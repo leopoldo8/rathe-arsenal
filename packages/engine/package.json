@@ -9,7 +9,10 @@
     "test": "jest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@flesh-and-blood/cards": "^3.6.243",
+    "@flesh-and-blood/types": "^3.6.243"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.2",
@@ -22,6 +25,10 @@
     "testEnvironment": "node",
     "rootDir": ".",
     "testRegex": "(__tests__/.*\\.spec\\.ts)$",
-    "moduleFileExtensions": ["ts", "js", "json"]
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ]
   }
 }

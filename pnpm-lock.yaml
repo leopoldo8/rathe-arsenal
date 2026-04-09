@@ -41,6 +41,9 @@ importers:
       '@nestjs/typeorm':
         specifier: ^11.0.0
         version: 11.0.1(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.28(pg@8.20.0)(ts-node@10.9.2(@types/node@22.19.17)(typescript@5.9.3)))
+      '@rathe-arsenal/engine':
+        specifier: workspace:^
+        version: link:../../packages/engine
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
@@ -165,6 +168,13 @@ importers:
         version: 2.1.9(@types/node@22.19.17)(terser@5.46.1)
 
   packages/engine:
+    dependencies:
+      '@flesh-and-blood/cards':
+        specifier: ^3.6.243
+        version: 3.6.243
+      '@flesh-and-blood/types':
+        specifier: ^3.6.243
+        version: 3.6.243
     devDependencies:
       '@types/jest':
         specifier: ^29.5.14
@@ -852,6 +862,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@flesh-and-blood/cards@3.6.243':
+    resolution: {integrity: sha512-8+WXNW67npPevoKrbJIQYZzDvhYMB/QYLI5enFiHgpQfIL0u84Y7A0tcZwZNPDAmh3NF4oU4qjb+hOMZwJUu4Q==}
+
+  '@flesh-and-blood/types@3.6.243':
+    resolution: {integrity: sha512-Swl0ZEnoLVZ9ek1cnJjE+OnSAMmY6MSVhzPWLEhAiFFuAnLCk5f1Ec8xYKVxvcBVcChHriL7W7EwYWkQ8CIpjw==}
 
   '@golevelup/ts-jest@0.5.6':
     resolution: {integrity: sha512-QnxP42Qu9M2UogdrF2kxpZcgWeW9R3WoUr+LdpcsbkvX3LjEoDYgrJ/PnV/QUCbxB1gaKbhR0ZxlDxE1cPkpDg==}
@@ -4770,6 +4786,12 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.7':
     optional: true
+
+  '@flesh-and-blood/cards@3.6.243':
+    dependencies:
+      '@flesh-and-blood/types': 3.6.243
+
+  '@flesh-and-blood/types@3.6.243': {}
 
   '@golevelup/ts-jest@0.5.6': {}
 
