@@ -8,6 +8,9 @@ import { FabraryModule } from '../fabrary/fabrary.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { DecksImportService } from './import/decks-import.service';
 import { DecksImportController } from './import/decks-import.controller';
+import { DecksController } from './decks.controller';
+import { DecksService } from './decks.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -19,8 +22,9 @@ import { DecksImportController } from './import/decks-import.controller';
     ]),
     FabraryModule,
     SubstitutionModule,
+    AuthModule,
   ],
-  controllers: [DecksImportController],
-  providers: [DecksImportService],
+  controllers: [DecksImportController, DecksController],
+  providers: [DecksImportService, DecksService],
 })
 export class DecksModule {}

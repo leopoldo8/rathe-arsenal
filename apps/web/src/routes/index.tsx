@@ -20,7 +20,7 @@ function LandingPage() {
       ) : (
         <div style={{ marginTop: '1rem' }}>
           <p>You are signed in as {user.email}.</p>
-          <p style={{ color: '#888', fontSize: '0.875rem' }}>Home surface ships in Phase 0 Unit 7.</p>
+          <Link to="/home">Go to your decks</Link>
         </div>
       )}
     </section>
