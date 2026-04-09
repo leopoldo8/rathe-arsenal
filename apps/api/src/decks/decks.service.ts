@@ -5,6 +5,7 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
+import { SubstitutionService } from '../substitution/substitution.service';
 import {
   ITrackedDeckListItem,
   TTrackedDeckListResponse,
@@ -28,6 +29,7 @@ export class DecksService {
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     private readonly authzService: AuthzService,
+    private readonly substitutionService: SubstitutionService,
   ) {}
 
   async listForUser(userId: string): Promise<TTrackedDeckListResponse> {
@@ -58,6 +60,25 @@ export class DecksService {
     const snapshotByDeckId = new Map<number, DeckReadinessSnapshotEntity>();
     for (const snap of latestSnapshots) {
       snapshotByDeckId.set(snap.trackedDeckId, snap);
+    }
+
+    // Auto-recompute missing snapshots
+    for (const deck of decks) {
+      if (!snapshotByDeckId.has(deck.id)) {
+        try {
+          const snap = await this.substitutionService.computeAndStoreReadiness(
+            deck.id,
+            userId,
+          );
+          snapshotByDeckId.set(deck.id, snap);
+        } catch (error) {
+          this.logger.warn({
+            msg: 'Failed to auto-recompute readiness for list',
+            deckId: deck.id,
+            error: (error as Error).message,
+          });
+        }
+      }
     }
 
     return decks.map((deck): ITrackedDeckListItem => {
@@ -100,10 +121,26 @@ export class DecksService {
 
     const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
 
-    const latestSnapshot = await this.snapshotRepo.findOne({
+    let latestSnapshot = await this.snapshotRepo.findOne({
       where: { trackedDeckId: deckId },
       order: { computedAt: 'DESC' },
     });
+
+    // Auto-recompute if no snapshot exists
+    if (!latestSnapshot) {
+      try {
+        latestSnapshot = await this.substitutionService.computeAndStoreReadiness(
+          deckId,
+          userId,
+        );
+      } catch (error) {
+        this.logger.warn({
+          msg: 'Failed to auto-recompute readiness',
+          deckId,
+          error: (error as Error).message,
+        });
+      }
+    }
 
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
       ? {

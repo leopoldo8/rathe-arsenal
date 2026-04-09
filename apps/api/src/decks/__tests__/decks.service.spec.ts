@@ -7,6 +7,7 @@ import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
+import { SubstitutionService } from '../../substitution/substitution.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -50,12 +51,14 @@ describe('DecksService', () => {
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
+  let substitutionService: jest.Mocked<SubstitutionService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
+    substitutionService = createMock<SubstitutionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -73,6 +76,7 @@ describe('DecksService', () => {
           useValue: snapshotRepo,
         },
         { provide: AuthzService, useValue: authzService },
+        { provide: SubstitutionService, useValue: substitutionService },
       ],
     }).compile();
 
@@ -131,9 +135,10 @@ describe('DecksService', () => {
       });
     });
 
-    it('should return null latestSnapshot when no snapshot exists for a deck', async () => {
+    it('should auto-recompute when no snapshot exists for a deck', async () => {
       // Arrange
       const deck = buildTrackedDeck();
+      const recomputedSnapshot = buildSnapshot({ id: 20, rawPercent: 0, effectivePercent: 0 });
       trackedDeckRepo.find.mockResolvedValue([deck]);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
@@ -142,12 +147,19 @@ describe('DecksService', () => {
       qb.getMany.mockResolvedValue([]);
       snapshotRepo.createQueryBuilder.mockReturnValue(qb);
 
+      substitutionService.computeAndStoreReadiness.mockResolvedValue(recomputedSnapshot);
+
       // Act
       const result = await service.listForUser(USER_ID);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]!.latestSnapshot).toBeNull();
+      expect(result[0]!.latestSnapshot).toEqual({
+        rawPercent: 0,
+        effectivePercent: 0,
+        computedAt: recomputedSnapshot.computedAt.toISOString(),
+      });
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(deck.id, USER_ID);
     });
 
     it('should return multiple decks ordered by trackedAt DESC', async () => {
