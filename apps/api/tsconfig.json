@@ -6,7 +6,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "incremental": true,
     "declaration": false,
     "removeComments": true,
     "types": ["node", "jest"]
