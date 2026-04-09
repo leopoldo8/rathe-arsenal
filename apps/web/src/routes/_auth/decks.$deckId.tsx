@@ -76,7 +76,6 @@ function DeckDetailPage() {
 
           <BreakdownList
             breakdown={snapshot.breakdown}
-            substitutions={snapshot.substitutions}
             onMarkOwned={handleMarkOwned}
             isMarkingOwned={markOwnedMutation.isPending}
             pendingCard={

@@ -1,10 +1,9 @@
-import { IBreakdown, ISubstitutionEntry } from '../api/deck-detail';
+import { IBreakdown } from '../api/deck-detail';
 import { SubstitutionRow } from './substitution-row';
 import { MarkOwnedButton } from './mark-owned-button';
 
 interface IBreakdownListProps {
   readonly breakdown: IBreakdown;
-  readonly substitutions: Record<string, ISubstitutionEntry>;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
@@ -12,7 +11,6 @@ interface IBreakdownListProps {
 
 export function BreakdownList({
   breakdown,
-  substitutions,
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
@@ -61,32 +59,13 @@ export function BreakdownList({
           </p>
         ) : (
           <div>
-            {breakdown.substituted.map((entry) => {
-              const sub = substitutions[entry.cardIdentifier];
-              if (!sub) {
-                return (
-                  <div
-                    key={`${entry.cardIdentifier}-${entry.slot}`}
-                    style={{
-                      padding: '0.375rem 0',
-                      borderBottom: '1px solid #f0f0f0',
-                    }}
-                  >
-                    <span>{entry.cardIdentifier}</span>
-                    <span style={{ color: '#999', marginLeft: '0.5rem' }}>
-                      x{entry.quantity} ({entry.slot})
-                    </span>
-                  </div>
-                );
-              }
-              return (
-                <SubstitutionRow
-                  key={`${entry.cardIdentifier}-${entry.slot}`}
-                  cardIdentifier={entry.cardIdentifier}
-                  substitution={sub}
-                />
-              );
-            })}
+            {breakdown.substituted.map((entry) => (
+              <SubstitutionRow
+                key={`${entry.original.cardIdentifier}-${entry.original.slot}`}
+                original={entry.original}
+                match={entry.match}
+              />
+            ))}
           </div>
         )}
       </section>

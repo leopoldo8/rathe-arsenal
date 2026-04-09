@@ -7,16 +7,31 @@ export interface IBreakdownEntry {
   readonly slot: string;
 }
 
-export interface ISubstitutionEntry {
-  readonly substitute: string;
-  readonly tier: string;
+export interface ISubstituteCard {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly classes: readonly string[];
+  readonly pitch: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+  readonly keywords: readonly string[];
+}
+
+export interface ISubstitutionMatch {
+  readonly substitute: ISubstituteCard;
+  readonly tier: number;
   readonly score: number;
   readonly rationale: string;
 }
 
+export interface ISubstitutedEntry {
+  readonly original: IBreakdownEntry;
+  readonly match: ISubstitutionMatch;
+}
+
 export interface IBreakdown {
   readonly exact: readonly IBreakdownEntry[];
-  readonly substituted: readonly IBreakdownEntry[];
+  readonly substituted: readonly ISubstitutedEntry[];
   readonly missing: readonly IBreakdownEntry[];
 }
 
@@ -25,7 +40,6 @@ export interface IDeckDetailSnapshot {
   readonly rawPercent: number;
   readonly effectivePercent: number;
   readonly breakdown: IBreakdown;
-  readonly substitutions: Record<string, ISubstitutionEntry>;
   readonly computedAt: string;
 }
 
