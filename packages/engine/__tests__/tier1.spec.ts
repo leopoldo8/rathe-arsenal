@@ -335,4 +335,71 @@ describe('tier1Substitution', () => {
     expect(result).not.toBeNull();
     expect(result!.substitute.cardIdentifier).toBe('perfect-match');
   });
+
+  it('rejects equipment substitute with different body slot (e.g. Chest vs Arms)', () => {
+    const missingChest = makeCard({
+      cardIdentifier: 'chest-equipment',
+      classes: [Class.Warrior],
+      types: [Type.Equipment],
+      pitch: null,
+      power: null,
+      defense: 2,
+      cost: null,
+      keywords: [Keyword.Temper],
+      subtypes: ['Chest'],
+    });
+
+    const armsCandidate = makeCard({
+      cardIdentifier: 'arms-equipment',
+      classes: [Class.Warrior],
+      types: [Type.Equipment],
+      pitch: null,
+      power: null,
+      defense: 2,
+      cost: null,
+      keywords: [Keyword.Temper],
+      subtypes: ['Arms'],
+    });
+
+    const catalog = makeCatalog([missingChest, armsCandidate]);
+    const inventory = new Map([['arms-equipment', 1]]);
+
+    const result = tier1Substitution(missingChest, inventory, catalog, DEFAULT_PITCH_TOLERANCE);
+
+    expect(result).toBeNull();
+  });
+
+  it('accepts equipment substitute with matching body slot', () => {
+    const missingArms = makeCard({
+      cardIdentifier: 'arms-equipment-a',
+      classes: [Class.Warrior],
+      types: [Type.Equipment],
+      pitch: null,
+      power: null,
+      defense: 2,
+      cost: null,
+      keywords: [Keyword.Temper],
+      subtypes: ['Arms'],
+    });
+
+    const armsCandidate = makeCard({
+      cardIdentifier: 'arms-equipment-b',
+      classes: [Class.Warrior],
+      types: [Type.Equipment],
+      pitch: null,
+      power: null,
+      defense: 2,
+      cost: null,
+      keywords: [Keyword.Temper],
+      subtypes: ['Arms'],
+    });
+
+    const catalog = makeCatalog([missingArms, armsCandidate]);
+    const inventory = new Map([['arms-equipment-b', 1]]);
+
+    const result = tier1Substitution(missingArms, inventory, catalog, DEFAULT_PITCH_TOLERANCE);
+
+    expect(result).not.toBeNull();
+    expect(result!.substitute.cardIdentifier).toBe('arms-equipment-b');
+  });
 });

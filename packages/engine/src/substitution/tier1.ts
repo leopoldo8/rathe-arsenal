@@ -29,6 +29,16 @@ function keywordOverlapCount(a: readonly string[], b: readonly string[]): number
   return a.filter((kw) => setB.has(kw)).length;
 }
 
+/** Equipment slot subtypes that define which body slot the equipment occupies. */
+const EQUIPMENT_SLOTS = new Set(['Arms', 'Chest', 'Head', 'Legs']);
+
+function getEquipmentSlot(card: ICatalogCard): string | null {
+  for (const st of card.subtypes) {
+    if (EQUIPMENT_SLOTS.has(st)) return st;
+  }
+  return null;
+}
+
 function scoreCandidate(
   missing: ICatalogCard,
   candidate: ICatalogCard,
@@ -38,6 +48,13 @@ function scoreCandidate(
   if (!hasClassIntersection(missing.classes, candidate.classes)) return null;
   if (missing.talents.length > 0 && !hasTalentIntersection(missing.talents, candidate.talents)) return null;
   if (!hasTypeIntersection(missing.types, candidate.types)) return null;
+
+  // Equipment slot constraint: Arms can only replace Arms, Chest only Chest, etc.
+  const missingSlot = getEquipmentSlot(missing);
+  if (missingSlot !== null) {
+    const candidateSlot = getEquipmentSlot(candidate);
+    if (candidateSlot !== missingSlot) return null;
+  }
 
   let score = BASE_SCORE;
 
