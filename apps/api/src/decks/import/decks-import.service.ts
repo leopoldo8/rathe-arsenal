@@ -93,15 +93,18 @@ export class DecksImportService {
       return { imported: [], skipped, errors };
     }
 
-    // Step 4: Aggregate inventory (max-wins)
+    // Step 4: Aggregate inventory (max-wins) — only when seedInventory is true
+    const shouldSeedInventory = dto.seedInventory !== false;
     const deckDtos = decksToImport.map((e) => e.deck);
-    const inventoryMap = aggregateInventory(deckDtos);
+    const inventoryMap = shouldSeedInventory ? aggregateInventory(deckDtos) : new Map<string, number>();
 
     // Step 5: Persist inside a transaction
     const savedDecks = await this.dataSource.transaction(
       async (manager: EntityManager) => {
-        // Upsert collection cards
-        await this.upsertCollectionCards(manager, user.userId, inventoryMap);
+        // Upsert collection cards (skipped when seedInventory is false)
+        if (shouldSeedInventory) {
+          await this.upsertCollectionCards(manager, user.userId, inventoryMap);
+        }
 
         // Insert tracked decks and deck cards
         const results: Array<{ trackedDeck: TrackedDeckEntity; deck: IDeckImportDto }> = [];

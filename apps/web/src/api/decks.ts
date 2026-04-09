@@ -53,10 +53,10 @@ export function useImportDecksMutation() {
   const apiFetch = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (urls: string[]) =>
+    mutationFn: ({ urls, seedInventory = true }: { urls: string[]; seedInventory?: boolean }) =>
       apiFetch<IImportDecksResponse>('/decks/import', {
         method: 'POST',
-        body: JSON.stringify({ urls }),
+        body: JSON.stringify({ urls, seedInventory }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });

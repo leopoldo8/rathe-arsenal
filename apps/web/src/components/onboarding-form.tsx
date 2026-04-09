@@ -16,6 +16,7 @@ function validateUrl(url: string): string | null {
 
 export function OnboardingForm() {
   const [urls, setUrls] = useState<string[]>(['']);
+  const [seedInventory, setSeedInventory] = useState(true);
   const [result, setResult] = useState<IImportDecksResponse | null>(null);
   const importMutation = useImportDecksMutation();
 
@@ -45,7 +46,7 @@ export function OnboardingForm() {
     if (hasErrors) return;
 
     try {
-      const response = await importMutation.mutateAsync(trimmedUrls);
+      const response = await importMutation.mutateAsync({ urls: trimmedUrls, seedInventory });
       setResult(response);
     } catch {
       // Error handled by TanStack Query
@@ -97,7 +98,18 @@ export function OnboardingForm() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={seedInventory}
+            onChange={(e) => setSeedInventory(e.target.checked)}
+          />
+          <span style={{ fontSize: '0.875rem' }}>
+            I own these cards (add to my collection)
+          </span>
+        </label>
+
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
           {urls.length < MAX_URLS && (
             <button type="button" onClick={handleAddRow} style={{ cursor: 'pointer' }}>
               + Add another URL
