@@ -15,7 +15,10 @@ export function MarkOwnedButton({
 
   return (
     <button
-      onClick={() => onMarkOwned(cardIdentifier)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onMarkOwned(cardIdentifier);
+      }}
       disabled={isPending}
       style={{
         cursor: isPending ? 'not-allowed' : 'pointer',
@@ -27,9 +30,10 @@ export function MarkOwnedButton({
         fontSize: '0.75rem',
         fontWeight: 600,
         opacity: isPending && !isThisCardPending ? 0.5 : 1,
+        whiteSpace: 'nowrap',
       }}
     >
-      {isThisCardPending ? 'Marking...' : 'I own this'}
+      {isThisCardPending ? 'Saving...' : 'I own this'}
     </button>
   );
 }

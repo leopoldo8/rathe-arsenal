@@ -69,19 +69,10 @@ export function useMarkOwnedMutation(deckId: string) {
         method: 'POST',
         body: JSON.stringify({ deckId: Number(deckId), cardIdentifier }),
       }),
-    onSuccess: (data) => {
-      // Optimistically update the deck detail cache with the new snapshot
-      queryClient.setQueryData<IDeckDetailResponse>(
-        deckDetailQueryKey(deckId),
-        (prev) => {
-          if (!prev) return prev;
-          return { ...prev, latestSnapshot: data.snapshot };
-        },
-      );
-      // Also invalidate to refetch cleanly
-      queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
-      // Invalidate the list view so percentages update
-      queryClient.invalidateQueries({ queryKey: ['decks'] });
+    onSuccess: () => {
+      // Invalidate both detail and list queries to refetch with fresh data
+      void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
+      void queryClient.invalidateQueries({ queryKey: ['decks'] });
     },
   });
 }
