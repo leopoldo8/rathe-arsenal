@@ -4,6 +4,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
+import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { DecksService } from '../decks.service';
@@ -46,11 +47,13 @@ function buildSnapshot(
 describe('DecksService', () => {
   let service: DecksService;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
+  let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
+    deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
 
@@ -60,6 +63,10 @@ describe('DecksService', () => {
         {
           provide: getRepositoryToken(TrackedDeckEntity),
           useValue: trackedDeckRepo,
+        },
+        {
+          provide: getRepositoryToken(DeckCardEntity),
+          useValue: deckCardRepo,
         },
         {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),

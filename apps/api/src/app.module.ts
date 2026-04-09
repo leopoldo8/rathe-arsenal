@@ -13,6 +13,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { FabraryModule } from './fabrary/fabrary.module';
 import { SubstitutionModule } from './substitution/substitution.module';
 import { DecksModule } from './decks/decks.module';
+import { CollectionModule } from './collection/collection.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -27,6 +28,7 @@ import { HealthController } from './health/health.controller';
     FabraryModule,
     SubstitutionModule,
     DecksModule,
+    CollectionModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({
