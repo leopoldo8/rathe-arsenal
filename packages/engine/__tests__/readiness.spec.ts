@@ -104,8 +104,8 @@ describe('computeEffectiveReadiness', () => {
 
     const result = computeEffectiveReadiness(deck, inventory, catalog);
 
-    expect(result.rawPercent).toBe(1);
-    expect(result.effectivePercent).toBe(1);
+    expect(result.rawPercent).toBe(100);
+    expect(result.effectivePercent).toBe(100);
     expect(result.breakdown.exact).toHaveLength(3);
     expect(result.breakdown.substituted).toHaveLength(0);
     expect(result.breakdown.missing).toHaveLength(0);
@@ -126,8 +126,8 @@ describe('computeEffectiveReadiness', () => {
 
     const result = computeEffectiveReadiness(deck, inventory, catalog);
 
-    expect(result.rawPercent).toBeCloseTo(2 / 3);
-    expect(result.effectivePercent).toBe(1);
+    expect(result.rawPercent).toBeCloseTo(66.7, 0);
+    expect(result.effectivePercent).toBe(100);
     expect(result.breakdown.exact).toHaveLength(1);
     expect(result.breakdown.exact[0]!.quantity).toBe(2);
     expect(result.breakdown.substituted).toHaveLength(1);
@@ -168,8 +168,8 @@ describe('computeEffectiveReadiness', () => {
 
     const result = computeEffectiveReadiness(deck, inventory, catalog);
 
-    expect(result.rawPercent).toBe(0.5);
-    expect(result.effectivePercent).toBe(0.5);
+    expect(result.rawPercent).toBe(50);
+    expect(result.effectivePercent).toBe(50);
     const missingHero = result.breakdown.missing.find(
       (e) => e.cardIdentifier === 'dorinthea-ironsong',
     );
@@ -192,8 +192,8 @@ describe('computeEffectiveReadiness', () => {
 
     const result = computeEffectiveReadiness(deck, inventory, catalog);
 
-    expect(result.rawPercent).toBe(0.5);
-    expect(result.effectivePercent).toBe(0.5);
+    expect(result.rawPercent).toBe(50);
+    expect(result.effectivePercent).toBe(50);
     const missingWeapon = result.breakdown.missing.find(
       (e) => e.cardIdentifier === 'dawnblade',
     );
@@ -318,7 +318,7 @@ describe('computeEffectiveReadiness', () => {
 
     // Since both cards have pitch 1, the substitution should succeed
     // (pitch curve stays the same)
-    expect(result.effectivePercent).toBe(1);
+    expect(result.effectivePercent).toBe(100);
     expect(result.breakdown.substituted).toHaveLength(1);
   });
 });

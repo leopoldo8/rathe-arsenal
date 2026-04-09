@@ -163,8 +163,8 @@ export function computeEffectiveReadiness(
     }
   }
 
-  const rawPercent = totalCards > 0 ? exactCount / totalCards : 0;
-  const effectivePercent = totalCards > 0 ? (exactCount + substitutedCount) / totalCards : 0;
+  const rawPercent = totalCards > 0 ? Math.round((exactCount / totalCards) * 1000) / 10 : 0;
+  const effectivePercent = totalCards > 0 ? Math.round(((exactCount + substitutedCount) / totalCards) * 1000) / 10 : 0;
 
   const originalCurve = computePitchCurve(originalPitchEntries);
   const modifiedCurve = computePitchCurve(modifiedPitchEntries);
