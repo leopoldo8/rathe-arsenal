@@ -23,8 +23,8 @@ import {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.get<string>('DATABASE_URL'),
+        type: 'postgres' as const,
+        url: config.get<string>('DATABASE_URL')!,
         entities: [
           UserEntity,
           CollectionCardEntity,
