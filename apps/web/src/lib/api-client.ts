@@ -20,6 +20,10 @@ export function useApiClient(): <T>(path: string, init?: RequestInit) => Promise
       const text = await response.text();
       throw new ApiError(response.status, text || response.statusText);
     }
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return undefined as T;
+    }
     return (await response.json()) as T;
   };
 }

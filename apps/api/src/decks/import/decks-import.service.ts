@@ -176,7 +176,35 @@ export class DecksImportService {
       });
     }
 
+    // Step 7: Recompute readiness for existing decks when inventory changed
+    if (shouldSeedInventory) {
+      await this.recomputeExistingDecks(user.userId, savedDecks.map((d) => d.trackedDeck.id));
+    }
+
     return { imported, skipped, errors };
+  }
+
+  private async recomputeExistingDecks(
+    userId: string,
+    excludeDeckIds: readonly number[],
+  ): Promise<void> {
+    const allDecks = await this.dataSource
+      .getRepository(TrackedDeckEntity)
+      .find({ where: { userId } });
+
+    const existingDecks = allDecks.filter((d) => !excludeDeckIds.includes(d.id));
+
+    for (const deck of existingDecks) {
+      try {
+        await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
+      } catch (error) {
+        this.logger.warn({
+          msg: 'Failed to recompute readiness for existing deck after import',
+          trackedDeckId: deck.id,
+          error: (error as Error).message,
+        });
+      }
+    }
   }
 
   private deduplicateUrls(urls: readonly string[]): {
