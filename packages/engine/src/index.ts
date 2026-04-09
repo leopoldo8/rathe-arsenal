@@ -16,3 +16,33 @@ export type {
   ICatalogIndices,
 } from './catalog/types';
 export { Class, Hero, Keyword, Talent, Type } from './catalog/types';
+
+// Substitution
+export type {
+  ISubstitutionMatch,
+  IPitchCurve,
+  IPitchDelta,
+  IPitchTolerance,
+} from './substitution';
+export {
+  TIER_1_FLOOR_SCORE,
+  DEFAULT_PITCH_TOLERANCE,
+  KEYWORD_OVERLAP_WEIGHT,
+  POWER_DELTA_WEIGHT,
+  DEFENSE_DELTA_WEIGHT,
+  BASE_SCORE,
+  computePitchCurve,
+  computePitchDelta,
+  isWithinTolerance,
+  composeRationale,
+  tier1Substitution,
+} from './substitution';
+
+// Readiness
+export type {
+  IBreakdownEntry,
+  ISubstitutedEntry,
+  IReadinessBreakdown,
+  IEffectiveReadinessResult,
+} from './readiness';
+export { computeEffectiveReadiness } from './readiness';
