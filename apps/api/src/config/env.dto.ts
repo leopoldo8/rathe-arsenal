@@ -52,20 +52,23 @@ export class EnvDto {
   @IsUrl({ require_tld: false, require_protocol: true })
   APP_BASE_URL!: string;
 
+  @IsOptional()
   @IsUrl({ require_tld: false, require_protocol: true })
-  AWS_APPSYNC_ENDPOINT!: string;
+  AWS_APPSYNC_ENDPOINT: string =
+    'https://42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com/graphql';
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  COGNITO_IDENTITY_POOL_ID!: string;
+  COGNITO_IDENTITY_POOL_ID: string = 'us-east-2:e50f3ed7-32ed-4b22-a05e-10b3e7e03fe0';
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  COGNITO_REGION!: string;
+  COGNITO_REGION: string = 'us-east-2';
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  FABRARY_ALLOW_HOSTS!: string;
+  FABRARY_ALLOW_HOSTS: string =
+    '42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com,fabrary.net';
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvDto {

@@ -10,6 +10,8 @@ import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { CatalogModule } from './catalog/catalog.module';
+import { FabraryModule } from './fabrary/fabrary.module';
+import { SubstitutionModule } from './substitution/substitution.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -21,6 +23,8 @@ import { HealthController } from './health/health.controller';
     AuthModule,
     EmailModule,
     CatalogModule,
+    FabraryModule,
+    SubstitutionModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({

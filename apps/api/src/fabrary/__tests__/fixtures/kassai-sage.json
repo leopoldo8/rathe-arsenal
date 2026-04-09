@@ -1,0 +1,61 @@
+{
+  "data": {
+    "getDeck": {
+      "deckId": "01HTXYZ1234567890ABCDEFGH",
+      "name": "Kassai SAGE",
+      "format": "Classic Constructed",
+      "heroIdentifier": "kassai-of-the-golden-sand",
+      "hero": {
+        "cardIdentifier": "kassai-of-the-golden-sand",
+        "name": "Kassai of the Golden Sand"
+      },
+      "deckCards": [
+        {
+          "cardIdentifier": "crippling-crush-yellow",
+          "quantity": 3,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "singing-steelblade-yellow",
+          "quantity": 3,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "take-the-tempo-red",
+          "quantity": 3,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "dauntless",
+          "quantity": 1,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "courage-of-bladehold",
+          "quantity": 1,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "heartened-cross-strap",
+          "quantity": 1,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "gallantry-gold",
+          "quantity": 1,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "unknown-card-xyz",
+          "quantity": 2,
+          "sideboardQuantity": 0
+        },
+        {
+          "cardIdentifier": "sideboard-only-card",
+          "quantity": 0,
+          "sideboardQuantity": 3
+        }
+      ]
+    }
+  }
+}
