@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from './entities/user.entity';
+import {
+  UserEntity,
+  CollectionCardEntity,
+  TrackedDeckEntity,
+  DeckCardEntity,
+  DeckReadinessSnapshotEntity,
+} from './entities';
 
 /**
  * Wires the runtime TypeORM connection from `DATABASE_URL`. Other modules
@@ -19,7 +25,13 @@ import { UserEntity } from './entities/user.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [UserEntity],
+        entities: [
+          UserEntity,
+          CollectionCardEntity,
+          TrackedDeckEntity,
+          DeckCardEntity,
+          DeckReadinessSnapshotEntity,
+        ],
         synchronize: false,
         logging: false,
       }),
