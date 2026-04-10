@@ -1,0 +1,22 @@
+rowNumber,deckHero,deckName,originalCard,proposedSubstitute,label
+1,"Kayo, Armed and Dangerous",[CC/CURRENT] Kayo,Enlightened Strike,Bingo,uncertain
+2,"Kayo, Armed and Dangerous",[CC/CURRENT] Kayo,Pack Hunt,Massacre,yes
+3,"Kayo, Armed and Dangerous",[CC/CURRENT] Kayo,Wild Ride,Pulping,yes
+4,"Verdance, Thorn of the Rose",Gardening with Verdance (Copy),Destructive Aethertide,Aether Quickening,no
+5,"Aurora, Shooting Star",FAFB (Copy),Ravenous Rabble,Zealous Belting,no
+6,Jarl Vetreiði,Permafrost,Fyendal's Spring Tunic,Ironrot Plate,yes
+7,Jarl Vetreiði,Permafrost,Tear Asunder,Buckle,yes
+8,"Oscilio, Constella Intelligence",Midrange (Copy),Etchings of Arcana,Aether Quickening,yes
+9,"Oscilio, Constella Intelligence",Midrange (Copy),Glyph Overlay,Aether Quickening,yes
+10,"Oscilio, Constella Intelligence",Midrange (Copy),"Volzar, the Lightning Rod","Volzar, Meteor Storm",yes
+11,Azalea,Project Blue: Azalea (Copy),Call in the Big Guns,Drop the Anchor,yes
+12,Azalea,Project Blue: Azalea (Copy),Lace with Inertia,Call in the Big Guns,yes
+13,Lyath Goldmane,Lyath rascunho,Cruel Ambition,Revolting Gesture,yes
+14,"Arakni, 5L!p3d 7hRu 7h3 cR4X",🧪,Art of Desire: Body,Back Stab,yes
+15,"Arakni, 5L!p3d 7hRu 7h3 cR4X",🧪,Double Trouble,Art of Desire: Mind,yes
+16,"Arakni, 5L!p3d 7hRu 7h3 cR4X",🧪,Infiltrate,Art of Desire: Body,yes
+17,"Arakni, 5L!p3d 7hRu 7h3 cR4X",🧪,Mark of the Black Widow,Art of Desire: Mind,no
+18,"Arakni, 5L!p3d 7hRu 7h3 cR4X",🧪,Persuasive Prognosis,Art of Desire: Mind,no
+19,"Pleiades, Superstar",Pliedes cc,Act of Glory,Edge of Their Seats,yes
+20,"Pleiades, Superstar",Pliedes cc,Boulder Drop,Cartilage Crush,uncertain
+21,"Pleiades, Superstar",Pliedes cc,Macho Grande,Glacial Footsteps,no

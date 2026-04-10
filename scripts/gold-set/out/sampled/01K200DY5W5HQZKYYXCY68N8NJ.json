@@ -1,0 +1,172 @@
+{
+  "deckId": "01K200DY5W5HQZKYYXCY68N8NJ",
+  "name": "Project Blue: Azalea (Copy)",
+  "format": "Silver Age",
+  "heroIdentifier": "azalea",
+  "hero": {
+    "cardIdentifier": "azalea",
+    "name": "Azalea"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "blade-beckoner-boots",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boltn-shot-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boltn-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boltn-shot-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bulls-eye-bracers",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "call-in-the-big-guns-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "crows-nest",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "death-dealer",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "death-touch-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "drill-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "dry-powder-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fatigue-shot-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "hamstring-shot-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "honing-hood",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "infecting-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "infecting-shot-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lace-with-bloodrot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lace-with-frailty-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lace-with-inertia-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "murkmire-grapnel-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "murkmire-grapnel-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "nimblism-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "nullrune-boots",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "old-knocker",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "ravenous-rabble-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "read-the-glide-path-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "release-the-tension-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "searing-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sedation-shot-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sleep-dart-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "take-aim-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "withering-shot-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    }
+  ]
+}

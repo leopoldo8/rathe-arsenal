@@ -1,0 +1,152 @@
+{
+  "deckId": "01KNRF8MEFHSRVAP8QR8M4Q33Y",
+  "name": "Pliedes cc",
+  "format": "Classic Constructed",
+  "heroIdentifier": "pleiades-superstar",
+  "hero": {
+    "cardIdentifier": "pleiades-superstar",
+    "name": "Pleiades, Superstar"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "act-of-glory-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "act-of-glory-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "attention-grabbers",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boots-to-the-boards",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boulder-drop-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "boulder-drop-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "comeback-kid-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "edge-of-their-seats-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "edge-of-their-seats-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fault-line-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "macho-grande-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "moment-maker",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "never-give-up-yellow",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "spinal-crush-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "standing-ovation-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "superstar-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tear-asunder-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tension-in-the-air-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tension-in-the-air-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "the-suspense-is-killing-me-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "thespian-charm-yellow",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tiara-of-suspense",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "to-be-continued-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "turning-point-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "up-on-a-pedestal-blue",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "uplifting-performance-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "virtuoso-bodice",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "what-happens-next-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    }
+  ]
+}

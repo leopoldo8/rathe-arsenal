@@ -1,0 +1,197 @@
+{
+  "deckId": "01KD44R1HG5TTBW5DQQPZ1C08N",
+  "name": "Lyath rascunho",
+  "format": "Silver Age",
+  "heroIdentifier": "lyath-goldmane",
+  "hero": {
+    "cardIdentifier": "lyath-goldmane",
+    "name": "Lyath Goldmane"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "bask-in-your-own-greatness-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bask-in-your-own-greatness-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "booze-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "cheap-shot-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "concealed-object-blue",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "craterhoof",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "cruel-ambition-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "disdainful-delight-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "edge-of-their-seats-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "garland-of-spring",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "goon-beatdown-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "goon-tactics-blue",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "horns-of-the-despised",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "instill-fear-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lead-with-heart-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lead-with-power-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "line-crossers",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mightybone-knuckles",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mocking-blow-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mocking-blow-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mocking-blow-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "nimblism-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "power-play-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "power-play-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "prime-the-crowd-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "revolting-gesture-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sadistic-scowl-red",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "short-shrift-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "spew-obscenities-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "stand-strong",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "steelbraid-buckler",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "strong-stomach-for-adversity",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "titans-fist",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "villainous-pose-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "villainous-pose-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "walk-in-my-shoes-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "wee-wrecking-ball-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    }
+  ]
+}

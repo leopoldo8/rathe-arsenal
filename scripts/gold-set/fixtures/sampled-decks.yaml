@@ -2,7 +2,13 @@
 # Pick 4-6 popular decks spanning different heroes and archetypes from fabrary.net
 # Format: one URL per line under decks:
 decks:
-  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_1
-  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_2
-  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_3
-  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_4
+  - https://fabrary.net/decks/01K200DY5W5HQZKYYXCY68N8NJ
+  - https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT
+  - https://fabrary.net/decks/01JSAPYR4PK4HV2QNBTN2W9R9J
+  - https://fabrary.net/decks/01J8AYMDW3XEXWWZP3FA53G0TX
+  - https://fabrary.net/decks/01J90DD8TP4ZZJH0ZVB8JBSD6T
+  - https://fabrary.net/decks/01JRK6MSXZB01N45KA3X72W3CA
+  - https://fabrary.net/decks/01KME3SV71PVJ52WWM4PMCCHX6
+  - https://fabrary.net/decks/01KNRF8MEFHSRVAP8QR8M4Q33Y
+  - https://fabrary.net/decks/01KMNP5N7EBBM7GGBJZXSVCP7S
+  - https://fabrary.net/decks/01KD44R1HG5TTBW5DQQPZ1C08N

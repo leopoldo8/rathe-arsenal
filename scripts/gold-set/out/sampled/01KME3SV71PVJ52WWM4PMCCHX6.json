@@ -1,0 +1,177 @@
+{
+  "deckId": "01KME3SV71PVJ52WWM4PMCCHX6",
+  "name": "Big Flo ",
+  "format": "Silver Age",
+  "heroIdentifier": "florian",
+  "hero": {
+    "cardIdentifier": "florian",
+    "name": "Florian"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "amplify-the-arknight-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "amplify-the-arknight-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "arcane-lantern",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "arcane-polarity-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "arcane-seeds--life-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "autumns-touch-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "autumns-touch-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "autumns-touch-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "beckoning-haunt",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bloodied-oval",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "cadaverous-tilling-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "chorus-of-rotwood-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "colors-of-aria-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fruits-of-the-forest-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "garland-of-spring",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "harvest-season-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "helm-of-lignum-vitae",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "nebula-blade",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "nullrune-gloves",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "oath-of-the-arknight-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "plume-of-evergrowth",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "read-the-runes-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "reduce-to-runechant-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "reduce-to-runechant-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "reduce-to-runechant-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "rootbound-carapace-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "rootbound-carapace-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "runebleed-robe",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "runeblood-incantation-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "scepter-of-pain",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-silphidae-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-suffering-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "well-grounded",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "deckId": "01J90DD8TP4ZZJH0ZVB8JBSD6T",
+  "name": "FAFB (Copy)",
+  "format": "Classic Constructed",
+  "heroIdentifier": "aurora-shooting-star",
+  "hero": {
+    "cardIdentifier": "aurora-shooting-star",
+    "name": "Aurora, Shooting Star"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "arc-lightning-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "arcanic-shockwave-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "blink-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "burn-up--shock-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "channel-lightning-valley-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "command-and-conquer-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "crown-of-providence",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "current-funnel-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "dyadic-carapace",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "electrify-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "electromagnetic-somersault-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "electrostatic-discharge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "enlightened-strike-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "entwine-lightning-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "face-purgatory",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "flicker-wisp-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "flittering-charge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fyendals-spring-tunic",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "gone-in-a-flash-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "grasp-of-the-arknight",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lightning-greaves",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lightning-press-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lightning-surge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "ravenous-rabble-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "shock-charmers",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "sigil-of-lightning-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sink-below-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "snatch-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "star-fall",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "static-shock-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "the-weakest-link-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "vaporize--shock-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "deckId": "01JSAPYR4PK4HV2QNBTN2W9R9J",
+  "name": "Midrange (Copy)",
+  "format": "Classic Constructed",
+  "heroIdentifier": "oscilio-constella-intelligence",
+  "hero": {
+    "cardIdentifier": "oscilio-constella-intelligence",
+    "name": "Oscilio, Constella Intelligence"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "aether-bindings-of-the-third-age",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "balance-of-justice",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "blast-to-oblivion-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "blast-to-oblivion-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "blink-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "blossom-of-spring",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "calming-breeze-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "channel-lightning-valley-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "comet-storm--shock-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "crown-of-providence",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "current-funnel-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "destructive-aethertide-blue",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "eclectic-magnetism-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "electromagnetic-somersault-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "electrostatic-discharge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "enlightened-strike-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "entwine-lightning-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "etchings-of-arcana-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "flash-of-brilliance",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "flittering-charge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fry-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fyendals-spring-tunic",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "glyph-overlay-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "gone-in-a-flash-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lightning-greaves",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lightning-press-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "mind-warp-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "null--shock-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "nullrune-hood",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "pop-the-bubble-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "rewind-blue",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "scour-blue",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "shelter-from-the-storm-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "shock-charmers",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-aether-blue",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-brilliance-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-conductivity-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-lightning-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-solace-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sink-below-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "snag-blue",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "that-all-you-got-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "volzar-the-lightning-rod",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    }
+  ]
+}

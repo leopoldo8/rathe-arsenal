@@ -1,0 +1,182 @@
+{
+  "deckId": "01J027FSFWMBYYDR457YVXM5QT",
+  "name": "[CC/CURRENT] Kayo",
+  "format": "Classic Constructed",
+  "heroIdentifier": "kayo-armed-and-dangerous",
+  "hero": {
+    "cardIdentifier": "kayo-armed-and-dangerous",
+    "name": "Kayo, Armed and Dangerous"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "agile-windup-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "agile-windup-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "assault-and-battery-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bare-fangs-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bare-fangs-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "beast-within-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "beaten-trackers",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "bloodrush-bellow-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "cast-bones-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "clash-of-agility-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "command-and-conquer-red",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "enlightened-strike-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "erase-face-red",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "hide-tanner",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "humble-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "mandible-claw",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mighty-windup-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "nullrune-gloves",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "pack-hunt-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "pulping-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "reckless-swing-blue",
+      "quantity": 1,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "riled-up-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "run-roughshod-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "runner-runner-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "savage-feast-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "savage-sash",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "scowling-flesh-bag",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "send-packing-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "skullhorn",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "smash-instinct-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "strength-rules-all-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "wild-ride-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "wild-ride-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "wrecker-romp-blue",
+      "quantity": 2,
+      "sideboardQuantity": 1
+    }
+  ]
+}

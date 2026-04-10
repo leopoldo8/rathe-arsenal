@@ -1,0 +1,217 @@
+{
+  "deckId": "01J8AYMDW3XEXWWZP3FA53G0TX",
+  "name": "Gardening with Verdance (Copy)",
+  "format": "Classic Constructed",
+  "heroIdentifier": "verdance-thorn-of-the-rose",
+  "hero": {
+    "cardIdentifier": "verdance-thorn-of-the-rose",
+    "name": "Verdance, Thorn of the Rose"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "aether-arc-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "aether-quickening-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "alluvion-constellas",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "autumns-touch-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "balance-of-justice",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "barkskin-of-the-millennium-tree",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "blossoming-decay-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "cadaverous-tilling-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "channel-the-millennium-tree-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "command-and-conquer-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "crown-of-providence",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "destructive-aethertide-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "energy-potion-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "felling-of-the-crown-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fruits-of-the-forest-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fyendals-spring-tunic",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "harvest-season-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "healing-potion-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "heartbeat-of-candlehold-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "hold-focus",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "life-for-a-life-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "metacarpus-node",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mind-warp-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "photon-splicing-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "plow-under-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "plume-of-evergrowth",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "pulsing-aether--life-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "rampant-growth--life-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "rootbound-carapace-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "scour-blue",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "seeds-of-tomorrow-blue",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "sigil-of-solace-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sink-below-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sow-tomorrow-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "stonewall-gauntlet",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "storm-striders",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "summers-fall-blue",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "surgent-aethertide",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "this-rounds-on-me-blue",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "trailblazing-aether-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "well-grounded",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    }
+  ]
+}

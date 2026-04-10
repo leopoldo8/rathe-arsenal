@@ -1,0 +1,222 @@
+{
+  "deckId": "01KMNP5N7EBBM7GGBJZXSVCP7S",
+  "name": "🧪",
+  "format": "Classic Constructed",
+  "heroIdentifier": "arakni-5lp3d-7hru-7h3-cr4x",
+  "hero": {
+    "cardIdentifier": "arakni-5lp3d-7hru-7h3-cr4x",
+    "name": "Arakni, 5L!p3d 7hRu 7h3 cR4X"
+  },
+  "deckCards": [
+    {
+      "cardIdentifier": "art-of-desire-body-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "balance-of-justice",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "blacktek-whisperers",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "codex-of-frailty-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "command-and-conquer-red",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "crown-of-providence",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "double-trouble-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "double-trouble-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fate-foreseen-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "flick-knives",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "frailty-trap-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "fyendals-spring-tunic",
+      "quantity": 1,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "hunters-klaive",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "infect-blue",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "infect-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "infiltrate-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "just-a-nick-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "kiss-of-death-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "leave-no-witnesses-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "lobotomy-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mark-of-the-black-widow-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mark-of-the-black-widow-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "mark-of-the-funnel-web-red",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "meet-madness-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "orb-weaver-spinneret-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "orbitoclast",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "overcrowded-blue",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "pain-in-the-backside-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "persuasive-prognosis-blue",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "pick-up-the-point-red",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    },
+    {
+      "cardIdentifier": "razors-edge-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "savor-bloodshed-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "shelter-from-the-storm-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "shred-red",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "shred-yellow",
+      "quantity": 2,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sigil-of-solace-red",
+      "quantity": 0,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "sink-below-red",
+      "quantity": 0,
+      "sideboardQuantity": 3
+    },
+    {
+      "cardIdentifier": "spike-with-bloodrot-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "stalkers-steps",
+      "quantity": 0,
+      "sideboardQuantity": 1
+    },
+    {
+      "cardIdentifier": "take-up-the-mantle-yellow",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tarantula-toxin-red",
+      "quantity": 3,
+      "sideboardQuantity": 0
+    },
+    {
+      "cardIdentifier": "tome-of-pandemonium-yellow",
+      "quantity": 0,
+      "sideboardQuantity": 2
+    }
+  ]
+}
