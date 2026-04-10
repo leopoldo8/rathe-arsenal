@@ -1,0 +1,8 @@
+# Gate 4 gold-set: sampled decks
+# Pick 4-6 popular decks spanning different heroes and archetypes from fabrary.net
+# Format: one URL per line under decks:
+decks:
+  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_1
+  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_2
+  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_3
+  - https://fabrary.net/decks/REPLACE_WITH_REAL_ULID_4
