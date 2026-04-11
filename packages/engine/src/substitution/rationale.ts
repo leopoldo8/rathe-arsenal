@@ -1,4 +1,5 @@
 import { ICatalogCard } from '../catalog/types';
+import { TSubstitutionTier } from './types';
 
 function pitchLabel(pitch: number | null): string {
   switch (pitch) {
@@ -36,10 +37,15 @@ function sharedKeywords(missing: ICatalogCard, substitute: ICatalogCard): readon
 
 /**
  * Build a human-readable rationale for why a substitute card was chosen.
+ *
+ * The tier argument is appended as a prefix when the match is a softer
+ * tier 2 substitution so the user sees the downgrade explicitly. Tier 1
+ * matches keep the terse format to preserve Phase 0 rationale output.
  */
 export function composeRationale(
   missing: ICatalogCard,
   substitute: ICatalogCard,
+  tier: TSubstitutionTier = 1,
 ): string {
   const pitch = pitchLabel(missing.pitch);
 
@@ -54,5 +60,10 @@ export function composeRationale(
   const shared = sharedKeywords(missing, substitute);
   const kwList = shared.length > 0 ? shared.join(', ') : 'no';
 
-  return `Same pitch (${pitch}), same ${classLabel} class, ${pNote}, ${dNote}, shared ${kwList} keywords.`;
+  const core = `Same pitch (${pitch}), same ${classLabel} class, ${pNote}, ${dNote}, shared ${kwList} keywords.`;
+
+  if (tier === 2) {
+    return `Tier 2 substitute -- keyword overlap relaxed: ${core}`;
+  }
+  return core;
 }

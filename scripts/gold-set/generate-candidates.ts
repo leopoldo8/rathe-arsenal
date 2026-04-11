@@ -2,8 +2,8 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import {
   catalog,
-  tier1Substitution,
-  DEFAULT_PITCH_TOLERANCE,
+  findTierMatch,
+  TIER_1_CONFIG,
   Type,
 } from '../../packages/engine/src';
 import type { ICatalogCard } from '../../packages/engine/src';
@@ -130,11 +130,14 @@ async function main(): Promise<void> {
         continue;
       }
 
-      const match = tier1Substitution(
+      // Tier 1 only. This script generates candidates for human gold-set
+      // labeling and must not mix tier 2 fallbacks into the candidate pool,
+      // since the labels would conflate distinct confidence levels.
+      const match = findTierMatch(
         catalogCard,
         syntheticInventory,
         catalog,
-        DEFAULT_PITCH_TOLERANCE,
+        TIER_1_CONFIG,
       );
 
       if (match) {

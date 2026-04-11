@@ -321,4 +321,219 @@ describe('computeEffectiveReadiness', () => {
     expect(result.effectivePercent).toBe(100);
     expect(result.breakdown.substituted).toHaveLength(1);
   });
+
+  describe('path field', () => {
+    it('returns Path A when every card is owned exactly', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['warrior-attack-red', 3]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('A');
+    });
+
+    it('returns Path B when all missing copies are covered by substitutions', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 2],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('B');
+      expect(result.effectivePercent).toBe(100);
+    });
+
+    it('returns Path C when some cards remain missing after substitution', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map<string, number>();
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('C');
+    });
+
+    it('derives Path A from a degenerate empty deck', () => {
+      const deck = { cards: [] };
+      const inventory = new Map<string, number>();
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('A');
+    });
+  });
+
+  describe('tier 2 substitution in readiness', () => {
+    const tier2Missing = makeCard({
+      cardIdentifier: 'tier2-missing',
+      pitch: 1,
+      power: 3,
+      defense: 3,
+      keywords: [Keyword.GoAgain],
+    });
+    const tier2Candidate = makeCard({
+      cardIdentifier: 'tier2-candidate',
+      pitch: 1,
+      power: 3,
+      defense: 3,
+      keywords: [Keyword.Intimidate], // zero overlap, tier 2 only
+    });
+
+    const tieredCatalog = makeCatalog([tier2Missing, tier2Candidate]);
+
+    it('falls through to tier 2 when no tier 1 candidate is available', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'tier2-missing', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['tier2-candidate', 1]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, tieredCatalog);
+
+      expect(result.breakdown.substituted).toHaveLength(1);
+      expect(result.breakdown.substituted[0]!.match.tier).toBe(2);
+      expect(result.path).toBe('B');
+      expect(result.effectivePercent).toBe(100);
+    });
+
+    it('populates substitutions array with tier 2 match when tier 2 fires', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'tier2-missing', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['tier2-candidate', 1]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, tieredCatalog);
+
+      expect(result.substitutions).toHaveLength(1);
+      expect(result.substitutions[0]!.tier).toBe(2);
+      expect(result.substitutions[0]!.rationale).toContain('Tier 2 substitute');
+    });
+  });
+
+  describe('excludedIdentifiers parameter (re-solve)', () => {
+    it('skips tier 1 candidates in the exclusion set and falls through to tier 2', () => {
+      const missing = makeCard({
+        cardIdentifier: 'pick-me',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+      const tier1Best = makeCard({
+        cardIdentifier: 'tier1-best',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+      const tier2Fallback = makeCard({
+        cardIdentifier: 'tier2-fallback',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.Intimidate],
+      });
+
+      const exclusionCatalog = makeCatalog([missing, tier1Best, tier2Fallback]);
+
+      const deck = {
+        cards: [
+          { cardIdentifier: 'pick-me', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['tier1-best', 1],
+        ['tier2-fallback', 1],
+      ]);
+
+      // Without exclusions: picks tier 1 best
+      const unrestricted = computeEffectiveReadiness(
+        deck,
+        inventory,
+        exclusionCatalog,
+      );
+      expect(unrestricted.breakdown.substituted[0]!.match.substitute.cardIdentifier).toBe('tier1-best');
+      expect(unrestricted.breakdown.substituted[0]!.match.tier).toBe(1);
+
+      // With tier 1 best excluded: falls through to tier 2 fallback
+      const restricted = computeEffectiveReadiness(
+        deck,
+        inventory,
+        exclusionCatalog,
+        DEFAULT_PITCH_TOLERANCE,
+        new Set(['tier1-best']),
+      );
+      expect(restricted.breakdown.substituted[0]!.match.substitute.cardIdentifier).toBe('tier2-fallback');
+      expect(restricted.breakdown.substituted[0]!.match.tier).toBe(2);
+    });
+
+    it('moves a card to missing when every candidate is excluded and reports Path C', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 2],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      // Excluding the only substitute -> third copy cannot be substituted.
+      const result = computeEffectiveReadiness(
+        deck,
+        inventory,
+        catalog,
+        DEFAULT_PITCH_TOLERANCE,
+        new Set(['warrior-attack-red-alt']),
+      );
+
+      expect(result.breakdown.missing).toHaveLength(1);
+      expect(result.breakdown.missing[0]!.quantity).toBe(1);
+      expect(result.breakdown.substituted).toHaveLength(0);
+      expect(result.path).toBe('C');
+    });
+
+    it('empty exclusion set matches the default no-exclusion behavior', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 2],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      const withEmptySet = computeEffectiveReadiness(
+        deck,
+        inventory,
+        catalog,
+        DEFAULT_PITCH_TOLERANCE,
+        new Set(),
+      );
+      const withoutArg = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(withEmptySet.effectivePercent).toBe(withoutArg.effectivePercent);
+      expect(withEmptySet.path).toBe(withoutArg.path);
+      expect(withEmptySet.breakdown.substituted.length).toBe(
+        withoutArg.breakdown.substituted.length,
+      );
+    });
+  });
 });

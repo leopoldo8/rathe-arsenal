@@ -3,6 +3,8 @@ export type {
   ISubstitutedEntry,
   IReadinessBreakdown,
   IEffectiveReadinessResult,
+  TPath,
 } from './types';
 
 export { computeEffectiveReadiness } from './compute';
+export { computePath } from './compute-path';
