@@ -182,6 +182,24 @@
 
 ---
 
+### A16. No CAPTCHA on sign-up (deferred from S6)
+
+**Phase 0 posture:** none. **Phase 1a posture:** still none. The full S1-S12 origin-doc posture lists "Sign-up has a CAPTCHA gate" as part of S6, which is required before public launch. Phase 1a ships rate limiting (5 sign-in/min, 3 sign-up/hour per IP) and email verification, but no CAPTCHA.
+
+**Why deferred (Phase 1a):** the Phase 1a audience is the ~47-person Pelotas FaB community, recruited via Cúpula DT and the local Discord/WhatsApp -- a known, invitation-adjacent surface. Per-IP rate limiting + email verification is the accepted compensating control at this scale. Adding CAPTCHA (hCaptcha or Cloudflare Turnstile) is ~1 hour of work and is held back to avoid friction on the first community impression.
+
+**Phase 1 trigger to revisit:** any of —
+- First credible abuse signal in Railway logs (sign-up spikes, repeated bot patterns)
+- Any growth campaign or open-web sign-up link beyond the closed community
+- User base grows past 100 active users
+- A leaked-credential-stuffing pattern emerges
+
+**When triggered, the work is:** add hCaptcha or Cloudflare Turnstile to the sign-up form, validate the token server-side in `AuthService.signUp()` before the existing-user check. ~1 hour of integration. The plan plan-1a documents this as a deliberate compensating control choice, not an oversight.
+
+**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` Scope Boundaries section.
+
+---
+
 ### A15. Resend free tier cap = 100 emails/day
 
 **Phase 0 posture:** Resend's free tier is the only email channel. 100 emails/day, 3000/month. For 5-10 closed-beta users this is irrelevant.
