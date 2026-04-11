@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { DataSource } from 'typeorm';
@@ -6,6 +7,7 @@ import { CollectionCardEntity } from '../apps/api/src/database/entities/collecti
 import { TrackedDeckEntity } from '../apps/api/src/database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../apps/api/src/database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../apps/api/src/database/entities/deck-readiness-snapshot.entity';
+import { RejectedSubstituteEntity } from '../apps/api/src/database/entities/rejected-substitute.entity';
 
 // Load .env from the api package (where DATABASE_URL lives)
 config({ path: resolve(__dirname, '..', 'apps', 'api', '.env') });
@@ -34,6 +36,7 @@ async function main(): Promise<void> {
       TrackedDeckEntity,
       DeckCardEntity,
       DeckReadinessSnapshotEntity,
+      RejectedSubstituteEntity,
     ],
     synchronize: false,
     logging: false,
@@ -51,6 +54,13 @@ async function main(): Promise<void> {
       .getRepository(TrackedDeckEntity)
       .find({ where: { userId }, select: ['id'] });
     const deckIdList = deckIds.map((d) => d.id);
+
+    const rejectedSubstituteCount =
+      deckIdList.length > 0
+        ? await queryRunner.manager
+            .getRepository(RejectedSubstituteEntity)
+            .count({ where: deckIdList.map((id) => ({ trackedDeckId: id })) })
+        : 0;
 
     const snapshotCount =
       deckIdList.length > 0
@@ -73,6 +83,7 @@ async function main(): Promise<void> {
     const trackedDeckCount = deckIdList.length;
 
     console.log(`\nRows to delete for user ${userId}:`);
+    console.log(`  rejected_substitute:     ${rejectedSubstituteCount}`);
     console.log(`  deck_readiness_snapshot: ${snapshotCount}`);
     console.log(`  deck_card:               ${deckCardCount}`);
     console.log(`  collection_card:         ${collectionCardCount}`);
@@ -82,6 +93,10 @@ async function main(): Promise<void> {
     // Delete in dependency order (children first).
     // ON DELETE CASCADE is defense-in-depth; explicit ordering is safer.
     if (deckIdList.length > 0) {
+      await queryRunner.manager
+        .getRepository(RejectedSubstituteEntity)
+        .delete(deckIdList.map((id) => ({ trackedDeckId: id })));
+
       await queryRunner.manager
         .getRepository(DeckReadinessSnapshotEntity)
         .delete(deckIdList.map((id) => ({ trackedDeckId: id })));

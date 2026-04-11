@@ -166,15 +166,9 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ---
 
-### A8. No account-deletion UI — manual dev script only
+### A8. No account-deletion UI — RESOLVED (Phase 1a Unit 2)
 
-**Phase 0 posture:** account deletion requires running `pnpm tsx scripts/delete-user.ts <userId>` against the production DB and then manually deleting the user from any external systems (none in Phase 0 since Clerk is gone). The script cascades through every user-linked table.
-
-**Why deferred:** carried over from the original Phase 0 plan. Closed beta scale means the operator handles the rare deletion request manually.
-
-**Phase 1 trigger to revisit:** any public surface, GDPR/LGPD considerations, or beta size growth past trust-the-operator scale.
-
-**When triggered, the work is:** add `DELETE /api/auth/me` requiring re-entry of the password, gated behind a confirmation modal. Server-side calls the same delete script logic.
+**Resolution:** `DELETE /api/auth/me` (authenticated, rate-limited to 5/hour per IP) now accepts a re-entered password and soft-deletes the account via `user.deletedAt = now()`. `JwtStrategy.validate()` rejects users with `deletedAt != null` on the same per-request lookup — no additional DB query, preserving the A13 trade-off. A new `/_auth/settings` route houses `DeleteAccountModal`, which requires both password and confirmation checkbox before submission and renders inline errors on 401 / 429. A `scripts/purge-deleted-users.ts` script (raw `pg` driver, single-transaction cascade, `--dry-run` / `--yes` / `--days=N` flags, interactive confirmation when `isTTY`) purges rows older than 30 days; wire-up instructions for Railway's second-service cron pattern live in `scripts/deploy-railway.md`. The Phase 0 `scripts/delete-user.ts` was updated alongside to include `rejected_substitute` in its cascade (the Unit 7 table that was never registered in the Phase 0 script).
 
 ---
 

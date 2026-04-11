@@ -285,3 +285,69 @@ describe('AuthService.resetPassword', () => {
     });
   });
 });
+
+describe('AuthService.deleteAccount', () => {
+  async function makeUser(
+    hasher: PasswordHasherService,
+    overrides: Partial<UserEntity> = {},
+  ): Promise<Partial<UserEntity>> {
+    return {
+      id: 'user-1',
+      email: 'a@b.com',
+      passwordHash: await hasher.hash('longenoughpassword'),
+      emailVerifiedAt: new Date(),
+      deletedAt: null,
+      ...overrides,
+    };
+  }
+
+  it('sets deletedAt and saves when the password is correct (happy path)', async () => {
+    const { service, hasher } = buildService();
+    const user = await makeUser(hasher);
+    const save = jest.fn().mockImplementation(async (u: Partial<UserEntity>) => u);
+    (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    (service as any).users.save = save;
+
+    const result = await service.deleteAccount('user-1', 'longenoughpassword');
+
+    expect(result).toEqual({ ok: true });
+    expect(user.deletedAt).toBeInstanceOf(Date);
+    expect(save).toHaveBeenCalledWith(user);
+  });
+
+  it('throws INVALID_CREDENTIALS for wrong password without setting deletedAt', async () => {
+    const { service, hasher } = buildService();
+    const user = await makeUser(hasher);
+    const save = jest.fn();
+    (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    (service as any).users.save = save;
+
+    await expect(service.deleteAccount('user-1', 'wrongpassword!')).rejects.toMatchObject({
+      code: EAuthErrorCode.InvalidCredentials,
+    });
+    expect(user.deletedAt).toBeNull();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('throws INVALID_CREDENTIALS when the user does not exist (defensive)', async () => {
+    const { service } = buildService();
+    (service as any).users.findOne = jest.fn().mockResolvedValue(null);
+
+    await expect(service.deleteAccount('user-1', 'longenoughpassword')).rejects.toMatchObject({
+      code: EAuthErrorCode.InvalidCredentials,
+    });
+  });
+
+  it('throws INVALID_CREDENTIALS when the user is already soft-deleted', async () => {
+    const { service, hasher } = buildService();
+    const user = await makeUser(hasher, { deletedAt: new Date('2020-01-01T00:00:00Z') });
+    const save = jest.fn();
+    (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    (service as any).users.save = save;
+
+    await expect(service.deleteAccount('user-1', 'longenoughpassword')).rejects.toMatchObject({
+      code: EAuthErrorCode.InvalidCredentials,
+    });
+    expect(save).not.toHaveBeenCalled();
+  });
+});

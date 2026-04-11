@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -9,6 +9,7 @@ import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
+import { DeleteAccountDto } from './dtos/delete-account.dto';
 import { AuthService } from './auth.service';
 import { AuthError } from './errors';
 import { mapAuthError } from './auth-error.mapper';
@@ -102,5 +103,26 @@ export class AuthController {
   @Get('me')
   async getMe(@CurrentUser() user: ICurrentUser) {
     return this.authService.getMe(user);
+  }
+
+  // A8 / Phase 1a Unit 2: authenticated soft-delete. Requires re-entered
+  // password as the destructive-action confirmation gate. Rate-limited to
+  // 5/hour per IP — matches forgot-password / reset-password and is strict
+  // enough that a compromised JWT cannot drain an account before the user
+  // notices, but lenient enough that a user mistyping their password a few
+  // times can recover within the same session.
+  @Throttle({ default: { limit: 5, ttl: HOUR_MS } })
+  @Delete('me')
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(
+    @CurrentUser() user: ICurrentUser,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    try {
+      return await this.authService.deleteAccount(user.userId, dto.password);
+    } catch (err) {
+      if (err instanceof AuthError) throw mapAuthError(err);
+      throw err;
+    }
   }
 }

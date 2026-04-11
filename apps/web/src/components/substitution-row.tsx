@@ -7,8 +7,11 @@ interface ISubstitutionRowProps {
    * Callback invoked when the user clicks the reject button. Receives
    * the *substitute* identifier (not the original) — that is the
    * identifier the rejection set keys on.
+   *
+   * Explicit `| undefined` keeps this assignable from an optional caller
+   * prop under `exactOptionalPropertyTypes: true`.
    */
-  readonly onReject?: (substituteIdentifier: string) => void;
+  readonly onReject?: ((substituteIdentifier: string) => void) | undefined;
   /**
    * True when this specific row's rejection is in flight. The row
    * dims to 50% opacity and the reject button disables.
@@ -26,7 +29,7 @@ interface ISubstitutionRowProps {
    * beneath the substitute. Surfaced when a previous rejection broke
    * the curve and no alternative exists for this slot.
    */
-  readonly curveWarning?: boolean;
+  readonly curveWarning?: boolean | undefined;
 }
 
 export function SubstitutionRow({

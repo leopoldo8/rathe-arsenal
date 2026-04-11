@@ -15,6 +15,7 @@
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "purge:deleted-users": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/purge-deleted-users.ts",
     "gold:sample": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/sample-decks.ts",
     "gold:generate": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/generate-candidates.ts",
     "gold:export": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/export-csv.ts",

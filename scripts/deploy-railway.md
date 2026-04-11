@@ -68,8 +68,92 @@ Visit `https://<your-railway-domain>/` in a browser -> landing page renders ->
 click "Sign up" -> fill email + password -> "Check your email" page -> open email ->
 click verification link -> signed in -> redirected to `/`.
 
-## Manual user deletion (Phase 0 — see Unit 2)
+## Manual user deletion (Phase 0 escape hatch — still supported)
 
 1. Run `pnpm tsx scripts/delete-user.ts <userId>` against the production DB
    (use Railway's `railway run` to inject `DATABASE_URL`).
-2. All user-linked rows are cascade-deleted by the script.
+2. All user-linked rows are cascade-deleted by the script, including
+   `rejected_substitute` rows tied to the user's tracked decks.
+
+## Soft-delete + 30-day purge (Phase 1a Unit 2 / A8)
+
+Users who request account deletion via the UI (`DELETE /api/auth/me`) are
+**soft-deleted** — their `user.deletedAt` is set, `JwtStrategy.validate()`
+immediately rejects their existing JWT, and no cascade runs yet. A scheduled
+cron purges the rows permanently 30 days later, meeting the LGPD retention
+window while leaving room for accidental-delete recovery in the interim.
+
+### Purge script
+
+```bash
+# Dry run (prints eligible userIds, touches nothing)
+pnpm purge:deleted-users -- --dry-run
+
+# Real purge with non-interactive confirmation (for cron)
+pnpm purge:deleted-users -- --yes
+
+# Interactive run (prompts y/N before deleting)
+pnpm purge:deleted-users
+
+# Override retention window (e.g. for testing against a staging DB)
+pnpm purge:deleted-users -- --dry-run --days=7
+```
+
+The script:
+- Uses the raw `pg` driver (no TypeORM decorator runtime, fast cold start)
+- Runs the whole cascade under a single transaction
+- Cascade order: `rejected_substitute` → `deck_readiness_snapshot` →
+  `deck_card` → `tracked_deck` → `collection_card` → `user`
+- Emits a structured `{"event":"purge.user.delete","userId":...}` log line
+  for every deleted userId before the final commit
+- Detects `process.stdin.isTTY` to decide between interactive prompt and
+  non-interactive cron mode
+- Exits non-zero on any failure (cron treats this as a failed run)
+
+### Wiring the cron on Railway
+
+Railway's cron feature requires a **second service** in the same project
+(the main API service is always-on and cannot also carry a cron schedule).
+Set it up once via the dashboard:
+
+1. **Dashboard → Project → New → Empty Service**
+2. **Settings → Source → Connect Repo** → `leopoldo8/rathe-arsenal` (same repo)
+3. **Settings → Deploy**:
+   - **Cron Schedule**: `0 3 * * *` (daily at 03:00 UTC — low-traffic window)
+   - **Start Command**: `pnpm purge:deleted-users -- --yes`
+   - **Health Check**: *disabled* (cron services don't serve traffic)
+   - **Restart Policy**: `NEVER` (a failed cron run should fail-loud, not
+     loop)
+4. **Settings → Variables → Shared Variables** → link `DATABASE_URL` from
+   the Postgres service so both the API and the cron share the same DB.
+   **Do not** copy-paste the URL — use Railway's shared-variable reference
+   so rotating the Postgres credentials propagates automatically.
+5. **Settings → Networking** → leave the cron service private (no public
+   domain, no incoming traffic).
+6. **Deploy** the service. Railway will run the build once, then schedule
+   the start command on the cron. Verify the first run in the service logs:
+
+   ```
+   [purge] Connected. Retention window: 30 days (cutoff: ...).
+   [purge] No users older than the retention window. Nothing to do.
+   ```
+
+### Operational notes
+
+- **Dry-run before enabling**: the first production run should be with
+  `--dry-run` (temporarily edit the start command to
+  `pnpm purge:deleted-users -- --yes --dry-run`) so the first cron tick
+  only logs, never deletes. Flip back to `--yes` alone once the dry-run
+  output looks right.
+- **Monitoring**: Railway log retention is short. If LGPD compliance
+  requires audit evidence beyond Railway's retention window, pipe the
+  `purge.user.delete` events to an external sink (Datadog, Logtail, S3).
+  Tracked as a Phase 2 follow-up (A14).
+- **Manual intervention**: to purge a specific user before the 30-day
+  window, use the Phase 0 `scripts/delete-user.ts` instead — it hard-deletes
+  a single user on demand and bypasses the retention gate.
+- **Restore window**: as long as `user.deletedAt IS NOT NULL` and the row
+  still exists, an operator can run
+  `UPDATE "user" SET "deletedAt" = NULL WHERE id = '<uuid>'` to resurrect
+  an accidentally-deleted account. The user's JWT is already invalidated
+  on their side, but their data survives until the cron fires.

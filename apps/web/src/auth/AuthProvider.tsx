@@ -106,9 +106,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(res.jwt, res.user);
   }, [persist]);
 
+  const deleteAccount = useCallback(async (password: string) => {
+    // A8 / Phase 1a Unit 2. On success, the backend has soft-deleted the
+    // user and the current JWT is already invalidated server-side (the
+    // JwtStrategy rejects `deletedAt != null` on the next request), so we
+    // must clear local state here to keep the client in sync. Any error
+    // (401 wrong password, 429 rate limit, network) is re-thrown so the
+    // calling modal can render inline feedback without clearing state.
+    await apiFetch<{ ok: true }>(
+      '/auth/me',
+      { method: 'DELETE', body: JSON.stringify({ password }) },
+      token,
+    );
+    localStorage.removeItem(STORAGE_KEY);
+    setToken(null);
+    setUser(null);
+  }, [token]);
+
   const value = useMemo(() => ({
-    user, token, isLoading, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword,
-  }), [user, token, isLoading, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword]);
+    user, token, isLoading, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount,
+  }), [user, token, isLoading, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

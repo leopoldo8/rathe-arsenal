@@ -227,7 +227,7 @@ Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Uni
 
 ---
 
-- [ ] **Unit 2: Account Deletion UI (A8)**
+- [x] **Unit 2: Account Deletion UI (A8)**
 
 **Goal:** Add a user-facing account deletion flow with password confirmation, soft delete, and LGPD-compliant 30-day purge path.
 
