@@ -30,6 +30,17 @@ export interface IEffectiveReadinessResult {
   readonly rawPercent: number;
   readonly effectivePercent: number;
   readonly path: TPath;
+  /**
+   * Tier-weighted fidelity percentage (0-100) for Path C display.
+   *
+   * Computed via `computeFidelity`:
+   *   ((exactCount * 1.0) + Σ(tierWeight(sub.tier) * sub.quantity)) / totalCards * 100
+   * where tierWeight(1) = 0.9 and tierWeight(2) = 0.7.
+   *
+   * Always populated (including Path A = 100 and Path B >= weighted total),
+   * but primarily consumed by Path C surfaces. Not pre-rounded.
+   */
+  readonly fidelityPercent: number;
   readonly breakdown: IReadinessBreakdown;
   readonly substitutions: readonly ISubstitutionMatch[];
   readonly pitchCurve: {
