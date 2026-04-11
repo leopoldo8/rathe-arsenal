@@ -18,6 +18,3 @@ export interface IGenericAuthAcceptedResponse {
   message: string;
   _devVerificationLink?: string;
 }
-
-/** @deprecated retained for backwards compat with older tests; use IGenericAuthAcceptedResponse */
-export type ISignUpResponse = IGenericAuthAcceptedResponse;
