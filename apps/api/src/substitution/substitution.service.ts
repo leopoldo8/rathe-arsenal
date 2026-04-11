@@ -44,7 +44,54 @@ export class SubstitutionService {
   async computeAndStoreReadiness(
     trackedDeckId: number,
     userId: string,
+    excludedIdentifiers: ReadonlySet<string> = new Set(),
   ): Promise<DeckReadinessSnapshotEntity> {
+    const result = await this.runReadiness(
+      trackedDeckId,
+      userId,
+      excludedIdentifiers,
+    );
+
+    const snapshot = this.snapshots.create({
+      trackedDeckId,
+      rawPercent: result.rawPercent,
+      effectivePercent: result.effectivePercent,
+      breakdown: result.breakdown as unknown as Record<string, unknown>,
+      substitutions: result.substitutions as unknown as Record<string, unknown>,
+    });
+
+    const saved = await this.snapshots.save(snapshot);
+
+    this.logger.log('Readiness snapshot computed', {
+      trackedDeckId,
+      rawPercent: result.rawPercent,
+      effectivePercent: result.effectivePercent,
+      exclusionCount: excludedIdentifiers.size,
+    });
+
+    return saved;
+  }
+
+  /**
+   * Dry-run flavor of {@link computeAndStoreReadiness} used by the
+   * interactive swap editor (U7). Computes a fresh
+   * `IEffectiveReadinessResult` with the given exclusion set without
+   * persisting any snapshot. Callers that want to persist the result
+   * should use {@link computeAndStoreReadiness} instead.
+   */
+  async computeReadinessWithExclusions(
+    trackedDeckId: number,
+    userId: string,
+    excludedIdentifiers: ReadonlySet<string>,
+  ): Promise<IEffectiveReadinessResult> {
+    return this.runReadiness(trackedDeckId, userId, excludedIdentifiers);
+  }
+
+  private async runReadiness(
+    trackedDeckId: number,
+    userId: string,
+    excludedIdentifiers: ReadonlySet<string>,
+  ): Promise<IEffectiveReadinessResult> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
     const deck = await this.trackedDecks.findOne({
@@ -76,29 +123,13 @@ export class SubstitutionService {
       inventory.set(row.cardIdentifier, row.quantity);
     }
 
-    const result: IEffectiveReadinessResult = computeEffectiveReadiness(
+    return computeEffectiveReadiness(
       deckInput,
       inventory,
       catalog,
+      undefined,
+      excludedIdentifiers,
     );
-
-    const snapshot = this.snapshots.create({
-      trackedDeckId,
-      rawPercent: result.rawPercent,
-      effectivePercent: result.effectivePercent,
-      breakdown: result.breakdown as unknown as Record<string, unknown>,
-      substitutions: result.substitutions as unknown as Record<string, unknown>,
-    });
-
-    const saved = await this.snapshots.save(snapshot);
-
-    this.logger.log('Readiness snapshot computed', {
-      trackedDeckId,
-      rawPercent: result.rawPercent,
-      effectivePercent: result.effectivePercent,
-    });
-
-    return saved;
   }
 
   /**

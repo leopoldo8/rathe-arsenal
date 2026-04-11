@@ -56,4 +56,9 @@ export interface ITrackedDeckDetailResponse {
   readonly trackedAt: string;
   readonly totalCards: number;
   readonly latestSnapshot: ITrackedDeckDetailSnapshot | null;
+  /**
+   * Number of persisted rejections for this deck (U7). The web UI
+   * renders the modified-view banner when this is > 0.
+   */
+  readonly rejectionCount: number;
 }

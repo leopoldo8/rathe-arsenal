@@ -530,7 +530,7 @@ _Note: `apps/web/src/routeTree.gen.ts` is regenerated automatically by the TanSt
 
 ---
 
-- [ ] **Unit 7: Interactive Swap Editor with Persisted Rejections (R17 Phase 1)**
+- [x] **Unit 7: Interactive Swap Editor with Persisted Rejections (R17 Phase 1)**
 
 **Goal:** Allow users to reject individual substitutions on a tracked deck and have the engine re-solve while preserving the pitch curve constraint. Rejections **persist** to the database scoped per deck so casual users returning weekly do not lose their preferences.
 

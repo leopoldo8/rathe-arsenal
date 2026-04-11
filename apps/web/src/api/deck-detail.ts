@@ -68,6 +68,11 @@ export interface IDeckDetailResponse {
   readonly trackedAt: string;
   readonly totalCards: number;
   readonly latestSnapshot: IDeckDetailSnapshot | null;
+  /**
+   * Number of persisted substitution rejections on this deck (U7).
+   * The deck detail page renders a modified-view banner when > 0.
+   */
+  readonly rejectionCount: number;
 }
 
 export interface IMarkOwnedResponse {

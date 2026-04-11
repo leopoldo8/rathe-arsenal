@@ -237,6 +237,8 @@ describe('SubstitutionService', () => {
       }),
       expect.any(Map),
       expect.anything(),
+      undefined,
+      expect.any(Set),
     );
 
     // Verify the inventory map passed to the engine

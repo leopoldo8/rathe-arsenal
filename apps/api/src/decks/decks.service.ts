@@ -5,6 +5,7 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
+import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import {
@@ -31,6 +32,8 @@ export class DecksService {
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     @InjectRepository(CollectionCardEntity)
     private readonly collectionCardRepo: Repository<CollectionCardEntity>,
+    @InjectRepository(RejectedSubstituteEntity)
+    private readonly rejectedSubstituteRepo: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
   ) {}
@@ -150,6 +153,10 @@ export class DecksService {
       }
     }
 
+    const rejectionCount = await this.rejectedSubstituteRepo.count({
+      where: { trackedDeckId: deckId },
+    });
+
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
       ? (() => {
           // Path + fidelity are derived at read time from the breakdown JSONB.
@@ -185,6 +192,7 @@ export class DecksService {
       trackedAt: deck.trackedAt.toISOString(),
       totalCards,
       latestSnapshot: snapshotDto,
+      rejectionCount,
     };
   }
 
