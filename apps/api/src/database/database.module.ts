@@ -7,6 +7,7 @@ import {
   TrackedDeckEntity,
   DeckCardEntity,
   DeckReadinessSnapshotEntity,
+  RejectedSubstituteEntity,
 } from './entities';
 
 /**
@@ -31,6 +32,7 @@ import {
           TrackedDeckEntity,
           DeckCardEntity,
           DeckReadinessSnapshotEntity,
+          RejectedSubstituteEntity,
         ],
         synchronize: config.get<string>('NODE_ENV') === 'development',
         logging: false,

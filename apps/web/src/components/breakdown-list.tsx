@@ -7,6 +7,20 @@ interface IBreakdownListProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
+  /**
+   * When supplied, each substitution row renders a reject button.
+   * Invoked with the **substitute** card identifier.
+   */
+  readonly onRejectSubstitute?: (substituteIdentifier: string) => void;
+  /**
+   * Substitute identifier whose rejection is currently in flight.
+   */
+  readonly pendingRejection?: string | null;
+  /**
+   * Set of original card identifiers that should render a curve
+   * warning on their substitution row.
+   */
+  readonly curveWarnings?: ReadonlySet<string>;
 }
 
 export function BreakdownList({
@@ -14,7 +28,11 @@ export function BreakdownList({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
+  onRejectSubstitute,
+  pendingRejection = null,
+  curveWarnings,
 }: IBreakdownListProps) {
+  const anyRejectionPending = pendingRejection !== null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Exact matches */}
@@ -64,6 +82,12 @@ export function BreakdownList({
                 key={`${entry.original.cardIdentifier}-${entry.original.slot}`}
                 original={entry.original}
                 match={entry.match}
+                onReject={onRejectSubstitute}
+                isPending={
+                  pendingRejection === entry.match.substitute.cardIdentifier
+                }
+                anyPending={anyRejectionPending}
+                curveWarning={curveWarnings?.has(entry.original.cardIdentifier)}
               />
             ))}
           </div>

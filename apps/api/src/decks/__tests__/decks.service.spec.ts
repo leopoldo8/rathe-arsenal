@@ -7,6 +7,7 @@ import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
+import { RejectedSubstituteEntity } from '../../database/entities/rejected-substitute.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { DecksService } from '../decks.service';
@@ -52,6 +53,7 @@ describe('DecksService', () => {
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let rejectedSubstituteRepo: jest.Mocked<Repository<RejectedSubstituteEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
 
@@ -60,6 +62,7 @@ describe('DecksService', () => {
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
+    rejectedSubstituteRepo = createMock<Repository<RejectedSubstituteEntity>>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
 
@@ -84,6 +87,10 @@ describe('DecksService', () => {
         {
           provide: getRepositoryToken(CollectionCardEntity),
           useValue: collectionCardRepo,
+        },
+        {
+          provide: getRepositoryToken(RejectedSubstituteEntity),
+          useValue: rejectedSubstituteRepo,
         },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
