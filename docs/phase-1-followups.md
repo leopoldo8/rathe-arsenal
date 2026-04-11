@@ -12,6 +12,8 @@
 
 ### A18. No Vitest bootstrap in `apps/web` — frontend unit tests are structurally unavailable
 
+**Status:** Resolved on 2026-04-11 in branch `chore/phase-1a-a18-vitest-bootstrap`. `apps/web` now has a `vitest.config.ts` mirroring the Vite plugins, a `src/test/setup.ts` loading `@testing-library/jest-dom/vitest` + RTL cleanup, and a smoke test (`src/components/__tests__/empty-home-state.test.tsx`) that renders `<EmptyHomeState>` end-to-end under `QueryClientProvider` + `AuthContext.Provider`. Backfill of the remaining Phase 1a-era components listed below is still outstanding and tracked as follow-up work.
+
 **Phase 0 posture:** none. **Phase 1a posture:** `apps/web` has no test runner configured. `pnpm --filter @rathe-arsenal/web test` exits with code 1 because Vitest finds no test files. There is no `vitest.config.ts`, no test setup file, no `@testing-library/react` dependency.
 
 **Why deferred (Phase 1a):** Phase 0 shipped a thin, largely stateless frontend (deck list, inline mark-owned, onboarding form) where visual/typecheck verification was sufficient and every hour spent bootstrapping Vitest was an hour not spent on Phase 0 gates. Phase 1a's parallel Units 4, 5, and 8 introduced non-trivial interactive components — the `<CardAutocomplete>` WAI-ARIA combobox, the two-mode home state machine with loading/error/empty/populated branches, and `<PathCResult>` + the Path C banner — all of which are currently verified by TypeScript typecheck plus manual reasoning only. None of them have automated coverage for keyboard behavior, ARIA state transitions, mode branching, or rendering contracts.
