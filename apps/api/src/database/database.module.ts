@@ -32,7 +32,7 @@ import {
           DeckCardEntity,
           DeckReadinessSnapshotEntity,
         ],
-        synchronize: false,
+        synchronize: config.get<string>('NODE_ENV') === 'development',
         logging: false,
       }),
     }),
