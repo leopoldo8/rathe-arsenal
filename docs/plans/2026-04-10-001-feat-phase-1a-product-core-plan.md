@@ -355,7 +355,7 @@ Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Uni
 
 ---
 
-- [ ] **Unit 4: Manual Card Autocomplete (R4)**
+- [x] **Unit 4: Manual Card Autocomplete (R4)**
 
 **Goal:** Add a search-as-you-type card autocomplete so users can add individual cards to their collection without pasting a Fabrary URL. Authenticated, throttled, ARIA-compliant, and recomputes readiness across all affected tracked decks.
 
@@ -422,7 +422,7 @@ Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Uni
 
 ---
 
-- [ ] **Unit 5: Home State Machine (Two-Mode Phase 1a)**
+- [x] **Unit 5: Home State Machine (Two-Mode Phase 1a)**
 
 **Goal:** Implement a simplified two-mode home (empty, populated). Per the Scope Boundaries decision, fallback mode is collapsed into empty mode for Phase 1a; the three-mode machine lands in Phase 1c when Discover data makes fallback meaningful.
 
@@ -606,7 +606,7 @@ _Note: The earlier draft listed Unit 6 as a hard prerequisite of Unit 7. That wa
 
 ---
 
-- [ ] **Unit 8: Path C -- Closest Playable Version (R18, tier 1 + tier 2 only)**
+- [x] **Unit 8: Path C -- Closest Playable Version (R18, tier 1 + tier 2 only)**
 
 **Goal:** When a deck cannot be fully built even with tier 1 and tier 2 substitutions, show the "closest playable version" with a tier-weighted fidelity score and a clear missing-cards report. Tier 3 stays in Phase 2 per the Scope Boundaries decision.
 

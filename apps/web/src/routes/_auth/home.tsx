@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useDecksQuery, useUntrackDeckMutation } from '../../api/decks';
 import { TrackedDeckCard } from '../../components/tracked-deck-card';
 import { EmptyHomeState } from '../../components/empty-home-state';
+import { CardAutocomplete } from '../../components/card-autocomplete';
 
 export const Route = createFileRoute('/_auth/home')({
   component: HomePage,
@@ -106,7 +107,9 @@ function HomePage() {
           />
         ))}
       </div>
-      {/* U4: CardAutocomplete mounts here (below the deck list in populated mode) */}
+      <div style={{ marginTop: '2rem' }}>
+        <CardAutocomplete label="Add more cards to your collection" />
+      </div>
     </section>
   );
 }

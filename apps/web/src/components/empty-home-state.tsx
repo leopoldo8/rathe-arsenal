@@ -1,3 +1,5 @@
+import { CardAutocomplete } from './card-autocomplete';
+
 interface IEmptyHomeStateProps {
   readonly collectionCardCount: number;
 }
@@ -62,7 +64,9 @@ export function EmptyHomeState({ collectionCardCount }: IEmptyHomeStateProps) {
       >
         Browse Discover -- coming soon
       </p>
-      {/* U4: CardAutocomplete mounts here (below the primary CTA in both modes) */}
+      <div style={{ marginTop: '1.5rem' }}>
+        <CardAutocomplete label="Or add cards manually" />
+      </div>
     </section>
   );
 }

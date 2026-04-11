@@ -8,6 +8,38 @@
 
 ---
 
+## Frontend testing infrastructure
+
+### A18. No Vitest bootstrap in `apps/web` — frontend unit tests are structurally unavailable
+
+**Phase 0 posture:** none. **Phase 1a posture:** `apps/web` has no test runner configured. `pnpm --filter @rathe-arsenal/web test` exits with code 1 because Vitest finds no test files. There is no `vitest.config.ts`, no test setup file, no `@testing-library/react` dependency.
+
+**Why deferred (Phase 1a):** Phase 0 shipped a thin, largely stateless frontend (deck list, inline mark-owned, onboarding form) where visual/typecheck verification was sufficient and every hour spent bootstrapping Vitest was an hour not spent on Phase 0 gates. Phase 1a's parallel Units 4, 5, and 8 introduced non-trivial interactive components — the `<CardAutocomplete>` WAI-ARIA combobox, the two-mode home state machine with loading/error/empty/populated branches, and `<PathCResult>` + the Path C banner — all of which are currently verified by TypeScript typecheck plus manual reasoning only. None of them have automated coverage for keyboard behavior, ARIA state transitions, mode branching, or rendering contracts.
+
+**Phase 1 trigger to revisit:** **before the next Phase 1a unit ships**, or whichever of the following comes first —
+- U6 (out-of-onboarding test mode) introduces a new route with fetch-bound UX states (loading, timeout, SSRF-rejected host, alreadyTracked, import success) that are exactly the kind of logic that degrades silently without tests
+- U7 (interactive swap editor) introduces per-row reject UI with reject-all-disable-while-pending semantics and curve-warning rendering — implicit contracts that typecheck cannot catch
+- Any user-reported regression in one of the Phase 1a interactive surfaces
+- Growth past the ~47-person community, at which point manual QA per release stops scaling
+
+**When triggered, the work is:**
+1. Add `vitest`, `@vitest/ui`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, and `jsdom` (or `happy-dom`) to `apps/web/package.json` as devDependencies
+2. Create `apps/web/vitest.config.ts` with `environment: 'jsdom'`, `setupFiles: ['./src/test-setup.ts']`, and `globals: true`
+3. Create `apps/web/src/test-setup.ts` importing `@testing-library/jest-dom/vitest`
+4. Add a `test` script to `apps/web/package.json` (e.g., `"test": "vitest run"`)
+5. Backfill tests for the Phase 1a-era components that currently have zero coverage, prioritizing:
+   - `<CardAutocomplete>` — keyboard navigation (ArrowUp/ArrowDown/Enter/Escape), ARIA combobox state (`aria-expanded`, `aria-activedescendant`), click-outside behavior, post-add confirmation dismissal, `ownedQuantity` badge rendering
+   - `home.tsx` state machine — all four branches (loading skeleton, error+retry, empty mode, populated mode) and mode transitions triggered by query invalidation
+   - `<EmptyHomeState>` — card-count phrasing, muted "coming soon" label is not interactive
+   - `<PathCResult>` and the `PathCBanner` — Path C renders only when `snapshot.path === 'C'`, fidelity formatting matches `Math.round(fidelityPercent * 10) / 10`
+6. Wire the new `test` script into the existing CI pipeline (matches the `@rathe-arsenal/api` and `@rathe-arsenal/engine` stages)
+
+Estimated: 1-2 hours to bootstrap the harness; the first component backfill batch is another 2-3 hours.
+
+**Where documented:** This entry. Cross-referenced from the Phase 1a plan's Known Gotchas ("Web package has no tests yet") and from the Unit 4/5/8 PR descriptions (leopoldo8/rathe-arsenal#2, leopoldo8/rathe-arsenal#3, leopoldo8/rathe-arsenal#4).
+
+---
+
 ## Auth & security trade-offs (from Clerk → DIY swap, 2026-04-09)
 
 ### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.)
