@@ -1,0 +1,79 @@
+import { IsString, IsUrl } from 'class-validator';
+
+/**
+ * Request body for `POST /api/decks/test`.
+ *
+ * The test endpoint accepts a single Fabrary deck URL and returns a
+ * computed readiness result **without persisting anything**. Validation
+ * rejects non-URLs and non-string payloads with 400.
+ */
+export class TestDeckRequestDto {
+  @IsString()
+  @IsUrl()
+  url!: string;
+}
+
+/**
+ * Response payload for `POST /api/decks/test`.
+ *
+ * Mirrors the shape the deck detail page consumes so the frontend result
+ * screen can reuse existing presentational components. `alreadyTracked`
+ * branches the UI between the two "Track" CTAs and an "already tracked"
+ * callout. No snapshot id or persisted metadata is returned -- nothing
+ * is written to the database.
+ */
+export interface ITestDeckBreakdownEntry {
+  readonly cardIdentifier: string;
+  readonly quantity: number;
+  readonly slot: string;
+}
+
+export interface ITestDeckSubstituteCard {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly classes: readonly string[];
+  readonly pitch: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+  readonly keywords: readonly string[];
+}
+
+export interface ITestDeckSubstitutionMatch {
+  readonly substitute: ITestDeckSubstituteCard;
+  readonly tier: number;
+  readonly score: number;
+  readonly rationale: string;
+}
+
+export interface ITestDeckSubstitutedEntry {
+  readonly original: ITestDeckBreakdownEntry;
+  readonly match: ITestDeckSubstitutionMatch;
+}
+
+export interface ITestDeckBreakdown {
+  readonly exact: readonly ITestDeckBreakdownEntry[];
+  readonly substituted: readonly ITestDeckSubstitutedEntry[];
+  readonly missing: readonly ITestDeckBreakdownEntry[];
+}
+
+export type TTestDeckPath = 'A' | 'B' | 'C';
+
+export interface ITestDeckResponse {
+  readonly fabraryUlid: string;
+  readonly name: string;
+  readonly hero: string;
+  readonly format: string;
+  readonly totalCards: number;
+  readonly rawPercent: number;
+  readonly effectivePercent: number;
+  readonly path: TTestDeckPath;
+  readonly fidelityPercent: number;
+  readonly breakdown: ITestDeckBreakdown;
+  readonly alreadyTracked: boolean;
+  /**
+   * Populated only when `alreadyTracked === true`. Lets the frontend
+   * deep-link to the existing tracked deck detail page instead of
+   * offering the track CTAs.
+   */
+  readonly trackedDeckId: number | null;
+}

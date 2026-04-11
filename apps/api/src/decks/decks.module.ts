@@ -10,6 +10,8 @@ import { DecksImportService } from './import/decks-import.service';
 import { DecksImportController } from './import/decks-import.controller';
 import { DecksController } from './decks.controller';
 import { DecksService } from './decks.service';
+import { TestDeckController } from './test/test-deck.controller';
+import { TestDeckService } from './test/test-deck.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -24,7 +26,7 @@ import { AuthModule } from '../auth/auth.module';
     SubstitutionModule,
     AuthModule,
   ],
-  controllers: [DecksImportController, DecksController],
-  providers: [DecksImportService, DecksService],
+  controllers: [DecksImportController, DecksController, TestDeckController],
+  providers: [DecksImportService, DecksService, TestDeckService],
 })
 export class DecksModule {}

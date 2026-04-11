@@ -466,7 +466,7 @@ Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Uni
 
 ---
 
-- [ ] **Unit 6: Out-of-Onboarding Test Mode (R15)**
+- [x] **Unit 6: Out-of-Onboarding Test Mode (R15)**
 
 **Goal:** Allow users to paste a Fabrary URL outside of onboarding to "test" a deck against their collection without adding cards to inventory or auto-tracking the deck.
 
