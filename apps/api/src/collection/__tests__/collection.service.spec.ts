@@ -3,10 +3,13 @@ import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
+import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { AuthzService } from '../../auth/authz.service';
+import { CatalogService } from '../../catalog/catalog.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { CollectionService } from '../collection.service';
 
@@ -67,14 +70,18 @@ describe('CollectionService', () => {
   let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
+  let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let authzService: jest.Mocked<AuthzService>;
+  let catalogService: jest.Mocked<CatalogService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
 
   beforeEach(async () => {
     collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     authzService = createMock<AuthzService>();
+    catalogService = createMock<CatalogService>();
     substitutionService = createMock<SubstitutionService>();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -92,7 +99,12 @@ describe('CollectionService', () => {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),
           useValue: snapshotRepo,
         },
+        {
+          provide: getRepositoryToken(TrackedDeckEntity),
+          useValue: trackedDeckRepo,
+        },
         { provide: AuthzService, useValue: authzService },
+        { provide: CatalogService, useValue: catalogService },
         { provide: SubstitutionService, useValue: substitutionService },
       ],
     }).compile();
@@ -216,6 +228,225 @@ describe('CollectionService', () => {
       expect(collectionCardRepo.update).toHaveBeenCalledWith(existingCard.id, {
         quantity: 2,
       });
+    });
+  });
+
+  describe('addCard', () => {
+    function mockAffectedDeckIds(deckIds: readonly number[]): void {
+      const rawRows = deckIds.map((id) => ({ trackedDeckId: id }));
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(rawRows),
+      };
+      (
+        deckCardRepo as unknown as {
+          createQueryBuilder: jest.Mock;
+        }
+      ).createQueryBuilder = jest.fn().mockReturnValue(qb);
+    }
+
+    it('should create a new CollectionCard row with default quantity 1', async () => {
+      // Arrange
+      catalogService.getCard.mockReturnValue({} as never);
+      collectionCardRepo.findOne.mockResolvedValue(null);
+      collectionCardRepo.create.mockReturnValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      collectionCardRepo.save.mockResolvedValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      mockAffectedDeckIds([]);
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER);
+
+      // Assert
+      expect(result.cardIdentifier).toBe(CARD_IDENTIFIER);
+      expect(result.newQuantity).toBe(1);
+      expect(result.recomputedDecks).toEqual([]);
+      expect(catalogService.getCard).toHaveBeenCalledWith(CARD_IDENTIFIER);
+      expect(collectionCardRepo.create).toHaveBeenCalledWith({
+        userId: USER_ID,
+        cardIdentifier: CARD_IDENTIFIER,
+        quantity: 1,
+      });
+      expect(collectionCardRepo.save).toHaveBeenCalled();
+      expect(substitutionService.computeAndStoreReadiness).not.toHaveBeenCalled();
+    });
+
+    it('should increment quantity when card already exists in collection', async () => {
+      // Arrange
+      catalogService.getCard.mockReturnValue({} as never);
+      const existing = buildCollectionCard({ quantity: 2 });
+      collectionCardRepo.findOne.mockResolvedValue(existing);
+      mockAffectedDeckIds([]);
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER, 1);
+
+      // Assert
+      expect(result.newQuantity).toBe(3);
+      expect(collectionCardRepo.update).toHaveBeenCalledWith(existing.id, {
+        quantity: 3,
+      });
+      expect(collectionCardRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should cap quantity at the hard limit when incrementing beyond it', async () => {
+      // Arrange
+      catalogService.getCard.mockReturnValue({} as never);
+      const existing = buildCollectionCard({ quantity: 19 });
+      collectionCardRepo.findOne.mockResolvedValue(existing);
+      mockAffectedDeckIds([]);
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER, 5);
+
+      // Assert
+      expect(result.newQuantity).toBe(20);
+      expect(collectionCardRepo.update).toHaveBeenCalledWith(existing.id, {
+        quantity: 20,
+      });
+    });
+
+    it('should throw BadRequestException with INVALID_CARD_IDENTIFIER for unknown card', async () => {
+      // Arrange
+      catalogService.getCard.mockImplementation(() => {
+        throw new CardNotFoundError('not-a-real-card');
+      });
+
+      // Act & Assert
+      await expect(
+        service.addCard(USER_ID, 'not-a-real-card'),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: 'INVALID_CARD_IDENTIFIER' }),
+      });
+      expect(collectionCardRepo.findOne).not.toHaveBeenCalled();
+      expect(collectionCardRepo.save).not.toHaveBeenCalled();
+      expect(substitutionService.computeAndStoreReadiness).not.toHaveBeenCalled();
+    });
+
+    it('triggers recompute for every affected tracked deck (cross-deck fan-out)', async () => {
+      // Arrange — card is in 3 decks owned by this user
+      catalogService.getCard.mockReturnValue({} as never);
+      collectionCardRepo.findOne.mockResolvedValue(null);
+      collectionCardRepo.create.mockReturnValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      collectionCardRepo.save.mockResolvedValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      mockAffectedDeckIds([1, 2, 3]);
+
+      substitutionService.computeAndStoreReadiness
+        .mockResolvedValueOnce(buildSnapshot({ id: 101, trackedDeckId: 1, effectivePercent: 90 }))
+        .mockResolvedValueOnce(buildSnapshot({ id: 102, trackedDeckId: 2, effectivePercent: 85 }))
+        .mockResolvedValueOnce(buildSnapshot({ id: 103, trackedDeckId: 3, effectivePercent: 70 }));
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER);
+
+      // Assert
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledTimes(3);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(1, 1, USER_ID);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(2, 2, USER_ID);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(3, 3, USER_ID);
+      expect(result.recomputedDecks).toHaveLength(3);
+      expect(result.recomputedDecks[0]).toEqual({
+        trackedDeckId: 1,
+        rawPercent: 75.5,
+        effectivePercent: 90,
+      });
+    });
+
+    it('triggers zero recomputes when the card is not in any tracked deck', async () => {
+      // Arrange
+      catalogService.getCard.mockReturnValue({} as never);
+      collectionCardRepo.findOne.mockResolvedValue(null);
+      collectionCardRepo.create.mockReturnValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      collectionCardRepo.save.mockResolvedValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      mockAffectedDeckIds([]);
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER);
+
+      // Assert
+      expect(substitutionService.computeAndStoreReadiness).not.toHaveBeenCalled();
+      expect(result.recomputedDecks).toEqual([]);
+    });
+
+    it('continues recomputing the remaining decks when one recompute fails', async () => {
+      // Arrange — critical: a mid-loop failure must NOT abort the loop or
+      // roll back the collection upsert; the DB change is already committed.
+      catalogService.getCard.mockReturnValue({} as never);
+      collectionCardRepo.findOne.mockResolvedValue(null);
+      collectionCardRepo.create.mockReturnValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      collectionCardRepo.save.mockResolvedValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      mockAffectedDeckIds([1, 2, 3]);
+
+      substitutionService.computeAndStoreReadiness
+        .mockResolvedValueOnce(buildSnapshot({ id: 101, trackedDeckId: 1 }))
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockResolvedValueOnce(buildSnapshot({ id: 103, trackedDeckId: 3 }));
+
+      // Act
+      const result = await service.addCard(USER_ID, CARD_IDENTIFIER);
+
+      // Assert
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledTimes(3);
+      // The failed deck is simply omitted from the response.
+      expect(result.recomputedDecks).toHaveLength(2);
+      expect(result.recomputedDecks.map((d) => d.trackedDeckId)).toEqual([1, 3]);
+      // Collection upsert still persisted.
+      expect(collectionCardRepo.save).toHaveBeenCalled();
+    });
+
+    it('scopes the affected-decks query to the requesting user (cross-user isolation)', async () => {
+      // Arrange
+      catalogService.getCard.mockReturnValue({} as never);
+      collectionCardRepo.findOne.mockResolvedValue(null);
+      collectionCardRepo.create.mockReturnValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+      collectionCardRepo.save.mockResolvedValue(
+        buildCollectionCard({ quantity: 1 }),
+      );
+
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      (
+        deckCardRepo as unknown as { createQueryBuilder: jest.Mock }
+      ).createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      // Act
+      await service.addCard(USER_ID, CARD_IDENTIFIER);
+
+      // Assert — the JOIN clause must include userId so other users' decks
+      // are never recomputed or leaked.
+      expect(qb.innerJoin).toHaveBeenCalledWith(
+        TrackedDeckEntity,
+        'td',
+        expect.stringContaining('td.userId = :userId'),
+        expect.objectContaining({ userId: USER_ID }),
+      );
+      expect(qb.where).toHaveBeenCalledWith(
+        'dc.cardIdentifier = :cardIdentifier',
+        { cardIdentifier: CARD_IDENTIFIER },
+      );
     });
   });
 });
