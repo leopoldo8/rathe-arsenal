@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { AuthFetchError } from '../auth/AuthProvider';
+import { formatRateLimitMessage } from '../auth/rate-limit-message';
 
 export const Route = createFileRoute('/sign-up')({
   component: SignUpPage,
@@ -23,7 +25,11 @@ function SignUpPage() {
       await signUp(email, password);
       void navigate({ to: '/check-your-email' });
     } catch (err) {
-      setError((err as Error).message);
+      if (err instanceof AuthFetchError && err.status === 429) {
+        setError(formatRateLimitMessage(err.retryAfterSeconds));
+      } else {
+        setError((err as Error).message);
+      }
     } finally {
       setLoading(false);
     }

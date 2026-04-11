@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { AuthFetchError } from '../auth/AuthProvider';
+import { formatRateLimitMessage } from '../auth/rate-limit-message';
 
 export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
@@ -27,7 +29,11 @@ function ResetPasswordPage() {
       await resetPassword(token, newPassword);
       void navigate({ to: '/' });
     } catch (err) {
-      setError((err as Error).message);
+      if (err instanceof AuthFetchError && err.status === 429) {
+        setError(formatRateLimitMessage(err.retryAfterSeconds));
+      } else {
+        setError((err as Error).message);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'path';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -22,6 +23,14 @@ import { HealthController } from './health/health.controller';
     DatabaseModule,
     LoggerModule,
     FetchGuardModule,
+    // A5: global rate limiter. 120 req/min per IP is the lenient default applied
+    // to every route; sensitive auth endpoints override via @Throttle() with
+    // tighter per-route limits. Health check opts out via @SkipThrottle().
+    // IP attribution relies on `trust proxy` being enabled in main.ts so that
+    // req.ip reflects the real client IP (not Railway's gateway).
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 120 },
+    ]),
     AuthModule,
     EmailModule,
     CatalogModule,
@@ -40,6 +49,7 @@ import { HealthController } from './health/health.controller';
   controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

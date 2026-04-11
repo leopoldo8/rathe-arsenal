@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   ForbiddenException,
   HttpException,
   InternalServerErrorException,
@@ -9,7 +8,6 @@ import {
 import { AuthError, EAuthErrorCode } from './errors';
 
 const STATUS_MAP: Record<EAuthErrorCode, new (msg: string) => HttpException> = {
-  [EAuthErrorCode.EmailInUse]: ConflictException,
   [EAuthErrorCode.InvalidCredentials]: UnauthorizedException,
   [EAuthErrorCode.EmailNotVerified]: ForbiddenException,
   [EAuthErrorCode.InvalidToken]: BadRequestException,

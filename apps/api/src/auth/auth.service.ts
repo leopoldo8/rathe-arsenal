@@ -9,8 +9,13 @@ import { EmailDeliveryError } from '../email/errors';
 import { PasswordHasherService } from './services/password-hasher.service';
 import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthError, EAuthErrorCode } from './errors';
-import { IAuthResponse, ISignUpResponse } from './dtos/auth-response.dto';
+import { IAuthResponse, IGenericAuthAcceptedResponse } from './dtos/auth-response.dto';
 import { ICurrentUser } from './dtos/current-user.dto';
+
+const GENERIC_SIGN_UP_MESSAGE =
+  'If this email is not already registered, you will receive a verification link shortly.';
+const GENERIC_RESEND_MESSAGE =
+  'If this email is registered and unverified, you will receive a verification link shortly.';
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const RESET_TTL_MS = 60 * 60 * 1000;             // 1 hour
@@ -34,10 +39,15 @@ export class AuthService {
     this.isDev = this.config.get<string>('NODE_ENV') !== 'production';
   }
 
-  async signUp(email: string, password: string): Promise<ISignUpResponse> {
+  async signUp(email: string, password: string): Promise<IGenericAuthAcceptedResponse> {
+    // A4: always return the same generic 202 response whether the email exists
+    // or not. Short-circuit for existing emails so we never attempt to save a
+    // new row (which would trigger a unique-constraint violation that leaks
+    // existence via a 500 response).
     const existing = await this.users.findOne({ where: { email } });
     if (existing) {
-      throw new AuthError(EAuthErrorCode.EmailInUse, 'An account with this email already exists');
+      this.logger.log({ event: 'auth.sign_up.existing_email_ignored', userId: existing.id });
+      return { message: GENERIC_SIGN_UP_MESSAGE };
     }
 
     const passwordHash = await this.passwordHasher.hash(password);
@@ -68,7 +78,46 @@ export class AuthService {
 
     this.logger.log({ event: 'auth.sign_up.success', userId: saved.id });
 
-    const response: ISignUpResponse = { userId: saved.id, email: saved.email };
+    const response: IGenericAuthAcceptedResponse = { message: GENERIC_SIGN_UP_MESSAGE };
+    if (this.isDev) {
+      response._devVerificationLink = link;
+    }
+    return response;
+  }
+
+  /**
+   * A6: Resend verification email. Returns a generic 202 regardless of whether
+   * the email exists or is already verified. Only actually sends when the user
+   * exists and is still unverified. Mirrors the email-enumeration-safe pattern
+   * used by requestPasswordReset().
+   */
+  async resendVerification(email: string): Promise<IGenericAuthAcceptedResponse> {
+    const user = await this.users.findOne({ where: { email } });
+    if (!user) {
+      this.logger.log({ event: 'auth.resend_verification.unknown_email' });
+      return { message: GENERIC_RESEND_MESSAGE };
+    }
+    if (user.emailVerifiedAt !== null) {
+      this.logger.log({ event: 'auth.resend_verification.already_verified', userId: user.id });
+      return { message: GENERIC_RESEND_MESSAGE };
+    }
+
+    const rawToken = this.tokenGenerator.generateRawToken();
+    user.verificationTokenHash = this.tokenGenerator.hashToken(rawToken);
+    user.verificationTokenExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
+    await this.users.save(user);
+
+    const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
+    try {
+      await this.emailService.sendVerificationEmail(email, link);
+    } catch (err) {
+      this.logger.error({ event: 'auth.resend_verification.email_failed', userId: user.id });
+      // Swallow — the user sees a generic 202 either way to avoid leaking existence.
+    }
+
+    this.logger.log({ event: 'auth.resend_verification.success', userId: user.id });
+
+    const response: IGenericAuthAcceptedResponse = { message: GENERIC_RESEND_MESSAGE };
     if (this.isDev) {
       response._devVerificationLink = link;
     }

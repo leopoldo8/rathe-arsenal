@@ -163,7 +163,7 @@ graph TD
 
 Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Units 6, 7, and 8 (they can run in parallel after Unit 3 lands). Unit 2 follows Unit 1 because account deletion exposes a destructive endpoint to the public surface and should land after rate limiting + email-leak fixes. Unit 6's test result screen integrates with Unit 7's re-solve as an enhancement, but Unit 7's core capability (deck detail re-solve) does not depend on Unit 6.
 
-- [ ] **Unit 1: Auth Hardening (A4, A5, A6)**
+- [x] **Unit 1: Auth Hardening (A4, A5, A6)**
 
 **Goal:** Harden auth endpoints for public exposure: fix email enumeration leak, add rate limiting with correct IP attribution, add resend-verification endpoint.
 

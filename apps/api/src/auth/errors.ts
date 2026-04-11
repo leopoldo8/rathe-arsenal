@@ -1,5 +1,7 @@
 export enum EAuthErrorCode {
-  EmailInUse = 'EMAIL_IN_USE',
+  // NOTE: EmailInUse removed in Unit 1 / A4 fix. The sign-up endpoint no
+  // longer rejects duplicate emails — it returns a generic 202 regardless of
+  // whether the email exists, to prevent account enumeration.
   InvalidCredentials = 'INVALID_CREDENTIALS',
   EmailNotVerified = 'EMAIL_NOT_VERIFIED',
   InvalidToken = 'INVALID_TOKEN',

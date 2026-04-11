@@ -3,6 +3,34 @@ import { AuthContext, IAuthUser } from './AuthContext';
 
 const STORAGE_KEY = 'rathe-arsenal:jwt';
 
+/**
+ * Error thrown by {@link apiFetch} on non-2xx responses. Carries HTTP status so
+ * the UI can branch on 429 (rate-limited) vs other failures, and the parsed
+ * `Retry-After` header (seconds) when present. See Unit 1 / A5.
+ */
+export class AuthFetchError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly retryAfterSeconds: number | null = null,
+  ) {
+    super(message);
+    this.name = 'AuthFetchError';
+  }
+}
+
+function parseRetryAfter(header: string | null): number | null {
+  if (!header) return null;
+  const asSeconds = Number(header);
+  if (Number.isFinite(asSeconds) && asSeconds >= 0) return Math.ceil(asSeconds);
+  // HTTP-date format fallback
+  const asDate = Date.parse(header);
+  if (!Number.isNaN(asDate)) {
+    return Math.max(0, Math.ceil((asDate - Date.now()) / 1000));
+  }
+  return null;
+}
+
 async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -10,7 +38,9 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string 
   const res = await fetch(`/api${path}`, { ...init, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? body.message ?? res.statusText);
+    const message = body.error ?? body.message ?? res.statusText;
+    const retryAfter = parseRetryAfter(res.headers.get('Retry-After'));
+    throw new AuthFetchError(message, res.status, retryAfter);
   }
   return (await res.json()) as T;
 }
@@ -37,7 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch<{ userId: string; email: string; _devVerificationLink?: string }>(
+    // A4: sign-up always returns a generic 202 payload { message, _devVerificationLink? }
+    // regardless of whether the email already exists.
+    const res = await apiFetch<{ message: string; _devVerificationLink?: string }>(
       '/auth/sign-up', { method: 'POST', body: JSON.stringify({ email, password }) },
     );
     return { _devVerificationLink: res._devVerificationLink };
