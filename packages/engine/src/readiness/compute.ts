@@ -10,6 +10,7 @@ import {
   ISubstitutedEntry,
 } from './types';
 import { computePath } from './compute-path';
+import { computeFidelity } from './compute-fidelity';
 
 /** Slots that are never eligible for substitution (R20 rule). */
 const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
@@ -190,6 +191,7 @@ export function computeEffectiveReadiness(
     rawPercent,
     effectivePercent,
     path: computePath(breakdown),
+    fidelityPercent: computeFidelity(breakdown, totalCards),
     breakdown,
     substitutions: Object.freeze(substitutions),
     pitchCurve: Object.freeze({

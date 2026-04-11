@@ -376,6 +376,92 @@ describe('computeEffectiveReadiness', () => {
     });
   });
 
+  describe('fidelityPercent field (Path C)', () => {
+    it('returns 100 fidelity for Path A (all exact)', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['warrior-attack-red', 3]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('A');
+      expect(result.fidelityPercent).toBe(100);
+    });
+
+    it('returns Path C with zero fidelity when user owns nothing', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map<string, number>();
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('C');
+      expect(result.fidelityPercent).toBe(0);
+    });
+
+    it('returns Path C with tier-1-weighted fidelity when some cards are unsubstituted', () => {
+      // Deck needs 3x warrior-attack-red.
+      // Inventory has 1x warrior-attack-red (exact) + 1x warrior-attack-red-alt (tier 1 sub).
+      // One copy is left unsubstituted -> Path C.
+      // Fidelity = (1 * 1.0 + 1 * 0.9) / 3 * 100 = 63.333...
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 1],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('C');
+      expect(result.breakdown.exact).toHaveLength(1);
+      expect(result.breakdown.substituted).toHaveLength(1);
+      expect(result.breakdown.substituted[0]!.match.tier).toBe(1);
+      expect(result.breakdown.missing).toHaveLength(1);
+      expect(result.fidelityPercent).toBeCloseTo(63.3333, 3);
+    });
+
+    it('returns Path B with tier-1-weighted fidelity below 100 when substitutions cover all missing', () => {
+      // Deck needs 3x warrior-attack-red. Inventory has 2 exact + 1 tier 1 substitute.
+      // Path B (effective = 100) but fidelity reflects the tier weight: (2 + 0.9) / 3 * 100 = 96.666...
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 2],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.path).toBe('B');
+      expect(result.effectivePercent).toBe(100);
+      expect(result.fidelityPercent).toBeCloseTo(96.6666, 3);
+      expect(result.fidelityPercent).toBeLessThan(100);
+    });
+
+    it('returns 0 fidelity for an empty deck', () => {
+      const deck = { cards: [] };
+      const inventory = new Map<string, number>();
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.fidelityPercent).toBe(0);
+      expect(Number.isNaN(result.fidelityPercent)).toBe(false);
+    });
+  });
+
   describe('tier 2 substitution in readiness', () => {
     const tier2Missing = makeCard({
       cardIdentifier: 'tier2-missing',

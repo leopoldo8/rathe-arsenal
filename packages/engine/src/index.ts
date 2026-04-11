@@ -53,4 +53,8 @@ export type {
   IEffectiveReadinessResult,
   TPath,
 } from './readiness';
-export { computeEffectiveReadiness, computePath } from './readiness';
+export {
+  computeEffectiveReadiness,
+  computePath,
+  computeFidelity,
+} from './readiness';
