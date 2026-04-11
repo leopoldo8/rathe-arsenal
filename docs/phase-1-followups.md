@@ -42,6 +42,50 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ---
 
+## Phase 1a Unit 7 review residuals (2026-04-11)
+
+### U7-R1. Re-solve double engine pass on every reject click
+
+**Phase 1a posture:** `ReSolveService.rejectSubstitute` and `reSolveDryRun` both run `computeAndStoreReadiness` (or `computeReadinessWithExclusions`) once with the exclusion set, then run `computeReadinessWithExclusions` a second time with an empty set to derive curve warnings. That is two full engine passes per click — catalog scan × per-deck inventory × substitution search, doubled.
+
+**Why deferred:** the race-safety fix (U7-R2) and the dead-code cleanup are cheap one-liners; eliminating the double pass requires either (a) threading a cached "baseline" through the request lifecycle or (b) teaching `computeEffectiveReadiness` to emit per-slot drop reasons so curve warnings fall out of a single pass. Option (b) is an engine-level redesign and would delay U7's merge by at least one working session. At Phase 1a scale (≤20 tracked decks × 4595-card catalog × per-click latency <100ms observed in tests) the user-visible cost is acceptable.
+
+**Phase 1 trigger to revisit:** any of —
+- Reject-click latency exceeds 250ms in practice for any tracked deck
+- Community grows past ~100 users, at which point the quadratic cost matters on shared infra
+- The engine grows additional per-slot diagnostic surface that makes option (b) cheap
+
+**When triggered, the work is:**
+1. Compute the baseline-exclusions readiness once at the top of `rejectSubstitute` / `reSolveDryRun`
+2. Reuse it both for the exclusions-empty short-circuit and for `compareMissing` in the warning derivation
+3. Alternatively: extend `IEffectiveReadinessResult` to carry `droppedByCurve: string[]` populated inside the single engine pass
+4. Retire `deriveCurveWarnings` and `deriveCurveWarningsFromSnapshot` helpers
+
+**Where documented:** This entry. Flagged by `ce:review` against commit `5c4829f` on `feat/phase-1a-unit7-swap-editor`.
+
+---
+
+### U7-R2. Re-solve test coverage gaps against plan scenarios
+
+**Phase 1a posture:** `re-solve.service.spec.ts` covers happy path, cross-deck isolation, idempotency (sequential), and the curve-break case. The plan lists two additional scenarios that never landed as tests:
+- "Reject multiple substitutes in sequence — each rejection accounts for all previously rejected cards"
+- "Reject all substitutes — deck shows raw readiness (effectivePercent === rawPercent); modified-view banner shows N rejections"
+
+There is also no explicit assertion that `reject-substitute` writes exactly **one** snapshot row (only that `computeAndStoreReadiness` is called once).
+
+**Why deferred:** the three missing scenarios are coverage gaps, not correctness gaps — the code path exercised by "reject one" is the same as "reject N in sequence" (each call loads all persisted exclusions, then computes). Sequential-idempotency is already tested. Adding the scenarios is a ~60-line test commit, reviewer flagged as non-blocking.
+
+**Phase 1 trigger to revisit:** any regression in the rejection flow, or any refactor to `ReSolveService` that changes how exclusions are loaded or applied.
+
+**When triggered, the work is:**
+1. Add "reject multiple in sequence" test: reject A, then B, assert exclusion set passed to `computeAndStoreReadiness` on call 2 contains both A and B
+2. Add "reject all substitutes" test: reject every entry in `breakdown.substituted`, assert `effectivePercent === rawPercent` in the response and `rejectionCount === initial.length`
+3. Add a `deck_readiness_snapshot` row count assertion to the happy-path reject test
+
+**Where documented:** This entry. Flagged by `ce:review` against commit `5c4829f`.
+
+---
+
 ## Auth & security trade-offs (from Clerk → DIY swap, 2026-04-09)
 
 ### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.)

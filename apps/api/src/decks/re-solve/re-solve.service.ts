@@ -51,15 +51,27 @@ export class ReSolveService {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
     // Idempotent upsert: the unique index on
-    // (trackedDeckId, cardIdentifier) is authoritative, but a
-    // find-then-insert keeps the happy path a single round-trip.
+    // (trackedDeckId, cardIdentifier) is authoritative. The happy path
+    // uses a single find-then-insert round-trip; the race-safety net
+    // catches QueryFailedError (Postgres 23505 duplicate key) when two
+    // concurrent requests for the same rejection slip through the
+    // find gap. The second writer no-ops because the row already
+    // exists.
     const existing = await this.rejections.findOne({
       where: { trackedDeckId, cardIdentifier },
     });
 
     if (!existing) {
-      const row = this.rejections.create({ trackedDeckId, cardIdentifier });
-      await this.rejections.save(row);
+      try {
+        const row = this.rejections.create({ trackedDeckId, cardIdentifier });
+        await this.rejections.save(row);
+      } catch (err) {
+        if (!this.isDuplicateKeyError(err)) throw err;
+        this.logger.debug('Concurrent rejection insert raced on unique index', {
+          trackedDeckId,
+          cardIdentifier,
+        });
+      }
     }
 
     const exclusions = await this.loadExclusions(trackedDeckId);
@@ -155,14 +167,6 @@ export class ReSolveService {
     };
   }
 
-  /**
-   * Count persisted rejections for a deck. Used by the deck detail
-   * handler so the list page can render the modified-view banner.
-   */
-  async getRejectionCount(trackedDeckId: number): Promise<number> {
-    return this.rejections.count({ where: { trackedDeckId } });
-  }
-
   private async loadExclusions(trackedDeckId: number): Promise<Set<string>> {
     const rows = await this.rejections.find({ where: { trackedDeckId } });
     return new Set(rows.map((r) => r.cardIdentifier));
@@ -248,6 +252,18 @@ export class ReSolveService {
       snapshot.breakdown as unknown as IEffectiveReadinessResult['breakdown'];
 
     return this.compareMissing(baseline.breakdown.missing, breakdown.missing);
+  }
+
+  /**
+   * Returns true when the error is a Postgres unique-constraint
+   * violation (SQLSTATE 23505) surfacing through TypeORM's
+   * QueryFailedError. This catches the race between find() and save()
+   * on the (trackedDeckId, cardIdentifier) unique index.
+   */
+  private isDuplicateKeyError(err: unknown): boolean {
+    if (!err || typeof err !== 'object') return false;
+    const maybe = err as { code?: unknown; driverError?: { code?: unknown } };
+    return maybe.code === '23505' || maybe.driverError?.code === '23505';
   }
 
   private compareMissing(
