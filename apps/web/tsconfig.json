@@ -10,9 +10,9 @@
     "allowImportingTsExtensions": true,
     "useDefineForClassFields": true,
     "isolatedModules": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "experimentalDecorators": false,
     "emitDecoratorMetadata": false
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "vitest.config.ts"]
 }
