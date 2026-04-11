@@ -17,6 +17,15 @@ export interface ITrackedDeckListItem {
   readonly latestSnapshot: ITrackedDeckSnapshot | null;
 }
 
+/**
+ * Response envelope for `GET /api/decks`. `collectionCardCount` is exposed
+ * for the home state machine and forward-compatibility with Phase 1c.
+ */
+export interface ITrackedDeckListResponse {
+  readonly trackedDecks: readonly ITrackedDeckListItem[];
+  readonly collectionCardCount: number;
+}
+
 export interface IImportDecksResponse {
   readonly imported: ReadonlyArray<{
     readonly trackedDeckId: number;
@@ -45,7 +54,7 @@ export function useDecksQuery() {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: DECKS_QUERY_KEY,
-    queryFn: () => apiFetch<ITrackedDeckListItem[]>('/decks'),
+    queryFn: () => apiFetch<ITrackedDeckListResponse>('/decks'),
   });
 }
 
