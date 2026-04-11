@@ -35,10 +35,26 @@ export interface IBreakdown {
   readonly missing: readonly IBreakdownEntry[];
 }
 
+/**
+ * Path classification for a readiness snapshot.
+ *
+ * - **A**: 100% exact coverage.
+ * - **B**: missing cards covered by tier 1 or tier 2 substitutions
+ *          (effectivePercent = 100).
+ * - **C**: some cards remain missing after substitution attempts.
+ */
+export type TPath = 'A' | 'B' | 'C';
+
 export interface IDeckDetailSnapshot {
   readonly id: number;
   readonly rawPercent: number;
   readonly effectivePercent: number;
+  readonly path: TPath;
+  /**
+   * Tier-weighted fidelity score (0-100). Not pre-rounded; format for
+   * display with `Math.round(fidelityPercent * 10) / 10` or equivalent.
+   */
+  readonly fidelityPercent: number;
   readonly breakdown: IBreakdown;
   readonly computedAt: string;
 }

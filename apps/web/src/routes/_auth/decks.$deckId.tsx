@@ -1,11 +1,52 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeckDetailQuery, useMarkOwnedMutation } from '../../api/deck-detail';
+import {
+  IBreakdown,
+  useDeckDetailQuery,
+  useMarkOwnedMutation,
+} from '../../api/deck-detail';
 import { ReadinessHeader } from '../../components/readiness-header';
 import { BreakdownList } from '../../components/breakdown-list';
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
 });
+
+function countMissingCards(breakdown: IBreakdown): number {
+  return breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0);
+}
+
+interface IPathCBannerProps {
+  readonly fidelityPercent: number;
+  readonly missingCardCount: number;
+}
+
+function PathCBanner({
+  fidelityPercent,
+  missingCardCount,
+}: IPathCBannerProps) {
+  const displayFidelity = Math.round(fidelityPercent * 10) / 10;
+  return (
+    <div
+      role="status"
+      style={{
+        backgroundColor: '#fffaf0',
+        border: '1px solid #f6ad55',
+        borderLeft: '4px solid #dd6b20',
+        borderRadius: '4px',
+        padding: '0.75rem 1rem',
+        marginTop: '1rem',
+        marginBottom: '1rem',
+        color: '#7b341e',
+        fontSize: '0.875rem',
+      }}
+    >
+      <strong style={{ color: '#9c4221' }}>Closest playable version.</strong>{' '}
+      This deck is missing {missingCardCount}{' '}
+      {missingCardCount === 1 ? 'card' : 'cards'}. You&rsquo;re currently at{' '}
+      {displayFidelity}% fidelity.
+    </div>
+  );
+}
 
 function DeckDetailPage() {
   const { deckId } = Route.useParams();
@@ -50,6 +91,13 @@ function DeckDetailPage() {
 
       {snapshot ? (
         <>
+          {snapshot.path === 'C' && (
+            <PathCBanner
+              fidelityPercent={snapshot.fidelityPercent}
+              missingCardCount={countMissingCards(snapshot.breakdown)}
+            />
+          )}
+
           <ReadinessHeader
             effectivePercent={snapshot.effectivePercent}
             rawPercent={snapshot.rawPercent}
