@@ -182,6 +182,23 @@
 
 ---
 
+### A17. Tier 2 keyword penalty weight not validated against a tier-2-labeled fixture
+
+**Phase 0 posture:** none (tier 2 did not exist). **Phase 1a posture:** Unit 3 ships `TIER_2_KEYWORD_OVERLAP_WEIGHT = 0.15` as the tier 2 keyword penalty weight. The value was picked during implementation to satisfy the plan's semantic guidance ("tier 2: 70-89%, keyword overlap relaxed") and the 0.70 floor, but it was not validated against a gold-set-labeled tier 2 fixture.
+
+**Why deferred (Phase 1a):** the Gate 4 gold set (`docs/brainstorms/gates/gate-4-gold-set.csv`) was generated from the Phase 0 tier 1 engine, so its labels apply only to tier 1 pairs. The existing `gold-set-regression.spec.ts` locks in tier 1 acceptance at 14/19 (73.7% SOFT_CONFIDENCE), which prevents tier 1 regressions during the Unit 3 refactor. It does **not** validate whether tier 2 produces substitutions humans would accept. Running a fresh depletion round over the same sampled decks with the new tiered engine and relabelling the tier 2 rows (target: >=60% acceptance per the plan's Risks table) is blocked on ~1 hour of human labelling time and would delay Unit 3.
+
+**Phase 1 trigger to revisit:** any of --
+- Before Phase 1a public rollout to the Pelotas FaB community, run a fresh tier-2 labelling round and publish the result alongside Gate 4.
+- First credible user complaint about a tier 2 suggestion quality in Phase 1a beta.
+- Any tuning of `TIER_2_KEYWORD_OVERLAP_WEIGHT`, `maxPowerDelta`, or `maxDefenseDelta` in `packages/engine/src/substitution/constants.ts`.
+
+**When triggered, the work is:** regenerate candidates with `scripts/gold-set/generate-candidates.ts` modified to use `findSubstitution` (or a dedicated tier-2-only script). Fill the `label` column for the tier 2 rows. Add a `gold-set-regression.spec.ts` block that enforces a tier 2 acceptance floor (plan target: >=60%). Estimated ~1-2 hours including labelling.
+
+**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` "Deferred to Implementation" + "Risks & Dependencies" sections.
+
+---
+
 ### A16. No CAPTCHA on sign-up (deferred from S6)
 
 **Phase 0 posture:** none. **Phase 1a posture:** still none. The full S1-S12 origin-doc posture lists "Sign-up has a CAPTCHA gate" as part of S6, which is required before public launch. Phase 1a ships rate limiting (5 sign-in/min, 3 sign-up/hour per IP) and email verification, but no CAPTCHA.

@@ -2,13 +2,14 @@ import { ICatalog } from '../catalog/types';
 import { ISubstitutionMatch, IPitchTolerance } from '../substitution/types';
 import { DEFAULT_PITCH_TOLERANCE } from '../substitution/constants';
 import { computePitchCurve, computePitchDelta, isWithinTolerance } from '../substitution/pitch-curve';
-import { tier1Substitution } from '../substitution/tier1';
+import { findSubstitution } from '../substitution/find-substitution';
 import {
   IBreakdownEntry,
   IEffectiveReadinessResult,
   IReadinessBreakdown,
   ISubstitutedEntry,
 } from './types';
+import { computePath } from './compute-path';
 
 /** Slots that are never eligible for substitution (R20 rule). */
 const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
@@ -26,12 +27,17 @@ interface IDeck {
 /**
  * Compute effective readiness for a deck against a user's inventory.
  * Pure function -- no side effects, no async, deterministic.
+ *
+ * The optional `excludedIdentifiers` set lets the interactive swap editor
+ * (Unit 7) re-solve a deck while skipping substitutes the user has
+ * explicitly rejected. Passing an empty set preserves Phase 0 behavior.
  */
 export function computeEffectiveReadiness(
   deck: IDeck,
   inventory: ReadonlyMap<string, number>,
   catalog: ICatalog,
   tolerance: IPitchTolerance = DEFAULT_PITCH_TOLERANCE,
+  excludedIdentifiers: ReadonlySet<string> = new Set(),
 ): IEffectiveReadinessResult {
   // Mutable working copy of inventory quantities
   const remainingInventory = new Map<string, number>();
@@ -115,7 +121,12 @@ export function computeEffectiveReadiness(
       let remainingMissing = missingQty;
 
       for (let i = 0; i < missingQty; i++) {
-        const match = tier1Substitution(catalogCard, remainingInventory, catalog, tolerance);
+        const match = findSubstitution(
+          catalogCard,
+          remainingInventory,
+          catalog,
+          excludedIdentifiers,
+        );
 
         if (match) {
           // Validate pitch curve tolerance with this substitution
@@ -178,6 +189,7 @@ export function computeEffectiveReadiness(
   return Object.freeze({
     rawPercent,
     effectivePercent,
+    path: computePath(breakdown),
     breakdown,
     substitutions: Object.freeze(substitutions),
     pitchCurve: Object.freeze({

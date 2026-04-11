@@ -23,9 +23,14 @@ export type {
   IPitchCurve,
   IPitchDelta,
   IPitchTolerance,
+  ITierConfig,
+  TSubstitutionTier,
 } from './substitution';
 export {
   TIER_1_FLOOR_SCORE,
+  TIER_2_FLOOR_SCORE,
+  TIER_1_CONFIG,
+  TIER_2_CONFIG,
   DEFAULT_PITCH_TOLERANCE,
   KEYWORD_OVERLAP_WEIGHT,
   POWER_DELTA_WEIGHT,
@@ -35,7 +40,9 @@ export {
   computePitchDelta,
   isWithinTolerance,
   composeRationale,
-  tier1Substitution,
+  scoreCandidate,
+  findTierMatch,
+  findSubstitution,
 } from './substitution';
 
 // Readiness
@@ -44,5 +51,6 @@ export type {
   ISubstitutedEntry,
   IReadinessBreakdown,
   IEffectiveReadinessResult,
+  TPath,
 } from './readiness';
-export { computeEffectiveReadiness } from './readiness';
+export { computeEffectiveReadiness, computePath } from './readiness';
