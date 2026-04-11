@@ -143,18 +143,29 @@ export class DecksService {
     }
 
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
-      ? {
-          id: latestSnapshot.id,
-          rawPercent: latestSnapshot.rawPercent,
-          effectivePercent: latestSnapshot.effectivePercent,
-          breakdown: latestSnapshot.breakdown as unknown as IBreakdown,
-          substitutions:
-            latestSnapshot.substitutions as unknown as Record<
-              string,
-              ISubstitutionEntry
-            >,
-          computedAt: latestSnapshot.computedAt.toISOString(),
-        }
+      ? (() => {
+          // Path + fidelity are derived at read time from the breakdown JSONB.
+          // Legacy snapshots (persisted before Unit 8) produce the same
+          // values here without any database migration.
+          const derived = this.substitutionService.deriveSnapshotFields(
+            latestSnapshot,
+            totalCards,
+          );
+          return {
+            id: latestSnapshot.id,
+            rawPercent: latestSnapshot.rawPercent,
+            effectivePercent: latestSnapshot.effectivePercent,
+            path: derived.path,
+            fidelityPercent: derived.fidelityPercent,
+            breakdown: latestSnapshot.breakdown as unknown as IBreakdown,
+            substitutions:
+              latestSnapshot.substitutions as unknown as Record<
+                string,
+                ISubstitutionEntry
+              >,
+            computedAt: latestSnapshot.computedAt.toISOString(),
+          };
+        })()
       : null;
 
     return {

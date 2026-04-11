@@ -4,13 +4,26 @@ import { Repository } from 'typeorm';
 import {
   catalog,
   computeEffectiveReadiness,
+  computeFidelity,
+  computePath,
   IEffectiveReadinessResult,
+  IReadinessBreakdown,
+  TPath,
 } from '@rathe-arsenal/engine';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
+
+/**
+ * Derived read-time fields that are NOT persisted on the snapshot row
+ * but can be recomputed purely from the stored breakdown JSONB.
+ */
+export interface IDerivedSnapshotFields {
+  readonly path: TPath;
+  readonly fidelityPercent: number;
+}
 
 @Injectable()
 export class SubstitutionService {
@@ -86,5 +99,29 @@ export class SubstitutionService {
     });
 
     return saved;
+  }
+
+  /**
+   * Derive `path` and `fidelityPercent` for a snapshot at read time.
+   *
+   * Both fields are computed by pure engine helpers over the persisted
+   * `breakdown` JSONB. Legacy snapshots created before the `path` +
+   * `fidelityPercent` fields existed on `IEffectiveReadinessResult` can
+   * still be classified this way without any database migration --
+   * the JSONB shape of `breakdown` is the source of truth.
+   *
+   * `totalCards` is the deck-level total (sum of all deck card
+   * quantities) the snapshot was computed against. Callers already
+   * have this value from the deck cards query.
+   */
+  deriveSnapshotFields(
+    snapshot: DeckReadinessSnapshotEntity,
+    totalCards: number,
+  ): IDerivedSnapshotFields {
+    const breakdown = snapshot.breakdown as unknown as IReadinessBreakdown;
+    return {
+      path: computePath(breakdown),
+      fidelityPercent: computeFidelity(breakdown, totalCards),
+    };
   }
 }
