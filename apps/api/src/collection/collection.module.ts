@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
+import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { CollectionController } from './collection.controller';
@@ -14,6 +15,7 @@ import { CollectionService } from './collection.service';
       CollectionCardEntity,
       DeckCardEntity,
       DeckReadinessSnapshotEntity,
+      TrackedDeckEntity,
     ]),
     AuthModule,
     SubstitutionModule,
