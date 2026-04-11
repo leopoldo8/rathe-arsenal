@@ -287,7 +287,7 @@ Units 1, 4, and 5 are independent and can start immediately. Unit 3 unblocks Uni
 
 ---
 
-- [ ] **Unit 3: Engine Tier 2 Substitution Scoring + Path Helper**
+- [x] **Unit 3: Engine Tier 2 Substitution Scoring + Path Helper**
 
 **Goal:** Extend the substitution engine to score tier 2 (70-89%) candidates, fix the zero-keyword scoring bug, add a `path` field + `computePath()` helper, add an `excludedIdentifiers` parameter for re-solve, and keep tier 1 behavior unchanged. Tier 3 stays in Phase 2 per the origin doc.
 
