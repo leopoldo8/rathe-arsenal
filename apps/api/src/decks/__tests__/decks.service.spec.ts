@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
+import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
@@ -50,6 +51,7 @@ describe('DecksService', () => {
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
+  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
 
@@ -57,8 +59,12 @@ describe('DecksService', () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
+
+    // Default: no collection cards owned. Individual tests override as needed.
+    collectionCardRepo.count.mockResolvedValue(0);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -75,6 +81,10 @@ describe('DecksService', () => {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),
           useValue: snapshotRepo,
         },
+        {
+          provide: getRepositoryToken(CollectionCardEntity),
+          useValue: collectionCardRepo,
+        },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
       ],
@@ -88,26 +98,57 @@ describe('DecksService', () => {
   });
 
   describe('listForUser', () => {
-    it('should return an empty array when user has no tracked decks', async () => {
+    it('should return empty trackedDecks and zero collectionCardCount when user has nothing', async () => {
       // Arrange
       trackedDeckRepo.find.mockResolvedValue([]);
+      collectionCardRepo.count.mockResolvedValue(0);
 
       // Act
       const result = await service.listForUser(USER_ID);
 
       // Assert
-      expect(result).toEqual([]);
+      expect(result).toEqual({ trackedDecks: [], collectionCardCount: 0 });
       expect(trackedDeckRepo.find).toHaveBeenCalledWith({
         where: { userId: USER_ID },
         order: { trackedAt: 'DESC' },
       });
     });
 
-    it('should return tracked decks with their latest snapshot', async () => {
+    it('should return collectionCardCount when user has cards but no tracked decks', async () => {
+      // Arrange
+      trackedDeckRepo.find.mockResolvedValue([]);
+      collectionCardRepo.count.mockResolvedValue(42);
+
+      // Act
+      const result = await service.listForUser(USER_ID);
+
+      // Assert
+      expect(result.trackedDecks).toEqual([]);
+      expect(result.collectionCardCount).toBe(42);
+    });
+
+    it('should scope collectionCardCount query to the authenticated userId only', async () => {
+      // Arrange: cross-user isolation regression. The count query must filter by
+      // userId so one user never sees another user's collection size.
+      trackedDeckRepo.find.mockResolvedValue([]);
+      collectionCardRepo.count.mockResolvedValue(7);
+
+      // Act
+      await service.listForUser(USER_ID);
+
+      // Assert
+      expect(collectionCardRepo.count).toHaveBeenCalledWith({
+        where: { userId: USER_ID },
+      });
+      expect(collectionCardRepo.count).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return tracked decks with their latest snapshot and collectionCardCount', async () => {
       // Arrange
       const deck = buildTrackedDeck();
       const snapshot = buildSnapshot();
       trackedDeckRepo.find.mockResolvedValue([deck]);
+      collectionCardRepo.count.mockResolvedValue(15);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -119,8 +160,9 @@ describe('DecksService', () => {
       const result = await service.listForUser(USER_ID);
 
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result.collectionCardCount).toBe(15);
+      expect(result.trackedDecks).toHaveLength(1);
+      expect(result.trackedDecks[0]).toEqual({
         id: deck.id,
         fabraryUlid: deck.fabraryUlid,
         name: deck.name,
@@ -138,8 +180,13 @@ describe('DecksService', () => {
     it('should auto-recompute when no snapshot exists for a deck', async () => {
       // Arrange
       const deck = buildTrackedDeck();
-      const recomputedSnapshot = buildSnapshot({ id: 20, rawPercent: 0, effectivePercent: 0 });
+      const recomputedSnapshot = buildSnapshot({
+        id: 20,
+        rawPercent: 0,
+        effectivePercent: 0,
+      });
       trackedDeckRepo.find.mockResolvedValue([deck]);
+      collectionCardRepo.count.mockResolvedValue(3);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -147,19 +194,25 @@ describe('DecksService', () => {
       qb.getMany.mockResolvedValue([]);
       snapshotRepo.createQueryBuilder.mockReturnValue(qb);
 
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(recomputedSnapshot);
+      substitutionService.computeAndStoreReadiness.mockResolvedValue(
+        recomputedSnapshot,
+      );
 
       // Act
       const result = await service.listForUser(USER_ID);
 
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]!.latestSnapshot).toEqual({
+      expect(result.trackedDecks).toHaveLength(1);
+      expect(result.trackedDecks[0]!.latestSnapshot).toEqual({
         rawPercent: 0,
         effectivePercent: 0,
         computedAt: recomputedSnapshot.computedAt.toISOString(),
       });
-      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(deck.id, USER_ID);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
+        deck.id,
+        USER_ID,
+      );
+      expect(result.collectionCardCount).toBe(3);
     });
 
     it('should return multiple decks ordered by trackedAt DESC', async () => {
@@ -172,6 +225,7 @@ describe('DecksService', () => {
         trackedAt: new Date('2025-01-16T10:00:00Z'),
       });
       trackedDeckRepo.find.mockResolvedValue([deck2, deck1]);
+      collectionCardRepo.count.mockResolvedValue(100);
 
       const snap1 = buildSnapshot({ id: 10, trackedDeckId: 1 });
       const snap2 = buildSnapshot({
@@ -191,11 +245,14 @@ describe('DecksService', () => {
       const result = await service.listForUser(USER_ID);
 
       // Assert
-      expect(result).toHaveLength(2);
-      expect(result[0]!.name).toBe('Deck B');
-      expect(result[1]!.name).toBe('Deck A');
-      expect(result[0]!.latestSnapshot?.effectivePercent).toBe(95);
-      expect(result[1]!.latestSnapshot?.effectivePercent).toBe(82.3);
+      expect(result.trackedDecks).toHaveLength(2);
+      expect(result.trackedDecks[0]!.name).toBe('Deck B');
+      expect(result.trackedDecks[1]!.name).toBe('Deck A');
+      expect(result.trackedDecks[0]!.latestSnapshot?.effectivePercent).toBe(95);
+      expect(result.trackedDecks[1]!.latestSnapshot?.effectivePercent).toBe(
+        82.3,
+      );
+      expect(result.collectionCardCount).toBe(100);
     });
   });
 

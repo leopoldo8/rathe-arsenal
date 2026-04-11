@@ -12,4 +12,16 @@ export interface ITrackedDeckListItem {
   } | null;
 }
 
-export type TTrackedDeckListResponse = readonly ITrackedDeckListItem[];
+/**
+ * Response envelope for `GET /api/decks`.
+ *
+ * The response is an object (not a bare array) so that collection-level state
+ * (e.g. `collectionCardCount`) can travel alongside the deck list without
+ * requiring an extra request. `collectionCardCount` is exposed in Phase 1a
+ * for the home state machine and forward-compatibility with the Phase 1c
+ * three-mode fallback state.
+ */
+export interface ITrackedDeckListResponse {
+  readonly trackedDecks: readonly ITrackedDeckListItem[];
+  readonly collectionCardCount: number;
+}

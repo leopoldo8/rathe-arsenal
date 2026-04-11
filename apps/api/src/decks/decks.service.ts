@@ -3,12 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
+import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import {
   ITrackedDeckListItem,
-  TTrackedDeckListResponse,
+  ITrackedDeckListResponse,
 } from './dtos/tracked-deck-list.response.dto';
 import {
   IBreakdown,
@@ -28,18 +29,23 @@ export class DecksService {
     private readonly deckCardRepo: Repository<DeckCardEntity>,
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
+    @InjectRepository(CollectionCardEntity)
+    private readonly collectionCardRepo: Repository<CollectionCardEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
   ) {}
 
-  async listForUser(userId: string): Promise<TTrackedDeckListResponse> {
-    const decks = await this.trackedDeckRepo.find({
-      where: { userId },
-      order: { trackedAt: 'DESC' },
-    });
+  async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
+    const [decks, collectionCardCount] = await Promise.all([
+      this.trackedDeckRepo.find({
+        where: { userId },
+        order: { trackedAt: 'DESC' },
+      }),
+      this.collectionCardRepo.count({ where: { userId } }),
+    ]);
 
     if (decks.length === 0) {
-      return [];
+      return { trackedDecks: [], collectionCardCount };
     }
 
     // Fetch latest snapshot per deck using a subquery for max computedAt
@@ -81,7 +87,7 @@ export class DecksService {
       }
     }
 
-    return decks.map((deck): ITrackedDeckListItem => {
+    const trackedDecks = decks.map((deck): ITrackedDeckListItem => {
       const snap = snapshotByDeckId.get(deck.id) ?? null;
       return {
         id: deck.id,
@@ -99,6 +105,8 @@ export class DecksService {
           : null,
       };
     });
+
+    return { trackedDecks, collectionCardCount };
   }
 
   async getDetail(

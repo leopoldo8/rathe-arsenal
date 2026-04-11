@@ -10,7 +10,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
 import { DecksService } from './decks.service';
-import { TTrackedDeckListResponse } from './dtos/tracked-deck-list.response.dto';
+import { ITrackedDeckListResponse } from './dtos/tracked-deck-list.response.dto';
 import { ITrackedDeckDetailResponse } from './dtos/tracked-deck-detail.response.dto';
 
 @Controller('decks')
@@ -20,7 +20,7 @@ export class DecksController {
   @Get()
   async list(
     @CurrentUser() user: ICurrentUser,
-  ): Promise<TTrackedDeckListResponse> {
+  ): Promise<ITrackedDeckListResponse> {
     return this.decksService.listForUser(user.userId);
   }
 
