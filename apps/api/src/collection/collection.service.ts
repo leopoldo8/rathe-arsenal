@@ -114,10 +114,20 @@ export class CollectionService {
     const newSnapshotEntity =
       await this.substitutionService.computeAndStoreReadiness(deckId, userId);
 
+    // Derive path + fidelityPercent for the response. deckCards is already
+    // loaded above, so totalCards is cheap to compute locally.
+    const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
+    const derived = this.substitutionService.deriveSnapshotFields(
+      newSnapshotEntity,
+      totalCards,
+    );
+
     const snapshot: ITrackedDeckDetailSnapshot = {
       id: newSnapshotEntity.id,
       rawPercent: newSnapshotEntity.rawPercent,
       effectivePercent: newSnapshotEntity.effectivePercent,
+      path: derived.path,
+      fidelityPercent: derived.fidelityPercent,
       breakdown:
         newSnapshotEntity.breakdown as unknown as IBreakdown,
       substitutions:

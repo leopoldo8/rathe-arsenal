@@ -17,10 +17,31 @@ export interface IBreakdown {
   readonly missing: readonly IBreakdownEntry[];
 }
 
+/**
+ * Path classification for a readiness snapshot.
+ *
+ * - **A**: 100% exact coverage.
+ * - **B**: missing cards covered by tier 1 or tier 2 substitutions
+ *          (effectivePercent = 100).
+ * - **C**: some cards remain missing after substitution attempts.
+ *
+ * Derived at read time by `SubstitutionService.deriveSnapshotFields` so
+ * legacy snapshots get the same classification without a migration.
+ */
+export type TPath = 'A' | 'B' | 'C';
+
 export interface ITrackedDeckDetailSnapshot {
   readonly id: number;
   readonly rawPercent: number;
   readonly effectivePercent: number;
+  /** Path classification derived from the breakdown. */
+  readonly path: TPath;
+  /**
+   * Tier-weighted fidelity percentage (0-100) -- primarily consumed by
+   * Path C surfaces. Not pre-rounded; frontend formats to display
+   * precision.
+   */
+  readonly fidelityPercent: number;
   readonly breakdown: IBreakdown;
   readonly substitutions: Record<string, ISubstitutionEntry>;
   readonly computedAt: string;
