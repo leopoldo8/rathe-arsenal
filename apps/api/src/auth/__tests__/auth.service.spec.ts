@@ -54,18 +54,27 @@ describe('AuthService.signUp', () => {
   it('creates a user, sends verification email, and returns dev link (happy path)', async () => {
     const { service, email } = buildService();
     const result = await service.signUp('a@b.com', 'longenoughpassword');
-    expect(result.email).toBe('a@b.com');
+    expect(result.message).toContain('verification link');
     expect(result._devVerificationLink).toContain('/verify-email?token=');
     expect(email.sendVerificationEmail).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='));
   });
 
-  it('throws EMAIL_IN_USE when the email already exists', async () => {
+  it('A4: returns the same generic message when the email already exists (no leak)', async () => {
+    const save = jest.fn();
+    const sendVerification = jest.fn().mockResolvedValue(undefined);
     const { service } = buildService({
       findOne: jest.fn().mockResolvedValue({ id: 'x', email: 'a@b.com' } as Partial<UserEntity>),
+      save,
+      sendVerification,
     });
-    await expect(service.signUp('a@b.com', 'longenoughpassword')).rejects.toMatchObject({
-      code: EAuthErrorCode.EmailInUse,
-    });
+    const result = await service.signUp('a@b.com', 'longenoughpassword');
+    // Generic message identical to the happy-path one.
+    expect(result.message).toContain('verification link');
+    // Critically: no new row written, no email sent, no _devVerificationLink
+    // leaked (which would reveal that we took the "new user" branch).
+    expect(save).not.toHaveBeenCalled();
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(result._devVerificationLink).toBeUndefined();
   });
 
   it('throws EMAIL_DELIVERY_FAILED when the email service fails', async () => {
@@ -75,6 +84,63 @@ describe('AuthService.signUp', () => {
     await expect(service.signUp('a@b.com', 'longenoughpassword')).rejects.toMatchObject({
       code: EAuthErrorCode.EmailDeliveryFailed,
     });
+  });
+});
+
+describe('AuthService.resendVerification', () => {
+  it('sends a new verification email for an unverified user (happy path)', async () => {
+    const tokens = new TokenGeneratorService();
+    const user: Partial<UserEntity> = {
+      id: 'u1',
+      email: 'a@b.com',
+      emailVerifiedAt: null,
+      verificationTokenHash: tokens.hashToken('old'),
+      verificationTokenExpiresAt: new Date(Date.now() - 1000),
+    };
+    const save = jest.fn().mockResolvedValue(user);
+    const sendVerification = jest.fn().mockResolvedValue(undefined);
+    const { service } = buildService({
+      findOne: jest.fn().mockResolvedValue(user),
+      save,
+      sendVerification,
+    });
+    const result = await service.resendVerification('a@b.com');
+    expect(result.message).toContain('verification link');
+    expect(sendVerification).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='));
+    expect(save).toHaveBeenCalled();
+    // Token hash was rotated (not the stale one)
+    expect(user.verificationTokenHash).not.toBe(tokens.hashToken('old'));
+  });
+
+  it('returns generic response for an already-verified user without sending email', async () => {
+    const user: Partial<UserEntity> = {
+      id: 'u1',
+      email: 'a@b.com',
+      emailVerifiedAt: new Date(),
+    };
+    const sendVerification = jest.fn();
+    const save = jest.fn();
+    const { service } = buildService({
+      findOne: jest.fn().mockResolvedValue(user),
+      save,
+      sendVerification,
+    });
+    const result = await service.resendVerification('a@b.com');
+    expect(result.message).toContain('verification link');
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(result._devVerificationLink).toBeUndefined();
+  });
+
+  it('returns generic response for an unknown email without sending email (no leak)', async () => {
+    const sendVerification = jest.fn();
+    const save = jest.fn();
+    const { service } = buildService({ save, sendVerification });
+    const result = await service.resendVerification('unknown@b.com');
+    expect(result.message).toContain('verification link');
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(result._devVerificationLink).toBeUndefined();
   });
 });
 

@@ -90,39 +90,21 @@ Estimated: 1-2 hours to bootstrap the harness; the first component backfill batc
 
 ---
 
-### A4. Email enumeration leak on `POST /api/auth/sign-up`
+### A4. Email enumeration leak on `POST /api/auth/sign-up` — RESOLVED (Phase 1a Unit 1)
 
-**Phase 0 posture:** when a user submits sign-up with an already-registered email, the API returns `409 EMAIL_IN_USE`. An attacker probing this endpoint can determine whether a given email has an account.
-
-**Why deferred:** Phase 0 is a closed beta with manual invitations to 5-10 trusted Pelotas friends. The leak is meaningless when the user list is hand-curated. The friendlier UX of "this email is already used, did you mean to sign in?" is worth more than the privacy cost at this scale.
-
-**Phase 1 trigger to revisit:** the moment sign-up is reachable by anyone outside the closed-beta invite list — i.e., when public sign-up is enabled.
-
-**When triggered, the work is:** change sign-up to always return `202 Accepted` with a generic message ("If this email is not already registered, you'll receive a verification link shortly"). Send the verification email if-and-only-if the user is new; do nothing on duplicates. Same pattern as `/auth/forgot-password` already uses.
+**Resolution:** `signUp()` now always returns `202 Accepted` with the generic message `"If this email is not already registered, you will receive a verification link shortly."` The existing-user check short-circuits before any database write, so duplicate sign-up attempts produce no side effects (no row, no email, no unique-constraint 500). `EAuthErrorCode.EmailInUse` and its mapper entry were removed as dead code. See `apps/api/src/auth/auth.service.ts`.
 
 ---
 
-### A5. No rate limiting on `/api/auth/*` endpoints
+### A5. No rate limiting on `/api/auth/*` endpoints — RESOLVED (Phase 1a Unit 1)
 
-**Phase 0 posture:** none. The endpoints are wide open. An attacker can hammer `/auth/sign-in` as fast as Express + Railway will respond.
-
-**Why deferred:** Phase 0 explicitly excludes S6 (CAPTCHA + rate limiting) per the origin Phase 0 plan. Closed-beta scale means even a clumsy brute-force attempt would be visible in Railway logs and shut down by the operator manually long before it succeeded.
-
-**Phase 1 trigger to revisit:** before any public sign-up. Non-negotiable for public exposure.
-
-**When triggered, the work is:** add `@nestjs/throttler` with sensible per-IP limits (e.g., 5 sign-in attempts per minute, 3 sign-up attempts per hour, 5 forgot-password requests per hour). Probably also add Cloudflare or similar in front for L4/L7 protection.
+**Resolution:** `@nestjs/throttler` is registered as a global `APP_GUARD` in `app.module.ts` with a lenient 120 req/min per-IP default, overridden per auth route: sign-in 5/min, sign-up / resend-verification 3/hour, forgot-password / reset-password 5/hour, verify-email 10/hour. Health checks opt out via `@SkipThrottle()`. `main.ts` enables `app.set('trust proxy', 1)` so `req.ip` reflects the real client IP from Railway's `X-Forwarded-For`, not the gateway. The catalog autocomplete endpoint is throttled at 30 req/min.
 
 ---
 
-### A6. Email verification is required, but no "resend verification email" endpoint
+### A6. Email verification resend endpoint — RESOLVED (Phase 1a Unit 1)
 
-**Phase 0 posture:** if email delivery fails on sign-up, the user has a row in the database but no way to trigger a fresh verification email through the UI. The workaround is to use `forgot-password`, which by design also works on unverified accounts and effectively serves as a "recover access" path.
-
-**Why deferred:** the workaround works. Adding a dedicated "resend verification" endpoint is more code for a flow nobody hits unless email delivery is broken.
-
-**Phase 1 trigger to revisit:** first time a Phase 0 tester gets stuck because of this. (Acceptable cost — closed beta, the operator can DM them the link.)
-
-**When triggered, the work is:** add `POST /api/auth/resend-verification` accepting an email; rate-limit it; reuse the existing token-generation path.
+**Resolution:** `POST /api/auth/resend-verification` now accepts `{ email }`, rate-limited at 3/hour per IP. It mirrors the enumeration-safe pattern of `forgot-password`: always returns a generic 202, only sends an email when the user exists and is still unverified. Known acceptable residual risk: an unverified account can be kept alive indefinitely by resending every 23 hours; purge-unverified cleanup is a Phase 2 chore.
 
 ---
 

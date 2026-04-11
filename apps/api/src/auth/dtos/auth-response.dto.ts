@@ -8,8 +8,16 @@ export interface IAuthResponse {
   user: IAuthUser;
 }
 
-export interface ISignUpResponse {
-  userId: string;
-  email: string;
+/**
+ * Sign-up and resend-verification endpoints return the same generic response
+ * regardless of whether the email already exists / is already verified. This
+ * prevents account-existence enumeration (A4/A6). The `_devVerificationLink`
+ * field is only populated in development to ease local testing.
+ */
+export interface IGenericAuthAcceptedResponse {
+  message: string;
   _devVerificationLink?: string;
 }
+
+/** @deprecated retained for backwards compat with older tests; use IGenericAuthAcceptedResponse */
+export type ISignUpResponse = IGenericAuthAcceptedResponse;
