@@ -1,0 +1,92 @@
+[
+  {
+    "description": "Gate 3c example: resource card (no pitch color, no suffix)",
+    "rawName": "5 Copper",
+    "expectedIdentifier": "copper"
+  },
+  {
+    "description": "Gate 3c example: pitched card with Blue color label",
+    "rawName": "A Drop in the Ocean (Blue)",
+    "expectedIdentifier": "a-drop-in-the-ocean-blue"
+  },
+  {
+    "description": "Gate 3c example: cold foil variant — suffix stripped, base match",
+    "rawName": "Aether Crackers (Cold Foil)",
+    "expectedIdentifier": "aether-crackers"
+  },
+  {
+    "description": "Pitched Red card",
+    "rawName": "Head Jab (Red)",
+    "expectedIdentifier": "head-jab-red"
+  },
+  {
+    "description": "Pitched Yellow card",
+    "rawName": "Autumn's Touch (Yellow)",
+    "expectedIdentifier": "autumns-touch-yellow"
+  },
+  {
+    "description": "Apostrophe stripped (pitch Red)",
+    "rawName": "Autumn's Touch (Red)",
+    "expectedIdentifier": "autumns-touch-red"
+  },
+  {
+    "description": "Apostrophe stripped (pitch Blue)",
+    "rawName": "Autumn's Touch (Blue)",
+    "expectedIdentifier": "autumns-touch-blue"
+  },
+  {
+    "description": "Rainbow Foil suffix stripped",
+    "rawName": "Aether Crackers (Rainbow Foil)",
+    "expectedIdentifier": "aether-crackers"
+  },
+  {
+    "description": "Plain (Foil) suffix stripped",
+    "rawName": "Aether Crackers (Foil)",
+    "expectedIdentifier": "aether-crackers"
+  },
+  {
+    "description": "Extended Art suffix stripped",
+    "rawName": "Aether Crackers (Extended Art)",
+    "expectedIdentifier": "aether-crackers"
+  },
+  {
+    "description": "Alternate Art suffix stripped",
+    "rawName": "Aether Crackers (Alternate Art)",
+    "expectedIdentifier": "aether-crackers"
+  },
+  {
+    "description": "Hero card — no pitch, no suffix",
+    "rawName": "Bravo",
+    "expectedIdentifier": "bravo"
+  },
+  {
+    "description": "Multiple parentheses: foil suffix then pitch color",
+    "rawName": "Head Jab (Rainbow Foil) (Red)",
+    "expectedIdentifier": "head-jab-red"
+  },
+  {
+    "description": "Quantity prefix only, no pitch (resource card)",
+    "rawName": "3 Copper",
+    "expectedIdentifier": "copper"
+  },
+  {
+    "description": "Quantity prefix with pitched card",
+    "rawName": "2 Head Jab (Red)",
+    "expectedIdentifier": "head-jab-red"
+  },
+  {
+    "description": "No match: completely unknown name",
+    "rawName": "Some Random Product Not a Card",
+    "expectedIdentifier": null
+  },
+  {
+    "description": "No match: empty string",
+    "rawName": "",
+    "expectedIdentifier": null
+  },
+  {
+    "description": "No match: whitespace only",
+    "rawName": "   ",
+    "expectedIdentifier": null
+  }
+]

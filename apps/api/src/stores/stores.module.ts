@@ -6,16 +6,18 @@ import {
   StoreScrapeRunEntity,
   CardAliasEntity,
 } from '../database/entities';
+import { CardNameMatcherService } from './card-name-matcher.service';
 
 /**
  * Phase 1b stores module. Owns the store-data vertical:
  * scraper, card-name matcher, shopping-line service, and admin endpoint.
  *
- * Units 2-6 add their services and controllers here.
- * Unit 1 wires the schema (entities, migrations) and module skeleton only.
+ * CatalogModule is @Global(), so CatalogService is available here without
+ * an explicit import.
  *
- * FetchGuardModule and CatalogModule are both @Global(), so their services
- * are available here without explicit imports.
+ * Unit 1: schema (entities, migrations) + module skeleton.
+ * Unit 2: CardNameMatcherService — deterministic + alias resolver.
+ * Units 3-6: scraper, ingestion, shopping-line service, admin endpoint.
  */
 @Module({
   imports: [
@@ -26,5 +28,7 @@ import {
       CardAliasEntity,
     ]),
   ],
+  providers: [CardNameMatcherService],
+  exports: [CardNameMatcherService],
 })
 export class StoresModule {}
