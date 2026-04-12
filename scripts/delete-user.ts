@@ -1,20 +1,33 @@
-import 'reflect-metadata';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import { DataSource } from 'typeorm';
-import { UserEntity } from '../apps/api/src/database/entities/user.entity';
-import { CollectionCardEntity } from '../apps/api/src/database/entities/collection-card.entity';
-import { TrackedDeckEntity } from '../apps/api/src/database/entities/tracked-deck.entity';
-import { DeckCardEntity } from '../apps/api/src/database/entities/deck-card.entity';
-import { DeckReadinessSnapshotEntity } from '../apps/api/src/database/entities/deck-readiness-snapshot.entity';
-import { RejectedSubstituteEntity } from '../apps/api/src/database/entities/rejected-substitute.entity';
+import { Client } from 'pg';
 
-// Load .env from the api package (where DATABASE_URL lives)
-config({ path: resolve(__dirname, '..', 'apps', 'api', '.env') });
+/**
+ * Phase 0 operator escape hatch — hard-deletes a single user and all
+ * their linked rows on demand (bypasses the 30-day retention window
+ * that `purge-deleted-users.ts` enforces for soft-deleted accounts).
+ *
+ * Uses the raw `pg` driver rather than TypeORM for the same reason
+ * `purge-deleted-users.ts` does: loading TypeORM entities under tsx
+ * triggers a decorator-emit incompatibility with esbuild. Raw SQL is
+ * faster to boot and easier to audit.
+ *
+ * Cascade order (children first, parents last — matches
+ * `purge-deleted-users.ts`):
+ *   rejected_substitute →
+ *   deck_readiness_snapshot →
+ *   deck_card →
+ *   tracked_deck →
+ *   collection_card →
+ *   user
+ */
 
 const USAGE = 'Usage: pnpm tsx scripts/delete-user.ts <userId>';
 
 async function main(): Promise<void> {
+  // Load env from the api package where DATABASE_URL lives.
+  config({ path: resolve(__dirname, '..', 'apps', 'api', '.env') });
+
   const userId = process.argv[2];
   if (!userId) {
     console.error(USAGE);
@@ -27,117 +40,119 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const dataSource = new DataSource({
-    type: 'postgres',
-    url: databaseUrl,
-    entities: [
-      UserEntity,
-      CollectionCardEntity,
-      TrackedDeckEntity,
-      DeckCardEntity,
-      DeckReadinessSnapshotEntity,
-      RejectedSubstituteEntity,
-    ],
-    synchronize: false,
-    logging: false,
-  });
-
-  await dataSource.initialize();
-  console.log('Connected to database.');
-
-  const queryRunner = dataSource.createQueryRunner();
-  await queryRunner.startTransaction();
+  const client = new Client({ connectionString: databaseUrl });
+  try {
+    await client.connect();
+    console.log('Connected to database.');
+  } catch (err) {
+    console.error('Could not connect to database:', err);
+    process.exit(1);
+  }
 
   try {
-    // Count rows before deletion
-    const deckIds = await queryRunner.manager
-      .getRepository(TrackedDeckEntity)
-      .find({ where: { userId }, select: ['id'] });
-    const deckIdList = deckIds.map((d) => d.id);
+    // Verify the user exists before the delete cascade so we can give
+    // a clean "not found" exit rather than a silent zero-row transaction.
+    const userRes = await client.query<{ id: string }>(
+      'SELECT id FROM "user" WHERE id = $1',
+      [userId],
+    );
+    if (userRes.rowCount === 0) {
+      console.error(`\nUser ${userId} not found in the database.`);
+      process.exit(1);
+    }
 
-    const rejectedSubstituteCount =
-      deckIdList.length > 0
-        ? await queryRunner.manager
-            .getRepository(RejectedSubstituteEntity)
-            .count({ where: deckIdList.map((id) => ({ trackedDeckId: id })) })
-        : 0;
+    // Count rows per table so the operator sees what will be deleted
+    // before the transaction commits.
+    const trackedDeckRes = await client.query<{ id: string }>(
+      'SELECT id FROM "tracked_deck" WHERE "userId" = $1',
+      [userId],
+    );
+    const trackedDeckIds = trackedDeckRes.rows.map((r) => r.id);
 
-    const snapshotCount =
-      deckIdList.length > 0
-        ? await queryRunner.manager
-            .getRepository(DeckReadinessSnapshotEntity)
-            .count({ where: deckIdList.map((id) => ({ trackedDeckId: id })) })
-        : 0;
+    const rejectedSubstituteCount = trackedDeckIds.length
+      ? (
+          await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM "rejected_substitute" WHERE "trackedDeckId" = ANY($1::uuid[])',
+            [trackedDeckIds],
+          )
+        ).rows[0]?.count ?? '0'
+      : '0';
 
-    const deckCardCount =
-      deckIdList.length > 0
-        ? await queryRunner.manager
-            .getRepository(DeckCardEntity)
-            .count({ where: deckIdList.map((id) => ({ trackedDeckId: id })) })
-        : 0;
+    const snapshotCount = trackedDeckIds.length
+      ? (
+          await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM "deck_readiness_snapshot" WHERE "trackedDeckId" = ANY($1::uuid[])',
+            [trackedDeckIds],
+          )
+        ).rows[0]?.count ?? '0'
+      : '0';
 
-    const collectionCardCount = await queryRunner.manager
-      .getRepository(CollectionCardEntity)
-      .count({ where: { userId } });
+    const deckCardCount = trackedDeckIds.length
+      ? (
+          await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM "deck_card" WHERE "trackedDeckId" = ANY($1::uuid[])',
+            [trackedDeckIds],
+          )
+        ).rows[0]?.count ?? '0'
+      : '0';
 
-    const trackedDeckCount = deckIdList.length;
+    const collectionCardCount =
+      (
+        await client.query<{ count: string }>(
+          'SELECT COUNT(*)::text AS count FROM "collection_card" WHERE "userId" = $1',
+          [userId],
+        )
+      ).rows[0]?.count ?? '0';
 
     console.log(`\nRows to delete for user ${userId}:`);
     console.log(`  rejected_substitute:     ${rejectedSubstituteCount}`);
     console.log(`  deck_readiness_snapshot: ${snapshotCount}`);
     console.log(`  deck_card:               ${deckCardCount}`);
     console.log(`  collection_card:         ${collectionCardCount}`);
-    console.log(`  tracked_deck:            ${trackedDeckCount}`);
+    console.log(`  tracked_deck:            ${trackedDeckIds.length}`);
     console.log(`  user:                    1`);
 
-    // Delete in dependency order (children first).
-    // ON DELETE CASCADE is defense-in-depth; explicit ordering is safer.
-    if (deckIdList.length > 0) {
-      await queryRunner.manager
-        .getRepository(RejectedSubstituteEntity)
-        .delete(deckIdList.map((id) => ({ trackedDeckId: id })));
+    await client.query('BEGIN');
+    try {
+      if (trackedDeckIds.length > 0) {
+        await client.query(
+          'DELETE FROM "rejected_substitute" WHERE "trackedDeckId" = ANY($1::uuid[])',
+          [trackedDeckIds],
+        );
+        await client.query(
+          'DELETE FROM "deck_readiness_snapshot" WHERE "trackedDeckId" = ANY($1::uuid[])',
+          [trackedDeckIds],
+        );
+        await client.query(
+          'DELETE FROM "deck_card" WHERE "trackedDeckId" = ANY($1::uuid[])',
+          [trackedDeckIds],
+        );
+      }
 
-      await queryRunner.manager
-        .getRepository(DeckReadinessSnapshotEntity)
-        .delete(deckIdList.map((id) => ({ trackedDeckId: id })));
+      await client.query('DELETE FROM "tracked_deck" WHERE "userId" = $1', [
+        userId,
+      ]);
+      await client.query('DELETE FROM "collection_card" WHERE "userId" = $1', [
+        userId,
+      ]);
+      await client.query('DELETE FROM "user" WHERE id = $1', [userId]);
 
-      await queryRunner.manager
-        .getRepository(DeckCardEntity)
-        .delete(deckIdList.map((id) => ({ trackedDeckId: id })));
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
     }
-
-    await queryRunner.manager
-      .getRepository(CollectionCardEntity)
-      .delete({ userId });
-
-    await queryRunner.manager
-      .getRepository(TrackedDeckEntity)
-      .delete({ userId });
-
-    const deleteResult = await queryRunner.manager
-      .getRepository(UserEntity)
-      .delete({ id: userId });
-
-    if (deleteResult.affected === 0) {
-      console.error(`\nUser ${userId} not found in the database.`);
-      await queryRunner.rollbackTransaction();
-      process.exit(1);
-    }
-
-    await queryRunner.commitTransaction();
 
     console.log(`\nUser ${userId} and all related data deleted successfully.`);
     console.log(
       '\nReminder: The user has been removed from the database. ' +
         'No external services need cleanup (DIY auth, no Clerk).',
     );
-  } catch (error) {
-    console.error('Error during deletion, rolling back transaction:', error);
-    await queryRunner.rollbackTransaction();
+  } catch (err) {
+    console.error('Error during deletion:', err);
     process.exit(1);
   } finally {
-    await queryRunner.release();
-    await dataSource.destroy();
+    await client.end();
   }
 }
 
