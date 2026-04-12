@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
+import { IShoppingLineResponse } from './shopping-line';
 
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
@@ -73,6 +74,8 @@ export interface IDeckDetailResponse {
    * The deck detail page renders a modified-view banner when > 0.
    */
   readonly rejectionCount: number;
+  /** Shopping line data for this deck. Added in Phase 1b Unit 5. */
+  readonly shoppingLine?: IShoppingLineResponse;
 }
 
 export interface IMarkOwnedResponse {

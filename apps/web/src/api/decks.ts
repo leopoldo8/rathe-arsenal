@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
+import { IShoppingLineResponse } from './shopping-line';
 
 export interface ITrackedDeckSnapshot {
   readonly rawPercent: number;
@@ -15,15 +16,28 @@ export interface ITrackedDeckListItem {
   readonly format: string;
   readonly trackedAt: string;
   readonly latestSnapshot: ITrackedDeckSnapshot | null;
+  /** Shopping line data for this deck, if available. Added in Phase 1b. */
+  readonly shoppingLine?: IShoppingLineResponse;
 }
 
 /**
  * Response envelope for `GET /api/decks`. `collectionCardCount` is exposed
  * for the home state machine and forward-compatibility with Phase 1c.
+ *
+ * `aggregateShoppingLine` is added in Phase 1b for the home page callout
+ * card ("R$ 312 completaria 4 de 6 decks na Cupula DT").
  */
 export interface ITrackedDeckListResponse {
   readonly trackedDecks: readonly ITrackedDeckListItem[];
   readonly collectionCardCount: number;
+  /** Aggregate shopping line across all tracked decks. Added in Phase 1b. */
+  readonly aggregateShoppingLine?: {
+    readonly storeName: string;
+    readonly totalCostCents: number;
+    readonly completableDecks: number;
+    readonly totalDecks: number;
+    readonly kind: 'populated' | 'unscraped';
+  };
 }
 
 export interface IImportDecksResponse {

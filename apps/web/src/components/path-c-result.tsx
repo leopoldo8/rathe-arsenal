@@ -1,5 +1,7 @@
 import { IBreakdown, ISubstitutedEntry } from '../api/deck-detail';
+import { IShoppingLineResponse } from '../api/shopping-line';
 import { BreakdownList } from './breakdown-list';
+import { ShoppingLine } from './ShoppingLine';
 
 interface IPathCResultProps {
   readonly breakdown: IBreakdown;
@@ -19,6 +21,8 @@ interface IPathCResultProps {
   readonly onMarkOwned?: (cardIdentifier: string) => void;
   readonly isMarkingOwned?: boolean;
   readonly pendingCard?: string | null;
+  /** Shopping line data from the API response. Added in Phase 1b. */
+  readonly shoppingLine?: IShoppingLineResponse;
 }
 
 const MISSING_SECTION_ID = 'path-c-missing-cards';
@@ -79,6 +83,7 @@ export function PathCResult({
   onMarkOwned,
   isMarkingOwned = false,
   pendingCard = null,
+  shoppingLine,
 }: IPathCResultProps) {
   const displayFidelity = Math.round(fidelityPercent * 10) / 10;
   const missingCount = countMissing(breakdown);
@@ -188,6 +193,8 @@ export function PathCResult({
         </a>
       </div>
 
+      <ShoppingLine data={shoppingLine ?? null} />
+
       <BreakdownList
         breakdown={breakdown}
         onMarkOwned={onMarkOwned ?? noopMarkOwned}
@@ -248,19 +255,6 @@ export function PathCResult({
         )}
       </section>
 
-      <div
-        role="note"
-        style={{
-          backgroundColor: '#f7fafc',
-          border: '1px dashed #cbd5e0',
-          borderRadius: '4px',
-          padding: '0.75rem 1rem',
-          color: '#718096',
-          fontSize: '0.8125rem',
-        }}
-      >
-        Check availability at C&uacute;pula DT &mdash; coming in Phase 1b
-      </div>
     </section>
   );
 }

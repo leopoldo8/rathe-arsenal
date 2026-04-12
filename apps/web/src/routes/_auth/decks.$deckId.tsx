@@ -11,6 +11,7 @@ import {
 } from '../../api/re-solve';
 import { ReadinessHeader } from '../../components/readiness-header';
 import { BreakdownList } from '../../components/breakdown-list';
+import { ShoppingLine } from '../../components/ShoppingLine';
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
@@ -256,6 +257,8 @@ function DeckDetailPage() {
             hero={deck.hero}
             format={deck.format}
           />
+
+          <ShoppingLine data={deck.shoppingLine ?? null} />
 
           {markOwnedMutation.isError && (
             <div
