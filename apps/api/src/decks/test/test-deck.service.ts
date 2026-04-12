@@ -27,6 +27,7 @@ import {
   FetchGuardError,
 } from '../../common/fetch-guard/errors';
 import { IDeckImportDto } from '../../fabrary/dtos/deck-import.dto';
+import { ShoppingLineService } from '../../stores/shopping-line.service';
 import {
   ITestDeckBreakdown,
   ITestDeckBreakdownEntry,
@@ -61,6 +62,7 @@ export class TestDeckService {
     @InjectRepository(CollectionCardEntity)
     private readonly collectionCardRepo: Repository<CollectionCardEntity>,
     private readonly fabraryService: FabraryService,
+    private readonly shoppingLineService: ShoppingLineService,
   ) {}
 
   async run(
@@ -77,8 +79,9 @@ export class TestDeckService {
 
     const readiness = await this.computeReadiness(deck, user.userId);
 
-    return this.buildResponse(deck, readiness, existing);
+    return await this.buildResponse(deck, readiness, existing);
   }
+
 
   private parseUrl(url: string): string {
     try {
@@ -219,15 +222,31 @@ export class TestDeckService {
     ];
   }
 
-  private buildResponse(
+  private async buildResponse(
     deck: IDeckImportDto,
     readiness: IEffectiveReadinessResult,
     existing: TrackedDeckEntity | null,
-  ): ITestDeckResponse {
+  ): Promise<ITestDeckResponse> {
     const totalCards = this.flattenDeckCards(deck).reduce(
       (sum, entry) => sum + entry.quantity,
       0,
     );
+
+    const breakdown = this.serializeBreakdown(readiness.breakdown);
+
+    // Shopping line derived from the in-memory breakdown — same pattern as
+    // DecksService.getDetail(). null = Path A.
+    // ITestDeckBreakdown.substituted has a richer shape than IBreakdown.substituted
+    // (it carries the full match object). We project it down to IBreakdownEntry.
+    const breakdownForShoppingLine = {
+      exact: breakdown.exact,
+      substituted: breakdown.substituted.map((e) => e.original),
+      missing: breakdown.missing,
+    };
+    const shoppingLine =
+      await this.shoppingLineService.computeForBreakdown(
+        breakdownForShoppingLine,
+      );
 
     return {
       fabraryUlid: deck.ulid,
@@ -239,9 +258,10 @@ export class TestDeckService {
       effectivePercent: readiness.effectivePercent,
       path: readiness.path,
       fidelityPercent: readiness.fidelityPercent,
-      breakdown: this.serializeBreakdown(readiness.breakdown),
+      breakdown,
       alreadyTracked: existing !== null,
       trackedDeckId: existing?.id ?? null,
+      shoppingLine,
     };
   }
 

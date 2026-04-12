@@ -8,12 +8,14 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
+import { ShoppingLineService } from '../stores/shopping-line.service';
 import {
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
 } from './dtos/tracked-deck-list.response.dto';
 import {
   IBreakdown,
+  IShoppingLineResponse,
   ISubstitutionEntry,
   ITrackedDeckDetailResponse,
   ITrackedDeckDetailSnapshot,
@@ -36,6 +38,7 @@ export class DecksService {
     private readonly rejectedSubstituteRepo: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
+    private readonly shoppingLineService: ShoppingLineService,
   ) {}
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
@@ -183,6 +186,16 @@ export class DecksService {
         })()
       : null;
 
+    // Compute the shopping line from the latest snapshot's breakdown.
+    // null = Path A (no missing cards). The discriminated union members cover
+    // populated / unscraped / error states.
+    let shoppingLine: IShoppingLineResponse | null = null;
+    if (snapshotDto?.breakdown) {
+      shoppingLine = await this.shoppingLineService.computeForBreakdown(
+        snapshotDto.breakdown,
+      );
+    }
+
     return {
       id: deck.id,
       fabraryUlid: deck.fabraryUlid,
@@ -193,6 +206,7 @@ export class DecksService {
       totalCards,
       latestSnapshot: snapshotDto,
       rejectionCount,
+      shoppingLine,
     };
   }
 

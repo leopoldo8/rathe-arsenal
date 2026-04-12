@@ -16,6 +16,7 @@ import { TestDeckService } from './test/test-deck.service';
 import { ReSolveController } from './re-solve/re-solve.controller';
 import { ReSolveService } from './re-solve/re-solve.service';
 import { AuthModule } from '../auth/auth.module';
+import { StoresModule } from '../stores/stores.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuthModule } from '../auth/auth.module';
     FabraryModule,
     SubstitutionModule,
     AuthModule,
+    StoresModule,
   ],
   controllers: [
     DecksImportController,

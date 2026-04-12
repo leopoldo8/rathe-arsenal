@@ -10,6 +10,7 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { RejectedSubstituteEntity } from '../../database/entities/rejected-substitute.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
+import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -56,6 +57,7 @@ describe('DecksService', () => {
   let rejectedSubstituteRepo: jest.Mocked<Repository<RejectedSubstituteEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
+  let shoppingLineService: jest.Mocked<ShoppingLineService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -65,6 +67,10 @@ describe('DecksService', () => {
     rejectedSubstituteRepo = createMock<Repository<RejectedSubstituteEntity>>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
+    shoppingLineService = createMock<ShoppingLineService>();
+
+    // Default: shopping line returns null (Path A / no missing cards).
+    shoppingLineService.computeForBreakdown.mockResolvedValue(null);
 
     // Default: no collection cards owned. Individual tests override as needed.
     collectionCardRepo.count.mockResolvedValue(0);
@@ -94,6 +100,7 @@ describe('DecksService', () => {
         },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
+        { provide: ShoppingLineService, useValue: shoppingLineService },
       ],
     }).compile();
 

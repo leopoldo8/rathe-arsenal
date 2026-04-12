@@ -1,4 +1,5 @@
 import { IsString, IsUrl } from 'class-validator';
+import { IShoppingLineResponse } from '../../../stores/dtos/shopping-line.response.dto';
 
 /**
  * Request body for `POST /api/decks/test`.
@@ -76,4 +77,12 @@ export interface ITestDeckResponse {
    * offering the track CTAs.
    */
   readonly trackedDeckId: number | null;
+  /**
+   * Shopping line derived at read time from the test deck's breakdown.
+   * null = Path A (no missing cards). The discriminated union covers
+   * populated / unscraped / error states.
+   *
+   * Unit 5 (Phase 1b).
+   */
+  readonly shoppingLine: IShoppingLineResponse | null;
 }

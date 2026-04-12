@@ -1,3 +1,7 @@
+import { IShoppingLineResponse } from '../../stores/dtos/shopping-line.response.dto';
+
+export { IShoppingLineResponse };
+
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
   readonly quantity: number;
@@ -61,4 +65,14 @@ export interface ITrackedDeckDetailResponse {
    * renders the modified-view banner when this is > 0.
    */
   readonly rejectionCount: number;
+  /**
+   * Shopping line derived at read time from the latest snapshot's breakdown.
+   * null = Path A (no missing cards). The discriminated union covers:
+   *   - populated: real data available
+   *   - unscraped: store exists but no stock rows yet (hide the section)
+   *   - error: computation failed (show "temporarily unavailable")
+   *
+   * Unit 5 (Phase 1b).
+   */
+  readonly shoppingLine?: IShoppingLineResponse | null;
 }

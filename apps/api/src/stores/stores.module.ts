@@ -5,10 +5,13 @@ import {
   StoreStockEntity,
   StoreScrapeRunEntity,
   CardAliasEntity,
+  TrackedDeckEntity,
+  DeckReadinessSnapshotEntity,
 } from '../database/entities';
 import { CardNameMatcherService } from './card-name-matcher.service';
 import { SbraubleScraperService } from './sbrauble-scraper.service';
 import { StoreIngestionService } from './store-ingestion.service';
+import { ShoppingLineService } from './shopping-line.service';
 import { AdminStoresController } from './admin/admin-stores.controller';
 import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
 
@@ -24,7 +27,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
  * Unit 3: SbraubleScraperService — HTML scraper + rate limiter.
  * Unit 4: StoreIngestionService — ingestion pipeline, delta guard, reconciliation,
  *          worker entry point (scripts/scrape-stores.ts), admin endpoint.
- * Units 5-6: shopping-line service, frontend — added in subsequent PRs.
+ * Unit 5: ShoppingLineService — read-time shopping line derivation + aggregate.
  */
 @Module({
   imports: [
@@ -33,6 +36,8 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
       StoreStockEntity,
       StoreScrapeRunEntity,
       CardAliasEntity,
+      TrackedDeckEntity,
+      DeckReadinessSnapshotEntity,
     ]),
   ],
   controllers: [AdminStoresController],
@@ -40,8 +45,14 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
     CardNameMatcherService,
     SbraubleScraperService,
     StoreIngestionService,
+    ShoppingLineService,
     AdminApiKeyGuard,
   ],
-  exports: [CardNameMatcherService, SbraubleScraperService, StoreIngestionService],
+  exports: [
+    CardNameMatcherService,
+    SbraubleScraperService,
+    StoreIngestionService,
+    ShoppingLineService,
+  ],
 })
 export class StoresModule {}

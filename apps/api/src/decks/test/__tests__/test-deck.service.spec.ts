@@ -23,6 +23,7 @@ import {
 import { IDeckImportDto } from '../../../fabrary/dtos/deck-import.dto';
 import { TestDeckService } from '../test-deck.service';
 import { TestDeckRequestDto } from '../dtos/test-deck.dto';
+import { ShoppingLineService } from '../../../stores/shopping-line.service';
 
 const FABRARY_URL = 'https://fabrary.net/decks/01H0000000000000000000AAAA';
 const ULID = '01H0000000000000000000AAAA';
@@ -53,6 +54,7 @@ describe('TestDeckService', () => {
   let fabraryService: jest.Mocked<FabraryService>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let shoppingLineService: jest.Mocked<ShoppingLineService>;
 
   beforeEach(async () => {
     fabraryService = createMock<FabraryService>() as jest.Mocked<FabraryService>;
@@ -62,11 +64,14 @@ describe('TestDeckService', () => {
     collectionCardRepo = createMock<
       Repository<CollectionCardEntity>
     >() as jest.Mocked<Repository<CollectionCardEntity>>;
+    shoppingLineService = createMock<ShoppingLineService>();
 
     // Default: user has no existing tracked deck for this URL
     (trackedDeckRepo.findOne as jest.Mock).mockResolvedValue(null);
     // Default: user has an empty collection
     (collectionCardRepo.find as jest.Mock).mockResolvedValue([]);
+    // Default: shopping line returns null (Path A / no missing cards)
+    shoppingLineService.computeForBreakdown.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -80,6 +85,7 @@ describe('TestDeckService', () => {
           provide: getRepositoryToken(CollectionCardEntity),
           useValue: collectionCardRepo,
         },
+        { provide: ShoppingLineService, useValue: shoppingLineService },
       ],
     }).compile();
 
