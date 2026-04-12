@@ -8,6 +8,10 @@ import {
   DeckCardEntity,
   DeckReadinessSnapshotEntity,
   RejectedSubstituteEntity,
+  StoreEntity,
+  StoreStockEntity,
+  StoreScrapeRunEntity,
+  CardAliasEntity,
 } from './entities';
 
 /**
@@ -33,6 +37,10 @@ import {
           DeckCardEntity,
           DeckReadinessSnapshotEntity,
           RejectedSubstituteEntity,
+          StoreEntity,
+          StoreStockEntity,
+          StoreScrapeRunEntity,
+          CardAliasEntity,
         ],
         synchronize: config.get<string>('NODE_ENV') === 'development',
         logging: false,

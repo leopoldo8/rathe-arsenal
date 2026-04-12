@@ -71,4 +71,66 @@ describe('validateEnv', () => {
     const withClerk = { ...rest, CLERK_SECRET_KEY: 'sk_test_x' };
     expect(() => validateEnv(withClerk)).toThrow(/JWT_SECRET/);
   });
+
+  describe('store scraper env vars', () => {
+    it('accepts defaults when STORE_SCRAPER_ENABLED is omitted', () => {
+      const dto = validateEnv(valid);
+      expect(dto.STORE_SCRAPER_ENABLED).toBe(false);
+      expect(dto.STORE_ALLOW_HOSTS).toBe('www.cupuladt.com.br');
+      expect(dto.ADMIN_API_KEY).toBeUndefined();
+    });
+
+    it('accepts STORE_SCRAPER_ENABLED=false without ADMIN_API_KEY', () => {
+      const dto = validateEnv({ ...valid, STORE_SCRAPER_ENABLED: 'false' });
+      expect(dto.STORE_SCRAPER_ENABLED).toBe(false);
+      expect(dto.ADMIN_API_KEY).toBeUndefined();
+    });
+
+    it('throws when STORE_SCRAPER_ENABLED=true but ADMIN_API_KEY is missing', () => {
+      expect(() =>
+        validateEnv({ ...valid, STORE_SCRAPER_ENABLED: 'true' }),
+      ).toThrow(/ADMIN_API_KEY/);
+    });
+
+    it('accepts STORE_SCRAPER_ENABLED=true when ADMIN_API_KEY is provided', () => {
+      const dto = validateEnv({
+        ...valid,
+        STORE_SCRAPER_ENABLED: 'true',
+        ADMIN_API_KEY: 'super-secret-key',
+      });
+      expect(dto.STORE_SCRAPER_ENABLED).toBe(true);
+      expect(dto.ADMIN_API_KEY).toBe('super-secret-key');
+    });
+
+    it('accepts a custom STORE_ALLOW_HOSTS list', () => {
+      const dto = validateEnv({
+        ...valid,
+        STORE_ALLOW_HOSTS: 'www.cupuladt.com.br,shop.example.com',
+      });
+      expect(dto.STORE_ALLOW_HOSTS).toBe('www.cupuladt.com.br,shop.example.com');
+    });
+
+    it('throws when STORE_ALLOW_HOSTS is empty and STORE_SCRAPER_ENABLED=true', () => {
+      // An empty allow-list would silently fail every outbound fetch at runtime
+      // rather than at boot — catch it early at env validation instead.
+      expect(() =>
+        validateEnv({
+          ...valid,
+          STORE_SCRAPER_ENABLED: 'true',
+          ADMIN_API_KEY: 'super-secret-key',
+          STORE_ALLOW_HOSTS: '',
+        }),
+      ).toThrow(/STORE_ALLOW_HOSTS/);
+    });
+
+    it('accepts empty STORE_ALLOW_HOSTS when STORE_SCRAPER_ENABLED=false', () => {
+      // Empty allow-list is only invalid when the scraper is enabled.
+      const dto = validateEnv({
+        ...valid,
+        STORE_SCRAPER_ENABLED: 'false',
+        STORE_ALLOW_HOSTS: '',
+      });
+      expect(dto.STORE_ALLOW_HOSTS).toBe('');
+    });
+  });
 });
