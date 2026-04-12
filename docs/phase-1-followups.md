@@ -283,7 +283,7 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ## Non-auth Phase 0 deferrals
 
-These come from the original Phase 0 plan (`personal/docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
+These come from the original Phase 0 plan (`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`) and are reproduced here so the Phase 1 implementer has one place to look. The original plan is the canonical source.
 
 - **B1.** No Discover surface (R11-R14)
 - **B2.** No shopping line / store data pipeline (R28-R33, including the Sbrauble vertical scraper)

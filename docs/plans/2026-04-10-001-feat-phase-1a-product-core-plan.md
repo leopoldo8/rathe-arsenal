@@ -687,7 +687,7 @@ _Note: The earlier draft listed Unit 6 as a hard prerequisite of Unit 7. That wa
 ## Sources & References
 
 - **Origin document:** [docs/brainstorms/2026-04-08-fab-deck-readiness-flow-requirements.md](../brainstorms/2026-04-08-fab-deck-readiness-flow-requirements.md)
-- **Phase 0 plan:** [docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md](../../docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md)
+- **Phase 0 plan:** [docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md](./2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md)
 - **Debt ledger:** [docs/phase-1-followups.md](../phase-1-followups.md)
 - **Gate 4 results:** [docs/brainstorms/gates/gate-4-score-result.md](../brainstorms/gates/gate-4-score-result.md)
-- **Auth migration plan:** [docs/plans/2026-04-09-001-feat-replace-clerk-diy-auth-plan.md](../../docs/plans/2026-04-09-001-feat-replace-clerk-diy-auth-plan.md)
+- **Auth migration plan:** [docs/plans/2026-04-09-001-feat-replace-clerk-diy-auth-plan.md](./2026-04-09-001-feat-replace-clerk-diy-auth-plan.md)

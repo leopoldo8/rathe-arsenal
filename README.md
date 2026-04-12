@@ -6,7 +6,7 @@ Private closed-beta web app that turns Fabrary deck URLs into a tracked deck lis
 
 **Phase 0** validates one hypothesis: *rule-based tier 1 substitution is good enough for casual FaB players.* Everything in this repo is in service of answering that question.
 
-See [`../docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`](../docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md) for the full plan.
+See [`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`](docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md) for the full plan.
 
 ## Stack
 
