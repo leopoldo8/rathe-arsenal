@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
+import { IShoppingLineResponse } from './shopping-line';
 
 export interface ITestDeckBreakdownEntry {
   readonly cardIdentifier: string;
@@ -50,6 +51,8 @@ export interface ITestDeckResponse {
   readonly breakdown: ITestDeckBreakdown;
   readonly alreadyTracked: boolean;
   readonly trackedDeckId: number | null;
+  /** Shopping line data for this test run, if available. Added in Phase 1b. */
+  readonly shoppingLine?: IShoppingLineResponse;
 }
 
 /**

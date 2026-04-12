@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useDecksQuery, useUntrackDeckMutation } from '../../api/decks';
+import { useDecksQuery, useUntrackDeckMutation, ITrackedDeckListResponse } from '../../api/decks';
 import { TrackedDeckCard } from '../../components/tracked-deck-card';
 import { EmptyHomeState } from '../../components/empty-home-state';
 import { CardAutocomplete } from '../../components/card-autocomplete';
+import { formatBrl } from '../../utils/format-brl';
 
 export const Route = createFileRoute('/_auth/home')({
   component: HomePage,
@@ -107,10 +108,57 @@ function HomePage() {
           />
         ))}
       </div>
+      <AggregateShoppingLine data={data} />
+
       <div style={{ marginTop: '2rem' }}>
         <CardAutocomplete label="Add more cards to your collection" />
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate shopping line callout (D6)
+// ---------------------------------------------------------------------------
+
+interface IAggregateShoppingLineProps {
+  readonly data: ITrackedDeckListResponse | undefined;
+}
+
+/**
+ * Renders a single-line aggregate callout below the deck list:
+ * "R$ 312 completaria 4 de 6 decks na Cupula DT"
+ *
+ * Rules (D6):
+ *  - Does not render when totalCostCents === 0
+ *  - Does not render when no decks are tracked
+ *  - Does not render when kind === 'unscraped'
+ */
+function AggregateShoppingLine({ data }: IAggregateShoppingLineProps) {
+  const agg = data?.aggregateShoppingLine;
+
+  if (!agg) return null;
+  if (agg.kind === 'unscraped') return null;
+  if (agg.totalCostCents === 0) return null;
+  if (agg.completableDecks === 0) return null;
+
+  return (
+    <aside
+      aria-label="Aggregate shopping line"
+      style={{
+        marginTop: '1.5rem',
+        padding: '0.875rem 1rem',
+        backgroundColor: '#ebf8ff',
+        border: '1px solid #bee3f8',
+        borderRadius: '6px',
+        fontSize: '0.875rem',
+        color: '#2a4365',
+      }}
+    >
+      <strong>{formatBrl(agg.totalCostCents)}</strong> completaria{' '}
+      <strong>{agg.completableDecks}</strong> de {agg.totalDecks} decks na{' '}
+      {agg.storeName}
+    </aside>
   );
 }
 

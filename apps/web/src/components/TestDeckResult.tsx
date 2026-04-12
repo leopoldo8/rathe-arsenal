@@ -3,6 +3,7 @@ import { IBreakdown } from '../api/deck-detail';
 import { ITestDeckResponse } from '../api/test-deck';
 import { BreakdownList } from './breakdown-list';
 import { PathCResult } from './path-c-result';
+import { ShoppingLine } from './ShoppingLine';
 
 interface ITestDeckResultProps {
   readonly result: ITestDeckResponse;
@@ -67,6 +68,7 @@ export function TestDeckResult({
           breakdown={breakdown}
           fidelityPercent={result.fidelityPercent}
           onTrackProximalVersion={onTrack}
+          shoppingLine={result.shoppingLine}
         />
       ) : (
         <>
@@ -97,7 +99,7 @@ export function TestDeckResult({
         </>
       )}
 
-      <ShoppingLinePlaceholder />
+      <ShoppingLine data={result.shoppingLine ?? null} />
 
       {result.alreadyTracked && result.trackedDeckId !== null ? (
         <AlreadyTrackedCallout trackedDeckId={result.trackedDeckId} />
@@ -136,24 +138,6 @@ function PathBadge({ path }: { readonly path: 'A' | 'B' | 'C' }) {
     >
       Path {path}
     </span>
-  );
-}
-
-function ShoppingLinePlaceholder() {
-  return (
-    <div
-      role="note"
-      style={{
-        backgroundColor: '#f7fafc',
-        border: '1px dashed #cbd5e0',
-        borderRadius: '4px',
-        padding: '0.75rem 1rem',
-        color: '#718096',
-        fontSize: '0.8125rem',
-      }}
-    >
-      Check availability at C&uacute;pula DT &mdash; coming in Phase 1b
-    </div>
   );
 }
 
