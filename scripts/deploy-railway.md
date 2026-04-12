@@ -24,6 +24,9 @@ and the bundled React SPA from the root path. One Postgres addon. One URL.
    - `COGNITO_IDENTITY_POOL_ID=us-east-2:e50f3ed7-32ed-4b22-a05e-10b3e7e03fe0`
    - `COGNITO_REGION=us-east-2`
    - `FABRARY_ALLOW_HOSTS=fabrary.net,42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com,cognito-identity.us-east-2.amazonaws.com`
+   - `STORE_SCRAPER_ENABLED=true` (Phase 1b — enables the scrape worker and admin endpoint; defaults to `false`)
+   - `STORE_ALLOW_HOSTS=www.cupuladt.com.br` (Phase 1b — comma-separated allow-list for outbound scrape fetches; default is already `www.cupuladt.com.br`)
+   - `ADMIN_API_KEY=<64-char random hex>` (Phase 1b — shared secret for `POST /api/admin/stores/:slug/scrape`; see "Generate admin API key" below; required when `STORE_SCRAPER_ENABLED=true`)
 4. **Set health check**: `/api/health` (already in `railway.json`).
 5. **Generate domain**: Service -> Settings -> Generate Domain. Note the URL.
 
@@ -157,3 +160,87 @@ Set it up once via the dashboard:
   `UPDATE "user" SET "deletedAt" = NULL WHERE id = '<uuid>'` to resurrect
   an accidentally-deleted account. The user's JWT is already invalidated
   on their side, but their data survives until the cron fires.
+
+## Phase 1b: Store scrape worker cron (Unit 4)
+
+The scrape worker runs `scripts/scrape-stores.ts` as a **separate Railway cron
+service** (same second-service pattern as the purge cron above). Unlike
+`purge-deleted-users.ts`, it bootstraps a full NestJS standalone context so the
+DI graph (FetchGuardService, CatalogService, TypeORM repositories) is available.
+
+### Generate admin API key
+
+```bash
+openssl rand -hex 32
+# produces a 64-character hex string (256 bits of entropy)
+# paste this into the Railway ADMIN_API_KEY env var
+```
+
+### Wiring the scrape cron on Railway
+
+1. **Dashboard → Project → New → Empty Service**
+2. **Settings → Source → Connect Repo** → `leopoldo8/rathe-arsenal`
+3. **Settings → Deploy**:
+   - **Cron Schedule**: `0 3 * * *` (daily at 03:00 UTC — off-peak for Brazil)
+   - **Start Command**: `pnpm tsx scripts/scrape-stores.ts`
+   - **Health Check**: *disabled*
+   - **Restart Policy**: `NEVER`
+4. **Settings → Variables**:
+   - Link `DATABASE_URL` from the Postgres service (shared reference).
+   - Set `STORE_SCRAPER_ENABLED=true`
+   - Set `STORE_ALLOW_HOSTS=www.cupuladt.com.br`
+   - `ADMIN_API_KEY` is not needed by the worker (it runs without HTTP); it is
+     only required on the API service. Still, linking it from shared variables
+     is harmless and avoids drift.
+5. **Settings → Networking**: leave private (no public domain).
+6. **Deploy**. Verify the first run in service logs:
+
+   ```
+   {"event":"scrape-worker.store.completed","storeSlug":"cupula-dt","runId":1,...}
+   ```
+
+### Triggering a manual scrape via the admin endpoint
+
+The scrape can also be triggered on-demand from the API pod (no Railway cron
+needed for one-off runs):
+
+```bash
+# Replace <your-domain> and <your-admin-api-key> accordingly.
+# Trigger an immediate scrape for cupula-dt:
+curl -s -X POST https://<your-domain>/api/admin/stores/cupula-dt/scrape \
+     -H 'x-admin-api-key: <your-admin-api-key>' | jq .
+
+# Bypass a paused_delta_guard lock (use after investigating the delta spike):
+curl -s -X POST 'https://<your-domain>/api/admin/stores/cupula-dt/scrape?force=true' \
+     -H 'x-admin-api-key: <your-admin-api-key>' | jq .
+```
+
+The endpoint returns an `IScrapeRunSummary` JSON body on success (HTTP 200).
+Rate limit: 2 calls per hour per IP.
+
+### Dry-run before enabling writes
+
+For the first production validation (Gate 2 accuracy check), run the worker in
+dry-run mode to verify the scraper + matcher output without writing to
+`store_stock`:
+
+```bash
+# Via Railway run (injects DATABASE_URL automatically):
+railway run pnpm tsx scripts/scrape-stores.ts --dry-run --store=cupula-dt
+```
+
+Dry-run logs `{"event":"scrape-worker.dry-run.would-scrape",...}` and exits
+without touching the database.
+
+### Operational notes
+
+- **Delta guard**: if a run's delta exceeds 90%, the run is aborted and
+  `store_scrape_run.status` is set to `paused_delta_guard`. Subsequent scheduled
+  runs will refuse to start. Use the `?force=true` admin endpoint or reset the
+  run row manually (`UPDATE store_scrape_run SET status='failed' WHERE id=<id>`)
+  after investigating.
+- **Soft lock**: a `running` row older than 30 minutes is treated as stale and
+  ignored (protects against a pod restart mid-run leaving an orphan lock).
+- **Monitoring**: check `store_scrape_run` for `status='failed'` or
+  `status='paused_delta_guard'` rows after each cron tick. Railway log query:
+  `event:scrape-worker.store.failed OR event:scrape-worker.store.completed`.
