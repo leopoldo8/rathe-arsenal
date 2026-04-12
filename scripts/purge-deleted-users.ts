@@ -82,8 +82,9 @@ async function promptYesNo(message: string): Promise<boolean> {
 }
 
 async function main(): Promise<void> {
-  // Load env from the api package where DATABASE_URL lives.
-  config({ path: resolve(__dirname, '..', 'apps', 'api', '.env') });
+  // Load env from the repo root .env — this workspace keeps all runtime
+  // configuration at the root, shared across api/web/scripts.
+  config({ path: resolve(__dirname, '..', '.env') });
 
   const flags = parseFlags(process.argv.slice(2));
 
