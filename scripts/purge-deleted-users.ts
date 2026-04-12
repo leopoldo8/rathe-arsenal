@@ -54,8 +54,14 @@ function parseFlags(argv: readonly string[]): IParsedFlags {
     else if (arg === '--yes' || arg === '-y') flags.yes = true;
     else if (arg.startsWith('--days=')) {
       const raw = Number(arg.slice('--days='.length));
-      if (!Number.isFinite(raw) || raw < 0) {
-        console.error(`Invalid --days value: ${arg}`);
+      // Require a positive integer. Rejecting 0 specifically closes the
+      // footgun where `--days=0 --yes` would set `cutoff ≈ now` and purge
+      // every soft-deleted user immediately — a mistyped flag should not
+      // short-circuit the 30-day LGPD retention window.
+      if (!Number.isInteger(raw) || raw < 1) {
+        console.error(
+          `Invalid --days value: ${arg} (must be a positive integer >= 1)`,
+        );
         process.exit(1);
       }
       flags.days = raw;
