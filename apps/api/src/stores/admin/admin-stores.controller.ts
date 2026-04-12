@@ -2,12 +2,13 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../auth/decorators/public.decorator';
 import { AdminApiKeyGuard } from './admin-api-key.guard';
@@ -61,27 +62,23 @@ export class AdminStoresController {
   async triggerScrape(
     @Param('slug') slug: string,
     @Query('force') force?: string,
+    @Req() req?: Request,
   ): Promise<ScrapeResponseDto> {
     const forceFlag = force === 'true';
-
-    try {
-      const summary = await this.ingestionService.runScrape(slug, { force: forceFlag });
-      return {
-        runId: summary.runId,
-        productsFetched: summary.productsFetched,
-        productsMatched: summary.productsMatched,
-        productsUnmatched: summary.productsUnmatched,
-        rowsUpserted: summary.rowsUpserted,
-        rowsZeroed: summary.rowsZeroed,
-        deltaPercent: summary.deltaPercent,
-        durationMs: summary.durationMs,
-        forcedOverride: summary.forcedOverride,
-      };
-    } catch (err) {
-      if (err instanceof NotFoundException) {
-        throw err;
-      }
-      throw err;
-    }
+    const summary = await this.ingestionService.runScrape(slug, {
+      force: forceFlag,
+      ...(req?.ip ? { actorIp: req.ip } : {}),
+    });
+    return {
+      runId: summary.runId,
+      productsFetched: summary.productsFetched,
+      productsMatched: summary.productsMatched,
+      productsUnmatched: summary.productsUnmatched,
+      rowsUpserted: summary.rowsUpserted,
+      rowsZeroed: summary.rowsZeroed,
+      deltaPercent: summary.deltaPercent,
+      durationMs: summary.durationMs,
+      forcedOverride: summary.forcedOverride,
+    };
   }
 }

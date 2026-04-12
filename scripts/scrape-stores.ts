@@ -129,22 +129,8 @@ async function main(): Promise<void> {
 
   for (const slug of slugs) {
     try {
-      if (flags.dryRun) {
-        // Dry-run: scrape and match without calling runScrape (which writes to DB).
-        // Log a placeholder so the operator can verify the output shape.
-        console.log(
-          JSON.stringify({
-            event: 'scrape-worker.dry-run.would-scrape',
-            storeSlug: slug,
-            msg: 'Would call StoreIngestionService.runScrape — skipped due to --dry-run',
-            at: new Date().toISOString(),
-          }),
-        );
-        continue;
-      }
-
       const summary = await (ingestionService as unknown as {
-        runScrape(slug: string, opts: { force?: boolean }): Promise<{
+        runScrape(slug: string, opts: { force?: boolean; dryRun?: boolean }): Promise<{
           runId: number;
           productsFetched: number;
           productsMatched: number;
@@ -155,7 +141,7 @@ async function main(): Promise<void> {
           durationMs: number;
           forcedOverride: boolean;
         }>;
-      }).runScrape(slug, {});
+      }).runScrape(slug, { dryRun: flags.dryRun });
 
       console.log(
         JSON.stringify({

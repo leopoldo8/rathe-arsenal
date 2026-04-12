@@ -1,6 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import {
   StoreEntity,
   StoreStockEntity,
@@ -89,7 +89,7 @@ export class StoreIngestionService {
 
   async runScrape(
     storeSlug: string,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; actorIp?: string; dryRun?: boolean } = {},
   ): Promise<IScrapeRunSummary> {
     const startedAt = new Date();
 
@@ -106,7 +106,7 @@ export class StoreIngestionService {
     await this.checkSoftLock(store.id);
 
     // Step 3: delta-guard lock check
-    const forcedOverride = await this.checkDeltaGuardLock(store.id, options.force ?? false);
+    const forcedOverride = await this.checkDeltaGuardLock(store.id, options.force ?? false, options.actorIp);
 
     // Step 4: create the run row
     const run = await this.runRepo.save(
@@ -128,7 +128,7 @@ export class StoreIngestionService {
 
     try {
       // Steps 5-9: pipeline
-      const summary = await this.executePipeline(store, run, forcedOverride, startedAt);
+      const summary = await this.executePipeline(store, run, forcedOverride, startedAt, options.dryRun ?? false);
       return summary;
     } catch (err) {
       // Step 10: mark run failed
@@ -162,7 +162,7 @@ export class StoreIngestionService {
 
     const ageMs = Date.now() - latestRunning.startedAt.getTime();
     if (ageMs < SOFT_LOCK_STALE_MS) {
-      throw new Error(
+      throw new ConflictException(
         `SCRAPE_ALREADY_RUNNING: storeId=${storeId} runId=${latestRunning.id} startedAt=${latestRunning.startedAt.toISOString()}`,
       );
     }
@@ -181,26 +181,36 @@ export class StoreIngestionService {
    * Returns true if this run bypasses the lock via force=true (for the
    * forcedOverride column), false otherwise.
    */
-  private async checkDeltaGuardLock(storeId: number, force: boolean): Promise<boolean> {
-    const mostRecentCompleted = await this.runRepo.findOne({
-      where: { storeId },
+  private async checkDeltaGuardLock(
+    storeId: number,
+    force: boolean,
+    actorIp?: string,
+  ): Promise<boolean> {
+    // F1 fix: exclude Running rows so a stale-but-allowed running row
+    // does not shadow a paused_delta_guard row beneath it.
+    const mostRecent = await this.runRepo.findOne({
+      where: {
+        storeId,
+        status: Not(EStoreScrapeRunStatus.Running),
+      },
       order: { startedAt: 'DESC' },
     });
 
-    if (mostRecentCompleted?.status !== EStoreScrapeRunStatus.PausedDeltaGuard) {
+    if (mostRecent?.status !== EStoreScrapeRunStatus.PausedDeltaGuard) {
       return false;
     }
 
     if (!force) {
-      throw new Error(
-        `SCRAPE_PAUSED_OPERATOR_OVERRIDE_REQUIRED: storeId=${storeId} priorRunId=${mostRecentCompleted.id} deltaPercent=${mostRecentCompleted.deltaPercent}`,
+      throw new ConflictException(
+        `SCRAPE_PAUSED_OPERATOR_OVERRIDE_REQUIRED: storeId=${storeId} priorRunId=${mostRecent.id} deltaPercent=${mostRecent.deltaPercent}`,
       );
     }
 
     this.logger.warn('Delta-guard lock bypassed via force=true', {
       storeId,
-      priorRunId: mostRecentCompleted.id,
-      overriddenDeltaPercent: mostRecentCompleted.deltaPercent,
+      actorIp: actorIp ?? 'unknown',
+      priorRunId: mostRecent.id,
+      overriddenDeltaPercent: mostRecent.deltaPercent,
     });
 
     return true;
@@ -215,6 +225,7 @@ export class StoreIngestionService {
     run: StoreScrapeRunEntity,
     forcedOverride: boolean,
     startedAt: Date,
+    dryRun: boolean,
   ): Promise<IScrapeRunSummary> {
     // Step 5: scrape into staging map
     const { staging, productsFetched, productsMatched, productsUnmatched } =
@@ -306,8 +317,49 @@ export class StoreIngestionService {
       });
     }
 
-    // Step 8: persist changes in a single transaction
+    // Step 8: persist changes in a single transaction (skip in dry-run mode)
     const now = new Date();
+
+    if (dryRun) {
+      this.logger.log('Dry-run mode: skipping DB writes (steps 8-9)', {
+        storeSlug: store.slug,
+        productsFetched,
+        productsMatched,
+        productsUnmatched,
+        rowsUpserted,
+        rowsZeroed,
+        deltaPercent: deltaPercent !== null ? Math.round(deltaPercent * 100) / 100 : null,
+      });
+
+      // Mark the run row as completed with a dry-run note
+      await this.runRepo.update(
+        { id: run.id },
+        {
+          status: EStoreScrapeRunStatus.Completed,
+          finishedAt: new Date(),
+          productsFetched,
+          productsMatched,
+          productsUnmatched,
+          rowsUpserted: 0,
+          rowsZeroed: 0,
+          deltaPercent: deltaPercent !== null ? Math.round(deltaPercent * 100) / 100 : null,
+          errorMessage: 'DRY_RUN: scrape + match completed, no store_stock writes',
+        },
+      );
+
+      return {
+        runId: run.id,
+        productsFetched,
+        productsMatched,
+        productsUnmatched,
+        rowsUpserted: 0,
+        rowsZeroed: 0,
+        deltaPercent: deltaPercent !== null ? Math.round(deltaPercent * 100) / 100 : null,
+        durationMs: Date.now() - startedAt.getTime(),
+        forcedOverride,
+      };
+    }
+
     await this.dataSource.transaction(async (em) => {
       // Upsert new / changed rows
       for (const { cardIdentifier, staged } of toUpsert) {
