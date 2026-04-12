@@ -43,7 +43,9 @@ import { HealthController } from './health/health.controller';
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', '..', 'web', 'dist'),
+      // __dirname at runtime = /app/apps/api/dist
+      // 3x .. = /app → apps/web/dist = /app/apps/web/dist
+      rootPath: join(__dirname, '..', '..', '..', 'apps', 'web', 'dist'),
       exclude: ['/api/{*path}'],
       serveStaticOptions: { fallthrough: true },
     }),
