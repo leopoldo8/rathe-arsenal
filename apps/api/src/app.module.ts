@@ -44,7 +44,7 @@ import { HealthController } from './health/health.controller';
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'web', 'dist'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api/{*path}'],
       serveStaticOptions: { fallthrough: true },
     }),
   ],
