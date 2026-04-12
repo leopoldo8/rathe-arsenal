@@ -17,6 +17,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CheckYourEmailRouteImport } from './routes/check-your-email'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
@@ -61,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSettingsRoute = AuthSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/settings': typeof AuthSettingsRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRoutesByTo {
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/settings': typeof AuthSettingsRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRoutesById {
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/import': typeof AuthImportRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
+  '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRouteTypes {
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/import'
     | '/onboarding'
+    | '/settings'
     | '/decks/$deckId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/import'
     | '/onboarding'
+    | '/settings'
     | '/decks/$deckId'
   id:
     | '__root__'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_auth/home'
     | '/_auth/import'
     | '/_auth/onboarding'
+    | '/_auth/settings'
     | '/_auth/decks/$deckId'
   fileRoutesById: FileRoutesById
 }
@@ -235,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/settings': {
+      id: '/_auth/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthSettingsRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/onboarding': {
       id: '/_auth/onboarding'
       path: '/onboarding'
@@ -270,6 +289,7 @@ interface AuthRouteChildren {
   AuthHomeRoute: typeof AuthHomeRoute
   AuthImportRoute: typeof AuthImportRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
+  AuthSettingsRoute: typeof AuthSettingsRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
 }
 
@@ -277,6 +297,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthHomeRoute: AuthHomeRoute,
   AuthImportRoute: AuthImportRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
+  AuthSettingsRoute: AuthSettingsRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
 }
 

@@ -18,6 +18,7 @@ describe('JwtStrategy.validate', () => {
       id: 'user-1',
       email: 'a@b.com',
       emailVerifiedAt: new Date(),
+      deletedAt: null,
     } as Partial<UserEntity>);
     const strategy = build(repoFindOne);
 
@@ -39,6 +40,7 @@ describe('JwtStrategy.validate', () => {
         id: 'user-1',
         email: 'a@b.com',
         emailVerifiedAt: null,
+        deletedAt: null,
       } as Partial<UserEntity>),
     );
     const err = await strategy
@@ -47,6 +49,26 @@ describe('JwtStrategy.validate', () => {
     expect(err).toBeInstanceOf(UnauthorizedException);
     // No internal-detail leakage in the message
     expect((err as Error).message.toLowerCase()).not.toContain('verified');
+  });
+
+  // A8 / Phase 1a Unit 2: soft-deleted users must be rejected on the same
+  // per-request lookup as the verified-email check. The per-request DB hit
+  // (A13) is preserved — this is a field check, not a new query.
+  it('throws Unauthorized when the user is soft-deleted', async () => {
+    const strategy = build(
+      jest.fn().mockResolvedValue({
+        id: 'user-1',
+        email: 'a@b.com',
+        emailVerifiedAt: new Date(),
+        deletedAt: new Date(),
+      } as Partial<UserEntity>),
+    );
+    const err = await strategy
+      .validate({ sub: 'user-1' })
+      .catch((e) => e as UnauthorizedException);
+    expect(err).toBeInstanceOf(UnauthorizedException);
+    // No internal-detail leakage about the deleted state
+    expect((err as Error).message.toLowerCase()).not.toContain('deleted');
   });
 
   it('throws at construction when JWT_SECRET is not configured', () => {

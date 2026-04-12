@@ -20,6 +20,17 @@ function RootLayout() {
         {user && (
           <>
             <span style={{ fontSize: '0.875rem' }}>{user.email}</span>
+            <Link
+              to="/settings"
+              style={{
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+                color: '#333',
+                padding: '0.25rem 0.5rem',
+              }}
+            >
+              Settings
+            </Link>
             <button onClick={signOut} style={{ cursor: 'pointer' }}>Sign out</button>
           </>
         )}

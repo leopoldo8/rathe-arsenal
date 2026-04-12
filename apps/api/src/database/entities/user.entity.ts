@@ -42,6 +42,16 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true })
   passwordResetTokenExpiresAt!: Date | null;
 
+  /**
+   * Soft-delete marker. Set by `AuthService.deleteAccount()` (Phase 1a Unit 2).
+   * `JwtStrategy.validate()` rejects users with a non-null value on the same
+   * per-request DB lookup, so deleted users lose access immediately without
+   * adding a second query. The 30-day purge in `scripts/purge-deleted-users.ts`
+   * removes rows whose `deletedAt < now() - 30 days`.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }

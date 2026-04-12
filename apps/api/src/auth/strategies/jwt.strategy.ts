@@ -47,6 +47,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException();
     }
+    // A8 / Phase 1a Unit 2: reject soft-deleted users on the same per-request
+    // lookup. This is a field check on the already-loaded entity, not a
+    // second query — the A13 trade-off from Phase 0 is preserved.
+    if (user.deletedAt !== null) {
+      throw new UnauthorizedException();
+    }
     if (user.emailVerifiedAt === null) {
       throw new UnauthorizedException();
     }

@@ -209,6 +209,44 @@ export class AuthService {
     return { id: currentUser.userId, email: currentUser.email };
   }
 
+  /**
+   * Phase 1a Unit 2 (A8) — soft-deletes the authenticated user's account
+   * after verifying the re-entered password. Subsequent requests using the
+   * same JWT are rejected by `JwtStrategy.validate()` via the `deletedAt`
+   * check on the already-loaded entity. The 30-day purge script
+   * (`scripts/purge-deleted-users.ts`) permanently removes rows whose
+   * `deletedAt < now() - 30 days`, cascading through every user-linked
+   * table.
+   *
+   * Idempotency: callers rarely reach this method twice because the JWT is
+   * cleared client-side on success and any follow-up request is rejected by
+   * `JwtStrategy.validate()`. If a second request does arrive while the
+   * JWT is still locally cached, the strategy has already short-circuited
+   * it before the service runs. We therefore do not branch on
+   * already-deleted state here.
+   */
+  async deleteAccount(userId: string, password: string): Promise<{ ok: true }> {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user || user.deletedAt !== null) {
+      // Defensive: the JwtStrategy should have rejected this already, but we
+      // treat the missing/deleted case as unauthorized rather than leaking
+      // "user not found" as a 404 on an authenticated endpoint.
+      throw new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid password');
+    }
+
+    const valid = await this.passwordHasher.verify(password, user.passwordHash);
+    if (!valid) {
+      this.logger.warn({ event: 'auth.delete_account.wrong_password', userId });
+      throw new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid password');
+    }
+
+    user.deletedAt = new Date();
+    await this.users.save(user);
+
+    this.logger.log({ event: 'auth.delete_account.success', userId });
+    return { ok: true };
+  }
+
   private async issueJwt(userId: string): Promise<string> {
     return this.jwtService.signAsync({ sub: userId });
   }
