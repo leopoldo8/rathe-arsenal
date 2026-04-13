@@ -23,6 +23,7 @@ function makeResult(): IReSolveResult {
       exact: [],
       substituted: [],
       missing: [],
+      notOwned: [],
     },
     substitutions: [],
     rejectionCount: 1,

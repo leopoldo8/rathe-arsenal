@@ -33,6 +33,10 @@ export function BreakdownList({
   curveWarnings,
 }: IBreakdownListProps) {
   const anyRejectionPending = pendingRejection !== null;
+
+  // Use the engine-computed notOwned list. Fall back to missing for legacy
+  // snapshots persisted before the notOwned field existed.
+  const notOwned = breakdown.notOwned ?? breakdown.missing;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Exact matches */}
@@ -94,18 +98,19 @@ export function BreakdownList({
         )}
       </section>
 
-      {/* Missing */}
+      {/* Not owned — all cards the user doesn't fully own, regardless
+          of whether a substitution suggestion exists. */}
       <section>
         <h3 style={{ margin: '0 0 0.5rem', color: '#e53e3e' }}>
-          Missing ({breakdown.missing.length})
+          Not owned ({notOwned.length})
         </h3>
-        {breakdown.missing.length === 0 ? (
+        {notOwned.length === 0 ? (
           <p style={{ color: '#999', fontSize: '0.875rem' }}>
             All cards accounted for!
           </p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {breakdown.missing.map((entry) => (
+            {notOwned.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}
                 style={{

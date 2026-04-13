@@ -4,11 +4,16 @@ import { IReadinessBreakdown } from '../src/readiness/types';
 function makeBreakdown(
   overrides: Partial<IReadinessBreakdown> = {},
 ): IReadinessBreakdown {
+  const missing = Object.freeze(overrides.missing ?? []);
+  const substituted = Object.freeze(overrides.substituted ?? []);
   return Object.freeze({
-    exact: Object.freeze([]),
-    substituted: Object.freeze([]),
-    missing: Object.freeze([]),
-    ...overrides,
+    exact: Object.freeze(overrides.exact ?? []),
+    substituted,
+    missing,
+    notOwned: Object.freeze(overrides.notOwned ?? [
+      ...missing,
+      ...substituted.map((e) => e.original),
+    ]),
   });
 }
 
@@ -122,6 +127,7 @@ describe('computePath', () => {
       ]),
       substituted: Object.freeze([]),
       missing: Object.freeze([]),
+      notOwned: Object.freeze([]),
     });
 
     expect(computePath(legacyBreakdown)).toBe('A');

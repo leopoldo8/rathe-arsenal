@@ -181,10 +181,38 @@ export function computeEffectiveReadiness(
   const originalCurve = computePitchCurve(originalPitchEntries);
   const modifiedCurve = computePitchCurve(modifiedPitchEntries);
 
+  // Compute notOwned: union of missing + substituted originals, grouped by
+  // (cardIdentifier, slot) with quantities summed.
+  const notOwnedMap = new Map<string, { cardIdentifier: string; quantity: number; slot: string }>();
+  for (const entry of missing) {
+    const key = `${entry.cardIdentifier}::${entry.slot}`;
+    const existing = notOwnedMap.get(key);
+    if (existing) {
+      notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.quantity });
+    } else {
+      notOwnedMap.set(key, { cardIdentifier: entry.cardIdentifier, quantity: entry.quantity, slot: entry.slot });
+    }
+  }
+  for (const entry of substituted) {
+    const key = `${entry.original.cardIdentifier}::${entry.original.slot}`;
+    const existing = notOwnedMap.get(key);
+    if (existing) {
+      notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.original.quantity });
+    } else {
+      notOwnedMap.set(key, {
+        cardIdentifier: entry.original.cardIdentifier,
+        quantity: entry.original.quantity,
+        slot: entry.original.slot,
+      });
+    }
+  }
+  const notOwned: IBreakdownEntry[] = Array.from(notOwnedMap.values()).map((e) => Object.freeze(e));
+
   const breakdown: IReadinessBreakdown = Object.freeze({
     exact: Object.freeze(exact),
     substituted: Object.freeze(substituted),
     missing: Object.freeze(missing),
+    notOwned: Object.freeze(notOwned),
   });
 
   return Object.freeze({

@@ -238,10 +238,15 @@ export class TestDeckService {
     // DecksService.getDetail(). null = Path A.
     // ITestDeckBreakdown.substituted has a richer shape than IBreakdown.substituted
     // (it carries the full match object). We project it down to IBreakdownEntry.
+    const notOwnedEntries = [
+      ...breakdown.missing,
+      ...breakdown.substituted.map((e) => e.original),
+    ];
     const breakdownForShoppingLine = {
       exact: breakdown.exact,
       substituted: breakdown.substituted.map((e) => e.original),
       missing: breakdown.missing,
+      notOwned: notOwnedEntries,
     };
     const shoppingLine =
       await this.shoppingLineService.computeForBreakdown(

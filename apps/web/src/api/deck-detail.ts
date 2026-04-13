@@ -34,6 +34,11 @@ export interface IBreakdown {
   readonly exact: readonly IBreakdownEntry[];
   readonly substituted: readonly ISubstitutedEntry[];
   readonly missing: readonly IBreakdownEntry[];
+  /**
+   * All cards the user does not fully own: union of `missing` + originals
+   * from `substituted`. Source of truth for the "I own this" affordance.
+   */
+  readonly notOwned: readonly IBreakdownEntry[];
 }
 
 /**

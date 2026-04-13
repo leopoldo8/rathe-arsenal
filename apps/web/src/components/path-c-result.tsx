@@ -63,8 +63,9 @@ function summarizeTiers(substituted: readonly ISubstitutedEntry[]): string {
   return `${tier1} ${tier1 === 1 ? 'card' : 'cards'} substituted at tier 1, ${tier2} ${tier2 === 1 ? 'card' : 'cards'} at tier 2`;
 }
 
-function countMissing(breakdown: IBreakdown): number {
-  return breakdown.missing.reduce((sum, e) => sum + e.quantity, 0);
+function countNotOwned(breakdown: IBreakdown): number {
+  const notOwned = breakdown.notOwned ?? breakdown.missing;
+  return notOwned.reduce((sum, e) => sum + e.quantity, 0);
 }
 
 /**
@@ -86,7 +87,8 @@ export function PathCResult({
   shoppingLine,
 }: IPathCResultProps) {
   const displayFidelity = Math.round(fidelityPercent * 10) / 10;
-  const missingCount = countMissing(breakdown);
+  const notOwned = breakdown.notOwned ?? breakdown.missing;
+  const missingCount = countNotOwned(breakdown);
   const tierSummary = summarizeTiers(breakdown.substituted);
 
   const handleTrackProximal = (): void => {
@@ -215,13 +217,13 @@ export function PathCResult({
         <h3 style={{ margin: '0 0 0.5rem', color: '#c53030' }}>
           Still missing ({missingCount})
         </h3>
-        {breakdown.missing.length === 0 ? (
+        {notOwned.length === 0 ? (
           <p style={{ color: '#718096', fontSize: '0.875rem', margin: 0 }}>
             All cards accounted for!
           </p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {breakdown.missing.map((entry) => (
+            {notOwned.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}
                 style={{

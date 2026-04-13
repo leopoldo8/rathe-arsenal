@@ -56,14 +56,16 @@ function makeStockRow(
 function makeBreakdown(
   missing: Array<{ cardIdentifier: string; quantity: number }>,
 ): IBreakdown {
+  const missingEntries = missing.map((e) => ({
+    cardIdentifier: e.cardIdentifier,
+    quantity: e.quantity,
+    slot: 'mainboard',
+  }));
   return {
     exact: [],
     substituted: [],
-    missing: missing.map((e) => ({
-      cardIdentifier: e.cardIdentifier,
-      quantity: e.quantity,
-      slot: 'mainboard',
-    })),
+    missing: missingEntries,
+    notOwned: missingEntries,
   };
 }
 
@@ -478,6 +480,10 @@ describe('ShoppingLineService', () => {
           },
         ],
         missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard' }],
+        notOwned: [
+          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard' },
+          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard' },
+        ],
       };
 
       // Act

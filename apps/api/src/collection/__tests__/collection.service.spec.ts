@@ -7,6 +7,7 @@ import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
+import { RejectedSubstituteEntity } from '../../database/entities/rejected-substitute.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CatalogService } from '../../catalog/catalog.service';
@@ -71,6 +72,7 @@ describe('CollectionService', () => {
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
+  let rejectedSubstituteRepo: jest.Mocked<Repository<RejectedSubstituteEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let catalogService: jest.Mocked<CatalogService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
@@ -80,6 +82,8 @@ describe('CollectionService', () => {
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
+    rejectedSubstituteRepo = createMock<Repository<RejectedSubstituteEntity>>();
+    rejectedSubstituteRepo.find.mockResolvedValue([]);
     authzService = createMock<AuthzService>();
     catalogService = createMock<CatalogService>();
     substitutionService = createMock<SubstitutionService>();
@@ -102,6 +106,10 @@ describe('CollectionService', () => {
         {
           provide: getRepositoryToken(TrackedDeckEntity),
           useValue: trackedDeckRepo,
+        },
+        {
+          provide: getRepositoryToken(RejectedSubstituteEntity),
+          useValue: rejectedSubstituteRepo,
         },
         { provide: AuthzService, useValue: authzService },
         { provide: CatalogService, useValue: catalogService },
@@ -165,21 +173,16 @@ describe('CollectionService', () => {
       expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
         DECK_ID,
         USER_ID,
+        new Set(),
       );
     });
 
-    it('should throw BadRequestException when card is not in missing list', async () => {
-      // Arrange
-      const snapshot = buildSnapshot({
-        breakdown: {
-          exact: [{ cardIdentifier: CARD_IDENTIFIER, quantity: 3, slot: 'mainboard' }],
-          substituted: [],
-          missing: [],
-        },
-      });
-
+    it('should throw BadRequestException when card is not part of the deck', async () => {
+      // Arrange — deck has no cards matching the requested identifier
       authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
-      snapshotRepo.findOne.mockResolvedValue(snapshot);
+      deckCardRepo.find.mockResolvedValue([
+        buildDeckCard({ cardIdentifier: 'OTHER_CARD' }),
+      ]);
 
       // Act & Assert
       await expect(
@@ -198,7 +201,7 @@ describe('CollectionService', () => {
       await expect(
         service.markOwned('wrong-user-id', DECK_ID, CARD_IDENTIFIER),
       ).rejects.toThrow(NotFoundException);
-      expect(snapshotRepo.findOne).not.toHaveBeenCalled();
+      expect(deckCardRepo.find).not.toHaveBeenCalled();
     });
 
     it('should cap quantity at deck required quantity when incrementing', async () => {
@@ -350,9 +353,9 @@ describe('CollectionService', () => {
 
       // Assert
       expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledTimes(3);
-      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(1, 1, USER_ID);
-      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(2, 2, USER_ID);
-      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(3, 3, USER_ID);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(1, 1, USER_ID, new Set());
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(2, 2, USER_ID, new Set());
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenNthCalledWith(3, 3, USER_ID, new Set());
       expect(result.recomputedDecks).toHaveLength(3);
       expect(result.recomputedDecks[0]).toEqual({
         trackedDeckId: 1,

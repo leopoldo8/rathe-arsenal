@@ -52,10 +52,16 @@ function makeSubstituted(
 }
 
 function makeBreakdown(overrides: Partial<IReadinessBreakdown> = {}): IReadinessBreakdown {
+  const missing = Object.freeze(overrides.missing ?? []);
+  const substituted = Object.freeze(overrides.substituted ?? []);
   return Object.freeze({
     exact: Object.freeze(overrides.exact ?? []),
-    substituted: Object.freeze(overrides.substituted ?? []),
-    missing: Object.freeze(overrides.missing ?? []),
+    substituted,
+    missing,
+    notOwned: Object.freeze(overrides.notOwned ?? [
+      ...missing,
+      ...substituted.map((e) => e.original),
+    ]),
   });
 }
 

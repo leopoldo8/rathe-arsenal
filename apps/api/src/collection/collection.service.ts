@@ -8,14 +8,13 @@ import { Repository } from 'typeorm';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
+import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { AuthzService } from '../auth/authz.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import {
   IBreakdown,
-  IBreakdownEntry,
   ISubstitutionEntry,
   ITrackedDeckDetailSnapshot,
 } from '../decks/dtos/tracked-deck-detail.response.dto';
@@ -36,10 +35,10 @@ export class CollectionService {
     private readonly collectionCardRepo: Repository<CollectionCardEntity>,
     @InjectRepository(DeckCardEntity)
     private readonly deckCardRepo: Repository<DeckCardEntity>,
-    @InjectRepository(DeckReadinessSnapshotEntity)
-    private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
+    @InjectRepository(RejectedSubstituteEntity)
+    private readonly rejectedSubstituteRepo: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
@@ -52,32 +51,10 @@ export class CollectionService {
   ): Promise<IMarkOwnedResponse> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
 
-    // Load latest snapshot to validate the card is in the missing list
-    const latestSnapshot = await this.snapshotRepo.findOne({
-      where: { trackedDeckId: deckId },
-      order: { computedAt: 'DESC' },
-    });
-
-    if (!latestSnapshot) {
-      throw new BadRequestException(
-        'No readiness snapshot exists for this deck',
-      );
-    }
-
-    const breakdown = latestSnapshot.breakdown as unknown as IBreakdown;
-    const missingEntries: readonly IBreakdownEntry[] = breakdown.missing ?? [];
-
-    const missingEntry = missingEntries.find(
-      (entry) => entry.cardIdentifier === cardIdentifier,
-    );
-
-    if (!missingEntry) {
-      throw new BadRequestException(
-        `Card "${cardIdentifier}" is not in the missing list for this deck`,
-      );
-    }
-
-    // Determine the deck's required quantity for this card
+    // Validate against the deck's card list — the source of truth for
+    // which cards belong to the deck. This is more correct than checking
+    // the breakdown because a card can move between missing/substituted
+    // sections as readiness is recomputed.
     const deckCards = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
     });
@@ -86,7 +63,13 @@ export class CollectionService {
       (dc) => dc.cardIdentifier === cardIdentifier,
     );
 
-    const requiredQuantity = deckCard?.quantity ?? missingEntry.quantity;
+    if (!deckCard) {
+      throw new BadRequestException(
+        `Card "${cardIdentifier}" is not part of this deck`,
+      );
+    }
+
+    const requiredQuantity = deckCard.quantity;
 
     // Upsert CollectionCard: insert with qty 1 if new, else increment (capped)
     const existing = await this.collectionCardRepo.findOne({
@@ -110,9 +93,19 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
+    // Load any persisted rejections so the recompute respects them.
+    const rejections = await this.rejectedSubstituteRepo.find({
+      where: { trackedDeckId: deckId },
+    });
+    const excludedIdentifiers = new Set(rejections.map((r) => r.cardIdentifier));
+
     // Recompute readiness
     const newSnapshotEntity =
-      await this.substitutionService.computeAndStoreReadiness(deckId, userId);
+      await this.substitutionService.computeAndStoreReadiness(
+        deckId,
+        userId,
+        excludedIdentifiers,
+      );
 
     // Derive path + fidelityPercent for the response. deckCards is already
     // loaded above, so totalCards is cheap to compute locally.
@@ -217,10 +210,16 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of affectedDeckIds) {
       try {
+        const deckRejections = await this.rejectedSubstituteRepo.find({
+          where: { trackedDeckId },
+        });
+        const deckExclusions = new Set(deckRejections.map((r) => r.cardIdentifier));
+
         const snapshot =
           await this.substitutionService.computeAndStoreReadiness(
             trackedDeckId,
             userId,
+            deckExclusions,
           );
         recomputedDecks.push({
           trackedDeckId,

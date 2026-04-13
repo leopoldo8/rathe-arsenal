@@ -24,6 +24,16 @@ export interface IReadinessBreakdown {
   readonly exact: readonly IBreakdownEntry[];
   readonly substituted: readonly ISubstitutedEntry[];
   readonly missing: readonly IBreakdownEntry[];
+  /**
+   * All cards the user does not fully own: the union of `missing` entries
+   * and the `original` side of `substituted` entries. Substitutions are
+   * suggestions — this list is the source of truth for ownership gaps.
+   *
+   * Entries are grouped by (cardIdentifier, slot) with quantities summed
+   * so that a card partially missing and partially substituted appears as
+   * a single entry with the total not-owned quantity.
+   */
+  readonly notOwned: readonly IBreakdownEntry[];
 }
 
 export interface IEffectiveReadinessResult {

@@ -17,8 +17,9 @@ export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
 });
 
-function countMissingCards(breakdown: IBreakdown): number {
-  return breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0);
+function countNotOwnedCards(breakdown: IBreakdown): number {
+  const notOwned = breakdown.notOwned ?? breakdown.missing;
+  return notOwned.reduce((sum, entry) => sum + entry.quantity, 0);
 }
 
 interface IPathCBannerProps {
@@ -191,7 +192,7 @@ function DeckDetailPage() {
           {snapshot.path === 'C' && (
             <PathCBanner
               fidelityPercent={snapshot.fidelityPercent}
-              missingCardCount={countMissingCards(snapshot.breakdown)}
+              missingCardCount={countNotOwnedCards(snapshot.breakdown)}
             />
           )}
 
