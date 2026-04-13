@@ -27,7 +27,7 @@ const LISTING_PATH_REGEX = /^\/\?view=ecom\/[a-z]+(&[a-zA-Z0-9]+=([a-zA-Z0-9]|%[
  * Maximum pages to fetch before aborting with PAGINATION_RUNAWAY.
  * Belt-and-suspenders guard against infinite-loop pagination bugs.
  */
-const MAX_PAGES = 100;
+const MAX_PAGES = 200;
 
 /**
  * Maximum response body size per page fetch (5 MB).
@@ -202,7 +202,7 @@ export class SbraubleScraperService {
    */
   private parsePage(html: string, baseUrl: string, baseHostname: string): IScrapedProduct[] {
     const $ = cheerio.load(html);
-    const cards = $('.ecom-item-card');
+    const cards = $('.card-item');
 
     if (cards.length === 0) {
       return [];
@@ -211,10 +211,10 @@ export class SbraubleScraperService {
     const products: IScrapedProduct[] = [];
 
     cards.each((_i, el) => {
-      const rawName = $(el).find('.ecom-item-nome a').text().trim();
-      const rawPrice = $(el).find('.ecom-item-preco').text().trim();
-      const rawStock = $(el).find('.ecom-item-estoque').text().trim();
-      const rawHref = $(el).find('.ecom-item-nome a').attr('href') ?? '';
+      const rawName = $(el).find('.card-desc .title a').text().trim();
+      const rawPrice = $(el).find('.card-desc .price').text().trim();
+      const rawStock = $(el).find('.card-desc .qty').text().trim();
+      const rawHref = $(el).find('.card-desc .title a').attr('href') ?? '';
 
       if (!rawName) {
         this.logger.warn({ msg: 'Product row missing name — skipped', baseUrl });
@@ -367,7 +367,7 @@ export class SbraubleScraperService {
       return 0;
     }
 
-    const match = rawStock.match(/^(\d+)\s+unid\.?$/i);
+    const match = rawStock.match(/^(\d+)\s*unid\.?$/i);
     if (!match) {
       throw new ScraperError(
         EScraperErrorCode.PARSE_FAILED,

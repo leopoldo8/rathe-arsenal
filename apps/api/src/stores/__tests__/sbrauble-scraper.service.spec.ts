@@ -371,7 +371,7 @@ describe('SbraubleScraperService', () => {
   // -------------------------------------------------------------------------
 
   describe('pagination runaway', () => {
-    it('should throw ScraperError(PAGINATION_RUNAWAY) after 100 pages', async () => {
+    it('should throw ScraperError(PAGINATION_RUNAWAY) after 200 pages', async () => {
       // Arrange — every page returns the same non-empty fixture
       const pageHtml = loadFixture('cupula-dt-listing-page.html');
       fetchGuard.guardedFetch.mockResolvedValue(makeGuardResult(pageHtml));
@@ -391,8 +391,8 @@ describe('SbraubleScraperService', () => {
       // Assert
       expect(thrownError).not.toBeNull();
       expect(thrownError!.code).toBe(EScraperErrorCode.PAGINATION_RUNAWAY);
-      // 100 pages × 6 products = 600 products yielded before the throw
-      expect(productCount).toBe(600);
+      // 200 pages × 6 products = 1200 products yielded before the throw
+      expect(productCount).toBe(1200);
     }, 30_000);
   });
 
