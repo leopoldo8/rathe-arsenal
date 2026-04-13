@@ -1,8 +1,8 @@
 /**
  * Phase 1b Unit 4 — Store scrape worker (compiled entry point).
  *
- * Runs with `node scripts/scrape-stores.js` — no tsx needed.
- * Imports from the compiled API dist/ so NestJS decorators work correctly.
+ * Runs with `node scrape-stores.js` from apps/api/ — no tsx needed.
+ * Imports from the compiled dist/ so NestJS decorators work correctly.
  *
  * Flags:
  *   --store=<slug>   Run only the named store.
@@ -13,7 +13,7 @@ const { resolve } = require('path');
 
 // Railway injects env vars; dotenv is only needed for local dev.
 try {
-  require('dotenv').config({ path: resolve(__dirname, '..', '.env') });
+  require('dotenv').config({ path: resolve(__dirname, '..', '..', '.env') });
 } catch {
   // dotenv not available in production — that's fine.
 }
@@ -62,9 +62,11 @@ async function main() {
   }
 
   // Import from compiled dist/ — NestJS decorators require tsc output.
+  // File lives at apps/api/scrape-stores.js so ./dist/ resolves correctly,
+  // and @nestjs/core resolves from apps/api/node_modules/.
   const { NestFactory } = require('@nestjs/core');
-  const { AppModule } = require('../apps/api/dist/app.module');
-  const { StoreIngestionService } = require('../apps/api/dist/stores/store-ingestion.service');
+  const { AppModule } = require('./dist/app.module');
+  const { StoreIngestionService } = require('./dist/stores/store-ingestion.service');
   const { DataSource } = require('typeorm');
 
   const app = await NestFactory.createApplicationContext(AppModule, {
