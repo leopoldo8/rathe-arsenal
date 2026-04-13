@@ -51,29 +51,47 @@ export class CardNameMatcherService {
   async match(
     sourceSlug: string,
     rawName: string,
-  ): Promise<ICardMatchResult | null> {
+  ): Promise<readonly ICardMatchResult[]> {
     if (!rawName || rawName.trim().length === 0) {
       this.logger.warn('Empty rawName received', { sourceSlug });
-      return null;
+      return [];
     }
 
     // Stage 1: alias table lookup
     const aliasResult = await this.tryAliasLookup(sourceSlug, rawName);
     if (aliasResult !== undefined) {
-      return aliasResult;
+      return aliasResult !== null ? [aliasResult] : [];
     }
 
-    // Stage 2: deterministic parse
+    // Stage 2: deterministic parse on the full name
     const deterministicResult = this.tryDeterministicMatch(rawName);
     if (deterministicResult !== null) {
-      return deterministicResult;
+      return [deterministicResult];
+    }
+
+    // Stage 3: double-faced card split. Store listings often join two
+    // independent card faces as "Face A // Face B". The physical product
+    // is one card but each face is a separate entry in the catalog, so
+    // we try matching both faces and return all successful matches.
+    if (rawName.includes(' // ')) {
+      const faces = rawName.split(' // ').map((f) => f.trim());
+      const faceResults: ICardMatchResult[] = [];
+      for (const face of faces) {
+        const result = this.tryDeterministicMatch(face);
+        if (result !== null) {
+          faceResults.push(result);
+        }
+      }
+      if (faceResults.length > 0) {
+        return faceResults;
+      }
     }
 
     this.logger.warn('No match found for product name', {
       sourceSlug,
       rawName: sanitizeForLog(rawName),
     });
-    return null;
+    return [];
   }
 
   /**

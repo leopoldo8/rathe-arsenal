@@ -29,3 +29,8 @@ coverage/
 
 # Railway
 .railway/
+
+# AI
+.claude/
+.context/
+.playwright-mcp/

@@ -60,10 +60,10 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'Foo Bar Weird Name');
 
       // Assert
-      expect(result).toEqual({
+      expect(result).toEqual([{
         cardIdentifier: 'some-alias-card',
         source: 'alias',
-      });
+      }]);
       expect(aliasRepo.findOne).toHaveBeenCalledWith({
         where: { sourceSlug: 'cupula-dt', rawName: 'Foo Bar Weird Name' },
       });
@@ -90,7 +90,7 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'Old Card Name');
 
       // Assert
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
       expect(loggerWarnSpy).toHaveBeenCalledWith(
         'Stale alias: target cardIdentifier not in catalog',
         expect.objectContaining({
@@ -117,7 +117,7 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'Copper');
 
       // Assert
-      expect(result).toEqual({ cardIdentifier: 'silver', source: 'alias' });
+      expect(result).toEqual([{ cardIdentifier: 'silver', source: 'alias' }]);
       // Confirm getCard was called only once (alias validation, not deterministic)
       expect(catalogService.getCard).toHaveBeenCalledTimes(1);
       expect(catalogService.getCard).toHaveBeenCalledWith('silver');
@@ -141,7 +141,7 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', '5 Copper');
 
       // Assert
-      expect(result).toEqual({ cardIdentifier: 'copper', source: 'deterministic' });
+      expect(result).toEqual([{ cardIdentifier: 'copper', source: 'deterministic' }]);
     });
 
     it('matches a pitched card with Blue color label', async () => {
@@ -157,10 +157,10 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'A Drop in the Ocean (Blue)');
 
       // Assert
-      expect(result).toEqual({
+      expect(result).toEqual([{
         cardIdentifier: 'a-drop-in-the-ocean-blue',
         source: 'deterministic',
-      });
+      }]);
     });
 
     it('matches a Cold Foil variant by stripping the suffix', async () => {
@@ -176,10 +176,10 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'Aether Crackers (Cold Foil)');
 
       // Assert
-      expect(result).toEqual({
+      expect(result).toEqual([{
         cardIdentifier: 'aether-crackers',
         source: 'deterministic',
-      });
+      }]);
     });
 
     it('returns null and emits no throw when candidate is not in catalog', async () => {
@@ -192,18 +192,18 @@ describe('CardNameMatcherService', () => {
       const result = await service.match('cupula-dt', 'Some Random Product Not a Card');
 
       // Assert
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
     });
 
-    it('returns null for empty rawName', async () => {
+    it('returns empty array for empty rawName', async () => {
       const result = await service.match('cupula-dt', '');
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
       expect(aliasRepo.findOne).not.toHaveBeenCalled();
     });
 
-    it('returns null for whitespace-only rawName', async () => {
+    it('returns empty array for whitespace-only rawName', async () => {
       const result = await service.match('cupula-dt', '   ');
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
     });
   });
 

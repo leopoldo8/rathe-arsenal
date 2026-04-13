@@ -465,21 +465,36 @@ export class StoreIngestionService {
     for await (const product of this.scraper.scrapeStore(store)) {
       productsFetched++;
 
-      const matchResult = await this.matcher.match(store.slug, product.rawName);
+      const matchResults = await this.matcher.match(store.slug, product.rawName);
 
-      if (!matchResult) {
+      if (matchResults.length === 0) {
         productsUnmatched++;
         continue;
       }
 
       productsMatched++;
-      const { cardIdentifier } = matchResult;
 
-      const existing = staging.get(cardIdentifier);
-      if (existing) {
-        // Duplicate: keep higher quantity; break ties by lower price
-        const keepNew = shouldPreferNew(existing, product);
-        if (keepNew) {
+      for (const matchResult of matchResults) {
+        const { cardIdentifier } = matchResult;
+
+        const existing = staging.get(cardIdentifier);
+        if (existing) {
+          // Duplicate: keep higher quantity; break ties by lower price
+          const keepNew = shouldPreferNew(existing, product);
+          if (keepNew) {
+            staging.set(cardIdentifier, {
+              priceCents: product.priceCents,
+              quantity: product.quantity,
+              productUrl: product.productUrl,
+              productNameRaw: product.rawName,
+            });
+          }
+          this.logger.debug('Duplicate cardIdentifier in stream — resolved via merge strategy', {
+            storeSlug: store.slug,
+            cardIdentifier,
+            keptHigherQty: keepNew ? product.quantity : existing.quantity,
+          });
+        } else {
           staging.set(cardIdentifier, {
             priceCents: product.priceCents,
             quantity: product.quantity,
@@ -487,18 +502,6 @@ export class StoreIngestionService {
             productNameRaw: product.rawName,
           });
         }
-        this.logger.debug('Duplicate cardIdentifier in stream — resolved via merge strategy', {
-          storeSlug: store.slug,
-          cardIdentifier,
-          keptHigherQty: keepNew ? product.quantity : existing.quantity,
-        });
-      } else {
-        staging.set(cardIdentifier, {
-          priceCents: product.priceCents,
-          quantity: product.quantity,
-          productUrl: product.productUrl,
-          productNameRaw: product.rawName,
-        });
       }
     }
 

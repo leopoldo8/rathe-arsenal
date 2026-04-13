@@ -282,12 +282,12 @@ describe('StoreIngestionService', () => {
 
       // First 95 match, last 5 do not
       (matcher.match as jest.Mock).mockImplementation(
-        (_slug: string, rawName: string): Promise<ICardMatchResult | null> => {
+        (_slug: string, rawName: string): Promise<readonly ICardMatchResult[]> => {
           const idx = parseInt(rawName.replace('Card ', ''), 10);
           if (idx < 95) {
-            return Promise.resolve({ cardIdentifier: `card-${idx}`, source: 'deterministic' });
+            return Promise.resolve([{ cardIdentifier: `card-${idx}`, source: 'deterministic' }]);
           }
-          return Promise.resolve(null);
+          return Promise.resolve([]);
         },
       );
 
@@ -309,7 +309,7 @@ describe('StoreIngestionService', () => {
     it('completes with all-unmatched products (productsMatched=0, rowsUpserted=0)', async () => {
       const products = [makeProduct('Totally Unknown Product')];
       (scraper.scrapeStore as jest.Mock).mockReturnValue(makeStream(products));
-      (matcher.match as jest.Mock).mockResolvedValue(null);
+      (matcher.match as jest.Mock).mockResolvedValue([]);
 
       const summary = await service.runScrape('cupula-dt');
 
@@ -340,10 +340,10 @@ describe('StoreIngestionService', () => {
       (scraper.scrapeStore as jest.Mock).mockReturnValue(
         makeStream([makeProduct('Test Card', { priceCents: 1000, quantity: 5 })]),
       );
-      (matcher.match as jest.Mock).mockResolvedValue({
+      (matcher.match as jest.Mock).mockResolvedValue([{
         cardIdentifier: CARD_ID,
         source: 'deterministic',
-      });
+      }]);
 
       const summary = await service.runScrape('cupula-dt');
 
@@ -357,10 +357,10 @@ describe('StoreIngestionService', () => {
       (scraper.scrapeStore as jest.Mock).mockReturnValue(
         makeStream([makeProduct('Test Card', { priceCents: 1500, quantity: 5 })]),
       );
-      (matcher.match as jest.Mock).mockResolvedValue({
+      (matcher.match as jest.Mock).mockResolvedValue([{
         cardIdentifier: CARD_ID,
         source: 'deterministic',
-      });
+      }]);
       // 1 upsert / 1 existing = 100% delta — bypass guard via first-run exemption.
       (runRepo.count as jest.Mock).mockResolvedValue(0);
 
@@ -496,10 +496,10 @@ describe('StoreIngestionService', () => {
         { rawName: 'Dup Card', priceCents: 400, quantity: 7, productUrl: 'https://www.cupuladt.com.br/?view=ecom/item&id=2' },
       ];
       (scraper.scrapeStore as jest.Mock).mockReturnValue(makeStream(products));
-      (matcher.match as jest.Mock).mockResolvedValue({
+      (matcher.match as jest.Mock).mockResolvedValue([{
         cardIdentifier: 'dup-card',
         source: 'deterministic',
-      });
+      }]);
 
       const summary = await service.runScrape('cupula-dt');
 
@@ -554,10 +554,10 @@ describe('StoreIngestionService', () => {
         { rawName: 'Dup Card', priceCents: 300, quantity: 5, productUrl: 'https://www.cupuladt.com.br/?view=ecom/item&id=2' },
       ];
       (scraper.scrapeStore as jest.Mock).mockReturnValue(makeStream(products));
-      (matcher.match as jest.Mock).mockResolvedValue({
+      (matcher.match as jest.Mock).mockResolvedValue([{
         cardIdentifier: 'dup-card',
         source: 'deterministic',
-      });
+      }]);
 
       await service.runScrape('cupula-dt');
 
