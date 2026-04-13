@@ -104,6 +104,10 @@ export class SbraubleScraperService {
           allowHosts: [baseHostname],
           maxBytes: MAX_BYTES,
           timeoutMs: REQUEST_TIMEOUT_MS,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; RatheArsenal/1.0)',
+            'Accept': 'text/html',
+          },
         });
         htmlBody = Buffer.from(result.body).toString('utf-8');
       } catch (err) {
@@ -114,6 +118,17 @@ export class SbraubleScraperService {
       }
 
       await this.persistLastFetchedAt(store);
+
+      if (page === 1) {
+        this.logger.log({
+          msg: 'First page HTML stats',
+          storeSlug: store.slug,
+          htmlLength: htmlBody.length,
+          hasCardItem: htmlBody.includes('card-item'),
+          hasCards: htmlBody.includes('class="cards"'),
+          snippet: htmlBody.substring(0, 500),
+        });
+      }
 
       const products = this.parsePage(htmlBody, store.baseUrl, baseHostname);
 
