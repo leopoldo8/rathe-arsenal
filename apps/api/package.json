@@ -12,7 +12,8 @@
     "test:cov": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
-    "migration:run": "node node_modules/typeorm/cli.js migration:run -d dist/database/datasource.js"
+    "migration:run": "node node_modules/typeorm/cli.js migration:run -d dist/database/datasource.js",
+    "scrape": "node ../../scripts/scrape-stores.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",
