@@ -4,15 +4,18 @@ import { In, Repository } from 'typeorm';
 import { catalog } from '@rathe-arsenal/engine';
 import { StoreEntity } from '../database/entities/store.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
+import { StoreStockVariantEntity } from '../database/entities/store-stock-variant.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { IBreakdown, IBreakdownEntry } from '../decks/dtos/tracked-deck-detail.response.dto';
 import {
+  EVariantVerificationStatus,
   IShoppingLine,
   IShoppingLineAggregate,
   IShoppingLinePopulated,
   IShoppingLineResponse,
   IShoppingLineUpgradeCandidate,
+  IShoppingLineVariant,
 } from './dtos/shopping-line.response.dto';
 
 /**
@@ -38,6 +41,8 @@ export class ShoppingLineService {
     private readonly storeRepo: Repository<StoreEntity>,
     @InjectRepository(StoreStockEntity)
     private readonly storeStockRepo: Repository<StoreStockEntity>,
+    @InjectRepository(StoreStockVariantEntity)
+    private readonly storeStockVariantRepo: Repository<StoreStockVariantEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
     @InjectRepository(DeckReadinessSnapshotEntity)
@@ -111,10 +116,26 @@ export class ShoppingLineService {
         stockByIdentifier.set(row.cardIdentifier, row);
       }
 
+      // Load variant rows for the same (storeId, cardIdentifiers) set.
+      const variantRows = await this.storeStockVariantRepo.find({
+        where: {
+          storeId: store.id,
+          cardIdentifier: In(cardIdentifiers),
+        },
+      });
+
+      // Group variant rows by cardIdentifier for O(1) lookup.
+      const variantsByIdentifier = new Map<string, StoreStockVariantEntity[]>();
+      for (const row of variantRows) {
+        const existing = variantsByIdentifier.get(row.cardIdentifier) ?? [];
+        variantsByIdentifier.set(row.cardIdentifier, [...existing, row]);
+      }
+
       const lines = this.buildLines(
         missingEntries,
         needed,
         stockByIdentifier,
+        variantsByIdentifier,
         storeHostname,
       );
 
@@ -128,12 +149,11 @@ export class ShoppingLineService {
 
       const sortedLines = this.sortLines(lines);
 
-      const totalCostCents = sortedLines.reduce((sum, line) => {
-        if (line.quantityAvailable > 0 && line.unitPriceCents !== null) {
-          return sum + line.quantityAvailable * line.unitPriceCents;
-        }
-        return sum;
-      }, 0);
+      // totalCostCents sums lineCostCents from each line (not unitPriceCents × qty).
+      const totalCostCents = sortedLines.reduce(
+        (sum, line) => sum + line.lineCostCents,
+        0,
+      );
 
       const availableCardCount = sortedLines.filter(
         (l) => l.quantityAvailable > 0,
@@ -151,6 +171,9 @@ export class ShoppingLineService {
           ? allTimestamps.reduce((oldest, ts) => (ts < oldest ? ts : oldest))
           : new Date(0).toISOString();
 
+      // isEstimated = true when ANY line lacks fresh variant data.
+      const isEstimated = sortedLines.some((l) => !l.hasVariantData);
+
       const result: IShoppingLinePopulated = {
         kind: 'populated',
         storeName: store.name,
@@ -162,6 +185,7 @@ export class ShoppingLineService {
         lastFetchedAt,
         lines: sortedLines,
         upgradeCandidates,
+        isEstimated,
       };
 
       return result;
@@ -346,6 +370,7 @@ export class ShoppingLineService {
     missingEntries: readonly IBreakdownEntry[],
     needed: Map<string, number>,
     stockByIdentifier: Map<string, StoreStockEntity>,
+    variantsByIdentifier: Map<string, StoreStockVariantEntity[]>,
     storeHostname: string,
   ): IShoppingLine[] {
     // De-duplicate by cardIdentifier in case breakdown has duplicates.
@@ -360,9 +385,16 @@ export class ShoppingLineService {
 
       const quantityNeeded = needed.get(entry.cardIdentifier) ?? entry.quantity;
       const stock = stockByIdentifier.get(entry.cardIdentifier);
+      const variants = variantsByIdentifier.get(entry.cardIdentifier) ?? [];
 
       lines.push(
-        this.buildLine(entry.cardIdentifier, quantityNeeded, stock, storeHostname),
+        this.buildLine(
+          entry.cardIdentifier,
+          quantityNeeded,
+          stock,
+          variants,
+          storeHostname,
+        ),
       );
     }
 
@@ -373,10 +405,32 @@ export class ShoppingLineService {
     cardIdentifier: string,
     quantityNeeded: number,
     stock: StoreStockEntity | undefined,
+    variantRows: StoreStockVariantEntity[],
     storeHostname: string,
   ): IShoppingLine {
     const catalogCard = this.safeGetCard(cardIdentifier);
+    const lastFetchedAt =
+      stock?.lastFetchedAt.toISOString() ?? new Date(0).toISOString();
+    const productUrl = stock
+      ? this.validateProductUrl(stock.productUrl, storeHostname, cardIdentifier)
+      : '';
 
+    // Determine whether variant data is fresh and usable.
+    const freshVariants = this.getFreshVariants(variantRows, stock);
+
+    if (freshVariants !== null) {
+      // Use variant data path.
+      return this.buildVariantLine(
+        cardIdentifier,
+        quantityNeeded,
+        freshVariants,
+        catalogCard,
+        productUrl,
+        lastFetchedAt,
+      );
+    }
+
+    // Fallback to listing data.
     if (!stock || stock.quantity === 0 || stock.priceCents === null) {
       return {
         cardIdentifier,
@@ -386,16 +440,14 @@ export class ShoppingLineService {
         quantityAvailable: 0,
         unitPriceCents: stock?.priceCents ?? null,
         productUrl: '',
-        lastFetchedAt: stock?.lastFetchedAt.toISOString() ?? new Date(0).toISOString(),
+        lastFetchedAt,
+        hasVariantData: false,
+        dataSource: 'listing',
+        lineCostCents: 0,
       };
     }
 
     const quantityAvailable = Math.min(quantityNeeded, stock.quantity);
-    const productUrl = this.validateProductUrl(
-      stock.productUrl,
-      storeHostname,
-      cardIdentifier,
-    );
 
     return {
       cardIdentifier,
@@ -405,7 +457,145 @@ export class ShoppingLineService {
       quantityAvailable,
       unitPriceCents: stock.priceCents,
       productUrl,
-      lastFetchedAt: stock.lastFetchedAt.toISOString(),
+      lastFetchedAt,
+      hasVariantData: false,
+      dataSource: 'listing',
+      lineCostCents: quantityAvailable * stock.priceCents,
+    };
+  }
+
+  /**
+   * Returns fresh variant rows when variant data exists AND passes the
+   * content-based staleness check against the current listing row.
+   *
+   * Returns null when:
+   * - No variant rows exist for this card.
+   * - All variant rows have null priceCents (unusable data).
+   * - Listing row is missing (no staleness comparison possible).
+   * - Snapshot values do not match current listing values (stale).
+   */
+  private getFreshVariants(
+    variantRows: StoreStockVariantEntity[],
+    stock: StoreStockEntity | undefined,
+  ): StoreStockVariantEntity[] | null {
+    if (variantRows.length === 0) {
+      return null;
+    }
+
+    // All variant priceCents must be non-null to use variant data.
+    const allHavePrice = variantRows.every((v) => v.priceCents !== null);
+    if (!allHavePrice) {
+      return null;
+    }
+
+    if (!stock) {
+      return null;
+    }
+
+    // Staleness check: strict equality on both snapshot columns.
+    // Use the snapshot from the first variant row (all rows for the same
+    // card were written in the same detail fetch and share the same snapshot).
+    const firstRow = variantRows[0]!;
+    const snapshotPriceCents = firstRow.listingPriceCentsSnapshot;
+    const snapshotQuantity = firstRow.listingQuantitySnapshot;
+
+    if (
+      snapshotPriceCents !== stock.priceCents ||
+      snapshotQuantity !== stock.quantity
+    ) {
+      return null;
+    }
+
+    return variantRows;
+  }
+
+  /**
+   * Builds a shopping line using variant-level data with greedy cheapest-first
+   * allocation.
+   *
+   * Sort variants by priceCents ascending. Fill quantityNeeded from cheapest
+   * first; spill to next when cheapest is exhausted. lineCostCents is the
+   * sum of (allocated × price) across all tiers.
+   */
+  private buildVariantLine(
+    cardIdentifier: string,
+    quantityNeeded: number,
+    variantRows: StoreStockVariantEntity[],
+    catalogCard: { name: string; pitch: number | null } | null,
+    productUrl: string,
+    lastFetchedAt: string,
+  ): IShoppingLine {
+    // Sort ascending by priceCents (cheapest first).
+    const sorted = [...variantRows].sort((a, b) => a.priceCents - b.priceCents);
+
+    const totalVariantQuantity = sorted.reduce((sum, v) => sum + v.quantity, 0);
+
+    // R12b: variant rows exist but all quantities are zero.
+    if (totalVariantQuantity === 0) {
+      const variants: IShoppingLineVariant[] = sorted.map((v) => ({
+        edition: v.edition,
+        condition: v.condition,
+        finish: v.finish,
+        priceCents: v.priceCents,
+        quantity: v.quantity,
+      }));
+
+      return {
+        cardIdentifier,
+        cardName: catalogCard?.name ?? cardIdentifier,
+        pitch: catalogCard?.pitch ?? null,
+        quantityNeeded,
+        quantityAvailable: 0,
+        unitPriceCents: sorted[0]!.priceCents,
+        productUrl,
+        lastFetchedAt,
+        hasVariantData: true,
+        dataSource: 'variant',
+        lineCostCents: 0,
+        variants,
+        verificationStatus: EVariantVerificationStatus.VERIFIED_ZERO,
+      };
+    }
+
+    // Greedy cheapest-first allocation.
+    let remaining = quantityNeeded;
+    let lineCostCents = 0;
+    let quantityAvailable = 0;
+
+    for (const variant of sorted) {
+      if (remaining <= 0) {
+        break;
+      }
+      const allocated = Math.min(remaining, variant.quantity);
+      lineCostCents += allocated * variant.priceCents;
+      quantityAvailable += allocated;
+      remaining -= allocated;
+    }
+
+    // unitPriceCents = cheapest available variant price (display only).
+    const cheapestPrice = sorted.find((v) => v.quantity > 0)?.priceCents ?? sorted[0]!.priceCents;
+
+    const variants: IShoppingLineVariant[] = sorted.map((v) => ({
+      edition: v.edition,
+      condition: v.condition,
+      finish: v.finish,
+      priceCents: v.priceCents,
+      quantity: v.quantity,
+    }));
+
+    return {
+      cardIdentifier,
+      cardName: catalogCard?.name ?? cardIdentifier,
+      pitch: catalogCard?.pitch ?? null,
+      quantityNeeded,
+      quantityAvailable,
+      unitPriceCents: cheapestPrice,
+      productUrl,
+      lastFetchedAt,
+      hasVariantData: true,
+      dataSource: 'variant',
+      lineCostCents,
+      variants,
     };
   }
 

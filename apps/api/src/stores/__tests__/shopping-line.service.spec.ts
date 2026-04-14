@@ -5,12 +5,14 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import {
   StoreEntity,
   StoreStockEntity,
+  StoreStockVariantEntity,
   TrackedDeckEntity,
   DeckReadinessSnapshotEntity,
 } from '../../database/entities';
 import { ShoppingLineService } from '../shopping-line.service';
 import { IBreakdown } from '../../decks/dtos/tracked-deck-detail.response.dto';
 import {
+  EVariantVerificationStatus,
   IShoppingLinePopulated,
   IShoppingLineResponse,
 } from '../dtos/shopping-line.response.dto';
@@ -53,6 +55,28 @@ function makeStockRow(
   } as StoreStockEntity;
 }
 
+function makeVariantRow(
+  cardIdentifier: string,
+  overrides: Partial<StoreStockVariantEntity> = {},
+): StoreStockVariantEntity {
+  return {
+    id: 1,
+    storeId: 1,
+    cardIdentifier,
+    edition: 'HVY',
+    condition: 'NM',
+    finish: 'non-foil',
+    priceCents: 35,
+    quantity: 5,
+    detailFetchedAt: new Date('2026-04-11T10:00:00Z'),
+    // Snapshot matches the default makeStockRow values (priceCents=4990, qty=3)
+    listingPriceCentsSnapshot: 4990,
+    listingQuantitySnapshot: 3,
+    store: {} as StoreEntity,
+    ...overrides,
+  } as StoreStockVariantEntity;
+}
+
 function makeBreakdown(
   missing: Array<{ cardIdentifier: string; quantity: number }>,
 ): IBreakdown {
@@ -77,14 +101,19 @@ describe('ShoppingLineService', () => {
   let service: ShoppingLineService;
   let storeRepo: jest.Mocked<Repository<StoreEntity>>;
   let storeStockRepo: jest.Mocked<Repository<StoreStockEntity>>;
+  let storeStockVariantRepo: jest.Mocked<Repository<StoreStockVariantEntity>>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
 
   beforeEach(async () => {
     storeRepo = createMock<Repository<StoreEntity>>();
     storeStockRepo = createMock<Repository<StoreStockEntity>>();
+    storeStockVariantRepo = createMock<Repository<StoreStockVariantEntity>>();
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+
+    // Default: no variant rows (backward-compatible baseline).
+    storeStockVariantRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -96,6 +125,10 @@ describe('ShoppingLineService', () => {
         {
           provide: getRepositoryToken(StoreStockEntity),
           useValue: storeStockRepo,
+        },
+        {
+          provide: getRepositoryToken(StoreStockVariantEntity),
+          useValue: storeStockVariantRepo,
         },
         {
           provide: getRepositoryToken(TrackedDeckEntity),
@@ -454,6 +487,479 @@ describe('ShoppingLineService', () => {
 
       // Assert
       expect(result).toEqual({ kind: 'error', reason: 'db_error' });
+    });
+
+    // -----------------------------------------------------------------------
+    // Variant integration tests (Unit 4)
+    // -----------------------------------------------------------------------
+
+    it('variant T1: card with 3 variants, need 2 copies — allocates cheapest first', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      // Stock row: price=4990, qty=3 (listing baseline)
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 3 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          id: 1,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'non-foil',
+          priceCents: 35,
+          quantity: 1,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+        makeVariantRow(cardId, {
+          id: 2,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'foil',
+          priceCents: 390,
+          quantity: 2,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+        makeVariantRow(cardId, {
+          id: 3,
+          edition: 'HVY',
+          condition: 'LP',
+          finish: 'non-foil',
+          priceCents: 990,
+          quantity: 5,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 2 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: allocates cheapest first — 1@35 + 1@390 = 425
+      expect(result.kind).toBe('populated');
+      expect(result.lines[0]!.quantityAvailable).toBe(2);
+      expect(result.lines[0]!.lineCostCents).toBe(425); // 1×35 + 1×390
+      expect(result.totalCostCents).toBe(425);
+      expect(result.lines[0]!.unitPriceCents).toBe(35); // cheapest variant
+      expect(result.lines[0]!.hasVariantData).toBe(true);
+      expect(result.lines[0]!.dataSource).toBe('variant');
+      expect(result.isEstimated).toBe(false);
+    });
+
+    it('variant T2: R12 example — need 3, A has 1@35c, B has 2@350c — cost = 735', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 3 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          id: 1,
+          priceCents: 35,
+          quantity: 1,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+        makeVariantRow(cardId, {
+          id: 2,
+          finish: 'foil',
+          priceCents: 350,
+          quantity: 2,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 3 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: 1×35 + 2×350 = 35 + 700 = 735
+      expect(result.kind).toBe('populated');
+      expect(result.lines[0]!.quantityAvailable).toBe(3);
+      expect(result.lines[0]!.lineCostCents).toBe(735);
+      expect(result.totalCostCents).toBe(735);
+    });
+
+    it('variant T3: all cards have fresh variant data — isEstimated = false', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 3 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert
+      expect(result.isEstimated).toBe(false);
+      expect(result.lines[0]!.hasVariantData).toBe(true);
+    });
+
+    it('variant T4: mix of variant and listing data — isEstimated = true, each uses its source', async () => {
+      // Arrange
+      const variantCardId = 'hammer-of-gravi-red';
+      const listingCardId = 'majestic-sword-blue';
+
+      const variantStock = makeStockRow(variantCardId, { id: 1, priceCents: 4990, quantity: 3 });
+      const listingStock = makeStockRow(listingCardId, { id: 2, priceCents: 2000, quantity: 2 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([variantStock, listingStock]);
+      // Only variantCardId has variant data
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(variantCardId, {
+          priceCents: 35,
+          quantity: 5,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([
+        { cardIdentifier: variantCardId, quantity: 1 },
+        { cardIdentifier: listingCardId, quantity: 1 },
+      ]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert
+      expect(result.isEstimated).toBe(true);
+
+      const variantLine = result.lines.find((l) => l.cardIdentifier === variantCardId)!;
+      expect(variantLine.hasVariantData).toBe(true);
+      expect(variantLine.dataSource).toBe('variant');
+      expect(variantLine.unitPriceCents).toBe(35);
+
+      const listingLine = result.lines.find((l) => l.cardIdentifier === listingCardId)!;
+      expect(listingLine.hasVariantData).toBe(false);
+      expect(listingLine.dataSource).toBe('listing');
+      expect(listingLine.unitPriceCents).toBe(2000);
+    });
+
+    it('variant T5: stale variant data (snapshot mismatch) — falls back to listing', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      // Current listing has priceCents=6000 but snapshot says 4990 → stale
+      const stock = makeStockRow(cardId, { priceCents: 6000, quantity: 3 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          priceCents: 35,
+          quantity: 5,
+          listingPriceCentsSnapshot: 4990, // mismatch: current listing is 6000
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: stale → listing fallback
+      expect(result.lines[0]!.hasVariantData).toBe(false);
+      expect(result.lines[0]!.dataSource).toBe('listing');
+      expect(result.lines[0]!.unitPriceCents).toBe(6000);
+      expect(result.isEstimated).toBe(true);
+    });
+
+    it('variant T6: R12a — need 3, total variant qty = 1 — partially available', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 1 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          priceCents: 35,
+          quantity: 1, // only 1 available, need 3
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 1,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 3 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: quantityAvailable = 1 (all that's available), cost = 1×35
+      expect(result.lines[0]!.quantityAvailable).toBe(1);
+      expect(result.lines[0]!.lineCostCents).toBe(35);
+      expect(result.lines[0]!.quantityNeeded).toBe(3);
+      expect(result.lines[0]!.hasVariantData).toBe(true);
+    });
+
+    it('variant T7: R12b — variant rows exist with qty=0 — verificationStatus = verified_zero', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 0 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockRepo.count.mockResolvedValue(42);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          priceCents: 35,
+          quantity: 0, // verified zero
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 0,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert
+      expect(result.lines[0]!.quantityAvailable).toBe(0);
+      expect(result.lines[0]!.lineCostCents).toBe(0);
+      expect(result.lines[0]!.verificationStatus).toBe(EVariantVerificationStatus.VERIFIED_ZERO);
+      expect(result.lines[0]!.hasVariantData).toBe(true);
+      expect(result.lines[0]!.dataSource).toBe('variant');
+    });
+
+    it('variant T8: all variant priceCents are null — falls back to listing', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 3 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          priceCents: null as unknown as number,
+          quantity: 3,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: falls back to listing because variant has null price
+      expect(result.lines[0]!.hasVariantData).toBe(false);
+      expect(result.lines[0]!.dataSource).toBe('listing');
+      expect(result.lines[0]!.unitPriceCents).toBe(4990);
+    });
+
+    it('variant T9 integration: totalCostCents sums correctly across mix of variant and listing cards', async () => {
+      // Arrange
+      const variantCardId = 'hammer-of-gravi-red';
+      const listingCardId = 'majestic-sword-blue';
+
+      const variantStock = makeStockRow(variantCardId, { id: 1, priceCents: 4990, quantity: 3 });
+      const listingStock = makeStockRow(listingCardId, { id: 2, priceCents: 2000, quantity: 2 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([variantStock, listingStock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(variantCardId, {
+          priceCents: 35,
+          quantity: 5,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([
+        { cardIdentifier: variantCardId, quantity: 2 },
+        { cardIdentifier: listingCardId, quantity: 1 },
+      ]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: variant card: 2×35=70; listing card: 1×2000=2000; total=2070
+      expect(result.totalCostCents).toBe(2070);
+    });
+
+    it('variant T10 regression: no variant data — behavior identical to pre-variant', async () => {
+      // Arrange: default storeStockVariantRepo.find returns [] (set in beforeEach)
+      const identifiers = ['hammer-of-gravi-red', 'majestic-sword-blue'];
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue(
+        identifiers.map((id, i) =>
+          makeStockRow(id, { id: i + 1, priceCents: (i + 1) * 1000, quantity: 2 }),
+        ),
+      );
+
+      const breakdown = makeBreakdown(
+        identifiers.map((id) => ({ cardIdentifier: id, quantity: 1 })),
+      );
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: same as pre-variant — listing prices, isEstimated = true
+      expect(result.kind).toBe('populated');
+      expect(result.isEstimated).toBe(true);
+      expect(result.totalCostCents).toBe(3000); // 1×1000 + 1×2000
+      for (const line of result.lines) {
+        expect(line.hasVariantData).toBe(false);
+        expect(line.dataSource).toBe('listing');
+        expect(line.lineCostCents).toBe(line.quantityAvailable * (line.unitPriceCents ?? 0));
+      }
+    });
+
+    it('variant T11: lineCostCents is populated for both variant and listing cards', async () => {
+      // Arrange
+      const variantCardId = 'hammer-of-gravi-red';
+      const listingCardId = 'majestic-sword-blue';
+      const variantStock = makeStockRow(variantCardId, { id: 1, priceCents: 4990, quantity: 3 });
+      const listingStock = makeStockRow(listingCardId, { id: 2, priceCents: 1500, quantity: 2 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([variantStock, listingStock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(variantCardId, {
+          priceCents: 100,
+          quantity: 3,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 3,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([
+        { cardIdentifier: variantCardId, quantity: 1 },
+        { cardIdentifier: listingCardId, quantity: 1 },
+      ]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: both lines have lineCostCents defined
+      for (const line of result.lines) {
+        expect(typeof line.lineCostCents).toBe('number');
+      }
+      const variantLine = result.lines.find((l) => l.cardIdentifier === variantCardId)!;
+      expect(variantLine.lineCostCents).toBe(100); // 1×100
+      const listingLine = result.lines.find((l) => l.cardIdentifier === listingCardId)!;
+      expect(listingLine.lineCostCents).toBe(1500); // 1×1500
+    });
+
+    it('variant T12: multi-tier — need 5; A has 2@10c, B has 1@50c, C has 3@100c — 270c total', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 6 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          id: 1,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'non-foil',
+          priceCents: 100,
+          quantity: 3,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 6,
+        }),
+        makeVariantRow(cardId, {
+          id: 2,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'foil',
+          priceCents: 50,
+          quantity: 1,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 6,
+        }),
+        makeVariantRow(cardId, {
+          id: 3,
+          edition: 'HVY',
+          condition: 'LP',
+          finish: 'non-foil',
+          priceCents: 10,
+          quantity: 2,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 6,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 5 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: greedy cheapest first: 2@10 + 1@50 + 2@100 = 20 + 50 + 200 = 270
+      expect(result.lines[0]!.quantityAvailable).toBe(5);
+      expect(result.lines[0]!.lineCostCents).toBe(270);
+      expect(result.totalCostCents).toBe(270);
+      expect(result.lines[0]!.verificationStatus).toBeUndefined();
+      expect(result.lines[0]!.unitPriceCents).toBe(10); // cheapest
+    });
+
+    it('variant T13: verified_zero populates correctly with variant data present', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 0 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockRepo.count.mockResolvedValue(42);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          id: 1,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'non-foil',
+          priceCents: 35,
+          quantity: 0,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 0,
+        }),
+        makeVariantRow(cardId, {
+          id: 2,
+          edition: 'HVY',
+          condition: 'NM',
+          finish: 'foil',
+          priceCents: 390,
+          quantity: 0,
+          listingPriceCentsSnapshot: 4990,
+          listingQuantitySnapshot: 0,
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: R12b — verified_zero with correct fields
+      expect(result.lines[0]!.hasVariantData).toBe(true);
+      expect(result.lines[0]!.dataSource).toBe('variant');
+      expect(result.lines[0]!.quantityAvailable).toBe(0);
+      expect(result.lines[0]!.lineCostCents).toBe(0);
+      expect(result.lines[0]!.verificationStatus).toBe(EVariantVerificationStatus.VERIFIED_ZERO);
+      expect(result.lines[0]!.variants).toHaveLength(2);
+      expect(result.totalCostCents).toBe(0);
+      expect(result.unavailableCardCount).toBe(1);
     });
 
     it('regression: substituted cards do NOT appear in the primary lines', async () => {
