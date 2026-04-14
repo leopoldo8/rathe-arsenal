@@ -3,6 +3,7 @@ import {
   IShoppingLinePopulated,
   IShoppingLineResponse,
   IShoppingLineLine,
+  IShoppingLineVariant,
   IVariantFetchProgress,
 } from '../api/shopping-line';
 import { VARIANT_FETCH_POLL_TIMEOUT_MS } from '../api/deck-detail';
@@ -656,80 +657,326 @@ interface ILineItemProps {
   readonly muted: boolean;
 }
 
+/**
+ * Returns true when the finish string represents a foil finish.
+ * 'Non-foil' is the only non-foil value; everything else is foil.
+ */
+function isFoilFinish(finish: string): boolean {
+  return finish.toLowerCase() !== 'non-foil';
+}
+
+/**
+ * Formats a variant's price with condition annotation and optional foil suffix.
+ * Example: "R$ 0,35 (NM)" or "R$ 0,80 (NM, Foil)"
+ */
+function formatVariantPrice(variant: IShoppingLineVariant): string {
+  const price = formatBrl(variant.priceCents);
+  const foilSuffix = isFoilFinish(variant.finish) ? ', Foil' : '';
+  return `${price} (${variant.condition}${foilSuffix})`;
+}
+
 function LineItem({ line, storeHostname, storeName, muted }: ILineItemProps) {
-  const { cardName, quantityNeeded, quantityAvailable, unitPriceCents, productUrl, hasVariantData } = line;
+  const {
+    cardName,
+    quantityNeeded,
+    quantityAvailable,
+    unitPriceCents,
+    productUrl,
+    hasVariantData,
+    variants,
+    verificationStatus,
+  } = line;
 
-  const quantityLabel =
-    quantityAvailable >= quantityNeeded
-      ? `${quantityNeeded} of ${quantityNeeded}`
-      : `${quantityAvailable} of ${quantityNeeded} in stock`;
+  // Determine if this is a partially available line:
+  // variant data exists, some copies in stock, but fewer than needed.
+  const isPartiallyAvailable =
+    hasVariantData === true &&
+    quantityAvailable > 0 &&
+    quantityAvailable < quantityNeeded;
 
-  const priceLabel =
-    unitPriceCents === null
-      ? 'price on request'
-      : hasVariantData
-        ? formatBrl(unitPriceCents)
-        : `~${formatBrl(unitPriceCents)}`;
+  // Determine unavailable sub-state
+  const isVerifiedZero = verificationStatus === 'verified_zero';
+
+  // Build quantity label
+  const quantityLabel: string = (() => {
+    if (isPartiallyAvailable) {
+      return `${quantityAvailable} of ${quantityNeeded} copies available`;
+    }
+    if (quantityAvailable >= quantityNeeded) {
+      return `${quantityNeeded} of ${quantityNeeded}`;
+    }
+    return `${quantityAvailable} of ${quantityNeeded} in stock`;
+  })();
+
+  // Build primary price label
+  const cheapestVariant = hasVariantData && variants && variants.length >= 1
+    ? variants[0]
+    : undefined;
+
+  const priceLabel: string = (() => {
+    if (unitPriceCents === null) return 'price on request';
+    if (cheapestVariant !== undefined) {
+      // Cheapest variant is first (sorted ascending by priceCents on backend)
+      return formatVariantPrice(cheapestVariant);
+    }
+    // Listing-only or no variant data — use tilde prefix
+    return `~${formatBrl(unitPriceCents)}`;
+  })();
+
+  // Build unavailable status label
+  const unavailableLabel = isVerifiedZero ? 'Out of stock (verified)' : 'not in stock';
+
+  const hasExpandableVariants = Boolean(
+    hasVariantData && variants && variants.length > 1,
+  );
+  const additionalVariantCount = variants ? variants.length - 1 : 0;
 
   return (
     <li
       style={{
         padding: '0.5rem 0',
         borderBottom: '1px solid #f7fafc',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        flexWrap: 'wrap',
         fontSize: '0.875rem',
         color: muted ? '#a0aec0' : '#2d3748',
       }}
     >
-      <span style={{ fontWeight: 500, flexGrow: 1, minWidth: '8rem' }}>
-        {cardName}
-      </span>
-
-      <span
+      {/* Main row */}
+      <div
         style={{
-          color: muted ? '#a0aec0' : '#718096',
-          fontSize: '0.8125rem',
-          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          flexWrap: 'wrap',
         }}
       >
-        {quantityLabel}
-      </span>
+        <span style={{ fontWeight: 500, flexGrow: 1, minWidth: '8rem' }}>
+          {cardName}
+        </span>
 
-      <span
-        style={{
-          fontWeight: muted ? 400 : 600,
-          color: muted ? '#a0aec0' : '#2d3748',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {muted ? (
-          <span style={{ color: '#a0aec0' }}>not in stock</span>
-        ) : (
-          priceLabel
-        )}
-      </span>
-
-      {!muted && productUrl && (
-        <StoreProductLink
-          url={productUrl}
-          storeHostname={storeHostname}
-          storeName={storeName}
-          cardName={cardName}
+        <span
+          style={{
+            color: muted ? '#a0aec0' : '#718096',
+            fontSize: '0.8125rem',
+            whiteSpace: 'nowrap',
+          }}
         >
-          <span
+          {quantityLabel}
+        </span>
+
+        <span
+          style={{
+            fontWeight: muted ? 400 : 600,
+            color: muted ? '#a0aec0' : '#2d3748',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {muted ? (
+            <span style={{ color: '#a0aec0' }}>{unavailableLabel}</span>
+          ) : (
+            priceLabel
+          )}
+        </span>
+
+        {!muted && productUrl && (
+          <StoreProductLink
+            url={productUrl}
+            storeHostname={storeHostname}
+            storeName={storeName}
+            cardName={cardName}
+          >
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: '#3182ce',
+                textDecoration: 'underline',
+              }}
+            >
+              View
+            </span>
+          </StoreProductLink>
+        )}
+      </div>
+
+      {/* Expandable variant breakdown */}
+      {hasExpandableVariants && variants !== undefined && (
+        <details
+          data-testid="variant-breakdown-details"
+          style={{ marginTop: '0.25rem' }}
+        >
+          <summary
             style={{
+              cursor: 'pointer',
               fontSize: '0.75rem',
               color: '#3182ce',
-              textDecoration: 'underline',
+              listStyle: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              userSelect: 'none',
             }}
           >
-            View
-          </span>
-        </StoreProductLink>
+            {additionalVariantCount} more variant{additionalVariantCount !== 1 ? 's' : ''}
+          </summary>
+          <VariantBreakdownTable variants={variants} />
+        </details>
       )}
     </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Variant breakdown table
+// ---------------------------------------------------------------------------
+
+interface IVariantBreakdownTableProps {
+  readonly variants: readonly IShoppingLineVariant[];
+}
+
+function VariantBreakdownTable({ variants }: IVariantBreakdownTableProps) {
+  return (
+    <table
+      style={{
+        marginTop: '0.375rem',
+        width: '100%',
+        borderCollapse: 'collapse',
+        fontSize: '0.75rem',
+        color: '#4a5568',
+      }}
+    >
+      <thead>
+        <tr>
+          <th
+            scope="col"
+            style={{
+              textAlign: 'left',
+              fontWeight: 600,
+              padding: '0.25rem 0.375rem 0.25rem 0',
+              borderBottom: '1px solid #edf2f7',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Edition
+          </th>
+          <th
+            scope="col"
+            style={{
+              textAlign: 'left',
+              fontWeight: 600,
+              padding: '0.25rem 0.375rem',
+              borderBottom: '1px solid #edf2f7',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Condition
+          </th>
+          <th
+            scope="col"
+            style={{
+              textAlign: 'left',
+              fontWeight: 600,
+              padding: '0.25rem 0.375rem',
+              borderBottom: '1px solid #edf2f7',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Finish
+          </th>
+          <th
+            scope="col"
+            style={{
+              textAlign: 'right',
+              fontWeight: 600,
+              padding: '0.25rem 0.375rem',
+              borderBottom: '1px solid #edf2f7',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Price
+          </th>
+          <th
+            scope="col"
+            style={{
+              textAlign: 'right',
+              fontWeight: 600,
+              padding: '0.25rem 0 0.25rem 0.375rem',
+              borderBottom: '1px solid #edf2f7',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Qty
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {variants.map((v, idx) => (
+          <VariantRow key={`${v.edition}-${v.condition}-${v.finish}-${idx}`} variant={v} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+interface IVariantRowProps {
+  readonly variant: IShoppingLineVariant;
+}
+
+function VariantRow({ variant }: IVariantRowProps) {
+  const finishLabel = isFoilFinish(variant.finish) ? variant.finish : 'Non-foil';
+
+  return (
+    <tr>
+      <td
+        style={{
+          padding: '0.25rem 0.375rem 0.25rem 0',
+          borderBottom: '1px solid #f7fafc',
+          maxWidth: '12rem',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+        title={variant.edition}
+      >
+        {variant.edition}
+      </td>
+      <td
+        style={{
+          padding: '0.25rem 0.375rem',
+          borderBottom: '1px solid #f7fafc',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {variant.condition}
+      </td>
+      <td
+        style={{
+          padding: '0.25rem 0.375rem',
+          borderBottom: '1px solid #f7fafc',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {finishLabel}
+      </td>
+      <td
+        style={{
+          padding: '0.25rem 0.375rem',
+          borderBottom: '1px solid #f7fafc',
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+          fontWeight: 500,
+        }}
+      >
+        {formatBrl(variant.priceCents)}
+      </td>
+      <td
+        style={{
+          padding: '0.25rem 0 0.25rem 0.375rem',
+          borderBottom: '1px solid #f7fafc',
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {variant.quantity}
+      </td>
+    </tr>
   );
 }

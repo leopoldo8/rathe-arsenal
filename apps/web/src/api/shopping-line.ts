@@ -24,6 +24,32 @@ export interface IVariantFetchProgress {
   readonly inProgress: boolean;
 }
 
+/**
+ * Variant verification status for a shopping line card.
+ * Mirrors `EVariantVerificationStatus` on the backend.
+ *
+ * When absent from a line, treat as 'never_checked' (no detail fetch yet).
+ * 'verified_zero' means variant data was fetched and all variants have qty 0.
+ */
+export type TVariantVerificationStatus = 'never_checked' | 'verified_zero';
+
+/**
+ * A single variant row from the store's detail page.
+ * Mirrors `IShoppingLineVariant` on the backend DTO.
+ */
+export interface IShoppingLineVariant {
+  readonly edition: string;
+  readonly condition: string;
+  /**
+   * Finish label from the store. Common values: 'Non-foil', 'Rainbow Foil',
+   * 'Cold Foil', 'Gold Foil'. The display layer normalises non-foil finishes
+   * to "Non-foil"; any other value is shown as-is and treated as foil.
+   */
+  readonly finish: string;
+  readonly priceCents: number;
+  readonly quantity: number;
+}
+
 export interface IShoppingLineLine {
   readonly cardIdentifier: string;
   readonly cardName: string;
@@ -46,6 +72,24 @@ export interface IShoppingLineLine {
    * Absent on older responses.
    */
   readonly lineCostCents?: number;
+  /**
+   * The data source used for this line's cost computation.
+   * 'variant': greedy cheapest-first allocation from variant rows.
+   * 'listing': fallback to listing-level price.
+   * Absent on older responses (treat as 'listing').
+   */
+  readonly dataSource?: 'listing' | 'variant';
+  /**
+   * Individual variant rows sorted by priceCents ascending.
+   * Only present when hasVariantData is true.
+   */
+  readonly variants?: readonly IShoppingLineVariant[];
+  /**
+   * Verification status for cards that have been detail-fetched.
+   * Absent when hasVariantData is false (never_checked is implicit).
+   * 'verified_zero' when variant rows exist but all quantities are 0.
+   */
+  readonly verificationStatus?: TVariantVerificationStatus;
 }
 
 export interface IShoppingLinePopulated {
