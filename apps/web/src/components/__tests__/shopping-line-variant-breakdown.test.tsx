@@ -560,3 +560,37 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
     expect(screen.getByText('Old Card')).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge case: variant data present with null unitPriceCents
+// ---------------------------------------------------------------------------
+
+describe('Edge case: variant data takes precedence over null listing price', () => {
+  it('shows the cheapest variant price when unitPriceCents is null but variants exist', () => {
+    const variants = [
+      makeVariant({ condition: 'NM', finish: 'Non-foil', priceCents: 42, quantity: 2 }),
+    ];
+    const line: IShoppingLineLine = {
+      cardIdentifier: 'sob-consulta-card',
+      cardName: 'Under Request Card',
+      quantityNeeded: 1,
+      quantityAvailable: 1,
+      // Listing price was "Sob consulta" at scrape time, so unitPriceCents is null.
+      // The variant detail fetch then discovered a concrete variant price.
+      unitPriceCents: null,
+      productUrl: 'https://www.cupuladt.com.br/?view=ecom/item&id=42',
+      lastFetchedAt: TWO_HOURS_AGO,
+      hasVariantData: true,
+      dataSource: 'variant',
+      lineCostCents: 42,
+      variants,
+    };
+    const data = makePopulated([line]);
+
+    render(<ShoppingLine data={data} />);
+
+    // Variant price must win over the 'price on request' fallback.
+    expect(screen.getByText(/r\$ 0,42 \(nm\)/i)).toBeInTheDocument();
+    expect(screen.queryByText(/price on request/i)).not.toBeInTheDocument();
+  });
+});

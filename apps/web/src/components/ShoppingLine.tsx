@@ -714,11 +714,14 @@ function LineItem({ line, storeHostname, storeName, muted }: ILineItemProps) {
     : undefined;
 
   const priceLabel: string = (() => {
-    if (unitPriceCents === null) return 'price on request';
+    // Variant data takes precedence: if the backend provided variants, they hold
+    // the authoritative price even when the listing-level unitPriceCents is null
+    // (e.g., a card where the listing price is "under request" but variants exist).
     if (cheapestVariant !== undefined) {
       // Cheapest variant is first (sorted ascending by priceCents on backend)
       return formatVariantPrice(cheapestVariant);
     }
+    if (unitPriceCents === null) return 'price on request';
     // Listing-only or no variant data — use tilde prefix
     return `~${formatBrl(unitPriceCents)}`;
   })();
