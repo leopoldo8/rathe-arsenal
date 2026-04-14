@@ -68,7 +68,7 @@ export function TestDeckResult({
           breakdown={breakdown}
           fidelityPercent={result.fidelityPercent}
           onTrackProximalVersion={onTrack}
-          shoppingLine={result.shoppingLine}
+          {...(result.shoppingLine !== undefined ? { shoppingLine: result.shoppingLine } : {})}
         />
       ) : (
         <>
