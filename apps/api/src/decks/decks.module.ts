@@ -5,6 +5,8 @@ import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
+import { StoreEntity } from '../database/entities/store.entity';
+import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { FabraryModule } from '../fabrary/fabrary.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { DecksImportService } from './import/decks-import.service';
@@ -15,6 +17,7 @@ import { TestDeckController } from './test/test-deck.controller';
 import { TestDeckService } from './test/test-deck.service';
 import { ReSolveController } from './re-solve/re-solve.controller';
 import { ReSolveService } from './re-solve/re-solve.service';
+import { VariantFetchController } from './variant-fetch.controller';
 import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
 
@@ -26,6 +29,8 @@ import { StoresModule } from '../stores/stores.module';
       CollectionCardEntity,
       DeckReadinessSnapshotEntity,
       RejectedSubstituteEntity,
+      StoreEntity,
+      StoreStockEntity,
     ]),
     FabraryModule,
     SubstitutionModule,
@@ -37,6 +42,7 @@ import { StoresModule } from '../stores/stores.module';
     DecksController,
     TestDeckController,
     ReSolveController,
+    VariantFetchController,
   ],
   providers: [
     DecksImportService,

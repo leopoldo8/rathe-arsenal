@@ -11,6 +11,7 @@ import { RejectedSubstituteEntity } from '../../database/entities/rejected-subst
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
+import { VariantFetchService } from '../../stores/variant-fetch.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -58,6 +59,7 @@ describe('DecksService', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
+  let variantFetchService: jest.Mocked<VariantFetchService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -68,9 +70,13 @@ describe('DecksService', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
+    variantFetchService = createMock<VariantFetchService>();
 
     // Default: shopping line returns null (Path A / no missing cards).
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
+
+    // Default: no in-progress variant fetch.
+    variantFetchService.getProgress.mockReturnValue(undefined);
 
     // Default: no collection cards owned. Individual tests override as needed.
     collectionCardRepo.count.mockResolvedValue(0);
@@ -101,6 +107,7 @@ describe('DecksService', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
+        { provide: VariantFetchService, useValue: variantFetchService },
       ],
     }).compile();
 
@@ -267,6 +274,165 @@ describe('DecksService', () => {
         82.3,
       );
       expect(result.collectionCardCount).toBe(100);
+    });
+  });
+
+  describe('getDetail — variantFetchProgress integration (Unit 5)', () => {
+    function buildDeckCards(): DeckCardEntity[] {
+      return [
+        {
+          id: 1,
+          trackedDeckId: 1,
+          cardIdentifier: 'card-a',
+          quantity: 2,
+          slot: 'main',
+          trackedDeck: {} as DeckCardEntity['trackedDeck'],
+        },
+      ];
+    }
+
+    function buildSnapshotWithMissing(): DeckReadinessSnapshotEntity {
+      return {
+        id: 10,
+        trackedDeckId: 1,
+        rawPercent: 75,
+        effectivePercent: 80,
+        breakdown: {
+          exact: [],
+          substituted: [],
+          missing: [{ cardIdentifier: 'card-a', quantity: 1, slot: 'main' }],
+          notOwned: [],
+        },
+        substitutions: {},
+        computedAt: new Date('2025-01-15T10:05:00Z'),
+        trackedDeck: {} as DeckReadinessSnapshotEntity['trackedDeck'],
+      };
+    }
+
+    function buildPopulatedShoppingLine() {
+      return {
+        kind: 'populated' as const,
+        storeName: 'Cupula DT',
+        storeSlug: 'cupula-dt',
+        storeHostname: 'www.cupuladt.com.br',
+        totalCostCents: 5000,
+        availableCardCount: 1,
+        unavailableCardCount: 0,
+        lastFetchedAt: new Date(0).toISOString(),
+        lines: [],
+        upgradeCandidates: [],
+        isEstimated: true,
+      };
+    }
+
+    it('should include variantFetchProgress on populated shopping line when a fetch is active', async () => {
+      // Arrange
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshotWithMissing();
+      const populatedLine = buildPopulatedShoppingLine();
+
+      trackedDeckRepo.findOne.mockResolvedValue(deck);
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue(snapshot);
+      rejectedSubstituteRepo.count.mockResolvedValue(0);
+      shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
+      substitutionService.deriveSnapshotFields.mockReturnValue({
+        path: 'C',
+        fidelityPercent: 80,
+      });
+
+      variantFetchService.getProgress.mockReturnValue({
+        fetchId: 'fetch-uuid-001',
+        total: 1,
+        completed: 0,
+        failed: 0,
+        inProgress: true,
+        startedAt: new Date(),
+        cards: new Map(),
+        globalFailed: false,
+      });
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert
+      expect(result.shoppingLine).not.toBeNull();
+      const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
+      expect(sl.kind).toBe('populated');
+      expect(sl.variantFetchProgress).toEqual({
+        fetchId: 'fetch-uuid-001',
+        total: 1,
+        completed: 0,
+        failed: 0,
+        inProgress: true,
+      });
+      expect(variantFetchService.getProgress).toHaveBeenCalledWith('1');
+    });
+
+    it('should NOT include variantFetchProgress when no progress entry exists', async () => {
+      // Arrange
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshotWithMissing();
+      const populatedLine = buildPopulatedShoppingLine();
+
+      trackedDeckRepo.findOne.mockResolvedValue(deck);
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue(snapshot);
+      rejectedSubstituteRepo.count.mockResolvedValue(0);
+      shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
+      substitutionService.deriveSnapshotFields.mockReturnValue({
+        path: 'C',
+        fidelityPercent: 80,
+      });
+
+      variantFetchService.getProgress.mockReturnValue(undefined);
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert
+      expect(result.shoppingLine).not.toBeNull();
+      const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
+      expect(sl.kind).toBe('populated');
+      expect(sl.variantFetchProgress).toBeUndefined();
+    });
+
+    it('should NOT add variantFetchProgress to non-populated shopping lines (unscraped)', async () => {
+      // Arrange
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshotWithMissing();
+
+      trackedDeckRepo.findOne.mockResolvedValue(deck);
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue(snapshot);
+      rejectedSubstituteRepo.count.mockResolvedValue(0);
+      shoppingLineService.computeForBreakdown.mockResolvedValue({
+        kind: 'unscraped',
+      });
+      substitutionService.deriveSnapshotFields.mockReturnValue({
+        path: 'C',
+        fidelityPercent: 80,
+      });
+
+      variantFetchService.getProgress.mockReturnValue({
+        fetchId: 'fetch-uuid-002',
+        total: 1,
+        completed: 0,
+        failed: 0,
+        inProgress: true,
+        startedAt: new Date(),
+        cards: new Map(),
+        globalFailed: false,
+      });
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert: unscraped kind should NOT get variantFetchProgress
+      expect(result.shoppingLine).not.toBeNull();
+      const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
+      expect(sl.kind).toBe('unscraped');
+      expect(sl).not.toHaveProperty('variantFetchProgress');
     });
   });
 
