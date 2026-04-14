@@ -45,9 +45,9 @@ const REQUEST_TIMEOUT_MS = 30_000;
  * Price strings that indicate the product has no public price.
  * Rows with these values are yielded with priceCents=null and quantity=0.
  *
- * Note: kept here for the listing-level parsePriceAndStock logic. The shared
- * parsePriceCents / parseQuantity utilities in utils/price-stock-parsers.ts are
- * used for the actual parsing work.
+ * Listing-level check only. The detail parser uses isUnavailablePrice() from
+ * utils/price-stock-parsers.ts, which uses the same string set but applies
+ * different logic: it excludes the row entirely rather than yielding it with null.
  */
 const UNAVAILABLE_PRICE_STRINGS = new Set(['sob consulta', 'indisponível', 'indisponivel']);
 

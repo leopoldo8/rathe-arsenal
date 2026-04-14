@@ -4,6 +4,17 @@ import { IScrapedVariant } from './types/scraped-variant';
 import { parsePriceCents, parseQuantity, isUnavailablePrice } from './utils/price-stock-parsers';
 
 /**
+ * cheerio v1.x exposes element types via domhandler, which is not always
+ * resolvable from tsconfigs that restrict `types` to ["node","jest"].
+ * Declaring a single `any` alias here with one eslint-disable avoids
+ * repeating the suppression comment on every private method signature.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TCheerioNode = any;
+
+type TCheerioAPI = ReturnType<typeof cheerio.load>;
+
+/**
  * Parses a Sbrauble card detail page HTML into structured variant records.
  *
  * Responsibilities:
@@ -65,8 +76,7 @@ export class SbraubleDetailParserService {
    * Returns null when the row should be excluded (zero stock or unavailable price).
    * Throws ScraperError for unrecognized price or stock formats.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private parseRow($: ReturnType<typeof cheerio.load>, el: any): IScrapedVariant | null {
+  private parseRow($: TCheerioAPI, el: TCheerioNode): IScrapedVariant | null {
     const edition = $(el).find('span.siglaEdicao').text().trim();
 
     // Extract condition: the text content of the quality cell, stripping child elements.
@@ -75,8 +85,7 @@ export class SbraubleDetailParserService {
     const conditionCell = $(el).find('.table-cards-body-cell.text-center');
     const rawCondition = conditionCell
       .contents()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((_i: number, node: any) => node.type === 'text')
+      .filter((_i: number, node: TCheerioNode) => node.type === 'text')
       .text()
       .trim();
 
@@ -120,20 +129,17 @@ export class SbraubleDetailParserService {
    * Finds the cell that contains a .title-mobile div with text "Estoque",
    * then returns the direct text node content (excluding .title-mobile text).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private extractStockText($: ReturnType<typeof cheerio.load>, el: any): string {
+  private extractStockText($: TCheerioAPI, el: TCheerioNode): string {
     let stockText = '';
 
     $(el)
       .find('.table-cards-body-cell.tooltip-item')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .each((_i: number, cell: any) => {
+      .each((_i: number, cell: TCheerioNode) => {
         const titleMobile = $(cell).find('.title-mobile').text().trim();
         if (titleMobile === 'Estoque') {
           stockText = $(cell)
             .contents()
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .filter((_i2: number, node: any) => node.type === 'text')
+            .filter((_i2: number, node: TCheerioNode) => node.type === 'text')
             .text()
             .trim();
         }
@@ -147,14 +153,12 @@ export class SbraubleDetailParserService {
    * The cell contains a .title-mobile child and a direct text node with the price.
    * Only the direct text nodes are returned (ignoring .title-mobile text).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private extractPriceText($: ReturnType<typeof cheerio.load>, el: any): string {
+  private extractPriceText($: TCheerioAPI, el: TCheerioNode): string {
     const priceCell = $(el).find('.card-preco');
 
     return priceCell
       .contents()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((_i: number, node: any) => node.type === 'text')
+      .filter((_i: number, node: TCheerioNode) => node.type === 'text')
       .text()
       .trim();
   }
