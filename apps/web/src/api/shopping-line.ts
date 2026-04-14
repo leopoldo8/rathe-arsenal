@@ -8,6 +8,22 @@
  *  - 'populated' = real data available; render the full shopping line
  */
 
+/**
+ * Mirrors `IVariantFetchProgressDto` on the backend.
+ * Present on `IShoppingLinePopulated` when a detail fetch is actively
+ * running (or recently completed but not yet cleaned up by the 5-min TTL).
+ * Absence means either no fetch has been triggered, the fetch completed
+ * and the TTL evicted the entry, or the server pod restarted mid-fetch.
+ */
+export interface IVariantFetchProgress {
+  readonly fetchId: string;
+  readonly total: number;
+  readonly completed: number;
+  readonly failed: number;
+  /** False when all cards have been processed (success or per-card failure). */
+  readonly inProgress: boolean;
+}
+
 export interface IShoppingLineLine {
   readonly cardIdentifier: string;
   readonly cardName: string;
@@ -17,6 +33,19 @@ export interface IShoppingLineLine {
   readonly unitPriceCents: number | null;
   readonly productUrl: string;
   readonly lastFetchedAt: string;
+  /**
+   * True when this line's price comes from detailed variant data rather
+   * than a listing-page estimate. Added in the variant-aware shopping line
+   * feature (Unit 5+). Absent on older responses (treat as false).
+   */
+  readonly hasVariantData?: boolean;
+  /**
+   * Cost allocated for this line using greedy cheapest-first allocation
+   * across variants. For listing-only lines, equals
+   * `min(quantityNeeded, quantityAvailable) * unitPriceCents`.
+   * Absent on older responses.
+   */
+  readonly lineCostCents?: number;
 }
 
 export interface IShoppingLinePopulated {
@@ -28,6 +57,19 @@ export interface IShoppingLinePopulated {
   readonly unavailableCardCount: number;
   readonly lines: readonly IShoppingLineLine[];
   readonly lastFetchedAt: string;
+  /**
+   * True when at least one line uses a listing-page estimate rather than
+   * detailed variant data. Present on deck-detail responses from Unit 5+.
+   * When absent, treat as false (no variant feature active).
+   */
+  readonly isEstimated?: boolean;
+  /**
+   * Progress of an active (or recently completed) detail fetch for this
+   * deck. Present only while the backend progress tracker holds an entry.
+   * Absence is a valid stop condition for polling (pod restart, TTL eviction,
+   * or fetch never started). Do NOT rely solely on `inProgress === false`.
+   */
+  readonly variantFetchProgress?: IVariantFetchProgress;
 }
 
 export interface IShoppingLineUnscraped {
