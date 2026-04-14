@@ -7,6 +7,7 @@ import {
   CardAliasEntity,
   TrackedDeckEntity,
   DeckReadinessSnapshotEntity,
+  StoreStockVariantEntity,
 } from '../database/entities';
 import { CardNameMatcherService } from './card-name-matcher.service';
 import { SbraubleScraperService } from './sbrauble-scraper.service';
@@ -38,6 +39,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
       CardAliasEntity,
       TrackedDeckEntity,
       DeckReadinessSnapshotEntity,
+      StoreStockVariantEntity,
     ]),
   ],
   controllers: [AdminStoresController],

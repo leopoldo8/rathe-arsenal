@@ -12,6 +12,7 @@ import {
   StoreStockEntity,
   StoreScrapeRunEntity,
   CardAliasEntity,
+  StoreStockVariantEntity,
 } from './entities';
 
 /**
@@ -41,6 +42,7 @@ import {
           StoreStockEntity,
           StoreScrapeRunEntity,
           CardAliasEntity,
+          StoreStockVariantEntity,
         ],
         synchronize: config.get<string>('NODE_ENV') === 'development',
         logging: false,
