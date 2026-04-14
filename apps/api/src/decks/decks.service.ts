@@ -9,6 +9,7 @@ import { RejectedSubstituteEntity } from '../database/entities/rejected-substitu
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
+import { VariantFetchService } from '../stores/variant-fetch.service';
 import {
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
@@ -20,6 +21,10 @@ import {
   ITrackedDeckDetailResponse,
   ITrackedDeckDetailSnapshot,
 } from './dtos/tracked-deck-detail.response.dto';
+import {
+  IShoppingLinePopulated,
+  IVariantFetchProgressDto,
+} from '../stores/dtos/shopping-line.response.dto';
 
 @Injectable()
 export class DecksService {
@@ -39,6 +44,7 @@ export class DecksService {
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
+    private readonly variantFetchService: VariantFetchService,
   ) {}
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
@@ -194,6 +200,27 @@ export class DecksService {
       shoppingLine = await this.shoppingLineService.computeForBreakdown(
         snapshotDto.breakdown,
       );
+    }
+
+    // Attach in-memory variant fetch progress to the populated shopping line
+    // when a fetch is active or recently completed for this deck.
+    // The field is absent (undefined) when no progress entry exists — this
+    // is the frontend's polling stop condition.
+    if (shoppingLine?.kind === 'populated') {
+      const rawProgress = this.variantFetchService.getProgress(String(deckId));
+      if (rawProgress !== undefined) {
+        const progressDto: IVariantFetchProgressDto = {
+          fetchId: rawProgress.fetchId,
+          total: rawProgress.total,
+          completed: rawProgress.completed,
+          failed: rawProgress.failed,
+          inProgress: rawProgress.inProgress,
+        };
+        shoppingLine = {
+          ...(shoppingLine as IShoppingLinePopulated),
+          variantFetchProgress: progressDto,
+        };
+      }
     }
 
     return {

@@ -154,6 +154,15 @@ export interface IShoppingLinePopulated {
    * False only when all lines have fresh variant data.
    */
   readonly isEstimated: boolean;
+  /**
+   * In-memory progress for an active or recently completed variant fetch.
+   * Absent when no fetch has been started (or the 5-minute TTL has expired).
+   * Frontend polls on this field to drive the loading indicator.
+   *
+   * Unit 5: populated by DecksService.getDetail() via VariantFetchService.getProgress().
+   * NOT present on IShoppingLineAggregate (deck list).
+   */
+  readonly variantFetchProgress?: IVariantFetchProgressDto;
 }
 
 /** The store exists but has no stock rows yet (pre-scrape state). */
@@ -181,6 +190,20 @@ export type IShoppingLineResponse =
   | IShoppingLinePopulated
   | IShoppingLineUnscraped
   | IShoppingLineError;
+
+/**
+ * Public DTO shape for variant fetch progress.
+ *
+ * Serializes only the 5 public fields from IVariantFetchProgress.
+ * Internal fields (startedAt, cards Map, globalFailed) are NOT exposed.
+ */
+export interface IVariantFetchProgressDto {
+  readonly fetchId: string;
+  readonly total: number;
+  readonly completed: number;
+  readonly failed: number;
+  readonly inProgress: boolean;
+}
 
 /**
  * Aggregate shopping line for the home deck list.
