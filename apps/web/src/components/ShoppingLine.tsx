@@ -798,7 +798,8 @@ function LineItem({ line, storeHostname, storeName, muted }: ILineItemProps) {
       </div>
 
       {/* Expandable variant breakdown */}
-      {hasExpandableVariants && variants !== undefined && (
+      {/* hasExpandableVariants already guards variants !== undefined */}
+      {hasExpandableVariants && variants && (
         <details
           data-testid="variant-breakdown-details"
           style={{ marginTop: '0.25rem' }}
