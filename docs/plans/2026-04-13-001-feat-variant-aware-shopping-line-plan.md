@@ -1,7 +1,7 @@
 ---
 title: "feat: Add variant-aware shopping line with detail-page scraping"
 type: feat
-status: active
+status: completed
 date: 2026-04-13
 origin: docs/brainstorms/2026-04-13-variant-aware-shopping-line-requirements.md
 ---
