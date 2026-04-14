@@ -6,7 +6,18 @@
  *   (the store genuinely has no copies of this variant combination).
  */
 export enum EVariantVerificationStatus {
+  /**
+   * No variant data has been fetched for this card yet.
+   * The service leaves verificationStatus absent (undefined) on listing-fallback
+   * lines rather than explicitly setting this value. This member is reserved for
+   * Unit 5+ (API endpoint / DTO serialization) where explicit population may be
+   * needed for frontend state discrimination.
+   */
   NEVER_CHECKED = 'never_checked',
+  /**
+   * Variant data was fetched and all variants have quantity 0.
+   * The store genuinely has no in-stock copies of any variant.
+   */
   VERIFIED_ZERO = 'verified_zero',
 }
 

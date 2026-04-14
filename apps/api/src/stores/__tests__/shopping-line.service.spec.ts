@@ -682,6 +682,35 @@ describe('ShoppingLineService', () => {
       expect(result.isEstimated).toBe(true);
     });
 
+    it('variant T5b: stale variant data (quantity-only mismatch) — falls back to listing', async () => {
+      // Arrange
+      const cardId = 'hammer-of-gravi-red';
+      // Current listing has quantity=5 but snapshot says 3 → stale even though price matches
+      const stock = makeStockRow(cardId, { priceCents: 4990, quantity: 5 });
+
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.find.mockResolvedValue([stock]);
+      storeStockVariantRepo.find.mockResolvedValue([
+        makeVariantRow(cardId, {
+          priceCents: 35,
+          quantity: 3,
+          listingPriceCentsSnapshot: 4990, // price matches current listing
+          listingQuantitySnapshot: 3,       // quantity mismatch: current is 5
+        }),
+      ]);
+
+      const breakdown = makeBreakdown([{ cardIdentifier: cardId, quantity: 1 }]);
+
+      // Act
+      const result = await service.computeForBreakdown(breakdown) as IShoppingLinePopulated;
+
+      // Assert: stale → listing fallback (quantity mismatch triggers staleness)
+      expect(result.lines[0]!.hasVariantData).toBe(false);
+      expect(result.lines[0]!.dataSource).toBe('listing');
+      expect(result.lines[0]!.unitPriceCents).toBe(4990);
+      expect(result.isEstimated).toBe(true);
+    });
+
     it('variant T6: R12a — need 3, total variant qty = 1 — partially available', async () => {
       // Arrange
       const cardId = 'hammer-of-gravi-red';

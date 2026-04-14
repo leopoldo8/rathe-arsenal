@@ -125,10 +125,16 @@ export class ShoppingLineService {
       });
 
       // Group variant rows by cardIdentifier for O(1) lookup.
+      // Use push-based accumulation to avoid O(n²) intermediate array allocations
+      // from spread operator on each iteration.
       const variantsByIdentifier = new Map<string, StoreStockVariantEntity[]>();
       for (const row of variantRows) {
-        const existing = variantsByIdentifier.get(row.cardIdentifier) ?? [];
-        variantsByIdentifier.set(row.cardIdentifier, [...existing, row]);
+        const bucket = variantsByIdentifier.get(row.cardIdentifier);
+        if (bucket) {
+          bucket.push(row);
+        } else {
+          variantsByIdentifier.set(row.cardIdentifier, [row]);
+        }
       }
 
       const lines = this.buildLines(
