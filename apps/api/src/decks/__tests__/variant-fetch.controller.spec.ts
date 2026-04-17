@@ -384,6 +384,45 @@ describe('VariantFetchController (e2e)', () => {
       // Must NOT spawn a duplicate loop.
       expect(mocks.variantFetchService.startFetch).not.toHaveBeenCalled();
     });
+
+    it('serializes the per-card status Map as a plain object under progress.cards', async () => {
+      // Arrange: progress has a populated Map with three cards in different states.
+      const mocks = makeServiceMocks();
+      const missing = [{ cardIdentifier: 'card-a', quantity: 1 }];
+      const cardsMap = new Map<string, 'pending' | 'done' | 'failed'>([
+        ['card-a', 'done'],
+        ['card-b', 'pending'],
+        ['card-c', 'failed'],
+      ]);
+      const existingProgress = buildProgress({
+        fetchId: 'fetch-with-cards',
+        total: 3,
+        completed: 1,
+        failed: 1,
+        cards: cardsMap,
+      });
+
+      mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
+      mocks.variantFetchService.getProgress.mockReturnValue(existingProgress);
+
+      app = await buildApp({
+        userId: USER_ID,
+        guardAllows: true,
+        ...mocks,
+      });
+
+      // Act & Assert: the Map must be flattened into a JSON-friendly object.
+      await request(app.getHttpServer())
+        .post(`/decks/${DECK_ID}/fetch-variants`)
+        .expect(HttpStatus.ACCEPTED)
+        .expect((res) => {
+          expect(res.body.progress.cards).toEqual({
+            'card-a': 'done',
+            'card-b': 'pending',
+            'card-c': 'failed',
+          });
+        });
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -443,6 +482,23 @@ describe('DecksService — variantFetchProgress on getDetail()', () => {
 
     expect(line.variantFetchProgress).toEqual(progress);
     expect(line.variantFetchProgress?.inProgress).toBe(true);
+  });
+
+  it('accepts the optional cards map on variantFetchProgress DTO', () => {
+    const progress: IVariantFetchProgressDto = {
+      fetchId: 'fetch-uuid-002',
+      total: 2,
+      completed: 1,
+      failed: 1,
+      inProgress: false,
+      cards: {
+        'card-a': 'done',
+        'card-b': 'failed',
+      },
+    };
+
+    expect(progress.cards).toEqual({ 'card-a': 'done', 'card-b': 'failed' });
+    expect(progress.cards?.['card-b']).toBe('failed');
   });
 
   it('omits variantFetchProgress when no fetch has been started', () => {

@@ -9,6 +9,12 @@
  */
 
 /**
+ * Per-card fetch status.
+ * Mirrors `TCardFetchStatusDto` on the backend.
+ */
+export type TCardFetchStatus = 'pending' | 'done' | 'failed';
+
+/**
  * Mirrors `IVariantFetchProgressDto` on the backend.
  * Present on `IShoppingLinePopulated` when a detail fetch is actively
  * running (or recently completed but not yet cleaned up by the 5-min TTL).
@@ -22,6 +28,11 @@ export interface IVariantFetchProgress {
   readonly failed: number;
   /** False when all cards have been processed (success or per-card failure). */
   readonly inProgress: boolean;
+  /**
+   * Per-card status keyed by cardIdentifier. Absent on older responses or
+   * when the backend progress entry was created without status tracking.
+   */
+  readonly cards?: Readonly<Record<string, TCardFetchStatus>>;
 }
 
 /**
