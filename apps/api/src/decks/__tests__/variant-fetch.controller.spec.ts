@@ -20,8 +20,6 @@ import {
 } from '../../stores/variant-fetch.service';
 import { IVariantFetchProgress } from '../../stores/types/variant-fetch-progress';
 import { VariantFetchController } from '../variant-fetch.controller';
-import { DecksService } from '../decks.service';
-import { ShoppingLineService } from '../../stores/shopping-line.service';
 import {
   IShoppingLinePopulated,
   IVariantFetchProgressDto,

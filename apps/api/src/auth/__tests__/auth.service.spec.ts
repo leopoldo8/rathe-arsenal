@@ -8,7 +8,7 @@ import { EmailDeliveryError, EEmailErrorCode } from '../../email/errors';
 import { AuthService } from '../auth.service';
 import { PasswordHasherService } from '../services/password-hasher.service';
 import { TokenGeneratorService } from '../services/token-generator.service';
-import { AuthError, EAuthErrorCode } from '../errors';
+import { EAuthErrorCode } from '../errors';
 
 function buildService(overrides: {
   findOne?: jest.Mock;
