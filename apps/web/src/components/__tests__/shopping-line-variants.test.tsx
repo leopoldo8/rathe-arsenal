@@ -648,3 +648,92 @@ describe('backward compatibility: existing 6 states unaffected', () => {
     expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-card failure indicator (variantFetchProgress.cards)
+// ---------------------------------------------------------------------------
+
+describe('per-card failure indicator', () => {
+  it('renders a "failed" badge next to a card whose fetch status is failed', () => {
+    const progress = makeProgress({
+      inProgress: false,
+      completed: 1,
+      failed: 1,
+      total: 2,
+      cards: {
+        [BASE_LINE.cardIdentifier]: 'failed',
+        [SECOND_LINE.cardIdentifier]: 'done',
+      },
+    });
+    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
+
+    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+
+    const badges = screen.getAllByTestId('line-item-fetch-failed');
+    expect(badges).toHaveLength(1);
+    expect(badges[0]).toHaveTextContent(/failed/i);
+    expect(badges[0]).toHaveAttribute(
+      'aria-label',
+      `Failed to fetch variants for ${BASE_LINE.cardName}`,
+    );
+  });
+
+  it('does not render the "failed" badge for cards with done or pending status', () => {
+    const progress = makeProgress({
+      inProgress: true,
+      completed: 1,
+      failed: 0,
+      total: 2,
+      cards: {
+        [BASE_LINE.cardIdentifier]: 'done',
+        [SECOND_LINE.cardIdentifier]: 'pending',
+      },
+    });
+    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
+
+    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+
+    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
+  });
+
+  it('does not render any "failed" badge when variantFetchProgress is absent', () => {
+    const data = makePopulated({ isEstimated: true });
+
+    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+
+    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
+  });
+
+  it('does not render the badge when cards map is absent (older API response)', () => {
+    const progress = makeProgress({
+      inProgress: false,
+      completed: 2,
+      failed: 0,
+      total: 2,
+    });
+    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
+
+    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+
+    expect(screen.queryByTestId('line-item-fetch-failed')).not.toBeInTheDocument();
+  });
+
+  it('renders the badge on unavailable lines too, not just in-stock ones', () => {
+    const progress = makeProgress({
+      inProgress: false,
+      completed: 0,
+      failed: 2,
+      total: 2,
+      cards: {
+        [BASE_LINE.cardIdentifier]: 'failed',
+        [SECOND_LINE.cardIdentifier]: 'failed',
+      },
+    });
+    const data = makePopulated({ isEstimated: true, variantFetchProgress: progress });
+
+    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+
+    const badges = screen.getAllByTestId('line-item-fetch-failed');
+    expect(badges).toHaveLength(2);
+  });
+});

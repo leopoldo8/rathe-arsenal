@@ -136,6 +136,7 @@ export class VariantFetchController {
         completed: existingProgress.completed,
         failed: existingProgress.failed,
         inProgress: existingProgress.inProgress,
+        cards: Object.fromEntries(existingProgress.cards),
       };
       res.status(HttpStatus.ACCEPTED);
       return {

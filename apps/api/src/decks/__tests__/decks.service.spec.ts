@@ -365,8 +365,54 @@ describe('DecksService', () => {
         completed: 0,
         failed: 0,
         inProgress: true,
+        cards: {},
       });
       expect(variantFetchService.getProgress).toHaveBeenCalledWith('1');
+    });
+
+    it('should serialize the per-card status Map to an object on variantFetchProgress', async () => {
+      // Arrange
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshotWithMissing();
+      const populatedLine = buildPopulatedShoppingLine();
+
+      trackedDeckRepo.findOne.mockResolvedValue(deck);
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue(snapshot);
+      rejectedSubstituteRepo.count.mockResolvedValue(0);
+      shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
+      substitutionService.deriveSnapshotFields.mockReturnValue({
+        path: 'C',
+        fidelityPercent: 80,
+      });
+
+      variantFetchService.getProgress.mockReturnValue({
+        fetchId: 'fetch-uuid-002',
+        total: 2,
+        completed: 1,
+        failed: 1,
+        inProgress: false,
+        startedAt: new Date(),
+        cards: new Map([
+          ['card-a', 'done'],
+          ['card-b', 'failed'],
+        ]),
+        globalFailed: false,
+      });
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert
+      const sl = result.shoppingLine as {
+        variantFetchProgress?: {
+          cards?: Record<string, string>;
+        };
+      };
+      expect(sl.variantFetchProgress?.cards).toEqual({
+        'card-a': 'done',
+        'card-b': 'failed',
+      });
     });
 
     it('should NOT include variantFetchProgress when no progress entry exists', async () => {

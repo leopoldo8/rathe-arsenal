@@ -3,7 +3,7 @@ import {
   IShoppingLinePopulated,
   IShoppingLineResponse,
   IShoppingLineLine,
-  IVariantFetchProgress,
+  TCardFetchStatus,
 } from '../api/shopping-line';
 import { VARIANT_FETCH_POLL_TIMEOUT_MS } from '../api/deck-detail';
 import { formatBrl } from '../utils/format-brl';
@@ -13,6 +13,11 @@ import {
   VariantBreakdownTable,
   formatVariantPrice,
 } from './ShoppingLineVariantBreakdown';
+import {
+  VariantFetchCta,
+  VariantFetchProgress,
+  PartialFailureNotice,
+} from './ShoppingLineFetchControls';
 
 /**
  * Status of the variant fetch mutation, passed from the parent component
@@ -440,6 +445,9 @@ function PopulatedShoppingLine({
               storeHostname={storeHostname}
               storeName={storeName}
               muted={false}
+              {...(variantFetchProgress?.cards !== undefined
+                ? { cardFetchStatus: variantFetchProgress.cards }
+                : {})}
             />
           )}
 
@@ -450,139 +458,14 @@ function PopulatedShoppingLine({
               storeHostname={storeHostname}
               storeName={storeName}
               muted={true}
+              {...(variantFetchProgress?.cards !== undefined
+                ? { cardFetchStatus: variantFetchProgress.cards }
+                : {})}
             />
           )}
         </div>
       )}
     </section>
-  );
-}
-
-// Variant fetch CTA button
-
-interface IVariantFetchCtaProps {
-  readonly onGetExactPrices: () => void;
-  readonly isPending: boolean;
-  readonly isError: boolean;
-}
-
-function VariantFetchCta({ onGetExactPrices, isPending, isError }: IVariantFetchCtaProps) {
-  return (
-    <div style={{ marginTop: '0.5rem' }}>
-      <button
-        type="button"
-        onClick={onGetExactPrices}
-        disabled={isPending}
-        aria-busy={isPending}
-        style={{
-          padding: '0.375rem 0.75rem',
-          backgroundColor: isPending ? '#e2e8f0' : '#3182ce',
-          color: isPending ? '#a0aec0' : '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: isPending ? 'not-allowed' : 'pointer',
-          fontSize: '0.8125rem',
-          fontWeight: 500,
-        }}
-      >
-        {isPending ? 'Starting...' : 'Get exact prices'}
-      </button>
-      {isError && (
-        <span
-          role="alert"
-          style={{ marginLeft: '0.5rem', fontSize: '0.8125rem', color: '#c53030' }}
-        >
-          Failed to start. Please try again.
-        </span>
-      )}
-    </div>
-  );
-}
-
-// Progress indicator (shown while fetch is active)
-
-interface IVariantFetchProgressProps {
-  readonly progress: IVariantFetchProgress;
-}
-
-function VariantFetchProgress({ progress }: IVariantFetchProgressProps) {
-  const processed = progress.completed + progress.failed;
-  const current = Math.min(processed + 1, progress.total);
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      style={{
-        marginTop: '0.5rem',
-        fontSize: '0.8125rem',
-        color: '#4a5568',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-      }}
-    >
-      <span>
-        Checking card {current} of {progress.total}...
-      </span>
-    </div>
-  );
-}
-
-// Partial failure notice (shown after fetch completes with failures)
-
-interface IPartialFailureNoticeProps {
-  readonly progress: IVariantFetchProgress;
-  readonly onRetry: () => void;
-  readonly isPending: boolean;
-}
-
-function PartialFailureNotice({
-  progress,
-  onRetry,
-  isPending,
-}: IPartialFailureNoticeProps) {
-  const updated = progress.completed;
-  const total = progress.total;
-
-  return (
-    <div
-      style={{
-        marginTop: '0.5rem',
-        fontSize: '0.8125rem',
-        color: '#744210',
-        backgroundColor: '#fefcbf',
-        border: '1px solid #f6e05e',
-        borderRadius: '4px',
-        padding: '0.375rem 0.625rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.5rem',
-        flexWrap: 'wrap',
-      }}
-    >
-      <span>
-        {updated} of {total} updated &mdash; {progress.failed} failed.
-      </span>
-      <button
-        type="button"
-        onClick={onRetry}
-        disabled={isPending}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#c05621',
-          cursor: isPending ? 'not-allowed' : 'pointer',
-          padding: 0,
-          fontSize: '0.8125rem',
-          textDecoration: 'underline',
-          fontWeight: 500,
-        }}
-      >
-        {isPending ? 'Retrying...' : 'Retry failed'}
-      </button>
-    </div>
   );
 }
 
@@ -594,9 +477,17 @@ interface ILineGroupProps {
   readonly storeHostname: string;
   readonly storeName: string;
   readonly muted: boolean;
+  readonly cardFetchStatus?: Readonly<Record<string, TCardFetchStatus>>;
 }
 
-function LineGroup({ label, lines, storeHostname, storeName, muted }: ILineGroupProps) {
+function LineGroup({
+  label,
+  lines,
+  storeHostname,
+  storeName,
+  muted,
+  cardFetchStatus,
+}: ILineGroupProps) {
   return (
     <div style={{ marginTop: '0.75rem' }}>
       <div
@@ -621,15 +512,19 @@ function LineGroup({ label, lines, storeHostname, storeName, muted }: ILineGroup
           opacity: muted ? 0.6 : 1,
         }}
       >
-        {lines.map((line) => (
-          <LineItem
-            key={line.cardIdentifier}
-            line={line}
-            storeHostname={storeHostname}
-            storeName={storeName}
-            muted={muted}
-          />
-        ))}
+        {lines.map((line) => {
+          const status = cardFetchStatus?.[line.cardIdentifier];
+          return (
+            <LineItem
+              key={line.cardIdentifier}
+              line={line}
+              storeHostname={storeHostname}
+              storeName={storeName}
+              muted={muted}
+              {...(status !== undefined ? { fetchStatus: status } : {})}
+            />
+          );
+        })}
       </ul>
     </div>
   );
@@ -642,9 +537,16 @@ interface ILineItemProps {
   readonly storeHostname: string;
   readonly storeName: string;
   readonly muted: boolean;
+  readonly fetchStatus?: TCardFetchStatus;
 }
 
-function LineItem({ line, storeHostname, storeName, muted }: ILineItemProps) {
+function LineItem({
+  line,
+  storeHostname,
+  storeName,
+  muted,
+  fetchStatus,
+}: ILineItemProps) {
   const {
     cardName,
     quantityNeeded,
@@ -721,8 +623,36 @@ function LineItem({ line, storeHostname, storeName, muted }: ILineItemProps) {
           flexWrap: 'wrap',
         }}
       >
-        <span style={{ fontWeight: 500, flexGrow: 1, minWidth: '8rem' }}>
+        <span
+          style={{
+            fontWeight: 500,
+            flexGrow: 1,
+            minWidth: '8rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+          }}
+        >
           {cardName}
+          {fetchStatus === 'failed' && (
+            <span
+              role="status"
+              aria-label={`Failed to fetch variants for ${cardName}`}
+              data-testid="line-item-fetch-failed"
+              style={{
+                fontSize: '0.6875rem',
+                fontWeight: 500,
+                color: '#742a2a',
+                backgroundColor: '#fed7d7',
+                border: '1px solid #feb2b2',
+                borderRadius: '3px',
+                padding: '0 0.3em',
+                lineHeight: '1.4',
+              }}
+            >
+              failed
+            </span>
+          )}
         </span>
 
         <span

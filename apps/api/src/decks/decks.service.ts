@@ -215,6 +215,7 @@ export class DecksService {
           completed: rawProgress.completed,
           failed: rawProgress.failed,
           inProgress: rawProgress.inProgress,
+          cards: Object.fromEntries(rawProgress.cards),
         };
         shoppingLine = {
           ...(shoppingLine as IShoppingLinePopulated),

@@ -192,10 +192,21 @@ export type IShoppingLineResponse =
   | IShoppingLineError;
 
 /**
+ * Per-card fetch status surfaced to the frontend.
+ *
+ * - `pending`: card has not yet been processed in the current fetch loop.
+ * - `done`: card was fetched and parsed successfully.
+ * - `failed`: the detail fetch or parse failed for this card; row-level
+ *   failure annotation should be shown on the matching IShoppingLine.
+ */
+export type TCardFetchStatusDto = 'pending' | 'done' | 'failed';
+
+/**
  * Public DTO shape for variant fetch progress.
  *
- * Serializes only the 5 public fields from IVariantFetchProgress.
- * Internal fields (startedAt, cards Map, globalFailed) are NOT exposed.
+ * Serializes the 5 aggregate fields from IVariantFetchProgress plus a
+ * per-card status map keyed by cardIdentifier. Internal fields
+ * (startedAt, globalFailed) remain private.
  */
 export interface IVariantFetchProgressDto {
   readonly fetchId: string;
@@ -203,6 +214,11 @@ export interface IVariantFetchProgressDto {
   readonly completed: number;
   readonly failed: number;
   readonly inProgress: boolean;
+  /**
+   * Per-card status keyed by cardIdentifier. Absent on progress records
+   * whose tracker did not collect card status (backward compatibility).
+   */
+  readonly cards?: Readonly<Record<string, TCardFetchStatusDto>>;
 }
 
 /**
