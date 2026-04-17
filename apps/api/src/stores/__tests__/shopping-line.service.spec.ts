@@ -14,7 +14,6 @@ import { IBreakdown } from '../../decks/dtos/tracked-deck-detail.response.dto';
 import {
   EVariantVerificationStatus,
   IShoppingLinePopulated,
-  IShoppingLineResponse,
 } from '../dtos/shopping-line.response.dto';
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../email.service';
-import { EEmailErrorCode, EmailDeliveryError } from '../errors';
+import { EEmailErrorCode } from '../errors';
 
 function makeConfig(overrides: Record<string, string> = {}): ConfigService {
   const defaults: Record<string, string> = {

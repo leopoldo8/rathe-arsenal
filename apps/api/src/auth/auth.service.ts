@@ -110,7 +110,7 @@ export class AuthService {
     const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
     try {
       await this.emailService.sendVerificationEmail(email, link);
-    } catch (err) {
+    } catch (_err) {
       this.logger.error({ event: 'auth.resend_verification.email_failed', userId: user.id });
       // Swallow — the user sees a generic 202 either way to avoid leaking existence.
     }
@@ -177,7 +177,7 @@ export class AuthService {
     const link = `${this.baseUrl}/reset-password?token=${rawToken}`;
     try {
       await this.emailService.sendPasswordResetEmail(email, link);
-    } catch (err) {
+    } catch (_err) {
       this.logger.error({ event: 'auth.password_reset.email_failed', userId: user.id });
       // Swallow — the user sees generic success either way
     }

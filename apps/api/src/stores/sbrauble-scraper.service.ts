@@ -205,7 +205,6 @@ export class SbraubleScraperService {
     await this.storeRepository.update({ id: store.id }, { lastFetchedAt: now });
     // Reflect the change on the in-memory entity so the next enforceRateLimit
     // call in this same run uses the updated value without re-querying.
-    // eslint-disable-next-line no-param-reassign
     (store as { lastFetchedAt: Date }).lastFetchedAt = now;
   }
 

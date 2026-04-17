@@ -206,6 +206,7 @@ describe('SubstitutionService', () => {
 
   it('builds inventory map from collection cards', async () => {
     // Arrange
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- mocked module needs runtime access to the jest.fn instance
     const { computeEffectiveReadiness } = require('@rathe-arsenal/engine');
     const trackedDeckId = 1;
     const userId = 'user-789';

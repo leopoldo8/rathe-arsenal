@@ -458,7 +458,6 @@ describe('StoreIngestionService', () => {
       // Return an async generator that immediately throws
       async function* failingStream(): AsyncGenerator<IScrapedProduct> {
         throw scraperError;
-        // eslint-disable-next-line no-unreachable
         yield {} as IScrapedProduct;
       }
       (scraper.scrapeStore as jest.Mock).mockReturnValue(failingStream());
@@ -516,7 +515,7 @@ describe('StoreIngestionService', () => {
       (runRepo.count as jest.Mock).mockResolvedValue(0);
 
       // To verify which row "won" we capture the transaction call values.
-      let capturedValues: unknown[] = [];
+      const capturedValues: unknown[] = [];
       transactionMock.mockImplementationOnce(
         (cb: (em: {
           createQueryBuilder: () => {
