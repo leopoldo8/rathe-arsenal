@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   IBreakdown,
@@ -9,6 +9,7 @@ import {
   useRejectSubstituteMutation,
   useResetRejectionsMutation,
 } from '../../api/re-solve';
+import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { ReadinessHeader } from '../../components/readiness-header';
 import { BreakdownList } from '../../components/breakdown-list';
 import { ShoppingLine } from '../../components/ShoppingLine';
@@ -115,13 +116,40 @@ function PathCBanner({
 
 function DeckDetailPage() {
   const { deckId } = Route.useParams();
-  const detailQuery = useDeckDetailQuery(deckId);
+
+  // pollingStartedAt tracks when variant fetch polling began (epoch ms).
+  // undefined means polling is inactive. Passed to useDeckDetailQuery to
+  // enable dynamic refetchInterval and enforce the 5-minute safety timeout.
+  const [pollingStartedAt, setPollingStartedAt] = useState<number | undefined>(
+    undefined,
+  );
+
+  const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const markOwnedMutation = useMarkOwnedMutation(deckId);
   const rejectMutation = useRejectSubstituteMutation(deckId);
   const resetMutation = useResetRejectionsMutation(deckId);
+  const variantFetchMutation = useVariantFetchMutation(deckId);
   const [curveWarnings, setCurveWarnings] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+
+  // Stable callback passed to ShoppingLine so that it can notify the page
+  // when polling begins or ends. The page updates pollingStartedAt which
+  // flows back into useDeckDetailQuery to control refetchInterval.
+  const handlePollingChange = useCallback(
+    (startedAt: number | undefined) => {
+      setPollingStartedAt(startedAt);
+    },
+    [],
+  );
+
+  const handleFetchVariants = useCallback(() => {
+    variantFetchMutation.mutate();
+  }, [variantFetchMutation]);
+
+  const isCooldownActive =
+    variantFetchMutation.isSuccess &&
+    variantFetchMutation.data?.status === 'already_fresh';
 
   if (detailQuery.isLoading) {
     return <p>Loading deck details...</p>;
@@ -259,7 +287,13 @@ function DeckDetailPage() {
             format={deck.format}
           />
 
-          <ShoppingLine data={deck.shoppingLine ?? null} />
+          <ShoppingLine
+            data={deck.shoppingLine ?? null}
+            onFetchVariants={handleFetchVariants}
+            fetchMutationStatus={variantFetchMutation.status}
+            isCooldownActive={isCooldownActive}
+            onPollingChange={handlePollingChange}
+          />
 
           {markOwnedMutation.isError && (
             <div

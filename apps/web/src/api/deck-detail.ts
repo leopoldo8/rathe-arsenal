@@ -91,15 +91,80 @@ export interface IMarkOwnedResponse {
 
 const DECK_DETAIL_KEY = 'deck-detail' as const;
 
+/** Polling interval when a variant fetch is active, in milliseconds. */
+const VARIANT_FETCH_POLL_INTERVAL_MS = 3_000;
+
+/** Hard safety timeout for polling, in milliseconds (5 minutes). */
+export const VARIANT_FETCH_POLL_TIMEOUT_MS = 5 * 60 * 1_000;
+
 export function deckDetailQueryKey(deckId: string): readonly [string, string] {
   return [DECK_DETAIL_KEY, deckId] as const;
 }
 
-export function useDeckDetailQuery(deckId: string) {
+/**
+ * Compute the `refetchInterval` for the deck-detail query.
+ *
+ * Returns the polling interval (3 s) when a variant fetch is active, or
+ * `false` to disable polling when any stop condition is met:
+ *
+ *  1. `variantFetchProgress` is absent/undefined — explicit stop. This
+ *     covers both "never started" and "pod restarted mid-fetch" (the
+ *     backend's in-memory tracker is lost on restart; the field will simply
+ *     be absent on the next poll response). CRITICAL: do not rely solely on
+ *     `inProgress === false`; absent progress is an equally valid stop signal.
+ *  2. `variantFetchProgress.inProgress === false` — fetch completed.
+ *  3. `isEstimated === false` — all cards now have variant data; no more
+ *     polling needed even if the progress entry is still in memory.
+ *  4. `pollingStartedAt` is defined and the 5-minute safety timeout has
+ *     elapsed — prevents runaway polling if the backend never signals done.
+ */
+export function computeVariantFetchInterval(
+  data: IDeckDetailResponse | undefined,
+  pollingStartedAt: number | undefined,
+): number | false {
+  const shoppingLine = data?.shoppingLine;
+  if (!shoppingLine || shoppingLine.kind !== 'populated') return false;
+
+  const { variantFetchProgress, isEstimated } = shoppingLine;
+
+  // Stop condition 1: no progress entry present (pod restart or never started)
+  if (!variantFetchProgress) return false;
+
+  // Stop condition 2: backend signalled completion
+  if (!variantFetchProgress.inProgress) return false;
+
+  // Stop condition 3: all cards have variant data
+  if (isEstimated === false) return false;
+
+  // Stop condition 4: 5-minute hard safety timeout
+  if (
+    pollingStartedAt !== undefined &&
+    Date.now() - pollingStartedAt >= VARIANT_FETCH_POLL_TIMEOUT_MS
+  ) {
+    return false;
+  }
+
+  return VARIANT_FETCH_POLL_INTERVAL_MS;
+}
+
+/**
+ * Query hook for deck detail data.
+ *
+ * Accepts an optional `pollingStartedAt` timestamp (epoch ms). When
+ * provided, the hook enables dynamic polling during an active variant
+ * fetch, stopping automatically when any of the 4 stop conditions are met.
+ * Pass `undefined` (default) to disable polling entirely.
+ */
+export function useDeckDetailQuery(
+  deckId: string,
+  pollingStartedAt?: number | undefined,
+) {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: deckDetailQueryKey(deckId),
     queryFn: () => apiFetch<IDeckDetailResponse>(`/decks/${deckId}`),
+    refetchInterval: (query) =>
+      computeVariantFetchInterval(query.state.data, pollingStartedAt),
   });
 }
 
