@@ -111,4 +111,4 @@ Shopping Line (listing data)         "Get Exact Prices"              Variant-Lev
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning
+✅ Plan executed: `docs/plans/2026-04-13-001-feat-variant-aware-shopping-line-plan.md` (status `completed`). Feature shipped via PRs #10–#12 on `main`.

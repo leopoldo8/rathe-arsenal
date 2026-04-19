@@ -1,9 +1,10 @@
 ---
 title: "feat: Phase 1a -- Product Core (Auth Hardening + Tier 2 Engine + Interactive Swap + Autocomplete)"
 type: feat
-status: active
+status: completed
 date: 2026-04-10
 deepened: 2026-04-10
+completed: 2026-04-11
 origin: docs/brainstorms/2026-04-08-fab-deck-readiness-flow-requirements.md
 phase-0-plan: docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md
 debt-ledger: docs/phase-1-followups.md

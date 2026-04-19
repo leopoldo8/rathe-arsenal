@@ -2,6 +2,7 @@
 title: "feat: Phase 1b -- Store Data & Shopping Line (Liga FaB / Sbrauble Scraper, Cúpula DT Anchor)"
 type: feat
 status: active
+state: "Units 0–6 merged to main; Unit 7 (Gate 2 accuracy verification) pending"
 date: 2026-04-11
 origin: docs/brainstorms/2026-04-08-fab-deck-readiness-flow-requirements.md
 phase-0-plan: docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md
@@ -291,7 +292,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 1: Store Schema + Allow-list + Env Wiring**
+- [x] **Unit 1: Store Schema + Allow-list + Env Wiring** *(merged to main — commit ff800b8)*
 
 **Goal:** Introduce the `store`, `store_stock`, and `store_scrape_run` entities, migrate the database, seed Cúpula DT as the only allow-listed store, and wire the scraper's outbound allow-list into `env.dto.ts` and `FetchGuardService` callers.
 
@@ -347,7 +348,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 2: Card-Name → `cardIdentifier` Matcher**
+- [x] **Unit 2: Card-Name → `cardIdentifier` Matcher** *(merged to main — commit 407843d)*
 
 **Goal:** Build a deterministic + alias-table resolver that maps raw store product names ("A Drop in the Ocean (Blue)", "Aether Crackers (Cold Foil)") to `@flesh-and-blood/cards` `cardIdentifier` values. Unmatched rows log warnings and are surfaced in `store_scrape_run.productsUnmatched`.
 
@@ -397,7 +398,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 3: Sbrauble Scraper Service**
+- [x] **Unit 3: Sbrauble Scraper Service** *(merged to main — commit edab868; CSS selector fixes in 3b7990a)*
 
 **Goal:** Fetch Cúpula DT's listing and product pages via `FetchGuardService`, parse the HTML with a server-side parser (`cheerio` or `node-html-parser` -- decided in this unit), return a typed array of `IScrapedProduct` records, enforce the per-store rate limit between requests, and surface structured errors for network/parse failures. **No database writes in this unit -- the ingestion layer (Unit 4) handles persistence.**
 
@@ -453,7 +454,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 4: Ingestion Service + Daily Cron + Admin Endpoint + Reconciliation + Delta Guard**
+- [x] **Unit 4: Ingestion Service + Daily Cron + Admin Endpoint + Reconciliation + Delta Guard** *(merged to main — commits 37d7631 + c9ff989 review fixes; multi-match fix in 38a7de6)*
 
 **Goal:** Compose Unit 2 (matcher) and Unit 3 (scraper) into a full ingestion pipeline that (a) runs daily via `@nestjs/schedule`, (b) can be manually triggered via an admin endpoint, (c) upserts `store_stock` rows, (d) zero-outs absent rows, (e) enforces the 90% delta guard, (f) records a `store_scrape_run` row with full diagnostics, and (g) respects the soft-lock against concurrent runs.
 
@@ -528,7 +529,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 5: Shopping Line Service + API Embedding**
+- [x] **Unit 5: Shopping Line Service + API Embedding** *(merged to main — commit 4481af2)*
 
 **Goal:** Compute the shopping line for a deck's latest readiness snapshot by joining `breakdown.missing` against `store_stock`, and expose it as an optional `shoppingLine` field on the tracked-deck-detail response and the test-mode response. Read-only, no persistence, authenticated.
 
@@ -614,7 +615,7 @@ U0 is a **manual** (non-code) precondition on U7. U1 is the foundation. U2 and U
 
 ---
 
-- [ ] **Unit 6: Shopping Line Frontend (Replace Phase 1a Placeholders)**
+- [x] **Unit 6: Shopping Line Frontend (Replace Phase 1a Placeholders)** *(merged to main — commit 348a6e2; later extended by variant-aware plan 2026-04-13-001)*
 
 **Goal:** Render the shopping line on every result surface that Phase 1a shipped a placeholder for: `TestDeckResult.tsx`, `PathCResult.tsx`, and `decks.$deckId.tsx`. The component shows the "With R$ X at Cúpula DT you reach Y%" affordance, per-card cost breakdown, freshness, and outbound product links. Replaces the "Check availability at Cúpula DT -- coming in Phase 1b" slots.
 

@@ -12,7 +12,7 @@
 
 ### A18. No Vitest bootstrap in `apps/web` — frontend unit tests are structurally unavailable
 
-**Status:** Resolved on 2026-04-11 in branch `chore/phase-1a-a18-vitest-bootstrap`. `apps/web` now has a `vitest.config.ts` mirroring the Vite plugins, a `src/test/setup.ts` loading `@testing-library/jest-dom/vitest` + RTL cleanup, and a smoke test (`src/components/__tests__/empty-home-state.test.tsx`) that renders `<EmptyHomeState>` end-to-end under `QueryClientProvider` + `AuthContext.Provider`. Backfill of the remaining Phase 1a-era components listed below is still outstanding and tracked as follow-up work.
+**Status:** Harness resolved on 2026-04-11 (branch `chore/phase-1a-a18-vitest-bootstrap`). `apps/web` has `vitest.config.ts`, `src/test/setup.ts` (loading `@testing-library/jest-dom/vitest` + RTL cleanup), and tests running for `<EmptyHomeState>`, `<DeleteAccountModal>`, `<ShoppingLine>`, `<ShoppingLineVariants>`, `<ShoppingLineVariantBreakdown>`, plus `format-brl` and `format-relative-time` utilities. **Backfill still outstanding** for Phase 1a interactive surfaces: `<CardAutocomplete>`, the home state machine (`home.tsx`), `<PathCResult>` + `PathCBanner`, `<TestDeckResult>`, and the swap editor per-row reject flow. Renamed follow-up: "A18-backfill — Phase 1a component tests".
 
 **Phase 0 posture:** none. **Phase 1a posture:** `apps/web` has no test runner configured. `pnpm --filter @rathe-arsenal/web test` exits with code 1 because Vitest finds no test files. There is no `vitest.config.ts`, no test setup file, no `@testing-library/react` dependency.
 

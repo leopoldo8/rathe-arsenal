@@ -1,7 +1,7 @@
 ---
 gate: 2
 title: Cúpula DT Scraping Consent and Data Accuracy
-status: PASSED (consent + crawl-rate exception done; accuracy verification is a Phase 0 follow-up task)
+status: PASSED (consent + crawl-rate exception done; accuracy walkthrough pending as Phase 1b Unit 7)
 date: 2026-04-08
 owner: Rodrigo
 ---
@@ -16,10 +16,10 @@ No manual work (CSV, feed, dashboard upload) is being asked of the owner. The pa
 
 ## Data accuracy verification status
 
-**PENDING.** Cannot be executed until the Sbrauble scraper (from Gate 3c) is built. The protocol is:
+**PENDING — walkthrough only.** As of 2026-04-18 the scraper exists and is populating `store_stock` / `store_stock_variant` for Cúpula DT (Phase 1b Units 1–6 merged to `main`). The outstanding step is the in-person walkthrough with the owner, tracked as Phase 1b Unit 7 (`docs/plans/2026-04-11-001-feat-phase-1b-shopping-line-plan.md`). Protocol:
 
-1. Point the scraper at `https://www.cupuladt.com.br/?view=ecom/itens&tcg=8` (and the paginated results).
-2. Save the first ingestion snapshot to `docs/brainstorms/gates/gate-2-snapshot.json` (or similar).
+1. Point the scraper at `https://www.cupuladt.com.br/?view=ecom/itens&tcg=8` (and the paginated results). ✅ done — automated via `StoreIngestionService` cron + admin endpoint.
+2. Save the first ingestion snapshot to `docs/brainstorms/gates/gate-2-snapshot.json` (or similar). ⏳ generate a fresh export before the walkthrough.
 3. Show the snapshot to the owner in person, walk through 10 randomly-chosen cards, and verify:
    - Is the card listed at the correct price?
    - Does the stock quantity look reasonable?
@@ -41,4 +41,4 @@ The owner's explicit permission for a higher rate supersedes the platform-level 
 
 ## Decision
 
-**PASSED.** Consent documented, crawl-rate exception granted by the store owner. Accuracy verification remains as a Phase 0 follow-up task — it runs after the scraper prototype exists (built during Phase 0 / early Phase 1) but does not block Phase 0 kickoff. The Phase 0 implementation has no store data dependency; the scraper and the accuracy verification are Phase 1 prerequisites.
+**PASSED.** Consent documented, crawl-rate exception granted by the store owner. Accuracy verification is the remaining item and is tracked as Phase 1b Unit 7 — the scraper is already shipped (Phase 1b Units 1–6 merged 2026-04-11 → 2026-04-13), so only the in-person walkthrough with the owner is outstanding. This is the last blocker before flipping the Cúpula DT `store.active` flag on in production.

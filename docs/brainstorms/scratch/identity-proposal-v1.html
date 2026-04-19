@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rathe Arsenal — Identity Proposal v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,100&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+    --font-display: "Fraunces", ui-serif, Georgia, serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+  }
+
+  :root[data-theme="dark"] {
+    --bg-canvas: #0e1014;
+    --bg-surface: #171a20;
+    --bg-raised: #1f232a;
+    --border-subtle: #2a2f37;
+    --border-strong: #3d434d;
+    --text-primary: #e9ecf1;
+    --text-secondary: #9097a3;
+    --text-muted: #6b7280;
+    --accent: #c9a24b;
+    --accent-hover: #dcb25a;
+    --accent-dim: #8a6f37;
+    --state-success: #7fae76;
+    --state-warning: #d4905d;
+    --state-danger: #c75454;
+    --state-info: #6b8db5;
+    --pitch-red: #d14242;
+    --pitch-yellow: #e0b84a;
+    --pitch-blue: #5b7fc9;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    --bg-canvas: #faf9f6;
+    --bg-surface: #ffffff;
+    --bg-raised: #f1efea;
+    --border-subtle: #e5e2da;
+    --border-strong: #c7c2b4;
+    --text-primary: #1a1c21;
+    --text-secondary: #52586a;
+    --text-muted: #7a8091;
+    --accent: #a88434;
+    --accent-hover: #8f6e27;
+    --accent-dim: #ccb97e;
+    --state-success: #4f7d47;
+    --state-warning: #a66529;
+    --state-danger: #a13c3c;
+    --state-info: #3c6397;
+    --pitch-red: #b43232;
+    --pitch-yellow: #a38012;
+    --pitch-blue: #3f5fa0;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    line-height: 1.5;
+    padding: 48px 32px 96px;
+    max-width: 1080px;
+    margin: 0 auto;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .wordmark .sep {
+    color: var(--accent);
+    margin: 0 0.35em;
+  }
+
+  .theme-toggle {
+    font: 500 0.8125rem/1 var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { margin-bottom: 56px; }
+  section > h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: 0.04em;
+    margin: 0 0 16px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  /* ── Wordmark variations ─────────────────────────────── */
+  .wordmark-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  .wordmark-card {
+    padding: 32px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 160px;
+    justify-content: center;
+  }
+  .wordmark-card .label {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .wm-lg {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.25rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .wm-stacked {
+    font-family: var(--font-display);
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+  .wm-stacked .top { font-weight: 700; font-size: 2.5rem; letter-spacing: 0.12em; }
+  .wm-stacked .bot {
+    font-weight: 500; font-size: 0.875rem; letter-spacing: 0.6em;
+    color: var(--accent); margin-top: 8px;
+  }
+  .wm-monogram {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 3.25rem;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+  }
+
+  /* ── Palette ────────────────────────────────────────── */
+  .palette {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  .swatch {
+    padding: 16px 12px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    min-height: 84px;
+    border: 1px solid var(--border-subtle);
+  }
+  .swatch .name {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.8125rem;
+  }
+
+  /* ── Type specimen ──────────────────────────────────── */
+  .type-grid {
+    display: grid;
+    gap: 24px;
+  }
+  .type-sample {
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 16px;
+  }
+  .type-sample .meta {
+    font: 500 0.6875rem/1 var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .t-display-xl { font: 600 3rem/1.1 var(--font-display); letter-spacing: -0.01em; }
+  .t-display-lg { font: 600 2rem/1.15 var(--font-display); }
+  .t-h3 { font: 600 1.25rem/1.3 var(--font-ui); }
+  .t-body { font: 400 1rem/1.55 var(--font-ui); }
+  .t-small { font: 400 0.875rem/1.5 var(--font-ui); color: var(--text-secondary); }
+  .t-caption {
+    font: 500 0.6875rem/1.2 var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .t-mono { font: 400 0.875rem/1.4 var(--font-mono); color: var(--text-secondary); }
+
+  /* ── Sample components ─────────────────────────────── */
+  .components-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card-title {
+    font: 600 1.125rem/1.3 var(--font-display);
+    margin: 0;
+  }
+  .card-hero {
+    font: 500 0.75rem/1 var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+
+  .readiness-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .readiness-num {
+    font: 600 2rem/1 var(--font-display);
+    color: var(--accent);
+    font-feature-settings: "tnum";
+  }
+  .readiness-label {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .bar {
+    height: 6px;
+    background: var(--bg-raised);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  }
+
+  .pitch-badges { display: flex; gap: 6px; margin-top: 4px; }
+  .pitch {
+    width: 22px; height: 22px;
+    border-radius: var(--radius-pill);
+    display: inline-flex; align-items: center; justify-content: center;
+    font: 600 0.75rem/1 var(--font-mono);
+    color: #0e1014;
+  }
+  .pitch.red { background: var(--pitch-red); color: #fff; }
+  .pitch.yellow { background: var(--pitch-yellow); }
+  .pitch.blue { background: var(--pitch-blue); color: #fff; }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .btn {
+    font: 500 0.875rem/1 var(--font-ui);
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .btn.primary {
+    background: var(--accent);
+    color: #0e1014;
+    font-weight: 600;
+  }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+  .btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .btn.ghost:hover { color: var(--text-primary); }
+  .btn.danger {
+    background: transparent;
+    color: var(--state-danger);
+    border-color: var(--state-danger);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
+    color: var(--text-secondary);
+    font: 500 0.75rem/1 var(--font-ui);
+    letter-spacing: 0.02em;
+  }
+  .tag.success { background: color-mix(in srgb, var(--state-success) 18%, transparent); color: var(--state-success); }
+  .tag.warning { background: color-mix(in srgb, var(--state-warning) 18%, transparent); color: var(--state-warning); }
+  .tag.danger  { background: color-mix(in srgb, var(--state-danger) 18%, transparent); color: var(--state-danger); }
+
+  .empty-state {
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .empty-state h3 {
+    font: 600 1.125rem/1.3 var(--font-display);
+    margin: 0 0 8px;
+  }
+  .empty-state p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin: 0 auto 20px;
+    max-width: 40ch;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wordmark">
+      Rathe<span class="sep">·</span>Arsenal
+    </div>
+    <button type="button" class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </header>
+
+  <section>
+    <h2>Wordmark</h2>
+    <div class="wordmark-grid">
+      <div class="wordmark-card">
+        <div class="wm-lg">Rathe<span style="color:var(--accent);margin:0 .25em">·</span>Arsenal</div>
+        <div class="label">Horizontal primary</div>
+      </div>
+      <div class="wordmark-card">
+        <div class="wm-stacked">
+          <div class="top">Rathe</div>
+          <div class="bot">A R S E N A L</div>
+        </div>
+        <div class="label">Stacked (app header)</div>
+      </div>
+      <div class="wordmark-card">
+        <div class="wm-monogram">R<span style="color:var(--text-primary)">A</span></div>
+        <div class="label">Monogram (favicon, mobile compact)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Palette</h2>
+    <div class="palette">
+      <div class="swatch" style="background:var(--bg-canvas);color:var(--text-primary);border-color:var(--border-strong)">
+        <span class="name">canvas</span><span>bg-canvas</span>
+      </div>
+      <div class="swatch" style="background:var(--bg-surface);color:var(--text-primary)">
+        <span class="name">surface</span><span>bg-surface</span>
+      </div>
+      <div class="swatch" style="background:var(--bg-raised);color:var(--text-primary)">
+        <span class="name">raised</span><span>bg-raised</span>
+      </div>
+      <div class="swatch" style="background:var(--accent);color:#0e1014;border-color:var(--accent-dim)">
+        <span class="name">accent</span><span>gold</span>
+      </div>
+      <div class="swatch" style="background:var(--state-success);color:#0e1014">
+        <span class="name">success</span><span>ready</span>
+      </div>
+      <div class="swatch" style="background:var(--state-warning);color:#0e1014">
+        <span class="name">warning</span><span>partial</span>
+      </div>
+      <div class="swatch" style="background:var(--state-danger);color:#fff">
+        <span class="name">danger</span><span>missing</span>
+      </div>
+      <div class="swatch" style="background:var(--state-info);color:#fff">
+        <span class="name">info</span><span>neutral cue</span>
+      </div>
+      <div class="swatch" style="background:var(--pitch-red);color:#fff">
+        <span class="name">pitch 1</span><span>red</span>
+      </div>
+      <div class="swatch" style="background:var(--pitch-yellow);color:#0e1014">
+        <span class="name">pitch 2</span><span>yellow</span>
+      </div>
+      <div class="swatch" style="background:var(--pitch-blue);color:#fff">
+        <span class="name">pitch 3</span><span>blue</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Typography</h2>
+    <div class="type-grid">
+      <div class="type-sample">
+        <div class="meta">Display XL · Fraunces 600 · 48/53</div>
+        <div class="t-display-xl">Your collection, ready to play.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Display LG · Fraunces 600 · 32/37</div>
+        <div class="t-display-lg">Briar, Warden of Thorns</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Heading · Inter 600 · 20/26</div>
+        <div class="t-h3">Effective readiness</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Body · Inter 400 · 16/25</div>
+        <div class="t-body">Cole a URL da sua deck do Fabrary e a gente calcula, em segundos, o quanto você já tem pronto para jogar — considerando substituições funcionais das cartas que faltam.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Small · Inter 400 · 14/21</div>
+        <div class="t-small">Tier 2 substitutions suggested where possible.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Caption · Inter 500 uppercase · 11/13</div>
+        <div class="t-caption">Última atualização há 3 minutos</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Mono · JetBrains Mono · 14/20</div>
+        <div class="t-mono">fabrary.net/decks/01HJ7K4W2QF3R</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Components in context</h2>
+    <div class="components-grid">
+
+      <div class="card">
+        <div class="card-hero">Guardian · Blitz</div>
+        <h3 class="card-title">Oldhim, Grandfather of Eons</h3>
+        <div class="pitch-badges">
+          <span class="pitch red">1</span>
+          <span class="pitch yellow">2</span>
+          <span class="pitch blue">3</span>
+        </div>
+        <div class="readiness-row">
+          <span class="readiness-num">82</span>
+          <span class="readiness-label">% ready · 4 cards short</span>
+        </div>
+        <div class="bar"><div class="bar-fill" style="width:82%"></div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="tag success">3 tier-1 subs</span>
+          <span class="tag warning">1 tier-2 sub</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hero">Buttons</div>
+        <div class="btn-row">
+          <button class="btn primary">Import deck</button>
+          <button class="btn secondary">Skip for now</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn ghost">Cancel</button>
+          <button class="btn danger">Untrack deck</button>
+        </div>
+        <div class="card-hero" style="margin-top:16px">Tags &amp; states</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="tag">neutral</span>
+          <span class="tag success">ready</span>
+          <span class="tag warning">partial</span>
+          <span class="tag danger">missing</span>
+        </div>
+      </div>
+
+      <div class="empty-state">
+        <h3>Nothing tracked yet</h3>
+        <p>Cole uma URL do Fabrary e você vê, em segundos, o quão pronto você está para jogar essa deck.</p>
+        <button class="btn primary">Paste a Fabrary URL</button>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    Rathe Arsenal — identity proposal v1 · closed beta
+  </footer>
+
+<script>
+  const root = document.documentElement;
+  root.setAttribute("data-theme", "dark");
+  const btn = document.getElementById("themeToggle");
+  const label = document.getElementById("themeLabel");
+  btn.addEventListener("click", () => {
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    label.textContent = next === "dark" ? "Light" : "Dark";
+  });
+</script>
+</body>
+</html>

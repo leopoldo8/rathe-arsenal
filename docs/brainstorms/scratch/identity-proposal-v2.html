@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rathe Arsenal — Identity Proposal v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=UnifrakturCook:wght@700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-display: "Cinzel", ui-serif, Georgia, serif;
+    --font-ornament: "Cinzel Decorative", "Cinzel", serif;
+    --font-gothic: "UnifrakturCook", "Cinzel", serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg-canvas: #0c0d10;
+    --bg-surface: #15171c;
+    --bg-raised: #1e2128;
+    --border-subtle: #2a2e37;
+    --border-strong: #3d424d;
+    --text-primary: #ece6d7;
+    --text-secondary: #9a9385;
+    --text-muted: #6b6658;
+    --accent: #c5923a;       /* brass/warm gold, more metal than before */
+    --accent-hover: #d9a34a;
+    --accent-dim: #7a5a24;
+    --accent-deep: #5a4218;
+    --ember: #b44a2e;        /* deep forge red (ornamental) */
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg-canvas: #f5f1e8;
+    --bg-surface: #ffffff;
+    --bg-raised: #ece7d8;
+    --border-subtle: #dcd4be;
+    --border-strong: #b8af93;
+    --text-primary: #1a1814;
+    --text-secondary: #4f4a3f;
+    --text-muted: #726b58;
+    --accent: #8f6a22;
+    --accent-hover: #6f521a;
+    --accent-dim: #c6ad72;
+    --accent-deep: #3d2c0e;
+    --ember: #8b3518;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    line-height: 1.55;
+    padding: 48px 32px 96px;
+    max-width: 1040px;
+    margin: 0 auto;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 48px; padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .top-mark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .top-mark span.dot { color: var(--accent); margin: 0 .4em; }
+
+  .theme-toggle {
+    font: 500 0.75rem/1 var(--font-ui);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface); color: var(--text-primary);
+    cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { margin-bottom: 72px; }
+  section > h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: 0.24em;
+    margin: 0 0 24px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  section > h2::before {
+    content: "◆"; color: var(--accent);
+    margin-right: 12px; font-size: 0.6em;
+    vertical-align: middle;
+  }
+
+  /* ── Wordmark grid ───────────────────────────────────── */
+  .wm-grid {
+    display: grid; gap: 24px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) {
+    .wm-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .wm-card {
+    position: relative;
+    padding: 48px 32px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 24px; min-height: 280px; justify-content: center;
+    overflow: hidden;
+  }
+  .wm-card::before {
+    content: ""; position: absolute; inset: 8px;
+    border: 1px solid var(--border-subtle); border-radius: 2px;
+    pointer-events: none; opacity: 0.5;
+  }
+  .wm-card .label {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    font: 500 0.6875rem/1 var(--font-mono);
+    color: var(--text-muted); letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .wm-card .code {
+    position: absolute; top: 16px; left: 16px;
+    font: 500 0.6875rem/1 var(--font-mono);
+    color: var(--accent); letter-spacing: 0.12em;
+  }
+
+  /* A — VAULT MARK */
+  .wm-vault { text-align: center; }
+  .wm-vault .top {
+    font: 700 3rem/0.95 var(--font-display);
+    letter-spacing: 0.08em;
+  }
+  .wm-vault .rule {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin: 14px 0;
+  }
+  .wm-vault .rule .line {
+    width: 72px; height: 1px; background: var(--accent);
+    opacity: 0.7;
+  }
+  .wm-vault .rule .dia {
+    width: 7px; height: 7px;
+    background: var(--accent); transform: rotate(45deg);
+  }
+  .wm-vault .bot {
+    font: 500 0.75rem/1 var(--font-display);
+    letter-spacing: 0.72em; text-indent: 0.72em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  /* B — BLADE CUT */
+  .wm-blade {
+    display: flex; align-items: center; gap: 20px;
+    font: 700 2rem/1 var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .wm-blade .blade {
+    width: 2px; height: 48px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--accent) 20%,
+      var(--accent-hover) 50%,
+      var(--accent) 80%,
+      transparent 100%
+    );
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .wm-blade .right { color: var(--accent); font-weight: 600; }
+
+  /* C — GOTHIC DUALITY */
+  .wm-gothic { text-align: center; display: flex; flex-direction: column; gap: 2px; }
+  .wm-gothic .rathe {
+    font: 700 3.5rem/1 var(--font-gothic);
+    color: var(--text-primary);
+  }
+  .wm-gothic .arsenal {
+    font: 600 0.8125rem/1 var(--font-ui);
+    letter-spacing: 0.8em; text-indent: 0.8em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+
+  /* D — MONOGRAM EMBLEM (bonus) */
+  .wm-emblem {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .wm-emblem .seal {
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font: 700 2.75rem/1 var(--font-ornament);
+    color: var(--accent);
+    letter-spacing: -0.04em;
+    position: relative;
+  }
+  .wm-emblem .seal::before,
+  .wm-emblem .seal::after {
+    content: ""; position: absolute;
+    width: 6px; height: 6px; background: var(--accent);
+    transform: rotate(45deg);
+  }
+  .wm-emblem .seal::before { left: -3px; top: 50%; margin-top: -3px; }
+  .wm-emblem .seal::after  { right: -3px; top: 50%; margin-top: -3px; }
+  .wm-emblem .name {
+    font: 600 0.875rem/1 var(--font-display);
+    letter-spacing: 0.3em; text-indent: 0.3em;
+    text-transform: uppercase;
+  }
+
+  /* ── Type specimen ──────────────────────────────────── */
+  .type-grid { display: grid; gap: 28px; }
+  .type-sample {
+    border-left: 2px solid var(--accent);
+    padding: 6px 0 6px 20px;
+  }
+  .type-sample .meta {
+    font: 500 0.6875rem/1 var(--font-mono);
+    color: var(--text-muted); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .t-hero {
+    font: 900 3.25rem/1.05 var(--font-ornament);
+    letter-spacing: 0.02em;
+  }
+  .t-h1 {
+    font: 700 2.25rem/1.15 var(--font-display);
+    letter-spacing: 0.04em;
+  }
+  .t-h2 {
+    font: 600 1.5rem/1.25 var(--font-display);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .t-h3 {
+    font: 600 1.125rem/1.3 var(--font-ui);
+    letter-spacing: 0.01em;
+  }
+  .t-body { font: 400 1rem/1.6 var(--font-ui); }
+  .t-small { font: 400 0.875rem/1.5 var(--font-ui); color: var(--text-secondary); }
+  .t-caption {
+    font: 500 0.6875rem/1.2 var(--font-ui);
+    text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+
+  /* ── Context card ───────────────────────────────────── */
+  .ctx {
+    padding: 28px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    position: relative;
+  }
+  .ctx::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent, var(--accent), transparent
+    );
+    opacity: 0.5;
+  }
+  .ctx .eyebrow {
+    font: 500 0.6875rem/1 var(--font-display);
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .ctx .deckname {
+    font: 700 1.75rem/1.15 var(--font-display);
+    letter-spacing: 0.02em; margin: 0 0 20px;
+  }
+  .ctx .readiness {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .ctx .readiness .num {
+    font: 700 3rem/1 var(--font-ornament);
+    color: var(--accent);
+    font-feature-settings: "tnum";
+  }
+  .ctx .readiness .pct {
+    font: 600 1rem/1 var(--font-display); color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  .ctx .readiness .delta {
+    font: 500 0.8125rem/1 var(--font-ui);
+    color: var(--text-secondary);
+    margin-left: auto;
+  }
+  .ctx .bar {
+    height: 2px; background: var(--bg-raised);
+    position: relative; margin-bottom: 20px;
+  }
+  .ctx .bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  }
+  .ctx .bar .fill::after {
+    content: ""; position: absolute; right: calc(100% - 82%);
+    top: -4px; width: 2px; height: 10px; background: var(--accent);
+  }
+  .ctx .meta-row {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    font: 500 0.75rem/1 var(--font-ui);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .ctx .meta-row .k { color: var(--text-muted); }
+  .ctx .meta-row .v { color: var(--text-primary); font-weight: 600; }
+
+  .ctx-btn-row { display: flex; gap: 10px; margin-top: 24px; }
+  .btn {
+    font: 600 0.75rem/1 var(--font-display);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 14px 20px; border-radius: 2px;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-deep); }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.secondary {
+    background: transparent; color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+  .btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  footer {
+    margin-top: 80px; padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font: 400 0.8125rem/1.5 var(--font-ui);
+    display: flex; justify-content: space-between;
+  }
+  footer .stamp {
+    font: 500 0.6875rem/1 var(--font-mono);
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-mark">Rathe<span class="dot">◆</span>Arsenal</div>
+    <button type="button" class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </header>
+
+  <section>
+    <h2>Wordmark — Four Creative Directions</h2>
+    <div class="wm-grid">
+
+      <div class="wm-card">
+        <span class="code">A</span>
+        <div class="wm-vault">
+          <div class="top">RATHE</div>
+          <div class="rule">
+            <span class="line"></span>
+            <span class="dia"></span>
+            <span class="line"></span>
+          </div>
+          <div class="bot">ARSENAL</div>
+        </div>
+        <span class="label">Vault Mark · engraved plaque</span>
+      </div>
+
+      <div class="wm-card">
+        <span class="code">B</span>
+        <div class="wm-blade">
+          <span class="left">RATHE</span>
+          <span class="blade" aria-hidden="true"></span>
+          <span class="right">ARSENAL</span>
+        </div>
+        <span class="label">Blade Cut · duality, weaponized</span>
+      </div>
+
+      <div class="wm-card">
+        <span class="code">C</span>
+        <div class="wm-gothic">
+          <div class="rathe">Rathe</div>
+          <div class="arsenal">ARSENAL</div>
+        </div>
+        <span class="label">Gothic Duality · medieval + modern</span>
+      </div>
+
+      <div class="wm-card">
+        <span class="code">D</span>
+        <div class="wm-emblem">
+          <div class="seal" aria-hidden="true">RA</div>
+          <div class="name">Rathe Arsenal</div>
+        </div>
+        <span class="label">Seal + Monogram · guild emblem</span>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Typography</h2>
+    <div class="type-grid">
+      <div class="type-sample">
+        <div class="meta">Hero · Cinzel Decorative 900 · 52/55</div>
+        <div class="t-hero">Your arsenal, forged.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">H1 · Cinzel 700 · 36/41 · tracking 0.04</div>
+        <div class="t-h1">Briar, Warden of Thorns</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">H2 · Cinzel 600 uppercase · 24/30 · tracking 0.05</div>
+        <div class="t-h2">Effective Readiness</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">H3 · IBM Plex Sans 600 · 18/23</div>
+        <div class="t-h3">Cartas que faltam</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Body · IBM Plex Sans 400 · 16/26</div>
+        <div class="t-body">Cole uma URL de deck do Fabrary e descubra, em segundos, o quão pronto você está para jogá-la — considerando substituições funcionais das cartas que ainda te faltam.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Small · Plex Sans 400 · 14/21</div>
+        <div class="t-small">Tier 2 substitutions applied where no tier 1 was available.</div>
+      </div>
+      <div class="type-sample">
+        <div class="meta">Caption · Plex Sans 500 uppercase · 11/13 · tracking 0.15</div>
+        <div class="t-caption">Última leitura · Cúpula DT · há 3 min</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Context</h2>
+    <div class="ctx">
+      <div class="eyebrow">Guardian · Blitz</div>
+      <h3 class="deckname">Oldhim, Grandfather of Eons</h3>
+      <div class="readiness">
+        <span class="num">82</span>
+        <span class="pct">%</span>
+        <span class="delta">+4 since last session</span>
+      </div>
+      <div class="bar"><div class="fill" style="width:82%"></div></div>
+      <div class="meta-row">
+        <div><span class="k">Raw</span> <span class="v">71%</span></div>
+        <div><span class="k">Subs</span> <span class="v">+11</span></div>
+        <div><span class="k">Missing</span> <span class="v">4 cards</span></div>
+        <div><span class="k">Shop</span> <span class="v">R$ 42</span></div>
+      </div>
+      <div class="ctx-btn-row">
+        <button class="btn primary">Open deck</button>
+        <button class="btn secondary">Untrack</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Rathe Arsenal · identity proposal v2</span>
+    <span class="stamp">◆ closed beta ◆</span>
+  </footer>
+
+<script>
+  const root = document.documentElement;
+  root.setAttribute("data-theme", "dark");
+  const btn = document.getElementById("themeToggle");
+  const label = document.getElementById("themeLabel");
+  btn.addEventListener("click", () => {
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    label.textContent = next === "dark" ? "Light" : "Dark";
+  });
+</script>
+</body>
+</html>

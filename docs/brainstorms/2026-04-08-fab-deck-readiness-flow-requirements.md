@@ -441,16 +441,20 @@ Additionally, one design-level decision should be answered before Phase 1 (does 
 
 ## Next Steps
 
-**Gate execution status (2026-04-08):** Gates 1 and 3 executed and passed. Gate 2 partially passed (consent done; accuracy verification sequenced after scraper exists). Gate 4 protocol defined; labeling session is a Phase 0 task.
+**Status update (2026-04-18).** Phase 0 shipped and Gate 4 passed with SOFT_CONFIDENCE (73.7%, 14/19 — see `gates/gate-4-score-result.md`). Phase 1a (product core) and the variant-aware shopping line shipped and merged to `main`. Phase 1b Units 0–6 (Liga FaB / Sbrauble scraper + ingestion + shopping line API/UI) are merged; Unit 7 (Gate 2 accuracy walkthrough with the Cúpula DT owner) is the remaining blocker to the Phase 1 public launch. Phase 1c (Discover, R9 fallback mode, R27 chart, click telemetry) is not yet planned.
 
-**Next concrete steps, in order:**
+**Historical next-steps list (superseded but kept for traceability):**
 
-1. **Run `/ce:plan` for Phase 0.** Phase 0 is unblocked. Its scope: `@flesh-and-blood/cards` ingestion, inventory + tracked decks data model, Fabrary deck URL parsing (via AppSync GraphQL with AWS_IAM anonymous — start by reverse-engineering the live query from the Fabrary web app), tier 1 substitution engine, non-interactive Path B result screen, deck detail without chart or shopping line, Phase 0 minimum security subset (S1, S2, S3, S4, S5, S7, S9). Target duration: 4-6 weeks.
+1. ✅ Run `/ce:plan` for Phase 0 — executed (`docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md`, status `completed`).
+2. ✅ Gate 4 labeling session — executed 2026-04-10 (see `gates/gate-4-score-result.md`, PASS SOFT_CONFIDENCE).
+3. ⏳ Gate 2 accuracy verification — the scraper exists (Phase 1b Units 1–6 merged); the in-person walkthrough with the Cúpula DT owner is the outstanding item and is tracked as Phase 1b Unit 7.
+4. ✅ Manual ToS follow-ups — executed during Phase 1b Unit 0 (`docs/research/phase-1b-compliance-log.md`, status `closed-risk-accepted`).
+5. ⏳ Separate design pass between Phase 0 and Phase 1 — not formally executed; Phase 1a shipped on an incremental-polish posture rather than a dedicated design pass. Revisit before Phase 1c if the community feedback flags UI gaps.
 
-2. **During Phase 0 implementation, execute Gate 4 labeling session.** Assemble 30-substitution gold set, label blindly, score against the ≥70% bar. Insert the resulting pitch curve tolerance numbers into R21. This happens after the engine prototype is functional but before committing to Phase 1.
+**New next steps (Phase 1 launch):**
 
-3. **After Phase 0 exit gate passes, sequence Gate 2 accuracy verification.** Build the scraper against Cúpula DT's `/?view=ecom/*` paths, produce a first snapshot, walk through it with the owner, verify ≥10 cards, capture the explicit crawl-rate exception. This is Phase 1 prep.
-
-4. **Manual follow-ups (can happen in parallel with any phase):** read Fabrary ToS from the site footer; read Sbrauble platform ToS from sbrauble.com. Quote relevant clauses in the gate-3 artifact. These are legal / compliance hygiene before Phase 1 launch, not blockers for Phase 0.
-
-5. **Separate design pass between Phase 0 and Phase 1:** mobile-first, interaction states (loading/empty/error/stale), navigation model, accessibility (WCAG AA, keyboard nav, color-independent tier semantics). Phase 0's minimal UI does not block on it, but Phase 1's richer surface requires it.
+1. **Close Gate 2 accuracy verification (Phase 1b Unit 7).** Walkthrough ≥10 cards with the Cúpula DT owner against the latest snapshot; record findings under `gates/gate-2-accuracy-verification.md` and flip the Cúpula DT `store.active` flag accordingly.
+2. **Revalidate tier 2 against a labeled fixture (followups A17).** Blocks public rollout; ~1–2h of labeling.
+3. **Ship CAPTCHA on sign-up (A16) and the delta-guard baseline run (3–7 manual scrapes)** as the last pre-launch hardening.
+4. **Plan Phase 1c:** Discover (R11–R14), R9 fallback mode, R27 historical chart, and click telemetry (deferred A25) — required to make the secondary success metric measurable.
+5. **Backfill Phase 1a component tests in `apps/web`** (swap editor, Path C result, test-mode result, autocomplete, home deck list). Vitest bootstrap itself (A18) is already resolved.

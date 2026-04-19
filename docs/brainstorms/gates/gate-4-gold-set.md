@@ -1,8 +1,9 @@
 ---
 gate: 4
 title: Gold-Set Protocol (Solo-Labeler Variant)
-status: PENDING (protocol defined; gold set not yet labeled)
+status: PASS (SOFT_CONFIDENCE — 73.7% acceptance, 14/19, executed 2026-04-10; see gate-4-score-result.md)
 date: 2026-04-08
+executed: 2026-04-10
 owner: Rodrigo (also the sole labeler — explicit bias tradeoff)
 ---
 

@@ -1,8 +1,9 @@
 ---
 title: "feat: Replace Clerk with DIY Passport+JWT auth in Phase 0"
 type: feat
-status: active
+status: completed
 date: 2026-04-09
+completed: 2026-04-09
 origin: docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md
 target_repo: rathe-arsenal
 ---
