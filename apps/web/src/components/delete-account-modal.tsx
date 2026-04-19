@@ -90,7 +90,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
     <AlertDialog.Root open={open} onOpenChange={handleOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={styles.overlay} />
-        <AlertDialog.Content className={styles.content} aria-describedby={undefined}>
+        <AlertDialog.Content className={styles.content}>
           <AlertDialog.Title className={styles.title}>
             Delete your account
           </AlertDialog.Title>
