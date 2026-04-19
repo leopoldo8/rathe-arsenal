@@ -18,7 +18,9 @@ import { Route as CheckYourEmailRouteImport } from './routes/check-your-email'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
+import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
@@ -67,9 +69,19 @@ const AuthSettingsRoute = AuthSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthReviewsRoute = AuthReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLibraryRoute = AuthLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthImportRoute = AuthImportRouteImport.update({
@@ -98,7 +110,9 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
+  '/library': typeof AuthLibraryRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
@@ -112,7 +126,9 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
+  '/library': typeof AuthLibraryRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
@@ -128,7 +144,9 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/import': typeof AuthImportRoute
+  '/_auth/library': typeof AuthLibraryRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
+  '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
@@ -144,7 +162,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/home'
     | '/import'
+    | '/library'
     | '/onboarding'
+    | '/reviews'
     | '/settings'
     | '/decks/$deckId'
   fileRoutesByTo: FileRoutesByTo
@@ -158,7 +178,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/home'
     | '/import'
+    | '/library'
     | '/onboarding'
+    | '/reviews'
     | '/settings'
     | '/decks/$deckId'
   id:
@@ -173,7 +195,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_auth/home'
     | '/_auth/import'
+    | '/_auth/library'
     | '/_auth/onboarding'
+    | '/_auth/reviews'
     | '/_auth/settings'
     | '/_auth/decks/$deckId'
   fileRoutesById: FileRoutesById
@@ -254,11 +278,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/reviews': {
+      id: '/_auth/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthReviewsRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/onboarding': {
       id: '/_auth/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthOnboardingRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/library': {
+      id: '/_auth/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthLibraryRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/import': {
@@ -288,7 +326,9 @@ declare module '@tanstack/react-router' {
 interface AuthRouteChildren {
   AuthHomeRoute: typeof AuthHomeRoute
   AuthImportRoute: typeof AuthImportRoute
+  AuthLibraryRoute: typeof AuthLibraryRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
+  AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
 }
@@ -296,7 +336,9 @@ interface AuthRouteChildren {
 const AuthRouteChildren: AuthRouteChildren = {
   AuthHomeRoute: AuthHomeRoute,
   AuthImportRoute: AuthImportRoute,
+  AuthLibraryRoute: AuthLibraryRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
+  AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
 }
