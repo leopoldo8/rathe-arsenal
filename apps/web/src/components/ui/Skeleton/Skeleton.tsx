@@ -42,7 +42,7 @@ export function Skeleton({
       aria-label={ariaLabel}
       aria-busy="true"
       className={classes}
-      style={{ width, height, display: 'block' }}
+      style={{ width, height }}
     />
   );
 }

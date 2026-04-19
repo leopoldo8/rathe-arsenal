@@ -9,9 +9,11 @@
      [data-theme="light"]         — light theme (declared here, tone-corrected in Plan C)
 
    Contrast notes (U3):
-     --ra-fg-secondary dark: adjusted to #b0a898 (~5.0:1 on --ra-bg-canvas) for AA body text.
-     --ra-accent dark: #c5923a at ~3.8:1 on canvas — large-text / decorative ONLY.
-     --ra-accent-body dark: #d4a84a at ~4.6:1 on canvas — use for body-size brass text.
+     --ra-fg-secondary dark: adjusted to #b0a898 (8.24:1 on --ra-bg-canvas) for AA body text.
+     --ra-accent dark: #c5923a at 6.98:1 on canvas — large-text / decorative ONLY.
+       Reserved for ornamental use to maintain visual distinction; --ra-accent-body is the
+       body-size companion. (Note: the plan doc estimated 3.8:1, which was incorrect.)
+     --ra-accent-body dark: #d4a84a at 8.79:1 on canvas — use for body-size brass text.
    ============================================================ */
 
 :root {
@@ -115,10 +117,11 @@
   --ra-fg-subtle:      #555040;
   --ra-fg-inverse:     #0c0d10;
 
-  /* --ra-accent: #c5923a — ~3.8:1 on canvas.
-     LARGE-TEXT AND DECORATIVE USE ONLY (headings >=18pt, ornamental elements,
-     .ra-readiness-display, .ra-diamond). Never use for body-size text on
-     canvas/surface backgrounds.
+  /* --ra-accent: #c5923a — 6.98:1 on canvas (passes AA body AND AA large).
+     LARGE-TEXT AND DECORATIVE USE ONLY by architectural choice, not contrast
+     necessity. Reserved for headings >=18pt, ornamental elements,
+     .ra-readiness-display, .ra-diamond to maintain the visual hierarchy.
+     For body-size brass text use --ra-accent-body instead.
      See: docs/design/v1/contrast-matrix.md */
   --ra-accent:         #c5923a;
   --ra-accent-hover:   #d9a34a;
@@ -129,10 +132,11 @@
   --ra-accent-ink-on:  #1a1408;
 
   /* --ra-accent-body: companion token for body-size brass text.
-     #d4a84a at ~4.6:1 on --ra-bg-canvas — passes WCAG AA at body size (>=4.5:1).
+     #d4a84a at 8.79:1 on --ra-bg-canvas — comfortably passes WCAG AA at body size.
      Use this instead of --ra-accent whenever text is smaller than 18pt/24px or
      not bold at 14pt/18.67px. --ra-accent is preserved for large-text/decorative
-     use where the 3.8:1 ratio qualifies under the large-text AA threshold (3.0:1).
+     use to maintain visual hierarchy (both tokens pass AA at all sizes, but the
+     distinction is architectural — decorative vs content).
      See: docs/design/v1/contrast-matrix.md */
   --ra-accent-body:    #d4a84a;
 

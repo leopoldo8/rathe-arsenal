@@ -66,6 +66,10 @@ const DARK_ACCENT_BODY = '#d4a84a';
 const DARK_ACCENT_HOVER = '#d9a34a';
 const DARK_READY_HIGH = '#6ea968';
 const DARK_READY_MID = '#c5923a';
+// DARK_READY_LOW is 4.35:1 on canvas — just below AA body (4.5:1).
+// Use at large-text contexts only (status badges, headers). Documented in
+// contrast-matrix.md as a borderline token. A body-size test is skipped below.
+const DARK_READY_LOW = '#c0574a';
 const DARK_INFO = '#6a90b8';
 const DARK_INFO_INK = '#b9cde3';
 const DARK_PATH_C = '#c77b3a';
@@ -170,11 +174,25 @@ describe('dark theme — large-text pairs (AA large >= 3.0:1)', () => {
   it('--ra-ready-mid on --ra-bg-canvas', () => {
     expect(contrast(DARK_READY_MID, DARK_CANVAS)).toBeGreaterThanOrEqual(AA_LARGE);
   });
+
+  it('--ra-ready-low on --ra-bg-canvas (large-text status only — body-size is below 4.5:1)', () => {
+    // 4.35:1 — passes AA large (>= 3.0:1). Enforce large-text use only via comments/matrix.
+    expect(contrast(DARK_READY_LOW, DARK_CANVAS)).toBeGreaterThanOrEqual(AA_LARGE);
+  });
 });
 
 // ---------------------------------------------------------------------------
 // Light theme — documented Plan C failures — skipped in CI
 // ---------------------------------------------------------------------------
+
+describe.skip('borderline dark tokens — body-size failures documented as known', () => {
+  it('Plan C: --ra-ready-low (#c0574a) on --ra-bg-canvas — 4.35:1, below 4.5:1 AA body', () => {
+    // 4.35:1 — fails AA body by 0.15. Use at large-text contexts only (status badges).
+    // Plan C action: if body-size danger text is needed, derive a darker companion.
+    // See: docs/design/v1/contrast-matrix.md
+    expect(contrast(DARK_READY_LOW, DARK_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});
 
 describe.skip('light theme — Plan C failures (skipped until Plan C tone correction)', () => {
   it('Plan C: --ra-accent (#8f6a22) on --ra-bg-canvas (#f5f1e8) — 4.38:1, below 4.5:1 AA body', () => {

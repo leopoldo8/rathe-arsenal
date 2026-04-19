@@ -113,7 +113,9 @@
 
 .button--danger:hover:not([aria-disabled='true']):not([aria-busy='true']) {
   background-color: var(--ra-ready-low);
-  color: #ffffff;
+  /* Use fg-inverse (white on dark, dark on light) so hover text stays readable
+     across both themes when the background becomes the danger solid color. */
+  color: var(--ra-fg-inverse);
   border-color: var(--ra-ready-low);
 }
 

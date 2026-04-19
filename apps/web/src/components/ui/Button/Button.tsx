@@ -66,6 +66,15 @@ export function Button({
     onClick?.(event);
   };
 
+  // aria-disabled does not prevent keyboard Enter/Space activation the way
+  // native `disabled` does. Block those events explicitly so keyboard users
+  // get the same disabled experience as mouse users.
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>): void => {
+    if (isDisabled && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+    }
+  };
+
   return (
     <button
       type={type}
@@ -73,6 +82,7 @@ export function Button({
       aria-busy={loading ? 'true' : undefined}
       aria-disabled={isDisabled ? 'true' : undefined}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       {...rest}
     >
       {loading ? (

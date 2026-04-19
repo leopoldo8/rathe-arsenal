@@ -9,8 +9,8 @@ import styles from './Toast.module.css';
 export type TToastKind = 'error' | 'success' | 'info';
 
 export interface IToastPayload {
-  kind: TToastKind;
-  message: string;
+  readonly kind: TToastKind;
+  readonly message: string;
   /** Optional retry callback. Shown as "Retry" button when kind is 'error'. */
   readonly retry?: () => void;
   /** Element to return focus to when toast is dismissed. */
@@ -111,7 +111,11 @@ export function ToastProvider({ children }: IToastProviderProps): React.ReactEle
 
   const dismiss = useCallback((id: string, returnFocusRef?: React.RefObject<HTMLElement | null>) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-    if (returnFocusRef?.current != null) {
+    // Guard with isConnected: toast removal triggers a re-render that may
+    // unmount the trigger element before focus() executes. Calling focus()
+    // on a detached node is a silent no-op in Chrome but throws in some
+    // environments. Check isConnected before calling.
+    if (returnFocusRef?.current != null && returnFocusRef.current.isConnected) {
       returnFocusRef.current.focus();
     }
   }, []);
