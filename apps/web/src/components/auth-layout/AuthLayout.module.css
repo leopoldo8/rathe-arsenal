@@ -1,0 +1,164 @@
+/* AuthLayout — split-panel auth layout */
+
+.split {
+  display: flex;
+  min-block-size: 100dvh;
+  background-color: var(--ra-bg-canvas);
+  color: var(--ra-fg-primary);
+}
+
+/* Left decoration panel — 40-50% width on wide screens */
+.art {
+  flex: 0 0 44%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--ra-space-12) var(--ra-space-8);
+  background-color: var(--ra-bg-surface);
+  border-inline-end: 1px solid var(--ra-border-subtle);
+  overflow: hidden;
+}
+
+.artContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+.artMark {
+  display: flex;
+  justify-content: center;
+}
+
+.artTagline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.artTaglineText {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-accent);
+  margin: 0;
+  line-height: var(--ra-leading-tight);
+}
+
+.artCopy {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  margin: 0;
+}
+
+.artQuote {
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  border-inline-start: 2px solid var(--ra-accent-dim);
+  padding-inline-start: var(--ra-space-4);
+  margin: 0;
+  line-height: var(--ra-leading-normal);
+}
+
+.artCite {
+  display: block;
+  margin-top: var(--ra-space-2);
+  font-style: normal;
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ra-fg-subtle);
+}
+
+/* Right form panel */
+.form {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ra-space-8) var(--ra-space-6);
+  /* Prevent horizontal scroll at narrow viewport */
+  overflow-x: hidden;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 420px;
+}
+
+.heading {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-6) 0;
+  line-height: var(--ra-leading-tight);
+}
+
+.sub {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: calc(-1 * var(--ra-space-4)) 0 var(--ra-space-6) 0;
+  line-height: var(--ra-leading-normal);
+}
+
+/* Inline error alert — replaces plain <p style={{ color: 'red' }}> */
+.errorAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  margin-block-end: var(--ra-space-4);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-ready-low-bg);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-ready-low);
+  line-height: var(--ra-leading-normal);
+}
+
+/* Brass left stripe for error — design spec R44 */
+.errorStripe {
+  display: block;
+  width: 3px;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: var(--ra-radius-sm);
+  background-color: var(--ra-accent);
+  min-block-size: 1em;
+}
+
+.errorText {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-3);
+  margin-top: var(--ra-space-6);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+/* Ensure form usable at 320px — no horizontal scroll */
+@media (max-width: 360px) {
+  .form {
+    padding-inline: var(--ra-space-4);
+  }
+
+  .heading {
+    font-size: var(--ra-text-h2);
+  }
+}

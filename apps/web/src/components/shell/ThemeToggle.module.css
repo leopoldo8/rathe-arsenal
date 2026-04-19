@@ -1,0 +1,44 @@
+/* ThemeToggle — two-button toggle group (sun / moon) */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-bg-sunken);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--ra-radius-sm);
+  background: transparent;
+  color: var(--ra-fg-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.item:hover {
+  color: var(--ra-fg-primary);
+  background-color: var(--ra-bg-raised);
+}
+
+.item[data-state='on'] {
+  background-color: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent-soft-bd);
+  color: var(--ra-accent-body);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

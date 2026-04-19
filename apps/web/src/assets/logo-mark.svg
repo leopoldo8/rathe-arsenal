@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="12" fill="#f5f4ef"></rect>
+  
+  <g transform="translate(32,34)">
+    
+    <g transform="rotate(-22)">
+      <rect x="-10" y="-18" width="20" height="30" rx="2.5" fill="#2c5282" stroke="#1a365d" stroke-width="1"></rect>
+      <rect x="-7.5" y="-15.5" width="15" height="25" rx="1.5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"></rect>
+      <text x="0" y="8" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="11" font-weight="700" fill="#fff">3</text>
+    </g>
+    
+    <g transform="translate(0,-2)">
+      <rect x="-10" y="-18" width="20" height="30" rx="2.5" fill="#d69e2e" stroke="#975a16" stroke-width="1"></rect>
+      <rect x="-7.5" y="-15.5" width="15" height="25" rx="1.5" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"></rect>
+      <text x="0" y="8" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="11" font-weight="700" fill="#fff">2</text>
+    </g>
+    
+    <g transform="rotate(22)">
+      <rect x="-10" y="-18" width="20" height="30" rx="2.5" fill="#c53030" stroke="#9b2c2c" stroke-width="1"></rect>
+      <rect x="-7.5" y="-15.5" width="15" height="25" rx="1.5" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"></rect>
+      <text x="0" y="8" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="11" font-weight="700" fill="#fff">1</text>
+    </g>
+  </g>
+</svg>

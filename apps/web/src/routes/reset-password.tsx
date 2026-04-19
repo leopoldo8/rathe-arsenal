@@ -1,8 +1,11 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import React from 'react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
 import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { AuthLayout } from '../components/auth-layout/AuthLayout';
+import styles from './auth-form.module.css';
 
 export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
@@ -11,7 +14,7 @@ export const Route = createFileRoute('/reset-password')({
   }),
 });
 
-function ResetPasswordPage() {
+function ResetPasswordPage(): React.ReactElement {
   const { token } = Route.useSearch();
   const { resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -19,7 +22,7 @@ function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     setError('');
     if (!token) { setError('Missing reset token'); return; }
@@ -40,13 +43,35 @@ function ResetPasswordPage() {
   }
 
   return (
-    <section style={{ maxWidth: 400 }}>
-      <h1>Reset your password</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input type="password" placeholder="New password (10+ characters)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={10} required />
-        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
-        <button type="submit" disabled={loading}>{loading ? 'Resetting...' : 'Reset password'}</button>
+    <AuthLayout
+      title="Set a new password"
+      subtitle="Choose carefully — your arsenal awaits."
+      tagline="A new key, a new campaign."
+      error={error}
+      footer={<Link to="/sign-in" className={styles.footerLink}>Back to sign in</Link>}
+    >
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <label className={styles.label} htmlFor="reset-password">New password</label>
+        <input
+          id="reset-password"
+          className={styles.input}
+          type="password"
+          placeholder="At least 10 characters"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
+          minLength={10}
+          required
+        />
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          aria-disabled={loading ? 'true' : undefined}
+          aria-busy={loading ? 'true' : undefined}
+        >
+          {loading ? 'Resetting…' : 'Update password'}
+        </button>
       </form>
-    </section>
+    </AuthLayout>
   );
 }

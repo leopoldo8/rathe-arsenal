@@ -1,0 +1,44 @@
+/* Placeholder page — "Coming in v1" empty state */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--ra-space-12) var(--ra-space-6);
+  min-block-size: 40vh;
+  gap: var(--ra-space-4);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-4);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-full);
+  background-color: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+}
+
+.heading {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  margin: 0;
+}
+
+.copy {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  max-width: 480px;
+  margin: 0;
+}

@@ -1,22 +1,26 @@
+import React from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
 import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { AuthLayout } from '../components/auth-layout/AuthLayout';
+import styles from './sign-in.module.css';
 
 export const Route = createFileRoute('/sign-in')({
   component: SignInPage,
 });
 
-function SignInPage() {
+function SignInPage(): React.ReactElement {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     setError('');
     if (!email || !password) { setError('All fields are required'); return; }
@@ -29,6 +33,8 @@ function SignInPage() {
         setError(formatRateLimitMessage(err.retryAfterSeconds));
       } else {
         setError((err as Error).message);
+        // Focus password field for quick retry after invalid-credentials error
+        passwordRef.current?.focus();
       }
     } finally {
       setLoading(false);
@@ -36,19 +42,54 @@ function SignInPage() {
   }
 
   return (
-    <section style={{ maxWidth: 400 }}>
-      <h1>Sign in</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
-        <button type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
+    <AuthLayout
+      title="Sign in"
+      subtitle="Welcome back, Hero."
+      tagline="Welcome back to the armory."
+      error={error}
+      footer={
+        <>
+          <Link to="/forgot-password" className={styles.footerLink}>Forgot password?</Link>
+          <span>
+            No account?{' '}
+            <Link to="/sign-up" className={styles.footerLink}>Create one</Link>
+          </span>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <label className={styles.label} htmlFor="sign-in-email">Email</label>
+        <input
+          id="sign-in-email"
+          className={styles.input}
+          type="email"
+          placeholder="hero@rathe.gg"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+        />
+        <label className={styles.label} htmlFor="sign-in-password">Password</label>
+        <input
+          id="sign-in-password"
+          className={styles.input}
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          ref={passwordRef}
+          required
+        />
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          aria-disabled={loading ? 'true' : undefined}
+          aria-busy={loading ? 'true' : undefined}
+        >
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
       </form>
-      <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>
-        <Link to="/forgot-password">Forgot your password?</Link>
-        {' | '}
-        <Link to="/sign-up">Create an account</Link>
-      </p>
-    </section>
+    </AuthLayout>
   );
 }
