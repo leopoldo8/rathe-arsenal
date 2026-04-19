@@ -47,16 +47,17 @@ export class DecksService {
   ) {}
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
-    const [decks, collectionCardCount] = await Promise.all([
+    const [decks, collectionCardCount, aggregateShoppingLine] = await Promise.all([
       this.trackedDeckRepo.find({
         where: { userId },
         order: { trackedAt: 'DESC' },
       }),
       this.collectionCardRepo.count({ where: { userId } }),
+      this.shoppingLineService.computeAggregate(userId),
     ]);
 
     if (decks.length === 0) {
-      return { trackedDecks: [], collectionCardCount };
+      return { trackedDecks: [], collectionCardCount, aggregateShoppingLine: null };
     }
 
     // Fetch latest snapshot per deck using a subquery for max computedAt
@@ -123,7 +124,7 @@ export class DecksService {
       };
     });
 
-    return { trackedDecks, collectionCardCount };
+    return { trackedDecks, collectionCardCount, aggregateShoppingLine };
   }
 
   async getDetail(

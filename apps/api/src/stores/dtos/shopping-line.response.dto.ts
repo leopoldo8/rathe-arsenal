@@ -229,8 +229,24 @@ export interface IShoppingLineAggregate {
   readonly storeName: string;
   readonly storeSlug: string;
   readonly totalCostCents: number;
-  /** Number of tracked decks where buying available cards reaches 100%. */
-  readonly decksCompletable: number;
+  /**
+   * Number of tracked decks where buying available cards reaches 100%.
+   * Renamed from decksCompletable in U10 to align with the frontend field name.
+   */
+  readonly completableDecks: number;
   /** Total number of tracked decks that have at least one missing card. */
   readonly totalDecks: number;
+  /**
+   * Discriminant used by the frontend as a render guard.
+   * 'populated' = store has stock rows for the user's missing cards.
+   * 'unscraped' = store exists but stock was not scraped recently or has no
+   *   entries for the user's missing cards.
+   */
+  readonly kind: 'populated' | 'unscraped';
+  /**
+   * Count of unique cardIdentifiers missing across all tracked decks.
+   * Each identifier is counted once regardless of how many decks need it.
+   * Used for the home hero "cards missing" stat (R23a).
+   */
+  readonly uniqueCardsMissing: number;
 }

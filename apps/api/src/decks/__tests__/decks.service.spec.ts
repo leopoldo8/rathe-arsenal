@@ -75,6 +75,9 @@ describe('DecksService', () => {
     // Default: shopping line returns null (Path A / no missing cards).
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
 
+    // Default: aggregate shopping line returns null (no tracked decks / all Path A).
+    shoppingLineService.computeAggregate.mockResolvedValue(null);
+
     // Default: no in-progress variant fetch.
     variantFetchService.getProgress.mockReturnValue(undefined);
 
@@ -125,12 +128,17 @@ describe('DecksService', () => {
       // Arrange
       trackedDeckRepo.find.mockResolvedValue([]);
       collectionCardRepo.count.mockResolvedValue(0);
+      shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
       const result = await service.listForUser(USER_ID);
 
       // Assert
-      expect(result).toEqual({ trackedDecks: [], collectionCardCount: 0 });
+      expect(result).toEqual({
+        trackedDecks: [],
+        collectionCardCount: 0,
+        aggregateShoppingLine: null,
+      });
       expect(trackedDeckRepo.find).toHaveBeenCalledWith({
         where: { userId: USER_ID },
         order: { trackedAt: 'DESC' },
@@ -141,6 +149,7 @@ describe('DecksService', () => {
       // Arrange
       trackedDeckRepo.find.mockResolvedValue([]);
       collectionCardRepo.count.mockResolvedValue(42);
+      shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
       const result = await service.listForUser(USER_ID);
@@ -148,6 +157,7 @@ describe('DecksService', () => {
       // Assert
       expect(result.trackedDecks).toEqual([]);
       expect(result.collectionCardCount).toBe(42);
+      expect(result.aggregateShoppingLine).toBeNull();
     });
 
     it('should scope collectionCardCount query to the authenticated userId only', async () => {
@@ -155,6 +165,7 @@ describe('DecksService', () => {
       // userId so one user never sees another user's collection size.
       trackedDeckRepo.find.mockResolvedValue([]);
       collectionCardRepo.count.mockResolvedValue(7);
+      shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
       await service.listForUser(USER_ID);
@@ -198,6 +209,63 @@ describe('DecksService', () => {
           computedAt: snapshot.computedAt.toISOString(),
         },
       });
+      // Default mock returns null — aggregateShoppingLine is null when no missing cards.
+      expect(result.aggregateShoppingLine).toBeNull();
+    });
+
+    it('(U10) should call computeAggregate and attach aggregateShoppingLine to response', async () => {
+      // Arrange
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshot();
+      trackedDeckRepo.find.mockResolvedValue([deck]);
+      collectionCardRepo.count.mockResolvedValue(5);
+
+      const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+      qb.where.mockReturnThis();
+      qb.andWhere.mockReturnThis();
+      qb.getMany.mockResolvedValue([snapshot]);
+      snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const aggregate = {
+        storeName: 'Cúpula DT',
+        storeSlug: 'cupula-dt',
+        totalCostCents: 31200,
+        completableDecks: 3,
+        totalDecks: 5,
+        kind: 'populated' as const,
+        uniqueCardsMissing: 12,
+      };
+      shoppingLineService.computeAggregate.mockResolvedValue(aggregate);
+
+      // Act
+      const result = await service.listForUser(USER_ID);
+
+      // Assert
+      expect(shoppingLineService.computeAggregate).toHaveBeenCalledWith(USER_ID);
+      expect(result.aggregateShoppingLine).toEqual(aggregate);
+    });
+
+    it('(U10) computeAggregate called in parallel — response includes null aggregate when no stock', async () => {
+      // Arrange: decks exist but aggregate returns null (no missing cards / all Path A).
+      const deck = buildTrackedDeck();
+      const snapshot = buildSnapshot();
+      trackedDeckRepo.find.mockResolvedValue([deck]);
+      collectionCardRepo.count.mockResolvedValue(0);
+
+      const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+      qb.where.mockReturnThis();
+      qb.andWhere.mockReturnThis();
+      qb.getMany.mockResolvedValue([snapshot]);
+      snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+
+      shoppingLineService.computeAggregate.mockResolvedValue(null);
+
+      // Act
+      const result = await service.listForUser(USER_ID);
+
+      // Assert: aggregate is null, trackedDecks still populated.
+      expect(result.aggregateShoppingLine).toBeNull();
+      expect(result.trackedDecks).toHaveLength(1);
     });
 
     it('should auto-recompute when no snapshot exists for a deck', async () => {
