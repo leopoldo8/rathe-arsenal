@@ -6,6 +6,19 @@ export interface IBreakdownEntry {
   readonly cardIdentifier: string;
   readonly quantity: number;
   readonly slot: string;
+  /**
+   * Card pitch (1 = red, 2 = yellow, 3 = blue).
+   * null for pitch-less cards such as heroes, weapons, and equipment (U11).
+   */
+  readonly pitch: 1 | 2 | 3 | null;
+  /**
+   * Card cost in resources. null for pitch-less cards (U11).
+   */
+  readonly cost: number | null;
+  /**
+   * Primary card type (types[0] from catalog). 'unknown' as defensive fallback (U11).
+   */
+  readonly type: string;
 }
 
 export interface ISubstitutionEntry {

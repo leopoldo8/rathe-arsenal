@@ -30,14 +30,27 @@ export interface ITrackedDeckListItem {
 export interface ITrackedDeckListResponse {
   readonly trackedDecks: readonly ITrackedDeckListItem[];
   readonly collectionCardCount: number;
-  /** Aggregate shopping line across all tracked decks. Added in Phase 1b. */
-  readonly aggregateShoppingLine?: {
+  /**
+   * Aggregate shopping line across all tracked decks. Added in Phase 1b (U10).
+   * null = no tracked decks with missing cards.
+   */
+  readonly aggregateShoppingLine: {
     readonly storeName: string;
+    readonly storeSlug: string;
     readonly totalCostCents: number;
     readonly completableDecks: number;
     readonly totalDecks: number;
+    /**
+     * Discriminant render guard. 'unscraped' = store not yet scraped;
+     * home.tsx:142 uses `agg.kind === 'unscraped'` to suppress the callout.
+     */
     readonly kind: 'populated' | 'unscraped';
-  };
+    /**
+     * Unique cardIdentifier count across all tracked decks' missing cards.
+     * Used for the home hero "cards missing" stat (R23a).
+     */
+    readonly uniqueCardsMissing: number;
+  } | null;
 }
 
 export interface IImportDecksResponse {

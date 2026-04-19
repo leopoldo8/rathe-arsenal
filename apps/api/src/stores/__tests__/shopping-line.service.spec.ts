@@ -79,10 +79,15 @@ function makeVariantRow(
 function makeBreakdown(
   missing: Array<{ cardIdentifier: string; quantity: number }>,
 ): IBreakdown {
+  // U11: IBreakdownEntry now requires pitch, cost, type.
+  // Tests use null/null/'ally' defaults — contextually appropriate for mainboard action cards.
   const missingEntries = missing.map((e) => ({
     cardIdentifier: e.cardIdentifier,
     quantity: e.quantity,
     slot: 'mainboard',
+    pitch: null as 1 | 2 | 3 | null,
+    cost: null as number | null,
+    type: 'ally',
   }));
   return {
     exact: [],
@@ -1004,6 +1009,7 @@ describe('ShoppingLineService', () => {
 
       // breakdown.missing only contains missingId; substituted card's original
       // is in breakdown.substituted but not in breakdown.missing.
+      // U11: IBreakdownEntry requires pitch, cost, type.
       const breakdown: IBreakdown = {
         exact: [],
         substituted: [
@@ -1011,12 +1017,15 @@ describe('ShoppingLineService', () => {
             cardIdentifier: substitutedOriginalId,
             quantity: 1,
             slot: 'mainboard',
+            pitch: null,
+            cost: null,
+            type: 'ally',
           },
         ],
-        missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard' }],
+        missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' }],
         notOwned: [
-          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard' },
-          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard' },
+          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' },
+          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' },
         ],
       };
 
@@ -1046,22 +1055,49 @@ describe('ShoppingLineService', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null when store has no stock rows (unscraped)', async () => {
-      // Arrange
+    it('(U10) returns aggregate with kind=unscraped when store has no stock rows', async () => {
+      // Arrange: store exists but anyStock === 0 — unscraped state.
+      // We also need decks + snapshots with missing cards to get a non-null response.
       storeRepo.findOne.mockResolvedValue(makeStore());
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: 1, userId: USER_ID } as TrackedDeckEntity,
+      ]);
+
+      const mockQb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+      snapshotRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockQb.where.mockReturnThis();
+      mockQb.andWhere.mockReturnThis();
+      mockQb.getMany.mockResolvedValue([
+        {
+          id: 10,
+          trackedDeckId: 1,
+          effectivePercent: 50,
+          breakdown: {
+            exact: [],
+            substituted: [],
+            missing: [{ cardIdentifier: 'card-x', quantity: 1, slot: 'mainboard' }],
+          },
+          substitutions: {},
+          computedAt: new Date(),
+        } as unknown as DeckReadinessSnapshotEntity,
+      ]);
+      // No stock rows at all
       storeStockRepo.count.mockResolvedValue(0);
 
       // Act
       const result = await service.computeAggregate(USER_ID);
 
-      // Assert
-      expect(result).toBeNull();
+      // Assert: non-null with kind='unscraped' so frontend render guard fires.
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe('unscraped');
+      expect(result!.totalCostCents).toBe(0);
+      expect(result!.completableDecks).toBe(0);
+      expect(result!.uniqueCardsMissing).toBe(1);
     });
 
     it('returns null when user has no tracked decks', async () => {
       // Arrange
       storeRepo.findOne.mockResolvedValue(makeStore());
-      storeStockRepo.count.mockResolvedValue(100);
       trackedDeckRepo.find.mockResolvedValue([]);
 
       // Act
@@ -1161,8 +1197,11 @@ describe('ShoppingLineService', () => {
       // deck 1: 1 × 3000 = 3000; deck 2: min(2,1) × 2000 = 2000; total = 5000
       expect(result!.totalCostCents).toBe(5000);
       // deck 1 completable (card-a all covered), deck 2 not (card-b partial, card-c missing)
-      expect(result!.decksCompletable).toBe(1);
+      expect(result!.completableDecks).toBe(1);
       expect(result!.totalDecks).toBe(2);
+      // (U10) kind and uniqueCardsMissing
+      expect(result!.kind).toBe('populated');
+      expect(result!.uniqueCardsMissing).toBe(3); // card-a, card-b, card-c
     });
 
     it('handles DB error gracefully — returns null', async () => {

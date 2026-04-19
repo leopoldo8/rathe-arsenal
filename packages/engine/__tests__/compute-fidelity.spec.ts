@@ -11,7 +11,9 @@ function makeEntry(
   quantity: number,
   slot: string = 'mainboard',
 ): IBreakdownEntry {
-  return Object.freeze({ cardIdentifier, quantity, slot });
+  // U11: IBreakdownEntry now requires pitch, cost, type.
+  // Tests use null/null/'ally' as contextually appropriate defaults.
+  return Object.freeze({ cardIdentifier, quantity, slot, pitch: null, cost: null, type: 'ally' });
 }
 
 function makeMatch(

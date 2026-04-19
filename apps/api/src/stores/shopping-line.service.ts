@@ -227,13 +227,6 @@ export class ShoppingLineService {
         return null;
       }
 
-      const anyStock = await this.storeStockRepo.count({
-        where: { storeId: store.id },
-      });
-      if (anyStock === 0) {
-        return null;
-      }
-
       const decks = await this.trackedDeckRepo.find({
         where: { userId },
       });
@@ -296,6 +289,25 @@ export class ShoppingLineService {
         return null;
       }
 
+      const uniqueCardsMissing = allMissingIdentifiers.size;
+
+      // Check if the store has ANY stock rows at all. If not, return unscraped
+      // so the frontend render guard (agg.kind === 'unscraped') fires correctly.
+      const anyStock = await this.storeStockRepo.count({
+        where: { storeId: store.id },
+      });
+      if (anyStock === 0) {
+        return {
+          storeName: store.name,
+          storeSlug: store.slug,
+          totalCostCents: 0,
+          completableDecks: 0,
+          totalDecks: deckMissingList.length,
+          kind: 'unscraped',
+          uniqueCardsMissing,
+        };
+      }
+
       // Single batched query for all missing cards across all decks.
       const stockRows = await this.storeStockRepo.find({
         where: {
@@ -313,7 +325,7 @@ export class ShoppingLineService {
       }
 
       let totalCostCents = 0;
-      let decksCompletable = 0;
+      let completableDecks = 0;
 
       for (const deckMissing of deckMissingList) {
         let deckCost = 0;
@@ -331,20 +343,18 @@ export class ShoppingLineService {
 
         totalCostCents += deckCost;
         if (allMissingCovered) {
-          decksCompletable += 1;
+          completableDecks += 1;
         }
-      }
-
-      if (totalCostCents === 0) {
-        return null;
       }
 
       return {
         storeName: store.name,
         storeSlug: store.slug,
         totalCostCents,
-        decksCompletable,
+        completableDecks,
         totalDecks: deckMissingList.length,
+        kind: 'populated',
+        uniqueCardsMissing,
       };
     } catch (error) {
       this.logger.error({
