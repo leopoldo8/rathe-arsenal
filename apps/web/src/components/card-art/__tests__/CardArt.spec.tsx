@@ -177,9 +177,26 @@ describe('CardArt — missing state', () => {
     // Arrange + Act
     const { container } = render(<CardArt {...BASE_PROPS} missing={true} size="md" />);
 
-    // Assert — pattern element is in the SVG defs
-    const pattern = container.querySelector('pattern[id="ra-hatch-md"]');
+    // Assert — pattern element is in the SVG defs. The id is generated via
+    // React.useId() per instance to avoid DOM collisions when multiple
+    // `missing` cards render simultaneously; we match on the stable prefix.
+    const pattern = container.querySelector('pattern[id^="ra-hatch-"]');
     expect(pattern).not.toBeNull();
+  });
+
+  it('assigns unique pattern ids across multiple simultaneous instances', () => {
+    // Regression guard for ce-review residual P2 — SVG `id` must be unique per DOM.
+    const { container } = render(
+      <>
+        <CardArt {...BASE_PROPS} missing={true} size="md" />
+        <CardArt {...BASE_PROPS} missing={true} size="md" />
+        <CardArt {...BASE_PROPS} missing={true} size="md" />
+      </>,
+    );
+    const patterns = container.querySelectorAll('pattern[id^="ra-hatch-"]');
+    expect(patterns).toHaveLength(3);
+    const ids = new Set(Array.from(patterns).map((p) => p.id));
+    expect(ids.size).toBe(3);
   });
 });
 

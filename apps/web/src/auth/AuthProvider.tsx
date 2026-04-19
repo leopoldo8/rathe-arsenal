@@ -1,49 +1,13 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext, IAuthSettings, IAuthUser } from './AuthContext';
+import { THEME_STORAGE_KEY } from '../styles/theme-init';
+import { authFetch as apiFetch, AuthFetchError } from '../lib/auth-fetch';
+
+// Re-export so existing consumers that imported AuthFetchError from this module
+// continue to compile without an import rewrite.
+export { AuthFetchError };
 
 const STORAGE_KEY = 'rathe-arsenal:jwt';
-const THEME_STORAGE_KEY = 'rathe-arsenal:theme';
-
-/**
- * Error thrown by {@link apiFetch} on non-2xx responses. Carries HTTP status so
- * the UI can branch on 429 (rate-limited) vs other failures, and the parsed
- * `Retry-After` header (seconds) when present. See Unit 1 / A5.
- */
-export class AuthFetchError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly retryAfterSeconds: number | null = null,
-  ) {
-    super(message);
-    this.name = 'AuthFetchError';
-  }
-}
-
-function parseRetryAfter(header: string | null): number | null {
-  if (!header) return null;
-  const asSeconds = Number(header);
-  if (Number.isFinite(asSeconds) && asSeconds >= 0) return Math.ceil(asSeconds);
-  const asDate = Date.parse(header);
-  if (!Number.isNaN(asDate)) {
-    return Math.max(0, Math.ceil((asDate - Date.now()) / 1000));
-  }
-  return null;
-}
-
-async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
-  const headers = new Headers(init.headers);
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const res = await fetch(`/api${path}`, { ...init, headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    const message = body.error ?? body.message ?? res.statusText;
-    const retryAfter = parseRetryAfter(res.headers.get('Retry-After'));
-    throw new AuthFetchError(message, res.status, retryAfter);
-  }
-  return (await res.json()) as T;
-}
 
 /**
  * U12 — applies a theme value to the DOM and localStorage in sync.
@@ -84,8 +48,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(!!token);
 
+  // persist() sets the token and seeds user+settings atomically from the auth
+  // response payload — the bootstrap effect below would otherwise re-fetch
+  // /auth/me and race against any optimistic write made between sign-in and the
+  // effect running. A ref-flag marks the "just-persisted" state so the effect
+  // skips exactly one run per session-start. See ce-review residual P1.
+  const justPersistedRef = useRef(false);
+
   useEffect(() => {
     if (!token) { setIsLoading(false); return; }
+    if (justPersistedRef.current) {
+      justPersistedRef.current = false;
+      setIsLoading(false);
+      return;
+    }
     apiFetch<IAuthMeResponse>('/auth/me', {}, token)
       .then((res) => {
         setUser({ id: res.id, email: res.email });
@@ -102,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback((jwt: string, u: IAuthUser, s: IAuthSettings) => {
     localStorage.setItem(STORAGE_KEY, jwt);
+    justPersistedRef.current = true;
     setToken(jwt);
     setUser(u);
     setSettingsState(s);

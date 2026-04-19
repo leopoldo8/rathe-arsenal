@@ -3,16 +3,11 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useAuth } from '../../auth/useAuth';
 import { useToast } from '../ui/Toast/useToast';
 import { patchUserSettings } from '../../api/user-settings';
+import { THEME_STORAGE_KEY, TTheme, resolveTheme } from '../../styles/theme-init';
 import styles from './ThemeToggle.module.css';
 
-const STORAGE_KEY = 'rathe-arsenal:theme';
-
-type TTheme = 'dark' | 'light';
-
 function getInitialTheme(): TTheme {
-  const stored = document.documentElement.dataset.theme;
-  if (stored === 'light' || stored === 'dark') return stored;
-  return 'dark';
+  return resolveTheme(document.documentElement.dataset.theme);
 }
 
 /**
@@ -36,7 +31,7 @@ export function ThemeToggle(): React.ReactElement {
     setTheme(next);
     document.documentElement.dataset.theme = next;
     try {
-      localStorage.setItem(STORAGE_KEY, next);
+      localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {
       // Private browsing — silent
     }

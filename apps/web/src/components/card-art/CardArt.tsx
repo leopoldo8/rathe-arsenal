@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import styles from './CardArt.module.css';
 
 import AttackGlyph from './glyphs/attack.svg?react';
@@ -131,6 +131,13 @@ export function CardArt({
   const width = SIZE_WIDTH_MAP[size];
   const height = Math.round(width * ASPECT_RATIO);
 
+  // React 18 stable id — unique per component instance across renders.
+  // Without this, rendering N `missing` cards of the same size produces N
+  // duplicate `id="ra-hatch-md"` elements; browsers resolve `url(#…)` to the
+  // first match, masking any future per-instance divergence of pattern attrs.
+  const reactId = useId();
+  const hatchId = `ra-hatch-${reactId}`;
+
   const pitchKey = resolvePitchKey(pitch);
   const colors = PITCH_FRAME_VARS[pitchKey];
 
@@ -166,7 +173,7 @@ export function CardArt({
         {missing && (
           <defs>
             <pattern
-              id={`ra-hatch-${size}`}
+              id={hatchId}
               x="0"
               y="0"
               width="8"
@@ -320,7 +327,7 @@ export function CardArt({
               height="136"
               rx="5"
               ry="5"
-              fill={`url(#ra-hatch-${size})`}
+              fill={`url(#${hatchId})`}
               opacity="0.7"
             />
           </g>
