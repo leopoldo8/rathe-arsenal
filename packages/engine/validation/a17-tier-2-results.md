@@ -5,7 +5,7 @@ blocker: true
 created: 2026-04-19
 ---
 
-> WARNING: PENDING LABELER — Gate 2 ship-blocker. Cupula DT member needed for 1-2h labeling session to fill this document. See `a17-tier-2-gold-set.md` for instructions and the 30 suggestions to review.
+> WARNING: PENDING LABELER — Gate 2 ship-blocker. Cúpula DT member needed for 1-2h labeling session to fill this document. See `a17-tier-2-gold-set.md` for instructions and the 30 suggestions to review.
 
 # A17 — Tier-2 Gold-Set Results
 

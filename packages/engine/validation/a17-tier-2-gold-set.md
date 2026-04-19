@@ -23,7 +23,7 @@ Gate 2 is blocked until this document reaches >=60% acceptance. The results are 
 
 ## 2. Instructions for Labeler
 
-You are a Cupula DT member reviewing 30 tier-2 substitution suggestions produced by the `@rathe-arsenal/engine`. Each suggestion answers the question: "If a player owns the proxy card but not the missing card, is the proxy a reasonable stand-in for this deck?"
+You are a Cúpula DT member reviewing 30 tier-2 substitution suggestions produced by the `@rathe-arsenal/engine`. Each suggestion answers the question: "If a player owns the proxy card but not the missing card, is the proxy a reasonable stand-in for this deck?"
 
 Estimated session time: 1-2 hours.
 
