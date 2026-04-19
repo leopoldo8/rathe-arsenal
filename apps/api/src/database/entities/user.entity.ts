@@ -55,14 +55,16 @@ export class UserEntity {
   /**
    * U12 — user preferences stored as a closed-schema JSONB blob.
    * The narrow shape `{ theme: 'dark' | 'light' }` is enforced at the DTO
-   * layer (UserSettingsDto with class-validator). TypeORM writes the raw
-   * record; the column default is set by migration 1776621087000.
+   * layer (PatchThemeDto with class-validator).
    *
-   * Nullable here so existing rows loaded before the migration has run (or
-   * rows that somehow have NULL) do not cause a runtime crash. The auth
-   * service uses `preferences?.theme ?? 'dark'` as a defensive fallback.
+   * Default value lives in migration 1776621087000 (`DEFAULT '{"theme":"dark"}'::jsonb`).
+   * The entity intentionally omits a `default` attribute — duplicating it here
+   * at the ORM layer risks drift with the DDL (TypeORM's function-expression
+   * defaults use different syntax than raw Postgres). Service code uses
+   * `preferences?.theme ?? 'dark'` as the runtime fallback when the column
+   * is NULL on a malformed row.
    */
-  @Column({ type: 'jsonb', nullable: true, default: () => `'{"theme":"dark"}'` })
+  @Column({ type: 'jsonb', nullable: true })
   preferences!: { theme: 'dark' | 'light' } | null;
 
   @CreateDateColumn({ type: 'timestamptz' })

@@ -1,15 +1,16 @@
+import { NotFoundException } from '@nestjs/common';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { UserEntity } from '../../database/entities/user.entity';
 import { UsersService } from '../users.service';
 
 function buildService(repoOverrides: Partial<{
   findOne: jest.Mock;
-  save: jest.Mock;
+  update: jest.Mock;
 }> = {}) {
   const repo = createMock<Repository<UserEntity>>();
   repo.findOne = repoOverrides.findOne ?? jest.fn().mockResolvedValue(null);
-  repo.save = repoOverrides.save ?? jest.fn().mockImplementation(async (u: Partial<UserEntity>) => u as UserEntity);
+  repo.update = repoOverrides.update ?? jest.fn().mockResolvedValue({ affected: 1, raw: [] } as UpdateResult);
 
   const service = new UsersService(repo as unknown as Repository<UserEntity>);
   return { service, repo };
@@ -34,123 +35,66 @@ function makeUser(overrides: Partial<UserEntity> = {}): UserEntity {
 
 describe('UsersService.getSettings', () => {
   it('returns dark theme for a fresh user with default preferences', async () => {
-    // Arrange
     const user = makeUser();
-    const { service, repo } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-
-    // Act
+    const { service, repo } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
     const result = await service.getSettings('user-1');
-
-    // Assert
     expect(result).toEqual({ theme: 'dark' });
     expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'user-1' } });
   });
 
   it('returns light theme when user has preferences.theme = light', async () => {
-    // Arrange
     const user = makeUser({ preferences: { theme: 'light' } });
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-
-    // Act
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
     const result = await service.getSettings('user-1');
-
-    // Assert
     expect(result).toEqual({ theme: 'light' });
   });
 
-  it('returns dark theme as fallback when user preferences is NULL (defensive edge case)', async () => {
-    // Arrange — simulate a row that somehow has NULL preferences (pre-migration row)
+  it('returns dark theme as fallback when preferences is NULL (defensive)', async () => {
     const user = makeUser({ preferences: null });
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-
-    // Act
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
     const result = await service.getSettings('user-1');
-
-    // Assert
     expect(result).toEqual({ theme: 'dark' });
+  });
+
+  it('throws NotFoundException when user row is missing', async () => {
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(null) });
+    await expect(service.getSettings('user-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
 describe('UsersService.patchSettings', () => {
-  it('updates preferences.theme to light and returns updated settings', async () => {
-    // Arrange
-    const user = makeUser({ preferences: { theme: 'dark' } });
-    const updatedUser = { ...user, preferences: { theme: 'light' as const } };
-    const saveMock = jest.fn().mockResolvedValue(updatedUser);
-    const { service, repo } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      save: saveMock,
-    });
+  it('issues an atomic UPDATE targeting only preferences and returns new value', async () => {
+    const updateMock = jest.fn().mockResolvedValue({ affected: 1, raw: [] } as UpdateResult);
+    const { service, repo } = buildService({ update: updateMock });
 
-    // Act
     const result = await service.patchSettings('user-1', 'light');
 
-    // Assert
     expect(result).toEqual({ theme: 'light' });
-    expect(saveMock).toHaveBeenCalledWith({
-      ...user,
-      preferences: { theme: 'light' },
-    });
-    expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'user-1' } });
+    expect(updateMock).toHaveBeenCalledWith({ id: 'user-1' }, { preferences: { theme: 'light' } });
+    // Targeted UPDATE — we do NOT pre-fetch the row; this eliminates the
+    // read-modify-write race with concurrent soft-delete writes to other columns.
+    expect(repo.findOne).not.toHaveBeenCalled();
   });
 
   it('persists theme=dark correctly', async () => {
-    // Arrange
-    const user = makeUser({ preferences: { theme: 'light' } });
-    const saveMock = jest.fn().mockResolvedValue({ ...user, preferences: { theme: 'dark' } });
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      save: saveMock,
-    });
-
-    // Act
+    const updateMock = jest.fn().mockResolvedValue({ affected: 1, raw: [] } as UpdateResult);
+    const { service } = buildService({ update: updateMock });
     const result = await service.patchSettings('user-1', 'dark');
-
-    // Assert
     expect(result).toEqual({ theme: 'dark' });
-    expect(saveMock).toHaveBeenCalledWith({
-      ...user,
-      preferences: { theme: 'dark' },
-    });
+    expect(updateMock).toHaveBeenCalledWith({ id: 'user-1' }, { preferences: { theme: 'dark' } });
   });
 
-  it('uses dark fallback when preferences is NULL and still saves correctly', async () => {
-    // Arrange — simulate null preferences row
-    const user = makeUser({ preferences: null });
-    const saveMock = jest.fn().mockResolvedValue({ ...user, preferences: { theme: 'light' } });
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      save: saveMock,
-    });
-
-    // Act
-    const result = await service.patchSettings('user-1', 'light');
-
-    // Assert
-    expect(result).toEqual({ theme: 'light' });
+  it('throws NotFoundException when no row was updated (vanished user)', async () => {
+    const updateMock = jest.fn().mockResolvedValue({ affected: 0, raw: [] } as UpdateResult);
+    const { service } = buildService({ update: updateMock });
+    await expect(service.patchSettings('ghost', 'light')).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('strips unknown keys — only stores closed-schema { theme } in preferences', async () => {
-    // Arrange — simulate a scenario where the column read back only has theme
-    const user = makeUser({ preferences: { theme: 'dark' } });
-    const saveMock = jest.fn().mockResolvedValue({ ...user, preferences: { theme: 'light' } });
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      save: saveMock,
-    });
-
-    // Act — service only accepts theme; unknown keys never reach here (stripped by DTO/ValidationPipe)
-    const result = await service.patchSettings('user-1', 'light');
-
-    // Assert — saved value is exactly { theme: 'light' }, no other keys
-    const savedArg = saveMock.mock.calls[0][0] as { preferences: { theme: string } };
-    expect(Object.keys(savedArg.preferences)).toEqual(['theme']);
-    expect(result).toEqual({ theme: 'light' });
+  it('writes only the closed-schema { theme } key — no unknown keys persisted', async () => {
+    const updateMock = jest.fn().mockResolvedValue({ affected: 1, raw: [] } as UpdateResult);
+    const { service } = buildService({ update: updateMock });
+    await service.patchSettings('user-1', 'light');
+    const [, partial] = updateMock.mock.calls[0] as [unknown, { preferences: Record<string, unknown> }];
+    expect(Object.keys(partial.preferences)).toEqual(['theme']);
   });
 });
