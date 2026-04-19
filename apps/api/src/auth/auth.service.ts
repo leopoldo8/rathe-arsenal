@@ -9,7 +9,7 @@ import { EmailDeliveryError } from '../email/errors';
 import { PasswordHasherService } from './services/password-hasher.service';
 import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthError, EAuthErrorCode } from './errors';
-import { IAuthResponse, IGenericAuthAcceptedResponse } from './dtos/auth-response.dto';
+import { IAuthResponse, IAuthSettings, IGenericAuthAcceptedResponse } from './dtos/auth-response.dto';
 import { ICurrentUser } from './dtos/current-user.dto';
 
 const GENERIC_SIGN_UP_MESSAGE =
@@ -140,7 +140,13 @@ export class AuthService {
 
     const jwt = await this.issueJwt(user.id);
     this.logger.log({ event: 'auth.sign_in.success', userId: user.id });
-    return { jwt, user: { id: user.id, email: user.email } };
+    return {
+      jwt,
+      user: { id: user.id, email: user.email },
+      // U12: include settings for first-paint theme correctness. Nullish fallback
+      // guards against NULL preferences on rows created before migration 1776621087000.
+      settings: { theme: user.preferences?.theme ?? 'dark' },
+    };
   }
 
   async verifyEmail(rawToken: string): Promise<IAuthResponse> {
@@ -159,7 +165,11 @@ export class AuthService {
 
     const jwt = await this.issueJwt(user.id);
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
-    return { jwt, user: { id: user.id, email: user.email } };
+    return {
+      jwt,
+      user: { id: user.id, email: user.email },
+      settings: { theme: user.preferences?.theme ?? 'dark' },
+    };
   }
 
   async requestPasswordReset(email: string): Promise<void> {
@@ -202,11 +212,22 @@ export class AuthService {
 
     const jwt = await this.issueJwt(user.id);
     this.logger.log({ event: 'auth.reset_password.success', userId: user.id });
-    return { jwt, user: { id: user.id, email: user.email } };
+    return {
+      jwt,
+      user: { id: user.id, email: user.email },
+      settings: { theme: user.preferences?.theme ?? 'dark' },
+    };
   }
 
-  async getMe(currentUser: ICurrentUser): Promise<{ id: string; email: string }> {
-    return { id: currentUser.userId, email: currentUser.email };
+  async getMe(
+    currentUser: ICurrentUser,
+  ): Promise<{ id: string; email: string; settings: IAuthSettings }> {
+    const user = await this.users.findOne({ where: { id: currentUser.userId } });
+    return {
+      id: currentUser.userId,
+      email: currentUser.email,
+      settings: { theme: user?.preferences?.theme ?? 'dark' },
+    };
   }
 
   /**

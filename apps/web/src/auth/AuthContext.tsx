@@ -5,10 +5,21 @@ export interface IAuthUser {
   email: string;
 }
 
+export interface IAuthSettings {
+  theme: 'dark' | 'light';
+}
+
 export interface IAuthContext {
   user: IAuthUser | null;
   token: string | null;
   isLoading: boolean;
+  /**
+   * U12 — server-persisted user preferences mirrored into context for first-paint
+   * theme correctness. Optional to avoid breaking every existing `useAuth()`
+   * consumer (shell + ThemeToggle are the required consumers).
+   */
+  settings?: IAuthSettings;
+  setSettings: (next: IAuthSettings) => void;
   signUp: (email: string, password: string) => Promise<{ _devVerificationLink?: string | undefined }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;

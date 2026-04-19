@@ -52,6 +52,19 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true })
   deletedAt!: Date | null;
 
+  /**
+   * U12 — user preferences stored as a closed-schema JSONB blob.
+   * The narrow shape `{ theme: 'dark' | 'light' }` is enforced at the DTO
+   * layer (UserSettingsDto with class-validator). TypeORM writes the raw
+   * record; the column default is set by migration 1776621087000.
+   *
+   * Nullable here so existing rows loaded before the migration has run (or
+   * rows that somehow have NULL) do not cause a runtime crash. The auth
+   * service uses `preferences?.theme ?? 'dark'` as a defensive fallback.
+   */
+  @Column({ type: 'jsonb', nullable: true, default: () => `'{"theme":"dark"}'` })
+  preferences!: { theme: 'dark' | 'light' } | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }
