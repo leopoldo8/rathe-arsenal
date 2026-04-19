@@ -83,7 +83,8 @@ describe('DeleteAccountModal', () => {
 
   it('renders nothing when closed', () => {
     renderModal({ deleteAccount: vi.fn(), open: false });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // Radix AlertDialog uses role="alertdialog"
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('keeps the submit button disabled until password and checkbox are filled', async () => {
@@ -146,8 +147,8 @@ describe('DeleteAccountModal', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(/incorrect password/i),
     );
 
-    // Modal is still rendered.
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    // Modal is still rendered (Radix AlertDialog uses role="alertdialog").
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(onDeleted).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     // Submit button is re-enabled (not stuck in submitting state).

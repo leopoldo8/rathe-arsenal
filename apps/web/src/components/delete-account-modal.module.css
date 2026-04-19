@@ -1,0 +1,199 @@
+/* DeleteAccountModal — Radix AlertDialog restyle
+   Tokens from src/styles/tokens.css
+   Unit 7 (Onda 3): modal visual system upgrade */
+
+/* Overlay (Radix renders this as a portal sibling to the content) */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 900;
+  animation: overlayShow var(--ra-duration-lg) var(--ra-ease);
+}
+
+@keyframes overlayShow {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal surface */
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 901;
+  width: min(440px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+  box-shadow: var(--ra-shadow-lg);
+  padding: var(--ra-space-6);
+  animation: contentShow var(--ra-duration-lg) var(--ra-ease);
+}
+
+@keyframes contentShow {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Title */
+.title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h2);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-h2);
+  color: var(--ra-ready-low);
+  margin: 0 0 var(--ra-space-3);
+}
+
+/* Description */
+.description {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  margin: 0 0 var(--ra-space-5);
+}
+
+/* Form field */
+.fieldGroup {
+  margin-bottom: var(--ra-space-4);
+}
+
+.fieldLabel {
+  display: block;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  margin-bottom: var(--ra-space-1);
+}
+
+.passwordInput {
+  width: 100%;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  box-sizing: border-box;
+  transition: border-color var(--ra-duration) var(--ra-ease);
+}
+
+.passwordInput:focus {
+  outline: none;
+  border-color: var(--ra-accent);
+}
+
+.passwordInput[aria-invalid="true"] {
+  border-color: var(--ra-ready-low);
+}
+
+.fieldError {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-ready-low);
+  margin-top: var(--ra-space-1);
+}
+
+/* Confirm checkbox row */
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ra-space-2);
+  margin-bottom: var(--ra-space-4);
+}
+
+.checkboxInput {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--ra-ready-low);
+}
+
+.checkboxLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  cursor: pointer;
+}
+
+/* Error banner */
+.errorBanner {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-ready-low);
+  background: var(--ra-ready-low-bg);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  margin-bottom: var(--ra-space-4);
+}
+
+/* Footer buttons */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ra-space-2);
+}
+
+.cancelBtn {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  background: none;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  cursor: pointer;
+  transition: background-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelBtn:focus-visible {
+  outline: 2px solid var(--ra-border-strong);
+  outline-offset: 2px;
+}
+
+.submitBtn {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: #fff;
+  background: var(--ra-ready-low);
+  border: none;
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  cursor: pointer;
+  transition: background-color var(--ra-duration) var(--ra-ease);
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--ra-ready-low-dark);
+}
+
+.submitBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.submitBtn:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 2px;
+}
