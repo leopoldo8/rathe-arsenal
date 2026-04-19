@@ -2,62 +2,82 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
+import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import styles from './settings.module.css';
 
 export const Route = createFileRoute('/_auth/settings')({
   component: SettingsPage,
 });
 
 /**
- * Phase 1a Unit 2 (A8) — minimal settings surface. Currently holds only the
- * account-deletion entry point. As Phase 1 grows (email change, password
- * change, notification preferences) this page will expand; the URL is
- * stable so future deep-links stay valid.
+ * Unit 7 (Onda 3) — Settings page restyled with 3-section layout.
+ *
+ * Sections:
+ *  1. Profile  — email displayed read-only (display-name is out of v1 scope)
+ *  2. Theme    — ThemeToggle (client-side; backend persistence wires in Unit 12)
+ *  3. Account  — change-password link + delete-account trigger
+ *
+ * Zero inline styles — all layout is handled by settings.module.css.
  */
-function SettingsPage() {
+export function SettingsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
-    <section style={{ maxWidth: '640px' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>Account settings</h1>
-      {user && (
-        <p style={{ color: '#666', marginTop: 0 }}>
-          Signed in as <strong>{user.email}</strong>
-        </p>
-      )}
+    <div className={styles.page}>
+      <h1 className={styles.pageHeading}>Account settings</h1>
 
+      {/* ---- Section 1: Profile ---- */}
+      <section className={styles.section} aria-labelledby="section-profile">
+        <span className={styles.eyebrow}>Profile</span>
+        <h2 id="section-profile" className={styles.sectionHeading}>
+          Your profile
+        </h2>
+        <div className={styles.emailRow}>
+          <span className={styles.emailLabel}>Email address</span>
+          <span className={styles.emailValue}>{user?.email ?? '—'}</span>
+        </div>
+      </section>
+
+      {/* ---- Section 2: Theme ---- */}
+      <section className={styles.section} aria-labelledby="section-theme">
+        <span className={styles.eyebrow}>Appearance</span>
+        <h2 id="section-theme" className={styles.sectionHeading}>
+          Theme
+        </h2>
+        <div className={styles.themeRow}>
+          <span className={styles.themeLabel}>Color theme</span>
+          <ThemeToggle />
+        </div>
+      </section>
+
+      {/* ---- Section 3: Account ---- */}
       <section
-        style={{
-          marginTop: '2rem',
-          padding: '1.25rem',
-          border: '1px solid #f5c6c1',
-          borderRadius: '8px',
-          background: '#fdecea',
-        }}
+        className={`${styles.section} ${styles.accountSection}`}
+        aria-labelledby="section-account"
       >
-        <h2 style={{ marginTop: 0, color: '#7a1f14' }}>Danger zone</h2>
-        <p style={{ color: '#7a1f14', marginTop: 0 }}>
-          Deleting your account marks it for permanent removal after 30 days.
-          You will be signed out immediately and your collection, tracked
-          decks, and readiness history will be erased.
-        </p>
-        <button
-          type="button"
-          onClick={() => setDeleteOpen(true)}
-          style={{
-            marginTop: '0.5rem',
-            padding: '0.5rem 0.875rem',
-            background: '#c0392b',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+        <span className={styles.eyebrow}>Account</span>
+        <h2
+          id="section-account"
+          className={`${styles.sectionHeading} ${styles.accountSectionHeading}`}
         >
-          Delete my account
-        </button>
+          Danger zone
+        </h2>
+        <p className={styles.dangerCopy}>
+          Deleting your account marks it for permanent removal after 30 days.
+          You will be signed out immediately and your collection, tracked decks,
+          and readiness history will be erased.
+        </p>
+        <div className={styles.accountActions}>
+          <button
+            type="button"
+            className={styles.deleteBtn}
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete my account
+          </button>
+        </div>
       </section>
 
       <DeleteAccountModal
@@ -72,6 +92,6 @@ function SettingsPage() {
           navigate({ to: '/' });
         }}
       />
-    </section>
+    </div>
   );
 }

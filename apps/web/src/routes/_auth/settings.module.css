@@ -1,0 +1,154 @@
+/* Settings page — 3-section layout (Profile / Theme / Account)
+   Tokens from src/styles/tokens.css
+   Unit 7 (Onda 3): settings restyle */
+
+.page {
+  max-width: 640px;
+}
+
+/* ---- Page heading ---- */
+.pageHeading {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-8);
+}
+
+/* ---- Section card ---- */
+.section {
+  padding: var(--ra-space-5) var(--ra-space-6);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+  background: var(--ra-bg-surface);
+  margin-bottom: var(--ra-space-6);
+}
+
+.section:last-of-type {
+  margin-bottom: 0;
+}
+
+/* ---- Eyebrow header above section heading ---- */
+.eyebrow {
+  display: block;
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+  margin-bottom: var(--ra-space-1);
+}
+
+/* ---- Section heading (h2) ---- */
+.sectionHeading {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h2);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-h2);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-4);
+}
+
+/* ---- Profile section ---- */
+.emailRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+}
+
+.emailLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+}
+
+.emailValue {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+}
+
+/* ---- Theme section ---- */
+.themeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-4);
+}
+
+.themeLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+}
+
+/* ---- Account section (danger zone) ---- */
+.accountSection {
+  border-color: var(--ra-ready-low-border);
+  background: var(--ra-ready-low-bg);
+}
+
+.accountSectionHeading {
+  color: var(--ra-ready-low);
+}
+
+.dangerCopy {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  margin: 0 0 var(--ra-space-5);
+}
+
+.accountActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-3);
+}
+
+/* Shared button base for account actions */
+.actionLink {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.actionLink:hover {
+  color: var(--ra-fg-primary);
+}
+
+/* Delete button — ember/danger styling */
+.deleteBtn {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-low);
+  background: none;
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  cursor: pointer;
+  transition: background-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+}
+
+.deleteBtn:hover {
+  background: var(--ra-ready-low-bg);
+  color: var(--ra-ready-low-dark);
+}
+
+.deleteBtn:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 2px;
+}
