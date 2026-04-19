@@ -7,6 +7,7 @@ export enum EAuthErrorCode {
   InvalidToken = 'INVALID_TOKEN',
   TokenExpired = 'TOKEN_EXPIRED',
   EmailDeliveryFailed = 'EMAIL_DELIVERY_FAILED',
+  UserNotFound = 'USER_NOT_FOUND',
 }
 
 export class AuthError extends Error {

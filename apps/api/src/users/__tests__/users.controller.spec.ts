@@ -1,6 +1,10 @@
+import { NotFoundException } from '@nestjs/common';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 import { createMock } from '@golevelup/ts-jest';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
+import { PatchThemeDto } from '../dtos/user-settings.dto';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 
 function buildController(serviceOverrides: Partial<{
@@ -70,5 +74,60 @@ describe('UsersController.patchSettings', () => {
     // Assert
     expect(result).toEqual({ theme: 'dark' });
     expect(patchMock).toHaveBeenCalledWith('user-1', 'dark');
+  });
+
+  it('propagates NotFoundException from the service (user row vanished)', async () => {
+    const { controller } = buildController({
+      patchSettings: jest.fn().mockRejectedValue(new NotFoundException('User not found')),
+    });
+    await expect(controller.patchSettings(MOCK_USER, { theme: 'light' }))
+      .rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('UsersController.getSettings — error propagation', () => {
+  it('propagates NotFoundException from the service', async () => {
+    const { controller } = buildController({
+      getSettings: jest.fn().mockRejectedValue(new NotFoundException('User not found')),
+    });
+    await expect(controller.getSettings(MOCK_USER)).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('PatchThemeDto validation', () => {
+  // The controller binds @Body() PatchThemeDto — the ValidationPipe rejects
+  // invalid payloads at the 400 boundary. These tests exercise the DTO rules
+  // directly, since the pipe is an app-level concern not present in the
+  // controller unit test harness.
+
+  it('accepts theme="dark"', async () => {
+    const dto = plainToInstance(PatchThemeDto, { theme: 'dark' });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('accepts theme="light"', async () => {
+    const dto = plainToInstance(PatchThemeDto, { theme: 'light' });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('rejects invalid theme values (e.g. "purple")', async () => {
+    const dto = plainToInstance(PatchThemeDto, { theme: 'purple' });
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]?.constraints).toHaveProperty('isIn');
+  });
+
+  it('rejects theme="modified" (future state not yet supported)', async () => {
+    const dto = plainToInstance(PatchThemeDto, { theme: 'modified' });
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('rejects missing theme field', async () => {
+    const dto = plainToInstance(PatchThemeDto, {});
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
   });
 });

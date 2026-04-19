@@ -222,11 +222,18 @@ export class AuthService {
   async getMe(
     currentUser: ICurrentUser,
   ): Promise<{ id: string; email: string; settings: IAuthSettings }> {
+    // JwtStrategy.validate() already rejected soft-deleted users, so the NULL
+    // path here is only reachable on a narrow race (concurrent hard-delete, or
+    // the row vanished mid-request). Fail loudly instead of returning synthetic
+    // data derived from the stale JWT payload.
     const user = await this.users.findOne({ where: { id: currentUser.userId } });
+    if (!user) {
+      throw new AuthError(EAuthErrorCode.UserNotFound, 'User not found');
+    }
     return {
-      id: currentUser.userId,
-      email: currentUser.email,
-      settings: { theme: user?.preferences?.theme ?? 'dark' },
+      id: user.id,
+      email: user.email,
+      settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }
 

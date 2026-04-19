@@ -163,6 +163,23 @@ describe('AuthService.signIn', () => {
     expect(result.user.id).toBe('user-1');
   });
 
+  it('returns settings with default theme=dark when user has no preferences', async () => {
+    const { service, hasher } = buildService();
+    const user = await makeVerifiedUser(hasher);
+    (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    const result = await service.signIn('a@b.com', 'longenoughpassword');
+    expect(result.settings).toEqual({ theme: 'dark' });
+  });
+
+  it('returns settings.theme=light when user has preferences.theme=light', async () => {
+    const { service, hasher } = buildService();
+    const user = await makeVerifiedUser(hasher);
+    (user as any).preferences = { theme: 'light' };
+    (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    const result = await service.signIn('a@b.com', 'longenoughpassword');
+    expect(result.settings).toEqual({ theme: 'light' });
+  });
+
   it('throws INVALID_CREDENTIALS for wrong password', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
@@ -205,8 +222,10 @@ describe('AuthService.verifyEmail', () => {
     const { service } = buildService({
       findOne: jest.fn().mockResolvedValue(user),
     });
+    // U12: verifyEmail response should include settings for first-paint correctness
     const result = await service.verifyEmail(raw);
     expect(result.jwt).toBe('jwt-token');
+    expect(result.settings).toEqual({ theme: 'dark' });
     expect(user.emailVerifiedAt).not.toBeNull();
     expect(user.verificationTokenHash).toBeNull();
   });
@@ -273,6 +292,7 @@ describe('AuthService.resetPassword', () => {
     });
     const result = await service.resetPassword(raw, 'newpasswordlongenough');
     expect(result.jwt).toBe('jwt-token');
+    expect(result.settings).toEqual({ theme: 'dark' });
     expect(user.passwordHash).not.toBe('old-hash');
     expect(user.passwordResetTokenHash).toBeNull();
     expect(user.emailVerifiedAt).not.toBeNull(); // preserved
@@ -283,6 +303,48 @@ describe('AuthService.resetPassword', () => {
     await expect(service.resetPassword('a'.repeat(64), 'newpasswordlongenough')).rejects.toMatchObject({
       code: EAuthErrorCode.InvalidToken,
     });
+  });
+});
+
+describe('AuthService.getMe', () => {
+  function makeCurrentUser(overrides: Partial<{ userId: string; email: string }> = {}) {
+    return { userId: 'user-1', email: 'hero@rathe.gg', ...overrides };
+  }
+
+  it('returns id, email, and settings.theme=dark for user without preferences (default)', async () => {
+    const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg' };
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    const result = await service.getMe(makeCurrentUser() as any);
+    expect(result).toEqual({ id: 'user-1', email: 'hero@rathe.gg', settings: { theme: 'dark' } });
+  });
+
+  it('returns settings.theme=light when user.preferences.theme=light', async () => {
+    const user: Partial<UserEntity> = {
+      id: 'user-1',
+      email: 'hero@rathe.gg',
+      preferences: { theme: 'light' } as any,
+    };
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    const result = await service.getMe(makeCurrentUser() as any);
+    expect(result.settings).toEqual({ theme: 'light' });
+  });
+
+  it('throws NotFoundException when user row is not found (race with soft-delete)', async () => {
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(null) });
+    await expect(service.getMe(makeCurrentUser() as any)).rejects.toMatchObject({
+      code: EAuthErrorCode.UserNotFound,
+    });
+  });
+
+  it('falls back to theme=dark when preferences column is null', async () => {
+    const user: Partial<UserEntity> = {
+      id: 'user-1',
+      email: 'hero@rathe.gg',
+      preferences: null as any,
+    };
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    const result = await service.getMe(makeCurrentUser() as any);
+    expect(result.settings).toEqual({ theme: 'dark' });
   });
 });
 
