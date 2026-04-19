@@ -21,9 +21,11 @@ function getInitialTheme(): TTheme {
  * On click:
  *  1. Optimistic: update `dataset.theme` + localStorage immediately (pre-hydration hint)
  *  2. PATCH /api/users/me/settings { theme } — server-persist
- *  3. On error: log server-side via console.error (existing logger sink), show toast
- *     with explicit divergence copy. localStorage stays updated — cross-device sync is
- *     best-effort, flash prevention is the hard requirement (plan §Key Technical Decisions).
+ *  3. On error: show toast with explicit divergence copy. localStorage stays updated —
+ *     cross-device sync is best-effort, flash prevention is the hard requirement
+ *     (plan §Key Technical Decisions). `console.error` surfaces the underlying error in
+ *     browser devtools for dev diagnosis; a server-side error sink (Sentry or similar)
+ *     is out of Plan A scope and planned as follow-up.
  */
 export function ThemeToggle(): React.ReactElement {
   const [theme, setTheme] = useState<TTheme>(getInitialTheme);
@@ -38,7 +40,7 @@ export function ThemeToggle(): React.ReactElement {
     } catch {
       // Private browsing — silent
     }
-    auth.setSettings?.({ theme: next });
+    auth.setSettings({ theme: next });
   }
 
   function handleThemeChange(value: string): void {

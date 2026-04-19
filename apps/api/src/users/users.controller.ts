@@ -22,9 +22,14 @@ export class UsersController {
   /**
    * GET /api/users/me/settings
    * Returns the current user's theme preference.
+   *
+   * Rate limit: 60/min per user — tighter than the global 120/min default but
+   * more lenient than PATCH, since reads are side-effect-free and a legit client
+   * may re-fetch on window focus etc.
    */
   @Get('me/settings')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 60, ttl: MINUTE_MS } })
   async getSettings(@CurrentUser() currentUser: ICurrentUser): Promise<IUserSettings> {
     return this.usersService.getSettings(currentUser.userId);
   }

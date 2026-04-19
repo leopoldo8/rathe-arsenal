@@ -93,6 +93,7 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     user: { id: 'u1', email: 'hero@rathe.gg' },
     token: 'jwt',
     isLoading: false,
+    setSettings: vi.fn(),
     signUp: async () => ({}),
     signIn: noopAsync,
     signOut: () => {

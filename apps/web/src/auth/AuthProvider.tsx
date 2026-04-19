@@ -51,6 +51,11 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, token?: string 
  * hydration; this keeps server-sourced values in lockstep on subsequent writes.
  */
 function applyTheme(theme: 'dark' | 'light'): void {
+  // Runtime whitelist guard — closes the TS→runtime gap at the DOM write boundary,
+  // mirroring the pre-hydration IIFE in index.html. If a future code path slips a
+  // non-whitelisted value through TypeScript (deserialisation, `as` cast), it cannot
+  // reach `dataset.theme`.
+  if (theme !== 'dark' && theme !== 'light') return;
   document.documentElement.dataset.theme = theme;
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -84,8 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     apiFetch<IAuthMeResponse>('/auth/me', {}, token)
       .then((res) => {
         setUser({ id: res.id, email: res.email });
-        setSettingsState(res.settings);
-        applyTheme(res.settings.theme);
+        // Defensive: old server versions without the field shouldn't partial-apply;
+        // only touch theme state when the server actually returned a valid shape.
+        if (res.settings?.theme) {
+          setSettingsState(res.settings);
+          applyTheme(res.settings.theme);
+        }
       })
       .catch(() => { localStorage.removeItem(STORAGE_KEY); setToken(null); setUser(null); setSettingsState(undefined); })
       .finally(() => setIsLoading(false));
@@ -120,9 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    // Also clear the theme hint — without this, a shared device can leak the
+    // previous user's theme to the next sign-in via the pre-hydration script.
+    try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* private mode */ }
     setToken(null);
     setUser(null);
     setSettingsState(undefined);
+    // Reset DOM to the product default so the anonymous session doesn't
+    // carry the ex-user's theme between signOut and the next auth bootstrap.
+    applyTheme('dark');
   }, []);
 
   const verifyEmail = useCallback(async (tkn: string) => {
@@ -150,9 +165,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
     );
     localStorage.removeItem(STORAGE_KEY);
+    try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* private mode */ }
     setToken(null);
     setUser(null);
     setSettingsState(undefined);
+    applyTheme('dark');
   }, [token]);
 
   const value = useMemo(() => ({
