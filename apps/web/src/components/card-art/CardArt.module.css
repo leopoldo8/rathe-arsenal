@@ -1,0 +1,51 @@
+/* ============================================================
+   CardArt — CSS Module
+   Pitch-colored card face in 4 sizes (R48).
+   Size map: xs=40px, sm=72px, md=120px, lg=200px (width).
+   ============================================================ */
+
+/* ---------- Container ---------- */
+.cardArt {
+  display: inline-block;
+  flex-shrink: 0;
+  line-height: 0; /* collapse inline gap below SVG */
+  transition: opacity var(--ra-duration) var(--ra-ease);
+}
+
+/* ---------- Size presets (width on container; SVG carries its own dimensions) ---------- */
+.cardArt--xs {
+  width: 40px;
+}
+
+.cardArt--sm {
+  width: 72px;
+}
+
+.cardArt--md {
+  width: 120px;
+}
+
+.cardArt--lg {
+  width: 200px;
+}
+
+/* ---------- Missing state ----------
+   Reduced opacity signals "not in collection" — NOT an error (R48).
+   The hatch pattern inside the SVG adds the visual stripe texture.
+   ============================================================ */
+.cardArt--missing {
+  opacity: 0.55;
+}
+
+/* ---------- Name band truncation ----------
+   The SVG <text> element cannot truncate with CSS text-overflow.
+   We rely on viewBox scaling at xs/sm to visually compress long names.
+   Additionally a data attribute is set on the wrapping div to allow
+   consumer-level CSS overrides if needed.
+   ============================================================ */
+.cardArt--xs .nameBand,
+.cardArt--sm .nameBand {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

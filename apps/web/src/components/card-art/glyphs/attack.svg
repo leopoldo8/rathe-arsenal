@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Sword / attack glyph — stylized upward blade -->
+  <path d="M50 10 L60 38 L56 42 L64 68 L50 78 L36 68 L44 42 L40 38 Z"
+        fill="currentColor" opacity="0.9"/>
+  <path d="M44 40 L50 20 L56 40 Z" fill="#000" opacity="0.22"/>
+  <rect x="36" y="72" width="28" height="4" rx="1"
+        fill="currentColor" opacity="0.6"/>
+</svg>

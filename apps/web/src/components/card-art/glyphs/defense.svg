@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Shield / defense glyph -->
+  <path d="M50 10 L82 22 L78 62 Q50 88 50 88 Q50 88 22 62 L18 22 Z"
+        fill="currentColor" opacity="0.85"/>
+  <path d="M50 22 L70 30 L68 58 Q50 74 50 74 Q50 74 32 58 L30 30 Z"
+        fill="#000" opacity="0.18"/>
+  <path d="M50 34 L58 46 L50 58 L42 46 Z"
+        fill="currentColor" opacity="0.6"/>
+</svg>

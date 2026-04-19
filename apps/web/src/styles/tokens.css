@@ -186,6 +186,28 @@
   --ra-pitch-yellow: #c5923a;
   --ra-pitch-blue:   #4a6a94;
 
+  /* CardArt frame colors — pitch-driven frame stroke + bg tint (R48) */
+  --ra-card-frame-red:       #c0574a;
+  --ra-card-frame-red-bg:    #3d1511;
+  --ra-card-frame-red-ink:   #f4d2c6;
+  --ra-card-frame-red-sym:   #e7916a;
+
+  --ra-card-frame-yellow:    #c5923a;
+  --ra-card-frame-yellow-bg: #3d2e0a;
+  --ra-card-frame-yellow-ink: #f4e2b3;
+  --ra-card-frame-yellow-sym: #e6c35d;
+
+  --ra-card-frame-blue:      #4a7ea8;
+  --ra-card-frame-blue-bg:   #0f1f36;
+  --ra-card-frame-blue-ink:  #d2e2f4;
+  --ra-card-frame-blue-sym:  #6a9ec9;
+
+  /* Colorless frame — brass/neutral (equipment, weapon, hero with pitch=null) */
+  --ra-card-frame-colorless:     #8a7f6a;
+  --ra-card-frame-colorless-bg:  #1e2128;
+  --ra-card-frame-colorless-ink: #c8c2b3;
+  --ra-card-frame-colorless-sym: #888888;
+
   /* Brand accents (back-compat) */
   --ra-brand-steel:  #3d424d;
   --ra-brand-forge:  #c5923a;
@@ -283,6 +305,28 @@
   --ra-pitch-red:    #8b3518;
   --ra-pitch-yellow: #8f6a22;
   --ra-pitch-blue:   #2b4d7a;
+
+  /* CardArt frame colors — light theme variants (R48) */
+  --ra-card-frame-red:       #a03430;
+  --ra-card-frame-red-bg:    #f9ebe9;
+  --ra-card-frame-red-ink:   #5c1a18;
+  --ra-card-frame-red-sym:   #c05040;
+
+  --ra-card-frame-yellow:    #8f6a22;
+  --ra-card-frame-yellow-bg: #faf3df;
+  --ra-card-frame-yellow-ink: #3d2c0e;
+  --ra-card-frame-yellow-sym: #b08030;
+
+  --ra-card-frame-blue:      #2b5a80;
+  --ra-card-frame-blue-bg:   #e4eef7;
+  --ra-card-frame-blue-ink:  #0f2a40;
+  --ra-card-frame-blue-sym:  #4a7ea8;
+
+  /* Colorless frame — light theme */
+  --ra-card-frame-colorless:     #6b6050;
+  --ra-card-frame-colorless-bg:  #ece7d8;
+  --ra-card-frame-colorless-ink: #2a2418;
+  --ra-card-frame-colorless-sym: #8a7f6a;
 
   --ra-brand-steel:  #3a3830;
   --ra-brand-forge:  #8f6a22;
