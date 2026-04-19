@@ -1,70 +1,55 @@
 import {
-  Body,
   Controller,
   HttpCode,
   HttpStatus,
   Param,
   ParseIntPipe,
   Post,
+  Res,
 } from '@nestjs/common';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { ICurrentUser } from '../../auth/dtos/current-user.dto';
-import { RejectSubstituteDto } from './dtos/reject-substitute.dto';
-import { ReSolveDto } from './dtos/re-solve.dto';
-import { IReSolveResult, ReSolveService } from './re-solve.service';
+import type { Response } from 'express';
 
-// TODO(U1): apply @Throttle() once @nestjs/throttler lands in U1.
+/**
+ * Deprecation stub for the old re-solve endpoints. All three endpoints now
+ * return 410 Gone with a structured payload pointing to the replacement routes.
+ *
+ * Kept so that open frontend tabs (or clients still on the old API surface)
+ * receive a clear 410 instead of a 500 or 404 — tab-safety during the
+ * single-commit atomic deploy.
+ *
+ * Delete this file in Plan C once the deprecation window is closed.
+ */
 @Controller('decks/:deckId')
 export class ReSolveController {
-  constructor(private readonly reSolveService: ReSolveService) {}
+  private readonly deprecationPayload = {
+    code: 'DEPRECATED' as const,
+    migration: 'use /api/decks/:trackedDeckId/decisions',
+  };
 
-  /**
-   * Reject a single substitute and persist the rejection. Returns the
-   * updated readiness snapshot with the rejection applied.
-   */
   @Post('reject-substitute')
-  @HttpCode(HttpStatus.OK)
-  async rejectSubstitute(
-    @Param('deckId', ParseIntPipe) deckId: number,
-    @Body() body: RejectSubstituteDto,
-    @CurrentUser() user: ICurrentUser,
-  ): Promise<IReSolveResult> {
-    return this.reSolveService.rejectSubstitute(
-      user.userId,
-      deckId,
-      body.cardIdentifier,
-    );
+  @HttpCode(HttpStatus.GONE)
+  rejectSubstitute(
+    @Param('deckId', ParseIntPipe) _deckId: number,
+    @Res() res: Response,
+  ): void {
+    res.status(HttpStatus.GONE).json(this.deprecationPayload);
   }
 
-  /**
-   * Delete all persisted rejections for the deck and return a fresh
-   * no-exclusion readiness snapshot.
-   */
   @Post('reset-rejections')
-  @HttpCode(HttpStatus.OK)
-  async resetRejections(
-    @Param('deckId', ParseIntPipe) deckId: number,
-    @CurrentUser() user: ICurrentUser,
-  ): Promise<IReSolveResult> {
-    return this.reSolveService.resetRejections(user.userId, deckId);
+  @HttpCode(HttpStatus.GONE)
+  resetRejections(
+    @Param('deckId', ParseIntPipe) _deckId: number,
+    @Res() res: Response,
+  ): void {
+    res.status(HttpStatus.GONE).json(this.deprecationPayload);
   }
 
-  /**
-   * Dry-run re-solve: preview a readiness result with a caller-
-   * supplied exclusion set without writing anything to the database.
-   * Used by the test result screen (U6).
-   */
   @Post('re-solve')
-  @HttpCode(HttpStatus.OK)
-  async reSolve(
-    @Param('deckId', ParseIntPipe) deckId: number,
-    @Body() body: ReSolveDto,
-    @CurrentUser() user: ICurrentUser,
-  ): Promise<IReSolveResult> {
-    return this.reSolveService.reSolveDryRun(
-      user.userId,
-      deckId,
-      body.excludedCardIdentifiers,
-    );
+  @HttpCode(HttpStatus.GONE)
+  reSolve(
+    @Param('deckId', ParseIntPipe) _deckId: number,
+    @Res() res: Response,
+  ): void {
+    res.status(HttpStatus.GONE).json(this.deprecationPayload);
   }
 }

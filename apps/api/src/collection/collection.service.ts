@@ -8,11 +8,11 @@ import { Repository } from 'typeorm';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { AuthzService } from '../auth/authz.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SubstitutionService } from '../substitution/substitution.service';
+import { DecisionsService } from '../decks/decisions/decisions.service';
 import {
   IBreakdown,
   ISubstitutionEntry,
@@ -37,11 +37,10 @@ export class CollectionService {
     private readonly deckCardRepo: Repository<DeckCardEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
-    @InjectRepository(RejectedSubstituteEntity)
-    private readonly rejectedSubstituteRepo: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
+    private readonly decisionsService: DecisionsService,
   ) {}
 
   async markOwned(
@@ -93,11 +92,8 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
-    // Load any persisted rejections so the recompute respects them.
-    const rejections = await this.rejectedSubstituteRepo.find({
-      where: { trackedDeckId: deckId },
-    });
-    const excludedIdentifiers = new Set(rejections.map((r) => r.cardIdentifier));
+    // Load rejected decisions so the recompute respects them.
+    const excludedIdentifiers = await this.decisionsService.loadExclusions(deckId);
 
     // Recompute readiness
     const newSnapshotEntity =
@@ -210,10 +206,8 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of affectedDeckIds) {
       try {
-        const deckRejections = await this.rejectedSubstituteRepo.find({
-          where: { trackedDeckId },
-        });
-        const deckExclusions = new Set(deckRejections.map((r) => r.cardIdentifier));
+        // Load rejected decisions for this deck so recompute respects them.
+        const deckExclusions = await this.decisionsService.loadExclusions(trackedDeckId);
 
         const snapshot =
           await this.substitutionService.computeAndStoreReadiness(

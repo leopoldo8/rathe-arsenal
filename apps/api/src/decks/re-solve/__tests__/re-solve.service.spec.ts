@@ -1,13 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ReSolveService } from '../re-solve.service';
-import { RejectedSubstituteEntity } from '../../../database/entities/rejected-substitute.entity';
 import { DeckReadinessSnapshotEntity } from '../../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../../auth/authz.service';
 import { SubstitutionService } from '../../../substitution/substitution.service';
+import { DecisionsService } from '../../decisions/decisions.service';
 
 const USER_ID = 'user-aaa';
 const OTHER_USER_ID = 'user-bbb';
@@ -76,19 +74,22 @@ function makeSnapshot(
   };
 }
 
-describe('ReSolveService', () => {
+describe('ReSolveService (deprecated, stubs)', () => {
   let service: ReSolveService;
-  let rejectionRepo: jest.Mocked<Repository<RejectedSubstituteEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
+  let decisionsService: jest.Mocked<DecisionsService>;
 
   beforeEach(async () => {
-    rejectionRepo = createMock<Repository<RejectedSubstituteEntity>>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
+    decisionsService = createMock<DecisionsService>();
 
     // Default: authz passes. Individual tests override.
     authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
+    decisionsService.loadExclusions.mockResolvedValue(new Set());
+    decisionsService.countRejected.mockResolvedValue(0);
+    decisionsService.clearRejections.mockResolvedValue(0);
 
     // Default deriveSnapshotFields impl — simple passthrough.
     (substitutionService.deriveSnapshotFields as jest.Mock).mockImplementation(
@@ -107,12 +108,9 @@ describe('ReSolveService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReSolveService,
-        {
-          provide: getRepositoryToken(RejectedSubstituteEntity),
-          useValue: rejectionRepo,
-        },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
+        { provide: DecisionsService, useValue: decisionsService },
       ],
     }).compile();
 
@@ -123,7 +121,7 @@ describe('ReSolveService', () => {
     jest.clearAllMocks();
   });
 
-  describe('rejectSubstitute', () => {
+  describe('rejectSubstitute (deprecated endpoint)', () => {
     it('asserts ownership before touching any data', async () => {
       // Arrange
       authzService.assertOwnsTrackedDeck.mockRejectedValue(
@@ -134,225 +132,53 @@ describe('ReSolveService', () => {
       await expect(
         service.rejectSubstitute(OTHER_USER_ID, DECK_ID, 'card-x'),
       ).rejects.toThrow(NotFoundException);
-      expect(rejectionRepo.save).not.toHaveBeenCalled();
+      expect(decisionsService.upsert).not.toHaveBeenCalled();
       expect(
         substitutionService.computeAndStoreReadiness,
       ).not.toHaveBeenCalled();
     });
 
-    it('inserts a rejection row and persists a snapshot with the exclusion applied', async () => {
-      // Arrange: a tier-2 fallback is available.
-      const fallbackReadiness = makeReadiness({
-        breakdown: {
-          exact: [{ cardIdentifier: 'card-a', quantity: 40, slot: 'mainboard' }],
-          substituted: [
-            {
-              original: { cardIdentifier: 'card-b', quantity: 1, slot: 'mainboard' },
-              match: { tier: 2 },
-            },
-          ],
-          missing: [],
-        },
+    it('upserts a rejected decision and persists a snapshot', async () => {
+      // Arrange
+      const readiness = makeReadiness();
+      decisionsService.upsert.mockResolvedValue({
+        cardIdentifier: 'rejected-card',
+        decision: 'rejected',
       });
-      rejectionRepo.findOne.mockResolvedValue(null);
-      rejectionRepo.find.mockResolvedValue([
-        {
-          id: 1,
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'rejected-tier1',
-          rejectedAt: new Date(),
-        } as RejectedSubstituteEntity,
-      ]);
-      rejectionRepo.create.mockReturnValue({
-        trackedDeckId: DECK_ID,
-        cardIdentifier: 'rejected-tier1',
-      } as RejectedSubstituteEntity);
-      rejectionRepo.save.mockResolvedValue({} as RejectedSubstituteEntity);
-
+      decisionsService.loadExclusions.mockResolvedValue(new Set(['rejected-card']));
       substitutionService.computeAndStoreReadiness.mockResolvedValue(
-        makeSnapshot(fallbackReadiness),
+        makeSnapshot(readiness),
       );
       substitutionService.computeReadinessWithExclusions.mockResolvedValue(
-        fallbackReadiness as unknown as Awaited<
+        readiness as unknown as Awaited<
           ReturnType<SubstitutionService['computeReadinessWithExclusions']>
         >,
       );
 
       // Act
-      const result = await service.rejectSubstitute(
-        USER_ID,
-        DECK_ID,
-        'rejected-tier1',
-      );
+      const result = await service.rejectSubstitute(USER_ID, DECK_ID, 'rejected-card');
 
       // Assert
-      expect(rejectionRepo.save).toHaveBeenCalledTimes(1);
+      expect(decisionsService.upsert).toHaveBeenCalledWith({
+        userId: USER_ID,
+        trackedDeckId: DECK_ID,
+        cardIdentifier: 'rejected-card',
+        decision: 'rejected',
+      });
       expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
         DECK_ID,
         USER_ID,
         expect.any(Set),
       );
-      const exclusionSet = (
-        substitutionService.computeAndStoreReadiness as jest.Mock
-      ).mock.calls[0][2] as Set<string>;
-      expect(exclusionSet.has('rejected-tier1')).toBe(true);
-      expect(result.effectivePercent).toBe(95);
+      // rejectionCount = exclusions.size
       expect(result.rejectionCount).toBe(1);
-    });
-
-    it('is idempotent when the same identifier is rejected twice', async () => {
-      // Arrange
-      const existingRejection = {
-        id: 7,
-        trackedDeckId: DECK_ID,
-        cardIdentifier: 'card-dup',
-        rejectedAt: new Date(),
-      } as RejectedSubstituteEntity;
-      rejectionRepo.findOne.mockResolvedValue(existingRejection);
-      rejectionRepo.find.mockResolvedValue([existingRejection]);
-
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(
-        makeSnapshot(makeReadiness()),
-      );
-      substitutionService.computeReadinessWithExclusions.mockResolvedValue(
-        makeReadiness() as unknown as Awaited<
-          ReturnType<SubstitutionService['computeReadinessWithExclusions']>
-        >,
-      );
-
-      // Act
-      await service.rejectSubstitute(USER_ID, DECK_ID, 'card-dup');
-
-      // Assert
-      expect(rejectionRepo.save).not.toHaveBeenCalled();
-      expect(rejectionRepo.create).not.toHaveBeenCalled();
-    });
-
-    it('emits a curve warning when the rejection pushes a card from substituted to missing', async () => {
-      // Arrange
-      const withRejection = makeReadiness({
-        effectivePercent: 90,
-        breakdown: {
-          exact: [{ cardIdentifier: 'card-a', quantity: 40, slot: 'mainboard' }],
-          substituted: [],
-          missing: [{ cardIdentifier: 'card-b', quantity: 1, slot: 'mainboard' }],
-        },
-      });
-      const baseline = makeReadiness({
-        breakdown: {
-          exact: [{ cardIdentifier: 'card-a', quantity: 40, slot: 'mainboard' }],
-          substituted: [
-            {
-              original: { cardIdentifier: 'card-b', quantity: 1, slot: 'mainboard' },
-              match: { tier: 1 },
-            },
-          ],
-          missing: [],
-        },
-      });
-      rejectionRepo.findOne.mockResolvedValue(null);
-      rejectionRepo.find.mockResolvedValue([
-        {
-          id: 1,
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'blocked-sub',
-          rejectedAt: new Date(),
-        } as RejectedSubstituteEntity,
-      ]);
-      rejectionRepo.create.mockReturnValue(
-        {} as RejectedSubstituteEntity,
-      );
-      rejectionRepo.save.mockResolvedValue({} as RejectedSubstituteEntity);
-
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(
-        makeSnapshot(withRejection),
-      );
-      substitutionService.computeReadinessWithExclusions.mockResolvedValue(
-        baseline as unknown as Awaited<
-          ReturnType<SubstitutionService['computeReadinessWithExclusions']>
-        >,
-      );
-
-      // Act
-      const result = await service.rejectSubstitute(
-        USER_ID,
-        DECK_ID,
-        'blocked-sub',
-      );
-
-      // Assert
-      expect(result.curveWarnings).toContain('card-b');
-    });
-
-    it('cross-deck isolation: rejection in deck A does not affect deck B', async () => {
-      // Arrange
-      rejectionRepo.findOne.mockResolvedValue(null);
-      // Only deck A has rejections; deck B never has any.
-      rejectionRepo.find.mockImplementation(async (opts?: unknown) => {
-        const where =
-          (opts as { where?: { trackedDeckId?: number } })?.where ?? {};
-        if (where.trackedDeckId === DECK_ID) {
-          return [
-            {
-              id: 1,
-              trackedDeckId: DECK_ID,
-              cardIdentifier: 'card-r',
-              rejectedAt: new Date(),
-            } as RejectedSubstituteEntity,
-          ];
-        }
-        return [];
-      });
-      rejectionRepo.create.mockReturnValue({} as RejectedSubstituteEntity);
-      rejectionRepo.save.mockResolvedValue({} as RejectedSubstituteEntity);
-
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(
-        makeSnapshot(makeReadiness()),
-      );
-      substitutionService.computeReadinessWithExclusions.mockResolvedValue(
-        makeReadiness() as unknown as Awaited<
-          ReturnType<SubstitutionService['computeReadinessWithExclusions']>
-        >,
-      );
-
-      // Act
-      await service.rejectSubstitute(USER_ID, DECK_ID, 'card-r');
-
-      // Assert: exclusions passed for deck A must be card-r.
-      const exclusionsA = (
-        substitutionService.computeAndStoreReadiness as jest.Mock
-      ).mock.calls[0][2] as Set<string>;
-      expect(exclusionsA.has('card-r')).toBe(true);
-
-      // Now simulate a separate deck B call
-      jest.clearAllMocks();
-      authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
-      rejectionRepo.findOne.mockResolvedValue(null);
-      rejectionRepo.find.mockResolvedValue([]);
-      rejectionRepo.create.mockReturnValue({} as RejectedSubstituteEntity);
-      rejectionRepo.save.mockResolvedValue({} as RejectedSubstituteEntity);
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(
-        makeSnapshot(makeReadiness()),
-      );
-      substitutionService.computeReadinessWithExclusions.mockResolvedValue(
-        makeReadiness() as unknown as Awaited<
-          ReturnType<SubstitutionService['computeReadinessWithExclusions']>
-        >,
-      );
-
-      await service.rejectSubstitute(USER_ID, OTHER_DECK_ID, 'card-r');
-
-      const exclusionsB = (
-        substitutionService.computeAndStoreReadiness as jest.Mock
-      ).mock.calls[0][2] as Set<string>;
-      expect(exclusionsB.size).toBe(0);
     });
   });
 
-  describe('resetRejections', () => {
-    it('deletes all rejections and recomputes without exclusions', async () => {
+  describe('resetRejections (deprecated endpoint)', () => {
+    it('clears all rejections and recomputes without exclusions', async () => {
       // Arrange
-      rejectionRepo.delete.mockResolvedValue({ affected: 3, raw: [] });
+      decisionsService.clearRejections.mockResolvedValue(3);
       substitutionService.computeAndStoreReadiness.mockResolvedValue(
         makeSnapshot(makeReadiness()),
       );
@@ -365,9 +191,7 @@ describe('ReSolveService', () => {
         USER_ID,
         DECK_ID,
       );
-      expect(rejectionRepo.delete).toHaveBeenCalledWith({
-        trackedDeckId: DECK_ID,
-      });
+      expect(decisionsService.clearRejections).toHaveBeenCalledWith(USER_ID, DECK_ID);
       const exclusions = (
         substitutionService.computeAndStoreReadiness as jest.Mock
       ).mock.calls[0][2] as Set<string>;
@@ -386,14 +210,14 @@ describe('ReSolveService', () => {
       await expect(
         service.resetRejections(OTHER_USER_ID, DECK_ID),
       ).rejects.toThrow(NotFoundException);
-      expect(rejectionRepo.delete).not.toHaveBeenCalled();
+      expect(decisionsService.clearRejections).not.toHaveBeenCalled();
     });
   });
 
   describe('reSolveDryRun', () => {
-    it('does not write to the rejections table or the snapshot table', async () => {
+    it('does not write to the decisions table or the snapshot table', async () => {
       // Arrange
-      rejectionRepo.count.mockResolvedValue(0);
+      decisionsService.countRejected.mockResolvedValue(0);
       substitutionService.computeReadinessWithExclusions.mockResolvedValue(
         makeReadiness() as unknown as Awaited<
           ReturnType<SubstitutionService['computeReadinessWithExclusions']>
@@ -404,17 +228,32 @@ describe('ReSolveService', () => {
       await service.reSolveDryRun(USER_ID, DECK_ID, ['card-x']);
 
       // Assert
-      expect(rejectionRepo.save).not.toHaveBeenCalled();
-      expect(rejectionRepo.create).not.toHaveBeenCalled();
-      expect(rejectionRepo.delete).not.toHaveBeenCalled();
+      expect(decisionsService.upsert).not.toHaveBeenCalled();
       expect(
         substitutionService.computeAndStoreReadiness,
       ).not.toHaveBeenCalled();
     });
 
+    it('uses decisionsService.countRejected for persistedCount (U9 bug fix)', async () => {
+      // Arrange: 2 persisted rejections in substitute_decision.
+      decisionsService.countRejected.mockResolvedValue(2);
+      substitutionService.computeReadinessWithExclusions.mockResolvedValue(
+        makeReadiness() as unknown as Awaited<
+          ReturnType<SubstitutionService['computeReadinessWithExclusions']>
+        >,
+      );
+
+      // Act
+      const result = await service.reSolveDryRun(USER_ID, DECK_ID, ['card-x']);
+
+      // Assert: rejectionCount comes from decisionsService, not a dropped table.
+      expect(decisionsService.countRejected).toHaveBeenCalledWith(DECK_ID);
+      expect(result.rejectionCount).toBe(2);
+    });
+
     it('forwards the exclusion set to SubstitutionService', async () => {
       // Arrange
-      rejectionRepo.count.mockResolvedValue(0);
+      decisionsService.countRejected.mockResolvedValue(0);
       substitutionService.computeReadinessWithExclusions.mockResolvedValue(
         makeReadiness() as unknown as Awaited<
           ReturnType<SubstitutionService['computeReadinessWithExclusions']>

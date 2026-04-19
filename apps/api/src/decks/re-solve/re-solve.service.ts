@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { IEffectiveReadinessResult } from '@rathe-arsenal/engine';
-import { RejectedSubstituteEntity } from '../../database/entities/rejected-substitute.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
+import { DecisionsService } from '../decisions/decisions.service';
 
 /**
  * Response shape for all three re-solve endpoints. Wraps the engine's
@@ -31,17 +29,19 @@ export class ReSolveService {
   private readonly logger = new Logger(ReSolveService.name);
 
   constructor(
-    @InjectRepository(RejectedSubstituteEntity)
-    private readonly rejections: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
+    private readonly decisionsService: DecisionsService,
   ) {}
 
   /**
-   * Upsert a rejection row for `cardIdentifier`, recompute readiness
-   * using **all** current rejections for the deck as the exclusion
-   * set, and persist a fresh snapshot. Idempotent on the rejection
-   * table but always returns a fresh engine result.
+   * Upsert a rejection decision for `cardIdentifier`, recompute readiness
+   * using **all** current rejections for the deck as the exclusion set,
+   * and persist a fresh snapshot. Idempotent on the decision table but
+   * always returns a fresh engine result.
+   *
+   * @deprecated — endpoint returns 410 Gone. Method kept so existing
+   *   service consumers compile; real writes now go through DecisionsService.
    */
   async rejectSubstitute(
     userId: string,
@@ -50,31 +50,14 @@ export class ReSolveService {
   ): Promise<IReSolveResult> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
-    // Idempotent upsert: the unique index on
-    // (trackedDeckId, cardIdentifier) is authoritative. The happy path
-    // uses a single find-then-insert round-trip; the race-safety net
-    // catches QueryFailedError (Postgres 23505 duplicate key) when two
-    // concurrent requests for the same rejection slip through the
-    // find gap. The second writer no-ops because the row already
-    // exists.
-    const existing = await this.rejections.findOne({
-      where: { trackedDeckId, cardIdentifier },
+    await this.decisionsService.upsert({
+      userId,
+      trackedDeckId,
+      cardIdentifier,
+      decision: 'rejected',
     });
 
-    if (!existing) {
-      try {
-        const row = this.rejections.create({ trackedDeckId, cardIdentifier });
-        await this.rejections.save(row);
-      } catch (err) {
-        if (!this.isDuplicateKeyError(err)) throw err;
-        this.logger.debug('Concurrent rejection insert raced on unique index', {
-          trackedDeckId,
-          cardIdentifier,
-        });
-      }
-    }
-
-    const exclusions = await this.loadExclusions(trackedDeckId);
+    const exclusions = await this.decisionsService.loadExclusions(trackedDeckId);
 
     const snapshot = await this.substitutionService.computeAndStoreReadiness(
       trackedDeckId,
@@ -89,7 +72,7 @@ export class ReSolveService {
       snapshot,
     );
 
-    this.logger.log('Substitute rejected', {
+    this.logger.log('Substitute rejected (deprecated endpoint)', {
       trackedDeckId,
       cardIdentifier,
       exclusionCount: exclusions.size,
@@ -102,6 +85,8 @@ export class ReSolveService {
   /**
    * Delete all persisted rejections for the deck and recompute the
    * "original" (no-exclusion) snapshot.
+   *
+   * @deprecated — endpoint returns 410 Gone.
    */
   async resetRejections(
     userId: string,
@@ -109,7 +94,7 @@ export class ReSolveService {
   ): Promise<IReSolveResult> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
-    await this.rejections.delete({ trackedDeckId });
+    await this.decisionsService.clearRejections(userId, trackedDeckId);
 
     const snapshot = await this.substitutionService.computeAndStoreReadiness(
       trackedDeckId,
@@ -117,14 +102,14 @@ export class ReSolveService {
       new Set(),
     );
 
-    this.logger.log('Rejections reset', { trackedDeckId });
+    this.logger.log('Rejections reset (deprecated endpoint)', { trackedDeckId });
 
     return this.toResultFromSnapshot(snapshot, 0, []);
   }
 
   /**
    * Dry-run re-solve: compute readiness with the caller-supplied
-   * exclusion set without writing to `rejected_substitute` or
+   * exclusion set without writing to `substitute_decision` or
    * `deck_readiness_snapshot`.
    */
   async reSolveDryRun(
@@ -143,10 +128,9 @@ export class ReSolveService {
         exclusions,
       );
 
-    // Dry run never mutates the persisted rejection count.
-    const persistedCount = await this.rejections.count({
-      where: { trackedDeckId },
-    });
+    // U9 fix: use decisionsService.countRejected (reads substitute_decision)
+    // instead of rejectionRepo.count (rejected_substitute was dropped).
+    const persistedCount = await this.decisionsService.countRejected(trackedDeckId);
 
     const curveWarnings = await this.deriveCurveWarnings(
       trackedDeckId,
@@ -165,11 +149,6 @@ export class ReSolveService {
       rejectionCount: persistedCount,
       curveWarnings,
     };
-  }
-
-  private async loadExclusions(trackedDeckId: number): Promise<Set<string>> {
-    const rows = await this.rejections.find({ where: { trackedDeckId } });
-    return new Set(rows.map((r) => r.cardIdentifier));
   }
 
   private toResultFromSnapshot(
@@ -252,18 +231,6 @@ export class ReSolveService {
       snapshot.breakdown as unknown as IEffectiveReadinessResult['breakdown'];
 
     return this.compareMissing(baseline.breakdown.missing, breakdown.missing);
-  }
-
-  /**
-   * Returns true when the error is a Postgres unique-constraint
-   * violation (SQLSTATE 23505) surfacing through TypeORM's
-   * QueryFailedError. This catches the race between find() and save()
-   * on the (trackedDeckId, cardIdentifier) unique index.
-   */
-  private isDuplicateKeyError(err: unknown): boolean {
-    if (!err || typeof err !== 'object') return false;
-    const maybe = err as { code?: unknown; driverError?: { code?: unknown } };
-    return maybe.code === '23505' || maybe.driverError?.code === '23505';
   }
 
   private compareMissing(

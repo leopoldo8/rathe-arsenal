@@ -398,7 +398,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       trackedAt: TWO_HOURS_AGO,
       totalCards: 40,
       latestSnapshot: null,
-      rejectionCount: 0,
+      rejectedCount: 0,
+      approvedCount: 0,
+      pendingCount: 0,
+      decisions: [],
       shoppingLine: makePopulated(shoppingLineOverrides),
     };
   }
@@ -451,7 +454,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       trackedAt: TWO_HOURS_AGO,
       totalCards: 40,
       latestSnapshot: null,
-      rejectionCount: 0,
+      rejectedCount: 0,
+      approvedCount: 0,
+      pendingCount: 0,
+      decisions: [],
     };
 
     const result = computeVariantFetchInterval(dataWithoutShoppingLine, NOW_MS);
@@ -532,7 +538,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       trackedAt: TWO_HOURS_AGO,
       totalCards: 40,
       latestSnapshot: null,
-      rejectionCount: 0,
+      rejectedCount: 0,
+      approvedCount: 0,
+      pendingCount: 0,
+      decisions: [],
       shoppingLine: { kind: 'unscraped' },
     };
 
