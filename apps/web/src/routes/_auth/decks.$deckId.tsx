@@ -6,9 +6,9 @@ import {
   useMarkOwnedMutation,
 } from '../../api/deck-detail';
 import {
-  useRejectSubstituteMutation,
-  useResetRejectionsMutation,
-} from '../../api/re-solve';
+  useDecideSubstitutionMutation,
+  useClearDeckRejectionsMutation,
+} from '../../api/decisions';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { ReadinessHeader } from '../../components/readiness-header';
 import { BreakdownList } from '../../components/breakdown-list';
@@ -29,13 +29,13 @@ interface IPathCBannerProps {
 }
 
 interface IModifiedViewBannerProps {
-  readonly rejectionCount: number;
+  readonly rejectedCount: number;
   readonly onReset: () => void;
   readonly isResetting: boolean;
 }
 
 function ModifiedViewBanner({
-  rejectionCount,
+  rejectedCount,
   onReset,
   isResetting,
 }: IModifiedViewBannerProps) {
@@ -61,8 +61,8 @@ function ModifiedViewBanner({
     >
       <div>
         <strong style={{ color: '#975a16' }}>Modified view.</strong> You have
-        rejected {rejectionCount}{' '}
-        {rejectionCount === 1 ? 'substitution' : 'substitutions'} for this
+        rejected {rejectedCount}{' '}
+        {rejectedCount === 1 ? 'substitution' : 'substitutions'} for this
         deck.
       </div>
       <button
@@ -126,8 +126,8 @@ function DeckDetailPage() {
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const rejectMutation = useRejectSubstituteMutation(deckId);
-  const resetMutation = useResetRejectionsMutation(deckId);
+  const rejectMutation = useDecideSubstitutionMutation(deckId);
+  const resetMutation = useClearDeckRejectionsMutation(deckId);
   const variantFetchMutation = useVariantFetchMutation(deckId);
   const [curveWarnings, setCurveWarnings] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -182,11 +182,16 @@ function DeckDetailPage() {
   }
 
   function handleRejectSubstitute(substituteIdentifier: string): void {
-    rejectMutation.mutate(substituteIdentifier, {
-      onSuccess: (result) => {
-        setCurveWarnings(new Set(result.curveWarnings));
+    rejectMutation.mutate(
+      { cardIdentifier: substituteIdentifier, decision: 'rejected' },
+      {
+        onSuccess: () => {
+          // curveWarnings are no longer returned by the new endpoint;
+          // reset to empty on each reject (Unit 17 will restore via decisions array).
+          setCurveWarnings(new Set());
+        },
       },
-    });
+    );
   }
 
   function handleResetRejections(): void {
@@ -209,9 +214,9 @@ function DeckDetailPage() {
 
       {snapshot ? (
         <>
-          {deck.rejectionCount > 0 && (
+          {deck.rejectedCount > 0 && (
             <ModifiedViewBanner
-              rejectionCount={deck.rejectionCount}
+              rejectedCount={deck.rejectedCount}
               onReset={handleResetRejections}
               isResetting={resetMutation.isPending}
             />

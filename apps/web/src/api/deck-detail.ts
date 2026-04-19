@@ -65,6 +65,16 @@ export interface IDeckDetailSnapshot {
   readonly computedAt: string;
 }
 
+/**
+ * Per-card substitution decision included in the deck detail response.
+ * Only non-pending decisions appear here — absence implies pending.
+ * Required for Unit 17 optimistic-update snapshot splicing.
+ */
+export interface IDecisionEntry {
+  readonly cardIdentifier: string;
+  readonly decision: 'approved' | 'rejected';
+}
+
 export interface IDeckDetailResponse {
   readonly id: number;
   readonly fabraryUlid: string;
@@ -75,10 +85,20 @@ export interface IDeckDetailResponse {
   readonly totalCards: number;
   readonly latestSnapshot: IDeckDetailSnapshot | null;
   /**
-   * Number of persisted substitution rejections on this deck (U7).
+   * Count of decision='rejected' rows for this deck (U9).
+   * Renamed from rejectionCount to align with the 3-state model.
    * The deck detail page renders a modified-view banner when > 0.
    */
-  readonly rejectionCount: number;
+  readonly rejectedCount: number;
+  /** Count of decision='approved' rows for this deck (U9). */
+  readonly approvedCount: number;
+  /** Count of non-owned cards without an explicit decision (U9). */
+  readonly pendingCount: number;
+  /**
+   * All non-pending decisions for this deck (U9).
+   * Required by Unit 17's optimistic-update snapshot path.
+   */
+  readonly decisions: readonly IDecisionEntry[];
   /** Shopping line data for this deck. Added in Phase 1b Unit 5. */
   readonly shoppingLine?: IShoppingLineResponse;
 }

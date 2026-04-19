@@ -5,11 +5,11 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
-import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { VariantFetchService } from '../stores/variant-fetch.service';
+import { DecisionsService } from './decisions/decisions.service';
 import {
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
@@ -39,12 +39,11 @@ export class DecksService {
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     @InjectRepository(CollectionCardEntity)
     private readonly collectionCardRepo: Repository<CollectionCardEntity>,
-    @InjectRepository(RejectedSubstituteEntity)
-    private readonly rejectedSubstituteRepo: Repository<RejectedSubstituteEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
     private readonly variantFetchService: VariantFetchService,
+    private readonly decisionsService: DecisionsService,
   ) {}
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
@@ -80,13 +79,19 @@ export class DecksService {
       snapshotByDeckId.set(snap.trackedDeckId, snap);
     }
 
-    // Auto-recompute missing snapshots
+    // Auto-recompute missing snapshots.
+    // BUG FIX (U9): load the exclusion set for each deck BEFORE recomputing
+    // so that rejected decisions are honoured. Previously, computeAndStoreReadiness
+    // was called without an exclusion set, silently treating all rejections as
+    // pending and producing an over-optimistic readiness score.
     for (const deck of decks) {
       if (!snapshotByDeckId.has(deck.id)) {
         try {
+          const exclusions = await this.decisionsService.loadExclusions(deck.id);
           const snap = await this.substitutionService.computeAndStoreReadiness(
             deck.id,
             userId,
+            exclusions,
           );
           snapshotByDeckId.set(deck.id, snap);
         } catch (error) {
@@ -146,12 +151,16 @@ export class DecksService {
       order: { computedAt: 'DESC' },
     });
 
-    // Auto-recompute if no snapshot exists
+    // Auto-recompute if no snapshot exists.
+    // BUG FIX (U9): load exclusions before recompute so that rejected decisions
+    // are honoured — symmetric fix to the listForUser bug fix above.
     if (!latestSnapshot) {
       try {
+        const exclusions = await this.decisionsService.loadExclusions(deckId);
         latestSnapshot = await this.substitutionService.computeAndStoreReadiness(
           deckId,
           userId,
+          exclusions,
         );
       } catch (error) {
         this.logger.warn({
@@ -162,9 +171,19 @@ export class DecksService {
       }
     }
 
-    const rejectionCount = await this.rejectedSubstituteRepo.count({
-      where: { trackedDeckId: deckId },
-    });
+    // Fetch decision counts and full list in parallel with other reads.
+    const [rejectedCount, decisions] = await Promise.all([
+      this.decisionsService.countRejected(deckId),
+      this.decisionsService.list(userId, deckId),
+    ]);
+
+    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
+
+    // Pending = not-owned cards without an explicit decision.
+    // Derived at response time from the snapshot breakdown.
+    const notOwnedCount =
+      (latestSnapshot?.breakdown as unknown as { notOwned?: unknown[] })?.notOwned?.length ?? 0;
+    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
 
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
       ? (() => {
@@ -233,7 +252,10 @@ export class DecksService {
       trackedAt: deck.trackedAt.toISOString(),
       totalCards,
       latestSnapshot: snapshotDto,
-      rejectionCount,
+      rejectedCount,
+      approvedCount,
+      pendingCount,
+      decisions,
       shoppingLine,
     };
   }

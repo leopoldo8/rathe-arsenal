@@ -4,7 +4,6 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
-import { RejectedSubstituteEntity } from '../database/entities/rejected-substitute.entity';
 import { StoreEntity } from '../database/entities/store.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { FabraryModule } from '../fabrary/fabrary.module';
@@ -20,6 +19,7 @@ import { ReSolveService } from './re-solve/re-solve.service';
 import { VariantFetchController } from './variant-fetch.controller';
 import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
+import { DecisionsModule } from './decisions/decisions.module';
 
 @Module({
   imports: [
@@ -28,7 +28,6 @@ import { StoresModule } from '../stores/stores.module';
       DeckCardEntity,
       CollectionCardEntity,
       DeckReadinessSnapshotEntity,
-      RejectedSubstituteEntity,
       StoreEntity,
       StoreStockEntity,
     ]),
@@ -36,6 +35,7 @@ import { StoresModule } from '../stores/stores.module';
     SubstitutionModule,
     AuthModule,
     StoresModule,
+    DecisionsModule,
   ],
   controllers: [
     DecksImportController,

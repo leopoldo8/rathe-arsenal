@@ -3,7 +3,7 @@ export { CollectionCardEntity } from './collection-card.entity';
 export { TrackedDeckEntity } from './tracked-deck.entity';
 export { DeckCardEntity } from './deck-card.entity';
 export { DeckReadinessSnapshotEntity } from './deck-readiness-snapshot.entity';
-export { RejectedSubstituteEntity } from './rejected-substitute.entity';
+export { SubstituteDecisionEntity } from './substitute-decision.entity';
 export { StoreEntity } from './store.entity';
 export { StoreStockEntity } from './store-stock.entity';
 export { StoreScrapeRunEntity, EStoreScrapeRunStatus } from './store-scrape-run.entity';
