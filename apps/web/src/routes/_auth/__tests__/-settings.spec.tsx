@@ -25,6 +25,15 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
 }));
 
+// ThemeToggle dependencies (U12 wiring) — mock useToast + user-settings API
+vi.mock('../../../components/ui/Toast/useToast', () => ({
+  useToast: () => ({ show: vi.fn() }),
+}));
+vi.mock('../../../api/user-settings', () => ({
+  patchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
+  fetchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
+}));
+
 // ThemeToggle — mock Radix ToggleGroup so toggle items are real buttons
 let capturedOnValueChange: ((v: string) => void) | undefined;
 vi.mock('@radix-ui/react-toggle-group', () => ({
