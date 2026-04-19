@@ -301,6 +301,28 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ---
 
+## Phase 1c trade-offs (2026-04-19)
+
+### Outbound click telemetry uses a dedicated table, not a third-party analytics platform
+
+**Posture.** Phase 1c ships its own `outbound_click_event` table + `POST /api/telemetry/outbound-click` endpoint to make the secondary success metric measurable. No PostHog, Mixpanel, Plausible, or GA4 integration.
+
+**Why deferred.** A self-hosted PostHog (or similar) would resolve the same use case with richer dashboarding, but Phase 1c is intentionally minimal:
+- Privacy posture is explicit (no IP, no User-Agent, no referrer) and easier to enforce on a 4-column table than on a SaaS event payload
+- Server-side validation of `deckId` ownership (anti-forgery) needs a server route either way
+- The success-metric query needs to JOIN against `tracked_deck` / `user`, which lives in Postgres anyway
+- LGPD analysis is simpler when there is no third-party data processor
+- Phase 1c plan explicitly scopes telemetry to "the minimum signal required to compute the secondary success metric, nothing more"
+
+**Trigger to revisit.** When any of the following becomes true:
+- Phase 2 surfaces (R12 conversion funnels, R27 chart engagement, Discover heatmaps) need behavioral analytics richer than rolling-30-day SQL aggregates
+- We want session replay or A/B-test infrastructure for product decisions
+- The number of dedicated event tables (today: `outbound_click_event`; tomorrow: maybe `discover_card_impression`, `suggestion_dismissal_reason`, `swap_acceptance_event`) crosses ~3 — at that point a generic event sink is cheaper than continuing to add tables
+
+**Implementation sketch when revisited.** Self-host PostHog on the same Railway project (Docker compose with their official image), gate event capture behind an explicit consent flag in the user profile, route all events through a thin server-side proxy that re-validates ownership for `deckId`/`storeId`-bearing events. Migrate the `outbound_click_event` historical data into PostHog as a one-shot backfill or keep the table as the canonical store and stream new events into both for 30 days before cutover.
+
+---
+
 ## How to use this file
 
 When starting Phase 1:
