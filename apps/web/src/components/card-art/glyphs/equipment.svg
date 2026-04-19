@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Hexagon frame / equipment glyph -->
+  <path d="M30 30 L50 16 L70 30 L70 70 L50 84 L30 70 Z"
+        fill="none" stroke="currentColor" stroke-width="4" opacity="0.85"/>
+  <path d="M40 40 L50 32 L60 40 L60 62 L50 70 L40 62 Z"
+        fill="currentColor" opacity="0.7"/>
+</svg>

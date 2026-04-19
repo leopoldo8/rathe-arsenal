@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0">
+  <defs>
+    <pattern id="ra-hatch" x="0" y="0" width="8" height="8"
+             patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8"
+            stroke="rgba(0,0,0,0.55)" stroke-width="3"/>
+    </pattern>
+  </defs>
+</svg>
