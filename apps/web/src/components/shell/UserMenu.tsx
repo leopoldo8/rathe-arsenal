@@ -10,14 +10,8 @@ import styles from './UserMenu.module.css';
  *  - Settings: navigates to /settings
  *  - Sign out: calls AuthProvider.signOut()
  */
-export function UserMenu(): React.ReactElement {
-  const { user, signOut } = useAuth();
-
-  function handleSignOut(): void {
-    signOut();
-  }
-
-  const SettingsIcon = (): React.ReactElement => (
+function SettingsIcon(): React.ReactElement {
+  return (
     <svg
       width="14"
       height="14"
@@ -31,8 +25,10 @@ export function UserMenu(): React.ReactElement {
       <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
   );
+}
 
-  const SignOutIcon = (): React.ReactElement => (
+function SignOutIcon(): React.ReactElement {
+  return (
     <svg
       width="14"
       height="14"
@@ -49,6 +45,14 @@ export function UserMenu(): React.ReactElement {
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
+}
+
+export function UserMenu(): React.ReactElement {
+  const { user, signOut } = useAuth();
+
+  function handleSignOut(): void {
+    signOut();
+  }
 
   return (
     <DropdownMenu.Root>

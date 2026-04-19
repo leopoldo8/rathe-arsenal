@@ -50,7 +50,6 @@ export function ThemeToggle(): React.ReactElement {
         aria-label="Light theme"
         className={styles.item}
         data-testid="theme-toggle-light"
-        onClick={() => handleThemeChange('light')}
       >
         {/* Sun icon */}
         <svg
@@ -80,7 +79,6 @@ export function ThemeToggle(): React.ReactElement {
         aria-label="Dark theme"
         className={styles.item}
         data-testid="theme-toggle-dark"
-        onClick={() => handleThemeChange('dark')}
       >
         {/* Moon icon */}
         <svg

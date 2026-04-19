@@ -60,16 +60,22 @@ vi.mock('@radix-ui/react-dropdown-menu', async (importOriginal) => {
 });
 
 // Mock Radix ToggleGroup (ThemeToggle dependency)
-vi.mock('@radix-ui/react-toggle-group', () => ({
-  Root: ({ children, onValueChange, value }: { children: React.ReactNode; onValueChange?: (v: string) => void; value?: string }) =>
-    <div data-testid="theme-toggle" data-value={value}>{children}</div>,
-  Item: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: () => void }) =>
-    <button
-      data-testid={`theme-toggle-${value}`}
-      onClick={onClick}
-      aria-pressed={undefined}
-    >{children}</button>,
-}));
+// The Root captures onValueChange; each Item calls it with its own value on click.
+vi.mock('@radix-ui/react-toggle-group', () => {
+  let capturedOnValueChange: ((v: string) => void) | undefined;
+  return {
+    Root: ({ children, onValueChange, value }: { children: React.ReactNode; onValueChange?: (v: string) => void; value?: string }) => {
+      capturedOnValueChange = onValueChange;
+      return <div data-testid="theme-toggle" data-value={value}>{children}</div>;
+    },
+    Item: ({ children, value }: { children: React.ReactNode; value: string }) =>
+      <button
+        data-testid={`theme-toggle-${value}`}
+        onClick={() => capturedOnValueChange?.(value)}
+        aria-pressed={undefined}
+      >{children}</button>,
+  };
+});
 
 import { AppShell } from '../AppShell';
 
