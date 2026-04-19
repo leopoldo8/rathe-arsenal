@@ -1,0 +1,154 @@
+/* ============================================================
+   Toast — CSS Module
+   Uses Radix Toast primitives (RadixToast.Root, .Viewport, etc.)
+   ============================================================ */
+
+/* ---------- Viewport (fixed position, top-right on desktop) ---------- */
+.viewport {
+  position: fixed;
+  top: var(--ra-space-4);
+  right: var(--ra-space-4);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  width: 360px;
+  max-width: calc(100vw - var(--ra-space-8));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+
+/* ---------- Individual toast ---------- */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-radius: var(--ra-radius-md);
+  border: 1px solid var(--ra-border);
+  background-color: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  box-shadow: var(--ra-shadow-md);
+
+  animation: toast-slide-in var(--ra-duration) var(--ra-ease) both;
+}
+
+/* Radix adds data-state="closed" when dismissed */
+.toast[data-state='closed'] {
+  animation: toast-fade-out var(--ra-duration) var(--ra-ease) both;
+}
+
+/* ---------- Variants ---------- */
+.toast--error {
+  border-color: var(--ra-ready-low-border);
+  background-color: var(--ra-ready-low-bg);
+}
+
+.toast--success {
+  border-color: var(--ra-ready-high-border);
+  background-color: var(--ra-ready-high-bg);
+}
+
+.toast--info {
+  border-color: var(--ra-info-border);
+  background-color: var(--ra-info-bg);
+}
+
+/* ---------- Content ---------- */
+.toastContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.toastTitle {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-primary);
+  margin: 0;
+  line-height: var(--ra-leading-snug);
+}
+
+/* ---------- Actions ---------- */
+.toastActions {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-shrink: 0;
+}
+
+.retryButton {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-accent-body);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.retryButton:hover {
+  color: var(--ra-accent-hover);
+}
+
+.closeButton {
+  font-size: var(--ra-text-h3);
+  line-height: 1;
+  color: var(--ra-fg-muted);
+  background: none;
+  border: none;
+  padding: var(--ra-space-1);
+  cursor: pointer;
+  border-radius: var(--ra-radius-sm);
+  transition: color var(--ra-duration) var(--ra-ease);
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: var(--ra-fg-primary);
+}
+
+/* ---------- Animations ---------- */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Reduced motion: disable slide, keep opacity */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes toast-slide-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes toast-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+}

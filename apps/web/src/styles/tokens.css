@@ -1,0 +1,302 @@
+/* ============================================================
+   Rathe Arsenal Design System — v1 tokens
+   Aligned to identity-proposal-v2: dual-theme (dark default, light),
+   Cinzel display / IBM Plex UI / JetBrains Mono,
+   brass accent + ember ornamental, parchment/charcoal surfaces.
+
+   Theme resolution order:
+     :root / [data-theme="dark"]  — dark theme (default, ships in Plan A)
+     [data-theme="light"]         — light theme (declared here, tone-corrected in Plan C)
+
+   Contrast notes (U3):
+     --ra-fg-secondary dark: adjusted to #b0a898 (8.24:1 on --ra-bg-canvas) for AA body text.
+     --ra-accent dark: #c5923a at 6.98:1 on canvas — large-text / decorative ONLY.
+       Reserved for ornamental use to maintain visual distinction; --ra-accent-body is the
+       body-size companion. (Note: the plan doc estimated 3.8:1, which was incorrect.)
+     --ra-accent-body dark: #d4a84a at 8.79:1 on canvas — use for body-size brass text.
+   ============================================================ */
+
+:root {
+  /* ---------- Type families ---------- */
+  --ra-font-ui:       "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --ra-font-display:  "Cinzel", ui-serif, Georgia, serif;
+  --ra-font-ornament: "Cinzel Decorative", "Cinzel", serif;
+  --ra-font-gothic:   "UnifrakturCook", "Cinzel", serif;
+  --ra-font-serif:    "IBM Plex Serif", ui-serif, Georgia, serif;
+  --ra-font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Back-compat aliases */
+  --ra-font-sans:     var(--ra-font-ui);
+  --ra-font-body:     var(--ra-font-ui);
+
+  /* ---------- Type scale ---------- */
+  --ra-text-hero:    3.25rem;   /* 52 — Cinzel Decorative 900 */
+  --ra-text-h1:      2.25rem;   /* 36 — Cinzel 700 */
+  --ra-text-h2:      1.5rem;    /* 24 — Cinzel 600 upper */
+  --ra-text-h3:      1.125rem;  /* 18 — IBM Plex Sans 600 */
+  --ra-text-body:    1rem;      /* 16 — IBM Plex Sans 400 */
+  --ra-text-small:   0.875rem;  /* 14 */
+  --ra-text-caption: 0.6875rem; /* 11 — Plex 500 upper */
+  --ra-text-mono:    0.6875rem; /* 11 — JetBrains Mono */
+
+  /* Legacy scale aliases */
+  --ra-text-xs:   0.75rem;
+  --ra-text-sm:   0.875rem;
+  --ra-text-base: 1rem;
+  --ra-text-lg:   1.125rem;
+  --ra-text-xl:   1.25rem;
+  --ra-text-2xl:  1.5rem;
+  --ra-text-3xl:  2.25rem;
+  --ra-text-4xl:  3.25rem;
+  --ra-text-5xl:  4rem;
+
+  --ra-weight-normal:   400;
+  --ra-weight-medium:   500;
+  --ra-weight-semibold: 600;
+  --ra-weight-bold:     700;
+  --ra-weight-black:    900;
+
+  --ra-leading-tight:  1.05;
+  --ra-leading-snug:   1.25;
+  --ra-leading-normal: 1.55;
+
+  /* Tracking presets (letter-spacing) */
+  --ra-track-display: 0.02em;
+  --ra-track-h1:      0.04em;
+  --ra-track-h2:      0.05em;
+  --ra-track-caps:    0.22em;
+  --ra-track-spaced:  0.15em;
+
+  /* ---------- Spacing (4px grid) ---------- */
+  --ra-space-1:  0.25rem;
+  --ra-space-2:  0.5rem;
+  --ra-space-3:  0.75rem;
+  --ra-space-4:  1rem;
+  --ra-space-5:  1.25rem;
+  --ra-space-6:  1.5rem;
+  --ra-space-8:  2rem;
+  --ra-space-10: 2.5rem;
+  --ra-space-12: 3rem;
+
+  /* ---------- Radii — tight/architectural (2–4px) ---------- */
+  --ra-radius-sm:   2px;
+  --ra-radius-md:   4px;
+  --ra-radius-lg:   4px;
+  --ra-radius-xl:   4px; /* capped at 4px per R6; pills reserved for badges */
+  --ra-radius-full: 9999px;
+
+  /* ---------- Motion ---------- */
+  --ra-ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ra-duration:    120ms;
+  --ra-duration-lg: 240ms;
+}
+
+/* ============================================================
+   DARK theme (default) — charcoal canvas, brass accent, ember spark
+   ============================================================ */
+:root,
+:root[data-theme="dark"] {
+  --ra-bg-canvas:      #0c0d10;
+  --ra-bg-surface:     #15171c;
+  --ra-bg-raised:      #1e2128;
+  --ra-bg-sunken:      #0a0b0e;
+  --ra-bg-muted:       #1a1c22;
+
+  --ra-border-subtle:  #2a2e37;
+  --ra-border:         #2a2e37;
+  --ra-border-strong:  #3d424d;
+
+  --ra-fg-primary:     #ece6d7;
+
+  /* --ra-fg-secondary: tone-adjusted in U3 from #9a9385 (3.8:1) to
+     #b0a898 (~5.0:1 on --ra-bg-canvas). Safe for AA body-size text on
+     canvas, surface, and raised backgrounds. */
+  --ra-fg-secondary:   #b0a898;
+
+  --ra-fg-muted:       #6b6658;
+  --ra-fg-subtle:      #555040;
+  --ra-fg-inverse:     #0c0d10;
+
+  /* --ra-accent: #c5923a — 6.98:1 on canvas (passes AA body AND AA large).
+     LARGE-TEXT AND DECORATIVE USE ONLY by architectural choice, not contrast
+     necessity. Reserved for headings >=18pt, ornamental elements,
+     .ra-readiness-display, .ra-diamond to maintain the visual hierarchy.
+     For body-size brass text use --ra-accent-body instead.
+     See: docs/design/v1/contrast-matrix.md */
+  --ra-accent:         #c5923a;
+  --ra-accent-hover:   #d9a34a;
+  --ra-accent-dim:     #7a5a24;
+  --ra-accent-deep:    #5a4218;
+  --ra-accent-soft-bg: rgba(197, 146, 58, 0.10);
+  --ra-accent-soft-bd: rgba(197, 146, 58, 0.35);
+  --ra-accent-ink-on:  #1a1408;
+
+  /* --ra-accent-body: companion token for body-size brass text.
+     #d4a84a at 8.79:1 on --ra-bg-canvas — comfortably passes WCAG AA at body size.
+     Use this instead of --ra-accent whenever text is smaller than 18pt/24px or
+     not bold at 14pt/18.67px. --ra-accent is preserved for large-text/decorative
+     use to maintain visual hierarchy (both tokens pass AA at all sizes, but the
+     distinction is architectural — decorative vs content).
+     See: docs/design/v1/contrast-matrix.md */
+  --ra-accent-body:    #d4a84a;
+
+  /* Back-compat aliases for JSX inline styles */
+  --ra-bg-primary:     var(--ra-bg-canvas);
+  --ra-accent-soft:    var(--ra-accent-soft-bg);
+
+  /* Ornamental ember (deep forge red) — ornamental accents only */
+  --ra-ember:          #b44a2e;
+  --ra-ember-hover:    #c85a3a;
+
+  /* Primary CTA mirrors accent */
+  --ra-action:         var(--ra-accent);
+  --ra-action-hover:   var(--ra-accent-hover);
+  --ra-action-ink-on:  var(--ra-accent-deep);
+  --ra-action-soft-bg: var(--ra-accent-soft-bg);
+  --ra-action-soft-bd: var(--ra-accent-soft-bd);
+
+  /* Readiness palette */
+  --ra-ready-high:        #6ea968;
+  --ra-ready-high-bg:     rgba(110, 169, 104, 0.10);
+  --ra-ready-high-border: rgba(110, 169, 104, 0.40);
+
+  --ra-ready-mid:         #c5923a;
+  --ra-ready-mid-bg:      rgba(197, 146, 58, 0.10);
+  --ra-ready-mid-border:  rgba(197, 146, 58, 0.40);
+  --ra-ready-mid-accent:  #d9a34a;
+
+  --ra-ready-low:         #c0574a;
+  --ra-ready-low-bg:      rgba(192, 87, 74, 0.10);
+  --ra-ready-low-border:  rgba(192, 87, 74, 0.40);
+  --ra-ready-low-dark:    #8c3a30;
+
+  --ra-info:              #6a90b8;
+  --ra-info-dark:         #4f78a2;
+  --ra-info-bg:           rgba(106, 144, 184, 0.10);
+  --ra-info-border:       rgba(106, 144, 184, 0.40);
+  --ra-info-ink:          #b9cde3;
+
+  --ra-path-c:            #c77b3a;
+  --ra-path-c-bg:         rgba(199, 123, 58, 0.10);
+  --ra-path-c-border:     rgba(199, 123, 58, 0.40);
+  --ra-path-c-ink:        #e1a977;
+
+  /* FAB pitch layer */
+  --ra-pitch-red:    #b44a2e;
+  --ra-pitch-yellow: #c5923a;
+  --ra-pitch-blue:   #4a6a94;
+
+  /* Brand accents (back-compat) */
+  --ra-brand-steel:  #3d424d;
+  --ra-brand-forge:  #c5923a;
+  --ra-brand-ember:  #b44a2e;
+  --ra-brand-parch:  #15171c;
+
+  /* Page background alias */
+  --ra-bg-page: var(--ra-bg-canvas);
+
+  /* Shadows — soft glows and deep drops on dark canvas */
+  --ra-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --ra-shadow:    0 1px 3px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --ra-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --ra-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --ra-shadow-glow: 0 0 0 1px rgba(197, 146, 58, 0.20), 0 0 24px rgba(197, 146, 58, 0.12);
+  --ra-inset:     inset 0 1px 0 rgba(255, 255, 255, 0.03);
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   LIGHT theme — warm parchment, deep brass, ink text
+   NOTE: Light theme token values are included as declarations but are NOT
+   tone-corrected for Plan A. Contrast verification and tone adjustment land
+   in Plan C. Do not rely on these values passing WCAG AA at body size — see
+   docs/design/v1/contrast-matrix.md for the documented Plan C failures.
+   ============================================================ */
+:root[data-theme="light"] {
+  --ra-bg-canvas:      #f5f1e8;
+  --ra-bg-surface:     #ffffff;
+  --ra-bg-raised:      #ece7d8;
+  --ra-bg-sunken:      #ebe6d4;
+  --ra-bg-muted:       #e4dec9;
+
+  --ra-border-subtle:  #e5dfc9;
+  --ra-border:         #dcd4be;
+  --ra-border-strong:  #b8af93;
+
+  --ra-fg-primary:     #1a1814;
+  --ra-fg-secondary:   #4f4a3f;
+  --ra-fg-muted:       #726b58;
+  --ra-fg-subtle:      #9a937f;
+  --ra-fg-inverse:     #ffffff;
+
+  /* --ra-accent: #8f6a22 — see contrast matrix. Body-size usage on parchment
+     needs verification; deferred to Plan C. Large-text use is safe (3:1+).
+     --ra-accent-body companion not tone-corrected for light — Plan C. */
+  --ra-accent:         #8f6a22;
+  --ra-accent-body:    #8f6a22; /* TODO Plan C: derive body-safe companion */
+  --ra-accent-hover:   #6f521a;
+  --ra-accent-dim:     #c6ad72;
+  --ra-accent-deep:    #3d2c0e;
+  --ra-accent-soft-bg: rgba(143, 106, 34, 0.08);
+  --ra-accent-soft-bd: rgba(143, 106, 34, 0.30);
+  --ra-accent-ink-on:  #ffffff;
+
+  /* Back-compat aliases */
+  --ra-bg-primary:     var(--ra-bg-canvas);
+  --ra-accent-soft:    var(--ra-accent-soft-bg);
+
+  --ra-ember:          #8b3518;
+  --ra-ember-hover:    #6f2812;
+
+  --ra-action:         var(--ra-accent);
+  --ra-action-hover:   var(--ra-accent-hover);
+  --ra-action-ink-on:  #ffffff;
+  --ra-action-soft-bg: var(--ra-accent-soft-bg);
+  --ra-action-soft-bd: var(--ra-accent-soft-bd);
+
+  --ra-ready-high:        #4a7a3e;
+  --ra-ready-high-bg:     #eef6e8;
+  --ra-ready-high-border: #b8d4a8;
+
+  --ra-ready-mid:         #8f6a22;
+  --ra-ready-mid-bg:      #faf3df;
+  --ra-ready-mid-border:  #d8bf7a;
+  --ra-ready-mid-accent:  #6f521a;
+
+  --ra-ready-low:         #8b3518;
+  --ra-ready-low-bg:      #f9e8e0;
+  --ra-ready-low-border:  #d8a995;
+  --ra-ready-low-dark:    #5c2010;
+
+  --ra-info:              #2b6cb0;
+  --ra-info-dark:         #1d4d80;
+  --ra-info-bg:           #e4eef7;
+  --ra-info-border:       #b3cde4;
+  --ra-info-ink:          #1a3a5a;
+
+  --ra-path-c:            #a35516;
+  --ra-path-c-bg:         #fbeed7;
+  --ra-path-c-border:     #e0b078;
+  --ra-path-c-ink:        #5c2e0a;
+
+  --ra-pitch-red:    #8b3518;
+  --ra-pitch-yellow: #8f6a22;
+  --ra-pitch-blue:   #2b4d7a;
+
+  --ra-brand-steel:  #3a3830;
+  --ra-brand-forge:  #8f6a22;
+  --ra-brand-ember:  #8b3518;
+  --ra-brand-parch:  #f5f1e8;
+
+  --ra-bg-page: var(--ra-bg-canvas);
+
+  --ra-shadow-sm: 0 1px 2px rgba(60, 50, 30, 0.06);
+  --ra-shadow:    0 1px 3px rgba(60, 50, 30, 0.08), 0 1px 2px rgba(60, 50, 30, 0.04);
+  --ra-shadow-md: 0 4px 10px rgba(60, 50, 30, 0.09), 0 2px 4px rgba(60, 50, 30, 0.04);
+  --ra-shadow-lg: 0 14px 30px rgba(60, 50, 30, 0.14), 0 4px 8px rgba(60, 50, 30, 0.06);
+  --ra-shadow-glow: 0 0 0 1px rgba(143, 106, 34, 0.22), 0 2px 12px rgba(143, 106, 34, 0.10);
+  --ra-inset:     inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  color-scheme: light;
+}

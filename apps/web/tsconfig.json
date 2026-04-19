@@ -10,7 +10,7 @@
     "allowImportingTsExtensions": true,
     "useDefineForClassFields": true,
     "isolatedModules": true,
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "types": ["vite/client", "vite-plugin-svgr/client", "vitest/globals", "@testing-library/jest-dom"],
     "experimentalDecorators": false,
     "emitDecoratorMetadata": false
   },

@@ -1,6 +1,7 @@
 import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
+import svgr from 'vite-plugin-svgr';
 import type { UserConfig as VitestUserConfig } from 'vitest/config';
 
 /**
@@ -27,7 +28,7 @@ import type { UserConfig as VitestUserConfig } from 'vitest/config';
  *  - `routeTree.gen.ts` is excluded from coverage because it is a
  *    generated artifact.
  */
-const plugins: PluginOption[] = [TanStackRouterVite(), react()];
+const plugins: PluginOption[] = [TanStackRouterVite(), svgr(), react()];
 
 const test: VitestUserConfig['test'] = {
   environment: 'jsdom',

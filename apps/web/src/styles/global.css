@@ -1,0 +1,148 @@
+/* ============================================================
+   Rathe Arsenal — global styles
+   Imports design tokens and applies baseline CSS reset + root defaults.
+   ============================================================ */
+
+@import './tokens.css';
+
+/* ---------- CSS reset ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Root defaults ---------- */
+html {
+  color-scheme: dark;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--ra-font-body);
+  font-size: var(--ra-text-body);
+  line-height: var(--ra-leading-normal);
+  color: var(--ra-fg-primary);
+  background-color: var(--ra-bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+/* ---------- Focus visible — global brass outline (R55) ---------- */
+:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Reduced motion baseline (R56) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ---------- Typography utility classes (from design-file tokens.css) ---------- */
+.ra-hero {
+  font-family: var(--ra-font-ornament);
+  font-weight: var(--ra-weight-black);
+  font-size: var(--ra-text-hero);
+  line-height: var(--ra-leading-tight);
+  letter-spacing: var(--ra-track-display);
+}
+
+h1,
+.ra-h1 {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-h1);
+  line-height: 1.15;
+  letter-spacing: var(--ra-track-h1);
+}
+
+h2,
+.ra-h2 {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h2);
+  line-height: 1.25;
+  letter-spacing: var(--ra-track-h2);
+  text-transform: uppercase;
+}
+
+h3,
+.ra-h3 {
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h3);
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.ra-eyebrow {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.ra-caption {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.ra-meta {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-mono);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+code,
+.ra-mono {
+  font-family: var(--ra-font-mono);
+  font-size: 0.95em;
+}
+
+/* Signature readiness treatment — Cinzel Decorative, tabular numerals.
+   Reserved for effectivePercent values only (R7). Never use for counts or
+   non-percentage stats — use .ra-hero-primary-stat for those. */
+.ra-readiness-display {
+  font-family: var(--ra-font-ornament);
+  font-weight: var(--ra-weight-black);
+  font-size: 3rem;
+  line-height: 1;
+  /* --ra-accent is safe here: this is large-text (48px), qualifies under
+     WCAG AA large-text threshold (3:1). See contrast matrix. */
+  color: var(--ra-accent);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0;
+}
+
+/* Diamond bullet — v2 motif */
+.ra-diamond {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  background: var(--ra-accent);
+  transform: rotate(45deg);
+  vertical-align: middle;
+}

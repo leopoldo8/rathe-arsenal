@@ -1,0 +1,40 @@
+/* ============================================================
+   Skeleton — CSS Module
+   CSS-only shimmer animation; respects prefers-reduced-motion.
+   ============================================================ */
+
+.skeleton {
+  display: block;
+  background-color: var(--ra-bg-muted);
+  background-image: linear-gradient(
+    90deg,
+    var(--ra-bg-muted) 0%,
+    var(--ra-bg-raised) 40%,
+    var(--ra-bg-muted) 80%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--ra-radius-sm);
+}
+
+.skeleton--rounded {
+  border-radius: var(--ra-radius-full);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Reduced motion: static gradient, no animation (R56) */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background-image: none;
+  }
+}
