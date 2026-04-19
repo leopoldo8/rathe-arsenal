@@ -1,5 +1,21 @@
 import { computePath } from '../src/readiness/compute-path';
-import { IReadinessBreakdown } from '../src/readiness/types';
+import { IBreakdownEntry, IReadinessBreakdown } from '../src/readiness/types';
+
+/** U11: IBreakdownEntry now requires pitch, cost, type. Helper adds defaults. */
+function makeEntry(
+  cardIdentifier: string,
+  quantity: number,
+  slot: string = 'mainboard',
+): IBreakdownEntry {
+  return Object.freeze({
+    cardIdentifier,
+    quantity,
+    slot,
+    pitch: null as 1 | 2 | 3 | null,
+    cost: null as number | null,
+    type: 'ally',
+  });
+}
 
 function makeBreakdown(
   overrides: Partial<IReadinessBreakdown> = {},
@@ -21,7 +37,7 @@ describe('computePath', () => {
   it('returns Path A when nothing is missing and nothing is substituted', () => {
     const breakdown = makeBreakdown({
       exact: Object.freeze([
-        Object.freeze({ cardIdentifier: 'a', quantity: 3, slot: 'mainboard' }),
+        makeEntry('a', 3),
       ]),
     });
 
@@ -34,11 +50,7 @@ describe('computePath', () => {
   });
 
   it('returns Path B when every missing card is covered by a substitution', () => {
-    const originalEntry = Object.freeze({
-      cardIdentifier: 'a',
-      quantity: 1,
-      slot: 'mainboard',
-    });
+    const originalEntry = makeEntry('a', 1);
     const breakdown = makeBreakdown({
       substituted: Object.freeze([
         Object.freeze({
@@ -73,11 +85,7 @@ describe('computePath', () => {
     const breakdown = makeBreakdown({
       substituted: Object.freeze([
         Object.freeze({
-          original: Object.freeze({
-            cardIdentifier: 'a',
-            quantity: 1,
-            slot: 'mainboard',
-          }),
+          original: makeEntry('a', 1),
           match: Object.freeze({
             substitute: Object.freeze({
               cardIdentifier: 'b',
@@ -100,7 +108,7 @@ describe('computePath', () => {
         }),
       ]),
       missing: Object.freeze([
-        Object.freeze({ cardIdentifier: 'c', quantity: 2, slot: 'mainboard' }),
+        makeEntry('c', 2),
       ]),
     });
 
@@ -110,7 +118,7 @@ describe('computePath', () => {
   it('returns Path C when cards are missing and none are substituted', () => {
     const breakdown = makeBreakdown({
       missing: Object.freeze([
-        Object.freeze({ cardIdentifier: 'c', quantity: 3, slot: 'mainboard' }),
+        makeEntry('c', 3),
       ]),
     });
 
@@ -122,9 +130,7 @@ describe('computePath', () => {
     // the `path` field. The helper must derive the path from breakdown alone
     // without any additional state.
     const legacyBreakdown: IReadinessBreakdown = Object.freeze({
-      exact: Object.freeze([
-        Object.freeze({ cardIdentifier: 'x', quantity: 4, slot: 'mainboard' }),
-      ]),
+      exact: Object.freeze([makeEntry('x', 4)]),
       substituted: Object.freeze([]),
       missing: Object.freeze([]),
       notOwned: Object.freeze([]),

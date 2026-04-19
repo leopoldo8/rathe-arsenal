@@ -27,6 +27,12 @@ export interface ITestDeckBreakdownEntry {
   readonly cardIdentifier: string;
   readonly quantity: number;
   readonly slot: string;
+  /** U11: Card pitch (1=red, 2=yellow, 3=blue); null for pitch-less cards. */
+  readonly pitch: 1 | 2 | 3 | null;
+  /** U11: Card cost in resources; null for pitch-less cards. */
+  readonly cost: number | null;
+  /** U11: Primary card type from catalog. 'unknown' as defensive fallback. */
+  readonly type: string;
 }
 
 export interface ITestDeckSubstituteCard {

@@ -6,6 +6,20 @@ export interface IBreakdownEntry {
   readonly cardIdentifier: string;
   readonly quantity: number;
   readonly slot: string;
+  /**
+   * Card pitch (1 = red, 2 = yellow, 3 = blue).
+   * null for pitch-less cards (heroes, weapons, equipment). Added in U11.
+   */
+  readonly pitch: 1 | 2 | 3 | null;
+  /**
+   * Card cost in resources. null for pitch-less cards. Added in U11.
+   */
+  readonly cost: number | null;
+  /**
+   * Primary card type from catalog (types[0]). 'unknown' as fallback. Added in U11.
+   * Used by CardArt for the type glyph (R47).
+   */
+  readonly type: string;
 }
 
 export interface ISubstituteCard {

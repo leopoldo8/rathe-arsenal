@@ -15,6 +15,28 @@ import { computeFidelity } from './compute-fidelity';
 /** Slots that are never eligible for substitution (R20 rule). */
 const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
 
+/**
+ * Derives the enriched pitch, cost, and type fields for a breakdown entry
+ * from the catalog card. Defensively returns null/null/'unknown' when the
+ * card is not found in the catalog so the compute function never throws.
+ *
+ * pitch is constrained to 1 | 2 | 3 per the FaB rules; any other numeric
+ * value (which should not occur in practice) is cast to null for safety.
+ */
+function deriveEntryMeta(
+  catalogCard: { pitch: number | null; cost: number | null; types: readonly string[] } | undefined,
+): { pitch: 1 | 2 | 3 | null; cost: number | null; type: string } {
+  if (!catalogCard) {
+    return { pitch: null, cost: null, type: 'unknown' };
+  }
+  const rawPitch = catalogCard.pitch;
+  const pitch: 1 | 2 | 3 | null =
+    rawPitch === 1 || rawPitch === 2 || rawPitch === 3 ? rawPitch : null;
+  const cost = catalogCard.cost ?? null;
+  const type = catalogCard.types[0] ?? 'unknown';
+  return { pitch, cost, type };
+}
+
 interface IDeckCard {
   readonly cardIdentifier: string;
   readonly quantity: number;
@@ -71,12 +93,16 @@ export function computeEffectiveReadiness(
     // Track original pitch
     originalPitchEntries.push({ pitch: cardPitch, quantity: deckCard.quantity });
 
+    // Derive enriched metadata for this card once per deck card.
+    const entryMeta = deriveEntryMeta(catalogCard);
+
     if (available >= deckCard.quantity) {
       // Exact match -- all copies available
       exact.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
         quantity: deckCard.quantity,
         slot: deckCard.slot,
+        ...entryMeta,
       }));
       remainingInventory.set(deckCard.cardIdentifier, available - deckCard.quantity);
       exactCount += deckCard.quantity;
@@ -91,6 +117,7 @@ export function computeEffectiveReadiness(
           cardIdentifier: deckCard.cardIdentifier,
           quantity: exactQty,
           slot: deckCard.slot,
+          ...entryMeta,
         }));
         remainingInventory.set(deckCard.cardIdentifier, 0);
         exactCount += exactQty;
@@ -103,6 +130,7 @@ export function computeEffectiveReadiness(
           cardIdentifier: deckCard.cardIdentifier,
           quantity: missingQty,
           slot: deckCard.slot,
+          ...entryMeta,
         }));
         modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
         continue;
@@ -114,6 +142,7 @@ export function computeEffectiveReadiness(
           cardIdentifier: deckCard.cardIdentifier,
           quantity: missingQty,
           slot: deckCard.slot,
+          ...entryMeta,
         }));
         modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
         continue;
@@ -144,6 +173,7 @@ export function computeEffectiveReadiness(
               cardIdentifier: deckCard.cardIdentifier,
               quantity: 1,
               slot: deckCard.slot,
+              ...entryMeta,
             });
 
             substituted.push(Object.freeze({ original: originalEntry, match }));
@@ -170,6 +200,7 @@ export function computeEffectiveReadiness(
           cardIdentifier: deckCard.cardIdentifier,
           quantity: remainingMissing,
           slot: deckCard.slot,
+          ...entryMeta,
         }));
       }
     }
@@ -183,14 +214,15 @@ export function computeEffectiveReadiness(
 
   // Compute notOwned: union of missing + substituted originals, grouped by
   // (cardIdentifier, slot) with quantities summed.
-  const notOwnedMap = new Map<string, { cardIdentifier: string; quantity: number; slot: string }>();
+  // The enriched fields (pitch, cost, type) are preserved from the source entry.
+  const notOwnedMap = new Map<string, IBreakdownEntry>();
   for (const entry of missing) {
     const key = `${entry.cardIdentifier}::${entry.slot}`;
     const existing = notOwnedMap.get(key);
     if (existing) {
       notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.quantity });
     } else {
-      notOwnedMap.set(key, { cardIdentifier: entry.cardIdentifier, quantity: entry.quantity, slot: entry.slot });
+      notOwnedMap.set(key, { ...entry });
     }
   }
   for (const entry of substituted) {
@@ -199,11 +231,7 @@ export function computeEffectiveReadiness(
     if (existing) {
       notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.original.quantity });
     } else {
-      notOwnedMap.set(key, {
-        cardIdentifier: entry.original.cardIdentifier,
-        quantity: entry.original.quantity,
-        slot: entry.original.slot,
-      });
+      notOwnedMap.set(key, { ...entry.original });
     }
   }
   const notOwned: IBreakdownEntry[] = Array.from(notOwnedMap.values()).map((e) => Object.freeze(e));

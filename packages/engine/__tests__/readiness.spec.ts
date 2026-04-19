@@ -622,4 +622,143 @@ describe('computeEffectiveReadiness', () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // U11: IBreakdownEntry enrichment — pitch, cost, type
+  // ---------------------------------------------------------------------------
+
+  describe('IBreakdownEntry enrichment (U11)', () => {
+    it('(happy path) exact entry for a red-pitch attack carries pitch=1, cost, and type', () => {
+      // cardA has pitch=1, cost=1, types=[Type.Action]
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['warrior-attack-red', 1]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      expect(result.breakdown.exact).toHaveLength(1);
+      const entry = result.breakdown.exact[0]!;
+      expect(entry.pitch).toBe(1);
+      expect(entry.cost).toBe(1);
+      expect(entry.type).toBe(Type.Action);
+    });
+
+    it('(happy path) weapon card has pitch=null, cost=null in breakdown entry', () => {
+      // weaponCard has pitch=null, cost=null
+      const deck = {
+        cards: [
+          { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
+          { cardIdentifier: 'warrior-attack-red', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      // Missing the weapon — it goes to missing list.
+      const inventory = new Map([['warrior-attack-red', 1]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      const missingWeapon = result.breakdown.missing.find(
+        (e) => e.cardIdentifier === 'dawnblade',
+      );
+      expect(missingWeapon).toBeDefined();
+      expect(missingWeapon!.pitch).toBeNull();
+      expect(missingWeapon!.cost).toBeNull();
+      expect(missingWeapon!.type).toBe(Type.Weapon);
+    });
+
+    it('(happy path) hero card has pitch=null, cost=null, type=Hero', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'dorinthea-ironsong', quantity: 1, slot: 'hero' },
+        ],
+      };
+      const inventory = new Map<string, number>(); // missing
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      const missingHero = result.breakdown.missing.find(
+        (e) => e.cardIdentifier === 'dorinthea-ironsong',
+      );
+      expect(missingHero).toBeDefined();
+      expect(missingHero!.pitch).toBeNull();
+      expect(missingHero!.cost).toBeNull();
+      expect(missingHero!.type).toBe(Type.Hero);
+    });
+
+    it('(happy path) every entry has type populated (not undefined, not empty string)', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'dorinthea-ironsong', quantity: 1, slot: 'hero' },
+          { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
+          { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+          { cardIdentifier: 'warrior-attack-red-alt', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['dorinthea-ironsong', 1],
+        ['warrior-attack-red', 2],
+        // dawnblade missing, warrior-attack-red-alt missing
+      ]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      const allEntries = [
+        ...result.breakdown.exact,
+        ...result.breakdown.missing,
+        ...result.breakdown.substituted.map((s) => s.original),
+      ];
+
+      for (const entry of allEntries) {
+        expect(typeof entry.type).toBe('string');
+        expect(entry.type.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('(edge case) card not in catalog returns pitch:null, cost:null, type:"unknown" without throwing', () => {
+      // Build a catalog that does NOT contain the card referenced in the deck.
+      const unknownCatalog = makeCatalog([cardA]); // only has warrior-attack-red
+
+      const deck = {
+        cards: [
+          { cardIdentifier: 'ghost-card-not-in-catalog', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map<string, number>();
+
+      // Should not throw
+      const result = computeEffectiveReadiness(deck, inventory, unknownCatalog);
+
+      expect(result.breakdown.missing).toHaveLength(1);
+      const entry = result.breakdown.missing[0]!;
+      expect(entry.cardIdentifier).toBe('ghost-card-not-in-catalog');
+      expect(entry.pitch).toBeNull();
+      expect(entry.cost).toBeNull();
+      expect(entry.type).toBe('unknown');
+    });
+
+    it('(regression) rawPercent, effectivePercent, slot, quantity are unchanged by U11', () => {
+      const deck = {
+        cards: [
+          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([
+        ['warrior-attack-red', 2],
+        ['warrior-attack-red-alt', 1],
+      ]);
+
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
+
+      // Core readiness fields must not regress.
+      expect(result.rawPercent).toBeCloseTo(66.7, 0);
+      expect(result.effectivePercent).toBe(100);
+      expect(result.path).toBe('B');
+      expect(result.breakdown.exact[0]!.slot).toBe('mainboard');
+      expect(result.breakdown.exact[0]!.quantity).toBe(2);
+      expect(result.breakdown.substituted[0]!.original.slot).toBe('mainboard');
+      expect(result.breakdown.substituted[0]!.original.quantity).toBe(1);
+    });
+  });
 });
