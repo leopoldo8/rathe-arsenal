@@ -41,8 +41,25 @@ vi.mock('../../../assets/logo-mark.svg?react', () => ({
 
 // Mock AuthContext / useAuth
 const mockSignOut = vi.fn();
+const mockSetSettings = vi.fn();
 vi.mock('../../../auth/useAuth', () => ({
-  useAuth: () => ({ user: { id: '1', email: 'hero@rathe.gg' }, signOut: mockSignOut }),
+  useAuth: () => ({
+    user: { id: '1', email: 'hero@rathe.gg' },
+    token: 'test-token',
+    signOut: mockSignOut,
+    setSettings: mockSetSettings,
+  }),
+}));
+
+// Mock useToast (ThemeToggle dependency for U12 error reporting)
+vi.mock('../../ui/Toast/useToast', () => ({
+  useToast: () => ({ show: vi.fn() }),
+}));
+
+// Mock user-settings API so ThemeToggle doesn't hit the network in tests
+vi.mock('../../../api/user-settings', () => ({
+  patchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
+  fetchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
 }));
 
 // Mock Radix DropdownMenu (UserMenu dependency) — render children directly

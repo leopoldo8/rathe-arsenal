@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import { useAuth } from '../../auth/useAuth';
+import { useToast } from '../ui/Toast/useToast';
+import { patchUserSettings } from '../../api/user-settings';
 import styles from './ThemeToggle.module.css';
 
 const STORAGE_KEY = 'rathe-arsenal:theme';
@@ -16,25 +19,43 @@ function getInitialTheme(): TTheme {
  * ThemeToggle — toggle-group with sun (light) / moon (dark) buttons.
  *
  * On click:
- *  1. Updates document.documentElement.dataset.theme
- *  2. Writes to localStorage['rathe-arsenal:theme']
- *  3. TODO(Unit 12): PATCH /api/users/me/settings { theme } — wired in Onda 3
+ *  1. Optimistic: update `dataset.theme` + localStorage immediately (pre-hydration hint)
+ *  2. PATCH /api/users/me/settings { theme } — server-persist
+ *  3. On error: log server-side via console.error (existing logger sink), show toast
+ *     with explicit divergence copy. localStorage stays updated — cross-device sync is
+ *     best-effort, flash prevention is the hard requirement (plan §Key Technical Decisions).
  */
 export function ThemeToggle(): React.ReactElement {
   const [theme, setTheme] = useState<TTheme>(getInitialTheme);
+  const auth = useAuth();
+  const toast = useToast();
 
-  function handleThemeChange(value: string): void {
-    if (value !== 'dark' && value !== 'light') return;
-    const next = value as TTheme;
+  function applyLocally(next: TTheme): void {
     setTheme(next);
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // Storage might be unavailable in private browsing — fail silently
+      // Private browsing — silent
     }
-    // TODO(Unit 12 / Onda 3): PATCH /api/users/me/settings { theme: next }
-    // Replace this comment with the actual fetch call once Unit 12 lands.
+    auth.setSettings?.({ theme: next });
+  }
+
+  function handleThemeChange(value: string): void {
+    if (value !== 'dark' && value !== 'light') return;
+    const next = value as TTheme;
+    applyLocally(next);
+
+    patchUserSettings(next, auth.token).catch((err) => {
+      // Server write failed. Per plan: localStorage stays updated (flash prevention
+      // is the hard requirement); user gets explicit divergence copy so silent
+      // cross-device desync doesn't accumulate.
+      console.error('[theme-toggle] server PATCH failed', err);
+      toast.show({
+        kind: 'error',
+        message: "Saved locally — didn't reach the server. Will retry on next change.",
+      });
+    });
   }
 
   return (

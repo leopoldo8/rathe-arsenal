@@ -17,6 +17,7 @@ import { DecksModule } from './decks/decks.module';
 import { CollectionModule } from './collection/collection.module';
 import { StoresModule } from './stores/stores.module';
 import { HealthController } from './health/health.controller';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { HealthController } from './health/health.controller';
     // tighter per-route limits. Health check opts out via @SkipThrottle().
     // IP attribution relies on `trust proxy` being enabled in main.ts so that
     // req.ip reflects the real client IP (not Railway's gateway).
+    // U12: settings/decisions endpoints also add per-endpoint 30/min overrides.
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60_000, limit: 120 },
     ]),
@@ -40,6 +42,8 @@ import { HealthController } from './health/health.controller';
     DecksModule,
     CollectionModule,
     StoresModule,
+    // U12: user settings (GET/PATCH /api/users/me/settings)
+    UsersModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({
