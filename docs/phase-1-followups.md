@@ -323,6 +323,30 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ---
 
+## Phase 2 follow-ups (deferred — not for Phase 1)
+
+> These entries are listed here for discoverability but are **out of scope for Phase 1**. When `phase-2-followups.md` is created, move them there and remove from this file. They are the debt Phase 1 is deliberately carrying forward into Phase 2.
+
+### P2-IP1. IP posture activation before any monetization surface ships
+
+**Posture.** Rathe Arsenal is built entirely on LSS-owned IP (card images, hero/card/keyword names, "Rathe" worldbuilding). The project has committed to **Option A — fan project with indirect monetization** (ads + Patreon, no paywall) on 2026-04-19. The LSS Fan Content Policy explicitly permits this for "platforms and services like card databases", so the posture is defensible. The full decision, operational rules, required disclaimer, triggers, and activation checklist live in `docs/research/ip-posture.md` — treat that file as the single source of truth, not this entry.
+
+**Why deferred to Phase 2.** Phase 1 (v1 foundation, closed beta, ~47-person Pelotas FaB community) does not activate any monetization surface. No ads, no Patreon, no affiliate links, no paid tier. The IP posture question only becomes binding at the moment the first monetization surface ships — and that belongs to Phase 2, not Phase 1. Phase 1 can and should surface the required disclaimer in the footer / `/about` / `README.md` as a low-cost preparatory step, but the full activation checklist is Phase 2 work.
+
+**Phase 2 trigger to revisit:** any of —
+- First activation of display ads (AdSense / Ezoic / direct) anywhere in the product
+- First Patreon page creation or first donation surface (even a "Buy me a coffee" link)
+- First affiliate / revenue-share link to a licensed retailer
+- Any product-level discussion of paid tiers, premium features, or subscription access (this triggers an escalation from Option A to Option B — seek LSS license — per the posture doc)
+- Any observed change to `https://fabtcg.com/resources/terms-use-licensed-assets/`
+- Any direct communication from LSS
+
+**When triggered, the work is:** execute the **Phase 2 activation checklist** in `docs/research/ip-posture.md` end-to-end, in order. Non-negotiable steps: re-retrieve the full LSS policy via real-browser session and diff against the 2026-04-19 extract, ship the required disclaimer on every surface, exercise the card-image takedown path as a dry run, consult IP legal counsel, optionally notify LSS as a good-faith courtesy. No monetization surface ships until every checklist item is satisfied.
+
+**Where documented:** `docs/research/ip-posture.md` (primary). This entry is a pointer only — do not duplicate the decision content here.
+
+---
+
 ## How to use this file
 
 When starting Phase 1:

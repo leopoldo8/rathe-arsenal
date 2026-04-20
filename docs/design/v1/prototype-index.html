@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rathe Arsenal — Auth Flow</title>
+<link rel="stylesheet" href="tokens.css?v=2"/>
+<link rel="stylesheet" href="app.css?v=2"/>
+<link rel="stylesheet" href="app-additions.css?v=2"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&family=Cinzel:wght@500;600;700&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet"/>
+<style>
+/* ---------- Tweaks panel ---------- */
+.tweaks-panel {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  background: var(--ra-bg-raised); border: 1px solid var(--ra-border-strong);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  width: 280px; display: none; font-family: var(--ra-font-sans);
+}
+.tweaks-panel.on { display: block; }
+.tweaks-panel__hd {
+  padding: 12px 14px; border-bottom: 1px solid var(--ra-border);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--ra-bg-primary);
+}
+.tweaks-panel__hd h4 {
+  margin: 0; font-family: var(--ra-font-display); font-size: 11px;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--ra-accent);
+}
+.tweaks-panel__body { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+.tweaks-panel__body label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 10px; font-family: var(--ra-font-mono); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ra-fg-muted);
+}
+.tweaks-panel__body select, .tweaks-panel__body input[type=range] {
+  width: 100%; background: var(--ra-bg-primary); border: 1px solid var(--ra-border);
+  color: var(--ra-fg-primary); padding: 6px 8px; font-family: var(--ra-font-mono); font-size: 12px;
+}
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Tweaks UI (outside React) -->
+<div class="tweaks-panel" id="tweaks">
+  <div class="tweaks-panel__hd"><h4>◆ Tweaks</h4></div>
+  <div class="tweaks-panel__body">
+    <label>Accent gold
+      <select id="tw-accent">
+        <option value="#d4a24c">Default gold</option>
+        <option value="#c77a2e">Ember copper</option>
+        <option value="#9b8ec4">Arcane violet</option>
+        <option value="#5e8c7b">Verdant jade</option>
+      </select>
+    </label>
+    <label>Font pairing
+      <select id="tw-font">
+        <option value="cinzel">Cinzel display (default)</option>
+        <option value="serif">Serif display</option>
+        <option value="mono-all">Mono everywhere</option>
+      </select>
+    </label>
+    <label>Readiness display
+      <select id="tw-ready">
+        <option value="pct">Percentage (default)</option>
+        <option value="fraction">Owned / total</option>
+      </select>
+    </label>
+    <label>Home layout
+      <select id="tw-layout">
+        <option value="shelves">Shelves by readiness (default)</option>
+        <option value="flat">Flat grid</option>
+      </select>
+    </label>
+  </div>
+</div>
+
+<script type="application/json" id="tweak-defaults">/*EDITMODE-BEGIN*/{
+  "accent": "#d4a24c",
+  "font": "cinzel",
+  "ready": "pct",
+  "layout": "shelves"
+}/*EDITMODE-END*/</script>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="card-art.jsx"></script>
+<script type="text/babel" src="auth-pages.jsx"></script>
+<script type="text/babel" src="app-pages.jsx"></script>
+<script type="text/babel" src="library-pages.jsx"></script>
+
+<script type="text/babel">
+/* ---------------- Router ---------------- */
+const ROUTES = {
+  '': LandingPage,
+  '/': LandingPage,
+  '/sign-in': SignInPage,
+  '/sign-up': SignUpPage,
+  '/forgot-password': ForgotPasswordPage,
+  '/reset-password': ResetPasswordPage,
+  '/check-your-email': CheckYourEmailPage,
+  '/verify-email': VerifyEmailPage,
+  '/onboarding': OnboardingPage,
+  '/home': HomePopulated,
+  '/home-empty': HomeEmpty,
+  '/import': ImportPage,
+  '/decks/1': DeckDetailPage,
+  '/settings': SettingsPage,
+  '/collection': CollectionPage,
+  '/reviews': ReviewsPage,
+  '/library': LibraryPage,
+  '/csv-sources': CsvSourcesPage,
+};
+
+const NAV = [
+  { group: 'Public', items: [
+    ['/', 'Landing'],
+    ['/sign-in', 'Sign in'],
+    ['/sign-up', 'Sign up'],
+    ['/forgot-password', 'Forgot password'],
+    ['/reset-password', 'Reset password'],
+    ['/check-your-email', 'Check email'],
+    ['/verify-email', 'Verify email'],
+  ]},
+  { group: 'App', items: [
+    ['/onboarding', 'Onboarding'],
+    ['/home-empty', 'Home (empty)'],
+    ['/home', 'Home (populated)'],
+    ['/import', 'Import'],
+    ['/decks/1', 'Deck detail'],
+    ['/library', 'Library'],
+    ['/csv-sources', 'CSV sources'],
+    ['/collection', 'Collection'],
+    ['/reviews', 'Review subs'],
+    ['/settings', 'Settings'],
+  ]}
+];
+
+function PageSwitcher() {
+  const [open, setOpen] = React.useState(false);
+  const [path, setPath] = React.useState(() => location.hash.slice(1) || '/');
+  React.useEffect(() => {
+    const h = () => setPath(location.hash.slice(1) || '/');
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
+  return (
+    <>
+      <button onClick={()=>setOpen(!open)} style={{
+        position:'fixed', left:20, bottom:20, zIndex:9999,
+        background:'var(--ra-bg-raised)', border:'1px solid var(--ra-border-strong)',
+        color:'var(--ra-accent)', padding:'10px 14px', cursor:'pointer',
+        fontFamily:'var(--ra-font-display)', fontSize:11, letterSpacing:'0.2em',
+        textTransform:'uppercase', boxShadow:'0 8px 24px rgba(0,0,0,0.5)'
+      }}>
+        ◆ Pages {open ? '×' : ''}
+      </button>
+      {open && (
+        <div style={{
+          position:'fixed', left:20, bottom:64, zIndex:9999,
+          background:'var(--ra-bg-raised)', border:'1px solid var(--ra-border-strong)',
+          boxShadow:'0 16px 40px rgba(0,0,0,0.6)', width:240, maxHeight:'70vh', overflow:'auto'
+        }}>
+          {NAV.map(g => (
+            <div key={g.group}>
+              <div style={{padding:'10px 14px 6px',fontFamily:'var(--ra-font-mono)',fontSize:9,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ra-fg-muted)',borderBottom:'1px solid var(--ra-border-subtle)'}}>{g.group}</div>
+              {g.items.map(([href, label]) => (
+                <a key={href} href={'#' + href} onClick={()=>setOpen(false)} style={{
+                  display:'block', padding:'8px 14px',
+                  color: path === href ? 'var(--ra-accent)' : 'var(--ra-fg-secondary)',
+                  background: path === href ? 'var(--ra-accent-soft)' : 'transparent',
+                  borderLeft: path === href ? '2px solid var(--ra-accent)' : '2px solid transparent',
+                  fontSize:12, textDecoration:'none', fontFamily:'var(--ra-font-sans)'
+                }}>{label}</a>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function App() {
+  const [path, setPath] = React.useState(() => location.hash.slice(1) || '/');
+  React.useEffect(() => {
+    const h = () => {
+      const p = location.hash.slice(1) || '/';
+      setPath(p);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
+  const Page = ROUTES[path] || ROUTES['/'];
+  return (
+    <>
+      <DeckboxDefs/>
+      <Page/>
+      <PageSwitcher/>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+/* ---------------- Tweaks wiring ---------------- */
+(function() {
+    const defaults = JSON.parse(document.getElementById('tweak-defaults').textContent.replace(/\/\*EDITMODE-(BEGIN|END)\*\//g, ''));
+  const current = {...defaults};
+
+  const applyAccent = (hex) => {
+    document.documentElement.style.setProperty('--ra-accent', hex);
+    // Re-derive soft from hex
+    const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+    document.documentElement.style.setProperty('--ra-accent-soft', `rgba(${r},${g},${b},0.08)`);
+    document.documentElement.style.setProperty('--ra-accent-soft-bd', `rgba(${r},${g},${b},0.3)`);
+  };
+  const applyFont = (kind) => {
+    const root = document.documentElement.style;
+    if (kind === 'cinzel') {
+      root.setProperty('--ra-font-display', '"Cinzel", serif');
+      root.setProperty('--ra-font-serif', '"Cormorant Garamond", serif');
+    } else if (kind === 'mono-all') {
+      root.setProperty('--ra-font-display', '"JetBrains Mono", monospace');
+      root.setProperty('--ra-font-serif', '"JetBrains Mono", monospace');
+      root.setProperty('--ra-font-sans', '"JetBrains Mono", monospace');
+    } else {
+      root.setProperty('--ra-font-display', '"Cormorant Garamond", serif');
+      root.setProperty('--ra-font-serif', '"Cormorant Garamond", serif');
+      root.setProperty('--ra-font-sans', 'system-ui, -apple-system, sans-serif');
+    }
+  };
+  const applyReady = (mode) => document.documentElement.setAttribute('data-ready-mode', mode);
+  const applyLayout = (mode) => document.documentElement.setAttribute('data-home-layout', mode);
+
+  const applyAll = (s) => {
+    applyAccent(s.accent);
+    applyFont(s.font);
+    applyReady(s.ready);
+    applyLayout(s.layout);
+    document.getElementById('tw-accent').value = s.accent;
+    document.getElementById('tw-font').value = s.font;
+    document.getElementById('tw-ready').value = s.ready;
+    document.getElementById('tw-layout').value = s.layout;
+  };
+  applyAll(current);
+
+  ['tw-accent','tw-font','tw-ready','tw-layout'].forEach(id => {
+    const key = id.replace('tw-','');
+    document.getElementById(id).addEventListener('change', e => {
+      current[key] = e.target.value;
+      applyAll(current);
+      try {
+        window.parent.postMessage({type:'__edit_mode_set_keys', edits: {[key]: e.target.value}}, '*');
+      } catch (_) {}
+    });
+  });
+
+  // Tweaks host protocol — register listener FIRST, then announce
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.type === '__activate_edit_mode') document.getElementById('tweaks').classList.add('on');
+    if (d.type === '__deactivate_edit_mode') document.getElementById('tweaks').classList.remove('on');
+  });
+  try { window.parent.postMessage({type:'__edit_mode_available'}, '*'); } catch (_) {}
+})();
+</script>
+</body>
+</html>
