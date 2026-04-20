@@ -1,0 +1,167 @@
+/* ============================================================
+   ReadinessHero — Column A of deck detail (R24, R7)
+   ============================================================ */
+
+.hero {
+  border: 1px solid var(--ra-border);
+  background: var(--ra-bg-surface);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: var(--ra-space-6);
+}
+
+/* Top band — Fabrary link */
+.hero__top {
+  position: relative;
+  min-height: 48px;
+  border-bottom: 1px solid var(--ra-accent-soft-bd);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--ra-space-3) var(--ra-space-6);
+  background: var(--ra-bg-raised);
+}
+
+.hero__fabraryLink {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+  text-decoration: none;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: 2px;
+  background: rgba(12, 13, 16, 0.6);
+  transition: color var(--ra-duration) var(--ra-ease),
+              border-color var(--ra-duration) var(--ra-ease);
+}
+
+.hero__fabraryLink:hover {
+  color: var(--ra-accent-hover);
+  border-color: var(--ra-accent);
+}
+
+.hero__fabraryLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Bottom section — name + readiness */
+.hero__bottom {
+  padding: var(--ra-space-6) var(--ra-space-8) var(--ra-space-8);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--ra-space-8);
+  align-items: end;
+}
+
+/* Deck name + meta */
+.hero__names {
+  min-width: 0;
+}
+
+.hero__deckName {
+  font-family: var(--ra-font-ornament);
+  font-weight: var(--ra-weight-black);
+  font-size: var(--ra-text-h1);
+  line-height: var(--ra-leading-tight);
+  letter-spacing: var(--ra-track-display);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-2);
+}
+
+.hero__meta {
+  display: flex;
+  gap: var(--ra-space-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--ra-space-2);
+}
+
+.hero__metaTag {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.hero__metaSep {
+  color: var(--ra-fg-subtle);
+}
+
+/* Readiness display — right-aligned */
+.hero__readiness {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* .ra-readiness-display is the globally reserved signature class (R7).
+   Local styles extend it with size/color but do NOT redefine the class
+   itself — consumers grep for ra-readiness-display to audit its usage. */
+.readiness {
+  font-family: var(--ra-font-ornament);
+  font-weight: var(--ra-weight-black);
+  font-size: 4.5rem; /* 72px — large decorative, passes WCAG AA large-text */
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ra-space-1);
+  color: var(--ra-accent); /* default — overridden by modifier below */
+}
+
+.readiness--high { color: var(--ra-ready-high); }
+.readiness--mid  { color: var(--ra-accent); }
+.readiness--low  { color: var(--ra-ready-low); }
+
+.readiness__number {
+  /* inherits font / color from .readiness */
+}
+
+.readiness__sym {
+  font-size: 1.75rem;
+  font-weight: var(--ra-weight-semibold);
+  opacity: 0.7;
+  font-family: var(--ra-font-display);
+}
+
+.readiness__label {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+  margin-top: var(--ra-space-2);
+}
+
+.readiness__raw {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: var(--ra-space-1);
+}
+
+/* Progress bar at the bottom of the hero */
+.hero__bar {
+  height: 2px;
+  background: var(--ra-bg-sunken);
+  position: relative;
+  overflow: hidden;
+  margin: 0 var(--ra-space-8) var(--ra-space-6);
+}
+
+.hero__barFill {
+  position: absolute;
+  inset: 0;
+  width: var(--pct, 0%);
+  background: linear-gradient(90deg, var(--ra-accent-dim), var(--ra-accent));
+}
