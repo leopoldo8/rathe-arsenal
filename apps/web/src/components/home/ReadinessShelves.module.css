@@ -1,0 +1,79 @@
+/* ============================================================
+   ReadinessShelves — CSS Module
+   Three-tier deck classification shelves for the home page.
+   ============================================================ */
+
+.shelves {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+/* ---------- Individual shelf ---------- */
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+}
+
+.shelfHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shelfTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+}
+
+.shelfHeading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  letter-spacing: var(--ra-track-h2);
+  text-transform: uppercase;
+}
+
+.shelfCount {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+}
+
+/* ---------- Diamond indicator ---------- */
+.diamond {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.diamondHigh {
+  background-color: var(--ra-ready-high);
+}
+
+.diamondMid {
+  background-color: var(--ra-ready-mid-accent);
+}
+
+.diamondLow {
+  background-color: var(--ra-ready-low);
+}
+
+/* ---------- Deck grid ---------- */
+.deckGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--ra-space-4);
+}
+
+@media (max-width: 480px) {
+  .deckGrid {
+    grid-template-columns: 1fr;
+  }
+}

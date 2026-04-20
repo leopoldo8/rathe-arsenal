@@ -1,0 +1,42 @@
+/* ============================================================
+   AggregateCallout — CSS Module
+   Brass-stroke aggregate shopping line band below the shelves.
+   ============================================================ */
+
+.callout {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--ra-space-8);
+  padding: var(--ra-space-4) var(--ra-space-5);
+  background-color: var(--ra-accent-soft-bg);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-normal);
+}
+
+.cost {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-h3);
+  color: var(--ra-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  color: var(--ra-fg-secondary);
+}
+
+.strong {
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+}
+
+.storeName {
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+}
