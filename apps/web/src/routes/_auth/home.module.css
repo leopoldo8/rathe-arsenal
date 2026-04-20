@@ -1,0 +1,87 @@
+/* ============================================================
+   Home route — CSS Module
+   Top-level layout for the home page.
+   ============================================================ */
+
+/* ---------- Error state ---------- */
+.errorSection {
+  max-width: 520px;
+  padding: var(--ra-space-5);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-ready-low-bg);
+}
+
+.errorHeading {
+  margin: 0 0 var(--ra-space-3);
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h3);
+  color: var(--ra-ready-low);
+}
+
+.errorMessage {
+  margin: 0 0 var(--ra-space-4);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+/* ---------- Populated state ---------- */
+.populated {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ---------- Loading skeleton ---------- */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+.skeletonHero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-6);
+  align-items: flex-start;
+  padding-bottom: var(--ra-space-6);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.skeletonHeroLeft {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.skeletonStats {
+  display: flex;
+  gap: var(--ra-space-6);
+  align-items: flex-end;
+}
+
+.skeletonShelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--ra-space-4);
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-4);
+  background-color: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  min-height: 140px;
+}

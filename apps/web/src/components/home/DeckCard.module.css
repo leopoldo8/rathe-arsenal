@@ -1,0 +1,185 @@
+/* ============================================================
+   DeckCard — CSS Module
+   Home readiness shelf deck card.
+   ============================================================ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    box-shadow var(--ra-duration) var(--ra-ease);
+}
+
+.card:hover {
+  border-color: var(--ra-border-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Tier accent stripe (left border) */
+.card--high {
+  border-left: 3px solid var(--ra-ready-high);
+}
+
+.card--mid {
+  border-left: 3px solid var(--ra-ready-mid-accent);
+}
+
+.card--low {
+  border-left: 3px solid var(--ra-ready-low);
+}
+
+/* ---------- Link area ---------- */
+.cardLink {
+  display: block;
+  padding: var(--ra-space-4);
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+}
+
+.cardLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.cardName {
+  margin: 0 0 var(--ra-space-1);
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-snug);
+}
+
+.cardMeta {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.cardReadiness {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ra-space-2);
+  margin-top: var(--ra-space-3);
+}
+
+/* Signature readiness display — Cinzel Decorative 900 brass.
+   RESERVED for the effectivePercent % on deck cards (R7).
+   The global .ra-readiness-display class mirrors this for
+   grep-ability across the codebase. */
+.readinessDisplay {
+  font-family: var(--ra-font-ornament);
+  font-weight: var(--ra-weight-black);
+  font-size: var(--ra-text-h2);
+  color: var(--ra-accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--ra-track-display);
+}
+
+.readinessLabel {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+}
+
+.cardNoReadiness {
+  margin-top: var(--ra-space-3);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  font-style: italic;
+}
+
+/* ---------- Footer actions ---------- */
+.cardFooter {
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-top: 1px solid var(--ra-border-subtle);
+}
+
+/* Wide: side-by-side — shown at ≥640px */
+.actionsWide {
+  display: none;
+  gap: var(--ra-space-2);
+  align-items: center;
+}
+
+/* Narrow: stacked — shown at <640px */
+.actionsNarrow {
+  display: flex;
+  gap: var(--ra-space-2);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .actionsWide {
+    display: flex;
+  }
+
+  .actionsNarrow {
+    display: none;
+  }
+}
+
+.viewLink {
+  text-decoration: none;
+}
+
+.viewLinkFull {
+  flex: 1;
+  text-decoration: none;
+  display: block;
+}
+
+.viewButtonFull {
+  width: 100%;
+}
+
+/* ---------- Overflow menu (narrow only) ---------- */
+.overflowMenu {
+  position: relative;
+}
+
+.overflowTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: var(--ra-space-2);
+  background-color: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  cursor: pointer;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  user-select: none;
+  list-style: none;
+}
+
+.overflowTrigger::-webkit-details-marker {
+  display: none;
+}
+
+.overflowTrigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.overflowContent {
+  position: absolute;
+  bottom: calc(100% + var(--ra-space-2));
+  right: 0;
+  z-index: 10;
+  background-color: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2);
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}

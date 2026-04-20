@@ -1,0 +1,157 @@
+/* ============================================================
+   PopulatedHomeHero — CSS Module
+   3-stat differentiated hero for the home page populated state.
+   ============================================================ */
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-6);
+  align-items: flex-start;
+  margin-bottom: var(--ra-space-8);
+  padding-bottom: var(--ra-space-6);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+/* ---------- Left copy ---------- */
+.heroLeft {
+  flex: 1;
+  min-width: 200px;
+}
+
+.eyebrow {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-accent);
+  margin-bottom: var(--ra-space-2);
+}
+
+.headline {
+  margin: 0 0 var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-h1);
+  color: var(--ra-fg-primary);
+  letter-spacing: var(--ra-track-h1);
+  line-height: var(--ra-leading-tight);
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.summaryReady {
+  color: var(--ra-ready-high);
+}
+
+.summaryAlmost {
+  color: var(--ra-ready-mid-accent);
+}
+
+.summaryNeeds {
+  color: var(--ra-fg-secondary);
+}
+
+/* ---------- Stats cluster ---------- */
+.heroStats {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ra-space-6);
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-1);
+}
+
+/* Secondary stat number — plain display size */
+.statNumber {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-h1);
+  color: var(--ra-fg-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  white-space: nowrap;
+}
+
+/* Primary stat — cards missing. Brass, Cinzel 700, larger.
+   .ra-hero-primary-stat class is the global token for this treatment.
+   Distinct from .ra-readiness-display (Cinzel Decorative 900) which is
+   RESERVED for % values on deck cards (origin R7). */
+.statPrimary .statNumber,
+.heroPrimaryStat {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-hero);
+  color: var(--ra-accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ra-track-h1);
+}
+
+/* ---------- Import action ---------- */
+.importAction {
+  align-self: center;
+  margin-left: var(--ra-space-3);
+}
+
+.importLink {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-2) var(--ra-space-5);
+  background-color: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-body);
+  text-decoration: none;
+  min-block-size: 44px;
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.importLink:hover {
+  background-color: var(--ra-accent-hover);
+}
+
+.importLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 639px) {
+  .hero {
+    flex-direction: column;
+  }
+
+  .heroStats {
+    gap: var(--ra-space-4);
+  }
+
+  .statPrimary .statNumber,
+  .heroPrimaryStat {
+    font-size: var(--ra-text-h1);
+  }
+}
