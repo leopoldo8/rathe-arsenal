@@ -46,7 +46,6 @@ function applyOptimisticUpsert(
   decision: 'approved' | 'rejected',
 ): IDeckDetailResponse {
   const existing = prev.decisions.find((d) => d.cardIdentifier === cardIdentifier);
-  const oldDecision = existing?.decision ?? null;
 
   const updatedDecisions = existing
     ? prev.decisions.map((d) =>
@@ -62,9 +61,6 @@ function applyOptimisticUpsert(
   // The original pendingCount + approvedCount + rejectedCount = total not-owned.
   const totalNotOwned = prev.pendingCount + prev.approvedCount + prev.rejectedCount;
   const pendingCount = totalNotOwned - approvedCount - rejectedCount;
-
-  // Adjust derived counts for a flip between approved and rejected
-  void oldDecision;
 
   return {
     ...prev,

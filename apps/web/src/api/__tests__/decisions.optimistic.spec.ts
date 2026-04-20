@@ -345,11 +345,13 @@ describe('useDecideSubstitutionMutation', () => {
         expect(rReject.current.isError).toBe(true);
       });
 
-      // After both rollbacks, cache should be back to original state
+      // After both rollbacks, the total not-owned card count must be preserved.
+      // Each rollback restores a snapshot; the last onError to run wins the cache.
+      // Regardless of ordering, the sum of all decision-state slots must equal the
+      // original total not-owned count (1 in this fixture).
       const cached = queryClient.getQueryData<IDeckDetailResponse>(QUERY_KEY);
-      // At least one rollback ran; decisions may differ depending on which
-      // onError ran last, but pendingCount should not go negative.
-      expect((cached?.pendingCount ?? 0) + (cached?.approvedCount ?? 0) + (cached?.rejectedCount ?? 0)).toBeGreaterThanOrEqual(0);
+      const total = (cached?.pendingCount ?? 0) + (cached?.approvedCount ?? 0) + (cached?.rejectedCount ?? 0);
+      expect(total).toBe(1);
     });
   });
 });
