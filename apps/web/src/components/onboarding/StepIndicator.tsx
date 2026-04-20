@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import styles from './StepIndicator.module.css';
 
 // ---------------------------------------------------------------------------
@@ -55,12 +55,10 @@ function resolveState(stepNumber: number, currentStep: number): TStepState {
  * descriptive aria-label that announces "Step N of 3: Label (state)".
  */
 export function StepIndicator({ currentStep }: IStepIndicatorProps): React.ReactElement {
-  const navId = useId();
   const steps = [1, 2, 3] as const;
 
   return (
     <nav
-      id={navId}
       aria-label={`Step ${currentStep} of 3`}
       className={styles.stepIndicator}
     >

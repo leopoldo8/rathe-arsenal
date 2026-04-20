@@ -58,8 +58,12 @@ export function Step3FirstReview({
   const deckIdStr = firstDeckId !== undefined ? String(firstDeckId) : '';
 
   const decksQuery = useDecksQuery();
-  const deckDetailQuery = useDeckDetailQuery(deckIdStr);
-  const decideMutation = useDecideSubstitutionMutation(deckIdStr);
+  // Guard: deckIdStr should always be set when Step3 mounts (Step1 imports a deck first).
+  // Fallback to '0' prevents an accidental fetch to the bare /decks/ endpoint if the
+  // parent wizard somehow renders Step3 without completing Step1 first.
+  const safeDeckIdStr = deckIdStr || '0';
+  const deckDetailQuery = useDeckDetailQuery(safeDeckIdStr);
+  const decideMutation = useDecideSubstitutionMutation(safeDeckIdStr);
 
   const isLoading = decksQuery.isLoading || deckDetailQuery.isLoading;
   const snapshot = deckDetailQuery.data?.latestSnapshot;
@@ -185,7 +189,7 @@ export function Step3FirstReview({
           <SubstitutionPreviewRow
             key={sub.original.cardIdentifier}
             sub={sub}
-            deckId={deckIdStr}
+            deckId={safeDeckIdStr}
             onDecide={(cardIdentifier, decision) => {
               decideMutation.mutate({ cardIdentifier, decision });
             }}

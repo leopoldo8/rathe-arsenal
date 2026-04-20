@@ -21,7 +21,6 @@ import {
   vi,
   beforeEach,
   afterEach,
-  type Mock,
 } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -43,13 +42,12 @@ vi.mock('@tanstack/react-router', () => ({
 // API: decks
 const mockUseDecksQuery = vi.fn();
 const mockImportMutateAsync = vi.fn();
-let mockImportIsPending = false;
 
 vi.mock('../../../api/decks', () => ({
   useDecksQuery: () => mockUseDecksQuery(),
   useImportDecksMutation: () => ({
     mutateAsync: mockImportMutateAsync,
-    isPending: mockImportIsPending,
+    isPending: false,
     error: null,
   }),
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
