@@ -1,0 +1,119 @@
+/* Step2ConfirmLibrary — onboarding step 2: confirm imported decks */
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--ra-space-6);
+}
+
+.eyebrow {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-tight);
+}
+
+.body {
+  max-width: 48ch;
+  margin: 0;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+/* ---------------------------------------------------------------------------
+   Deck grid
+   --------------------------------------------------------------------------- */
+
+.deckGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-4);
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 640px;
+}
+
+.deckItem {
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Deck preview card
+   --------------------------------------------------------------------------- */
+
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-4);
+  background-color: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: 2px;
+  width: 160px;
+}
+
+.previewInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-1);
+  text-align: center;
+}
+
+.previewName {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-snug);
+}
+
+.previewMeta {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+}
+
+.previewReadiness {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-bold);
+  color: var(--ra-accent-body);
+}
+
+/* ---------------------------------------------------------------------------
+   Actions
+   --------------------------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  width: 100%;
+  max-width: 480px;
+}
+
+.actionsRight {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+}

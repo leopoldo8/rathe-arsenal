@@ -1,0 +1,98 @@
+/* Step1PasteUrl — onboarding step 1: paste a Fabrary deck URL */
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--ra-space-4);
+}
+
+.eyebrow {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-tight);
+}
+
+.body {
+  max-width: 42ch;
+  margin: 0;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ra-space-6);
+  width: 100%;
+  max-width: 420px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ra-space-2);
+  text-align: left;
+  width: 100%;
+}
+
+.label {
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+}
+
+.input {
+  width: 100%;
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border: 1.5px solid var(--ra-border);
+  border-radius: 2px;
+  background-color: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  line-height: var(--ra-leading-normal);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--ra-accent);
+}
+
+.input--error {
+  border-color: var(--ra-error, #e53e3e);
+}
+
+.errorMessage {
+  font-size: var(--ra-text-small);
+  color: var(--ra-error, #e53e3e);
+  line-height: var(--ra-leading-normal);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+}

@@ -1,0 +1,120 @@
+/* StepIndicator — horizontal 3-step progress indicator with diamond separators */
+
+.stepIndicator {
+  width: 100%;
+  margin-block-end: var(--ra-space-8);
+}
+
+.stepList {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Individual step item
+   --------------------------------------------------------------------------- */
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+  min-width: 80px;
+}
+
+.stepNumeral {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-display);
+  border: 1.5px solid var(--ra-border);
+  background-color: var(--ra-bg-raised);
+  color: var(--ra-fg-muted);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.stepLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+  transition: color 0.2s ease;
+}
+
+/* Current step */
+.step--current .stepNumeral {
+  background-color: var(--ra-accent);
+  border-color: var(--ra-accent);
+  color: var(--ra-bg-canvas);
+}
+
+.step--current .stepLabel {
+  color: var(--ra-accent-body);
+  font-weight: var(--ra-weight-semibold);
+}
+
+/* Completed step */
+.step--complete .stepNumeral {
+  background-color: transparent;
+  border-color: var(--ra-accent);
+  color: var(--ra-accent);
+}
+
+.step--complete .stepLabel {
+  color: var(--ra-fg-secondary);
+}
+
+/* Upcoming step */
+.step--upcoming .stepNumeral {
+  background-color: var(--ra-bg-raised);
+  border-color: var(--ra-border);
+  color: var(--ra-fg-muted);
+}
+
+.step--upcoming .stepLabel {
+  color: var(--ra-fg-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Diamond separator
+   --------------------------------------------------------------------------- */
+
+.separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Align with the numeral row, not the label row */
+  align-self: flex-start;
+  padding-block-start: 0.65rem;
+  /* Push separator below the numeral center */
+  padding-inline: var(--ra-space-2);
+  list-style: none;
+}
+
+.diamond {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--ra-border);
+  background-color: transparent;
+  transform: rotate(45deg);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.separator--passed .diamond {
+  border-color: var(--ra-accent);
+  background-color: var(--ra-accent);
+}
