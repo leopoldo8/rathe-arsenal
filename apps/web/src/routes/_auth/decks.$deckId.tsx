@@ -7,12 +7,15 @@ import {
 } from '../../api/deck-detail';
 import {
   useDecideSubstitutionMutation,
+  useResetDecisionsMutation,
   useClearDeckRejectionsMutation,
 } from '../../api/decisions';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
-import { ReadinessHeader } from '../../components/readiness-header';
-import { BreakdownList } from '../../components/breakdown-list';
-import { ShoppingLine } from '../../components/ShoppingLine';
+import { ReadinessHero } from '../../components/deck-detail/ReadinessHero';
+import { BreakdownSections } from '../../components/deck-detail/BreakdownSections';
+import { ModifiedViewBanner } from '../../components/deck-detail/ModifiedViewBanner';
+import { ShoppingPanel } from '../../components/deck-detail/ShoppingPanel';
+import styles from './decks.$deckId.module.css';
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
@@ -23,98 +26,7 @@ function countNotOwnedCards(breakdown: IBreakdown): number {
   return notOwned.reduce((sum, entry) => sum + entry.quantity, 0);
 }
 
-interface IPathCBannerProps {
-  readonly fidelityPercent: number;
-  readonly missingCardCount: number;
-}
-
-interface IModifiedViewBannerProps {
-  readonly rejectedCount: number;
-  readonly onReset: () => void;
-  readonly isResetting: boolean;
-}
-
-function ModifiedViewBanner({
-  rejectedCount,
-  onReset,
-  isResetting,
-}: IModifiedViewBannerProps) {
-  return (
-    <div
-      role="status"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '1rem',
-        flexWrap: 'wrap',
-        backgroundColor: '#fffbea',
-        border: '1px solid #ecc94b',
-        borderLeft: '4px solid #d69e2e',
-        borderRadius: '4px',
-        padding: '0.75rem 1rem',
-        marginTop: '1rem',
-        marginBottom: '1rem',
-        color: '#744210',
-        fontSize: '0.875rem',
-      }}
-    >
-      <div>
-        <strong style={{ color: '#975a16' }}>Modified view.</strong> You have
-        rejected {rejectedCount}{' '}
-        {rejectedCount === 1 ? 'substitution' : 'substitutions'} for this
-        deck.
-      </div>
-      <button
-        type="button"
-        onClick={onReset}
-        disabled={isResetting}
-        style={{
-          padding: '0.375rem 0.75rem',
-          borderRadius: '4px',
-          border: '1px solid #d69e2e',
-          backgroundColor: isResetting ? '#f7e9b7' : '#fefcbf',
-          color: '#744210',
-          cursor: isResetting ? 'not-allowed' : 'pointer',
-          fontSize: '0.8125rem',
-          fontWeight: 500,
-        }}
-      >
-        {isResetting ? 'Resetting...' : 'Reset all rejections'}
-      </button>
-    </div>
-  );
-}
-
-function PathCBanner({
-  fidelityPercent,
-  missingCardCount,
-}: IPathCBannerProps) {
-  const displayFidelity = Math.round(fidelityPercent * 10) / 10;
-  return (
-    <div
-      role="status"
-      style={{
-        backgroundColor: '#fffaf0',
-        border: '1px solid #f6ad55',
-        borderLeft: '4px solid #dd6b20',
-        borderRadius: '4px',
-        padding: '0.75rem 1rem',
-        marginTop: '1rem',
-        marginBottom: '1rem',
-        color: '#7b341e',
-        fontSize: '0.875rem',
-      }}
-    >
-      <strong style={{ color: '#9c4221' }}>Closest playable version.</strong>{' '}
-      This deck is missing {missingCardCount}{' '}
-      {missingCardCount === 1 ? 'card' : 'cards'}. You&rsquo;re currently at{' '}
-      {displayFidelity}% fidelity.
-    </div>
-  );
-}
-
-function DeckDetailPage() {
+function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
 
   // pollingStartedAt tracks when variant fetch polling began (epoch ms).
@@ -126,14 +38,12 @@ function DeckDetailPage() {
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const rejectMutation = useDecideSubstitutionMutation(deckId);
-  const resetMutation = useClearDeckRejectionsMutation(deckId);
+  const decideMutation = useDecideSubstitutionMutation(deckId);
+  const resetDecisionMutation = useResetDecisionsMutation(deckId);
+  const clearRejectionsMutation = useClearDeckRejectionsMutation(deckId);
   const variantFetchMutation = useVariantFetchMutation(deckId);
-  const [curveWarnings, setCurveWarnings] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
 
-  // Stable callback passed to ShoppingLine so that it can notify the page
+  // Stable callback passed to ShoppingPanel so that it can notify the page
   // when polling begins or ends. The page updates pollingStartedAt which
   // flows back into useDeckDetailQuery to control refetchInterval.
   const handlePollingChange = useCallback(
@@ -152,16 +62,19 @@ function DeckDetailPage() {
     variantFetchMutation.data?.status === 'already_fresh';
 
   if (detailQuery.isLoading) {
-    return <p>Loading deck details...</p>;
+    return <p className={styles.loadingMsg}>Loading deck details...</p>;
   }
 
   if (detailQuery.isError) {
     return (
-      <div style={{ color: '#e53e3e' }}>
-        <p>Failed to load deck: {(detailQuery.error as Error).message}</p>
+      <div>
+        <p className={styles.errorMsg}>
+          Failed to load deck: {(detailQuery.error as Error).message}
+        </p>
         <button
-          onClick={() => detailQuery.refetch()}
-          style={{ cursor: 'pointer' }}
+          type="button"
+          className={styles.retryBtn}
+          onClick={() => void detailQuery.refetch()}
         >
           Retry
         </button>
@@ -172,7 +85,7 @@ function DeckDetailPage() {
   const deck = detailQuery.data;
 
   if (!deck) {
-    return <p>Deck not found.</p>;
+    return <p className={styles.noSnapshotMsg}>Deck not found.</p>;
   }
 
   const snapshot = deck.latestSnapshot;
@@ -181,175 +94,155 @@ function DeckDetailPage() {
     markOwnedMutation.mutate(cardIdentifier);
   }
 
-  function handleRejectSubstitute(substituteIdentifier: string): void {
-    rejectMutation.mutate(
-      { cardIdentifier: substituteIdentifier, decision: 'rejected' },
-      {
-        onSuccess: () => {
-          // curveWarnings are no longer returned by the new endpoint;
-          // reset to empty on each reject (Unit 17 will restore via decisions array).
-          setCurveWarnings(new Set());
-        },
-      },
-    );
-  }
-
-  function handleResetRejections(): void {
-    resetMutation.mutate(undefined, {
-      onSuccess: () => {
-        setCurveWarnings(new Set());
-      },
+  function handleApproveSubstitute(substituteIdentifier: string): void {
+    decideMutation.mutate({
+      cardIdentifier: substituteIdentifier,
+      decision: 'approved',
     });
   }
 
-  const pendingRejection = rejectMutation.isPending
-    ? (rejectMutation.variables ?? null)
-    : null;
+  function handleRejectSubstitute(substituteIdentifier: string): void {
+    decideMutation.mutate({
+      cardIdentifier: substituteIdentifier,
+      decision: 'rejected',
+    });
+  }
+
+  function handleResetSubstitute(substituteIdentifier: string): void {
+    // Reset a single decision back to pending (deletes the row).
+    // Uses DELETE /api/decks/:deckId/decisions/:cardIdentifier.
+    // Unit 17 will add onMutate/onError optimistic rollback inside the hook.
+    resetDecisionMutation.mutate(substituteIdentifier);
+  }
+
+  function handleClearRejections(): void {
+    clearRejectionsMutation.mutate(undefined);
+  }
+
+  // The substitute identifier whose mutation is in flight (if any).
+  // Covers both decide (approve/reject) and reset mutations.
+  const pendingSubstituteId: string | null =
+    decideMutation.isPending
+      ? (decideMutation.variables?.cardIdentifier ?? null)
+      : resetDecisionMutation.isPending
+        ? (resetDecisionMutation.variables ?? null)
+        : null;
 
   return (
-    <section style={{ maxWidth: '720px' }}>
-      <Link to="/home" style={{ color: '#3182ce', fontSize: '0.875rem' }}>
-        &larr; Back to decks
+    <div className={styles.page}>
+      <Link to="/home" className={styles.backLink}>
+        &#8592; Back to decks
       </Link>
 
-      {snapshot ? (
-        <>
-          {deck.rejectedCount > 0 && (
-            <ModifiedViewBanner
-              rejectedCount={deck.rejectedCount}
-              onReset={handleResetRejections}
-              isResetting={resetMutation.isPending}
-            />
-          )}
-
-          {snapshot.path === 'C' && (
-            <PathCBanner
-              fidelityPercent={snapshot.fidelityPercent}
-              missingCardCount={countNotOwnedCards(snapshot.breakdown)}
-            />
-          )}
-
-          {curveWarnings.size > 0 && (
-            <div
-              role="status"
-              style={{
-                backgroundColor: '#fefcbf',
-                border: '1px solid #ecc94b',
-                borderLeft: '4px solid #b7791f',
-                borderRadius: '4px',
-                padding: '0.75rem 1rem',
-                marginTop: '1rem',
-                marginBottom: '1rem',
-                color: '#744210',
-                fontSize: '0.875rem',
-              }}
-            >
-              <strong>Pitch curve broken.</strong> Rejecting this swap broke
-              the pitch curve and no alternative was found. Affected{' '}
-              {curveWarnings.size === 1 ? 'card' : 'cards'}:{' '}
-              {Array.from(curveWarnings).join(', ')}.
-            </div>
-          )}
-
-          {rejectMutation.isError && (
-            <div
-              style={{
-                color: '#e53e3e',
-                backgroundColor: '#fff5f5',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                fontSize: '0.875rem',
-              }}
-            >
-              Failed to reject substitution:{' '}
-              {(rejectMutation.error as Error).message}
-            </div>
-          )}
-
-          {resetMutation.isError && (
-            <div
-              style={{
-                color: '#e53e3e',
-                backgroundColor: '#fff5f5',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                fontSize: '0.875rem',
-              }}
-            >
-              Failed to reset rejections:{' '}
-              {(resetMutation.error as Error).message}
-            </div>
-          )}
-
-          <ReadinessHeader
-            effectivePercent={snapshot.effectivePercent}
-            rawPercent={snapshot.rawPercent}
-            fabraryUlid={deck.fabraryUlid}
-            deckName={deck.name}
-            hero={deck.hero}
-            format={deck.format}
-          />
-
-          <ShoppingLine
-            data={deck.shoppingLine ?? null}
-            onFetchVariants={handleFetchVariants}
-            fetchMutationStatus={variantFetchMutation.status}
-            isCooldownActive={isCooldownActive}
-            onPollingChange={handlePollingChange}
-          />
-
-          {markOwnedMutation.isError && (
-            <div
-              style={{
-                color: '#e53e3e',
-                backgroundColor: '#fff5f5',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                fontSize: '0.875rem',
-              }}
-            >
-              Failed to mark card: {(markOwnedMutation.error as Error).message}
-            </div>
-          )}
-
-          <BreakdownList
-            breakdown={snapshot.breakdown}
-            onMarkOwned={handleMarkOwned}
-            isMarkingOwned={markOwnedMutation.isPending}
-            pendingCard={
-              markOwnedMutation.isPending
-                ? (markOwnedMutation.variables ?? null)
-                : null
-            }
-            onRejectSubstitute={handleRejectSubstitute}
-            pendingRejection={pendingRejection}
-            curveWarnings={curveWarnings}
-          />
-        </>
-      ) : (
-        <div style={{ marginTop: '1rem' }}>
-          <h1 style={{ margin: '0 0 0.25rem' }}>{deck.name}</h1>
-          <div
-            style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1rem' }}
-          >
-            {deck.hero} -- {deck.format}
-          </div>
-          <p style={{ color: '#999' }}>
+      {!snapshot ? (
+        <div>
+          <h1>{deck.name}</h1>
+          <p className={styles.noSnapshotMsg}>
             No readiness data yet. The snapshot will appear once computed.
           </p>
           <a
             href={`https://fabrary.com/decks/${deck.fabraryUlid}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#3182ce', fontSize: '0.875rem' }}
           >
             View on Fabrary
           </a>
         </div>
+      ) : (
+        <>
+          {/* Mutation error messages */}
+          {decideMutation.isError && (
+            <p className={styles.errorMsg}>
+              Failed to update decision:{' '}
+              {(decideMutation.error as Error).message}
+            </p>
+          )}
+          {clearRejectionsMutation.isError && (
+            <p className={styles.errorMsg}>
+              Failed to clear rejections:{' '}
+              {(clearRejectionsMutation.error as Error).message}
+            </p>
+          )}
+          {markOwnedMutation.isError && (
+            <p className={styles.errorMsg}>
+              Failed to mark card:{' '}
+              {(markOwnedMutation.error as Error).message}
+            </p>
+          )}
+
+          {/* 3-column grid */}
+          <div className={styles.layout}>
+            {/* Column A — Readiness hero */}
+            <div className={styles.colA}>
+              <ReadinessHero
+                effectivePercent={snapshot.effectivePercent}
+                rawPercent={snapshot.rawPercent}
+                fidelityPercent={snapshot.fidelityPercent}
+                fabraryUlid={deck.fabraryUlid}
+                deckName={deck.name}
+                hero={deck.hero}
+                format={deck.format}
+              />
+            </div>
+
+            {/* Column B — Breakdown sections (substitutions, exact, not-owned) */}
+            <div className={styles.colB}>
+              {/* Modified view banner — appears when any decision='rejected' */}
+              {deck.rejectedCount > 0 && (
+                <ModifiedViewBanner
+                  rejectedCount={deck.rejectedCount}
+                  onClearRejections={handleClearRejections}
+                  isClearing={clearRejectionsMutation.isPending}
+                />
+              )}
+
+              {/* Path C banner */}
+              {snapshot.path === 'C' && (
+                <div role="status" className={styles.pathCBanner}>
+                  <strong className={styles.pathCBanner__strong}>
+                    Closest playable version.
+                  </strong>{' '}
+                  This deck is missing{' '}
+                  {countNotOwnedCards(snapshot.breakdown)}{' '}
+                  {countNotOwnedCards(snapshot.breakdown) === 1
+                    ? 'card'
+                    : 'cards'}
+                  . You&rsquo;re currently at{' '}
+                  {(Math.round(snapshot.fidelityPercent * 10) / 10).toFixed(1)}%
+                  fidelity.
+                </div>
+              )}
+
+              <BreakdownSections
+                breakdown={snapshot.breakdown}
+                decisions={deck.decisions}
+                onMarkOwned={handleMarkOwned}
+                isMarkingOwned={markOwnedMutation.isPending}
+                pendingCard={
+                  markOwnedMutation.isPending
+                    ? (markOwnedMutation.variables ?? null)
+                    : null
+                }
+                onApproveSubstitute={handleApproveSubstitute}
+                onRejectSubstitute={handleRejectSubstitute}
+                onResetSubstitute={handleResetSubstitute}
+                pendingSubstituteId={pendingSubstituteId}
+              />
+            </div>
+
+            {/* Column C — Shopping panel (desktop sticky aside + mobile sheet) */}
+            <div className={styles.colC}>
+              <ShoppingPanel
+                data={deck.shoppingLine ?? null}
+                onFetchVariants={handleFetchVariants}
+                fetchMutationStatus={variantFetchMutation.status}
+                isCooldownActive={isCooldownActive}
+                onPollingChange={handlePollingChange}
+              />
+            </div>
+          </div>
+        </>
       )}
-    </section>
+    </div>
   );
 }

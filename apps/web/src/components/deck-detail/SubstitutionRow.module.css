@@ -1,0 +1,205 @@
+/* ============================================================
+   SubstitutionRow — 3-state substitution row (R25–R27)
+   ============================================================ */
+
+.row {
+  list-style: none;
+  padding: var(--ra-space-4) var(--ra-space-4);
+  border-bottom: 1px solid var(--ra-border-subtle);
+  border-left: 3px solid var(--ra-border-strong);
+  background: var(--ra-bg-raised);
+  transition: border-color var(--ra-duration) var(--ra-ease),
+              opacity var(--ra-duration) var(--ra-ease);
+}
+
+/* Approved stripe — gold left border */
+.row--approved {
+  border-left-color: var(--ra-accent);
+}
+
+/* Rejected stripe — red left border + slot treated as missing */
+.row--rejected {
+  border-left-color: var(--ra-ready-low);
+  opacity: 0.8;
+}
+
+/* In-flight dim */
+.row--pending {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ---- Card layout ---- */
+.row__cards {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--ra-space-4);
+  align-items: center;
+  margin-bottom: var(--ra-space-3);
+}
+
+.row__cardSlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.row__cardLabel {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-secondary);
+  text-align: center;
+  letter-spacing: 0.02em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Center meta column ---- */
+.row__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.row__arrow {
+  font-size: 1.25rem;
+  color: var(--ra-fg-muted);
+}
+
+.row__tier {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+  border: 1px solid var(--ra-accent-soft-bd);
+  padding: 0.1em 0.5em;
+  border-radius: 2px;
+}
+
+/* Confidence bar */
+.row__scoreBar {
+  width: 64px;
+  height: 2px;
+  background: var(--ra-bg-sunken);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.row__scoreFill {
+  position: absolute;
+  inset: 0;
+  width: var(--score, 0%);
+  background: var(--ra-accent-dim);
+}
+
+.row__scoreLabel {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+}
+
+.row__reviewedBadge {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+  background: var(--ra-bg-sunken);
+  border: 1px solid var(--ra-border-subtle);
+  padding: 0.1em 0.5em;
+  border-radius: 2px;
+}
+
+/* ---- Rationale ---- */
+.row__rationale {
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: 0 0 var(--ra-space-3);
+  display: flex;
+  gap: var(--ra-space-2);
+  align-items: flex-start;
+  line-height: var(--ra-leading-normal);
+}
+
+.row__rationaleGlyph {
+  color: var(--ra-accent-dim);
+  font-size: 0.6rem;
+  margin-top: 0.35em;
+  flex-shrink: 0;
+}
+
+/* ---- Action buttons ---- */
+.row__actions {
+  display: flex;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.row__btn {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--ra-border-strong);
+  background: transparent;
+  color: var(--ra-fg-secondary);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  transition: all var(--ra-duration) var(--ra-ease);
+}
+
+.row__btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.row__btn:not(:disabled):hover {
+  border-color: var(--ra-fg-secondary);
+  color: var(--ra-fg-primary);
+}
+
+.row__btn:not(:disabled):focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Approve button — gold when active */
+.row__btn--approve:not(:disabled):hover {
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+.row__btn--approve.row__btn--active {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+/* Reject button — red when active */
+.row__btn--reject:not(:disabled):hover {
+  border-color: var(--ra-ready-low);
+  color: var(--ra-ready-low);
+}
+
+.row__btn--reject.row__btn--active {
+  background: var(--ra-ready-low-bg);
+  border-color: var(--ra-ready-low);
+  color: var(--ra-ready-low);
+}
+
+/* Reset button — neutral */
+.row__btn--reset {
+  margin-left: auto;
+}

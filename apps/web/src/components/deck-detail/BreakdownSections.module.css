@@ -1,0 +1,198 @@
+/* ============================================================
+   BreakdownSections — Column B: exact, substituted, not-owned (R24–R28)
+   ============================================================ */
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+/* ---- Section shell ---- */
+.section {
+  /* no extra margin — gap from parent */
+}
+
+.section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  margin-bottom: var(--ra-space-4);
+  padding-bottom: var(--ra-space-3);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.section__diamond {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--ra-accent);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.section__diamond--low {
+  background: var(--ra-ready-low);
+}
+
+.section__title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  margin: 0;
+}
+
+.section__count {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+
+.section__empty {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ---- Exact matches card grid ---- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-2) 0 var(--ra-space-1);
+}
+
+.cardCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.cardCell__qty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+.cardCellMore {
+  width: 72px;
+  height: 100px; /* ~sm art height */
+  border: 1px dashed var(--ra-border-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ra-space-1);
+  color: var(--ra-fg-muted);
+  background: var(--ra-bg-sunken);
+}
+
+.cardCellMore__n {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: 1.125rem;
+  color: var(--ra-accent);
+}
+
+.cardCellMore__l {
+  font-family: var(--ra-font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---- Substitution list ---- */
+.subList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+/* ---- Empty all-playable state ---- */
+.emptyAllPlayable {
+  background: var(--ra-ready-high-bg);
+  border: 1px solid var(--ra-ready-high-border);
+  border-left: 3px solid var(--ra-ready-high);
+  border-radius: 2px;
+  padding: var(--ra-space-4) var(--ra-space-6);
+}
+
+.emptyAllPlayable__title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-high);
+  margin: 0 0 var(--ra-space-2);
+}
+
+.emptyAllPlayable__sub {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: 0;
+}
+
+/* ---- Not-owned list ---- */
+.missList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.missRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-left: 2px solid var(--ra-ready-low);
+  border-radius: 2px;
+  transition: border-color var(--ra-duration) var(--ra-ease);
+}
+
+.missRow:hover {
+  border-left-color: var(--ra-accent);
+}
+
+.missRow__body {
+  min-width: 0;
+}
+
+.missRow__name {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: var(--ra-space-1);
+}
+
+.missRow__meta {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.04em;
+}
+
+.missRow__qty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  white-space: nowrap;
+}
