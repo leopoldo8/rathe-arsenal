@@ -108,6 +108,14 @@ export function CardLightbox({
         onClick={(e) => e.stopPropagation()}
         data-testid="card-lightbox-card"
       >
+        {!loaded && (
+          <div
+            className={styles.skeleton}
+            role="status"
+            aria-label={`Loading ${name}`}
+            data-testid="card-lightbox-skeleton"
+          />
+        )}
         <img
           src={imageUrl}
           alt={name}
