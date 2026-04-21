@@ -41,9 +41,7 @@
   aspect-ratio: 63 / 88;
   border-radius: var(--ra-radius-md);
   overflow: hidden;
-  box-shadow:
-    0 30px 60px -20px rgba(0, 0, 0, 0.55),
-    0 0 0 1px var(--ra-accent);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
   /* perspective + rotateX/Y set inline from the mousemove handler */
   transform-style: preserve-3d;
   transition: transform 0.08s linear;
@@ -97,16 +95,6 @@
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--ra-radius-md);
   z-index: 0;
-}
-
-.skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--ra-accent);
-  border-radius: inherit;
-  opacity: 0.35;
-  pointer-events: none;
 }
 
 @keyframes shimmer {
