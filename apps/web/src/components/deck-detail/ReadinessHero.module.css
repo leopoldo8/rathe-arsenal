@@ -48,13 +48,17 @@
   outline-offset: 2px;
 }
 
-/* Bottom section — name + readiness */
+/* Bottom section — name + readiness.
+   Stacked vertically by default because the hero sits in column A of
+   the 3-col deck detail grid (≤ ~350px wide at 1440 viewport). A
+   1fr/auto side-by-side grid collided the deck name with the 72px
+   readiness number in narrow containers. The stack reads cleanly at
+   any width; no layout-breaking collision mode remains. */
 .hero__bottom {
   padding: var(--ra-space-6) var(--ra-space-8) var(--ra-space-8);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--ra-space-8);
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-6);
 }
 
 /* Deck name + meta */
@@ -63,13 +67,19 @@
 }
 
 .hero__deckName {
-  font-family: var(--ra-font-ornament);
+  /* Fallback chain matters: Cinzel Decorative is missing `[` `]` and
+     some punctuation glyphs; without a fallback those collapse and
+     "[CC/CURRENT] KAYO" renders as "ICC/CURRENT KAYO". Include the
+     body display stack so bracketed prefixes render correctly. */
+  font-family: var(--ra-font-ornament), var(--ra-font-display), Georgia, serif;
   font-weight: var(--ra-weight-black);
   font-size: var(--ra-text-h1);
   line-height: var(--ra-leading-tight);
   letter-spacing: var(--ra-track-display);
   color: var(--ra-fg-primary);
   margin: 0 0 var(--ra-space-2);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .hero__meta {
@@ -92,13 +102,13 @@
   color: var(--ra-fg-subtle);
 }
 
-/* Readiness display — right-aligned */
+/* Readiness display — left-aligned under the deck name for a stacked
+   hero layout. align-items: flex-start keeps the big numeric baseline
+   consistent with the deck name above. */
 .hero__readiness {
-  text-align: right;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
+  align-items: flex-start;
 }
 
 /* .ra-readiness-display is the globally reserved signature class (R7).
