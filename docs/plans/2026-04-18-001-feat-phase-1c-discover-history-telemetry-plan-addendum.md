@@ -5,7 +5,13 @@ status: active
 date: 2026-04-19
 parent-plan: docs/plans/2026-04-18-001-feat-phase-1c-discover-history-telemetry-plan.md
 spike-report: docs/brainstorms/gates/phase-1c-unit-1-spike.md
+validation-override: docs/validation-philosophy.md
 ---
+
+> **Validation language override (2026-04-21).** Parent plan references
+> to external human validation ceremonies (Gate 2, labeler sessions,
+> presencial walkthroughs) are retired. See
+> [docs/validation-philosophy.md](../validation-philosophy.md).
 
 # Phase 1c plan addendum — Algolia source pivot + spike findings
 

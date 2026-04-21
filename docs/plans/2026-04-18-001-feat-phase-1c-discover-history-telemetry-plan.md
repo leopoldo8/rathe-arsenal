@@ -10,7 +10,16 @@ phase-0-plan: docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md
 phase-1a-plan: docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md
 phase-1b-plan: docs/plans/2026-04-11-001-feat-phase-1b-shopping-line-plan.md
 debt-ledger: docs/phase-1-followups.md
+validation-override: docs/validation-philosophy.md
 ---
+
+> **Validation language override (2026-04-21).** Any reference to "Gate 2
+> walkthrough", external labeler sessions, or presencial Cúpula DT
+> validation rounds in this plan is retired. Release semantics are now
+> governed by [docs/validation-philosophy.md](../validation-philosophy.md):
+> automated tests, server telemetry, dev-browser self-validation, and
+> owner self-review replace those ceremonies. The technical scope
+> (Discover, R9, R27, click telemetry) is unaffected.
 
 # feat: Phase 1c -- Discover, R9 Three-Mode Home, R27 History Chart, Click Telemetry
 

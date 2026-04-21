@@ -5,6 +5,16 @@
 > **What this is not:** a roadmap of new features. It is a debt ledger.
 >
 > **Rule:** when Phase 0 makes a deliberate trade-off, add an entry here in the same commit. When Phase 1 starts, this file is the first thing the implementer reads.
+>
+> **Validation override (2026-04-21):** entries below that reference
+> "Gate 2 walkthrough", "1-2h human labelling session", "Pelotas FaB
+> community rollout as a validation gate", or any external-human
+> ceremony are retired as release triggers. The authoritative validation
+> cadence is in [docs/validation-philosophy.md](./validation-philosophy.md)
+> (automated tests + server telemetry + dev-browser self-loop + owner
+> self-review). Entries remain here for historical context; their
+> trigger conditions now resolve to "owner decides" or to the automated
+> signal equivalents named in the validation-philosophy doc.
 
 ---
 
@@ -242,14 +252,31 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 **Why deferred (Phase 1a):** the Gate 4 gold set (`docs/brainstorms/gates/gate-4-gold-set.csv`) was generated from the Phase 0 tier 1 engine, so its labels apply only to tier 1 pairs. The existing `gold-set-regression.spec.ts` locks in tier 1 acceptance at 14/19 (73.7% SOFT_CONFIDENCE), which prevents tier 1 regressions during the Unit 3 refactor. It does **not** validate whether tier 2 produces substitutions humans would accept. Running a fresh depletion round over the same sampled decks with the new tiered engine and relabelling the tier 2 rows (target: >=60% acceptance per the plan's Risks table) is blocked on ~1 hour of human labelling time and would delay Unit 3.
 
-**Phase 1 trigger to revisit:** any of --
-- Before Phase 1a public rollout to the Pelotas FaB community, run a fresh tier-2 labelling round and publish the result alongside Gate 4.
-- First credible user complaint about a tier 2 suggestion quality in Phase 1a beta.
-- Any tuning of `TIER_2_KEYWORD_OVERLAP_WEIGHT`, `maxPowerDelta`, or `maxDefenseDelta` in `packages/engine/src/substitution/constants.ts`.
+**Phase 1 trigger to revisit** (revised 2026-04-21 — see
+`docs/validation-philosophy.md`): any of —
+- **Telemetry signal**: rolling 7-day tier-2 acceptance rate
+  (`decision='approved' / total tier-2 suggestions served`) drops
+  below 40% with ≥20 decisions captured. Passive, no coordination.
+- **Constant tuning**: any change to `TIER_2_KEYWORD_OVERLAP_WEIGHT`,
+  `maxPowerDelta`, or `maxDefenseDelta` in
+  `packages/engine/src/substitution/constants.ts`.
+- **Owner-flagged anomaly**: owner personally reviews the new engine
+  output against a handful of decks and notices a pattern that warrants
+  attention.
 
-**When triggered, the work is:** regenerate candidates with `scripts/gold-set/generate-candidates.ts` modified to use `findSubstitution` (or a dedicated tier-2-only script). Fill the `label` column for the tier 2 rows. Add a `gold-set-regression.spec.ts` block that enforces a tier 2 acceptance floor (plan target: >=60%). Estimated ~1-2 hours including labelling.
+**Retired trigger:** "Before Phase 1a public rollout to the Pelotas
+FaB community, run a fresh tier-2 labelling round". External labeling
+ceremonies are not release gates (see validation-philosophy.md).
 
-**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` "Deferred to Implementation" + "Risks & Dependencies" sections.
+**When triggered, the work is:** either (a) owner labels ~10–15 tier-2
+suggestions in 15 minutes (owner is a competent FaB player — fastest
+path, no coordination), or (b) regenerate candidates with
+`scripts/gold-set/generate-candidates.ts` modified to use
+`findSubstitution`, owner fills the `label` column, add a
+`gold-set-regression.spec.ts` block enforcing a tier 2 acceptance floor.
+No external labelers required at any step.
+
+**Where documented:** `docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md` "Deferred to Implementation" + "Risks & Dependencies" sections; validation cadence in `docs/validation-philosophy.md`.
 
 ---
 

@@ -1,7 +1,17 @@
 ---
 date: 2026-04-19
 topic: v1-visual-identity-and-ux
+validation-override: docs/validation-philosophy.md
 ---
+
+> **Validation language in this brainstorm is retired.** References to
+> "Gate 2 walkthrough", "3-5 Cúpula DT testers", "in-person observation
+> session", and "A17 labeler session" describe a ceremony that was
+> replaced on 2026-04-21 by automated/self-validation primitives (E2E
+> tests, telemetry, dev-browser self-loop, visual regression). The
+> authoritative source is [docs/validation-philosophy.md](../validation-philosophy.md).
+> The problem framing and requirements below remain valid; only the
+> release-gate semantics are obsolete.
 
 # Rathe Arsenal v1 Visual Identity + UX
 
