@@ -26,7 +26,13 @@
 
 .card {
   position: relative;
-  max-width: min(86vw, 560px);
+  /* Explicit width — without this the container collapses to the
+     <img>'s intrinsic dimensions, which are 0 until the image's first
+     network bytes land. The skeleton (inset: 0) would then render at
+     0x0 and the user would see only the backdrop + caption + outline
+     for ~1s before the card "appears". Giving the card a width up
+     front makes the skeleton fill its final footprint immediately. */
+  width: min(86vw, 560px);
   max-height: min(86vh, 780px);
   aspect-ratio: 7 / 10;
   border-radius: var(--ra-radius-md);
@@ -39,6 +45,16 @@
   transition: transform 0.08s linear;
   will-change: transform;
   cursor: default;
+}
+
+/* On short viewports the aspect-ratio would overflow — cap by height
+   and recompute width from the ratio so the card stays fully visible. */
+@media (max-height: 720px) {
+  .card {
+    height: 86vh;
+    width: calc(86vh * 7 / 10);
+    max-width: 86vw;
+  }
 }
 
 .image {
