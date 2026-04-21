@@ -30,16 +30,16 @@
   border-radius: var(--ra-radius-sm);
 }
 
-/* logo-mark: always visible */
+/* logo-mark (deckbox): always visible */
 .logoMark {
-  height: 32px;
+  height: 40px;
   width: auto;
   flex-shrink: 0;
 }
 
-/* logo-wordmark: hidden <960px */
+/* logo-wordmark (Rathe/Arsenal stacked): hidden <960px */
 .logoWordmark {
-  height: 24px;
+  height: 40px;
   width: auto;
   display: none;
 }

@@ -95,8 +95,13 @@ const TYPE_GLYPH_MAP: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = 
 // ---------------------------------------------------------------------------
 
 function resolveGlyph(
-  type: string,
+  type: string | null | undefined,
 ): React.FC<React.SVGProps<SVGSVGElement>> {
+  // Defensive: pre-U11 snapshots persisted before IBreakdownEntry enrichment
+  // may carry a missing `type` field. Fall back to the deckbox glyph instead
+  // of crashing on `undefined.trim()`. Next auto-recompute writes the enriched
+  // shape and the fallback clears on its own.
+  if (!type) return DeckboxGlyph;
   const normalized = type.trim().toLowerCase();
   return TYPE_GLYPH_MAP[normalized] ?? DeckboxGlyph;
 }
