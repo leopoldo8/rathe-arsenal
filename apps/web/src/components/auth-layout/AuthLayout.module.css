@@ -60,10 +60,26 @@
   font-style: italic;
   font-size: var(--ra-text-small);
   color: var(--ra-fg-muted);
-  border-inline-start: 2px solid var(--ra-accent-dim);
+  /* Leading curly quote instead of a 2px left stripe (BAN 1). The
+     italic serif + em-dashed citation below already set the "pull-
+     quote" register; the glyph is a softer flourish that matches the
+     arcane/artisanal tone. */
   padding-inline-start: var(--ra-space-4);
+  position: relative;
   margin: 0;
   line-height: var(--ra-leading-normal);
+}
+
+.artQuote::before {
+  content: '\201C'; /* left double quotation mark */
+  position: absolute;
+  left: 0;
+  top: -0.35em;
+  font-family: var(--ra-font-serif);
+  font-style: normal;
+  font-size: 2em;
+  color: var(--ra-accent-dim);
+  line-height: 1;
 }
 
 .artCite {

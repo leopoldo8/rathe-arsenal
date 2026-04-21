@@ -20,17 +20,28 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-/* Tier accent stripe (left border) */
+/* Tier accent — subtle background tint blended with surface.
+   Replaces the previous left-stripe treatment (an AI-slop tell). The
+   shelf heading already names the tier; the tint gives a secondary
+   signal when a card is skimmed out of shelf context (search, hover
+   preview, sharing). color-mix in oklch keeps hue consistent in dark
+   and preserves text contrast.
+
+   Tints are kept at 6–8% so the card still reads as the base surface,
+   not a colored box. */
 .card--high {
-  border-left: 3px solid var(--ra-ready-high);
+  background-color: color-mix(in oklch, var(--ra-ready-high) 6%, var(--ra-bg-surface));
+  border-color: color-mix(in oklch, var(--ra-ready-high) 24%, var(--ra-border));
 }
 
 .card--mid {
-  border-left: 3px solid var(--ra-ready-mid-accent);
+  background-color: color-mix(in oklch, var(--ra-ready-mid-accent) 6%, var(--ra-bg-surface));
+  border-color: color-mix(in oklch, var(--ra-ready-mid-accent) 24%, var(--ra-border));
 }
 
 .card--low {
-  border-left: 3px solid var(--ra-ready-low);
+  background-color: color-mix(in oklch, var(--ra-ready-low) 6%, var(--ra-bg-surface));
+  border-color: color-mix(in oklch, var(--ra-ready-low) 24%, var(--ra-border));
 }
 
 /* ---------- Link area ---------- */

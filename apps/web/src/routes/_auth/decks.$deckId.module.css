@@ -111,12 +111,13 @@
   border-color: var(--ra-accent);
 }
 
-/* Path C banner */
+/* Path C banner — uniform ready-low wash instead of a 4px left stripe
+   (BAN 1). The heading inside (in ready-low display color) carries the
+   "not fully coverable" signal; the wash just establishes the block. */
 .pathCBanner {
-  background: var(--ra-ready-low-bg);
-  border: 1px solid var(--ra-ready-low-border);
-  border-left: 4px solid var(--ra-ready-low);
-  border-radius: 2px;
+  background: color-mix(in oklch, var(--ra-ready-low) 8%, var(--ra-ready-low-bg));
+  border: 1px solid color-mix(in oklch, var(--ra-ready-low) 40%, var(--ra-ready-low-border));
+  border-radius: var(--ra-radius-sm);
   padding: var(--ra-space-3) var(--ra-space-4);
   margin-bottom: var(--ra-space-4);
   font-size: var(--ra-text-small);

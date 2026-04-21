@@ -6,21 +6,22 @@
   list-style: none;
   padding: var(--ra-space-4) var(--ra-space-4);
   border-bottom: 1px solid var(--ra-border-subtle);
-  border-left: 3px solid var(--ra-border-strong);
   background: var(--ra-bg-raised);
-  transition: border-color var(--ra-duration) var(--ra-ease),
+  transition: background-color var(--ra-duration) var(--ra-ease),
               opacity var(--ra-duration) var(--ra-ease);
 }
 
-/* Approved stripe — gold left border */
+/* Decision state signal: subtle background wash tinted with the
+   decision color. Replaces the previous left-stripe treatment (BAN 1).
+   The confidence bar + tier diamond already carry the primary semantic
+   signal; the wash just reinforces which rows are acted-on at a glance. */
 .row--approved {
-  border-left-color: var(--ra-accent);
+  background: color-mix(in oklch, var(--ra-accent) 8%, var(--ra-bg-raised));
 }
 
-/* Rejected stripe — red left border + slot treated as missing */
 .row--rejected {
-  border-left-color: var(--ra-ready-low);
-  opacity: 0.8;
+  background: color-mix(in oklch, var(--ra-ready-low) 8%, var(--ra-bg-raised));
+  opacity: 0.85;
 }
 
 /* In-flight dim */

@@ -8,10 +8,12 @@
   justify-content: space-between;
   gap: var(--ra-space-4);
   flex-wrap: wrap;
-  background: var(--ra-ready-mid-bg);
-  border: 1px solid var(--ra-ready-mid-border);
-  border-left: 4px solid var(--ra-accent);
-  border-radius: 2px;
+  /* Brass-tinted callout: replaces the old 4px left stripe (BAN 1) with
+     a uniform tint + border. The brass hue reads "there is an override
+     active on this deck" without the dashboard-stripe reflex. */
+  background: color-mix(in oklch, var(--ra-accent) 10%, var(--ra-ready-mid-bg));
+  border: 1px solid color-mix(in oklch, var(--ra-accent) 40%, var(--ra-ready-mid-border));
+  border-radius: var(--ra-radius-sm);
   padding: var(--ra-space-3) var(--ra-space-4);
   margin-bottom: var(--ra-space-4);
 }
