@@ -28,6 +28,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService.signIn.mockResolvedValue({
       jwt: 'jwt-token',
       user: { id: 'u1', email: 'a@b.com' },
+      settings: { theme: 'dark' },
     });
     authService.signUp.mockResolvedValue({
       message: 'If this email is not already registered, you will receive a verification link shortly.',

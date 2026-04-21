@@ -3,6 +3,7 @@ import {
   HttpException,
   InternalServerErrorException,
   BadRequestException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthError, EAuthErrorCode } from './errors';
@@ -13,6 +14,7 @@ const STATUS_MAP: Record<EAuthErrorCode, new (msg: string) => HttpException> = {
   [EAuthErrorCode.InvalidToken]: BadRequestException,
   [EAuthErrorCode.TokenExpired]: BadRequestException,
   [EAuthErrorCode.EmailDeliveryFailed]: InternalServerErrorException,
+  [EAuthErrorCode.UserNotFound]: NotFoundException,
 };
 
 export function mapAuthError(err: AuthError): HttpException {
