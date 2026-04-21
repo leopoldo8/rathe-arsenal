@@ -14,6 +14,7 @@ function makeEntry(
     pitch: null as 1 | 2 | 3 | null,
     cost: null as number | null,
     type: 'ally',
+    imageUrl: null,
   });
 }
 
@@ -69,6 +70,7 @@ describe('computePath', () => {
               keywords: Object.freeze([]),
               subtypes: Object.freeze([]),
               legalHeroes: Object.freeze([]),
+              imageUrl: null,
             }),
             tier: 1 as const,
             score: 1,
@@ -100,6 +102,7 @@ describe('computePath', () => {
               keywords: Object.freeze([]),
               subtypes: Object.freeze([]),
               legalHeroes: Object.freeze([]),
+              imageUrl: null,
             }),
             tier: 2 as const,
             score: 0.75,

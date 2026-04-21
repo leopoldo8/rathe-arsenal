@@ -25,6 +25,7 @@ const ORIGINAL: IBreakdownEntry = {
   pitch: 1,
   cost: 2,
   type: 'attack',
+  imageUrl: null,
 };
 
 const MATCH: ISubstitutionMatch = {
@@ -36,6 +37,7 @@ const MATCH: ISubstitutionMatch = {
     power: null,
     defense: null,
     keywords: [],
+    imageUrl: null,
   },
   tier: 1,
   score: 0.82,

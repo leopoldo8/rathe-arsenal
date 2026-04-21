@@ -19,6 +19,13 @@ export interface IBreakdownEntry {
    * Primary card type (types[0] from catalog). 'unknown' as defensive fallback (U11).
    */
   readonly type: string;
+  /**
+   * Public URLs for the card face image (WebP), small + large, served
+   * from the LSS public S3 bucket. null when the source card has no
+   * image code. Frontend falls back to the <CardArt> SVG placeholder
+   * on load error.
+   */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ISubstitutionEntry {

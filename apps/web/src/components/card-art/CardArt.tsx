@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import styles from './CardArt.module.css';
 
 import AttackGlyph from './glyphs/attack.svg?react';
@@ -29,6 +29,23 @@ export interface ICardArtProps {
   readonly missing: boolean;
   /** Size preset. Controls overall card dimensions. */
   readonly size: TCardArtSize;
+  /**
+   * Public image URLs (WebP small/large) from the LSS S3 bucket. When
+   * present and the image loads successfully, the photo replaces the
+   * stylized SVG placeholder. On load error, the SVG fallback renders
+   * automatically — so a broken CDN never breaks the UI. null means the
+   * source catalog has no image code; the SVG placeholder is used.
+   */
+  readonly imageUrl?:
+    | { readonly small: string; readonly large: string }
+    | null
+    | undefined;
+  /**
+   * When provided, wraps the card in a button so the user can click to
+   * open a fullscreen lightbox view. The parent owns the lightbox state;
+   * CardArt just emits the click.
+   */
+  readonly onClick?: (() => void) | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,9 +152,17 @@ export function CardArt({
   type,
   missing,
   size,
+  imageUrl,
+  onClick,
 }: ICardArtProps): React.ReactElement {
   const width = SIZE_WIDTH_MAP[size];
   const height = Math.round(width * ASPECT_RATIO);
+
+  // Track whether the real card image loaded successfully. On 404 or
+  // network error we drop back to the stylized SVG placeholder without
+  // a visible flicker — `imageLoaded` gates the `<img>` opacity.
+  const [imageErrored, setImageErrored] = useState(false);
+  const hasImage = Boolean(imageUrl && !imageErrored);
 
   // React 18 stable id — unique per component instance across renders.
   // Without this, rendering N `missing` cards of the same size produces N
@@ -164,12 +189,40 @@ export function CardArt({
     styles.cardArt,
     styles[`cardArt--${size}`],
     missing ? styles['cardArt--missing'] : '',
+    hasImage ? styles['cardArt--withImage'] : '',
+    onClick ? styles['cardArt--clickable'] : '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  return (
-    <div className={containerClass} style={cssVars} data-testid="card-art">
+  const inner = (
+    <>
+      {/* Real card image overlay — sits above the SVG placeholder. The
+          SVG still renders beneath so a slow-loading image briefly shows
+          the stylized frame instead of a blank rectangle. */}
+      {imageUrl && !imageErrored && (
+        <img
+          src={imageUrl.small}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          className={styles.cardArtImage}
+          onError={() => setImageErrored(true)}
+          data-testid="card-art-image"
+          style={{ width, height }}
+        />
+      )}
+      {/* Missing hatch overlay for `imageUrl` path — replicates the SVG
+          pattern as CSS so it sits above the <img>. For the SVG-only
+          path the overlay is drawn inside the <svg>. */}
+      {hasImage && missing && (
+        <span
+          className={styles.cardArtHatch}
+          data-testid="missing-overlay-image"
+          aria-hidden="true"
+        />
+      )}
       <svg
         viewBox="0 0 100 140"
         width={width}
@@ -343,6 +396,27 @@ export function CardArt({
           </g>
         )}
       </svg>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={containerClass}
+        style={cssVars}
+        data-testid="card-art"
+        onClick={onClick}
+        aria-label={`Open ${name} fullscreen`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <div className={containerClass} style={cssVars} data-testid="card-art">
+      {inner}
     </div>
   );
 }

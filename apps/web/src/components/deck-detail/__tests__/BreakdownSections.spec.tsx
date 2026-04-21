@@ -25,6 +25,7 @@ const EXACT_ENTRY = {
   pitch: 1 as const,
   cost: 2,
   type: 'attack',
+  imageUrl: null,
 };
 
 const SUB_ORIGINAL = {
@@ -34,6 +35,7 @@ const SUB_ORIGINAL = {
   pitch: 2 as const,
   cost: 1,
   type: 'attack',
+  imageUrl: null,
 };
 
 const SUB_MATCH = {
@@ -45,6 +47,7 @@ const SUB_MATCH = {
     power: null,
     defense: null,
     keywords: [],
+    imageUrl: null,
   },
   tier: 1,
   score: 0.9,
@@ -58,6 +61,7 @@ const NOT_OWNED_ENTRY = {
   pitch: null,
   cost: null,
   type: 'hero',
+  imageUrl: null,
 };
 
 const FULL_BREAKDOWN: IBreakdown = {

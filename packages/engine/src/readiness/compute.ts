@@ -23,18 +23,33 @@ const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
  * pitch is constrained to 1 | 2 | 3 per the FaB rules; any other numeric
  * value (which should not occur in practice) is cast to null for safety.
  */
+type TImageUrlPair = { readonly small: string; readonly large: string };
+
 function deriveEntryMeta(
-  catalogCard: { pitch: number | null; cost: number | null; types: readonly string[] } | undefined,
-): { pitch: 1 | 2 | 3 | null; cost: number | null; type: string } {
+  catalogCard:
+    | {
+        pitch: number | null;
+        cost: number | null;
+        types: readonly string[];
+        imageUrl?: TImageUrlPair | null;
+      }
+    | undefined,
+): {
+  pitch: 1 | 2 | 3 | null;
+  cost: number | null;
+  type: string;
+  imageUrl: TImageUrlPair | null;
+} {
   if (!catalogCard) {
-    return { pitch: null, cost: null, type: 'unknown' };
+    return { pitch: null, cost: null, type: 'unknown', imageUrl: null };
   }
   const rawPitch = catalogCard.pitch;
   const pitch: 1 | 2 | 3 | null =
     rawPitch === 1 || rawPitch === 2 || rawPitch === 3 ? rawPitch : null;
   const cost = catalogCard.cost ?? null;
   const type = catalogCard.types[0] ?? 'unknown';
-  return { pitch, cost, type };
+  const imageUrl = catalogCard.imageUrl ?? null;
+  return { pitch, cost, type, imageUrl };
 }
 
 interface IDeckCard {

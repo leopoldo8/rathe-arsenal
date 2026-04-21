@@ -16,6 +16,7 @@ function makeCard(overrides: Partial<ICatalogCard> = {}): ICatalogCard {
     keywords: [Keyword.GoAgain],
     subtypes: [],
     legalHeroes: [],
+    imageUrl: null,
   };
   return Object.freeze({ ...base, ...overrides });
 }

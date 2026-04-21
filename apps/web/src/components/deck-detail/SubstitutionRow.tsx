@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
 import { IBreakdownEntry, ISubstitutionMatch } from '../../api/deck-detail';
 import styles from './SubstitutionRow.module.css';
 
@@ -104,6 +106,13 @@ export function SubstitutionRow({
   const scorePercent = Math.round(match.score * 100);
   const rowAriaLabel = `Substitution: ${originalName} for ${substituteName}, Tier ${match.tier}, ${scorePercent}% confidence, decision: ${decision}`;
 
+  // Lightbox state — local to the row so approving/rejecting a different
+  // row doesn't cause cross-row flicker when the preview is open.
+  const [lightbox, setLightbox] = useState<
+    | { readonly imageUrl: string; readonly name: string }
+    | null
+  >(null);
+
   return (
     <li className={rowClassName} aria-label={rowAriaLabel}>
       <div className={styles.row__cards}>
@@ -116,6 +125,16 @@ export function SubstitutionRow({
             type={original.type}
             missing={false}
             size="md"
+            imageUrl={original.imageUrl}
+            onClick={
+              original.imageUrl
+                ? () =>
+                    setLightbox({
+                      imageUrl: original.imageUrl!.large,
+                      name: originalName,
+                    })
+                : undefined
+            }
           />
           <span className={styles.row__cardLabel}>{originalName}</span>
         </div>
@@ -152,6 +171,16 @@ export function SubstitutionRow({
             type="action"
             missing={isRejected}
             size="md"
+            imageUrl={match.substitute.imageUrl}
+            onClick={
+              match.substitute.imageUrl
+                ? () =>
+                    setLightbox({
+                      imageUrl: match.substitute.imageUrl!.large,
+                      name: substituteName,
+                    })
+                : undefined
+            }
           />
           <span className={styles.row__cardLabel}>{substituteName}</span>
         </div>
@@ -211,6 +240,13 @@ export function SubstitutionRow({
           <span aria-hidden="true">&#8635;</span> Reset
         </button>
       </div>
+      {lightbox && (
+        <CardLightbox
+          imageUrl={lightbox.imageUrl}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </li>
   );
 }

@@ -21,6 +21,23 @@ export interface ICatalogCard {
   readonly keywords: readonly Keyword[];
   readonly subtypes: readonly string[];
   readonly legalHeroes: readonly string[];
+  /**
+   * Public URLs for the card face image (WebP), in two sizes. Derived
+   * from `@flesh-and-blood/cards` `defaultImage` field (a printing code
+   * like "SKA019") against the LSS public S3 bucket
+   * (`legendstory-production-s3-public`). `null` when the source record
+   * has no image code.
+   *
+   * Sourcing from LSS infrastructure directly (rather than a third-party
+   * CDN like Fabrary) keeps the IP posture defensible under the Option A
+   * fan-project policy documented in `docs/research/ip-posture.md`: we
+   * consume the endpoint the rightsholder chose to expose, not a mirror.
+   *
+   * The frontend treats this as best-effort: on HTTP 404 or network
+   * error it falls back to the stylized <CardArt> SVG placeholder, so a
+   * broken CDN never surfaces as a crash.
+   */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ICatalogIndices {

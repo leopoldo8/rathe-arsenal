@@ -88,6 +88,7 @@ function makeBreakdown(
     pitch: null as 1 | 2 | 3 | null,
     cost: null as number | null,
     type: 'ally',
+    imageUrl: null,
   }));
   return {
     exact: [],
@@ -1020,12 +1021,13 @@ describe('ShoppingLineService', () => {
             pitch: null,
             cost: null,
             type: 'ally',
+            imageUrl: null,
           },
         ],
-        missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' }],
+        missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null }],
         notOwned: [
-          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' },
-          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally' },
+          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
+          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
         ],
       };
 

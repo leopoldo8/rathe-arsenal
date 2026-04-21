@@ -13,7 +13,7 @@ function makeEntry(
 ): IBreakdownEntry {
   // U11: IBreakdownEntry now requires pitch, cost, type.
   // Tests use null/null/'ally' as contextually appropriate defaults.
-  return Object.freeze({ cardIdentifier, quantity, slot, pitch: null, cost: null, type: 'ally' });
+  return Object.freeze({ cardIdentifier, quantity, slot, pitch: null, cost: null, type: 'ally', imageUrl: null });
 }
 
 function makeMatch(

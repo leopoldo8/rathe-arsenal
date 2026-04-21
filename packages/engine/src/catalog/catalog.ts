@@ -16,6 +16,26 @@ interface IRawCard {
   keywords?: string[];
   subtypes?: string[];
   legalHeroes?: string[];
+  defaultImage?: string;
+}
+
+/**
+ * LSS public S3 bucket base for card faces (WebP).
+ * Using the rightsholder's own endpoint instead of a third-party mirror
+ * (Fabrary, etc.) — see ICatalogCard.imageUrl docstring and
+ * docs/research/ip-posture.md for the compliance rationale.
+ */
+const IMAGE_CDN_BASE =
+  'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/';
+
+function buildImageUrl(
+  defaultImage: string | undefined,
+): { readonly small: string; readonly large: string } | null {
+  if (!defaultImage) return null;
+  return Object.freeze({
+    small: `${IMAGE_CDN_BASE}small/${defaultImage}.webp`,
+    large: `${IMAGE_CDN_BASE}large/${defaultImage}.webp`,
+  });
 }
 
 function normalizeCard(raw: IRawCard): ICatalogCard {
@@ -32,6 +52,7 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
     keywords: Object.freeze((raw.keywords ?? []) as ICatalogCard['keywords']),
     subtypes: Object.freeze(raw.subtypes ?? []),
     legalHeroes: Object.freeze(raw.legalHeroes ?? []),
+    imageUrl: buildImageUrl(raw.defaultImage),
   });
 }
 

@@ -31,6 +31,13 @@ export interface IBreakdownEntry {
    * Used by CardArt for the type glyph (R47).
    */
   readonly type: string;
+  /**
+   * Public URLs for the card face image (WebP), small + large. `null`
+   * when the source catalog entry has no image code. Frontend treats
+   * load failure as best-effort fallback to the stylized <CardArt> SVG
+   * placeholder. See `ICatalogCard.imageUrl` for the full contract.
+   */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ISubstitutedEntry {

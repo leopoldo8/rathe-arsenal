@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
 import { IBreakdown, IDecisionEntry } from '../../api/deck-detail';
 import { SubstitutionRow, TDecisionState } from './SubstitutionRow';
 import { MarkOwnedButton } from './MarkOwnedButton';
@@ -52,6 +54,14 @@ export function BreakdownSections({
 }: IBreakdownSectionsProps): React.ReactElement {
   const notOwned = breakdown.notOwned ?? breakdown.missing;
 
+  // Single lightbox at the section root — only one card can be expanded
+  // at a time across exact + not-owned grids. SubstitutionRow owns its
+  // own local lightbox so substitute clicks stay per-row.
+  const [lightbox, setLightbox] = useState<
+    | { readonly imageUrl: string; readonly name: string }
+    | null
+  >(null);
+
   return (
     <div id="breakdown" className={styles.sections}>
       {/* ---- Exact matches ---- */}
@@ -80,6 +90,16 @@ export function BreakdownSections({
                   type={entry.type}
                   missing={false}
                   size="sm"
+                  imageUrl={entry.imageUrl}
+                  onClick={
+                    entry.imageUrl
+                      ? () =>
+                          setLightbox({
+                            imageUrl: entry.imageUrl!.large,
+                            name: entry.cardIdentifier,
+                          })
+                      : undefined
+                  }
                 />
                 <span className={styles.cardCell__qty}>
                   &#215;{entry.quantity}
@@ -167,6 +187,16 @@ export function BreakdownSections({
                   type={entry.type}
                   missing={true}
                   size="xs"
+                  imageUrl={entry.imageUrl}
+                  onClick={
+                    entry.imageUrl
+                      ? () =>
+                          setLightbox({
+                            imageUrl: entry.imageUrl!.large,
+                            name: entry.cardIdentifier,
+                          })
+                      : undefined
+                  }
                 />
                 <div className={styles.missRow__body}>
                   <div className={styles.missRow__name}>{entry.cardIdentifier}</div>
@@ -186,6 +216,13 @@ export function BreakdownSections({
           </ul>
         )}
       </section>
+      {lightbox && (
+        <CardLightbox
+          imageUrl={lightbox.imageUrl}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }

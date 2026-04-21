@@ -9,7 +9,71 @@
   display: inline-block;
   flex-shrink: 0;
   line-height: 0; /* collapse inline gap below SVG */
+  position: relative;
   transition: opacity var(--ra-duration) var(--ra-ease);
+  /* Button reset when rendered as <button> (onClick path) */
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+}
+
+/* ---------- Clickable (button) affordance ---------- */
+.cardArt--clickable {
+  cursor: zoom-in;
+  border-radius: var(--ra-radius-sm);
+  transition:
+    transform var(--ra-duration) var(--ra-ease),
+    box-shadow var(--ra-duration) var(--ra-ease),
+    opacity var(--ra-duration) var(--ra-ease);
+}
+
+.cardArt--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ra-shadow-md);
+}
+
+.cardArt--clickable:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 3px;
+}
+
+/* ---------- Real image overlay ---------- */
+.cardArtImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--ra-radius-sm);
+  pointer-events: none;
+  /* The SVG placeholder sits beneath as the during-load fallback; once
+     the image appears, it occludes the SVG entirely. */
+  z-index: 1;
+}
+
+/* When the real image is present, dim the SVG placeholder so any 1-frame
+   flash before the image renders stays subtle. */
+.cardArt--withImage svg {
+  opacity: 0;
+}
+
+/* Hatch overlay for the imageUrl path — replicates the SVG hatch
+   pattern with a CSS repeating-linear-gradient so it lands above the
+   <img> without poking into the SVG tree. */
+.cardArtHatch {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ra-radius-sm);
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.55) 0 3px,
+    transparent 3px 8px
+  );
+  z-index: 2;
 }
 
 /* ---------- Size presets (width on container; SVG carries its own dimensions) ---------- */

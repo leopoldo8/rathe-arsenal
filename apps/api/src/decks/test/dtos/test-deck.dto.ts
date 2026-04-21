@@ -33,6 +33,8 @@ export interface ITestDeckBreakdownEntry {
   readonly cost: number | null;
   /** U11: Primary card type from catalog. 'unknown' as defensive fallback. */
   readonly type: string;
+  /** LSS S3 card face image URLs (small + large). null when unavailable. */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ITestDeckSubstituteCard {
@@ -43,6 +45,7 @@ export interface ITestDeckSubstituteCard {
   readonly power: number | null;
   readonly defense: number | null;
   readonly keywords: readonly string[];
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ITestDeckSubstitutionMatch {

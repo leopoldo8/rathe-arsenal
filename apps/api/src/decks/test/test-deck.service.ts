@@ -282,6 +282,7 @@ export class TestDeckService {
           pitch: entry.pitch,
           cost: entry.cost,
           type: entry.type,
+          imageUrl: entry.imageUrl,
         }),
       ),
       substituted: breakdown.substituted.map(
@@ -293,6 +294,7 @@ export class TestDeckService {
             pitch: entry.original.pitch,
             cost: entry.original.cost,
             type: entry.original.type,
+            imageUrl: entry.original.imageUrl,
           },
           match: this.serializeMatch(entry),
         }),
@@ -305,6 +307,7 @@ export class TestDeckService {
           pitch: entry.pitch,
           cost: entry.cost,
           type: entry.type,
+          imageUrl: entry.imageUrl,
         }),
       ),
     };
@@ -323,6 +326,7 @@ export class TestDeckService {
         power: substitute.power,
         defense: substitute.defense,
         keywords: substitute.keywords.map((kw) => String(kw)),
+        imageUrl: substitute.imageUrl,
       },
       tier: entry.match.tier,
       score: entry.match.score,
