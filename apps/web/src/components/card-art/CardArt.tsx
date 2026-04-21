@@ -106,9 +106,12 @@ function resolveGlyph(
   return TYPE_GLYPH_MAP[normalized] ?? DeckboxGlyph;
 }
 
-function resolvePitchKey(pitch: 1 | 2 | 3 | null): string {
-  if (pitch === null) return 'colorless';
-  return String(pitch);
+function resolvePitchKey(pitch: 1 | 2 | 3 | null | undefined): string {
+  // Defensive: pre-U11 snapshots may carry pitch=undefined or unexpected
+  // numeric values. Anything outside {1,2,3} falls back to the colorless
+  // palette so lookup into PITCH_FRAME_VARS always hits a defined entry.
+  if (pitch === 1 || pitch === 2 || pitch === 3) return String(pitch);
+  return 'colorless';
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +147,9 @@ export function CardArt({
   const hatchId = `ra-hatch-${reactId}`;
 
   const pitchKey = resolvePitchKey(pitch);
-  const colors = PITCH_FRAME_VARS[pitchKey];
+  // resolvePitchKey only returns '1'|'2'|'3'|'colorless', all present in the
+  // map. Fall back explicitly in case the map is narrowed in a future change.
+  const colors = PITCH_FRAME_VARS[pitchKey] ?? PITCH_FRAME_VARS.colorless!;
 
   const TypeGlyphComponent = resolveGlyph(type);
 
