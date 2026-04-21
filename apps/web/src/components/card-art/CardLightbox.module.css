@@ -34,7 +34,11 @@
      front makes the skeleton fill its final footprint immediately. */
   width: min(86vw, 560px);
   max-height: min(86vh, 780px);
-  aspect-ratio: 7 / 10;
+  /* FaB card standard is 63mm × 88mm → 63:88 (~0.716). Using a 7:10
+     approximation produces a 2% mismatch that object-fit: cover would
+     trim from top/bottom. 63:88 keeps the card edge flush with the
+     brass outline. */
+  aspect-ratio: 63 / 88;
   border-radius: var(--ra-radius-md);
   overflow: hidden;
   box-shadow:
@@ -52,7 +56,7 @@
 @media (max-height: 720px) {
   .card {
     height: 86vh;
-    width: calc(86vh * 7 / 10);
+    width: calc(86vh * 63 / 88);
     max-width: 86vw;
   }
 }
@@ -61,7 +65,11 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  /* contain (not cover): the LSS source already trims to the card
+     bleed edge — covering would double-crop. With the container set
+     to 63:88 the image lands flush edge-to-edge; contain is a safety
+     net in case LSS ships a slightly different crop in the future. */
+  object-fit: contain;
   transition: opacity 180ms var(--ra-ease);
   position: relative;
   z-index: 1;
