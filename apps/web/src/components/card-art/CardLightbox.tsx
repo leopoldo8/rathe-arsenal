@@ -24,6 +24,7 @@ export function CardLightbox({
 }: ICardLightboxProps): React.ReactElement {
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useRef<boolean>(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -108,7 +109,7 @@ export function CardLightbox({
         onClick={(e) => e.stopPropagation()}
         data-testid="card-lightbox-card"
       >
-        {!loaded && (
+        {!loaded && !errored && (
           <div
             className={styles.skeleton}
             role="status"
@@ -116,14 +117,32 @@ export function CardLightbox({
             data-testid="card-lightbox-skeleton"
           />
         )}
-        <img
-          src={imageUrl}
-          alt={name}
-          className={styles.image}
-          onLoad={() => setLoaded(true)}
-          data-testid="card-lightbox-image"
-          style={{ opacity: loaded ? 1 : 0 }}
-        />
+        {errored && (
+          // Graceful fallback for LSS S3 misses: the image code didn't
+          // resolve to a real asset (404, network, CORS). Keep the
+          // container intact and communicate the state instead of
+          // looping the skeleton forever.
+          <div
+            className={styles.errorState}
+            role="alert"
+            data-testid="card-lightbox-error"
+          >
+            <span className={styles.errorGlyph} aria-hidden="true">&#9670;</span>
+            <span className={styles.errorTitle}>Card art unavailable</span>
+            <span className={styles.errorBody}>{name}</span>
+          </div>
+        )}
+        {!errored && (
+          <img
+            src={imageUrl}
+            alt={name}
+            className={styles.image}
+            onLoad={() => setLoaded(true)}
+            onError={() => setErrored(true)}
+            data-testid="card-lightbox-image"
+            style={{ opacity: loaded ? 1 : 0 }}
+          />
+        )}
       </div>
       <p className={styles.caption} aria-hidden="true">
         {name}

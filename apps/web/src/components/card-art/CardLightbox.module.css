@@ -154,6 +154,47 @@
   margin: 0;
 }
 
+/* Graceful error fallback when the S3 image 404s or fails CORS. Fills
+   the card container with a muted surface + brass diamond + card name
+   instead of looping the skeleton. */
+.errorState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-6);
+  background: var(--ra-bg-surface);
+  border-radius: var(--ra-radius-md);
+  text-align: center;
+  z-index: 1;
+}
+
+.errorGlyph {
+  font-size: 2.5rem;
+  color: var(--ra-accent);
+  line-height: 1;
+}
+
+.errorTitle {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.errorBody {
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  max-width: 32ch;
+  line-height: var(--ra-leading-normal);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .backdrop {
     animation: none;

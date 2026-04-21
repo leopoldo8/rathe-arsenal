@@ -109,3 +109,15 @@
   background-color: var(--ra-border-subtle);
   margin: var(--ra-space-2) 0;
 }
+
+/* R56: reduced-motion users get an instant open without the slide-down
+   animation and without easing-backed hover color transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+  }
+  .trigger,
+  .item {
+    transition: none;
+  }
+}

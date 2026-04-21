@@ -197,3 +197,21 @@
   outline: 2px solid var(--ra-ready-low);
   outline-offset: 2px;
 }
+
+/* R56: reduced-motion users get an instant modal with no fade/scale
+   entrance. Hover color transitions collapse to immediate state
+   changes as well. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .content {
+    animation: none;
+  }
+  .content {
+    transform: translate(-50%, -50%);
+  }
+  .passwordInput,
+  .cancelBtn,
+  .submitBtn {
+    transition: none;
+  }
+}
