@@ -18,6 +18,7 @@ import { CollectionModule } from './collection/collection.module';
 import { StoresModule } from './stores/stores.module';
 import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -44,6 +45,8 @@ import { UsersModule } from './users/users.module';
     StoresModule,
     // U12: user settings (GET/PATCH /api/users/me/settings)
     UsersModule,
+    // U5 (Plan B): review_aggregate entity + service (no HTTP endpoints yet).
+    ReviewsModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({
