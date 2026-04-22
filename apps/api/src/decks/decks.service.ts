@@ -3,13 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { VariantFetchService } from '../stores/variant-fetch.service';
 import { DecisionsService } from './decisions/decisions.service';
+import { CollectionReadService } from '../collection/collection-read.service';
 import {
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
@@ -37,13 +37,12 @@ export class DecksService {
     private readonly deckCardRepo: Repository<DeckCardEntity>,
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
-    @InjectRepository(CollectionCardEntity)
-    private readonly collectionCardRepo: Repository<CollectionCardEntity>,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
     private readonly variantFetchService: VariantFetchService,
     private readonly decisionsService: DecisionsService,
+    private readonly collectionReadService: CollectionReadService,
   ) {}
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
@@ -52,7 +51,9 @@ export class DecksService {
         where: { userId },
         order: { trackedAt: 'DESC' },
       }),
-      this.collectionCardRepo.count({ where: { userId } }),
+      // countUniqueOwned sums across active sources so the home empty-state
+      // shows unique cards owned, not raw collection_card row count.
+      this.collectionReadService.countUniqueOwned(userId),
       this.shoppingLineService.computeAggregate(userId),
     ]);
 

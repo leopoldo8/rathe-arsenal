@@ -13,6 +13,7 @@ import { AuthzService } from '../auth/authz.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { DecisionsService } from '../decks/decisions/decisions.service';
+import { SourcesService } from './sources/sources.service';
 import {
   IBreakdown,
   ISubstitutionEntry,
@@ -41,6 +42,7 @@ export class CollectionService {
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
     private readonly decisionsService: DecisionsService,
+    private readonly sourcesService: SourcesService,
   ) {}
 
   async markOwned(
@@ -70,9 +72,13 @@ export class CollectionService {
 
     const requiredQuantity = deckCard.quantity;
 
-    // Upsert CollectionCard: insert with qty 1 if new, else increment (capped)
+    // Ensure the user has a manual source before writing the card row.
+    const manualSource = await this.sourcesService.ensureManualSource(userId);
+
+    // Upsert CollectionCard: insert with qty 1 if new, else increment (capped).
+    // Scoped to the manual source so CSV source rows are never overwritten.
     const existing = await this.collectionCardRepo.findOne({
-      where: { userId, cardIdentifier },
+      where: { userId, cardIdentifier, sourceId: manualSource.id },
     });
 
     let newQuantity: number;
@@ -87,6 +93,7 @@ export class CollectionService {
       const entity = this.collectionCardRepo.create({
         userId,
         cardIdentifier,
+        sourceId: manualSource.id,
         quantity: 1,
       });
       await this.collectionCardRepo.save(entity);
@@ -170,10 +177,14 @@ export class CollectionService {
       throw error;
     }
 
+    // Ensure the user has a manual source before writing the card row.
+    const manualSource = await this.sourcesService.ensureManualSource(userId);
+
     // Upsert the collection row. Quantities are capped at
     // MAX_COLLECTION_QUANTITY to keep user input bounded.
+    // Scoped to the manual source so CSV source rows are never overwritten.
     const existing = await this.collectionCardRepo.findOne({
-      where: { userId, cardIdentifier },
+      where: { userId, cardIdentifier, sourceId: manualSource.id },
     });
 
     let newQuantity: number;
@@ -191,6 +202,7 @@ export class CollectionService {
       const entity = this.collectionCardRepo.create({
         userId,
         cardIdentifier,
+        sourceId: manualSource.id,
         quantity: newQuantity,
       });
       await this.collectionCardRepo.save(entity);

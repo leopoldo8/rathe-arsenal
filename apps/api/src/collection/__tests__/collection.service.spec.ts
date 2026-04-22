@@ -8,15 +8,18 @@ import { CollectionCardEntity } from '../../database/entities/collection-card.en
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
+import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SourcesService } from '../sources/sources.service';
 import { CollectionService } from '../collection.service';
 
 const USER_ID = 'user-uuid-123';
 const DECK_ID = 1;
 const CARD_IDENTIFIER = 'WTR001';
+const MANUAL_SOURCE_ID = 'manual-source-uuid-001';
 
 function buildSnapshot(
   overrides: Partial<DeckReadinessSnapshotEntity> = {},
@@ -59,9 +62,31 @@ function buildCollectionCard(
     id: 50,
     userId: USER_ID,
     cardIdentifier: CARD_IDENTIFIER,
+    sourceId: MANUAL_SOURCE_ID,
     quantity: 1,
     lastUpdated: new Date('2025-01-15T10:00:00Z'),
     user: {} as CollectionCardEntity['user'],
+    source: {} as CollectionCardEntity['source'],
+    ...overrides,
+  };
+}
+
+function buildManualSource(
+  overrides: Partial<CsvSourceEntity> = {},
+): CsvSourceEntity {
+  return {
+    id: MANUAL_SOURCE_ID,
+    userId: USER_ID,
+    kind: 'manual',
+    label: 'Manual entries',
+    originalFilename: null,
+    sourceUrl: null,
+    contentHash: null,
+    cardCount: null,
+    active: true,
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    updatedAt: new Date('2025-01-01T00:00:00Z'),
+    user: {} as CsvSourceEntity['user'],
     ...overrides,
   };
 }
@@ -76,6 +101,7 @@ describe('CollectionService', () => {
   let catalogService: jest.Mocked<CatalogService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let decisionsService: jest.Mocked<DecisionsService>;
+  let sourcesService: jest.Mocked<SourcesService>;
 
   beforeEach(async () => {
     collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
@@ -86,9 +112,12 @@ describe('CollectionService', () => {
     catalogService = createMock<CatalogService>();
     substitutionService = createMock<SubstitutionService>();
     decisionsService = createMock<DecisionsService>();
+    sourcesService = createMock<SourcesService>();
 
     // Default: no rejections — exclusion set is empty.
     decisionsService.loadExclusions.mockResolvedValue(new Set());
+    // Default: manual source always resolves for the test user.
+    sourcesService.ensureManualSource.mockResolvedValue(buildManualSource());
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -113,6 +142,7 @@ describe('CollectionService', () => {
         { provide: CatalogService, useValue: catalogService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: DecisionsService, useValue: decisionsService },
+        { provide: SourcesService, useValue: sourcesService },
       ],
     }).compile();
 
@@ -301,6 +331,7 @@ describe('CollectionService', () => {
       expect(collectionCardRepo.create).toHaveBeenCalledWith({
         userId: USER_ID,
         cardIdentifier: CARD_IDENTIFIER,
+        sourceId: MANUAL_SOURCE_ID,
         quantity: 1,
       });
       expect(collectionCardRepo.save).toHaveBeenCalled();

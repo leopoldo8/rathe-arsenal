@@ -1,4 +1,5 @@
 export { UserEntity } from './user.entity';
+export { CsvSourceEntity } from './csv-source.entity';
 export { CollectionCardEntity } from './collection-card.entity';
 export { TrackedDeckEntity } from './tracked-deck.entity';
 export { DeckCardEntity } from './deck-card.entity';

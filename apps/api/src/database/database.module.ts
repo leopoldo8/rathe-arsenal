@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   UserEntity,
+  CsvSourceEntity,
   CollectionCardEntity,
   TrackedDeckEntity,
   DeckCardEntity,
@@ -33,6 +34,7 @@ import {
         url: config.get<string>('DATABASE_URL')!,
         entities: [
           UserEntity,
+          CsvSourceEntity,
           CollectionCardEntity,
           TrackedDeckEntity,
           DeckCardEntity,

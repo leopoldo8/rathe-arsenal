@@ -3,6 +3,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { FabraryService } from '../../../fabrary/fabrary.service';
 import { SubstitutionService } from '../../../substitution/substitution.service';
+import { SourcesService } from '../../../collection/sources/sources.service';
 import { TrackedDeckEntity } from '../../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../../database/entities/deck-readiness-snapshot.entity';
 import { IDeckImportDto } from '../../../fabrary/dtos/deck-import.dto';
@@ -39,6 +40,7 @@ describe('DecksImportService', () => {
   let service: DecksImportService;
   let fabraryService: FabraryService;
   let substitutionService: SubstitutionService;
+  let sourcesService: jest.Mocked<SourcesService>;
   let dataSource: DataSource;
   let mockManager: EntityManager;
   let mockTrackedDeckRepo: Repository<TrackedDeckEntity>;
@@ -46,6 +48,7 @@ describe('DecksImportService', () => {
   beforeEach(async () => {
     fabraryService = createMock<FabraryService>();
     substitutionService = createMock<SubstitutionService>();
+    sourcesService = createMock<SourcesService>();
     mockManager = createMock<EntityManager>();
     mockTrackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     dataSource = createMock<DataSource>();
@@ -60,6 +63,22 @@ describe('DecksImportService', () => {
 
     // Default: no existing tracked decks
     (mockTrackedDeckRepo.findOne as jest.Mock).mockResolvedValue(null);
+
+    // Default: sourcesService returns a manual source
+    sourcesService.ensureManualSource.mockResolvedValue({
+      id: 'manual-source-uuid-001',
+      userId: USER_ID,
+      kind: 'manual',
+      label: 'Manual entries',
+      originalFilename: null,
+      sourceUrl: null,
+      contentHash: null,
+      cardCount: null,
+      active: true,
+      createdAt: new Date('2025-01-01T00:00:00Z'),
+      updatedAt: new Date('2025-01-01T00:00:00Z'),
+      user: {} as never,
+    });
 
     // Default: manager.create returns the input with an id
     let deckIdCounter = 100;
@@ -87,6 +106,7 @@ describe('DecksImportService', () => {
         { provide: DataSource, useValue: dataSource },
         { provide: FabraryService, useValue: fabraryService },
         { provide: SubstitutionService, useValue: substitutionService },
+        { provide: SourcesService, useValue: sourcesService },
       ],
     }).compile();
 

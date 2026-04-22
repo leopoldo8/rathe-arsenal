@@ -15,7 +15,7 @@ import {
   ISubstitutedEntry,
 } from '@rathe-arsenal/engine';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
-import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
+import { CollectionReadService } from '../../collection/collection-read.service';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { parseFabraryUrl } from '../../fabrary/parse-url';
 import {
@@ -59,10 +59,9 @@ export class TestDeckService {
   constructor(
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
-    @InjectRepository(CollectionCardEntity)
-    private readonly collectionCardRepo: Repository<CollectionCardEntity>,
     private readonly fabraryService: FabraryService,
     private readonly shoppingLineService: ShoppingLineService,
+    private readonly collectionReadService: CollectionReadService,
   ) {}
 
   async run(
@@ -185,14 +184,8 @@ export class TestDeckService {
     deck: IDeckImportDto,
     userId: string,
   ): Promise<IEffectiveReadinessResult> {
-    const collectionRows = await this.collectionCardRepo.find({
-      where: { userId },
-    });
-
-    const inventory = new Map<string, number>();
-    for (const row of collectionRows) {
-      inventory.set(row.cardIdentifier, row.quantity);
-    }
+    // Use CollectionReadService so inventory is summed across active sources.
+    const inventory = await this.collectionReadService.loadOwned(userId);
 
     const deckCards = this.flattenDeckCards(deck);
 

@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TrackedDeckEntity } from '../../../database/entities/tracked-deck.entity';
-import { CollectionCardEntity } from '../../../database/entities/collection-card.entity';
+import { CollectionReadService } from '../../../collection/collection-read.service';
 import { FabraryService } from '../../../fabrary/fabrary.service';
 import {
   EFabraryErrorCode,
@@ -53,7 +53,7 @@ describe('TestDeckService', () => {
   let service: TestDeckService;
   let fabraryService: jest.Mocked<FabraryService>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
-  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let collectionReadService: jest.Mocked<CollectionReadService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
 
   beforeEach(async () => {
@@ -61,15 +61,13 @@ describe('TestDeckService', () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>() as jest.Mocked<
       Repository<TrackedDeckEntity>
     >;
-    collectionCardRepo = createMock<
-      Repository<CollectionCardEntity>
-    >() as jest.Mocked<Repository<CollectionCardEntity>>;
+    collectionReadService = createMock<CollectionReadService>() as jest.Mocked<CollectionReadService>;
     shoppingLineService = createMock<ShoppingLineService>();
 
     // Default: user has no existing tracked deck for this URL
     (trackedDeckRepo.findOne as jest.Mock).mockResolvedValue(null);
     // Default: user has an empty collection
-    (collectionCardRepo.find as jest.Mock).mockResolvedValue([]);
+    collectionReadService.loadOwned.mockResolvedValue(new Map());
     // Default: shopping line returns null (Path A / no missing cards)
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
 
@@ -81,10 +79,7 @@ describe('TestDeckService', () => {
           provide: getRepositoryToken(TrackedDeckEntity),
           useValue: trackedDeckRepo,
         },
-        {
-          provide: getRepositoryToken(CollectionCardEntity),
-          useValue: collectionCardRepo,
-        },
+        { provide: CollectionReadService, useValue: collectionReadService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
       ],
     }).compile();
@@ -116,8 +111,6 @@ describe('TestDeckService', () => {
       // Verify no writes happened
       expect(trackedDeckRepo.save).not.toHaveBeenCalled();
       expect(trackedDeckRepo.insert).not.toHaveBeenCalled();
-      expect(collectionCardRepo.save).not.toHaveBeenCalled();
-      expect(collectionCardRepo.insert).not.toHaveBeenCalled();
     });
 
     it('reports alreadyTracked=true when the user already tracks the deck', async () => {
@@ -140,18 +133,14 @@ describe('TestDeckService', () => {
 
     it('fetches the user inventory but does not mutate it', async () => {
       fabraryService.fetchDeck.mockResolvedValue(buildDeckFixture());
-      (collectionCardRepo.find as jest.Mock).mockResolvedValue([
-        { cardIdentifier: 'snatch-red', quantity: 3 },
-        { cardIdentifier: 'dawnblade', quantity: 1 },
-      ]);
+      collectionReadService.loadOwned.mockResolvedValue(new Map([
+        ['snatch-red', 3],
+        ['dawnblade', 1],
+      ]));
 
       await service.run({ url: FABRARY_URL }, { userId: USER_ID });
 
-      expect(collectionCardRepo.find).toHaveBeenCalledWith({
-        where: { userId: USER_ID },
-      });
-      expect(collectionCardRepo.save).not.toHaveBeenCalled();
-      expect(collectionCardRepo.update).not.toHaveBeenCalled();
+      expect(collectionReadService.loadOwned).toHaveBeenCalledWith(USER_ID);
     });
   });
 
@@ -218,7 +207,6 @@ describe('TestDeckService', () => {
         .catch(() => undefined);
 
       expect(trackedDeckRepo.save).not.toHaveBeenCalled();
-      expect(collectionCardRepo.save).not.toHaveBeenCalled();
     });
   });
 

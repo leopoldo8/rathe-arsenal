@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
+import { SourcesService } from '../../collection/sources/sources.service';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
@@ -29,6 +30,7 @@ export class DecksImportService {
     private readonly dataSource: DataSource,
     private readonly fabraryService: FabraryService,
     private readonly substitutionService: SubstitutionService,
+    private readonly sourcesService: SourcesService,
   ) {}
 
   async run(
@@ -236,9 +238,18 @@ export class DecksImportService {
       return;
     }
 
+    // Ensure the manual source exists within the outer transaction so the
+    // find-or-create participates in the same DB context.
+    const manualSource = await this.sourcesService.ensureManualSource(
+      userId,
+      manager,
+    );
+
     for (const [cardIdentifier, quantity] of inventory) {
+      // Scope the lookup to the manual source so rows from CSV uploads are
+      // never overwritten by max-wins deck-import inventory seeding.
       const existing = await manager.findOne(CollectionCardEntity, {
-        where: { userId, cardIdentifier },
+        where: { userId, cardIdentifier, sourceId: manualSource.id },
       });
 
       if (existing) {
@@ -253,6 +264,7 @@ export class DecksImportService {
         const card = manager.create(CollectionCardEntity, {
           userId,
           cardIdentifier,
+          sourceId: manualSource.id,
           quantity,
         });
         await manager.save(CollectionCardEntity, card);

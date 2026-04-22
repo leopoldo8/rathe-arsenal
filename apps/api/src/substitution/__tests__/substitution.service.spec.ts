@@ -6,9 +6,9 @@ import { NotFoundException } from '@nestjs/common';
 import { SubstitutionService } from '../substitution.service';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
-import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
+import { CollectionReadService } from '../../collection/collection-read.service';
 
 // Mock the engine module to avoid loading the full catalog in unit tests
 jest.mock('@rathe-arsenal/engine', () => ({
@@ -75,25 +75,28 @@ describe('SubstitutionService', () => {
   let service: SubstitutionService;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
-  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
+  let collectionReadService: jest.Mocked<CollectionReadService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
-    collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
+    collectionReadService = createMock<CollectionReadService>();
+
+    // Default: empty collection (no owned cards).
+    collectionReadService.loadOwned.mockResolvedValue(new Map());
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubstitutionService,
         { provide: getRepositoryToken(TrackedDeckEntity), useValue: trackedDeckRepo },
         { provide: getRepositoryToken(DeckCardEntity), useValue: deckCardRepo },
-        { provide: getRepositoryToken(CollectionCardEntity), useValue: collectionCardRepo },
         { provide: getRepositoryToken(DeckReadinessSnapshotEntity), useValue: snapshotRepo },
         { provide: AuthzService, useValue: authzService },
+        { provide: CollectionReadService, useValue: collectionReadService },
       ],
     }).compile();
 
@@ -127,9 +130,9 @@ describe('SubstitutionService', () => {
       { id: 1, trackedDeckId, cardIdentifier: 'card-a', quantity: 3, slot: 'mainboard' } as DeckCardEntity,
     ]);
 
-    collectionCardRepo.find.mockResolvedValue([
-      { id: 1, userId, cardIdentifier: 'card-a', quantity: 3, lastUpdated: new Date() } as CollectionCardEntity,
-    ]);
+    collectionReadService.loadOwned.mockResolvedValue(
+      new Map([['card-a', 3]]),
+    );
 
     const savedSnapshot = {
       id: 1,
@@ -175,7 +178,7 @@ describe('SubstitutionService', () => {
     } as TrackedDeckEntity);
 
     deckCardRepo.find.mockResolvedValue([]);
-    collectionCardRepo.find.mockResolvedValue([]);
+    collectionReadService.loadOwned.mockResolvedValue(new Map());
 
     const savedSnapshot = {
       id: 10,
@@ -220,10 +223,9 @@ describe('SubstitutionService', () => {
       { id: 1, trackedDeckId, cardIdentifier: 'card-x', quantity: 2, slot: 'mainboard' } as DeckCardEntity,
     ]);
 
-    collectionCardRepo.find.mockResolvedValue([
-      { id: 1, userId, cardIdentifier: 'card-x', quantity: 4, lastUpdated: new Date() } as CollectionCardEntity,
-      { id: 2, userId, cardIdentifier: 'card-y', quantity: 1, lastUpdated: new Date() } as CollectionCardEntity,
-    ]);
+    collectionReadService.loadOwned.mockResolvedValue(
+      new Map([['card-x', 4], ['card-y', 1]]),
+    );
 
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
     snapshotRepo.save.mockResolvedValue({} as DeckReadinessSnapshotEntity);
