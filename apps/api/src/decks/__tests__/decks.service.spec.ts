@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
-import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
+import { CollectionReadService } from '../../collection/collection-read.service';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
@@ -54,7 +54,7 @@ describe('DecksService', () => {
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
-  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let collectionReadService: jest.Mocked<CollectionReadService>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
@@ -65,7 +65,7 @@ describe('DecksService', () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
-    collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
+    collectionReadService = createMock<CollectionReadService>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
@@ -82,7 +82,7 @@ describe('DecksService', () => {
     variantFetchService.getProgress.mockReturnValue(undefined);
 
     // Default: no collection cards owned. Individual tests override as needed.
-    collectionCardRepo.count.mockResolvedValue(0);
+    collectionReadService.countUniqueOwned.mockResolvedValue(0);
 
     // Default: no decisions — rejectedCount=0, empty list.
     decisionsService.countRejected.mockResolvedValue(0);
@@ -104,10 +104,7 @@ describe('DecksService', () => {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),
           useValue: snapshotRepo,
         },
-        {
-          provide: getRepositoryToken(CollectionCardEntity),
-          useValue: collectionCardRepo,
-        },
+        { provide: CollectionReadService, useValue: collectionReadService },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
@@ -127,7 +124,7 @@ describe('DecksService', () => {
     it('should return empty trackedDecks and zero collectionCardCount when user has nothing', async () => {
       // Arrange
       trackedDeckRepo.find.mockResolvedValue([]);
-      collectionCardRepo.count.mockResolvedValue(0);
+      collectionReadService.countUniqueOwned.mockResolvedValue(0);
       shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
@@ -148,7 +145,7 @@ describe('DecksService', () => {
     it('should return collectionCardCount when user has cards but no tracked decks', async () => {
       // Arrange
       trackedDeckRepo.find.mockResolvedValue([]);
-      collectionCardRepo.count.mockResolvedValue(42);
+      collectionReadService.countUniqueOwned.mockResolvedValue(42);
       shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
@@ -164,17 +161,17 @@ describe('DecksService', () => {
       // Arrange: cross-user isolation regression. The count query must filter by
       // userId so one user never sees another user's collection size.
       trackedDeckRepo.find.mockResolvedValue([]);
-      collectionCardRepo.count.mockResolvedValue(7);
+      collectionReadService.countUniqueOwned.mockResolvedValue(7);
       shoppingLineService.computeAggregate.mockResolvedValue(null);
 
       // Act
       await service.listForUser(USER_ID);
 
       // Assert
-      expect(collectionCardRepo.count).toHaveBeenCalledWith({
-        where: { userId: USER_ID },
-      });
-      expect(collectionCardRepo.count).toHaveBeenCalledTimes(1);
+      expect(collectionReadService.countUniqueOwned).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(collectionReadService.countUniqueOwned).toHaveBeenCalledTimes(1);
     });
 
     it('should return tracked decks with their latest snapshot and collectionCardCount', async () => {
@@ -182,7 +179,7 @@ describe('DecksService', () => {
       const deck = buildTrackedDeck();
       const snapshot = buildSnapshot();
       trackedDeckRepo.find.mockResolvedValue([deck]);
-      collectionCardRepo.count.mockResolvedValue(15);
+      collectionReadService.countUniqueOwned.mockResolvedValue(15);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -218,7 +215,7 @@ describe('DecksService', () => {
       const deck = buildTrackedDeck();
       const snapshot = buildSnapshot();
       trackedDeckRepo.find.mockResolvedValue([deck]);
-      collectionCardRepo.count.mockResolvedValue(5);
+      collectionReadService.countUniqueOwned.mockResolvedValue(5);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -250,7 +247,7 @@ describe('DecksService', () => {
       const deck = buildTrackedDeck();
       const snapshot = buildSnapshot();
       trackedDeckRepo.find.mockResolvedValue([deck]);
-      collectionCardRepo.count.mockResolvedValue(0);
+      collectionReadService.countUniqueOwned.mockResolvedValue(0);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -277,7 +274,7 @@ describe('DecksService', () => {
         effectivePercent: 0,
       });
       trackedDeckRepo.find.mockResolvedValue([deck]);
-      collectionCardRepo.count.mockResolvedValue(3);
+      collectionReadService.countUniqueOwned.mockResolvedValue(3);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -318,7 +315,7 @@ describe('DecksService', () => {
         effectivePercent: 60,
       });
       trackedDeckRepo.find.mockResolvedValue([deck]);
-      collectionCardRepo.count.mockResolvedValue(0);
+      collectionReadService.countUniqueOwned.mockResolvedValue(0);
 
       const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
       qb.where.mockReturnThis();
@@ -352,7 +349,7 @@ describe('DecksService', () => {
         trackedAt: new Date('2025-01-16T10:00:00Z'),
       });
       trackedDeckRepo.find.mockResolvedValue([deck2, deck1]);
-      collectionCardRepo.count.mockResolvedValue(100);
+      collectionReadService.countUniqueOwned.mockResolvedValue(100);
 
       const snap1 = buildSnapshot({ id: 10, trackedDeckId: 1 });
       const snap2 = buildSnapshot({

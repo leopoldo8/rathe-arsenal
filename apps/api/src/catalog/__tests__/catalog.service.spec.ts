@@ -1,27 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { CatalogService } from '../catalog.service';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
-import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
+import { CollectionReadService } from '../../collection/collection-read.service';
 
 const USER_ID = 'user-uuid-123';
 
 describe('CatalogService', () => {
   let service: CatalogService;
-  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let collectionReadService: jest.Mocked<CollectionReadService>;
 
   beforeEach(async () => {
-    collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
-    collectionCardRepo.find.mockResolvedValue([]);
+    collectionReadService = createMock<CollectionReadService>();
+    collectionReadService.loadOwned.mockResolvedValue(new Map());
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CatalogService,
         {
-          provide: getRepositoryToken(CollectionCardEntity),
-          useValue: collectionCardRepo,
+          provide: CollectionReadService,
+          useValue: collectionReadService,
         },
       ],
     }).compile();
@@ -68,7 +66,7 @@ describe('CatalogService', () => {
   describe('search', () => {
     it('returns cards whose name starts with the query (case-insensitive)', async () => {
       // Arrange
-      collectionCardRepo.find.mockResolvedValue([]);
+      collectionReadService.loadOwned.mockResolvedValue(new Map());
 
       // Act
       const response = await service.search(USER_ID, 'Snatch', 10);
@@ -120,22 +118,13 @@ describe('CatalogService', () => {
 
       // Assert
       expect(response.results).toEqual([]);
-      expect(collectionCardRepo.find).not.toHaveBeenCalled();
+      expect(collectionReadService.loadOwned).not.toHaveBeenCalled();
     });
 
     it('populates ownedQuantity from the user collection', async () => {
       // Arrange — pick a real card identifier and fake it as owned
       const OWNED_ID = 'snatch-red';
-      collectionCardRepo.find.mockResolvedValue([
-        {
-          id: 1,
-          userId: USER_ID,
-          cardIdentifier: OWNED_ID,
-          quantity: 3,
-          lastUpdated: new Date(),
-          user: {} as CollectionCardEntity['user'],
-        },
-      ]);
+      collectionReadService.loadOwned.mockResolvedValue(new Map([[OWNED_ID, 3]]));
 
       // Act
       const response = await service.search(USER_ID, 'Snatch', 10);
@@ -159,11 +148,10 @@ describe('CatalogService', () => {
       // Act
       await service.search(USER_ID, 'Snatch', 10);
 
-      // Assert
-      expect(collectionCardRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ userId: USER_ID }),
-        }),
+      // Assert — loadOwned is called with userId and the matched identifiers
+      expect(collectionReadService.loadOwned).toHaveBeenCalledWith(
+        USER_ID,
+        expect.any(Array),
       );
     });
 

@@ -12,9 +12,9 @@ import {
 } from '@rathe-arsenal/engine';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
+import { CollectionReadService } from '../collection/collection-read.service';
 
 /**
  * Derived read-time fields that are NOT persisted on the snapshot row
@@ -34,11 +34,10 @@ export class SubstitutionService {
     private readonly trackedDecks: Repository<TrackedDeckEntity>,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
-    @InjectRepository(CollectionCardEntity)
-    private readonly collectionCards: Repository<CollectionCardEntity>,
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshots: Repository<DeckReadinessSnapshotEntity>,
     private readonly authzService: AuthzService,
+    private readonly collectionReadService: CollectionReadService,
   ) {}
 
   async computeAndStoreReadiness(
@@ -106,9 +105,10 @@ export class SubstitutionService {
       where: { trackedDeckId },
     });
 
-    const collectionRows = await this.collectionCards.find({
-      where: { userId },
-    });
+    // Load the effective collection: quantities summed across active sources.
+    // CollectionReadService handles source filtering so the inventory map
+    // reflects the user's active multi-source collection correctly.
+    const inventory = await this.collectionReadService.loadOwned(userId);
 
     const deckInput = {
       cards: deckCardRows.map((row) => ({
@@ -117,11 +117,6 @@ export class SubstitutionService {
         slot: row.slot,
       })),
     };
-
-    const inventory = new Map<string, number>();
-    for (const row of collectionRows) {
-      inventory.set(row.cardIdentifier, row.quantity);
-    }
 
     return computeEffectiveReadiness(
       deckInput,

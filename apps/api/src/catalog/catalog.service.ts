@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
 import {
   catalog,
   ICatalog,
   ICatalogCard,
   ICatalogIndices,
 } from '@rathe-arsenal/engine';
-import { CollectionCardEntity } from '../database/entities/collection-card.entity';
+import { CollectionReadService } from '../collection/collection-read.service';
 import {
   ISearchCardResult,
   ISearchCardsResponse,
@@ -24,8 +22,7 @@ export class CatalogService {
   private readonly catalog: ICatalog = catalog;
 
   constructor(
-    @InjectRepository(CollectionCardEntity)
-    private readonly collectionCardRepo: Repository<CollectionCardEntity>,
+    private readonly collectionReadService: CollectionReadService,
   ) {}
 
   getCard(identifier: string): ICatalogCard {
@@ -106,7 +103,11 @@ export class CatalogService {
       ...includesMatches,
     ].slice(0, limit);
 
-    const ownedQuantityByIdentifier = await this.loadOwnedQuantities(
+    if (matches.length === 0) {
+      return { results: [] };
+    }
+
+    const ownedQuantityByIdentifier = await this.collectionReadService.loadOwned(
       userId,
       matches.map((card) => card.cardIdentifier),
     );
@@ -128,26 +129,5 @@ export class CatalogService {
       if (EXCLUDED_TYPES.has(t)) return true;
     }
     return false;
-  }
-
-  private async loadOwnedQuantities(
-    userId: string,
-    cardIdentifiers: readonly string[],
-  ): Promise<Map<string, number>> {
-    const result = new Map<string, number>();
-    if (cardIdentifiers.length === 0) return result;
-
-    const rows = await this.collectionCardRepo.find({
-      where: {
-        userId,
-        cardIdentifier: In([...cardIdentifiers]),
-      },
-    });
-
-    for (const row of rows) {
-      result.set(row.cardIdentifier, row.quantity);
-    }
-
-    return result;
   }
 }
