@@ -10,3 +10,4 @@ export { StoreStockEntity } from './store-stock.entity';
 export { StoreScrapeRunEntity, EStoreScrapeRunStatus } from './store-scrape-run.entity';
 export { CardAliasEntity } from './card-alias.entity';
 export { StoreStockVariantEntity } from './store-stock-variant.entity';
+export { ReviewAggregateEntity } from './review-aggregate.entity';
