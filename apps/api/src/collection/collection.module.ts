@@ -12,6 +12,8 @@ import { CollectionController } from './collection.controller';
 import { CollectionService } from './collection.service';
 import { CollectionReadService } from './collection-read.service';
 import { SourcesService } from './sources/sources.service';
+import { CsvParserService } from './csv/csv-parser.service';
+import { DuplicateDetectionService } from './csv/duplicate-detection.service';
 
 @Module({
   imports: [
@@ -27,7 +29,19 @@ import { SourcesService } from './sources/sources.service';
     DecisionsModule,
   ],
   controllers: [CollectionController],
-  providers: [CollectionService, CollectionReadService, SourcesService],
-  exports: [CollectionService, CollectionReadService, SourcesService],
+  providers: [
+    CollectionService,
+    CollectionReadService,
+    SourcesService,
+    CsvParserService,
+    DuplicateDetectionService,
+  ],
+  exports: [
+    CollectionService,
+    CollectionReadService,
+    SourcesService,
+    CsvParserService,
+    DuplicateDetectionService,
+  ],
 })
 export class CollectionModule {}
