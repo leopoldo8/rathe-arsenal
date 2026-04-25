@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
+import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
+import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
+import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
+import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SubstitutionService } from '../../substitution/substitution.service';
 import { SourcesService } from '../sources/sources.service';
 
 const USER_ID = 'user-uuid-test-001';
@@ -41,6 +46,30 @@ describe('SourcesService', () => {
         {
           provide: getRepositoryToken(CsvSourceEntity),
           useValue: csvSourceRepo,
+        },
+        {
+          provide: getRepositoryToken(CollectionCardEntity),
+          useValue: createMock<Repository<CollectionCardEntity>>(),
+        },
+        {
+          provide: getRepositoryToken(TrackedDeckEntity),
+          useValue: createMock<Repository<TrackedDeckEntity>>(),
+        },
+        {
+          provide: getRepositoryToken(DeckReadinessSnapshotEntity),
+          useValue: createMock<Repository<DeckReadinessSnapshotEntity>>(),
+        },
+        {
+          provide: DataSource,
+          useValue: createMock<DataSource>(),
+        },
+        {
+          provide: DecisionsService,
+          useValue: createMock<DecisionsService>(),
+        },
+        {
+          provide: SubstitutionService,
+          useValue: createMock<SubstitutionService>(),
         },
       ],
     }).compile();

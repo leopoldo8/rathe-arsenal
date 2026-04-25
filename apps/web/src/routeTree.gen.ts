@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/library-csv-sources'
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
@@ -79,6 +80,11 @@ const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthLibraryCsvSourcesRoute = AuthLibraryCsvSourcesRouteImport.update({
+  id: '/library-csv-sources',
+  path: '/library-csv-sources',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLibraryRoute = AuthLibraryRouteImport.update({
   id: '/library',
   path: '/library',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
+  '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
+  '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/import': typeof AuthImportRoute
   '/_auth/library': typeof AuthLibraryRoute
+  '/_auth/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/import'
     | '/library'
+    | '/library-csv-sources'
     | '/onboarding'
     | '/reviews'
     | '/settings'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/import'
     | '/library'
+    | '/library-csv-sources'
     | '/onboarding'
     | '/reviews'
     | '/settings'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/_auth/home'
     | '/_auth/import'
     | '/_auth/library'
+    | '/_auth/library-csv-sources'
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
@@ -292,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnboardingRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/library-csv-sources': {
+      id: '/_auth/library-csv-sources'
+      path: '/library-csv-sources'
+      fullPath: '/library-csv-sources'
+      preLoaderRoute: typeof AuthLibraryCsvSourcesRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/library': {
       id: '/_auth/library'
       path: '/library'
@@ -327,6 +346,7 @@ interface AuthRouteChildren {
   AuthHomeRoute: typeof AuthHomeRoute
   AuthImportRoute: typeof AuthImportRoute
   AuthLibraryRoute: typeof AuthLibraryRoute
+  AuthLibraryCsvSourcesRoute: typeof AuthLibraryCsvSourcesRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
@@ -337,6 +357,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthHomeRoute: AuthHomeRoute,
   AuthImportRoute: AuthImportRoute,
   AuthLibraryRoute: AuthLibraryRoute,
+  AuthLibraryCsvSourcesRoute: AuthLibraryCsvSourcesRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,

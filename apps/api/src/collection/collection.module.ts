@@ -13,6 +13,7 @@ import { CollectionController } from './collection.controller';
 import { CollectionService } from './collection.service';
 import { CollectionReadService } from './collection-read.service';
 import { SourcesService } from './sources/sources.service';
+import { SourcesController } from './sources/sources.controller';
 import { CsvParserService } from './csv/csv-parser.service';
 import { DuplicateDetectionService } from './csv/duplicate-detection.service';
 import { CsvController } from './csv/csv.controller';
@@ -34,7 +35,7 @@ import { LibraryService } from './library/library.service';
     SubstitutionModule,
     DecisionsModule,
   ],
-  controllers: [CollectionController, CsvController, LibraryController],
+  controllers: [CollectionController, CsvController, LibraryController, SourcesController],
   providers: [
     CollectionService,
     CollectionReadService,
