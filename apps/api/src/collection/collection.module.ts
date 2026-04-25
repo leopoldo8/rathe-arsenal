@@ -15,6 +15,8 @@ import { CollectionReadService } from './collection-read.service';
 import { SourcesService } from './sources/sources.service';
 import { CsvParserService } from './csv/csv-parser.service';
 import { DuplicateDetectionService } from './csv/duplicate-detection.service';
+import { CsvController } from './csv/csv.controller';
+import { CsvUploadService } from './csv/csv-upload.service';
 import { LibraryController } from './library/library.controller';
 import { LibraryService } from './library/library.service';
 
@@ -32,13 +34,14 @@ import { LibraryService } from './library/library.service';
     SubstitutionModule,
     DecisionsModule,
   ],
-  controllers: [CollectionController, LibraryController],
+  controllers: [CollectionController, CsvController, LibraryController],
   providers: [
     CollectionService,
     CollectionReadService,
     SourcesService,
     CsvParserService,
     DuplicateDetectionService,
+    CsvUploadService,
     LibraryService,
   ],
   exports: [
@@ -47,6 +50,7 @@ import { LibraryService } from './library/library.service';
     SourcesService,
     CsvParserService,
     DuplicateDetectionService,
+    CsvUploadService,
   ],
 })
 export class CollectionModule {}
