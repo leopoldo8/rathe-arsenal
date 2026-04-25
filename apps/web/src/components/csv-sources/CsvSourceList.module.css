@@ -1,0 +1,6 @@
+.list {
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-surface);
+  overflow: hidden;
+}

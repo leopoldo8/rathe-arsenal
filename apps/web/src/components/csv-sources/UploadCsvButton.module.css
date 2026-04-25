@@ -1,0 +1,68 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-2) var(--ra-space-5);
+  background: var(--ra-accent-soft-bg);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-accent-body);
+  font: var(--ra-weight-semibold) var(--ra-text-small) / 1 var(--ra-font-ui);
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+  /* Minimum touch target */
+  min-height: 44px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:hover:not(.btnLoading) {
+  background: var(--ra-accent-soft-bd);
+  border-color: var(--ra-accent);
+  color: var(--ra-accent);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.btnLoading {
+  opacity: 0.65;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Visually hidden file input */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.sizeError {
+  margin: var(--ra-space-2) 0 0;
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-small);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ra-accent-dim);
+  border-top-color: var(--ra-accent-body);
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

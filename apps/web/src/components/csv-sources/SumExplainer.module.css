@@ -1,0 +1,119 @@
+.root {
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+}
+
+.header {
+  padding: var(--ra-space-3) var(--ra-space-4);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ra-fg-secondary);
+  font: var(--ra-weight-medium) var(--ra-text-small) / var(--ra-leading-normal) var(--ra-font-ui);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.trigger:hover {
+  color: var(--ra-fg-primary);
+}
+
+.triggerIcon {
+  font-size: 0.75em;
+  color: var(--ra-accent);
+  flex-shrink: 0;
+}
+
+.content {
+  padding: 0 var(--ra-space-4) var(--ra-space-4);
+}
+
+.body {
+  margin: 0 0 var(--ra-space-4);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  line-height: var(--ra-leading-normal);
+}
+
+.body strong {
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-semibold);
+}
+
+/* Two-box-plus-total diagram */
+.diagram {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--ra-space-4);
+}
+
+.diagramBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  min-width: 80px;
+}
+
+.diagramTotal {
+  border-color: var(--ra-accent-soft-bd);
+  background: var(--ra-accent-soft-bg);
+}
+
+.diagramLabel {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-muted);
+  margin-bottom: var(--ra-space-1);
+}
+
+.diagramValue {
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-bold);
+  color: var(--ra-accent-body);
+  line-height: 1.2;
+}
+
+.diagramTotal .diagramValue {
+  color: var(--ra-accent);
+}
+
+.diagramCard {
+  font-size: 0.65rem;
+  color: var(--ra-fg-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.diagramPlus,
+.diagramEquals {
+  font-size: var(--ra-text-h3);
+  color: var(--ra-fg-muted);
+  flex-shrink: 0;
+}
+
+.footnote {
+  margin: 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  line-height: var(--ra-leading-normal);
+}

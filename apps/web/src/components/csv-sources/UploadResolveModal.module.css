@@ -1,0 +1,186 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 40;
+  animation: fadeIn var(--ra-duration) var(--ra-ease);
+}
+
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  width: min(560px, calc(100vw - var(--ra-space-8)));
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+  padding: var(--ra-space-6);
+  box-shadow: var(--ra-shadow-lg);
+  animation: slideUp var(--ra-duration-lg) var(--ra-ease);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, calc(-50% + 8px)); opacity: 0; }
+  to { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+.title {
+  font: var(--ra-weight-semibold) var(--ra-text-h3) / var(--ra-leading-snug) var(--ra-font-ui);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-2);
+}
+
+.description {
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  line-height: var(--ra-leading-normal);
+  margin: 0 0 var(--ra-space-4);
+}
+
+/* Skipped rows */
+.skippedList {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-sm);
+  margin-bottom: var(--ra-space-4);
+}
+
+.skippedRow {
+  display: grid;
+  grid-template-columns: 5rem 1fr auto;
+  gap: var(--ra-space-3);
+  align-items: start;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.skippedRow:last-child {
+  border-bottom: none;
+}
+
+.skippedRowNum {
+  font: var(--ra-weight-medium) var(--ra-text-caption) / 1.5 var(--ra-font-mono);
+  color: var(--ra-fg-muted);
+}
+
+.skippedName {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  word-break: break-word;
+}
+
+.skippedReason {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Delta table */
+.deltaTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--ra-space-4);
+}
+
+.deltaTable td {
+  padding: var(--ra-space-1) var(--ra-space-2);
+  font-size: var(--ra-text-small);
+}
+
+.deltaLabel {
+  color: var(--ra-fg-secondary);
+}
+
+.deltaCount {
+  text-align: right;
+  font-weight: var(--ra-weight-semibold);
+}
+
+.deltaAdded {
+  color: var(--ra-ready-high);
+}
+
+.deltaRemoved {
+  color: var(--ra-ready-low);
+}
+
+.deltaEmpty {
+  color: var(--ra-fg-muted);
+  font-size: var(--ra-text-small);
+  margin-bottom: var(--ra-space-4);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  gap: var(--ra-space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: var(--ra-space-4);
+  padding-top: var(--ra-space-4);
+  border-top: 1px solid var(--ra-border-subtle);
+}
+
+/* Button variants */
+.btnPrimary,
+.btnSecondary,
+.btnTertiary {
+  padding: var(--ra-space-2) var(--ra-space-4);
+  border-radius: var(--ra-radius-md);
+  font: var(--ra-weight-semibold) var(--ra-text-small) / 1 var(--ra-font-ui);
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.btnPrimary {
+  background: var(--ra-accent-soft-bg);
+  border: 1px solid var(--ra-accent-soft-bd);
+  color: var(--ra-accent-body);
+}
+
+.btnPrimary:hover {
+  background: var(--ra-accent-soft-bd);
+  border-color: var(--ra-accent);
+  color: var(--ra-accent);
+}
+
+.btnSecondary {
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  color: var(--ra-fg-secondary);
+}
+
+.btnSecondary:hover {
+  border-color: var(--ra-border-strong);
+  color: var(--ra-fg-primary);
+}
+
+.btnTertiary {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--ra-fg-muted);
+}
+
+.btnTertiary:hover {
+  color: var(--ra-fg-secondary);
+}
+
+.btnPrimary:focus-visible,
+.btnSecondary:focus-visible,
+.btnTertiary:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
