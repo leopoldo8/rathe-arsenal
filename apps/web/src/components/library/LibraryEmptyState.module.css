@@ -1,0 +1,91 @@
+/* ============================================================
+   LibraryEmptyState — zero-card educational empty state.
+   ============================================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-5);
+  text-align: center;
+  padding: var(--ra-space-12) var(--ra-space-4);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.icon {
+  font-size: 3rem;
+  color: var(--ra-fg-subtle);
+  line-height: 1;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h2);
+  color: var(--ra-fg-primary);
+  letter-spacing: var(--ra-track-h2);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.ctas {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primaryCta {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-2) var(--ra-space-5);
+  background-color: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  border-radius: var(--ra-radius-md);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: none;
+  transition: background-color var(--ra-duration) var(--ra-ease);
+  min-block-size: 40px;
+}
+
+.primaryCta:hover {
+  background-color: var(--ra-accent-hover);
+}
+
+.primaryCta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 3px;
+}
+
+.secondaryCta {
+  background: none;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-5);
+  font-size: var(--ra-text-small);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  cursor: pointer;
+  transition: color var(--ra-duration) var(--ra-ease), border-color var(--ra-duration) var(--ra-ease);
+  min-block-size: 40px;
+}
+
+.secondaryCta:hover {
+  color: var(--ra-fg-primary);
+  border-color: var(--ra-border-strong);
+}
+
+.secondaryCta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

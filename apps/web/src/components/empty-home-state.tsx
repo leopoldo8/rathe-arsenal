@@ -1,5 +1,3 @@
-import { CardAutocomplete } from './card-autocomplete';
-
 interface IEmptyHomeStateProps {
   readonly collectionCardCount: number;
 }
@@ -15,6 +13,10 @@ interface IEmptyHomeStateProps {
  *
  * The "Browse Discover -- coming soon" affordance is intentionally a muted
  * label, not a disabled button, to avoid the misleading click target.
+ *
+ * The "Add loose cards" affordance that previously embedded CardAutocomplete
+ * has been replaced with a link to the Library page (U8) where the full
+ * LibrarySearchAddBar lives.
  */
 export function EmptyHomeState({ collectionCardCount }: IEmptyHomeStateProps) {
   return (
@@ -65,7 +67,12 @@ export function EmptyHomeState({ collectionCardCount }: IEmptyHomeStateProps) {
         Browse Discover -- coming soon
       </p>
       <div style={{ marginTop: '1.5rem' }}>
-        <CardAutocomplete label="Or add cards manually" />
+        <p style={{ color: '#666', fontSize: '0.875rem' }}>
+          Or add cards manually:{' '}
+          <a href="/library" style={{ color: '#2b6cb0' }}>
+            Go to Library
+          </a>
+        </p>
       </div>
     </section>
   );
