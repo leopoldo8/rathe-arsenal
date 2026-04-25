@@ -1,0 +1,74 @@
+/* ============================================================
+   ReviewsRowList — CSS Module
+   ============================================================ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Error ---------- */
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-8);
+}
+
+.errorMessage {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-ready-low);
+}
+
+.retryBtn {
+  min-block-size: 36px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  background: transparent;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+}
+
+.retryBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.retryBtn:hover {
+  background-color: color-mix(in srgb, var(--ra-fg-secondary) 8%, transparent);
+}
+
+/* ---------- Skeleton ---------- */
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 2rem 72px 2rem 72px 1fr;
+  gap: var(--ra-space-4);
+  align-items: start;
+  padding: var(--ra-space-4);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.skeletonMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.skeletonActions {
+  display: flex;
+  gap: var(--ra-space-2);
+}

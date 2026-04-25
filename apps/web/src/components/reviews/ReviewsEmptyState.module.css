@@ -1,0 +1,60 @@
+/* ============================================================
+   ReviewsEmptyState — CSS Module
+   ============================================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-12) var(--ra-space-6);
+}
+
+.diamond {
+  font-size: 2rem;
+  color: var(--ra-accent);
+  line-height: 1;
+  opacity: 0.5;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h2);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h2);
+  color: var(--ra-fg-primary);
+}
+
+.body {
+  margin: 0;
+  max-width: 36ch;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.cta {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-5);
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-md);
+  background: transparent;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--ra-duration) var(--ra-ease);
+}
+
+.cta:hover {
+  background-color: color-mix(in srgb, var(--ra-accent) 12%, transparent);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
