@@ -1,0 +1,155 @@
+/* ============================================================
+   ReviewsBulkBar — CSS Module
+   Sticky bottom bar; appears/disappears based on selection.
+   ============================================================ */
+
+/* ---------- Cap hint (shown when selection exceeds BULK_MAX_OPS) ---------- */
+
+.capHint {
+  padding: var(--ra-space-1) var(--ra-space-5);
+  font-size: var(--ra-text-xs, 0.75rem);
+  color: var(--ra-fg-secondary);
+  background-color: color-mix(in srgb, var(--ra-ember) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ra-ember) 20%, transparent);
+  text-align: center;
+}
+
+/* ---------- Bar ---------- */
+
+.bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--ra-bg-surface);
+  border-top: 1px solid var(--ra-border);
+  padding: var(--ra-space-3) var(--ra-space-5);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 40;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-4);
+  max-width: 900px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.count {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-accent-body);
+  white-space: nowrap;
+  min-width: 5rem;
+}
+
+/* ---------- Actions group ---------- */
+
+.actions {
+  display: flex;
+  gap: var(--ra-space-2);
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.btn {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border-radius: var(--ra-radius-md);
+  border: 1px solid var(--ra-border);
+  background: transparent;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  cursor: pointer;
+  color: var(--ra-fg-secondary);
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.btn--approve:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--ra-accent) 12%, transparent);
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+.btn--reject:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--ra-ready-low) 12%, transparent);
+  border-color: var(--ra-ready-low);
+  color: var(--ra-ready-low);
+}
+
+.btn--reset:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--ra-fg-secondary) 10%, transparent);
+  border-color: var(--ra-fg-secondary);
+}
+
+/* ---------- Clear selection button ---------- */
+
+.clearBtn {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-3);
+  border: none;
+  background: transparent;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.clearBtn:hover {
+  color: var(--ra-fg-primary);
+}
+
+.clearBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.clearBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 480px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ra-space-3);
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .btn {
+    flex: 1;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
