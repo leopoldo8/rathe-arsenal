@@ -1,18 +1,35 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpException,
   HttpStatus,
   Post,
+  Query,
 } from '@nestjs/common';
+import { IsIn, IsOptional } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import {
   DecisionsService,
   IBulkUpsertResult,
 } from '../decks/decisions/decisions.service';
+import {
+  ReviewAggregateService,
+  ISubstitutionRow,
+  TReviewState,
+} from './review-aggregate.service';
 import { BulkReviewsRequestDto } from './dtos/bulk-reviews.request.dto';
+
+/**
+ * Query DTO for `GET /api/reviews`.
+ */
+class GetReviewsQueryDto {
+  @IsOptional()
+  @IsIn(['pending', 'approved', 'rejected', 'all'])
+  state?: TReviewState | 'all';
+}
 
 /**
  * Owns the `/api/reviews/*` routes introduced in Plan B.
@@ -20,12 +37,39 @@ import { BulkReviewsRequestDto } from './dtos/bulk-reviews.request.dto';
  * JwtAuthGuard is applied globally via APP_GUARD in `AppModule`, so all
  * routes here require a valid JWT without additional decorators.
  *
- * The bulk endpoint delegates all business logic to `DecisionsService.bulkUpsert`
- * which owns the pre-validation → transaction → recompute pipeline.
+ * - GET  /api/reviews?state=pending|approved|rejected|all (U5)
+ * - POST /api/reviews/bulk (U6)
  */
 @Controller('reviews')
 export class ReviewsController {
-  constructor(private readonly decisionsService: DecisionsService) {}
+  constructor(
+    private readonly decisionsService: DecisionsService,
+    private readonly reviewAggregateService: ReviewAggregateService,
+  ) {}
+
+  /**
+   * Return cross-deck substitution rows, optionally filtered by state.
+   *
+   * `GET /api/reviews?state=pending|approved|rejected|all`
+   *
+   * Default state: `pending`. Returns rows from the latest snapshot's
+   * `breakdown.substituted[]` for every tracked deck the user owns,
+   * with decision state derived from `substitute_decision` rows.
+   *
+   * Response: `{ rows: ISubstitutionRow[] }`
+   */
+  @Get()
+  async list(
+    @Query() query: GetReviewsQueryDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<{ rows: ISubstitutionRow[] }> {
+    const stateFilter = query.state ?? 'pending';
+    const rows = await this.reviewAggregateService.listSubstitutionRows(
+      user.userId,
+      stateFilter,
+    );
+    return { rows };
+  }
 
   /**
    * Apply up to 200 review operations (decision upserts and resets) in a

@@ -8,6 +8,7 @@ import type { Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import { ReviewsController } from '../reviews.controller';
 import { DecisionsService, IBulkUpsertResult } from '../../decks/decisions/decisions.service';
+import { ReviewAggregateService } from '../review-aggregate.service';
 
 const USER_ID = 'reviews-controller-user-uuid';
 
@@ -21,10 +22,14 @@ describe('ReviewsController — POST /reviews/bulk (e2e)', () => {
 
   beforeEach(async () => {
     decisionsService = createMock<DecisionsService>();
+    const reviewAggregateService = createMock<ReviewAggregateService>();
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [ReviewsController],
-      providers: [{ provide: DecisionsService, useValue: decisionsService }],
+      providers: [
+        { provide: DecisionsService, useValue: decisionsService },
+        { provide: ReviewAggregateService, useValue: reviewAggregateService },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();

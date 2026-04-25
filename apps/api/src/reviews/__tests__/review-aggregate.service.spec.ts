@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { ReviewAggregateService } from '../review-aggregate.service';
 import { ReviewAggregateEntity } from '../../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
+import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
+import { SubstituteDecisionEntity } from '../../database/entities/substitute-decision.entity';
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -126,6 +128,8 @@ describe('ReviewAggregateService', () => {
   beforeEach(async () => {
     aggregateRepo = createMock<Repository<ReviewAggregateEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    const trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
+    const decisionRepo = createMock<Repository<SubstituteDecisionEntity>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -137,6 +141,14 @@ describe('ReviewAggregateService', () => {
         {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),
           useValue: snapshotRepo,
+        },
+        {
+          provide: getRepositoryToken(TrackedDeckEntity),
+          useValue: trackedDeckRepo,
+        },
+        {
+          provide: getRepositoryToken(SubstituteDecisionEntity),
+          useValue: decisionRepo,
         },
       ],
     }).compile();
