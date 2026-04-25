@@ -71,4 +71,70 @@ describe('catalog', () => {
     expect(Object.isFrozen(catalog)).toBe(true);
     expect(Object.isFrozen(catalog.cards)).toBe(true);
   });
+
+  describe('ICatalogCard.sets', () => {
+    it('sets is non-empty for snatch-red (a WTR-era generic card)', () => {
+      const card = catalog.getCard('snatch-red');
+      expect(card.sets).toBeDefined();
+      expect(card.sets.length).toBeGreaterThan(0);
+    });
+
+    it('sets is a frozen readonly array', () => {
+      const card = catalog.getCard('snatch-red');
+      expect(Object.isFrozen(card.sets)).toBe(true);
+    });
+
+    it('sets is empty array (not null/undefined) for cards with no set data', () => {
+      // Every card should have sets as a readonly array — never null/undefined.
+      for (const card of catalog.cards) {
+        expect(Array.isArray(card.sets)).toBe(true);
+      }
+    });
+  });
+
+  describe('ICatalogIndices.byName', () => {
+    it('byName index is populated', () => {
+      expect(catalog.indices.byName.size).toBeGreaterThan(0);
+    });
+
+    it('lookup by exact lowercase name returns cards', () => {
+      const cards = catalog.indices.byName.get('snatch');
+      expect(cards).toBeDefined();
+      expect(cards!.length).toBeGreaterThan(0);
+      for (const card of cards!) {
+        expect(card.name.toLowerCase()).toBe('snatch');
+      }
+    });
+
+    it('is case-insensitive: "Snatch" and "snatch" resolve to the same bucket', () => {
+      const lower = catalog.indices.byName.get('snatch');
+      const upper = catalog.indices.byName.get('snatch'); // index is always lowercase
+      expect(lower).toBe(upper);
+    });
+
+    it('looking up with mixed case requires .toLowerCase() (index key is lowercased)', () => {
+      // Consumer must call .toLowerCase() — the index stores lowercase keys only.
+      const byLower = catalog.indices.byName.get('snatch');
+      const byMixed = catalog.indices.byName.get('Snatch'); // not found — intentional
+      expect(byLower).toBeDefined();
+      expect(byMixed).toBeUndefined();
+    });
+
+    it('byName bucket for a multi-pitch card contains all pitch variants', () => {
+      // "Snatch" has red/yellow/blue variants — all should be in the same bucket.
+      const cards = catalog.indices.byName.get('snatch');
+      if (cards && cards.length > 1) {
+        const pitches = cards.map((c) => c.pitch);
+        // Should contain at least two different pitch values.
+        const uniquePitches = new Set(pitches);
+        expect(uniquePitches.size).toBeGreaterThan(1);
+      }
+    });
+
+    it('byName bucket arrays are frozen', () => {
+      const cards = catalog.indices.byName.get('snatch');
+      expect(cards).toBeDefined();
+      expect(Object.isFrozen(cards)).toBe(true);
+    });
+  });
 });

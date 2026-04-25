@@ -22,6 +22,13 @@ export interface ICatalogCard {
   readonly subtypes: readonly string[];
   readonly legalHeroes: readonly string[];
   /**
+   * Set identifiers (short codes) this card belongs to. Sourced from
+   * `@flesh-and-blood/types` `Card.setIdentifiers` field (e.g. `["WTR"]`,
+   * `["WTR", "CRU"]`). Used for set-filter functionality (R30) and as a
+   * disambiguation hint for the CSV parser (U3).
+   */
+  readonly sets: readonly string[];
+  /**
    * Public URLs for the card face image (WebP), in two sizes. Derived
    * from `@flesh-and-blood/cards` `defaultImage` field (a printing code
    * like "SKA019") against the LSS public S3 bucket
@@ -44,6 +51,15 @@ export interface ICatalogIndices {
   readonly byIdentifier: ReadonlyMap<string, ICatalogCard>;
   readonly byClassAndPitch: ReadonlyMap<string, readonly ICatalogCard[]>;
   readonly byTypeAndClass: ReadonlyMap<string, readonly ICatalogCard[]>;
+  /**
+   * Case-insensitive name index. Keys are `name.toLowerCase()`; values are
+   * all cards sharing that lowercased name (different pitch variants and/or
+   * editions produce multiple entries under one name).
+   *
+   * Built once at factory time. Intended for O(1) card lookup by name in the
+   * CSV parser (U3) — disambiguated via the optional `set` column.
+   */
+  readonly byName: ReadonlyMap<string, readonly ICatalogCard[]>;
 }
 
 export interface ICatalog {

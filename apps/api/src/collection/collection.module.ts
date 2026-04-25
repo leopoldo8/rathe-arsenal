@@ -5,6 +5,7 @@ import { CollectionCardEntity } from '../database/entities/collection-card.entit
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
+import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { DecisionsModule } from '../decks/decisions/decisions.module';
@@ -14,6 +15,8 @@ import { CollectionReadService } from './collection-read.service';
 import { SourcesService } from './sources/sources.service';
 import { CsvParserService } from './csv/csv-parser.service';
 import { DuplicateDetectionService } from './csv/duplicate-detection.service';
+import { LibraryController } from './library/library.controller';
+import { LibraryService } from './library/library.service';
 
 @Module({
   imports: [
@@ -23,18 +26,20 @@ import { DuplicateDetectionService } from './csv/duplicate-detection.service';
       DeckCardEntity,
       DeckReadinessSnapshotEntity,
       TrackedDeckEntity,
+      StoreStockEntity,
     ]),
     AuthModule,
     SubstitutionModule,
     DecisionsModule,
   ],
-  controllers: [CollectionController],
+  controllers: [CollectionController, LibraryController],
   providers: [
     CollectionService,
     CollectionReadService,
     SourcesService,
     CsvParserService,
     DuplicateDetectionService,
+    LibraryService,
   ],
   exports: [
     CollectionService,
