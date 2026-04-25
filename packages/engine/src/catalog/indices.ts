@@ -21,9 +21,14 @@ export function buildIndices(cards: readonly ICatalogCard[]): ICatalogIndices {
   const byIdentifier = new Map<string, ICatalogCard>();
   const byClassAndPitch = new Map<string, ICatalogCard[]>();
   const byTypeAndClass = new Map<string, ICatalogCard[]>();
+  const byName = new Map<string, ICatalogCard[]>();
 
   for (const card of cards) {
     byIdentifier.set(card.cardIdentifier, card);
+
+    // Case-insensitive name index: key is name.toLowerCase().
+    // Multiple cards can share a name (different pitch variants, different editions).
+    appendToMap(byName, card.name.toLowerCase(), card);
 
     for (const cls of card.classes) {
       appendToMap(byClassAndPitch, pitchKey(cls, card.pitch), card);
@@ -41,5 +46,10 @@ export function buildIndices(cards: readonly ICatalogCard[]): ICatalogIndices {
     }
   }
 
-  return { byIdentifier, byClassAndPitch, byTypeAndClass };
+  // Freeze inner arrays to satisfy ReadonlyMap<string, readonly ICatalogCard[]>.
+  for (const [key, arr] of byName) {
+    byName.set(key, Object.freeze(arr) as ICatalogCard[]);
+  }
+
+  return { byIdentifier, byClassAndPitch, byTypeAndClass, byName };
 }

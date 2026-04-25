@@ -17,6 +17,13 @@ interface IRawCard {
   subtypes?: string[];
   legalHeroes?: string[];
   defaultImage?: string;
+  /**
+   * Short set-code identifiers (e.g. ["WTR"], ["CRU", "MON"]).
+   * Field name confirmed from @flesh-and-blood/types@3.6.x interfaces.d.ts:
+   * `Card.setIdentifiers: string[]`. Distinct from `sets: Release[]` which
+   * holds the human-readable release enum values.
+   */
+  setIdentifiers?: string[];
 }
 
 /**
@@ -52,6 +59,7 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
     keywords: Object.freeze((raw.keywords ?? []) as ICatalogCard['keywords']),
     subtypes: Object.freeze(raw.subtypes ?? []),
     legalHeroes: Object.freeze(raw.legalHeroes ?? []),
+    sets: Object.freeze(raw.setIdentifiers ?? []),
     imageUrl: buildImageUrl(raw.defaultImage),
   });
 }

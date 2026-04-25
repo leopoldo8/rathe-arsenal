@@ -24,6 +24,7 @@ function buildCatalogCard(
     keywords: [],
     subtypes: [],
     legalHeroes: [],
+    sets: [],
     imageUrl: null,
     ...overrides,
   };
