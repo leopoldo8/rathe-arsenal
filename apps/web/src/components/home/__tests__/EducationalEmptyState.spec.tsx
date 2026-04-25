@@ -96,7 +96,7 @@ describe('EducationalEmptyState', () => {
   it('renders the manual card add section', () => {
     renderEmpty();
     expect(
-      screen.getByText(/or add cards to your collection manually/i),
+      screen.getByText(/want to add cards without a csv/i),
     ).toBeInTheDocument();
   });
 });

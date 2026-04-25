@@ -1,5 +1,4 @@
 import React from 'react';
-import { CardAutocomplete } from '../card-autocomplete';
 import { Button } from '../ui/Button/Button';
 import styles from './EducationalEmptyState.module.css';
 
@@ -94,7 +93,13 @@ export function EducationalEmptyState({
       </div>
 
       <div className={styles.manualAdd}>
-        <CardAutocomplete label="Or add cards to your collection manually" />
+        <p className={styles.manualAddText}>
+          Want to add cards without a CSV?{' '}
+          <a href="/library" className={styles.manualAddLink}>
+            Go to Library
+          </a>{' '}
+          to search and add individual cards.
+        </p>
       </div>
     </section>
   );

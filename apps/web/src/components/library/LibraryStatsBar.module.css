@@ -1,0 +1,180 @@
+/* ============================================================
+   LibraryStatsBar — sticky collection statistics strip.
+   Desktop: single row; Mobile (<640px): two rows.
+   ============================================================ */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--ra-bg-surface);
+  border-bottom: 1px solid var(--ra-border-subtle);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-4);
+  flex-wrap: wrap;
+}
+
+/* ---- Row 1: counts + pitch pills ---- */
+.row1 {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.statValue {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+}
+
+.statLabel {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+}
+
+.separator {
+  width: 1px;
+  height: 24px;
+  background-color: var(--ra-border-subtle);
+  flex-shrink: 0;
+}
+
+/* ---- Pitch pills ---- */
+.pitchPills {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--ra-radius-full);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pillRed {
+  color: var(--ra-card-frame-red-ink);
+  background-color: var(--ra-card-frame-red-bg);
+  border-color: var(--ra-card-frame-red);
+}
+
+.pillYellow {
+  color: var(--ra-card-frame-yellow-ink);
+  background-color: var(--ra-card-frame-yellow-bg);
+  border-color: var(--ra-card-frame-yellow);
+}
+
+.pillBlue {
+  color: var(--ra-card-frame-blue-ink);
+  background-color: var(--ra-card-frame-blue-bg);
+  border-color: var(--ra-card-frame-blue);
+}
+
+.pillColorless {
+  color: var(--ra-card-frame-colorless-ink);
+  background-color: var(--ra-card-frame-colorless-bg);
+  border-color: var(--ra-card-frame-colorless);
+}
+
+/* ---- Row 2: value + Manage CSVs ---- */
+.row2 {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-4);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.valueBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.valueAmount {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+}
+
+.freshnessMuted {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-secondary);
+}
+
+.freshnessStale {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ember);
+}
+
+.manageCsvs {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-3);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+  min-block-size: 32px;
+}
+
+.manageCsvs:hover {
+  color: var(--ra-fg-primary);
+  border-color: var(--ra-border-strong);
+}
+
+.manageCsvs:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Mobile two-row layout (<640px) ---- */
+@media (max-width: 639px) {
+  .bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--ra-space-2);
+  }
+
+  .row1 {
+    margin-left: 0;
+  }
+
+  .row2 {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .valueBlock {
+    align-items: flex-start;
+  }
+}

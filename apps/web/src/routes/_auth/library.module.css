@@ -1,0 +1,85 @@
+/* ============================================================
+   Library route — page layout.
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ---- Search bar row ---- */
+.searchRow {
+  padding: var(--ra-space-5) var(--ra-space-4) var(--ra-space-4);
+}
+
+/* ---- Filters row ---- */
+.filtersRow {
+  padding: 0 var(--ra-space-4) var(--ra-space-4);
+}
+
+/* ---- Grid row ---- */
+.gridRow {
+  padding: 0 var(--ra-space-4) var(--ra-space-8);
+}
+
+/* ---- No results ---- */
+.noResults {
+  margin: var(--ra-space-10) auto;
+  text-align: center;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+}
+
+/* ---- Error state ---- */
+.errorSection {
+  max-width: 520px;
+  margin: var(--ra-space-8) auto;
+  padding: var(--ra-space-5);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-ready-low-bg);
+}
+
+.errorHeading {
+  margin: 0 0 var(--ra-space-3);
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h3);
+  color: var(--ra-ready-low);
+}
+
+.errorMessage {
+  margin: 0 0 var(--ra-space-4);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+/* ---- Loading skeleton ---- */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-5) var(--ra-space-4);
+}
+
+.skeletonSearch {
+  max-width: 520px;
+}
+
+.skeletonStats {
+  /* full width */
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--ra-space-3);
+  margin-top: var(--ra-space-4);
+}
+
+.skeletonCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}

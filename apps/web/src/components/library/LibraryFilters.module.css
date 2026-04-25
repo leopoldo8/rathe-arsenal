@@ -1,0 +1,187 @@
+/* ============================================================
+   LibraryFilters — pitch checkboxes, type/set selects, grouping control.
+   ============================================================ */
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-5);
+  align-items: flex-start;
+  padding: var(--ra-space-4);
+  background-color: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+}
+
+/* ---- Pitch fieldset ---- */
+.fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.legend {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  margin-bottom: var(--ra-space-2);
+}
+
+.checkboxRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-3);
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  cursor: pointer;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+.checkboxLabel:hover {
+  color: var(--ra-fg-primary);
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--ra-accent);
+}
+
+.checkboxText {
+  white-space: nowrap;
+}
+
+/* ---- Select groups ---- */
+.selectGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-width: 120px;
+}
+
+.selectLabel {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+}
+
+.select {
+  background-color: var(--ra-bg-sunken);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-primary);
+  font-size: var(--ra-text-small);
+  font-family: var(--ra-font-ui);
+  padding: var(--ra-space-1);
+  min-width: 120px;
+  resize: vertical;
+}
+
+.select:focus {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 1px;
+}
+
+.select option {
+  padding: 2px 4px;
+}
+
+.clearBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.clearBtn:hover {
+  color: var(--ra-fg-primary);
+}
+
+/* ---- Grouping segmented control ---- */
+.segmentGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  margin-left: auto;
+}
+
+.segmentLabel {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+}
+
+.segmentControl {
+  display: flex;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+}
+
+.segmentBtn {
+  flex: 1;
+  padding: var(--ra-space-1) var(--ra-space-3);
+  background: var(--ra-bg-sunken);
+  border: none;
+  border-right: 1px solid var(--ra-border);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  font-family: var(--ra-font-ui);
+  cursor: pointer;
+  transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
+  white-space: nowrap;
+}
+
+.segmentBtn:last-child {
+  border-right: none;
+}
+
+.segmentBtn:hover {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+}
+
+.segmentBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.segmentBtnActive {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.segmentBtnActive:hover {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+}
+
+@media (max-width: 639px) {
+  .segmentGroup {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .segmentControl {
+    width: 100%;
+  }
+}

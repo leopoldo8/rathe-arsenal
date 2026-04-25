@@ -114,3 +114,20 @@
   padding-top: var(--ra-space-4);
   border-top: 1px solid var(--ra-border-subtle);
 }
+
+.manualAddText {
+  margin: 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.manualAddLink {
+  color: var(--ra-accent-body);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.manualAddLink:hover {
+  color: var(--ra-fg-primary);
+}
