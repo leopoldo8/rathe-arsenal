@@ -12,6 +12,7 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { SourcesService } from '../sources/sources.service';
 import { SourcesController } from '../sources/sources.controller';
 import { PatchSourceDto } from '../sources/dtos/patch-source.dto';
+import { FabraryImportService } from '../sources/fabrary-import.service';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 
 // ---------------------------------------------------------------------------
@@ -48,13 +49,18 @@ function buildSource(overrides: Partial<CsvSourceEntity> = {}): CsvSourceEntity 
 describe('SourcesController', () => {
   let controller: SourcesController;
   let sourcesService: jest.Mocked<SourcesService>;
+  let fabraryImportService: jest.Mocked<FabraryImportService>;
 
   beforeEach(async () => {
     sourcesService = createMock<SourcesService>();
+    fabraryImportService = createMock<FabraryImportService>();
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SourcesController],
-      providers: [{ provide: SourcesService, useValue: sourcesService }],
+      providers: [
+        { provide: SourcesService, useValue: sourcesService },
+        { provide: FabraryImportService, useValue: fabraryImportService },
+      ],
     }).compile();
 
     controller = module.get<SourcesController>(SourcesController);
@@ -191,6 +197,37 @@ describe('SourcesController', () => {
 
       // Assert
       expect(result).toEqual({ deleted: true, recomputeWarning: true });
+    });
+  });
+
+  describe('POST /from-fabrary', () => {
+    it('delegates to FabraryImportService.importFromUrl with the user id and url', async () => {
+      const url = 'https://fabrary.net/decks/01HTESTABCDEFGHJKMNPQRSTVW';
+      const expected = {
+        sourceId: 'fab-source-1',
+        cardCount: 60,
+        uniqueCardCount: 30,
+        deckName: 'Kayo Brute Bash',
+        format: 'classic-constructed',
+      };
+      fabraryImportService.importFromUrl.mockResolvedValue(expected);
+
+      const result = await controller.importFromFabrary({ url }, mockCurrentUser);
+
+      expect(fabraryImportService.importFromUrl).toHaveBeenCalledWith(USER_ID, url);
+      expect(result).toEqual(expected);
+    });
+
+    it('propagates errors thrown by the import service (e.g. BadRequest)', async () => {
+      fabraryImportService.importFromUrl.mockRejectedValue(
+        new Error('Invalid URL: not-a-fabrary-url'),
+      );
+      await expect(
+        controller.importFromFabrary(
+          { url: 'not-a-fabrary-url' },
+          mockCurrentUser,
+        ),
+      ).rejects.toThrow('Invalid URL');
     });
   });
 });

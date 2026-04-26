@@ -9,11 +9,13 @@ import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { DecisionsModule } from '../decks/decisions/decisions.module';
+import { FabraryModule } from '../fabrary/fabrary.module';
 import { CollectionController } from './collection.controller';
 import { CollectionService } from './collection.service';
 import { CollectionReadService } from './collection-read.service';
 import { SourcesService } from './sources/sources.service';
 import { SourcesController } from './sources/sources.controller';
+import { FabraryImportService } from './sources/fabrary-import.service';
 import { CsvParserService } from './csv/csv-parser.service';
 import { DuplicateDetectionService } from './csv/duplicate-detection.service';
 import { CsvController } from './csv/csv.controller';
@@ -34,6 +36,7 @@ import { LibraryService } from './library/library.service';
     AuthModule,
     SubstitutionModule,
     DecisionsModule,
+    FabraryModule,
   ],
   controllers: [CollectionController, CsvController, LibraryController, SourcesController],
   providers: [
@@ -44,6 +47,7 @@ import { LibraryService } from './library/library.service';
     DuplicateDetectionService,
     CsvUploadService,
     LibraryService,
+    FabraryImportService,
   ],
   exports: [
     CollectionService,

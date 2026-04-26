@@ -3,7 +3,7 @@ import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import type { ILibraryCard } from '../../api/library';
-import type { TGroupBy } from './LibraryFilters';
+import type { TGroupBy } from './LibraryFilterRail';
 import styles from './LibraryGrid.module.css';
 
 // ---------------------------------------------------------------------------

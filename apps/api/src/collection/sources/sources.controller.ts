@@ -3,15 +3,22 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import { SourcesService, IPreviewDeleteResult, IDeleteSourceResult } from './sources.service';
+import {
+  FabraryImportService,
+  IFabraryImportResult,
+} from './fabrary-import.service';
 import { PatchSourceDto } from './dtos/patch-source.dto';
+import { ImportFromFabraryDto } from './dtos/import-from-fabrary.dto';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 
 /**
@@ -30,7 +37,25 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
  */
 @Controller('collection/sources')
 export class SourcesController {
-  constructor(private readonly sourcesService: SourcesService) {}
+  constructor(
+    private readonly sourcesService: SourcesService,
+    private readonly fabraryImportService: FabraryImportService,
+  ) {}
+
+  /**
+   * Imports the cards of a public Fabrary deck into the user's library
+   * **as a new source**, without creating a tracked deck. The
+   * library-only flow is the third add-cards method alongside Manual
+   * search and CSV upload.
+   */
+  @Post('from-fabrary')
+  @HttpCode(201)
+  async importFromFabrary(
+    @Body() dto: ImportFromFabraryDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<IFabraryImportResult> {
+    return this.fabraryImportService.importFromUrl(user.userId, dto.url);
+  }
 
   @Get()
   async list(

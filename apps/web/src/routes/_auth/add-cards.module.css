@@ -1,0 +1,266 @@
+/* ============================================================
+   /add-cards — gallery of the three add-cards methods.
+   Visual register: arcane-cerimonial. More respiro than the
+   library page; each card carries weight.
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+  padding: var(--ra-space-8) var(--ra-space-5) var(--ra-space-12);
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  text-align: center;
+  padding-block: var(--ra-space-4);
+}
+
+.eyebrow {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-accent-body);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-tight);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  max-width: 56ch;
+  margin-inline: auto;
+}
+
+/* ---- Gallery ---- */
+.gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ra-space-5);
+}
+
+.galleryItem {
+  display: flex;
+}
+
+/* Each method card is the entire <Link>. */
+.method {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--ra-space-4);
+  min-block-size: 320px;
+  padding: var(--ra-space-6);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+  text-decoration: none;
+  color: inherit;
+  /* The brass top edge is the only ornamental flourish — and it's
+     positioned at the top so it doesn't read as a left-stripe accent. */
+  isolation: isolate;
+  transition:
+    transform var(--ra-duration-lg) var(--ra-ease),
+    border-color var(--ra-duration-lg) var(--ra-ease),
+    background var(--ra-duration-lg) var(--ra-ease);
+}
+
+.method::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: var(--ra-space-6);
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ra-accent) 30%,
+    var(--ra-accent) 70%,
+    transparent
+  );
+  opacity: 0.45;
+  transition: opacity var(--ra-duration-lg) var(--ra-ease);
+}
+
+.method:hover {
+  transform: translateY(-2px);
+  border-color: var(--ra-accent);
+  background: var(--ra-bg-raised);
+}
+
+.method:hover::before {
+  opacity: 1;
+}
+
+.method:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 4px;
+}
+
+.methodHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ra-space-3);
+  border-bottom: 1px solid var(--ra-border-subtle);
+  padding-block-end: var(--ra-space-3);
+}
+
+.methodNumeral {
+  font-family: var(--ra-font-ornament);
+  font-size: 2.5rem;
+  font-weight: var(--ra-weight-black);
+  line-height: 1;
+  color: var(--ra-accent);
+  letter-spacing: 0;
+  text-shadow: 0 0 24px var(--ra-accent-soft-bg);
+}
+
+.methodTitle {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h2);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-h2);
+  color: var(--ra-fg-primary);
+  text-transform: uppercase;
+}
+
+.methodSummary {
+  margin: 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.methodNotes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2);
+}
+
+.methodNote {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-2);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-mono);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.methodCta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  margin-top: auto;
+  padding-block-start: var(--ra-space-3);
+  border-top: 1px solid var(--ra-border-subtle);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-accent-body);
+}
+
+.methodCtaArrow {
+  font-family: var(--ra-font-mono);
+  transition: transform var(--ra-duration) var(--ra-ease);
+}
+
+.method:hover .methodCtaArrow {
+  transform: translateX(3px);
+}
+
+/* ---- Footer ---- */
+.pageFooter {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--ra-space-4);
+  border-top: 1px solid var(--ra-border-subtle);
+}
+
+.manageLink {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-muted);
+  text-decoration: none;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  border-radius: var(--ra-radius-sm);
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.manageLink::before {
+  content: '→ ';
+  color: var(--ra-fg-muted);
+}
+
+.manageLink:hover {
+  color: var(--ra-accent-body);
+}
+
+.manageLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1023px) {
+  .gallery {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+    margin-inline: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  .page {
+    padding: var(--ra-space-5) var(--ra-space-4) var(--ra-space-10);
+  }
+  .title {
+    font-size: var(--ra-text-h2);
+  }
+  .method {
+    min-block-size: 0;
+    padding: var(--ra-space-5);
+  }
+  .methodNumeral {
+    font-size: 2rem;
+  }
+}

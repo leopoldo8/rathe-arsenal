@@ -24,7 +24,11 @@ import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/librar
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
+import { Route as AuthAddCardsRouteImport } from './routes/_auth/add-cards'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
+import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
+import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
+import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -100,10 +104,30 @@ const AuthHomeRoute = AuthHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsRoute = AuthAddCardsRouteImport.update({
+  id: '/add-cards',
+  path: '/add-cards',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDecksDeckIdRoute = AuthDecksDeckIdRouteImport.update({
   id: '/decks/$deckId',
   path: '/decks/$deckId',
   getParentRoute: () => AuthRoute,
+} as any)
+const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => AuthAddCardsRoute,
+} as any)
+const AuthAddCardsFabraryRoute = AuthAddCardsFabraryRouteImport.update({
+  id: '/fabrary',
+  path: '/fabrary',
+  getParentRoute: () => AuthAddCardsRoute,
+} as any)
+const AuthAddCardsCsvRoute = AuthAddCardsCsvRouteImport.update({
+  id: '/csv',
+  path: '/csv',
+  getParentRoute: () => AuthAddCardsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -114,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
@@ -121,6 +146,9 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/add-cards/csv': typeof AuthAddCardsCsvRoute
+  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
+  '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +159,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
@@ -138,6 +167,9 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/add-cards/csv': typeof AuthAddCardsCsvRoute
+  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
+  '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRoutesById {
@@ -150,6 +182,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/_auth/add-cards': typeof AuthAddCardsRouteWithChildren
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/import': typeof AuthImportRoute
   '/_auth/library': typeof AuthLibraryRoute
@@ -157,6 +190,9 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
+  '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
+  '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
 }
 export interface FileRouteTypes {
@@ -169,6 +205,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verify-email'
+    | '/add-cards'
     | '/home'
     | '/import'
     | '/library'
@@ -176,6 +213,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/add-cards/csv'
+    | '/add-cards/fabrary'
+    | '/add-cards/manual'
     | '/decks/$deckId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -186,6 +226,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verify-email'
+    | '/add-cards'
     | '/home'
     | '/import'
     | '/library'
@@ -193,6 +234,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/add-cards/csv'
+    | '/add-cards/fabrary'
+    | '/add-cards/manual'
     | '/decks/$deckId'
   id:
     | '__root__'
@@ -204,6 +248,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verify-email'
+    | '/_auth/add-cards'
     | '/_auth/home'
     | '/_auth/import'
     | '/_auth/library'
@@ -211,6 +256,9 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
+    | '/_auth/add-cards/csv'
+    | '/_auth/add-cards/fabrary'
+    | '/_auth/add-cards/manual'
     | '/_auth/decks/$deckId'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthHomeRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards': {
+      id: '/_auth/add-cards'
+      path: '/add-cards'
+      fullPath: '/add-cards'
+      preLoaderRoute: typeof AuthAddCardsRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/decks/$deckId': {
       id: '/_auth/decks/$deckId'
       path: '/decks/$deckId'
@@ -339,10 +394,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDecksDeckIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards/manual': {
+      id: '/_auth/add-cards/manual'
+      path: '/manual'
+      fullPath: '/add-cards/manual'
+      preLoaderRoute: typeof AuthAddCardsManualRouteImport
+      parentRoute: typeof AuthAddCardsRoute
+    }
+    '/_auth/add-cards/fabrary': {
+      id: '/_auth/add-cards/fabrary'
+      path: '/fabrary'
+      fullPath: '/add-cards/fabrary'
+      preLoaderRoute: typeof AuthAddCardsFabraryRouteImport
+      parentRoute: typeof AuthAddCardsRoute
+    }
+    '/_auth/add-cards/csv': {
+      id: '/_auth/add-cards/csv'
+      path: '/csv'
+      fullPath: '/add-cards/csv'
+      preLoaderRoute: typeof AuthAddCardsCsvRouteImport
+      parentRoute: typeof AuthAddCardsRoute
+    }
   }
 }
 
+interface AuthAddCardsRouteChildren {
+  AuthAddCardsCsvRoute: typeof AuthAddCardsCsvRoute
+  AuthAddCardsFabraryRoute: typeof AuthAddCardsFabraryRoute
+  AuthAddCardsManualRoute: typeof AuthAddCardsManualRoute
+}
+
+const AuthAddCardsRouteChildren: AuthAddCardsRouteChildren = {
+  AuthAddCardsCsvRoute: AuthAddCardsCsvRoute,
+  AuthAddCardsFabraryRoute: AuthAddCardsFabraryRoute,
+  AuthAddCardsManualRoute: AuthAddCardsManualRoute,
+}
+
+const AuthAddCardsRouteWithChildren = AuthAddCardsRoute._addFileChildren(
+  AuthAddCardsRouteChildren,
+)
+
 interface AuthRouteChildren {
+  AuthAddCardsRoute: typeof AuthAddCardsRouteWithChildren
   AuthHomeRoute: typeof AuthHomeRoute
   AuthImportRoute: typeof AuthImportRoute
   AuthLibraryRoute: typeof AuthLibraryRoute
@@ -354,6 +447,7 @@ interface AuthRouteChildren {
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthAddCardsRoute: AuthAddCardsRouteWithChildren,
   AuthHomeRoute: AuthHomeRoute,
   AuthImportRoute: AuthImportRoute,
   AuthLibraryRoute: AuthLibraryRoute,
