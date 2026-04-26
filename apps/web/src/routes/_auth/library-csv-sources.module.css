@@ -1,93 +1,159 @@
+/* /library-csv-sources — Library sources management.
+   Aesthetic mirror of /add-cards: brass eyebrow, ◆ chrome,
+   serif italic subtitle, no card-with-icon templates. */
+
 .page {
-  min-height: 100vh;
-  background: var(--ra-bg-canvas);
-}
-
-/* Sticky page header */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--ra-bg-surface);
-  border-bottom: 1px solid var(--ra-border-subtle);
-  padding: var(--ra-space-4) var(--ra-space-6);
-}
-
-.headerInner {
-  max-width: 760px;
-  margin: 0 auto;
   display: flex;
-  align-items: center;
-  gap: var(--ra-space-4);
+  flex-direction: column;
+  gap: var(--ra-space-6);
+  padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
+  max-width: 960px;
+  margin: 0 auto;
 }
 
 .backLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-2) var(--ra-space-1);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
   color: var(--ra-fg-muted);
-  font-size: var(--ra-text-small);
   text-decoration: none;
-  flex-shrink: 0;
   transition: color var(--ra-duration) var(--ra-ease);
 }
 
-.backLink:hover {
-  color: var(--ra-fg-secondary);
+.backLink:hover { color: var(--ra-accent-body); }
+.backLink:focus-visible { outline: 2px solid var(--ra-accent); outline-offset: 2px; }
+
+/* ---- Header ---- */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ra-space-5);
+  border-bottom: 1px solid var(--ra-border-subtle);
+  padding-bottom: var(--ra-space-4);
 }
 
-.backLink:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  max-width: 60ch;
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-accent-body);
 }
 
 .title {
-  font: var(--ra-weight-semibold) var(--ra-text-h3) / var(--ra-leading-snug) var(--ra-font-ui);
-  color: var(--ra-fg-primary);
   margin: 0;
-  flex: 1;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-tight);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
 }
 
 .headerActions {
   display: flex;
   align-items: center;
   gap: var(--ra-space-3);
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-/* Content area */
+.viewLibraryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  min-block-size: 36px;
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: transparent;
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  text-decoration: none;
+  transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
+}
+
+.viewLibraryLink:hover {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+}
+
+.viewLibraryLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Content ---- */
 .content {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: var(--ra-space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-4);
+  gap: var(--ra-space-5);
 }
 
 .explainerRow {
-  /* Full width within content */
+  /* SumExplainer renders its own border; just a layout wrapper. */
 }
 
-/* Error banner */
+/* ---- Error ---- */
 .errorBanner {
-  padding: var(--ra-space-3) var(--ra-space-4);
-  background: rgba(192, 87, 74, 0.12);
-  border: 1px solid rgba(192, 87, 74, 0.40);
+  padding: var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border-strong);
   border-radius: var(--ra-radius-sm);
-  color: var(--ra-ready-low);
+  color: var(--ra-fg-secondary);
   font-size: var(--ra-text-small);
 }
 
 .retryBtn {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--ra-ready-low);
-  font: inherit;
-  text-decoration: underline;
+  background: transparent;
+  border: 0;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  margin-left: var(--ra-space-2);
 }
 
-/* Skeleton rows */
+.retryBtn:hover { color: var(--ra-fg-primary); }
+.retryBtn:focus-visible { outline: 2px solid var(--ra-accent); outline-offset: 2px; }
+
+/* ---- Skeleton ---- */
 .skeletonRows {
   display: flex;
   flex-direction: column;
@@ -98,23 +164,27 @@
 .skeletonRow {
   display: flex;
   align-items: center;
-  gap: var(--ra-space-4);
-  padding: var(--ra-space-3) var(--ra-space-4);
-  background: var(--ra-bg-surface);
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3);
+  border: 1px solid var(--ra-border-subtle);
   border-radius: var(--ra-radius-sm);
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .header {
-    padding: var(--ra-space-3) var(--ra-space-4);
+@media (max-width: 639px) {
+  .page {
+    padding: var(--ra-space-5) var(--ra-space-4) var(--ra-space-10);
   }
-
-  .content {
-    padding: var(--ra-space-4);
-  }
-
   .title {
-    font-size: var(--ra-text-body);
+    font-size: var(--ra-text-h2);
+  }
+  .pageHeader {
+    align-items: flex-start;
+  }
+  .headerActions {
+    width: 100%;
+  }
+  .viewLibraryLink {
+    flex: 1;
+    justify-content: center;
   }
 }

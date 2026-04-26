@@ -85,11 +85,9 @@ describe('LibraryStatsBar — happy path: counts and pills', () => {
     expect(screen.getByText('R$ 150,00')).toBeInTheDocument();
   });
 
-  it('renders "Manage CSVs" link pointing to /library-csv-sources', () => {
+  it('does not render a "Manage CSVs" link — that affordance moved to /add-cards', () => {
     render(<LibraryStatsBar stats={makeStats()} />);
-    const link = screen.getByRole('link', { name: /manage csv/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/library-csv-sources');
+    expect(screen.queryByRole('link', { name: /manage csv/i })).not.toBeInTheDocument();
   });
 });
 

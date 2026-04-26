@@ -1,24 +1,18 @@
 import React from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useCsvSourcesQuery } from '../../api/csv-sources';
 import { CsvSourceList } from '../../components/csv-sources/CsvSourceList';
 import { CsvSourcesEmptyState } from '../../components/csv-sources/CsvSourcesEmptyState';
 import { UploadCsvButton } from '../../components/csv-sources/UploadCsvButton';
 import { SumExplainer } from '../../components/csv-sources/SumExplainer';
+import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { DEFAULT_LIBRARY_SEARCH } from './library';
 import styles from './library-csv-sources.module.css';
-
-// ---------------------------------------------------------------------------
-// Route definition
-// ---------------------------------------------------------------------------
 
 export const Route = createFileRoute('/_auth/library-csv-sources')({
   component: LibraryCsvSourcesPage,
 });
-
-// ---------------------------------------------------------------------------
-// Page component
-// ---------------------------------------------------------------------------
 
 function LibraryCsvSourcesPage(): React.ReactElement {
   const sourcesQuery = useCsvSourcesQuery();
@@ -31,30 +25,45 @@ function LibraryCsvSourcesPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      {/* Sticky page header */}
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <a href="/library" className={styles.backLink} aria-label="Back to Library">
-            ← Library
-          </a>
-          <h1 className={styles.title}>CSV Sources</h1>
-          <div className={styles.headerActions}>
-            <UploadCsvButton />
-          </div>
+      <Link to="/add-cards/csv" className={styles.backLink}>
+        <span aria-hidden="true">←</span> Add cards · CSV
+      </Link>
+
+      <header className={styles.pageHeader}>
+        <div className={styles.headerText}>
+          <p className={styles.eyebrow}>
+            <span aria-hidden="true">◆</span> Imports management
+          </p>
+          <h1 className={styles.title}>Library sources</h1>
+          <p className={styles.subtitle}>
+            Each source is a snapshot of cards you've imported — toggle one off
+            to remove its contribution from your library without losing the
+            file. Manual entries and Fabrary imports show up here too.
+          </p>
+        </div>
+        <div className={styles.headerActions}>
+          <Link
+            to="/library"
+            search={DEFAULT_LIBRARY_SEARCH}
+            className={styles.viewLibraryLink}
+          >
+            <span aria-hidden="true">→</span> View library
+          </Link>
+          <UploadCsvButton />
         </div>
       </header>
 
+      <RecentlyAddedBanner />
+
       <main className={styles.content}>
-        {/* Sum explainer collapsible */}
         <div className={styles.explainerRow}>
           <SumExplainer />
         </div>
 
-        {/* Source list or empty state */}
         {sources.length === 0 ? (
           <CsvSourcesEmptyState
             onUpload={() => {
-              // Programmatically trigger the file input by finding the label
+              // Programmatically trigger the upload button's hidden input.
               const fileInputLabel = document.querySelector<HTMLLabelElement>(
                 'label[aria-label="Upload CSV file"]',
               );
@@ -65,10 +74,9 @@ function LibraryCsvSourcesPage(): React.ReactElement {
           <CsvSourceList sources={sources} />
         )}
 
-        {/* Error banner */}
         {sourcesQuery.isError && (
           <div role="alert" className={styles.errorBanner}>
-            Failed to load CSV sources.{' '}
+            Failed to load library sources.{' '}
             <button
               type="button"
               className={styles.retryBtn}
@@ -83,18 +91,15 @@ function LibraryCsvSourcesPage(): React.ReactElement {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Loading skeleton
-// ---------------------------------------------------------------------------
-
 function CsvSourcesSkeleton(): React.ReactElement {
   return (
     <div className={styles.page} aria-busy="true" aria-live="polite">
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <Skeleton width="80px" height="20px" aria-label="Loading back link" />
-          <Skeleton width="160px" height="28px" aria-label="Loading title" />
-          <Skeleton width="100px" height="36px" aria-label="Loading upload button" />
+      <Skeleton width="120px" height="14px" aria-label="Loading back link" />
+      <header className={styles.pageHeader}>
+        <div className={styles.headerText}>
+          <Skeleton width="160px" height="14px" aria-label="Loading eyebrow" />
+          <Skeleton width="240px" height="36px" aria-label="Loading title" />
+          <Skeleton width="100%" height="48px" aria-label="Loading subtitle" />
         </div>
       </header>
       <main className={styles.content}>

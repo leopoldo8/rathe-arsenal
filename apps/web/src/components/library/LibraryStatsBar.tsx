@@ -77,7 +77,11 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
         </div>
       </div>
 
-      {/* Row 2 — estimated value + Manage CSVs */}
+      {/* Row 2 — estimated value + freshness chip.
+          The "Manage CSVs" link previously sat here; it's been removed
+          now that /add-cards is the canonical entry point for adding
+          and /library-csv-sources is reachable from there. The stats
+          bar is purely informational again. */}
       <div className={styles.row2}>
         <div className={styles.valueBlock}>
           <span className={styles.valueAmount}>
@@ -91,16 +95,6 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
             {freshnessLabel}
           </span>
         </div>
-
-        {/* /library-csv-sources is the U9 route, not yet in the router tree.
-            Plain anchor keeps typecheck clean until U9 lands. */}
-        <a
-          href="/library-csv-sources"
-          className={styles.manageCsvs}
-          aria-label="Manage CSV sources"
-        >
-          Manage CSVs
-        </a>
       </div>
     </section>
   );

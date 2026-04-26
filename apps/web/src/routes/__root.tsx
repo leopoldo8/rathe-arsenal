@@ -7,7 +7,17 @@ export const Route = createRootRoute({
 });
 
 // Routes that render the authenticated shell (AppShell wraps Outlet)
-const AUTH_SHELL_PREFIXES = ['/home', '/library', '/import', '/reviews', '/settings', '/decks', '/onboarding'];
+const AUTH_SHELL_PREFIXES = [
+  '/home',
+  '/library',
+  '/library-csv-sources',
+  '/add-cards',
+  '/import',
+  '/reviews',
+  '/settings',
+  '/decks',
+  '/onboarding',
+];
 
 // Auth routes render their own full-page layout (AuthLayout per-route)
 const AUTH_PAGE_PREFIXES = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email', '/check-your-email'];

@@ -149,11 +149,17 @@
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: var(--ra-space-8);
-  align-items: start;
+  /* `align-items: stretch` (the default) is intentional here: the
+     `.railSlot` cell needs to be as tall as the gridArea cell, so the
+     sticky rail inside it has scroll room to operate against. With
+     `align-items: start` each cell collapsed to its content height,
+     the rail's container was rail-content-tall, and sticky had nowhere
+     to stick. */
 }
 
 .railSlot {
   /* The rail is sticky; this slot just reserves the column width. */
+  min-width: 0;
 }
 
 .gridArea {

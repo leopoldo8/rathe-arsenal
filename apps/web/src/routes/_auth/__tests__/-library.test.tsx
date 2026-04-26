@@ -256,7 +256,7 @@ describe('LibraryPage — populated: 20 cards', () => {
   });
 });
 
-describe('LibraryPage — Manage CSVs navigation', () => {
+describe('LibraryPage — header navigation', () => {
   beforeEach(() => {
     mockUseLibraryQuery.mockReturnValue({
       isLoading: false,
@@ -265,10 +265,15 @@ describe('LibraryPage — Manage CSVs navigation', () => {
     });
   });
 
-  it('stats bar Manage CSVs link points to /library-csv-sources', () => {
+  it('exposes a single "Add cards" link in the header — sources go through /add-cards', () => {
     renderLibraryPage();
-    const links = screen.getAllByRole('link', { name: /manage csv/i });
-    expect(links[0]).toHaveAttribute('href', '/library-csv-sources');
+    const link = screen.getByRole('link', { name: /add cards/i });
+    expect(link).toHaveAttribute('href', '/add-cards');
+  });
+
+  it('does not render a "Manage CSVs" affordance', () => {
+    renderLibraryPage();
+    expect(screen.queryByRole('link', { name: /manage csv/i })).not.toBeInTheDocument();
   });
 });
 

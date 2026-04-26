@@ -15,6 +15,7 @@ import {
 import { LibraryFilterDrawer } from '../../components/library/LibraryFilterDrawer';
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
+import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Button } from '../../components/ui/Button/Button';
 import styles from './library.module.css';
@@ -294,6 +295,7 @@ export function LibraryPageInner({
         </div>
 
         <div className={styles.gridArea}>
+          <RecentlyAddedBanner />
           {stats && <LibraryStatsBar stats={stats} />}
           <div className={styles.gridRow}>
             {filteredCards.length === 0 ? (

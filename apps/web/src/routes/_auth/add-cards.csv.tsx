@@ -2,7 +2,7 @@ import React, { useId, useRef, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useUploadCsvMutation } from '../../api/csv-sources';
 import { ApiError } from '../../lib/api-client';
-import { DEFAULT_LIBRARY_SEARCH } from './library';
+import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner';
 import styles from './add-cards.csv.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/csv')({
@@ -11,10 +11,14 @@ export const Route = createFileRoute('/_auth/add-cards/csv')({
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
+/**
+ * The CSV subview now redirects on success, so it never sits in a "done"
+ * state on this page. The state union covers the three states the page
+ * actually displays: idle (drop zone), uploading (in flight), error.
+ */
 type TStatus =
   | { state: 'idle' }
   | { state: 'uploading'; filename: string }
-  | { state: 'success'; cardCount: number; sourceId: string; filename: string }
   | { state: 'error'; message: string };
 
 function AddCardsCsvPage(): React.ReactElement {
@@ -43,12 +47,14 @@ function AddCardsCsvPage(): React.ReactElement {
       {
         onSuccess: (response) => {
           if (response.kind === 'created') {
-            setStatus({
-              state: 'success',
+            // Record the success payload, then bounce the user to the
+            // sources list — that's where they manage what just landed.
+            recordRecentlyAddedSource({
+              kind: 'csv',
+              label: file.name,
               cardCount: response.cardCount,
-              sourceId: response.sourceId,
-              filename: file.name,
             });
+            void navigate({ to: '/library-csv-sources' });
             return;
           }
           // The 'separate' action should never produce these other kinds
@@ -153,37 +159,6 @@ function AddCardsCsvPage(): React.ReactElement {
           </>
         )}
       </div>
-
-      {status.state === 'success' && (
-        <section className={styles.success} role="status" aria-live="polite">
-          <p className={styles.successTitle}>
-            <span aria-hidden="true">◆</span> Added{' '}
-            <strong>{status.cardCount}</strong> distinct cards from{' '}
-            <em>{status.filename}</em>.
-          </p>
-          <div className={styles.successActions}>
-            <button
-              type="button"
-              className={styles.secondaryAction}
-              onClick={() => {
-                reset();
-                fileInputRef.current?.click();
-              }}
-            >
-              Upload another
-            </button>
-            <button
-              type="button"
-              className={styles.primaryAction}
-              onClick={() => {
-                void navigate({ to: '/library', search: DEFAULT_LIBRARY_SEARCH });
-              }}
-            >
-              View library
-            </button>
-          </div>
-        </section>
-      )}
 
       {status.state === 'error' && (
         <section className={styles.errorCallout} role="alert">

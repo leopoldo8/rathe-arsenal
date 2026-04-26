@@ -1,15 +1,10 @@
 import React, { useEffect, useId, useState } from 'react';
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-} from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
 import { LIBRARY_QUERY_KEY } from '../../api/library';
-import { DEFAULT_LIBRARY_SEARCH } from './library';
 import styles from './add-cards.manual.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/manual')({
@@ -22,14 +17,15 @@ const QTY_MIN = 1;
 const QTY_MAX = 3;
 
 function AddCardsManualPage(): React.ReactElement {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [feedback, setFeedback] = useState<{
-    cardName: string;
-    qty: number;
-  } | null>(null);
+  // Counter incremented on every successful add. The result row reads
+  // this via key changes to reset its local qty stepper back to 1 — no
+  // toast, no banner, no redirect. The catalog query invalidates on
+  // success too, so each row's "Owned: N" updates as the natural
+  // confirmation that the add went through.
+  const [addsCommitted, setAddsCommitted] = useState(0);
   const inputId = useId();
 
   useEffect(() => {
@@ -50,7 +46,7 @@ function AddCardsManualPage(): React.ReactElement {
       { cardIdentifier: card.cardIdentifier, quantity: qty },
       {
         onSuccess: () => {
-          setFeedback({ cardName: card.name, qty });
+          setAddsCommitted((n) => n + 1);
           queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
         },
       },
@@ -90,22 +86,6 @@ function AddCardsManualPage(): React.ReactElement {
         />
       </div>
 
-      {feedback && (
-        <p className={styles.toast} role="status" aria-live="polite">
-          <span className={styles.toastDiamond} aria-hidden="true">◆</span>
-          Added <strong>{feedback.qty}×</strong> {feedback.cardName} to your library.
-          <button
-            type="button"
-            className={styles.toastLink}
-            onClick={() => {
-              void navigate({ to: '/library', search: DEFAULT_LIBRARY_SEARCH });
-            }}
-          >
-            View library
-          </button>
-        </p>
-      )}
-
       {/* States — order matters for clarity. */}
       {!showResults && (
         <p className={styles.emptyHint}>
@@ -121,7 +101,11 @@ function AddCardsManualPage(): React.ReactElement {
         <ul className={styles.results} aria-label="Search results">
           {results.map((card) => (
             <ResultRow
-              key={card.cardIdentifier}
+              // `addsCommitted` is folded into the row key so each row
+              // remounts after a successful add — that resets the local
+              // qty stepper back to 1 without leaking add-time state
+              // into the row's render.
+              key={`${card.cardIdentifier}-${addsCommitted}`}
               card={card}
               onAdd={handleAdd}
               isPending={addMutation.isPending}

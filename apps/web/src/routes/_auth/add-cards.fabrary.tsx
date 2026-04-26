@@ -1,11 +1,9 @@
 import React, { useId, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import {
-  useFabraryLibraryImportMutation,
-  type IFabraryLibraryImportResponse,
-} from '../../api/fabrary-import';
+import { useFabraryLibraryImportMutation } from '../../api/fabrary-import';
 import { ApiError } from '../../lib/api-client';
 import { DEFAULT_LIBRARY_SEARCH } from './library';
+import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner';
 import styles from './add-cards.fabrary.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/fabrary')({
@@ -16,10 +14,14 @@ export { AddCardsFabraryPage };
 
 const URL_REGEX = /^https?:\/\/(www\.)?fabrary\.net\/decks\/[A-Za-z0-9]+/;
 
+/**
+ * On success the Fabrary subview redirects straight to /library so the
+ * user lands on the cards they just imported. The state union covers
+ * the three states this page actually renders.
+ */
 type TStatus =
   | { state: 'idle' }
   | { state: 'submitting' }
-  | { state: 'success'; result: IFabraryLibraryImportResponse }
   | { state: 'error'; message: string };
 
 function AddCardsFabraryPage(): React.ReactElement {
@@ -46,7 +48,14 @@ function AddCardsFabraryPage(): React.ReactElement {
     importMutation.mutate(
       { url: trimmed },
       {
-        onSuccess: (result) => setStatus({ state: 'success', result }),
+        onSuccess: (result) => {
+          recordRecentlyAddedSource({
+            kind: 'fabrary',
+            label: result.deckName,
+            cardCount: result.cardCount,
+          });
+          void navigate({ to: '/library', search: DEFAULT_LIBRARY_SEARCH });
+        },
         onError: (err) => {
           const message =
             err instanceof ApiError
@@ -127,38 +136,6 @@ function AddCardsFabraryPage(): React.ReactElement {
           <span className={styles.progressDiamond} aria-hidden="true">◆</span>
           Fetching deck → parsing cards → adding to library…
         </p>
-      )}
-
-      {status.state === 'success' && (
-        <section className={styles.success} role="status" aria-live="polite">
-          <p className={styles.successTitle}>
-            <span aria-hidden="true">◆</span> Added{' '}
-            <strong>{status.result.cardCount}</strong> cards as new source:{' '}
-            <em>{status.result.deckName}</em>.
-          </p>
-          <p className={styles.successMeta}>
-            {status.result.uniqueCardCount} unique identifiers · format:{' '}
-            {status.result.format}
-          </p>
-          <div className={styles.successActions}>
-            <button
-              type="button"
-              className={styles.secondaryAction}
-              onClick={reset}
-            >
-              Import another
-            </button>
-            <button
-              type="button"
-              className={styles.primaryAction}
-              onClick={() => {
-                void navigate({ to: '/library', search: DEFAULT_LIBRARY_SEARCH });
-              }}
-            >
-              View library
-            </button>
-          </div>
-        </section>
       )}
 
       {status.state === 'error' && (

@@ -5,11 +5,14 @@
 
 .rail {
   position: sticky;
-  top: var(--ra-space-4);
-  align-self: flex-start;
+  /* Sit just below the 56px AppShell TopBar (also sticky at top:0). The
+     extra 16px of breathing room matches the page's vertical rhythm. */
+  top: 72px;
   width: 280px;
   flex-shrink: 0;
-  max-height: calc(100vh - var(--ra-space-8));
+  /* Cap height to the viewport minus the topbar so the rail's own scroll
+     area never extends past the visible region. */
+  max-height: calc(100vh - 88px);
   overflow-y: auto;
   /* Hairline that reads as a divider, not a card. The page reserves the
      card metaphor for the deck/card primitives — chrome stays flat. */

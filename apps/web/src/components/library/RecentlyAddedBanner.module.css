@@ -1,0 +1,72 @@
+/* RecentlyAddedBanner — one-time confirmation surface. */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
+  animation: bannerIn var(--ra-duration-lg) var(--ra-ease);
+}
+
+@keyframes bannerIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.diamond {
+  color: var(--ra-accent);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.body {
+  margin: 0;
+  flex: 1;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-normal);
+}
+
+.body em {
+  font-style: italic;
+  color: var(--ra-accent-body);
+}
+
+.count {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-accent-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-muted);
+  cursor: pointer;
+  transition: color var(--ra-duration) var(--ra-ease), background var(--ra-duration) var(--ra-ease);
+}
+
+.dismiss:hover {
+  color: var(--ra-fg-primary);
+  background: var(--ra-bg-raised);
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner { animation: none; }
+}
