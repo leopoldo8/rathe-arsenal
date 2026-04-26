@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
 import type { IReviewRow, TReviewRowId, IBulkOperation } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
 import styles from './ReviewsRow.module.css';
@@ -44,6 +45,11 @@ export function ReviewsRow({
   const rowId = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
   const checkboxId = `review-row-${rowId}`;
   const actionsDisabled = isBulkPending;
+
+  const [lightbox, setLightbox] = useState<
+    | { readonly imageUrl: string; readonly name: string }
+    | null
+  >(null);
 
   function handleApprove(): void {
     if (actionsDisabled) return;
@@ -124,6 +130,15 @@ export function ReviewsRow({
             missing={true}
             size="sm"
             imageUrl={row.originalImageUrl}
+            onClick={
+              row.originalImageUrl
+                ? () =>
+                    setLightbox({
+                      imageUrl: row.originalImageUrl!.large,
+                      name: row.cardIdentifier,
+                    })
+                : undefined
+            }
           />
           <span className={styles.cardLabel}>{row.cardIdentifier}</span>
         </div>
@@ -143,6 +158,15 @@ export function ReviewsRow({
             missing={false}
             size="sm"
             imageUrl={row.substituteImageUrl}
+            onClick={
+              row.substituteImageUrl
+                ? () =>
+                    setLightbox({
+                      imageUrl: row.substituteImageUrl!.large,
+                      name: row.substituteName,
+                    })
+                : undefined
+            }
           />
           <span className={styles.cardLabel}>{row.substituteName}</span>
         </div>
@@ -228,6 +252,13 @@ export function ReviewsRow({
           </button>
         </div>
       </div>
+      {lightbox && (
+        <CardLightbox
+          imageUrl={lightbox.imageUrl}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }

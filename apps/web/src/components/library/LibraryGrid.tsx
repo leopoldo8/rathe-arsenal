@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilters';
 import styles from './LibraryGrid.module.css';
@@ -83,10 +84,12 @@ function groupCards(
 
 interface ILibraryCardCellProps {
   readonly card: ILibraryCard;
+  readonly onOpenLightbox: (card: ILibraryCard) => void;
 }
 
-function LibraryCardCell({ card }: ILibraryCardCellProps): React.ReactElement {
+function LibraryCardCell({ card, onOpenLightbox }: ILibraryCardCellProps): React.ReactElement {
   const typeStr = primaryType(card.types);
+  const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
     <li
       className={styles.cell}
@@ -101,6 +104,7 @@ function LibraryCardCell({ card }: ILibraryCardCellProps): React.ReactElement {
           missing={false}
           size="sm"
           imageUrl={card.imageUrl}
+          onClick={handleClick}
         />
       </div>
       <div className={styles.meta}>
@@ -126,10 +130,20 @@ function LibraryCardCell({ card }: ILibraryCardCellProps): React.ReactElement {
 export function LibraryGrid({ cards, group, setNames }: ILibraryGridProps): React.ReactElement {
   const groups = groupCards(cards, group);
 
+  const [lightbox, setLightbox] = useState<
+    | { readonly imageUrl: string; readonly name: string }
+    | null
+  >(null);
+
   function headingFor(key: string): string {
     if (group !== 'set') return key;
     const name = setNames?.[key];
     return name ? `${key} · ${name}` : key;
+  }
+
+  function openLightbox(card: ILibraryCard): void {
+    if (!card.imageUrl) return;
+    setLightbox({ imageUrl: card.imageUrl.large, name: card.name });
   }
 
   return (
@@ -141,11 +155,22 @@ export function LibraryGrid({ cards, group, setNames }: ILibraryGridProps): Reac
           )}
           <ul className={styles.grid} aria-label={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}>
             {groupCards.map((card) => (
-              <LibraryCardCell key={card.cardIdentifier} card={card} />
+              <LibraryCardCell
+                key={card.cardIdentifier}
+                card={card}
+                onOpenLightbox={openLightbox}
+              />
             ))}
           </ul>
         </section>
       ))}
+      {lightbox && (
+        <CardLightbox
+          imageUrl={lightbox.imageUrl}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
