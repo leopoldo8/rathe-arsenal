@@ -52,6 +52,9 @@ function renderModal(opts: IRenderOpts) {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: opts.deleteAccount,
+    setSettings: () => {
+      /* test stub */
+    },
   };
 
   const onClose = opts.onClose ?? vi.fn();

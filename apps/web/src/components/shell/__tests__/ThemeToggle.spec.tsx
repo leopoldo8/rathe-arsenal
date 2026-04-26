@@ -85,13 +85,15 @@ function renderToggle(ctx: IAuthContext = makeAuthContext()) {
   );
 }
 
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
   patchMock.mockReset();
   toastShow.mockReset();
   capturedOnValueChange = undefined;
   document.documentElement.dataset.theme = 'dark';
   localStorage.clear();
-  vi.spyOn(console, 'error').mockImplementation(() => {});
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -169,11 +171,10 @@ describe('ThemeToggle — error path (divergence copy)', () => {
   it('logs the underlying error via console.error for dev diagnosis', async () => {
     const err = new AuthFetchError('boom', 500);
     patchMock.mockRejectedValue(err);
-    const errorSpy = console.error as ReturnType<typeof vi.spyOn>;
     renderToggle();
     fireEvent.click(screen.getByTestId('theme-toggle-light'));
-    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
-    expect(errorSpy).toHaveBeenCalledWith('[theme-toggle] server PATCH failed', err);
+    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[theme-toggle] server PATCH failed', err);
   });
 });
 

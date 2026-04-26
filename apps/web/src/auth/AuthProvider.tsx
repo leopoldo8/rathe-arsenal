@@ -150,7 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const value = useMemo(() => ({
-    user, token, isLoading, settings, setSettings,
+    user, token, isLoading,
+    // exactOptionalPropertyTypes: only attach the settings key when defined;
+    // assigning `undefined` to an optional field is a type error.
+    ...(settings !== undefined ? { settings } : {}),
+    setSettings,
     signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount,
   }), [user, token, isLoading, settings, setSettings, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
 
