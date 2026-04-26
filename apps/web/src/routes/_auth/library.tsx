@@ -241,6 +241,11 @@ export function LibraryPageInner({
           <p className={styles.eyebrow}>Your collection</p>
           <h1 className={styles.title}>Library</h1>
         </header>
+        {/* The recently-added banner is mounted on the empty path too so
+            an import that didn't resolve to any countable cards still
+            tells the user something landed (e.g. a Fabrary deck whose
+            identifiers all fell outside the catalog). */}
+        <RecentlyAddedBanner />
         <LibraryEmptyState />
       </div>
     );

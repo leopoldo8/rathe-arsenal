@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styles from './RecentlyAddedBanner.module.css';
 
 const STORAGE_KEY = 'rathe-arsenal:recently-added-source';
@@ -59,13 +59,17 @@ function consumeRecentlyAddedSource(): IRecentlyAddedSource | null {
 /**
  * One-time banner shown on the route the user lands on after a successful
  * import. Renders nothing if there's no payload to consume.
+ *
+ * The consume runs inside `useState`'s lazy initializer so it fires
+ * exactly once per component instance — including under React strict
+ * mode, where a `useEffect` would run twice (the second pass would read
+ * an already-cleared sessionStorage entry and reset state to null,
+ * dropping the banner before the user ever saw it).
  */
 export function RecentlyAddedBanner(): React.ReactElement | null {
-  const [payload, setPayload] = useState<IRecentlyAddedSource | null>(null);
-
-  useEffect(() => {
-    setPayload(consumeRecentlyAddedSource());
-  }, []);
+  const [payload, setPayload] = useState<IRecentlyAddedSource | null>(() =>
+    consumeRecentlyAddedSource(),
+  );
 
   if (!payload) return null;
 
