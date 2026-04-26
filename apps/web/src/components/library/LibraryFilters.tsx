@@ -20,10 +20,32 @@ export interface ILibraryFiltersValue {
   readonly cardSize: number;
 }
 
-/** Range constants for the card-size slider — also enforced by the URL parser. */
-export const CARD_SIZE_MIN = 80;
-export const CARD_SIZE_MAX = 240;
+/**
+ * Allowed card-size thresholds in pixels. The slider snaps to these values —
+ * arbitrary intermediate sizes are rejected and rounded to the nearest step
+ * (see `clampCardSize` in the route validator). Five steps map to the legacy
+ * preset language (xs / sm / md / lg / xl) without baking those names into
+ * URL state.
+ */
+export const CARD_SIZE_STEPS: readonly number[] = Object.freeze([80, 120, 160, 200, 240]);
+export const CARD_SIZE_MIN = CARD_SIZE_STEPS[0]!;
+export const CARD_SIZE_MAX = CARD_SIZE_STEPS[CARD_SIZE_STEPS.length - 1]!;
 export const CARD_SIZE_DEFAULT = 120;
+
+/** Snap any pixel input to the nearest allowed threshold. */
+export function snapCardSize(value: number): number {
+  if (!Number.isFinite(value)) return CARD_SIZE_DEFAULT;
+  let best = CARD_SIZE_STEPS[0]!;
+  let bestDistance = Math.abs(value - best);
+  for (const step of CARD_SIZE_STEPS) {
+    const distance = Math.abs(value - step);
+    if (distance < bestDistance) {
+      best = step;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
 
 interface ILibraryFiltersProps {
   readonly cards: readonly ILibraryCard[];
@@ -166,8 +188,9 @@ export function LibraryFilters({
 
   // ---- Size slider ----
   function handleSizeChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    const next = Number(e.currentTarget.value);
-    if (Number.isFinite(next)) {
+    const raw = Number(e.currentTarget.value);
+    const next = snapCardSize(raw);
+    if (next !== value.cardSize) {
       onChange({ ...value, cardSize: next });
     }
   }
@@ -337,7 +360,7 @@ export function LibraryFilters({
         )}
       </div>
 
-      {/* Card-size slider */}
+      {/* Card-size slider — snaps to CARD_SIZE_STEPS */}
       <div className={styles.sliderGroup}>
         <label className={styles.selectLabel} htmlFor={sizeSliderId}>
           Card size
@@ -348,7 +371,8 @@ export function LibraryFilters({
           className={styles.slider}
           min={CARD_SIZE_MIN}
           max={CARD_SIZE_MAX}
-          step={4}
+          step={CARD_SIZE_STEPS[1]! - CARD_SIZE_STEPS[0]!}
+          list={`${sizeSliderId}-ticks`}
           value={value.cardSize}
           onChange={handleSizeChange}
           aria-label="Card size in pixels"
@@ -356,6 +380,11 @@ export function LibraryFilters({
           aria-valuemax={CARD_SIZE_MAX}
           aria-valuenow={value.cardSize}
         />
+        <datalist id={`${sizeSliderId}-ticks`}>
+          {CARD_SIZE_STEPS.map((step) => (
+            <option key={step} value={step} label={`${step}px`} />
+          ))}
+        </datalist>
         <span className={styles.sliderValue} aria-hidden="true">
           {value.cardSize}px
         </span>

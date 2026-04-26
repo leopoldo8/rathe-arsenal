@@ -6,11 +6,7 @@ import { LibrarySearchAddBar } from '../../components/library/LibrarySearchAddBa
 import { LibraryStatsBar } from '../../components/library/LibraryStatsBar';
 import { LibraryFilters } from '../../components/library/LibraryFilters';
 import type { ILibraryFiltersValue, TGroupBy } from '../../components/library/LibraryFilters';
-import {
-  CARD_SIZE_DEFAULT,
-  CARD_SIZE_MAX,
-  CARD_SIZE_MIN,
-} from '../../components/library/LibraryFilters';
+import { CARD_SIZE_DEFAULT, snapCardSize } from '../../components/library/LibraryFilters';
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
@@ -39,8 +35,7 @@ export interface TLibrarySearch {
 
 function clampCardSize(raw: unknown): number {
   const n = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(n)) return CARD_SIZE_DEFAULT;
-  return Math.min(CARD_SIZE_MAX, Math.max(CARD_SIZE_MIN, Math.round(n)));
+  return snapCardSize(n);
 }
 
 function validateLibrarySearch(raw: Record<string, unknown>): TLibrarySearch {

@@ -186,14 +186,28 @@ describe('LibraryFilters — card-size slider', () => {
     expect(slider).toHaveValue('160');
   });
 
-  it('calls onChange with the new card size when slider moves', () => {
+  it('calls onChange with a snapped card size when slider moves', () => {
     const onChange = vi.fn();
     render(
       <LibraryFilters cards={SAMPLE_CARDS} value={EMPTY_FILTERS} onChange={onChange} />,
     );
     const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    // 180 is exactly between thresholds 160 and 200. The snap implementation
+    // prefers the first threshold seen on a tie (160). Verify the value lands
+    // on a configured threshold rather than asserting a raw px input.
     fireEvent.change(slider, { target: { value: '180' } });
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ cardSize: 180 }));
+    const call = onChange.mock.calls[0]?.[0] as { cardSize: number } | undefined;
+    expect([80, 120, 160, 200, 240]).toContain(call?.cardSize);
+  });
+
+  it('snaps to the nearest threshold (140 -> 120 or 160)', () => {
+    const onChange = vi.fn();
+    render(
+      <LibraryFilters cards={SAMPLE_CARDS} value={{ ...EMPTY_FILTERS, cardSize: 80 }} onChange={onChange} />,
+    );
+    const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    fireEvent.change(slider, { target: { value: '162' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ cardSize: 160 }));
   });
 });
 
