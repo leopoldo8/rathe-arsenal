@@ -26,18 +26,15 @@
 
 .card {
   position: relative;
-  /* Explicit width — without this the container collapses to the
-     <img>'s intrinsic dimensions, which are 0 until the image's first
-     network bytes land. The skeleton (inset: 0) would then render at
-     0x0 and the user would see only the backdrop + caption + outline
-     for ~1s before the card "appears". Giving the card a width up
-     front makes the skeleton fill its final footprint immediately. */
-  width: min(86vw, 560px);
-  max-height: min(86vh, 780px);
-  /* FaB card standard is 63mm × 88mm → 63:88 (~0.716). Using a 7:10
-     approximation produces a 2% mismatch that object-fit: cover would
-     trim from top/bottom. 63:88 keeps the card edge flush with the
-     brass outline. */
+  /* FaB card standard is 63mm × 88mm → 63:88 (~0.716). The container's
+     width is the smallest of three caps: viewport width (86vw),
+     viewport height converted to width via the ratio (86vh × 63/88),
+     and the absolute design max (560px). Picking the min of all three
+     means `aspect-ratio` derives a height that always fits inside
+     86vh — no separate `max-height` clamp can re-skew the box. The
+     skeleton, error fallback and image (all `inset: 0`) sit flush with
+     the card edge instead of hugging a slightly wider container. */
+  width: min(86vw, calc(86vh * 63 / 88), 560px);
   aspect-ratio: 63 / 88;
   border-radius: var(--ra-radius-md);
   overflow: hidden;
@@ -47,16 +44,6 @@
   transition: transform 0.08s linear;
   will-change: transform;
   cursor: default;
-}
-
-/* On short viewports the aspect-ratio would overflow — cap by height
-   and recompute width from the ratio so the card stays fully visible. */
-@media (max-height: 720px) {
-  .card {
-    height: 86vh;
-    width: calc(86vh * 63 / 88);
-    max-width: 86vw;
-  }
 }
 
 .image {
