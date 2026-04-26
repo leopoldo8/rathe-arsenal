@@ -74,8 +74,11 @@ function createCatalog(): ICatalog {
     rawByIdentifier.set(raw.cardIdentifier, raw);
   }
 
-  // eslint-disable-next-line no-console
-  console.log(`[catalog] loaded ${frozenCards.length} cards from @flesh-and-blood/cards`);
+  // Stay quiet during jest runs (jest sets JEST_WORKER_ID on every worker).
+  if (process.env['JEST_WORKER_ID'] === undefined && process.env['NODE_ENV'] !== 'test') {
+    // eslint-disable-next-line no-console
+    console.log(`[catalog] loaded ${frozenCards.length} cards from @flesh-and-blood/cards`);
+  }
 
   return Object.freeze({
     cards: frozenCards,

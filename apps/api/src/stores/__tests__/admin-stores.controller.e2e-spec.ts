@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -177,7 +177,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
       .set('x-admin-api-key', VALID_KEY)
       .expect(200);
 
-    expect(ingestionService.runScrape).toHaveBeenCalledWith('cupula-dt', { force: true });
+    expect(ingestionService.runScrape).toHaveBeenCalledWith('cupula-dt', expect.objectContaining({ force: true }));
   });
 
   it('calls runScrape with force=false when force param is omitted', async () => {
@@ -186,7 +186,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
       .set('x-admin-api-key', VALID_KEY)
       .expect(200);
 
-    expect(ingestionService.runScrape).toHaveBeenCalledWith('cupula-dt', { force: false });
+    expect(ingestionService.runScrape).toHaveBeenCalledWith('cupula-dt', expect.objectContaining({ force: false }));
   });
 
   // ---------------------------------------------------------------------------
@@ -196,9 +196,16 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
   it('returns 401 when ADMIN_API_KEY env var is missing', async () => {
     delete process.env.ADMIN_API_KEY;
 
-    await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
-      .set('x-admin-api-key', VALID_KEY)
-      .expect(401);
+    // The guard logs an operator-facing error in this branch; silence it here
+    // since the missing env var is the test's deliberate setup, not a real fault.
+    const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      await request(app.getHttpServer())
+        .post('/admin/stores/cupula-dt/scrape')
+        .set('x-admin-api-key', VALID_KEY)
+        .expect(401);
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

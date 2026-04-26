@@ -72,8 +72,9 @@ const FIXTURE_CSV_BUFFER = Buffer.from(FIXTURE_CSV_CONTENT, 'utf-8');
  * The mock Fabrary ULID used in the deck import request.
  * Must be a valid Fabrary URL so parseFabraryUrl accepts it.
  */
+// ULID uses Crockford Base32 alphabet (excludes I, L, O, U).
 const FIXTURE_FABRARY_URL =
-  'https://fabrary.net/decks/01HPLANBTESTMOCKDECK0000001';
+  'https://fabrary.net/decks/01HPABCDEFGHJKMN0000000QR1';
 
 /**
  * Mock IDeckImportDto returned by the stubbed FabraryService.fetchDeck.
@@ -97,7 +98,7 @@ const FIXTURE_FABRARY_URL =
  * Therefore breakdown.substituted.length = 2 → 2 pending review rows.
  */
 const FIXTURE_DECK_DTO: IDeckImportDto = {
-  ulid: '01HPLANBTESTMOCKDECK0000001',
+  ulid: '01HPABCDEFGHJKMN0000000QR1',
   name: 'Test Fixture Deck (U11)',
   format: 'Classic Constructed',
   hero: {
@@ -428,7 +429,7 @@ describe('Plan B full flow (E2E, U11)', () => {
 
       // Sanity: verify the mock was called with the correct Fabrary ULID.
       expect(mockFabraryService.fetchDeck).toHaveBeenCalledWith(
-        '01HPLANBTESTMOCKDECK0000001',
+        '01HPABCDEFGHJKMN0000000QR1',
       );
     },
     60_000, // 60-second timeout for the full DB-backed flow

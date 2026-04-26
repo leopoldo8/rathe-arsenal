@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
 
-const isDev = process.env.NODE_ENV !== 'production';
+// Jest sets JEST_WORKER_ID on every worker; use it to detect test runs even
+// when NODE_ENV is overridden (e.g., e2e specs that need NODE_ENV=development
+// to enable TypeORM synchronize).
+const isTest = process.env.JEST_WORKER_ID !== undefined;
+const isDev = process.env.NODE_ENV !== 'production' && !isTest;
 
 const pinoHttpOptions = {
-  level: isDev ? 'debug' : 'info',
+  level: isTest ? 'silent' : isDev ? 'debug' : 'info',
   ...(isDev
     ? {
         transport: {

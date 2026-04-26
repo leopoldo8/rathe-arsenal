@@ -33,6 +33,7 @@
     "cheerio": "^1.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "multer": "^1.4.5-lts.1",
     "nestjs-pino": "^4.2.0",
     "papaparse": "^5.5.3",
     "passport": "^0.7.0",
@@ -77,7 +78,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
