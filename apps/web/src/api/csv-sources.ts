@@ -151,12 +151,9 @@ export function useUploadCsvMutation() {
       if (action !== undefined) formData.append('action', action);
       if (targetSourceId !== undefined) formData.append('targetSourceId', targetSourceId);
 
-      // apiFetch sets Content-Type from init.body only for JSON. For FormData
-      // we must NOT set Content-Type manually (browser sets multipart boundary).
       return apiFetch<IUploadCsvResponse>('/collection/csv', {
         method: 'POST',
         body: formData,
-        headers: {},
       });
     },
 

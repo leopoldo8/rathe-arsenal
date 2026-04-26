@@ -12,7 +12,15 @@ export function useApiClient(): <T>(path: string, init?: RequestInit) => Promise
   return async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     if (token) headers.set('Authorization', `Bearer ${token}`);
-    if (init.body && !headers.has('Content-Type')) {
+    // Default Content-Type to application/json only for serialised bodies.
+    // FormData must be left untouched so the browser can attach the multipart
+    // boundary; without that, multer/NestJS rejects the upload as malformed
+    // and the request falls through to a 404 catch-all.
+    if (
+      init.body &&
+      !headers.has('Content-Type') &&
+      !(init.body instanceof FormData)
+    ) {
       headers.set('Content-Type', 'application/json');
     }
     const response = await fetch(`/api${path}`, { ...init, headers });
