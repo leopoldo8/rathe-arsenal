@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { catalog } from '@rathe-arsenal/engine';
+import { catalog, getSetName } from '@rathe-arsenal/engine';
 import { StoreStockEntity } from '../../database/entities/store-stock.entity';
 import { CollectionReadService } from '../collection-read.service';
 import {
@@ -48,7 +48,7 @@ export class LibraryService {
 
     if (ownedMap.size === 0) {
       const emptyStats = await this.buildEmptyStats();
-      return { cards: [], stats: emptyStats };
+      return { cards: [], stats: emptyStats, setNames: {} };
     }
 
     const identifiers = [...ownedMap.keys()];
@@ -142,7 +142,31 @@ export class LibraryService {
       priceDataLastUpdatedAt,
     };
 
-    return { cards, stats };
+    const setNames = this.buildSetNamesMap(cards);
+
+    return { cards, stats, setNames };
+  }
+
+  /**
+   * Builds a `code → release name` map containing only set codes that appear
+   * in the response's cards (avoids shipping the full 109-entry catalog
+   * mapping when most users only own a few editions).
+   */
+  private buildSetNamesMap(
+    cards: readonly ILibraryCard[],
+  ): Readonly<Record<string, string>> {
+    const codes = new Set<string>();
+    for (const card of cards) {
+      for (const code of card.sets) {
+        codes.add(code);
+      }
+    }
+    const map: Record<string, string> = {};
+    for (const code of codes) {
+      const name = getSetName(code);
+      if (name !== null) map[code] = name;
+    }
+    return map;
   }
 
   /**

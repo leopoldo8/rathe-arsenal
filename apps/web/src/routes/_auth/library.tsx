@@ -189,6 +189,7 @@ export function LibraryPageInner({
   const data = libraryQuery.data;
   const allCards = data?.cards ?? [];
   const stats = data?.stats;
+  const setNames = data?.setNames ?? {};
 
   // ---- Empty ----
   if (allCards.length === 0) {
@@ -223,7 +224,7 @@ export function LibraryPageInner({
 
       {/* Filters */}
       <div className={styles.filtersRow}>
-        <LibraryFilters cards={allCards} value={filters} onChange={handleFiltersChange} />
+        <LibraryFilters cards={allCards} value={filters} onChange={handleFiltersChange} setNames={setNames} />
       </div>
 
       {/* Grid or filtered empty state */}
@@ -231,7 +232,7 @@ export function LibraryPageInner({
         {filteredCards.length === 0 ? (
           <p className={styles.noResults}>No cards match the current filters.</p>
         ) : (
-          <LibraryGrid cards={filteredCards} group={filters.group} />
+          <LibraryGrid cards={filteredCards} group={filters.group} setNames={setNames} />
         )}
       </div>
     </div>

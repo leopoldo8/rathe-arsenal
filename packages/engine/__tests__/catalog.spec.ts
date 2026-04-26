@@ -1,4 +1,4 @@
-import { catalog, CardNotFoundError, Class, Keyword, Type } from '../src';
+import { catalog, CardNotFoundError, Class, Keyword, Type, getSetName } from '../src';
 
 describe('catalog', () => {
   it('loads all cards from @flesh-and-blood/cards', () => {
@@ -89,6 +89,36 @@ describe('catalog', () => {
       for (const card of catalog.cards) {
         expect(Array.isArray(card.sets)).toBe(true);
       }
+    });
+
+    it('sets contains only 3-letter uppercase codes (no card numbers)', () => {
+      const card = catalog.getCard('snatch-red');
+      for (const code of card.sets) {
+        expect(code).toMatch(/^[0-9A-Z]{3}$/);
+      }
+    });
+
+    it('sets is deduplicated and sorted', () => {
+      const card = catalog.getCard('snatch-red');
+      const set = new Set(card.sets);
+      expect(set.size).toBe(card.sets.length);
+      expect([...card.sets]).toEqual([...card.sets].sort());
+    });
+  });
+
+  describe('getSetName helper', () => {
+    it('returns the human-readable release name for known codes', () => {
+      expect(getSetName('WTR')).toBe('Welcome to Rathe');
+      expect(getSetName('HVY')).toBe('Heavy Hitters');
+    });
+
+    it('is case-insensitive on input', () => {
+      expect(getSetName('wtr')).toBe('Welcome to Rathe');
+      expect(getSetName('Hvy')).toBe('Heavy Hitters');
+    });
+
+    it('returns null for unknown codes', () => {
+      expect(getSetName('XYZ')).toBeNull();
     });
   });
 

@@ -45,6 +45,24 @@ function buildImageUrl(
   });
 }
 
+/**
+ * Extracts unique 3-letter set codes from raw `setIdentifiers` entries.
+ *
+ * Raw entries look like `"WTR023"` or `"1HP025"` — a 3-character set code
+ * followed by a printing number. The catalog exposes only the set codes
+ * (uppercase, deduplicated, sorted) so consumers can filter / group by edition
+ * without parsing card numbers themselves.
+ */
+function extractSetCodes(rawIds: readonly string[]): readonly string[] {
+  const codes = new Set<string>();
+  for (const id of rawIds) {
+    if (id.length >= 3) {
+      codes.add(id.slice(0, 3).toUpperCase());
+    }
+  }
+  return Object.freeze([...codes].sort());
+}
+
 function normalizeCard(raw: IRawCard): ICatalogCard {
   return Object.freeze({
     cardIdentifier: raw.cardIdentifier,
@@ -59,7 +77,7 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
     keywords: Object.freeze((raw.keywords ?? []) as ICatalogCard['keywords']),
     subtypes: Object.freeze(raw.subtypes ?? []),
     legalHeroes: Object.freeze(raw.legalHeroes ?? []),
-    sets: Object.freeze(raw.setIdentifiers ?? []),
+    sets: extractSetCodes(raw.setIdentifiers ?? []),
     imageUrl: buildImageUrl(raw.defaultImage),
   });
 }

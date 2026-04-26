@@ -379,4 +379,41 @@ describe('LibraryService', () => {
       expect(collectionReadService.loadOwned).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('setNames map', () => {
+    it('returns release names for the union of set codes across owned cards', async () => {
+      const ownedMap = new Map<string, number>([['snatch-red', 1]]);
+      collectionReadService.loadOwned.mockResolvedValue(ownedMap);
+
+      const qb = buildQbMock([], { maxLastFetchedAt: null });
+      storeStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.load(USER_ID);
+
+      // snatch-red is a Welcome to Rathe Generic — sets[] always contains
+      // at least WTR. Whatever else it has, the response must map every
+      // included code to a non-empty release name.
+      expect(result.cards[0]?.sets.length).toBeGreaterThan(0);
+      for (const code of result.cards[0]!.sets) {
+        // Either present in setNames (mapped) or the code is unknown (fallback).
+        const name = result.setNames[code];
+        if (name !== undefined) {
+          expect(name.length).toBeGreaterThan(0);
+        }
+      }
+      expect(result.setNames['WTR']).toBe('Welcome to Rathe');
+    });
+
+    it('returns an empty map when the user owns zero cards', async () => {
+      collectionReadService.loadOwned.mockResolvedValue(new Map());
+
+      const qb = buildQbMock([], { maxLastFetchedAt: null });
+      storeStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.load(USER_ID);
+
+      expect(result.cards).toEqual([]);
+      expect(result.setNames).toEqual({});
+    });
+  });
 });

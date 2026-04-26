@@ -64,4 +64,13 @@ export interface ILibraryStats {
 export interface ILibraryResponse {
   readonly cards: readonly ILibraryCard[];
   readonly stats: ILibraryStats;
+  /**
+   * Map of set codes appearing in `cards[].sets` to their human-readable
+   * release names (e.g. `{ "WTR": "Welcome to Rathe", "HVY": "Heavy Hitters" }`).
+   *
+   * Only includes codes the engine recognises — unknown codes are omitted, so
+   * the frontend should still display the bare code as a fallback. Built once
+   * per response to avoid pushing the full 109-entry mapping for every request.
+   */
+  readonly setNames: Readonly<Record<string, string>>;
 }

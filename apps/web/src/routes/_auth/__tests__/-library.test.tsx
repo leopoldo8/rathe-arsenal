@@ -96,6 +96,7 @@ function makeLibraryResponse(cards: readonly ILibraryCard[]): ILibraryResponse {
       pricedIdentifierCount: 0,
       priceDataLastUpdatedAt: null,
     },
+    setNames: {},
   };
 }
 

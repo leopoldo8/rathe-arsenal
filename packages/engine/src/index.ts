@@ -16,6 +16,7 @@ export type {
   ICatalogIndices,
 } from './catalog/types';
 export { Class, Hero, Keyword, Talent, Type } from './catalog/types';
+export { getSetName } from './catalog/sets';
 
 // Substitution
 export type {

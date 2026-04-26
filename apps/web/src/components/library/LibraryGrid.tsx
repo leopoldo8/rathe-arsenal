@@ -11,6 +11,8 @@ import styles from './LibraryGrid.module.css';
 interface ILibraryGridProps {
   readonly cards: readonly ILibraryCard[];
   readonly group: TGroupBy;
+  /** Optional set-code → release-name map for prettier section headings. */
+  readonly setNames?: Readonly<Record<string, string>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,17 +123,23 @@ function LibraryCardCell({ card }: ILibraryCardCellProps): React.ReactElement {
  * Groups are determined by the `group` prop (type | pitch | set | flat).
  * Client-side only; no refetch on group change.
  */
-export function LibraryGrid({ cards, group }: ILibraryGridProps): React.ReactElement {
+export function LibraryGrid({ cards, group, setNames }: ILibraryGridProps): React.ReactElement {
   const groups = groupCards(cards, group);
+
+  function headingFor(key: string): string {
+    if (group !== 'set') return key;
+    const name = setNames?.[key];
+    return name ? `${key} · ${name}` : key;
+  }
 
   return (
     <div className={styles.container}>
       {groups.map(([groupKey, groupCards]) => (
         <section key={groupKey} className={styles.group}>
           {group !== 'flat' && (
-            <h2 className={styles.groupHeading}>{groupKey}</h2>
+            <h2 className={styles.groupHeading}>{headingFor(groupKey)}</h2>
           )}
-          <ul className={styles.grid} aria-label={group !== 'flat' ? groupKey : 'Library cards'}>
+          <ul className={styles.grid} aria-label={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}>
             {groupCards.map((card) => (
               <LibraryCardCell key={card.cardIdentifier} card={card} />
             ))}

@@ -20,6 +20,11 @@ interface ILibraryFiltersProps {
   readonly cards: readonly ILibraryCard[];
   readonly value: ILibraryFiltersValue;
   readonly onChange: (value: ILibraryFiltersValue) => void;
+  /**
+   * Map of set code → release name (e.g. `{ WTR: 'Welcome to Rathe' }`).
+   * Optional — when omitted, the filter shows bare codes.
+   */
+  readonly setNames?: Readonly<Record<string, string>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,10 +74,16 @@ function extractSets(cards: readonly ILibraryCard[]): string[] {
  * grouping segmented control. All filter state is lifted to the parent
  * (the Library route) and stored in URL search params.
  */
+function formatSetOption(code: string, names?: Readonly<Record<string, string>>): string {
+  const name = names?.[code];
+  return name ? `${code} · ${name}` : code;
+}
+
 export function LibraryFilters({
   cards,
   value,
   onChange,
+  setNames,
 }: ILibraryFiltersProps): React.ReactElement {
   const pitchGroupId = useId();
   const typeSelectId = useId();
@@ -176,7 +187,7 @@ export function LibraryFilters({
         >
           {allSets.map((set) => (
             <option key={set} value={set}>
-              {set}
+              {formatSetOption(set, setNames)}
             </option>
           ))}
         </select>

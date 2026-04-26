@@ -38,6 +38,13 @@ export interface ILibraryStats {
 export interface ILibraryResponse {
   readonly cards: readonly ILibraryCard[];
   readonly stats: ILibraryStats;
+  /**
+   * Map of 3-letter set codes that appear across this response's cards to
+   * their human-readable release names (e.g. `{ "WTR": "Welcome to Rathe" }`).
+   * Codes the engine does not recognise are omitted; display the bare code
+   * as a fallback in that case.
+   */
+  readonly setNames: Readonly<Record<string, string>>;
 }
 
 // ---------------------------------------------------------------------------
