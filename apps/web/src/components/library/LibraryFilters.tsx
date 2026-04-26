@@ -74,39 +74,14 @@ function extractClasses(cards: readonly ILibraryCard[]): string[] {
   return [...classSet].sort();
 }
 
-/**
- * Mirrors the `Talent` enum from `@flesh-and-blood/types`. Listed
- * statically here so the dropdown is always populated — the talent set is
- * a stable LSS contract, and a user whose collection has no talented cards
- * (e.g. a pure Brute deck) still gets a meaningful filter affordance.
- */
-const FAB_TALENTS: readonly string[] = Object.freeze([
-  'Chaos',
-  'Draconic',
-  'Earth',
-  'Elemental',
-  'Ice',
-  'Light',
-  'Lightning',
-  'Mystic',
-  'Revered',
-  'Reviled',
-  'Royal',
-  'Shadow',
-]);
-
 function extractTalents(cards: readonly ILibraryCard[]): string[] {
-  // Union of (all talents in the loaded collection) and the static FAB
-  // talent enum. Loaded talents win on case (some catalog rows ship
-  // lowercased like 'lightning'); the static set fills any gaps.
-  const seen = new Set<string>();
+  const talentSet = new Set<string>();
   for (const card of cards) {
     for (const t of card.talents) {
-      if (t) seen.add(t);
+      if (t) talentSet.add(t);
     }
   }
-  for (const t of FAB_TALENTS) seen.add(t);
-  return [...seen].sort((a, b) => a.localeCompare(b));
+  return [...talentSet].sort();
 }
 
 function extractSets(cards: readonly ILibraryCard[]): string[] {
@@ -255,30 +230,38 @@ export function LibraryFilters({
         <label className={styles.selectLabel} htmlFor={classSelectId}>
           Class
         </label>
-        <select
-          id={classSelectId}
-          className={styles.select}
-          multiple
-          size={3}
-          value={[...value.classes]}
-          onChange={handleClassChange}
-          aria-label="Filter by card class"
-        >
-          {allClasses.map((cls) => (
-            <option key={cls} value={cls}>
-              {cls}
-            </option>
-          ))}
-        </select>
-        {value.classes.length > 0 && (
-          <button
-            type="button"
-            className={styles.clearBtn}
-            onClick={() => onChange({ ...value, classes: [] })}
-            aria-label="Clear class filter"
-          >
-            Clear
-          </button>
+        {allClasses.length === 0 ? (
+          <p className={styles.emptyHint} id={classSelectId}>
+            No classes in your collection yet.
+          </p>
+        ) : (
+          <>
+            <select
+              id={classSelectId}
+              className={styles.select}
+              multiple
+              size={3}
+              value={[...value.classes]}
+              onChange={handleClassChange}
+              aria-label="Filter by card class"
+            >
+              {allClasses.map((cls) => (
+                <option key={cls} value={cls}>
+                  {cls}
+                </option>
+              ))}
+            </select>
+            {value.classes.length > 0 && (
+              <button
+                type="button"
+                className={styles.clearBtn}
+                onClick={() => onChange({ ...value, classes: [] })}
+                aria-label="Clear class filter"
+              >
+                Clear
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -287,30 +270,38 @@ export function LibraryFilters({
         <label className={styles.selectLabel} htmlFor={talentSelectId}>
           Talent
         </label>
-        <select
-          id={talentSelectId}
-          className={styles.select}
-          multiple
-          size={3}
-          value={[...value.talents]}
-          onChange={handleTalentChange}
-          aria-label="Filter by card talent"
-        >
-          {allTalents.map((talent) => (
-            <option key={talent} value={talent}>
-              {talent}
-            </option>
-          ))}
-        </select>
-        {value.talents.length > 0 && (
-          <button
-            type="button"
-            className={styles.clearBtn}
-            onClick={() => onChange({ ...value, talents: [] })}
-            aria-label="Clear talent filter"
-          >
-            Clear
-          </button>
+        {allTalents.length === 0 ? (
+          <p className={styles.emptyHint} id={talentSelectId}>
+            None of your cards carry a talent yet.
+          </p>
+        ) : (
+          <>
+            <select
+              id={talentSelectId}
+              className={styles.select}
+              multiple
+              size={3}
+              value={[...value.talents]}
+              onChange={handleTalentChange}
+              aria-label="Filter by card talent"
+            >
+              {allTalents.map((talent) => (
+                <option key={talent} value={talent}>
+                  {talent}
+                </option>
+              ))}
+            </select>
+            {value.talents.length > 0 && (
+              <button
+                type="button"
+                className={styles.clearBtn}
+                onClick={() => onChange({ ...value, talents: [] })}
+                aria-label="Clear talent filter"
+              >
+                Clear
+              </button>
+            )}
+          </>
         )}
       </div>
 

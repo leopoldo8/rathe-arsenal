@@ -97,6 +97,16 @@
   padding: 2px 4px;
 }
 
+.emptyHint {
+  margin: 0;
+  padding: var(--ra-space-2) 0;
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  font-style: italic;
+  max-width: 180px;
+  line-height: 1.4;
+}
+
 .clearBtn {
   align-self: flex-start;
   background: none;
