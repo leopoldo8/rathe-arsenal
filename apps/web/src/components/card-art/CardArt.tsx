@@ -191,6 +191,12 @@ export function CardArt({
     '--card-bg': colors.bg,
     '--card-ink': colors.ink,
     '--card-sym': colors.sym,
+    // When the caller passes `widthOverride`, force the container to that
+    // exact pixel width so the absolutely-positioned <img> overlay
+    // (`inset: 0`) tracks the rendered art instead of overflowing the preset.
+    ...(widthOverride !== undefined
+      ? { width: `${widthOverride}px`, height: `${height}px` }
+      : {}),
   } as React.CSSProperties;
 
   const containerClass = [

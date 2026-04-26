@@ -74,14 +74,39 @@ function extractClasses(cards: readonly ILibraryCard[]): string[] {
   return [...classSet].sort();
 }
 
+/**
+ * Mirrors the `Talent` enum from `@flesh-and-blood/types`. Listed
+ * statically here so the dropdown is always populated — the talent set is
+ * a stable LSS contract, and a user whose collection has no talented cards
+ * (e.g. a pure Brute deck) still gets a meaningful filter affordance.
+ */
+const FAB_TALENTS: readonly string[] = Object.freeze([
+  'Chaos',
+  'Draconic',
+  'Earth',
+  'Elemental',
+  'Ice',
+  'Light',
+  'Lightning',
+  'Mystic',
+  'Revered',
+  'Reviled',
+  'Royal',
+  'Shadow',
+]);
+
 function extractTalents(cards: readonly ILibraryCard[]): string[] {
-  const talentSet = new Set<string>();
+  // Union of (all talents in the loaded collection) and the static FAB
+  // talent enum. Loaded talents win on case (some catalog rows ship
+  // lowercased like 'lightning'); the static set fills any gaps.
+  const seen = new Set<string>();
   for (const card of cards) {
     for (const t of card.talents) {
-      if (t) talentSet.add(t);
+      if (t) seen.add(t);
     }
   }
-  return [...talentSet].sort();
+  for (const t of FAB_TALENTS) seen.add(t);
+  return [...seen].sort((a, b) => a.localeCompare(b));
 }
 
 function extractSets(cards: readonly ILibraryCard[]): string[] {
