@@ -23,7 +23,11 @@ const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
  * pitch is constrained to 1 | 2 | 3 per the FaB rules; any other numeric
  * value (which should not occur in practice) is cast to null for safety.
  */
-type TImageUrlPair = { readonly small: string; readonly large: string };
+type TImageUrlPair = {
+  readonly small: string;
+  readonly large: string;
+  readonly sources: readonly { readonly small: string; readonly large: string }[];
+};
 
 function deriveEntryMeta(
   catalogCard:

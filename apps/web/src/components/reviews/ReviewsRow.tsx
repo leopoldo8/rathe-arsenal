@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
+import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import type { IReviewRow, TReviewRowId, IBulkOperation } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
 import styles from './ReviewsRow.module.css';
@@ -47,7 +48,11 @@ export function ReviewsRow({
   const actionsDisabled = isBulkPending;
 
   const [lightbox, setLightbox] = useState<
-    | { readonly imageUrl: string; readonly name: string }
+    | {
+        readonly imageUrl: string;
+        readonly sources: readonly string[];
+        readonly name: string;
+      }
     | null
   >(null);
 
@@ -135,6 +140,7 @@ export function ReviewsRow({
                 ? () =>
                     setLightbox({
                       imageUrl: row.originalImageUrl!.large,
+                      sources: lightboxSourcesFor(row.originalImageUrl),
                       name: row.cardIdentifier,
                     })
                 : undefined
@@ -163,6 +169,7 @@ export function ReviewsRow({
                 ? () =>
                     setLightbox({
                       imageUrl: row.substituteImageUrl!.large,
+                      sources: lightboxSourcesFor(row.substituteImageUrl),
                       name: row.substituteName,
                     })
                 : undefined
@@ -255,6 +262,7 @@ export function ReviewsRow({
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}
+          sources={lightbox.sources}
           name={lightbox.name}
           onClose={() => setLightbox(null)}
         />

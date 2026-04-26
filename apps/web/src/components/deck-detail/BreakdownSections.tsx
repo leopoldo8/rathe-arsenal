@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
+import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { IBreakdown, IDecisionEntry } from '../../api/deck-detail';
 import { SubstitutionRow, TDecisionState } from './SubstitutionRow';
 import { MarkOwnedButton } from './MarkOwnedButton';
@@ -58,7 +59,11 @@ export function BreakdownSections({
   // at a time across exact + not-owned grids. SubstitutionRow owns its
   // own local lightbox so substitute clicks stay per-row.
   const [lightbox, setLightbox] = useState<
-    | { readonly imageUrl: string; readonly name: string }
+    | {
+        readonly imageUrl: string;
+        readonly sources: readonly string[];
+        readonly name: string;
+      }
     | null
   >(null);
 
@@ -96,6 +101,7 @@ export function BreakdownSections({
                       ? () =>
                           setLightbox({
                             imageUrl: entry.imageUrl!.large,
+                            sources: lightboxSourcesFor(entry.imageUrl),
                             name: entry.cardIdentifier,
                           })
                       : undefined
@@ -193,6 +199,7 @@ export function BreakdownSections({
                       ? () =>
                           setLightbox({
                             imageUrl: entry.imageUrl!.large,
+                            sources: lightboxSourcesFor(entry.imageUrl),
                             name: entry.cardIdentifier,
                           })
                       : undefined
@@ -219,6 +226,7 @@ export function BreakdownSections({
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}
+          sources={lightbox.sources}
           name={lightbox.name}
           onClose={() => setLightbox(null)}
         />

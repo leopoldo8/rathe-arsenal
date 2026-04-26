@@ -2,8 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './CardLightbox.module.css';
 
 export interface ICardLightboxProps {
-  /** Large-size WebP URL for the card face. */
+  /**
+   * Large-size WebP URL for the card face — the primary candidate.
+   * Treated as a single-entry sources list when `sources` is omitted.
+   */
   readonly imageUrl: string;
+  /**
+   * Optional ordered list of fallback URLs. The lightbox tries each in
+   * sequence on load failure — same model as `CardArt`. When empty/omitted
+   * only `imageUrl` is attempted.
+   */
+  readonly sources?: readonly string[];
   /** Card name — used as dialog title + img alt. */
   readonly name: string;
   /** Called when user dismisses via Escape, backdrop, or close button. */
@@ -19,12 +28,16 @@ export interface ICardLightboxProps {
  */
 export function CardLightbox({
   imageUrl,
+  sources,
   name,
   onClose,
 }: ICardLightboxProps): React.ReactElement {
+  const candidateList = sources && sources.length > 0 ? sources : [imageUrl];
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const currentSrc = candidateList[sourceIndex];
+  const errored = sourceIndex >= candidateList.length;
   const cardRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useRef<boolean>(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -132,13 +145,20 @@ export function CardLightbox({
             <span className={styles.errorBody}>{name}</span>
           </div>
         )}
-        {!errored && (
+        {!errored && currentSrc && (
           <img
-            src={imageUrl}
+            // `key` forces a fresh element when the URL changes — the next
+            // candidate runs through load → error/loaded even when the
+            // previous tick already advanced the index.
+            key={currentSrc}
+            src={currentSrc}
             alt={name}
             className={styles.image}
             onLoad={() => setLoaded(true)}
-            onError={() => setErrored(true)}
+            onError={() => {
+              setLoaded(false);
+              setSourceIndex((i) => i + 1);
+            }}
             data-testid="card-lightbox-image"
             style={{ opacity: loaded ? 1 : 0 }}
           />

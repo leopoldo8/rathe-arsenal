@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
+import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilters';
 import styles from './LibraryGrid.module.css';
@@ -147,7 +148,11 @@ export function LibraryGrid({
   const groups = groupCards(cards, group);
 
   const [lightbox, setLightbox] = useState<
-    | { readonly imageUrl: string; readonly name: string }
+    | {
+        readonly imageUrl: string;
+        readonly sources: readonly string[];
+        readonly name: string;
+      }
     | null
   >(null);
 
@@ -159,7 +164,11 @@ export function LibraryGrid({
 
   function openLightbox(card: ILibraryCard): void {
     if (!card.imageUrl) return;
-    setLightbox({ imageUrl: card.imageUrl.large, name: card.name });
+    setLightbox({
+      imageUrl: card.imageUrl.large,
+      sources: lightboxSourcesFor(card.imageUrl),
+      name: card.name,
+    });
   }
 
   return (
@@ -194,6 +203,7 @@ export function LibraryGrid({
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}
+          sources={lightbox.sources}
           name={lightbox.name}
           onClose={() => setLightbox(null)}
         />

@@ -22,7 +22,22 @@ export interface ILibraryCard {
   readonly talents: readonly string[];
   /** Short set-code identifiers (e.g. ["WTR", "CRU"]). */
   readonly sets: readonly string[];
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        /**
+         * Ordered list of candidate URL pairs the frontend tries in turn —
+         * bare `defaultImage` first, then foiled variants (`-RF`/`-CF`/`-GF`).
+         * Lets us surface real artwork for sets that LSS only published in
+         * foiled form (Armory Decks, judge promos).
+         */
+        readonly sources: readonly {
+          readonly small: string;
+          readonly large: string;
+        }[];
+      }
+    | null;
   /** Summed quantity owned across all active sources. */
   readonly ownedQuantity: number;
 }

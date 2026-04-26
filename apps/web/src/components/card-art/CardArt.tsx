@@ -38,13 +38,21 @@ export interface ICardArtProps {
   readonly widthOverride?: number | undefined;
   /**
    * Public image URLs (WebP small/large) from the LSS S3 bucket. When
-   * present and the image loads successfully, the photo replaces the
-   * stylized SVG placeholder. On load error, the SVG fallback renders
-   * automatically — so a broken CDN never breaks the UI. null means the
-   * source catalog has no image code; the SVG placeholder is used.
+   * `sources` is provided, the component cycles through each candidate
+   * on `<img onError>` until one loads or the list is exhausted (the SVG
+   * fallback then renders). `small`/`large` mirror the first source for
+   * legacy callers; new code should rely on `sources`. null means the
+   * source catalog has no image code at all.
    */
   readonly imageUrl?:
-    | { readonly small: string; readonly large: string }
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources?: readonly {
+          readonly small: string;
+          readonly large: string;
+        }[];
+      }
     | null
     | undefined;
   /**
@@ -166,11 +174,23 @@ export function CardArt({
   const width = widthOverride ?? SIZE_WIDTH_MAP[size];
   const height = Math.round(width * ASPECT_RATIO);
 
-  // Track whether the real card image loaded successfully. On 404 or
-  // network error we drop back to the stylized SVG placeholder without
-  // a visible flicker — `imageLoaded` gates the `<img>` opacity.
-  const [imageErrored, setImageErrored] = useState(false);
-  const hasImage = Boolean(imageUrl && !imageErrored);
+  // Ordered candidate list — the bare `defaultImage` URL plus any foiled
+  // variants (`-RF`/`-CF`/`-GF`). Older shape callers without `sources`
+  // get a single-entry list synthesised from `small`/`large` so the
+  // cycling logic still applies uniformly.
+  const sources = imageUrl
+    ? imageUrl.sources && imageUrl.sources.length > 0
+      ? imageUrl.sources
+      : [{ small: imageUrl.small, large: imageUrl.large }]
+    : [];
+
+  // Index of the currently-attempted candidate. Advances on each `<img
+  // onError>`; once it equals `sources.length`, every candidate has 404'd
+  // and the SVG fallback takes over.
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const currentSource = sources[sourceIndex];
+  const imageErrored = sources.length === 0 || sourceIndex >= sources.length;
+  const hasImage = Boolean(currentSource && !imageErrored);
 
   // React 18 stable id — unique per component instance across renders.
   // Without this, rendering N `missing` cards of the same size produces N
@@ -214,15 +234,19 @@ export function CardArt({
       {/* Real card image overlay — sits above the SVG placeholder. The
           SVG still renders beneath so a slow-loading image briefly shows
           the stylized frame instead of a blank rectangle. */}
-      {imageUrl && !imageErrored && (
+      {currentSource && !imageErrored && (
         <img
-          src={imageUrl.small}
+          // `key` forces a fresh <img> when the URL changes, so the next
+          // candidate runs through the load → error lifecycle even if the
+          // previous one's onError already fired in the same tick.
+          key={currentSource.small}
+          src={currentSource.small}
           alt=""
           aria-hidden="true"
           loading="lazy"
           decoding="async"
           className={styles.cardArtImage}
-          onError={() => setImageErrored(true)}
+          onError={() => setSourceIndex((i) => i + 1)}
           data-testid="card-art-image"
           style={{ width, height }}
         />

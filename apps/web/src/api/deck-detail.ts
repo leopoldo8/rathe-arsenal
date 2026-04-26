@@ -26,7 +26,13 @@ export interface IBreakdownEntry {
    * image code. CardArt falls back to the SVG placeholder on load
    * failure or missing URL.
    */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly { readonly small: string; readonly large: string }[];
+      }
+    | null;
 }
 
 export interface ISubstituteCard {
@@ -38,7 +44,13 @@ export interface ISubstituteCard {
   readonly defense: number | null;
   readonly keywords: readonly string[];
   /** Same shape as IBreakdownEntry.imageUrl; null when unavailable. */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly { readonly small: string; readonly large: string }[];
+      }
+    | null;
 }
 
 export interface ISubstitutionMatch {

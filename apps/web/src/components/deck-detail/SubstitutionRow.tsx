@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
+import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { IBreakdownEntry, ISubstitutionMatch } from '../../api/deck-detail';
 import styles from './SubstitutionRow.module.css';
 
@@ -109,7 +110,11 @@ export function SubstitutionRow({
   // Lightbox state — local to the row so approving/rejecting a different
   // row doesn't cause cross-row flicker when the preview is open.
   const [lightbox, setLightbox] = useState<
-    | { readonly imageUrl: string; readonly name: string }
+    | {
+        readonly imageUrl: string;
+        readonly sources: readonly string[];
+        readonly name: string;
+      }
     | null
   >(null);
 
@@ -131,6 +136,7 @@ export function SubstitutionRow({
                 ? () =>
                     setLightbox({
                       imageUrl: original.imageUrl!.large,
+                      sources: lightboxSourcesFor(original.imageUrl),
                       name: originalName,
                     })
                 : undefined
@@ -177,6 +183,7 @@ export function SubstitutionRow({
                 ? () =>
                     setLightbox({
                       imageUrl: match.substitute.imageUrl!.large,
+                      sources: lightboxSourcesFor(match.substitute.imageUrl),
                       name: substituteName,
                     })
                 : undefined
@@ -243,6 +250,7 @@ export function SubstitutionRow({
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}
+          sources={lightbox.sources}
           name={lightbox.name}
           onClose={() => setLightbox(null)}
         />

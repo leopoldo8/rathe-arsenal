@@ -25,7 +25,13 @@ export interface IBreakdownEntry {
    * image code. Frontend falls back to the <CardArt> SVG placeholder
    * on load error.
    */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly { readonly small: string; readonly large: string }[];
+      }
+    | null;
 }
 
 export interface ISubstitutionEntry {

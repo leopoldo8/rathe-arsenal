@@ -35,16 +35,35 @@ export interface ICatalogCard {
    * (`legendstory-production-s3-public`). `null` when the source record
    * has no image code.
    *
+   * `small` / `large` carry the primary candidate URL — equivalent to
+   * `sources[0]` — and exist for callers that don't need the fallback
+   * machinery (lightbox tile, link previews). `sources` is the ordered
+   * list of candidates: the bare `defaultImage` first, then `-RF`/`-CF`/
+   * `-GF` foiling suffixes derived from `printings[]`. Some sets (Armory
+   * Decks, judge promos, FAB special editions) only publish the foiled
+   * face on LSS S3, so a single-URL approach surfaces the SVG fallback
+   * even when LSS does serve the artwork.
+   *
    * Sourcing from LSS infrastructure directly (rather than a third-party
    * CDN like Fabrary) keeps the IP posture defensible under the Option A
    * fan-project policy documented in `docs/research/ip-posture.md`: we
    * consume the endpoint the rightsholder chose to expose, not a mirror.
    *
-   * The frontend treats this as best-effort: on HTTP 404 or network
-   * error it falls back to the stylized <CardArt> SVG placeholder, so a
-   * broken CDN never surfaces as a crash.
+   * The frontend treats each entry in `sources` as best-effort: on HTTP
+   * 403/404 or network error it advances to the next candidate, and only
+   * after exhausting the list does it fall back to the stylized
+   * <CardArt> SVG placeholder.
    */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly {
+          readonly small: string;
+          readonly large: string;
+        }[];
+      }
+    | null;
 }
 
 export interface ICatalogIndices {

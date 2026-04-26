@@ -3,6 +3,13 @@ import { buildIndices } from './indices';
 import { CardNotFoundError } from './errors';
 import { ICatalog, ICatalogCard, ICatalogIndices } from './types';
 
+interface IRawPrinting {
+  identifier?: string;
+  image?: string;
+  /** "Rainbow" | "Cold" | "Gold" — values from `@flesh-and-blood/types` Foiling enum. */
+  foiling?: string;
+}
+
 interface IRawCard {
   cardIdentifier: string;
   name: string;
@@ -17,6 +24,13 @@ interface IRawCard {
   subtypes?: string[];
   legalHeroes?: string[];
   defaultImage?: string;
+  /**
+   * Per-printing artwork + foiling metadata. We use this to derive image
+   * URL fallbacks for cards (e.g. Armory Decks, judge promos) where LSS
+   * only published the foiled face — `DTD200.webp` is missing but
+   * `DTD200-RF.webp` resolves.
+   */
+  printings?: readonly IRawPrinting[];
   /**
    * Short set-code identifiers (e.g. ["WTR"], ["CRU", "MON"]).
    * Field name confirmed from @flesh-and-blood/types@3.6.x interfaces.d.ts:
@@ -35,13 +49,55 @@ interface IRawCard {
 const IMAGE_CDN_BASE =
   'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/';
 
+/**
+ * Maps the FAB Foiling enum values to LSS S3 URL suffixes — discovered by
+ * probing the public bucket directly (e.g. `DTD200-RF.webp` resolves while
+ * `DTD200.webp` 403s for Armory Deck cards).
+ */
+const FOIL_SUFFIX: Record<string, string> = {
+  Rainbow: '-RF',
+  Cold: '-CF',
+  Gold: '-GF',
+};
+
 function buildImageUrl(
   defaultImage: string | undefined,
-): { readonly small: string; readonly large: string } | null {
+  printings: readonly IRawPrinting[] | undefined,
+): {
+  readonly small: string;
+  readonly large: string;
+  /**
+   * Ordered list of candidate URL pairs. The frontend tries each in turn:
+   * first the bare `defaultImage`, then the same code with each foiling
+   * suffix found in the printings array. Some sets (Armory Decks, judges,
+   * promos) only publish the foiled face — without the fallback, a real
+   * card image would never resolve.
+   */
+  readonly sources: readonly { readonly small: string; readonly large: string }[];
+} | null {
   if (!defaultImage) return null;
+
+  const codes = new Set<string>();
+  codes.add(defaultImage);
+  for (const printing of printings ?? []) {
+    const code = printing.image;
+    if (!code || !printing.foiling) continue;
+    const suffix = FOIL_SUFFIX[printing.foiling];
+    if (suffix) codes.add(`${code}${suffix}`);
+  }
+
+  const sources = [...codes].map((code) =>
+    Object.freeze({
+      small: `${IMAGE_CDN_BASE}small/${code}.webp`,
+      large: `${IMAGE_CDN_BASE}large/${code}.webp`,
+    }),
+  );
+  const primary = sources[0]!;
+
   return Object.freeze({
-    small: `${IMAGE_CDN_BASE}small/${defaultImage}.webp`,
-    large: `${IMAGE_CDN_BASE}large/${defaultImage}.webp`,
+    small: primary.small,
+    large: primary.large,
+    sources: Object.freeze(sources),
   });
 }
 
@@ -78,7 +134,7 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
     subtypes: Object.freeze(raw.subtypes ?? []),
     legalHeroes: Object.freeze(raw.legalHeroes ?? []),
     sets: extractSetCodes(raw.setIdentifiers ?? []),
-    imageUrl: buildImageUrl(raw.defaultImage),
+    imageUrl: buildImageUrl(raw.defaultImage, raw.printings),
   });
 }
 

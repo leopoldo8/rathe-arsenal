@@ -167,4 +167,40 @@ describe('catalog', () => {
       expect(Object.isFrozen(cards)).toBe(true);
     });
   });
+
+  describe('ICatalogCard.imageUrl.sources', () => {
+    it('returns the bare defaultImage as the first source', () => {
+      const card = catalog.getCard('snatch-red');
+      expect(card.imageUrl).not.toBeNull();
+      expect(card.imageUrl?.sources[0]?.small).toMatch(/\/small\/[A-Z0-9]+\.webp$/);
+      expect(card.imageUrl?.sources[0]?.small).not.toMatch(/-(RF|CF|GF)\.webp$/);
+    });
+
+    it('appends -RF/-CF/-GF foiling suffixes for cards with foiled-only printings', () => {
+      // Hide Tanner (Armory Deck: Kayo) — bare AKO005 returns 403 on LSS,
+      // only AKO005-RF resolves. The catalog must list both candidates so
+      // CardArt can fall back through them.
+      const card = catalog.getCard('hide-tanner');
+      const sourceSmalls = card.imageUrl?.sources.map((s) => s.small) ?? [];
+      expect(sourceSmalls.some((url) => /AKO005\.webp$/.test(url))).toBe(true);
+      expect(sourceSmalls.some((url) => /AKO005-RF\.webp$/.test(url))).toBe(true);
+    });
+
+    it('deduplicates candidates when multiple printings share the same image+foiling pair', () => {
+      // Savage Sash has two Rainbow GEM082 printings — they collapse to
+      // a single GEM082-RF candidate after the Set-based dedup.
+      const card = catalog.getCard('savage-sash');
+      const codes = (card.imageUrl?.sources ?? []).map((s) =>
+        s.small.replace(/^.*\/small\//, '').replace(/\.webp$/, ''),
+      );
+      const unique = new Set(codes);
+      expect(unique.size).toBe(codes.length);
+    });
+
+    it('mirrors sources[0] in the legacy small/large fields', () => {
+      const card = catalog.getCard('hide-tanner');
+      expect(card.imageUrl?.small).toBe(card.imageUrl?.sources[0]?.small);
+      expect(card.imageUrl?.large).toBe(card.imageUrl?.sources[0]?.large);
+    });
+  });
 });

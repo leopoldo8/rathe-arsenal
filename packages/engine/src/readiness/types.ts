@@ -37,7 +37,13 @@ export interface IBreakdownEntry {
    * load failure as best-effort fallback to the stylized <CardArt> SVG
    * placeholder. See `ICatalogCard.imageUrl` for the full contract.
    */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly { readonly small: string; readonly large: string }[];
+      }
+    | null;
 }
 
 export interface ISubstitutedEntry {

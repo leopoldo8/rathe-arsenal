@@ -19,7 +19,13 @@ export interface ILibraryCard {
   readonly talents: readonly string[];
   /** Short set-code identifiers (e.g. ["WTR", "CRU"]). */
   readonly sets: readonly string[];
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl:
+    | {
+        readonly small: string;
+        readonly large: string;
+        readonly sources: readonly { readonly small: string; readonly large: string }[];
+      }
+    | null;
   /** Summed quantity owned across all active sources. */
   readonly ownedQuantity: number;
 }
