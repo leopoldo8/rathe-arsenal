@@ -30,6 +30,22 @@ const QUANTITY_ALIASES: ReadonlySet<string> = new Set([
 const SET_ALIASES: ReadonlySet<string> = new Set(['set', 'set code']);
 
 /**
+ * Trailing-pitch-suffix pattern produced by Fabrary and similar exporters,
+ * e.g. `"Bare Fangs (red)"`. Capture group 1 is the base name (with trailing
+ * whitespace already trimmed by `trim()` upstream), group 2 is the colour.
+ *
+ * Cards without a pitch value (equipment, weapons, hero) export without the
+ * suffix and are not matched here — they fall through to the plain-name path.
+ */
+const PITCH_SUFFIX_PATTERN = /^(.+?)\s*\((red|yellow|blue)\)$/i;
+
+const PITCH_BY_COLOUR: Record<string, number> = {
+  red: 1,
+  yellow: 2,
+  blue: 3,
+};
+
+/**
  * A lazy-initialized, process-scoped name index built from the catalog.
  *
  * Key: lowercase card name.
@@ -237,6 +253,35 @@ export class CsvParserService {
       return this.skip(rowNumber, name, 'invalid-quantity');
     }
 
+    // --- Pitch suffix path: "Name (red|yellow|blue)" → strip + filter by pitch.
+    const pitchMatch = name.match(PITCH_SUFFIX_PATTERN);
+    if (pitchMatch !== null) {
+      const baseName = pitchMatch[1]!.trim();
+      const colour = pitchMatch[2]!.toLowerCase();
+      const pitch = PITCH_BY_COLOUR[colour]!;
+
+      const baseCandidates = index.get(baseName.toLowerCase());
+      if (baseCandidates === undefined || baseCandidates.length === 0) {
+        return this.skip(rowNumber, name, 'no-match');
+      }
+
+      const byPitch = baseCandidates.filter(
+        (id) => this.catalogService.getCard(id).pitch === pitch,
+      );
+      if (byPitch.length === 1) {
+        return {
+          kind: 'resolved',
+          row: { rowNumber, cardIdentifier: byPitch[0]!, quantity },
+        };
+      }
+      if (byPitch.length === 0) {
+        return this.skip(rowNumber, name, 'no-match');
+      }
+      // >1 catalog cards share name + pitch (extremely rare, e.g. cross-set
+      // reprints with identical pitch); fall through to set-column disambiguator.
+      return this.disambiguateOrAmbiguous(byPitch, set, rowNumber, name, quantity);
+    }
+
     // --- Catalog lookup ---
     const candidates = index.get(name.toLowerCase());
     if (candidates === undefined || candidates.length === 0) {
@@ -253,21 +298,33 @@ export class CsvParserService {
       };
     }
 
-    // --- Multiple candidates: try set-column disambiguation ---
+    return this.disambiguateOrAmbiguous(candidates, set, rowNumber, name, quantity);
+  }
+
+  /**
+   * Multi-candidate fallback: try the optional set column to narrow down to a
+   * single identifier. Returns `ambiguous` when the set column is missing or
+   * does not narrow the set to exactly one match. Shared between the
+   * pitch-suffix path and the plain-name path.
+   */
+  private disambiguateOrAmbiguous(
+    candidates: string[],
+    set: string | undefined,
+    rowNumber: number,
+    name: string,
+    quantity: number,
+  ):
+    | { kind: 'resolved'; row: IResolvedCsvRow }
+    | { kind: 'skipped'; row: ISkippedCsvRow } {
     if (set !== undefined && set.length > 0) {
       const narrowed = this.filterBySet(candidates, set);
       if (narrowed.length === 1) {
-        // noUncheckedIndexedAccess: narrowed[0] is guaranteed non-undefined
-        // because we just checked narrowed.length === 1.
-        const cardIdentifier = narrowed[0] as string;
         return {
           kind: 'resolved',
-          row: { rowNumber, cardIdentifier, quantity },
+          row: { rowNumber, cardIdentifier: narrowed[0] as string, quantity },
         };
       }
-      // Still ambiguous after set filter — fall through to ambiguous skip.
     }
-
     return this.skip(rowNumber, name, 'ambiguous');
   }
 

@@ -32,15 +32,23 @@ function buildCatalogCard(
 
 // A set of catalog cards used by multiple test cases.
 const CATALOG_CARDS: readonly ICatalogCard[] = [
-  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-red', name: 'Absorb in Aether' }),
-  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-yellow', name: 'Absorb in Aether' }),
-  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-blue', name: 'Absorb in Aether' }),
-  buildCatalogCard({ cardIdentifier: 'command-and-conquer', name: 'Command and Conquer' }),
-  buildCatalogCard({ cardIdentifier: 'enlightened-strike', name: 'Enlightened Strike' }),
-  buildCatalogCard({ cardIdentifier: 'razor-reflex-red', name: 'Razor Reflex' }),
-  buildCatalogCard({ cardIdentifier: 'razor-reflex-yellow', name: 'Razor Reflex' }),
-  buildCatalogCard({ cardIdentifier: 'razor-reflex-blue', name: 'Razor Reflex' }),
-  buildCatalogCard({ cardIdentifier: 'aether-dart-red', name: 'Aether Dart' }),
+  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-red', name: 'Absorb in Aether', pitch: 1 }),
+  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-yellow', name: 'Absorb in Aether', pitch: 2 }),
+  buildCatalogCard({ cardIdentifier: 'absorb-in-aether-blue', name: 'Absorb in Aether', pitch: 3 }),
+  buildCatalogCard({ cardIdentifier: 'command-and-conquer', name: 'Command and Conquer', pitch: 1 }),
+  buildCatalogCard({ cardIdentifier: 'enlightened-strike', name: 'Enlightened Strike', pitch: 1 }),
+  buildCatalogCard({ cardIdentifier: 'razor-reflex-red', name: 'Razor Reflex', pitch: 1 }),
+  buildCatalogCard({ cardIdentifier: 'razor-reflex-yellow', name: 'Razor Reflex', pitch: 2 }),
+  buildCatalogCard({ cardIdentifier: 'razor-reflex-blue', name: 'Razor Reflex', pitch: 3 }),
+  buildCatalogCard({ cardIdentifier: 'aether-dart-red', name: 'Aether Dart', pitch: 1 }),
+  // Multi-pitch action used by the Fabrary-suffix test cases.
+  buildCatalogCard({ cardIdentifier: 'bare-fangs-red', name: 'Bare Fangs', pitch: 1 }),
+  buildCatalogCard({ cardIdentifier: 'bare-fangs-yellow', name: 'Bare Fangs', pitch: 2 }),
+  buildCatalogCard({ cardIdentifier: 'bare-fangs-blue', name: 'Bare Fangs', pitch: 3 }),
+  // Single-pitch action that Fabrary still exports with a "(red)" suffix.
+  buildCatalogCard({ cardIdentifier: 'cast-bones-red', name: 'Cast Bones', pitch: 1 }),
+  // Equipment: no pitch, exported without suffix.
+  buildCatalogCard({ cardIdentifier: 'hide-tanner', name: 'Hide Tanner', pitch: null }),
 ];
 
 // Raw card data used for set disambiguation (via getRawCard).
@@ -54,6 +62,15 @@ function buildCatalogService(): jest.Mocked<CatalogService> {
   const mock = createMock<CatalogService>();
   mock.getCards.mockReturnValue(CATALOG_CARDS);
   mock.getRawCard.mockImplementation((id: string) => RAW_CARDS[id] ?? {});
+  // Index by identifier so the pitch-suffix path can look up a card's pitch.
+  const byIdentifier = new Map<string, ICatalogCard>(
+    CATALOG_CARDS.map((c) => [c.cardIdentifier, c]),
+  );
+  mock.getCard.mockImplementation((id: string) => {
+    const card = byIdentifier.get(id);
+    if (!card) throw new Error(`Test catalog: unknown card ${id}`);
+    return card;
+  });
   return mock;
 }
 
@@ -429,6 +446,106 @@ describe('CsvParserService', () => {
       const [skipped] = result.skipped;
       expect(resolved?.rowNumber).toBe(2);
       expect(skipped?.rowNumber).toBe(3);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Pitch suffix resolution — Fabrary export format
+  //
+  // Fabrary (and similar exporters) appends "(red|yellow|blue)" to the name
+  // for any card that has a pitch value. Cards without pitch (equipment,
+  // weapons, hero) export without a suffix. The parser recognises the suffix,
+  // strips it from the name, and filters candidates by `card.pitch`
+  // (red=1, yellow=2, blue=3). Falls through to the existing set-disambiguator
+  // and ambiguous skip when the suffix is absent.
+  // -------------------------------------------------------------------------
+
+  describe('pitch suffix resolution (Fabrary export format)', () => {
+    it('resolves "Bare Fangs (red)" to bare-fangs-red', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs (red),3\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved).toHaveLength(1);
+      expect(result.resolved[0]?.cardIdentifier).toBe('bare-fangs-red');
+      expect(result.resolved[0]?.quantity).toBe(3);
+    });
+
+    it('resolves "Bare Fangs (yellow)" to bare-fangs-yellow', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs (yellow),3\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('bare-fangs-yellow');
+    });
+
+    it('resolves "Bare Fangs (blue)" to bare-fangs-blue', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs (blue),2\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('bare-fangs-blue');
+    });
+
+    it('is case-insensitive on the suffix: "Bare Fangs (RED)" still resolves to red', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs (RED),1\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('bare-fangs-red');
+    });
+
+    it('tolerates whitespace around the suffix: "Bare Fangs  (red)" resolves correctly', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs  (red)  ,1\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('bare-fangs-red');
+    });
+
+    it('resolves single-pitch cards that still carry the suffix: "Cast Bones (red)" → cast-bones-red', () => {
+      const csv = csvBuffer('Name,Quantity\nCast Bones (red),3\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('cast-bones-red');
+    });
+
+    it('resolves equipment without suffix: "Hide Tanner" → hide-tanner', () => {
+      const csv = csvBuffer('Name,Quantity\nHide Tanner,1\n');
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved[0]?.cardIdentifier).toBe('hide-tanner');
+    });
+
+    it('treats invalid colour suffix as part of the name → no-match', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs (purple),1\n');
+      const result = service.parse(csv);
+      expect(result.resolved).toEqual([]);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0]?.reason).toBe('no-match');
+    });
+
+    it('preserves prior behaviour: multi-pitch without suffix or set → ambiguous', () => {
+      const csv = csvBuffer('Name,Quantity\nBare Fangs,1\n');
+      const result = service.parse(csv);
+      expect(result.resolved).toEqual([]);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0]?.reason).toBe('ambiguous');
+    });
+
+    it('mixed Fabrary-style deck: equipment + single-pitch + multi-pitch all resolve', () => {
+      const csv = csvBuffer(
+        'Name,Quantity\n' +
+          'Hide Tanner,1\n' +
+          'Cast Bones (red),3\n' +
+          'Bare Fangs (red),3\n' +
+          'Bare Fangs (yellow),3\n' +
+          'Bare Fangs (blue),2\n',
+      );
+      const result = service.parse(csv);
+      expect(result.skipped).toEqual([]);
+      expect(result.resolved.map((r) => r.cardIdentifier)).toEqual([
+        'hide-tanner',
+        'cast-bones-red',
+        'bare-fangs-red',
+        'bare-fangs-yellow',
+        'bare-fangs-blue',
+      ]);
     });
   });
 });
