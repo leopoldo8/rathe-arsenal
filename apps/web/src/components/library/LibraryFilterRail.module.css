@@ -201,6 +201,77 @@
   white-space: nowrap;
 }
 
+/* ---- Accordion (Class / Talent / Set headers) ---- */
+.accordionHeading {
+  margin: 0;
+  padding: 0;
+}
+
+.accordionTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  width: 100%;
+  min-block-size: 32px;
+  padding: var(--ra-space-2) 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+
+.accordionTrigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: var(--ra-radius-sm);
+}
+
+.accordionSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accordionSummaryIdle {
+  color: var(--ra-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.accordionSummaryActive {
+  color: var(--ra-accent-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.accordionChevron {
+  display: inline-block;
+  transition: transform var(--ra-duration) var(--ra-ease);
+  transform: rotate(-90deg);
+  color: var(--ra-fg-muted);
+  font-size: 0.75rem;
+}
+
+.accordionChevron--open {
+  transform: rotate(0deg);
+  color: var(--ra-accent-body);
+}
+
+.accordionPanel {
+  /* Padding only when open; collapsed panel is fully hidden via the
+     `hidden` attribute. Cap height + scroll within the panel so a
+     50-set collection doesn't push subsequent filters off-screen. */
+  padding-top: var(--ra-space-2);
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ra-border) transparent;
+}
+
 /* ---- Toggle list (Class / Talent / Set) ---- */
 .toggleList {
   list-style: none;

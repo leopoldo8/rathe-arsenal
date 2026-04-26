@@ -116,37 +116,50 @@ describe('LibraryFilterRail — pitch pills', () => {
   });
 });
 
-describe('LibraryFilterRail — class/talent/set toggle rows', () => {
-  it('lists every class found in the loaded cards with its count', () => {
+describe('LibraryFilterRail — class/talent/set accordion sections', () => {
+  it('collapses by default and reveals options when expanded', async () => {
     renderRail();
+    // Brute is hidden behind the collapsed Class accordion.
+    expect(screen.queryByRole('checkbox', { name: /Brute/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Class/i }));
     expect(screen.getByRole('checkbox', { name: /Brute/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Ranger/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Guardian/i })).toBeInTheDocument();
   });
 
-  it('shows the empty hint when no cards carry talents', () => {
+  it('opens automatically when the section already has selections', () => {
+    renderRail({
+      value: { ...EMPTY_FILTERS, classes: ['Brute'] },
+    });
+    // Pre-selected → accordion opens on mount, Brute row is in the DOM.
+    expect(screen.getByRole('checkbox', { name: /Brute/i })).toBeInTheDocument();
+  });
+
+  it('shows the empty-talent hint inside the talent accordion when expanded', async () => {
     renderRail({
       cards: [makeCard({ classes: ['Brute'] })],
     });
+    await userEvent.click(screen.getByRole('button', { name: /Talent/i }));
     expect(
       screen.getByText(/none of your cards carry a talent yet/i),
-    ).toBeInTheDocument();
-  });
-
-  it('shows the empty hint when no cards carry classes', () => {
-    renderRail({ cards: [makeCard({ classes: [] })] });
-    expect(
-      screen.getByText(/no classes in your collection yet/i),
     ).toBeInTheDocument();
   });
 
   it('emits onChange with the new selection when a row is toggled', async () => {
     const onChange = vi.fn();
     renderRail({ onChange });
+    await userEvent.click(screen.getByRole('button', { name: /Class/i }));
     await userEvent.click(screen.getByRole('checkbox', { name: /Brute/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ classes: ['Brute'] }),
     );
+  });
+
+  it('exposes aria-expanded on the accordion trigger', async () => {
+    renderRail();
+    const trigger = screen.getByRole('button', { name: /Class/i });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
 

@@ -54,7 +54,7 @@ vi.mock('../../../api/fabrary-import', () => ({
 // Imports under test (after the vi.mock declarations)
 // ---------------------------------------------------------------------------
 
-import { AddCardsPage } from '../add-cards';
+import { AddCardsPage } from '../add-cards.index';
 import { AddCardsFabraryPage } from '../add-cards.fabrary';
 
 function createTestQueryClient(): QueryClient {

@@ -25,6 +25,7 @@ import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
 import { Route as AuthAddCardsRouteImport } from './routes/_auth/add-cards'
+import { Route as AuthAddCardsIndexRouteImport } from './routes/_auth/add-cards.index'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
@@ -109,6 +110,11 @@ const AuthAddCardsRoute = AuthAddCardsRouteImport.update({
   path: '/add-cards',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsIndexRoute = AuthAddCardsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthAddCardsRoute,
+} as any)
 const AuthDecksDeckIdRoute = AuthDecksDeckIdRouteImport.update({
   id: '/decks/$deckId',
   path: '/decks/$deckId',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/add-cards/': typeof AuthAddCardsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,7 +166,6 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
   '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
@@ -171,6 +177,7 @@ export interface FileRoutesByTo {
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/add-cards': typeof AuthAddCardsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -194,6 +201,7 @@ export interface FileRoutesById {
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
+  '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -217,6 +225,7 @@ export interface FileRouteTypes {
     | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/decks/$deckId'
+    | '/add-cards/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -226,7 +235,6 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verify-email'
-    | '/add-cards'
     | '/home'
     | '/import'
     | '/library'
@@ -238,6 +246,7 @@ export interface FileRouteTypes {
     | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/decks/$deckId'
+    | '/add-cards'
   id:
     | '__root__'
     | '/'
@@ -260,6 +269,7 @@ export interface FileRouteTypes {
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
     | '/_auth/decks/$deckId'
+    | '/_auth/add-cards/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -387,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards/': {
+      id: '/_auth/add-cards/'
+      path: '/'
+      fullPath: '/add-cards/'
+      preLoaderRoute: typeof AuthAddCardsIndexRouteImport
+      parentRoute: typeof AuthAddCardsRoute
+    }
     '/_auth/decks/$deckId': {
       id: '/_auth/decks/$deckId'
       path: '/decks/$deckId'
@@ -422,12 +439,14 @@ interface AuthAddCardsRouteChildren {
   AuthAddCardsCsvRoute: typeof AuthAddCardsCsvRoute
   AuthAddCardsFabraryRoute: typeof AuthAddCardsFabraryRoute
   AuthAddCardsManualRoute: typeof AuthAddCardsManualRoute
+  AuthAddCardsIndexRoute: typeof AuthAddCardsIndexRoute
 }
 
 const AuthAddCardsRouteChildren: AuthAddCardsRouteChildren = {
   AuthAddCardsCsvRoute: AuthAddCardsCsvRoute,
   AuthAddCardsFabraryRoute: AuthAddCardsFabraryRoute,
   AuthAddCardsManualRoute: AuthAddCardsManualRoute,
+  AuthAddCardsIndexRoute: AuthAddCardsIndexRoute,
 }
 
 const AuthAddCardsRouteWithChildren = AuthAddCardsRoute._addFileChildren(

@@ -1,4 +1,4 @@
-import React, { useId, useMemo } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import type { ILibraryCard } from '../../api/library';
 import styles from './LibraryFilterRail.module.css';
 
@@ -375,6 +375,21 @@ interface IToggleSectionProps {
   readonly dense?: boolean;
 }
 
+/**
+ * Renders a collapsible filter section. Class / Talent / Set lists can grow
+ * past 50 entries each; collapsing by default keeps the rail compact and
+ * stops one filter dimension from pushing the others out of view.
+ *
+ * Open/closed rules:
+ *  - Default: collapsed.
+ *  - Auto-opens whenever the user adds a selection — they shouldn't have
+ *    to keep the section expanded just to see what's active.
+ *  - Stays open after manual interaction (the user controls it from there).
+ *
+ * The toggle rows live in a real <ul> rendered only when expanded — so
+ * keyboard tab order and screen-reader navigation skip the collapsed
+ * lists entirely (no `aria-hidden` patchwork).
+ */
 function ToggleSection({
   headingId,
   label,
@@ -385,45 +400,101 @@ function ToggleSection({
   formatLabel,
   dense = false,
 }: IToggleSectionProps): React.ReactElement {
+  const panelId = useId();
+  const [open, setOpen] = useState(selected.length > 0);
+  const lastSelectedSize = React.useRef(selected.length);
+
+  // Auto-open when the user just added a selection (e.g. via the chips
+  // in the future, or by URL load). Avoid auto-closing on removal — the
+  // user might still be looking at the list to add another option.
+  useEffect(() => {
+    if (selected.length > lastSelectedSize.current) {
+      setOpen(true);
+    }
+    lastSelectedSize.current = selected.length;
+  }, [selected.length]);
+
+  // Compact summary shown in the accordion header. Stays terse so the
+  // unique empty-state copy lives in the panel body and isn't duplicated.
+  const summary =
+    options.length === 0
+      ? '—'
+      : selected.length > 0
+        ? `${selected.length} of ${options.length}`
+        : `${options.length}`;
+
   return (
-    <section className={styles.section} aria-labelledby={headingId}>
-      <h3 className={styles.label} id={headingId}>
-        <span className={styles.diamond} aria-hidden="true">◆</span> {label}
-      </h3>
-      {options.length === 0 ? (
-        <p className={styles.emptyHint}>{emptyHint}</p>
-      ) : (
-        <ul
-          className={`${styles.toggleList} ${dense ? styles['toggleList--dense'] : ''}`}
-          role="group"
-          aria-labelledby={headingId}
+    <section className={styles.section}>
+      <h3 className={styles.accordionHeading} id={headingId}>
+        <button
+          type="button"
+          className={styles.accordionTrigger}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
         >
-          {options.map(([opt, count]) => {
-            const checked = selected.includes(opt);
-            return (
-              <li key={opt}>
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={checked}
-                  className={`${styles.toggleRow} ${checked ? styles['toggleRow--on'] : ''}`}
-                  onClick={() => onToggle(opt)}
-                >
-                  <span className={styles.toggleMarker} aria-hidden="true">
-                    {checked ? '◆' : '◇'}
-                  </span>
-                  <span className={styles.toggleLabel}>
-                    {formatLabel ? formatLabel(opt) : opt}
-                  </span>
-                  <span className={styles.toggleCount} aria-hidden="true">
-                    {count}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+          <span className={styles.label}>
+            <span className={styles.diamond} aria-hidden="true">◆</span> {label}
+          </span>
+          <span className={styles.accordionSummary}>
+            <span
+              className={
+                selected.length > 0
+                  ? styles.accordionSummaryActive
+                  : styles.accordionSummaryIdle
+              }
+            >
+              {summary}
+            </span>
+            <span
+              className={`${styles.accordionChevron} ${open ? styles['accordionChevron--open'] : ''}`}
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </span>
+        </button>
+      </h3>
+      <div
+        id={panelId}
+        className={`${styles.accordionPanel} ${open ? styles['accordionPanel--open'] : ''}`}
+        hidden={!open}
+      >
+        {options.length === 0 ? (
+          <p className={styles.emptyHint}>{emptyHint}</p>
+        ) : (
+          <ul
+            className={`${styles.toggleList} ${dense ? styles['toggleList--dense'] : ''}`}
+            role="group"
+            aria-labelledby={headingId}
+          >
+            {options.map(([opt, count]) => {
+              const checked = selected.includes(opt);
+              return (
+                <li key={opt}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={checked}
+                    className={`${styles.toggleRow} ${checked ? styles['toggleRow--on'] : ''}`}
+                    onClick={() => onToggle(opt)}
+                  >
+                    <span className={styles.toggleMarker} aria-hidden="true">
+                      {checked ? '◆' : '◇'}
+                    </span>
+                    <span className={styles.toggleLabel}>
+                      {formatLabel ? formatLabel(opt) : opt}
+                    </span>
+                    <span className={styles.toggleCount} aria-hidden="true">
+                      {count}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }
