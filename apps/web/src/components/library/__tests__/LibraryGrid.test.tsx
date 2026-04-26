@@ -26,6 +26,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     pitch: null,
     types: ['attack'],
     classes: [],
+    talents: [],
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,

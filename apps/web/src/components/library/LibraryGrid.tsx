@@ -14,6 +14,11 @@ interface ILibraryGridProps {
   readonly group: TGroupBy;
   /** Optional set-code → release-name map for prettier section headings. */
   readonly setNames?: Readonly<Record<string, string>>;
+  /**
+   * Card width in pixels for each grid cell. When omitted, falls back to the
+   * 'sm' CardArt preset (72px) for backward compatibility with existing tests.
+   */
+  readonly cardSize?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,10 +89,15 @@ function groupCards(
 
 interface ILibraryCardCellProps {
   readonly card: ILibraryCard;
+  readonly cardSize: number | undefined;
   readonly onOpenLightbox: (card: ILibraryCard) => void;
 }
 
-function LibraryCardCell({ card, onOpenLightbox }: ILibraryCardCellProps): React.ReactElement {
+function LibraryCardCell({
+  card,
+  cardSize,
+  onOpenLightbox,
+}: ILibraryCardCellProps): React.ReactElement {
   const typeStr = primaryType(card.types);
   const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
@@ -105,6 +115,7 @@ function LibraryCardCell({ card, onOpenLightbox }: ILibraryCardCellProps): React
           size="sm"
           imageUrl={card.imageUrl}
           onClick={handleClick}
+          widthOverride={cardSize}
         />
       </div>
       <div className={styles.meta}>
@@ -127,7 +138,12 @@ function LibraryCardCell({ card, onOpenLightbox }: ILibraryCardCellProps): React
  * Groups are determined by the `group` prop (type | pitch | set | flat).
  * Client-side only; no refetch on group change.
  */
-export function LibraryGrid({ cards, group, setNames }: ILibraryGridProps): React.ReactElement {
+export function LibraryGrid({
+  cards,
+  group,
+  setNames,
+  cardSize,
+}: ILibraryGridProps): React.ReactElement {
   const groups = groupCards(cards, group);
 
   const [lightbox, setLightbox] = useState<
@@ -153,11 +169,22 @@ export function LibraryGrid({ cards, group, setNames }: ILibraryGridProps): Reac
           {group !== 'flat' && (
             <h2 className={styles.groupHeading}>{headingFor(groupKey)}</h2>
           )}
-          <ul className={styles.grid} aria-label={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}>
+          <ul
+            className={styles.grid}
+            aria-label={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}
+            style={
+              cardSize !== undefined
+                ? // Add 1rem to compensate for the cell's internal padding so
+                  // the column track is always wider than the rendered card.
+                  ({ '--cell-min': `calc(${cardSize}px + 1rem)` } as React.CSSProperties)
+                : undefined
+            }
+          >
             {groupCards.map((card) => (
               <LibraryCardCell
                 key={card.cardIdentifier}
                 card={card}
+                cardSize={cardSize}
                 onOpenLightbox={openLightbox}
               />
             ))}

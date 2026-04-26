@@ -19,7 +19,15 @@ const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (_config: unknown) => ({
-    useSearch: () => ({ pitches: [], types: [], sets: [], group: 'type' }),
+    useSearch: () => ({
+      pitches: [],
+      types: [],
+      classes: [],
+      talents: [],
+      sets: [],
+      group: 'type',
+      cardSize: 120,
+    }),
   }),
   useNavigate: () => mockNavigate,
   Link: ({
@@ -37,7 +45,15 @@ const mockUseLibraryQuery = vi.fn();
 vi.mock('../../../api/library', () => ({
   useLibraryQuery: () => mockUseLibraryQuery(),
   LIBRARY_QUERY_KEY: ['library'],
-  DEFAULT_LIBRARY_SEARCH: { pitches: [], types: [], sets: [], group: 'type' },
+  DEFAULT_LIBRARY_SEARCH: {
+    pitches: [],
+    types: [],
+    classes: [],
+    talents: [],
+    sets: [],
+    group: 'type',
+    cardSize: 120,
+  },
 }));
 
 const mockMutate = vi.fn();
@@ -78,6 +94,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     pitch: 1,
     types: ['attack'],
     classes: [],
+    talents: [],
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,

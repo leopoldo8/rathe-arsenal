@@ -120,6 +120,7 @@ export class LibraryService {
         pitch: catalogCard.pitch,
         types: catalogCard.types,
         classes: catalogCard.classes,
+        talents: catalogCard.talents,
         sets: catalogCard.sets,
         imageUrl: catalogCard.imageUrl,
         ownedQuantity,

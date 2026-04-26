@@ -12,6 +12,11 @@ export interface ILibraryCard {
   readonly pitch: number | null;
   readonly types: readonly string[];
   readonly classes: readonly string[];
+  /**
+   * Talent identifiers (e.g. `["lightning"]`, `["earth"]`). Empty when the
+   * card has no talent (most generic cards). Sourced from the engine catalog.
+   */
+  readonly talents: readonly string[];
   /** Short set-code identifiers (e.g. ["WTR", "CRU"]). */
   readonly sets: readonly string[];
   readonly imageUrl: { readonly small: string; readonly large: string } | null;

@@ -6,6 +6,11 @@ import { LibrarySearchAddBar } from '../../components/library/LibrarySearchAddBa
 import { LibraryStatsBar } from '../../components/library/LibraryStatsBar';
 import { LibraryFilters } from '../../components/library/LibraryFilters';
 import type { ILibraryFiltersValue, TGroupBy } from '../../components/library/LibraryFilters';
+import {
+  CARD_SIZE_DEFAULT,
+  CARD_SIZE_MAX,
+  CARD_SIZE_MIN,
+} from '../../components/library/LibraryFilters';
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
@@ -25,8 +30,17 @@ type TGroupValue = (typeof VALID_GROUPS)[number];
 export interface TLibrarySearch {
   readonly pitches: readonly TPitchValue[];
   readonly types: readonly string[];
+  readonly classes: readonly string[];
+  readonly talents: readonly string[];
   readonly sets: readonly string[];
   readonly group: TGroupValue;
+  readonly cardSize: number;
+}
+
+function clampCardSize(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return CARD_SIZE_DEFAULT;
+  return Math.min(CARD_SIZE_MAX, Math.max(CARD_SIZE_MIN, Math.round(n)));
 }
 
 function validateLibrarySearch(raw: Record<string, unknown>): TLibrarySearch {
@@ -40,6 +54,14 @@ function validateLibrarySearch(raw: Record<string, unknown>): TLibrarySearch {
     ? raw.types.filter((t): t is string => typeof t === 'string')
     : [];
 
+  const classes = Array.isArray(raw.classes)
+    ? raw.classes.filter((c): c is string => typeof c === 'string')
+    : [];
+
+  const talents = Array.isArray(raw.talents)
+    ? raw.talents.filter((t): t is string => typeof t === 'string')
+    : [];
+
   const sets = Array.isArray(raw.sets)
     ? raw.sets.filter((s): s is string => typeof s === 'string')
     : [];
@@ -48,14 +70,19 @@ function validateLibrarySearch(raw: Record<string, unknown>): TLibrarySearch {
     ? (raw.group as TGroupValue)
     : 'type';
 
-  return { pitches, types, sets, group };
+  const cardSize = raw.cardSize === undefined ? CARD_SIZE_DEFAULT : clampCardSize(raw.cardSize);
+
+  return { pitches, types, classes, talents, sets, group, cardSize };
 }
 
 export const DEFAULT_LIBRARY_SEARCH: TLibrarySearch = {
   pitches: [],
   types: [],
+  classes: [],
+  talents: [],
   sets: [],
   group: 'type',
+  cardSize: CARD_SIZE_DEFAULT,
 };
 
 export const Route = createFileRoute('/_auth/library')({
@@ -101,6 +128,22 @@ export function applyFilters(
     );
   }
 
+  // Class filter
+  if (filters.classes.length > 0) {
+    const targetClasses = new Set(filters.classes.map((c) => c.toLowerCase()));
+    result = result.filter((c) =>
+      c.classes.some((cls) => targetClasses.has(cls.toLowerCase())),
+    );
+  }
+
+  // Talent filter
+  if (filters.talents.length > 0) {
+    const targetTalents = new Set(filters.talents.map((t) => t.toLowerCase()));
+    result = result.filter((c) =>
+      c.talents.some((t) => targetTalents.has(t.toLowerCase())),
+    );
+  }
+
   // Set filter
   if (filters.sets.length > 0) {
     const targetSets = new Set(filters.sets);
@@ -142,8 +185,11 @@ export function LibraryPageInner({
   const filters: ILibraryFiltersValue = {
     pitches: (filterState.pitches ?? []) as ILibraryFiltersValue['pitches'],
     types: filterState.types ?? [],
+    classes: filterState.classes ?? [],
+    talents: filterState.talents ?? [],
     sets: filterState.sets ?? [],
     group: (filterState.group ?? 'type') as TGroupBy,
+    cardSize: filterState.cardSize ?? CARD_SIZE_DEFAULT,
   };
 
   const handleFiltersChange = useCallback(
@@ -151,8 +197,11 @@ export function LibraryPageInner({
       const nextSearch: TLibrarySearch = {
         pitches: [...next.pitches],
         types: [...next.types],
+        classes: [...next.classes],
+        talents: [...next.talents],
         sets: [...next.sets],
         group: next.group,
+        cardSize: next.cardSize,
       };
       setFilterState(nextSearch);
       void navigate({
@@ -232,7 +281,12 @@ export function LibraryPageInner({
         {filteredCards.length === 0 ? (
           <p className={styles.noResults}>No cards match the current filters.</p>
         ) : (
-          <LibraryGrid cards={filteredCards} group={filters.group} setNames={setNames} />
+          <LibraryGrid
+            cards={filteredCards}
+            group={filters.group}
+            setNames={setNames}
+            cardSize={filters.cardSize}
+          />
         )}
       </div>
     </div>

@@ -12,9 +12,18 @@ export type TGroupBy = 'type' | 'pitch' | 'set' | 'flat';
 export interface ILibraryFiltersValue {
   readonly pitches: readonly TPitch[];
   readonly types: readonly string[];
+  readonly classes: readonly string[];
+  readonly talents: readonly string[];
   readonly sets: readonly string[];
   readonly group: TGroupBy;
+  /** Card width in pixels for the grid cells. */
+  readonly cardSize: number;
 }
+
+/** Range constants for the card-size slider — also enforced by the URL parser. */
+export const CARD_SIZE_MIN = 80;
+export const CARD_SIZE_MAX = 240;
+export const CARD_SIZE_DEFAULT = 120;
 
 interface ILibraryFiltersProps {
   readonly cards: readonly ILibraryCard[];
@@ -55,6 +64,26 @@ function extractTypes(cards: readonly ILibraryCard[]): string[] {
   return [...typeSet].sort();
 }
 
+function extractClasses(cards: readonly ILibraryCard[]): string[] {
+  const classSet = new Set<string>();
+  for (const card of cards) {
+    for (const c of card.classes) {
+      if (c) classSet.add(c);
+    }
+  }
+  return [...classSet].sort();
+}
+
+function extractTalents(cards: readonly ILibraryCard[]): string[] {
+  const talentSet = new Set<string>();
+  for (const card of cards) {
+    for (const t of card.talents) {
+      if (t) talentSet.add(t);
+    }
+  }
+  return [...talentSet].sort();
+}
+
 function extractSets(cards: readonly ILibraryCard[]): string[] {
   const setSet = new Set<string>();
   for (const card of cards) {
@@ -87,10 +116,15 @@ export function LibraryFilters({
 }: ILibraryFiltersProps): React.ReactElement {
   const pitchGroupId = useId();
   const typeSelectId = useId();
+  const classSelectId = useId();
+  const talentSelectId = useId();
   const setSelectId = useId();
   const groupControlId = useId();
+  const sizeSliderId = useId();
 
   const allTypes = extractTypes(cards);
+  const allClasses = extractClasses(cards);
+  const allTalents = extractTalents(cards);
   const allSets = extractSets(cards);
 
   // ---- Pitch toggles ----
@@ -107,6 +141,18 @@ export function LibraryFilters({
     onChange({ ...value, types: selected });
   }
 
+  // ---- Class select ----
+  function handleClassChange(e: React.ChangeEvent<HTMLSelectElement>): void {
+    const selected = [...e.currentTarget.selectedOptions].map((o) => o.value);
+    onChange({ ...value, classes: selected });
+  }
+
+  // ---- Talent select ----
+  function handleTalentChange(e: React.ChangeEvent<HTMLSelectElement>): void {
+    const selected = [...e.currentTarget.selectedOptions].map((o) => o.value);
+    onChange({ ...value, talents: selected });
+  }
+
   // ---- Set select ----
   function handleSetChange(e: React.ChangeEvent<HTMLSelectElement>): void {
     const selected = [...e.currentTarget.selectedOptions].map((o) => o.value);
@@ -116,6 +162,14 @@ export function LibraryFilters({
   // ---- Grouping ----
   function handleGroupChange(group: TGroupBy): void {
     onChange({ ...value, group });
+  }
+
+  // ---- Size slider ----
+  function handleSizeChange(e: React.ChangeEvent<HTMLInputElement>): void {
+    const next = Number(e.currentTarget.value);
+    if (Number.isFinite(next)) {
+      onChange({ ...value, cardSize: next });
+    }
   }
 
   return (
@@ -171,6 +225,70 @@ export function LibraryFilters({
         )}
       </div>
 
+      {/* Class multi-select */}
+      <div className={styles.selectGroup}>
+        <label className={styles.selectLabel} htmlFor={classSelectId}>
+          Class
+        </label>
+        <select
+          id={classSelectId}
+          className={styles.select}
+          multiple
+          size={3}
+          value={[...value.classes]}
+          onChange={handleClassChange}
+          aria-label="Filter by card class"
+        >
+          {allClasses.map((cls) => (
+            <option key={cls} value={cls}>
+              {cls}
+            </option>
+          ))}
+        </select>
+        {value.classes.length > 0 && (
+          <button
+            type="button"
+            className={styles.clearBtn}
+            onClick={() => onChange({ ...value, classes: [] })}
+            aria-label="Clear class filter"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Talent multi-select */}
+      <div className={styles.selectGroup}>
+        <label className={styles.selectLabel} htmlFor={talentSelectId}>
+          Talent
+        </label>
+        <select
+          id={talentSelectId}
+          className={styles.select}
+          multiple
+          size={3}
+          value={[...value.talents]}
+          onChange={handleTalentChange}
+          aria-label="Filter by card talent"
+        >
+          {allTalents.map((talent) => (
+            <option key={talent} value={talent}>
+              {talent}
+            </option>
+          ))}
+        </select>
+        {value.talents.length > 0 && (
+          <button
+            type="button"
+            className={styles.clearBtn}
+            onClick={() => onChange({ ...value, talents: [] })}
+            aria-label="Clear talent filter"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Set multi-select */}
       <div className={styles.selectGroup}>
         <label className={styles.selectLabel} htmlFor={setSelectId}>
@@ -201,6 +319,30 @@ export function LibraryFilters({
             Clear
           </button>
         )}
+      </div>
+
+      {/* Card-size slider */}
+      <div className={styles.sliderGroup}>
+        <label className={styles.selectLabel} htmlFor={sizeSliderId}>
+          Card size
+        </label>
+        <input
+          id={sizeSliderId}
+          type="range"
+          className={styles.slider}
+          min={CARD_SIZE_MIN}
+          max={CARD_SIZE_MAX}
+          step={4}
+          value={value.cardSize}
+          onChange={handleSizeChange}
+          aria-label="Card size in pixels"
+          aria-valuemin={CARD_SIZE_MIN}
+          aria-valuemax={CARD_SIZE_MAX}
+          aria-valuenow={value.cardSize}
+        />
+        <span className={styles.sliderValue} aria-hidden="true">
+          {value.cardSize}px
+        </span>
       </div>
 
       {/* Grouping segmented control */}

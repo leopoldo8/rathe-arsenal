@@ -30,6 +30,13 @@ export interface ICardArtProps {
   /** Size preset. Controls overall card dimensions. */
   readonly size: TCardArtSize;
   /**
+   * Optional pixel width override. When provided, the size preset is ignored
+   * for sizing (height derived from the same 7:10 aspect ratio). Used by the
+   * library grid's continuous size slider so users can scale cells beyond the
+   * 4 fixed presets.
+   */
+  readonly widthOverride?: number | undefined;
+  /**
    * Public image URLs (WebP small/large) from the LSS S3 bucket. When
    * present and the image loads successfully, the photo replaces the
    * stylized SVG placeholder. On load error, the SVG fallback renders
@@ -154,8 +161,9 @@ export function CardArt({
   size,
   imageUrl,
   onClick,
+  widthOverride,
 }: ICardArtProps): React.ReactElement {
-  const width = SIZE_WIDTH_MAP[size];
+  const width = widthOverride ?? SIZE_WIDTH_MAP[size];
   const height = Math.round(width * ASPECT_RATIO);
 
   // Track whether the real card image loaded successfully. On 404 or

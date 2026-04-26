@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { LibraryFilters } from '../LibraryFilters';
@@ -13,8 +13,11 @@ import type { ILibraryCard } from '../../../api/library';
 const EMPTY_FILTERS: ILibraryFiltersValue = {
   pitches: [],
   types: [],
+  classes: [],
+  talents: [],
   sets: [],
   group: 'type',
+  cardSize: 120,
 };
 
 function makeCard(overrides: Partial<ILibraryCard>): ILibraryCard {
@@ -24,6 +27,7 @@ function makeCard(overrides: Partial<ILibraryCard>): ILibraryCard {
     pitch: null,
     types: ['attack'],
     classes: [],
+    talents: [],
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,
@@ -131,6 +135,65 @@ describe('LibraryFilters — grouping segmented control', () => {
     render(<LibraryFilters cards={SAMPLE_CARDS} value={EMPTY_FILTERS} onChange={onChange} />);
     await userEvent.click(screen.getByRole('button', { name: /^Set$/i }));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ group: 'set' }));
+  });
+});
+
+describe('LibraryFilters — class select', () => {
+  const cards: readonly ILibraryCard[] = [
+    makeCard({ cardIdentifier: 'A', classes: ['Warrior'] }),
+    makeCard({ cardIdentifier: 'B', classes: ['Wizard'] }),
+    makeCard({ cardIdentifier: 'C', classes: [] }),
+  ];
+
+  it('populates class options from cards', () => {
+    render(<LibraryFilters cards={cards} value={EMPTY_FILTERS} onChange={vi.fn()} />);
+    expect(screen.getByRole('option', { name: 'Warrior' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Wizard' })).toBeInTheDocument();
+  });
+
+  it('shows a Clear button when classes are selected', () => {
+    const value: ILibraryFiltersValue = { ...EMPTY_FILTERS, classes: ['Warrior'] };
+    render(<LibraryFilters cards={cards} value={value} onChange={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /clear class filter/i })).toBeInTheDocument();
+  });
+});
+
+describe('LibraryFilters — talent select', () => {
+  const cards: readonly ILibraryCard[] = [
+    makeCard({ cardIdentifier: 'A', talents: ['lightning'] }),
+    makeCard({ cardIdentifier: 'B', talents: ['earth'] }),
+    makeCard({ cardIdentifier: 'C', talents: [] }),
+  ];
+
+  it('populates talent options from cards', () => {
+    render(<LibraryFilters cards={cards} value={EMPTY_FILTERS} onChange={vi.fn()} />);
+    expect(screen.getByRole('option', { name: 'lightning' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'earth' })).toBeInTheDocument();
+  });
+
+  it('shows a Clear button when talents are selected', () => {
+    const value: ILibraryFiltersValue = { ...EMPTY_FILTERS, talents: ['earth'] };
+    render(<LibraryFilters cards={cards} value={value} onChange={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /clear talent filter/i })).toBeInTheDocument();
+  });
+});
+
+describe('LibraryFilters — card-size slider', () => {
+  it('renders the slider with the current value', () => {
+    const value: ILibraryFiltersValue = { ...EMPTY_FILTERS, cardSize: 160 };
+    render(<LibraryFilters cards={SAMPLE_CARDS} value={value} onChange={vi.fn()} />);
+    const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    expect(slider).toHaveValue('160');
+  });
+
+  it('calls onChange with the new card size when slider moves', () => {
+    const onChange = vi.fn();
+    render(
+      <LibraryFilters cards={SAMPLE_CARDS} value={EMPTY_FILTERS} onChange={onChange} />,
+    );
+    const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    fireEvent.change(slider, { target: { value: '180' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ cardSize: 180 }));
   });
 });
 

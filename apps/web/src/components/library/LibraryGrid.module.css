@@ -33,7 +33,14 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* `--cell-min` is set inline from the size slider. Each column is exactly
+     `--cell-min` wide (no `1fr` stretch) so the card sits flush with its cell
+     boundary and the visual rhythm stays uniform across the row. `min()`
+     guards against overflow on very narrow viewports. */
+  grid-template-columns: repeat(
+    auto-fill,
+    min(100%, var(--cell-min, 96px))
+  );
   gap: var(--ra-space-3);
 }
 
@@ -47,6 +54,14 @@
   border: 1px solid var(--ra-border-subtle);
   border-radius: var(--ra-radius-md);
   transition: border-color var(--ra-duration) var(--ra-ease);
+  /* Keep cell from overflowing the grid track when CardArt's intrinsic
+     width is at the upper end of the slider range. */
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.cell > * {
+  min-width: 0;
 }
 
 .cell:hover {
@@ -56,6 +71,7 @@
 .art {
   display: flex;
   justify-content: center;
+  max-width: 100%;
 }
 
 .meta {
@@ -93,7 +109,6 @@
 
 @media (max-width: 639px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: var(--ra-space-2);
   }
 }
