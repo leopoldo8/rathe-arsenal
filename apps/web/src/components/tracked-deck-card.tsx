@@ -1,10 +1,17 @@
 import { Link } from '@tanstack/react-router';
 import { ITrackedDeckListItem } from '../api/decks';
+import styles from './tracked-deck-card.module.css';
 
 interface ITrackedDeckCardProps {
   readonly deck: ITrackedDeckListItem;
   readonly onUntrack: (deckId: number) => void;
   readonly isUntracking: boolean;
+}
+
+function getReadinessTier(percent: number): 'high' | 'mid' | 'low' {
+  if (percent >= 80) return 'high';
+  if (percent >= 50) return 'mid';
+  return 'low';
 }
 
 export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckCardProps) {
@@ -20,55 +27,34 @@ export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckC
   }
 
   return (
-    <div
-      style={{
-        border: '1px solid #e5e5e5',
-        borderRadius: '8px',
-        padding: '1rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-      }}
-    >
+    <div className={styles.card}>
       <Link
         to="/decks/$deckId"
         params={{ deckId: String(deck.id) }}
-        style={{ textDecoration: 'none', color: 'inherit' }}
+        className={styles.deckLink}
       >
-        <h3 style={{ margin: 0 }}>{deck.name}</h3>
-        <div style={{ color: '#666', fontSize: '0.875rem' }}>
+        <h3 className={styles.deckName}>{deck.name}</h3>
+        <div className={styles.deckMeta}>
           {deck.hero} -- {deck.format}
         </div>
         {effectivePercent !== null ? (
           <div
-            style={{
-              marginTop: '0.5rem',
-              fontSize: '1.25rem',
-              fontWeight: 'bold',
-              color: effectivePercent >= 80 ? '#38a169' : effectivePercent >= 50 ? '#d69e2e' : '#e53e3e',
-            }}
+            className={styles.readinessPercent}
+            data-tier={getReadinessTier(effectivePercent)}
           >
             {effectivePercent.toFixed(1)}% ready
           </div>
         ) : (
-          <div style={{ marginTop: '0.5rem', color: '#999', fontSize: '0.875rem' }}>
+          <div className={styles.noReadiness}>
             No readiness data yet
           </div>
         )}
       </Link>
-      <div style={{ marginTop: '0.25rem' }}>
+      <div className={styles.cardFooter}>
         <button
           onClick={handleUntrack}
           disabled={isUntracking}
-          style={{
-            cursor: isUntracking ? 'not-allowed' : 'pointer',
-            color: '#e53e3e',
-            background: 'none',
-            border: '1px solid #e53e3e',
-            borderRadius: '4px',
-            padding: '0.25rem 0.5rem',
-            fontSize: '0.75rem',
-          }}
+          className={styles.untrackBtn}
         >
           {isUntracking ? 'Removing...' : 'Untrack'}
         </button>

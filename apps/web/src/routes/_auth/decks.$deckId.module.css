@@ -99,20 +99,36 @@
   border-color: var(--ra-accent);
 }
 
-/* Path C banner — uniform ready-low wash instead of a 4px left stripe
-   (BAN 1). The heading inside (in ready-low display color) carries the
-   "not fully coverable" signal; the wash just establishes the block. */
+/* Path C banner — ember frame ornament per U4 spec.
+   Replaces the earlier ready-low wash (BAN 1 treatment).
+   Semantically this is NOT a tab — it is a section separator block
+   signaling a category change from A/B results. */
 .pathCBanner {
-  background: color-mix(in oklch, var(--ra-ready-low) 8%, var(--ra-ready-low-bg));
-  border: 1px solid color-mix(in oklch, var(--ra-ready-low) 40%, var(--ra-ready-low-border));
-  border-radius: var(--ra-radius-sm);
-  padding: var(--ra-space-3) var(--ra-space-4);
+  /* Perimeter border using path-c-border token */
+  border: 1px solid var(--ra-path-c-border);
+  /* Left border overrides with ember accent (3px ornamental) */
+  border-left: 3px solid var(--ra-ember);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-5);
   margin-bottom: var(--ra-space-4);
+  background: var(--ra-path-c-bg);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
 }
 
+/* APPROXIMATION eyebrow */
+.pathCBanner__eyebrow {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ra-path-c-ink);
+  margin-bottom: var(--ra-space-2);
+}
+
 .pathCBanner__strong {
-  color: var(--ra-ready-low);
+  color: var(--ra-path-c-ink);
   font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
 }

@@ -184,9 +184,14 @@ function DeckDetailPage(): React.ReactElement {
             />
           )}
 
-          {/* Path C banner */}
+          {/* Path C banner — ember frame ornament per U4 spec.
+              NOT styled as a tab; this is a semantic separator block
+              that signals a category change from A/B. */}
           {snapshot.path === 'C' && (
             <div role="status" className={styles.pathCBanner}>
+              <div className={styles.pathCBanner__eyebrow}>
+                APPROXIMATION
+              </div>
               <strong className={styles.pathCBanner__strong}>
                 Closest playable version.
               </strong>{' '}

@@ -1,4 +1,5 @@
 import { IBreakdownEntry, ISubstitutionMatch } from '../api/deck-detail';
+import styles from './substitution-row.module.css';
 
 interface ISubstitutionRowProps {
   readonly original: IBreakdownEntry;
@@ -50,80 +51,40 @@ export function SubstitutionRow({
   return (
     <div
       data-pending={isPending ? 'true' : 'false'}
-      style={{
-        padding: '0.5rem 0',
-        borderBottom: '1px solid #f0f0f0',
-        opacity: isPending ? 0.5 : 1,
-        transition: 'opacity 150ms ease',
-      }}
+      className={styles.row}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span style={{ fontWeight: 500 }}>{original.cardIdentifier}</span>
-        <span style={{ color: '#666' }}>&rarr;</span>
-        <span style={{ fontWeight: 500, color: '#3182ce' }}>
+      <div className={styles.rowHeader}>
+        <span className={styles.originalName}>{original.cardIdentifier}</span>
+        <span className={styles.arrow}>&rarr;</span>
+        <span className={styles.substituteName}>
           {match.substitute.name}
         </span>
-        <span
-          style={{
-            display: 'inline-block',
-            padding: '0.125rem 0.5rem',
-            borderRadius: '9999px',
-            border: '1px solid #d69e2e',
-            color: '#d69e2e',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-          }}
-        >
+        <span className={styles.tierBadge}>
           Tier {match.tier}
         </span>
-        <span style={{ color: '#999', fontSize: '0.75rem' }}>
+        <span className={styles.score}>
           ({(match.score * 100).toFixed(0)}%)
         </span>
-        <span style={{ flex: 1 }} />
+        <span className={styles.spacer} />
         {onReject && (
           <button
             type="button"
             onClick={handleReject}
             disabled={disabled}
             aria-label="Reject this substitution"
-            style={{
-              border: 'none',
-              background: 'transparent',
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              color: disabled ? '#ccc' : '#e53e3e',
-              fontSize: '1rem',
-              lineHeight: 1,
-              padding: '0.25rem 0.5rem',
-              borderRadius: '4px',
-            }}
+            className={styles.rejectBtn}
           >
             &times;
           </button>
         )}
       </div>
-      <div
-        style={{ color: '#888', fontSize: '0.8125rem', marginTop: '0.25rem' }}
-      >
+      <div className={styles.rationale}>
         {match.rationale}
       </div>
       {curveWarning && (
         <div
           role="status"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.375rem',
-            marginTop: '0.375rem',
-            color: '#b7791f',
-            fontSize: '0.8125rem',
-          }}
+          className={styles.curveWarning}
         >
           <span aria-hidden="true">&#9888;</span>
           Pitch curve broken: no valid alternative for this slot.

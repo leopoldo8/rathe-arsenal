@@ -1,6 +1,7 @@
 import { IBreakdown } from '../api/deck-detail';
 import { SubstitutionRow } from './substitution-row';
 import { MarkOwnedButton } from './mark-owned-button';
+import styles from './breakdown-list.module.css';
 
 interface IBreakdownListProps {
   readonly breakdown: IBreakdown;
@@ -38,30 +39,25 @@ export function BreakdownList({
   // snapshots persisted before the notOwned field existed.
   const notOwned = breakdown.notOwned ?? breakdown.missing;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className={styles.container}>
       {/* Exact matches */}
       <section>
-        <h3 style={{ margin: '0 0 0.5rem', color: '#38a169' }}>
+        <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--exact']}`}>
           Exact ({breakdown.exact.length})
         </h3>
         {breakdown.exact.length === 0 ? (
-          <p style={{ color: '#999', fontSize: '0.875rem' }}>
+          <p className={styles.emptyMsg}>
             No exact matches
           </p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className={styles.exactList}>
             {breakdown.exact.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}
-                style={{
-                  padding: '0.375rem 0',
-                  borderBottom: '1px solid #f0f0f0',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                }}
+                className={styles.exactItem}
               >
                 <span>{entry.cardIdentifier}</span>
-                <span style={{ color: '#999' }}>
+                <span className={styles.exactItemMeta}>
                   x{entry.quantity} ({entry.slot})
                 </span>
               </li>
@@ -72,11 +68,11 @@ export function BreakdownList({
 
       {/* Substituted */}
       <section>
-        <h3 style={{ margin: '0 0 0.5rem', color: '#d69e2e' }}>
+        <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--substituted']}`}>
           Substituted ({breakdown.substituted.length})
         </h3>
         {breakdown.substituted.length === 0 ? (
-          <p style={{ color: '#999', fontSize: '0.875rem' }}>
+          <p className={styles.emptyMsg}>
             No substitutions
           </p>
         ) : (
@@ -101,29 +97,23 @@ export function BreakdownList({
       {/* Not owned — all cards the user doesn't fully own, regardless
           of whether a substitution suggestion exists. */}
       <section>
-        <h3 style={{ margin: '0 0 0.5rem', color: '#e53e3e' }}>
+        <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--notOwned']}`}>
           Not owned ({notOwned.length})
         </h3>
         {notOwned.length === 0 ? (
-          <p style={{ color: '#999', fontSize: '0.875rem' }}>
+          <p className={styles.emptyMsg}>
             All cards accounted for!
           </p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className={styles.notOwnedList}>
             {notOwned.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}
-                style={{
-                  padding: '0.375rem 0',
-                  borderBottom: '1px solid #f0f0f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+                className={styles.notOwnedItem}
               >
-                <div>
+                <div className={styles.notOwnedItemLeft}>
                   <span>{entry.cardIdentifier}</span>
-                  <span style={{ color: '#999', marginLeft: '0.5rem' }}>
+                  <span className={styles.notOwnedItemMeta}>
                     x{entry.quantity} ({entry.slot})
                   </span>
                 </div>

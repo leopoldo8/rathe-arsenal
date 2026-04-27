@@ -38,7 +38,7 @@ vi.mock('../../../components/onboarding/OnboardingWizard', () => ({
   OnboardingWizard: () => <div data-testid="onboarding-wizard" />,
 }));
 
-// OnboardingSkeleton — stub so loading-state test is isolated from the skeleton impl
+// OnboardingSkeleton — stub so the loading-state test stays isolated from the skeleton impl
 vi.mock('../../../components/onboarding/OnboardingSkeleton', () => ({
   OnboardingSkeleton: () => <div data-testid="onboarding-skeleton" />,
 }));
@@ -109,8 +109,6 @@ describe('OnboardingPage — R60 redirect (Unit 9)', () => {
   });
 
   it('renders a skeleton (not null) while decks query is loading (R59)', () => {
-    // Unit 9 introduced OnboardingSkeleton to prevent a blank flash during load.
-    // The previous expectation of null was written before the skeleton existed.
     mockUseDecksQuery.mockReturnValue(makeQueryLoading());
     render(<OnboardingPage />);
     expect(screen.getByTestId('onboarding-skeleton')).toBeInTheDocument();
