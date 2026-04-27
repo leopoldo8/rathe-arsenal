@@ -646,10 +646,12 @@ describe('OnboardingWizard — R60 guard (OnboardingPage)', () => {
     vi.clearAllMocks();
   });
 
-  it('renders null while decks query is loading (prevents flash)', () => {
+  it('renders skeleton while decks query is loading (prevents blank flash)', () => {
     mockUseDecksQuery.mockReturnValue(makeDecksQueryLoading());
-    const { container } = renderOnboardingPage();
-    expect(container.firstChild).toBeNull();
+    renderOnboardingPage();
+    // The skeleton carries aria-busy to communicate the loading state (R59).
+    const skeleton = screen.getByRole('region', { name: /loading onboarding/i });
+    expect(skeleton).toHaveAttribute('aria-busy', 'true');
   });
 
   it('renders Navigate to /import when user has existing tracked decks', () => {

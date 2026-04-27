@@ -2,6 +2,7 @@ import React from 'react';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useDecksQuery } from '../../api/decks';
 import { OnboardingWizard } from '../../components/onboarding/OnboardingWizard';
+import { OnboardingSkeleton } from '../../components/onboarding/OnboardingSkeleton';
 
 export const Route = createFileRoute('/_auth/onboarding')({
   component: OnboardingPage,
@@ -19,11 +20,11 @@ export const Route = createFileRoute('/_auth/onboarding')({
  * is redirected to /import rather than resuming the wizard. This is a
  * deliberate block — v1 has no in-progress-onboarding state persistence.
  */
-export function OnboardingPage(): React.ReactElement | null {
+export function OnboardingPage(): React.ReactElement {
   const decksQuery = useDecksQuery();
 
-  // While resolving, render nothing to avoid flashing the wizard.
-  if (decksQuery.isLoading) return null;
+  // While resolving, show a skeleton to avoid a blank flash (R59).
+  if (decksQuery.isLoading) return <OnboardingSkeleton />;
 
   // R60: returning user with existing decks → redirect to import.
   const trackedDecks = decksQuery.data?.trackedDecks ?? [];
