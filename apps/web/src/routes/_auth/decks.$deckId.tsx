@@ -11,6 +11,9 @@ import {
   useClearDeckRejectionsMutation,
 } from '../../api/decisions';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
+import { useToast } from '../../components/ui/Toast/useToast';
+import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
+import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
 import { ReadinessHero } from '../../components/deck-detail/ReadinessHero';
 import { BreakdownSections } from '../../components/deck-detail/BreakdownSections';
 import { ModifiedViewBanner } from '../../components/deck-detail/ModifiedViewBanner';
@@ -28,6 +31,7 @@ function countNotOwnedCards(breakdown: IBreakdown): number {
 
 function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
+  const { show: showToast } = useToast();
 
   // pollingStartedAt tracks when variant fetch polling began (epoch ms).
   // undefined means polling is inactive. Passed to useDeckDetailQuery to
@@ -38,8 +42,8 @@ function DeckDetailPage(): React.ReactElement {
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const decideMutation = useDecideSubstitutionMutation(deckId);
-  const resetDecisionMutation = useResetDecisionsMutation(deckId);
+  const decideMutation = useDecideSubstitutionMutation(deckId, { showToast });
+  const resetDecisionMutation = useResetDecisionsMutation(deckId, { showToast });
   const clearRejectionsMutation = useClearDeckRejectionsMutation(deckId);
   const variantFetchMutation = useVariantFetchMutation(deckId);
 
@@ -62,7 +66,7 @@ function DeckDetailPage(): React.ReactElement {
     variantFetchMutation.data?.status === 'already_fresh';
 
   if (detailQuery.isLoading) {
-    return <p className={styles.loadingMsg}>Loading deck details...</p>;
+    return <DeckDetailSkeleton />;
   }
 
   if (detailQuery.isError) {
@@ -84,14 +88,26 @@ function DeckDetailPage(): React.ReactElement {
 
   const deck = detailQuery.data;
 
-  if (!deck) {
-    return <p className={styles.noSnapshotMsg}>Deck not found.</p>;
+  if (deck == null) {
+    return <DeckDetailEmptyState kind="not-found" />;
+  }
+
+  if (deck.latestSnapshot == null) {
+    return <DeckDetailEmptyState kind="computing" />;
   }
 
   const snapshot = deck.latestSnapshot;
 
   function handleMarkOwned(cardIdentifier: string): void {
-    markOwnedMutation.mutate(cardIdentifier);
+    markOwnedMutation.mutate(cardIdentifier, {
+      onError: (err) => {
+        showToast({
+          kind: 'error',
+          message: `Failed to mark card: ${(err as Error).message}`,
+          retry: () => markOwnedMutation.mutate(cardIdentifier),
+        });
+      },
+    });
   }
 
   function handleApproveSubstitute(substituteIdentifier: string): void {
@@ -116,7 +132,15 @@ function DeckDetailPage(): React.ReactElement {
   }
 
   function handleClearRejections(): void {
-    clearRejectionsMutation.mutate(undefined);
+    clearRejectionsMutation.mutate(undefined, {
+      onError: (err) => {
+        showToast({
+          kind: 'error',
+          message: `Failed to clear rejections: ${(err as Error).message}`,
+          retry: () => clearRejectionsMutation.mutate(undefined),
+        });
+      },
+    });
   }
 
   // The substitute identifier whose mutation is in flight (if any).
@@ -134,115 +158,77 @@ function DeckDetailPage(): React.ReactElement {
         &#8592; Back to decks
       </Link>
 
-      {!snapshot ? (
-        <div>
-          <h1>{deck.name}</h1>
-          <p className={styles.noSnapshotMsg}>
-            No readiness data yet. The snapshot will appear once computed.
-          </p>
-          <a
-            href={`https://fabrary.com/decks/${deck.fabraryUlid}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View on Fabrary
-          </a>
+      {/* 3-column grid */}
+      <div className={styles.layout}>
+        {/* Column A — Readiness hero */}
+        <div className={styles.colA}>
+          <ReadinessHero
+            effectivePercent={snapshot.effectivePercent}
+            rawPercent={snapshot.rawPercent}
+            fidelityPercent={snapshot.fidelityPercent}
+            fabraryUlid={deck.fabraryUlid}
+            deckName={deck.name}
+            hero={deck.hero}
+            format={deck.format}
+          />
         </div>
-      ) : (
-        <>
-          {/* Mutation error messages */}
-          {decideMutation.isError && (
-            <p className={styles.errorMsg}>
-              Failed to update decision:{' '}
-              {(decideMutation.error as Error).message}
-            </p>
-          )}
-          {clearRejectionsMutation.isError && (
-            <p className={styles.errorMsg}>
-              Failed to clear rejections:{' '}
-              {(clearRejectionsMutation.error as Error).message}
-            </p>
-          )}
-          {markOwnedMutation.isError && (
-            <p className={styles.errorMsg}>
-              Failed to mark card:{' '}
-              {(markOwnedMutation.error as Error).message}
-            </p>
+
+        {/* Column B — Breakdown sections (substitutions, exact, not-owned) */}
+        <div className={styles.colB}>
+          {/* Modified view banner — appears when any decision='rejected' */}
+          {deck.rejectedCount > 0 && (
+            <ModifiedViewBanner
+              rejectedCount={deck.rejectedCount}
+              onClearRejections={handleClearRejections}
+              isClearing={clearRejectionsMutation.isPending}
+            />
           )}
 
-          {/* 3-column grid */}
-          <div className={styles.layout}>
-            {/* Column A — Readiness hero */}
-            <div className={styles.colA}>
-              <ReadinessHero
-                effectivePercent={snapshot.effectivePercent}
-                rawPercent={snapshot.rawPercent}
-                fidelityPercent={snapshot.fidelityPercent}
-                fabraryUlid={deck.fabraryUlid}
-                deckName={deck.name}
-                hero={deck.hero}
-                format={deck.format}
-              />
+          {/* Path C banner */}
+          {snapshot.path === 'C' && (
+            <div role="status" className={styles.pathCBanner}>
+              <strong className={styles.pathCBanner__strong}>
+                Closest playable version.
+              </strong>{' '}
+              This deck is missing{' '}
+              {countNotOwnedCards(snapshot.breakdown)}{' '}
+              {countNotOwnedCards(snapshot.breakdown) === 1
+                ? 'card'
+                : 'cards'}
+              . You&rsquo;re currently at{' '}
+              {(Math.round(snapshot.fidelityPercent * 10) / 10).toFixed(1)}%
+              fidelity.
             </div>
+          )}
 
-            {/* Column B — Breakdown sections (substitutions, exact, not-owned) */}
-            <div className={styles.colB}>
-              {/* Modified view banner — appears when any decision='rejected' */}
-              {deck.rejectedCount > 0 && (
-                <ModifiedViewBanner
-                  rejectedCount={deck.rejectedCount}
-                  onClearRejections={handleClearRejections}
-                  isClearing={clearRejectionsMutation.isPending}
-                />
-              )}
+          <BreakdownSections
+            breakdown={snapshot.breakdown}
+            decisions={deck.decisions}
+            onMarkOwned={handleMarkOwned}
+            isMarkingOwned={markOwnedMutation.isPending}
+            pendingCard={
+              markOwnedMutation.isPending
+                ? (markOwnedMutation.variables ?? null)
+                : null
+            }
+            onApproveSubstitute={handleApproveSubstitute}
+            onRejectSubstitute={handleRejectSubstitute}
+            onResetSubstitute={handleResetSubstitute}
+            pendingSubstituteId={pendingSubstituteId}
+          />
+        </div>
 
-              {/* Path C banner */}
-              {snapshot.path === 'C' && (
-                <div role="status" className={styles.pathCBanner}>
-                  <strong className={styles.pathCBanner__strong}>
-                    Closest playable version.
-                  </strong>{' '}
-                  This deck is missing{' '}
-                  {countNotOwnedCards(snapshot.breakdown)}{' '}
-                  {countNotOwnedCards(snapshot.breakdown) === 1
-                    ? 'card'
-                    : 'cards'}
-                  . You&rsquo;re currently at{' '}
-                  {(Math.round(snapshot.fidelityPercent * 10) / 10).toFixed(1)}%
-                  fidelity.
-                </div>
-              )}
-
-              <BreakdownSections
-                breakdown={snapshot.breakdown}
-                decisions={deck.decisions}
-                onMarkOwned={handleMarkOwned}
-                isMarkingOwned={markOwnedMutation.isPending}
-                pendingCard={
-                  markOwnedMutation.isPending
-                    ? (markOwnedMutation.variables ?? null)
-                    : null
-                }
-                onApproveSubstitute={handleApproveSubstitute}
-                onRejectSubstitute={handleRejectSubstitute}
-                onResetSubstitute={handleResetSubstitute}
-                pendingSubstituteId={pendingSubstituteId}
-              />
-            </div>
-
-            {/* Column C — Shopping panel (desktop sticky aside + mobile sheet) */}
-            <div className={styles.colC}>
-              <ShoppingPanel
-                data={deck.shoppingLine ?? null}
-                onFetchVariants={handleFetchVariants}
-                fetchMutationStatus={variantFetchMutation.status}
-                isCooldownActive={isCooldownActive}
-                onPollingChange={handlePollingChange}
-              />
-            </div>
-          </div>
-        </>
-      )}
+        {/* Column C — Shopping panel (desktop sticky aside + mobile sheet) */}
+        <div className={styles.colC}>
+          <ShoppingPanel
+            data={deck.shoppingLine ?? null}
+            onFetchVariants={handleFetchVariants}
+            fetchMutationStatus={variantFetchMutation.status}
+            isCooldownActive={isCooldownActive}
+            onPollingChange={handlePollingChange}
+          />
+        </div>
+      </div>
     </div>
   );
 }

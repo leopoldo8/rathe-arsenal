@@ -78,18 +78,6 @@
   margin-bottom: var(--ra-space-3);
 }
 
-.loadingMsg {
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-muted);
-  padding: var(--ra-space-4) 0;
-}
-
-.noSnapshotMsg {
-  color: var(--ra-fg-muted);
-  font-size: var(--ra-text-small);
-  font-style: italic;
-}
-
 /* Retry button */
 .retryBtn {
   font-family: var(--ra-font-display);

@@ -1,0 +1,104 @@
+/* ============================================================
+   DeckDetailEmptyState — not-found and computing states.
+   Mirrors the tone + ornament + CTA shape of LibraryEmptyState.
+   ============================================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-5);
+  text-align: center;
+  padding: var(--ra-space-12) var(--ra-space-4);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.diamond {
+  font-size: 2.25rem;
+  color: var(--ra-accent);
+  line-height: 1;
+  text-shadow: 0 0 24px var(--ra-accent-soft-bg);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-h2);
+  color: var(--ra-fg-primary);
+  letter-spacing: var(--ra-track-h2);
+}
+
+.body {
+  margin: 0;
+  font-family: var(--ra-font-serif);
+  font-style: italic;
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+/* ---------- not-found CTA group ---------- */
+.ctaGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-3);
+  margin-top: var(--ra-space-2);
+}
+
+.primaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ra-space-3) var(--ra-space-6);
+  background-color: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  text-decoration: none;
+  transition: background-color var(--ra-duration) var(--ra-ease);
+  min-block-size: 44px;
+}
+
+.primaryCta:hover {
+  background-color: var(--ra-accent-hover);
+}
+
+.primaryCta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 3px;
+}
+
+.secondaryCta {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.secondaryCta:hover {
+  color: var(--ra-fg-primary);
+}
+
+.secondaryCta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: var(--ra-radius-sm);
+}
+
+/* ---------- computing state ---------- */
+.computingIndicator {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--ra-space-2);
+}

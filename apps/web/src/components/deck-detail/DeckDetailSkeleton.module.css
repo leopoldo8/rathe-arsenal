@@ -1,0 +1,49 @@
+/* ============================================================
+   DeckDetailSkeleton — loading placeholder for the 3-column layout.
+   Mirrors the populated grid breakpoints from decks.$deckId.module.css.
+   ============================================================ */
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ra-space-6);
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr 2fr 1fr;
+  }
+}
+
+/* Column A */
+.colA {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+/* Column B */
+.colB {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  min-width: 0;
+}
+
+/* Column C */
+.colC {
+  /* ShoppingPanel manages its own sticky positioning */
+}
+
+.sectionTitle {
+  margin-top: var(--ra-space-2);
+}
+
+.heroLine {
+  margin-top: var(--ra-space-2);
+}
+
+.card {
+  border-radius: var(--ra-radius-sm);
+}
