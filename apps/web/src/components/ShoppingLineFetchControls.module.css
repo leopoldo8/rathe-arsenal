@@ -1,0 +1,74 @@
+/* ============================================================
+   ShoppingLineFetchControls — CSS Module
+   Inline-style migration (Plan C Unit 6).
+   ============================================================ */
+
+/* ---- VariantFetchCta ---- */
+.ctaWrapper {
+  margin-top: var(--ra-space-2);
+}
+
+.ctaBtn {
+  padding: 0.375rem var(--ra-space-3);
+  background: var(--ra-info);
+  color: var(--ra-fg-inverse);
+  border: none;
+  border-radius: var(--ra-radius-md);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: var(--ra-weight-medium);
+}
+
+.ctaBtn[data-pending="true"] {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-muted);
+  cursor: not-allowed;
+}
+
+.ctaError {
+  margin-left: var(--ra-space-2);
+  font-size: 0.8125rem;
+  color: var(--ra-ready-low);
+}
+
+/* ---- VariantFetchProgress ---- */
+.progress {
+  margin-top: var(--ra-space-2);
+  font-size: 0.8125rem;
+  color: var(--ra-fg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+/* ---- PartialFailureNotice ---- */
+.failureNotice {
+  margin-top: var(--ra-space-2);
+  font-size: 0.8125rem;
+  color: var(--ra-ready-mid);
+  background: var(--ra-ready-mid-bg);
+  border: 1px solid var(--ra-ready-mid-border);
+  border-radius: var(--ra-radius-md);
+  padding: 0.375rem 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.failureRetryBtn {
+  background: none;
+  border: none;
+  color: var(--ra-ready-mid);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  font-weight: var(--ra-weight-medium);
+}
+
+.failureRetryBtn[data-pending="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

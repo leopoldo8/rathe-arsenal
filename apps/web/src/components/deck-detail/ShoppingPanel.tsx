@@ -14,6 +14,11 @@ interface IShoppingPanelProps {
   readonly fetchMutationStatus?: TVariantFetchMutationStatus;
   readonly isCooldownActive?: boolean;
   readonly onPollingChange?: (startedAt: number | undefined) => void;
+  /**
+   * Called when the user clicks "Retry" in the ShoppingLine error state.
+   * The host route owns recovery (TanStack Query invalidation / refetch).
+   */
+  readonly onRetry?: () => void;
 }
 
 /**
@@ -36,6 +41,7 @@ export function ShoppingPanel({
   fetchMutationStatus = 'idle',
   isCooldownActive = false,
   onPollingChange,
+  onRetry,
 }: IShoppingPanelProps): React.ReactElement {
   const [sheetOpen, setSheetOpen] = useState(false);
   const titleId = useId();
@@ -54,6 +60,7 @@ export function ShoppingPanel({
       fetchMutationStatus={fetchMutationStatus}
       isCooldownActive={isCooldownActive}
       {...(onPollingChange !== undefined ? { onPollingChange } : {})}
+      {...(onRetry !== undefined ? { onRetry } : {})}
     />
   );
 

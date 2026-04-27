@@ -1,0 +1,69 @@
+/* ============================================================
+   ShoppingLineVariantBreakdown — CSS Module
+   Inline-style migration (Plan C Unit 6).
+   ============================================================ */
+
+/* ---- Variant breakdown table ---- */
+.table {
+  margin-top: 0.375rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}
+
+/* Shared column header */
+.th {
+  font-weight: var(--ra-weight-semibold);
+  padding: var(--ra-space-1) 0.375rem;
+  border-bottom: 1px solid var(--ra-border-subtle);
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Right-aligned headers (Price, Qty) */
+.th--right {
+  text-align: right;
+}
+
+/* First column: no left padding */
+.th--first {
+  padding-left: 0;
+}
+
+/* Last column: no right padding */
+.th--last {
+  padding-right: 0;
+}
+
+/* ---- Variant data cells ---- */
+.td {
+  padding: var(--ra-space-1) 0.375rem;
+  border-bottom: 1px solid var(--ra-bg-raised);
+  white-space: nowrap;
+}
+
+/* Edition cell — constrained width with ellipsis */
+.td--edition {
+  padding-left: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right-aligned cells */
+.td--right {
+  text-align: right;
+}
+
+/* Price cell emphasis */
+.td--price {
+  font-weight: var(--ra-weight-medium);
+  text-align: right;
+}
+
+/* Last column: no right padding */
+.td--last {
+  padding-right: 0;
+  text-align: right;
+}

@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   IBreakdown,
   useDeckDetailQuery,
   useMarkOwnedMutation,
+  deckDetailQueryKey,
 } from '../../api/deck-detail';
 import {
   useDecideSubstitutionMutation,
@@ -32,6 +34,7 @@ function countNotOwnedCards(breakdown: IBreakdown): number {
 function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
   const { show: showToast } = useToast();
+  const queryClient = useQueryClient();
 
   // pollingStartedAt tracks when variant fetch polling began (epoch ms).
   // undefined means polling is inactive. Passed to useDeckDetailQuery to
@@ -60,6 +63,17 @@ function DeckDetailPage(): React.ReactElement {
   const handleFetchVariants = useCallback(() => {
     variantFetchMutation.mutate();
   }, [variantFetchMutation]);
+
+  // Retry handler for ShoppingLine error state: invalidates the deck-detail
+  // query so TanStack re-fetches fresh data. Toast notification of the failure
+  // is the host's responsibility — ShoppingLine stays portal-free.
+  const handleShoppingLineRetry = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
+    showToast({
+      kind: 'error',
+      message: 'Retrying shopping line…',
+    });
+  }, [queryClient, deckId, showToast]);
 
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
@@ -231,6 +245,7 @@ function DeckDetailPage(): React.ReactElement {
             fetchMutationStatus={variantFetchMutation.status}
             isCooldownActive={isCooldownActive}
             onPollingChange={handlePollingChange}
+            onRetry={handleShoppingLineRetry}
           />
         </div>
       </div>

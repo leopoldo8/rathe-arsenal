@@ -1,5 +1,6 @@
 import { IShoppingLineVariant } from '../api/shopping-line';
 import { formatBrl } from '../utils/format-brl';
+import styles from './ShoppingLineVariantBreakdown.module.css';
 
 /**
  * Returns true when the finish string represents a foil finish.
@@ -25,74 +26,36 @@ interface IVariantBreakdownTableProps {
 
 export function VariantBreakdownTable({ variants }: IVariantBreakdownTableProps) {
   return (
-    <table
-      style={{
-        marginTop: '0.375rem',
-        width: '100%',
-        borderCollapse: 'collapse',
-        fontSize: '0.75rem',
-        color: '#4a5568',
-      }}
-    >
+    <table className={styles.table}>
       <thead>
         <tr>
           <th
             scope="col"
-            style={{
-              textAlign: 'left',
-              fontWeight: 600,
-              padding: '0.25rem 0.375rem 0.25rem 0',
-              borderBottom: '1px solid #edf2f7',
-              whiteSpace: 'nowrap',
-            }}
+            className={`${styles.th} ${styles['th--first']}`}
           >
             Edition
           </th>
           <th
             scope="col"
-            style={{
-              textAlign: 'left',
-              fontWeight: 600,
-              padding: '0.25rem 0.375rem',
-              borderBottom: '1px solid #edf2f7',
-              whiteSpace: 'nowrap',
-            }}
+            className={styles.th}
           >
             Condition
           </th>
           <th
             scope="col"
-            style={{
-              textAlign: 'left',
-              fontWeight: 600,
-              padding: '0.25rem 0.375rem',
-              borderBottom: '1px solid #edf2f7',
-              whiteSpace: 'nowrap',
-            }}
+            className={styles.th}
           >
             Finish
           </th>
           <th
             scope="col"
-            style={{
-              textAlign: 'right',
-              fontWeight: 600,
-              padding: '0.25rem 0.375rem',
-              borderBottom: '1px solid #edf2f7',
-              whiteSpace: 'nowrap',
-            }}
+            className={`${styles.th} ${styles['th--right']}`}
           >
             Price
           </th>
           <th
             scope="col"
-            style={{
-              textAlign: 'right',
-              fontWeight: 600,
-              padding: '0.25rem 0 0.25rem 0.375rem',
-              borderBottom: '1px solid #edf2f7',
-              whiteSpace: 'nowrap',
-            }}
+            className={`${styles.th} ${styles['th--right']} ${styles['th--last']}`}
           >
             Qty
           </th>
@@ -117,55 +80,21 @@ function VariantRow({ variant }: IVariantRowProps) {
   return (
     <tr>
       <td
-        style={{
-          padding: '0.25rem 0.375rem 0.25rem 0',
-          borderBottom: '1px solid #f7fafc',
-          maxWidth: '12rem',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
+        className={`${styles.td} ${styles['td--edition']}`}
         title={variant.edition}
       >
         {variant.edition}
       </td>
-      <td
-        style={{
-          padding: '0.25rem 0.375rem',
-          borderBottom: '1px solid #f7fafc',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <td className={styles.td}>
         {variant.condition}
       </td>
-      <td
-        style={{
-          padding: '0.25rem 0.375rem',
-          borderBottom: '1px solid #f7fafc',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <td className={styles.td}>
         {finishLabel}
       </td>
-      <td
-        style={{
-          padding: '0.25rem 0.375rem',
-          borderBottom: '1px solid #f7fafc',
-          textAlign: 'right',
-          whiteSpace: 'nowrap',
-          fontWeight: 500,
-        }}
-      >
+      <td className={`${styles.td} ${styles['td--price']}`}>
         {formatBrl(variant.priceCents)}
       </td>
-      <td
-        style={{
-          padding: '0.25rem 0 0.25rem 0.375rem',
-          borderBottom: '1px solid #f7fafc',
-          textAlign: 'right',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <td className={`${styles.td} ${styles['td--last']}`}>
         {variant.quantity}
       </td>
     </tr>
