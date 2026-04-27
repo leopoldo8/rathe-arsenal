@@ -79,6 +79,22 @@ function sortByName(cards: readonly ILibraryCard[]): ILibraryCard[] {
 }
 
 /**
+ * Type groups that represent the arena (the play zone permanents the
+ * player sets up at the start of the game) — listed last so the deck
+ * cards (Actions, Reactions, etc.) appear first. The rule only kicks
+ * in when grouping by type; for pitch/set the keys never match these
+ * names so the comparator stays a no-op.
+ */
+const ARENA_TYPE_GROUPS = new Set(['Equipment', 'Hero', 'Token', 'Weapon']);
+
+function compareGroupKeys(a: string, b: string): number {
+  const aArena = ARENA_TYPE_GROUPS.has(a);
+  const bArena = ARENA_TYPE_GROUPS.has(b);
+  if (aArena !== bArena) return aArena ? 1 : -1;
+  return a.localeCompare(b);
+}
+
+/**
  * Groups cards by the requested dimension and returns an ordered list of
  * [groupKey, cards[]] pairs. Immutable — never mutates the input array.
  */
@@ -115,8 +131,10 @@ function groupCards(
     groupMap.set(key, sortByName(list));
   }
 
-  // Sort group keys alphabetically for deterministic ordering.
-  return [...groupMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+  // Sort group keys deterministically. Arena type groups (Equipment,
+  // Hero, Token, Weapon) get pushed to the end of the list so the deck
+  // cards — which the player scans far more often — read first.
+  return [...groupMap.entries()].sort(([a], [b]) => compareGroupKeys(a, b));
 }
 
 // ---------------------------------------------------------------------------

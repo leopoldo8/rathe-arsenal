@@ -213,6 +213,40 @@ describe('LibraryGrid — Action subtype split (group=type)', () => {
   });
 });
 
+describe('LibraryGrid — arena type groups sort last', () => {
+  it('orders deck-card groups before Equipment / Hero / Weapon / Token', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'EQ', name: 'Hide Tanner', types: ['Equipment'] }),
+      makeCard({ cardIdentifier: 'WP', name: 'Romping Club', types: ['Weapon'] }),
+      makeCard({ cardIdentifier: 'AA', name: 'Wild Ride', types: ['Action'], subtypes: ['Attack'] }),
+      makeCard({ cardIdentifier: 'BL', name: 'Sigil of Solace', types: ['Block'] }),
+      makeCard({ cardIdentifier: 'HE', name: 'Kayo', types: ['Hero'] }),
+      makeCard({ cardIdentifier: 'TK', name: 'Might', types: ['Token'] }),
+    ];
+    render(<LibraryGrid cards={cards} group="type" />);
+    const headings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent);
+    // All deck-card group names come before all arena ones.
+    const arenaIndices = headings
+      .map((name, i) => (['Equipment', 'Hero', 'Token', 'Weapon'].includes(name ?? '') ? i : -1))
+      .filter((i) => i !== -1);
+    const deckIndices = headings
+      .map((name, i) => (['Equipment', 'Hero', 'Token', 'Weapon'].includes(name ?? '') ? -1 : i))
+      .filter((i) => i !== -1);
+    expect(Math.min(...arenaIndices)).toBeGreaterThan(Math.max(...deckIndices));
+    // Within each block, alphabetical order survives.
+    expect(headings).toEqual([
+      'Attack Action',
+      'Block',
+      'Equipment',
+      'Hero',
+      'Token',
+      'Weapon',
+    ]);
+  });
+});
+
 describe('LibraryGrid — stable in-group sort', () => {
   it('sorts cards alphabetically by name within each group', () => {
     const cards = [
