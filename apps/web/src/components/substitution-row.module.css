@@ -1,0 +1,98 @@
+/* ============================================================
+   substitution-row (legacy) — CSS Module
+   Inline-style migration (Plan C Unit 5).
+   Distinct from deck-detail/SubstitutionRow.module.css (Unit 7).
+   This file covers the simpler breakdown-list substitution row
+   used in breakdown-list.tsx and path-c-result.tsx contexts.
+   ============================================================ */
+
+.row {
+  padding: var(--ra-space-2) 0;
+  border-bottom: 1px solid var(--ra-border-subtle);
+  transition: opacity var(--ra-duration) var(--ra-ease);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* In-flight dim via data-pending attribute */
+.row[data-pending="true"] {
+  opacity: 0.5;
+}
+
+/* ---- Header row ---- */
+.rowHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.originalName {
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-primary);
+}
+
+.arrow {
+  color: var(--ra-fg-muted);
+}
+
+.substituteName {
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-info);
+}
+
+.tierBadge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--ra-radius-full);
+  border: 1px solid var(--ra-ready-mid-border);
+  color: var(--ra-ready-mid);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.score {
+  color: var(--ra-fg-muted);
+  font-size: var(--ra-text-caption);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ---- Reject button ---- */
+.rejectBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-body);
+  line-height: 1;
+  padding: var(--ra-space-1) var(--ra-space-2);
+  border-radius: var(--ra-radius-sm);
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.rejectBtn:disabled {
+  cursor: not-allowed;
+  color: var(--ra-fg-subtle);
+}
+
+/* ---- Rationale ---- */
+.rationale {
+  color: var(--ra-fg-muted);
+  font-size: var(--ra-text-small);
+  margin-top: var(--ra-space-1);
+}
+
+/* ---- Curve warning ---- */
+.curveWarning {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  color: var(--ra-ready-mid);
+  font-size: var(--ra-text-small);
+}

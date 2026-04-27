@@ -2,6 +2,7 @@ import { IBreakdown, ISubstitutedEntry } from '../api/deck-detail';
 import { IShoppingLineResponse } from '../api/shopping-line';
 import { BreakdownList } from './breakdown-list';
 import { ShoppingLine } from './ShoppingLine';
+import styles from './path-c-result.module.css';
 
 interface IPathCResultProps {
   readonly breakdown: IBreakdown;
@@ -27,17 +28,13 @@ interface IPathCResultProps {
 
 const MISSING_SECTION_ID = 'path-c-missing-cards';
 
-function pitchColor(pitch: number | null | undefined): string {
-  switch (pitch) {
-    case 1:
-      return '#c53030'; // red
-    case 2:
-      return '#d69e2e'; // yellow
-    case 3:
-      return '#3182ce'; // blue
-    default:
-      return '#718096'; // colorless / unknown
-  }
+/**
+ * Returns the pitch value as a string suitable for the data-pitch attribute,
+ * or undefined (renders no attribute) for colorless/unknown pitch.
+ */
+function pitchDataAttr(pitch: number | null | undefined): string | undefined {
+  if (pitch === 1 || pitch === 2 || pitch === 3) return String(pitch);
+  return undefined;
 }
 
 function pitchLabel(pitch: number | null | undefined): string {
@@ -72,10 +69,12 @@ function countNotOwned(breakdown: IBreakdown): number {
  * Path C result display: a closest-playable-version summary anchored by
  * the tier-weighted fidelity percentage.
  *
- * This component is standalone in Unit 8 and is not yet imported by
- * `TestDeckResult` (that integration is Unit 6's responsibility). It
- * renders a complete Path C experience so Unit 6 can drop it in with a
- * single import.
+ * Frame ornament per U4 spec:
+ *  - Ember left border (3px solid var(--ra-ember))
+ *  - var(--ra-path-c-bg) background
+ *  - var(--ra-path-c-border) perimeter
+ *  - Eyebrow: "APPROXIMATION" in var(--ra-path-c-ink)
+ *  - Fidelity number: IBM Plex Sans 700, var(--ra-path-c), var(--ra-text-h1)
  */
 export function PathCResult({
   breakdown,
@@ -104,92 +103,35 @@ export function PathCResult({
   return (
     <section
       aria-label="Closest playable version"
-      style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
+      className={styles.section}
     >
-      <header
-        style={{
-          backgroundColor: '#fffaf0',
-          border: '1px solid #f6ad55',
-          borderLeft: '4px solid #dd6b20',
-          borderRadius: '6px',
-          padding: '1.25rem 1.5rem',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '0.75rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: '#9c4221',
-            fontWeight: 600,
-            marginBottom: '0.25rem',
-          }}
-        >
-          Closest playable version
+      <header className={styles.header}>
+        <div className={styles.eyebrow}>
+          APPROXIMATION
         </div>
-        <div
-          style={{
-            fontSize: '3rem',
-            fontWeight: 700,
-            color: '#7b341e',
-            lineHeight: 1,
-          }}
-        >
+        <div className={styles.fidelityNumber}>
           {displayFidelity}%
         </div>
-        <div
-          style={{
-            marginTop: '0.375rem',
-            color: '#7b341e',
-            fontSize: '0.9375rem',
-          }}
-        >
+        <div className={styles.fidelitySubline}>
           of this deck can be assembled or substituted from your collection.
         </div>
-        <div
-          style={{
-            marginTop: '0.5rem',
-            color: '#9c4221',
-            fontSize: '0.8125rem',
-          }}
-        >
+        <div className={styles.tierSummary}>
           {tierSummary},{' '}
           {missingCount} {missingCount === 1 ? 'card' : 'cards'} still missing.
         </div>
       </header>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className={styles.ctaRow}>
         <button
           type="button"
           onClick={handleTrackProximal}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#dd6b20',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className={styles.ctaTrack}
         >
           Track proximal version
         </button>
         <a
           href={`#${MISSING_SECTION_ID}`}
-          style={{
-            padding: '0.5rem 1rem',
-            color: '#9c4221',
-            border: '1px solid #f6ad55',
-            borderRadius: '4px',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
+          className={styles.ctaMissing}
         >
           Show me what&rsquo;s missing
         </a>
@@ -207,48 +149,31 @@ export function PathCResult({
       <section
         id={MISSING_SECTION_ID}
         aria-label="Still missing"
-        style={{
-          backgroundColor: '#fff5f5',
-          border: '1px solid #fc8181',
-          borderRadius: '6px',
-          padding: '1rem 1.25rem',
-        }}
+        className={styles.missingSection}
       >
-        <h3 style={{ margin: '0 0 0.5rem', color: '#c53030' }}>
+        <h3 className={styles.missingSectionHeader}>
           Still missing ({missingCount})
         </h3>
         {notOwned.length === 0 ? (
-          <p style={{ color: '#718096', fontSize: '0.875rem', margin: 0 }}>
+          <p className={styles.missingEmpty}>
             All cards accounted for!
           </p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className={styles.missingList}>
             {notOwned.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}
-                style={{
-                  padding: '0.5rem 0',
-                  borderBottom: '1px solid #fed7d7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.625rem',
-                }}
+                className={styles.missingItem}
               >
                 <span
                   aria-label={pitchLabel(undefined)}
-                  style={{
-                    display: 'inline-block',
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '9999px',
-                    backgroundColor: pitchColor(undefined),
-                    flexShrink: 0,
-                  }}
+                  className={styles.pitchDot}
+                  data-pitch={pitchDataAttr(undefined)}
                 />
-                <span style={{ color: '#742a2a', fontWeight: 500 }}>
+                <span className={styles.missingCardName}>
                   {entry.cardIdentifier}
                 </span>
-                <span style={{ color: '#a0aec0', fontSize: '0.8125rem' }}>
+                <span className={styles.missingCardMeta}>
                   x{entry.quantity} ({entry.slot})
                 </span>
               </li>
