@@ -230,10 +230,8 @@
 
 /* ============================================================
    LIGHT theme — warm parchment, deep brass, ink text
-   NOTE: Light theme token values are included as declarations but are NOT
-   tone-corrected for Plan A. Contrast verification and tone adjustment land
-   in Plan C. Do not rely on these values passing WCAG AA at body size — see
-   docs/design/v1/contrast-matrix.md for the documented Plan C failures.
+   Tone-corrected in Plan C (Unit 1). All body-size fg/bg pairs clear WCAG AA.
+   See docs/design/v1/contrast-matrix.md for the verified pair table.
    ============================================================ */
 :root[data-theme="light"] {
   --ra-bg-canvas:      #f5f1e8;
@@ -252,11 +250,13 @@
   --ra-fg-subtle:      #9a937f;
   --ra-fg-inverse:     #ffffff;
 
-  /* --ra-accent: #8f6a22 — see contrast matrix. Body-size usage on parchment
-     needs verification; deferred to Plan C. Large-text use is safe (3:1+).
-     --ra-accent-body companion not tone-corrected for light — Plan C. */
+  /* --ra-accent: #8f6a22 — large-text and decorative use only on light theme.
+     4.38:1 on canvas falls below the AA body threshold (4.5:1).
+     --ra-accent-body: #7d5e1d — body-size companion. Cleared AA body on all
+     light backgrounds: 5.34:1 on canvas (#f5f1e8), 6.02:1 on surface (#ffffff),
+     4.87:1 on raised (#ece7d8). See docs/design/v1/contrast-matrix.md. */
   --ra-accent:         #8f6a22;
-  --ra-accent-body:    #8f6a22; /* TODO Plan C: derive body-safe companion */
+  --ra-accent-body:    #7d5e1d;
   --ra-accent-hover:   #6f521a;
   --ra-accent-dim:     #c6ad72;
   --ra-accent-deep:    #3d2c0e;
