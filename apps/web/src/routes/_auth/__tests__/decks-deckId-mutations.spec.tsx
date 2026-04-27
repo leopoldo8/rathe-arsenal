@@ -176,7 +176,6 @@ vi.mock('../../../api/variant-fetch', () => ({
 // The route component — imported after all mocks
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line import/first
 import { Route } from '../../../routes/_auth/decks.$deckId';
 
 // ---------------------------------------------------------------------------

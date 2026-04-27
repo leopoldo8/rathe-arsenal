@@ -13,7 +13,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Skeleton } from '../Skeleton';
 
 describe('Skeleton — happy path', () => {

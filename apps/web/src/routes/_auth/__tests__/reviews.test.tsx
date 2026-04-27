@@ -21,7 +21,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IReviewRow, IBulkUpsertResult } from '../../../api/reviews';
@@ -129,7 +129,6 @@ vi.mock('@radix-ui/react-popover', () => ({
 
 // Reviews API hooks
 let mockReviewsData: { rows: IReviewRow[] } | undefined;
-let mockBulkResult: IBulkUpsertResult | Error | undefined;
 const mockBulkMutate = vi.fn();
 let mockIsBulkPending = false;
 
@@ -220,7 +219,6 @@ beforeEach(() => {
     confidenceMax: 100,
   };
   mockReviewsData = undefined;
-  mockBulkResult = undefined;
   mockIsBulkPending = false;
 
   // Default mockBulkMutate: simulate success with succeeded=N (N=operations.length)
@@ -489,7 +487,6 @@ describe('ReviewsPage — tab badge counts update after bulk approve', () => {
 
     // Pending tab badge should show 3; Approved should show 1
     // Tabs are rendered with badges; confirm the pending badge value
-    const tabList = screen.getByRole('tablist');
     // Check the pending tab has a badge
     const pendingTab = screen.getByRole('tab', { name: /Pending/i });
     expect(pendingTab).toHaveTextContent('3');

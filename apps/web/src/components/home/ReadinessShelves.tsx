@@ -31,21 +31,18 @@ const SHELF_CONFIGS: readonly IShelfConfig[] = [
     tier: 'ready',
     label: 'Ready to play',
     rangeLabel: '≥80%',
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     tierClass: styles.diamondHigh!,
   },
   {
     tier: 'almost',
     label: 'Almost there',
     rangeLabel: '50–80%',
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     tierClass: styles.diamondMid!,
   },
   {
     tier: 'needs',
     label: 'Needs collection',
     rangeLabel: '<50%',
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     tierClass: styles.diamondLow!,
   },
 ] as const;
