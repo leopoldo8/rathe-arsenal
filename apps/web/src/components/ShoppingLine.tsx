@@ -18,6 +18,7 @@ import {
   VariantFetchProgress,
   PartialFailureNotice,
 } from './ShoppingLineFetchControls';
+import styles from './ShoppingLine.module.css';
 
 /**
  * Status of the variant fetch mutation, passed from the parent component
@@ -57,6 +58,13 @@ interface IShoppingLineProps {
    * `undefined` when polling stops.
    */
   readonly onPollingChange?: (startedAt: number | undefined) => void;
+  /**
+   * Called when the user clicks "Retry" in the error state.
+   * The host route owns error recovery (TanStack Query invalidation / refetch).
+   * ShoppingLine does NOT import the Toast hook — error notification is the
+   * host's responsibility.
+   */
+  readonly onRetry?: () => void;
 }
 
 /**
@@ -86,6 +94,7 @@ export function ShoppingLine({
   fetchMutationStatus = 'idle',
   isCooldownActive = false,
   onPollingChange,
+  onRetry,
 }: IShoppingLineProps) {
   // State 1: null = Path A, nothing missing
   if (data === null) {
@@ -99,7 +108,7 @@ export function ShoppingLine({
 
   // State 3: server-side error
   if (data.kind === 'error') {
-    return <ErrorState />;
+    return <ErrorState {...(onRetry !== undefined ? { onRetry } : {})} />;
   }
 
   // States 4, 5, 6: populated
@@ -120,14 +129,7 @@ function PathAEmptyState() {
   return (
     <div
       role="status"
-      style={{
-        padding: '0.875rem 1rem',
-        backgroundColor: '#f0fff4',
-        border: '1px solid #9ae6b4',
-        borderRadius: '6px',
-        color: '#22543d',
-        fontSize: '0.875rem',
-      }}
+      className={styles.pathAEmpty}
     >
       You have everything you need for this deck.
     </div>
@@ -136,40 +138,27 @@ function PathAEmptyState() {
 
 // Error state
 
-function ErrorState() {
+interface IErrorStateProps {
+  readonly onRetry?: () => void;
+  readonly message?: string;
+}
+
+function ErrorState({ onRetry, message }: IErrorStateProps) {
   return (
     <div
       role="status"
-      style={{
-        padding: '0.875rem 1rem',
-        backgroundColor: '#fff5f5',
-        border: '1px solid #feb2b2',
-        borderRadius: '6px',
-        color: '#742a2a',
-        fontSize: '0.875rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.75rem',
-        flexWrap: 'wrap',
-      }}
+      className={styles.errorState}
     >
-      <span>Shopping line temporarily unavailable.</span>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#3182ce',
-          cursor: 'pointer',
-          padding: 0,
-          fontSize: '0.875rem',
-          textDecoration: 'underline',
-        }}
-      >
-        Retry
-      </button>
+      <span>{message ?? 'Shopping line temporarily unavailable.'}</span>
+      {onRetry !== undefined && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className={styles.errorRetryBtn}
+        >
+          Retry
+        </button>
+      )}
     </div>
   );
 }
@@ -208,7 +197,8 @@ function PopulatedShoppingLine({
   const stale = isStale(lastFetchedAt);
   const veryStale = isVeryStale(lastFetchedAt);
 
-  const freshnessColor = veryStale ? '#c53030' : stale ? '#b7791f' : '#718096';
+  // Freshness state: drives data-freshness attribute selector on the timestamp span
+  const freshnessKey = veryStale ? 'very-stale' : stale ? 'stale' : 'ok';
 
   const availableLines = lines.filter((l) => l.quantityAvailable > 0);
   const unavailableLines = lines.filter((l) => l.quantityAvailable === 0);
@@ -260,41 +250,16 @@ function PopulatedShoppingLine({
   return (
     <section
       aria-label="Shopping line"
-      style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: '6px',
-        overflow: 'hidden',
-      }}
+      className={styles.section}
     >
       {/* Section header */}
-      <header
-        style={{
-          padding: '0.625rem 1rem',
-          backgroundColor: '#f7fafc',
-          borderBottom: '1px solid #e2e8f0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            color: '#2d3748',
-            letterSpacing: '0.01em',
-          }}
-        >
+      <header className={styles.header}>
+        <h2 className={styles.headerTitle}>
           Shopping line &middot; {storeName}
         </h2>
         <span
-          style={{
-            fontSize: '0.75rem',
-            color: freshnessColor,
-          }}
+          className={styles.headerFreshness}
+          data-freshness={freshnessKey}
           title={lastFetchedAt}
         >
           updated {relativeTime}
@@ -303,29 +268,16 @@ function PopulatedShoppingLine({
       </header>
 
       {/* Headline affordance */}
-      <div
-        style={{ padding: '0.875rem 1rem', borderBottom: '1px solid #e2e8f0' }}
-      >
+      <div className={styles.headline}>
         <div aria-live="polite">
           {availableCardCount > 0 ? (
-            <p
-              style={{
-                margin: 0,
-                fontWeight: 600,
-                color: '#2d3748',
-                fontSize: '0.9375rem',
-              }}
-            >
+            <p className={styles.headlinePrimary}>
               With{' '}
               {isEstimated && (
                 <span
                   aria-label="estimated price"
                   title="Price is estimated from listing data. Click 'Get exact prices' for accurate variant pricing."
-                  style={{
-                    marginRight: '0.125rem',
-                    color: '#718096',
-                    fontWeight: 400,
-                  }}
+                  className={styles.estimateTilde}
                 >
                   ~
                 </span>
@@ -333,19 +285,7 @@ function PopulatedShoppingLine({
               {formatBrl(totalCostCents)}{' '}
               {isEstimated && (
                 <span
-                  style={{
-                    display: 'inline-block',
-                    fontSize: '0.6875rem',
-                    fontWeight: 500,
-                    color: '#718096',
-                    backgroundColor: '#edf2f7',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '3px',
-                    padding: '0 0.3em',
-                    marginRight: '0.25rem',
-                    verticalAlign: 'middle',
-                    lineHeight: '1.4',
-                  }}
+                  className={styles.estimatedBadge}
                   data-testid="estimated-badge"
                 >
                   estimated
@@ -355,26 +295,13 @@ function PopulatedShoppingLine({
               {availableCardCount} of {totalMissing} missing{' '}
               {totalMissing === 1 ? 'card' : 'cards'}.
               {veryStale && (
-                <span
-                  style={{
-                    marginLeft: '0.5rem',
-                    color: '#c53030',
-                    fontSize: '0.8125rem',
-                    fontWeight: 400,
-                  }}
-                >
+                <span className={styles.headlineStaleWarning}>
                   (prices may have changed)
                 </span>
               )}
             </p>
           ) : (
-            <p
-              style={{
-                margin: 0,
-                color: '#718096',
-                fontSize: '0.875rem',
-              }}
-            >
+            <p className={styles.headlineEmpty}>
               No missing cards currently in stock at {storeName}.
             </p>
           )}
@@ -382,17 +309,11 @@ function PopulatedShoppingLine({
 
         {/* No-stock CTA */}
         {availableCardCount === 0 && (
-          <p
-            style={{
-              margin: '0.5rem 0 0',
-              fontSize: '0.8125rem',
-              color: '#718096',
-            }}
-          >
+          <p className={styles.noStockCta}>
             last checked {relativeTime} &mdash;{' '}
             <a
               href="#breakdown"
-              style={{ color: '#3182ce', textDecoration: 'underline' }}
+              className={styles.noStockCtaLink}
             >
               Try the substitution editor to find alternatives
             </a>
@@ -416,13 +337,7 @@ function PopulatedShoppingLine({
         {/* "Get exact prices" CTA or cooldown message */}
         {showCta && (
           isCooldownActive ? (
-            <p
-              style={{
-                margin: '0.5rem 0 0',
-                fontSize: '0.8125rem',
-                color: '#718096',
-              }}
-            >
+            <p className={styles.cooldownMsg}>
               Prices are up to date.
             </p>
           ) : (
@@ -437,7 +352,7 @@ function PopulatedShoppingLine({
 
       {/* Card list */}
       {lines.length > 0 && (
-        <div style={{ padding: '0 1rem 1rem' }}>
+        <div className={styles.cardList}>
           {availableLines.length > 0 && (
             <LineGroup
               label={`In stock (${availableLines.length})`}
@@ -489,28 +404,16 @@ function LineGroup({
   cardFetchStatus,
 }: ILineGroupProps) {
   return (
-    <div style={{ marginTop: '0.75rem' }}>
+    <div className={styles.lineGroup}>
       <div
-        style={{
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          color: muted ? '#a0aec0' : '#4a5568',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          marginBottom: '0.375rem',
-          paddingBottom: '0.25rem',
-          borderBottom: '1px solid #edf2f7',
-        }}
+        className={styles.lineGroupLabel}
+        data-muted={String(muted)}
       >
         {label}
       </div>
       <ul
-        style={{
-          listStyle: 'none',
-          padding: 0,
-          margin: 0,
-          opacity: muted ? 0.6 : 1,
-        }}
+        className={styles.lineList}
+        data-muted={String(muted)}
       >
         {lines.map((line) => {
           const status = cardFetchStatus?.[line.cardIdentifier];
@@ -607,48 +510,19 @@ function LineItem({
 
   return (
     <li
-      style={{
-        padding: '0.5rem 0',
-        borderBottom: '1px solid #f7fafc',
-        fontSize: '0.875rem',
-        color: muted ? '#a0aec0' : '#2d3748',
-      }}
+      className={styles.lineItem}
+      data-muted={String(muted)}
     >
       {/* Main row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span
-          style={{
-            fontWeight: 500,
-            flexGrow: 1,
-            minWidth: '8rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.375rem',
-          }}
-        >
+      <div className={styles.lineItemRow}>
+        <span className={styles.lineItemName}>
           {cardName}
           {fetchStatus === 'failed' && (
             <span
               role="status"
               aria-label={`Failed to fetch variants for ${cardName}`}
               data-testid="line-item-fetch-failed"
-              style={{
-                fontSize: '0.6875rem',
-                fontWeight: 500,
-                color: '#742a2a',
-                backgroundColor: '#fed7d7',
-                border: '1px solid #feb2b2',
-                borderRadius: '3px',
-                padding: '0 0.3em',
-                lineHeight: '1.4',
-              }}
+              className={styles.lineItemFailedBadge}
             >
               failed
             </span>
@@ -656,24 +530,18 @@ function LineItem({
         </span>
 
         <span
-          style={{
-            color: muted ? '#a0aec0' : '#718096',
-            fontSize: '0.8125rem',
-            whiteSpace: 'nowrap',
-          }}
+          className={styles.lineItemQty}
+          data-muted={String(muted)}
         >
           {quantityLabel}
         </span>
 
         <span
-          style={{
-            fontWeight: muted ? 400 : 600,
-            color: muted ? '#a0aec0' : '#2d3748',
-            whiteSpace: 'nowrap',
-          }}
+          className={styles.lineItemPrice}
+          data-muted={String(muted)}
         >
           {muted ? (
-            <span style={{ color: '#a0aec0' }}>{unavailableLabel}</span>
+            <span>{unavailableLabel}</span>
           ) : (
             priceLabel
           )}
@@ -686,13 +554,7 @@ function LineItem({
             storeName={storeName}
             cardName={cardName}
           >
-            <span
-              style={{
-                fontSize: '0.75rem',
-                color: '#3182ce',
-                textDecoration: 'underline',
-              }}
-            >
+            <span className={styles.lineItemViewLink}>
               View
             </span>
           </StoreProductLink>
@@ -704,20 +566,9 @@ function LineItem({
       {hasExpandableVariants && variants && (
         <details
           data-testid="variant-breakdown-details"
-          style={{ marginTop: '0.25rem' }}
+          className={styles.variantDetails}
         >
-          <summary
-            style={{
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-              color: '#3182ce',
-              listStyle: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              userSelect: 'none',
-            }}
-          >
+          <summary className={styles.variantSummary}>
             {additionalVariantCount} more variant{additionalVariantCount !== 1 ? 's' : ''}
           </summary>
           <VariantBreakdownTable variants={variants} />
@@ -726,4 +577,3 @@ function LineItem({
     </li>
   );
 }
-

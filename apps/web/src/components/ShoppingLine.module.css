@@ -1,0 +1,267 @@
+/* ============================================================
+   ShoppingLine — CSS Module
+   Inline-style migration (Plan C Unit 6).
+   ============================================================ */
+
+/* ---- Path A empty state ---- */
+.pathAEmpty {
+  padding: var(--ra-space-3) var(--ra-space-4);
+  background: var(--ra-ready-high-bg);
+  border: 1px solid var(--ra-ready-high-border);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-ready-high);
+  font-size: var(--ra-text-small);
+}
+
+/* ---- Error state ---- */
+.errorState {
+  padding: var(--ra-space-3) var(--ra-space-4);
+  background: var(--ra-ready-low-bg);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-small);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  flex-wrap: wrap;
+}
+
+.errorRetryBtn {
+  background: none;
+  border: none;
+  color: var(--ra-info);
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--ra-text-small);
+  text-decoration: underline;
+}
+
+/* ---- Populated section container ---- */
+.section {
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+}
+
+/* ---- Section header ---- */
+.header {
+  padding: 0.625rem var(--ra-space-4);
+  background: var(--ra-bg-raised);
+  border-bottom: 1px solid var(--ra-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  letter-spacing: 0.01em;
+}
+
+/* Freshness timestamp — color driven by data-freshness attribute */
+.headerFreshness {
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}
+
+.headerFreshness[data-freshness="ok"] {
+  color: var(--ra-fg-secondary);
+}
+
+.headerFreshness[data-freshness="stale"] {
+  color: var(--ra-ready-mid);
+}
+
+.headerFreshness[data-freshness="very-stale"] {
+  color: var(--ra-ready-low);
+}
+
+/* ---- Headline affordance ---- */
+.headline {
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-bottom: 1px solid var(--ra-border);
+}
+
+.headlinePrimary {
+  margin: 0;
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  font-size: 0.9375rem;
+}
+
+.estimateTilde {
+  margin-right: 0.125rem;
+  color: var(--ra-fg-secondary);
+  font-weight: var(--ra-weight-normal);
+}
+
+.estimatedBadge {
+  display: inline-block;
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  padding: 0 0.3em;
+  margin-right: var(--ra-space-1);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.headlineStaleWarning {
+  margin-left: var(--ra-space-2);
+  color: var(--ra-ready-low);
+  font-size: 0.8125rem;
+  font-weight: var(--ra-weight-normal);
+}
+
+.headlineEmpty {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+}
+
+/* No-stock sub-CTA */
+.noStockCta {
+  margin: var(--ra-space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--ra-fg-secondary);
+}
+
+.noStockCtaLink {
+  color: var(--ra-info);
+  text-decoration: underline;
+}
+
+/* Cooldown message */
+.cooldownMsg {
+  margin: var(--ra-space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--ra-fg-secondary);
+}
+
+/* ---- Card list ---- */
+.cardList {
+  padding: 0 var(--ra-space-4) var(--ra-space-4);
+}
+
+/* ---- Line group (in stock / unavailable) ---- */
+.lineGroup {
+  margin-top: var(--ra-space-3);
+}
+
+.lineGroupLabel {
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.375rem;
+  padding-bottom: var(--ra-space-1);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.lineGroupLabel[data-muted="true"] {
+  color: var(--ra-fg-muted);
+}
+
+.lineList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lineList[data-muted="true"] {
+  opacity: 0.6;
+}
+
+/* ---- Line item ---- */
+.lineItem {
+  padding: var(--ra-space-2) 0;
+  border-bottom: 1px solid var(--ra-bg-raised);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+}
+
+.lineItem[data-muted="true"] {
+  color: var(--ra-fg-muted);
+}
+
+.lineItemRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.lineItemName {
+  font-weight: var(--ra-weight-medium);
+  flex-grow: 1;
+  min-width: 8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Failed fetch badge on a line item */
+.lineItemFailedBadge {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-ready-low);
+  background: var(--ra-ready-low-bg);
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-sm);
+  padding: 0 0.3em;
+  line-height: 1.4;
+}
+
+.lineItemQty {
+  color: var(--ra-fg-secondary);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.lineItemQty[data-muted="true"] {
+  color: var(--ra-fg-muted);
+}
+
+.lineItemPrice {
+  font-weight: var(--ra-weight-semibold);
+  white-space: nowrap;
+  color: var(--ra-fg-primary);
+}
+
+.lineItemPrice[data-muted="true"] {
+  font-weight: var(--ra-weight-normal);
+  color: var(--ra-fg-muted);
+}
+
+.lineItemViewLink {
+  font-size: var(--ra-text-xs);
+  color: var(--ra-info);
+  text-decoration: underline;
+}
+
+/* ---- Variant breakdown details/summary ---- */
+.variantDetails {
+  margin-top: var(--ra-space-1);
+}
+
+.variantSummary {
+  cursor: pointer;
+  font-size: var(--ra-text-xs);
+  color: var(--ra-info);
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  user-select: none;
+}
