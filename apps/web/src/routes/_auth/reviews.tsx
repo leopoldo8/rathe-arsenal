@@ -13,7 +13,6 @@ import { ReviewsTabs } from '../../components/reviews/ReviewsTabs';
 import type { TTabValue } from '../../components/reviews/ReviewsTabs';
 import { ReviewsFilters } from '../../components/reviews/ReviewsFilters';
 import type { IReviewsFilters } from '../../components/reviews/ReviewsFilters';
-import { DEFAULT_FILTERS } from '../../components/reviews/ReviewsFilters';
 import { ReviewsRowList } from '../../components/reviews/ReviewsRowList';
 import { ReviewsBulkBar } from '../../components/reviews/ReviewsBulkBar';
 import styles from './reviews.module.css';

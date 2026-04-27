@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build engine package (required by API typecheck + tests)
+        run: pnpm --filter @rathe-arsenal/engine build
+
+      - name: Lint (web) — react/forbid-dom-props blocks inline style={}
+        run: pnpm --filter @rathe-arsenal/web lint
+
+      - name: Typecheck (web)
+        run: pnpm --filter @rathe-arsenal/web typecheck
+
+      - name: Typecheck (api)
+        run: pnpm --filter @rathe-arsenal/api typecheck
+
+      - name: Unit tests (web)
+        run: pnpm --filter @rathe-arsenal/web test
+
+      - name: Unit tests (api)
+        run: pnpm --filter @rathe-arsenal/api test
+
+  # Theme persistence E2E and Plan B E2E require a real PostgreSQL database.
+  # Runs on every PR using the ephemeral postgres service container.
+  e2e:
+    name: API E2E (theme persistence + plan-b flow)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: rathe_arsenal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build engine package
+        run: pnpm --filter @rathe-arsenal/engine build
+
+      - name: Run API E2E tests
+        env:
+          NODE_ENV: development
+          DATABASE_URL: postgresql://postgres:dev@localhost:5432/rathe_arsenal
+          JWT_SECRET: ci-test-jwt-secret-that-is-at-least-32-chars-long
+          JWT_EXPIRES_IN: 1d
+          RESEND_API_KEY: re_test_fake_key_for_ci_bypass
+          EMAIL_FROM: CI Test <noreply@test.local>
+          APP_BASE_URL: http://localhost:5173
+          PORT: "3001"
+        run: pnpm --filter @rathe-arsenal/api test:e2e
+
+  # Visual regression suite runs against a live dev server.
+  # Skipped in CI at launch per E3 decision — local self-validation tool only.
+  # See docs/design/v1/visual-regression.md for the update procedure.

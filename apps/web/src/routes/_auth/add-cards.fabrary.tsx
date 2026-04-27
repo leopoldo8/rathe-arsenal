@@ -67,11 +67,6 @@ function AddCardsFabraryPage(): React.ReactElement {
     );
   }
 
-  function reset(): void {
-    setStatus({ state: 'idle' });
-    setUrl('');
-  }
-
   function onKey(e: React.KeyboardEvent<HTMLInputElement>): void {
     if (e.key === 'Enter' && status.state !== 'submitting') {
       submit();

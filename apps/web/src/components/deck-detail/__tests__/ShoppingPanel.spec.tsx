@@ -11,7 +11,7 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ShoppingPanel } from '../ShoppingPanel';
 import type { IShoppingLineResponse } from '../../../api/shopping-line';
 
