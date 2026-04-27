@@ -1,12 +1,12 @@
 /**
  * Automated WCAG 2.1 contrast checks for design token pairs.
  *
- * Dark theme — ALL pairs declared as body-size or large-text must pass their
+ * Both themes — ALL pairs declared as body-size or large-text must pass their
  * respective AA threshold. Any new fg/bg pair introduced in a later unit must
  * be added here.
  *
- * Light theme failures are documented as Plan C work and use skip() with a
- * 'Plan C' reason string so CI is never broken by them.
+ * Light theme tone-corrected in Plan C Unit 1: --ra-accent-body (#7d5e1d)
+ * introduced as the body-safe brass companion. All light body-size pairs pass.
  *
  * Thresholds:
  *   AA body text    >= 4.5:1
@@ -78,11 +78,16 @@ const DARK_PATH_C_INK = '#e1a977';
 // Light backgrounds
 const LIGHT_CANVAS = '#f5f1e8';
 const LIGHT_SURFACE = '#ffffff';
+const LIGHT_RAISED = '#ece7d8';
 
 // Light foreground tokens
 const LIGHT_FG_PRIMARY = '#1a1814';
 const LIGHT_FG_SECONDARY = '#4f4a3f';
+const LIGHT_FG_MUTED = '#726b58';
 const LIGHT_ACCENT = '#8f6a22';
+// LIGHT_ACCENT_BODY: body-safe brass companion introduced Plan C U1.
+// 5.34:1 on canvas, 6.02:1 on surface, 4.87:1 on raised — all pass AA body.
+const LIGHT_ACCENT_BODY = '#7d5e1d';
 
 const AA_BODY = 4.5;
 const AA_LARGE = 3.0;
@@ -194,18 +199,12 @@ describe.skip('borderline dark tokens — body-size failures documented as known
   });
 });
 
-describe.skip('light theme — Plan C failures (skipped until Plan C tone correction)', () => {
-  it('Plan C: --ra-accent (#8f6a22) on --ra-bg-canvas (#f5f1e8) — 4.38:1, below 4.5:1 AA body', () => {
-    // 4.38:1 — fails AA body by 0.12. Plan C: derive body-safe companion for light.
-    expect(contrast(LIGHT_ACCENT, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
-  });
-});
-
 // ---------------------------------------------------------------------------
-// Light theme — pairs that already pass (documented for completeness)
+// Light theme — body-size pairs (must pass >= 4.5:1)
+// Tone-corrected in Plan C Unit 1: --ra-accent-body (#7d5e1d) introduced.
 // ---------------------------------------------------------------------------
 
-describe('light theme — passing pairs', () => {
+describe('light theme — body-size text pairs (AA >= 4.5:1)', () => {
   it('--ra-fg-primary on --ra-bg-canvas', () => {
     expect(contrast(LIGHT_FG_PRIMARY, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
   });
@@ -218,7 +217,48 @@ describe('light theme — passing pairs', () => {
     expect(contrast(LIGHT_FG_SECONDARY, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
   });
 
-  it('--ra-accent on --ra-bg-surface (light — passes on white)', () => {
-    expect(contrast(LIGHT_ACCENT, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  it('--ra-fg-secondary on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_FG_SECONDARY, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('--ra-fg-muted on --ra-bg-canvas', () => {
+    expect(contrast(LIGHT_FG_MUTED, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('--ra-fg-muted on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_FG_MUTED, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('--ra-accent-body on --ra-bg-canvas', () => {
+    // 5.34:1 — body-safe brass companion introduced Plan C U1.
+    expect(contrast(LIGHT_ACCENT_BODY, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('--ra-accent-body on --ra-bg-surface', () => {
+    // 6.02:1
+    expect(contrast(LIGHT_ACCENT_BODY, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('--ra-accent-body on --ra-bg-raised', () => {
+    // 4.87:1
+    expect(contrast(LIGHT_ACCENT_BODY, LIGHT_RAISED)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Light theme — large-text pairs (must pass >= 3.0:1)
+// --ra-accent is large-text/decorative ONLY in light — body-size requires
+// --ra-accent-body instead (see tokens.css and contrast-matrix.md).
+// ---------------------------------------------------------------------------
+
+describe('light theme — large-text pairs (AA large >= 3.0:1)', () => {
+  it('--ra-accent on --ra-bg-canvas (large-text decorative use only)', () => {
+    // 4.38:1 — passes AA large (>= 3.0:1). Body-size use is forbidden; use --ra-accent-body.
+    expect(contrast(LIGHT_ACCENT, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_LARGE);
+  });
+
+  it('--ra-accent on --ra-bg-surface (large-text decorative use only)', () => {
+    // 4.94:1
+    expect(contrast(LIGHT_ACCENT, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_LARGE);
   });
 });

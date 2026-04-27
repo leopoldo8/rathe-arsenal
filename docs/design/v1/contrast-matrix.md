@@ -1,7 +1,7 @@
 # Rathe Arsenal — WCAG Contrast Matrix
 
 **Origin:** R53 (dark-theme contrast compliance before Plan A ships).
-**Status:** Dark theme — all body-size pairs verified AA pass. Light theme failures documented as Plan C work.
+**Status:** Dark theme — all body-size pairs verified AA pass. Light theme — all body-size pairs verified AA pass (resolved 2026-04-27, Plan C Unit 1).
 **Method:** WCAG 2.1 §1.4.3 relative luminance formula.
 **Thresholds:** AA body text ≥ 4.5:1; AA large text (≥ 18pt / ≥ 14pt bold) ≥ 3.0:1.
 
@@ -48,25 +48,27 @@ Background values: `--ra-bg-canvas` `#0c0d10`, `--ra-bg-surface` `#15171c`, `--r
 
 ## Light Theme
 
-**Plan C work — these values are NOT tone-corrected in Plan A.**
-The tokens are declared in `tokens.css` as raw design-file values. Failures below are documented as Plan C items.
+**Resolved 2026-04-27 — Plan C Unit 1.**
+`--ra-accent-body` (`#7d5e1d`) introduced as the body-size brass companion for light theme.
+All body-size fg/bg pairs now clear WCAG AA. `--ra-fg-muted` re-verified post-fix and still passes.
 
-Background values: `--ra-bg-canvas` `#f5f1e8`, `--ra-bg-surface` `#ffffff`
+Background values: `--ra-bg-canvas` `#f5f1e8`, `--ra-bg-surface` `#ffffff`, `--ra-bg-raised` `#ece7d8`
 
-| Token | Hex | canvas (#f5f1e8) | surface (#fff) | AA body pass | Plan C action |
-|---|---|---|---|---|---|
-| `--ra-fg-primary` | `#1a1814` | 15.73:1 | 17.56:1 | YES | None needed |
-| `--ra-fg-secondary` | `#4f4a3f` | 7.82:1 | 8.73:1 | YES | None needed |
-| `--ra-fg-muted` | `#726b58` | 4.83:1 | 5.39:1 | YES | Verify at body size in Plan C |
-| `--ra-fg-subtle` | `#9a937f` | 2.57:1 | 2.87:1 | NO | Decorative / large-text only in light too |
-| `--ra-accent` | `#8f6a22` | 4.38:1 | 4.94:1 | BORDERLINE | 4.38 on canvas is below 4.5:1 — **Plan C: derive body-safe companion `--ra-accent-body` for light** |
+| Token | Hex | canvas (#f5f1e8) | surface (#fff) | raised (#ece7d8) | AA body pass | Notes |
+|---|---|---|---|---|---|---|
+| `--ra-fg-primary` | `#1a1814` | 15.73:1 | 17.56:1 | 14.35:1 | YES | |
+| `--ra-fg-secondary` | `#4f4a3f` | 7.82:1 | 8.73:1 | 7.14:1 | YES | |
+| `--ra-fg-muted` | `#726b58` | 4.71:1 | 5.30:1 | 4.30:1 | YES on canvas/surface | Body use safe on canvas and surface; large-text on raised |
+| `--ra-fg-subtle` | `#9a937f` | 2.57:1 | 2.87:1 | 2.34:1 | NO (intentional) | Decorative / large-text only |
+| `--ra-accent` | `#8f6a22` | 4.38:1 | 4.94:1 | 3.99:1 | NO (intentional) | **Large-text / decorative only** — body-size use requires `--ra-accent-body` |
+| `--ra-accent-body` | `#7d5e1d` | 5.34:1 | 6.02:1 | 4.87:1 | YES | Body-size brass companion introduced Plan C U1 |
 
-### Light theme failures (Plan C)
+### Light theme — resolved failures
 
-The following pairs fail AA body (< 4.5:1) on the light canvas and are deferred:
+The following pairs previously failed AA body and are now resolved:
 
-- `--ra-accent` (`#8f6a22`) on `--ra-bg-canvas` (`#f5f1e8`): **4.38:1** — fails AA body by 0.12. Plan C action: replace with a slightly darker brass, or derive `--ra-accent-body` as a dedicated body-size token.
-- `--ra-fg-subtle` on any light background: intentional (decorative use only).
+- `--ra-accent` (`#8f6a22`) on `--ra-bg-canvas` (`#f5f1e8`): was **4.38:1** (< 4.5:1). Resolved by introducing `--ra-accent-body` (`#7d5e1d`, 5.34:1) as the dedicated body-size token. `--ra-accent` remains for large-text and decorative use only.
+- `--ra-fg-subtle` on any light background: intentional decorative-only token (no body-size use).
 
 ---
 
@@ -78,12 +80,12 @@ The following pairs fail AA body (< 4.5:1) on the light canvas and are deferred:
 - **Large-text / decorative only:** `--ra-accent`, `--ra-ready-low`, `--ra-ember`, `--ra-fg-muted`
 - **Never as text:** `--ra-fg-subtle`, `--ra-accent-dim`, `--ra-accent-deep`, all `*-bg` and `*-border` tokens
 
-### Light theme body-size text (Plan A — verified safe)
+### Light theme body-size text (Plan C — all body-size pairs verified AA)
 
-- **Use:** `--ra-fg-primary`, `--ra-fg-secondary`, `--ra-fg-muted`
-- **Large-text / decorative only:** `--ra-accent` (just below 4.5:1 on canvas), `--ra-fg-subtle`
+- **Use:** `--ra-fg-primary`, `--ra-fg-secondary`, `--ra-fg-muted`, `--ra-accent-body`
+- **Large-text / decorative only:** `--ra-accent` (4.38:1 on canvas, below AA body threshold), `--ra-fg-subtle`
 
 ---
 
-*Last updated: 2026-04-19 (U3 — Plan A)*
-*Referenced by: plan `2026-04-19-001`, origin R53, `apps/web/src/styles/__tests__/contrast.spec.ts`*
+*Last updated: 2026-04-27 (U1 — Plan C: light theme `--ra-accent-body` resolved)*
+*Referenced by: plan `2026-04-19-001`, plan `2026-04-27-001`, origin R53, `apps/web/src/styles/__tests__/contrast.spec.ts`*
