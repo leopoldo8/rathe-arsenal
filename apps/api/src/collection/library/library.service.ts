@@ -131,6 +131,7 @@ export class LibraryService {
         name: catalogCard.name,
         pitch: catalogCard.pitch,
         types: catalogCard.types,
+        subtypes: catalogCard.subtypes,
         classes: catalogCard.classes,
         talents: catalogCard.talents,
         sets: catalogCard.sets,

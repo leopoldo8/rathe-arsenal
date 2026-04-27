@@ -11,6 +11,12 @@ export interface ILibraryCard {
   /** Pitch value (1=red, 2=yellow, 3=blue) or null for equipment/weapons/etc. */
   readonly pitch: number | null;
   readonly types: readonly string[];
+  /**
+   * Subtype tags. The library grid uses this to split top-level "Action"
+   * into Attack Actions and Non-Attack Actions — two card kinds players
+   * group very differently.
+   */
+  readonly subtypes: readonly string[];
   readonly classes: readonly string[];
   /**
    * Talent identifiers (e.g. `["lightning"]`, `["earth"]`). Empty when the

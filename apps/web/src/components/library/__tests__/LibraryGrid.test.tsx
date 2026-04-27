@@ -31,6 +31,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     name: 'Test Card',
     pitch: null,
     types: ['attack'],
+    subtypes: [],
     classes: [],
     talents: [],
     sets: ['WTR'],
@@ -177,5 +178,82 @@ describe('LibraryGrid — accessibility', () => {
     expect(
       screen.getByRole('listitem', { name: /Surging Strike.*owned: 2/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('LibraryGrid — Action subtype split (group=type)', () => {
+  it('renders separate "Attack Action" and "Non-Attack Action" headings', () => {
+    const cards = [
+      makeCard({
+        cardIdentifier: 'A1',
+        name: 'Wild Ride',
+        types: ['Action'],
+        subtypes: ['Attack'],
+      }),
+      makeCard({
+        cardIdentifier: 'A2',
+        name: 'Nimblism',
+        types: ['Action'],
+        subtypes: ['Non-Attack'],
+      }),
+    ];
+    render(<LibraryGrid cards={cards} group="type" />);
+    expect(screen.getByRole('heading', { name: /^Attack Action$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Non-Attack Action$/i })).toBeInTheDocument();
+  });
+
+  it('keeps top-level types untouched (Equipment, Weapon, etc.)', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'E1', name: 'Hide Tanner', types: ['Equipment'], subtypes: ['Arms'] }),
+      makeCard({ cardIdentifier: 'W1', name: 'Romping Club', types: ['Weapon'], subtypes: [] }),
+    ];
+    render(<LibraryGrid cards={cards} group="type" />);
+    expect(screen.getByRole('heading', { name: /Equipment/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Weapon/ })).toBeInTheDocument();
+  });
+});
+
+describe('LibraryGrid — stable in-group sort', () => {
+  it('sorts cards alphabetically by name within each group', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'C', name: 'Charlie' }),
+      makeCard({ cardIdentifier: 'A', name: 'Alpha' }),
+      makeCard({ cardIdentifier: 'B', name: 'Bravo' }),
+    ];
+    render(<LibraryGrid cards={cards} group="flat" />);
+    // The display order doesn't depend on the input array; alpha → beta → charlie.
+    const items = screen.getAllByRole('listitem');
+    expect(items.map((el) => el.getAttribute('aria-label'))).toEqual([
+      'Alpha, owned: 1',
+      'Bravo, owned: 1',
+      'Charlie, owned: 1',
+    ]);
+  });
+
+  it('keeps the same position when ownedQuantity changes (regression: decrement no longer reorders)', () => {
+    // Two cards alphabetical order: "Alpha" before "Bravo" regardless of qty.
+    const cards = [
+      makeCard({ cardIdentifier: 'A', name: 'Alpha', ownedQuantity: 1 }),
+      makeCard({ cardIdentifier: 'B', name: 'Bravo', ownedQuantity: 5 }),
+    ];
+    const { rerender } = render(<LibraryGrid cards={cards} group="flat" />);
+    let items = screen.getAllByRole('listitem');
+    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, owned: 1');
+
+    // Simulate API refetch returning cards in a different array order
+    // (e.g. Postgres reordered after a row mutation). Bravo's qty
+    // dropped 5 → 2, but Alpha is still first because of the alpha sort.
+    rerender(
+      <LibraryGrid
+        cards={[
+          makeCard({ cardIdentifier: 'B', name: 'Bravo', ownedQuantity: 2 }),
+          makeCard({ cardIdentifier: 'A', name: 'Alpha', ownedQuantity: 1 }),
+        ]}
+        group="flat"
+      />,
+    );
+    items = screen.getAllByRole('listitem');
+    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, owned: 1');
+    expect(items[1]?.getAttribute('aria-label')).toBe('Bravo, owned: 2');
   });
 });

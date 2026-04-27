@@ -41,12 +41,41 @@ function pitchValue(pitch: number | null): 1 | 2 | 3 | null {
   return null;
 }
 
-function primaryType(types: readonly string[]): string {
-  return types[0] ?? 'Other';
+/**
+ * Picks the display type for grouping + the cell glyph.
+ *
+ * The FAB types catalog collapses Attack Actions and Non-Attack Actions
+ * into a single `"Action"` top-level type, with the distinction living
+ * in `subtypes`. That collapses two very different cards (a swing vs a
+ * resource modifier) into one bucket, which the player doesn't think of
+ * as the same group. We split them back out here so the grouping +
+ * type-glyph affordances reflect how the cards are actually used.
+ */
+function primaryType(
+  types: readonly string[],
+  subtypes: readonly string[] = [],
+): string {
+  const top = types[0] ?? 'Other';
+  if (top !== 'Action') return top;
+  if (subtypes.includes('Attack')) return 'Attack Action';
+  if (subtypes.includes('Non-Attack')) return 'Non-Attack Action';
+  return 'Action';
 }
 
 function primarySet(sets: readonly string[]): string {
   return sets[0] ?? 'Unknown';
+}
+
+/**
+ * Sorts cards by name for stable in-group order. The library API returns
+ * rows in DB order, which can shift after a mutation (a decrement that
+ * deletes a row reorders subsequent fetches). Sorting client-side by
+ * `name` keeps each cell's position fixed regardless of quantity edits,
+ * so a `−` click never makes the cell visually "drift" or appear to
+ * disappear.
+ */
+function sortByName(cards: readonly ILibraryCard[]): ILibraryCard[] {
+  return [...cards].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -58,7 +87,7 @@ function groupCards(
   group: TGroupBy,
 ): Array<[string, readonly ILibraryCard[]]> {
   if (group === 'flat') {
-    return [['All cards', cards]];
+    return [['All cards', sortByName(cards)]];
   }
 
   const groupMap = new Map<string, ILibraryCard[]>();
@@ -66,7 +95,7 @@ function groupCards(
   for (const card of cards) {
     let key: string;
     if (group === 'type') {
-      key = primaryType(card.types);
+      key = primaryType(card.types, card.subtypes);
     } else if (group === 'pitch') {
       key = pitchLabel(card.pitch);
     } else {
@@ -79,6 +108,11 @@ function groupCards(
     } else {
       groupMap.set(key, [card]);
     }
+  }
+
+  // Sort each group's cards alphabetically — see `sortByName` rationale.
+  for (const [key, list] of groupMap) {
+    groupMap.set(key, sortByName(list));
   }
 
   // Sort group keys alphabetically for deterministic ordering.
@@ -100,7 +134,7 @@ function LibraryCardCell({
   cardSize,
   onOpenLightbox,
 }: ILibraryCardCellProps): React.ReactElement {
-  const typeStr = primaryType(card.types);
+  const typeStr = primaryType(card.types, card.subtypes);
   const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
     <li

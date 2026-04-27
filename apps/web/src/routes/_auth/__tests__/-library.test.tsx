@@ -99,6 +99,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     name: 'Test Card',
     pitch: 1,
     types: ['attack'],
+    subtypes: [],
     classes: [],
     talents: [],
     sets: ['WTR'],
