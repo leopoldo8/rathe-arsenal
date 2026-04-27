@@ -1,0 +1,49 @@
+/* ============================================================
+   OnboardingSkeleton — CSS Module
+   Mirrors the OnboardingWizard shell layout (max-width 640px,
+   centered, flex-column) so the skeleton occupies the same
+   footprint as the real wizard while the decks query is pending.
+   ============================================================ */
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding-block: var(--ra-space-8);
+  padding-inline: var(--ra-space-4);
+  box-sizing: border-box;
+}
+
+/* Step indicator region — same height the real StepIndicator occupies */
+.indicatorRegion {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--ra-space-8);
+}
+
+/* Content body placeholder */
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: var(--ra-space-5);
+}
+
+/* Heading placeholder row */
+.headingRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+/* Footer actions placeholder */
+.footer {
+  display: flex;
+  gap: var(--ra-space-3);
+  margin-top: var(--ra-space-2);
+}
