@@ -71,7 +71,7 @@ Note: per R60, the Import nav item routes returning users to the plain Import pa
 ### Shell & Navigation
 
 - R12. Authenticated shell: top bar with wordmark (desktop) / logo-mark (mobile), primary nav, theme toggle, user menu.
-- R13. Primary nav: **Home · Library · Import · Reviews**. Deck detail reached via home/library drill-down. CSV Sources lives as a sub-page under Library (reached via "Manage CSVs" button on the Library page), not at nav level — it names a data-management mechanism, not a user task, and would mismatch the vocabulary of the other items. Settings lives under the user menu.
+- R13. Primary nav: **Home · Library · Import · Reviews**. Deck detail reached via home/library drill-down. CSV Sources lives as a sub-page under Library (reached via "Manage CSVs" button on the Library page), not at nav level — it names a data-management mechanism, not a user task, and would mismatch the vocabulary of the other items. Settings lives under the user menu. *(revised 2026-04-27 in Plan C, Unit 9: nav simplified to **Home · Library · Reviews** — 3 items. The "track a new deck" task moves to a Home CTA routing to `/add-cards/fabrary`. The `/import` route is deleted. `/add-cards/*` hub remains reachable via the Home CTA, Home empty-state CTA, and a new "Add cards" button on the Library page.)*
 - R14. Auth routes: split-panel layout — deckbox decoration + brand story left (40–50%), form right. Stacks vertically below 720 px, hiding the decoration.
 - R15. Mobile primary nav: **bottom tab bar** with 4 items (Home · Library · Import · Reviews). Tab targets ≥ 64 px wide at 320 px viewport, icons + short labels. Hamburger drawer avoided due to worse discoverability for a tool used presencial at Gate 2 walkthroughs.
 
@@ -86,7 +86,7 @@ Note: per R60, the Import nav item routes returning users to the plain Import pa
 
 #### Routing guards
 
-- R60. Returning-user routing: the `/onboarding` route runs the wizard only for users with zero tracked decks. Users with any tracked decks who hit `/onboarding` are redirected to `/import` (the plain Import page, not the wizard). Primary-nav "Import" always routes to `/import`, never the wizard.
+- R60. Returning-user routing: the `/onboarding` route runs the wizard only for users with zero tracked decks. Users with any tracked decks who hit `/onboarding` are redirected to `/import` (the plain Import page, not the wizard). Primary-nav "Import" always routes to `/import`, never the wizard. *(revised 2026-04-27 in Plan C, Unit 9: with `/import` deleted, the redirect target changes to `/add-cards/fabrary`. The "Primary-nav Import" nav item is removed; no nav item routes to the wizard.)*
 
 ### Home (Readiness Shelves)
 

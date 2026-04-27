@@ -75,13 +75,7 @@ export function EducationalEmptyState({
       </div>
 
       <div className={styles.cta}>
-        {/*
-          U6 creates the `/import` route. Until then this link 404s, which is
-          acceptable per the Phase 1a plan. A plain anchor is used instead of
-          TanStack Router's typed <Link> to keep typecheck green before U6
-          lands -- the route tree does not yet know about `/import`.
-        */}
-        <a href="/import" className={styles.importLink}>
+        <a href="/add-cards/fabrary" className={styles.importLink}>
           <Button variant="primary" size="lg">
             Track your first deck
           </Button>

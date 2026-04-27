@@ -117,9 +117,8 @@ export function PopulatedHomeHero({
         )}
 
         <div className={styles.importAction}>
-          {/* U6 creates `/import`. Plain anchor until then. */}
-          <a href="/import" className={styles.importLink}>
-            + Import
+          <a href="/add-cards/fabrary" className={styles.trackLink}>
+            Track new deck
           </a>
         </div>
       </div>
