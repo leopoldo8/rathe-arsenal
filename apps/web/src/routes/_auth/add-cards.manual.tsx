@@ -1,10 +1,8 @@
 import React, { useEffect, useId, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
-import { LIBRARY_QUERY_KEY } from '../../api/library';
 import styles from './add-cards.manual.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/manual')({
@@ -17,14 +15,14 @@ const QTY_MIN = 1;
 const QTY_MAX = 3;
 
 function AddCardsManualPage(): React.ReactElement {
-  const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   // Counter incremented on every successful add. The result row reads
   // this via key changes to reset its local qty stepper back to 1 — no
-  // toast, no banner, no redirect. The catalog query invalidates on
-  // success too, so each row's "Owned: N" updates as the natural
-  // confirmation that the add went through.
+  // toast, no banner, no redirect. The catalog + library queries are
+  // invalidated by `useAddCardMutation`'s onSuccess so each row's
+  // "Owned: N" updates as the natural confirmation that the add went
+  // through.
   const [addsCommitted, setAddsCommitted] = useState(0);
   const inputId = useId();
 
@@ -47,7 +45,6 @@ function AddCardsManualPage(): React.ReactElement {
       {
         onSuccess: () => {
           setAddsCommitted((n) => n + 1);
-          queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
         },
       },
     );

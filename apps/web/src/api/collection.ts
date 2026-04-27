@@ -39,6 +39,13 @@ export function useAddCardMutation() {
         }),
       }),
     onSuccess: () => {
+      // Library is invalidated alongside decks + catalog-search so the
+      // hover `+` on /library cells reflects the new owned quantity
+      // without a manual refresh. The /add-cards/manual subview also
+      // relies on this — keeping the invalidation in the hook makes
+      // every call site benefit, not just the ones that remember to
+      // pipe an `onSuccess` through.
+      queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['decks'] });
       queryClient.invalidateQueries({ queryKey: CATALOG_SEARCH_QUERY_KEY });
     },
