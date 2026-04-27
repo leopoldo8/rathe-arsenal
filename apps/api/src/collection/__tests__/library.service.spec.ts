@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
 import { StoreStockEntity } from '../../database/entities/store-stock.entity';
+import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
+import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionReadService } from '../collection-read.service';
 import { LibraryService } from '../library/library.service';
 
@@ -36,10 +38,19 @@ describe('LibraryService', () => {
   let service: LibraryService;
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let storeStockRepo: jest.Mocked<Repository<StoreStockEntity>>;
+  let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let csvSourceRepo: jest.Mocked<Repository<CsvSourceEntity>>;
 
   beforeEach(async () => {
     collectionReadService = createMock<CollectionReadService>();
     storeStockRepo = createMock<Repository<StoreStockEntity>>();
+    collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
+    csvSourceRepo = createMock<Repository<CsvSourceEntity>>();
+    // Empty defaults so the contributions query in `loadContributionsByCard`
+    // resolves to an empty list. Tests that exercise contributions overrride
+    // these for the specific card identifiers they care about.
+    csvSourceRepo.find.mockResolvedValue([]);
+    collectionCardRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +59,14 @@ describe('LibraryService', () => {
         {
           provide: getRepositoryToken(StoreStockEntity),
           useValue: storeStockRepo,
+        },
+        {
+          provide: getRepositoryToken(CollectionCardEntity),
+          useValue: collectionCardRepo,
+        },
+        {
+          provide: getRepositoryToken(CsvSourceEntity),
+          useValue: csvSourceRepo,
         },
       ],
     }).compile();
@@ -414,6 +433,115 @@ describe('LibraryService', () => {
 
       expect(result.cards).toEqual([]);
       expect(result.setNames).toEqual({});
+    });
+  });
+
+  describe('contributions[]', () => {
+    it('exposes per-source breakdown for each card with manual entries first', async () => {
+      const ownedMap = new Map<string, number>([['snatch-red', 4]]);
+      collectionReadService.loadOwned.mockResolvedValue(ownedMap);
+
+      const qb = buildQbMock([], { maxLastFetchedAt: null });
+      storeStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      // Two active sources contribute to snatch-red.
+      csvSourceRepo.find.mockResolvedValue([
+        {
+          id: 'src-csv',
+          userId: USER_ID,
+          kind: 'csv',
+          label: 'My import',
+          active: true,
+        } as never,
+        {
+          id: 'src-manual',
+          userId: USER_ID,
+          kind: 'manual',
+          label: 'Manual entries',
+          active: true,
+        } as never,
+      ]);
+      collectionCardRepo.find.mockResolvedValue([
+        {
+          cardIdentifier: 'snatch-red',
+          sourceId: 'src-csv',
+          quantity: 3,
+        } as never,
+        {
+          cardIdentifier: 'snatch-red',
+          sourceId: 'src-manual',
+          quantity: 1,
+        } as never,
+      ]);
+
+      const result = await service.load(USER_ID);
+      const card = result.cards.find((c) => c.cardIdentifier === 'snatch-red');
+      expect(card?.contributions).toHaveLength(2);
+      // Manual ranks first in the popover so the user reaches their own
+      // edits before scanning imported sources.
+      expect(card?.contributions[0]?.kind).toBe('manual');
+      expect(card?.contributions[0]?.quantity).toBe(1);
+      expect(card?.contributions[1]?.kind).toBe('csv');
+      expect(card?.contributions[1]?.quantity).toBe(3);
+    });
+
+    it('returns an empty contributions list for a card with no active source rows', async () => {
+      // Owned map says the user has the card but find() returns nothing
+      // (e.g. the source went inactive between the loadOwned call and the
+      // contributions query). Defensive: contributions falls back to [].
+      const ownedMap = new Map<string, number>([['snatch-red', 1]]);
+      collectionReadService.loadOwned.mockResolvedValue(ownedMap);
+      const qb = buildQbMock([], { maxLastFetchedAt: null });
+      storeStockRepo.createQueryBuilder.mockReturnValue(qb);
+      csvSourceRepo.find.mockResolvedValue([]);
+      collectionCardRepo.find.mockResolvedValue([]);
+
+      const result = await service.load(USER_ID);
+      const card = result.cards.find((c) => c.cardIdentifier === 'snatch-red');
+      expect(card?.contributions).toEqual([]);
+    });
+
+    it('skips zero-quantity rows and ignores rows whose source is no longer in the active set', async () => {
+      const ownedMap = new Map<string, number>([['snatch-red', 2]]);
+      collectionReadService.loadOwned.mockResolvedValue(ownedMap);
+      const qb = buildQbMock([], { maxLastFetchedAt: null });
+      storeStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      csvSourceRepo.find.mockResolvedValue([
+        {
+          id: 'src-active',
+          userId: USER_ID,
+          kind: 'csv',
+          label: 'Active CSV',
+          active: true,
+        } as never,
+      ]);
+      collectionCardRepo.find.mockResolvedValue([
+        // Zero qty row — must not contribute.
+        {
+          cardIdentifier: 'snatch-red',
+          sourceId: 'src-active',
+          quantity: 0,
+        } as never,
+        // Real contribution.
+        {
+          cardIdentifier: 'snatch-red',
+          sourceId: 'src-active',
+          quantity: 2,
+        } as never,
+        // Row pointing at a source that's NOT in the active list — ignored.
+        {
+          cardIdentifier: 'snatch-red',
+          sourceId: 'src-stale',
+          quantity: 5,
+        } as never,
+      ]);
+
+      const result = await service.load(USER_ID);
+      const card = result.cards.find((c) => c.cardIdentifier === 'snatch-red');
+      expect(card?.contributions).toEqual([
+        expect.objectContaining({ sourceId: 'src-active', quantity: 2 }),
+      ]);
     });
   });
 });

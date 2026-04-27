@@ -1,0 +1,142 @@
+/* LibraryCardStepper — hover-revealed +/- on a library cell. */
+
+/* The stepper is anchored to its cell. Visibility (hover/focus reveal)
+   is owned by the cell's CSS in LibraryGrid.module.css — it targets the
+   `[data-rathe-stepper]` attribute on this root so the cross-module
+   reach is explicit (no `:global` reliance). The base styles below
+   cover the always-on look (overflow, layout, focus rings); the cell
+   only toggles `opacity` + `pointer-events`. */
+.stepper {
+  position: absolute;
+  inset-block-start: var(--ra-space-2);
+  inset-inline-end: var(--ra-space-2);
+  display: inline-flex;
+  align-items: stretch;
+  z-index: 2;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  overflow: visible;
+  background: var(--ra-bg-canvas);
+  transition:
+    opacity var(--ra-duration) var(--ra-ease),
+    transform var(--ra-duration) var(--ra-ease);
+}
+
+.btn {
+  width: 28px;
+  height: 28px;
+  background: var(--ra-bg-surface);
+  border: 0;
+  border-right: 1px solid var(--ra-border);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-mono);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.btn:last-child {
+  border-right: 0;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Multi-source picker — small floating popover anchored under the
+   stepper. Sized to read at a glance, not to compete with the cell. */
+.picker {
+  position: absolute;
+  inset-block-start: calc(28px + var(--ra-space-1));
+  inset-inline-end: 0;
+  min-width: 220px;
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-sm);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.45);
+  padding: var(--ra-space-2);
+  z-index: 3;
+  /* Trap pointer events so the cell hover reveal doesn't dismiss us. */
+  pointer-events: auto;
+}
+
+.pickerHeading {
+  margin: 0;
+  padding: var(--ra-space-1) var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-secondary);
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ra-space-1);
+}
+
+.pickerHeading span {
+  color: var(--ra-accent);
+}
+
+.pickerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pickerRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--ra-space-3);
+  width: 100%;
+  padding: var(--ra-space-2) var(--ra-space-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
+}
+
+.pickerRow:hover {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+}
+
+.pickerRow:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.pickerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickerCount {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-mono);
+  color: var(--ra-accent-body);
+  font-variant-numeric: tabular-nums;
+}

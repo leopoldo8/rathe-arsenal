@@ -2,11 +2,13 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
+import { CsvSourceEntity } from '../database/entities/csv-source.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { AuthzService } from '../auth/authz.service';
@@ -23,6 +25,7 @@ import {
   IAddCardRecomputedDeck,
   IAddCardResponse,
 } from './dtos/add-card.dto';
+import { IDecrementCardResponse } from './dtos/decrement-card.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
 
 const MAX_COLLECTION_QUANTITY = 20;
@@ -34,10 +37,13 @@ export class CollectionService {
   constructor(
     @InjectRepository(CollectionCardEntity)
     private readonly collectionCardRepo: Repository<CollectionCardEntity>,
+    @InjectRepository(CsvSourceEntity)
+    private readonly csvSourceRepo: Repository<CsvSourceEntity>,
     @InjectRepository(DeckCardEntity)
     private readonly deckCardRepo: Repository<DeckCardEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
+    private readonly dataSource: DataSource,
     private readonly authzService: AuthzService,
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
@@ -255,6 +261,142 @@ export class CollectionService {
     return {
       cardIdentifier,
       newQuantity,
+      recomputedDecks,
+    };
+  }
+
+  /**
+   * Subtracts `quantity` from the `collection_card` row owned by `(userId,
+   * cardIdentifier, sourceId)`. Powers the hover stepper on /library: a
+   * `−` click sends the source the user picked (or the only contributing
+   * source when there's no ambiguity).
+   *
+   * Semantics:
+   *  - 404 if the source doesn't belong to the user OR there's no row
+   *    for this card on that source.
+   *  - 400 if `quantity` exceeds the row's current quantity. Clamping
+   *    silently would mask a stale UI; surfacing a 400 lets the client
+   *    refetch and present the correct state.
+   *  - When the row's quantity reaches 0 we delete the row inside the
+   *    same transaction that updates `csv_source.cardCount` (decremented
+   *    by 1) — the source itself stays so the user can later re-upload
+   *    the original CSV file or toggle it active/inactive without losing
+   *    the label.
+   *  - Cross-deck readiness is recomputed best-effort, mirroring
+   *    `addCard` — recompute failures do not abort the response.
+   */
+  async decrementCardFromSource(
+    userId: string,
+    cardIdentifier: string,
+    sourceId: string,
+    quantity: number = 1,
+  ): Promise<IDecrementCardResponse> {
+    if (quantity < 1) {
+      throw new BadRequestException('Decrement quantity must be at least 1');
+    }
+
+    const result = await this.dataSource.transaction(
+      async (manager: EntityManager) => {
+        // Verify the source belongs to the user. Querying by
+        // `(id, userId)` makes the ownership check the same SQL round-trip
+        // as the existence check.
+        const source = await manager.findOne(CsvSourceEntity, {
+          where: { id: sourceId, userId },
+        });
+        if (!source) {
+          throw new NotFoundException('Source not found');
+        }
+
+        const row = await manager.findOne(CollectionCardEntity, {
+          where: { userId, cardIdentifier, sourceId },
+        });
+        if (!row) {
+          throw new NotFoundException(
+            `No "${cardIdentifier}" row on this source`,
+          );
+        }
+
+        if (quantity > row.quantity) {
+          throw new BadRequestException(
+            `Cannot decrement ${quantity} — only ${row.quantity} on this source`,
+          );
+        }
+
+        const newQuantity = row.quantity - quantity;
+        let removed = false;
+        if (newQuantity === 0) {
+          await manager.delete(CollectionCardEntity, { id: row.id });
+          // Keep `csv_source.cardCount` in sync with the actual number
+          // of `collection_card` rows owned by this source. Failing to
+          // decrement here would leave the count drifting whenever a
+          // user fully removes a card from a CSV/Fabrary import.
+          if ((source.cardCount ?? 0) > 0) {
+            await manager.update(
+              CsvSourceEntity,
+              { id: sourceId },
+              { cardCount: (source.cardCount ?? 0) - 1 },
+            );
+          }
+          removed = true;
+        } else {
+          await manager.update(
+            CollectionCardEntity,
+            { id: row.id },
+            { quantity: newQuantity },
+          );
+        }
+
+        return { newQuantity, removed };
+      },
+    );
+
+    // Cross-deck recompute outside the transaction — keeps the user-
+    // facing mutation transactional while the readiness write is best-
+    // effort. Mirrors the `addCard` policy.
+    const affectedDeckIds = await this.findAffectedDeckIds(
+      userId,
+      cardIdentifier,
+    );
+    const recomputedDecks: IAddCardRecomputedDeck[] = [];
+    for (const trackedDeckId of affectedDeckIds) {
+      try {
+        const exclusions = await this.decisionsService.loadExclusions(trackedDeckId);
+        const snapshot = await this.substitutionService.computeAndStoreReadiness(
+          trackedDeckId,
+          userId,
+          exclusions,
+        );
+        recomputedDecks.push({
+          trackedDeckId,
+          rawPercent: snapshot.rawPercent,
+          effectivePercent: snapshot.effectivePercent,
+        });
+      } catch (error) {
+        this.logger.warn({
+          msg: 'Failed to recompute readiness after decrementCardFromSource',
+          userId,
+          trackedDeckId,
+          cardIdentifier,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    this.logger.log({
+      event: 'collection.cards.decrement',
+      userId,
+      cardIdentifier,
+      sourceId,
+      quantity,
+      newQuantity: result.newQuantity,
+      removed: result.removed,
+    });
+
+    return {
+      cardIdentifier,
+      sourceId,
+      newQuantity: result.newQuantity,
+      removed: result.removed,
       recomputedDecks,
     };
   }

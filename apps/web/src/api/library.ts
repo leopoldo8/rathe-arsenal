@@ -28,6 +28,20 @@ export interface ILibraryCard {
     | null;
   /** Summed quantity owned across all active sources. */
   readonly ownedQuantity: number;
+  /**
+   * Per-source breakdown that sums to `ownedQuantity`. Drives the hover
+   * stepper on /library: if more than one source contributes, `−` opens
+   * a popover so the user picks which source to decrement.
+   */
+  readonly contributions: readonly ILibraryCardContribution[];
+}
+
+export interface ILibraryCardContribution {
+  readonly sourceId: string;
+  /** "Manual entries" for the manual source, otherwise the user-set label. */
+  readonly sourceLabel: string;
+  readonly kind: 'manual' | 'csv';
+  readonly quantity: number;
 }
 
 export interface IPitchBreakdown {

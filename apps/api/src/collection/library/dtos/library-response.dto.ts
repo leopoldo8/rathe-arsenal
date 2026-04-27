@@ -40,6 +40,26 @@ export interface ILibraryCard {
     | null;
   /** Summed quantity owned across all active sources. */
   readonly ownedQuantity: number;
+  /**
+   * Per-source breakdown of the contributions that make up `ownedQuantity`.
+   * The web hover stepper uses it to know which sources can be decremented
+   * for a given card and to disambiguate when 2+ sources contribute. Only
+   * active sources are listed; toggling a source off is the existing
+   * "remove this CSV's contribution wholesale" affordance and shouldn't
+   * appear here.
+   */
+  readonly contributions: readonly ILibraryCardContribution[];
+}
+
+export interface ILibraryCardContribution {
+  readonly sourceId: string;
+  /**
+   * Human label for the source. Manual entries always read "Manual entries"
+   * — `csv_source.label` defaults to that for `kind='manual'` rows.
+   */
+  readonly sourceLabel: string;
+  readonly kind: 'manual' | 'csv';
+  readonly quantity: number;
 }
 
 export interface IPitchBreakdown {

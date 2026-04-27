@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
+import { LibraryCardStepper } from './LibraryCardStepper';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilterRail';
 import styles from './LibraryGrid.module.css';
@@ -106,6 +107,7 @@ function LibraryCardCell({
       className={styles.cell}
       aria-label={`${card.name}, owned: ${card.ownedQuantity}`}
     >
+      <LibraryCardStepper card={card} />
       <div className={styles.art}>
         <CardArt
           name={card.name}

@@ -6,6 +6,10 @@ import {
   AddCardRequestDto,
   IAddCardResponse,
 } from './dtos/add-card.dto';
+import {
+  DecrementCardRequestDto,
+  IDecrementCardResponse,
+} from './dtos/decrement-card.dto';
 import { MarkOwnedRequestDto } from './dtos/mark-owned.request.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
 
@@ -33,6 +37,23 @@ export class CollectionController {
     return this.collectionService.addCard(
       user.userId,
       dto.cardIdentifier,
+      dto.quantity ?? 1,
+    );
+  }
+
+  /**
+   * Subtracts from a `(cardIdentifier, sourceId)` row in the user's
+   * collection. Powers the hover `−` stepper on `/library`.
+   */
+  @Post('cards/decrement')
+  async decrementCard(
+    @Body() dto: DecrementCardRequestDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<IDecrementCardResponse> {
+    return this.collectionService.decrementCardFromSource(
+      user.userId,
+      dto.cardIdentifier,
+      dto.sourceId,
       dto.quantity ?? 1,
     );
   }

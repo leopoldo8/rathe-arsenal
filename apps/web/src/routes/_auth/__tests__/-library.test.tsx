@@ -57,8 +57,14 @@ vi.mock('../../../api/library', () => ({
 }));
 
 const mockMutate = vi.fn();
+const mockDecrementMutate = vi.fn();
 vi.mock('../../../api/collection', () => ({
   useAddCardMutation: () => ({ mutate: mockMutate, isPending: false, isError: false }),
+  useDecrementCardMutation: () => ({
+    mutate: mockDecrementMutate,
+    isPending: false,
+    isError: false,
+  }),
 }));
 
 vi.mock('../../../api/catalog', () => ({
@@ -98,6 +104,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,
+    contributions: [],
     ...overrides,
   };
 }

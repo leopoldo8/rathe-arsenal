@@ -15,6 +15,12 @@ vi.mock('../../card-art/CardArt', () => ({
   ),
 }));
 
+// LibraryCardStepper depends on the auth-aware api client. Stub it to a
+// noop so LibraryGrid's grouping/cell tests stay focused on layout.
+vi.mock('../LibraryCardStepper', () => ({
+  LibraryCardStepper: () => null,
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -30,6 +36,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,
+    contributions: [],
     ...overrides,
   };
 }

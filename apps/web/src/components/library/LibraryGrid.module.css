@@ -58,6 +58,9 @@
      width is at the upper end of the slider range. */
   min-width: 0;
   box-sizing: border-box;
+  /* Anchor the absolutely-positioned hover stepper — the stepper sits
+     inside the cell and is positioned relative to it. */
+  position: relative;
 }
 
 .cell > * {
@@ -66,6 +69,32 @@
 
 .cell:hover {
   border-color: var(--ra-border-strong);
+}
+
+/* Hover stepper visibility — owned by the cell, targeting the stepper's
+   data attribute so the cross-module reach is explicit. The popover
+   that opens on multi-source `−` clicks keeps the stepper visible even
+   after the user's pointer leaves the cell (`data-picker-open=true`). */
+.cell [data-rathe-stepper] {
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
+}
+
+.cell:hover [data-rathe-stepper],
+.cell:focus-within [data-rathe-stepper],
+.cell [data-rathe-stepper][data-picker-open='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .cell [data-rathe-stepper] {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
 }
 
 .art {

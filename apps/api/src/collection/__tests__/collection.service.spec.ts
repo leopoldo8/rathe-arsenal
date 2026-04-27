@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
@@ -94,9 +94,11 @@ function buildManualSource(
 describe('CollectionService', () => {
   let service: CollectionService;
   let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
+  let csvSourceRepo: jest.Mocked<Repository<CsvSourceEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
+  let dataSource: jest.Mocked<DataSource>;
   let authzService: jest.Mocked<AuthzService>;
   let catalogService: jest.Mocked<CatalogService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
@@ -105,9 +107,17 @@ describe('CollectionService', () => {
 
   beforeEach(async () => {
     collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
+    csvSourceRepo = createMock<Repository<CsvSourceEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
+    dataSource = createMock<DataSource>();
+    // The decrement path runs inside dataSource.transaction. Default the
+    // mock to invoke the callback with a fresh EntityManager mock — tests
+    // that exercise decrement override the manager's behaviour as needed.
+    (dataSource.transaction as unknown as jest.Mock).mockImplementation(
+      async (cb: (m: EntityManager) => Promise<unknown>) => cb(createMock<EntityManager>()),
+    );
     authzService = createMock<AuthzService>();
     catalogService = createMock<CatalogService>();
     substitutionService = createMock<SubstitutionService>();
@@ -127,6 +137,10 @@ describe('CollectionService', () => {
           useValue: collectionCardRepo,
         },
         {
+          provide: getRepositoryToken(CsvSourceEntity),
+          useValue: csvSourceRepo,
+        },
+        {
           provide: getRepositoryToken(DeckCardEntity),
           useValue: deckCardRepo,
         },
@@ -138,6 +152,7 @@ describe('CollectionService', () => {
           provide: getRepositoryToken(TrackedDeckEntity),
           useValue: trackedDeckRepo,
         },
+        { provide: DataSource, useValue: dataSource },
         { provide: AuthzService, useValue: authzService },
         { provide: CatalogService, useValue: catalogService },
         { provide: SubstitutionService, useValue: substitutionService },
@@ -508,6 +523,141 @@ describe('CollectionService', () => {
         'dc.cardIdentifier = :cardIdentifier',
         { cardIdentifier: CARD_IDENTIFIER },
       );
+    });
+  });
+
+  describe('decrementCardFromSource', () => {
+    const SOURCE_ID = 'csv-source-decrement-uuid';
+    const ROW_ID = 99;
+
+    function arrangeTransaction(
+      sourceLookup: CsvSourceEntity | null,
+      rowLookup: CollectionCardEntity | null,
+    ): {
+      manager: jest.Mocked<EntityManager>;
+    } {
+      const manager = createMock<EntityManager>();
+      manager.findOne.mockImplementation(async (entity: unknown) => {
+        if (entity === CsvSourceEntity) return sourceLookup as never;
+        if (entity === CollectionCardEntity) return rowLookup as never;
+        return null as never;
+      });
+      manager.delete.mockResolvedValue({} as never);
+      manager.update.mockResolvedValue({} as never);
+      (dataSource.transaction as unknown as jest.Mock).mockImplementation(
+        async (cb: (m: EntityManager) => Promise<unknown>) => cb(manager),
+      );
+      // Default: no decks affected, recompute loop is a no-op.
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      (
+        deckCardRepo as unknown as { createQueryBuilder: jest.Mock }
+      ).createQueryBuilder = jest.fn().mockReturnValue(qb);
+      return { manager };
+    }
+
+    it('throws BadRequest when quantity is below 1', async () => {
+      await expect(
+        service.decrementCardFromSource(USER_ID, CARD_IDENTIFIER, SOURCE_ID, 0),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws NotFound when the source is not owned by the user', async () => {
+      arrangeTransaction(null, buildCollectionCard());
+      await expect(
+        service.decrementCardFromSource(USER_ID, CARD_IDENTIFIER, SOURCE_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFound when there is no collection_card row for that source', async () => {
+      arrangeTransaction(buildManualSource({ id: SOURCE_ID }), null);
+      await expect(
+        service.decrementCardFromSource(USER_ID, CARD_IDENTIFIER, SOURCE_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws BadRequest when quantity exceeds the row quantity', async () => {
+      arrangeTransaction(
+        buildManualSource({ id: SOURCE_ID }),
+        buildCollectionCard({ id: ROW_ID, sourceId: SOURCE_ID, quantity: 1 }),
+      );
+      await expect(
+        service.decrementCardFromSource(USER_ID, CARD_IDENTIFIER, SOURCE_ID, 2),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('decrements the row quantity and returns the new total', async () => {
+      const { manager } = arrangeTransaction(
+        buildManualSource({ id: SOURCE_ID }),
+        buildCollectionCard({ id: ROW_ID, sourceId: SOURCE_ID, quantity: 3 }),
+      );
+
+      const result = await service.decrementCardFromSource(
+        USER_ID,
+        CARD_IDENTIFIER,
+        SOURCE_ID,
+        1,
+      );
+
+      expect(manager.update).toHaveBeenCalledWith(
+        CollectionCardEntity,
+        { id: ROW_ID },
+        { quantity: 2 },
+      );
+      expect(manager.delete).not.toHaveBeenCalled();
+      expect(result).toEqual(
+        expect.objectContaining({
+          cardIdentifier: CARD_IDENTIFIER,
+          sourceId: SOURCE_ID,
+          newQuantity: 2,
+          removed: false,
+        }),
+      );
+    });
+
+    it('deletes the row and decrements csv_source.cardCount when quantity hits 0', async () => {
+      const { manager } = arrangeTransaction(
+        buildManualSource({ id: SOURCE_ID, cardCount: 7 }),
+        buildCollectionCard({ id: ROW_ID, sourceId: SOURCE_ID, quantity: 1 }),
+      );
+
+      const result = await service.decrementCardFromSource(
+        USER_ID,
+        CARD_IDENTIFIER,
+        SOURCE_ID,
+        1,
+      );
+
+      expect(manager.delete).toHaveBeenCalledWith(CollectionCardEntity, {
+        id: ROW_ID,
+      });
+      expect(manager.update).toHaveBeenCalledWith(
+        CsvSourceEntity,
+        { id: SOURCE_ID },
+        { cardCount: 6 },
+      );
+      expect(result.removed).toBe(true);
+      expect(result.newQuantity).toBe(0);
+    });
+
+    it('leaves csv_source.cardCount alone when it was already at zero', async () => {
+      const { manager } = arrangeTransaction(
+        buildManualSource({ id: SOURCE_ID, cardCount: 0 }),
+        buildCollectionCard({ id: ROW_ID, sourceId: SOURCE_ID, quantity: 1 }),
+      );
+
+      await service.decrementCardFromSource(USER_ID, CARD_IDENTIFIER, SOURCE_ID);
+
+      // delete still runs, but the cardCount UPDATE shouldn't underflow.
+      expect(
+        manager.update.mock.calls.some(
+          (call) => call[0] === CsvSourceEntity,
+        ),
+      ).toBe(false);
     });
   });
 });

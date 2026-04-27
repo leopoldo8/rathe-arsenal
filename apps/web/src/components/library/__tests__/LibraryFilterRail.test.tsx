@@ -33,6 +33,7 @@ function makeCard(overrides: Partial<ILibraryCard> = {}): ILibraryCard {
     sets: ['WTR'],
     imageUrl: null,
     ownedQuantity: 1,
+    contributions: [],
     ...overrides,
   };
 }
