@@ -9,7 +9,7 @@
  *  - Edge case (private deck): step 1 shows private-deck copy from backend error
  *  - Edge case (100% readiness): step 3 renders <CongratsAllPlayable>
  *  - Edge case (10s computation timeout): step 3 shows "Continue without review"
- *  - Integration (R60 guard): user with tracked decks is redirected to /import
+ *  - Integration (R60 guard): user with tracked decks is redirected to /add-cards/fabrary
  *  - A11y: step indicator announces progress via aria-label
  */
 
@@ -641,7 +641,7 @@ describe('OnboardingWizard — edge case: 10s computation timeout', () => {
   });
 });
 
-describe('OnboardingWizard — R60 guard (OnboardingPage)', () => {
+describe('OnboardingWizard — R60 guard (OnboardingPage): redirect to /add-cards/fabrary', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -652,11 +652,11 @@ describe('OnboardingWizard — R60 guard (OnboardingPage)', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders Navigate to /import when user has existing tracked decks', () => {
+  it('renders Navigate to /add-cards/fabrary when user has existing tracked decks', () => {
     mockUseDecksQuery.mockReturnValue(makeDecksQueryWithDecks(1));
     renderOnboardingPage();
     const redirect = screen.getByTestId('navigate-redirect');
-    expect(redirect).toHaveAttribute('data-to', '/import');
+    expect(redirect).toHaveAttribute('data-to', '/add-cards/fabrary');
   });
 
   it('renders the wizard for a fresh user (0 tracked decks)', () => {

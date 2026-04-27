@@ -84,4 +84,18 @@ describe('PopulatedHomeHero', () => {
     render(<PopulatedHomeHero decks={noSnapshots} uniqueCardsMissing={null} />);
     expect(screen.getByText('--')).toBeInTheDocument();
   });
+
+  it('renders "Track new deck" CTA linking to /add-cards/fabrary', () => {
+    render(<PopulatedHomeHero decks={THREE_DECKS} uniqueCardsMissing={null} />);
+    const cta = screen.getByRole('link', { name: /track new deck/i });
+    expect(cta).toBeInTheDocument();
+    expect(cta).toHaveAttribute('href', '/add-cards/fabrary');
+  });
+
+  it('does not render an "/import" link', () => {
+    render(<PopulatedHomeHero decks={THREE_DECKS} uniqueCardsMissing={null} />);
+    const links = screen.queryAllByRole('link');
+    const importLinks = links.filter((l) => l.getAttribute('href')?.includes('/import'));
+    expect(importLinks).toHaveLength(0);
+  });
 });

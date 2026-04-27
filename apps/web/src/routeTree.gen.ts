@@ -22,7 +22,6 @@ import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/library-csv-sources'
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
-import { Route as AuthImportRouteImport } from './routes/_auth/import'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
 import { Route as AuthAddCardsRouteImport } from './routes/_auth/add-cards'
 import { Route as AuthAddCardsIndexRouteImport } from './routes/_auth/add-cards.index'
@@ -95,11 +94,6 @@ const AuthLibraryRoute = AuthLibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthImportRoute = AuthImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthHomeRoute = AuthHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -146,7 +140,6 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
-  '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/onboarding': typeof AuthOnboardingRoute
@@ -167,7 +160,6 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/verify-email': typeof VerifyEmailRoute
   '/home': typeof AuthHomeRoute
-  '/import': typeof AuthImportRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/onboarding': typeof AuthOnboardingRoute
@@ -191,7 +183,6 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_auth/add-cards': typeof AuthAddCardsRouteWithChildren
   '/_auth/home': typeof AuthHomeRoute
-  '/_auth/import': typeof AuthImportRoute
   '/_auth/library': typeof AuthLibraryRoute
   '/_auth/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
@@ -215,7 +206,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/add-cards'
     | '/home'
-    | '/import'
     | '/library'
     | '/library-csv-sources'
     | '/onboarding'
@@ -236,7 +226,6 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/verify-email'
     | '/home'
-    | '/import'
     | '/library'
     | '/library-csv-sources'
     | '/onboarding'
@@ -259,7 +248,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_auth/add-cards'
     | '/_auth/home'
-    | '/_auth/import'
     | '/_auth/library'
     | '/_auth/library-csv-sources'
     | '/_auth/onboarding'
@@ -376,13 +364,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLibraryRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/import': {
-      id: '/_auth/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof AuthImportRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/home': {
       id: '/_auth/home'
       path: '/home'
@@ -456,7 +437,6 @@ const AuthAddCardsRouteWithChildren = AuthAddCardsRoute._addFileChildren(
 interface AuthRouteChildren {
   AuthAddCardsRoute: typeof AuthAddCardsRouteWithChildren
   AuthHomeRoute: typeof AuthHomeRoute
-  AuthImportRoute: typeof AuthImportRoute
   AuthLibraryRoute: typeof AuthLibraryRoute
   AuthLibraryCsvSourcesRoute: typeof AuthLibraryCsvSourcesRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
@@ -468,7 +448,6 @@ interface AuthRouteChildren {
 const AuthRouteChildren: AuthRouteChildren = {
   AuthAddCardsRoute: AuthAddCardsRouteWithChildren,
   AuthHomeRoute: AuthHomeRoute,
-  AuthImportRoute: AuthImportRoute,
   AuthLibraryRoute: AuthLibraryRoute,
   AuthLibraryCsvSourcesRoute: AuthLibraryCsvSourcesRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,

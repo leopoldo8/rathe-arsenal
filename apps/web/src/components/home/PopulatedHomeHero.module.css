@@ -108,19 +108,20 @@
   letter-spacing: var(--ra-track-h1);
 }
 
-/* ---------- Import action ---------- */
+/* ---------- Track new deck action (brass-secondary weight) ---------- */
 .importAction {
   align-self: center;
   margin-left: var(--ra-space-3);
 }
 
-.importLink {
+.trackLink {
   display: inline-flex;
   align-items: center;
   padding: var(--ra-space-2) var(--ra-space-5);
-  background-color: var(--ra-accent);
-  color: var(--ra-accent-ink-on);
+  background: transparent;
+  border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-md);
+  color: var(--ra-accent-body);
   font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-body);
@@ -131,11 +132,12 @@
     color var(--ra-duration) var(--ra-ease);
 }
 
-.importLink:hover {
-  background-color: var(--ra-accent-hover);
+.trackLink:hover {
+  background-color: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
 }
 
-.importLink:focus-visible {
+.trackLink:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }

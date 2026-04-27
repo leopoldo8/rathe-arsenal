@@ -26,14 +26,6 @@ function LibraryIcon(): React.ReactElement {
   );
 }
 
-function ImportIcon(): React.ReactElement {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 8l-5 5-5-5M12 4v8" />
-    </svg>
-  );
-}
-
 function ReviewsIcon(): React.ReactElement {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -49,14 +41,13 @@ function ReviewsIcon(): React.ReactElement {
 const TAB_ITEMS: readonly ITabItem[] = [
   { to: '/home', label: 'Home', icon: <HomeIcon /> },
   { to: '/library', label: 'Library', icon: <LibraryIcon /> },
-  { to: '/import', label: 'Import', icon: <ImportIcon /> },
   { to: '/reviews', label: 'Reviews', icon: <ReviewsIcon /> },
 ];
 
 /**
  * BottomTabBar — fixed bottom navigation, visible only <960px.
- * 4 equal-width items with icon + short label.
- * Each item min-width 64px to fit 4 items at 320px viewport.
+ * 3 equal-width items with icon + short label.
+ * Each item min-width 107px to fit 3 items at 320px viewport.
  * Active state uses brass accent.
  */
 export function BottomTabBar(): React.ReactElement {

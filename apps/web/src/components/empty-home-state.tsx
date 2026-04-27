@@ -35,13 +35,12 @@ export function EmptyHomeState({ collectionCardCount }: IEmptyHomeStateProps) {
       ) : null}
       <div style={{ marginTop: '1.25rem' }}>
         {/*
-          U6 creates the `/import` route. Until then this link 404s, which is
-          acceptable per the Phase 1a plan. A plain anchor is used instead of
-          TanStack Router's typed <Link> to keep typecheck green before U6
-          lands -- the route tree does not yet know about `/import`.
+          /add-cards/fabrary is the canonical Fabrary deck tracking surface
+          introduced in Plan B. This component is a legacy stub deleted in
+          Plan C Unit 5; updating the href here keeps the Unit 9 audit clean.
         */}
         <a
-          href="/import"
+          href="/add-cards/fabrary"
           style={{
             display: 'inline-block',
             padding: '0.625rem 1rem',

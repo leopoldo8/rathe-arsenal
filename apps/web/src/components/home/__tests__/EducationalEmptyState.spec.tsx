@@ -68,11 +68,11 @@ describe('EducationalEmptyState', () => {
     expect(screen.getByText(/approve.*buy/i)).toBeInTheDocument();
   });
 
-  it('renders the import CTA link', () => {
+  it('renders the primary CTA link pointing to /add-cards/fabrary', () => {
     renderEmpty();
     const importLink = screen.getByRole('link', { name: /track your first deck/i });
     expect(importLink).toBeInTheDocument();
-    expect(importLink).toHaveAttribute('href', '/import');
+    expect(importLink).toHaveAttribute('href', '/add-cards/fabrary');
   });
 
   it('renders the "Skip to Library" secondary link', () => {

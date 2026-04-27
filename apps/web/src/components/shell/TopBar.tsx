@@ -14,7 +14,6 @@ interface INavItem {
 const NAV_ITEMS: readonly INavItem[] = [
   { to: '/home', label: 'Home' },
   { to: '/library', label: 'Library' },
-  { to: '/import', label: 'Import' },
   { to: '/reviews', label: 'Reviews' },
 ];
 
@@ -23,7 +22,7 @@ const NAV_ITEMS: readonly INavItem[] = [
  *
  * Layout:
  *  - Left: wordmark (>=960px) or logo-mark (<960px) as Link to /home
- *  - Center: primary nav (Home / Library / Import / Reviews)
+ *  - Center: primary nav (Home / Library / Reviews)
  *  - Right: ThemeToggle + UserMenu
  *
  * Primary nav is hidden <960px (replaced by BottomTabBar in AppShell).

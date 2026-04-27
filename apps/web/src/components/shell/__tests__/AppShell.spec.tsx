@@ -136,14 +136,14 @@ describe('AppShell — happy path', () => {
     expect(main).toHaveTextContent('page content');
   });
 
-  it('renders primary nav with Home, Library, Import, Reviews links', () => {
+  it('renders primary nav with Home, Library, Reviews links (no Import)', () => {
     render(<AppShell><div /></AppShell>);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
     expect(nav).toBeInTheDocument();
     expect(nav).toHaveTextContent('Home');
     expect(nav).toHaveTextContent('Library');
-    expect(nav).toHaveTextContent('Import');
     expect(nav).toHaveTextContent('Reviews');
+    expect(nav).not.toHaveTextContent('Import');
   });
 });
 
