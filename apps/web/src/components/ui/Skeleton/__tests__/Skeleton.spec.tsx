@@ -5,11 +5,15 @@
  *  - Happy path: renders with declared width/height; shimmer animation class present.
  *  - Edge case: prefers-reduced-motion matched -> no shimmer animation.
  *  - A11y: role="status", aria-busy, aria-label present.
+ *
+ * Width/height are bridged to CSS custom properties via a ref+effect (internal
+ * migration from U7). The public props API is unchanged for callers; tests verify
+ * that the CSS vars are set on the element rather than checking inline styles.
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { Skeleton } from '../Skeleton';
 
 describe('Skeleton — happy path', () => {
@@ -20,16 +24,18 @@ describe('Skeleton — happy path', () => {
     expect(el).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('applies explicit width and height as inline styles', () => {
+  it('sets --ra-skeleton-width and --ra-skeleton-height as CSS custom properties for numeric values', () => {
     render(<Skeleton width={120} height={16} />);
     const el = screen.getByRole('status');
-    expect(el).toHaveStyle({ width: '120px', height: '16px' });
+    expect(el.style.getPropertyValue('--ra-skeleton-width')).toBe('120px');
+    expect(el.style.getPropertyValue('--ra-skeleton-height')).toBe('16px');
   });
 
-  it('applies string width/height values directly', () => {
+  it('sets CSS custom properties for string width/height values', () => {
     render(<Skeleton width="50%" height="2rem" />);
     const el = screen.getByRole('status');
-    expect(el).toHaveStyle({ width: '50%', height: '2rem' });
+    expect(el.style.getPropertyValue('--ra-skeleton-width')).toBe('50%');
+    expect(el.style.getPropertyValue('--ra-skeleton-height')).toBe('2rem');
   });
 
   it('applies custom aria-label', () => {
@@ -47,6 +53,15 @@ describe('Skeleton — happy path', () => {
     // CSS Modules transforms class names — just verify a class was added
     const el = container.firstChild as HTMLElement;
     expect(el.className).toBeTruthy();
+  });
+
+  it('does not set inline style attribute — width/height are bridged via CSS vars', () => {
+    render(<Skeleton width={100} height={20} />);
+    const el = screen.getByRole('status');
+    // The style attribute may contain the CSS vars, but no direct width/height
+    // properties are set — only the custom properties.
+    expect(el.style.width).toBe('');
+    expect(el.style.height).toBe('');
   });
 });
 

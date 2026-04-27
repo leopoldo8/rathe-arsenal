@@ -161,6 +161,7 @@
 
 .confidenceFill {
   height: 100%;
+  width: var(--confidence, 0%);
   background-color: var(--ra-accent);
   border-radius: var(--ra-radius-full);
   transition: width var(--ra-duration) var(--ra-ease);

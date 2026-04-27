@@ -90,7 +90,13 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background-color: var(--ra-fg-muted); /* colorless fallback */
 }
+
+/* Pitch color via data attribute — 4-value enum, no first-paint race. */
+.pitchDot[data-pitch='1'] { background-color: var(--ra-pitch-red); }
+.pitchDot[data-pitch='2'] { background-color: var(--ra-pitch-yellow); }
+.pitchDot[data-pitch='3'] { background-color: var(--ra-pitch-blue); }
 
 .optionName {
   flex: 1;

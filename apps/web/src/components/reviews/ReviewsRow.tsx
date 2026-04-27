@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import type { IReviewRow, TReviewRowId, IBulkOperation } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
 import styles from './ReviewsRow.module.css';
+import { setCssVar } from '../../lib/dom/setCssVar';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,6 +99,13 @@ export function ReviewsRow({
 
   const tierLabel = `Tier ${row.tier}`;
   const confidencePct = `${row.confidence}%`;
+
+  // --confidence drives the confidence bar fill width via CSS (continuous value).
+  // First-paint race is acceptable — the bar is decorative, not load-bearing.
+  const confidenceFillRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setCssVar(confidenceFillRef.current, '--confidence', confidencePct);
+  }, [confidencePct]);
 
   return (
     <div
@@ -204,8 +212,8 @@ export function ReviewsRow({
             aria-valuemax={100}
           >
             <div
+              ref={confidenceFillRef}
               className={styles.confidenceFill}
-              style={{ width: confidencePct }}
             />
           </div>
           <span className={styles.confidenceLabel}>{confidencePct}</span>

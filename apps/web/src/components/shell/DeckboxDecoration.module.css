@@ -1,0 +1,6 @@
+/* DeckboxDecoration — inline SVG deckbox used in the AuthLayout left panel. */
+
+.svg {
+  width: 100%;
+  max-width: 220px;
+}

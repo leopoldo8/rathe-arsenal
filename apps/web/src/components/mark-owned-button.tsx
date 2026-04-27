@@ -1,3 +1,5 @@
+import styles from './mark-owned-button.module.css';
+
 interface IMarkOwnedButtonProps {
   readonly cardIdentifier: string;
   readonly onMarkOwned: (cardIdentifier: string) => void;
@@ -20,18 +22,9 @@ export function MarkOwnedButton({
         onMarkOwned(cardIdentifier);
       }}
       disabled={isPending}
-      style={{
-        cursor: isPending ? 'not-allowed' : 'pointer',
-        background: isThisCardPending ? '#ccc' : '#38a169',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        padding: '0.25rem 0.5rem',
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        opacity: isPending && !isThisCardPending ? 0.5 : 1,
-        whiteSpace: 'nowrap',
-      }}
+      className={styles.btn}
+      data-pending={isPending ? 'true' : undefined}
+      data-this-pending={isThisCardPending ? 'true' : undefined}
     >
       {isThisCardPending ? 'Saving...' : 'I own this'}
     </button>

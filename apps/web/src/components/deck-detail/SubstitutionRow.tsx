@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { IBreakdownEntry, ISubstitutionMatch } from '../../api/deck-detail';
 import styles from './SubstitutionRow.module.css';
+import { setCssVar } from '../../lib/dom/setCssVar';
 
 /**
  * Decision state for a substitution row.
@@ -107,6 +108,13 @@ export function SubstitutionRow({
   const scorePercent = Math.round(match.score * 100);
   const rowAriaLabel = `Substitution: ${originalName} for ${substituteName}, Tier ${match.tier}, ${scorePercent}% confidence, decision: ${decision}`;
 
+  // --score drives the confidence bar fill width via CSS (continuous value).
+  // First-paint race is acceptable for the confidence bar — it is decorative.
+  const scoreFillRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setCssVar(scoreFillRef.current, '--score', `${scorePercent}%`);
+  }, [scorePercent]);
+
   // Lightbox state — local to the row so approving/rejecting a different
   // row doesn't cause cross-row flicker when the preview is open.
   const [lightbox, setLightbox] = useState<
@@ -151,8 +159,8 @@ export function SubstitutionRow({
           <span className={styles.row__tier}>{getTierLabel(match.tier)}</span>
           <div className={styles.row__scoreBar}>
             <div
+              ref={scoreFillRef}
               className={styles.row__scoreFill}
-              style={{ '--score': `${scorePercent}%` } as React.CSSProperties}
             />
           </div>
           <span className={styles.row__scoreLabel}>{scorePercent}%</span>

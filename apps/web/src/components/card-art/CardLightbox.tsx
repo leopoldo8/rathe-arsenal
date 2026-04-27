@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './CardLightbox.module.css';
+import { setCssVar } from '../../lib/dom/setCssVar';
 
 export interface ICardLightboxProps {
   /**
@@ -90,9 +91,16 @@ export function CardLightbox({
     setTilt({ x: 0, y: 0 });
   }, []);
 
-  const cardStyle: React.CSSProperties = {
-    transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-  };
+  // Perspective tilt is a continuous three-value transform — bridged via CSS
+  // custom properties on the card element. The pre-existing transform-style/
+  // transition on .card in the module still applies; we only override the
+  // rotateX/Y values that change on every mousemove.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    setCssVar(el, '--tilt-x', `${tilt.x}deg`);
+    setCssVar(el, '--tilt-y', `${tilt.y}deg`);
+  }, [tilt]);
 
   return (
     <div
@@ -116,7 +124,6 @@ export function CardLightbox({
       <div
         ref={cardRef}
         className={styles.card}
-        style={cardStyle}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onClick={(e) => e.stopPropagation()}
@@ -153,14 +160,13 @@ export function CardLightbox({
             key={currentSrc}
             src={currentSrc}
             alt={name}
-            className={styles.image}
+            className={loaded ? `${styles.image} ${styles['image--loaded']}` : styles.image}
             onLoad={() => setLoaded(true)}
             onError={() => {
               setLoaded(false);
               setSourceIndex((i) => i + 1);
             }}
             data-testid="card-lightbox-image"
-            style={{ opacity: loaded ? 1 : 0 }}
           />
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -6,6 +6,7 @@ import { LibraryCardStepper } from './LibraryCardStepper';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilterRail';
 import styles from './LibraryGrid.module.css';
+import { setCssVar } from '../../lib/dom/setCssVar';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -138,6 +139,36 @@ function groupCards(
 }
 
 // ---------------------------------------------------------------------------
+// Sub-component: grid <ul> with optional --cell-min CSS var
+// ---------------------------------------------------------------------------
+
+interface ICardGridProps {
+  readonly ariaLabel: string;
+  readonly cardSize: number | undefined;
+  readonly children: React.ReactNode;
+}
+
+function CardGrid({ ariaLabel, cardSize, children }: ICardGridProps): React.ReactElement {
+  const gridRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    setCssVar(
+      gridRef.current,
+      '--cell-min',
+      // Add 1rem (≈16px) to compensate for the cell's internal padding so
+      // the column track is always wider than the rendered card.
+      cardSize !== undefined ? `calc(${cardSize}px + 1rem)` : null,
+    );
+  }, [cardSize]);
+
+  return (
+    <ul ref={gridRef} className={styles.grid} aria-label={ariaLabel}>
+      {children}
+    </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Sub-component: single card cell
 // ---------------------------------------------------------------------------
 
@@ -232,16 +263,9 @@ export function LibraryGrid({
           {group !== 'flat' && (
             <h2 className={styles.groupHeading}>{headingFor(groupKey)}</h2>
           )}
-          <ul
-            className={styles.grid}
-            aria-label={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}
-            style={
-              cardSize !== undefined
-                ? // Add 1rem to compensate for the cell's internal padding so
-                  // the column track is always wider than the rendered card.
-                  ({ '--cell-min': `calc(${cardSize}px + 1rem)` } as React.CSSProperties)
-                : undefined
-            }
+          <CardGrid
+            ariaLabel={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}
+            cardSize={cardSize}
           >
             {groupCards.map((card) => (
               <LibraryCardCell
@@ -251,7 +275,7 @@ export function LibraryGrid({
                 onOpenLightbox={openLightbox}
               />
             ))}
-          </ul>
+          </CardGrid>
         </section>
       ))}
       {lightbox && (
