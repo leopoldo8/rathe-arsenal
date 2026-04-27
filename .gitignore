@@ -34,3 +34,7 @@ coverage/
 .claude/
 .context/
 .playwright-mcp/
+
+# Screenshot captures — local review artifacts, not committed baselines.
+# Unit 8 owns the committed CI snapshot baselines (dark-desktop only).
+apps/web/tests/visual/__captures__/

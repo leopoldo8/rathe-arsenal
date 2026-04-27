@@ -38,7 +38,7 @@ vi.mock('../../../components/onboarding/OnboardingWizard', () => ({
   OnboardingWizard: () => <div data-testid="onboarding-wizard" />,
 }));
 
-// OnboardingSkeleton — stub so the loading state is a predictable element
+// OnboardingSkeleton — stub so the loading-state test stays isolated from the skeleton impl
 vi.mock('../../../components/onboarding/OnboardingSkeleton', () => ({
   OnboardingSkeleton: () => <div data-testid="onboarding-skeleton" />,
 }));
@@ -108,7 +108,7 @@ describe('OnboardingPage — R60 redirect (Unit 9)', () => {
     expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
   });
 
-  it('renders the loading skeleton while decks query is loading', () => {
+  it('renders a skeleton (not null) while decks query is loading (R59)', () => {
     mockUseDecksQuery.mockReturnValue(makeQueryLoading());
     render(<OnboardingPage />);
     expect(screen.getByTestId('onboarding-skeleton')).toBeInTheDocument();
