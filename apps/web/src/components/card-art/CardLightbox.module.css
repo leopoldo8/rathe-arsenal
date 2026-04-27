@@ -39,7 +39,8 @@
   border-radius: var(--ra-radius-md);
   overflow: hidden;
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
-  /* perspective + rotateX/Y set inline from the mousemove handler */
+  /* --tilt-x / --tilt-y are set via setCssVar on mousemove. */
+  transform: perspective(1200px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transform-style: preserve-3d;
   transition: transform 0.08s linear;
   will-change: transform;
@@ -55,9 +56,15 @@
      to 63:88 the image lands flush edge-to-edge; contain is a safety
      net in case LSS ships a slightly different crop in the future. */
   object-fit: contain;
+  opacity: 0;
   transition: opacity 180ms var(--ra-ease);
   position: relative;
   z-index: 1;
+}
+
+/* Class toggle for the loaded state — boolean state, not a CSS-var bridge. */
+.image--loaded {
+  opacity: 1;
 }
 
 /* Shimmer skeleton behind the <img> until it loads. Sized to the card

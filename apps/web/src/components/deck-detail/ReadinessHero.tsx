@@ -1,4 +1,6 @@
+import React, { useEffect, useRef } from 'react';
 import styles from './ReadinessHero.module.css';
+import { setCssVar } from '../../lib/dom/setCssVar';
 
 interface IReadinessHeroProps {
   readonly effectivePercent: number;
@@ -34,6 +36,13 @@ export function ReadinessHero({
 }: IReadinessHeroProps): React.ReactElement {
   const fabraryUrl = `https://fabrary.com/decks/${fabraryUlid}`;
   const readinessClass = getReadinessClass(effectivePercent);
+
+  // --pct drives the bar fill width via CSS (continuous value, no first-paint
+  // race concern since the bar is decorative, not load-bearing geometry).
+  const barFillRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setCssVar(barFillRef.current, '--pct', `${effectivePercent}%`);
+  }, [effectivePercent]);
 
   return (
     <div className={styles.hero}>
@@ -75,8 +84,8 @@ export function ReadinessHero({
 
       <div className={styles.hero__bar}>
         <div
+          ref={barFillRef}
           className={styles.hero__barFill}
-          style={{ '--pct': `${effectivePercent}%` } as React.CSSProperties}
         />
       </div>
     </div>

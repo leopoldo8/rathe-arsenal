@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from './Skeleton.module.css';
+import { setCssVar } from '../../../lib/dom/setCssVar';
 
 interface ISkeletonProps {
   /** Explicit width (CSS value). Defaults to '100%'. */
@@ -20,6 +21,10 @@ interface ISkeletonProps {
  * CSS-only shimmer via background-position animation.
  * Respects `prefers-reduced-motion`: when reduced motion is requested
  * the shimmer animation is suppressed and a static muted background remains.
+ *
+ * Width/height are bridged to CSS custom properties via a ref so the inline
+ * `style` prop is never set — the public API (width/height props) is unchanged
+ * for callers; the migration is internal.
  */
 export function Skeleton({
   width = '100%',
@@ -36,13 +41,20 @@ export function Skeleton({
     .filter(Boolean)
     .join(' ');
 
+  const elRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    setCssVar(elRef.current, '--ra-skeleton-width', typeof width === 'number' ? `${width}px` : width);
+    setCssVar(elRef.current, '--ra-skeleton-height', typeof height === 'number' ? `${height}px` : height);
+  }, [width, height]);
+
   return (
     <span
+      ref={elRef}
       role="status"
       aria-label={ariaLabel}
       aria-busy="true"
       className={classes}
-      style={{ width, height }}
     />
   );
 }

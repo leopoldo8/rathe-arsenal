@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import styles from './CardArt.module.css';
 
 import AttackGlyph from './glyphs/attack.svg?react';
@@ -80,34 +80,6 @@ const SIZE_WIDTH_MAP: Record<TCardArtSize, number> = {
  * standard FaB card dimension.
  */
 const ASPECT_RATIO = 10 / 7;
-
-/** Frame color tokens per pitch value. Maps directly to CSS custom properties. */
-const PITCH_FRAME_VARS: Record<string, { frame: string; bg: string; ink: string; sym: string }> = {
-  '1': {
-    frame: 'var(--ra-card-frame-red)',
-    bg: 'var(--ra-card-frame-red-bg)',
-    ink: 'var(--ra-card-frame-red-ink)',
-    sym: 'var(--ra-card-frame-red-sym)',
-  },
-  '2': {
-    frame: 'var(--ra-card-frame-yellow)',
-    bg: 'var(--ra-card-frame-yellow-bg)',
-    ink: 'var(--ra-card-frame-yellow-ink)',
-    sym: 'var(--ra-card-frame-yellow-sym)',
-  },
-  '3': {
-    frame: 'var(--ra-card-frame-blue)',
-    bg: 'var(--ra-card-frame-blue-bg)',
-    ink: 'var(--ra-card-frame-blue-ink)',
-    sym: 'var(--ra-card-frame-blue-sym)',
-  },
-  colorless: {
-    frame: 'var(--ra-card-frame-colorless)',
-    bg: 'var(--ra-card-frame-colorless-bg)',
-    ink: 'var(--ra-card-frame-colorless-ink)',
-    sym: 'var(--ra-card-frame-colorless-sym)',
-  },
-};
 
 /** Map of recognized card type strings to their glyph component. */
 const TYPE_GLYPH_MAP: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -200,24 +172,24 @@ export function CardArt({
   const hatchId = `ra-hatch-${reactId}`;
 
   const pitchKey = resolvePitchKey(pitch);
-  // resolvePitchKey only returns '1'|'2'|'3'|'colorless', all present in the
-  // map. Fall back explicitly in case the map is narrowed in a future change.
-  const colors = PITCH_FRAME_VARS[pitchKey] ?? PITCH_FRAME_VARS.colorless!;
 
   const TypeGlyphComponent = resolveGlyph(type);
 
-  const cssVars = {
-    '--card-frame': colors.frame,
-    '--card-bg': colors.bg,
-    '--card-ink': colors.ink,
-    '--card-sym': colors.sym,
-    // When the caller passes `widthOverride`, force the container to that
-    // exact pixel width so the absolutely-positioned <img> overlay
-    // (`inset: 0`) tracks the rendered art instead of overflowing the preset.
-    ...(widthOverride !== undefined
-      ? { width: `${widthOverride}px`, height: `${height}px` }
-      : {}),
-  } as React.CSSProperties;
+  // When widthOverride is set, apply dimensions directly to the container
+  // via a ref — this avoids the style prop in JSX while keeping the
+  // precise pixel sizing needed for the library grid size slider.
+  const containerRef = useRef<HTMLButtonElement | HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (widthOverride !== undefined) {
+      el.style.width = `${widthOverride}px`;
+      el.style.height = `${height}px`;
+    } else {
+      el.style.width = '';
+      el.style.height = '';
+    }
+  }, [widthOverride, height]);
 
   const containerClass = [
     styles.cardArt,
@@ -229,11 +201,19 @@ export function CardArt({
     .filter(Boolean)
     .join(' ');
 
+  // Pitch key as a data attribute value for CSS Module selectors.
+  // 'colorless' matches the default CSS vars on .cardArt; numbered values
+  // match the [data-pitch='1'/'2'/'3'] selectors in the module.
+  const dataPitch = pitchKey === 'colorless' ? undefined : pitchKey;
+
   const inner = (
     <>
       {/* Real card image overlay — sits above the SVG placeholder. The
           SVG still renders beneath so a slow-loading image briefly shows
-          the stylized frame instead of a blank rectangle. */}
+          the stylized frame instead of a blank rectangle.
+          The image uses width/height 100% from the module CSS; when
+          widthOverride is set the container is sized by the ref effect
+          and the image fills it via position:absolute + inset:0. */}
       {currentSource && !imageErrored && (
         <img
           // `key` forces a fresh <img> when the URL changes, so the next
@@ -248,7 +228,6 @@ export function CardArt({
           className={styles.cardArtImage}
           onError={() => setSourceIndex((i) => i + 1)}
           data-testid="card-art-image"
-          style={{ width, height }}
         />
       )}
       {/* Missing hatch overlay for `imageUrl` path — replicates the SVG
@@ -329,10 +308,13 @@ export function CardArt({
           strokeWidth="0.4"
         />
 
-        {/* Type glyph — scaled into the art panel */}
+        {/* Type glyph — scaled into the art panel.
+            The typeGlyph class sets color: var(--card-sym) so the glyph
+            component's fill: currentColor picks up the pitch-derived sym color
+            from the container's data-pitch CSS variable selectors. */}
         <g
           transform="translate(10 22) scale(0.8 0.8)"
-          style={{ color: 'var(--card-sym)' }}
+          className={styles.typeGlyph}
           data-testid="type-glyph"
         >
           <TypeGlyphComponent aria-hidden="true" />
@@ -441,8 +423,9 @@ export function CardArt({
     return (
       <button
         type="button"
+        ref={containerRef as React.RefObject<HTMLButtonElement>}
         className={containerClass}
-        style={cssVars}
+        data-pitch={dataPitch}
         data-testid="card-art"
         onClick={onClick}
         aria-label={`Open ${name} fullscreen`}
@@ -453,7 +436,12 @@ export function CardArt({
   }
 
   return (
-    <div className={containerClass} style={cssVars} data-testid="card-art">
+    <div
+      ref={containerRef as React.RefObject<HTMLDivElement>}
+      className={containerClass}
+      data-pitch={dataPitch}
+      data-testid="card-art"
+    >
       {inner}
     </div>
   );

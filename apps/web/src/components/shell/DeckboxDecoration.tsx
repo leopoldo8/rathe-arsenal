@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './DeckboxDecoration.module.css';
 
 /**
  * DeckboxDecoration — inline SVG deckbox used in the AuthLayout left panel.
@@ -9,7 +10,7 @@ export function DeckboxDecoration(): React.ReactElement {
     <svg
       viewBox="0 0 104 104"
       overflow="visible"
-      style={{ width: '100%', maxWidth: 220 }}
+      className={styles.svg}
       aria-hidden="true"
     >
       <defs>

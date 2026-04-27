@@ -5,6 +5,8 @@
 
 .skeleton {
   display: block;
+  width: var(--ra-skeleton-width, 100%);
+  height: var(--ra-skeleton-height, 1em);
   background-color: var(--ra-bg-muted);
   background-image: linear-gradient(
     90deg,

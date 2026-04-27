@@ -113,3 +113,46 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- Pitch frame vars via data-pitch attribute ----------
+   4-value enum (1=red, 2=yellow, 3=blue, colorless). The CSS vars
+   are consumed by the SVG fill/stroke attributes via var(--card-*).
+   Colorless is the fallback (no data-pitch match needed since defaults
+   are declared on .cardArt below).
+   ============================================================ */
+.cardArt {
+  --card-frame: var(--ra-card-frame-colorless);
+  --card-bg:    var(--ra-card-frame-colorless-bg);
+  --card-ink:   var(--ra-card-frame-colorless-ink);
+  --card-sym:   var(--ra-card-frame-colorless-sym);
+}
+
+.cardArt[data-pitch='1'] {
+  --card-frame: var(--ra-card-frame-red);
+  --card-bg:    var(--ra-card-frame-red-bg);
+  --card-ink:   var(--ra-card-frame-red-ink);
+  --card-sym:   var(--ra-card-frame-red-sym);
+}
+
+.cardArt[data-pitch='2'] {
+  --card-frame: var(--ra-card-frame-yellow);
+  --card-bg:    var(--ra-card-frame-yellow-bg);
+  --card-ink:   var(--ra-card-frame-yellow-ink);
+  --card-sym:   var(--ra-card-frame-yellow-sym);
+}
+
+.cardArt[data-pitch='3'] {
+  --card-frame: var(--ra-card-frame-blue);
+  --card-bg:    var(--ra-card-frame-blue-bg);
+  --card-ink:   var(--ra-card-frame-blue-ink);
+  --card-sym:   var(--ra-card-frame-blue-sym);
+}
+
+/* ---------- SVG type glyph color ----------
+   The <g> containing the type glyph inherits color from the container
+   (which exposes --card-sym via data-pitch). The class bridges that to
+   the SVG fill via currentColor on the glyph component.
+   ============================================================ */
+.typeGlyph {
+  color: var(--card-sym);
+}

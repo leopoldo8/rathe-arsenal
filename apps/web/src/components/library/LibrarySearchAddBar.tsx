@@ -219,7 +219,7 @@ export function LibrarySearchAddBar({
               >
                 <span
                   className={styles.pitchDot}
-                  style={{ background: pitchToColor(card.pitch) }}
+                  data-pitch={card.pitch ?? 'colorless'}
                   aria-hidden="true"
                 />
                 <span className={styles.optionName}>{card.name}</span>
@@ -257,19 +257,3 @@ export function LibrarySearchAddBar({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function pitchToColor(pitch: number | null): string {
-  switch (pitch) {
-    case 1:
-      return 'var(--ra-pitch-red)';
-    case 2:
-      return 'var(--ra-pitch-yellow)';
-    case 3:
-      return 'var(--ra-pitch-blue)';
-    default:
-      return 'var(--ra-fg-muted)';
-  }
-}
