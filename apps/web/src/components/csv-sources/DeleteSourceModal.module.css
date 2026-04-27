@@ -200,13 +200,14 @@
 }
 
 .btnDelete {
-  background: rgba(192, 87, 74, 0.15);
-  border: 1px solid rgba(192, 87, 74, 0.40);
+  /* Use tokens so both dark and light themes get the correct danger wash. */
+  background: var(--ra-ready-low-bg);
+  border: 1px solid var(--ra-ready-low-border);
   color: var(--ra-ready-low);
 }
 
 .btnDelete:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: rgba(192, 87, 74, 0.25);
+  background: color-mix(in oklch, var(--ra-ready-low) 16%, var(--ra-ready-low-bg));
   border-color: var(--ra-ready-low);
 }
 

@@ -205,7 +205,8 @@
 .menuItemDestructive:hover,
 .menuItemDestructive[data-highlighted] {
   color: var(--ra-ready-low);
-  background: rgba(192, 87, 74, 0.12);
+  /* Use token-based danger wash so both themes get the correct tint. */
+  background: var(--ra-ready-low-bg);
 }
 
 .menuSeparator {

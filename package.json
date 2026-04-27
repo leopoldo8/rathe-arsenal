@@ -19,7 +19,8 @@
     "gold:sample": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/sample-decks.ts",
     "gold:generate": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/generate-candidates.ts",
     "gold:export": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/export-csv.ts",
-    "gold:score": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/score.ts"
+    "gold:score": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/score.ts",
+    "screenshot": "tsx scripts/screenshot-all-surfaces.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",
@@ -31,6 +32,7 @@
     "csv-stringify": "^6.7.0",
     "dotenv": "^16.4.5",
     "pg": "^8.13.1",
+    "playwright": "^1.59.1",
     "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "yaml": "^2.8.3"

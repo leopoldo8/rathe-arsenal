@@ -33,7 +33,9 @@
   padding: var(--ra-space-2) var(--ra-space-3);
   border: 1px solid var(--ra-accent-soft-bd);
   border-radius: 2px;
-  background: rgba(12, 13, 16, 0.6);
+  /* Use token-based surface instead of hardcoded dark-canvas rgba.
+     --ra-bg-raised correctly resolves to the raised surface for both themes. */
+  background: var(--ra-bg-raised);
   transition: color var(--ra-duration) var(--ra-ease),
               border-color var(--ra-duration) var(--ra-ease);
 }
