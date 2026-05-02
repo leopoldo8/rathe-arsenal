@@ -10,7 +10,6 @@ import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import {
   ICreatedResponse,
   IUpdatedResponse,
-  IReplacedResponse,
   IExactMatchResponse,
   IPartialOverlapResponse,
   ICancelledResponse,

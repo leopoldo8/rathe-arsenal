@@ -10,7 +10,6 @@ import { DecisionsService } from '../../decisions/decisions.service';
 const USER_ID = 'user-aaa';
 const OTHER_USER_ID = 'user-bbb';
 const DECK_ID = 1;
-const OTHER_DECK_ID = 2;
 
 interface IMinimalReadiness {
   rawPercent: number;

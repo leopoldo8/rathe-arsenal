@@ -7,6 +7,7 @@ import { ReviewAggregateEntity } from '../../database/entities/review-aggregate.
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { SubstituteDecisionEntity } from '../../database/entities/substitute-decision.entity';
+import { CatalogService } from '../../catalog/catalog.service';
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -124,12 +125,30 @@ describe('ReviewAggregateService', () => {
   let service: ReviewAggregateService;
   let aggregateRepo: jest.Mocked<Repository<ReviewAggregateEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
+  let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
+  let decisionRepo: jest.Mocked<Repository<SubstituteDecisionEntity>>;
+  let catalogService: jest.Mocked<CatalogService>;
 
   beforeEach(async () => {
     aggregateRepo = createMock<Repository<ReviewAggregateEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
-    const trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
-    const decisionRepo = createMock<Repository<SubstituteDecisionEntity>>();
+    trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
+    decisionRepo = createMock<Repository<SubstituteDecisionEntity>>();
+    catalogService = createMock<CatalogService>();
+    // Default: every catalog lookup returns an Action card. Individual tests
+    // override via `catalogService.getCard.mockImplementation(...)`.
+    catalogService.getCard.mockReturnValue({
+      cardIdentifier: 'fallback',
+      name: 'Fallback Card',
+      classes: [],
+      types: ['Action'],
+      pitch: null,
+      cost: null,
+      power: null,
+      defense: null,
+      keywords: [],
+      imageUrl: null,
+    } as unknown as ReturnType<CatalogService['getCard']>);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -150,6 +169,7 @@ describe('ReviewAggregateService', () => {
           provide: getRepositoryToken(SubstituteDecisionEntity),
           useValue: decisionRepo,
         },
+        { provide: CatalogService, useValue: catalogService },
       ],
     }).compile();
 
@@ -381,6 +401,223 @@ describe('ReviewAggregateService', () => {
 
       // Assert
       expect(result).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listSubstitutionRows
+  // -------------------------------------------------------------------------
+
+  describe('listSubstitutionRows', () => {
+    const ORIGINAL_IMAGE = {
+      small: 'https://cdn.example/orig-small.webp',
+      large: 'https://cdn.example/orig-large.webp',
+      sources: [
+        {
+          small: 'https://cdn.example/orig-small.webp',
+          large: 'https://cdn.example/orig-large.webp',
+        },
+      ],
+    };
+    const SUBSTITUTE_IMAGE = {
+      small: 'https://cdn.example/sub-small.webp',
+      large: 'https://cdn.example/sub-large.webp',
+      sources: [
+        {
+          small: 'https://cdn.example/sub-small.webp',
+          large: 'https://cdn.example/sub-large.webp',
+        },
+      ],
+    };
+
+    function makeEnrichedSubstitutionSnapshot(
+      trackedDeckId: number = DECK_ID,
+    ): DeckReadinessSnapshotEntity {
+      return {
+        id: 90,
+        trackedDeckId,
+        rawPercent: 80,
+        effectivePercent: 100,
+        breakdown: {
+          exact: [],
+          substituted: [
+            {
+              original: {
+                cardIdentifier: 'FaB-orig (1)',
+                quantity: 1,
+                slot: 'main',
+                pitch: 2,
+                cost: 1,
+                type: 'Action',
+                imageUrl: ORIGINAL_IMAGE,
+              },
+              match: {
+                substitute: {
+                  cardIdentifier: 'FaB-sub (1)',
+                  name: 'Substitute Card',
+                  classes: ['Generic'],
+                  pitch: 1,
+                  power: null,
+                  defense: null,
+                  keywords: [],
+                  imageUrl: SUBSTITUTE_IMAGE,
+                },
+                tier: 2,
+                score: 0.83,
+                rationale: 'similar effect, lower power',
+              },
+            },
+          ],
+          missing: [],
+          notOwned: [],
+        } as unknown as Record<string, unknown>,
+        substitutions: {} as Record<string, unknown>,
+        computedAt: new Date(),
+        trackedDeck: {} as DeckReadinessSnapshotEntity['trackedDeck'],
+      };
+    }
+
+    function stubLatestSnapshotsQuery(
+      snapshots: readonly DeckReadinessSnapshotEntity[],
+    ): void {
+      snapshotRepo.createQueryBuilder = jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(snapshots),
+      });
+    }
+
+    it('returns rows enriched with hero, tier, confidence, decision, image URLs, and pitch/type pairs', async () => {
+      // Arrange
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Aggressive Briar', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+      decisionRepo.find.mockResolvedValue([]);
+      catalogService.getCard.mockReturnValue({
+        cardIdentifier: 'FaB-sub (1)',
+        name: 'Substitute Card',
+        classes: ['Generic'],
+        types: ['Defense Reaction'],
+        pitch: 1,
+        cost: null,
+        power: null,
+        defense: null,
+        keywords: [],
+        imageUrl: null,
+      } as unknown as ReturnType<CatalogService['getCard']>);
+
+      // Act — request 'all' so the pending row is not filtered out.
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
+
+      // Assert
+      expect(rows).toHaveLength(1);
+      const row = rows[0]!;
+      expect(row.trackedDeckId).toBe(DECK_ID);
+      expect(row.deckName).toBe('Aggressive Briar');
+      expect(row.hero).toBe('Briar');
+      expect(row.cardIdentifier).toBe('FaB-orig (1)');
+      expect(row.substituteIdentifier).toBe('FaB-sub (1)');
+      expect(row.substituteName).toBe('Substitute Card');
+      expect(row.tier).toBe(2);
+      // 0.83 → 83
+      expect(row.confidence).toBe(83);
+      expect(row.rationale).toBe('similar effect, lower power');
+      expect(row.decision).toBe('pending');
+      expect(row.originalImageUrl).toEqual({
+        small: ORIGINAL_IMAGE.small,
+        large: ORIGINAL_IMAGE.large,
+      });
+      // The wire format must NOT carry `sources`.
+      expect(row.originalImageUrl).not.toHaveProperty('sources');
+      expect(row.substituteImageUrl).toEqual({
+        small: SUBSTITUTE_IMAGE.small,
+        large: SUBSTITUTE_IMAGE.large,
+      });
+      expect(row.originalPitch).toBe(2);
+      expect(row.substitutePitch).toBe(1);
+      expect(row.originalType).toBe('Action');
+      expect(row.substituteType).toBe('Defense Reaction');
+    });
+
+    it('uses decisionMap to surface approved/rejected decision states', async () => {
+      // Arrange
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+      decisionRepo.find.mockResolvedValue([
+        {
+          trackedDeckId: DECK_ID,
+          cardIdentifier: 'FaB-orig (1)',
+          decision: 'approved',
+        } as SubstituteDecisionEntity,
+      ]);
+
+      // Act
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
+
+      // Assert
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.decision).toBe('approved');
+    });
+
+    it('respects the state filter and drops rows with mismatched decisions', async () => {
+      // Arrange
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+      decisionRepo.find.mockResolvedValue([
+        {
+          trackedDeckId: DECK_ID,
+          cardIdentifier: 'FaB-orig (1)',
+          decision: 'approved',
+        } as SubstituteDecisionEntity,
+      ]);
+
+      // Act — default filter is 'pending'; the only row is approved.
+      const rows = await service.listSubstitutionRows(USER_A);
+
+      // Assert
+      expect(rows).toEqual([]);
+    });
+
+    it('clamps tier to {1,2,3} and falls back to type=unknown when catalog lookup throws', async () => {
+      // Arrange — engine snapshot with an out-of-range tier and a substitute
+      // missing from the catalog (legacy data).
+      const snapshot = makeEnrichedSubstitutionSnapshot();
+      const breakdown = snapshot.breakdown as unknown as {
+        substituted: Array<{
+          original: Record<string, unknown>;
+          match: { tier: number; substitute: { cardIdentifier: string } };
+        }>;
+      };
+      breakdown.substituted[0]!.match.tier = 7;
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([snapshot]);
+      decisionRepo.find.mockResolvedValue([]);
+      catalogService.getCard.mockImplementation(() => {
+        throw new Error('card not in catalog');
+      });
+
+      // Act
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
+
+      // Assert
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.tier).toBe(3);
+      expect(rows[0]!.substituteType).toBe('unknown');
+    });
+
+    it('returns an empty array when the user has no tracked decks', async () => {
+      trackedDeckRepo.find.mockResolvedValue([]);
+
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
+
+      expect(rows).toEqual([]);
     });
   });
 });
