@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -18,6 +19,9 @@ import styles from './LibrarySearchAddBar.module.css';
 
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
+
+/** Stable empty array used as fallback for search results to avoid a new reference each render. */
+const EMPTY_RESULTS: readonly ISearchCardResult[] = [];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,7 +78,12 @@ export function LibrarySearchAddBar({
   const searchQuery = useSearchCardsQuery(debouncedQuery);
   const addCardMutation = useAddCardMutation();
 
-  const results: readonly ISearchCardResult[] = searchQuery.data?.results ?? [];
+  // Memoized so the `useEffect` below receives a stable reference and only
+  // resets the highlight when the result set actually changes.
+  const results = useMemo<readonly ISearchCardResult[]>(
+    () => searchQuery.data?.results ?? EMPTY_RESULTS,
+    [searchQuery.data],
+  );
   const hasQueryLength = debouncedQuery.length >= MIN_QUERY_LENGTH;
   const showEmptyResults =
     hasQueryLength && searchQuery.isSuccess && !searchQuery.isFetching && results.length === 0;

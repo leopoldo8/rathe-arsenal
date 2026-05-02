@@ -1,5 +1,6 @@
 import { useContext } from 'react';
-import { ToastContext, type IToastContext } from './ToastProvider';
+import { ToastContext } from './ToastContext';
+import type { IToastContext } from './ToastContext';
 
 /**
  * Access the toast notification API from any component within <ToastProvider>.

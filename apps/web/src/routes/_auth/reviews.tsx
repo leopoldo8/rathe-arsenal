@@ -7,15 +7,21 @@ import {
   buildSuccessMessage,
 } from '../../api/reviews';
 import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
-import { makeReviewRowId } from '../../api/reviews';
 import { useToast } from '../../components/ui/Toast/useToast';
 import { ReviewsTabs } from '../../components/reviews/ReviewsTabs';
 import type { TTabValue } from '../../components/reviews/ReviewsTabs';
 import { ReviewsFilters } from '../../components/reviews/ReviewsFilters';
-import type { IReviewsFilters } from '../../components/reviews/ReviewsFilters';
+import type { IReviewsFilters } from '../../components/reviews/ReviewsFilters.helpers';
 import { ReviewsRowList } from '../../components/reviews/ReviewsRowList';
 import { ReviewsBulkBar } from '../../components/reviews/ReviewsBulkBar';
 import styles from './reviews.module.css';
+
+// ---------------------------------------------------------------------------
+// Module-level constants
+// ---------------------------------------------------------------------------
+
+/** Stable empty array used as fallback for allRows to avoid a new reference each render. */
+const EMPTY_ROWS: readonly IReviewRow[] = [];
 
 // ---------------------------------------------------------------------------
 // URL search schema
@@ -85,7 +91,13 @@ export function ReviewsPage(): React.ReactElement {
 
   // --- Derived data ---
 
-  const allRows: readonly IReviewRow[] = reviewsQuery.data?.rows ?? [];
+  const reviewsData = reviewsQuery.data;
+  // Memoized so downstream useMemo hooks receive a stable reference and only
+  // recompute when the server response actually changes.
+  const allRows = useMemo<readonly IReviewRow[]>(
+    () => reviewsData?.rows ?? EMPTY_ROWS,
+    [reviewsData],
+  );
 
   // Derive available decks + heroes from the full row set for filter chips.
   const availableDecks = useMemo(
@@ -348,5 +360,3 @@ function deriveUniqueDecks(
   return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
 }
 
-// Re-export makeReviewRowId so tests can use it without importing from api.
-export { makeReviewRowId };

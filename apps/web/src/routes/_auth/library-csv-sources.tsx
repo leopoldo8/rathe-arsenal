@@ -7,7 +7,7 @@ import { UploadCsvButton } from '../../components/csv-sources/UploadCsvButton';
 import { SumExplainer } from '../../components/csv-sources/SumExplainer';
 import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
-import { DEFAULT_LIBRARY_SEARCH } from './library';
+import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
 import styles from './library-csv-sources.module.css';
 
 export const Route = createFileRoute('/_auth/library-csv-sources')({

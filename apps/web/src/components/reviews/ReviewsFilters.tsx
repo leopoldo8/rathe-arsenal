@@ -1,18 +1,12 @@
 import React, { useId } from 'react';
 import * as Popover from '@radix-ui/react-popover';
+import type { IReviewsFilters } from './ReviewsFilters.helpers';
+import { DEFAULT_FILTERS } from './ReviewsFilters.helpers';
 import styles from './ReviewsFilters.module.css';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface IReviewsFilters {
-  readonly tier: ReadonlyArray<1 | 2 | 3>;
-  readonly deck: readonly string[];
-  readonly hero: readonly string[];
-  readonly confidenceMin: number;
-  readonly confidenceMax: number;
-}
 
 interface IReviewsFiltersProps {
   readonly filters: IReviewsFilters;
@@ -20,18 +14,6 @@ interface IReviewsFiltersProps {
   readonly availableHeroes: readonly string[];
   readonly onChange: (next: IReviewsFilters) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Default filters
-// ---------------------------------------------------------------------------
-
-export const DEFAULT_FILTERS: IReviewsFilters = {
-  tier: [],
-  deck: [],
-  hero: [],
-  confidenceMin: 0,
-  confidenceMax: 100,
-};
 
 // ---------------------------------------------------------------------------
 // Component
