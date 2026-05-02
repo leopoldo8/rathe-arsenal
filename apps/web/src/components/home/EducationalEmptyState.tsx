@@ -75,7 +75,7 @@ export function EducationalEmptyState({
       </div>
 
       <div className={styles.cta}>
-        <a href="/add-cards/fabrary" className={styles.importLink}>
+        <a href="/decks/new" className={styles.importLink}>
           <Button variant="primary" size="lg">
             Track your first deck
           </Button>

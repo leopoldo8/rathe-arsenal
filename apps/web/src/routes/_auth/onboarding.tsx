@@ -12,14 +12,14 @@ export const Route = createFileRoute('/_auth/onboarding')({
  * Onboarding page — entry point for the 3-step onboarding wizard.
  *
  * R60 guard: if the user already has tracked decks, redirect to
- * /add-cards/fabrary (the Fabrary deck tracking surface). While the decks
- * query is loading, render null to prevent a flash of the wizard for
- * returning users on slow networks.
+ * /decks/new (the deck tracking surface). While the decks query is loading,
+ * render null to prevent a flash of the wizard for returning users on slow
+ * networks.
  *
  * The guard intentionally catches mid-wizard re-entry: a user who completed
  * step 1 (decks imported), navigated away, and then returned to /onboarding
- * is redirected to /add-cards/fabrary rather than resuming the wizard. This
- * is a deliberate block — v1 has no in-progress-onboarding state persistence.
+ * is redirected to /decks/new rather than resuming the wizard. This is a
+ * deliberate block — v1 has no in-progress-onboarding state persistence.
  */
 export function OnboardingPage(): React.ReactElement {
   const decksQuery = useDecksQuery();
@@ -27,10 +27,10 @@ export function OnboardingPage(): React.ReactElement {
   // While resolving, show a skeleton to avoid a blank flash (R59).
   if (decksQuery.isLoading) return <OnboardingSkeleton />;
 
-  // R60: returning user with existing decks → redirect to /add-cards/fabrary.
+  // R60: returning user with existing decks → redirect to /decks/new.
   const trackedDecks = decksQuery.data?.trackedDecks ?? [];
   if (trackedDecks.length > 0) {
-    return <Navigate to="/add-cards/fabrary" replace />;
+    return <Navigate to="/decks/new" replace />;
   }
 
   return <OnboardingWizard />;

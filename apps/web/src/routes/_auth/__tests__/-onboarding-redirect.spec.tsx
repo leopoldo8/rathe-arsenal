@@ -1,11 +1,12 @@
 /**
- * Onboarding R60 redirect tests — Unit 9
+ * Onboarding R60 redirect tests
  *
  * Verifies that the R60 returning-user routing guard redirects to
- * /add-cards/fabrary (not /import) after Plan C Unit 9.
+ * /decks/new (deck tracking) rather than /add-cards/fabrary (cards-only import).
  *
  * Covers:
- *  - Happy path: user with tracked decks is redirected to /add-cards/fabrary
+ *  - Happy path: user with tracked decks is redirected to /decks/new
+ *  - Not redirected to /import (legacy) or /add-cards/fabrary (cards-only)
  *  - Happy path: fresh user (0 decks) sees the onboarding wizard
  *  - Loading state: null render while query resolves (prevents flash)
  */
@@ -86,12 +87,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('OnboardingPage — R60 redirect (Unit 9)', () => {
-  it('redirects to /add-cards/fabrary when user has tracked decks', () => {
+describe('OnboardingPage — R60 redirect', () => {
+  it('redirects to /decks/new when user has tracked decks', () => {
     mockUseDecksQuery.mockReturnValue(makeQueryWithDecks(1));
     render(<OnboardingPage />);
     const redirect = screen.getByTestId('navigate-redirect');
-    expect(redirect).toHaveAttribute('data-to', '/add-cards/fabrary');
+    expect(redirect).toHaveAttribute('data-to', '/decks/new');
   });
 
   it('does not redirect to /import (legacy route deleted in Unit 9)', () => {
@@ -99,6 +100,13 @@ describe('OnboardingPage — R60 redirect (Unit 9)', () => {
     render(<OnboardingPage />);
     const redirect = screen.getByTestId('navigate-redirect');
     expect(redirect).not.toHaveAttribute('data-to', '/import');
+  });
+
+  it('does not redirect to /add-cards/fabrary (cards-only import route)', () => {
+    mockUseDecksQuery.mockReturnValue(makeQueryWithDecks(1));
+    render(<OnboardingPage />);
+    const redirect = screen.getByTestId('navigate-redirect');
+    expect(redirect).not.toHaveAttribute('data-to', '/add-cards/fabrary');
   });
 
   it('renders the wizard for a fresh user (0 tracked decks)', () => {
