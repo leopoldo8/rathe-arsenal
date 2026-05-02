@@ -66,6 +66,7 @@ describe('FabraryService', () => {
           keywords: [],
           subtypes: card.subtypes,
           legalHeroes: [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only the fields read by the service under test are required
         } as any;
       });
 
@@ -115,6 +116,7 @@ describe('FabraryService', () => {
           keywords: [],
           subtypes: [],
           legalHeroes: [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only the fields read by the service under test are required
         } as any;
       });
 
@@ -147,6 +149,7 @@ describe('FabraryService', () => {
           keywords: [],
           subtypes: [],
           legalHeroes: [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only the fields read by the service under test are required
         } as any;
       });
 

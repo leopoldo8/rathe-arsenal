@@ -54,6 +54,7 @@ describe('CardNameMatcherService', () => {
       });
       catalogService.getCard.mockReturnValue({
         cardIdentifier: 'some-alias-card',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only cardIdentifier is read by the alias validation path
       } as any);
 
       // Act
@@ -72,6 +73,7 @@ describe('CardNameMatcherService', () => {
     it('returns null and logs warn when alias target is stale (not in catalog)', async () => {
       // Arrange
       const loggerWarnSpy = jest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- spying on private NestJS Logger instance; no public getter exposed
         .spyOn((service as any).logger, 'warn')
         .mockImplementation(() => undefined);
       aliasRepo.findOne.mockResolvedValue({
@@ -111,6 +113,7 @@ describe('CardNameMatcherService', () => {
         createdAt: new Date(),
         notes: null,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only cardIdentifier is read by the alias validation path
       catalogService.getCard.mockReturnValue({ cardIdentifier: 'silver' } as any);
 
       // Act
@@ -133,6 +136,7 @@ describe('CardNameMatcherService', () => {
     it('matches a resource card by stripping leading quantity prefix', async () => {
       // Arrange
       catalogService.getCard.mockImplementation((id: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only cardIdentifier is read by the deterministic path
         if (id === 'copper') return { cardIdentifier: 'copper' } as any;
         throw new CardNotFoundError(id);
       });
@@ -148,6 +152,7 @@ describe('CardNameMatcherService', () => {
       // Arrange
       catalogService.getCard.mockImplementation((id: string) => {
         if (id === 'a-drop-in-the-ocean-blue') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only cardIdentifier is read by the deterministic path
           return { cardIdentifier: 'a-drop-in-the-ocean-blue' } as any;
         }
         throw new CardNotFoundError(id);
@@ -167,6 +172,7 @@ describe('CardNameMatcherService', () => {
       // Arrange
       catalogService.getCard.mockImplementation((id: string) => {
         if (id === 'aether-crackers') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only cardIdentifier is read by the deterministic path
           return { cardIdentifier: 'aether-crackers' } as any;
         }
         throw new CardNotFoundError(id);

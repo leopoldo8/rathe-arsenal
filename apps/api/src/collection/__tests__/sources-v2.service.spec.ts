@@ -355,7 +355,6 @@ describe('SourcesService — U9 extensions', () => {
       // Simulate transaction execution
       const mockManager = createMock<EntityManager>();
       mockManager.delete.mockResolvedValue({ affected: 1 } as never);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dataSource.transaction as jest.Mock).mockImplementation(async (cb: (manager: EntityManager) => Promise<void>) => {
         await cb(mockManager);
       });
@@ -394,7 +393,6 @@ describe('SourcesService — U9 extensions', () => {
       csvSourceRepo.findOne.mockResolvedValue(buildCsvSource());
       const mockManager = createMock<EntityManager>();
       mockManager.delete.mockResolvedValue({ affected: 1 } as never);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dataSource.transaction as jest.Mock).mockImplementation(async (cb: (manager: EntityManager) => Promise<void>) => {
         await cb(mockManager);
       });

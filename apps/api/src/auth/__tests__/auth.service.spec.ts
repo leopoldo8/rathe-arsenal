@@ -157,6 +157,7 @@ describe('AuthService.signIn', () => {
   it('returns a JWT for a verified user with correct password (happy path)', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
     expect(result.jwt).toBe('jwt-token');
@@ -166,6 +167,7 @@ describe('AuthService.signIn', () => {
   it('returns settings with default theme=dark when user has no preferences', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
     expect(result.settings).toEqual({ theme: 'dark' });
@@ -174,7 +176,8 @@ describe('AuthService.signIn', () => {
   it('returns settings.theme=light when user has preferences.theme=light', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
-    (user as any).preferences = { theme: 'light' };
+    user.preferences = { theme: 'light' };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
     expect(result.settings).toEqual({ theme: 'light' });
@@ -183,6 +186,7 @@ describe('AuthService.signIn', () => {
   it('throws INVALID_CREDENTIALS for wrong password', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     await expect(service.signIn('a@b.com', 'wrongpassword!')).rejects.toMatchObject({
       code: EAuthErrorCode.InvalidCredentials,
@@ -199,7 +203,8 @@ describe('AuthService.signIn', () => {
   it('throws EMAIL_NOT_VERIFIED for unverified user with correct password', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
-    (user as any).emailVerifiedAt = null;
+    user.emailVerifiedAt = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     await expect(service.signIn('a@b.com', 'longenoughpassword')).rejects.toMatchObject({
       code: EAuthErrorCode.EmailNotVerified,
@@ -314,7 +319,7 @@ describe('AuthService.getMe', () => {
   it('returns id, email, and settings.theme=dark for user without preferences (default)', async () => {
     const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg' };
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
-    const result = await service.getMe(makeCurrentUser() as any);
+    const result = await service.getMe(makeCurrentUser());
     expect(result).toEqual({ id: 'user-1', email: 'hero@rathe.gg', settings: { theme: 'dark' } });
   });
 
@@ -322,16 +327,16 @@ describe('AuthService.getMe', () => {
     const user: Partial<UserEntity> = {
       id: 'user-1',
       email: 'hero@rathe.gg',
-      preferences: { theme: 'light' } as any,
+      preferences: { theme: 'light' },
     };
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
-    const result = await service.getMe(makeCurrentUser() as any);
+    const result = await service.getMe(makeCurrentUser());
     expect(result.settings).toEqual({ theme: 'light' });
   });
 
   it('throws NotFoundException when user row is not found (race with soft-delete)', async () => {
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(null) });
-    await expect(service.getMe(makeCurrentUser() as any)).rejects.toMatchObject({
+    await expect(service.getMe(makeCurrentUser())).rejects.toMatchObject({
       code: EAuthErrorCode.UserNotFound,
     });
   });
@@ -340,10 +345,10 @@ describe('AuthService.getMe', () => {
     const user: Partial<UserEntity> = {
       id: 'user-1',
       email: 'hero@rathe.gg',
-      preferences: null as any,
+      preferences: null,
     };
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
-    const result = await service.getMe(makeCurrentUser() as any);
+    const result = await service.getMe(makeCurrentUser());
     expect(result.settings).toEqual({ theme: 'dark' });
   });
 });
@@ -367,7 +372,9 @@ describe('AuthService.deleteAccount', () => {
     const { service, hasher } = buildService();
     const user = await makeUser(hasher);
     const save = jest.fn().mockImplementation(async (u: Partial<UserEntity>) => u);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.save = save;
 
     const result = await service.deleteAccount('user-1', 'longenoughpassword');
@@ -381,7 +388,9 @@ describe('AuthService.deleteAccount', () => {
     const { service, hasher } = buildService();
     const user = await makeUser(hasher);
     const save = jest.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.save = save;
 
     await expect(service.deleteAccount('user-1', 'wrongpassword!')).rejects.toMatchObject({
@@ -393,6 +402,7 @@ describe('AuthService.deleteAccount', () => {
 
   it('throws INVALID_CREDENTIALS when the user does not exist (defensive)', async () => {
     const { service } = buildService();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(null);
 
     await expect(service.deleteAccount('user-1', 'longenoughpassword')).rejects.toMatchObject({
@@ -404,7 +414,9 @@ describe('AuthService.deleteAccount', () => {
     const { service, hasher } = buildService();
     const user = await makeUser(hasher, { deletedAt: new Date('2020-01-01T00:00:00Z') });
     const save = jest.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne/save without restructuring the service
     (service as any).users.save = save;
 
     await expect(service.deleteAccount('user-1', 'longenoughpassword')).rejects.toMatchObject({

@@ -19,6 +19,7 @@ describe('EmailService', () => {
 
     beforeEach(() => {
       service = new EmailService(makeConfig());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- spying on private NestJS Logger instance; no public getter exposed
       logSpy = jest.spyOn((service as any).logger, 'log').mockImplementation();
     });
 
@@ -35,6 +36,7 @@ describe('EmailService', () => {
 
     it('does not call Resend in dev mode', async () => {
       // The resend client is null in dev
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `resend` field to verify null state; no public getter exposed
       expect((service as any).resend).toBeNull();
       await service.sendPasswordResetEmail('a@b.com', 'https://example.com/reset');
       // No throw = success
@@ -48,6 +50,7 @@ describe('EmailService', () => {
     beforeEach(() => {
       service = new EmailService(makeConfig({ NODE_ENV: 'production' }));
       sendMock = jest.fn();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- injecting mock Resend client into private field; Resend is constructed internally with no DI seam
       (service as any).resend = { emails: { send: sendMock } };
     });
 
