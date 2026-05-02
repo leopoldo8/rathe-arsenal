@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -30,27 +31,34 @@ import {
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres' as const,
-        url: config.get<string>('DATABASE_URL')!,
-        entities: [
-          UserEntity,
-          CsvSourceEntity,
-          CollectionCardEntity,
-          TrackedDeckEntity,
-          DeckCardEntity,
-          DeckReadinessSnapshotEntity,
-          SubstituteDecisionEntity,
-          StoreEntity,
-          StoreStockEntity,
-          StoreScrapeRunEntity,
-          CardAliasEntity,
-          StoreStockVariantEntity,
-          ReviewAggregateEntity,
-        ],
-        synchronize: config.get<string>('NODE_ENV') === 'development',
-        logging: false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const isDev = config.get<string>('NODE_ENV') === 'development';
+        return {
+          type: 'postgres' as const,
+          url: config.get<string>('DATABASE_URL')!,
+          entities: [
+            UserEntity,
+            CsvSourceEntity,
+            CollectionCardEntity,
+            TrackedDeckEntity,
+            DeckCardEntity,
+            DeckReadinessSnapshotEntity,
+            SubstituteDecisionEntity,
+            StoreEntity,
+            StoreStockEntity,
+            StoreScrapeRunEntity,
+            CardAliasEntity,
+            StoreStockVariantEntity,
+            ReviewAggregateEntity,
+          ],
+          // Pending migrations run on app boot in non-dev environments. Dev
+          // still relies on `synchronize: true` for fast iteration.
+          migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
+          migrationsRun: !isDev,
+          synchronize: isDev,
+          logging: false,
+        };
+      },
     }),
   ],
 })
