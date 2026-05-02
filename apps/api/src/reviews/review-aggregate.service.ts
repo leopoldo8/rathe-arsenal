@@ -5,6 +5,7 @@ import { ReviewAggregateEntity } from '../database/entities/review-aggregate.ent
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
+import { CatalogService } from '../catalog/catalog.service';
 
 // ---------------------------------------------------------------------------
 // Internal types mirroring the engine's IReadinessBreakdown shape.
@@ -13,14 +14,37 @@ import { SubstituteDecisionEntity } from '../database/entities/substitute-decisi
 // fields we need are accessed defensively.
 // ---------------------------------------------------------------------------
 
+interface IImageUrl {
+  readonly small: string;
+  readonly large: string;
+  readonly sources?: readonly { readonly small: string; readonly large: string }[];
+}
+
 interface IBreakdownEntry {
   readonly cardIdentifier: string;
   readonly quantity: number;
+  readonly pitch?: 1 | 2 | 3 | null;
+  readonly type?: string;
+  readonly imageUrl?: IImageUrl | null;
+}
+
+interface ISubstituteCardSnapshot {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch?: number | null;
+  readonly imageUrl?: IImageUrl | null;
+}
+
+interface ISubstitutionMatchSnapshot {
+  readonly substitute: ISubstituteCardSnapshot;
+  readonly tier: number;
+  readonly score: number;
+  readonly rationale: string;
 }
 
 interface ISubstitutedEntry {
   readonly original: IBreakdownEntry;
-  readonly match: unknown;
+  readonly match: ISubstitutionMatchSnapshot;
 }
 
 interface IBreakdown {
@@ -83,14 +107,39 @@ function deriveCounters(breakdown: IBreakdown): {
 export type TReviewState = 'pending' | 'approved' | 'rejected';
 
 /**
+ * Public image URL pair (small + large WebP). The snapshot also carries a
+ * `sources` mirror list, but the Reviews wire format keeps only the canonical
+ * pair to keep payloads compact.
+ */
+export interface IReviewImageUrl {
+  readonly small: string;
+  readonly large: string;
+}
+
+/**
  * A single substitution row returned by `listSubstitutionRows`.
- * Represents one missing card in one deck that has (or could have) a substitute.
+ * Represents one substituted card in one deck that may require a review
+ * decision. Wire format mirrors the frontend `IReviewRow` contract.
  */
 export interface ISubstitutionRow {
   readonly trackedDeckId: number;
   readonly deckName: string;
+  readonly hero: string;
   readonly cardIdentifier: string;
-  readonly state: TReviewState;
+  readonly substituteIdentifier: string;
+  readonly substituteName: string;
+  readonly tier: 1 | 2 | 3;
+  /** Confidence score 0–100 (rounded). Derived from the engine match score. */
+  readonly confidence: number;
+  readonly rationale: string;
+  /** Decision state. Field name mirrors frontend `IReviewRow.decision`. */
+  readonly decision: TReviewState;
+  readonly originalImageUrl: IReviewImageUrl | null;
+  readonly substituteImageUrl: IReviewImageUrl | null;
+  readonly originalPitch: 1 | 2 | 3 | null;
+  readonly substitutePitch: 1 | 2 | 3 | null;
+  readonly originalType: string;
+  readonly substituteType: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +172,7 @@ export class ReviewAggregateService {
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
     @InjectRepository(SubstituteDecisionEntity)
     private readonly decisionRepo: Repository<SubstituteDecisionEntity>,
+    private readonly catalogService: CatalogService,
   ) {}
 
   /**
@@ -232,10 +282,10 @@ export class ReviewAggregateService {
     userId: string,
     stateFilter: TReviewState | 'all' = 'pending',
   ): Promise<ISubstitutionRow[]> {
-    // 1. Fetch all tracked decks for this user.
+    // 1. Fetch all tracked decks for this user (with hero for enrichment).
     const decks = await this.trackedDeckRepo.find({
       where: { userId },
-      select: ['id', 'name'],
+      select: ['id', 'name', 'hero'],
     });
 
     if (decks.length === 0) {
@@ -243,7 +293,9 @@ export class ReviewAggregateService {
     }
 
     const deckIds = decks.map((d) => d.id);
-    const deckNameById = new Map<number, string>(decks.map((d) => [d.id, d.name]));
+    const deckById = new Map<number, { name: string; hero: string }>(
+      decks.map((d) => [d.id, { name: d.name, hero: d.hero }]),
+    );
 
     // 2. Fetch the latest snapshot per deck (subquery pattern from DecksService).
     const latestSnapshots = await this.snapshotRepo
@@ -262,20 +314,20 @@ export class ReviewAggregateService {
       return [];
     }
 
-    // 3. Collect all (trackedDeckId, cardIdentifier) pairs from substituted entries.
-    const substitutedPairs: Array<{ trackedDeckId: number; cardIdentifier: string }> = [];
+    // 3. Collect substituted entries with their owning trackedDeckId.
+    const substitutedRows: Array<{
+      trackedDeckId: number;
+      entry: ISubstitutedEntry;
+    }> = [];
     for (const snapshot of latestSnapshots) {
       const breakdown = snapshot.breakdown as unknown as IBreakdown;
       const substituted = breakdown.substituted ?? [];
       for (const entry of substituted) {
-        substitutedPairs.push({
-          trackedDeckId: snapshot.trackedDeckId,
-          cardIdentifier: entry.original.cardIdentifier,
-        });
+        substitutedRows.push({ trackedDeckId: snapshot.trackedDeckId, entry });
       }
     }
 
-    if (substitutedPairs.length === 0) {
+    if (substitutedRows.length === 0) {
       return [];
     }
 
@@ -291,26 +343,103 @@ export class ReviewAggregateService {
       decisionMap.set(`${d.trackedDeckId}:${d.cardIdentifier}`, d.decision);
     }
 
-    // 5. Compose rows with state.
+    // 5. Compose enriched rows.
     const rows: ISubstitutionRow[] = [];
-    for (const pair of substitutedPairs) {
-      const existingDecision = decisionMap.get(
-        `${pair.trackedDeckId}:${pair.cardIdentifier}`,
-      );
-      const state: TReviewState = existingDecision ?? 'pending';
+    for (const { trackedDeckId, entry } of substitutedRows) {
+      const original = entry.original;
+      const match = entry.match;
+      const substitute = match.substitute;
 
-      if (stateFilter !== 'all' && state !== stateFilter) {
+      const existingDecision = decisionMap.get(
+        `${trackedDeckId}:${original.cardIdentifier}`,
+      );
+      const decision: TReviewState = existingDecision ?? 'pending';
+
+      if (stateFilter !== 'all' && decision !== stateFilter) {
         continue;
       }
 
+      const deckMeta = deckById.get(trackedDeckId);
+
       rows.push({
-        trackedDeckId: pair.trackedDeckId,
-        deckName: deckNameById.get(pair.trackedDeckId) ?? '',
-        cardIdentifier: pair.cardIdentifier,
-        state,
+        trackedDeckId,
+        deckName: deckMeta?.name ?? '',
+        hero: deckMeta?.hero ?? '',
+        cardIdentifier: original.cardIdentifier,
+        substituteIdentifier: substitute.cardIdentifier,
+        substituteName: substitute.name,
+        tier: this.normalizeTier(match.tier),
+        confidence: this.normalizeConfidence(match.score),
+        rationale: match.rationale,
+        decision,
+        originalImageUrl: this.compactImageUrl(original.imageUrl),
+        substituteImageUrl: this.compactImageUrl(substitute.imageUrl),
+        originalPitch: this.normalizePitch(original.pitch ?? null),
+        substitutePitch: this.normalizePitch(substitute.pitch ?? null),
+        originalType: original.type ?? 'unknown',
+        substituteType: this.lookupType(substitute.cardIdentifier),
       });
     }
 
     return rows;
+  }
+
+  /**
+   * Clamps the tier value into the supported {1, 2, 3} domain. Engine tiers
+   * outside this range are treated as tier 3 (least confident) — defensive
+   * fallback for legacy snapshots.
+   */
+  private normalizeTier(tier: number): 1 | 2 | 3 {
+    if (tier === 1 || tier === 2 || tier === 3) {
+      return tier;
+    }
+    return 3;
+  }
+
+  /**
+   * Translates the engine match score into a 0–100 confidence integer.
+   * The engine emits scores in 0–1 (continuous); the frontend renders
+   * `${row.confidence}%`. Snapshots written before this contract may already
+   * carry 0–100 values, so values >1 are passed through with rounding.
+   */
+  private normalizeConfidence(score: number): number {
+    if (!Number.isFinite(score)) return 0;
+    const scaled = score <= 1 ? score * 100 : score;
+    return Math.max(0, Math.min(100, Math.round(scaled)));
+  }
+
+  /**
+   * Restricts the pitch value to the {1, 2, 3, null} domain expected by the
+   * frontend. Snapshot data is permissive (any number); anything outside the
+   * domain is treated as null (pitch-less card).
+   */
+  private normalizePitch(pitch: number | null): 1 | 2 | 3 | null {
+    if (pitch === 1 || pitch === 2 || pitch === 3) return pitch;
+    return null;
+  }
+
+  /**
+   * Strips the `sources` mirror list from the snapshot's image URL pair,
+   * keeping only the canonical small/large fields the frontend needs.
+   */
+  private compactImageUrl(
+    image: IImageUrl | null | undefined,
+  ): IReviewImageUrl | null {
+    if (!image) return null;
+    return { small: image.small, large: image.large };
+  }
+
+  /**
+   * Looks up the substitute card's primary type from the in-process catalog.
+   * Falls back to 'unknown' when the catalog has no matching card (e.g.,
+   * a legacy snapshot referencing a card that has since been retired).
+   */
+  private lookupType(cardIdentifier: string): string {
+    try {
+      const card = this.catalogService.getCard(cardIdentifier);
+      return card.types?.[0] ?? 'unknown';
+    } catch {
+      return 'unknown';
+    }
   }
 }

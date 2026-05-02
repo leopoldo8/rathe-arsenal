@@ -34,7 +34,7 @@ function IsAbsentWhenDecisionPresent(): PropertyDecorator {
   return function (target: object, propertyName: string | symbol): void {
     registerDecorator({
       name: 'isAbsentWhenDecisionPresent',
-      target: (target as { constructor: Function }).constructor,
+      target: (target as { constructor: new (...args: unknown[]) => unknown }).constructor,
       propertyName: String(propertyName),
       options: {
         message:
