@@ -32,9 +32,6 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // Mock SVGR imports for logo assets
-vi.mock('../../../assets/logo-wordmark.svg?react', () => ({
-  default: () => <svg data-testid="logo-wordmark" aria-hidden="true" />,
-}));
 vi.mock('../../../assets/logo-mark.svg?react', () => ({
   default: () => <svg data-testid="logo-mark" aria-hidden="true" />,
 }));

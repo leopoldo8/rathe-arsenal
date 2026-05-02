@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
-import LogoWordmark from '../../assets/logo-wordmark.svg?react';
 import LogoMark from '../../assets/logo-mark.svg?react';
 import styles from './TopBar.module.css';
 
@@ -35,7 +34,10 @@ export function TopBar(): React.ReactElement {
       {/* Brand */}
       <Link to="/home" className={styles.brand} aria-label="Rathe Arsenal home">
         <LogoMark className={styles.logoMark} aria-hidden="true" />
-        <LogoWordmark className={styles.logoWordmark} aria-hidden="true" />
+        <span className={styles.wordmark} aria-hidden="true">
+          <span className={styles.brandRathe}>Rathe</span>
+          <span className={styles.brandArsenal}>Arsenal</span>
+        </span>
       </Link>
 
       {/* Primary navigation — hidden <960px */}
