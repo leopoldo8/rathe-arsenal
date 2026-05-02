@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { validateProductUrl } from './StoreProductLink.helpers';
 
 interface IStoreProductLinkProps {
   /** Outbound product URL from the shopping line API response. */
@@ -54,26 +55,3 @@ export function StoreProductLink({
   );
 }
 
-/**
- * Returns true when the URL is safe to render as an outbound link.
- * Exported for use in tests.
- */
-export function validateProductUrl(url: string, expectedHostname: string): boolean {
-  if (!url) return false;
-
-  try {
-    const parsed = new URL(url);
-
-    if (parsed.protocol !== 'https:') {
-      return false;
-    }
-
-    if (parsed.hostname !== expectedHostname) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}

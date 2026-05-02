@@ -2,8 +2,8 @@ import React, { useId, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useFabraryLibraryImportMutation } from '../../api/fabrary-import';
 import { ApiError } from '../../lib/api-client';
-import { DEFAULT_LIBRARY_SEARCH } from './library';
-import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner';
+import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
+import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner.helpers';
 import styles from './add-cards.fabrary.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/fabrary')({

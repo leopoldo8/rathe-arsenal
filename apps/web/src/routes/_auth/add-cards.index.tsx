@@ -1,6 +1,6 @@
 import React from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { DEFAULT_LIBRARY_SEARCH } from './library';
+import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
 import styles from './add-cards.module.css';
 
 /**

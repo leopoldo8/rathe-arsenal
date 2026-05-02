@@ -2,7 +2,7 @@ import React, { useId, useRef, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useUploadCsvMutation } from '../../api/csv-sources';
 import { ApiError } from '../../lib/api-client';
-import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner';
+import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner.helpers';
 import styles from './add-cards.csv.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/csv')({

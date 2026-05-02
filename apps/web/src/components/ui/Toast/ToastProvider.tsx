@@ -1,21 +1,19 @@
-import React, { createContext, useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import * as RadixToast from '@radix-ui/react-toast';
+import {
+  ToastContext,
+} from './ToastContext';
+import type {
+  IToastPayload,
+} from './ToastContext';
 import styles from './Toast.module.css';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// Re-export types so existing barrel (Toast.tsx) and direct importers keep working.
+export type { TToastKind, IToastPayload, IToastContext } from './ToastContext';
 
-export type TToastKind = 'error' | 'success' | 'info';
-
-export interface IToastPayload {
-  readonly kind: TToastKind;
-  readonly message: string;
-  /** Optional retry callback. Shown as "Retry" button when kind is 'error'. */
-  readonly retry?: () => void;
-  /** Element to return focus to when toast is dismissed. */
-  readonly returnFocusRef?: React.RefObject<HTMLElement | null>;
-}
+// ---------------------------------------------------------------------------
+// Internal types
+// ---------------------------------------------------------------------------
 
 interface IToastItem extends IToastPayload {
   readonly id: string;
@@ -30,16 +28,6 @@ interface IConsolidatedToast {
 }
 
 type TActiveToast = IToastItem | IConsolidatedToast;
-
-export interface IToastContext {
-  show: (payload: IToastPayload) => void;
-}
-
-// ---------------------------------------------------------------------------
-// Context
-// ---------------------------------------------------------------------------
-
-export const ToastContext = createContext<IToastContext | null>(null);
 
 // ---------------------------------------------------------------------------
 // Burst consolidation constants

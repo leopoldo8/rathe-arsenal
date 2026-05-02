@@ -9,10 +9,8 @@ import { VARIANT_FETCH_POLL_TIMEOUT_MS } from '../api/deck-detail';
 import { formatBrl } from '../utils/format-brl';
 import { formatRelativeTime, isStale, isVeryStale } from '../utils/format-relative-time';
 import { StoreProductLink } from './StoreProductLink';
-import {
-  VariantBreakdownTable,
-  formatVariantPrice,
-} from './ShoppingLineVariantBreakdown';
+import { VariantBreakdownTable } from './ShoppingLineVariantBreakdown';
+import { formatVariantPrice } from './ShoppingLineVariantBreakdown.helpers';
 import {
   VariantFetchCta,
   VariantFetchProgress,
