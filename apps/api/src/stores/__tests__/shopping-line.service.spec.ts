@@ -1216,5 +1216,48 @@ describe('ShoppingLineService', () => {
       // Assert
       expect(result).toBeNull();
     });
+
+    it('regression: single missing card with stock.quantity < needed is NOT completable', async () => {
+      // Arrange — only one missing card; stock exists but cannot cover the full quantity.
+      // Without the fix, allMissingCovered stays true and the deck is wrongly counted as completable.
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      storeStockRepo.count.mockResolvedValue(100);
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: 1, userId: USER_ID } as TrackedDeckEntity,
+      ]);
+
+      const mockQb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+      snapshotRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockQb.where.mockReturnThis();
+      mockQb.andWhere.mockReturnThis();
+      mockQb.getMany.mockResolvedValue([
+        {
+          id: 10,
+          trackedDeckId: 1,
+          effectivePercent: 80,
+          breakdown: {
+            exact: [],
+            substituted: [],
+            missing: [{ cardIdentifier: 'card-a', quantity: 3, slot: 'mainboard' }],
+          },
+          substitutions: {},
+          computedAt: new Date(),
+        } as unknown as DeckReadinessSnapshotEntity,
+      ]);
+
+      storeStockRepo.find.mockResolvedValue([
+        makeStockRow('card-a', { priceCents: 1000, quantity: 1 }), // need 3, only 1 available
+      ]);
+
+      // Act
+      const result = await service.computeAggregate(USER_ID);
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result!.completableDecks).toBe(0);
+      expect(result!.totalDecks).toBe(1);
+      // partial cost: min(3, 1) × 1000 = 1000
+      expect(result!.totalCostCents).toBe(1000);
+    });
   });
 });

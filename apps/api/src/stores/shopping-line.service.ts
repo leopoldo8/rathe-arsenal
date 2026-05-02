@@ -336,6 +336,10 @@ export class ShoppingLineService {
           if (stock) {
             const qty = Math.min(entry.quantity, stock.quantity);
             deckCost += qty * (stock.priceCents as number);
+            // Deck is not completable when stock cannot cover the full quantity needed.
+            if (stock.quantity < entry.quantity) {
+              allMissingCovered = false;
+            }
           } else {
             allMissingCovered = false;
           }
