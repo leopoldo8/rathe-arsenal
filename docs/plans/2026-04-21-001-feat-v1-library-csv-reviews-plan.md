@@ -1,9 +1,10 @@
 ---
 title: "feat: v1 Library + CSV Sources + Reviews (Plan B)"
 type: feat
-status: active
+status: completed
 date: 2026-04-21
 deepened: 2026-04-21
+completed: 2026-04-27
 origin: docs/brainstorms/2026-04-19-v1-visual-identity-and-ux-requirements.md
 ---
 
