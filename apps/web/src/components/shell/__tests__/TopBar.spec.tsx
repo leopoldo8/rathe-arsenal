@@ -38,9 +38,6 @@ vi.mock('@tanstack/react-router', () => ({
   },
 }));
 
-vi.mock('../../../assets/logo-wordmark.svg?react', () => ({
-  default: () => <svg data-testid="logo-wordmark" aria-hidden="true" />,
-}));
 vi.mock('../../../assets/logo-mark.svg?react', () => ({
   default: () => <svg data-testid="logo-mark" aria-hidden="true" />,
 }));
@@ -152,5 +149,19 @@ describe('TopBar — A11y', () => {
   it('renders a <header> landmark', () => {
     render(<TopBar />);
     expect(screen.getByRole('banner')).toBeInTheDocument();
+  });
+});
+
+describe('TopBar — brand wordmark', () => {
+  it('renders the "Rathe" wordmark text', () => {
+    render(<TopBar />);
+    const link = screen.getByRole('link', { name: /Rathe Arsenal home/i });
+    expect(link).toHaveTextContent('Rathe');
+  });
+
+  it('renders the "Arsenal" wordmark text', () => {
+    render(<TopBar />);
+    const link = screen.getByRole('link', { name: /Rathe Arsenal home/i });
+    expect(link).toHaveTextContent('Arsenal');
   });
 });
