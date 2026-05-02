@@ -117,7 +117,7 @@ export function PopulatedHomeHero({
         )}
 
         <div className={styles.importAction}>
-          <a href="/add-cards/fabrary" className={styles.trackLink}>
+          <a href="/decks/new" className={styles.trackLink}>
             Track new deck
           </a>
         </div>

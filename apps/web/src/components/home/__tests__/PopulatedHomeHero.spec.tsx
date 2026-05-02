@@ -85,11 +85,11 @@ describe('PopulatedHomeHero', () => {
     expect(screen.getByText('--')).toBeInTheDocument();
   });
 
-  it('renders "Track new deck" CTA linking to /add-cards/fabrary', () => {
+  it('renders "Track new deck" CTA linking to /decks/new', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} uniqueCardsMissing={null} />);
     const cta = screen.getByRole('link', { name: /track new deck/i });
     expect(cta).toBeInTheDocument();
-    expect(cta).toHaveAttribute('href', '/add-cards/fabrary');
+    expect(cta).toHaveAttribute('href', '/decks/new');
   });
 
   it('does not render an "/import" link', () => {
