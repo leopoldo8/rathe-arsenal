@@ -763,4 +763,129 @@ describe('computeEffectiveReadiness', () => {
       expect(result.breakdown.substituted[0]!.original.quantity).toBe(1);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Regression: deck-needed cards must not be consumed by substitution for
+  // another slot in the same deck (two-pass allocation fix).
+  // ---------------------------------------------------------------------------
+
+  describe('two-pass allocation: deck-needed cards are never offered as substitutes', () => {
+    it('does not offer card A as substitute for card B when deck needs both and only A is owned', () => {
+      // Deck needs 3x cardA and 2x cardB.
+      // Inventory: 3x cardA, 0x cardB.
+      // Bug (single-pass): if cardB is processed first in substitution search,
+      // cardA is in remainingInventory and gets offered as a substitute for cardB.
+      // After the fix (two-pass): cardA's exact-match reservation runs before any
+      // substitution search, so cardA is fully consumed by its own slot and is
+      // never available to substitute for cardB.
+
+      const deckCardA = makeCard({
+        cardIdentifier: 'deck-card-a',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+      const deckCardB = makeCard({
+        cardIdentifier: 'deck-card-b',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+
+      const twoCardCatalog = makeCatalog([deckCardA, deckCardB]);
+
+      // Card B is listed FIRST in the deck so that the single-pass implementation
+      // processes B before A. At that point A is still in remainingInventory and
+      // gets offered as a substitute for B, stealing copies that A's own slot needs.
+      const deck = {
+        cards: [
+          { cardIdentifier: 'deck-card-b', quantity: 2, slot: 'mainboard' },
+          { cardIdentifier: 'deck-card-a', quantity: 3, slot: 'mainboard' },
+        ],
+      };
+
+      // Own exactly the right number of A; own none of B.
+      const inventory = new Map([['deck-card-a', 3]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, twoCardCatalog);
+
+      // Card A must appear as exact (full quantity 3).
+      const exactA = result.breakdown.exact.find(
+        (e) => e.cardIdentifier === 'deck-card-a',
+      );
+      expect(exactA).toBeDefined();
+      expect(exactA!.quantity).toBe(3);
+
+      // Card B must appear as missing (full quantity 2) — no substitute from A.
+      const missingB = result.breakdown.missing.find(
+        (e) => e.cardIdentifier === 'deck-card-b',
+      );
+      expect(missingB).toBeDefined();
+      expect(missingB!.quantity).toBe(2);
+
+      // No substitution should have fired.
+      expect(result.breakdown.substituted).toHaveLength(0);
+      expect(result.substitutions).toHaveLength(0);
+    });
+
+    it('partial A scenario: only unneeded A copies can substitute for B', () => {
+      // Deck needs 2x cardA and 2x cardB.
+      // Inventory: 3x cardA, 0x cardB.
+      // After two-pass: 2 copies of A reserved for A's exact slot.
+      // 1 copy of A is surplus and CAN substitute for B (up to 1 copy).
+      // Result: 2 exact A, 1 substituted B (from surplus A), 1 missing B.
+
+      const deckCardA = makeCard({
+        cardIdentifier: 'partial-a',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+      const deckCardB = makeCard({
+        cardIdentifier: 'partial-b',
+        pitch: 1,
+        power: 3,
+        defense: 3,
+        keywords: [Keyword.GoAgain],
+      });
+
+      const twoCardCatalog = makeCatalog([deckCardA, deckCardB]);
+
+      // Card B is listed FIRST so the single-pass code sees it before A.
+      const deck = {
+        cards: [
+          { cardIdentifier: 'partial-b', quantity: 2, slot: 'mainboard' },
+          { cardIdentifier: 'partial-a', quantity: 2, slot: 'mainboard' },
+        ],
+      };
+
+      // 3 copies of A owned, deck needs 2 — 1 copy surplus.
+      const inventory = new Map([['partial-a', 3]]);
+
+      const result = computeEffectiveReadiness(deck, inventory, twoCardCatalog);
+
+      // A must be fully exact.
+      const exactA = result.breakdown.exact.find(
+        (e) => e.cardIdentifier === 'partial-a',
+      );
+      expect(exactA).toBeDefined();
+      expect(exactA!.quantity).toBe(2);
+
+      // B should have 1 copy substituted (from surplus A) and 1 copy missing.
+      const substitutedForB = result.breakdown.substituted.filter(
+        (s) => s.original.cardIdentifier === 'partial-b',
+      );
+      expect(substitutedForB).toHaveLength(1);
+      expect(substitutedForB[0]!.match.substitute.cardIdentifier).toBe('partial-a');
+
+      const missingB = result.breakdown.missing.find(
+        (e) => e.cardIdentifier === 'partial-b',
+      );
+      expect(missingB).toBeDefined();
+      expect(missingB!.quantity).toBe(1);
+    });
+  });
 });
