@@ -140,7 +140,9 @@ describe('ReviewsRow — decision badge', () => {
 });
 
 describe('ReviewsRow — per-row actions', () => {
-  it('calls onAction with APPROVED operation when Approve is clicked', async () => {
+  it('calls onAction with APPROVED operation keyed by substituteIdentifier', async () => {
+    // Decisions must be keyed by the substitute id — deck-detail and loadExclusions
+    // both look up by substitute, so the write must use the same identifier.
     const onAction = vi.fn();
     renderRow(makeRow(), { onAction });
     await userEvent.click(screen.getByRole('button', { name: /Approve ARC012/i }));
@@ -150,29 +152,35 @@ describe('ReviewsRow — per-row actions', () => {
     expect(ops).toHaveLength(1);
     expect(ops![0]).toMatchObject({
       trackedDeckId: 1,
-      cardIdentifier: 'ARC012',
+      cardIdentifier: 'ELE020', // substituteIdentifier, NOT the original 'ARC012'
       decision: 'APPROVED',
     });
   });
 
-  it('calls onAction with REJECTED operation when Reject is clicked', async () => {
+  it('calls onAction with REJECTED operation keyed by substituteIdentifier', async () => {
     const onAction = vi.fn();
     renderRow(makeRow(), { onAction });
     await userEvent.click(screen.getByRole('button', { name: /Reject ARC012/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
-    expect(ops![0]).toMatchObject({ decision: 'REJECTED' });
+    expect(ops![0]).toMatchObject({
+      cardIdentifier: 'ELE020', // substituteIdentifier
+      decision: 'REJECTED',
+    });
   });
 
-  it('calls onAction with reset: true when Reset is clicked', async () => {
+  it('calls onAction with reset: true keyed by substituteIdentifier', async () => {
     const onAction = vi.fn();
     renderRow(makeRow(), { onAction });
     await userEvent.click(screen.getByRole('button', { name: /Reset decision/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
-    expect(ops![0]).toMatchObject({ reset: true });
+    expect(ops![0]).toMatchObject({
+      cardIdentifier: 'ELE020', // substituteIdentifier
+      reset: true,
+    });
     expect((ops![0] as Record<string, unknown>).decision).toBeUndefined();
   });
 });

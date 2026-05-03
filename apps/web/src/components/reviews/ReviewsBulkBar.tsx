@@ -68,13 +68,16 @@ export function ReviewsBulkBar({
         if (decision === 'RESET') {
           return {
             trackedDeckId: row.trackedDeckId,
-            cardIdentifier: row.cardIdentifier,
+            // Key by SUBSTITUTE id — consistent with per-row actions and what
+            // deck-detail / loadExclusions look up by.
+            cardIdentifier: row.substituteIdentifier,
             reset: true,
           };
         }
         return {
           trackedDeckId: row.trackedDeckId,
-          cardIdentifier: row.cardIdentifier,
+          // Key by SUBSTITUTE id — same reason as above.
+          cardIdentifier: row.substituteIdentifier,
           decision,
         };
       });

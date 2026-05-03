@@ -541,7 +541,7 @@ describe('ReviewAggregateService', () => {
     });
 
     it('uses decisionMap to surface approved/rejected decision states', async () => {
-      // Arrange
+      // Arrange — decision must be keyed by the SUBSTITUTE id (fix: was ORIGINAL).
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
@@ -549,7 +549,7 @@ describe('ReviewAggregateService', () => {
       decisionRepo.find.mockResolvedValue([
         {
           trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-orig (1)',
+          cardIdentifier: 'FaB-sub (1)', // keyed by substitute, not original
           decision: 'approved',
         } as SubstituteDecisionEntity,
       ]);
@@ -563,7 +563,7 @@ describe('ReviewAggregateService', () => {
     });
 
     it('respects the state filter and drops rows with mismatched decisions', async () => {
-      // Arrange
+      // Arrange — decision must be keyed by the SUBSTITUTE id (fix: was ORIGINAL).
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
@@ -571,7 +571,7 @@ describe('ReviewAggregateService', () => {
       decisionRepo.find.mockResolvedValue([
         {
           trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-orig (1)',
+          cardIdentifier: 'FaB-sub (1)', // keyed by substitute, not original
           decision: 'approved',
         } as SubstituteDecisionEntity,
       ]);
@@ -618,6 +618,79 @@ describe('ReviewAggregateService', () => {
       const rows = await service.listSubstitutionRows(USER_A, 'all');
 
       expect(rows).toEqual([]);
+    });
+
+    // -----------------------------------------------------------------------
+    // Regression: substitute-keyed decision lookup
+    // -----------------------------------------------------------------------
+
+    it('regression — decision keyed by SUBSTITUTE id is found; decision keyed by ORIGINAL id is NOT', async () => {
+      // This test documents and guards the fix:
+      //   Before fix: decisionMap key was `${trackedDeckId}:${original.cardIdentifier}`
+      //   After fix:  decisionMap key is  `${trackedDeckId}:${substitute.cardIdentifier}`
+      //
+      // A row stored under the original id (the old bug) must be treated as
+      // pending (not found), while a row stored under the substitute id (the fix)
+      // must be surfaced as approved.
+
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+
+      // Part 1 — row stored under original id (old-bug scenario): must appear as pending.
+      decisionRepo.find.mockResolvedValue([
+        {
+          trackedDeckId: DECK_ID,
+          cardIdentifier: 'FaB-orig (1)', // original id — the wrong key
+          decision: 'approved',
+        } as SubstituteDecisionEntity,
+      ]);
+
+      const rowsWithWrongKey = await service.listSubstitutionRows(USER_A, 'all');
+      expect(rowsWithWrongKey).toHaveLength(1);
+      // A decision stored under the original id must NOT be picked up.
+      expect(rowsWithWrongKey[0]!.decision).toBe('pending');
+
+      // Part 2 — row stored under substitute id (correct, post-fix scenario): must appear as approved.
+      decisionRepo.find.mockResolvedValue([
+        {
+          trackedDeckId: DECK_ID,
+          cardIdentifier: 'FaB-sub (1)', // substitute id — the correct key
+          decision: 'approved',
+        } as SubstituteDecisionEntity,
+      ]);
+
+      const rowsWithCorrectKey = await service.listSubstitutionRows(USER_A, 'all');
+      expect(rowsWithCorrectKey).toHaveLength(1);
+      expect(rowsWithCorrectKey[0]!.decision).toBe('approved');
+    });
+
+    it('rejected substitute is absent from rows returned under state=pending after its cardIdentifier is stored', async () => {
+      // Simulates the loadExclusions engine-effect path at the service layer:
+      // When a substitute is rejected (keyed by substitute id), listSubstitutionRows
+      // must not surface that row under the pending filter — confirming the row is
+      // correctly recorded and the state filter works end-to-end.
+      trackedDeckRepo.find.mockResolvedValue([
+        { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
+      ]);
+      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+      decisionRepo.find.mockResolvedValue([
+        {
+          trackedDeckId: DECK_ID,
+          cardIdentifier: 'FaB-sub (1)', // substitute id — the correct key
+          decision: 'rejected',
+        } as SubstituteDecisionEntity,
+      ]);
+
+      // With stateFilter='pending' the rejected row must be filtered out.
+      const pendingRows = await service.listSubstitutionRows(USER_A, 'pending');
+      expect(pendingRows).toHaveLength(0);
+
+      // With stateFilter='rejected' it must be visible.
+      const rejectedRows = await service.listSubstitutionRows(USER_A, 'rejected');
+      expect(rejectedRows).toHaveLength(1);
+      expect(rejectedRows[0]!.decision).toBe('rejected');
     });
   });
 });

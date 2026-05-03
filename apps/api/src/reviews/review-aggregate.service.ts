@@ -350,8 +350,12 @@ export class ReviewAggregateService {
       const match = entry.match;
       const substitute = match.substitute;
 
+      // Decisions are keyed by the SUBSTITUTE id — the same identifier written
+      // by ReviewsRow (after Fix 1) and read by deck-detail's BreakdownSections.
+      // Using original.cardIdentifier here was the root cause: it produced
+      // orphaned rows that deck-detail (keying by substitute) could never find.
       const existingDecision = decisionMap.get(
-        `${trackedDeckId}:${original.cardIdentifier}`,
+        `${trackedDeckId}:${substitute.cardIdentifier}`,
       );
       const decision: TReviewState = existingDecision ?? 'pending';
 

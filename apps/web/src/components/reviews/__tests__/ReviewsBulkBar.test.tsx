@@ -45,9 +45,9 @@ function makeRow(overrides: Partial<IReviewRow> = {}): IReviewRow {
   };
 }
 
-const ROW_A = makeRow({ trackedDeckId: 1, cardIdentifier: 'ARC001', decision: 'pending' });
-const ROW_B = makeRow({ trackedDeckId: 2, cardIdentifier: 'ELE005', decision: 'approved' });
-const ROW_C = makeRow({ trackedDeckId: 1, cardIdentifier: 'MST003', decision: 'rejected' });
+const ROW_A = makeRow({ trackedDeckId: 1, cardIdentifier: 'ARC001', substituteIdentifier: 'SUB-ARC001', decision: 'pending' });
+const ROW_B = makeRow({ trackedDeckId: 2, cardIdentifier: 'ELE005', substituteIdentifier: 'SUB-ELE005', decision: 'approved' });
+const ROW_C = makeRow({ trackedDeckId: 1, cardIdentifier: 'MST003', substituteIdentifier: 'SUB-MST003', decision: 'rejected' });
 
 const ID_A = makeReviewRowId(1, 'ARC001');
 const ID_B = makeReviewRowId(2, 'ELE005');
@@ -127,7 +127,7 @@ describe('ReviewsBulkBar — Approve selected', () => {
     expect(ops!.every((op) => op.reset === undefined)).toBe(true);
   });
 
-  it('includes row with decision=approved in the operations (idempotent)', async () => {
+  it('includes row with decision=approved in the operations (idempotent), keyed by substituteIdentifier', async () => {
     const onBulkAction = vi.fn();
     // ROW_B is already approved; sending APPROVED again is a server no-op.
     renderBar({ selectedIds: makeSet(ID_B), onBulkAction });
@@ -135,7 +135,8 @@ describe('ReviewsBulkBar — Approve selected', () => {
     const ops = onBulkAction.mock.calls[0]?.[0] as IBulkOperation[] | undefined;
     expect(ops).toBeDefined();
     expect(ops).toHaveLength(1);
-    expect(ops![0]).toMatchObject({ trackedDeckId: 2, cardIdentifier: 'ELE005', decision: 'APPROVED' });
+    // Operation must use substituteIdentifier ('SUB-ELE005'), not original ('ELE005').
+    expect(ops![0]).toMatchObject({ trackedDeckId: 2, cardIdentifier: 'SUB-ELE005', decision: 'APPROVED' });
   });
 });
 
