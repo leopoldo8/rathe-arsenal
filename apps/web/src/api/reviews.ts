@@ -9,6 +9,10 @@ import { deckDetailQueryKey } from './deck-detail';
 export type TReviewDecision = 'APPROVED' | 'REJECTED';
 export type TReviewState = 'pending' | 'approved' | 'rejected';
 
+// Renamed aliases (new preferred names)
+export type TSwapDecision = TReviewDecision;
+export type TSwapState = TReviewState;
+
 /**
  * A single row returned by `GET /api/reviews` — represents one substitution
  * across a user's tracked decks that may require a review decision.
@@ -32,6 +36,9 @@ export interface IReviewRow {
   readonly originalType: string;
   readonly substituteType: string;
 }
+
+// Renamed alias (new preferred name)
+export type ISwapRow = IReviewRow;
 
 export interface IReviewsResponse {
   readonly rows: readonly IReviewRow[];
@@ -81,7 +88,12 @@ export const REVIEWS_QUERY_KEY = ['reviews'] as const;
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches all review rows for the current user from `GET /api/reviews`.
+ * Fetches all swap/review rows for the current user from `GET /api/reviews?state=all`.
+ *
+ * Requests ALL state rows (pending + approved + rejected) so that client-side
+ * tab filtering works correctly. Without `?state=all`, the backend defaults to
+ * `state=pending`, which causes approved/rejected rows to disappear from their
+ * tabs after a decision is made and the query refetches.
  *
  * The response contains rows across all tracked decks. Client-side filtering
  * by `state`, `tier`, `deck`, `hero`, and `confidence` is performed in the
@@ -92,16 +104,19 @@ export function useReviewsQuery() {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: REVIEWS_QUERY_KEY,
-    queryFn: () => apiFetch<IReviewsResponse>('/reviews'),
+    queryFn: () => apiFetch<IReviewsResponse>('/reviews?state=all'),
   });
 }
+
+// Renamed alias (new preferred name)
+export const useSwapsQuery = useReviewsQuery;
 
 // ---------------------------------------------------------------------------
 // Bulk mutation hook
 // ---------------------------------------------------------------------------
 
 /**
- * Applies up to 200 review operations atomically via `POST /api/reviews/bulk`.
+ * Applies up to 200 swap/review operations atomically via `POST /api/reviews/bulk`.
  *
  * Used for BOTH single-row and bulk actions — unified code path per spec.
  *
@@ -114,7 +129,7 @@ export function useReviewsQuery() {
  * again". No Retry button; all-or-nothing semantics already require full
  * resubmission. Triggers a refetch to restore authoritative state.
  *
- * No optimistic update on the Reviews page (per spec). Per-row action buttons
+ * No optimistic update on the Swaps page (per spec). Per-row action buttons
  * are disabled while `bulkMutation.isPending` is true to prevent concurrent
  * stale requests.
  */
@@ -131,7 +146,7 @@ export function useBulkReviewsMutation() {
 
     onSuccess: () => {
       // Invalidate for authoritative data. Toast is handled by the caller
-      // (ReviewsPage.handleAction) so it can be tested independently.
+      // (SwapsPage.handleAction) so it can be tested independently.
       void queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ['decks'] });
       void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'deck-detail' });
@@ -144,6 +159,9 @@ export function useBulkReviewsMutation() {
     },
   });
 }
+
+// Renamed alias (new preferred name)
+export const useBulkSwapsMutation = useBulkReviewsMutation;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -181,17 +199,17 @@ export function resolveActionLabel(operations: readonly IBulkOperation[]): strin
  * Builds a success toast message from the action label and succeeded count.
  *
  * Examples:
- *  - "Approved 3 substitutions"
- *  - "Approved 0 substitutions" (idempotent; already-approved rows show 0)
- *  - "Reset 5 substitutions"
+ *  - "Approved 3 swaps"
+ *  - "Approved 0 swaps" (idempotent; already-approved rows show 0)
+ *  - "Reset 5 swaps"
  */
 export function buildSuccessMessage(actionLabel: string, succeeded: number): string {
-  const noun = succeeded === 1 ? 'substitution' : 'substitutions';
+  const noun = succeeded === 1 ? 'swap' : 'swaps';
   return `${actionLabel} ${succeeded} ${noun}`;
 }
 
 // ---------------------------------------------------------------------------
-// Query invalidation helper (used by ReviewsPage to invalidate deck-detail)
+// Query invalidation helper (used by SwapsPage to invalidate deck-detail)
 // ---------------------------------------------------------------------------
 
 export function invalidateDeckDetailQuery(

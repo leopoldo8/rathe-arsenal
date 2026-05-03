@@ -1,0 +1,32 @@
+/* ============================================================
+   Reviews route — CSS Module
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: 80px; /* clearance for sticky bulk bar */
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  padding: var(--ra-space-6) 0 var(--ra-space-4);
+}
+
+.heading {
+  margin: 0 0 var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-h1);
+  color: var(--ra-fg-primary);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}

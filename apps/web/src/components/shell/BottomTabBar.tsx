@@ -41,7 +41,7 @@ function ReviewsIcon(): React.ReactElement {
 const TAB_ITEMS: readonly ITabItem[] = [
   { to: '/home', label: 'Home', icon: <HomeIcon /> },
   { to: '/library', label: 'Library', icon: <LibraryIcon /> },
-  { to: '/reviews', label: 'Reviews', icon: <ReviewsIcon /> },
+  { to: '/swaps', label: 'Swaps', icon: <ReviewsIcon /> },
 ];
 
 /**

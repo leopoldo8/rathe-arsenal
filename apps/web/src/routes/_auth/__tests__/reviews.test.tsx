@@ -5,7 +5,7 @@
  *  - Happy path: 10 pending rows render in Pending tab
  *  - Tab switching: selecting Approved tab filters to approved rows only
  *  - Bulk approve: 3 rows selected → bulk endpoint called with 3 APPROVED ops;
- *    success toast shows "Approved N substitutions"
+ *    success toast shows "Approved N swaps"
  *  - Bulk reset: mixed-state rows → 5 ops with reset: true
  *  - Filter tier=2: only tier-2 rows remain after filter
  *  - Filter deck=X: only rows from that deck remain
@@ -62,6 +62,7 @@ vi.mock('@tanstack/react-router', () => {
       // Preserve the component so the module export works.
       component: config.component,
     }),
+    redirect: (opts: unknown) => ({ _isRedirect: true, ...((opts as object) ?? {}) }),
     useNavigate: () => mockNavigate,
     useSearch: () => mockSearchState,
     Route: routeApi,
@@ -149,7 +150,7 @@ vi.mock('../../../api/reviews', async (importOriginal) => {
   };
 });
 
-import { ReviewsPage } from '../reviews';
+import { SwapsPage as ReviewsPage } from '../swaps';
 
 // ---- Fixtures ----
 
@@ -464,7 +465,7 @@ describe('ReviewsPage — error path: NOT_ACCESSIBLE partial failure', () => {
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',
-        message: 'Approved 2 substitutions',
+        message: 'Approved 2 swaps',
       }),
     );
   });
