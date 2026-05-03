@@ -96,11 +96,31 @@ export function computeEffectiveReadiness(
   let exactCount = 0;
   let substitutedCount = 0;
 
-  // Build original pitch curve entries from the deck
+  // Build original pitch curve entries from the deck (same regardless of pass).
   const originalPitchEntries: Array<{ pitch: number | null; quantity: number }> = [];
 
-  // Build modified pitch curve entries (starts same, substitutions may change it)
+  // Build modified pitch curve entries (starts same, substitutions may change it).
   const modifiedPitchEntries: Array<{ pitch: number | null; quantity: number }> = [];
+
+  // ---------------------------------------------------------------------------
+  // Pass 1 — exact-match reservation.
+  //
+  // Iterate all deck cards, emit exact/partial-exact entries, and decrement
+  // remainingInventory for owned copies. Substitution is NOT attempted here.
+  // This guarantees that every card needed by its own deck slot is reserved
+  // before any substitution search looks at remainingInventory.
+  // ---------------------------------------------------------------------------
+
+  interface IPass1Slot {
+    readonly deckCard: IDeckCard;
+    readonly catalogCard: ReturnType<typeof catalog.indices.byIdentifier.get>;
+    readonly cardPitch: number | null;
+    readonly entryMeta: ReturnType<typeof deriveEntryMeta>;
+    readonly exactQty: number;
+    readonly missingQty: number;
+  }
+
+  const pass1Slots: IPass1Slot[] = [];
 
   for (const deckCard of deck.cards) {
     totalCards += deckCard.quantity;
@@ -109,119 +129,124 @@ export function computeEffectiveReadiness(
     const catalogCard = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
     const cardPitch = catalogCard?.pitch ?? null;
 
-    // Track original pitch
+    // Track original pitch.
     originalPitchEntries.push({ pitch: cardPitch, quantity: deckCard.quantity });
 
     // Derive enriched metadata for this card once per deck card.
     const entryMeta = deriveEntryMeta(catalogCard);
 
-    if (available >= deckCard.quantity) {
-      // Exact match -- all copies available
+    const exactQty = Math.min(available, deckCard.quantity);
+    const missingQty = deckCard.quantity - exactQty;
+
+    if (exactQty > 0) {
       exact.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
-        quantity: deckCard.quantity,
+        quantity: exactQty,
         slot: deckCard.slot,
         ...entryMeta,
       }));
-      remainingInventory.set(deckCard.cardIdentifier, available - deckCard.quantity);
-      exactCount += deckCard.quantity;
-      modifiedPitchEntries.push({ pitch: cardPitch, quantity: deckCard.quantity });
-    } else {
-      // Some or all copies missing
-      const exactQty = available;
-      const missingQty = deckCard.quantity - available;
+      remainingInventory.set(deckCard.cardIdentifier, available - exactQty);
+      exactCount += exactQty;
+      modifiedPitchEntries.push({ pitch: cardPitch, quantity: exactQty });
+    }
 
-      if (exactQty > 0) {
-        exact.push(Object.freeze({
-          cardIdentifier: deckCard.cardIdentifier,
-          quantity: exactQty,
-          slot: deckCard.slot,
-          ...entryMeta,
-        }));
-        remainingInventory.set(deckCard.cardIdentifier, 0);
-        exactCount += exactQty;
-        modifiedPitchEntries.push({ pitch: cardPitch, quantity: exactQty });
-      }
+    pass1Slots.push({ deckCard, catalogCard, cardPitch, entryMeta, exactQty, missingQty });
+  }
 
-      // Non-substitutable slots go straight to missing
-      if (NON_SUBSTITUTABLE_SLOTS.has(deckCard.slot)) {
-        missing.push(Object.freeze({
-          cardIdentifier: deckCard.cardIdentifier,
-          quantity: missingQty,
-          slot: deckCard.slot,
-          ...entryMeta,
-        }));
-        modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
-        continue;
-      }
+  // ---------------------------------------------------------------------------
+  // Pass 2 — substitution search.
+  //
+  // Only deck cards with remaining missing quantity reach this pass.
+  // remainingInventory now reflects the fully-reserved exact-match allocation
+  // from pass 1, so no card needed by its own slot can be offered here.
+  // ---------------------------------------------------------------------------
 
-      // Try to substitute each missing copy
-      if (!catalogCard) {
-        missing.push(Object.freeze({
-          cardIdentifier: deckCard.cardIdentifier,
-          quantity: missingQty,
-          slot: deckCard.slot,
-          ...entryMeta,
-        }));
-        modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
-        continue;
-      }
+  for (const slot of pass1Slots) {
+    const { deckCard, catalogCard, cardPitch, entryMeta, missingQty } = slot;
 
-      let remainingMissing = missingQty;
+    if (missingQty === 0) {
+      // Fully covered by exact match in pass 1 — nothing left to substitute.
+      continue;
+    }
 
-      for (let i = 0; i < missingQty; i++) {
-        const match = findSubstitution(
-          catalogCard,
-          remainingInventory,
-          catalog,
-          excludedIdentifiers,
-        );
+    // Non-substitutable slots go straight to missing.
+    if (NON_SUBSTITUTABLE_SLOTS.has(deckCard.slot)) {
+      missing.push(Object.freeze({
+        cardIdentifier: deckCard.cardIdentifier,
+        quantity: missingQty,
+        slot: deckCard.slot,
+        ...entryMeta,
+      }));
+      modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
+      continue;
+    }
 
-        if (match) {
-          // Validate pitch curve tolerance with this substitution
-          const tentativeModified = [
-            ...modifiedPitchEntries,
-            { pitch: match.substitute.pitch, quantity: 1 },
-          ];
-          const tentativeOriginal = computePitchCurve(originalPitchEntries);
-          const tentativeModifiedCurve = computePitchCurve(tentativeModified);
-          const delta = computePitchDelta(tentativeOriginal, tentativeModifiedCurve);
+    // Cards absent from catalog cannot be substituted.
+    if (!catalogCard) {
+      missing.push(Object.freeze({
+        cardIdentifier: deckCard.cardIdentifier,
+        quantity: missingQty,
+        slot: deckCard.slot,
+        ...entryMeta,
+      }));
+      modifiedPitchEntries.push({ pitch: cardPitch, quantity: missingQty });
+      continue;
+    }
 
-          if (isWithinTolerance(delta, tolerance)) {
-            const originalEntry: IBreakdownEntry = Object.freeze({
-              cardIdentifier: deckCard.cardIdentifier,
-              quantity: 1,
-              slot: deckCard.slot,
-              ...entryMeta,
-            });
+    let remainingMissing = missingQty;
 
-            substituted.push(Object.freeze({ original: originalEntry, match }));
-            substitutions.push(match);
-            substitutedCount += 1;
-            remainingMissing -= 1;
+    for (let i = 0; i < missingQty; i++) {
+      const match = findSubstitution(
+        catalogCard,
+        remainingInventory,
+        catalog,
+        excludedIdentifiers,
+      );
 
-            // Consume from inventory
-            const subAvailable = remainingInventory.get(match.substitute.cardIdentifier) ?? 0;
-            remainingInventory.set(match.substitute.cardIdentifier, subAvailable - 1);
+      if (match) {
+        // Validate pitch curve tolerance with this substitution.
+        const tentativeModified = [
+          ...modifiedPitchEntries,
+          { pitch: match.substitute.pitch, quantity: 1 },
+        ];
+        const tentativeOriginal = computePitchCurve(originalPitchEntries);
+        const tentativeModifiedCurve = computePitchCurve(tentativeModified);
+        const delta = computePitchDelta(tentativeOriginal, tentativeModifiedCurve);
 
-            modifiedPitchEntries.push({ pitch: match.substitute.pitch, quantity: 1 });
-          } else {
-            // Pitch curve would break -- reject this substitution
-            modifiedPitchEntries.push({ pitch: cardPitch, quantity: 1 });
-          }
+        if (isWithinTolerance(delta, tolerance)) {
+          const originalEntry: IBreakdownEntry = Object.freeze({
+            cardIdentifier: deckCard.cardIdentifier,
+            quantity: 1,
+            slot: deckCard.slot,
+            ...entryMeta,
+          });
+
+          substituted.push(Object.freeze({ original: originalEntry, match }));
+          substitutions.push(match);
+          substitutedCount += 1;
+          remainingMissing -= 1;
+
+          // Consume from inventory.
+          const subAvailable = remainingInventory.get(match.substitute.cardIdentifier) ?? 0;
+          remainingInventory.set(match.substitute.cardIdentifier, subAvailable - 1);
+
+          modifiedPitchEntries.push({ pitch: match.substitute.pitch, quantity: 1 });
         } else {
+          // Pitch curve would break -- reject this substitution.
           modifiedPitchEntries.push({ pitch: cardPitch, quantity: 1 });
         }
+      } else {
+        modifiedPitchEntries.push({ pitch: cardPitch, quantity: 1 });
       }
+    }
 
-      if (remainingMissing > 0) {
-        missing.push(Object.freeze({
-          cardIdentifier: deckCard.cardIdentifier,
-          quantity: remainingMissing,
-          slot: deckCard.slot,
-          ...entryMeta,
-        }));
-      }
+    if (remainingMissing > 0) {
+      missing.push(Object.freeze({
+        cardIdentifier: deckCard.cardIdentifier,
+        quantity: remainingMissing,
+        slot: deckCard.slot,
+        ...entryMeta,
+      }));
     }
   }
 
