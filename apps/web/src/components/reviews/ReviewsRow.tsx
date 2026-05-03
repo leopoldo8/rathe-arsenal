@@ -62,7 +62,9 @@ export function ReviewsRow({
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
-        cardIdentifier: row.cardIdentifier,
+        // Key decisions by the SUBSTITUTE id so the backend stores the row under
+        // the same identifier that loadExclusions() and deck-detail look up by.
+        cardIdentifier: row.substituteIdentifier,
         decision: 'APPROVED',
       },
     ]);
@@ -73,7 +75,8 @@ export function ReviewsRow({
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
-        cardIdentifier: row.cardIdentifier,
+        // Same substitut-keyed convention as handleApprove.
+        cardIdentifier: row.substituteIdentifier,
         decision: 'REJECTED',
       },
     ]);
@@ -84,7 +87,8 @@ export function ReviewsRow({
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
-        cardIdentifier: row.cardIdentifier,
+        // Reset also targets the substitute-keyed row.
+        cardIdentifier: row.substituteIdentifier,
         reset: true,
       },
     ]);

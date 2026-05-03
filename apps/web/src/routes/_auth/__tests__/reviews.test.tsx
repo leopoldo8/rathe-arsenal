@@ -498,8 +498,10 @@ describe('ReviewsPage — tab badge counts update after bulk approve', () => {
 });
 
 describe('ReviewsPage — per-row single action', () => {
-  it('Approve button on a single row calls the same bulk mutate with 1 operation', async () => {
-    mockReviewsData = { rows: [makeRow({ cardIdentifier: 'SINGLE001' })] };
+  it('Approve button on a single row calls bulk mutate keyed by substituteIdentifier', async () => {
+    mockReviewsData = {
+      rows: [makeRow({ cardIdentifier: 'SINGLE001', substituteIdentifier: 'SUB-SINGLE001' })],
+    };
     renderPage();
 
     await userEvent.click(screen.getByRole('button', { name: /Approve SINGLE001/i }));
@@ -508,7 +510,9 @@ describe('ReviewsPage — per-row single action', () => {
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
     expect(ops).toHaveLength(1);
-    expect(ops![0]).toMatchObject({ cardIdentifier: 'SINGLE001', decision: 'APPROVED' });
+    // Must be the SUBSTITUTE id — decision is keyed by substitute for consistency
+    // with deck-detail and loadExclusions.
+    expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-SINGLE001', decision: 'APPROVED' });
   });
 });
 
