@@ -124,12 +124,12 @@ export function BreakdownSections({
         )}
       </section>
 
-      {/* ---- Substituted ---- */}
+      {/* ---- Swaps ---- */}
       <section className={styles.section} aria-labelledby="section-subs">
         <div className={styles.section__header}>
           <div className={styles.section__diamond} />
           <h2 id="section-subs" className={styles.section__title}>
-            Substituted
+            Swaps
           </h2>
           <span className={styles.section__count}>
             {breakdown.substituted.length} active
@@ -137,9 +137,9 @@ export function BreakdownSections({
         </div>
 
         {breakdown.substituted.length === 0 ? (
-          <p className={styles.section__empty}>No substitutions needed</p>
+          <p className={styles.section__empty}>No swaps needed</p>
         ) : (
-          <ul className={styles.subList} aria-label="Substitution proposals">
+          <ul className={styles.subList} aria-label="Swap proposals">
             {breakdown.substituted.map((entry) => {
               const subId = entry.match.substitute.cardIdentifier;
               const decision = resolveDecision(decisions, subId);

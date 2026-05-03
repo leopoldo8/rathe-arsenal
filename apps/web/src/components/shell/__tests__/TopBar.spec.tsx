@@ -2,7 +2,7 @@
  * TopBar tests — Unit 9
  *
  * Covers:
- *  - Happy path: 3 nav items (Home / Library / Reviews), no Import
+ *  - Happy path: 3 nav items (Home / Library / Swaps), no Import
  *  - A11y: primary nav has correct aria-label
  *  - Brand: logo link renders
  */
@@ -118,10 +118,10 @@ describe('TopBar — nav items', () => {
     expect(nav).toHaveTextContent('Library');
   });
 
-  it('renders the Reviews nav link', () => {
+  it('renders the Swaps nav link', () => {
     render(<TopBar />);
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(nav).toHaveTextContent('Reviews');
+    expect(nav).toHaveTextContent('Swaps');
   });
 
   it('does not render an Import nav link', () => {

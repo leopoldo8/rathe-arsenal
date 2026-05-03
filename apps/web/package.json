@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test:visual": "playwright test --project=visual-dark-desktop",
-    "test:visual:update": "playwright test --project=visual-dark-desktop --update-snapshots"
+    "test:visual:update": "playwright test --project=visual-dark-desktop --update-snapshots",
+    "test:e2e": "playwright test --project=e2e-chromium"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.6",

@@ -201,7 +201,7 @@ describe('BreakdownSections', () => {
       expect(onReject).toHaveBeenCalledWith('open-the-floodgates');
     });
 
-    it('renders "No substitutions needed" when substituted is empty', () => {
+    it('renders "No swaps needed" when substituted is empty', () => {
       render(
         <BreakdownSections
           breakdown={{ ...FULL_BREAKDOWN, substituted: [] }}
@@ -211,7 +211,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      expect(screen.getByText('No substitutions needed')).toBeInTheDocument();
+      expect(screen.getByText('No swaps needed')).toBeInTheDocument();
     });
   });
 

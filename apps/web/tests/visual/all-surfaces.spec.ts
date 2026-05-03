@@ -63,8 +63,8 @@ const AUTH_SURFACES = [
   { name: 'library', url: '/library' },
   // Library CSV Sources sub-page.
   { name: 'library-csv-sources', url: '/library-csv-sources' },
-  // Reviews (pending tab default).
-  { name: 'reviews', url: '/reviews' },
+  // Swaps (pending tab default — renamed from Reviews).
+  { name: 'swaps', url: '/swaps' },
   // Settings (theme toggle, account).
   { name: 'settings', url: '/settings' },
   // Add cards — chooser (the three-path entry screen).

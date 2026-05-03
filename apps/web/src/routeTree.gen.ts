@@ -17,6 +17,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CheckYourEmailRouteImport } from './routes/check-your-email'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSwapsRouteImport } from './routes/_auth/swaps'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
@@ -69,6 +70,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSwapsRoute = AuthSwapsRouteImport.update({
+  id: '/swaps',
+  path: '/swaps',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthSettingsRoute = AuthSettingsRouteImport.update({
   id: '/settings',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/swaps': typeof AuthSwapsRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/swaps': typeof AuthSwapsRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/swaps': typeof AuthSwapsRoute
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/swaps'
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/swaps'
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
+    | '/_auth/swaps'
     | '/_auth/add-cards/csv'
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/swaps': {
+      id: '/_auth/swaps'
+      path: '/swaps'
+      fullPath: '/swaps'
+      preLoaderRoute: typeof AuthSwapsRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/settings': {
       id: '/_auth/settings'
@@ -461,6 +480,7 @@ interface AuthRouteChildren {
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthSwapsRoute: typeof AuthSwapsRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
   AuthDecksNewRoute: typeof AuthDecksNewRoute
 }
@@ -473,6 +493,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
+  AuthSwapsRoute: AuthSwapsRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
   AuthDecksNewRoute: AuthDecksNewRoute,
 }
