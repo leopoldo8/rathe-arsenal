@@ -36,8 +36,8 @@ const DeckboxDefs = () => (
         <path d="M24 36 L 60 32 L 60 14 L 24 18 Z"/>
       </clipPath>
       <symbol id="deckbox" viewBox="0 0 104 104" overflow="visible">
-        <path d="M36 28 L 72 24 L 72 96 L 36 96 Z" fill="#3a0f0f" stroke="#d69e2e" strokeWidth="0.6"/>
-        <path d="M60 32 L 72 24 L 72 96 L 60 96 Z" fill="url(#box-side)" stroke="#d69e2e" strokeWidth="0.8"/>
+        <path d="M36 28 L 72 24 L 72 88 L 36 96 Z" fill="#3a0f0f" stroke="#d69e2e" strokeWidth="0.6"/>
+        <path d="M60 32 L 72 24 L 72 88 L 60 96 Z" fill="url(#box-side)" stroke="#d69e2e" strokeWidth="0.8"/>
         <path d="M24 36 L 60 32 L 60 96 L 24 96 Z" fill="url(#box-front)" stroke="#d69e2e" strokeWidth="1"/>
         <path d="M27 41 L 57 37 L 57 92 L 27 92 Z" fill="none" stroke="#d69e2e" strokeWidth="0.5" opacity="0.75"/>
         <text x="42" y="72" textAnchor="middle" fontFamily="UnifrakturCook, serif" fontWeight="700" fontSize="26" fill="#d69e2e">R</text>
