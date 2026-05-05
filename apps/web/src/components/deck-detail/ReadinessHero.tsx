@@ -10,6 +10,16 @@ interface IReadinessHeroProps {
   readonly deckName: string;
   readonly hero: string;
   readonly format: string;
+  /**
+   * Total quantity of cards in the deck (exact + substituted + missing).
+   * Displayed in the "X/Y cartas" count alongside the percentage.
+   */
+  readonly totalCards: number;
+  /**
+   * Quantity of cards already covered: sum of quantities for exact matches
+   * plus substituted matches. This is the numerator in the "X/Y cartas" count.
+   */
+  readonly provisionedCards: number;
 }
 
 function getReadinessClass(percent: number): string {
@@ -33,6 +43,8 @@ export function ReadinessHero({
   deckName,
   hero,
   format,
+  totalCards,
+  provisionedCards,
 }: IReadinessHeroProps): React.ReactElement {
   const fabraryUrl = `https://fabrary.com/decks/${fabraryUlid}`;
   const readinessClass = getReadinessClass(effectivePercent);
@@ -75,7 +87,12 @@ export function ReadinessHero({
             </span>
             <span className={styles.readiness__sym}>%</span>
           </div>
-          <div className={styles.readiness__label}>Effective Ready</div>
+          <div className={styles.readiness__label}>
+            Effective Ready
+            <span className={styles.readiness__count}>
+              {' '}&middot;{' '}{provisionedCards}/{totalCards} cartas
+            </span>
+          </div>
           <div className={styles.readiness__raw}>
             Raw {rawPercent.toFixed(1)}% &#183; Fidelity {(Math.round(fidelityPercent * 10) / 10).toFixed(1)}%
           </div>

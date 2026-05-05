@@ -149,14 +149,27 @@
   font-size: var(--ra-text-caption);
   letter-spacing: var(--ra-track-spaced);
   text-transform: uppercase;
-  color: var(--ra-fg-muted);
+  /* --ra-fg-secondary replaces --ra-fg-muted here.
+     Dark: #b0a898 on #15171c = 7.60:1 (WCAG AA body pass).
+     Light: #4f4a3f on #ffffff = 8.81:1 (WCAG AA body pass).
+     --ra-fg-muted on dark surface was only 3.13:1, failing AA body. */
+  color: var(--ra-fg-secondary);
   margin-top: var(--ra-space-2);
+}
+
+/* Absolute count "(provisioned/total cartas)" inlined after the label.
+   Inherits font and text-transform from .readiness__label; uses the same
+   --ra-fg-secondary token so it visually groups with the label. */
+.readiness__count {
+  /* No additional color override needed — inherits from parent .readiness__label. */
 }
 
 .readiness__raw {
   font-family: var(--ra-font-mono);
   font-size: var(--ra-text-caption);
-  color: var(--ra-fg-muted);
+  /* Same contrast fix: --ra-fg-secondary over --ra-fg-muted.
+     Dark: 7.60:1, Light: 8.81:1 on their respective surface backgrounds. */
+  color: var(--ra-fg-secondary);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-top: var(--ra-space-1);
