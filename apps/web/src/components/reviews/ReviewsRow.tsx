@@ -46,7 +46,18 @@ export function ReviewsRow({
 }: IReviewsRowProps): React.ReactElement {
   const rowId = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
   const checkboxId = `review-row-${rowId}`;
-  const actionsDisabled = isBulkPending;
+
+  const isApproved = row.decision === 'approved';
+  const isRejected = row.decision === 'rejected';
+  const hasDec = isApproved || isRejected;
+
+  // Button enabled/disabled state — mirrors SubstitutionRow (deck detail) contract:
+  //   pending  → Approve + Reject enabled, Reset disabled (nothing to clear)
+  //   approved → Reject + Reset enabled,   Approve disabled (already approved)
+  //   rejected → Approve + Reset enabled,  Reject disabled (already rejected)
+  const approveDisabled = isBulkPending || isApproved;
+  const rejectDisabled = isBulkPending || isRejected;
+  const resetDisabled = isBulkPending || !hasDec;
 
   const [lightbox, setLightbox] = useState<
     | {
@@ -58,7 +69,7 @@ export function ReviewsRow({
   >(null);
 
   function handleApprove(): void {
-    if (actionsDisabled) return;
+    if (approveDisabled) return;
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
@@ -71,7 +82,7 @@ export function ReviewsRow({
   }
 
   function handleReject(): void {
-    if (actionsDisabled) return;
+    if (rejectDisabled) return;
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
@@ -83,7 +94,7 @@ export function ReviewsRow({
   }
 
   function handleReset(): void {
-    if (actionsDisabled) return;
+    if (resetDisabled) return;
     onAction([
       {
         trackedDeckId: row.trackedDeckId,
@@ -245,8 +256,9 @@ export function ReviewsRow({
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--approve']}`}
-            disabled={actionsDisabled}
+            disabled={approveDisabled}
             onClick={handleApprove}
+            aria-pressed={isApproved}
             aria-label={`Approve ${row.cardIdentifier} as substitute`}
           >
             Approve
@@ -254,8 +266,9 @@ export function ReviewsRow({
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--reject']}`}
-            disabled={actionsDisabled}
+            disabled={rejectDisabled}
             onClick={handleReject}
+            aria-pressed={isRejected}
             aria-label={`Reject ${row.cardIdentifier} as substitute`}
           >
             Reject
@@ -263,7 +276,7 @@ export function ReviewsRow({
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--reset']}`}
-            disabled={actionsDisabled}
+            disabled={resetDisabled}
             onClick={handleReset}
             aria-label={`Reset decision for ${row.cardIdentifier}`}
           >

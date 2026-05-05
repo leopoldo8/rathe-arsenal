@@ -171,8 +171,10 @@ describe('ReviewsRow — per-row actions', () => {
   });
 
   it('calls onAction with reset: true keyed by substituteIdentifier', async () => {
+    // Reset is only enabled when a decision exists (approved or rejected).
+    // Use an approved row so the Reset button is enabled.
     const onAction = vi.fn();
-    renderRow(makeRow(), { onAction });
+    renderRow(makeRow({ decision: 'approved' }), { onAction });
     await userEvent.click(screen.getByRole('button', { name: /Reset decision/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
