@@ -31,6 +31,19 @@ function countNotOwnedCards(breakdown: IBreakdown): number {
   return notOwned.reduce((sum, entry) => sum + entry.quantity, 0);
 }
 
+/**
+ * Sum the total quantity of cards covered (exact matches + substituted matches).
+ * Used to display the "X/Y cartas" count in ReadinessHero.
+ */
+function countProvisionedCards(breakdown: IBreakdown): number {
+  const exactTotal = breakdown.exact.reduce((sum, entry) => sum + entry.quantity, 0);
+  const substitutedTotal = breakdown.substituted.reduce(
+    (sum, entry) => sum + entry.original.quantity,
+    0,
+  );
+  return exactTotal + substitutedTotal;
+}
+
 function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
   const { show: showToast } = useToast();
@@ -184,6 +197,8 @@ function DeckDetailPage(): React.ReactElement {
             deckName={deck.name}
             hero={deck.hero}
             format={deck.format}
+            totalCards={deck.totalCards}
+            provisionedCards={countProvisionedCards(snapshot.breakdown)}
           />
         </div>
 
