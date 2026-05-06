@@ -228,30 +228,30 @@ function DeckBoxVessel({
           </linearGradient>
         </defs>
 
-        {/* Top rim trapezoid — dark inside-of-box. Wider at the front
-            (y=58) than at the back (y=32). The back of the box is at
-            x=40-160; the front rim is at x=20-180 — narrower than
-            the front face below it so the box looks like a portrait
-            container, not an exaggerated wedge. */}
+        {/* Top rim trapezoid — dark inside-of-box. Box width is
+            tightened so the front face is just barely wider than a
+            single card sitting inside, like a real card box. Front
+            edge of the rim aligns with the front face top below.
+            Back edge inset slightly for the looking-down perspective. */}
         <path
-          d="M40 32 L 160 32 L 180 58 L 20 58 Z"
+          d="M55 32 L 145 32 L 158 58 L 42 58 Z"
           fill="url(#vsl-rim)"
           stroke="#d69e2e"
           strokeWidth="0.9"
         />
 
         {/* Closed lid — same trapezoid as rim, different fill. On
-            hover the group rotates -150deg around its back edge,
-            revealing the rim beneath. */}
+            hover the group rotates -90deg around its back edge,
+            standing exactly vertical to fully reveal the rim beneath. */}
         <g className={styles.deckBoxLid}>
           <path
-            d="M40 32 L 160 32 L 180 58 L 20 58 Z"
+            d="M55 32 L 145 32 L 158 58 L 42 58 Z"
             fill="url(#vsl-lid)"
             stroke="#d69e2e"
             strokeWidth="1.1"
           />
           <path
-            d="M48 38 L 152 38 L 168 56 L 32 56 Z"
+            d="M62 38 L 138 38 L 150 56 L 50 56 Z"
             fill="none"
             stroke="#d69e2e"
             strokeWidth="0.4"
@@ -294,12 +294,13 @@ function DeckBoxVessel({
           </linearGradient>
         </defs>
 
-        {/* Front face — simple rectangle, no diagonal cut. The
-            previous bottom-right diagonal felt orphaned with the
-            box now sitting symmetric and face-on; clean square
-            corners read more deliberate. */}
+        {/* Front face — narrow rectangle aligned with the front edge
+            of the rim trapezoid above. Width 116 SVG units (x=42 to
+            x=158) — barely wider than a single card thumbnail (50% of
+            viewBox = 100 SVG units), like a real card box where the
+            cards sit snugly inside. */}
         <path
-          d="M20 58 L 180 58 L 180 222 L 20 222 Z"
+          d="M42 58 L 158 58 L 158 222 L 42 222 Z"
           fill="url(#vsl-front)"
           stroke="#d69e2e"
           strokeWidth="1.4"
@@ -307,7 +308,7 @@ function DeckBoxVessel({
 
         {/* Inner brass frame on the front face — decorative panel. */}
         <path
-          d="M28 66 L 172 66 L 172 214 L 28 214 Z"
+          d="M48 64 L 152 64 L 152 216 L 48 216 Z"
           fill="none"
           stroke="#d69e2e"
           strokeWidth="0.6"
