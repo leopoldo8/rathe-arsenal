@@ -53,6 +53,8 @@ function makeDeck(
       effectivePercent !== null
         ? { rawPercent: effectivePercent, effectivePercent, computedAt: '' }
         : null,
+    heroImageUrl: null,
+    representativeCards: [],
   };
 }
 

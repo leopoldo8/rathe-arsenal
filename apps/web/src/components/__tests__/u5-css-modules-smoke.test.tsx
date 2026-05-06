@@ -136,6 +136,8 @@ const DECK_LIST_ITEM: ITrackedDeckListItem = {
     rawPercent: 82.0,
     computedAt: '2026-01-01T00:00:00.000Z',
   },
+  heroImageUrl: null,
+  representativeCards: [],
 };
 
 // ---------------------------------------------------------------------------

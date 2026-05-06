@@ -51,6 +51,8 @@ function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckLi
       effectivePercent: 85,
       computedAt: '2026-01-01T00:00:00Z',
     },
+    heroImageUrl: null,
+    representativeCards: [],
     ...overrides,
   };
 }
@@ -137,5 +139,60 @@ describe('DeckCard', () => {
     const viewLinks = screen.getAllByRole('link', { name: /view/i });
     expect(viewLinks.length).toBeGreaterThan(0);
     expect(viewLinks[0]).toHaveAttribute('href', '/decks/7');
+  });
+
+  describe('(C3) deckbox vessel', () => {
+    it('renders the hero image when heroImageUrl is provided', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          hero: 'Bravo, Star-Crossed',
+          heroImageUrl: { small: 'https://lss.example/bravo-small.webp' },
+        }),
+      );
+      const heroImg = container.querySelector('img[src*="bravo-small"]');
+      expect(heroImg).toBeInTheDocument();
+      expect(heroImg).toHaveAttribute('alt', 'Bravo, Star-Crossed');
+    });
+
+    it('falls back to a sigil placeholder when heroImageUrl is null', () => {
+      const { container } = renderDeckCard(makeDeck({ heroImageUrl: null }));
+      const heroImg = container.querySelector('img[alt="Rhinar"]');
+      expect(heroImg).not.toBeInTheDocument();
+      // The fallback renders a sigil glyph; presence proves the slot is rendered.
+      expect(container.textContent).toContain('◆');
+    });
+
+    it('renders representative card images for the hover-open animation', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          representativeCards: [
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp' } },
+            { cardIdentifier: 'sigil', name: 'Sigil', imageUrl: { small: 'https://lss.example/sigil.webp' } },
+            { cardIdentifier: 'romp', name: 'Romp', imageUrl: { small: 'https://lss.example/romp.webp' } },
+          ],
+        }),
+      );
+      expect(container.querySelector('img[src*="pummel"]')).toBeInTheDocument();
+      expect(container.querySelector('img[src*="sigil"]')).toBeInTheDocument();
+      expect(container.querySelector('img[src*="romp"]')).toBeInTheDocument();
+    });
+
+    it('pads missing slots with silhouette fallbacks when fewer than 3 reps available', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          representativeCards: [
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp' } },
+          ],
+        }),
+      );
+      // The single image slot renders, the other two slots fall back to silhouettes.
+      expect(container.querySelector('img[src*="pummel"]')).toBeInTheDocument();
+      // Silhouette renders a brass diamond crest. With one real card +
+      // two silhouettes we expect 2 crest occurrences in the cards layer
+      // plus 1 from the empty hero slot fallback if no hero image; here
+      // hero is null so 3 total diamond glyphs.
+      const diamondCount = (container.textContent?.match(/◆/g) ?? []).length;
+      expect(diamondCount).toBeGreaterThanOrEqual(2);
+    });
   });
 });

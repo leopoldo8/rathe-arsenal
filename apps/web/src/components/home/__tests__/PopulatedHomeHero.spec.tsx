@@ -21,6 +21,8 @@ function makeDeck(effectivePercent: number, id = 1): ITrackedDeckListItem {
       effectivePercent,
       computedAt: '',
     },
+    heroImageUrl: null,
+    representativeCards: [],
   };
 }
 

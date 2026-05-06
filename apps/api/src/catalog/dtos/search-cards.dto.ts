@@ -30,6 +30,15 @@ export interface ISearchCardResult {
   readonly classes: readonly string[];
   readonly types: readonly string[];
   readonly ownedQuantity: number;
+  /**
+   * LSS S3 image URLs for the card face (small + large WebP). Null when the
+   * source catalog entry has no image code. Frontend renders the small URL
+   * as a 52x72 row thumbnail; click opens the large URL in a fullscreen
+   * lightbox. The `sources` mirror list from the catalog entry is dropped
+   * here — the autocomplete falls back to <CardArt> on load failure rather
+   * than cycling alternative URLs.
+   */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ISearchCardsResponse {

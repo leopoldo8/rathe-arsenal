@@ -1,6 +1,6 @@
 /* ============================================================
    DeckCard — CSS Module
-   Home readiness shelf deck card.
+   Home readiness shelf deck card, rendered as a deckbox vessel.
    ============================================================ */
 
 .card {
@@ -9,7 +9,7 @@
   background-color: var(--ra-bg-surface);
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-md);
-  overflow: hidden;
+  overflow: visible;
   transition:
     border-color var(--ra-duration) var(--ra-ease),
     box-shadow var(--ra-duration) var(--ra-ease);
@@ -17,18 +17,13 @@
 
 .card:hover {
   border-color: var(--ra-border-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
 }
 
 /* Tier accent — subtle background tint blended with surface.
    Replaces the previous left-stripe treatment (an AI-slop tell). The
    shelf heading already names the tier; the tint gives a secondary
-   signal when a card is skimmed out of shelf context (search, hover
-   preview, sharing). color-mix in oklch keeps hue consistent in dark
-   and preserves text contrast.
-
-   Tints are kept at 6–8% so the card still reads as the base surface,
-   not a colored box. */
+   signal when a card is skimmed out of shelf context. */
 .card--high {
   background-color: color-mix(in oklch, var(--ra-ready-high) 6%, var(--ra-bg-surface));
   border-color: color-mix(in oklch, var(--ra-ready-high) 24%, var(--ra-border));
@@ -46,11 +41,14 @@
 
 /* ---------- Link area ---------- */
 .cardLink {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: var(--ra-space-4);
   text-decoration: none;
   color: inherit;
   flex: 1;
+  gap: var(--ra-space-3);
 }
 
 .cardLink:focus-visible {
@@ -58,32 +56,267 @@
   outline-offset: -2px;
 }
 
+/* ============================================================
+   Deckbox Vessel — SVG chrome + HTML overlays
+   ============================================================ */
+
+.vesselWrap {
+  position: relative;
+  width: 100%;
+  /* The vessel keeps a fixed aspect ratio so the deckbox proportions
+     read consistently across viewport sizes. The viewBox geometry is
+     96 × 108 (room above the rim for the lid lift on hover). */
+  aspect-ratio: 96 / 108;
+  max-width: 240px;
+  /* Lifted cards on hover overflow upward. We allow that. */
+  overflow: visible;
+}
+
+.vesselSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* The cards layer sits on top of the SVG chrome; the SVG itself
+     provides the box body, lid, and rim. */
+}
+
+/* Tier saturation curve — applied to the vessel via filter so it
+   tonalizes every oxblood/brass element at once. Subtle on purpose:
+   the brass percent display is the primary tier readout. */
+.vesselWrap--high .vesselSvg {
+  filter: saturate(1.05);
+}
+
+.vesselWrap--mid .vesselSvg {
+  filter: saturate(0.92);
+}
+
+.vesselWrap--low .vesselSvg {
+  filter: saturate(0.78) brightness(0.94);
+}
+
+/* ---------- Lid (translates upward on hover) ---------- */
+
+.deckBoxLid {
+  /* GPU-only transition. transform-origin is the back-edge so the
+     lift reads as opening (not floating). */
+  transform-origin: 78px 6px;
+  transform: translateY(0);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.card:hover .deckBoxLid,
+.cardLink:focus-visible .deckBoxLid {
+  /* Lid lifts ~12% of viewBox height upward, revealing the cards. */
+  transform: translateY(-13px);
+}
+
+/* ---------- Cards layer ---------- */
+
+.deckBoxCardsLayer {
+  position: absolute;
+  /* The cards layer covers the entire vessel so each slot can be
+     positioned freely. Pointer-events: none lets clicks reach the
+     anchor below. */
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Each card slot is positioned absolutely. The base position has
+   the card tucked behind the rim (so it's invisible). Hover/focus
+   lifts it to the visible position with depth-staggered translateY.
+   All three cards share aspect-ratio + dimensions; only their base
+   X position differs to create the fan. */
+.deckBoxCard {
+  position: absolute;
+  /* Card thumbnail: 5:7 aspect ratio (FaB cards). Width ~22% of
+     vessel width — three cards fit side-by-side inside the box. */
+  width: 22%;
+  aspect-ratio: 5 / 7;
+  /* Base position: tucked behind the rim. The vessel's rim sits
+     around y=22% from the top in viewBox space; we set top so the
+     card's bottom edge clips just below the rim. */
+  top: 13%;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: #2a0808;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(214, 158, 46, 0.3);
+  /* Idle state: invisible (clipped behind the rim by y position +
+     opacity 0). Hover state: opacity 1 + translateY -X. */
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease-out;
+  will-change: transform, opacity;
+}
+
+/* Slot positions: back card at the far back-left of the rim, middle
+   centered, front at the front-right. Translates create the fan. */
+.deckBoxCardBack {
+  left: 33%;
+  z-index: 1;
+}
+
+.deckBoxCardMiddle {
+  left: 39%;
+  z-index: 2;
+}
+
+.deckBoxCardFront {
+  left: 45%;
+  z-index: 3;
+}
+
+/* Hover-open: each card lifts a different amount with a different
+   delay, creating a depth-staggered "fan opening from the back" feel. */
+.card:hover .deckBoxCardBack,
+.cardLink:focus-visible .deckBoxCardBack {
+  opacity: 1;
+  transform: translateY(-22px);
+  transition-delay: 60ms;
+}
+
+.card:hover .deckBoxCardMiddle,
+.cardLink:focus-visible .deckBoxCardMiddle {
+  opacity: 1;
+  transform: translateY(-14px);
+  transition-delay: 90ms;
+}
+
+.card:hover .deckBoxCardFront,
+.cardLink:focus-visible .deckBoxCardFront {
+  opacity: 1;
+  transform: translateY(-6px);
+  transition-delay: 120ms;
+}
+
+.deckBoxCardImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.deckBoxCardSilhouette {
+  /* Default-fill: oxblood gradient + brass diamond crest. Renders
+     when the deck has no snapshot yet or the catalog lacks an image. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(160deg, #5a1a1a 0%, #3a0f0f 60%, #2a0808 100%);
+  color: var(--ra-accent);
+  font-size: 0.95rem;
+}
+
+.deckBoxCardCrest {
+  font-size: 1.1rem;
+  opacity: 0.55;
+}
+
+/* ---------- Hero centerpiece ---------- */
+
+.deckBoxHeroSlot {
+  position: absolute;
+  /* Centered horizontally; sits just below the rim of the box. */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -42%);
+  /* Hero thumbnail size — proportional to vessel. */
+  width: 36%;
+  aspect-ratio: 5 / 7;
+  z-index: 4;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(214, 158, 46, 0.45);
+}
+
+.deckBoxHeroImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.deckBoxHeroFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 50% 30%, #5a1a1a 0%, #2a0808 80%);
+}
+
+.deckBoxHeroSigil {
+  font-family: var(--ra-font-display);
+  color: var(--ra-accent);
+  font-size: 1.4rem;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   Card text + readiness
+   ============================================================ */
+
+.cardTextRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--ra-space-1);
+  width: 100%;
+}
+
 .cardName {
-  margin: 0 0 var(--ra-space-1);
+  margin: 0;
   font-family: var(--ra-font-display);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-primary);
   line-height: var(--ra-leading-snug);
+  /* Limit to two lines so a long deck name doesn't push the readiness
+     readout off the tile. The middle line truncates with ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .cardMeta {
+  margin: 0;
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
+}
+
+.cardMetaSep {
+  margin: 0 0.35em;
+  color: var(--ra-fg-tertiary, var(--ra-fg-secondary));
+  opacity: 0.7;
 }
 
 .cardReadiness {
   display: flex;
   align-items: baseline;
   gap: var(--ra-space-2);
-  margin-top: var(--ra-space-3);
+  justify-content: center;
 }
 
 /* Signature readiness display — Cinzel Decorative 900 brass.
-   RESERVED for the effectivePercent % on deck cards (R7).
-   The global .ra-readiness-display class mirrors this for
-   grep-ability across the codebase. */
+   RESERVED for the effectivePercent % on deck cards (R7). */
 .readinessDisplay {
   font-family: var(--ra-font-ornament);
   font-weight: var(--ra-weight-black);
@@ -101,13 +334,16 @@
 }
 
 .cardNoReadiness {
-  margin-top: var(--ra-space-3);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
   font-style: italic;
+  text-align: center;
 }
 
-/* ---------- Footer actions ---------- */
+/* ============================================================
+   Footer actions
+   ============================================================ */
+
 .cardFooter {
   padding: var(--ra-space-3) var(--ra-space-4);
   border-top: 1px solid var(--ra-border-subtle);
@@ -193,4 +429,36 @@
   padding: var(--ra-space-2);
   min-width: 140px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   Reduced motion — opacity-only path
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Disable translation; the lid stays at idle, the cards reveal via
+     opacity only. Final visible state is "open" but achieved without
+     motion. */
+  .deckBoxLid,
+  .deckBoxCard {
+    transition: opacity 200ms linear;
+    transform: none;
+    will-change: auto;
+  }
+
+  .card:hover .deckBoxLid,
+  .cardLink:focus-visible .deckBoxLid {
+    transform: none;
+  }
+
+  .card:hover .deckBoxCardBack,
+  .card:hover .deckBoxCardMiddle,
+  .card:hover .deckBoxCardFront,
+  .cardLink:focus-visible .deckBoxCardBack,
+  .cardLink:focus-visible .deckBoxCardMiddle,
+  .cardLink:focus-visible .deckBoxCardFront {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0ms;
+  }
 }
