@@ -231,10 +231,6 @@ function DeckBoxVessel({
             <stop offset="55%" stopColor="#3a0f0f" />
             <stop offset="100%" stopColor="#220505" />
           </linearGradient>
-          <linearGradient id="vsl-side" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#2f0a0a" />
-            <stop offset="100%" stopColor="#150404" />
-          </linearGradient>
           <linearGradient id="vsl-rim" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#080202" />
             <stop offset="100%" stopColor="#1a0606" />
@@ -248,43 +244,29 @@ function DeckBoxVessel({
         {/* Top rim trapezoid — dark inside-of-box. Drawn first; sits
             BEHIND the closed lid in z-order. When the lid hinges open
             on hover, this rim is what gets revealed. The trapezoid is
-            wider at the front (y=58) than at the back (y=34) — this
-            is the perspective cue. */}
+            wider at the front (y=58) than at the back (y=34) — that
+            ratio is the looking-down perspective cue.
+            Box is centered at x=100 (full viewBox width 200). */}
         <path
-          d="M28 34 L 158 34 L 178 58 L 8 58 Z"
+          d="M30 32 L 170 32 L 192 58 L 8 58 Z"
           fill="url(#vsl-rim)"
           stroke="#d69e2e"
           strokeWidth="0.9"
         />
 
-        {/* Front face — large rectangle with the bottom-right diagonal.
-            Width: x 8 → 178. Height: y 58 → 220. Bottom-right tapers
-            from y=204 down to (162, 220). */}
+        {/* Front face — large rectangle with bottom-right diagonal.
+            Spans almost the full viewBox width (x 8 → 192) so cards
+            stacked inside fit comfortably. */}
         <path
-          d="M8 58 L 178 58 L 178 204 L 162 220 L 8 220 Z"
+          d="M8 58 L 192 58 L 192 208 L 174 226 L 8 226 Z"
           fill="url(#vsl-front)"
           stroke="#d69e2e"
           strokeWidth="1.4"
         />
 
-        {/* Right side depth strip — narrow parallelogram between front
-            and the implied back face. Same diagonal matching at bottom. */}
-        <path
-          d="M178 58 L 188 66 L 188 200 L 178 204 Z"
-          fill="url(#vsl-side)"
-          stroke="#d69e2e"
-          strokeWidth="0.9"
-        />
-        <path
-          d="M178 204 L 188 200 L 174 218 L 162 220 Z"
-          fill="url(#vsl-side)"
-          stroke="#d69e2e"
-          strokeWidth="0.9"
-        />
-
         {/* Inner brass frame on the front face — decorative panel. */}
         <path
-          d="M18 68 L 168 68 L 168 200 L 158 212 L 18 212 Z"
+          d="M18 68 L 182 68 L 182 204 L 170 218 L 18 218 Z"
           fill="none"
           stroke="#d69e2e"
           strokeWidth="0.6"
@@ -293,19 +275,19 @@ function DeckBoxVessel({
 
         {/* Closed lid — sits ON TOP of the rim trapezoid at idle.
             Same trapezoidal geometry, different fill (lid is lighter
-            oxblood, rim is dark interior). On hover this group rotates
-            -115deg around its back edge via CSS rotateX, revealing the
-            rim beneath. */}
+            oxblood, rim is dark interior). On hover the group rotates
+            -150deg around its back edge via CSS rotateX, fully opening
+            backward and revealing the rim beneath. */}
         <g className={styles.deckBoxLid}>
           <path
-            d="M28 34 L 158 34 L 178 58 L 8 58 Z"
+            d="M30 32 L 170 32 L 192 58 L 8 58 Z"
             fill="url(#vsl-lid)"
             stroke="#d69e2e"
             strokeWidth="1.1"
           />
           {/* Subtle inner brass detail on the lid */}
           <path
-            d="M36 40 L 152 40 L 168 56 L 18 56 Z"
+            d="M38 38 L 162 38 L 180 56 L 20 56 Z"
             fill="none"
             stroke="#d69e2e"
             strokeWidth="0.4"

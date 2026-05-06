@@ -6,34 +6,24 @@
 .card {
   display: flex;
   flex-direction: column;
-  background-color: var(--ra-bg-surface);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
+  /* No solid surface, no border, no radius — the deckbox vessel IS
+     the visual identity. The tile sits directly on the page canvas;
+     the brass-bordered SVG box provides all the chrome. */
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
   overflow: visible;
-  transition:
-    border-color var(--ra-duration) var(--ra-ease),
-    box-shadow var(--ra-duration) var(--ra-ease);
 }
 
-.card:hover {
-  border-color: var(--ra-border-strong);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
-}
-
-/* Tier accent — subtle background tint blended with surface. */
-.card--high {
-  background-color: color-mix(in oklch, var(--ra-ready-high) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-high) 24%, var(--ra-border));
-}
-
-.card--mid {
-  background-color: color-mix(in oklch, var(--ra-ready-mid-accent) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-mid-accent) 24%, var(--ra-border));
-}
-
+/* Tier styling lives on the .vesselWrap (saturation filter on the SVG)
+   rather than on the surrounding tile — the box itself absorbs the
+   ready/mid/low cue. The tile-level classes stay for backwards
+   compatibility but are no-ops. */
+.card--high,
+.card--mid,
 .card--low {
-  background-color: color-mix(in oklch, var(--ra-ready-low) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-low) 24%, var(--ra-border));
+  background-color: transparent;
+  border: none;
 }
 
 /* ---------- Link area ---------- */
@@ -130,7 +120,11 @@
 
 .card:hover .deckBoxLid,
 .cardLink:focus-visible .deckBoxLid {
-  transform: rotateX(-115deg);
+  /* Open well past vertical so the lid clearly tips backward and the
+     rim trapezoid below is fully revealed. -150deg leaves the lid
+     resting upside-down at the back of the box, like a card box
+     opened all the way. */
+  transform: rotateX(-150deg);
 }
 
 /* ============================================================
@@ -243,13 +237,15 @@
 .deckBoxHeroSlot {
   position: absolute;
   left: 50%;
-  top: 50%;
+  /* Position the hero slightly below center — sits in the "panel"
+     portion of the box front face, not floating in the middle. */
+  top: 58%;
   transform: translate(-50%, -50%);
-  /* Bigger, more square slot — we crop into the art portion of the
+  /* Smaller, square-ish slot. We crop into the art portion of the
      hero card (upper ~50% of the FaB layout) and feather the edges
-     so it reads as "the hero's art is woven into the box face",
+     so it reads as "the hero's likeness woven into the box panel",
      not "a card sitting in front of the box". */
-  width: 78%;
+  width: 48%;
   aspect-ratio: 4 / 5;
   z-index: 10;
   /* No hard frame, no shadow — the radial mask provides the visual
@@ -375,8 +371,9 @@
    ============================================================ */
 
 .cardFooter {
-  padding: var(--ra-space-3) var(--ra-space-4);
-  border-top: 1px solid var(--ra-border-subtle);
+  padding: var(--ra-space-3) 0 0;
+  /* No border-top — the tile is now container-less, divider lines
+     would re-introduce the "boxed" feel. */
 }
 
 .actionsWide {
