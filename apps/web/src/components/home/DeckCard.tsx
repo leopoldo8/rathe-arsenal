@@ -107,7 +107,7 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
         </h3>
 
         {effectivePercent !== null ? (
-          <ReadinessPlaque percent={effectivePercent} tier={tier} />
+          <ReadinessGauge percent={effectivePercent} tier={tier} />
         ) : (
           <div className={styles.cardNoReadiness}>No readiness data yet</div>
         )}
@@ -191,11 +191,7 @@ function DeckBoxVessel({
           </linearGradient>
         </defs>
 
-        {/* Top rim trapezoid — dark inside-of-box. Stronger
-            perspective taper: back edge x=62-138 (76 wide), front
-            edge x=42-158 (116 wide). Ratio 65% gives a clear
-            looking-down angle without exaggerating it into wedge
-            territory. */}
+        {/* Top rim trapezoid — back edge inset for perspective. */}
         <path
           d="M62 32 L 138 32 L 158 58 L 42 58 Z"
           fill="url(#vsl-rim)"
@@ -204,8 +200,8 @@ function DeckBoxVessel({
         />
 
         {/* Closed lid — same trapezoid as rim, different fill. On
-            hover the group rotates -90deg around its back edge,
-            standing exactly vertical to fully reveal the rim beneath. */}
+            hover this group rotates -90deg via CSS rotateX, standing
+            vertical to reveal the rim beneath. */}
         <g className={styles.deckBoxLid}>
           <path
             d="M62 32 L 138 32 L 158 58 L 42 58 Z"
@@ -213,8 +209,15 @@ function DeckBoxVessel({
             stroke="#d69e2e"
             strokeWidth="1.1"
           />
+          {/* Inner brass detail — proportional inset trapezoid.
+              Calculated as a 0.84x scale from the outer trapezoid
+              about its centroid (100, 45). This guarantees each
+              inner side is parallel to its corresponding outer side
+              (same slope, same direction) — earlier the inner sides
+              had a different slope from the outer sides, which made
+              the detail line look misaligned with the lid corners. */}
           <path
-            d="M68 38 L 132 38 L 150 56 L 50 56 Z"
+            d="M68 34 L 132 34 L 149 56 L 51 56 Z"
             fill="none"
             stroke="#d69e2e"
             strokeWidth="0.4"
@@ -353,38 +356,44 @@ function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement
 }
 
 // ---------------------------------------------------------------------------
-// ReadinessPlaque — brass-bordered oxblood seal for the readiness %
+// ReadinessGauge — minimalist readout: brass numeral + tier-colored bar
 // ---------------------------------------------------------------------------
 
-interface IReadinessPlaqueProps {
+interface IReadinessGaugeProps {
   readonly percent: number;
   readonly tier: 'high' | 'mid' | 'low' | null;
 }
 
-function ReadinessPlaque({ percent, tier }: IReadinessPlaqueProps): React.ReactElement {
-  const verdict =
-    tier === 'high' ? 'Ready to play' : tier === 'mid' ? 'Almost there' : 'Needs work';
-
+function ReadinessGauge({ percent, tier }: IReadinessGaugeProps): React.ReactElement {
+  // Clamp for the gauge fill — number text stays unclamped so legacy
+  // snapshots that overflow 100 still display correctly.
+  const fillPct = Math.max(0, Math.min(100, percent));
   return (
-    <div className={styles.readinessPlaque}>
-      <span className={styles.readinessDiamond} aria-hidden="true">&#9670;</span>
-      <span className={styles.readinessNumberCluster}>
+    <div className={styles.readinessGauge}>
+      <span className={styles.readinessNumberRow}>
         <span className={`${styles.readinessNumber} ra-readiness-display`}>
           {percent.toFixed(1)}
         </span>
         <span className={styles.readinessPercentSign}>%</span>
       </span>
-      <span className={styles.readinessDiamond} aria-hidden="true">&#9670;</span>
-      <span
-        className={[
-          styles.readinessVerdict,
-          tier ? styles[`readinessVerdict--${tier}`] : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+      <div
+        className={styles.readinessBar}
+        role="progressbar"
+        aria-label="Deck readiness"
+        aria-valuenow={Math.round(percent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
       >
-        {verdict}
-      </span>
+        <div
+          className={[
+            styles.readinessBarFill,
+            tier ? styles[`readinessBarFill--${tier}`] : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={{ width: `${fillPct}%` }}
+        />
+      </div>
     </div>
   );
 }
