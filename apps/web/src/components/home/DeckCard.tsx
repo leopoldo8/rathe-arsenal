@@ -94,10 +94,15 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
           heroAlt={deck.hero}
           slots={slots}
           tier={tier}
+          deckName={deck.name}
         />
 
+        {/* Visually-hidden h3 — keeps the deck name in the document
+            outline for assistive tech (the in-box label is decorative
+            in the a11y tree). */}
+        <h3 className={styles.srOnlyTitle}>{deck.name}</h3>
+
         <div className={styles.cardTextRow}>
-          <h3 className={styles.cardName}>{deck.name}</h3>
           <p className={styles.cardMeta}>
             {deck.hero} <span className={styles.cardMetaSep} aria-hidden="true">&middot;</span> {deck.format}
           </p>
@@ -142,6 +147,7 @@ interface IDeckBoxVesselProps {
   readonly heroAlt: string;
   readonly slots: ReadonlyArray<IRepresentativeCard | null>;
   readonly tier: 'high' | 'mid' | 'low' | null;
+  readonly deckName: string;
 }
 
 function DeckBoxVessel({
@@ -149,6 +155,7 @@ function DeckBoxVessel({
   heroAlt,
   slots,
   tier,
+  deckName,
 }: IDeckBoxVesselProps): React.ReactElement {
   return (
     <div
@@ -220,6 +227,21 @@ function DeckBoxVessel({
             strokeWidth="0.4"
             opacity="0.45"
           />
+          {/* Brand R emblem — UnifrakturCook fraktur, brass. Reserved
+              treatment from the logo-mark, applied here as the deckbox's
+              "branding stamp". When the lid hinges open the R rotates
+              with it (physical lid behavior). */}
+          <text
+            x="100"
+            y="53"
+            textAnchor="middle"
+            fontFamily="UnifrakturCook, serif"
+            fontWeight="700"
+            fontSize="20"
+            fill="#d69e2e"
+          >
+            R
+          </text>
         </g>
       </svg>
 
@@ -288,6 +310,13 @@ function DeckBoxVessel({
             <span className={styles.deckBoxHeroSigil}>&#9670;</span>
           </div>
         )}
+      </div>
+
+      {/* Deck name printed on the box — sits at the bottom of the
+          front face like a label on a real card box. Truncates with
+          ellipsis when the name doesn't fit on one line. */}
+      <div className={styles.deckBoxTitle} title={deckName}>
+        {deckName}
       </div>
      </div>
     </div>

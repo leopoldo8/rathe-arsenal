@@ -325,6 +325,43 @@
 }
 
 /* ============================================================
+   Deck name printed inside the box (bottom)
+   ============================================================ */
+
+.deckBoxTitle {
+  position: absolute;
+  /* Sits inside the inner brass frame on the front face. The frame
+     spans viewBox y=64-216 (front face is 58-222); we place the
+     title near the bottom of the frame. */
+  left: 50%;
+  /* Box front face ends at viewBox y=222 (vesselWrap height 240).
+     Inner brass frame bottom at y=216. Title sits just inside the
+     frame ~ y=205-210. From bottom: (240 - 207) / 240 ≈ 14%. */
+  bottom: 13%;
+  transform: translateX(-50%);
+  /* Match the inner-frame width so the title sits neatly inside
+     the brass border. */
+  width: 50%;
+  z-index: 5;
+  text-align: center;
+  font-family: var(--ra-font-display);
+  font-size: 0.72rem;
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--ra-fg-primary);
+  /* Single-line truncation with ellipsis. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Subtle dark backdrop so the text reads against varying card
+     art beneath. */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 4px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+/* ============================================================
    Card text + readiness
    ============================================================ */
 
@@ -417,36 +454,59 @@
 }
 
 /* ============================================================
-   Untrack — hover-only on hover-capable devices
+   sr-only title (visually hidden, accessible)
+   ============================================================ */
+
+.srOnlyTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   Untrack — bordered pill button, hover-only on desktop
    ============================================================ */
 
 .untrackButton {
   align-self: center;
-  margin-top: var(--ra-space-2);
-  background: transparent;
-  border: 0;
-  padding: var(--ra-space-1) var(--ra-space-2);
+  margin-top: var(--ra-space-3);
+  padding: 6px 16px;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
   font-family: var(--ra-font-display);
-  font-size: 0.65rem;
+  font-size: 0.7rem;
+  font-weight: var(--ra-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   color: var(--ra-fg-secondary);
   cursor: pointer;
-  /* Default (touch / no-hover): always visible. */
+  /* Touch / no-hover devices: always visible by default. */
   opacity: 1;
   transition:
     color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease),
+    background-color var(--ra-duration) var(--ra-ease),
     opacity var(--ra-duration) var(--ra-ease);
+  min-block-size: 32px;
+  min-inline-size: 88px;
 }
 
 .untrackButton:hover:not(:disabled) {
+  border-color: var(--ra-ready-low, #c44);
   color: var(--ra-ready-low, #c44);
+  background: color-mix(in oklch, var(--ra-ready-low, #c44) 8%, var(--ra-bg-raised));
 }
 
 .untrackButton:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 .untrackButton:disabled {
@@ -460,12 +520,14 @@
   .untrackButton {
     opacity: 0;
     pointer-events: none;
+    transform: translateY(4px);
   }
 
   .card:hover .untrackButton,
   .card:focus-within .untrackButton {
-    opacity: 0.85;
+    opacity: 1;
     pointer-events: auto;
+    transform: translateY(0);
   }
 }
 

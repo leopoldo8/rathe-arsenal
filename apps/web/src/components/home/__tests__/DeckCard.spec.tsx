@@ -78,7 +78,9 @@ describe('DeckCard', () => {
 
   it('renders deck name', () => {
     renderDeckCard(makeDeck({ name: 'Prism Spectral Shield' }));
-    expect(screen.getByText('Prism Spectral Shield')).toBeInTheDocument();
+    // Deck name appears twice: as the in-box label (visible) and as
+    // the visually-hidden h3 (a11y outline).
+    expect(screen.getAllByText('Prism Spectral Shield').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders hero and format', () => {
