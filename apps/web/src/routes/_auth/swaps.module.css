@@ -6,12 +6,11 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  /* Match the home/library spacing pattern: horizontal page padding +
-     bottom clearance for the sticky bulk action bar. */
-  padding: var(--ra-space-5) var(--ra-space-5) 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-  width: 100%;
+  /* AppShell's <main> already supplies the standard page padding
+     (var(--ra-space-6) on all sides + bottom-tab-bar clearance on
+     mobile). The page module only adds extra bottom space for the
+     sticky bulk-action bar at the foot of this surface. */
+  padding-block-end: 80px;
 }
 
 /* ---------- Header ---------- */

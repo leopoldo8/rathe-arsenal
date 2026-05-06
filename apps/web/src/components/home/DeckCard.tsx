@@ -99,22 +99,15 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
 
         {/* Visually-hidden h3 — keeps the deck name in the document
             outline for assistive tech (the in-box label is decorative
-            in the a11y tree). */}
-        <h3 className={styles.srOnlyTitle}>{deck.name}</h3>
-
-        <div className={styles.cardTextRow}>
-          <p className={styles.cardMeta}>
-            {deck.hero} <span className={styles.cardMetaSep} aria-hidden="true">&middot;</span> {deck.format}
-          </p>
-        </div>
+            in the a11y tree). The hero name + format are conveyed by
+            the hero art and the deck title inside the box, so they
+            are not duplicated in visible text below. */}
+        <h3 className={styles.srOnlyTitle}>
+          {deck.name} — {deck.hero}, {deck.format}
+        </h3>
 
         {effectivePercent !== null ? (
-          <div className={styles.cardReadiness}>
-            <span className={`${styles.readinessDisplay} ra-readiness-display`}>
-              {effectivePercent.toFixed(1)}%
-            </span>
-            <span className={styles.readinessLabel}>ready</span>
-          </div>
+          <ReadinessPlaque percent={effectivePercent} tier={tier} />
         ) : (
           <div className={styles.cardNoReadiness}>No readiness data yet</div>
         )}
@@ -198,13 +191,13 @@ function DeckBoxVessel({
           </linearGradient>
         </defs>
 
-        {/* Top rim trapezoid — dark inside-of-box. Box width is
-            tightened so the front face is just barely wider than a
-            single card sitting inside, like a real card box. Front
-            edge of the rim aligns with the front face top below.
-            Back edge inset slightly for the looking-down perspective. */}
+        {/* Top rim trapezoid — dark inside-of-box. Stronger
+            perspective taper: back edge x=62-138 (76 wide), front
+            edge x=42-158 (116 wide). Ratio 65% gives a clear
+            looking-down angle without exaggerating it into wedge
+            territory. */}
         <path
-          d="M55 32 L 145 32 L 158 58 L 42 58 Z"
+          d="M62 32 L 138 32 L 158 58 L 42 58 Z"
           fill="url(#vsl-rim)"
           stroke="#d69e2e"
           strokeWidth="0.9"
@@ -215,13 +208,13 @@ function DeckBoxVessel({
             standing exactly vertical to fully reveal the rim beneath. */}
         <g className={styles.deckBoxLid}>
           <path
-            d="M55 32 L 145 32 L 158 58 L 42 58 Z"
+            d="M62 32 L 138 32 L 158 58 L 42 58 Z"
             fill="url(#vsl-lid)"
             stroke="#d69e2e"
             strokeWidth="1.1"
           />
           <path
-            d="M62 38 L 138 38 L 150 56 L 50 56 Z"
+            d="M68 38 L 132 38 L 150 56 L 50 56 Z"
             fill="none"
             stroke="#d69e2e"
             strokeWidth="0.4"
@@ -355,6 +348,43 @@ function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement
           <span className={styles.deckBoxCardCrest}>&#9670;</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ReadinessPlaque — brass-bordered oxblood seal for the readiness %
+// ---------------------------------------------------------------------------
+
+interface IReadinessPlaqueProps {
+  readonly percent: number;
+  readonly tier: 'high' | 'mid' | 'low' | null;
+}
+
+function ReadinessPlaque({ percent, tier }: IReadinessPlaqueProps): React.ReactElement {
+  const verdict =
+    tier === 'high' ? 'Ready to play' : tier === 'mid' ? 'Almost there' : 'Needs work';
+
+  return (
+    <div className={styles.readinessPlaque}>
+      <span className={styles.readinessDiamond} aria-hidden="true">&#9670;</span>
+      <span className={styles.readinessNumberCluster}>
+        <span className={`${styles.readinessNumber} ra-readiness-display`}>
+          {percent.toFixed(1)}
+        </span>
+        <span className={styles.readinessPercentSign}>%</span>
+      </span>
+      <span className={styles.readinessDiamond} aria-hidden="true">&#9670;</span>
+      <span
+        className={[
+          styles.readinessVerdict,
+          tier ? styles[`readinessVerdict--${tier}`] : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {verdict}
+      </span>
     </div>
   );
 }

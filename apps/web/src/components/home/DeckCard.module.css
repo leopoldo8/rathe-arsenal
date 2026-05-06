@@ -210,25 +210,27 @@
 }
 
 /* Hover lift — same X, depth-staggered Y. Back rises highest, front
-   barely peeks. Stagger via transition-delay creates the cascade. */
+   barely peeks. Lift values are tuned so the back card never extends
+   past the lid hinge area — keeps cards inside the tile rather than
+   bleeding into the page header above. */
 .card:hover .deckBoxCardBack,
 .cardLink:focus-visible .deckBoxCardBack {
   opacity: 1;
-  transform: translate(-50%, calc(-50% - 64%));
+  transform: translate(-50%, calc(-50% - 38%));
   transition-delay: 60ms;
 }
 
 .card:hover .deckBoxCardMiddle,
 .cardLink:focus-visible .deckBoxCardMiddle {
   opacity: 1;
-  transform: translate(-50%, calc(-50% - 42%));
+  transform: translate(-50%, calc(-50% - 24%));
   transition-delay: 90ms;
 }
 
 .card:hover .deckBoxCardFront,
 .cardLink:focus-visible .deckBoxCardFront {
   opacity: 1;
-  transform: translate(-50%, calc(-50% - 22%));
+  transform: translate(-50%, calc(-50% - 12%));
   transition-delay: 120ms;
 }
 
@@ -365,87 +367,91 @@
    Card text + readiness
    ============================================================ */
 
-.cardTextRow {
-  display: flex;
-  flex-direction: column;
+/* ============================================================
+   Readiness plaque — brass-bordered oxblood seal
+   ============================================================
+   The readiness % is the core stat of the app. It used to live as
+   a bare brass number; the plaque treatment frames it as a stamped
+   seal on the deck box label, with ◆ flanks, oxblood gradient
+   background, and a tier-colored verdict line below.
+*/
+
+.readinessPlaque {
+  display: grid;
+  grid-template-columns: auto auto auto;
   align-items: center;
-  text-align: center;
-  /* Name + meta read as a single caption block; the gap between
-     them is intentionally tiny so they look related, not stacked. */
-  gap: 1px;
-  width: 100%;
-  margin-top: calc(-1 * var(--ra-space-1));
-}
-
-.cardName {
-  margin: 0;
-  font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-semibold);
-  /* Slightly tightened with a touch of letter-spacing — feels more
-     like a label, less like body text. */
-  font-size: 0.95rem;
-  letter-spacing: 0.01em;
-  color: var(--ra-fg-primary);
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-word;
-  max-width: 16ch;
-}
-
-.cardMeta {
-  margin: 0;
-  /* Eyebrow-style meta: small caps treatment via tracking + uppercase
-     to read as auxiliary info, not a second title. */
-  font-family: var(--ra-font-display);
-  font-size: 0.7rem;
-  font-weight: var(--ra-weight-regular, 400);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--ra-fg-secondary);
-  line-height: 1.4;
-  opacity: 0.78;
-}
-
-.cardMetaSep {
-  margin: 0 0.5em;
-  color: var(--ra-accent);
-  opacity: 0.6;
-  font-size: 0.85em;
-}
-
-.cardReadiness {
-  display: flex;
-  align-items: baseline;
-  gap: var(--ra-space-2);
   justify-content: center;
-  /* Small breathing room before the readiness — separates it from
-     the title cluster as the primary stat. */
-  margin-top: var(--ra-space-1);
+  column-gap: var(--ra-space-2);
+  margin-top: var(--ra-space-3);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: linear-gradient(180deg, #5a1a1a 0%, #3a0f0f 80%, #220505 100%);
+  border: 1px solid var(--ra-accent);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 0 rgba(214, 158, 46, 0.22),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.readinessDisplay {
+.readinessDiamond {
+  color: var(--ra-accent);
+  opacity: 0.55;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.readinessNumberCluster {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.readinessNumber {
   font-family: var(--ra-font-ornament);
   font-weight: var(--ra-weight-black);
-  font-size: var(--ra-text-h2);
+  font-size: 1.55rem;
   color: var(--ra-accent);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: var(--ra-track-display);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
-.readinessLabel {
+.readinessPercentSign {
   font-family: var(--ra-font-display);
-  font-size: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--ra-accent);
+  opacity: 0.78;
+  margin-left: 2px;
+}
+
+/* Verdict text below the plaque — tier-colored eyebrow. Spans the
+   full grid (column 1 → 4) and sits on its own row. */
+.readinessVerdict {
+  grid-column: 1 / -1;
+  margin-top: var(--ra-space-1);
+  font-family: var(--ra-font-display);
+  font-size: 0.66rem;
+  font-weight: var(--ra-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--ra-fg-secondary);
-  opacity: 0.72;
+  text-align: center;
+}
+
+.readinessVerdict--high {
+  color: var(--ra-ready-high, #6fbf73);
+}
+
+.readinessVerdict--mid {
+  color: var(--ra-ready-mid-accent, var(--ra-accent));
+}
+
+.readinessVerdict--low {
+  color: var(--ra-ready-low, #c44);
 }
 
 .cardNoReadiness {
+  margin-top: var(--ra-space-3);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
   font-style: italic;

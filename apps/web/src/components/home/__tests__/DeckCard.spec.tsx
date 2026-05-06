@@ -95,7 +95,10 @@ describe('DeckCard', () => {
         latestSnapshot: { rawPercent: 85, effectivePercent: 85, computedAt: '' },
       }),
     );
-    const pctEl = screen.getByText(/85\.0%/);
+    // The number lives in its own span (the % sign sits in a sibling
+    // span), and the .ra-readiness-display class is what carries the
+    // brand's signature Cinzel Decorative treatment.
+    const pctEl = screen.getByText('85.0');
     expect(pctEl).toHaveClass('ra-readiness-display');
   });
 

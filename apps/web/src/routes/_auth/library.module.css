@@ -8,7 +8,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
-  padding: var(--ra-space-5) var(--ra-space-5) var(--ra-space-10);
+  /* AppShell's <main> already supplies the standard page padding
+     (var(--ra-space-6) horizontal + vertical, plus bottom-tab-bar
+     clearance on mobile). No extra padding here so all routes share
+     the same spacing rhythm. */
 }
 
 /* ---- Page header ---- */
