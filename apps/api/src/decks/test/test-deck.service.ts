@@ -270,6 +270,7 @@ export class TestDeckService {
       exact: breakdown.exact.map(
         (entry): ITestDeckBreakdownEntry => ({
           cardIdentifier: entry.cardIdentifier,
+          name: entry.name,
           quantity: entry.quantity,
           slot: entry.slot,
           pitch: entry.pitch,
@@ -282,6 +283,7 @@ export class TestDeckService {
         (entry): ITestDeckSubstitutedEntry => ({
           original: {
             cardIdentifier: entry.original.cardIdentifier,
+            name: entry.original.name,
             quantity: entry.original.quantity,
             slot: entry.original.slot,
             pitch: entry.original.pitch,
@@ -295,6 +297,7 @@ export class TestDeckService {
       missing: breakdown.missing.map(
         (entry): ITestDeckBreakdownEntry => ({
           cardIdentifier: entry.cardIdentifier,
+          name: entry.name,
           quantity: entry.quantity,
           slot: entry.slot,
           pitch: entry.pitch,

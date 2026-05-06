@@ -19,7 +19,8 @@ import type { IBreakdownEntry, ISubstitutionMatch } from '../../../api/deck-deta
 // ---------------------------------------------------------------------------
 
 const ORIGINAL: IBreakdownEntry = {
-  cardIdentifier: 'pummel',
+  cardIdentifier: 'Pummel',
+  name: 'Pummel',
   quantity: 3,
   slot: 'action',
   pitch: 1,
@@ -62,10 +63,10 @@ function renderRow(props: Partial<React.ComponentProps<typeof SubstitutionRow>> 
 
 describe('SubstitutionRow', () => {
   describe('pending state (default)', () => {
-    it('renders the original and substitute card identifiers', () => {
+    it('renders the original and substitute card names', () => {
       renderRow();
       // CardArt renders names in multiple places (aria-label on SVG + card label span)
-      expect(screen.getAllByText('pummel').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Pummel').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Open the Floodgates').length).toBeGreaterThan(0);
     });
 
@@ -199,17 +200,17 @@ describe('SubstitutionRow', () => {
     it('row has an aria-label summarizing the substitution', () => {
       renderRow({ decision: 'pending' });
       const li = screen.getByRole('listitem');
-      expect(li).toHaveAttribute('aria-label', expect.stringContaining('pummel'));
+      expect(li).toHaveAttribute('aria-label', expect.stringContaining('Pummel'));
       expect(li).toHaveAttribute('aria-label', expect.stringContaining('Open the Floodgates'));
     });
 
     it('action buttons have descriptive aria-labels', () => {
       renderRow({ decision: 'pending' });
       expect(
-        screen.getByRole('button', { name: /Approve substitution: pummel for Open the Floodgates/i }),
+        screen.getByRole('button', { name: /Approve substitution: Pummel for Open the Floodgates/i }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /Reject substitution: pummel for Open the Floodgates/i }),
+        screen.getByRole('button', { name: /Reject substitution: Pummel for Open the Floodgates/i }),
       ).toBeInTheDocument();
     });
   });

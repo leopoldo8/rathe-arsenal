@@ -20,6 +20,7 @@ import type { IBreakdown, IDecisionEntry } from '../../../api/deck-detail';
 
 const EXACT_ENTRY = {
   cardIdentifier: 'pummel',
+  name: 'Pummel',
   quantity: 3,
   slot: 'action',
   pitch: 1 as const,
@@ -30,6 +31,7 @@ const EXACT_ENTRY = {
 
 const SUB_ORIGINAL = {
   cardIdentifier: 'scar-for-a-scar',
+  name: 'Scar for a Scar',
   quantity: 2,
   slot: 'action',
   pitch: 2 as const,
@@ -56,6 +58,7 @@ const SUB_MATCH = {
 
 const NOT_OWNED_ENTRY = {
   cardIdentifier: 'rhinar',
+  name: 'Rhinar',
   quantity: 1,
   slot: 'hero',
   pitch: null,
@@ -94,7 +97,7 @@ const WITH_REJECTION: readonly IDecisionEntry[] = [
 
 describe('BreakdownSections', () => {
   describe('exact matches section', () => {
-    it('renders exact match card identifiers', () => {
+    it('renders exact match card names', () => {
       render(
         <BreakdownSections
           breakdown={FULL_BREAKDOWN}
@@ -104,8 +107,8 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      // Card is rendered inside CardArt via aria-label
-      expect(screen.getByRole('img', { name: 'pummel' })).toBeInTheDocument();
+      // Card is rendered inside CardArt via aria-label, sourced from entry.name
+      expect(screen.getByRole('img', { name: 'Pummel' })).toBeInTheDocument();
     });
 
     it('renders "No exact matches" when exact is empty', () => {

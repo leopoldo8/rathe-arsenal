@@ -12,6 +12,7 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { VariantFetchService } from '../../stores/variant-fetch.service';
 import { DecisionsService } from '../decisions/decisions.service';
+import { CatalogService } from '../../catalog/catalog.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -60,6 +61,7 @@ describe('DecksService', () => {
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
   let variantFetchService: jest.Mocked<VariantFetchService>;
   let decisionsService: jest.Mocked<DecisionsService>;
+  let catalogService: jest.Mocked<CatalogService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -71,6 +73,7 @@ describe('DecksService', () => {
     shoppingLineService = createMock<ShoppingLineService>();
     variantFetchService = createMock<VariantFetchService>();
     decisionsService = createMock<DecisionsService>();
+    catalogService = createMock<CatalogService>();
 
     // Default: shopping line returns null (Path A / no missing cards).
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
@@ -110,6 +113,7 @@ describe('DecksService', () => {
         { provide: ShoppingLineService, useValue: shoppingLineService },
         { provide: VariantFetchService, useValue: variantFetchService },
         { provide: DecisionsService, useValue: decisionsService },
+        { provide: CatalogService, useValue: catalogService },
       ],
     }).compile();
 

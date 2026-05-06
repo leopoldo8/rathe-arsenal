@@ -112,7 +112,12 @@ export function ReviewsRow({
     }
   }
 
-  const tierLabel = `Tier ${row.tier}`;
+  const tierLabel =
+    row.tier === 1
+      ? 'Tier I — Close'
+      : row.tier === 2
+        ? 'Tier II — Loose'
+        : 'Tier III — Distant';
   const confidencePct = `${row.confidence}%`;
 
   // --confidence drives the confidence bar fill width via CSS (continuous value).
@@ -164,12 +169,12 @@ export function ReviewsRow({
                     setLightbox({
                       imageUrl: row.originalImageUrl!.large,
                       sources: lightboxSourcesFor(row.originalImageUrl),
-                      name: row.cardIdentifier,
+                      name: row.originalName,
                     })
                 : undefined
             }
           />
-          <span className={styles.cardLabel}>{row.cardIdentifier}</span>
+          <span className={styles.cardLabel}>{row.originalName}</span>
         </div>
 
         {/* Diamond connector */}

@@ -25,6 +25,11 @@ export class TestDeckRequestDto {
  */
 export interface ITestDeckBreakdownEntry {
   readonly cardIdentifier: string;
+  /**
+   * Human-readable card name from the catalog. Falls back to the identifier
+   * when the card is not in the catalog. UI surfaces render `name`.
+   */
+  readonly name: string;
   readonly quantity: number;
   readonly slot: string;
   /** U11: Card pitch (1=red, 2=yellow, 3=blue); null for pitch-less cards. */

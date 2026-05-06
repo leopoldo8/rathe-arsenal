@@ -22,6 +22,8 @@ interface IImageUrl {
 
 interface IBreakdownEntry {
   readonly cardIdentifier: string;
+  /** Human-readable card name from catalog. Optional in legacy snapshots. */
+  readonly name?: string;
   readonly quantity: number;
   readonly pitch?: 1 | 2 | 3 | null;
   readonly type?: string;
@@ -126,6 +128,11 @@ export interface ISubstitutionRow {
   readonly deckName: string;
   readonly hero: string;
   readonly cardIdentifier: string;
+  /**
+   * Human-readable name for the original card (from catalog). Falls back to
+   * `cardIdentifier` when the card is not in the catalog. UI renders `originalName`.
+   */
+  readonly originalName: string;
   readonly substituteIdentifier: string;
   readonly substituteName: string;
   readonly tier: 1 | 2 | 3;
@@ -370,6 +377,7 @@ export class ReviewAggregateService {
         deckName: deckMeta?.name ?? '',
         hero: deckMeta?.hero ?? '',
         cardIdentifier: original.cardIdentifier,
+        originalName: original.name ?? this.lookupName(original.cardIdentifier),
         substituteIdentifier: substitute.cardIdentifier,
         substituteName: substitute.name,
         tier: this.normalizeTier(match.tier),
@@ -444,6 +452,20 @@ export class ReviewAggregateService {
       return card.types?.[0] ?? 'unknown';
     } catch {
       return 'unknown';
+    }
+  }
+
+  /**
+   * Looks up the human-readable card name from the catalog. Falls back to
+   * the identifier when the card is not in the catalog. Used to enrich
+   * legacy snapshots that predate B1 (entries persisted without `name`).
+   */
+  private lookupName(cardIdentifier: string): string {
+    try {
+      const card = this.catalogService.getCard(cardIdentifier);
+      return card.name || cardIdentifier;
+    } catch {
+      return cardIdentifier;
     }
   }
 }

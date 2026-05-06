@@ -29,6 +29,7 @@ function makeRow(overrides: Partial<IReviewRow> = {}): IReviewRow {
     deckName: 'Test Deck',
     hero: 'Briar',
     cardIdentifier: 'ARC001',
+    originalName: 'ARC001',
     substituteIdentifier: 'ELE001',
     substituteName: 'Sub Card',
     tier: 1,
