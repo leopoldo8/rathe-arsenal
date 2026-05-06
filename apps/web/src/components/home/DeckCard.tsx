@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
-import { Button } from '../ui/Button/Button';
 import styles from './DeckCard.module.css';
 
 // ---------------------------------------------------------------------------
@@ -116,56 +115,20 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
         )}
       </Link>
 
-      <div className={styles.cardFooter}>
-        <div className={styles.actionsWide}>
-          <Link
-            to="/decks/$deckId"
-            params={{ deckId: String(deck.id) }}
-            className={styles.viewLink}
-          >
-            <Button variant="primary" size="sm">
-              View
-            </Button>
-          </Link>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={handleUntrack}
-            loading={isUntracking}
-            disabled={isUntracking}
-          >
-            Untrack
-          </Button>
-        </div>
-
-        <div className={styles.actionsNarrow}>
-          <Link
-            to="/decks/$deckId"
-            params={{ deckId: String(deck.id) }}
-            className={styles.viewLinkFull}
-          >
-            <Button variant="primary" size="sm" className={styles.viewButtonFull}>
-              View deck
-            </Button>
-          </Link>
-          <details className={styles.overflowMenu}>
-            <summary className={styles.overflowTrigger} aria-label="More actions">
-              &hellip;
-            </summary>
-            <div className={styles.overflowContent}>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleUntrack}
-                loading={isUntracking}
-                disabled={isUntracking}
-              >
-                Untrack deck
-              </Button>
-            </div>
-          </details>
-        </div>
-      </div>
+      {/* Untrack — the only persistent action. The whole tile is a
+          Link to the deck detail, so a "View" CTA is redundant. On
+          hover-capable devices the action stays hidden until the
+          tile is hovered or focused; on touch devices (no hover)
+          it is always visible. */}
+      <button
+        type="button"
+        className={styles.untrackButton}
+        onClick={handleUntrack}
+        disabled={isUntracking}
+        aria-label={`Untrack ${deck.name}`}
+      >
+        {isUntracking ? 'Untracking…' : 'Untrack'}
+      </button>
     </article>
   );
 }

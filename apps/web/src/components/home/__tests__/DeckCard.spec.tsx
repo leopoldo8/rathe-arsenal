@@ -125,20 +125,19 @@ describe('DeckCard', () => {
 
   it('shows loading state when isUntracking=true', () => {
     renderDeckCard(makeDeck(), vi.fn(), true);
-    const buttons = screen.getAllByRole('button');
-    const disabledOrLoading = buttons.filter(
-      (b) =>
-        b.getAttribute('aria-busy') === 'true' ||
-        b.getAttribute('aria-disabled') === 'true',
-    );
-    expect(disabledOrLoading.length).toBeGreaterThan(0);
+    // Untrack button is disabled and copy switches to "Untracking…"
+    const btn = screen.getByRole('button', { name: /untrack/i });
+    expect(btn).toBeDisabled();
+    expect(btn.textContent).toMatch(/untracking/i);
   });
 
-  it('renders View link to deck detail', () => {
+  it('the whole tile is a link to the deck detail (no explicit View CTA)', () => {
     renderDeckCard(makeDeck({ id: 7 }));
-    const viewLinks = screen.getAllByRole('link', { name: /view/i });
-    expect(viewLinks.length).toBeGreaterThan(0);
-    expect(viewLinks[0]).toHaveAttribute('href', '/decks/7');
+    const tileLink = screen.getByRole('link', { name: /test deck/i });
+    expect(tileLink).toHaveAttribute('href', '/decks/7');
+    // No standalone "View" button — clicking the deckbox is the action.
+    expect(screen.queryByRole('link', { name: /^view/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^view/i })).not.toBeInTheDocument();
   });
 
   describe('(C3) deckbox vessel', () => {

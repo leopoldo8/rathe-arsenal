@@ -31,16 +31,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--ra-space-4);
+  padding: var(--ra-space-4) var(--ra-space-3) var(--ra-space-2);
   text-decoration: none;
   color: inherit;
   flex: 1;
-  gap: var(--ra-space-3);
+  /* Tight stack — the deckbox dominates; the text below sits as a
+     compact caption directly underneath, not as a separate panel. */
+  gap: var(--ra-space-2);
 }
 
 .cardLink:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: -2px;
+  border-radius: 4px;
 }
 
 /* ============================================================
@@ -259,37 +262,38 @@
 .deckBoxHeroSlot {
   position: absolute;
   left: 50%;
-  /* Position the hero so its top aligns roughly with the inner brass
-     frame on the box front. The image extends downward and fades. */
-  top: 38%;
+  /* Top aligned with the inner brass frame on the box front (which
+     starts at viewBox y=64 = 26.7% of vesselWrap). Anchor at the
+     top edge so the visible portion of the hero stays flush with
+     the frame — no vertical centering, no drift. */
+  top: 27%;
   transform: translate(-50%, 0);
-  /* Width sized to fit comfortably inside the box front face (which
-     is ~58% of viewBox wide). The full card aspect 5:7 is preserved
-     so the top of the card stays uncropped — only the bottom fades
-     out via the gradient mask. */
+  /* Width matches the cards (50% of viewBox) so the hero reads as
+     "the top card" — same physical dimensions as the cards stacked
+     behind it. Aspect 5:7 preserves full card proportions. */
   width: 50%;
   aspect-ratio: 5 / 7;
   z-index: 4;
   border-radius: 0;
   overflow: hidden;
-  /* Vertical gradient mask — the top of the hero card is fully
-     visible; opacity ramps down through the lower portion so the
-     name banner / text / stats fade into the box surface without a
-     hard edge. The very top has a tiny soft fade so the upper edge
-     isn't a sharp line either. */
+  /* Stronger vertical gradient — the top 8% has a soft entry, 8-45%
+     is fully opaque (the art band is the focus), then 45%-80% fades
+     aggressively to transparent so the name banner + ability text
+     dissolve well before reaching the bottom of the card. Anything
+     below 80% is fully invisible. */
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 6%,
-    black 60%,
-    transparent 100%
+    black 8%,
+    black 45%,
+    transparent 80%
   );
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 6%,
-    black 60%,
-    transparent 100%
+    black 8%,
+    black 45%,
+    transparent 80%
   );
 }
 
@@ -329,35 +333,50 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: var(--ra-space-1);
+  /* Name + meta read as a single caption block; the gap between
+     them is intentionally tiny so they look related, not stacked. */
+  gap: 1px;
   width: 100%;
+  margin-top: calc(-1 * var(--ra-space-1));
 }
 
 .cardName {
   margin: 0;
   font-family: var(--ra-font-display);
   font-weight: var(--ra-weight-semibold);
-  font-size: var(--ra-text-body);
+  /* Slightly tightened with a touch of letter-spacing — feels more
+     like a label, less like body text. */
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
   color: var(--ra-fg-primary);
-  line-height: var(--ra-leading-snug);
+  line-height: 1.2;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
+  max-width: 16ch;
 }
 
 .cardMeta {
   margin: 0;
-  font-size: var(--ra-text-small);
+  /* Eyebrow-style meta: small caps treatment via tracking + uppercase
+     to read as auxiliary info, not a second title. */
+  font-family: var(--ra-font-display);
+  font-size: 0.7rem;
+  font-weight: var(--ra-weight-regular, 400);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
+  line-height: 1.4;
+  opacity: 0.78;
 }
 
 .cardMetaSep {
-  margin: 0 0.35em;
-  color: var(--ra-fg-tertiary, var(--ra-fg-secondary));
-  opacity: 0.7;
+  margin: 0 0.5em;
+  color: var(--ra-accent);
+  opacity: 0.6;
+  font-size: 0.85em;
 }
 
 .cardReadiness {
@@ -365,6 +384,9 @@
   align-items: baseline;
   gap: var(--ra-space-2);
   justify-content: center;
+  /* Small breathing room before the readiness — separates it from
+     the title cluster as the primary stat. */
+  margin-top: var(--ra-space-1);
 }
 
 .readinessDisplay {
@@ -378,9 +400,12 @@
 }
 
 .readinessLabel {
-  font-size: var(--ra-text-small);
+  font-family: var(--ra-font-display);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
+  opacity: 0.72;
 }
 
 .cardNoReadiness {
@@ -388,97 +413,62 @@
   color: var(--ra-fg-secondary);
   font-style: italic;
   text-align: center;
+  opacity: 0.7;
 }
 
 /* ============================================================
-   Footer actions
+   Untrack — hover-only on hover-capable devices
    ============================================================ */
 
-.cardFooter {
-  padding: var(--ra-space-3) 0 0;
-  /* No border-top — the tile is now container-less, divider lines
-     would re-introduce the "boxed" feel. */
-}
-
-.actionsWide {
-  display: none;
-  gap: var(--ra-space-2);
-  align-items: center;
-}
-
-.actionsNarrow {
-  display: flex;
-  gap: var(--ra-space-2);
-  align-items: center;
-}
-
-@media (min-width: 640px) {
-  .actionsWide {
-    display: flex;
-  }
-
-  .actionsNarrow {
-    display: none;
-  }
-}
-
-.viewLink {
-  text-decoration: none;
-}
-
-.viewLinkFull {
-  flex: 1;
-  text-decoration: none;
-  display: block;
-}
-
-.viewButtonFull {
-  width: 100%;
-}
-
-/* ---------- Overflow menu (narrow only) ---------- */
-.overflowMenu {
-  position: relative;
-}
-
-.overflowTrigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-block-size: 44px;
-  min-inline-size: 44px;
-  padding: var(--ra-space-2);
-  background-color: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  cursor: pointer;
+.untrackButton {
+  align-self: center;
+  margin-top: var(--ra-space-2);
+  background: transparent;
+  border: 0;
+  padding: var(--ra-space-1) var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
   color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-body);
-  user-select: none;
-  list-style: none;
+  cursor: pointer;
+  /* Default (touch / no-hover): always visible. */
+  opacity: 1;
+  transition:
+    color var(--ra-duration) var(--ra-ease),
+    opacity var(--ra-duration) var(--ra-ease);
 }
 
-.overflowTrigger::-webkit-details-marker {
-  display: none;
+.untrackButton:hover:not(:disabled) {
+  color: var(--ra-ready-low, #c44);
 }
 
-.overflowTrigger:focus-visible {
+.untrackButton:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
-.overflowContent {
-  position: absolute;
-  bottom: calc(100% + var(--ra-space-2));
-  right: 0;
-  z-index: 10;
-  background-color: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border-strong);
-  border-radius: var(--ra-radius-md);
-  padding: var(--ra-space-2);
-  min-width: 140px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+.untrackButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
+
+/* On hover-capable devices the action is hidden until the tile is
+   hovered or focused — keeps the idle composition uncluttered. */
+@media (hover: hover) {
+  .untrackButton {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card:hover .untrackButton,
+  .card:focus-within .untrackButton {
+    opacity: 0.85;
+    pointer-events: auto;
+  }
+}
+
 
 /* ============================================================
    Reduced motion — opacity-only path
