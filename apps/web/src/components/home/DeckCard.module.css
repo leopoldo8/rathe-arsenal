@@ -60,31 +60,26 @@
 .vesselWrap {
   position: relative;
   width: 100%;
-  /* viewBox aspect — 200×220 — gives the box a portrait profile and
-     leaves headroom for the lid + cards rising above the rim. */
+  /* viewBox aspect — 200×240 — gives the box a portrait profile and
+     leaves headroom for the lid (which extends above the box body in
+     viewBox via the trapezoid rim) plus cards rising above on hover. */
   aspect-ratio: 200 / 240;
   max-width: 220px;
-  /* 3D context. perspective + perspective-origin place the camera
-     slightly above the box so the whole vessel reads as tilted
-     downward — like a card box sitting on a table viewed from
-     standing height. */
-  perspective: 1100px;
-  perspective-origin: 50% -10%;
-  /* Lid + cards may extend above the box. We let them. */
+  /* 3D context for the lid hinge animation. The box body itself is
+     drawn with perspective baked into the SVG geometry (top rim
+     trapezoid, right depth strip), so we don't need a CSS tilt — the
+     SVG IS the tilt. perspective is only here so the lid's CSS 3D
+     rotation reads as physical motion. */
+  perspective: 900px;
   overflow: visible;
-  transform-style: preserve-3d;
 }
 
-/* The tilt is applied to a wrapper inside .vesselWrap so every child
-   (box SVG, lid, cards, hero) sits in the same tilted coordinate
-   system. Cards rising on hover translate in this rotated space, so
-   they read as "rising out of a tilted box" rather than "rising in
-   screen Y above a tilted box". */
 .vesselTilt {
   position: absolute;
   inset: 0;
-  transform: rotateX(10deg);
   transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
 }
 
 .vesselBox {
@@ -92,7 +87,9 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  /* The box geometry is static — only the lid and cards animate. */
+  /* The box geometry is static — only the lid (an inner SVG group) and
+     the cards/hero overlay animate. */
+  overflow: visible;
 }
 
 /* Tier saturation — applied to the box SVG via filter. Subtle: the
@@ -111,48 +108,28 @@
 }
 
 /* ============================================================
-   Lid — 3D hinge animation
+   Lid — SVG group, 3D hinge via CSS rotateX
    ============================================================ */
 
 .deckBoxLid {
-  /* The lid sits flush over the box rim at idle. On hover it rotates
-     backward around its back edge (the hinge), revealing the box
-     interior + the cards that rise from inside.
+  /* The lid is a <g> inside the box SVG. transform-box: fill-box
+     roots the transform-origin in the group's bounding box; we hinge
+     at 50% 0% — that is the BACK edge of the trapezoidal lid (top in
+     SVG y coords).
 
-     Position: top of the box, matching the rim's vertical extent in
-     the SVG (y 30-36 in viewBox = ~13-15% from top). */
-  position: absolute;
-  left: 4%;
-  right: 4%;
-  top: 11%;
-  height: 8%;
-  /* Hinge at the back edge — top of this element in screen Y. The
-     back edge is "behind" the box in 3D; the front edge is the visible
-     edge of the lid when closed. */
+     At idle the group is at rotateX(0): the lid sits flush over the
+     rim trapezoid drawn beneath it. On hover the group rotates -115deg
+     around its back edge: the lid swings up and backward, revealing
+     the rim below. */
+  transform-box: fill-box;
   transform-origin: 50% 0%;
   transform: rotateX(0deg);
   transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform-style: preserve-3d;
   will-change: transform;
-}
-
-.deckBoxLidFace {
-  width: 100%;
-  height: 100%;
-  background:
-    linear-gradient(180deg, #5a1a1a 0%, #3a0f0f 70%, #2a0808 100%);
-  border: 1px solid var(--ra-accent);
-  border-bottom-width: 0;
-  /* The lid's bottom edge meets the rim — keep the borders flush. */
-  border-radius: 2px 2px 0 0;
-  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.4);
 }
 
 .card:hover .deckBoxLid,
 .cardLink:focus-visible .deckBoxLid {
-  /* Lid hinges backward past vertical, like a real card box opening
-     fully. -115deg is enough to reveal the inside without flipping
-     too far back. */
   transform: rotateX(-115deg);
 }
 
@@ -487,15 +464,20 @@
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .deckBoxLid,
+  /* Lid: stays in its idle (closed) state — no rotation. The cards
+     fade in via opacity only. The visible-on-hover state is "lid
+     closed, cards floating up out of the box face" — less dramatic
+     but no motion required. */
+  .deckBoxLid {
+    transition: opacity 200ms linear;
+    transform: rotateX(0deg);
+    will-change: auto;
+  }
+
   .deckBoxCard {
     transition: opacity 200ms linear;
     transform: translate(-50%, -50%);
     will-change: auto;
-  }
-
-  .deckBoxLid {
-    transform: rotateX(0deg);
   }
 
   .card:hover .deckBoxLid,
