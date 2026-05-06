@@ -196,6 +196,7 @@ function DeckBoxVessel({
         .filter(Boolean)
         .join(' ')}
     >
+     <div className={styles.vesselTilt}>
       {/* Cards layer — stacked at same X behind the hero. Idle they are
           tucked inside the box (translateY 0, opacity 0). On hover they
           rise vertically with depth-staggered translateY. */}
@@ -300,6 +301,7 @@ function DeckBoxVessel({
           </div>
         )}
       </div>
+     </div>
     </div>
   );
 }

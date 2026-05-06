@@ -64,13 +64,27 @@
      leaves headroom for the lid + cards rising above the rim. */
   aspect-ratio: 200 / 240;
   max-width: 220px;
-  /* 3D context for the lid hinge animation. perspective places the
-     vanishing point ~800px in front of the screen — strong enough that
-     the lid rotation reads as physical motion, not just a translate. */
-  perspective: 800px;
-  perspective-origin: 50% 30%;
+  /* 3D context. perspective + perspective-origin place the camera
+     slightly above the box so the whole vessel reads as tilted
+     downward — like a card box sitting on a table viewed from
+     standing height. */
+  perspective: 1100px;
+  perspective-origin: 50% -10%;
   /* Lid + cards may extend above the box. We let them. */
   overflow: visible;
+  transform-style: preserve-3d;
+}
+
+/* The tilt is applied to a wrapper inside .vesselWrap so every child
+   (box SVG, lid, cards, hero) sits in the same tilted coordinate
+   system. Cards rising on hover translate in this rotated space, so
+   they read as "rising out of a tilted box" rather than "rising in
+   screen Y above a tilted box". */
+.vesselTilt {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(10deg);
+  transform-style: preserve-3d;
 }
 
 .vesselBox {
@@ -254,16 +268,30 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 50%;
-  aspect-ratio: 5 / 7;
-  /* z-index higher than every card so the hero always reads as the
-     "in-front" face of the deck. */
+  /* Bigger, more square slot — we crop into the art portion of the
+     hero card (upper ~50% of the FaB layout) and feather the edges
+     so it reads as "the hero's art is woven into the box face",
+     not "a card sitting in front of the box". */
+  width: 78%;
+  aspect-ratio: 4 / 5;
   z-index: 10;
-  border-radius: 3px;
+  /* No hard frame, no shadow — the radial mask provides the visual
+     boundary. The brand's brass border lives on the BOX, not on the
+     hero image. */
+  border-radius: 0;
   overflow: hidden;
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(214, 158, 46, 0.45);
+  /* Soft radial fade — the art is opaque in the center and dissolves
+     to transparency at the edges, blending into the box surface. */
+  mask-image: radial-gradient(
+    ellipse 65% 70% at 50% 42%,
+    black 55%,
+    transparent 96%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 65% 70% at 50% 42%,
+    black 55%,
+    transparent 96%
+  );
 }
 
 .deckBoxHeroImage {
@@ -271,6 +299,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Focus on the upper portion of the FaB card where the art lives.
+     The card frame's name banner + ability text below get cropped
+     out of view; combined with the radial mask the result reads as
+     "just the art". */
+  object-position: center 22%;
   user-select: none;
 }
 
