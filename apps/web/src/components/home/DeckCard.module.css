@@ -72,28 +72,47 @@
   height: 100%;
 }
 
-.vesselBox {
+/* Two SVG layers + an HTML cards layer + the hero overlay sit in this
+   z-order:
+     z=1  vesselBack  — rim trapezoid + lid (drawn behind everything)
+     z=2  cardsLayer  — 3 representative cards, rise out of the rim
+     z=3  vesselFront — front face + inner brass frame (occludes
+                        cards' lower halves so they appear to emerge
+                        from inside the box)
+     z=4  heroSlot    — feathered hero art, on top of the front face
+*/
+.vesselBack {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  /* The box geometry is static — only the lid (an inner SVG group) and
-     the cards/hero overlay animate. */
+  z-index: 1;
   overflow: visible;
 }
 
-/* Tier saturation — applied to the box SVG via filter. Subtle: the
-   brass percent display is the primary tier readout; this is a
-   secondary cue. */
-.vesselWrap--high .vesselBox {
+.vesselFront {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  overflow: visible;
+}
+
+/* Tier saturation — applied to BOTH SVG layers so the whole vessel
+   tonalizes coherently. */
+.vesselWrap--high .vesselBack,
+.vesselWrap--high .vesselFront {
   filter: saturate(1.05);
 }
 
-.vesselWrap--mid .vesselBox {
+.vesselWrap--mid .vesselBack,
+.vesselWrap--mid .vesselFront {
   filter: saturate(0.92);
 }
 
-.vesselWrap--low .vesselBox {
+.vesselWrap--low .vesselBack,
+.vesselWrap--low .vesselFront {
   filter: saturate(0.78) brightness(0.94);
 }
 
@@ -135,9 +154,12 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* The hero is centered in the box; the representative cards stack
-     directly behind it (same X). z-index keeps them under the hero
-     so they read as "tucked inside" at idle. */
+  /* z-index: between vesselBack (z=1) and vesselFront (z=3). Cards
+     rising on hover pass IN FRONT of the rim opening but BEHIND the
+     box front face. Combined with their idle position deep inside
+     the box, this makes them look like they're emerging from inside
+     the deckbox. */
+  z-index: 2;
 }
 
 .deckBoxCard {
@@ -237,31 +259,25 @@
 .deckBoxHeroSlot {
   position: absolute;
   left: 50%;
-  /* Position the hero slightly below center — sits in the "panel"
-     portion of the box front face, not floating in the middle. */
   top: 58%;
   transform: translate(-50%, -50%);
-  /* Smaller, square-ish slot. We crop into the art portion of the
-     hero card (upper ~50% of the FaB layout) and feather the edges
-     so it reads as "the hero's likeness woven into the box panel",
-     not "a card sitting in front of the box". */
-  width: 48%;
-  aspect-ratio: 4 / 5;
-  z-index: 10;
-  /* No hard frame, no shadow — the radial mask provides the visual
-     boundary. The brand's brass border lives on the BOX, not on the
-     hero image. */
+  /* Wide-and-short aspect (5:3) crops down to a horizontal strip of
+     the FaB card — only the art band is visible, the name banner +
+     ability text get fully cropped. */
+  width: 64%;
+  aspect-ratio: 5 / 3;
+  z-index: 4;
   border-radius: 0;
   overflow: hidden;
   /* Soft radial fade — the art is opaque in the center and dissolves
      to transparency at the edges, blending into the box surface. */
   mask-image: radial-gradient(
-    ellipse 65% 70% at 50% 42%,
+    ellipse 70% 90% at 50% 50%,
     black 55%,
     transparent 96%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse 65% 70% at 50% 42%,
+    ellipse 70% 90% at 50% 50%,
     black 55%,
     transparent 96%
   );
@@ -271,12 +287,12 @@
   display: block;
   width: 100%;
   height: 100%;
+  /* Crop into the art band of the FaB card. With aspect 5:3 (wider
+     than tall), object-fit cover scales the image so the height
+     fills the slot and the sides crop. object-position centers the
+     art region (which is the upper ~40% of the card). */
   object-fit: cover;
-  /* Focus on the upper portion of the FaB card where the art lives.
-     The card frame's name banner + ability text below get cropped
-     out of view; combined with the radial mask the result reads as
-     "just the art". */
-  object-position: center 22%;
+  object-position: center 30%;
   user-select: none;
 }
 

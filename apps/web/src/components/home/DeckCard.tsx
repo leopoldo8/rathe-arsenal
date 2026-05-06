@@ -197,9 +197,75 @@ function DeckBoxVessel({
         .join(' ')}
     >
      <div className={styles.vesselTilt}>
-      {/* Cards layer — stacked at same X behind the hero. Idle they are
-          tucked inside the box (translateY 0, opacity 0). On hover they
-          rise vertically with depth-staggered translateY. */}
+
+      {/* Box body — true 3D perspective drawn in SVG.
+          - Front face: big rectangle with bottom-right diagonal
+          - Top face (rim): trapezoid above the front, narrower at the
+            back to convey looking-down perspective
+          - Right side: thin angled strip showing depth
+          The whole thing reads as a card box on a table viewed from
+          standing height — without relying on CSS rotateX of a flat
+          rectangle. */}
+      {/* Back layer — rim trapezoid + lid. Drawn BEHIND the cards
+          layer so when cards rise they pass over the rim opening, but
+          BEHIND the front-face layer so they emerge naturally from
+          inside the box. */}
+      <svg
+        className={styles.vesselBack}
+        viewBox="0 0 200 240"
+        fill="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="vsl-rim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#080202" />
+            <stop offset="100%" stopColor="#1a0606" />
+          </linearGradient>
+          <linearGradient id="vsl-lid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5a1a1a" />
+            <stop offset="100%" stopColor="#3a0f0f" />
+          </linearGradient>
+        </defs>
+
+        {/* Top rim trapezoid — dark inside-of-box. Wider at the front
+            (y=58) than at the back (y=32). The back of the box is at
+            x=40-160; the front rim is at x=20-180 — narrower than
+            the front face below it so the box looks like a portrait
+            container, not an exaggerated wedge. */}
+        <path
+          d="M40 32 L 160 32 L 180 58 L 20 58 Z"
+          fill="url(#vsl-rim)"
+          stroke="#d69e2e"
+          strokeWidth="0.9"
+        />
+
+        {/* Closed lid — same trapezoid as rim, different fill. On
+            hover the group rotates -150deg around its back edge,
+            revealing the rim beneath. */}
+        <g className={styles.deckBoxLid}>
+          <path
+            d="M40 32 L 160 32 L 180 58 L 20 58 Z"
+            fill="url(#vsl-lid)"
+            stroke="#d69e2e"
+            strokeWidth="1.1"
+          />
+          <path
+            d="M48 38 L 152 38 L 168 56 L 32 56 Z"
+            fill="none"
+            stroke="#d69e2e"
+            strokeWidth="0.4"
+            opacity="0.45"
+          />
+        </g>
+      </svg>
+
+      {/* Cards layer — stacked at same X behind the hero. Idle they
+          are tucked inside the box (opacity 0). On hover they rise
+          vertically with depth-staggered translateY. Sits BETWEEN
+          the back SVG (rim+lid) and the front SVG so cards emerge
+          from inside the box, in front of the rim, behind the front
+          face. */}
       <div className={styles.deckBoxCardsLayer} aria-hidden="true">
         {slots.map((card, index) => (
           <DeckBoxCard
@@ -210,16 +276,11 @@ function DeckBoxVessel({
         ))}
       </div>
 
-      {/* Box body — true 3D perspective drawn in SVG.
-          - Front face: big rectangle with bottom-right diagonal
-          - Top face (rim): trapezoid above the front, narrower at the
-            back to convey looking-down perspective
-          - Right side: thin angled strip showing depth
-          The whole thing reads as a card box on a table viewed from
-          standing height — without relying on CSS rotateX of a flat
-          rectangle. */}
+      {/* Front layer — front face + inner brass frame. Sits IN FRONT
+          of the cards so cards rising from inside the box emerge
+          through the open rim above, hidden by this face below. */}
       <svg
-        className={styles.vesselBox}
+        className={styles.vesselFront}
         viewBox="0 0 200 240"
         fill="none"
         aria-hidden="true"
@@ -231,34 +292,14 @@ function DeckBoxVessel({
             <stop offset="55%" stopColor="#3a0f0f" />
             <stop offset="100%" stopColor="#220505" />
           </linearGradient>
-          <linearGradient id="vsl-rim" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#080202" />
-            <stop offset="100%" stopColor="#1a0606" />
-          </linearGradient>
-          <linearGradient id="vsl-lid" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5a1a1a" />
-            <stop offset="100%" stopColor="#3a0f0f" />
-          </linearGradient>
         </defs>
 
-        {/* Top rim trapezoid — dark inside-of-box. Drawn first; sits
-            BEHIND the closed lid in z-order. When the lid hinges open
-            on hover, this rim is what gets revealed. The trapezoid is
-            wider at the front (y=58) than at the back (y=34) — that
-            ratio is the looking-down perspective cue.
-            Box is centered at x=100 (full viewBox width 200). */}
+        {/* Front face — simple rectangle, no diagonal cut. The
+            previous bottom-right diagonal felt orphaned with the
+            box now sitting symmetric and face-on; clean square
+            corners read more deliberate. */}
         <path
-          d="M30 32 L 170 32 L 192 58 L 8 58 Z"
-          fill="url(#vsl-rim)"
-          stroke="#d69e2e"
-          strokeWidth="0.9"
-        />
-
-        {/* Front face — large rectangle with bottom-right diagonal.
-            Spans almost the full viewBox width (x 8 → 192) so cards
-            stacked inside fit comfortably. */}
-        <path
-          d="M8 58 L 192 58 L 192 208 L 174 226 L 8 226 Z"
+          d="M20 58 L 180 58 L 180 222 L 20 222 Z"
           fill="url(#vsl-front)"
           stroke="#d69e2e"
           strokeWidth="1.4"
@@ -266,34 +307,12 @@ function DeckBoxVessel({
 
         {/* Inner brass frame on the front face — decorative panel. */}
         <path
-          d="M18 68 L 182 68 L 182 204 L 170 218 L 18 218 Z"
+          d="M28 66 L 172 66 L 172 214 L 28 214 Z"
           fill="none"
           stroke="#d69e2e"
           strokeWidth="0.6"
           opacity="0.55"
         />
-
-        {/* Closed lid — sits ON TOP of the rim trapezoid at idle.
-            Same trapezoidal geometry, different fill (lid is lighter
-            oxblood, rim is dark interior). On hover the group rotates
-            -150deg around its back edge via CSS rotateX, fully opening
-            backward and revealing the rim beneath. */}
-        <g className={styles.deckBoxLid}>
-          <path
-            d="M30 32 L 170 32 L 192 58 L 8 58 Z"
-            fill="url(#vsl-lid)"
-            stroke="#d69e2e"
-            strokeWidth="1.1"
-          />
-          {/* Subtle inner brass detail on the lid */}
-          <path
-            d="M38 38 L 162 38 L 180 56 L 20 56 Z"
-            fill="none"
-            stroke="#d69e2e"
-            strokeWidth="0.4"
-            opacity="0.45"
-          />
-        </g>
       </svg>
 
       {/* Hero centerpiece — static, centered, in front of cards. */}
