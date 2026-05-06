@@ -20,10 +20,7 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
 }
 
-/* Tier accent — subtle background tint blended with surface.
-   Replaces the previous left-stripe treatment (an AI-slop tell). The
-   shelf heading already names the tier; the tint gives a secondary
-   signal when a card is skimmed out of shelf context. */
+/* Tier accent — subtle background tint blended with surface. */
 .card--high {
   background-color: color-mix(in oklch, var(--ra-ready-high) 6%, var(--ra-bg-surface));
   border-color: color-mix(in oklch, var(--ra-ready-high) 24%, var(--ra-border));
@@ -57,141 +54,171 @@
 }
 
 /* ============================================================
-   Deckbox Vessel — SVG chrome + HTML overlays
+   Deckbox Vessel — face-on geometry + 3D lid + cards + hero
    ============================================================ */
 
 .vesselWrap {
   position: relative;
   width: 100%;
-  /* The vessel keeps a fixed aspect ratio so the deckbox proportions
-     read consistently across viewport sizes. The viewBox geometry is
-     96 × 108 (room above the rim for the lid lift on hover). */
-  aspect-ratio: 96 / 108;
-  max-width: 240px;
-  /* Lifted cards on hover overflow upward. We allow that. */
+  /* viewBox aspect — 200×220 — gives the box a portrait profile and
+     leaves headroom for the lid + cards rising above the rim. */
+  aspect-ratio: 200 / 240;
+  max-width: 220px;
+  /* 3D context for the lid hinge animation. perspective places the
+     vanishing point ~800px in front of the screen — strong enough that
+     the lid rotation reads as physical motion, not just a translate. */
+  perspective: 800px;
+  perspective-origin: 50% 30%;
+  /* Lid + cards may extend above the box. We let them. */
   overflow: visible;
 }
 
-.vesselSvg {
+.vesselBox {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  /* The cards layer sits on top of the SVG chrome; the SVG itself
-     provides the box body, lid, and rim. */
+  /* The box geometry is static — only the lid and cards animate. */
 }
 
-/* Tier saturation curve — applied to the vessel via filter so it
-   tonalizes every oxblood/brass element at once. Subtle on purpose:
-   the brass percent display is the primary tier readout. */
-.vesselWrap--high .vesselSvg {
+/* Tier saturation — applied to the box SVG via filter. Subtle: the
+   brass percent display is the primary tier readout; this is a
+   secondary cue. */
+.vesselWrap--high .vesselBox {
   filter: saturate(1.05);
 }
 
-.vesselWrap--mid .vesselSvg {
+.vesselWrap--mid .vesselBox {
   filter: saturate(0.92);
 }
 
-.vesselWrap--low .vesselSvg {
+.vesselWrap--low .vesselBox {
   filter: saturate(0.78) brightness(0.94);
 }
 
-/* ---------- Lid (translates upward on hover) ---------- */
+/* ============================================================
+   Lid — 3D hinge animation
+   ============================================================ */
 
 .deckBoxLid {
-  /* GPU-only transition. transform-origin is the back-edge so the
-     lift reads as opening (not floating). */
-  transform-origin: 78px 6px;
-  transform: translateY(0);
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* The lid sits flush over the box rim at idle. On hover it rotates
+     backward around its back edge (the hinge), revealing the box
+     interior + the cards that rise from inside.
+
+     Position: top of the box, matching the rim's vertical extent in
+     the SVG (y 30-36 in viewBox = ~13-15% from top). */
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 11%;
+  height: 8%;
+  /* Hinge at the back edge — top of this element in screen Y. The
+     back edge is "behind" the box in 3D; the front edge is the visible
+     edge of the lid when closed. */
+  transform-origin: 50% 0%;
+  transform: rotateX(0deg);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
   will-change: transform;
+}
+
+.deckBoxLidFace {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(180deg, #5a1a1a 0%, #3a0f0f 70%, #2a0808 100%);
+  border: 1px solid var(--ra-accent);
+  border-bottom-width: 0;
+  /* The lid's bottom edge meets the rim — keep the borders flush. */
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.4);
 }
 
 .card:hover .deckBoxLid,
 .cardLink:focus-visible .deckBoxLid {
-  /* Lid lifts ~12% of viewBox height upward, revealing the cards. */
-  transform: translateY(-13px);
+  /* Lid hinges backward past vertical, like a real card box opening
+     fully. -115deg is enough to reveal the inside without flipping
+     too far back. */
+  transform: rotateX(-115deg);
 }
 
-/* ---------- Cards layer ---------- */
+/* ============================================================
+   Cards layer — stacked at same X, rise vertically on hover
+   ============================================================ */
 
 .deckBoxCardsLayer {
   position: absolute;
-  /* The cards layer covers the entire vessel so each slot can be
-     positioned freely. Pointer-events: none lets clicks reach the
-     anchor below. */
   inset: 0;
   pointer-events: none;
+  /* The hero is centered in the box; the representative cards stack
+     directly behind it (same X). z-index keeps them under the hero
+     so they read as "tucked inside" at idle. */
 }
 
-/* Each card slot is positioned absolutely. The base position has
-   the card tucked behind the rim (so it's invisible). Hover/focus
-   lifts it to the visible position with depth-staggered translateY.
-   All three cards share aspect-ratio + dimensions; only their base
-   X position differs to create the fan. */
 .deckBoxCard {
   position: absolute;
-  /* Card thumbnail: 5:7 aspect ratio (FaB cards). Width ~22% of
-     vessel width — three cards fit side-by-side inside the box. */
-  width: 22%;
+  /* Card thumbnail — same size as the hero, same horizontal center.
+     5/7 aspect mirrors a real FaB card. */
+  width: 50%;
   aspect-ratio: 5 / 7;
-  /* Base position: tucked behind the rim. The vessel's rim sits
-     around y=22% from the top in viewBox space; we set top so the
-     card's bottom edge clips just below the rim. */
-  top: 13%;
+  left: 50%;
+  /* Idle Y: aligned with the hero (same center). On hover we
+     translate up. The translate is calculated from this baseline. */
+  top: 50%;
+  /* Center anchor + vertical lift offset. The base translate centers
+     the card on the same point as the hero; the lift gets added in
+     the hover state. */
+  transform: translate(-50%, -50%);
   border-radius: 2px;
   overflow: hidden;
   background-color: #2a0808;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.4),
     inset 0 0 0 1px rgba(214, 158, 46, 0.3);
-  /* Idle state: invisible (clipped behind the rim by y position +
-     opacity 0). Hover state: opacity 1 + translateY -X. */
+  /* Idle: tucked behind hero with opacity 0 so they don't show
+     through. They reveal on hover as they rise above the hero. */
   opacity: 0;
-  transform: translateY(8px);
   transition:
-    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 200ms ease-out;
   will-change: transform, opacity;
 }
 
-/* Slot positions: back card at the far back-left of the rim, middle
-   centered, front at the front-right. Translates create the fan. */
+/* z-stacking: back card is deepest, front card is closest to hero.
+   All sit beneath the hero (z-index < hero's). The lift puts each
+   above the hero in screen Y but they remain underneath in z-stack. */
 .deckBoxCardBack {
-  left: 33%;
   z-index: 1;
 }
 
 .deckBoxCardMiddle {
-  left: 39%;
   z-index: 2;
 }
 
 .deckBoxCardFront {
-  left: 45%;
   z-index: 3;
 }
 
-/* Hover-open: each card lifts a different amount with a different
-   delay, creating a depth-staggered "fan opening from the back" feel. */
+/* Hover lift — same X, depth-staggered Y. Back rises highest, front
+   barely peeks. Stagger via transition-delay creates the cascade. */
 .card:hover .deckBoxCardBack,
 .cardLink:focus-visible .deckBoxCardBack {
   opacity: 1;
-  transform: translateY(-22px);
+  transform: translate(-50%, calc(-50% - 64%));
   transition-delay: 60ms;
 }
 
 .card:hover .deckBoxCardMiddle,
 .cardLink:focus-visible .deckBoxCardMiddle {
   opacity: 1;
-  transform: translateY(-14px);
+  transform: translate(-50%, calc(-50% - 42%));
   transition-delay: 90ms;
 }
 
 .card:hover .deckBoxCardFront,
 .cardLink:focus-visible .deckBoxCardFront {
   opacity: 1;
-  transform: translateY(-6px);
+  transform: translate(-50%, calc(-50% - 22%));
   transition-delay: 120ms;
 }
 
@@ -204,36 +231,34 @@
 }
 
 .deckBoxCardSilhouette {
-  /* Default-fill: oxblood gradient + brass diamond crest. Renders
-     when the deck has no snapshot yet or the catalog lacks an image. */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  background:
-    linear-gradient(160deg, #5a1a1a 0%, #3a0f0f 60%, #2a0808 100%);
+  background: linear-gradient(160deg, #5a1a1a 0%, #3a0f0f 60%, #2a0808 100%);
   color: var(--ra-accent);
-  font-size: 0.95rem;
 }
 
 .deckBoxCardCrest {
-  font-size: 1.1rem;
+  font-size: 1rem;
   opacity: 0.55;
 }
 
-/* ---------- Hero centerpiece ---------- */
+/* ============================================================
+   Hero centerpiece — static, in front
+   ============================================================ */
 
 .deckBoxHeroSlot {
   position: absolute;
-  /* Centered horizontally; sits just below the rim of the box. */
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -42%);
-  /* Hero thumbnail size — proportional to vessel. */
-  width: 36%;
+  transform: translate(-50%, -50%);
+  width: 50%;
   aspect-ratio: 5 / 7;
-  z-index: 4;
+  /* z-index higher than every card so the hero always reads as the
+     "in-front" face of the deck. */
+  z-index: 10;
   border-radius: 3px;
   overflow: hidden;
   box-shadow:
@@ -255,8 +280,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background:
-    radial-gradient(circle at 50% 30%, #5a1a1a 0%, #2a0808 80%);
+  background: radial-gradient(circle at 50% 30%, #5a1a1a 0%, #2a0808 80%);
 }
 
 .deckBoxHeroSigil {
@@ -286,8 +310,6 @@
   font-size: var(--ra-text-body);
   color: var(--ra-fg-primary);
   line-height: var(--ra-leading-snug);
-  /* Limit to two lines so a long deck name doesn't push the readiness
-     readout off the tile. The middle line truncates with ellipsis. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -315,8 +337,6 @@
   justify-content: center;
 }
 
-/* Signature readiness display — Cinzel Decorative 900 brass.
-   RESERVED for the effectivePercent % on deck cards (R7). */
 .readinessDisplay {
   font-family: var(--ra-font-ornament);
   font-weight: var(--ra-weight-black);
@@ -349,14 +369,12 @@
   border-top: 1px solid var(--ra-border-subtle);
 }
 
-/* Wide: side-by-side — shown at ≥640px */
 .actionsWide {
   display: none;
   gap: var(--ra-space-2);
   align-items: center;
 }
 
-/* Narrow: stacked — shown at <640px */
 .actionsNarrow {
   display: flex;
   gap: var(--ra-space-2);
@@ -436,19 +454,21 @@
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  /* Disable translation; the lid stays at idle, the cards reveal via
-     opacity only. Final visible state is "open" but achieved without
-     motion. */
   .deckBoxLid,
   .deckBoxCard {
     transition: opacity 200ms linear;
-    transform: none;
+    transform: translate(-50%, -50%);
     will-change: auto;
+  }
+
+  .deckBoxLid {
+    transform: rotateX(0deg);
   }
 
   .card:hover .deckBoxLid,
   .cardLink:focus-visible .deckBoxLid {
-    transform: none;
+    transform: rotateX(0deg);
+    opacity: 0;
   }
 
   .card:hover .deckBoxCardBack,
@@ -458,7 +478,7 @@
   .cardLink:focus-visible .deckBoxCardMiddle,
   .cardLink:focus-visible .deckBoxCardFront {
     opacity: 1;
-    transform: none;
+    transform: translate(-50%, -50%);
     transition-delay: 0ms;
   }
 }

@@ -24,9 +24,6 @@ function resolveReadinessTier(effectivePercent: number): 'high' | 'mid' | 'low' 
   return 'low';
 }
 
-// Card slot index: back lifts the most, front lifts the least. Drives
-// the hover-open animation: each slot has its own translateY + delay
-// in the CSS module so the cards fan upward when the deckbox opens.
 const SLOT_CLASSES = [
   styles.deckBoxCardBack,
   styles.deckBoxCardMiddle,
@@ -40,28 +37,23 @@ const SLOT_CLASSES = [
 /**
  * DeckCard — home readiness shelf card, rendered as a deckbox vessel.
  *
- * Static composition:
- *  - The deckbox SVG (oxblood gradient + brass detail) reuses the
- *    isometric geometry from `assets/logo-mark.svg` and the design
- *    prototype `docs/design/v1/shell.jsx`. The bottom-right diagonal
- *    fix (PR #57) lives in both sources.
- *  - The hero card thumbnail is the static centerpiece — sourced from
- *    the snapshot's slot=hero entry and projected as `heroImageUrl`.
- *  - The brass `.ra-readiness-display` percent (Cinzel Decorative 900)
- *    sits below the hero. RESERVED class (R7).
+ * Idle composition (closed state):
+ *  - Face-on rectangular deckbox with a subtle right-edge slope and the
+ *    bottom-right diagonal corner from the brand's deckbox vocabulary.
+ *  - Lid sits flat across the top, hinging at its back edge.
+ *  - Hero card is the static centerpiece, framed inside the box.
+ *  - Brass `.ra-readiness-display` percent (Cinzel Decorative 900) sits
+ *    in the meta strip below. RESERVED class (R7).
  *
  * Hover/focus animation:
- *  - Deckbox perspective is immutable — only the lid translates upward
- *    and three representative cards fan out from inside.
- *  - The back card lifts the most (-22px); middle (-14px); front (-6px).
- *    Stagger via CSS transition-delay creates a "fan opening" cascade.
- *  - All movement uses transform + opacity (GPU-only). The
- *    prefers-reduced-motion path swaps translation for opacity-only
- *    fades.
- *  - When the snapshot has fewer than 3 mainboard entries (e.g. just-
- *    tracked deck without a snapshot, or a hero-only deck), the missing
- *    slots fall back to neutral oxblood card-back silhouettes so the
- *    animation still plays.
+ *  - The lid rotates open backward via 3D rotateX (true hinge motion,
+ *    not a translate). transform-origin is the back edge.
+ *  - Three representative cards rise vertically from behind the hero,
+ *    all at the same X position. Back rises highest, then middle, then
+ *    front — depth-staggered to feel like a fan opening.
+ *  - Hero is the anchor and does not move.
+ *  - prefers-reduced-motion path swaps the rotation/translation for
+ *    opacity-only fades. Final visible state mirrors the open look.
  */
 export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): React.ReactElement {
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
@@ -83,8 +75,8 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
     .filter(Boolean)
     .join(' ');
 
-  // Pad the representativeCards list out to length 3 so the hover
-  // animation always has three slots. Missing slots render as silhouettes.
+  // Pad representativeCards out to length 3 — missing slots get default
+  // oxblood card-back silhouettes so the hover effect always plays.
   const slots: ReadonlyArray<IRepresentativeCard | null> = [
     deck.representativeCards[0] ?? null,
     deck.representativeCards[1] ?? null,
@@ -125,7 +117,6 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
       </Link>
 
       <div className={styles.cardFooter}>
-        {/* Wide layout (≥640px): side-by-side actions */}
         <div className={styles.actionsWide}>
           <Link
             to="/decks/$deckId"
@@ -147,7 +138,6 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
           </Button>
         </div>
 
-        {/* Narrow layout (<640px): View full-width, Untrack in overflow */}
         <div className={styles.actionsNarrow}>
           <Link
             to="/decks/$deckId"
@@ -181,7 +171,7 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
 }
 
 // ---------------------------------------------------------------------------
-// DeckBoxVessel — the SVG container + HTML overlays
+// DeckBoxVessel — the box body + lid + cards + hero
 // ---------------------------------------------------------------------------
 
 interface IDeckBoxVesselProps {
@@ -205,113 +195,10 @@ function DeckBoxVessel({
       ]
         .filter(Boolean)
         .join(' ')}
-      aria-hidden="false"
     >
-      {/* Outer SVG carries the box body + side + lid. The geometry
-          mirrors logo-mark.svg (PR #57 isometric-bottom fix preserved).
-          ViewBox is widened to give the cards horizontal headroom on
-          hover; the box itself sits inside the original 24-72 / 24-96
-          coordinate window. */}
-      <svg
-        className={styles.vesselSvg}
-        viewBox="0 0 96 108"
-        fill="none"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <defs>
-          <linearGradient id="vsl-box-front" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#7a2222" />
-            <stop offset="60%" stopColor="#5a1a1a" />
-            <stop offset="100%" stopColor="#3a0f0f" />
-          </linearGradient>
-          <linearGradient id="vsl-box-side" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#3a0f0f" />
-            <stop offset="100%" stopColor="#2a0808" />
-          </linearGradient>
-          <linearGradient id="vsl-lid-top" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7a2222" />
-            <stop offset="100%" stopColor="#4a1414" />
-          </linearGradient>
-        </defs>
-
-        {/* Box back face — flat oxblood with brass hairline */}
-        <path
-          d="M36 28 L 72 24 L 72 88 L 36 96 Z"
-          fill="#3a0f0f"
-          stroke="#d69e2e"
-          strokeWidth="0.6"
-        />
-        {/* Box side face */}
-        <path
-          d="M60 32 L 72 24 L 72 88 L 60 96 Z"
-          fill="url(#vsl-box-side)"
-          stroke="#d69e2e"
-          strokeWidth="0.8"
-        />
-        {/* Box front face */}
-        <path
-          d="M24 36 L 60 32 L 60 96 L 24 96 Z"
-          fill="url(#vsl-box-front)"
-          stroke="#d69e2e"
-          strokeWidth="1"
-        />
-        {/* Decorative inner brass border on front face */}
-        <path
-          d="M27 41 L 57 37 L 57 92 L 27 92 Z"
-          fill="none"
-          stroke="#d69e2e"
-          strokeWidth="0.5"
-          opacity="0.75"
-        />
-
-        {/* Lid — translates upward on hover. transform-origin sits at
-            the back-edge of the lid so the lift reads as the box opening
-            from the back, not floating off vertically. */}
-        <g className={styles.deckBoxLid}>
-          <path
-            d="M36 28 L 72 24 L 78 12 L 42 16 Z"
-            fill="#3a0f0f"
-            stroke="#d69e2e"
-            strokeWidth="0.8"
-          />
-          <path
-            d="M42 16 L 78 12 L 78 6 L 42 10 Z"
-            fill="url(#vsl-lid-top)"
-            stroke="#d69e2e"
-            strokeWidth="0.8"
-          />
-          <path
-            d="M38.5 26.5 L 70.5 23 L 75 14 L 44 17.5 Z"
-            fill="none"
-            stroke="#d69e2e"
-            strokeWidth="0.35"
-            opacity="0.55"
-          />
-        </g>
-
-        {/* Box rim — sits in front of the lid in z-order so when the
-            lid lifts, the rim is what the cards fan out from. */}
-        <path
-          d="M24 36 L 60 32 L 72 24 L 36 28 Z"
-          fill="#120303"
-          stroke="#d69e2e"
-          strokeWidth="0.9"
-        />
-        <path
-          d="M27 35.2 L 58 31.5 L 69 24.9 L 38 28.6 Z"
-          fill="none"
-          stroke="#d69e2e"
-          strokeWidth="0.3"
-          opacity="0.55"
-        />
-      </svg>
-
-      {/* Cards layer — three slot positions stacked inside the box.
-          At idle they sit clipped behind the rim with reduced opacity.
-          On hover/focus they fan upward with depth-staggered timing.
-          Real card images for slots populated by representativeCards;
-          silhouette fallbacks for any empty slot. */}
+      {/* Cards layer — stacked at same X behind the hero. Idle they are
+          tucked inside the box (translateY 0, opacity 0). On hover they
+          rise vertically with depth-staggered translateY. */}
       <div className={styles.deckBoxCardsLayer} aria-hidden="true">
         {slots.map((card, index) => (
           <DeckBoxCard
@@ -322,9 +209,88 @@ function DeckBoxVessel({
         ))}
       </div>
 
-      {/* Hero centerpiece — static anchor that does NOT move on hover.
-          Sits in front of (z-index above) the lifting cards so it always
-          reads as the deck's identity. */}
+      {/* Box body — face-on rectangle with bottom-right diagonal cut.
+          The geometry is intentionally simpler than the logo-mark
+          (no isometric skew); the depth is suggested by a thin right-
+          edge strip and the diagonal corner. */}
+      <svg
+        className={styles.vesselBox}
+        viewBox="0 0 200 220"
+        fill="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="vsl-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5a1a1a" />
+            <stop offset="60%" stopColor="#3a0f0f" />
+            <stop offset="100%" stopColor="#2a0808" />
+          </linearGradient>
+          <linearGradient id="vsl-side" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#3a0f0f" />
+            <stop offset="100%" stopColor="#1a0606" />
+          </linearGradient>
+          <linearGradient id="vsl-rim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0a0202" />
+            <stop offset="100%" stopColor="#1a0606" />
+          </linearGradient>
+        </defs>
+
+        {/* Front face — large rectangle with the bottom-right diagonal.
+            Bottom-right corner cut at 45° preserves the deckbox vocab
+            from PR #57. */}
+        <path
+          d="M8 30 L 176 30 L 176 196 L 162 210 L 8 210 Z"
+          fill="url(#vsl-front)"
+          stroke="#d69e2e"
+          strokeWidth="1.4"
+        />
+
+        {/* Right depth strip — narrow oxblood sliver right of the front
+            face. Conveys depth without isometric skew. */}
+        <path
+          d="M176 30 L 192 36 L 192 200 L 176 196 Z"
+          fill="url(#vsl-side)"
+          stroke="#d69e2e"
+          strokeWidth="1"
+        />
+        {/* Bottom-right corner of the depth strip — matches the front
+            diagonal so the box closes coherently. */}
+        <path
+          d="M176 196 L 192 200 L 178 214 L 162 210 Z"
+          fill="url(#vsl-side)"
+          stroke="#d69e2e"
+          strokeWidth="1"
+        />
+
+        {/* Inner brass border on the front face — decorative frame. */}
+        <path
+          d="M16 38 L 168 38 L 168 192 L 158 202 L 16 202 Z"
+          fill="none"
+          stroke="#d69e2e"
+          strokeWidth="0.6"
+          opacity="0.55"
+        />
+
+        {/* Box rim (top inner edge, dark) — the lid sits on this rim
+            when closed. Sits behind the lid in z-order so when the lid
+            opens we see this dark rim revealed. */}
+        <path
+          d="M8 30 L 176 30 L 192 36 L 24 36 Z"
+          fill="url(#vsl-rim)"
+          stroke="#d69e2e"
+          strokeWidth="1"
+        />
+      </svg>
+
+      {/* Lid — separate HTML element so we can apply 3D rotateX.
+          Idle: lid lies flat over the rim. Hover: rotates -115deg
+          backward around its back-edge hinge. */}
+      <div className={styles.deckBoxLid} aria-hidden="true">
+        <div className={styles.deckBoxLidFace} />
+      </div>
+
+      {/* Hero centerpiece — static, centered, in front of cards. */}
       <div className={styles.deckBoxHeroSlot}>
         {heroImageUrl ? (
           <HeroImage src={heroImageUrl} alt={heroAlt} />
@@ -339,7 +305,7 @@ function DeckBoxVessel({
 }
 
 // ---------------------------------------------------------------------------
-// DeckBoxCard — single card slot (real image or silhouette fallback)
+// DeckBoxCard — single card slot
 // ---------------------------------------------------------------------------
 
 interface IDeckBoxCardProps {
@@ -350,7 +316,9 @@ interface IDeckBoxCardProps {
 function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage =
-    card?.imageUrl?.small !== undefined && card.imageUrl.small.length > 0 && !imageFailed;
+    card?.imageUrl?.small !== undefined &&
+    card.imageUrl.small.length > 0 &&
+    !imageFailed;
 
   return (
     <div className={`${styles.deckBoxCard} ${className}`}>
@@ -364,9 +332,6 @@ function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement
           onError={() => setImageFailed(true)}
         />
       ) : (
-        // Default-fill silhouette: oxblood backdrop + brass diamond crest.
-        // Used when the deck has no snapshot yet, the catalog has no
-        // image for the card, or the image URL fails to load.
         <div className={styles.deckBoxCardSilhouette}>
           <span className={styles.deckBoxCardCrest}>&#9670;</span>
         </div>
@@ -376,7 +341,7 @@ function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement
 }
 
 // ---------------------------------------------------------------------------
-// HeroImage — small wrapper with onError fallback
+// HeroImage — onError fallback wrapper
 // ---------------------------------------------------------------------------
 
 interface IHeroImageProps {
