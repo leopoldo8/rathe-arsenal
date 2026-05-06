@@ -233,16 +233,31 @@ export class DecksService {
       mainboardEntries.push(entry);
     }
 
+    // Legacy snapshots persisted before B1 lack an entry-level `name` —
+    // fall back to the catalog (and ultimately the identifier) so the
+    // sort key is always defined and the wire payload always carries a
+    // human-readable name.
+    const resolveName = (entry: IBreakdownEntry): string => {
+      if (entry.name && entry.name.length > 0) return entry.name;
+      try {
+        const card = this.catalogService.getCard(entry.cardIdentifier);
+        if (card?.name) return card.name;
+      } catch {
+        // Card retired from catalog — keep identifier fallback.
+      }
+      return entry.cardIdentifier;
+    };
+
     mainboardEntries.sort((a, b) => {
       if (b.quantity !== a.quantity) return b.quantity - a.quantity;
-      return a.name.localeCompare(b.name);
+      return resolveName(a).localeCompare(resolveName(b));
     });
 
     const representativeCards: readonly IRepresentativeCard[] = mainboardEntries
       .slice(0, 3)
       .map((entry) => ({
         cardIdentifier: entry.cardIdentifier,
-        name: entry.name,
+        name: resolveName(entry),
         imageUrl: entry.imageUrl ? { small: entry.imageUrl.small } : null,
       }));
 

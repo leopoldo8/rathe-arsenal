@@ -408,6 +408,99 @@ const trackedDeck = result.trackedDecks[0]!;
         expect(result.trackedDecks[0]!.representativeCards).toEqual([]);
       });
 
+      it('falls back to cardIdentifier when entry.name is undefined (legacy snapshot)', async () => {
+        // Arrange — legacy snapshots persisted before B1 lack entry-level
+        // `name`. Sorting on a.name.localeCompare(b.name) used to throw
+        // "Cannot read properties of undefined" for these snapshots.
+        const legacyBreakdown = {
+          exact: [
+            // No `name` field — simulates pre-B1 stored breakdown
+            {
+              cardIdentifier: 'pummel',
+              slot: 'mainboard',
+              quantity: 3,
+              pitch: null,
+              cost: null,
+              type: 'attack',
+              imageUrl: null,
+            },
+            {
+              cardIdentifier: 'sigil-of-solace',
+              slot: 'mainboard',
+              quantity: 2,
+              pitch: null,
+              cost: null,
+              type: 'ally',
+              imageUrl: null,
+            },
+          ],
+          substituted: [],
+          missing: [],
+          notOwned: [],
+        };
+        // Mock catalog to fail (card retired) so the fallback chain
+        // ultimately uses cardIdentifier as the name.
+        catalogService.getCard.mockImplementation(() => {
+          throw new Error('Card not found');
+        });
+        setupListWithSnapshot(legacyBreakdown);
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert — no throw, sort by quantity desc + identifier fallback
+        const reps = result.trackedDecks[0]!.representativeCards;
+        expect(reps).toHaveLength(2);
+        expect(reps[0]?.name).toBe('pummel');
+        expect(reps[1]?.name).toBe('sigil-of-solace');
+      });
+
+      it('uses catalog name when breakdown name is missing (legacy snapshot, catalog hit)', async () => {
+        // Arrange — same legacy shape, but catalog has the card.
+        const legacyBreakdown = {
+          exact: [
+            {
+              cardIdentifier: 'pummel',
+              slot: 'mainboard',
+              quantity: 3,
+              pitch: null,
+              cost: null,
+              type: 'attack',
+              imageUrl: null,
+            },
+          ],
+          substituted: [],
+          missing: [],
+          notOwned: [],
+        };
+        catalogService.getCard.mockImplementation((id: string) => {
+          if (id === 'pummel') {
+            return {
+              cardIdentifier: 'pummel',
+              name: 'Pummel',
+              types: ['Action'],
+              classes: [],
+              talents: [],
+              pitch: 1,
+              cost: 0,
+              power: null,
+              defense: null,
+              keywords: [],
+              imageUrl: null,
+            } as unknown as ReturnType<typeof catalogService.getCard>;
+          }
+          throw new Error('Card not found');
+        });
+        setupListWithSnapshot(legacyBreakdown);
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        const reps = result.trackedDecks[0]!.representativeCards;
+        expect(reps[0]?.name).toBe('Pummel');
+      });
+
       it('handles entries with null imageUrl gracefully', async () => {
         // Arrange — catalog can carry null imageUrl for unprinted cards.
         setupListWithSnapshot(
