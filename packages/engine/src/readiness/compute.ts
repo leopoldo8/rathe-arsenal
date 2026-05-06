@@ -32,20 +32,23 @@ type TImageUrlPair = {
 function deriveEntryMeta(
   catalogCard:
     | {
+        name: string;
         pitch: number | null;
         cost: number | null;
         types: readonly string[];
         imageUrl?: TImageUrlPair | null;
       }
     | undefined,
+  fallbackIdentifier: string,
 ): {
+  name: string;
   pitch: 1 | 2 | 3 | null;
   cost: number | null;
   type: string;
   imageUrl: TImageUrlPair | null;
 } {
   if (!catalogCard) {
-    return { pitch: null, cost: null, type: 'unknown', imageUrl: null };
+    return { name: fallbackIdentifier, pitch: null, cost: null, type: 'unknown', imageUrl: null };
   }
   const rawPitch = catalogCard.pitch;
   const pitch: 1 | 2 | 3 | null =
@@ -53,7 +56,7 @@ function deriveEntryMeta(
   const cost = catalogCard.cost ?? null;
   const type = catalogCard.types[0] ?? 'unknown';
   const imageUrl = catalogCard.imageUrl ?? null;
-  return { pitch, cost, type, imageUrl };
+  return { name: catalogCard.name, pitch, cost, type, imageUrl };
 }
 
 interface IDeckCard {
@@ -133,7 +136,7 @@ export function computeEffectiveReadiness(
     originalPitchEntries.push({ pitch: cardPitch, quantity: deckCard.quantity });
 
     // Derive enriched metadata for this card once per deck card.
-    const entryMeta = deriveEntryMeta(catalogCard);
+    const entryMeta = deriveEntryMeta(catalogCard, deckCard.cardIdentifier);
 
     const exactQty = Math.min(available, deckCard.quantity);
     const missingQty = deckCard.quantity - exactQty;

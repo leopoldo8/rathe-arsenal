@@ -57,7 +57,7 @@ function summarizeTiers(substituted: readonly ISubstitutedEntry[]): string {
     if (entry.match.tier === 1) tier1 += entry.original.quantity;
     else if (entry.match.tier === 2) tier2 += entry.original.quantity;
   }
-  return `${tier1} ${tier1 === 1 ? 'card' : 'cards'} substituted at tier 1, ${tier2} ${tier2 === 1 ? 'card' : 'cards'} at tier 2`;
+  return `${tier1} ${tier1 === 1 ? 'card' : 'cards'} swapped with a close match, ${tier2} with a looser match`;
 }
 
 function countNotOwned(breakdown: IBreakdown): number {
@@ -171,7 +171,7 @@ export function PathCResult({
                   data-pitch={pitchDataAttr(undefined)}
                 />
                 <span className={styles.missingCardName}>
-                  {entry.cardIdentifier}
+                  {entry.name}
                 </span>
                 <span className={styles.missingCardMeta}>
                   x{entry.quantity} ({entry.slot})

@@ -35,6 +35,7 @@ function makeRow(overrides: Partial<IReviewRow> = {}): IReviewRow {
     deckName: 'Dromai Storm',
     hero: 'Dromai',
     cardIdentifier: 'ARC012',
+    originalName: 'ARC012',
     substituteIdentifier: 'ELE020',
     substituteName: 'Fyendal Spring Tunic',
     tier: 1,
@@ -96,7 +97,7 @@ describe('ReviewsRow — rendering', () => {
 
   it('renders the tier badge', () => {
     renderRow(makeRow());
-    expect(screen.getByText('Tier 1')).toBeInTheDocument();
+    expect(screen.getByText(/Tier I/)).toBeInTheDocument();
   });
 
   it('renders the rationale text', () => {

@@ -32,6 +32,10 @@ function resolveDecision(
   return entry.decision;
 }
 
+function sumQuantities(entries: readonly { readonly quantity: number }[]): number {
+  return entries.reduce((sum, entry) => sum + entry.quantity, 0);
+}
+
 /**
  * BreakdownSections — Column B of deck detail.
  *
@@ -76,7 +80,7 @@ export function BreakdownSections({
           <h2 id="section-exact" className={styles.section__title}>
             Exact matches
           </h2>
-          <span className={styles.section__count}>{breakdown.exact.length} cards</span>
+          <span className={styles.section__count}>{sumQuantities(breakdown.exact)} cards</span>
         </div>
 
         {breakdown.exact.length === 0 ? (
@@ -89,7 +93,7 @@ export function BreakdownSections({
                 className={styles.cardCell}
               >
                 <CardArt
-                  name={entry.cardIdentifier}
+                  name={entry.name}
                   pitch={entry.pitch}
                   cost={entry.cost}
                   type={entry.type}
@@ -167,7 +171,7 @@ export function BreakdownSections({
           <h2 id="section-not-owned" className={styles.section__title}>
             Not owned
           </h2>
-          <span className={styles.section__count}>{notOwned.length} cards</span>
+          <span className={styles.section__count}>{sumQuantities(notOwned)} cards</span>
         </div>
 
         {notOwned.length === 0 ? (
@@ -187,7 +191,7 @@ export function BreakdownSections({
                 className={styles.missRow}
               >
                 <CardArt
-                  name={entry.cardIdentifier}
+                  name={entry.name}
                   pitch={entry.pitch}
                   cost={entry.cost}
                   type={entry.type}
@@ -200,13 +204,13 @@ export function BreakdownSections({
                           setLightbox({
                             imageUrl: entry.imageUrl!.large,
                             sources: lightboxSourcesFor(entry.imageUrl),
-                            name: entry.cardIdentifier,
+                            name: entry.name,
                           })
                       : undefined
                   }
                 />
                 <div className={styles.missRow__body}>
-                  <div className={styles.missRow__name}>{entry.cardIdentifier}</div>
+                  <div className={styles.missRow__name}>{entry.name}</div>
                   <div className={styles.missRow__meta}>{entry.slot}</div>
                 </div>
                 <span className={styles.missRow__qty}>

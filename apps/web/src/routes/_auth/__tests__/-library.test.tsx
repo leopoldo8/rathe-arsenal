@@ -203,9 +203,9 @@ describe('LibraryPage — empty state: 0 cards', () => {
     expect(screen.getByText(/your library is empty/i)).toBeInTheDocument();
   });
 
-  it('renders the single "Open Add Cards" CTA pointing to /add-cards', () => {
+  it('renders the single Add cards CTA pointing to /add-cards', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /open add cards/i });
+    const link = screen.getByRole('link', { name: /add cards/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 

@@ -83,6 +83,7 @@ function makeBreakdown(
   // Tests use null/null/'ally' defaults — contextually appropriate for mainboard action cards.
   const missingEntries = missing.map((e) => ({
     cardIdentifier: e.cardIdentifier,
+    name: e.cardIdentifier,
     quantity: e.quantity,
     slot: 'mainboard',
     pitch: null as 1 | 2 | 3 | null,
@@ -1016,6 +1017,7 @@ describe('ShoppingLineService', () => {
         substituted: [
           {
             cardIdentifier: substitutedOriginalId,
+            name: substitutedOriginalId,
             quantity: 1,
             slot: 'mainboard',
             pitch: null,
@@ -1024,10 +1026,10 @@ describe('ShoppingLineService', () => {
             imageUrl: null,
           },
         ],
-        missing: [{ cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null }],
+        missing: [{ cardIdentifier: missingId, name: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null }],
         notOwned: [
-          { cardIdentifier: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
-          { cardIdentifier: substitutedOriginalId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
+          { cardIdentifier: missingId, name: missingId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
+          { cardIdentifier: substitutedOriginalId, name: substitutedOriginalId, quantity: 1, slot: 'mainboard', pitch: null, cost: null, type: 'ally', imageUrl: null },
         ],
       };
 

@@ -10,12 +10,14 @@ import { ShoppingLineService } from '../stores/shopping-line.service';
 import { VariantFetchService } from '../stores/variant-fetch.service';
 import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { CatalogService } from '../catalog/catalog.service';
 import {
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
 } from './dtos/tracked-deck-list.response.dto';
 import {
   IBreakdown,
+  IBreakdownEntry,
   IShoppingLineResponse,
   ISubstitutionEntry,
   ITrackedDeckDetailResponse,
@@ -43,7 +45,52 @@ export class DecksService {
     private readonly variantFetchService: VariantFetchService,
     private readonly decisionsService: DecisionsService,
     private readonly collectionReadService: CollectionReadService,
+    private readonly catalogService: CatalogService,
   ) {}
+
+  // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
+  // Enrich on read from the catalog so UI surfaces always render a human
+  // name without forcing a DB migration. Fallback to the identifier so the
+  // pipe never produces a missing string.
+  //
+  // Note: the runtime shape of `substituted` is `{ original, match }` (engine
+  // shape), even though the public DTO declares `IBreakdownEntry[]`. We treat
+  // the input as `unknown` and reshape both branches defensively.
+  private enrichBreakdown(breakdown: unknown): IBreakdown {
+    const enrichEntry = (entry: IBreakdownEntry): IBreakdownEntry => {
+      if (entry.name && entry.name.length > 0) return entry;
+      let name = entry.cardIdentifier;
+      try {
+        const card = this.catalogService.getCard(entry.cardIdentifier);
+        if (card?.name) name = card.name;
+      } catch {
+        // Card retired from catalog — keep identifier fallback.
+      }
+      return { ...entry, name };
+    };
+
+    const raw = breakdown as {
+      exact?: readonly IBreakdownEntry[];
+      substituted?: readonly unknown[];
+      missing?: readonly IBreakdownEntry[];
+      notOwned?: readonly IBreakdownEntry[];
+    };
+
+    const enrichedSubstituted = (raw.substituted ?? []).map((sub) => {
+      const wrapped = sub as { original?: IBreakdownEntry } & IBreakdownEntry;
+      if (wrapped && typeof wrapped === 'object' && 'original' in wrapped && wrapped.original) {
+        return { ...wrapped, original: enrichEntry(wrapped.original) };
+      }
+      return enrichEntry(wrapped);
+    });
+
+    return {
+      exact: (raw.exact ?? []).map(enrichEntry),
+      substituted: enrichedSubstituted as unknown as readonly IBreakdownEntry[],
+      missing: (raw.missing ?? []).map(enrichEntry),
+      notOwned: (raw.notOwned ?? []).map(enrichEntry),
+    };
+  }
 
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
     const [decks, collectionCardCount, aggregateShoppingLine] = await Promise.all([
@@ -202,7 +249,7 @@ export class DecksService {
             effectivePercent: latestSnapshot.effectivePercent,
             path: derived.path,
             fidelityPercent: derived.fidelityPercent,
-            breakdown: latestSnapshot.breakdown as unknown as IBreakdown,
+            breakdown: this.enrichBreakdown(latestSnapshot.breakdown),
             substitutions:
               latestSnapshot.substitutions as unknown as Record<
                 string,

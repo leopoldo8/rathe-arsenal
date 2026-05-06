@@ -27,7 +27,7 @@ export function LibraryEmptyState(): React.ReactElement {
       </p>
 
       <Link to="/add-cards" className={styles.primaryCta}>
-        <span aria-hidden="true">→</span> Open Add Cards
+        <span aria-hidden="true">→</span> Add cards
       </Link>
     </section>
   );

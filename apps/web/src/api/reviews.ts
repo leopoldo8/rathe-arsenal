@@ -22,6 +22,8 @@ export interface IReviewRow {
   readonly deckName: string;
   readonly hero: string;
   readonly cardIdentifier: string;
+  /** Human-readable name for the original card. Falls back to identifier. */
+  readonly originalName: string;
   readonly substituteIdentifier: string;
   readonly substituteName: string;
   readonly tier: 1 | 2 | 3;

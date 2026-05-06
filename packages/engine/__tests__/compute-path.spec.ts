@@ -9,6 +9,7 @@ function makeEntry(
 ): IBreakdownEntry {
   return Object.freeze({
     cardIdentifier,
+    name: cardIdentifier,
     quantity,
     slot,
     pitch: null as 1 | 2 | 3 | null,

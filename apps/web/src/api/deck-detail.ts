@@ -4,6 +4,11 @@ import { IShoppingLineResponse } from './shopping-line';
 
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
+  /**
+   * Human-readable card name from the catalog. Falls back to the identifier
+   * when the card is not in the catalog. UI surfaces render `name`.
+   */
+  readonly name: string;
   readonly quantity: number;
   readonly slot: string;
   /**

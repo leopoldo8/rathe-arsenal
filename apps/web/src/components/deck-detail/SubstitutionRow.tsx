@@ -41,8 +41,9 @@ interface ISubstitutionRowProps {
 }
 
 function getTierLabel(tier: number): string {
-  if (tier === 1) return 'Tier I';
-  if (tier === 2) return 'Tier II';
+  if (tier === 1) return 'Tier I — Close';
+  if (tier === 2) return 'Tier II — Loose';
+  if (tier === 3) return 'Tier III — Distant';
   return `Tier ${tier}`;
 }
 
@@ -69,7 +70,7 @@ export function SubstitutionRow({
   isPending = false,
 }: ISubstitutionRowProps): React.ReactElement {
   const substituteId = match.substitute.cardIdentifier;
-  const originalName = original.cardIdentifier;
+  const originalName = original.name;
   const substituteName = match.substitute.name;
 
   const isApproved = decision === 'approved';

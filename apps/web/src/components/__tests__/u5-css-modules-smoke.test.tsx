@@ -44,6 +44,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 const ENTRY: IBreakdownEntry = {
   cardIdentifier: 'pummel',
+  name: 'Pummel',
   quantity: 3,
   slot: 'main',
   pitch: 1,

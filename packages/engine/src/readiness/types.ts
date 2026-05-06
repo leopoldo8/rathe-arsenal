@@ -11,6 +11,12 @@ export type TPath = 'A' | 'B' | 'C';
 
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
+  /**
+   * Human-readable card name from the catalog. Falls back to the identifier
+   * when the card is not in the catalog (defensive; same fallback contract
+   * as `type`). UI surfaces should render `name` instead of `cardIdentifier`.
+   */
+  readonly name: string;
   readonly quantity: number;
   readonly slot: string;
   /**

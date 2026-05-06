@@ -28,7 +28,7 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
 import { DataSource, Repository } from 'typeorm';
 import { ReviewAggregateService, ISubstitutionRow } from '../review-aggregate.service';
-import { DecisionsService, IBulkReviewOperation, IBulkUpsertResult } from '../../decks/decisions/decisions.service';
+import { DecisionsService, IBulkReviewOperation } from '../../decks/decisions/decisions.service';
 import { ReviewAggregateEntity } from '../../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
