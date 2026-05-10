@@ -23,6 +23,17 @@
   outline-offset: -1px;
 }
 
+/* Collapsed accordion (decided rows). Single-line layout: checkbox · thumbs ·
+   summary · big decision badge + Change button. Dimmer background so the eye
+   skips ahead to pending rows that still need attention. */
+.row--collapsed {
+  grid-template-columns: 2rem auto 1fr auto;
+  gap: var(--ra-space-3);
+  align-items: center;
+  padding-block: var(--ra-space-3);
+  background-color: color-mix(in srgb, var(--ra-bg-surface) 92%, transparent);
+}
+
 /* ---------- Checkbox ---------- */
 
 .checkboxCell {
@@ -190,27 +201,152 @@
   vertical-align: middle;
 }
 
-/* ---------- Decision badge ---------- */
+/* ---------- Collapsed-state pieces ---------- */
 
-.decisionBadge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: var(--ra-radius-full);
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
+.collapsedPair {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.collapsedThumb {
+  flex-shrink: 0;
+}
+
+.connectorCompact {
+  font-size: 0.875rem;
+  color: var(--ra-accent);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.collapsedSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-width: 0;
+}
+
+.collapsedDeckLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ra-space-2);
+  flex-wrap: wrap;
+}
+
+.collapsedDeckName {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
   font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-display);
+  color: var(--ra-fg-primary);
+}
+
+.collapsedHero {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-secondary);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
 }
 
-.decisionBadge--approved {
-  background-color: color-mix(in srgb, var(--ra-accent) 15%, transparent);
+.collapsedNames {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  min-width: 0;
+}
+
+.collapsedNameOriginal {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: line-through;
+  text-decoration-color: var(--ra-border);
+  opacity: 0.7;
+}
+
+.collapsedNameSubstitute {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ra-fg-primary);
+}
+
+.collapsedArrow {
+  color: var(--ra-accent);
+  flex-shrink: 0;
+}
+
+.collapsedDecision {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-shrink: 0;
+}
+
+/* Big decision badge — used both in collapsed state and inline when
+   the row is expanded but already has a decision. Replaces the tiny
+   `.decisionBadge` that was easy to miss. */
+.bigDecisionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--ra-radius-md);
+  border: 1px solid currentColor;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  white-space: nowrap;
+}
+
+.bigDecisionBadgeInline {
+  align-self: flex-start;
+}
+
+.bigDecisionBadge--approved {
+  background-color: color-mix(in srgb, var(--ra-accent) 18%, transparent);
   color: var(--ra-accent-body);
 }
 
-.decisionBadge--rejected {
-  background-color: color-mix(in srgb, var(--ra-ready-low) 15%, transparent);
+.bigDecisionBadge--rejected {
+  background-color: color-mix(in srgb, var(--ra-ready-low) 18%, transparent);
   color: var(--ra-ready-low);
+}
+
+.changeBtn {
+  min-block-size: 32px;
+  padding-inline: var(--ra-space-3);
+  border-radius: var(--ra-radius-md);
+  border: 1px solid var(--ra-border);
+  background: transparent;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  cursor: pointer;
+  color: var(--ra-fg-secondary);
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.changeBtn:hover,
+.changeBtn:focus-visible {
+  background-color: color-mix(in srgb, var(--ra-fg-secondary) 10%, transparent);
+  border-color: var(--ra-fg-secondary);
+  color: var(--ra-fg-primary);
+}
+
+.changeBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
 }
 
 /* ---------- Per-row actions ---------- */
@@ -265,6 +401,12 @@
   border-color: var(--ra-fg-secondary);
 }
 
+.actionBtn--collapse:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--ra-fg-secondary) 10%, transparent);
+  border-color: var(--ra-fg-secondary);
+  color: var(--ra-fg-primary);
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 600px) {
@@ -284,6 +426,25 @@
   .badges {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .row--collapsed {
+    grid-template-columns: 2rem 1fr;
+    grid-template-rows: auto auto auto;
+    row-gap: var(--ra-space-2);
+  }
+
+  .collapsedPair {
+    grid-column: 2;
+  }
+
+  .collapsedSummary {
+    grid-column: 2;
+  }
+
+  .collapsedDecision {
+    grid-column: 2;
+    flex-wrap: wrap;
   }
 }
 

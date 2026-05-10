@@ -24,11 +24,21 @@ interface IReviewsRowProps {
 // ---------------------------------------------------------------------------
 
 /**
- * ReviewsRow — renders a single substitution review row.
+ * ReviewsRow — renders a single swap review row with an accordion for
+ * decided rows.
  *
- * Shows the original card (left) and the suggested substitute (right)
- * with a ◆ connector between them. Includes a tier badge, a confidence
- * bar, and the match rationale.
+ * Three render modes:
+ *  - Pending decision → full layout (cards + tier + confidence + rationale +
+ *    Approve / Reject / Reset buttons). The user needs to decide.
+ *  - Decided + collapsed (default after first render of a decided row) →
+ *    compact layout: checkbox + thumbs + deck context + big "Approved" or
+ *    "Rejected" badge + "Change ▾" toggle. No competing visual noise from
+ *    disabled action buttons.
+ *  - Decided + expanded (user clicked "Change") → full layout, same as
+ *    pending, plus a "Done ▴" toggle to collapse back.
+ *
+ * The expanded state lives only in component memory — page refresh starts
+ * decided rows collapsed again.
  *
  * Per-row Approve / Reject / Reset actions each call
  * `onAction([{ trackedDeckId, cardIdentifier, decision | reset }])` — the
@@ -50,6 +60,11 @@ export function ReviewsRow({
   const isApproved = row.decision === 'approved';
   const isRejected = row.decision === 'rejected';
   const hasDec = isApproved || isRejected;
+
+  // Accordion state — only meaningful when hasDec. Decided rows start
+  // collapsed; "Change" toggles to expanded; "Done" collapses again.
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isCollapsed = hasDec && !isExpanded;
 
   // Button enabled/disabled state — mirrors SubstitutionRow (deck detail) contract:
   //   pending  → Approve + Reject enabled, Reset disabled (nothing to clear)
@@ -127,11 +142,136 @@ export function ReviewsRow({
     setCssVar(confidenceFillRef.current, '--confidence', confidencePct);
   }, [confidencePct]);
 
+  // ----- Card thumbs (shared between collapsed + expanded) -----
+  const originalThumb = (
+    <CardArt
+      name={row.cardIdentifier}
+      pitch={row.originalPitch}
+      cost={null}
+      type={row.originalType}
+      missing={true}
+      size={isCollapsed ? 'xs' : 'sm'}
+      imageUrl={row.originalImageUrl}
+      onClick={
+        row.originalImageUrl
+          ? () =>
+              setLightbox({
+                imageUrl: row.originalImageUrl!.large,
+                sources: lightboxSourcesFor(row.originalImageUrl),
+                name: row.originalName,
+              })
+          : undefined
+      }
+    />
+  );
+
+  const substituteThumb = (
+    <CardArt
+      name={row.substituteName}
+      pitch={row.substitutePitch}
+      cost={null}
+      type={row.substituteType}
+      missing={false}
+      size={isCollapsed ? 'xs' : 'sm'}
+      imageUrl={row.substituteImageUrl}
+      onClick={
+        row.substituteImageUrl
+          ? () =>
+              setLightbox({
+                imageUrl: row.substituteImageUrl!.large,
+                sources: lightboxSourcesFor(row.substituteImageUrl),
+                name: row.substituteName,
+              })
+          : undefined
+      }
+    />
+  );
+
+  // ----- Collapsed render (decided + not expanded) -----
+  if (isCollapsed) {
+    return (
+      <div
+        className={`${styles.row} ${styles['row--collapsed']} ${
+          isSelected ? styles['row--selected'] : ''
+        }`}
+        data-testid="reviews-row"
+        data-row-id={rowId}
+        data-state={row.decision}
+      >
+        <div className={styles.checkboxCell}>
+          <input
+            id={checkboxId}
+            type="checkbox"
+            className={styles.checkbox}
+            checked={isSelected}
+            onChange={() => onToggleSelect(rowId)}
+            aria-label={`Select ${row.cardIdentifier} substitution`}
+          />
+        </div>
+
+        <div className={styles.collapsedPair}>
+          <div className={styles.collapsedThumb}>{originalThumb}</div>
+          <span className={styles.connectorCompact} aria-hidden="true">
+            ◆
+          </span>
+          <div className={styles.collapsedThumb}>{substituteThumb}</div>
+        </div>
+
+        <div className={styles.collapsedSummary}>
+          <div className={styles.collapsedDeckLine}>
+            <span className={styles.collapsedDeckName}>{row.deckName}</span>
+            <span className={styles.collapsedHero}>{row.hero}</span>
+          </div>
+          <div className={styles.collapsedNames}>
+            <span className={styles.collapsedNameOriginal}>
+              {row.originalName}
+            </span>
+            <span className={styles.collapsedArrow} aria-hidden="true">
+              →
+            </span>
+            <span className={styles.collapsedNameSubstitute}>
+              {row.substituteName}
+            </span>
+          </div>
+        </div>
+
+        <div className={styles.collapsedDecision}>
+          <span
+            className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${row.decision}`]}`}
+            aria-label={`Decision: ${row.decision}`}
+          >
+            {isApproved ? (
+              <>
+                <span aria-hidden="true">✓</span> Approved
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">✕</span> Rejected
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            className={styles.changeBtn}
+            onClick={() => setIsExpanded(true)}
+            aria-expanded={false}
+            aria-controls={`row-actions-${rowId}`}
+            aria-label={`Change decision for ${row.cardIdentifier} swap`}
+          >
+            Change <span aria-hidden="true">▾</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ----- Expanded render (pending OR decided + expanded) -----
   return (
     <div
       className={`${styles.row} ${isSelected ? styles['row--selected'] : ''}`}
       data-testid="reviews-row"
       data-row-id={rowId}
+      data-state={row.decision}
     >
       {/* Selection checkbox */}
       <div className={styles.checkboxCell}>
@@ -153,69 +293,26 @@ export function ReviewsRow({
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
-        {/* Original card */}
         <div className={styles.cardSlot}>
-          <CardArt
-            name={row.cardIdentifier}
-            pitch={row.originalPitch}
-            cost={null}
-            type={row.originalType}
-            missing={true}
-            size="sm"
-            imageUrl={row.originalImageUrl}
-            onClick={
-              row.originalImageUrl
-                ? () =>
-                    setLightbox({
-                      imageUrl: row.originalImageUrl!.large,
-                      sources: lightboxSourcesFor(row.originalImageUrl),
-                      name: row.originalName,
-                    })
-                : undefined
-            }
-          />
+          {originalThumb}
           <span className={styles.cardLabel}>{row.originalName}</span>
         </div>
-
-        {/* Diamond connector */}
         <span className={styles.connector} aria-hidden="true">
           ◆
         </span>
-
-        {/* Substitute card */}
         <div className={styles.cardSlot}>
-          <CardArt
-            name={row.substituteName}
-            pitch={row.substitutePitch}
-            cost={null}
-            type={row.substituteType}
-            missing={false}
-            size="sm"
-            imageUrl={row.substituteImageUrl}
-            onClick={
-              row.substituteImageUrl
-                ? () =>
-                    setLightbox({
-                      imageUrl: row.substituteImageUrl!.large,
-                      sources: lightboxSourcesFor(row.substituteImageUrl),
-                      name: row.substituteName,
-                    })
-                : undefined
-            }
-          />
+          {substituteThumb}
           <span className={styles.cardLabel}>{row.substituteName}</span>
         </div>
       </div>
 
       {/* Meta column */}
-      <div className={styles.meta}>
-        {/* Deck context */}
+      <div className={styles.meta} id={`row-actions-${rowId}`}>
         <div className={styles.deckContext}>
           <span className={styles.deckName}>{row.deckName}</span>
           <span className={styles.hero}>{row.hero}</span>
         </div>
 
-        {/* Tier + confidence */}
         <div className={styles.badges}>
           <span
             className={`${styles.tierBadge} ${styles[`tierBadge--t${row.tier}`]}`}
@@ -231,15 +328,11 @@ export function ReviewsRow({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div
-              ref={confidenceFillRef}
-              className={styles.confidenceFill}
-            />
+            <div ref={confidenceFillRef} className={styles.confidenceFill} />
           </div>
           <span className={styles.confidenceLabel}>{confidencePct}</span>
         </div>
 
-        {/* Rationale */}
         <p className={styles.rationale}>
           <span aria-hidden="true" className={styles.rationalePrefix}>
             ◆
@@ -247,12 +340,22 @@ export function ReviewsRow({
           {row.rationale}
         </p>
 
-        {/* Decision state indicator */}
-        {row.decision !== 'pending' && (
+        {/* Decision badge — visible when expanded with a decision so the
+            user keeps the current state in view while they consider changing
+            it. Bigger than before; matches the collapsed-state badge styling. */}
+        {hasDec && (
           <span
-            className={`${styles.decisionBadge} ${styles[`decisionBadge--${row.decision}`]}`}
+            className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${row.decision}`]} ${styles.bigDecisionBadgeInline}`}
           >
-            {row.decision === 'approved' ? 'Approved' : 'Rejected'}
+            {isApproved ? (
+              <>
+                <span aria-hidden="true">✓</span> Approved
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">✕</span> Rejected
+              </>
+            )}
           </span>
         )}
 
@@ -287,6 +390,18 @@ export function ReviewsRow({
           >
             Reset
           </button>
+          {hasDec && (
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${styles['actionBtn--collapse']}`}
+              onClick={() => setIsExpanded(false)}
+              aria-expanded={true}
+              aria-controls={`row-actions-${rowId}`}
+              aria-label={`Collapse ${row.cardIdentifier} swap`}
+            >
+              Done <span aria-hidden="true">▴</span>
+            </button>
+          )}
         </div>
       </div>
       {lightbox && (

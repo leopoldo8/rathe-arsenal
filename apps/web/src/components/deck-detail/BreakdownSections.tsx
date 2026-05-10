@@ -87,7 +87,7 @@ export function BreakdownSections({
           <p className={styles.section__empty}>No exact matches</p>
         ) : (
           <div className={styles.cardGrid}>
-            {breakdown.exact.slice(0, 8).map((entry) => (
+            {breakdown.exact.map((entry) => (
               <div
                 key={`${entry.cardIdentifier}-${entry.slot}`}
                 className={styles.cardCell}
@@ -116,14 +116,6 @@ export function BreakdownSections({
                 </span>
               </div>
             ))}
-            {breakdown.exact.length > 8 && (
-              <div className={styles.cardCellMore}>
-                <div className={styles.cardCellMore__n}>
-                  +{breakdown.exact.length - 8}
-                </div>
-                <div className={styles.cardCellMore__l}>more</div>
-              </div>
-            )}
           </div>
         )}
       </section>

@@ -138,6 +138,7 @@ describe('DecksService', () => {
       expect(result).toEqual({
         trackedDecks: [],
         collectionCardCount: 0,
+        totalCardsMissing: null,
         aggregateShoppingLine: null,
       });
       expect(trackedDeckRepo.find).toHaveBeenCalledWith({
@@ -216,6 +217,64 @@ describe('DecksService', () => {
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.
       expect(result.aggregateShoppingLine).toBeNull();
+    });
+
+    describe('totalCardsMissing aggregate', () => {
+      // Reuse the (C3) describe block's helpers via a local copy so this
+      // test isn't coupled to that block's state setup.
+      function setupWithBreakdown(breakdown: unknown): void {
+        const deck = buildTrackedDeck();
+        const snapshot = buildSnapshot({
+          breakdown: breakdown as Record<string, unknown>,
+        });
+        trackedDeckRepo.find.mockResolvedValue([deck]);
+        collectionReadService.countUniqueOwned.mockResolvedValue(0);
+        const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+        qb.where.mockReturnThis();
+        qb.andWhere.mockReturnThis();
+        qb.getMany.mockResolvedValue([snapshot]);
+        snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+      }
+
+      it('sums notOwned quantities (counts duplicates, not unique ids)', async () => {
+        setupWithBreakdown({
+          exact: [],
+          substituted: [],
+          missing: [],
+          notOwned: [
+            { cardIdentifier: 'a', quantity: 3, slot: 'mainboard' },
+            { cardIdentifier: 'b', quantity: 2, slot: 'mainboard' },
+            { cardIdentifier: 'c', quantity: 1, slot: 'mainboard' },
+          ],
+        });
+
+        const result = await service.listForUser(USER_ID);
+
+        // Total = 3 + 2 + 1 = 6 physical copies missing (not 3 unique ids).
+        expect(result.totalCardsMissing).toBe(6);
+      });
+
+      it('returns 0 when notOwned is empty (all decks fully owned)', async () => {
+        setupWithBreakdown({
+          exact: [],
+          substituted: [],
+          missing: [],
+          notOwned: [],
+        });
+
+        const result = await service.listForUser(USER_ID);
+
+        expect(result.totalCardsMissing).toBe(0);
+      });
+
+      it('handles legacy breakdowns that lack notOwned (returns 0)', async () => {
+        // Pre-B1 snapshots may not carry notOwned; defensive sum yields 0.
+        setupWithBreakdown({ exact: [], substituted: [], missing: [] });
+
+        const result = await service.listForUser(USER_ID);
+
+        expect(result.totalCardsMissing).toBe(0);
+      });
     });
 
     describe('(C3) representativeCards heuristic', () => {

@@ -9,11 +9,15 @@ import styles from './PopulatedHomeHero.module.css';
 interface IPopulatedHomeHeroProps {
   readonly decks: readonly ITrackedDeckListItem[];
   /**
-   * Unique cards missing across all tracked decks.
-   * Sourced from `aggregateShoppingLine.uniqueCardsMissing` (R23a).
-   * null when the shopping line hasn't been computed or store is unscraped.
+   * Total physical card copies the user does not own across all tracked
+   * decks. Sourced from `ITrackedDeckListResponse.totalCardsMissing` —
+   * sum of `breakdown.notOwned[].quantity` per snapshot. Counts duplicates
+   * (3x copies needed and missing → 3, not 1).
+   *
+   * Decoupled from the shopping line: always rendered when non-null, even
+   * when no priced store is configured. Null only when no snapshot exists.
    */
-  readonly uniqueCardsMissing: number | null;
+  readonly totalCardsMissing: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,7 +54,7 @@ function computeAverageReadiness(decks: readonly ITrackedDeckListItem[]): number
  */
 export function PopulatedHomeHero({
   decks,
-  uniqueCardsMissing,
+  totalCardsMissing,
 }: IPopulatedHomeHeroProps): React.ReactElement {
   const avgReadiness = computeAverageReadiness(decks);
 
@@ -106,11 +110,13 @@ export function PopulatedHomeHero({
 
         {/* Stat 3: Cards missing — PRIMARY brass signature treatment.
             Uses .ra-hero-primary-stat (Cinzel 700, brass, large).
-            NOT .ra-readiness-display (that is reserved for % values on R7). */}
-        {uniqueCardsMissing !== null && (
+            NOT .ra-readiness-display (that is reserved for % values on R7).
+            Counts every needed copy (sum of breakdown.notOwned quantities),
+            so 3x missing of the same card contributes 3. */}
+        {totalCardsMissing !== null && (
           <div className={`${styles.stat} ${styles.statPrimary}`}>
             <div className={`${styles.statNumber} ${styles.heroPrimaryStat} ra-hero-primary-stat`}>
-              {uniqueCardsMissing}
+              {totalCardsMissing}
             </div>
             <div className={styles.statLabel}>Cards missing</div>
           </div>

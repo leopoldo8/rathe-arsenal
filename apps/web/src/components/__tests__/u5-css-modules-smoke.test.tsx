@@ -297,7 +297,7 @@ describe('PathCResult', () => {
 // ---------------------------------------------------------------------------
 
 describe('BreakdownList', () => {
-  it('renders section headings for exact, substituted, and not-owned', async () => {
+  it('renders section headings for exact, swaps, and not-owned', async () => {
     const { BreakdownList } = await import('../breakdown-list');
     render(
       <BreakdownList
@@ -308,7 +308,7 @@ describe('BreakdownList', () => {
       />,
     );
     expect(screen.getByText(/^exact \(1\)$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^substituted \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^swaps \(1\)$/i)).toBeInTheDocument();
     expect(screen.getByText(/^not owned \(1\)$/i)).toBeInTheDocument();
   });
 
@@ -323,7 +323,7 @@ describe('BreakdownList', () => {
       />,
     );
     expect(screen.getByText(/no exact matches/i)).toBeInTheDocument();
-    expect(screen.getByText(/no substitutions/i)).toBeInTheDocument();
+    expect(screen.getByText(/no swaps/i)).toBeInTheDocument();
     expect(screen.getByText(/all cards accounted for/i)).toBeInTheDocument();
   });
 

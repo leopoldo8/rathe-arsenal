@@ -21,7 +21,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    expect(screen.getByText(/rejected 1 substitution/i)).toBeInTheDocument();
+    expect(screen.getByText(/rejected 1 swap/i)).toBeInTheDocument();
   });
 
   it('renders with the correct plural label for multiple rejections', () => {
@@ -32,7 +32,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    expect(screen.getByText(/rejected 3 substitutions/i)).toBeInTheDocument();
+    expect(screen.getByText(/rejected 3 swaps/i)).toBeInTheDocument();
   });
 
   it('calls onClearRejections when the button is clicked', () => {

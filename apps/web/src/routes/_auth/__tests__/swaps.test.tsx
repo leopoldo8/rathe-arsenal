@@ -612,6 +612,8 @@ describe('SwapsPage — reset action', () => {
     };
     renderPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for APP001/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision for APP001/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
@@ -997,6 +999,8 @@ describe('Fix regression — approve/reject sends substituteIdentifier, not orig
     };
     renderPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-1/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-1/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;

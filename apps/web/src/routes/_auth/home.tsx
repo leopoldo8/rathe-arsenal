@@ -59,10 +59,7 @@ function HomePage(): React.ReactElement {
     return <EducationalEmptyState collectionCardCount={collectionCardCount} />;
   }
 
-  const uniqueCardsMissing =
-    data?.aggregateShoppingLine?.kind === 'populated'
-      ? (data.aggregateShoppingLine.uniqueCardsMissing ?? null)
-      : null;
+  const totalCardsMissing = data?.totalCardsMissing ?? null;
 
   const untrackingDeckId =
     untrackMutation.isPending ? (untrackMutation.variables ?? null) : null;
@@ -71,7 +68,7 @@ function HomePage(): React.ReactElement {
     <section className={styles.populated}>
       <PopulatedHomeHero
         decks={trackedDecks}
-        uniqueCardsMissing={uniqueCardsMissing}
+        totalCardsMissing={totalCardsMissing}
       />
       <ReadinessShelves
         decks={trackedDecks}
