@@ -69,6 +69,16 @@ export interface ITrackedDeckListResponse {
   readonly trackedDecks: readonly ITrackedDeckListItem[];
   readonly collectionCardCount: number;
   /**
+   * Total physical card copies the user does not own across all tracked decks.
+   * Sum of `breakdown.notOwned[].quantity` from each snapshot — counts every
+   * needed copy (3x missing of the same card = 3, not 1).
+   *
+   * Decoupled from `aggregateShoppingLine`: always available from snapshots,
+   * even without a priced store. Powers the home "Cards missing" stat
+   * unconditionally (no kind check). Null only when no snapshot exists.
+   */
+  readonly totalCardsMissing: number | null;
+  /**
    * Aggregate shopping line across all tracked decks. Added in Phase 1b (U10).
    * null = no tracked decks with missing cards.
    */

@@ -176,6 +176,8 @@ describe('ReviewsRow — per-row actions', () => {
     // Use an approved row so the Reset button is enabled.
     const onAction = vi.fn();
     renderRow(makeRow({ decision: 'approved' }), { onAction });
+    // Decided rows render collapsed by default — expand to access action buttons.
+    await userEvent.click(screen.getByRole('button', { name: /change decision/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;

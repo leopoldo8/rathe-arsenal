@@ -34,7 +34,7 @@ export function ModifiedViewBanner({
   onClearRejections,
   isClearing,
 }: IModifiedViewBannerProps): React.ReactElement {
-  const subLabel = rejectedCount === 1 ? 'substitution' : 'substitutions';
+  const subLabel = rejectedCount === 1 ? 'swap' : 'swaps';
 
   return (
     <div role="status" className={styles.banner}>

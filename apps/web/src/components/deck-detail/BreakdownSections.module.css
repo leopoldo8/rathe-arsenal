@@ -81,33 +81,6 @@
   letter-spacing: 0.04em;
 }
 
-.cardCellMore {
-  width: 72px;
-  height: 100px; /* ~sm art height */
-  border: 1px dashed var(--ra-border-strong);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ra-space-1);
-  color: var(--ra-fg-muted);
-  background: var(--ra-bg-sunken);
-}
-
-.cardCellMore__n {
-  font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-bold);
-  font-size: 1.125rem;
-  color: var(--ra-accent);
-}
-
-.cardCellMore__l {
-  font-family: var(--ra-font-mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 /* ---- Substitution list ---- */
 .subList {
   list-style: none;

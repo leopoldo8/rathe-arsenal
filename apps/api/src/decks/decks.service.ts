@@ -106,7 +106,12 @@ export class DecksService {
     ]);
 
     if (decks.length === 0) {
-      return { trackedDecks: [], collectionCardCount, aggregateShoppingLine: null };
+      return {
+        trackedDecks: [],
+        collectionCardCount,
+        totalCardsMissing: null,
+        aggregateShoppingLine: null,
+      };
     }
 
     // Fetch latest snapshot per deck using a subquery for max computedAt
@@ -178,7 +183,40 @@ export class DecksService {
       };
     });
 
-    return { trackedDecks, collectionCardCount, aggregateShoppingLine };
+    // Total physical copies the user does not own across every deck. Summed
+    // from each snapshot's `notOwned` breakdown — counts duplicates (3x copies
+    // missing → 3, not 1). Decoupled from the shopping line: this number is
+    // always available even when no priced store is configured.
+    let totalCardsMissing: number | null = null;
+    for (const deck of decks) {
+      const snap = snapshotByDeckId.get(deck.id);
+      if (!snap) continue;
+      const sum = this.sumNotOwnedQuantities(snap.breakdown);
+      totalCardsMissing = (totalCardsMissing ?? 0) + sum;
+    }
+
+    return {
+      trackedDecks,
+      collectionCardCount,
+      totalCardsMissing,
+      aggregateShoppingLine,
+    };
+  }
+
+  // Sums quantity across breakdown.notOwned entries (cards the user does not
+  // fully own — union of `missing` plus the `original` side of `substituted`).
+  // Returns 0 for snapshots with empty/legacy breakdowns.
+  private sumNotOwnedQuantities(breakdown: unknown): number {
+    const raw = breakdown as {
+      notOwned?: readonly { quantity?: number }[];
+    };
+    const entries = raw?.notOwned ?? [];
+    let total = 0;
+    for (const entry of entries) {
+      const q = typeof entry?.quantity === 'number' ? entry.quantity : 0;
+      total += q;
+    }
+    return total;
   }
 
   // Extracts the hero thumbnail + up to 3 representative mainboard cards

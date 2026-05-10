@@ -66,14 +66,14 @@ export function BreakdownList({
         )}
       </section>
 
-      {/* Substituted */}
+      {/* Swaps */}
       <section>
         <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--substituted']}`}>
-          Substituted ({breakdown.substituted.length})
+          Swaps ({breakdown.substituted.length})
         </h3>
         {breakdown.substituted.length === 0 ? (
           <p className={styles.emptyMsg}>
-            No substitutions
+            No swaps
           </p>
         ) : (
           <div>

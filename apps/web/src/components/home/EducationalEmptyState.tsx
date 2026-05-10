@@ -68,7 +68,7 @@ export function EducationalEmptyState({
           <div className={styles.stepNumber} aria-hidden="true">03</div>
           <h4 className={styles.stepTitle}>Approve &amp; buy</h4>
           <p className={styles.stepBody}>
-            Approve or reject each substitution. Shop the missing cards in one
+            Approve or reject each swap. Shop the missing cards in one
             click.
           </p>
         </div>

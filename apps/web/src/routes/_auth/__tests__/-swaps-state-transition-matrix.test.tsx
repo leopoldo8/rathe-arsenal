@@ -329,6 +329,8 @@ describe('State transition (5): approved → reject via /swaps [user-reported bu
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-A/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reject ORIG-A/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
@@ -409,6 +411,8 @@ describe('State transition (7): approved → reset via /swaps', () => {
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-R/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-R/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
@@ -447,6 +451,8 @@ describe('State transition (9): rejected → approve via /swaps', () => {
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-J/i }));
     await userEvent.click(screen.getByRole('button', { name: /Approve ORIG-J/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
@@ -483,6 +489,8 @@ describe('State transition (11): rejected → reset via /swaps', () => {
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-K/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-K/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
@@ -531,37 +539,41 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     expect(resetBtn).toBeDisabled();
   });
 
-  it('Approve button on an APPROVED row should be disabled — BUG if enabled', () => {
+  it('Approve button on an APPROVED row should be disabled — BUG if enabled', async () => {
     mockSearchState = { ...mockSearchState, state: 'approved' };
     mockReviewsData = {
       rows: [makeRow({ cardIdentifier: 'APP001', decision: 'approved' })],
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed — expand to inspect button state.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for APP001/i }));
     const approveBtn = screen.getByRole('button', { name: /Approve APP001/i });
     // Per spec: Approve is disabled (or aria-pressed=true) when already approved.
     expect(approveBtn).toBeDisabled();
   });
 
-  it('Reject button on a REJECTED row should be disabled — BUG if enabled', () => {
+  it('Reject button on a REJECTED row should be disabled — BUG if enabled', async () => {
     mockSearchState = { ...mockSearchState, state: 'rejected' };
     mockReviewsData = {
       rows: [makeRow({ cardIdentifier: 'REJ001', decision: 'rejected' })],
     };
     renderSwapsPage();
 
+    await userEvent.click(screen.getByRole('button', { name: /change decision for REJ001/i }));
     const rejectBtn = screen.getByRole('button', { name: /Reject REJ001/i });
     // Per spec: Reject is disabled when already rejected.
     expect(rejectBtn).toBeDisabled();
   });
 
-  it('on an APPROVED row: Reject and Reset are enabled, Approve is disabled', () => {
+  it('on an APPROVED row: Reject and Reset are enabled, Approve is disabled', async () => {
     mockSearchState = { ...mockSearchState, state: 'approved' };
     mockReviewsData = {
       rows: [makeRow({ cardIdentifier: 'APP002', decision: 'approved' })],
     };
     renderSwapsPage();
 
+    await userEvent.click(screen.getByRole('button', { name: /change decision for APP002/i }));
     expect(screen.getByRole('button', { name: /Approve APP002/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Reject APP002/i })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: /Reset decision for APP002/i })).not.toBeDisabled();
@@ -579,13 +591,14 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     expect(screen.getByRole('button', { name: /Reset decision for PEND002/i })).toBeDisabled();
   });
 
-  it('on a REJECTED row: Approve and Reset are enabled, Reject is disabled', () => {
+  it('on a REJECTED row: Approve and Reset are enabled, Reject is disabled', async () => {
     mockSearchState = { ...mockSearchState, state: 'rejected' };
     mockReviewsData = {
       rows: [makeRow({ cardIdentifier: 'REJ002', decision: 'rejected' })],
     };
     renderSwapsPage();
 
+    await userEvent.click(screen.getByRole('button', { name: /change decision for REJ002/i }));
     expect(screen.getByRole('button', { name: /Approve REJ002/i })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: /Reject REJ002/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Reset decision for REJ002/i })).not.toBeDisabled();
@@ -1009,6 +1022,8 @@ describe('All transitions: operations keyed by substituteIdentifier, not origina
     };
     renderSwapsPage();
 
+    // Decided rows render collapsed by default — expand to access actions.
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reject ORIG/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string }>;
@@ -1023,6 +1038,7 @@ describe('All transitions: operations keyed by substituteIdentifier, not origina
     };
     renderSwapsPage();
 
+    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG/i }));
     await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string }>;
