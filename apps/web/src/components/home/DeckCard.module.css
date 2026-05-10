@@ -13,6 +13,19 @@
   border: none;
   border-radius: 0;
   overflow: visible;
+  /* Anchor for the absolutely-positioned UntrackPin. */
+  position: relative;
+  /* Constrain the card to the vessel's max width and center it within
+     the grid cell. This makes the trash pin's offsets land at the
+     vessel edge instead of floating in empty grid space. */
+  max-width: 264px;
+  align-self: center;
+  width: 100%;
+  /* Create a fresh stacking context so the cardLink (z=2) stays
+     above the trash pin (z=1). Without this, sibling z-indexes would
+     leak into ancestor stacking and the pin would not get hidden
+     behind the deckbox at idle. */
+  isolation: isolate;
 }
 
 /* Tier styling lives on the .vesselWrap (saturation filter on the SVG)
@@ -38,6 +51,10 @@
   /* Tight stack — the deckbox dominates; the text below sits as a
      compact caption directly underneath, not as a separate panel. */
   gap: var(--ra-space-2);
+  /* Stacking context: above the trash pin so the deckbox visually
+     covers the idle (tucked-back) pin. */
+  position: relative;
+  z-index: 2;
 }
 
 .cardLink:focus-visible {
@@ -57,7 +74,7 @@
      leaves headroom for the lid (which extends above the box body in
      viewBox via the trapezoid rim) plus cards rising above on hover. */
   aspect-ratio: 200 / 240;
-  max-width: 220px;
+  max-width: 264px;
   /* 3D context for the lid hinge animation. The box body itself is
      drawn with perspective baked into the SVG geometry (top rim
      trapezoid, right depth strip), so we don't need a CSS tilt — the
@@ -336,10 +353,10 @@
      spans viewBox y=64-216 (front face is 58-222); we place the
      title near the bottom of the frame. */
   left: 50%;
-  /* Box front face ends at viewBox y=222 (vesselWrap height 240).
-     Inner brass frame bottom at y=216. Title sits just inside the
-     frame ~ y=205-210. From bottom: (240 - 207) / 240 ≈ 14%. */
-  bottom: 13%;
+  /* Slightly higher anchor than the single-line version (was 13%)
+     so a 2-line title still fits above the front-face bottom edge
+     without crowding the brass border. */
+  bottom: 11%;
   transform: translateX(-50%);
   /* Match the inner-frame width so the title sits neatly inside
      the brass border. */
@@ -347,14 +364,19 @@
   z-index: 5;
   text-align: center;
   font-family: var(--ra-font-display);
-  font-size: 0.72rem;
+  font-size: 0.86rem;
   font-weight: var(--ra-weight-semibold);
   letter-spacing: 0.04em;
+  line-height: 1.15;
   color: var(--ra-fg-primary);
-  /* Single-line truncation with ellipsis. */
-  white-space: nowrap;
+  /* Up to 2 lines, with ellipsis on the second line if it overflows.
+     Uses the -webkit-box line-clamp idiom (well-supported across
+     evergreen browsers). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   /* Subtle dark backdrop so the text reads against varying card
      art beneath. */
   text-shadow:
@@ -364,87 +386,100 @@
 }
 
 /* ============================================================
-   Card text + readiness
-   ============================================================ */
-
-/* ============================================================
-   Readiness gauge — minimalist readout
+   Hero life token — readiness as a FaB-style life token
    ============================================================
-   The readiness % is the core stat. The treatment is restrained:
-   a large brass numeral (the brand's signature .ra-readiness-display
-   class) over a thin tier-colored progress bar that maps the value
-   visually. No frames, no plaques, no decorative flanks — the
-   personality comes from the brand typography + the live gauge.
+   Three concentric octagons mirror a Flesh and Blood hero life
+   token: outer status halo (tier-colored), brass border, oxblood-
+   deep center, cream numeral. Sits below the deckbox like a token
+   placed on the table next to the box. Tier is encoded in the
+   OUTER ring so the token stays recognizably "FaB life token"
+   (red+brass) while the ring acts as a status halo.
 */
 
-.readinessGauge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--ra-space-1);
-  margin-top: var(--ra-space-3);
-}
-
-.readinessNumberRow {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-  line-height: 1;
-}
-
-.readinessNumber {
-  font-family: var(--ra-font-ornament);
-  font-weight: var(--ra-weight-black);
-  font-size: 1.85rem;
-  color: var(--ra-accent);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  letter-spacing: var(--ra-track-display);
-}
-
-.readinessPercentSign {
-  font-family: var(--ra-font-display);
-  font-size: 0.95rem;
-  font-weight: var(--ra-weight-semibold);
-  color: var(--ra-accent);
-  opacity: 0.7;
-  margin-left: 2px;
-}
-
-/* Gauge bar — thin horizontal line with a tier-colored fill. The
-   fill width is set inline via the `style` prop so it tracks the
-   exact percent without a per-tier breakpoint. */
-.readinessBar {
-  width: 64%;
-  max-width: 120px;
-  height: 2px;
-  background: rgba(214, 158, 46, 0.22);
-  position: relative;
-  overflow: hidden;
-}
-
-.readinessBarFill {
+.heroLifeToken {
+  /* Pinned absolute INSIDE the vessel, in the bottom-right of the
+     front face. Adds zero vertical space to the tile — the token
+     is a pinned overlay, not an appended panel.
+     - bottom: 26% clears a 2-line deck title (which now occupies
+       ~11-21% from bottom). 5% air gap above the title.
+     - right: 7% leaves a hair of brass frame visible to the right.
+     - width: 19% keeps the token small enough that it reads as a
+       pip pinned to the box rather than a competing element. */
   position: absolute;
-  inset: 0 auto 0 0;
+  bottom: 20%;
+  right: 13%;
+  width: 26%;
+  aspect-ratio: 1 / 1;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.heroLifeToken svg {
+  display: block;
+  width: 100%;
   height: 100%;
-  background: var(--ra-accent);
-  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.readinessBarFill--high {
-  background: var(--ra-ready-high, #6fbf73);
+/* On tile hover the token lifts a hair — feels like a piece on a
+   table reacting to your touch. */
+.card:hover .heroLifeToken,
+.cardLink:focus-visible .heroLifeToken {
+  transform: translateY(-2px) scale(1.06);
 }
 
-.readinessBarFill--mid {
-  background: var(--ra-ready-mid-accent, var(--ra-accent));
+.lifeTokenRing {
+  fill: var(--ra-token-ring);
 }
 
-.readinessBarFill--low {
-  background: var(--ra-ready-low, #c44);
+.lifeTokenNumber {
+  /* Inherits Cinzel Decorative + heavy weight from .ra-readiness-display
+     (applied in JSX). The font-size is in viewBox units (100×100), so
+     the rendered numeral always fills ~30% of the token regardless of
+     its absolute on-screen size. */
+  fill: #f0e0c0;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 1;
+}
+
+.lifeTokenPercent {
+  /* Stacked centered below the numeral on the same vertical axis. The
+     unit label sits as a small caption — much lighter weight than the
+     numeral so the visual hierarchy reads numeral → unit. */
+  font-size: 14px;
+  fill: #f0e0c0;
+  opacity: 0.75;
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.05em;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 0.4;
+}
+
+/* Tier ring colors — emerald / brass-bright / oxblood-bright. The
+   center stays oxblood-red regardless of tier (FaB life-token DNA);
+   the ring is the status channel. */
+.heroLifeToken--high {
+  --ra-token-ring: #2a8050;
+}
+
+.heroLifeToken--mid {
+  --ra-token-ring: #c89544;
+}
+
+.heroLifeToken--low {
+  --ra-token-ring: #a23440;
 }
 
 .cardNoReadiness {
-  margin-top: var(--ra-space-3);
+  margin-top: var(--ra-space-2);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
   font-style: italic;
@@ -469,64 +504,136 @@
 }
 
 /* ============================================================
-   Untrack — bordered pill button, hover-only on desktop
-   ============================================================ */
+   Untrack pin — split into visual + hit-area layers
+   ============================================================
+   The animation requirement ("emerges from behind the deckbox") and
+   the click requirement ("must register clicks past the deckbox")
+   pull in opposite directions: one needs z-index BELOW cardLink, the
+   other needs z-index ABOVE. Splitting into two co-located layers
+   resolves it cleanly:
 
-.untrackButton {
-  align-self: center;
-  margin-top: var(--ra-space-3);
-  padding: 6px 16px;
-  background: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
-  font-size: 0.7rem;
-  font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+     - .untrackPinVisual (z=1, aria-hidden, pointer-events: none):
+       the slide animation. Sits BEHIND cardLink at all times so the
+       deckbox visually covers it during slide-in.
+     - .untrackPinHit (z=3, the actual <button>): sits ABOVE cardLink
+       at the FINAL hover position. Invisible. Captures clicks only
+       when the tile is hovered/focused.
+
+   Both layers share position/size variables to stay co-located.
+*/
+
+.untrackPinVisual,
+.untrackPinHit {
+  position: absolute;
+  /* Aligned with the lid hinge line (top of the front face) — see
+     comment on top: 26% calculation. */
+  top: 26%;
+  /* Natural position: pin's left edge flush with the deckbox's
+     painted right edge. */
+  right: 11%;
+  /* Visual 22×22; padding 6px → 34px hit/visual target. */
+  width: 22px;
+  height: 22px;
+  padding: 6px;
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Visual layer: animates, behind the box, never catches events ---- */
+.untrackPinVisual {
+  z-index: 1;
+  pointer-events: none;
   color: var(--ra-fg-secondary);
-  cursor: pointer;
-  /* Touch / no-hover devices: always visible by default. */
-  opacity: 1;
+  /* Idle: tucked one pin-width to the left (= behind the deckbox's
+     painted right edge), invisible. */
+  transform: translateX(-100%);
+  opacity: 0;
   transition:
-    color var(--ra-duration) var(--ra-ease),
-    border-color var(--ra-duration) var(--ra-ease),
-    background-color var(--ra-duration) var(--ra-ease),
-    opacity var(--ra-duration) var(--ra-ease);
-  min-block-size: 32px;
-  min-inline-size: 88px;
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms 60ms ease,
+    color 180ms ease;
 }
 
-.untrackButton:hover:not(:disabled) {
-  border-color: var(--ra-ready-low, #c44);
-  color: var(--ra-ready-low, #c44);
-  background: color-mix(in oklch, var(--ra-ready-low, #c44) 8%, var(--ra-bg-raised));
+.card:hover .untrackPinVisual,
+.card:focus-within .untrackPinVisual {
+  transform: translateX(0);
+  opacity: 1;
 }
 
-.untrackButton:focus-visible {
+/* ---- Hit-area layer: invisible button, captures clicks, above all ---- */
+.untrackPinHit {
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  /* Idle: not clickable. Hover/focus on the tile flips this to auto.
+     opacity stays 0 — this layer is purely a click target; the visual
+     comes from .untrackPinVisual underneath it. */
+  pointer-events: none;
+  opacity: 0;
+  transition: pointer-events 0s, opacity 120ms ease;
+}
+
+.card:hover .untrackPinHit,
+.card:focus-within .untrackPinHit {
+  pointer-events: auto;
+}
+
+.untrackPinHit:hover:not(:disabled) ~ * .untrackPinIcon,
+.untrackPinHit:hover:not(:disabled) {
+  /* Sibling-target trick to color the visual when hovering the hit
+     area. Falls through to the visual via the .untrackPinVisual
+     hover rule below. */
+}
+
+/* When the hit area is hovered/focused, recolor the visual to
+   oxblood as the destructive cue. The visual is a SIBLING of the
+   hit area, so we use :has() — supported in evergreen browsers. */
+.card:has(.untrackPinHit:hover:not(:disabled)) .untrackPinVisual,
+.card:has(.untrackPinHit:focus-visible) .untrackPinVisual {
+  color: #c44;
+}
+
+.untrackPinHit:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+  border-radius: 4px;
+  /* Make the focus ring visible; opacity stays 0 for the button body
+     itself. */
+  opacity: 1;
 }
 
-.untrackButton:disabled {
-  opacity: 0.5;
+.untrackPinHit:disabled {
   cursor: not-allowed;
 }
 
-/* On hover-capable devices the action is hidden until the tile is
-   hovered or focused — keeps the idle composition uncluttered. */
-@media (hover: hover) {
-  .untrackButton {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(4px);
+.card:has(.untrackPinHit:disabled) .untrackPinVisual {
+  opacity: 0.4;
+}
+
+.untrackPinIcon {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* Reduced-motion: no slide, just a fade-in at the natural position. */
+@media (prefers-reduced-motion: reduce) {
+  .untrackPinVisual {
+    transition: opacity 180ms linear, color 180ms linear;
+    transform: translateX(0);
   }
 
-  .card:hover .untrackButton,
-  .card:focus-within .untrackButton {
+  .card:hover .untrackPinVisual,
+  .card:focus-within .untrackPinVisual {
+    transform: translateX(0);
     opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
   }
 }
 

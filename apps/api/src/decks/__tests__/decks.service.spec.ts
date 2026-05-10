@@ -295,7 +295,7 @@ const trackedDeck = result.trackedDecks[0]!;
         expect(reps[0]?.name).toBe('Pummel'); // qty 3, P < S
         expect(reps[1]?.name).toBe('Sigil of Solace'); // qty 3, S
         expect(reps[2]?.name).toBe('Crippling Crush'); // qty 2
-        expect(reps[0]?.imageUrl).toEqual({ small: 'pummel.webp' });
+        expect(reps[0]?.imageUrl).toEqual({ small: 'pummel.webp', smallSources: ['pummel.webp'] });
       });
 
       it('excludes hero, weapon, and equipment slots', async () => {
@@ -370,7 +370,49 @@ const trackedDeck = result.trackedDecks[0]!;
         const result = await service.listForUser(USER_ID);
 
         // Assert
-        expect(result.trackedDecks[0]!.heroImageUrl).toEqual({ small: 'bravo.webp' });
+        expect(result.trackedDecks[0]!.heroImageUrl).toEqual({
+          small: 'bravo.webp',
+          smallSources: ['bravo.webp'],
+        });
+      });
+
+      it('projects the catalog `sources` mirror as smallSources fallback list', async () => {
+        // Arrange — a hero whose primary URL is known to 403 on the LSS CDN
+        // (e.g. ASR001) but has working alternates. The engine breakdown
+        // carries the `sources` array; the service must surface it as an
+        // ordered, deduped list with the primary first.
+        const heroEntry = {
+          cardIdentifier: 'ira-scarlet-revenger',
+          name: 'Ira, Scarlet Revenger',
+          slot: 'hero',
+          quantity: 1,
+          pitch: null,
+          cost: null,
+          type: 'hero',
+          imageUrl: {
+            small: 'https://lss.example/ASR001.webp',
+            large: 'https://lss.example/large/ASR001.webp',
+            sources: [
+              { small: 'https://lss.example/ASR001.webp', large: 'https://lss.example/large/ASR001.webp' },
+              { small: 'https://lss.example/ASR001-RF.webp', large: 'https://lss.example/large/ASR001-RF.webp' },
+              { small: 'https://lss.example/HER123-RF.webp', large: 'https://lss.example/large/HER123-RF.webp' },
+            ],
+          },
+        };
+        setupListWithSnapshot({ exact: [heroEntry], substituted: [], missing: [], notOwned: [] });
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toEqual({
+          small: 'https://lss.example/ASR001.webp',
+          smallSources: [
+            'https://lss.example/ASR001.webp',
+            'https://lss.example/ASR001-RF.webp',
+            'https://lss.example/HER123-RF.webp',
+          ],
+        });
       });
 
       it('returns null heroImageUrl + empty representatives when breakdown is empty', async () => {

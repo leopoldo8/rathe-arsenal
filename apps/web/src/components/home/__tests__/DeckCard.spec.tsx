@@ -89,17 +89,28 @@ describe('DeckCard', () => {
     expect(screen.getByText(/Blitz/)).toBeInTheDocument();
   });
 
-  it('renders effectivePercent with .ra-readiness-display class', () => {
+  it('renders effectivePercent inside the wax seal with .ra-readiness-display class', () => {
     renderDeckCard(
       makeDeck({
         latestSnapshot: { rawPercent: 85, effectivePercent: 85, computedAt: '' },
       }),
     );
-    // The number lives in its own span (the % sign sits in a sibling
-    // span), and the .ra-readiness-display class is what carries the
-    // brand's signature Cinzel Decorative treatment.
-    const pctEl = screen.getByText('85.0');
+    // The wax seal rounds to integer (a quick-read stamp) and the
+    // numeric SVG <text> keeps the brand's `.ra-readiness-display`
+    // class so the brass Cinzel Decorative treatment carries over.
+    const pctEl = screen.getByText('85');
     expect(pctEl).toHaveClass('ra-readiness-display');
+  });
+
+  it('exposes wax seal as a meter with the percent + tier in the label', () => {
+    renderDeckCard(
+      makeDeck({
+        latestSnapshot: { rawPercent: 85, effectivePercent: 85, computedAt: '' },
+      }),
+    );
+    const meter = screen.getByRole('meter');
+    expect(meter).toHaveAttribute('aria-valuenow', '85');
+    expect(meter).toHaveAttribute('aria-label', expect.stringMatching(/85%/));
   });
 
   it('renders "No readiness data yet" when snapshot is null', () => {
@@ -130,10 +141,12 @@ describe('DeckCard', () => {
 
   it('shows loading state when isUntracking=true', () => {
     renderDeckCard(makeDeck(), vi.fn(), true);
-    // Untrack button is disabled and copy switches to "Untracking…"
+    // The pin is icon-only, so the loading state is signalled by the
+    // disabled attribute + aria-busy. The aria-label stays stable so
+    // assistive tech still announces the deck name.
     const btn = screen.getByRole('button', { name: /untrack/i });
     expect(btn).toBeDisabled();
-    expect(btn.textContent).toMatch(/untracking/i);
+    expect(btn).toHaveAttribute('aria-busy', 'true');
   });
 
   it('the whole tile is a link to the deck detail (no explicit View CTA)', () => {
@@ -150,7 +163,7 @@ describe('DeckCard', () => {
       const { container } = renderDeckCard(
         makeDeck({
           hero: 'Bravo, Star-Crossed',
-          heroImageUrl: { small: 'https://lss.example/bravo-small.webp' },
+          heroImageUrl: { small: 'https://lss.example/bravo-small.webp', smallSources: ['https://lss.example/bravo-small.webp'] },
         }),
       );
       const heroImg = container.querySelector('img[src*="bravo-small"]');
@@ -170,9 +183,9 @@ describe('DeckCard', () => {
       const { container } = renderDeckCard(
         makeDeck({
           representativeCards: [
-            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp' } },
-            { cardIdentifier: 'sigil', name: 'Sigil', imageUrl: { small: 'https://lss.example/sigil.webp' } },
-            { cardIdentifier: 'romp', name: 'Romp', imageUrl: { small: 'https://lss.example/romp.webp' } },
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp', smallSources: ['https://lss.example/pummel.webp'] } },
+            { cardIdentifier: 'sigil', name: 'Sigil', imageUrl: { small: 'https://lss.example/sigil.webp', smallSources: ['https://lss.example/sigil.webp'] } },
+            { cardIdentifier: 'romp', name: 'Romp', imageUrl: { small: 'https://lss.example/romp.webp', smallSources: ['https://lss.example/romp.webp'] } },
           ],
         }),
       );
@@ -185,7 +198,7 @@ describe('DeckCard', () => {
       const { container } = renderDeckCard(
         makeDeck({
           representativeCards: [
-            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp' } },
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp', smallSources: ['https://lss.example/pummel.webp'] } },
           ],
         }),
       );

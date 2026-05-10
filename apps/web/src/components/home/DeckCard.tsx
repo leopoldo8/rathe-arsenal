@@ -90,11 +90,12 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
         className={styles.cardLink}
       >
         <DeckBoxVessel
-          heroImageUrl={deck.heroImageUrl?.small ?? null}
+          heroSources={resolveSources(deck.heroImageUrl)}
           heroAlt={deck.hero}
           slots={slots}
           tier={tier}
           deckName={deck.name}
+          percent={effectivePercent}
         />
 
         {/* Visually-hidden h3 — keeps the deck name in the document
@@ -106,27 +107,21 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
           {deck.name} — {deck.hero}, {deck.format}
         </h3>
 
-        {effectivePercent !== null ? (
-          <ReadinessGauge percent={effectivePercent} tier={tier} />
-        ) : (
+        {effectivePercent === null && (
           <div className={styles.cardNoReadiness}>No readiness data yet</div>
         )}
       </Link>
 
-      {/* Untrack — the only persistent action. The whole tile is a
-          Link to the deck detail, so a "View" CTA is redundant. On
-          hover-capable devices the action stays hidden until the
-          tile is hovered or focused; on touch devices (no hover)
-          it is always visible. */}
-      <button
-        type="button"
-        className={styles.untrackButton}
+      {/* Untrack pin — brass nail/pin glued to the top-right corner of
+          the box. Always visible (no :hover gating) so touch devices
+          get the action without trickery. The 32×32 visual is padded
+          out to a 44×44 tap target. The whole tile is a Link to the
+          deck detail; this pin is the only persistent action. */}
+      <UntrackPin
         onClick={handleUntrack}
         disabled={isUntracking}
-        aria-label={`Untrack ${deck.name}`}
-      >
-        {isUntracking ? 'Untracking…' : 'Untrack'}
-      </button>
+        deckName={deck.name}
+      />
     </article>
   );
 }
@@ -136,19 +131,21 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
 // ---------------------------------------------------------------------------
 
 interface IDeckBoxVesselProps {
-  readonly heroImageUrl: string | null;
+  readonly heroSources: readonly string[] | null;
   readonly heroAlt: string;
   readonly slots: ReadonlyArray<IRepresentativeCard | null>;
   readonly tier: 'high' | 'mid' | 'low' | null;
   readonly deckName: string;
+  readonly percent: number | null;
 }
 
 function DeckBoxVessel({
-  heroImageUrl,
+  heroSources,
   heroAlt,
   slots,
   tier,
   deckName,
+  percent,
 }: IDeckBoxVesselProps): React.ReactElement {
   return (
     <div
@@ -299,8 +296,8 @@ function DeckBoxVessel({
 
       {/* Hero centerpiece — static, centered, in front of cards. */}
       <div className={styles.deckBoxHeroSlot}>
-        {heroImageUrl ? (
-          <HeroImage src={heroImageUrl} alt={heroAlt} />
+        {heroSources && heroSources.length > 0 ? (
+          <HeroImage sources={heroSources} alt={heroAlt} />
         ) : (
           <div className={styles.deckBoxHeroFallback} aria-hidden="true">
             <span className={styles.deckBoxHeroSigil}>&#9670;</span>
@@ -314,6 +311,15 @@ function DeckBoxVessel({
       <div className={styles.deckBoxTitle} title={deckName}>
         {deckName}
       </div>
+
+      {/* Hero life token — small octagonal life-counter pinned to the
+          bottom-right of the box's front face, inside the brass frame.
+          Reads as a FaB life token sitting on/in the deckbox, not as
+          a label appended below it. Hidden when no snapshot has been
+          computed yet — the box itself still reads as a deck. */}
+      {percent !== null && tier !== null && (
+        <HeroLifeToken percent={percent} tier={tier} />
+      )}
      </div>
     </div>
   );
@@ -329,22 +335,20 @@ interface IDeckBoxCardProps {
 }
 
 function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage =
-    card?.imageUrl?.small !== undefined &&
-    card.imageUrl.small.length > 0 &&
-    !imageFailed;
+  const sources = resolveSources(card?.imageUrl ?? null);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const exhausted = sources === null || sourceIndex >= sources.length;
 
   return (
     <div className={`${styles.deckBoxCard} ${className}`}>
-      {showImage ? (
+      {!exhausted ? (
         <img
-          src={card!.imageUrl!.small}
+          src={sources![sourceIndex]}
           alt=""
           loading="lazy"
           decoding="async"
           className={styles.deckBoxCardImage}
-          onError={() => setImageFailed(true)}
+          onError={() => setSourceIndex((i) => i + 1)}
         />
       ) : (
         <div className={styles.deckBoxCardSilhouette}>
@@ -356,45 +360,154 @@ function DeckBoxCard({ card, className }: IDeckBoxCardProps): React.ReactElement
 }
 
 // ---------------------------------------------------------------------------
-// ReadinessGauge — minimalist readout: brass numeral + tier-colored bar
+// HeroLifeToken — readiness rendered as a FaB-style hero life token
 // ---------------------------------------------------------------------------
 
-interface IReadinessGaugeProps {
+interface IHeroLifeTokenProps {
   readonly percent: number;
-  readonly tier: 'high' | 'mid' | 'low' | null;
+  readonly tier: 'high' | 'mid' | 'low';
 }
 
-function ReadinessGauge({ percent, tier }: IReadinessGaugeProps): React.ReactElement {
-  // Clamp for the gauge fill — number text stays unclamped so legacy
-  // snapshots that overflow 100 still display correctly.
-  const fillPct = Math.max(0, Math.min(100, percent));
+/**
+ * Three concentric octagons mirror the anatomy of a Flesh and Blood
+ * hero life token: an outer status halo (tier-colored), a brass border,
+ * and an oxblood-deep center. The cream numeral inside reads as the
+ * hero's life total. Percentage is rounded to an integer (tokens are
+ * for at-a-glance reading); precision lives on the deck detail page.
+ *
+ * Tier is encoded in the OUTER ring rather than the center so the token
+ * stays recognizably "FaB life token" (red+brass) and the ring acts as
+ * a status halo. The numeric text keeps the brand `.ra-readiness-display`
+ * class for typographic continuity.
+ */
+function HeroLifeToken({ percent, tier }: IHeroLifeTokenProps): React.ReactElement {
+  const display = Math.round(Math.max(0, Math.min(100, percent)));
+  const tierClass = styles[`heroLifeToken--${tier}`] ?? '';
   return (
-    <div className={styles.readinessGauge}>
-      <span className={styles.readinessNumberRow}>
-        <span className={`${styles.readinessNumber} ra-readiness-display`}>
-          {percent.toFixed(1)}
-        </span>
-        <span className={styles.readinessPercentSign}>%</span>
-      </span>
-      <div
-        className={styles.readinessBar}
-        role="progressbar"
-        aria-label="Deck readiness"
-        aria-valuenow={Math.round(percent)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className={[
-            styles.readinessBarFill,
-            tier ? styles[`readinessBarFill--${tier}`] : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          style={{ width: `${fillPct}%` }}
+    <div
+      className={`${styles.heroLifeToken} ${tierClass}`}
+      role="meter"
+      aria-label={`Readiness ${display}%, ${tier}`}
+      aria-valuenow={display}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="lt-brass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#e8c878" />
+            <stop offset="50%" stopColor="#b8860b" />
+            <stop offset="100%" stopColor="#5a3a08" />
+          </linearGradient>
+          <radialGradient id="lt-center" cx="50%" cy="38%" r="62%">
+            <stop offset="0%" stopColor="#7a2222" />
+            <stop offset="65%" stopColor="#4a1313" />
+            <stop offset="100%" stopColor="#2a0808" />
+          </radialGradient>
+        </defs>
+        {/* Outer tier ring — status halo. */}
+        <path
+          d="M 29.3 0 L 70.7 0 L 100 29.3 L 100 70.7 L 70.7 100 L 29.3 100 L 0 70.7 L 0 29.3 Z"
+          className={styles.lifeTokenRing}
         />
-      </div>
+        {/* Brass border — metallic gradient. */}
+        <path
+          d="M 32 4 L 68 4 L 96 32 L 96 68 L 68 96 L 32 96 L 4 68 L 4 32 Z"
+          fill="url(#lt-brass)"
+        />
+        {/* Inner brass detail line — proportional inset for embossing. */}
+        <path
+          d="M 34 7 L 66 7 L 93 34 L 93 66 L 66 93 L 34 93 L 7 66 L 7 34 Z"
+          fill="none"
+          stroke="rgba(0, 0, 0, 0.4)"
+          strokeWidth="0.6"
+        />
+        {/* Oxblood center — deep red, the FaB life-token signature color. */}
+        <path
+          d="M 36 9 L 64 9 L 91 36 L 91 64 L 64 91 L 36 91 L 9 64 L 9 36 Z"
+          fill="url(#lt-center)"
+        />
+        {/* Inner brass beveled rim — narrow gold line just inside the center. */}
+        <path
+          d="M 38 12 L 62 12 L 88 38 L 88 62 L 62 88 L 38 88 L 12 62 L 12 38 Z"
+          fill="none"
+          stroke="#b8860b"
+          strokeWidth="0.8"
+          opacity="0.55"
+        />
+        {/* Two stacked text elements, both centered on x=50, so the
+            number sits above and the % sits below the same vertical
+            axis. The numeral is the focal element; the % reads as a
+            unit label below it. */}
+        <text
+          x="50"
+          y="48"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className={`${styles.lifeTokenNumber} ra-readiness-display`}
+        >
+          {display}
+        </text>
+        <text
+          x="50"
+          y="72"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className={styles.lifeTokenPercent}
+        >
+          %
+        </text>
+      </svg>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// UntrackPin — brass corner pin that removes the deck from tracking
+// ---------------------------------------------------------------------------
+
+interface IUntrackPinProps {
+  readonly onClick: () => void;
+  readonly disabled: boolean;
+  readonly deckName: string;
+}
+
+function UntrackPin({ onClick, disabled, deckName }: IUntrackPinProps): React.ReactElement {
+  // The pin is split into two co-located elements:
+  //  - .untrackPinVisual (z-index: 1, aria-hidden, pointer-events: none):
+  //    sits BEHIND the deckbox so the box visually covers it during the
+  //    slide-in animation. This is the "from behind" visual.
+  //  - .untrackPinHit (z-index: 3, the actual button): sits ABOVE the
+  //    deckbox at the final hover position. Invisible; only catches
+  //    clicks. pointer-events flips to auto on tile hover.
+  //
+  // Splitting solves the conflict between "box must cover the pin
+  // during animation" (requires z < cardLink) and "click must register"
+  // (requires z > cardLink). One layer per concern.
+  return (
+    <>
+      <span className={styles.untrackPinVisual} aria-hidden="true">
+        <svg
+          className={styles.untrackPinIcon}
+          viewBox="0 0 24 24"
+          focusable="false"
+        >
+          <path d="M5 6 H 19" />
+          <path d="M9 4 H 15 V 6" />
+          <path d="M7 6 L 8 20 H 16 L 17 6" />
+          <path d="M11 10 V 17 M 13 10 V 17" />
+        </svg>
+      </span>
+      <button
+        type="button"
+        className={styles.untrackPinHit}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={`Untrack ${deckName}`}
+        aria-busy={disabled}
+        title="Untrack"
+      />
+    </>
   );
 }
 
@@ -403,13 +516,20 @@ function ReadinessGauge({ percent, tier }: IReadinessGaugeProps): React.ReactEle
 // ---------------------------------------------------------------------------
 
 interface IHeroImageProps {
-  readonly src: string;
+  readonly sources: readonly string[];
   readonly alt: string;
 }
 
-function HeroImage({ src, alt }: IHeroImageProps): React.ReactElement {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
+/**
+ * Walks the catalog's ordered URL list on `<img onError>`. Legend Story's
+ * CDN 403's some primary card assets — most heroes have working `-RF`
+ * (rainbow foil) or `HER###-RF` reprint URLs as fallbacks even when the
+ * canonical set/number 404's. When all sources fail, falls back to the
+ * stylized sigil placeholder.
+ */
+function HeroImage({ sources, alt }: IHeroImageProps): React.ReactElement {
+  const [sourceIndex, setSourceIndex] = useState(0);
+  if (sourceIndex >= sources.length) {
     return (
       <div className={styles.deckBoxHeroFallback}>
         <span className={styles.deckBoxHeroSigil}>&#9670;</span>
@@ -418,12 +538,28 @@ function HeroImage({ src, alt }: IHeroImageProps): React.ReactElement {
   }
   return (
     <img
-      src={src}
+      src={sources[sourceIndex]}
       alt={alt}
       loading="lazy"
       decoding="async"
       className={styles.deckBoxHeroImage}
-      onError={() => setFailed(true)}
+      onError={() => setSourceIndex((i) => i + 1)}
     />
   );
+}
+
+/**
+ * Normalises an `imageUrl` payload into the ordered list of small URLs
+ * to try. Returns null when no usable URL exists. Also tolerates legacy
+ * payloads (pre-fix) that lack `smallSources` — falls back to a single-
+ * element list with just `small`.
+ */
+function resolveSources(
+  imageUrl: { readonly small: string; readonly smallSources?: readonly string[] } | null,
+): readonly string[] | null {
+  if (!imageUrl || !imageUrl.small) return null;
+  if (imageUrl.smallSources && imageUrl.smallSources.length > 0) {
+    return imageUrl.smallSources;
+  }
+  return [imageUrl.small];
 }

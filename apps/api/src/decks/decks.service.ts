@@ -187,7 +187,7 @@ export class DecksService {
   // hover. When the breakdown contains nothing usable, returns null/[] —
   // the frontend renders default oxblood card-back silhouettes.
   private derivePreviewMeta(breakdown: unknown): {
-    heroImageUrl: { small: string } | null;
+    heroImageUrl: { small: string; smallSources: readonly string[] } | null;
     representativeCards: readonly IRepresentativeCard[];
   } {
     const raw = breakdown as {
@@ -214,10 +214,15 @@ export class DecksService {
     ];
 
     // Hero: the breakdown carries one entry with slot='hero'. Image comes
-    // straight from that entry's enriched imageUrl (B1).
+    // straight from that entry's enriched imageUrl (B1). We project the full
+    // `sources` mirror as `smallSources` so the frontend can walk to a
+    // working URL when the primary 403's on Legend Story's CDN.
     const heroEntry = allEntries.find((entry) => entry.slot === 'hero');
     const heroImageUrl = heroEntry?.imageUrl
-      ? { small: heroEntry.imageUrl.small }
+      ? {
+          small: heroEntry.imageUrl.small,
+          smallSources: this.projectSmallSources(heroEntry.imageUrl),
+        }
       : null;
 
     // Representatives: mainboard entries, deduped by identifier (defensive
@@ -258,10 +263,41 @@ export class DecksService {
       .map((entry) => ({
         cardIdentifier: entry.cardIdentifier,
         name: resolveName(entry),
-        imageUrl: entry.imageUrl ? { small: entry.imageUrl.small } : null,
+        imageUrl: entry.imageUrl
+          ? {
+              small: entry.imageUrl.small,
+              smallSources: this.projectSmallSources(entry.imageUrl),
+            }
+          : null,
       }));
 
     return { heroImageUrl, representativeCards };
+  }
+
+  /**
+   * Builds the ordered fallback URL list for a card thumbnail. The primary
+   * `small` is always first, followed by the rest of the `sources` mirror
+   * (deduped). The frontend tries each in turn on `<img onError>` because
+   * Legend Story's CDN 403's some primary assets — recent heroes often have
+   * working `-RF` (rainbow foil) or `HER###-RF` reprint URLs even when the
+   * canonical set/number 403's.
+   */
+  private projectSmallSources(imageUrl: {
+    small: string;
+    sources: readonly { small: string }[];
+  }): readonly string[] {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    const push = (url: string): void => {
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      ordered.push(url);
+    };
+    push(imageUrl.small);
+    for (const src of imageUrl.sources ?? []) {
+      push(src.small);
+    }
+    return ordered;
   }
 
   async getDetail(

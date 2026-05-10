@@ -8,14 +8,20 @@ export { IShoppingLineAggregate };
  * desc + name asc. The list is empty when the deck has no snapshot yet
  * (the frontend renders default oxblood card-back silhouettes in that case).
  *
- * Only the `small` image URL is exposed — these thumbnails are decorative
- * and never become the user's focus, so the full `sources` mirror list and
- * `large` URL are deliberately stripped.
+ * `imageUrl.small` is the preferred URL (matches the engine's primary).
+ * `imageUrl.smallSources` is the full ordered fallback list — when the
+ * primary URL fails to load (Legend Story's CDN 403's some assets despite
+ * the catalog producing a stable URL), the frontend walks this list to find
+ * a working alternate. The `large` URL is deliberately omitted because these
+ * thumbnails are decorative.
  */
 export interface IRepresentativeCard {
   readonly cardIdentifier: string;
   readonly name: string;
-  readonly imageUrl: { readonly small: string } | null;
+  readonly imageUrl: {
+    readonly small: string;
+    readonly smallSources: readonly string[];
+  } | null;
 }
 
 export interface ITrackedDeckListItem {
@@ -35,8 +41,16 @@ export interface ITrackedDeckListItem {
    * (matched by `hero` name, lower-cased, hyphenated). Null when no match
    * is found in the catalog (e.g., a hero introduced after the catalog was
    * compiled, or a typo in the upstream deck import).
+   *
+   * `smallSources` is an ordered fallback list (same contract as
+   * `IRepresentativeCard.imageUrl.smallSources`). The frontend walks it on
+   * `onError` because Legend Story's CDN 403's some primary assets despite
+   * the catalog producing a stable URL.
    */
-  readonly heroImageUrl: { readonly small: string } | null;
+  readonly heroImageUrl: {
+    readonly small: string;
+    readonly smallSources: readonly string[];
+  } | null;
   /**
    * Up to 3 representative mainboard cards for the home tile's hover-open
    * animation. Empty array when no snapshot has been computed yet.
