@@ -150,6 +150,8 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
+      // Decided rows render collapsed by default — expand to inspect Approve.
+      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
       const approveBtn = screen.getByRole('button', {
         name: /approve substitution/i,
       });
@@ -166,6 +168,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
+      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
       const rejectBtn = screen.getByRole('button', {
         name: /reject substitution/i,
       });
@@ -294,6 +297,8 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
+      // Approved row collapsed by default — expand to inspect Approve.
+      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
       const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
       expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
     });

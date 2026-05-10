@@ -57,6 +57,13 @@ function renderRow(props: Partial<React.ComponentProps<typeof SubstitutionRow>> 
   return render(<SubstitutionRow {...defaultProps} {...props} />);
 }
 
+// Decided rows (approved/rejected) render collapsed by default — expand
+// them via the "Change" button so the action buttons become accessible.
+function expandIfCollapsed(): void {
+  const changeBtn = screen.queryByRole('button', { name: /change decision/i });
+  if (changeBtn) fireEvent.click(changeBtn);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -97,62 +104,71 @@ describe('SubstitutionRow', () => {
   describe('approved state', () => {
     it('Approve button shows pressed state (aria-pressed=true)', () => {
       renderRow({ decision: 'approved' });
+      expandIfCollapsed();
       const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
       expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('Approve button is disabled (already approved)', () => {
       renderRow({ decision: 'approved' });
+      expandIfCollapsed();
       const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
       expect(approveBtn).toBeDisabled();
     });
 
     it('Reject button is enabled', () => {
       renderRow({ decision: 'approved' });
+      expandIfCollapsed();
       const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
       expect(rejectBtn).not.toBeDisabled();
     });
 
     it('Reset button is enabled', () => {
       renderRow({ decision: 'approved' });
+      expandIfCollapsed();
       const resetBtn = screen.getByRole('button', { name: /reset decision/i });
       expect(resetBtn).not.toBeDisabled();
     });
 
-    it('shows the Reviewed badge', () => {
+    it('shows the Approved decision badge in collapsed state', () => {
       renderRow({ decision: 'approved' });
-      expect(screen.getByText('Reviewed')).toBeInTheDocument();
+      // Collapsed by default — big badge visible without expansion.
+      expect(screen.getByText(/^Approved$/)).toBeInTheDocument();
     });
   });
 
   describe('rejected state', () => {
     it('Reject button shows pressed state (aria-pressed=true)', () => {
       renderRow({ decision: 'rejected' });
+      expandIfCollapsed();
       const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
       expect(rejectBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('Reject button is disabled (already rejected)', () => {
       renderRow({ decision: 'rejected' });
+      expandIfCollapsed();
       const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
       expect(rejectBtn).toBeDisabled();
     });
 
     it('Approve button is enabled', () => {
       renderRow({ decision: 'rejected' });
+      expandIfCollapsed();
       const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
       expect(approveBtn).not.toBeDisabled();
     });
 
     it('Reset button is enabled', () => {
       renderRow({ decision: 'rejected' });
+      expandIfCollapsed();
       const resetBtn = screen.getByRole('button', { name: /reset decision/i });
       expect(resetBtn).not.toBeDisabled();
     });
 
-    it('shows the Reviewed badge', () => {
+    it('shows the Rejected decision badge in collapsed state', () => {
       renderRow({ decision: 'rejected' });
-      expect(screen.getByText('Reviewed')).toBeInTheDocument();
+      expect(screen.getByText(/^Rejected$/)).toBeInTheDocument();
     });
   });
 
@@ -174,6 +190,7 @@ describe('SubstitutionRow', () => {
     it('calls onReset with the substitute identifier when Reset is clicked (approved)', () => {
       const onReset = vi.fn();
       renderRow({ decision: 'approved', onReset });
+      expandIfCollapsed();
       fireEvent.click(screen.getByRole('button', { name: /reset decision/i }));
       expect(onReset).toHaveBeenCalledWith('open-the-floodgates');
     });
@@ -181,6 +198,7 @@ describe('SubstitutionRow', () => {
     it('does not call onApprove when Approve is already active', () => {
       const onApprove = vi.fn();
       renderRow({ decision: 'approved', onApprove });
+      expandIfCollapsed();
       fireEvent.click(screen.getByRole('button', { name: /approve substitution/i }));
       expect(onApprove).not.toHaveBeenCalled();
     });
