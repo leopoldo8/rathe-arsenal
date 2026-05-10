@@ -39,18 +39,17 @@ function computeAverageReadiness(decks: readonly ITrackedDeckListItem[]): number
 // ---------------------------------------------------------------------------
 
 /**
- * PopulatedHomeHero — 3-stat differentiated header for the home page.
+ * PopulatedHomeHero — 3-stat header for the home page.
  *
- * Stat 1: Tracked deck count — secondary treatment (plain number + label).
- * Stat 2: Average readiness % — secondary treatment (plain number + label).
- * Stat 3: Cards missing — PRIMARY brass treatment.
+ * Stat 1: Tracked deck count.
+ * Stat 2: Average readiness %.
+ * Stat 3: Cards missing.
  *
- * Typographic distinction:
- *  - `.ra-readiness-display` (Cinzel Decorative 900 brass) is RESERVED for
- *    deck card effectivePercent % values (origin R7). Do NOT use it here.
- *  - `.ra-hero-primary-stat` (Cinzel 700 brass, large) is used for the
- *    hero "cards missing" count. Same accent palette, different weight/font,
- *    because count vs. percentage have different semantic meanings.
+ * All three stats share the same secondary treatment (display font,
+ * h1 size, primary fg) so the row reads as a uniform triplet.
+ *
+ * `.ra-readiness-display` (Cinzel Decorative 900 brass) is RESERVED for
+ * deck card effectivePercent % values (origin R7) — not used here.
  */
 export function PopulatedHomeHero({
   decks,
@@ -108,16 +107,13 @@ export function PopulatedHomeHero({
           <div className={styles.statLabel}>Avg ready</div>
         </div>
 
-        {/* Stat 3: Cards missing — PRIMARY brass signature treatment.
-            Uses .ra-hero-primary-stat (Cinzel 700, brass, large).
-            NOT .ra-readiness-display (that is reserved for % values on R7).
-            Counts every needed copy (sum of breakdown.notOwned quantities),
-            so 3x missing of the same card contributes 3. */}
+        {/* Stat 3: Cards missing — same secondary treatment as the other
+            two stats (Decks · Avg ready) so the row reads as a uniform
+            triplet. Counts every needed copy (sum of breakdown.notOwned
+            quantities), so 3x missing of the same card contributes 3. */}
         {totalCardsMissing !== null && (
-          <div className={`${styles.stat} ${styles.statPrimary}`}>
-            <div className={`${styles.statNumber} ${styles.heroPrimaryStat} ra-hero-primary-stat`}>
-              {totalCardsMissing}
-            </div>
+          <div className={styles.stat}>
+            <div className={styles.statNumber}>{totalCardsMissing}</div>
             <div className={styles.statLabel}>Cards missing</div>
           </div>
         )}
