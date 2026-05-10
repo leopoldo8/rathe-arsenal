@@ -50,12 +50,23 @@ function getTierLabel(tier: number): string {
 /**
  * SubstitutionRow — 3-state substitution row for deck detail Column B.
  *
+ * Three render modes:
+ *  - Pending decision → full layout (cards · meta · rationale · 3 action
+ *    buttons). The user needs to decide.
+ *  - Decided + collapsed (default after first render of a decided row) →
+ *    compact layout: small thumbs · "X → Y" line · big "Approved" or
+ *    "Rejected" badge · "Change ▾" toggle. Removes the ghosted action
+ *    buttons that previously read as "still needs a decision".
+ *  - Decided + expanded (user clicked Change) → full layout, plus a "Done"
+ *    collapser to return to the compact state.
+ *
+ * The expanded state lives only in component memory — page refresh starts
+ * decided rows collapsed again.
+ *
  * Row state → button enabled-ness (from plan Key Decisions):
  *   pending  → Approve + Reject enabled, Reset disabled
  *   approved → Reject + Reset enabled, Approve shows pressed/selected state
  *   rejected → Approve + Reset enabled, Reject shows pressed/selected state
- *
- * Reset is only ever enabled when there is a decision to clear (approved or rejected).
  *
  * A11y: each row is a <li> with aria-label summarizing the substitution.
  *       Action buttons carry aria-label("Approve/Reject/Reset substitution: X for Y").
@@ -76,6 +87,11 @@ export function SubstitutionRow({
   const isApproved = decision === 'approved';
   const isRejected = decision === 'rejected';
   const hasDec = isApproved || isRejected;
+
+  // Accordion state — only meaningful when hasDec. Decided rows start
+  // collapsed; "Change" toggles to expanded; "Done" collapses again.
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isCollapsed = hasDec && !isExpanded;
 
   // Button enabled/disabled state (plan Key Decisions — row state → button enabled-ness)
   const approveDisabled = isPending || isApproved;
@@ -102,6 +118,7 @@ export function SubstitutionRow({
     isRejected ? styles['row--rejected'] : '',
     isApproved ? styles['row--approved'] : '',
     isPending ? styles['row--pending'] : '',
+    isCollapsed ? styles['row--collapsed'] : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -127,88 +144,165 @@ export function SubstitutionRow({
     | null
   >(null);
 
+  // ----- Card thumbs (shared between modes; size differs) -----
+  const thumbSize = isCollapsed ? 'sm' : 'md';
+
+  const originalThumb = (
+    <CardArt
+      name={originalName}
+      pitch={original.pitch}
+      cost={original.cost}
+      type={original.type}
+      missing={false}
+      size={thumbSize}
+      imageUrl={original.imageUrl}
+      onClick={
+        original.imageUrl
+          ? () =>
+              setLightbox({
+                imageUrl: original.imageUrl!.large,
+                sources: lightboxSourcesFor(original.imageUrl),
+                name: originalName,
+              })
+          : undefined
+      }
+    />
+  );
+
+  const substituteThumb = (
+    <CardArt
+      name={substituteName}
+      pitch={match.substitute.pitch as 1 | 2 | 3 | null}
+      cost={null}
+      type="action"
+      missing={isRejected}
+      size={thumbSize}
+      imageUrl={match.substitute.imageUrl}
+      onClick={
+        match.substitute.imageUrl
+          ? () =>
+              setLightbox({
+                imageUrl: match.substitute.imageUrl!.large,
+                sources: lightboxSourcesFor(match.substitute.imageUrl),
+                name: substituteName,
+              })
+          : undefined
+      }
+    />
+  );
+
+  // ----- Collapsed render (decided + not expanded) -----
+  if (isCollapsed) {
+    return (
+      <li className={rowClassName} aria-label={rowAriaLabel}>
+        <div className={styles.collapsed}>
+          <div className={styles.collapsedPair}>
+            {originalThumb}
+            <span className={styles.collapsedArrow} aria-hidden="true">
+              &#8594;
+            </span>
+            {substituteThumb}
+          </div>
+
+          <div className={styles.collapsedSummary}>
+            <div className={styles.collapsedNames}>
+              <span className={styles.collapsedNameOriginal}>{originalName}</span>
+              <span className={styles.collapsedNameArrow} aria-hidden="true">
+                &#8594;
+              </span>
+              <span className={styles.collapsedNameSubstitute}>
+                {substituteName}
+              </span>
+            </div>
+            <div className={styles.collapsedMeta}>
+              <span className={styles.row__tier}>{getTierLabel(match.tier)}</span>
+              <span className={styles.row__scoreLabel}>{scorePercent}%</span>
+            </div>
+          </div>
+
+          <div className={styles.collapsedDecision}>
+            <span
+              className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${decision}`]}`}
+              aria-label={`Decision: ${decision}`}
+            >
+              {isApproved ? (
+                <>
+                  <span aria-hidden="true">&#10003;</span> Approved
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">&#10005;</span> Rejected
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              className={styles.changeBtn}
+              onClick={() => setIsExpanded(true)}
+              disabled={isPending}
+              aria-expanded={false}
+              aria-label={`Change decision for ${originalName} swap`}
+            >
+              Change <span aria-hidden="true">&#9662;</span>
+            </button>
+          </div>
+        </div>
+        {lightbox && (
+          <CardLightbox
+            imageUrl={lightbox.imageUrl}
+            sources={lightbox.sources}
+            name={lightbox.name}
+            onClose={() => setLightbox(null)}
+          />
+        )}
+      </li>
+    );
+  }
+
+  // ----- Expanded render (pending OR decided + expanded) -----
   return (
     <li className={rowClassName} aria-label={rowAriaLabel}>
       <div className={styles.row__cards}>
-        {/* Original (left) */}
         <div className={styles.row__cardSlot}>
-          <CardArt
-            name={originalName}
-            pitch={original.pitch}
-            cost={original.cost}
-            type={original.type}
-            missing={false}
-            size="md"
-            imageUrl={original.imageUrl}
-            onClick={
-              original.imageUrl
-                ? () =>
-                    setLightbox({
-                      imageUrl: original.imageUrl!.large,
-                      sources: lightboxSourcesFor(original.imageUrl),
-                      name: originalName,
-                    })
-                : undefined
-            }
-          />
+          {originalThumb}
           <span className={styles.row__cardLabel}>{originalName}</span>
         </div>
 
-        {/* Arrow + meta */}
         <div className={styles.row__meta}>
           <span className={styles.row__arrow} aria-hidden="true">&#8594;</span>
           <span className={styles.row__tier}>{getTierLabel(match.tier)}</span>
           <div className={styles.row__scoreBar}>
-            <div
-              ref={scoreFillRef}
-              className={styles.row__scoreFill}
-            />
+            <div ref={scoreFillRef} className={styles.row__scoreFill} />
           </div>
           <span className={styles.row__scoreLabel}>{scorePercent}%</span>
           {hasDec && (
-            <span className={styles.row__reviewedBadge}>Reviewed</span>
+            <span
+              className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${decision}`]} ${styles.bigDecisionBadgeInline}`}
+            >
+              {isApproved ? (
+                <>
+                  <span aria-hidden="true">&#10003;</span> Approved
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">&#10005;</span> Rejected
+                </>
+              )}
+            </span>
           )}
         </div>
 
-        {/* Substitute (right) */}
         <div className={styles.row__cardSlot}>
-          {/*
-            ISubstituteCard omits cost and type (only pitch is meaningful for
-            the substitution engine's primary score axis). Fall back to null
-            and 'action' so CardArt renders a neutral glyph instead of
-            crashing on a required field. Unit 11 can enrich ISubstituteCard
-            if the cost/type glyphs become important for Gate 2 comprehension.
-          */}
-          <CardArt
-            name={substituteName}
-            pitch={match.substitute.pitch as 1 | 2 | 3 | null}
-            cost={null}
-            type="action"
-            missing={isRejected}
-            size="md"
-            imageUrl={match.substitute.imageUrl}
-            onClick={
-              match.substitute.imageUrl
-                ? () =>
-                    setLightbox({
-                      imageUrl: match.substitute.imageUrl!.large,
-                      sources: lightboxSourcesFor(match.substitute.imageUrl),
-                      name: substituteName,
-                    })
-                : undefined
-            }
-          />
+          {substituteThumb}
           <span className={styles.row__cardLabel}>{substituteName}</span>
         </div>
       </div>
 
-      {/* Rationale */}
       <p className={styles.row__rationale}>
         <span className={styles.row__rationaleGlyph} aria-hidden="true">&#9670;</span>
         {match.rationale}
       </p>
 
-      {/* 3-state action buttons */}
       <div className={styles.row__actions}>
         <button
           type="button"
@@ -255,6 +349,20 @@ export function SubstitutionRow({
         >
           <span aria-hidden="true">&#8635;</span> Reset
         </button>
+
+        {hasDec && (
+          <button
+            type="button"
+            className={[styles.row__btn, styles['row__btn--collapse']]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setIsExpanded(false)}
+            aria-expanded={true}
+            aria-label={`Collapse ${originalName} swap`}
+          >
+            Done <span aria-hidden="true">&#9652;</span>
+          </button>
+        )}
       </div>
       {lightbox && (
         <CardLightbox
