@@ -93,21 +93,6 @@
   white-space: nowrap;
 }
 
-/* Primary stat — cards missing. Brass, Cinzel 700, larger.
-   .ra-hero-primary-stat class is the global token for this treatment.
-   Distinct from .ra-readiness-display (Cinzel Decorative 900) which is
-   RESERVED for % values on deck cards (origin R7). */
-.statPrimary .statNumber,
-.heroPrimaryStat {
-  font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-bold);
-  font-size: var(--ra-text-hero);
-  color: var(--ra-accent);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--ra-track-h1);
-}
-
 /* ---------- Track new deck action (brass-secondary weight) ---------- */
 .importAction {
   align-self: center;
@@ -150,10 +135,5 @@
 
   .heroStats {
     gap: var(--ra-space-4);
-  }
-
-  .statPrimary .statNumber,
-  .heroPrimaryStat {
-    font-size: var(--ra-text-h1);
   }
 }

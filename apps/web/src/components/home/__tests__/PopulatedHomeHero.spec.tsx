@@ -51,10 +51,12 @@ describe('PopulatedHomeHero', () => {
     expect(screen.getByText('Avg ready')).toBeInTheDocument();
   });
 
-  it('renders cards missing stat with .ra-hero-primary-stat class when provided', () => {
+  it('renders cards missing stat with the same treatment as other stats', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={42} />);
     const missingEl = screen.getByText('42');
-    expect(missingEl).toHaveClass('ra-hero-primary-stat');
+    // Stat 3 reads as a uniform triplet with stats 1 & 2 — no primary
+    // treatment class anymore.
+    expect(missingEl).not.toHaveClass('ra-hero-primary-stat');
     expect(screen.getByText('Cards missing')).toBeInTheDocument();
   });
 
