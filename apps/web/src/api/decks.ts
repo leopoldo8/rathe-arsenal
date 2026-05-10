@@ -8,6 +8,27 @@ export interface ITrackedDeckSnapshot {
   readonly computedAt: string;
 }
 
+/**
+ * Card preview rendered inside the home tile's deckbox vessel on hover.
+ * Up to 3 representative mainboard cards lift in a depth-staggered fan
+ * when the user hovers/focuses the tile. Empty array → frontend renders
+ * default oxblood card-back silhouettes (the hover effect still plays).
+ */
+export interface IRepresentativeCard {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  /**
+   * `small` is the preferred URL; `smallSources` is the ordered fallback
+   * list (primary first, then the catalog's `sources` mirror). The frontend
+   * walks it in `<img onError>` because Legend Story's CDN 403's some
+   * primary assets even when the catalog produces a stable URL.
+   */
+  readonly imageUrl: {
+    readonly small: string;
+    readonly smallSources: readonly string[];
+  } | null;
+}
+
 export interface ITrackedDeckListItem {
   readonly id: number;
   readonly fabraryUlid: string;
@@ -16,6 +37,23 @@ export interface ITrackedDeckListItem {
   readonly format: string;
   readonly trackedAt: string;
   readonly latestSnapshot: ITrackedDeckSnapshot | null;
+  /**
+   * Hero card thumbnail for the home tile centerpiece. Null when the
+   * deck has no snapshot yet, or when the catalog has no image for the
+   * hero. Frontend falls back to a neutral oxblood placeholder.
+   *
+   * `smallSources` mirrors `IRepresentativeCard.imageUrl.smallSources`:
+   * an ordered fallback list the frontend walks on `onError`.
+   */
+  readonly heroImageUrl: {
+    readonly small: string;
+    readonly smallSources: readonly string[];
+  } | null;
+  /**
+   * Up to 3 representative mainboard cards for the home tile's hover
+   * animation. Sorted by quantity desc, name asc.
+   */
+  readonly representativeCards: readonly IRepresentativeCard[];
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
 }
@@ -85,11 +123,19 @@ export function useDecksQuery() {
   });
 }
 
+/**
+ * Imports a Fabrary deck and starts tracking it.
+ *
+ * `seedInventory` defaults to `false`: tracking a deck does NOT assume the
+ * user owns its cards. Callers that want to seed the user's collection
+ * with the deck's cards (e.g. a Library "track + own" path) must opt in
+ * explicitly with `seedInventory: true`.
+ */
 export function useImportDecksMutation() {
   const apiFetch = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ urls, seedInventory = true }: { urls: string[]; seedInventory?: boolean }) =>
+    mutationFn: ({ urls, seedInventory = false }: { urls: string[]; seedInventory?: boolean }) =>
       apiFetch<IImportDecksResponse>('/decks/import', {
         method: 'POST',
         body: JSON.stringify({ urls, seedInventory }),

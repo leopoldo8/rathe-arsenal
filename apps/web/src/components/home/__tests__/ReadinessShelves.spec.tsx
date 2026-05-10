@@ -53,6 +53,8 @@ function makeDeck(
       effectivePercent !== null
         ? { rawPercent: effectivePercent, effectivePercent, computedAt: '' }
         : null,
+    heroImageUrl: null,
+    representativeCards: [],
   };
 }
 
@@ -151,7 +153,12 @@ describe('ReadinessShelves', () => {
 
   it('renders readiness percentage on cards', () => {
     renderShelves([DECK_READY]);
-    expect(screen.getByText('90.0%')).toBeInTheDocument();
+    // The wax seal renders the percent rounded to integer in an SVG
+    // <text>, with the % sign in a sibling <text>. We assert the
+    // semantic role exposes the value, which is the contract the rest
+    // of the app + assistive tech reads.
+    expect(screen.getByText('90')).toBeInTheDocument();
+    expect(screen.getByRole('meter')).toHaveAttribute('aria-valuenow', '90');
   });
 
   it('does not render empty shelves', () => {

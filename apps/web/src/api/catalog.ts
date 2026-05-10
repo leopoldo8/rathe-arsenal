@@ -8,6 +8,12 @@ export interface ISearchCardResult {
   readonly classes: readonly string[];
   readonly types: readonly string[];
   readonly ownedQuantity: number;
+  /**
+   * Card face image URLs (small + large WebP). Null when the source
+   * catalog entry has no image code. Frontend renders `small` as a 52x72
+   * row thumbnail; click opens `large` in the shared CardLightbox.
+   */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
 }
 
 export interface ISearchCardsResponse {

@@ -3,6 +3,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
+import { CardLightbox } from '../../components/card-art/CardLightbox';
+import { CardArt } from '../../components/card-art/CardArt';
 import styles from './add-cards.manual.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/manual')({
@@ -14,6 +16,11 @@ const MIN_QUERY = 2;
 const QTY_MIN = 1;
 const QTY_MAX = 3;
 
+interface ILightboxState {
+  readonly imageUrl: string;
+  readonly name: string;
+}
+
 function AddCardsManualPage(): React.ReactElement {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -24,6 +31,7 @@ function AddCardsManualPage(): React.ReactElement {
   // "Owned: N" updates as the natural confirmation that the add went
   // through.
   const [addsCommitted, setAddsCommitted] = useState(0);
+  const [lightbox, setLightbox] = useState<ILightboxState | null>(null);
   const inputId = useId();
 
   useEffect(() => {
@@ -106,9 +114,18 @@ function AddCardsManualPage(): React.ReactElement {
               card={card}
               onAdd={handleAdd}
               isPending={addMutation.isPending}
+              onOpenLightbox={(payload) => setLightbox(payload)}
             />
           ))}
         </ul>
+      )}
+
+      {lightbox && (
+        <CardLightbox
+          imageUrl={lightbox.imageUrl}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+        />
       )}
     </div>
   );
@@ -118,33 +135,86 @@ interface IResultRowProps {
   readonly card: ISearchCardResult;
   readonly onAdd: (card: ISearchCardResult, qty: number) => void;
   readonly isPending: boolean;
+  readonly onOpenLightbox: (state: ILightboxState) => void;
 }
 
-function ResultRow({ card, onAdd, isPending }: IResultRowProps): React.ReactElement {
+function ResultRow({
+  card,
+  onAdd,
+  isPending,
+  onOpenLightbox,
+}: IResultRowProps): React.ReactElement {
   const [qty, setQty] = useState(1);
-  const pitchLabel =
-    card.pitch === 1 ? 'Red' : card.pitch === 2 ? 'Yellow' : card.pitch === 3 ? 'Blue' : 'Colorless';
-  const pitchTone =
-    card.pitch === 1 ? 'red' : card.pitch === 2 ? 'yellow' : card.pitch === 3 ? 'blue' : 'colorless';
+  const [thumbFailed, setThumbFailed] = useState(false);
   const primaryType = card.types[0] ?? '—';
   const className = card.classes.join(', ') || 'Generic';
+
+  // Pitch ◆ pip — tonalized by pitch value. Heroes/weapons/equipment
+  // are pitch-less and render no diamond (absence is the signal).
+  const pitchToneClass = resolvePitchToneClass(card.pitch);
 
   function bump(delta: number): void {
     const next = Math.max(QTY_MIN, Math.min(QTY_MAX, qty + delta));
     setQty(next);
   }
 
+  function handleThumbClick(): void {
+    if (!card.imageUrl) return;
+    onOpenLightbox({ imageUrl: card.imageUrl.large, name: card.name });
+  }
+
+  const showThumbImage =
+    card.imageUrl !== null && card.imageUrl.small.length > 0 && !thumbFailed;
+
   return (
     <li className={styles.row}>
       <div className={styles.rowMain}>
-        <span
-          className={`${styles.pitchBadge} ${styles[`pitchBadge--${pitchTone}`]}`}
-          aria-label={`${pitchLabel} pitch`}
+        <button
+          type="button"
+          className={styles.thumb}
+          onClick={handleThumbClick}
+          disabled={!card.imageUrl}
+          aria-label={card.imageUrl ? `Preview ${card.name}` : `${card.name} (no preview)`}
         >
-          {card.pitch ?? '◇'}
-        </span>
+          {showThumbImage ? (
+            <img
+              src={card.imageUrl!.small}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className={styles.thumbImage}
+              onError={() => setThumbFailed(true)}
+            />
+          ) : (
+            // Fallback to <CardArt> SVG placeholder. Same fallback chain
+            // used in BreakdownSections / ReviewsRow.
+            <CardArt
+              name={card.name}
+              pitch={
+                card.pitch === 1 || card.pitch === 2 || card.pitch === 3
+                  ? card.pitch
+                  : null
+              }
+              cost={null}
+              type={primaryType}
+              missing={false}
+              size="xs"
+              imageUrl={null}
+            />
+          )}
+        </button>
         <div className={styles.rowText}>
-          <p className={styles.rowName}>{card.name}</p>
+          <p className={styles.rowName}>
+            {pitchToneClass !== null && (
+              <span
+                className={`${styles.pitchPip} ${styles[pitchToneClass]}`}
+                aria-label={`${pitchLabelFor(card.pitch)} pitch`}
+              >
+                &#9670;
+              </span>
+            )}
+            {card.name}
+          </p>
           <p className={styles.rowMeta}>
             <span>{className}</span>
             <span className={styles.rowSep} aria-hidden="true">·</span>
@@ -200,4 +270,29 @@ function ResultRow({ card, onAdd, isPending }: IResultRowProps): React.ReactElem
       </div>
     </li>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the CSS-module class name for the pitch ◆ pip, or null when
+ * the card is pitch-less (no diamond rendered). The diamond uses the
+ * brand's existing decorative-diamond vocabulary — see `.impeccable.md`.
+ */
+function resolvePitchToneClass(
+  pitch: number | null,
+): 'pitchPipRed' | 'pitchPipYellow' | 'pitchPipBlue' | null {
+  if (pitch === 1) return 'pitchPipRed';
+  if (pitch === 2) return 'pitchPipYellow';
+  if (pitch === 3) return 'pitchPipBlue';
+  return null;
+}
+
+function pitchLabelFor(pitch: number | null): string {
+  if (pitch === 1) return 'Red';
+  if (pitch === 2) return 'Yellow';
+  if (pitch === 3) return 'Blue';
+  return 'No';
 }

@@ -144,6 +144,24 @@ describe('CatalogService', () => {
       }
     });
 
+    it('(C3) projects imageUrl as the canonical small/large pair, dropping sources', async () => {
+      // Act
+      const response = await service.search(USER_ID, 'Snatch', 5);
+
+      // Assert — every populated imageUrl carries exactly small + large
+      // (the autocomplete row uses small as a 52×72 thumb; the lightbox
+      // opens large). The catalog's `sources` mirror list is intentionally
+      // dropped; on load failure the row falls back to <CardArt>.
+      expect(response.results.length).toBeGreaterThan(0);
+      for (const result of response.results) {
+        if (result.imageUrl !== null) {
+          expect(Object.keys(result.imageUrl).sort()).toEqual(['large', 'small']);
+          expect(typeof result.imageUrl.small).toBe('string');
+          expect(typeof result.imageUrl.large).toBe('string');
+        }
+      }
+    });
+
     it('scopes ownedQuantity lookup to the requesting user', async () => {
       // Act
       await service.search(USER_ID, 'Snatch', 10);

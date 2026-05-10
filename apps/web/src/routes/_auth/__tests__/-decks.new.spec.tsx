@@ -122,4 +122,18 @@ describe('DecksNewPage — /decks/new', () => {
       expect.any(Object),
     );
   });
+
+  it('does not opt into inventory seeding when tracking from /decks/new', async () => {
+    // Tracking a deck from the home flow must not auto-populate the user's
+    // collection. The mutation hook defaults seedInventory to false; this
+    // test guards against a future caller passing seedInventory: true here.
+    renderPage();
+    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    fireEvent.change(input, {
+      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    const [payload] = importMutate.mock.calls[0] as [{ seedInventory?: boolean }];
+    expect(payload.seedInventory).not.toBe(true);
+  });
 });

@@ -1,196 +1,678 @@
 /* ============================================================
    DeckCard — CSS Module
-   Home readiness shelf deck card.
+   Home readiness shelf deck card, rendered as a deckbox vessel.
    ============================================================ */
 
 .card {
   display: flex;
   flex-direction: column;
-  background-color: var(--ra-bg-surface);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  overflow: hidden;
-  transition:
-    border-color var(--ra-duration) var(--ra-ease),
-    box-shadow var(--ra-duration) var(--ra-ease);
+  /* No solid surface, no border, no radius — the deckbox vessel IS
+     the visual identity. The tile sits directly on the page canvas;
+     the brass-bordered SVG box provides all the chrome. */
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  /* Anchor for the absolutely-positioned UntrackPin. */
+  position: relative;
+  /* Constrain the card to the vessel's max width and center it within
+     the grid cell. This makes the trash pin's offsets land at the
+     vessel edge instead of floating in empty grid space. */
+  max-width: 264px;
+  align-self: center;
+  width: 100%;
+  /* Create a fresh stacking context so the cardLink (z=2) stays
+     above the trash pin (z=1). Without this, sibling z-indexes would
+     leak into ancestor stacking and the pin would not get hidden
+     behind the deckbox at idle. */
+  isolation: isolate;
 }
 
-.card:hover {
-  border-color: var(--ra-border-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-/* Tier accent — subtle background tint blended with surface.
-   Replaces the previous left-stripe treatment (an AI-slop tell). The
-   shelf heading already names the tier; the tint gives a secondary
-   signal when a card is skimmed out of shelf context (search, hover
-   preview, sharing). color-mix in oklch keeps hue consistent in dark
-   and preserves text contrast.
-
-   Tints are kept at 6–8% so the card still reads as the base surface,
-   not a colored box. */
-.card--high {
-  background-color: color-mix(in oklch, var(--ra-ready-high) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-high) 24%, var(--ra-border));
-}
-
-.card--mid {
-  background-color: color-mix(in oklch, var(--ra-ready-mid-accent) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-mid-accent) 24%, var(--ra-border));
-}
-
+/* Tier styling lives on the .vesselWrap (saturation filter on the SVG)
+   rather than on the surrounding tile — the box itself absorbs the
+   ready/mid/low cue. The tile-level classes stay for backwards
+   compatibility but are no-ops. */
+.card--high,
+.card--mid,
 .card--low {
-  background-color: color-mix(in oklch, var(--ra-ready-low) 6%, var(--ra-bg-surface));
-  border-color: color-mix(in oklch, var(--ra-ready-low) 24%, var(--ra-border));
+  background-color: transparent;
+  border: none;
 }
 
 /* ---------- Link area ---------- */
 .cardLink {
-  display: block;
-  padding: var(--ra-space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--ra-space-4) var(--ra-space-3) var(--ra-space-2);
   text-decoration: none;
   color: inherit;
   flex: 1;
+  /* Tight stack — the deckbox dominates; the text below sits as a
+     compact caption directly underneath, not as a separate panel. */
+  gap: var(--ra-space-2);
+  /* Stacking context: above the trash pin so the deckbox visually
+     covers the idle (tucked-back) pin. */
+  position: relative;
+  z-index: 2;
 }
 
 .cardLink:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: -2px;
+  border-radius: 4px;
 }
 
-.cardName {
-  margin: 0 0 var(--ra-space-1);
-  font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-semibold);
-  font-size: var(--ra-text-body);
-  color: var(--ra-fg-primary);
-  line-height: var(--ra-leading-snug);
-}
+/* ============================================================
+   Deckbox Vessel — face-on geometry + 3D lid + cards + hero
+   ============================================================ */
 
-.cardMeta {
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
-}
-
-.cardReadiness {
-  display: flex;
-  align-items: baseline;
-  gap: var(--ra-space-2);
-  margin-top: var(--ra-space-3);
-}
-
-/* Signature readiness display — Cinzel Decorative 900 brass.
-   RESERVED for the effectivePercent % on deck cards (R7).
-   The global .ra-readiness-display class mirrors this for
-   grep-ability across the codebase. */
-.readinessDisplay {
-  font-family: var(--ra-font-ornament);
-  font-weight: var(--ra-weight-black);
-  font-size: var(--ra-text-h2);
-  color: var(--ra-accent);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  letter-spacing: var(--ra-track-display);
-}
-
-.readinessLabel {
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
-}
-
-.cardNoReadiness {
-  margin-top: var(--ra-space-3);
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  font-style: italic;
-}
-
-/* ---------- Footer actions ---------- */
-.cardFooter {
-  padding: var(--ra-space-3) var(--ra-space-4);
-  border-top: 1px solid var(--ra-border-subtle);
-}
-
-/* Wide: side-by-side — shown at ≥640px */
-.actionsWide {
-  display: none;
-  gap: var(--ra-space-2);
-  align-items: center;
-}
-
-/* Narrow: stacked — shown at <640px */
-.actionsNarrow {
-  display: flex;
-  gap: var(--ra-space-2);
-  align-items: center;
-}
-
-@media (min-width: 640px) {
-  .actionsWide {
-    display: flex;
-  }
-
-  .actionsNarrow {
-    display: none;
-  }
-}
-
-.viewLink {
-  text-decoration: none;
-}
-
-.viewLinkFull {
-  flex: 1;
-  text-decoration: none;
-  display: block;
-}
-
-.viewButtonFull {
-  width: 100%;
-}
-
-/* ---------- Overflow menu (narrow only) ---------- */
-.overflowMenu {
+.vesselWrap {
   position: relative;
+  width: 100%;
+  /* viewBox aspect — 200×240 — gives the box a portrait profile and
+     leaves headroom for the lid (which extends above the box body in
+     viewBox via the trapezoid rim) plus cards rising above on hover. */
+  aspect-ratio: 200 / 240;
+  max-width: 264px;
+  /* 3D context for the lid hinge animation. The box body itself is
+     drawn with perspective baked into the SVG geometry (top rim
+     trapezoid, right depth strip), so we don't need a CSS tilt — the
+     SVG IS the tilt. perspective is only here so the lid's CSS 3D
+     rotation reads as physical motion. */
+  perspective: 900px;
+  overflow: visible;
 }
 
-.overflowTrigger {
+.vesselTilt {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
+}
+
+/* Two SVG layers + an HTML cards layer + the hero overlay sit in this
+   z-order:
+     z=1  vesselBack  — rim trapezoid + lid (drawn behind everything)
+     z=2  cardsLayer  — 3 representative cards, rise out of the rim
+     z=3  vesselFront — front face + inner brass frame (occludes
+                        cards' lower halves so they appear to emerge
+                        from inside the box)
+     z=4  heroSlot    — feathered hero art, on top of the front face
+*/
+.vesselBack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+}
+
+.vesselFront {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  overflow: visible;
+}
+
+/* Tier saturation — applied to BOTH SVG layers so the whole vessel
+   tonalizes coherently. */
+.vesselWrap--high .vesselBack,
+.vesselWrap--high .vesselFront {
+  filter: saturate(1.05);
+}
+
+.vesselWrap--mid .vesselBack,
+.vesselWrap--mid .vesselFront {
+  filter: saturate(0.92);
+}
+
+.vesselWrap--low .vesselBack,
+.vesselWrap--low .vesselFront {
+  filter: saturate(0.78) brightness(0.94);
+}
+
+/* ============================================================
+   Lid — SVG group, 3D hinge via CSS rotateX
+   ============================================================ */
+
+.deckBoxLid {
+  /* The lid is a <g> inside the box SVG. transform-box: fill-box
+     roots the transform-origin in the group's bounding box; we hinge
+     at 50% 0% — that is the BACK edge of the trapezoidal lid (top in
+     SVG y coords).
+
+     At idle the group is at rotateX(0): the lid sits flush over the
+     rim trapezoid drawn beneath it. On hover the group rotates -115deg
+     around its back edge: the lid swings up and backward, revealing
+     the rim below. */
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  transform: rotateX(0deg);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.card:hover .deckBoxLid,
+.cardLink:focus-visible .deckBoxLid {
+  /* Lid stands exactly vertical (90deg from horizontal idle), like
+     a card box lid swung up to its full open position. Doesn't tip
+     past vertical — that would put the lid behind the box and read
+     as "lid fell off" rather than "lid open". */
+  transform: rotateX(-90deg);
+}
+
+/* ============================================================
+   Cards layer — stacked at same X, rise vertically on hover
+   ============================================================ */
+
+.deckBoxCardsLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* z-index: between vesselBack (z=1) and vesselFront (z=3). Cards
+     rising on hover pass IN FRONT of the rim opening but BEHIND the
+     box front face. Combined with their idle position deep inside
+     the box, this makes them look like they're emerging from inside
+     the deckbox. */
+  z-index: 2;
+}
+
+.deckBoxCard {
+  position: absolute;
+  /* Card thumbnail — same size as the hero, same horizontal center.
+     5/7 aspect mirrors a real FaB card. */
+  width: 50%;
+  aspect-ratio: 5 / 7;
+  left: 50%;
+  /* Idle Y: aligned with the hero (same center). On hover we
+     translate up. The translate is calculated from this baseline. */
+  top: 50%;
+  /* Center anchor + vertical lift offset. The base translate centers
+     the card on the same point as the hero; the lift gets added in
+     the hover state. */
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: #2a0808;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(214, 158, 46, 0.3);
+  /* Idle: tucked behind hero with opacity 0 so they don't show
+     through. They reveal on hover as they rise above the hero. */
+  opacity: 0;
+  transition:
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease-out;
+  will-change: transform, opacity;
+}
+
+/* z-stacking: back card is deepest, front card is closest to hero.
+   All sit beneath the hero (z-index < hero's). The lift puts each
+   above the hero in screen Y but they remain underneath in z-stack. */
+.deckBoxCardBack {
+  z-index: 1;
+}
+
+.deckBoxCardMiddle {
+  z-index: 2;
+}
+
+.deckBoxCardFront {
+  z-index: 3;
+}
+
+/* Hover lift — same X, depth-staggered Y. Back rises highest, front
+   barely peeks. Lift values are tuned so the back card never extends
+   past the lid hinge area — keeps cards inside the tile rather than
+   bleeding into the page header above. */
+.card:hover .deckBoxCardBack,
+.cardLink:focus-visible .deckBoxCardBack {
+  opacity: 1;
+  transform: translate(-50%, calc(-50% - 38%));
+  transition-delay: 60ms;
+}
+
+.card:hover .deckBoxCardMiddle,
+.cardLink:focus-visible .deckBoxCardMiddle {
+  opacity: 1;
+  transform: translate(-50%, calc(-50% - 24%));
+  transition-delay: 90ms;
+}
+
+.card:hover .deckBoxCardFront,
+.cardLink:focus-visible .deckBoxCardFront {
+  opacity: 1;
+  transform: translate(-50%, calc(-50% - 12%));
+  transition-delay: 120ms;
+}
+
+.deckBoxCardImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.deckBoxCardSilhouette {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-block-size: 44px;
-  min-inline-size: 44px;
-  padding: var(--ra-space-2);
-  background-color: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  cursor: pointer;
-  color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-body);
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #5a1a1a 0%, #3a0f0f 60%, #2a0808 100%);
+  color: var(--ra-accent);
+}
+
+.deckBoxCardCrest {
+  font-size: 1rem;
+  opacity: 0.55;
+}
+
+/* ============================================================
+   Hero centerpiece — static, in front
+   ============================================================ */
+
+.deckBoxHeroSlot {
+  position: absolute;
+  left: 50%;
+  /* Top aligned with the inner brass frame on the box front (which
+     starts at viewBox y=64 = 26.7% of vesselWrap). Anchor at the
+     top edge so the visible portion of the hero stays flush with
+     the frame — no vertical centering, no drift. */
+  top: 27%;
+  transform: translate(-50%, 0);
+  /* Width matches the cards (50% of viewBox) so the hero reads as
+     "the top card" — same physical dimensions as the cards stacked
+     behind it. Aspect 5:7 preserves full card proportions. */
+  width: 50%;
+  aspect-ratio: 5 / 7;
+  z-index: 4;
+  border-radius: 0;
+  overflow: hidden;
+  /* Stronger vertical gradient — the top 8% has a soft entry, 8-45%
+     is fully opaque (the art band is the focus), then 45%-80% fades
+     aggressively to transparent so the name banner + ability text
+     dissolve well before reaching the bottom of the card. Anything
+     below 80% is fully invisible. */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 8%,
+    black 45%,
+    transparent 80%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 8%,
+    black 45%,
+    transparent 80%
+  );
+}
+
+.deckBoxHeroImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Show the card from the top down, no vertical crop. The mask
+     handles the visual fade-out at the bottom. */
+  object-fit: cover;
+  object-position: center top;
   user-select: none;
-  list-style: none;
 }
 
-.overflowTrigger::-webkit-details-marker {
-  display: none;
+.deckBoxHeroFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 30%, #5a1a1a 0%, #2a0808 80%);
 }
 
-.overflowTrigger:focus-visible {
+.deckBoxHeroSigil {
+  font-family: var(--ra-font-display);
+  color: var(--ra-accent);
+  font-size: 1.4rem;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   Deck name printed inside the box (bottom)
+   ============================================================ */
+
+.deckBoxTitle {
+  position: absolute;
+  /* Sits inside the inner brass frame on the front face. The frame
+     spans viewBox y=64-216 (front face is 58-222); we place the
+     title near the bottom of the frame. */
+  left: 50%;
+  /* Slightly higher anchor than the single-line version (was 13%)
+     so a 2-line title still fits above the front-face bottom edge
+     without crowding the brass border. */
+  bottom: 11%;
+  transform: translateX(-50%);
+  /* Match the inner-frame width so the title sits neatly inside
+     the brass border. */
+  width: 50%;
+  z-index: 5;
+  text-align: center;
+  font-family: var(--ra-font-display);
+  font-size: 0.86rem;
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  color: var(--ra-fg-primary);
+  /* Up to 2 lines, with ellipsis on the second line if it overflows.
+     Uses the -webkit-box line-clamp idiom (well-supported across
+     evergreen browsers). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Subtle dark backdrop so the text reads against varying card
+     art beneath. */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 4px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+/* ============================================================
+   Hero life token — readiness as a FaB-style life token
+   ============================================================
+   Three concentric octagons mirror a Flesh and Blood hero life
+   token: outer status halo (tier-colored), brass border, oxblood-
+   deep center, cream numeral. Sits below the deckbox like a token
+   placed on the table next to the box. Tier is encoded in the
+   OUTER ring so the token stays recognizably "FaB life token"
+   (red+brass) while the ring acts as a status halo.
+*/
+
+.heroLifeToken {
+  /* Pinned absolute INSIDE the vessel, in the bottom-right of the
+     front face. Adds zero vertical space to the tile — the token
+     is a pinned overlay, not an appended panel.
+     - bottom: 26% clears a 2-line deck title (which now occupies
+       ~11-21% from bottom). 5% air gap above the title.
+     - right: 7% leaves a hair of brass frame visible to the right.
+     - width: 19% keeps the token small enough that it reads as a
+       pip pinned to the box rather than a competing element. */
+  position: absolute;
+  bottom: 20%;
+  right: 13%;
+  width: 26%;
+  aspect-ratio: 1 / 1;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.heroLifeToken svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* On tile hover the token lifts a hair — feels like a piece on a
+   table reacting to your touch. */
+.card:hover .heroLifeToken,
+.cardLink:focus-visible .heroLifeToken {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.lifeTokenRing {
+  fill: var(--ra-token-ring);
+}
+
+.lifeTokenNumber {
+  /* Inherits Cinzel Decorative + heavy weight from .ra-readiness-display
+     (applied in JSX). The font-size is in viewBox units (100×100), so
+     the rendered numeral always fills ~30% of the token regardless of
+     its absolute on-screen size. */
+  fill: #f0e0c0;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 1;
+}
+
+.lifeTokenPercent {
+  /* Stacked centered below the numeral on the same vertical axis. The
+     unit label sits as a small caption — much lighter weight than the
+     numeral so the visual hierarchy reads numeral → unit. */
+  font-size: 14px;
+  fill: #f0e0c0;
+  opacity: 0.75;
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.05em;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 0.4;
+}
+
+/* Tier ring colors — emerald / brass-bright / oxblood-bright. The
+   center stays oxblood-red regardless of tier (FaB life-token DNA);
+   the ring is the status channel. */
+.heroLifeToken--high {
+  --ra-token-ring: #2a8050;
+}
+
+.heroLifeToken--mid {
+  --ra-token-ring: #c89544;
+}
+
+.heroLifeToken--low {
+  --ra-token-ring: #a23440;
+}
+
+.cardNoReadiness {
+  margin-top: var(--ra-space-2);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  font-style: italic;
+  text-align: center;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   sr-only title (visually hidden, accessible)
+   ============================================================ */
+
+.srOnlyTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   Untrack pin — split into visual + hit-area layers
+   ============================================================
+   The animation requirement ("emerges from behind the deckbox") and
+   the click requirement ("must register clicks past the deckbox")
+   pull in opposite directions: one needs z-index BELOW cardLink, the
+   other needs z-index ABOVE. Splitting into two co-located layers
+   resolves it cleanly:
+
+     - .untrackPinVisual (z=1, aria-hidden, pointer-events: none):
+       the slide animation. Sits BEHIND cardLink at all times so the
+       deckbox visually covers it during slide-in.
+     - .untrackPinHit (z=3, the actual <button>): sits ABOVE cardLink
+       at the FINAL hover position. Invisible. Captures clicks only
+       when the tile is hovered/focused.
+
+   Both layers share position/size variables to stay co-located.
+*/
+
+.untrackPinVisual,
+.untrackPinHit {
+  position: absolute;
+  /* Aligned with the lid hinge line (top of the front face) — see
+     comment on top: 26% calculation. */
+  top: 26%;
+  /* Natural position: pin's left edge flush with the deckbox's
+     painted right edge. */
+  right: 11%;
+  /* Visual 22×22; padding 6px → 34px hit/visual target. */
+  width: 22px;
+  height: 22px;
+  padding: 6px;
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Visual layer: animates, behind the box, never catches events ---- */
+.untrackPinVisual {
+  z-index: 1;
+  pointer-events: none;
+  color: var(--ra-fg-secondary);
+  /* Idle: tucked one pin-width to the left (= behind the deckbox's
+     painted right edge), invisible. */
+  transform: translateX(-100%);
+  opacity: 0;
+  transition:
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms 60ms ease,
+    color 180ms ease;
+}
+
+.card:hover .untrackPinVisual,
+.card:focus-within .untrackPinVisual {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* ---- Hit-area layer: invisible button, captures clicks, above all ---- */
+.untrackPinHit {
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  /* Idle: not clickable. Hover/focus on the tile flips this to auto.
+     opacity stays 0 — this layer is purely a click target; the visual
+     comes from .untrackPinVisual underneath it. */
+  pointer-events: none;
+  opacity: 0;
+  transition: pointer-events 0s, opacity 120ms ease;
+}
+
+.card:hover .untrackPinHit,
+.card:focus-within .untrackPinHit {
+  pointer-events: auto;
+}
+
+.untrackPinHit:hover:not(:disabled) ~ * .untrackPinIcon,
+.untrackPinHit:hover:not(:disabled) {
+  /* Sibling-target trick to color the visual when hovering the hit
+     area. Falls through to the visual via the .untrackPinVisual
+     hover rule below. */
+}
+
+/* When the hit area is hovered/focused, recolor the visual to
+   oxblood as the destructive cue. The visual is a SIBLING of the
+   hit area, so we use :has() — supported in evergreen browsers. */
+.card:has(.untrackPinHit:hover:not(:disabled)) .untrackPinVisual,
+.card:has(.untrackPinHit:focus-visible) .untrackPinVisual {
+  color: #c44;
+}
+
+.untrackPinHit:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+  border-radius: 4px;
+  /* Make the focus ring visible; opacity stays 0 for the button body
+     itself. */
+  opacity: 1;
 }
 
-.overflowContent {
-  position: absolute;
-  bottom: calc(100% + var(--ra-space-2));
-  right: 0;
-  z-index: 10;
-  background-color: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border-strong);
-  border-radius: var(--ra-radius-md);
-  padding: var(--ra-space-2);
-  min-width: 140px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+.untrackPinHit:disabled {
+  cursor: not-allowed;
+}
+
+.card:has(.untrackPinHit:disabled) .untrackPinVisual {
+  opacity: 0.4;
+}
+
+.untrackPinIcon {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* Reduced-motion: no slide, just a fade-in at the natural position. */
+@media (prefers-reduced-motion: reduce) {
+  .untrackPinVisual {
+    transition: opacity 180ms linear, color 180ms linear;
+    transform: translateX(0);
+  }
+
+  .card:hover .untrackPinVisual,
+  .card:focus-within .untrackPinVisual {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+/* ============================================================
+   Reduced motion — opacity-only path
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Lid: stays in its idle (closed) state — no rotation. The cards
+     fade in via opacity only. The visible-on-hover state is "lid
+     closed, cards floating up out of the box face" — less dramatic
+     but no motion required. */
+  .deckBoxLid {
+    transition: opacity 200ms linear;
+    transform: rotateX(0deg);
+    will-change: auto;
+  }
+
+  .deckBoxCard {
+    transition: opacity 200ms linear;
+    transform: translate(-50%, -50%);
+    will-change: auto;
+  }
+
+  .card:hover .deckBoxLid,
+  .cardLink:focus-visible .deckBoxLid {
+    transform: rotateX(0deg);
+    opacity: 0;
+  }
+
+  .card:hover .deckBoxCardBack,
+  .card:hover .deckBoxCardMiddle,
+  .card:hover .deckBoxCardFront,
+  .cardLink:focus-visible .deckBoxCardBack,
+  .cardLink:focus-visible .deckBoxCardMiddle,
+  .cardLink:focus-visible .deckBoxCardFront {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    transition-delay: 0ms;
+  }
 }

@@ -51,6 +51,8 @@ function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckLi
       effectivePercent: 85,
       computedAt: '2026-01-01T00:00:00Z',
     },
+    heroImageUrl: null,
+    representativeCards: [],
     ...overrides,
   };
 }
@@ -76,7 +78,9 @@ describe('DeckCard', () => {
 
   it('renders deck name', () => {
     renderDeckCard(makeDeck({ name: 'Prism Spectral Shield' }));
-    expect(screen.getByText('Prism Spectral Shield')).toBeInTheDocument();
+    // Deck name appears twice: as the in-box label (visible) and as
+    // the visually-hidden h3 (a11y outline).
+    expect(screen.getAllByText('Prism Spectral Shield').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders hero and format', () => {
@@ -85,14 +89,28 @@ describe('DeckCard', () => {
     expect(screen.getByText(/Blitz/)).toBeInTheDocument();
   });
 
-  it('renders effectivePercent with .ra-readiness-display class', () => {
+  it('renders effectivePercent inside the wax seal with .ra-readiness-display class', () => {
     renderDeckCard(
       makeDeck({
         latestSnapshot: { rawPercent: 85, effectivePercent: 85, computedAt: '' },
       }),
     );
-    const pctEl = screen.getByText(/85\.0%/);
+    // The wax seal rounds to integer (a quick-read stamp) and the
+    // numeric SVG <text> keeps the brand's `.ra-readiness-display`
+    // class so the brass Cinzel Decorative treatment carries over.
+    const pctEl = screen.getByText('85');
     expect(pctEl).toHaveClass('ra-readiness-display');
+  });
+
+  it('exposes wax seal as a meter with the percent + tier in the label', () => {
+    renderDeckCard(
+      makeDeck({
+        latestSnapshot: { rawPercent: 85, effectivePercent: 85, computedAt: '' },
+      }),
+    );
+    const meter = screen.getByRole('meter');
+    expect(meter).toHaveAttribute('aria-valuenow', '85');
+    expect(meter).toHaveAttribute('aria-label', expect.stringMatching(/85%/));
   });
 
   it('renders "No readiness data yet" when snapshot is null', () => {
@@ -123,19 +141,75 @@ describe('DeckCard', () => {
 
   it('shows loading state when isUntracking=true', () => {
     renderDeckCard(makeDeck(), vi.fn(), true);
-    const buttons = screen.getAllByRole('button');
-    const disabledOrLoading = buttons.filter(
-      (b) =>
-        b.getAttribute('aria-busy') === 'true' ||
-        b.getAttribute('aria-disabled') === 'true',
-    );
-    expect(disabledOrLoading.length).toBeGreaterThan(0);
+    // The pin is icon-only, so the loading state is signalled by the
+    // disabled attribute + aria-busy. The aria-label stays stable so
+    // assistive tech still announces the deck name.
+    const btn = screen.getByRole('button', { name: /untrack/i });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders View link to deck detail', () => {
+  it('the whole tile is a link to the deck detail (no explicit View CTA)', () => {
     renderDeckCard(makeDeck({ id: 7 }));
-    const viewLinks = screen.getAllByRole('link', { name: /view/i });
-    expect(viewLinks.length).toBeGreaterThan(0);
-    expect(viewLinks[0]).toHaveAttribute('href', '/decks/7');
+    const tileLink = screen.getByRole('link', { name: /test deck/i });
+    expect(tileLink).toHaveAttribute('href', '/decks/7');
+    // No standalone "View" button — clicking the deckbox is the action.
+    expect(screen.queryByRole('link', { name: /^view/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^view/i })).not.toBeInTheDocument();
+  });
+
+  describe('(C3) deckbox vessel', () => {
+    it('renders the hero image when heroImageUrl is provided', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          hero: 'Bravo, Star-Crossed',
+          heroImageUrl: { small: 'https://lss.example/bravo-small.webp', smallSources: ['https://lss.example/bravo-small.webp'] },
+        }),
+      );
+      const heroImg = container.querySelector('img[src*="bravo-small"]');
+      expect(heroImg).toBeInTheDocument();
+      expect(heroImg).toHaveAttribute('alt', 'Bravo, Star-Crossed');
+    });
+
+    it('falls back to a sigil placeholder when heroImageUrl is null', () => {
+      const { container } = renderDeckCard(makeDeck({ heroImageUrl: null }));
+      const heroImg = container.querySelector('img[alt="Rhinar"]');
+      expect(heroImg).not.toBeInTheDocument();
+      // The fallback renders a sigil glyph; presence proves the slot is rendered.
+      expect(container.textContent).toContain('◆');
+    });
+
+    it('renders representative card images for the hover-open animation', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          representativeCards: [
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp', smallSources: ['https://lss.example/pummel.webp'] } },
+            { cardIdentifier: 'sigil', name: 'Sigil', imageUrl: { small: 'https://lss.example/sigil.webp', smallSources: ['https://lss.example/sigil.webp'] } },
+            { cardIdentifier: 'romp', name: 'Romp', imageUrl: { small: 'https://lss.example/romp.webp', smallSources: ['https://lss.example/romp.webp'] } },
+          ],
+        }),
+      );
+      expect(container.querySelector('img[src*="pummel"]')).toBeInTheDocument();
+      expect(container.querySelector('img[src*="sigil"]')).toBeInTheDocument();
+      expect(container.querySelector('img[src*="romp"]')).toBeInTheDocument();
+    });
+
+    it('pads missing slots with silhouette fallbacks when fewer than 3 reps available', () => {
+      const { container } = renderDeckCard(
+        makeDeck({
+          representativeCards: [
+            { cardIdentifier: 'pummel', name: 'Pummel', imageUrl: { small: 'https://lss.example/pummel.webp', smallSources: ['https://lss.example/pummel.webp'] } },
+          ],
+        }),
+      );
+      // The single image slot renders, the other two slots fall back to silhouettes.
+      expect(container.querySelector('img[src*="pummel"]')).toBeInTheDocument();
+      // Silhouette renders a brass diamond crest. With one real card +
+      // two silhouettes we expect 2 crest occurrences in the cards layer
+      // plus 1 from the empty hero slot fallback if no hero image; here
+      // hero is null so 3 total diamond glyphs.
+      const diamondCount = (container.textContent?.match(/◆/g) ?? []).length;
+      expect(diamondCount).toBeGreaterThanOrEqual(2);
+    });
   });
 });

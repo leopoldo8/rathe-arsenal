@@ -6,7 +6,11 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: 80px; /* clearance for sticky bulk bar */
+  /* AppShell's <main> already supplies the standard page padding
+     (var(--ra-space-6) on all sides + bottom-tab-bar clearance on
+     mobile). The page module only adds extra bottom space for the
+     sticky bulk-action bar at the foot of this surface. */
+  padding-block-end: 80px;
 }
 
 /* ---------- Header ---------- */

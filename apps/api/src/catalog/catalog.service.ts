@@ -119,6 +119,12 @@ export class CatalogService {
       classes: [...card.classes] as string[],
       types: [...card.types] as string[],
       ownedQuantity: ownedQuantityByIdentifier.get(card.cardIdentifier) ?? 0,
+      // Strip the `sources` mirror list — autocomplete only needs the
+      // canonical small/large pair. Falls back to <CardArt> SVG on load
+      // failure rather than cycling alternative URLs.
+      imageUrl: card.imageUrl
+        ? { small: card.imageUrl.small, large: card.imageUrl.large }
+        : null,
     }));
 
     return { results };

@@ -198,27 +198,68 @@
   min-width: 0;
 }
 
-.pitchBadge {
+/* ---- Card thumbnail (52×72) ---- */
+.thumb {
   flex-shrink: 0;
-  display: inline-flex;
+  width: 52px;
+  height: 72px;
+  padding: 0;
+  background: var(--ra-bg-sunken);
+  border: 1px solid var(--ra-border);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--ra-radius-full);
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-small);
-  font-weight: var(--ra-weight-bold);
-  color: var(--ra-bg-canvas);
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    transform var(--ra-duration) var(--ra-ease);
 }
 
-.pitchBadge--red { background: var(--ra-card-frame-red); }
-.pitchBadge--yellow { background: var(--ra-card-frame-yellow); }
-.pitchBadge--blue { background: var(--ra-card-frame-blue); color: #fff; }
-.pitchBadge--colorless {
-  background: transparent;
-  border: 1px solid var(--ra-border);
-  color: var(--ra-fg-muted);
+.thumb:hover:not(:disabled) {
+  border-color: var(--ra-border-strong);
+  transform: scale(1.04);
+}
+
+.thumb:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.thumb:disabled {
+  cursor: default;
+}
+
+.thumbImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+/* ---- Pitch ◆ pip — tonalized by pitch value ---- */
+.pitchPip {
+  display: inline-block;
+  margin-right: 0.45em;
+  font-size: 0.78em;
+  /* Slight vertical alignment so the diamond sits on the optical
+     baseline of the card name. */
+  transform: translateY(-0.06em);
+  line-height: 1;
+}
+
+.pitchPipRed {
+  color: var(--ra-card-frame-red);
+}
+
+.pitchPipYellow {
+  color: var(--ra-card-frame-yellow);
+}
+
+.pitchPipBlue {
+  color: var(--ra-card-frame-blue);
 }
 
 .rowText {

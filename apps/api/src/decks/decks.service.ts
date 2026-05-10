@@ -12,6 +12,7 @@ import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
 import {
+  IRepresentativeCard,
   ITrackedDeckListItem,
   ITrackedDeckListResponse,
 } from './dtos/tracked-deck-list.response.dto';
@@ -155,6 +156,9 @@ export class DecksService {
 
     const trackedDecks = decks.map((deck): ITrackedDeckListItem => {
       const snap = snapshotByDeckId.get(deck.id) ?? null;
+      const previewMeta = snap
+        ? this.derivePreviewMeta(snap.breakdown)
+        : { heroImageUrl: null, representativeCards: [] };
       return {
         id: deck.id,
         fabraryUlid: deck.fabraryUlid,
@@ -169,10 +173,131 @@ export class DecksService {
               computedAt: snap.computedAt.toISOString(),
             }
           : null,
+        heroImageUrl: previewMeta.heroImageUrl,
+        representativeCards: previewMeta.representativeCards,
       };
     });
 
     return { trackedDecks, collectionCardCount, aggregateShoppingLine };
+  }
+
+  // Extracts the hero thumbnail + up to 3 representative mainboard cards
+  // from a snapshot's breakdown JSONB. Powers the home tile's deckbox vessel
+  // visual: the hero is the static centerpiece, the representatives lift on
+  // hover. When the breakdown contains nothing usable, returns null/[] —
+  // the frontend renders default oxblood card-back silhouettes.
+  private derivePreviewMeta(breakdown: unknown): {
+    heroImageUrl: { small: string; smallSources: readonly string[] } | null;
+    representativeCards: readonly IRepresentativeCard[];
+  } {
+    const raw = breakdown as {
+      exact?: readonly IBreakdownEntry[];
+      substituted?: readonly unknown[];
+      missing?: readonly IBreakdownEntry[];
+    };
+
+    // Substituted entries on the wire wrap the original card in `{ original, match }`.
+    const substitutedOriginals: IBreakdownEntry[] = (raw.substituted ?? [])
+      .map((entry) => {
+        const wrapped = entry as { original?: IBreakdownEntry } & IBreakdownEntry;
+        if (wrapped && typeof wrapped === 'object' && 'original' in wrapped && wrapped.original) {
+          return wrapped.original;
+        }
+        return wrapped;
+      })
+      .filter((entry): entry is IBreakdownEntry => Boolean(entry?.cardIdentifier));
+
+    const allEntries: readonly IBreakdownEntry[] = [
+      ...(raw.exact ?? []),
+      ...substitutedOriginals,
+      ...(raw.missing ?? []),
+    ];
+
+    // Hero: the breakdown carries one entry with slot='hero'. Image comes
+    // straight from that entry's enriched imageUrl (B1). We project the full
+    // `sources` mirror as `smallSources` so the frontend can walk to a
+    // working URL when the primary 403's on Legend Story's CDN.
+    const heroEntry = allEntries.find((entry) => entry.slot === 'hero');
+    const heroImageUrl = heroEntry?.imageUrl
+      ? {
+          small: heroEntry.imageUrl.small,
+          smallSources: this.projectSmallSources(heroEntry.imageUrl),
+        }
+      : null;
+
+    // Representatives: mainboard entries, deduped by identifier (defensive
+    // — same card could appear partially in exact and partially in missing
+    // after the engine's per-slot accounting), ranked by quantity desc then
+    // name asc, top 3.
+    const seen = new Set<string>();
+    const mainboardEntries: IBreakdownEntry[] = [];
+    for (const entry of allEntries) {
+      if (entry.slot !== 'mainboard') continue;
+      if (seen.has(entry.cardIdentifier)) continue;
+      seen.add(entry.cardIdentifier);
+      mainboardEntries.push(entry);
+    }
+
+    // Legacy snapshots persisted before B1 lack an entry-level `name` —
+    // fall back to the catalog (and ultimately the identifier) so the
+    // sort key is always defined and the wire payload always carries a
+    // human-readable name.
+    const resolveName = (entry: IBreakdownEntry): string => {
+      if (entry.name && entry.name.length > 0) return entry.name;
+      try {
+        const card = this.catalogService.getCard(entry.cardIdentifier);
+        if (card?.name) return card.name;
+      } catch {
+        // Card retired from catalog — keep identifier fallback.
+      }
+      return entry.cardIdentifier;
+    };
+
+    mainboardEntries.sort((a, b) => {
+      if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+      return resolveName(a).localeCompare(resolveName(b));
+    });
+
+    const representativeCards: readonly IRepresentativeCard[] = mainboardEntries
+      .slice(0, 3)
+      .map((entry) => ({
+        cardIdentifier: entry.cardIdentifier,
+        name: resolveName(entry),
+        imageUrl: entry.imageUrl
+          ? {
+              small: entry.imageUrl.small,
+              smallSources: this.projectSmallSources(entry.imageUrl),
+            }
+          : null,
+      }));
+
+    return { heroImageUrl, representativeCards };
+  }
+
+  /**
+   * Builds the ordered fallback URL list for a card thumbnail. The primary
+   * `small` is always first, followed by the rest of the `sources` mirror
+   * (deduped). The frontend tries each in turn on `<img onError>` because
+   * Legend Story's CDN 403's some primary assets — recent heroes often have
+   * working `-RF` (rainbow foil) or `HER###-RF` reprint URLs even when the
+   * canonical set/number 403's.
+   */
+  private projectSmallSources(imageUrl: {
+    small: string;
+    sources: readonly { small: string }[];
+  }): readonly string[] {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    const push = (url: string): void => {
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      ordered.push(url);
+    };
+    push(imageUrl.small);
+    for (const src of imageUrl.sources ?? []) {
+      push(src.small);
+    }
+    return ordered;
   }
 
   async getDetail(

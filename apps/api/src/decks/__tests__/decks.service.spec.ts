@@ -209,9 +209,356 @@ describe('DecksService', () => {
           effectivePercent: snapshot.effectivePercent,
           computedAt: snapshot.computedAt.toISOString(),
         },
+        // Empty breakdown ({}) yields no preview entries — frontend renders
+        // default oxblood card-back silhouettes inside the deckbox.
+        heroImageUrl: null,
+        representativeCards: [],
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.
       expect(result.aggregateShoppingLine).toBeNull();
+    });
+
+    describe('(C3) representativeCards heuristic', () => {
+      function buildBreakdown(
+        entries: ReadonlyArray<{
+          cardIdentifier: string;
+          name: string;
+          slot: string;
+          quantity: number;
+          smallUrl?: string | null;
+          bucket?: 'exact' | 'substituted' | 'missing';
+        }>,
+      ): unknown {
+        const exact: unknown[] = [];
+        const substituted: unknown[] = [];
+        const missing: unknown[] = [];
+
+        for (const entry of entries) {
+          const breakdownEntry = {
+            cardIdentifier: entry.cardIdentifier,
+            name: entry.name,
+            slot: entry.slot,
+            quantity: entry.quantity,
+            pitch: null,
+            cost: null,
+            type: 'ally',
+            imageUrl:
+              entry.smallUrl !== undefined
+                ? entry.smallUrl === null
+                  ? null
+                  : { small: entry.smallUrl, large: entry.smallUrl, sources: [] }
+                : { small: `${entry.cardIdentifier}.webp`, large: `${entry.cardIdentifier}-l.webp`, sources: [] },
+          };
+          const bucket = entry.bucket ?? 'exact';
+          if (bucket === 'exact') exact.push(breakdownEntry);
+          else if (bucket === 'missing') missing.push(breakdownEntry);
+          else substituted.push({ original: breakdownEntry, match: {} });
+        }
+
+        return { exact, substituted, missing, notOwned: [] };
+      }
+
+      function setupListWithSnapshot(breakdown: unknown): {
+        deck: TrackedDeckEntity;
+        snapshot: DeckReadinessSnapshotEntity;
+      } {
+        const deck = buildTrackedDeck();
+        const snapshot = buildSnapshot({ breakdown: breakdown as Record<string, unknown> });
+        trackedDeckRepo.find.mockResolvedValue([deck]);
+        collectionReadService.countUniqueOwned.mockResolvedValue(0);
+        const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+        qb.where.mockReturnThis();
+        qb.andWhere.mockReturnThis();
+        qb.getMany.mockResolvedValue([snapshot]);
+        snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+        return { deck, snapshot };
+      }
+
+      it('returns top 3 mainboard entries by quantity desc, name asc', async () => {
+        // Arrange
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 3 },
+            { cardIdentifier: 'sigil-of-solace', name: 'Sigil of Solace', slot: 'mainboard', quantity: 3 },
+            { cardIdentifier: 'crippling-crush', name: 'Crippling Crush', slot: 'mainboard', quantity: 2 },
+            { cardIdentifier: 'anothos', name: 'Anothos', slot: 'weapon', quantity: 1 },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+const trackedDeck = result.trackedDecks[0]!;
+        const reps = trackedDeck.representativeCards;
+        expect(reps).toHaveLength(3);
+        expect(reps[0]?.name).toBe('Pummel'); // qty 3, P < S
+        expect(reps[1]?.name).toBe('Sigil of Solace'); // qty 3, S
+        expect(reps[2]?.name).toBe('Crippling Crush'); // qty 2
+        expect(reps[0]?.imageUrl).toEqual({ small: 'pummel.webp', smallSources: ['pummel.webp'] });
+      });
+
+      it('excludes hero, weapon, and equipment slots', async () => {
+        // Arrange
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'bravo-star-crossed', name: 'Bravo, Star-Crossed', slot: 'hero', quantity: 1 },
+            { cardIdentifier: 'anothos', name: 'Anothos', slot: 'weapon', quantity: 1 },
+            { cardIdentifier: 'helm-of-isen', name: 'Helm of Isen', slot: 'equipment', quantity: 1 },
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 3 },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+const trackedDeck = result.trackedDecks[0]!;
+        const reps = trackedDeck.representativeCards;
+        expect(reps.map((r) => r.cardIdentifier)).toEqual(['pummel']);
+      });
+
+      it('combines exact + substituted-original + missing entries', async () => {
+        // Arrange
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 3, bucket: 'exact' },
+            { cardIdentifier: 'sigil', name: 'Sigil', slot: 'mainboard', quantity: 2, bucket: 'substituted' },
+            { cardIdentifier: 'wrecker-romp', name: 'Wrecker Romp', slot: 'mainboard', quantity: 1, bucket: 'missing' },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+const trackedDeck = result.trackedDecks[0]!;
+        const reps = trackedDeck.representativeCards;
+        expect(reps.map((r) => r.cardIdentifier)).toEqual(['pummel', 'sigil', 'wrecker-romp']);
+      });
+
+      it('dedupes by cardIdentifier across buckets', async () => {
+        // Arrange — same card appearing in two buckets should count once.
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 2, bucket: 'exact' },
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 1, bucket: 'missing' },
+            { cardIdentifier: 'sigil', name: 'Sigil', slot: 'mainboard', quantity: 1 },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+const trackedDeck = result.trackedDecks[0]!;
+        const reps = trackedDeck.representativeCards;
+        expect(reps).toHaveLength(2);
+        expect(reps.map((r) => r.cardIdentifier)).toEqual(['pummel', 'sigil']);
+      });
+
+      it('extracts heroImageUrl from the slot=hero breakdown entry', async () => {
+        // Arrange
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'bravo', name: 'Bravo, Star-Crossed', slot: 'hero', quantity: 1, smallUrl: 'bravo.webp' },
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 3 },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toEqual({
+          small: 'bravo.webp',
+          smallSources: ['bravo.webp'],
+        });
+      });
+
+      it('projects the catalog `sources` mirror as smallSources fallback list', async () => {
+        // Arrange — a hero whose primary URL is known to 403 on the LSS CDN
+        // (e.g. ASR001) but has working alternates. The engine breakdown
+        // carries the `sources` array; the service must surface it as an
+        // ordered, deduped list with the primary first.
+        const heroEntry = {
+          cardIdentifier: 'ira-scarlet-revenger',
+          name: 'Ira, Scarlet Revenger',
+          slot: 'hero',
+          quantity: 1,
+          pitch: null,
+          cost: null,
+          type: 'hero',
+          imageUrl: {
+            small: 'https://lss.example/ASR001.webp',
+            large: 'https://lss.example/large/ASR001.webp',
+            sources: [
+              { small: 'https://lss.example/ASR001.webp', large: 'https://lss.example/large/ASR001.webp' },
+              { small: 'https://lss.example/ASR001-RF.webp', large: 'https://lss.example/large/ASR001-RF.webp' },
+              { small: 'https://lss.example/HER123-RF.webp', large: 'https://lss.example/large/HER123-RF.webp' },
+            ],
+          },
+        };
+        setupListWithSnapshot({ exact: [heroEntry], substituted: [], missing: [], notOwned: [] });
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toEqual({
+          small: 'https://lss.example/ASR001.webp',
+          smallSources: [
+            'https://lss.example/ASR001.webp',
+            'https://lss.example/ASR001-RF.webp',
+            'https://lss.example/HER123-RF.webp',
+          ],
+        });
+      });
+
+      it('returns null heroImageUrl + empty representatives when breakdown is empty', async () => {
+        // Arrange — snapshot exists but breakdown is the legacy `{}` form.
+        setupListWithSnapshot({});
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toBeNull();
+        expect(result.trackedDecks[0]!.representativeCards).toEqual([]);
+      });
+
+      it('returns null heroImageUrl + empty representatives when no snapshot exists', async () => {
+        // Arrange — auto-recompute path also fails; snapshot stays null.
+        const deck = buildTrackedDeck();
+        trackedDeckRepo.find.mockResolvedValue([deck]);
+        collectionReadService.countUniqueOwned.mockResolvedValue(0);
+
+        const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+        qb.where.mockReturnThis();
+        qb.andWhere.mockReturnThis();
+        qb.getMany.mockResolvedValue([]);
+        snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+        substitutionService.computeAndStoreReadiness.mockRejectedValue(
+          new Error('engine offline'),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toBeNull();
+        expect(result.trackedDecks[0]!.representativeCards).toEqual([]);
+      });
+
+      it('falls back to cardIdentifier when entry.name is undefined (legacy snapshot)', async () => {
+        // Arrange — legacy snapshots persisted before B1 lack entry-level
+        // `name`. Sorting on a.name.localeCompare(b.name) used to throw
+        // "Cannot read properties of undefined" for these snapshots.
+        const legacyBreakdown = {
+          exact: [
+            // No `name` field — simulates pre-B1 stored breakdown
+            {
+              cardIdentifier: 'pummel',
+              slot: 'mainboard',
+              quantity: 3,
+              pitch: null,
+              cost: null,
+              type: 'attack',
+              imageUrl: null,
+            },
+            {
+              cardIdentifier: 'sigil-of-solace',
+              slot: 'mainboard',
+              quantity: 2,
+              pitch: null,
+              cost: null,
+              type: 'ally',
+              imageUrl: null,
+            },
+          ],
+          substituted: [],
+          missing: [],
+          notOwned: [],
+        };
+        // Mock catalog to fail (card retired) so the fallback chain
+        // ultimately uses cardIdentifier as the name.
+        catalogService.getCard.mockImplementation(() => {
+          throw new Error('Card not found');
+        });
+        setupListWithSnapshot(legacyBreakdown);
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert — no throw, sort by quantity desc + identifier fallback
+        const reps = result.trackedDecks[0]!.representativeCards;
+        expect(reps).toHaveLength(2);
+        expect(reps[0]?.name).toBe('pummel');
+        expect(reps[1]?.name).toBe('sigil-of-solace');
+      });
+
+      it('uses catalog name when breakdown name is missing (legacy snapshot, catalog hit)', async () => {
+        // Arrange — same legacy shape, but catalog has the card.
+        const legacyBreakdown = {
+          exact: [
+            {
+              cardIdentifier: 'pummel',
+              slot: 'mainboard',
+              quantity: 3,
+              pitch: null,
+              cost: null,
+              type: 'attack',
+              imageUrl: null,
+            },
+          ],
+          substituted: [],
+          missing: [],
+          notOwned: [],
+        };
+        catalogService.getCard.mockImplementation((id: string) => {
+          if (id === 'pummel') {
+            return {
+              cardIdentifier: 'pummel',
+              name: 'Pummel',
+              types: ['Action'],
+              classes: [],
+              talents: [],
+              pitch: 1,
+              cost: 0,
+              power: null,
+              defense: null,
+              keywords: [],
+              imageUrl: null,
+            } as unknown as ReturnType<typeof catalogService.getCard>;
+          }
+          throw new Error('Card not found');
+        });
+        setupListWithSnapshot(legacyBreakdown);
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        const reps = result.trackedDecks[0]!.representativeCards;
+        expect(reps[0]?.name).toBe('Pummel');
+      });
+
+      it('handles entries with null imageUrl gracefully', async () => {
+        // Arrange — catalog can carry null imageUrl for unprinted cards.
+        setupListWithSnapshot(
+          buildBreakdown([
+            { cardIdentifier: 'bravo', name: 'Bravo', slot: 'hero', quantity: 1, smallUrl: null },
+            { cardIdentifier: 'pummel', name: 'Pummel', slot: 'mainboard', quantity: 3, smallUrl: null },
+          ]),
+        );
+
+        // Act
+        const result = await service.listForUser(USER_ID);
+
+        // Assert
+        expect(result.trackedDecks[0]!.heroImageUrl).toBeNull();
+        expect(result.trackedDecks[0]!.representativeCards[0]?.imageUrl).toBeNull();
+      });
     });
 
     it('(U10) should call computeAggregate and attach aggregateShoppingLine to response', async () => {
