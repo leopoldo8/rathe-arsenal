@@ -11,3 +11,5 @@ export { StoreScrapeRunEntity, EStoreScrapeRunStatus } from './store-scrape-run.
 export { CardAliasEntity } from './card-alias.entity';
 export { StoreStockVariantEntity } from './store-stock-variant.entity';
 export { ReviewAggregateEntity } from './review-aggregate.entity';
+export { DeckTagEntity } from './deck-tag.entity';
+export { TrackedDeckTagEntity } from './tracked-deck-tag.entity';

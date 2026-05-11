@@ -79,8 +79,11 @@ function buildDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeckEntit
     fabraryUlid: 'ULID001',
     name: 'Test Deck',
     hero: 'Rhinar',
+    heroIdentifier: 'rhinar-reckless-rampage',
     format: 'cc',
+    status: 'building',
     trackedAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };

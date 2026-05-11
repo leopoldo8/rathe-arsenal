@@ -27,8 +27,11 @@ function buildTrackedDeck(
     fabraryUlid: '01H0000000000000000000AAAA',
     name: 'Bravo Showstopper',
     hero: 'Bravo',
+    heroIdentifier: 'bravo-showstopper',
     format: 'Classic Constructed',
+    status: 'building',
     trackedAt: new Date('2025-01-15T10:00:00Z'),
+    updatedAt: new Date('2025-01-15T10:00:00Z'),
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };

@@ -26,8 +26,11 @@ function makeDeck(userId = USER_ID, id = DECK_ID): TrackedDeckEntity {
     fabraryUlid: '01H0000000000000000000AAAA',
     name: 'Test Deck',
     hero: 'Bravo',
+    heroIdentifier: 'bravo-showstopper',
     format: 'Classic Constructed',
+    status: 'building',
     trackedAt: new Date(),
+    updatedAt: new Date(),
     user: {} as TrackedDeckEntity['user'],
   };
 }

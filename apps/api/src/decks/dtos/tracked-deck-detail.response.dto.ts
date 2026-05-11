@@ -99,7 +99,8 @@ export interface IDecisionEntry {
 
 export interface ITrackedDeckDetailResponse {
   readonly id: number;
-  readonly fabraryUlid: string;
+  /** Null for scratch decks created without a Fabrary URL (D8). */
+  readonly fabraryUlid: string | null;
   readonly name: string;
   readonly hero: string;
   readonly format: string;

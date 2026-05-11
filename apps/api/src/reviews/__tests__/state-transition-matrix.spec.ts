@@ -199,8 +199,11 @@ function stubOwnership(
     fabraryUlid: '01H0000000000000000000BBBB',
     name: 'Test Deck',
     hero: 'Briar',
+    heroIdentifier: 'briar-warden-of-thorns',
     format: 'Classic Constructed',
+    status: 'building',
     trackedAt: new Date(),
+    updatedAt: new Date(),
     user: {} as TrackedDeckEntity['user'],
   };
   // find for list
