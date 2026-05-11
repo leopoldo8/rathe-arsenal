@@ -116,6 +116,7 @@ export class DecksImportService {
             fabraryUlid: deck.ulid,
             name: deck.name,
             hero: deck.hero.name,
+            heroIdentifier: deck.hero.cardIdentifier,
             format: deck.format,
           });
           const saved = await manager.save(TrackedDeckEntity, trackedDeck);

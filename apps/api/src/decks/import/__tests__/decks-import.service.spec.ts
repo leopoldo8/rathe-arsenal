@@ -150,6 +150,17 @@ describe('DecksImportService', () => {
     expect(fabraryService.fetchDeck).toHaveBeenCalledWith(ULID_1);
     expect(dataSource.transaction).toHaveBeenCalled();
     expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalled();
+
+    // U1: heroIdentifier must be set from the Fabrary GraphQL hero.cardIdentifier
+    // field — not from the display name — so the legality engine can resolve it.
+    const createCalls = (mockManager.create as jest.Mock).mock.calls as unknown[][];
+    const trackedDeckCreateCall = createCalls.find(
+      (call) => call[0] === TrackedDeckEntity,
+    );
+    expect(trackedDeckCreateCall).toBeDefined();
+    expect(trackedDeckCreateCall![1]).toMatchObject({
+      heroIdentifier: 'hero-001',
+    });
   });
 
   it('should skip duplicate URLs within the same request', async () => {

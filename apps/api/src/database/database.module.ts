@@ -16,6 +16,8 @@ import {
   CardAliasEntity,
   StoreStockVariantEntity,
   ReviewAggregateEntity,
+  DeckTagEntity,
+  TrackedDeckTagEntity,
 } from './entities';
 
 /**
@@ -50,6 +52,8 @@ import {
             CardAliasEntity,
             StoreStockVariantEntity,
             ReviewAggregateEntity,
+            DeckTagEntity,
+            TrackedDeckTagEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.
