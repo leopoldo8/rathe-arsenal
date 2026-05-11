@@ -1,12 +1,15 @@
 import {
   Class,
+  Format,
   Hero,
   Keyword,
+  LegalOverride,
+  Rarity,
   Talent,
   Type,
 } from '@flesh-and-blood/types';
 
-export { Class, Hero, Keyword, Talent, Type };
+export { Class, Format, Hero, Keyword, LegalOverride, Rarity, Talent, Type };
 
 export interface ICatalogCard {
   readonly cardIdentifier: string;
@@ -21,6 +24,40 @@ export interface ICatalogCard {
   readonly keywords: readonly Keyword[];
   readonly subtypes: readonly string[];
   readonly legalHeroes: readonly string[];
+  /**
+   * The `Hero` enum value for hero cards (e.g., `"Dorinthea"`, `"Kayo"`).
+   * Used when evaluating per-card hero-scope rules against the deck hero.
+   * Undefined for non-hero cards.
+   */
+  readonly hero?: Hero;
+  /** Formats in which this card is tournament-legal (from `@flesh-and-blood/types`). */
+  readonly legalFormats: readonly Format[];
+  /** Formats from which this card is explicitly banned. Optional — undefined means no bans. */
+  readonly bannedFormats?: readonly Format[];
+  /**
+   * Formats in which this card's use is restricted (limited copies).
+   * Optional — undefined means no restrictions.
+   */
+  readonly restrictedFormats?: readonly Format[];
+  /**
+   * Per-format hero-scope overrides. Lets a card be legal in a format for
+   * specific heroes even when it would otherwise be out of scope.
+   * Optional — undefined means no overrides.
+   */
+  readonly legalOverrides?: readonly LegalOverride[];
+  /** Card rarity (from `@flesh-and-blood/types` Rarity enum). */
+  readonly rarity: Rarity;
+  /**
+   * True for hero cards that are designated "young hero" versions.
+   * Used for Blitz / Silver Age hero requirement checks.
+   * False when not a young hero (coerced from upstream `true | undefined`).
+   */
+  readonly young: boolean;
+  /**
+   * Hero identifiers this card specializes in (i.e. `Keyword.Specialization` cards).
+   * Optional — undefined when the card has no specialization restriction.
+   */
+  readonly specializations?: readonly Hero[];
   /**
    * Set identifiers (short codes) this card belongs to. Sourced from
    * `@flesh-and-blood/types` `Card.setIdentifiers` field (e.g. `["WTR"]`,

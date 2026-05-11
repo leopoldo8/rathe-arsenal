@@ -1,5 +1,5 @@
 import { findSubstitution } from '../src/substitution/find-substitution';
-import { ICatalog, ICatalogCard, Class, Keyword, Talent, Type } from '../src';
+import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Talent, Type } from '../src';
 import { buildIndices } from '../src/catalog/indices';
 
 function makeCard(overrides: Partial<ICatalogCard> & { cardIdentifier: string }): ICatalogCard {
@@ -16,6 +16,9 @@ function makeCard(overrides: Partial<ICatalogCard> & { cardIdentifier: string })
     keywords: [Keyword.GoAgain],
     subtypes: [],
     legalHeroes: [],
+    legalFormats: [Format.ClassicConstructed],
+    rarity: Rarity.Common,
+    young: false,
     sets: [],
     imageUrl: null,
   };
