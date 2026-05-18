@@ -1,0 +1,62 @@
+/* ============================================================
+   SlotPicker — 4-slot segmented control for deck card slots.
+   ============================================================ */
+
+.root {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+  background-color: var(--ra-bg-surface);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  background-color: transparent;
+  border: none;
+  border-right: 1px solid var(--ra-border);
+  cursor: pointer;
+  font-size: var(--ra-text-small);
+  font-family: var(--ra-font-ui);
+  color: var(--ra-fg-secondary);
+  transition: background-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+  min-block-size: 44px;  /* R52: touch target */
+  min-inline-size: 44px;
+}
+
+.item:last-child {
+  border-right: none;
+}
+
+.item:hover {
+  background-color: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Active / pressed state — Radix sets data-state="on" for the selected item */
+.item[data-state='on'],
+.item[data-active='true'] {
+  background-color: var(--ra-bg-raised);
+  color: var(--ra-accent);
+}
+
+.icon {
+  flex-shrink: 0;
+  /* currentColor inherits from .item color */
+}
+
+.label {
+  white-space: nowrap;
+}

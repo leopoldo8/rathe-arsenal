@@ -14,6 +14,21 @@ export interface ISearchCardResult {
    * row thumbnail; click opens `large` in the shared CardLightbox.
    */
   readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  /**
+   * Legality fields from U17 — extended `/catalog/search` response.
+   * Formats in which this card is legal (e.g. ["CC", "Blitz"]).
+   */
+  readonly legalFormats: readonly string[];
+  /**
+   * Hero identifiers (cardIdentifier) for which this card is legal.
+   * Empty array means no hero restriction (legal for all heroes in the
+   * legal formats).
+   */
+  readonly legalHeroes: readonly string[];
+  /**
+   * Formats in which this card is explicitly banned. Empty array = no bans.
+   */
+  readonly bannedFormats: readonly string[];
 }
 
 export interface ISearchCardsResponse {
