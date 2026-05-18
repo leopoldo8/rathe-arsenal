@@ -19,6 +19,7 @@ import { StoresModule } from './stores/stores.module';
 import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -47,6 +48,8 @@ import { ReviewsModule } from './reviews/reviews.module';
     UsersModule,
     // U5 (Plan B): review_aggregate entity + service (no HTTP endpoints yet).
     ReviewsModule,
+    // U3 (Deck Management v2): GET/POST/DELETE /api/tags for user-defined deck tags.
+    TagsModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({

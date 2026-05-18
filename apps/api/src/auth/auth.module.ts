@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../database/entities/user.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
+import { DeckTagEntity } from '../database/entities/deck-tag.entity';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PasswordHasherService } from './services/password-hasher.service';
@@ -28,7 +29,10 @@ import { OwnsTrackedDeckGuard } from './guards/owns-tracked-deck.guard';
         },
       }),
     }),
-    TypeOrmModule.forFeature([UserEntity, TrackedDeckEntity, CollectionCardEntity]),
+    // DeckTagEntity is registered here (not in TagsModule) so that AuthzService
+    // can use @InjectRepository(DeckTagEntity) without creating a circular
+    // dependency: AuthModule ← TagsModule ← AuthModule.
+    TypeOrmModule.forFeature([UserEntity, TrackedDeckEntity, CollectionCardEntity, DeckTagEntity]),
   ],
   controllers: [AuthController],
   providers: [
