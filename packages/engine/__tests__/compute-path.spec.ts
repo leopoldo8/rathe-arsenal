@@ -1,5 +1,6 @@
 import { computePath } from '../src/readiness/compute-path';
 import { IBreakdownEntry, IReadinessBreakdown } from '../src/readiness/types';
+import { Format, Rarity } from '../src';
 
 /** U11: IBreakdownEntry now requires pitch, cost, type. Helper adds defaults. */
 function makeEntry(
@@ -71,6 +72,9 @@ describe('computePath', () => {
               keywords: Object.freeze([]),
               subtypes: Object.freeze([]),
               legalHeroes: Object.freeze([]),
+              legalFormats: Object.freeze([Format.ClassicConstructed]),
+              rarity: Rarity.Common,
+              young: false,
               sets: Object.freeze([]),
               imageUrl: null,
             }),
@@ -104,6 +108,9 @@ describe('computePath', () => {
               keywords: Object.freeze([]),
               subtypes: Object.freeze([]),
               legalHeroes: Object.freeze([]),
+              legalFormats: Object.freeze([Format.ClassicConstructed]),
+              rarity: Rarity.Common,
+              young: false,
               sets: Object.freeze([]),
               imageUrl: null,
             }),

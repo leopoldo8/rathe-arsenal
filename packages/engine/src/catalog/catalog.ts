@@ -1,7 +1,14 @@
 import { cards as rawCards } from '@flesh-and-blood/cards';
 import { buildIndices } from './indices';
 import { CardNotFoundError } from './errors';
-import { ICatalog, ICatalogCard, ICatalogIndices } from './types';
+import {
+  ICatalog,
+  ICatalogCard,
+  ICatalogIndices,
+  Format,
+  LegalOverride,
+  Rarity,
+} from './types';
 
 interface IRawPrinting {
   identifier?: string;
@@ -22,7 +29,15 @@ interface IRawCard {
   cost?: number;
   keywords?: string[];
   subtypes?: string[];
+  hero?: string;
   legalHeroes?: string[];
+  legalFormats?: string[];
+  bannedFormats?: string[];
+  restrictedFormats?: string[];
+  legalOverrides?: readonly { format: string; heroes: string[] }[];
+  rarity?: string;
+  young?: boolean;
+  specializations?: string[];
   defaultImage?: string;
   /**
    * Per-printing artwork + foiling metadata. We use this to derive image
@@ -120,7 +135,9 @@ function extractSetCodes(rawIds: readonly string[]): readonly string[] {
 }
 
 function normalizeCard(raw: IRawCard): ICatalogCard {
-  return Object.freeze({
+  // Build the required (always-present) fields first.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const card: Record<string, unknown> = {
     cardIdentifier: raw.cardIdentifier,
     name: raw.name,
     classes: Object.freeze((raw.classes ?? []) as ICatalogCard['classes']),
@@ -133,9 +150,39 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
     keywords: Object.freeze((raw.keywords ?? []) as ICatalogCard['keywords']),
     subtypes: Object.freeze(raw.subtypes ?? []),
     legalHeroes: Object.freeze(raw.legalHeroes ?? []),
+    legalFormats: Object.freeze((raw.legalFormats ?? []) as Format[]),
+    rarity: (raw.rarity ?? Rarity.Common) as Rarity,
+    young: raw.young ?? false,
     sets: extractSetCodes(raw.setIdentifiers ?? []),
     imageUrl: buildImageUrl(raw.defaultImage, raw.printings),
-  });
+  };
+
+  // Optional fields: only assign when the raw source has a value, so the
+  // resulting object satisfies `exactOptionalPropertyTypes` on ICatalogCard.
+  if (raw.hero != null) {
+    card['hero'] = raw.hero as import('./types').Hero;
+  }
+  if (raw.bannedFormats != null) {
+    card['bannedFormats'] = Object.freeze(raw.bannedFormats as Format[]);
+  }
+  if (raw.restrictedFormats != null) {
+    card['restrictedFormats'] = Object.freeze(raw.restrictedFormats as Format[]);
+  }
+  if (raw.legalOverrides != null) {
+    card['legalOverrides'] = Object.freeze(
+      raw.legalOverrides.map((o) => ({
+        format: o.format as Format,
+        heroes: [...o.heroes] as import('@flesh-and-blood/types').Hero[],
+      })),
+    );
+  }
+  if (raw.specializations != null) {
+    card['specializations'] = Object.freeze(
+      raw.specializations as ICatalogCard['specializations'],
+    );
+  }
+
+  return Object.freeze(card) as unknown as ICatalogCard;
 }
 
 function createCatalog(): ICatalog {

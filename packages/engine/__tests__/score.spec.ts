@@ -8,7 +8,7 @@ import {
   TIER_1_FLOOR_SCORE,
   TIER_2_FLOOR_SCORE,
 } from '../src/substitution/constants';
-import { ICatalog, ICatalogCard, Class, Keyword, Type, Talent } from '../src';
+import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Type, Talent } from '../src';
 import { buildIndices } from '../src/catalog/indices';
 
 /**
@@ -28,6 +28,9 @@ function makeCard(overrides: Partial<ICatalogCard> & { cardIdentifier: string })
     keywords: [Keyword.GoAgain],
     subtypes: [],
     legalHeroes: [],
+    legalFormats: [Format.ClassicConstructed],
+    rarity: Rarity.Common,
+    young: false,
     sets: [],
     imageUrl: null,
   };

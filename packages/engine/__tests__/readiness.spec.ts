@@ -1,5 +1,5 @@
 import { computeEffectiveReadiness } from '../src/readiness/compute';
-import { ICatalog, ICatalogCard, Class, Keyword, Talent, Type } from '../src';
+import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Talent, Type } from '../src';
 import { buildIndices } from '../src/catalog/indices';
 import { DEFAULT_PITCH_TOLERANCE } from '../src/substitution/constants';
 
@@ -17,6 +17,9 @@ function makeCard(overrides: Partial<ICatalogCard> & { cardIdentifier: string })
     keywords: [Keyword.GoAgain],
     subtypes: [],
     legalHeroes: [],
+    legalFormats: [Format.ClassicConstructed],
+    rarity: Rarity.Common,
+    young: false,
     sets: [],
     imageUrl: null,
   };

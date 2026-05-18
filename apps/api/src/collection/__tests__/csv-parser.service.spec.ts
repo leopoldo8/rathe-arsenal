@@ -4,7 +4,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CsvParserService, computeContentHash } from '../csv/csv-parser.service';
 import { IResolvedCsvRow } from '../csv/csv.types';
-import { ICatalogCard } from '@rathe-arsenal/engine';
+import { ICatalogCard, Rarity } from '@rathe-arsenal/engine';
 
 // ---------------------------------------------------------------------------
 // Test catalog helpers
@@ -24,6 +24,9 @@ function buildCatalogCard(
     keywords: [],
     subtypes: [],
     legalHeroes: [],
+    legalFormats: [],
+    rarity: Rarity.Common,
+    young: false,
     sets: [],
     imageUrl: null,
     ...overrides,

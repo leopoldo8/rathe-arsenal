@@ -1,6 +1,6 @@
 import { composeRationale } from '../src/substitution/rationale';
 import { ICatalogCard } from '../src/catalog/types';
-import { Class, Keyword, Talent, Type } from '@flesh-and-blood/types';
+import { Class, Format, Keyword, Rarity, Talent, Type } from '@flesh-and-blood/types';
 
 function makeCard(overrides: Partial<ICatalogCard> = {}): ICatalogCard {
   const base: ICatalogCard = {
@@ -16,6 +16,9 @@ function makeCard(overrides: Partial<ICatalogCard> = {}): ICatalogCard {
     keywords: [Keyword.GoAgain],
     subtypes: [],
     legalHeroes: [],
+    legalFormats: [Format.ClassicConstructed],
+    rarity: Rarity.Common,
+    young: false,
     sets: [],
     imageUrl: null,
   };

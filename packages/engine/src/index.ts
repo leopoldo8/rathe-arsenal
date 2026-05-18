@@ -15,7 +15,7 @@ export type {
   ICatalogCard,
   ICatalogIndices,
 } from './catalog/types';
-export { Class, Hero, Keyword, Talent, Type } from './catalog/types';
+export { Class, Format, Hero, Keyword, LegalOverride, Rarity, Talent, Type } from './catalog/types';
 export { getSetName } from './catalog/sets';
 
 // Substitution
@@ -59,3 +59,14 @@ export {
   computePath,
   computeFidelity,
 } from './readiness';
+
+// Legality
+export type {
+  TSupportedFormat,
+  TLegalityCategory,
+  IFormatRules,
+  IDeckLegalityResult,
+  ILegalityDeck,
+  ILegalityDeckCard,
+} from './legality';
+export { FORMAT_RULES, computeDeckLegality } from './legality';
