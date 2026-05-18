@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
+import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -17,6 +18,14 @@ async function bootstrap(): Promise<void> {
   app.set('trust proxy', 1);
 
   app.useLogger(app.get(Logger));
+
+  // Wire NestJS DI into class-validator so injectable validators (e.g.
+  // HeroIdentifierExistsInCatalog) can receive injected dependencies.
+  // `fallbackOnErrors: true` means class-validator falls back to plain
+  // instantiation when DI resolution fails — preserving the static-catalog
+  // fallback behavior for validators that don't actually need injection.
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
+
   app.setGlobalPrefix('api', { exclude: [] });
   app.useGlobalPipes(
     new ValidationPipe({

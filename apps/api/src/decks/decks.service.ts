@@ -1,9 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
+import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
@@ -29,9 +30,15 @@ import {
   IShoppingLinePopulated,
   IVariantFetchProgressDto,
 } from '../stores/dtos/shopping-line.response.dto';
-import { catalog, computeDeckLegality, TSupportedFormat } from '@rathe-arsenal/engine';
+import {
+  catalog,
+  computeDeckLegality,
+  computeEffectiveReadiness,
+  TSupportedFormat,
+} from '@rathe-arsenal/engine';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
 import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
+import { UpdateDeckCompositionDto } from './dto/update-deck-composition.dto';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
 import { TrackedDeckTagEntity } from '../database/entities/tracked-deck-tag.entity';
 
@@ -684,6 +691,272 @@ export class DecksService {
 
     // Re-fetch the full detail payload after commit.
     return this.getDetail(userId, deckId);
+  }
+
+  /**
+   * Atomically replaces a deck's composition (cards, heroIdentifier, format).
+   *
+   * Transactional steps (steps 1–5):
+   *   1. Ownership check — 404 if deck not found for this user.
+   *   2. DELETE all deck_card rows for this deck.
+   *   3. Bulk INSERT the new deck_card rows.
+   *   4. UPDATE tracked_deck.heroIdentifier and .format; updatedAt bumped
+   *      automatically by TypeORM @UpdateDateColumn.
+   *   5. Engine pass inside the transaction — computeEffectiveReadiness against
+   *      the just-inserted cards. Orphan substitute decisions are removed using
+   *      TypeORM In()/Not() operators (never raw string-concatenated SQL).
+   *
+   * Post-commit steps (steps 6–8):
+   *   6. Best-effort snapshot insert — non-fatal on failure (warn + continue).
+   *   7. computeDeckLegality (3-arg) in-memory.
+   *   8. Compose the response from in-memory readinessResult (NOT from the
+   *      snapshot table — avoids the staleness window) + legality + deck row + tags.
+   *
+   * Concurrent PUTs are last-write-wins (no optimistic-lock check, per D12).
+   */
+  async updateComposition(
+    deckId: number,
+    userId: string,
+    dto: UpdateDeckCompositionDto,
+  ): Promise<ITrackedDeckDetailResponse> {
+    // -------------------------------------------------------------------------
+    // Steps 1–5: inside a single transaction.
+    // -------------------------------------------------------------------------
+    const { deck: updatedDeck, tagRows, readinessInsideTransaction } =
+      await this.dataSource.transaction(async (manager) => {
+        // Step 1: Ownership check.
+        const deck = await manager.findOne(TrackedDeckEntity, {
+          where: { id: deckId, userId },
+        });
+        if (!deck) {
+          throw new NotFoundException('Tracked deck not found');
+        }
+
+        // Step 2: Delete existing deck_card rows.
+        await manager.delete(DeckCardEntity, { trackedDeckId: deckId });
+
+        // Step 3: Bulk insert new deck_card rows.
+        if (dto.cards.length > 0) {
+          await manager.insert(
+            DeckCardEntity,
+            dto.cards.map((card) => ({
+              trackedDeckId: deckId,
+              cardIdentifier: card.cardIdentifier,
+              quantity: card.quantity,
+              slot: card.slot,
+            })),
+          );
+        }
+
+        // Step 4: Update hero and format on the tracked_deck row.
+        // updatedAt is bumped automatically by @UpdateDateColumn on the entity.
+        await manager.update(
+          TrackedDeckEntity,
+          { id: deckId },
+          {
+            heroIdentifier: dto.heroIdentifier,
+            format: dto.format,
+          },
+        );
+
+        // Reload the deck row to pick up the new updatedAt (set by the DB trigger
+        // / TypeORM UpdateDateColumn after the update above).
+        const reloadedDeck = await manager.findOne(TrackedDeckEntity, {
+          where: { id: deckId },
+        });
+        if (!reloadedDeck) {
+          throw new NotFoundException('Tracked deck not found after update');
+        }
+
+        // Step 5: Engine pass — must run inside the transaction so it sees the
+        // just-inserted deck_card rows.
+        const freshCards = await manager.find(DeckCardEntity, {
+          where: { trackedDeckId: deckId },
+        });
+
+        const inventory = await this.collectionReadService.loadOwned(userId);
+
+        // Load persisted rejections — these are substitutes the user has
+        // explicitly rejected for this deck. They must be excluded so that
+        // the engine doesn't try to reuse them.
+        const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+
+        const deckInput = {
+          cards: freshCards.map((row) => ({
+            cardIdentifier: row.cardIdentifier,
+            quantity: row.quantity,
+            slot: row.slot,
+          })),
+        };
+
+        // 5-arg call: pass `undefined` for tolerance so the engine default applies;
+        // pass persistedRejections as the 5th arg (excludedIdentifiers).
+        const transactionReadiness = computeEffectiveReadiness(
+          deckInput,
+          inventory,
+          catalog,
+          undefined,
+          persistedRejections,
+        );
+
+        // Orphan cleanup: remove substitute decisions for substitutes that are
+        // no longer part of the new engine result. Uses TypeORM In()/Not() — never
+        // raw string-concatenated SQL.
+        const newSubstituteIds = new Set(
+          transactionReadiness.breakdown.substituted.map(
+            (s) => s.match.substitute.cardIdentifier,
+          ),
+        );
+
+        if (newSubstituteIds.size > 0) {
+          // Keep only decisions whose cardIdentifier is still in the new substitute set.
+          await manager.delete(SubstituteDecisionEntity, {
+            trackedDeckId: deckId,
+            cardIdentifier: Not(In([...newSubstituteIds])),
+          });
+        } else {
+          // New substitute set is empty — all decisions for this deck are orphaned.
+          await manager.delete(SubstituteDecisionEntity, { trackedDeckId: deckId });
+        }
+
+        // Fetch tags for the response (within the transaction so we read a
+        // consistent snapshot, even though tags are not modified by this endpoint).
+        const tagRowsInTx = await this.dataSource.query<Array<{ name: string; id: number }>>(
+          `SELECT tag.name, tag.id
+             FROM deck_tag tag
+             INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
+             WHERE tdt."trackedDeckId" = $1
+             ORDER BY tdt."attachedAt" ASC`,
+          [deckId],
+        );
+
+        return {
+          deck: reloadedDeck,
+          tagRows: tagRowsInTx ?? [],
+          readinessInsideTransaction: transactionReadiness,
+        };
+      });
+
+    // -------------------------------------------------------------------------
+    // Step 6 (post-commit): best-effort snapshot insert.
+    // -------------------------------------------------------------------------
+    // The readiness result is computed again here so it reflects the committed
+    // state. If the snapshot insert fails, we log and continue — the user still
+    // gets fresh readiness in the 200 response via the in-memory result.
+    let readinessResult = readinessInsideTransaction;
+    try {
+      const inventory = await this.collectionReadService.loadOwned(userId);
+      const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+      const freshCards = await this.deckCardRepo.find({
+        where: { trackedDeckId: deckId },
+      });
+
+      const deckInput = {
+        cards: freshCards.map((row) => ({
+          cardIdentifier: row.cardIdentifier,
+          quantity: row.quantity,
+          slot: row.slot,
+        })),
+      };
+
+      readinessResult = computeEffectiveReadiness(
+        deckInput,
+        inventory,
+        catalog,
+        undefined,
+        persistedRejections,
+      );
+
+      // Insert snapshot — best-effort.
+      try {
+        const snapshot = this.snapshotRepo.create({
+          trackedDeckId: deckId,
+          rawPercent: readinessResult.rawPercent,
+          effectivePercent: readinessResult.effectivePercent,
+          breakdown: readinessResult.breakdown as unknown as Record<string, unknown>,
+          substitutions: readinessResult.substitutions as unknown as Record<string, unknown>,
+        });
+        await this.snapshotRepo.save(snapshot);
+      } catch (snapshotError) {
+        this.logger.warn({
+          msg: 'Non-fatal: failed to insert readiness snapshot after PUT /decks/:id',
+          deckId,
+          error: (snapshotError as Error).message,
+        });
+      }
+    } catch (outerError) {
+      // If the outer load (inventory / deck cards) fails, fall back to the
+      // in-transaction result and log a warning.
+      this.logger.warn({
+        msg: 'Non-fatal: failed to recompute readiness post-commit for PUT /decks/:id; using transaction result',
+        deckId,
+        error: (outerError as Error).message,
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 7 (post-commit): legality pass.
+    // -------------------------------------------------------------------------
+    const freshCardsForLegality = await this.deckCardRepo.find({
+      where: { trackedDeckId: deckId },
+    });
+
+    const deckInputForLegality = {
+      heroIdentifier: dto.heroIdentifier,
+      cards: freshCardsForLegality.map((row) => ({
+        cardIdentifier: row.cardIdentifier,
+        quantity: row.quantity,
+        slot: row.slot,
+      })),
+    };
+
+    const legalityResult = computeDeckLegality(
+      deckInputForLegality,
+      catalog,
+      dto.format,
+    );
+
+    const legality: IDeckLegality = {
+      category: legalityResult.category,
+      reasons: legalityResult.reasons,
+    };
+
+    // -------------------------------------------------------------------------
+    // Step 8 (post-commit): compose the response.
+    // -------------------------------------------------------------------------
+    // Readiness comes from the in-memory readinessResult — NOT from a snapshot
+    // table re-read — to avoid the staleness window described in Key Technical
+    // Decisions.
+    const totalCards = freshCardsForLegality.reduce((sum, c) => sum + c.quantity, 0);
+
+    const [rejectedCount, decisions] = await Promise.all([
+      this.decisionsService.countRejected(deckId),
+      this.decisionsService.list(userId, deckId),
+    ]);
+
+    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
+    const notOwnedCount = readinessResult.breakdown.notOwned.length;
+    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
+
+    return {
+      id: updatedDeck.id,
+      fabraryUlid: updatedDeck.fabraryUlid,
+      name: updatedDeck.name,
+      hero: updatedDeck.hero,
+      format: updatedDeck.format,
+      status: updatedDeck.status,
+      tags: tagRows.map((r) => r.name),
+      trackedAt: updatedDeck.trackedAt.toISOString(),
+      updatedAt: updatedDeck.updatedAt.toISOString(),
+      totalCards,
+      latestSnapshot: null,
+      rejectedCount,
+      approvedCount,
+      pendingCount,
+      decisions,
+      shoppingLine: null,
+      legality,
+    };
   }
 
   async untrack(userId: string, deckId: number): Promise<void> {

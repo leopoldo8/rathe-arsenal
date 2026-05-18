@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,6 +20,7 @@ import { ITrackedDeckListResponse } from './dtos/tracked-deck-list.response.dto'
 import { ITrackedDeckDetailResponse } from './dtos/tracked-deck-detail.response.dto';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
 import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
+import { UpdateDeckCompositionDto } from './dto/update-deck-composition.dto';
 
 @Controller('decks')
 export class DecksController {
@@ -79,6 +81,34 @@ export class DecksController {
     @CurrentUser() user: ICurrentUser,
   ): Promise<ITrackedDeckDetailResponse> {
     return this.decksService.updateMeta(deckId, user.userId, dto);
+  }
+
+  /**
+   * PUT /api/decks/:deckId
+   *
+   * Atomically replaces the deck's composition: all existing deck_card rows
+   * are deleted and replaced with the provided `cards` list, and
+   * `heroIdentifier` + `format` are updated on the tracked_deck row.
+   *
+   * The response uses the in-memory engine readiness result computed
+   * post-commit — it does NOT re-read the snapshot table, so the response
+   * always reflects the just-saved state even when the snapshot insert fails.
+   *
+   * Orphan substitute decisions (for substitutes no longer recommended by the
+   * engine after the new card list) are cleaned up inside the transaction.
+   *
+   * Protected by `OwnsTrackedDeckGuard`: 404 when the deck is missing or
+   * belongs to another user.
+   */
+  @Put(':deckId')
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateComposition(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @Body() dto: UpdateDeckCompositionDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ITrackedDeckDetailResponse> {
+    return this.decksService.updateComposition(deckId, user.userId, dto);
   }
 
   @Delete(':deckId')
