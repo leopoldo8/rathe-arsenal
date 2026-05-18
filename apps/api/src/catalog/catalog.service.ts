@@ -4,18 +4,23 @@ import {
   ICatalog,
   ICatalogCard,
   ICatalogIndices,
+  Type,
 } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
 import {
   ISearchCardResult,
   ISearchCardsResponse,
 } from './dtos/search-cards.dto';
+import { IHeroListItem, IHeroListResponse } from './dtos/hero-list-item.dto';
 
 const DEFAULT_SEARCH_LIMIT = 10;
 
 // Card types that are not collectible in this context and must be excluded
 // from the autocomplete search results.
 const EXCLUDED_TYPES: ReadonlySet<string> = new Set(['Hero', 'Token']);
+
+// The Type.Hero enum value, used to filter hero cards in listHeroes().
+const HERO_TYPE: Type = Type.Hero;
 
 @Injectable()
 export class CatalogService {
@@ -39,6 +44,33 @@ export class CatalogService {
 
   getRawCard(identifier: string): unknown {
     return this.catalog.getRawCard(identifier);
+  }
+
+  /**
+   * Returns a slim projection of every hero card in the catalog.
+   *
+   * The HeroDropdown in the web app calls this endpoint once per session so it
+   * can render the hero picker without importing the engine (~9MB) client-side.
+   * No pagination — the hero set is bounded (~143 records, ~22KB JSON).
+   */
+  listHeroes(): IHeroListResponse {
+    const heroes: IHeroListItem[] = [];
+
+    for (const card of this.catalog.cards) {
+      if (!card.types.includes(HERO_TYPE)) continue;
+
+      heroes.push({
+        cardIdentifier: card.cardIdentifier,
+        name: card.name,
+        young: card.young,
+        legalFormats: [...card.legalFormats] as string[],
+        imageUrl: card.imageUrl
+          ? { small: card.imageUrl.small, large: card.imageUrl.large }
+          : null,
+      });
+    }
+
+    return { heroes };
   }
 
   /**
@@ -125,6 +157,12 @@ export class CatalogService {
       imageUrl: card.imageUrl
         ? { small: card.imageUrl.small, large: card.imageUrl.large }
         : null,
+      // Legality fields for the Edit-mode cascade check (U12/U17).
+      // Always serialized as arrays — never undefined — so the web client
+      // can safely iterate without null-guards.
+      legalFormats: [...card.legalFormats] as string[],
+      legalHeroes: [...card.legalHeroes] as string[],
+      bannedFormats: card.bannedFormats ? ([...card.bannedFormats] as string[]) : [],
     }));
 
     return { results };
