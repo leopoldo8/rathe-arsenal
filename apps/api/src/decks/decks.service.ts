@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
@@ -19,6 +19,7 @@ import {
 import {
   IBreakdown,
   IBreakdownEntry,
+  IDeckLegality,
   IShoppingLineResponse,
   ISubstitutionEntry,
   ITrackedDeckDetailResponse,
@@ -28,6 +29,8 @@ import {
   IShoppingLinePopulated,
   IVariantFetchProgressDto,
 } from '../stores/dtos/shopping-line.response.dto';
+import { catalog, computeDeckLegality, TSupportedFormat } from '@rathe-arsenal/engine';
+import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
 
 @Injectable()
 export class DecksService {
@@ -40,6 +43,7 @@ export class DecksService {
     private readonly deckCardRepo: Repository<DeckCardEntity>,
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
+    private readonly dataSource: DataSource,
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
@@ -469,6 +473,72 @@ export class DecksService {
       pendingCount,
       decisions,
       shoppingLine,
+    };
+  }
+
+  /**
+   * Creates an empty scratch deck for the user.
+   *
+   * The deck starts with `status='idea'` and `fabraryUlid=NULL`.
+   * The name is composed as `'{heroDisplayName} — {format}'`.
+   * No deck_card rows are inserted — the deck has 0 cards.
+   *
+   * Returns the standard detail payload shape including `legality`, which will
+   * be `'incomplete'` for a 0-card deck (step 3 of the 7-step engine fires
+   * when mainboard count is below the format minimum).
+   */
+  async createScratch(
+    userId: string,
+    dto: CreateScratchDeckDto,
+  ): Promise<ITrackedDeckDetailResponse> {
+    // Look up the hero display name from the catalog.
+    const heroCard = this.catalogService.getCard(dto.heroIdentifier);
+    const heroDisplayName = heroCard.name;
+    const name = `${heroDisplayName} — ${dto.format}`;
+
+    // Persist the deck row inside a transaction (no deck_card rows on creation).
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const deck = manager.create(TrackedDeckEntity, {
+        userId,
+        fabraryUlid: null,
+        name,
+        hero: heroDisplayName,
+        heroIdentifier: dto.heroIdentifier,
+        format: dto.format,
+        status: 'idea',
+      });
+      return manager.save(TrackedDeckEntity, deck);
+    });
+
+    // Compute legality in-memory using the catalog singleton.
+    // A 0-card scratch deck always produces 'incomplete' (step 3 fires for
+    // empty mainboard), provided the hero is valid in the format.
+    const legalityResult = computeDeckLegality(
+      { heroIdentifier: dto.heroIdentifier, cards: [] },
+      catalog,
+      dto.format as TSupportedFormat,
+    );
+
+    const legality: IDeckLegality = {
+      category: legalityResult.category,
+      reasons: legalityResult.reasons,
+    };
+
+    return {
+      id: saved.id,
+      fabraryUlid: null,
+      name: saved.name,
+      hero: saved.hero,
+      format: saved.format,
+      trackedAt: saved.trackedAt.toISOString(),
+      totalCards: 0,
+      latestSnapshot: null,
+      rejectedCount: 0,
+      approvedCount: 0,
+      pendingCount: 0,
+      decisions: [],
+      shoppingLine: null,
+      legality,
     };
   }
 
