@@ -31,6 +31,9 @@ import {
 } from '../stores/dtos/shopping-line.response.dto';
 import { catalog, computeDeckLegality, TSupportedFormat } from '@rathe-arsenal/engine';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
+import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
+import { DeckTagEntity } from '../database/entities/deck-tag.entity';
+import { TrackedDeckTagEntity } from '../database/entities/tracked-deck-tag.entity';
 
 @Injectable()
 export class DecksService {
@@ -387,11 +390,24 @@ export class DecksService {
       }
     }
 
-    // Fetch decision counts and full list in parallel with other reads.
-    const [rejectedCount, decisions] = await Promise.all([
+    // Fetch decision counts, full list, and tags in parallel with other reads.
+    // Tags are fetched with a raw query to avoid adding new @InjectRepository
+    // tokens to the constructor (which would require updating all existing
+    // test modules). The `?? []` fallback handles the case where dataSource.query
+    // returns undefined in unit test mocks.
+    const [rejectedCount, decisions, tagRowsRaw] = await Promise.all([
       this.decisionsService.countRejected(deckId),
       this.decisionsService.list(userId, deckId),
+      this.dataSource.query<Array<{ name: string }>>(
+        `SELECT tag.name
+           FROM deck_tag tag
+           INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
+           WHERE tdt."trackedDeckId" = $1
+           ORDER BY tdt."attachedAt" ASC`,
+        [deckId],
+      ),
     ]);
+    const tagRows: Array<{ name: string }> = tagRowsRaw ?? [];
 
     const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
 
@@ -465,7 +481,10 @@ export class DecksService {
       name: deck.name,
       hero: deck.hero,
       format: deck.format,
+      status: deck.status,
+      tags: tagRows.map((r) => r.name),
       trackedAt: deck.trackedAt.toISOString(),
+      updatedAt: deck.updatedAt.toISOString(),
       totalCards,
       latestSnapshot: snapshotDto,
       rejectedCount,
@@ -530,7 +549,10 @@ export class DecksService {
       name: saved.name,
       hero: saved.hero,
       format: saved.format,
+      status: saved.status,
+      tags: [],
       trackedAt: saved.trackedAt.toISOString(),
+      updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
       latestSnapshot: null,
       rejectedCount: 0,
@@ -540,6 +562,128 @@ export class DecksService {
       shoppingLine: null,
       legality,
     };
+  }
+
+  /**
+   * Partially updates deck metadata inside a single transaction.
+   *
+   * Each field in `dto` is handled independently:
+   * - `status`: simple UPDATE on tracked_deck.
+   * - `name`: simple UPDATE on tracked_deck.
+   * - `addTagIds`: for each id, asserts ownership (inside the tx), then
+   *   INSERTs into tracked_deck_tag with INSERT OR IGNORE semantics so
+   *   duplicate addTagIds entries are idempotent.
+   * - `removeTagIds`: TOCTOU-safe four-step sequence per plan R8:
+   *   1. SELECT … FOR UPDATE on deck_tag to serialize concurrent detaches.
+   *   2. DELETE from tracked_deck_tag.
+   *   3. COUNT remaining attachments for that tag.
+   *   4. If count = 0, DELETE the deck_tag row (defensive userId scope).
+   *
+   * Returns the full detail payload (same shape as GET /decks/:id) after commit.
+   * The OwnsTrackedDeckGuard has already verified ownership before this method
+   * is called, so there is no second ownership check here.
+   */
+  async updateMeta(
+    deckId: number,
+    userId: string,
+    dto: UpdateDeckMetaDto,
+  ): Promise<ITrackedDeckDetailResponse> {
+    await this.dataSource.transaction(async (manager) => {
+      // --- status ---
+      if (dto.status !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ status: dto.status })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- name ---
+      if (dto.name !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ name: dto.name })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- addTagIds ---
+      if (dto.addTagIds && dto.addTagIds.length > 0) {
+        for (const tagId of dto.addTagIds) {
+          // Validate ownership inside the transaction (same connection = same isolation).
+          await this.authzService.assertOwnsTag(userId, tagId, manager);
+
+          // INSERT with conflict-ignore to handle duplicate ids in the same request.
+          await manager
+            .createQueryBuilder()
+            .insert()
+            .into(TrackedDeckTagEntity)
+            .values({ trackedDeckId: deckId, tagId })
+            .orIgnore()
+            .execute();
+        }
+      }
+
+      // --- removeTagIds ---
+      if (dto.removeTagIds && dto.removeTagIds.length > 0) {
+        for (const tagId of dto.removeTagIds) {
+          // Step 1: SELECT … FOR UPDATE on deck_tag — acquires a row lock to
+          // serialize concurrent last-detach transactions on the same tag.
+          // Returns 0 rows when the tag was already deleted by a concurrent tx.
+          const lockResult = await manager
+            .createQueryBuilder()
+            .select('tag.id')
+            .from(DeckTagEntity, 'tag')
+            .where('tag.id = :tagId AND tag."userId" = :userId', { tagId, userId })
+            .setLock('pessimistic_write')
+            .getRawMany<{ tag_id: number }>();
+
+          if (lockResult.length === 0) {
+            // Tag no longer exists (deleted by a concurrent transaction that
+            // already ran steps 2-4). This detach is in its desired terminal
+            // state — no-op.
+            continue;
+          }
+
+          // Step 2: DELETE from tracked_deck_tag (the specific attachment).
+          await manager
+            .createQueryBuilder()
+            .delete()
+            .from(TrackedDeckTagEntity)
+            .where('"trackedDeckId" = :deckId AND "tagId" = :tagId', { deckId, tagId })
+            .execute();
+
+          // Step 3: COUNT remaining attachments for this tag.
+          // The FOR UPDATE lock in step 1 ensures no other tx can observe
+          // a stale count for this tag row while we hold the lock.
+          const countResult = await manager
+            .createQueryBuilder()
+            .select('COUNT(*)', 'count')
+            .from(TrackedDeckTagEntity, 'tdt')
+            .where('tdt."tagId" = :tagId', { tagId })
+            .getRawOne<{ count: string }>();
+
+          const remainingCount = parseInt(countResult?.count ?? '0', 10);
+
+          // Step 4: If no attachments remain, delete the deck_tag row itself.
+          // The defensive userId scope guards against deleting another user's
+          // tag in case of a logic error earlier in the chain.
+          if (remainingCount === 0) {
+            await manager
+              .createQueryBuilder()
+              .delete()
+              .from(DeckTagEntity)
+              .where('id = :tagId AND "userId" = :userId', { tagId, userId })
+              .execute();
+          }
+        }
+      }
+    });
+
+    // Re-fetch the full detail payload after commit.
+    return this.getDetail(userId, deckId);
   }
 
   async untrack(userId: string, deckId: number): Promise<void> {

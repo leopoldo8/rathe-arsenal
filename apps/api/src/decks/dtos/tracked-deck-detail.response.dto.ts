@@ -115,7 +115,22 @@ export interface ITrackedDeckDetailResponse {
   readonly name: string;
   readonly hero: string;
   readonly format: string;
+  /**
+   * User-assigned lifecycle label (U4).
+   * One of: idea | building | ready | active | retired.
+   */
+  readonly status: 'idea' | 'building' | 'ready' | 'active' | 'retired';
+  /**
+   * Tag names attached to this deck (U4). Empty array when no tags are attached.
+   * Ordered by attachment time ascending (earliest first).
+   */
+  readonly tags: readonly string[];
   readonly trackedAt: string;
+  /**
+   * ISO timestamp of the last ORM-driven update to this deck row (U4 / D12).
+   * Seeded from trackedAt for rows created before v2.
+   */
+  readonly updatedAt: string;
   readonly totalCards: number;
   readonly latestSnapshot: ITrackedDeckDetailSnapshot | null;
   /**

@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { DecksService } from './decks.service';
 import { ITrackedDeckListResponse } from './dtos/tracked-deck-list.response.dto';
 import { ITrackedDeckDetailResponse } from './dtos/tracked-deck-detail.response.dto';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
+import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
 
 @Controller('decks')
 export class DecksController {
@@ -55,6 +57,28 @@ export class DecksController {
     @CurrentUser() user: ICurrentUser,
   ): Promise<ITrackedDeckDetailResponse> {
     return this.decksService.getDetail(user.userId, deckId);
+  }
+
+  /**
+   * PATCH /api/decks/:deckId
+   *
+   * Partially updates deck metadata. All body fields are optional and
+   * independent — sending only `status` leaves name and tags unchanged.
+   *
+   * Protected by `OwnsTrackedDeckGuard`: 404 when the deck is missing or
+   * belongs to another user (never leaks existence to wrong user).
+   *
+   * Returns the full deck detail payload after the transaction commits.
+   */
+  @Patch(':deckId')
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateMeta(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @Body() dto: UpdateDeckMetaDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ITrackedDeckDetailResponse> {
+    return this.decksService.updateMeta(deckId, user.userId, dto);
   }
 
   @Delete(':deckId')
