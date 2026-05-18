@@ -1,0 +1,131 @@
+/* ============================================================
+   DeckCardSearchAutocomplete — catalog search combobox, parameterized
+   via onPick(card, slot). Used in deck Edit canvas + LibrarySearchAddBar.
+   ============================================================ */
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  max-width: 520px;
+}
+
+.label {
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+}
+
+.comboboxWrapper {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  background-color: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  font-size: var(--ra-text-body);
+  font-family: var(--ra-font-ui);
+  color: var(--ra-fg-primary);
+  box-sizing: border-box;
+  transition: border-color var(--ra-duration) var(--ra-ease);
+}
+
+.input::placeholder {
+  color: var(--ra-fg-muted);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--ra-accent);
+  box-shadow: 0 0 0 2px var(--ra-accent-soft-bg);
+}
+
+.spinner {
+  position: absolute;
+  right: var(--ra-space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+}
+
+/* ---- Listbox dropdown ---- */
+.listbox {
+  list-style: none;
+  margin: 0;
+  padding: var(--ra-space-1) 0;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-bg-surface);
+  box-shadow: var(--ra-shadow-md);
+  max-height: 16rem;
+  overflow-y: auto;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  cursor: pointer;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  transition: background-color var(--ra-duration) var(--ra-ease);
+}
+
+.optionActive {
+  background-color: var(--ra-bg-raised);
+}
+
+.pitchDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: var(--ra-fg-muted); /* colorless fallback */
+}
+
+/* Pitch color via data attribute — 4-value enum, no first-paint race. */
+.pitchDot[data-pitch='1'] { background-color: var(--ra-pitch-red); }
+.pitchDot[data-pitch='2'] { background-color: var(--ra-pitch-yellow); }
+.pitchDot[data-pitch='3'] { background-color: var(--ra-pitch-blue); }
+
+.optionName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionClass {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  flex-shrink: 0;
+}
+
+.ownedBadge {
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-high);
+  background-color: var(--ra-ready-high-bg);
+  border: 1px solid var(--ra-ready-high-border);
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--ra-radius-full);
+  flex-shrink: 0;
+}
+
+.optionEmpty {
+  padding: var(--ra-space-2) var(--ra-space-3);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  font-style: italic;
+}
