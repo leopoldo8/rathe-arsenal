@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -58,6 +58,7 @@ describe('DecksService', () => {
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
+  let dataSource: jest.Mocked<DataSource>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
@@ -70,6 +71,7 @@ describe('DecksService', () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     deckCardRepo = createMock<Repository<DeckCardEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    dataSource = createMock<DataSource>();
     collectionReadService = createMock<CollectionReadService>();
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
@@ -110,6 +112,7 @@ describe('DecksService', () => {
           provide: getRepositoryToken(DeckReadinessSnapshotEntity),
           useValue: snapshotRepo,
         },
+        { provide: DataSource, useValue: dataSource },
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },

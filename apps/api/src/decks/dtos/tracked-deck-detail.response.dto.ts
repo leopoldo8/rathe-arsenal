@@ -1,6 +1,17 @@
 import { IShoppingLineResponse } from '../../stores/dtos/shopping-line.response.dto';
+import { TLegalityCategory } from '@rathe-arsenal/engine';
 
 export { IShoppingLineResponse };
+
+/**
+ * Legality verdict included in deck detail responses (U5).
+ * Three-state per Key Technical Decisions: `'legal' | 'incomplete' | 'illegal'`.
+ * Empty `reasons` array when `category === 'legal'`.
+ */
+export interface IDeckLegality {
+  readonly category: TLegalityCategory;
+  readonly reasons: readonly string[];
+}
 
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
@@ -137,4 +148,11 @@ export interface ITrackedDeckDetailResponse {
    * Unit 5 (Phase 1b).
    */
   readonly shoppingLine?: IShoppingLineResponse | null;
+  /**
+   * Legality verdict for this deck in its format (U5 v2 deck management).
+   * Present on scratch deck responses from `POST /decks`.
+   * Optional on existing `GET /decks/:id` responses until U6 adds it
+   * to the standard detail read path.
+   */
+  readonly legality?: IDeckLegality;
 }
