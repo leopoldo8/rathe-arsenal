@@ -6,7 +6,7 @@ interface IReadinessHeroProps {
   readonly effectivePercent: number;
   readonly rawPercent: number;
   readonly fidelityPercent: number;
-  readonly fabraryUlid: string;
+  readonly fabraryUlid: string | null;
   readonly deckName: string;
   readonly hero: string;
   readonly format: string;
@@ -46,7 +46,7 @@ export function ReadinessHero({
   totalCards,
   provisionedCards,
 }: IReadinessHeroProps): React.ReactElement {
-  const fabraryUrl = `https://fabrary.com/decks/${fabraryUlid}`;
+  const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
   const readinessClass = getReadinessClass(effectivePercent);
 
   // --pct drives the bar fill width via CSS (continuous value, no first-paint
@@ -59,14 +59,16 @@ export function ReadinessHero({
   return (
     <div className={styles.hero}>
       <div className={styles.hero__top}>
-        <a
-          href={fabraryUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.hero__fabraryLink}
-        >
-          View on Fabrary &#x2197;
-        </a>
+        {fabraryUrl && (
+          <a
+            href={fabraryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.hero__fabraryLink}
+          >
+            View on Fabrary &#x2197;
+          </a>
+        )}
       </div>
 
       <div className={styles.hero__bottom}>

@@ -131,6 +131,10 @@ const DECK_LIST_ITEM: ITrackedDeckListItem = {
   hero: 'Rhinar',
   format: 'CC',
   trackedAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  status: 'building',
+  tags: [],
+  legality: { category: 'legal', reasons: [] },
   latestSnapshot: {
     effectivePercent: 85.0,
     rawPercent: 82.0,

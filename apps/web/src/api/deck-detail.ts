@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { IShoppingLineResponse } from './shopping-line';
+// Re-export shared v2 types so callers import from a single location
+export type { TDeckStatus, IDeckLegality } from './decks';
 
 export interface IBreakdownEntry {
   readonly cardIdentifier: string;
@@ -117,11 +119,33 @@ export interface IDecisionEntry {
 
 export interface IDeckDetailResponse {
   readonly id: number;
-  readonly fabraryUlid: string;
+  /**
+   * Fabrary ULID for imported decks; null for scratch decks created in
+   * Rathe Arsenal. Made nullable in v2 (U7).
+   */
+  readonly fabraryUlid: string | null;
   readonly name: string;
   readonly hero: string;
+  /**
+   * Hero card identifier (e.g. "katsu-the-wanderer-wtr"). Null for scratch
+   * decks where the user has not yet chosen a hero. Added in v2 (U7).
+   */
+  readonly heroIdentifier: string | null;
   readonly format: string;
   readonly trackedAt: string;
+  /** Last time any field on this deck was modified. Added in v2 (U7). */
+  readonly updatedAt: string;
+  /** Lifecycle status for this deck. Added in v2 (U7). */
+  readonly status: import('./decks').TDeckStatus;
+  /**
+   * User-defined tag names attached to this deck (display strings, not IDs).
+   * Empty array when no tags. Added in v2 (U7).
+   */
+  readonly tags: readonly string[];
+  /**
+   * Legality assessment against the deck's configured format. Added in v2 (U7).
+   */
+  readonly legality: import('./decks').IDeckLegality;
   readonly totalCards: number;
   readonly latestSnapshot: IDeckDetailSnapshot | null;
   /**
