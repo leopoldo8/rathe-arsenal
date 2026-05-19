@@ -1,0 +1,106 @@
+/* StatusDropdown — Radix Select styled to Rathe Arsenal dark theme */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding-block: var(--ra-space-2);
+  padding-inline: var(--ra-space-3);
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+  transition: border-color var(--ra-duration) var(--ra-ease),
+              background var(--ra-duration) var(--ra-ease);
+  white-space: nowrap;
+}
+
+.trigger:hover:not([data-disabled]) {
+  border-color: var(--ra-border-strong);
+  background: var(--ra-bg-muted);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.trigger[data-disabled],
+.trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.triggerIcon {
+  margin-inline-start: auto;
+  color: var(--ra-fg-secondary);
+  flex-shrink: 0;
+}
+
+/* Spinner — shown while mutation is in flight */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ra-border-strong);
+  border-top-color: var(--ra-accent);
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: var(--ra-accent);
+  }
+}
+
+/* Portal content */
+.content {
+  min-width: 160px;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  box-shadow: var(--ra-shadow-md);
+  padding-block: var(--ra-space-1);
+  z-index: 50;
+}
+
+.viewport {
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding-block: var(--ra-space-2);
+  padding-inline: var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  border-radius: var(--ra-radius-sm);
+  transition: background var(--ra-duration) var(--ra-ease);
+}
+
+.item[data-highlighted] {
+  background: var(--ra-bg-muted);
+  color: var(--ra-fg-primary);
+}
+
+.item[data-state="checked"] {
+  color: var(--ra-accent-body);
+}

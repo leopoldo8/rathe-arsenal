@@ -1,0 +1,84 @@
+/* TagChipRow — horizontally scrollable chip row + add-tag button */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+/* Individual tag chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  padding-block: 3px;
+  padding-inline: var(--ra-space-2) var(--ra-space-1);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-full);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-secondary);
+  white-space: nowrap;
+}
+
+/* × remove button inside the chip */
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-block-size: 16px;
+  min-inline-size: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--ra-fg-muted);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 12px;
+  transition: color var(--ra-duration) var(--ra-ease),
+              background var(--ra-duration) var(--ra-ease);
+}
+
+.removeBtn:hover {
+  color: var(--ra-fg-primary);
+  background: var(--ra-bg-muted);
+}
+
+.removeBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* + add tag button */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  padding-block: 3px;
+  padding-inline: var(--ra-space-2);
+  background: transparent;
+  border: 1px dashed var(--ra-border);
+  border-radius: var(--ra-radius-full);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  cursor: pointer;
+  transition: border-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+  white-space: nowrap;
+}
+
+.addBtn:hover {
+  border-color: var(--ra-border-strong);
+  color: var(--ra-fg-secondary);
+}
+
+.addBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

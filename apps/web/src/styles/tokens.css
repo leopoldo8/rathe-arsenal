@@ -181,6 +181,21 @@
   --ra-path-c-border:     rgba(199, 123, 58, 0.40);
   --ra-path-c-ink:        #e1a977;
 
+  /* ------------------------------------------------------------------ */
+  /* Status semantic tokens — deck lifecycle status colours (U8)        */
+  /* Maps the 5 TDeckStatus values to semantic fg/accent tokens.        */
+  /* --ra-status-idea: muted fg (neutral, not yet started)              */
+  /* --ra-status-building: dim brass (in-progress, warm but subtle)     */
+  /* --ra-status-ready: full brass accent (playable, prominent)         */
+  /* --ra-status-active: ready-high green (actively played, positive)   */
+  /* --ra-status-retired: subtle fg (de-emphasised, lowest priority)    */
+  /* ------------------------------------------------------------------ */
+  --ra-status-idea:     var(--ra-fg-muted);
+  --ra-status-building: var(--ra-accent-dim);
+  --ra-status-ready:    var(--ra-accent);
+  --ra-status-active:   var(--ra-ready-high);
+  --ra-status-retired:  var(--ra-fg-subtle);
+
   /* FAB pitch layer */
   --ra-pitch-red:    #b44a2e;
   --ra-pitch-yellow: #c5923a;

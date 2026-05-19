@@ -1,0 +1,107 @@
+/* TagAutocompleteCombobox — WAI-ARIA combobox for tag search + create */
+
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.input {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  padding-block: var(--ra-space-1);
+  padding-inline: var(--ra-space-2);
+  min-block-size: 30px;
+  width: 160px;
+  outline: none;
+  transition: border-color var(--ra-duration) var(--ra-ease);
+}
+
+.input:focus {
+  border-color: var(--ra-accent);
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Dropdown listbox */
+.listbox {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  box-shadow: var(--ra-shadow-md);
+  padding-block: var(--ra-space-1);
+  list-style: none;
+  margin: 0;
+  padding-inline: 0;
+}
+
+/* Individual option */
+.option {
+  display: flex;
+  align-items: center;
+  padding-block: var(--ra-space-2);
+  padding-inline: var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--ra-duration) var(--ra-ease);
+}
+
+.option:hover,
+.option[aria-selected="true"] {
+  background: var(--ra-bg-muted);
+}
+
+/* "Create …" option — visually distinct */
+.createOption {
+  color: var(--ra-accent-body);
+  font-style: italic;
+}
+
+/* Inline error footer */
+.errorFooter {
+  padding-block: var(--ra-space-2);
+  padding-inline: var(--ra-space-3);
+  border-top: 1px solid var(--ra-border);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ra-space-2);
+  flex-direction: column;
+}
+
+.retryBtn {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent-body);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.retryBtn:hover {
+  color: var(--ra-accent);
+}
+
+.retryBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
