@@ -1,0 +1,121 @@
+/* ============================================================
+   CascadeWarningPanel — cascade legality warning (U12)
+   ============================================================ */
+
+/* ---- Sidebar variant (desktop ≥1280px) ---- */
+.sidebarPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-4);
+  background: color-mix(in oklch, var(--ra-ready-low) 6%, var(--ra-bg-surface));
+  border: 1px solid color-mix(in oklch, var(--ra-ready-low) 30%, var(--ra-border));
+  border-radius: var(--ra-radius-sm);
+}
+
+.sidebarTitle {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-ready-low);
+  margin: 0;
+}
+
+.sidebarBody {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: 0;
+  line-height: var(--ra-leading-snug);
+}
+
+/* ---- Mobile banner variant (<1280px) ---- */
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: color-mix(in oklch, var(--ra-ready-low) 8%, var(--ra-bg-surface));
+  border: 1px solid color-mix(in oklch, var(--ra-ready-low) 30%, var(--ra-border));
+  border-radius: var(--ra-radius-sm);
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.bannerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ra-space-3) var(--ra-space-4);
+  cursor: pointer;
+  user-select: none;
+  gap: var(--ra-space-3);
+}
+
+.bannerTitle {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-low);
+  margin: 0;
+  flex: 1;
+}
+
+.bannerChevron {
+  color: var(--ra-fg-muted);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  transition: transform var(--ra-duration) var(--ra-ease);
+}
+
+.bannerChevron--expanded {
+  transform: rotate(180deg);
+}
+
+.bannerBody {
+  padding: 0 var(--ra-space-4) var(--ra-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.bannerBodyText {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: 0;
+  line-height: var(--ra-leading-snug);
+}
+
+/* Shared: Remove illegal cards button */
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  min-block-size: 32px;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  background: transparent;
+  border: 1px solid var(--ra-ready-low);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+  align-self: flex-start;
+}
+
+.removeBtn:hover {
+  background: var(--ra-ready-low-bg);
+}
+
+.removeBtn:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 2px;
+}

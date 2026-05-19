@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import React, { useState, useCallback } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   IBreakdown,
+  IDeckDetailResponse,
   useDeckDetailQuery,
   useMarkOwnedMutation,
   deckDetailQueryKey,
@@ -20,11 +21,24 @@ import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout'
 import { DeckDetailHeader } from '../../components/deck-detail/DeckDetailHeader';
 import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSidebar';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
+import { useCompositionDraft } from '../../hooks/useCompositionDraft';
+import { useCascadeCheck } from '../../hooks/useCascadeCheck';
 import type { ITagResponse } from '../../api/tags';
 import styles from './decks.$deckId.module.css';
 
+// ---------------------------------------------------------------------------
+// Search param validation (U12: adds `edit` param)
+// ---------------------------------------------------------------------------
+
+function validateDeckDetailSearch(raw: Record<string, unknown>): { edit: '1' | undefined } {
+  return {
+    edit: raw.edit === '1' ? '1' : undefined,
+  };
+}
+
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
+  validateSearch: validateDeckDetailSearch,
 });
 
 function countNotOwnedCards(breakdown: IBreakdown): number {
@@ -47,8 +61,21 @@ function countProvisionedCards(breakdown: IBreakdown): number {
 
 function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
+  const { edit } = Route.useSearch();
+  const navigate = useNavigate();
   const { show: showToast } = useToast();
   const queryClient = useQueryClient();
+
+  // Derive current mode from ?edit=1 search param
+  const mode = edit === '1' ? 'edit' : 'view';
+
+  function handleEnterEdit(): void {
+    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: '1' } });
+  }
+
+  function handleExitEdit(): void {
+    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: undefined } });
+  }
 
   // pollingStartedAt tracks when variant fetch polling began (epoch ms).
   // undefined means polling is inactive. Passed to useDeckDetailQuery to
@@ -120,80 +147,179 @@ function DeckDetailPage(): React.ReactElement {
     return <DeckDetailEmptyState kind="not-found" />;
   }
 
-  if (deck.latestSnapshot == null) {
-    return <DeckDetailEmptyState kind="computing" />;
-  }
-
+  // Allow editing even if latestSnapshot is null (R22: scratch deck with 0 cards)
   const snapshot = deck.latestSnapshot;
-
-  function handleMarkOwned(cardIdentifier: string): void {
-    markOwnedMutation.mutate(cardIdentifier, {
-      onError: (err) => {
-        showToast({
-          kind: 'error',
-          message: `Failed to mark card: ${(err as Error).message}`,
-          retry: () => markOwnedMutation.mutate(cardIdentifier),
-        });
-      },
-    });
-  }
-
-  function handleApproveSubstitute(substituteIdentifier: string): void {
-    decideMutation.mutate({
-      cardIdentifier: substituteIdentifier,
-      decision: 'approved',
-    });
-  }
-
-  function handleRejectSubstitute(substituteIdentifier: string): void {
-    decideMutation.mutate({
-      cardIdentifier: substituteIdentifier,
-      decision: 'rejected',
-    });
-  }
-
-  function handleResetSubstitute(substituteIdentifier: string): void {
-    resetDecisionMutation.mutate(substituteIdentifier);
-  }
-
-  function handleClearRejections(): void {
-    clearRejectionsMutation.mutate(undefined, {
-      onError: (err) => {
-        showToast({
-          kind: 'error',
-          message: `Failed to clear rejections: ${(err as Error).message}`,
-          retry: () => clearRejectionsMutation.mutate(undefined),
-        });
-      },
-    });
-  }
-
-  // The substitute identifier whose mutation is in flight (if any).
-  // Covers both decide (approve/reject) and reset mutations.
-  const pendingSubstituteId: string | null =
-    decideMutation.isPending
-      ? (decideMutation.variables?.cardIdentifier ?? null)
-      : resetDecisionMutation.isPending
-        ? (resetDecisionMutation.variables ?? null)
-        : null;
 
   // Build the tags structure expected by DeckDetailHeader.
   // deck.tags is readonly string[] (display names only from v2 U7).
   // TagChipRow expects ITagResponse[] (with id + name).
   // Because the API only returns tag names (not IDs) on the detail response,
   // we synthesise lightweight objects using the index as a stable key.
-  // This is safe for the display + remove flow since usePatchDeckMutation
-  // removeTagIds is handled by TagChipRow → TagAutocompleteCombobox internally.
-  // TODO(U12): align with a full ITagResponse[] from the API once tags carry IDs.
   const tagsForHeader: ITagResponse[] = (deck.tags ?? []).map((name, idx) => ({
     id: idx,
     name,
     createdAt: '',
   }));
 
-  // Path C banner is kept in the canvas section via the existing BreakdownSections
-  // approach but now renders inside DeckCanvas. Path C detection:
-  const isPathC = snapshot.path === 'C';
+  if (snapshot == null && mode === 'view') {
+    return <DeckDetailEmptyState kind="computing" />;
+  }
+
+  return (
+    <DeckDetailPageWithData
+      deck={deck}
+      deckId={deckId}
+      mode={mode}
+      tagsForHeader={tagsForHeader}
+      snapshot={snapshot}
+      onEnterEdit={handleEnterEdit}
+      onExitEdit={handleExitEdit}
+      onMarkOwned={(cardIdentifier) => {
+        markOwnedMutation.mutate(cardIdentifier, {
+          onError: (err) => {
+            showToast({
+              kind: 'error',
+              message: `Failed to mark card: ${(err as Error).message}`,
+              retry: () => markOwnedMutation.mutate(cardIdentifier),
+            });
+          },
+        });
+      }}
+      isMarkingOwned={markOwnedMutation.isPending}
+      pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
+      onApproveSubstitute={(substituteIdentifier) => {
+        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'approved' });
+      }}
+      onRejectSubstitute={(substituteIdentifier) => {
+        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'rejected' });
+      }}
+      onResetSubstitute={(substituteIdentifier) => {
+        resetDecisionMutation.mutate(substituteIdentifier);
+      }}
+      pendingSubstituteId={
+        decideMutation.isPending
+          ? (decideMutation.variables?.cardIdentifier ?? null)
+          : resetDecisionMutation.isPending
+            ? (resetDecisionMutation.variables ?? null)
+            : null
+      }
+      onClearRejections={() => {
+        clearRejectionsMutation.mutate(undefined, {
+          onError: (err) => {
+            showToast({
+              kind: 'error',
+              message: `Failed to clear rejections: ${(err as Error).message}`,
+              retry: () => clearRejectionsMutation.mutate(undefined),
+            });
+          },
+        });
+      }}
+      isClearingRejections={clearRejectionsMutation.isPending}
+      onFetchVariants={handleFetchVariants}
+      fetchMutationStatus={variantFetchMutation.status}
+      isCooldownActive={isCooldownActive}
+      onPollingChange={handlePollingChange}
+      onShoppingRetry={handleShoppingLineRetry}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DeckDetailPageWithData — sub-component that can safely call edit-mode hooks
+// (useCompositionDraft, useCascadeCheck) because it always renders with data.
+// ---------------------------------------------------------------------------
+
+interface IDeckDetailPageWithDataProps {
+  readonly deck: IDeckDetailResponse;
+  readonly deckId: string;
+  readonly mode: 'view' | 'edit';
+  readonly tagsForHeader: ITagResponse[];
+  readonly snapshot: IDeckDetailResponse['latestSnapshot'];
+  readonly onEnterEdit: () => void;
+  readonly onExitEdit: () => void;
+  readonly onMarkOwned: (cardIdentifier: string) => void;
+  readonly isMarkingOwned: boolean;
+  readonly pendingCard: string | null;
+  readonly onApproveSubstitute: (id: string) => void;
+  readonly onRejectSubstitute: (id: string) => void;
+  readonly onResetSubstitute: (id: string) => void;
+  readonly pendingSubstituteId: string | null;
+  readonly onClearRejections: () => void;
+  readonly isClearingRejections: boolean;
+  readonly onFetchVariants: () => void;
+  readonly fetchMutationStatus: string;
+  readonly isCooldownActive: boolean;
+  readonly onPollingChange: (startedAt: number | undefined) => void;
+  readonly onShoppingRetry: () => void;
+}
+
+/**
+ * DeckDetailPageWithData — renders after data is confirmed loaded.
+ * Calls Edit-mode hooks (useCompositionDraft, useCascadeCheck) unconditionally.
+ */
+function DeckDetailPageWithData({
+  deck,
+  deckId,
+  mode,
+  tagsForHeader,
+  snapshot,
+  onEnterEdit,
+  onExitEdit,
+  onMarkOwned,
+  isMarkingOwned,
+  pendingCard,
+  onApproveSubstitute,
+  onRejectSubstitute,
+  onResetSubstitute,
+  pendingSubstituteId,
+  onClearRejections,
+  isClearingRejections,
+  onFetchVariants,
+  fetchMutationStatus,
+  isCooldownActive,
+  onPollingChange,
+  onShoppingRetry,
+}: IDeckDetailPageWithDataProps): React.ReactElement {
+  // Build initial payload for the composition draft from the current deck state.
+  // Cards come from the snapshot breakdown (all cards across all sections).
+  const draftInitialPayload = React.useMemo(() => {
+    if (!snapshot) {
+      // Scratch deck with no snapshot (R22)
+      return {
+        cards: [],
+        heroIdentifier: deck.heroIdentifier ?? null,
+        format: deck.format,
+      };
+    }
+    const allCards = [
+      ...snapshot.breakdown.exact,
+      ...(snapshot.breakdown.notOwned ?? snapshot.breakdown.missing),
+    ].map((entry) => ({
+      cardIdentifier: entry.cardIdentifier,
+      name: entry.name,
+      quantity: entry.quantity,
+      slot: entry.slot,
+      pitch: entry.pitch,
+      cost: entry.cost ?? null,
+      type: entry.type,
+      imageUrl: entry.imageUrl
+        ? { small: entry.imageUrl.small, large: entry.imageUrl.large }
+        : null,
+      legalFormats: [],
+      legalHeroes: [],
+      bannedFormats: [],
+    }));
+    return {
+      cards: allCards,
+      heroIdentifier: deck.heroIdentifier ?? null,
+      format: deck.format,
+    };
+  }, [snapshot, deck.heroIdentifier, deck.format]);
+
+  const compositionDraft = useCompositionDraft(deckId, draftInitialPayload);
+  const cascadeCheck = useCascadeCheck(compositionDraft.draft);
+
+  const isPathC = snapshot?.path === 'C';
 
   return (
     <DeckDetailLayout
@@ -203,7 +329,10 @@ function DeckDetailPage(): React.ReactElement {
           deckName={deck.name}
           status={deck.status}
           tags={tagsForHeader}
-          mode="view"
+          mode={mode}
+          onEnterEdit={onEnterEdit}
+          onExitEdit={onExitEdit}
+          cascadeCheckCount={cascadeCheck.count}
         />
       }
       sidebar={
@@ -215,22 +344,28 @@ function DeckDetailPage(): React.ReactElement {
           legality={deck.legality}
           fabraryUlid={deck.fabraryUlid ?? null}
           status={deck.status}
-          effectivePercent={snapshot.effectivePercent}
-          rawPercent={snapshot.rawPercent}
-          provisionedCards={countProvisionedCards(snapshot.breakdown)}
+          effectivePercent={snapshot?.effectivePercent ?? 0}
+          rawPercent={snapshot?.rawPercent ?? 0}
+          provisionedCards={snapshot ? countProvisionedCards(snapshot.breakdown) : 0}
           totalCards={deck.totalCards}
           shoppingData={deck.shoppingLine ?? null}
-          onFetchVariants={handleFetchVariants}
-          fetchMutationStatus={variantFetchMutation.status}
+          onFetchVariants={onFetchVariants}
+          fetchMutationStatus={fetchMutationStatus as import('../../components/ShoppingLine').TVariantFetchMutationStatus}
           isCooldownActive={isCooldownActive}
-          onPollingChange={handlePollingChange}
-          onShoppingRetry={handleShoppingLineRetry}
+          onPollingChange={onPollingChange}
+          onShoppingRetry={onShoppingRetry}
+          mode={mode}
+          compositionDraft={compositionDraft.draft}
+          cascadeCheck={cascadeCheck}
+          onRemoveIllegalCards={compositionDraft.removeIllegalCards}
+          onSetHero={compositionDraft.setHero}
+          onSetFormat={compositionDraft.setFormat}
         />
       }
       canvas={
         <>
-          {/* Path C banner — ember frame ornament per existing pattern */}
-          {isPathC && (
+          {/* Path C banner — only in view mode */}
+          {mode === 'view' && isPathC && snapshot && (
             <div role="status" className={styles.pathCBanner}>
               <div className={styles.pathCBanner__eyebrow}>
                 APPROXIMATION
@@ -249,23 +384,27 @@ function DeckDetailPage(): React.ReactElement {
             </div>
           )}
           <DeckCanvas
-            mode="view"
-            breakdown={snapshot.breakdown}
+            mode={mode}
+            breakdown={snapshot?.breakdown ?? { exact: [], substituted: [], missing: [], notOwned: [] }}
             decisions={deck.decisions}
             rejectedCount={deck.rejectedCount}
-            onMarkOwned={handleMarkOwned}
-            isMarkingOwned={markOwnedMutation.isPending}
-            pendingCard={
-              markOwnedMutation.isPending
-                ? (markOwnedMutation.variables ?? null)
-                : null
-            }
-            onApproveSubstitute={handleApproveSubstitute}
-            onRejectSubstitute={handleRejectSubstitute}
-            onResetSubstitute={handleResetSubstitute}
+            onMarkOwned={onMarkOwned}
+            isMarkingOwned={isMarkingOwned}
+            pendingCard={pendingCard}
+            onApproveSubstitute={onApproveSubstitute}
+            onRejectSubstitute={onRejectSubstitute}
+            onResetSubstitute={onResetSubstitute}
             pendingSubstituteId={pendingSubstituteId}
-            onClearRejections={handleClearRejections}
-            isClearingRejections={clearRejectionsMutation.isPending}
+            onClearRejections={onClearRejections}
+            isClearingRejections={isClearingRejections}
+            compositionDraft={compositionDraft.draft}
+            cascadeCheck={cascadeCheck}
+            onAddCard={compositionDraft.addCard}
+            onUpdateQuantity={compositionDraft.updateQuantity}
+            onRemoveCard={compositionDraft.removeCard}
+            onRemoveIllegalCards={compositionDraft.removeIllegalCards}
+            onSetHero={compositionDraft.setHero}
+            onSetFormat={compositionDraft.setFormat}
           />
         </>
       }

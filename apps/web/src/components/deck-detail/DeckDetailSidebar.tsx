@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
+import { HeroDropdown } from './HeroDropdown';
+import { FormatDropdown } from './FormatDropdown';
+import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
 import type { TDeckStatus, IDeckLegality } from '../../api/decks';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
+import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
+import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
 import styles from './DeckDetailSidebar.module.css';
 
 /** localStorage key for sidebar expanded/collapsed preference. */
@@ -75,6 +80,36 @@ interface IDeckDetailSidebarProps {
   readonly isCooldownActive: boolean;
   readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
+
+  // ---------------------------------------------------------------------------
+  // U12 Edit-mode props
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Current render mode. 'edit' dims the readiness block and shows
+   * the cascade warning panel + hero/format dropdowns (on desktop).
+   */
+  readonly mode?: 'view' | 'edit';
+  /**
+   * Current composition draft. Required when mode='edit'.
+   */
+  readonly compositionDraft?: ICompositionDraft;
+  /**
+   * Result from useCascadeCheck. Required when mode='edit'.
+   */
+  readonly cascadeCheck?: ICascadeCheckResult;
+  /**
+   * Called when the user clicks "Remove illegal cards".
+   */
+  readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
+  /**
+   * Called when the hero changes from the HeroDropdown (desktop Edit).
+   */
+  readonly onSetHero?: (heroIdentifier: string | null) => void;
+  /**
+   * Called when the format changes from the FormatDropdown (desktop Edit).
+   */
+  readonly onSetFormat?: (format: string) => void;
 }
 
 /**
@@ -109,6 +144,12 @@ export function DeckDetailSidebar({
   isCooldownActive,
   onPollingChange,
   onShoppingRetry,
+  mode = 'view',
+  compositionDraft,
+  cascadeCheck,
+  onRemoveIllegalCards,
+  onSetHero,
+  onSetFormat,
 }: IDeckDetailSidebarProps): React.ReactElement {
   const [expanded, setExpanded] = useState(readSidebarExpanded);
 
@@ -145,55 +186,84 @@ export function DeckDetailSidebar({
       >
         {/* ---- Block 1: Hero ---- */}
         <section className={styles.block} aria-labelledby="sidebar-hero-title">
-          <div className={styles.heroBlock} data-testid="sidebar-hero-block">
-            {/* Hero art thumbnail placeholder — the actual art is a CSS background
-                on the placeholder div. No <img> to avoid broken-image flicker when
-                heroIdentifier has no image in the catalog. */}
-            <div
-              className={styles.heroThumb}
-              aria-label={heroDisplayName ? `Hero: ${heroDisplayName}` : 'Hero placeholder'}
-              role="img"
-              data-testid="sidebar-hero-thumb"
-            >
-              {/* Inner glyph placeholder */}
-              <span className={styles.heroThumb__glyph} aria-hidden="true">
-                &#9670;
-              </span>
+          {/* In Edit mode (desktop ≥1280px), show HeroDropdown + FormatDropdown.
+              On mobile (<1280px) these render at the canvas top per R43. */}
+          {mode === 'edit' && onSetHero !== undefined && onSetFormat !== undefined && compositionDraft !== undefined ? (
+            <div className={styles.editHeroBlock} data-testid="sidebar-edit-hero-block">
+              <HeroDropdown
+                value={compositionDraft.heroIdentifier}
+                onChange={onSetHero}
+              />
+              <FormatDropdown
+                value={compositionDraft.format}
+                onChange={onSetFormat}
+              />
             </div>
-
-            <div className={styles.heroMeta}>
-              <h2
-                id="sidebar-hero-title"
-                className={styles.heroName}
-                data-testid="sidebar-hero-name"
-              >
-                {heroIdentifier ? heroDisplayName : heroDisplayName || 'No hero set'}
-              </h2>
-              <span className={styles.formatPill} data-testid="sidebar-format-pill">
-                {format}
-              </span>
-
-              {/* Legality badge slot — U14 mounts LegalityBadge here.
-                  In U11 we render a data-testid anchor so U14 tests can
-                  assert the slot exists without breaking U11 tests. */}
+          ) : (
+            <div className={styles.heroBlock} data-testid="sidebar-hero-block">
+              {/* Hero art thumbnail placeholder — the actual art is a CSS background
+                  on the placeholder div. No <img> to avoid broken-image flicker when
+                  heroIdentifier has no image in the catalog. */}
               <div
-                className={styles.legalitySlot}
-                data-testid="sidebar-legality-slot"
-                aria-label={`Legality: ${legality.category}`}
+                className={styles.heroThumb}
+                aria-label={heroDisplayName ? `Hero: ${heroDisplayName}` : 'Hero placeholder'}
+                role="img"
+                data-testid="sidebar-hero-thumb"
               >
-                {/* Slot only — U14 fills this with <LegalityBadge /> */}
-                <span className={styles.legalitySlot__placeholder}>
-                  {legality.category === 'legal' && '✓ Legal'}
-                  {legality.category === 'incomplete' && '◌ Incomplete'}
-                  {legality.category === 'illegal' && '✗ Illegal'}
+                {/* Inner glyph placeholder */}
+                <span className={styles.heroThumb__glyph} aria-hidden="true">
+                  &#9670;
                 </span>
               </div>
+
+              <div className={styles.heroMeta}>
+                <h2
+                  id="sidebar-hero-title"
+                  className={styles.heroName}
+                  data-testid="sidebar-hero-name"
+                >
+                  {heroIdentifier ? heroDisplayName : heroDisplayName || 'No hero set'}
+                </h2>
+                <span className={styles.formatPill} data-testid="sidebar-format-pill">
+                  {format}
+                </span>
+
+                {/* Legality badge slot — U14 mounts LegalityBadge here.
+                    In U11 we render a data-testid anchor so U14 tests can
+                    assert the slot exists without breaking U11 tests. */}
+                <div
+                  className={styles.legalitySlot}
+                  data-testid="sidebar-legality-slot"
+                  aria-label={`Legality: ${legality.category}`}
+                >
+                  {/* Slot only — U14 fills this with <LegalityBadge /> */}
+                  <span className={styles.legalitySlot__placeholder}>
+                    {legality.category === 'legal' && '✓ Legal'}
+                    {legality.category === 'incomplete' && '◌ Incomplete'}
+                    {legality.category === 'illegal' && '✗ Illegal'}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
-        {/* ---- Block 2: Readiness ---- */}
-        <section className={styles.block} aria-labelledby="sidebar-readiness-title">
+        {/* ---- Block 2: Readiness ----
+            In Edit mode, dims with overlay scoped to this block ONLY.
+            The overlay is position:absolute within the block container.
+            Other sidebar blocks (cascade panel, shopping, fabrary) render
+            at full opacity below this block. */}
+        <section
+          className={[styles.block, mode === 'edit' ? styles['block--dimmed'] : ''].filter(Boolean).join(' ')}
+          aria-labelledby="sidebar-readiness-title"
+          data-testid="sidebar-readiness-section"
+        >
+          {/* Dim overlay scoped to this block only when in Edit mode */}
+          {mode === 'edit' && (
+            <div className={styles.readinessDimOverlay} aria-hidden="true">
+              <span className={styles.readinessDimLabel}>Will recompute on Save</span>
+            </div>
+          )}
           <h3 id="sidebar-readiness-title" className={styles.blockTitle}>
             Readiness
           </h3>
@@ -218,6 +288,19 @@ export function DeckDetailSidebar({
             </div>
           </div>
         </section>
+
+        {/* ---- Cascade Warning Panel — Edit mode only, desktop only (N > 0) ---- */}
+        {mode === 'edit' &&
+          cascadeCheck !== undefined &&
+          compositionDraft !== undefined &&
+          onRemoveIllegalCards !== undefined &&
+          cascadeCheck.count > 0 && (
+            <CascadeWarningPanelSidebar
+              draft={compositionDraft}
+              cascadeCheck={cascadeCheck}
+              onRemoveIllegal={onRemoveIllegalCards}
+            />
+          )}
 
         {/* ---- Block 3: Shopping ---- */}
         <section

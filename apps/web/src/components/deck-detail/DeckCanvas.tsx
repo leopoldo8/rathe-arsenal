@@ -20,8 +20,16 @@ import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { SubstitutionRow } from './SubstitutionRow';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { ModifiedViewBanner } from './ModifiedViewBanner';
+import { EditableCardRow } from './EditableCardRow';
+import { HeroDropdown } from './HeroDropdown';
+import { FormatDropdown } from './FormatDropdown';
+import { CascadeWarningPanelBanner } from './CascadeWarningPanel';
+import { DeckCardSearchAutocomplete, type TDeckSlot } from '../deck-card-search/DeckCardSearchAutocomplete';
 import type { IBreakdown, IDecisionEntry, IBreakdownEntry } from '../../api/deck-detail';
 import type { TDecisionState } from './SubstitutionRow';
+import type { ICompositionDraft, IDraftCard, TDraftSlot } from '../../hooks/useCompositionDraft';
+import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
+import type { ISearchCardResult } from '../../api/catalog';
 
 // Import slot icons — vite-plugin-svgr `?react` suffix converts to React components
 import SlotMainboardIcon from '../../assets/icons/slot-mainboard.svg?react';
@@ -165,7 +173,7 @@ interface IDeckCanvasProps {
   /**
    * Rendering mode.
    *  - 'view': renders ViewBody (U11 — fully implemented).
-   *  - 'edit': renders EditBody (U12 — stub in U11).
+   *  - 'edit': renders EditBody (U12 — implemented).
    */
   readonly mode: 'view' | 'edit';
 
@@ -184,6 +192,16 @@ interface IDeckCanvasProps {
   readonly pendingSubstituteId?: string | null;
   readonly onClearRejections: () => void;
   readonly isClearingRejections: boolean;
+
+  // --- Edit-mode props (U12) ---
+  readonly compositionDraft?: ICompositionDraft;
+  readonly cascadeCheck?: ICascadeCheckResult;
+  readonly onAddCard?: (card: ISearchCardResult, slot: TDraftSlot) => void;
+  readonly onUpdateQuantity?: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  readonly onRemoveCard?: (cardIdentifier: string, slot: TDraftSlot) => void;
+  readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
+  readonly onSetHero?: (heroIdentifier: string | null) => void;
+  readonly onSetFormat?: (format: string) => void;
 }
 
 /**
@@ -210,10 +228,28 @@ export function DeckCanvas({
   pendingSubstituteId = null,
   onClearRejections,
   isClearingRejections,
+  compositionDraft,
+  cascadeCheck,
+  onAddCard,
+  onUpdateQuantity,
+  onRemoveCard,
+  onRemoveIllegalCards,
+  onSetHero,
+  onSetFormat,
 }: IDeckCanvasProps): React.ReactElement {
   if (mode === 'edit') {
-    // U12 will implement EditBody. For U11 render a no-op stub.
-    return <EditBody />;
+    return (
+      <EditBody
+        compositionDraft={compositionDraft}
+        cascadeCheck={cascadeCheck}
+        onAddCard={onAddCard}
+        onUpdateQuantity={onUpdateQuantity}
+        onRemoveCard={onRemoveCard}
+        onRemoveIllegalCards={onRemoveIllegalCards}
+        onSetHero={onSetHero}
+        onSetFormat={onSetFormat}
+      />
+    );
   }
 
   return (
@@ -235,17 +271,167 @@ export function DeckCanvas({
 }
 
 // ---------------------------------------------------------------------------
-// EditBody — stub (U12 fills this in)
+// EditBody — implemented in U12
 // ---------------------------------------------------------------------------
 
+interface IEditBodyProps {
+  readonly compositionDraft: ICompositionDraft | undefined;
+  readonly cascadeCheck: ICascadeCheckResult | undefined;
+  readonly onAddCard: ((card: ISearchCardResult, slot: TDraftSlot) => void) | undefined;
+  readonly onUpdateQuantity: ((cardIdentifier: string, slot: TDraftSlot, quantity: number) => void) | undefined;
+  readonly onRemoveCard: ((cardIdentifier: string, slot: TDraftSlot) => void) | undefined;
+  readonly onRemoveIllegalCards: ((ids: ReadonlySet<string>) => void) | undefined;
+  readonly onSetHero: ((heroIdentifier: string | null) => void) | undefined;
+  readonly onSetFormat: ((format: string) => void) | undefined;
+}
+
 /**
- * EditBody — stub component for U11.
- * U12 will replace this with the full editable canvas.
+ * EditBody — the editable canvas for deck composition editing.
+ *
+ * Layout:
+ *  Mobile (<1280px): hero → format → cascade banner → autocomplete → card list.
+ *  Desktop (≥1280px): autocomplete at top + grouped editable rows by slot.
+ *    Hero/format dropdowns live in the sidebar (hidden here via CSS).
+ *
+ * Both modes share the same <SlotGroup>-style grouping helper that ViewBody uses.
  */
-function EditBody(): React.ReactElement {
+function EditBody({
+  compositionDraft,
+  cascadeCheck,
+  onAddCard,
+  onUpdateQuantity,
+  onRemoveCard,
+  onRemoveIllegalCards,
+  onSetHero,
+  onSetFormat,
+}: IEditBodyProps): React.ReactElement {
+  const autocompleteRef = React.useRef<HTMLInputElement>(null);
+
+  // If no draft yet (shouldn't happen after U12 wiring, but guard gracefully)
+  if (!compositionDraft || !cascadeCheck) {
+    return (
+      <div className={styles.editCanvas} data-testid="deck-canvas-edit">
+        <p className={styles.editEmptyState}>Loading composition…</p>
+      </div>
+    );
+  }
+
+  // Group draft cards by slot (same helper as ViewBody uses)
+  const ORDERED_SLOTS: TSlotGroup[] = ['mainboard', 'hero', 'weapon', 'equipment', 'other'];
+  const slotGroups = new Map<TSlotGroup, IDraftCard[]>(
+    ORDERED_SLOTS.map((g) => [g, []]),
+  );
+  for (const card of compositionDraft.cards) {
+    const group = card.slot as TSlotGroup;
+    slotGroups.get(group)!.push(card);
+  }
+
+  function handlePick(card: ISearchCardResult, slot: TDeckSlot): void {
+    onAddCard?.(card, slot as TDraftSlot);
+  }
+
+  function handleRemoveIllegal(ids: ReadonlySet<string>): void {
+    onRemoveIllegalCards?.(ids);
+    // Focus autocomplete after removing illegal cards
+    setTimeout(() => autocompleteRef.current?.focus(), 50);
+  }
+
+  const totalCards = compositionDraft.cards.reduce((sum, c) => sum + c.quantity, 0);
+
   return (
-    <div className={styles.editStub} data-testid="deck-canvas-edit-stub" aria-busy="false">
-      {/* U12 implements the editable canvas */}
+    <div className={styles.editCanvas} data-testid="deck-canvas-edit">
+
+      {/* ---- Mobile-only: Hero + Format dropdowns ---- */}
+      {/* These show on mobile (<1280px) where the sidebar is hidden. */}
+      {/* On desktop (≥1280px) they live in the sidebar instead. */}
+      {onSetHero !== undefined && onSetFormat !== undefined && (
+        <div className={styles.editMobileDropdowns} data-testid="edit-mobile-dropdowns">
+          <HeroDropdown
+            value={compositionDraft.heroIdentifier}
+            onChange={onSetHero}
+          />
+          <FormatDropdown
+            value={compositionDraft.format}
+            onChange={onSetFormat}
+          />
+        </div>
+      )}
+
+      {/* ---- Mobile-only: Cascade warning banner ---- */}
+      {cascadeCheck.count > 0 && (
+        <div className={styles.editMobileBanner} data-testid="edit-mobile-cascade-banner">
+          <CascadeWarningPanelBanner
+            draft={compositionDraft}
+            cascadeCheck={cascadeCheck}
+            onRemoveIllegal={handleRemoveIllegal}
+          />
+        </div>
+      )}
+
+      {/* ---- Card search autocomplete + slot picker ---- */}
+      <div className={styles.editSearch}>
+        <DeckCardSearchAutocomplete
+          onPick={handlePick}
+          label="Add cards to deck"
+          showSlotPicker={true}
+          inputRef={autocompleteRef}
+        />
+      </div>
+
+      {/* ---- Editable card list — grouped by slot ---- */}
+      {totalCards === 0 ? (
+        <div className={styles.editEmptyState} data-testid="edit-empty-state">
+          <p className={styles.editEmptyState__title}>
+            No cards in this deck yet.
+          </p>
+          <p className={styles.editEmptyState__sub}>
+            Search above to add cards and start building your deck.
+          </p>
+        </div>
+      ) : (
+        <div className={styles.editSlotGroups} data-testid="edit-slot-groups">
+          {Array.from(slotGroups.entries()).map(([group, cards]) => {
+            if (cards.length === 0) return null;
+            const total = cards.reduce((s, c) => s + c.quantity, 0);
+            return (
+              <div
+                key={group}
+                className={styles.editSlotGroup}
+                data-testid={`edit-slot-group-${group}`}
+              >
+                {/* Slot group header */}
+                <div className={styles.editSlotGroupHeader}>
+                  <SlotIcon group={group} />
+                  <span className={styles.editSlotGroupName}>{group}</span>
+                  <span className={styles.editSlotGroupCount}>{total}&times;</span>
+                </div>
+
+                {/* Editable card rows */}
+                <ul className={styles.editCardList} aria-label={`${group} cards`}>
+                  {cards.map((card) => (
+                    <EditableCardRow
+                      key={`${card.cardIdentifier}-${card.slot}`}
+                      cardIdentifier={card.cardIdentifier}
+                      name={card.name}
+                      quantity={card.quantity}
+                      slot={card.slot}
+                      pitch={card.pitch}
+                      onQuantityChange={(id, sl, qty) => {
+                        if (qty <= 0) {
+                          onRemoveCard?.(id, sl);
+                        } else {
+                          onUpdateQuantity?.(id, sl, qty);
+                        }
+                      }}
+                      onRemove={(id, sl) => onRemoveCard?.(id, sl)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

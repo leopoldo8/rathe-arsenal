@@ -1,0 +1,132 @@
+/* ============================================================
+   EditableCardRow — per-card editable row in Edit mode (U12)
+   ============================================================ */
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    background-color var(--ra-duration) var(--ra-ease);
+}
+
+.row:hover {
+  border-color: var(--ra-border-strong);
+}
+
+.slotIcon {
+  color: var(--ra-fg-muted);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.cardInfo {
+  min-width: 0;
+}
+
+.cardName {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: var(--ra-space-1);
+}
+
+.cardMeta {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.04em;
+}
+
+/* Quantity stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex-shrink: 0;
+}
+
+.stepperBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+  flex-shrink: 0;
+}
+
+.stepperBtn:hover:not(:disabled) {
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+.stepperBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 1px;
+}
+
+.stepperBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepperQty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-small);
+  color: var(--ra-accent);
+  font-weight: var(--ra-weight-semibold);
+  min-width: 1.5ch;
+  text-align: center;
+}
+
+/* Remove button */
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease),
+    background var(--ra-duration) var(--ra-ease);
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  border-color: var(--ra-ready-low);
+  color: var(--ra-ready-low);
+  background: var(--ra-ready-low-bg);
+}
+
+.removeBtn:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 1px;
+}

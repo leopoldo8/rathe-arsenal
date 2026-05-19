@@ -30,6 +30,7 @@ import type { IDeckDetailResponse } from '../../../api/deck-detail';
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (config: Record<string, unknown>) => ({
     useParams: () => ({ deckId: 'deck-123' }),
+    useSearch: () => ({ edit: undefined }),
     component: config.component,
   }),
   Link: ({
