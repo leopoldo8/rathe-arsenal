@@ -1,0 +1,243 @@
+/* ============================================================
+   DeckCanvas — shared styles for View and Edit modes (U11)
+
+   Slot grouping, section diamonds, slot icons are defined here so
+   both ViewBody (U11) and EditBody (U12) share the same visual language.
+   Edit-mode styles are added in U12.
+   ============================================================ */
+
+/* ---- Canvas wrapper ---- */
+.canvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+/* ---- Edit mode stub (U11 placeholder, removed when U12 fills it in) ---- */
+.editStub {
+  /* Empty stub for U12 */
+}
+
+/* ---- Section shell ---- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  margin-bottom: var(--ra-space-4);
+  padding-bottom: var(--ra-space-3);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.section__title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  margin: 0;
+}
+
+.section__count {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+
+.section__empty {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ---- Section diamonds (R35 colour semantics) ---- */
+.sectionDiamond {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--ra-accent);    /* Exact — brass (positive) */
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.sectionDiamond--swaps {
+  background: var(--ra-info);      /* Swaps — info blue (neutral-positive) */
+}
+
+.sectionDiamond--notOwned {
+  background: var(--ra-ready-low); /* Not owned — red (negative) */
+}
+
+/* ---- Slot icons (R36) ---- */
+.slotIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--ra-fg-muted);
+  flex-shrink: 0;
+}
+
+/* ---- Exact matches — slot-grouped ---- */
+.exactGrouped {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-5);
+}
+
+.slotGroup {
+  /* Each slot group */
+}
+
+.slotGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  margin-bottom: var(--ra-space-3);
+}
+
+.slotGroupName {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.slotGroupCount {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent-body);
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+
+/* ---- Card grid (shared between slot groups) ---- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: var(--ra-space-4);
+  padding: var(--ra-space-2) 0 var(--ra-space-1);
+}
+
+.cardCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.cardCell__qty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+/* ---- Substitution list (Swaps section) ---- */
+.subList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+/* ---- Not-owned list ---- */
+.missList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.missRow {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: color-mix(in oklch, var(--ra-ready-low) 5%, var(--ra-bg-raised));
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    background-color var(--ra-duration) var(--ra-ease);
+}
+
+.missRow:hover {
+  border-color: var(--ra-border-strong);
+  background: color-mix(in oklch, var(--ra-accent) 6%, var(--ra-bg-raised));
+}
+
+.missRow__slotIcon {
+  color: var(--ra-fg-muted);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.missRow__body {
+  min-width: 0;
+}
+
+.missRow__name {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-semibold);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: var(--ra-space-1);
+}
+
+.missRow__meta {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  letter-spacing: 0.04em;
+}
+
+.missRow__qty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  white-space: nowrap;
+}
+
+/* ---- All-playable empty state ---- */
+.emptyAllPlayable {
+  background: var(--ra-ready-high-bg);
+  border: 1px solid var(--ra-ready-high-border);
+  border-radius: var(--ra-radius-sm);
+  padding: var(--ra-space-4) var(--ra-space-6);
+}
+
+.emptyAllPlayable__title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-ready-high);
+  margin: 0 0 var(--ra-space-2);
+}
+
+.emptyAllPlayable__sub {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  margin: 0;
+}
+
+/* ============================================================
+   Edit mode styles — added in U12
+   ============================================================ */

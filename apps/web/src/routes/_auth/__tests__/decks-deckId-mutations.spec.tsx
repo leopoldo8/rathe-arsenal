@@ -45,6 +45,7 @@ vi.mock('@tanstack/react-router', () => ({
       {children}
     </a>
   ),
+  useNavigate: () => vi.fn(),
 }));
 
 // Toast
@@ -67,12 +68,12 @@ vi.mock('../../../components/deck-detail/DeckDetailEmptyState', () => ({
   ),
 }));
 
-// ReadinessHero — smoke stub
+// ReadinessHero — smoke stub (kept for backward compat; not used in new layout)
 vi.mock('../../../components/deck-detail/ReadinessHero', () => ({
   ReadinessHero: () => <div data-testid="readiness-hero" />,
 }));
 
-// BreakdownSections — smoke stub
+// BreakdownSections — smoke stub (kept for backward compat; not used in new layout)
 vi.mock('../../../components/deck-detail/BreakdownSections', () => ({
   BreakdownSections: () => <div data-testid="breakdown-sections" />,
 }));
@@ -93,6 +94,59 @@ vi.mock('../../../components/deck-detail/ModifiedViewBanner', () => ({
 // ShoppingPanel — smoke stub
 vi.mock('../../../components/deck-detail/ShoppingPanel', () => ({
   ShoppingPanel: () => <div data-testid="shopping-panel" />,
+}));
+
+// DeckDetailLayout — smoke stub that renders children
+vi.mock('../../../components/deck-detail/DeckDetailLayout', () => ({
+  DeckDetailLayout: ({
+    header,
+    sidebar,
+    canvas,
+  }: {
+    header: React.ReactNode;
+    sidebar: React.ReactNode;
+    canvas: React.ReactNode;
+  }) => (
+    <div data-testid="deck-detail-layout">
+      <div data-testid="layout-header">{header}</div>
+      <div data-testid="layout-sidebar">{sidebar}</div>
+      <div data-testid="layout-canvas">{canvas}</div>
+    </div>
+  ),
+}));
+
+// DeckDetailHeader — smoke stub
+vi.mock('../../../components/deck-detail/DeckDetailHeader', () => ({
+  DeckDetailHeader: () => <div data-testid="deck-detail-header" />,
+}));
+
+// DeckDetailSidebar — smoke stub
+vi.mock('../../../components/deck-detail/DeckDetailSidebar', () => ({
+  DeckDetailSidebar: () => (
+    <div data-testid="deck-detail-sidebar">
+      <div data-testid="readiness-hero" />
+    </div>
+  ),
+}));
+
+// DeckCanvas — smoke stub
+vi.mock('../../../components/deck-detail/DeckCanvas', () => ({
+  DeckCanvas: ({
+    rejectedCount,
+    onClearRejections,
+  }: {
+    rejectedCount: number;
+    onClearRejections: () => void;
+  }) => (
+    <div data-testid="deck-canvas">
+      <div data-testid="breakdown-sections" />
+      {rejectedCount > 0 && (
+        <button onClick={onClearRejections} data-testid="clear-rejections-btn">
+          Clear rejections
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 // ---------------------------------------------------------------------------
@@ -285,13 +339,14 @@ describe('DeckDetailPage — computing state', () => {
 });
 
 describe('DeckDetailPage — populated state', () => {
-  it('renders the 3-column layout when deck and snapshot are present', () => {
+  it('renders the two-column layout when deck and snapshot are present', () => {
     mockQueryState = 'success-populated';
     mockDeckData = buildDeck();
     renderPage();
-    expect(screen.getByTestId('readiness-hero')).toBeInTheDocument();
-    expect(screen.getByTestId('breakdown-sections')).toBeInTheDocument();
-    expect(screen.getByTestId('shopping-panel')).toBeInTheDocument();
+    // The new layout renders DeckDetailLayout + DeckDetailSidebar + DeckCanvas
+    expect(screen.getByTestId('deck-detail-layout')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-detail-sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-canvas')).toBeInTheDocument();
   });
 });
 

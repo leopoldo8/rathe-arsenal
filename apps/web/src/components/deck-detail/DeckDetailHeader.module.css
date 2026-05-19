@@ -1,0 +1,184 @@
+/* ============================================================
+   DeckDetailHeader — full-width header strip (U11)
+   ============================================================ */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+/* ---- Breadcrumb ---- */
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-accent-body);
+  text-decoration: none;
+  transition: color var(--ra-duration) var(--ra-ease);
+  align-self: flex-start;
+}
+
+.breadcrumb:hover {
+  color: var(--ra-accent-hover);
+}
+
+.breadcrumb:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: var(--ra-radius-sm);
+}
+
+/* ---- Title area: name + actions + tags ---- */
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ra-space-4);
+  flex-wrap: wrap;
+}
+
+.titleName {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Action bar (right-aligned) ---- */
+.actionBar {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  flex-shrink: 0;
+}
+
+/* Edit button */
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 36px;
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: transparent;
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.editBtn:hover:not(:disabled) {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+}
+
+.editBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.editBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ⋯ overflow menu container */
+.overflow {
+  position: relative;
+}
+
+.overflowTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 36px;
+  min-inline-size: 36px;
+  background: transparent;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  cursor: pointer;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.overflowTrigger:hover {
+  border-color: var(--ra-border-strong);
+  color: var(--ra-fg-primary);
+}
+
+.overflowTrigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Overflow dropdown */
+.overflowMenu {
+  position: absolute;
+  top: calc(100% + var(--ra-space-1));
+  right: 0;
+  z-index: 50;
+  min-width: 140px;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  box-shadow: var(--ra-shadow-md);
+  padding: var(--ra-space-1) 0;
+}
+
+.overflowItem {
+  display: block;
+  width: 100%;
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: transparent;
+  border: 0;
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ra-duration) var(--ra-ease);
+}
+
+.overflowItem:hover:not(:disabled) {
+  background: var(--ra-ready-low-bg);
+}
+
+.overflowItem:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.overflowItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Mobile adjustments ---- */
+@media (max-width: 639px) {
+  .titleRow {
+    flex-direction: column;
+    gap: var(--ra-space-3);
+  }
+
+  .actionBar {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
