@@ -164,6 +164,22 @@
   cursor: not-allowed;
 }
 
+/* Save button wrapper (holds button + inline error) */
+.saveWrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ra-space-1);
+}
+
+/* Inline error message adjacent to Save (R19a) */
+.saveError {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+  white-space: nowrap;
+}
+
 /* ⋯ overflow menu container */
 .overflow {
   position: relative;
