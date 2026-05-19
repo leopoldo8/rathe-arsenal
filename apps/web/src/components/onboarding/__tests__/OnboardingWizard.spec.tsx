@@ -327,7 +327,7 @@ describe('OnboardingWizard — step 1: skip', () => {
     renderWizard();
 
     await user.click(screen.getByRole('button', { name: /skip for now/i }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
   });
 });
 
@@ -408,7 +408,7 @@ describe('OnboardingWizard — happy path (skip): step 2 skip', () => {
     });
 
     await user.click(screen.getByRole('button', { name: /skip for now/i }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
   });
 });
 
@@ -478,7 +478,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     });
 
     await user.click(screen.getByRole('button', { name: /enter the armory/i }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
   });
 });
 
@@ -592,7 +592,7 @@ describe('OnboardingWizard — edge case: 100% readiness', () => {
       expect(screen.getByRole('button', { name: /go to my decks/i })).toBeInTheDocument();
     });
     await user.click(screen.getByRole('button', { name: /go to my decks/i }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
   });
 });
 

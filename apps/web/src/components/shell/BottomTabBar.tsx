@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
+import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
 import styles from './BottomTabBar.module.css';
 
 interface ITabItem {
@@ -38,8 +39,10 @@ function ReviewsIcon(): React.ReactElement {
   );
 }
 
-const TAB_ITEMS: readonly ITabItem[] = [
-  { to: '/home', label: 'Home', icon: <HomeIcon /> },
+// /home is handled separately with a typed Link+search prop.
+// /library and /swaps use string-typed `to` so TypeScript does not enforce
+// their route-specific search params here — their validateSearch accepts empty.
+const OTHER_TAB_ITEMS: readonly ITabItem[] = [
   { to: '/library', label: 'Library', icon: <LibraryIcon /> },
   { to: '/swaps', label: 'Swaps', icon: <ReviewsIcon /> },
 ];
@@ -53,14 +56,29 @@ const TAB_ITEMS: readonly ITabItem[] = [
 export function BottomTabBar(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
 
+  const homeActive = pathname === '/home' || pathname.startsWith('/home/');
+
   return (
     <nav className={styles.nav} aria-label="Mobile primary">
-      {TAB_ITEMS.map((item) => {
+      {/* /home needs explicit search prop for the U9 validateSearch */}
+      <Link
+        to="/home"
+        search={DEFAULT_HOME_SEARCH}
+        className={styles.tab}
+        data-active={homeActive ? 'true' : undefined}
+        aria-current={homeActive ? 'page' : undefined}
+      >
+        <span className={styles.icon}><HomeIcon /></span>
+        <span className={styles.label}>Home</span>
+      </Link>
+
+      {OTHER_TAB_ITEMS.map((item) => {
         const isActive = pathname === item.to || pathname.startsWith(item.to + '/');
         return (
           <Link
             key={item.to}
-            to={item.to}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            to={item.to as any}
             className={styles.tab}
             data-active={isActive ? 'true' : undefined}
             aria-current={isActive ? 'page' : undefined}

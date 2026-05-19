@@ -1,14 +1,47 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PopulatedHomeHero } from '../PopulatedHomeHero';
 import { ITrackedDeckListItem } from '../../../api/decks';
+
+// ---------------------------------------------------------------------------
+// Mock TanStack Router — Link renders as a plain <a>
+// ---------------------------------------------------------------------------
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      params,
+      className,
+    }: {
+      children: React.ReactNode;
+      to: string;
+      params?: Record<string, string>;
+      className?: string;
+    }) => {
+      const href = params ? to.replace('$deckId', params.deckId ?? '') : to;
+      return (
+        <a href={href} className={className}>
+          {children}
+        </a>
+      );
+    },
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
-function makeDeck(effectivePercent: number, id = 1): ITrackedDeckListItem {
+function makeDeck(
+  effectivePercent: number,
+  id = 1,
+  status: ITrackedDeckListItem['status'] = 'building',
+): ITrackedDeckListItem {
   return {
     id,
     fabraryUlid: `ulid-${id}`,
@@ -17,7 +50,7 @@ function makeDeck(effectivePercent: number, id = 1): ITrackedDeckListItem {
     format: 'Classic Constructed',
     trackedAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
-    status: 'building',
+    status,
     tags: [],
     legality: { category: 'legal', reasons: [] },
     latestSnapshot: {
@@ -93,11 +126,35 @@ describe('PopulatedHomeHero', () => {
     expect(screen.getByText('--')).toBeInTheDocument();
   });
 
-  it('renders "Track new deck" CTA linking to /decks/new', () => {
+  it('renders "Add new deck" CTA linking to /decks/new (renamed from Track new deck per R44)', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
-    const cta = screen.getByRole('link', { name: /track new deck/i });
+    const cta = screen.getByRole('link', { name: /add new deck/i });
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveAttribute('href', '/decks/new');
+  });
+
+  it('activeLibraryCount counts only non-retired decks', () => {
+    const decks: ITrackedDeckListItem[] = [
+      makeDeck(80, 1, 'active'),
+      makeDeck(70, 2, 'building'),
+      makeDeck(60, 3, 'retired'),
+    ];
+    render(<PopulatedHomeHero decks={decks} totalCardsMissing={null} />);
+    // Only 2 non-retired decks → Decks stat = 2
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('Decks')).toBeInTheDocument();
+  });
+
+  it('avgReadiness excludes retired decks from denominator', () => {
+    const decks: ITrackedDeckListItem[] = [
+      makeDeck(80, 1, 'active'),
+      makeDeck(60, 2, 'building'),
+      // This retired deck (100%) should NOT affect the avg
+      makeDeck(100, 3, 'retired'),
+    ];
+    render(<PopulatedHomeHero decks={decks} totalCardsMissing={null} />);
+    // avg of [80, 60] = 70%
+    expect(screen.getByText('70%')).toBeInTheDocument();
   });
 
   it('does not render an "/import" link', () => {

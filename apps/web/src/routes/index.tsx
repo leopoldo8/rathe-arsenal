@@ -15,5 +15,5 @@ export const Route = createFileRoute('/')({
 function IndexRedirect(): React.ReactElement | null {
   const { user, isLoading } = useAuth();
   if (isLoading) return null;
-  return user ? <Navigate to="/home" replace /> : <Navigate to="/sign-in" replace />;
+  return user ? <Navigate to="/home" search={{ tag: [] }} replace /> : <Navigate to="/sign-in" replace />;
 }

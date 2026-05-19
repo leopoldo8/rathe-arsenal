@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
+import { StatusBullet, STATUS_LABELS } from '../deck-detail/StatusBullet';
 import styles from './DeckCard.module.css';
 
 // ---------------------------------------------------------------------------
@@ -11,16 +12,55 @@ interface IDeckCardProps {
   readonly deck: ITrackedDeckListItem;
   readonly onUntrack: (deckId: number) => void;
   readonly isUntracking: boolean;
+  /**
+   * Currently active tag filter chips on the home page. When non-empty,
+   * any matching tag is promoted to the visible 4 tag chip slots so the
+   * filter context is always visible on the card.
+   */
+  readonly activeFilterTags?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+const TAG_VISIBLE_LIMIT = 4;
+
 function resolveReadinessTier(effectivePercent: number): 'high' | 'mid' | 'low' {
   if (effectivePercent >= 80) return 'high';
   if (effectivePercent >= 50) return 'mid';
   return 'low';
+}
+
+/**
+ * Builds the list of up to TAG_VISIBLE_LIMIT tags to show on the card.
+ * Active filter tags are promoted to the front so they are always visible,
+ * regardless of their position in the deck's tag list (R7).
+ *
+ * Returns { visible: string[], overflow: number } where `overflow` is the
+ * count of additional tags not shown.
+ */
+function resolveVisibleTags(
+  tags: readonly string[],
+  activeFilterTags: readonly string[],
+): { readonly visible: readonly string[]; readonly overflow: number } {
+  if (tags.length === 0) return { visible: [], overflow: 0 };
+
+  // Partition tags: active-filter matches first, then the rest
+  const active: string[] = [];
+  const rest: string[] = [];
+  for (const tag of tags) {
+    if (activeFilterTags.includes(tag)) {
+      active.push(tag);
+    } else {
+      rest.push(tag);
+    }
+  }
+
+  const ordered = [...active, ...rest];
+  const visible = ordered.slice(0, TAG_VISIBLE_LIMIT);
+  const overflow = ordered.length - visible.length;
+  return { visible, overflow };
 }
 
 const SLOT_CLASSES = [
@@ -54,7 +94,12 @@ const SLOT_CLASSES = [
  *  - prefers-reduced-motion path swaps the rotation/translation for
  *    opacity-only fades. Final visible state mirrors the open look.
  */
-export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): React.ReactElement {
+export function DeckCard({
+  deck,
+  onUntrack,
+  isUntracking,
+  activeFilterTags = [],
+}: IDeckCardProps): React.ReactElement {
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
   const tier = effectivePercent !== null ? resolveReadinessTier(effectivePercent) : null;
 
@@ -82,6 +127,16 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
     deck.representativeCards[2] ?? null,
   ];
 
+  const { visible: visibleTags, overflow: tagOverflow } = resolveVisibleTags(
+    deck.tags,
+    activeFilterTags,
+  );
+
+  // Legality icon: 2-state mapping per R26.
+  // 'legal' → ✓, 'incomplete' | 'illegal' → ✗.
+  const legalityCategory = deck.legality.category;
+  const isLegal = legalityCategory === 'legal';
+
   return (
     <article className={cardClasses} aria-label={deck.name}>
       <Link
@@ -106,6 +161,46 @@ export function DeckCard({ deck, onUntrack, isUntracking }: IDeckCardProps): Rea
         <h3 className={styles.srOnlyTitle}>
           {deck.name} — {deck.hero}, {deck.format}
         </h3>
+
+        {/* Status row — StatusBullet dot + label below deck name.
+            Small caps styling via CSS. */}
+        <div className={styles.statusRow}>
+          <StatusBullet status={deck.status} showLabel={false} />
+          <span className={styles.statusLabel}>{STATUS_LABELS[deck.status]}</span>
+        </div>
+
+        {/* Format pill + legality icon (2-state: ✓ legal / ✗ incomplete or illegal) */}
+        <div className={styles.metaRow}>
+          <span className={styles.formatPill}>{deck.format}</span>
+          <span
+            className={`${styles.legalityIcon} ${isLegal ? styles.legalityLegal : styles.legalityIllegal}`}
+            aria-label={isLegal ? 'Legal' : 'Not legal'}
+            title={isLegal ? 'Legal' : legalityCategory === 'incomplete' ? 'Incomplete' : 'Illegal'}
+          >
+            {isLegal ? '✓' : '✗'}
+          </span>
+        </div>
+
+        {/* Tag chips — soft cap of 4 visible + +N overflow.
+            Active filter tags are promoted to the front so they are
+            always visible in the card (R7). */}
+        {visibleTags.length > 0 && (
+          <div className={styles.tagRow} aria-label="Tags">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag}
+                className={`${styles.tagChip} ${activeFilterTags.includes(tag) ? styles.tagChipActive : ''}`}
+              >
+                {tag}
+              </span>
+            ))}
+            {tagOverflow > 0 && (
+              <span className={styles.tagOverflow} aria-label={`${tagOverflow} more tags`}>
+                +{tagOverflow}
+              </span>
+            )}
+          </div>
+        )}
 
         {effectivePercent === null && (
           <div className={styles.cardNoReadiness}>No readiness data yet</div>
