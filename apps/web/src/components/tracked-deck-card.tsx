@@ -31,6 +31,7 @@ export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckC
       <Link
         to="/decks/$deckId"
         params={{ deckId: String(deck.id) }}
+        search={{ edit: undefined }}
         className={styles.deckLink}
       >
         <h3 className={styles.deckName}>{deck.name}</h3>

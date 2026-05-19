@@ -147,6 +147,7 @@ function AlreadyTrackedCallout({ trackedDeckId }: { readonly trackedDeckId: numb
       <Link
         to="/decks/$deckId"
         params={{ deckId: String(trackedDeckId) }}
+        search={{ edit: undefined }}
         className={styles.alreadyTrackedLink}
       >
         Go to deck &rarr;

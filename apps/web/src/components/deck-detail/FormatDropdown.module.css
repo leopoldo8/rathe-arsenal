@@ -1,0 +1,102 @@
+/* ============================================================
+   FormatDropdown — Radix Select wrapper for Edit mode (U12)
+   ============================================================ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.label {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+  cursor: default;
+}
+
+/* Radix Select trigger */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-block-size: 36px;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+  gap: var(--ra-space-2);
+  transition: border-color var(--ra-duration) var(--ra-ease);
+  box-sizing: border-box;
+}
+
+.trigger:hover {
+  border-color: var(--ra-border-strong);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.trigger[data-state='open'] {
+  border-color: var(--ra-accent);
+}
+
+.icon {
+  color: var(--ra-fg-muted);
+  font-size: 0.625rem;
+  flex-shrink: 0;
+}
+
+/* Radix dropdown content */
+.content {
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  box-shadow: var(--ra-shadow-md);
+  z-index: 60;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.viewport {
+  padding: var(--ra-space-1) 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ra-space-2) var(--ra-space-4) var(--ra-space-2) var(--ra-space-3);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  gap: var(--ra-space-3);
+  transition: background var(--ra-duration) var(--ra-ease);
+}
+
+.item[data-highlighted] {
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+}
+
+.item[data-state='checked'] {
+  color: var(--ra-accent-body);
+}
+
+.itemIndicator {
+  color: var(--ra-accent);
+  flex-shrink: 0;
+  font-size: var(--ra-text-caption);
+}

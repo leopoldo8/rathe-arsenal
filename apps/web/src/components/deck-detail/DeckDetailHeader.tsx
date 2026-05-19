@@ -23,6 +23,21 @@ interface IDeckDetailHeaderProps {
    * and opens inline edit). U12 will pass 'edit' to lock the name as static.
    */
   readonly mode: 'view' | 'edit';
+  /**
+   * Called when the user clicks the Edit button. Navigates to ?edit=1.
+   * Optional for backward compat (U11 tests pass no callbacks).
+   */
+  readonly onEnterEdit?: (() => void) | undefined;
+  /**
+   * Called when the user clicks Cancel in Edit mode. Navigates back to View.
+   * Optional for backward compat.
+   */
+  readonly onExitEdit?: (() => void) | undefined;
+  /**
+   * Count of cards that may be illegal in the current format (from useCascadeCheck).
+   * Used to check before Save. 0 = no warning.
+   */
+  readonly cascadeCheckCount?: number;
 }
 
 /**
@@ -47,6 +62,9 @@ export function DeckDetailHeader({
   status,
   tags,
   mode,
+  onEnterEdit,
+  onExitEdit,
+  cascadeCheckCount = 0,
 }: IDeckDetailHeaderProps): React.ReactElement {
   const navigate = useNavigate();
   const { show: showToast } = useToast();
@@ -100,16 +118,47 @@ export function DeckDetailHeader({
           <div className={styles.actionBar} data-testid="deck-detail-action-bar">
             <StatusDropdown deckId={deckId} currentStatus={status} />
 
-            {/* Edit button — stub in U11; U12 wires ?edit=1 toggle */}
-            <button
-              type="button"
-              className={styles.editBtn}
-              aria-label="Edit deck composition"
-              data-testid="deck-detail-edit-btn"
-              disabled={mode === 'edit'}
-            >
-              Edit
-            </button>
+            {mode === 'edit' ? (
+              /* Edit mode: Cancel + Save buttons */
+              <>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  aria-label="Cancel editing and return to view"
+                  data-testid="deck-detail-cancel-btn"
+                  onClick={onExitEdit}
+                >
+                  Cancel
+                </button>
+                {/* Save button — U13 wires the actual mutation.
+                    For U12 this checks the cascade count and logs a placeholder.
+                    U13 will replace the console.log with the real modal/mutation. */}
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  aria-label="Save deck composition"
+                  data-testid="deck-detail-save-btn"
+                  onClick={() => {
+                    // U13-STUB: if cascadeCheckCount > 5, show SaveCascadeConfirmModal
+                    // U13-STUB: wire usePutDeckMutation on Save
+                    void cascadeCheckCount; // referenced to satisfy TS; U13 uses this
+                  }}
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              /* View mode: Edit button */
+              <button
+                type="button"
+                className={styles.editBtn}
+                aria-label="Edit deck composition"
+                data-testid="deck-detail-edit-btn"
+                onClick={onEnterEdit}
+              >
+                Edit
+              </button>
+            )}
 
             {/* ⋯ overflow menu */}
             <div className={styles.overflow} ref={overflowRef}>

@@ -60,6 +60,7 @@ function DecksNewPage(): React.ReactElement {
             void navigate({
               to: '/decks/$deckId',
               params: { deckId: String(imported.trackedDeckId) },
+              search: { edit: undefined },
             });
           } else {
             // Deck was skipped (already tracked) — navigate to home

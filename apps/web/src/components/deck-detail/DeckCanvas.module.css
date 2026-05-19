@@ -241,3 +241,112 @@
 /* ============================================================
    Edit mode styles — added in U12
    ============================================================ */
+
+/* Edit canvas wrapper */
+.editCanvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-5);
+}
+
+/* Mobile-only: hero/format dropdowns above the search bar.
+   On desktop (≥1280px) these are hidden — they live in the sidebar. */
+.editMobileDropdowns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+}
+
+@media (min-width: 1280px) {
+  .editMobileDropdowns {
+    display: none;
+  }
+}
+
+/* Mobile-only: cascade banner above the search bar.
+   On desktop (≥1280px) this is hidden — the sidebar panel shows instead. */
+.editMobileBanner {
+  display: block;
+}
+
+@media (min-width: 1280px) {
+  .editMobileBanner {
+    display: none;
+  }
+}
+
+/* Search bar row */
+.editSearch {
+  /* Full-width autocomplete */
+}
+
+/* Empty state for zero-card decks (R22) */
+.editEmptyState {
+  padding: var(--ra-space-8) var(--ra-space-6);
+  background: var(--ra-bg-muted);
+  border: 1px dashed var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  text-align: center;
+}
+
+.editEmptyState__title {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  margin: 0 0 var(--ra-space-2);
+}
+
+.editEmptyState__sub {
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  margin: 0;
+}
+
+/* Grouped slot sections */
+.editSlotGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-6);
+}
+
+.editSlotGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.editSlotGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  margin-bottom: var(--ra-space-3);
+  padding-bottom: var(--ra-space-2);
+  border-bottom: 1px solid var(--ra-border-subtle);
+}
+
+.editSlotGroupName {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.editSlotGroupCount {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent-body);
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+
+.editCardList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}

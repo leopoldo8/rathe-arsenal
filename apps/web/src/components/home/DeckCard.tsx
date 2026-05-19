@@ -142,6 +142,7 @@ export function DeckCard({
       <Link
         to="/decks/$deckId"
         params={{ deckId: String(deck.id) }}
+        search={{ edit: undefined }}
         className={styles.cardLink}
       >
         <DeckBoxVessel

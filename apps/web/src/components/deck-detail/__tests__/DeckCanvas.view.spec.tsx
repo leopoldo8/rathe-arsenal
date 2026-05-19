@@ -107,6 +107,26 @@ vi.mock('../../../assets/icons/slot-equipment.svg?react', () => ({
   default: () => null,
 }));
 
+// Edit-mode components — stub for view-mode spec
+vi.mock('../EditableCardRow', () => ({
+  EditableCardRow: ({ name }: { name: string }) => (
+    <li data-testid={`editable-card-row-stub-${name}`}>{name}</li>
+  ),
+}));
+vi.mock('../HeroDropdown', () => ({
+  HeroDropdown: () => <div data-testid="hero-dropdown-stub" />,
+}));
+vi.mock('../FormatDropdown', () => ({
+  FormatDropdown: () => <div data-testid="format-dropdown-stub" />,
+}));
+vi.mock('../CascadeWarningPanel', () => ({
+  CascadeWarningPanelBanner: () => null,
+  CascadeWarningPanelSidebar: () => null,
+}));
+vi.mock('../../deck-card-search/DeckCardSearchAutocomplete', () => ({
+  DeckCardSearchAutocomplete: () => <div data-testid="autocomplete-stub" />,
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -333,10 +353,10 @@ describe('DeckCanvas — Slot grouping (R36)', () => {
   });
 });
 
-describe('DeckCanvas — Edit mode stub', () => {
-  it('renders the edit stub data-testid in edit mode', () => {
+describe('DeckCanvas — Edit mode (U12)', () => {
+  it('renders the edit canvas data-testid in edit mode', () => {
     renderCanvas({ mode: 'edit' });
-    expect(screen.getByTestId('deck-canvas-edit-stub')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-canvas-edit')).toBeInTheDocument();
   });
 
   it('does NOT render deck-canvas-view in edit mode', () => {
