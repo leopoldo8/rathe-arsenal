@@ -1,0 +1,36 @@
+/* StatusBullet — 8px filled circle + optional text label */
+
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bullet {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Status-specific fill colours using semantic tokens */
+.bullet[data-status="idea"] {
+  background-color: var(--ra-status-idea);
+}
+
+.bullet[data-status="building"] {
+  background-color: var(--ra-status-building);
+}
+
+.bullet[data-status="ready"] {
+  background-color: var(--ra-status-ready);
+}
+
+.bullet[data-status="active"] {
+  background-color: var(--ra-status-active);
+}
+
+.bullet[data-status="retired"] {
+  background-color: var(--ra-status-retired);
+}
