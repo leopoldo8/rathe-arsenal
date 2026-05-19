@@ -71,7 +71,7 @@ export function DeckDetailHeader({
     setOverflowOpen(false);
     untrackMutation.mutate(deckId, {
       onSuccess: () => {
-        void navigate({ to: '/home' });
+        void navigate({ to: '/home', search: { tag: [] } });
       },
       onError: (err) => {
         showToast({
@@ -85,7 +85,7 @@ export function DeckDetailHeader({
   return (
     <div className={styles.header} data-testid="deck-detail-header">
       {/* ---- Breadcrumb ---- */}
-      <Link to="/home" className={styles.breadcrumb} aria-label="Back to Decks">
+      <Link to="/home" search={{ tag: [] }} className={styles.breadcrumb} aria-label="Back to Decks">
         <span aria-hidden="true">&#8592;</span> Decks
       </Link>
 

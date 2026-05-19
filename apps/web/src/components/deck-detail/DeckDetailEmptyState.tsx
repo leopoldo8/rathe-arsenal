@@ -66,7 +66,7 @@ export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): Reac
       </p>
 
       <div className={styles.ctaGroup}>
-        <Link to="/home" className={styles.primaryCta}>
+        <Link to="/home" search={{ tag: [] }} className={styles.primaryCta}>
           Back to home
         </Link>
 

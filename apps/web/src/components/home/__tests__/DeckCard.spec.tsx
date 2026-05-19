@@ -89,8 +89,10 @@ describe('DeckCard', () => {
 
   it('renders hero and format', () => {
     renderDeckCard(makeDeck({ hero: 'Prism', format: 'Blitz' }));
-    expect(screen.getByText(/Prism/)).toBeInTheDocument();
-    expect(screen.getByText(/Blitz/)).toBeInTheDocument();
+    // Hero appears in the sr-only h3 title; format appears in the sr-only title
+    // AND the new format pill — use getAllByText since both are in the DOM.
+    expect(screen.getAllByText(/Prism/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Blitz/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders effectivePercent inside the wax seal with .ra-readiness-display class', () => {
@@ -160,6 +162,91 @@ describe('DeckCard', () => {
     // No standalone "View" button — clicking the deckbox is the action.
     expect(screen.queryByRole('link', { name: /^view/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^view/i })).not.toBeInTheDocument();
+  });
+
+  describe('(U9) status row', () => {
+    it('renders the status label below the deck name', () => {
+      renderDeckCard(makeDeck({ status: 'active' }));
+      expect(screen.getByText('Active')).toBeInTheDocument();
+    });
+
+    it('renders different status labels for each status value', () => {
+      const statuses: ITrackedDeckListItem['status'][] = [
+        'idea', 'building', 'ready', 'active', 'retired',
+      ];
+      const expectedLabels = ['Idea', 'Building', 'Ready', 'Active', 'Retired'];
+      statuses.forEach((status, i) => {
+        const { unmount } = renderDeckCard(makeDeck({ status }));
+        expect(screen.getByText(expectedLabels[i]!)).toBeInTheDocument();
+        unmount();
+      });
+    });
+  });
+
+  describe('(U9) tag chip soft cap', () => {
+    it('shows all tags when deck has ≤4 tags', () => {
+      renderDeckCard(makeDeck({ tags: ['a', 'b', 'c', 'd'] }));
+      expect(screen.getByText('a')).toBeInTheDocument();
+      expect(screen.getByText('b')).toBeInTheDocument();
+      expect(screen.getByText('c')).toBeInTheDocument();
+      expect(screen.getByText('d')).toBeInTheDocument();
+      expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
+    });
+
+    it('shows 4 visible chips + "+N" overflow when deck has 6 tags', () => {
+      renderDeckCard(makeDeck({ tags: ['a', 'b', 'c', 'd', 'e', 'f'] }));
+      // 4 visible + +2 overflow
+      expect(screen.getByText('a')).toBeInTheDocument();
+      expect(screen.getByText('b')).toBeInTheDocument();
+      expect(screen.getByText('c')).toBeInTheDocument();
+      expect(screen.getByText('d')).toBeInTheDocument();
+      expect(screen.queryByText('e')).not.toBeInTheDocument();
+      expect(screen.queryByText('f')).not.toBeInTheDocument();
+      expect(screen.getByText('+2')).toBeInTheDocument();
+    });
+
+    it('renders nothing when deck has no tags', () => {
+      renderDeckCard(makeDeck({ tags: [] }));
+      expect(screen.queryByLabelText('Tags')).not.toBeInTheDocument();
+    });
+
+    it('promotes active filter tags into the visible 4', () => {
+      // Deck has 6 tags; 'liga local' is at position 6 (last)
+      const deck = makeDeck({
+        tags: ['a', 'b', 'c', 'd', 'e', 'liga local'],
+      });
+      // activeFilterTags = ['liga local'] — should be promoted to visible
+      render(
+        <DeckCard
+          deck={deck}
+          onUntrack={vi.fn()}
+          isUntracking={false}
+          activeFilterTags={['liga local']}
+        />,
+      );
+      expect(screen.getByText('liga local')).toBeInTheDocument();
+      // 'e' should be pushed out (liga local took a slot)
+      expect(screen.queryByText('e')).not.toBeInTheDocument();
+      // The overflow should show +2 (e and one of a-d pushed out)
+      expect(screen.getByText('+2')).toBeInTheDocument();
+    });
+  });
+
+  describe('(U9) legality icon', () => {
+    it('renders ✓ when legality.category is "legal"', () => {
+      renderDeckCard(makeDeck({ legality: { category: 'legal', reasons: [] } }));
+      expect(screen.getByText('✓')).toBeInTheDocument();
+    });
+
+    it('renders ✗ when legality.category is "illegal"', () => {
+      renderDeckCard(makeDeck({ legality: { category: 'illegal', reasons: ['Violation'] } }));
+      expect(screen.getByText('✗')).toBeInTheDocument();
+    });
+
+    it('renders ✗ when legality.category is "incomplete"', () => {
+      renderDeckCard(makeDeck({ legality: { category: 'incomplete', reasons: ['Missing hero'] } }));
+      expect(screen.getByText('✗')).toBeInTheDocument();
+    });
   });
 
   describe('(C3) deckbox vessel', () => {

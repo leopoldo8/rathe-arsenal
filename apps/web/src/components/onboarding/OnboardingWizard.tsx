@@ -42,7 +42,7 @@ export function OnboardingWizard(): React.ReactElement {
   });
 
   function handleSkip(): void {
-    void navigate({ to: '/home' });
+    void navigate({ to: '/home', search: { tag: [] } });
   }
 
   function handleStep1Complete(result: IStep1Result): void {
@@ -63,7 +63,7 @@ export function OnboardingWizard(): React.ReactElement {
   }
 
   function handleStep3Complete(): void {
-    void navigate({ to: '/home' });
+    void navigate({ to: '/home', search: { tag: [] } });
   }
 
   function handleStep3Back(): void {

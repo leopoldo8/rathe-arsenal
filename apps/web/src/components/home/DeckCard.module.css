@@ -488,6 +488,106 @@
 }
 
 /* ============================================================
+   Status row — StatusBullet + small-caps label below deck name
+   ============================================================ */
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--ra-space-2);
+}
+
+.statusLabel {
+  font-family: var(--ra-font-ui);
+  font-size: 0.65rem;
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-secondary);
+}
+
+/* ============================================================
+   Meta row — format pill + legality icon
+   ============================================================ */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  margin-top: var(--ra-space-1);
+}
+
+.formatPill {
+  font-family: var(--ra-font-ui);
+  font-size: 0.65rem;
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  background-color: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: 10px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.legalityIcon {
+  font-size: 0.7rem;
+  font-weight: var(--ra-weight-bold);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.legalityLegal {
+  color: var(--ra-status-active, #2a8050);
+}
+
+.legalityIllegal {
+  color: var(--ra-status-retired, #a23440);
+}
+
+/* ============================================================
+   Tag chips row — soft cap of 4, active tags promoted
+   ============================================================ */
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-1);
+  margin-top: var(--ra-space-2);
+}
+
+.tagChip {
+  font-family: var(--ra-font-ui);
+  font-size: 0.6rem;
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  background-color: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: 8px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagChipActive {
+  color: var(--ra-accent-body);
+  border-color: var(--ra-accent);
+  background-color: var(--ra-accent-soft-bg, rgba(184, 134, 11, 0.08));
+}
+
+.tagOverflow {
+  font-family: var(--ra-font-ui);
+  font-size: 0.6rem;
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+  padding: 1px 4px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* ============================================================
    sr-only title (visually hidden, accessible)
    ============================================================ */
 

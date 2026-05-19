@@ -1,0 +1,101 @@
+/* ============================================================
+   TagFilterChips — CSS Module
+   OR-logic tag filter row above the StatusShelves on the home page.
+   ============================================================ */
+
+.container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-2) 0;
+  margin-bottom: var(--ra-space-4);
+}
+
+.label {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-secondary);
+  white-space: nowrap;
+  margin-right: var(--ra-space-1);
+  flex-shrink: 0;
+}
+
+/* ---------- Individual chip ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  background-color: transparent;
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: 16px;
+  cursor: pointer;
+  transition:
+    color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease),
+    background-color var(--ra-duration) var(--ra-ease);
+  min-block-size: 28px;
+  white-space: nowrap;
+  /* Touch-accessible tap target — minimum 44px via padding. */
+  padding-block: calc((44px - 1lh - 2px) / 2);
+  padding-inline: var(--ra-space-3);
+}
+
+.chip:hover:not(.chipActive) {
+  color: var(--ra-fg-primary);
+  border-color: var(--ra-border);
+  background-color: var(--ra-bg-surface);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Selected / active state */
+.chipActive {
+  color: var(--ra-accent-body);
+  border-color: var(--ra-accent);
+  background-color: var(--ra-accent-soft-bg, rgba(184, 134, 11, 0.08));
+  font-weight: var(--ra-weight-semibold);
+}
+
+.chipActive:hover {
+  background-color: var(--ra-accent-soft-bg, rgba(184, 134, 11, 0.12));
+}
+
+/* ---------- Clear link ---------- */
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0 var(--ra-space-2);
+  cursor: pointer;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color var(--ra-duration) var(--ra-ease);
+  min-block-size: 28px;
+}
+
+.clearBtn:hover {
+  color: var(--ra-fg-primary);
+}
+
+.clearBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

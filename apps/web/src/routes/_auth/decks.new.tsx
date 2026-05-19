@@ -63,7 +63,7 @@ function DecksNewPage(): React.ReactElement {
             });
           } else {
             // Deck was skipped (already tracked) — navigate to home
-            void navigate({ to: '/home' });
+            void navigate({ to: '/home', search: { tag: [] } });
           }
         },
         onError: (err) => {
@@ -86,7 +86,7 @@ function DecksNewPage(): React.ReactElement {
   return (
     <div className={styles.page}>
       <header className={styles.subviewHeader}>
-        <Link to="/home" className={styles.back}>
+        <Link to="/home" search={{ tag: [] }} className={styles.back}>
           <span aria-hidden="true">←</span> Home
         </Link>
         <h1 className={styles.title}>Track a deck</h1>
