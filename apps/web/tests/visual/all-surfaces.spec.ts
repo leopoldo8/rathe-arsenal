@@ -49,8 +49,8 @@ const ANON_SURFACES = [
   { name: 'check-your-email', url: '/check-your-email' },
 ] as const;
 
-// Authenticated surfaces: 11 surfaces
-// Covers every primary route in the _auth layout.
+// Authenticated surfaces: 11 original + 4 v2 additions = 15 surfaces (U16)
+// Covers every primary route in the _auth layout plus v2 deck management surfaces.
 const AUTH_SURFACES = [
   // Onboarding wizard (step 1 — shown to fresh users without a tracked deck).
   { name: 'onboarding', url: '/onboarding' },
@@ -75,6 +75,18 @@ const AUTH_SURFACES = [
   { name: 'add-cards-csv', url: '/add-cards/csv' },
   // Add cards — Fabrary import sub-page.
   { name: 'add-cards-fabrary', url: '/add-cards/fabrary' },
+  // v2 U16 additions --------------------------------------------------------
+  // /decks/new two-path landing (Import from Fabrary + Start from scratch).
+  { name: 'decks-new', url: '/decks/new' },
+  // Deck detail in Edit mode — hero/format dropdowns + edit canvas + Save/Cancel.
+  // Resolved at runtime from the first deck link on /home (?edit=1 appended).
+  { name: 'deck-detail-edit', url: '/home' /* resolved at runtime — ?edit=1 appended */ },
+  // Home with status shelves: canonical mixed permutation (multiple decks).
+  { name: 'home-mixed', url: '/home' },
+  // Home filtered by tag — shows TagFilterChips active state.
+  { name: 'home-tag-filter', url: '/home' /* tag param injected at runtime */ },
+  // Home with Retired shelf collapsed (default collapsed state).
+  { name: 'home-retired-collapsed', url: '/home' },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -218,6 +230,35 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
           return;
         }
         targetUrl = deckUrl;
+      }
+
+      // v2 U16: deck-detail-edit — navigate to deck ?edit=1 for Edit-mode snapshot.
+      if (surface.name === 'deck-detail-edit') {
+        if (!deckUrl) {
+          test.skip(true, 'Skipping deck-detail-edit — no tracked deck found on /home');
+          return;
+        }
+        targetUrl = deckUrl + '?edit=1';
+      }
+
+      // v2 U16: home-tag-filter — activate the first available tag filter chip.
+      if (surface.name === 'home-tag-filter') {
+        // Navigate to /home first to discover available tags from the page.
+        // If no tags exist, skip (fixture has no tagged decks).
+        targetUrl = '/home';
+        await page.goto(`${BASE_URL}${targetUrl}`, { waitUntil: 'networkidle', timeout: 20000 });
+        await applyDarkTheme(page);
+        await page.waitForTimeout(SETTLE_MS);
+        const firstTag = await page.evaluate(() => {
+          const chip = document.querySelector<HTMLButtonElement>('button[aria-pressed]');
+          return chip?.textContent?.trim() ?? null;
+        });
+        if (!firstTag) {
+          test.skip(true, 'Skipping home-tag-filter — no tag chips found (fixture has no tagged decks)');
+          return;
+        }
+        // Append the first tag to the URL as a filter param.
+        targetUrl = `/home?tag=${encodeURIComponent(firstTag)}`;
       }
 
       await captureAndCompare(page, surface.name, targetUrl, surface.name);

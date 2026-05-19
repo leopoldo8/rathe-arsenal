@@ -44,3 +44,30 @@ setting JWT in localStorage once, all routes reuse it. Viewport 375×812
 for mobile, 1440×900 for desktop. Use `fullPage: false` when verifying
 `position: fixed` elements (BottomTabBar, Toast region) — `fullPage: true`
 duplicates fixed elements at every scroll frame.
+
+## Scratch deck fixture (v2 — POST /decks)
+
+Create a scratch deck (no Fabrary import) for testing the Start-from-scratch flow:
+
+
+# Create a scratch deck via the API (Dorinthea + Classic Constructed)
+curl -s -X POST http://localhost:5173/api/decks \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{'"heroIdentifier"': '"WTR000"', '"format"': '"Classic Constructed"', '"name"': '"Test Scratch Deck"'}'
+
+
+## Fixture deck status + tag operations (v2)
+
+
+# Mark a deck Active
+curl -s -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{'"status"': '"active"'}'
+
+# Add a tag to a deck
+curl -s -X POST http://localhost:5173/api/decks/{DECK_ID}/tags \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{'"name"': '"liga local"'}'
