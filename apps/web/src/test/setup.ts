@@ -2,6 +2,16 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// Stub ResizeObserver — jsdom does not implement it and Radix UI's Popover
+// and Select primitives use it internally via @radix-ui/react-use-size.
+if (typeof window !== 'undefined' && typeof window.ResizeObserver === 'undefined') {
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 /**
  * Global test setup for the web package.
  *

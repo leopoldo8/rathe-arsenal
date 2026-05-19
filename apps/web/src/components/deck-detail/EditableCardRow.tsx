@@ -10,6 +10,7 @@
 import React from 'react';
 import type { TDraftSlot } from '../../hooks/useCompositionDraft';
 import { SlotIcon, type TSlotGroup } from './DeckCanvas';
+import { CardRowLegalityWarning } from './CardRowLegalityWarning';
 import styles from './EditableCardRow.module.css';
 
 // ---------------------------------------------------------------------------
@@ -31,6 +32,17 @@ export interface IEditableCardRowProps {
   readonly onQuantityChange: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
   /** Called when the remove button is pressed. */
   readonly onRemove: (cardIdentifier: string, slot: TDraftSlot) => void;
+  /**
+   * Set of card identifiers that are in the cascade-illegal set.
+   * When this card's identifier is in the set, a warning icon is rendered
+   * at the row's right edge. Optional — omit outside Edit mode.
+   */
+  readonly illegalCardIds?: ReadonlySet<string>;
+  /**
+   * Deck format string — forwarded to CardRowLegalityWarning for the
+   * accessible aria-label and tooltip text.
+   */
+  readonly format?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,7 +60,10 @@ export function EditableCardRow({
   pitch,
   onQuantityChange,
   onRemove,
+  illegalCardIds,
+  format,
 }: IEditableCardRowProps): React.ReactElement {
+  const isIllegal = illegalCardIds !== undefined && illegalCardIds.has(cardIdentifier);
   function handleDecrement(): void {
     const next = quantity - 1;
     if (next <= 0) {
@@ -117,6 +132,14 @@ export function EditableCardRow({
           +
         </button>
       </div>
+
+      {/* Per-card legality warning icon (Edit mode, cascade-illegal) */}
+      {isIllegal && format !== undefined && (
+        <CardRowLegalityWarning
+          format={format}
+          cardIdentifier={cardIdentifier}
+        />
+      )}
 
       {/* Remove button */}
       <button

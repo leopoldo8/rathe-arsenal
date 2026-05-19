@@ -1,0 +1,98 @@
+/* ============================================================
+   LegalityBadge — three-state legality chip (U14)
+   ============================================================ */
+
+/* ---- Base badge ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  letter-spacing: 0.04em;
+  border-radius: var(--ra-radius-full);
+  padding: 2px var(--ra-space-3);
+  border-width: 1px;
+  border-style: solid;
+  /* Ensure ≥ 44×44 touch target via min-block-size */
+  min-block-size: 28px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ---- Legal variant: inert span, no hover/focus styles ---- */
+.badge--legal {
+  border-color: var(--ra-ready-high);
+  color: var(--ra-ready-high);
+  background: var(--ra-ready-high-bg);
+  /* Not interactive — no cursor, no pointer */
+  cursor: default;
+  user-select: none;
+}
+
+/* ---- Incomplete variant: neutral muted-brass border, button reset ---- */
+.badge--incomplete {
+  border-color: var(--ra-accent-dim);
+  color: var(--ra-fg-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.badge--incomplete:hover {
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+.badge--incomplete:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Illegal variant: red-muted border, button reset ---- */
+.badge--illegal {
+  border-color: var(--ra-ready-low);
+  color: var(--ra-ready-low);
+  background: var(--ra-ready-low-bg);
+  cursor: pointer;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease),
+    background var(--ra-duration) var(--ra-ease);
+}
+
+.badge--illegal:hover {
+  border-color: var(--ra-ready-low);
+  background: rgba(192, 87, 74, 0.18);
+}
+
+.badge--illegal:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 2px;
+}
+
+/* Button reset (applies to incomplete + illegal interactive variants) */
+button.badge {
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+
+/* ---- Badge icon ---- */
+.badgeIcon {
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ---- Badge text ---- */
+.badgeText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 18ch;
+}

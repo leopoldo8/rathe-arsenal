@@ -1,0 +1,76 @@
+/* ============================================================
+   LegalityReasonsPopover — Radix Popover content panel (U14)
+   ============================================================ */
+
+.content {
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-4);
+  min-width: 220px;
+  max-width: 320px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  /* Entrance animation */
+  animation: popoverIn 0.15s ease;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+  }
+}
+
+/* ---- Heading ---- */
+.heading {
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+  margin: 0 0 var(--ra-space-3) 0;
+  line-height: var(--ra-leading-snug);
+}
+
+/* ---- Reasons list ---- */
+.reasonsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.reasonItem {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+  padding-left: var(--ra-space-3);
+  position: relative;
+}
+
+.reasonItem::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--ra-fg-muted);
+}
+
+/* ---- Arrow ---- */
+.arrow {
+  fill: var(--ra-border-strong);
+}
