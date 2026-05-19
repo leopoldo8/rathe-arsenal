@@ -4,6 +4,7 @@ import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
 import { FormatDropdown } from './FormatDropdown';
 import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
+import { LegalityBadge } from './LegalityBadge';
 import type { TDeckStatus, IDeckLegality } from '../../api/decks';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
@@ -228,20 +229,13 @@ export function DeckDetailSidebar({
                   {format}
                 </span>
 
-                {/* Legality badge slot — U14 mounts LegalityBadge here.
-                    In U11 we render a data-testid anchor so U14 tests can
-                    assert the slot exists without breaking U11 tests. */}
+                {/* Legality badge — U14 mounts LegalityBadge here. */}
                 <div
                   className={styles.legalitySlot}
                   data-testid="sidebar-legality-slot"
                   aria-label={`Legality: ${legality.category}`}
                 >
-                  {/* Slot only — U14 fills this with <LegalityBadge /> */}
-                  <span className={styles.legalitySlot__placeholder}>
-                    {legality.category === 'legal' && '✓ Legal'}
-                    {legality.category === 'incomplete' && '◌ Incomplete'}
-                    {legality.category === 'illegal' && '✗ Illegal'}
-                  </span>
+                  <LegalityBadge legality={legality} format={format} />
                 </div>
               </div>
             </div>

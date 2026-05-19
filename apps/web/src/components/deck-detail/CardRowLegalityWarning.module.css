@@ -1,0 +1,63 @@
+/* ============================================================
+   CardRowLegalityWarning — per-row edit-mode warning icon (U14)
+   ============================================================ */
+
+/* ---- Warning icon trigger ---- */
+.warningIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Ensure ≥ 44×44 touch target via min dimensions */
+  min-inline-size: 28px;
+  min-block-size: 28px;
+  width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
+  color: var(--ra-ready-low);
+  cursor: default;
+  flex-shrink: 0;
+  border-radius: var(--ra-radius-sm);
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.warningIcon:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 1px;
+}
+
+/* ---- Tooltip content ---- */
+.tooltipContent {
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  max-width: 240px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  animation: tooltipIn 0.1s ease;
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltipContent {
+    animation: none;
+  }
+}
+
+/* ---- Tooltip arrow ---- */
+.tooltipArrow {
+  fill: var(--ra-border-strong);
+}
