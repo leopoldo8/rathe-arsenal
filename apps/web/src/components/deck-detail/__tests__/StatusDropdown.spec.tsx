@@ -267,7 +267,6 @@ describe('StatusDropdown — error path', () => {
     act(() => { capturedOnError?.(); });
 
     expect(spies.toast).toHaveBeenCalledTimes(1);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const toastPayload = spies.toast.mock.calls[0]?.[0] as { retry: () => void } | undefined;
     expect(toastPayload).toBeDefined();
     // Invoke the retry

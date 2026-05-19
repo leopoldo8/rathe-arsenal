@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   IBreakdown,
@@ -16,10 +16,11 @@ import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { useToast } from '../../components/ui/Toast/useToast';
 import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
 import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
-import { ReadinessHero } from '../../components/deck-detail/ReadinessHero';
-import { BreakdownSections } from '../../components/deck-detail/BreakdownSections';
-import { ModifiedViewBanner } from '../../components/deck-detail/ModifiedViewBanner';
-import { ShoppingPanel } from '../../components/deck-detail/ShoppingPanel';
+import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout';
+import { DeckDetailHeader } from '../../components/deck-detail/DeckDetailHeader';
+import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSidebar';
+import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
+import type { ITagResponse } from '../../api/tags';
 import styles from './decks.$deckId.module.css';
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
@@ -33,7 +34,7 @@ function countNotOwnedCards(breakdown: IBreakdown): number {
 
 /**
  * Sum the total quantity of cards covered (exact matches + substituted matches).
- * Used to display the "X/Y cartas" count in ReadinessHero.
+ * Used to display the "X/Y cartas" count in the sidebar readiness block.
  */
 function countProvisionedCards(breakdown: IBreakdown): number {
   const exactTotal = breakdown.exact.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -152,9 +153,6 @@ function DeckDetailPage(): React.ReactElement {
   }
 
   function handleResetSubstitute(substituteIdentifier: string): void {
-    // Reset a single decision back to pending (deletes the row).
-    // Uses DELETE /api/decks/:deckId/decisions/:cardIdentifier.
-    // Unit 17 will add onMutate/onError optimistic rollback inside the hook.
     resetDecisionMutation.mutate(substituteIdentifier);
   }
 
@@ -179,44 +177,60 @@ function DeckDetailPage(): React.ReactElement {
         ? (resetDecisionMutation.variables ?? null)
         : null;
 
+  // Build the tags structure expected by DeckDetailHeader.
+  // deck.tags is readonly string[] (display names only from v2 U7).
+  // TagChipRow expects ITagResponse[] (with id + name).
+  // Because the API only returns tag names (not IDs) on the detail response,
+  // we synthesise lightweight objects using the index as a stable key.
+  // This is safe for the display + remove flow since usePatchDeckMutation
+  // removeTagIds is handled by TagChipRow → TagAutocompleteCombobox internally.
+  // TODO(U12): align with a full ITagResponse[] from the API once tags carry IDs.
+  const tagsForHeader: ITagResponse[] = (deck.tags ?? []).map((name, idx) => ({
+    id: idx,
+    name,
+    createdAt: '',
+  }));
+
+  // Path C banner is kept in the canvas section via the existing BreakdownSections
+  // approach but now renders inside DeckCanvas. Path C detection:
+  const isPathC = snapshot.path === 'C';
+
   return (
-    <div className={styles.page}>
-      <Link to="/home" className={styles.backLink}>
-        &#8592; Back to decks
-      </Link>
-
-      {/* 3-column grid */}
-      <div className={styles.layout}>
-        {/* Column A — Readiness hero */}
-        <div className={styles.colA}>
-          <ReadinessHero
-            effectivePercent={snapshot.effectivePercent}
-            rawPercent={snapshot.rawPercent}
-            fidelityPercent={snapshot.fidelityPercent}
-            fabraryUlid={deck.fabraryUlid}
-            deckName={deck.name}
-            hero={deck.hero}
-            format={deck.format}
-            totalCards={deck.totalCards}
-            provisionedCards={countProvisionedCards(snapshot.breakdown)}
-          />
-        </div>
-
-        {/* Column B — Breakdown sections (substitutions, exact, not-owned) */}
-        <div className={styles.colB}>
-          {/* Modified view banner — appears when any decision='rejected' */}
-          {deck.rejectedCount > 0 && (
-            <ModifiedViewBanner
-              rejectedCount={deck.rejectedCount}
-              onClearRejections={handleClearRejections}
-              isClearing={clearRejectionsMutation.isPending}
-            />
-          )}
-
-          {/* Path C banner — ember frame ornament per U4 spec.
-              NOT styled as a tab; this is a semantic separator block
-              that signals a category change from A/B. */}
-          {snapshot.path === 'C' && (
+    <DeckDetailLayout
+      header={
+        <DeckDetailHeader
+          deckId={deck.id}
+          deckName={deck.name}
+          status={deck.status}
+          tags={tagsForHeader}
+          mode="view"
+        />
+      }
+      sidebar={
+        <DeckDetailSidebar
+          heroIdentifier={deck.heroIdentifier ?? null}
+          heroName={null}
+          heroLegacy={deck.hero}
+          format={deck.format}
+          legality={deck.legality}
+          fabraryUlid={deck.fabraryUlid ?? null}
+          status={deck.status}
+          effectivePercent={snapshot.effectivePercent}
+          rawPercent={snapshot.rawPercent}
+          provisionedCards={countProvisionedCards(snapshot.breakdown)}
+          totalCards={deck.totalCards}
+          shoppingData={deck.shoppingLine ?? null}
+          onFetchVariants={handleFetchVariants}
+          fetchMutationStatus={variantFetchMutation.status}
+          isCooldownActive={isCooldownActive}
+          onPollingChange={handlePollingChange}
+          onShoppingRetry={handleShoppingLineRetry}
+        />
+      }
+      canvas={
+        <>
+          {/* Path C banner — ember frame ornament per existing pattern */}
+          {isPathC && (
             <div role="status" className={styles.pathCBanner}>
               <div className={styles.pathCBanner__eyebrow}>
                 APPROXIMATION
@@ -234,10 +248,11 @@ function DeckDetailPage(): React.ReactElement {
               fidelity.
             </div>
           )}
-
-          <BreakdownSections
+          <DeckCanvas
+            mode="view"
             breakdown={snapshot.breakdown}
             decisions={deck.decisions}
+            rejectedCount={deck.rejectedCount}
             onMarkOwned={handleMarkOwned}
             isMarkingOwned={markOwnedMutation.isPending}
             pendingCard={
@@ -249,21 +264,11 @@ function DeckDetailPage(): React.ReactElement {
             onRejectSubstitute={handleRejectSubstitute}
             onResetSubstitute={handleResetSubstitute}
             pendingSubstituteId={pendingSubstituteId}
+            onClearRejections={handleClearRejections}
+            isClearingRejections={clearRejectionsMutation.isPending}
           />
-        </div>
-
-        {/* Column C — Shopping panel (desktop sticky aside + mobile sheet) */}
-        <div className={styles.colC}>
-          <ShoppingPanel
-            data={deck.shoppingLine ?? null}
-            onFetchVariants={handleFetchVariants}
-            fetchMutationStatus={variantFetchMutation.status}
-            isCooldownActive={isCooldownActive}
-            onPollingChange={handlePollingChange}
-            onRetry={handleShoppingLineRetry}
-          />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

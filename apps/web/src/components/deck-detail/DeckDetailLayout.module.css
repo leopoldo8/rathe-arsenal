@@ -1,0 +1,76 @@
+/* ============================================================
+   DeckDetailLayout — two-column shell (U11)
+
+   Desktop (≥ 1280px): full-width header + 280px sidebar + canvas grid.
+   Below 1280px: sidebar becomes a card under the header (collapse toggle
+   handled by SidebarCollapseToggle inside the sidebar slot).
+   Mobile (< 640px): single-column, no bottom bar clearance needed here
+   because ShoppingPanel manages its own sticky bottom bar.
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* Extra bottom padding on mobile so ShoppingPanel's sticky bar doesn't
+     obscure the last canvas section. */
+  padding-bottom: 80px;
+}
+
+@media (min-width: 960px) {
+  .page {
+    padding-bottom: 0;
+  }
+}
+
+/* ---- Full-width header strip ---- */
+.header {
+  padding-bottom: var(--ra-space-4);
+  border-bottom: 1px solid var(--ra-border-subtle);
+  margin-bottom: var(--ra-space-6);
+}
+
+/* ---- Body: sidebar + canvas ---- */
+.body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ra-space-6);
+  align-items: start;
+}
+
+/* ---- Sidebar (below 1280px: full width card above canvas) ---- */
+.sidebar {
+  min-width: 0;
+  /* On mobile / narrow viewport the sidebar renders as a block above the canvas.
+     The SidebarCollapseToggle inside it handles visibility. */
+}
+
+/* ---- Canvas ---- */
+.canvas {
+  min-width: 0;
+}
+
+/* ---- Desktop two-column layout (≥ 1280px) ---- */
+@media (min-width: 1280px) {
+  .body {
+    grid-template-columns: 280px 1fr;
+    gap: var(--ra-space-8);
+  }
+
+  .sidebar {
+    /* Sticky so the sidebar stays in view while the canvas scrolls. */
+    position: sticky;
+    top: var(--ra-space-6);
+    max-height: calc(100vh - var(--ra-space-12));
+    overflow-y: auto;
+    /* Custom scrollbar — minimal track on webkit */
+    scrollbar-width: thin;
+    scrollbar-color: var(--ra-border) transparent;
+  }
+}
+
+@media (max-width: 639px) {
+  .header {
+    margin-bottom: var(--ra-space-4);
+  }
+}
