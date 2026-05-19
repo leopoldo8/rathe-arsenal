@@ -47,6 +47,9 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
   useNavigate: () => vi.fn(),
+  // U13: useBlocker is called by useNavigationAwayGuard mounted inside DeckDetailPageWithData.
+  // Stub it as a no-op so existing tests continue to pass.
+  useBlocker: vi.fn(),
 }));
 
 // Toast

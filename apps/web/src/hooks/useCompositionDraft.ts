@@ -2,12 +2,21 @@
  * useCompositionDraft — local draft state for Edit mode composition.
  *
  * Tracks the working copy of a deck's card list, hero, and format while
- * the user is in Edit mode. Does NOT persist to localStorage (that is U13).
+ * the user is in Edit mode. Persists to localStorage with a 500ms debounce
+ * so the draft survives accidental tab close (U13).
+ *
+ * On Edit-mode entry, reads the stored draft and validates it against the
+ * Zod schema. Success → returns hasDraft + draftPayload for the caller to
+ * mount DraftRestoreModal. Failure → silently discards (removes the key).
  *
  * Returns a stable interface consumed by DeckCanvas EditBody and
  * DeckDetailHeader Save/Cancel controls.
  */
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import {
+  compositionDraftPayloadSchema,
+  type TCompositionDraftPayload,
+} from './useCompositionDraft.schema';
 import type { ISearchCardResult } from '../api/catalog';
 
 // ---------------------------------------------------------------------------
@@ -59,6 +68,16 @@ export interface ICompositionDraftResult {
    * Replaces the current draft entirely.
    */
   readonly applyDraft: (payload: ICompositionDraft) => void;
+  /**
+   * clearPersistedDraft — removes the draft from localStorage.
+   * Called by Save success path and Cancel-discard path.
+   */
+  readonly clearPersistedDraft: () => void;
+  /**
+   * readPersistedDraft — reads and validates the draft from localStorage.
+   * Returns the payload if valid, null otherwise (key also removed on failure).
+   */
+  readonly readPersistedDraft: () => TCompositionDraftPayload | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -261,22 +280,105 @@ function isDraftDirty(initial: ICompositionDraft, current: ICompositionDraft): b
 }
 
 // ---------------------------------------------------------------------------
+// localStorage key + persistence helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the localStorage key for a given deck ID.
+ * Pattern: `ra-deck-draft-{deckId}` (sign-out cleanup sweeps this prefix).
+ */
+export function draftStorageKey(deckId: string | number): string {
+  return `ra-deck-draft-${String(deckId)}`;
+}
+
+/**
+ * Reads and validates the draft from localStorage for the given deck.
+ * Returns the validated payload on success, or null on any failure
+ * (missing key, JSON parse error, Zod validation error).
+ * Silently removes the key on validation failure.
+ */
+export function readStoredDraft(deckId: string | number): TCompositionDraftPayload | null {
+  const key = draftStorageKey(deckId);
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+  if (raw == null) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // Corrupt JSON — silently discard.
+    try { localStorage.removeItem(key); } catch { /* private mode */ }
+    return null;
+  }
+
+  const result = compositionDraftPayloadSchema.safeParse(parsed);
+  if (!result.success) {
+    // Schema mismatch (tampered or version-drifted payload) — silently discard.
+    try { localStorage.removeItem(key); } catch { /* private mode */ }
+    return null;
+  }
+  return result.data;
+}
+
+/**
+ * Removes the localStorage draft key for the given deck.
+ * Called on Save success and Cancel-discard.
+ */
+export function clearStoredDraft(deckId: string | number): void {
+  try {
+    localStorage.removeItem(draftStorageKey(deckId));
+  } catch { /* private mode */ }
+}
+
+/**
+ * Writes the current draft to localStorage in the validated schema shape.
+ */
+function writeStoredDraft(deckId: string | number, draft: ICompositionDraft): void {
+  const payload: TCompositionDraftPayload = {
+    version: 'v1',
+    heroIdentifier: draft.heroIdentifier,
+    format: draft.format,
+    cards: draft.cards.map((c) => ({
+      cardIdentifier: c.cardIdentifier,
+      quantity: c.quantity,
+      slot: c.slot,
+    })),
+  };
+  try {
+    localStorage.setItem(draftStorageKey(deckId), JSON.stringify(payload));
+  } catch { /* storage quota exceeded or private mode */ }
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
 /**
  * useCompositionDraft — manages the mutable composition draft for Edit mode.
  *
- * @param _deckId - The deck ID (reserved for U13 localStorage key; unused in U12).
+ * @param deckId - The deck ID (used for localStorage key: `ra-deck-draft-{id}`).
  * @param initialPayload - The deck's current composition loaded from the API.
  */
 export function useCompositionDraft(
-  _deckId: string | number,
+  deckId: string | number,
   initialPayload: ICompositionDraftInitialPayload,
 ): ICompositionDraftResult {
   const initial = useMemo(() => buildInitialDraft(initialPayload), [initialPayload]);
 
   const [draft, dispatch] = useReducer(draftReducer, initial);
+
+  // Debounced localStorage write — 500ms after the last change.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      writeStoredDraft(deckId, draft);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [deckId, draft]);
 
   const setHero = useCallback((heroIdentifier: string | null) => {
     dispatch({ type: 'SET_HERO', heroIdentifier });
@@ -326,6 +428,14 @@ export function useCompositionDraft(
     dispatch({ type: 'APPLY_DRAFT', payload });
   }, []);
 
+  const clearPersistedDraft = useCallback(() => {
+    clearStoredDraft(deckId);
+  }, [deckId]);
+
+  const readPersistedDraft = useCallback((): TCompositionDraftPayload | null => {
+    return readStoredDraft(deckId);
+  }, [deckId]);
+
   const isDirty = useMemo(() => isDraftDirty(initial, draft), [initial, draft]);
   const changeCount = useMemo(() => computeChangeCount(initial, draft), [initial, draft]);
 
@@ -341,5 +451,7 @@ export function useCompositionDraft(
     changeCount,
     reset,
     applyDraft,
+    clearPersistedDraft,
+    readPersistedDraft,
   };
 }

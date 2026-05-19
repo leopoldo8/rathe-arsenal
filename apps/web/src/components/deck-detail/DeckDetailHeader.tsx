@@ -3,9 +3,11 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { DeckNameInline } from './DeckNameInline';
 import { TagChipRow } from './TagChipRow';
 import { StatusDropdown } from './StatusDropdown';
+import { DiscardChangesConfirm } from './DiscardChangesConfirm';
+import { SaveCascadeConfirmModal } from './SaveCascadeConfirmModal';
 import type { TDeckStatus } from '../../api/decks';
 import type { ITagResponse } from '../../api/tags';
-import { useUntrackDeckMutation } from '../../api/decks';
+import { useUntrackDeckMutation, usePutDeckMutation, type IPutDeckBody } from '../../api/decks';
 import { useToast } from '../ui/Toast/useToast';
 import styles from './DeckDetailHeader.module.css';
 
@@ -29,15 +31,38 @@ interface IDeckDetailHeaderProps {
    */
   readonly onEnterEdit?: (() => void) | undefined;
   /**
-   * Called when the user clicks Cancel in Edit mode. Navigates back to View.
-   * Optional for backward compat.
+   * Whether the composition draft has unsaved changes (from useCompositionDraft).
+   * Controls whether Cancel shows DiscardChangesConfirm.
    */
-  readonly onExitEdit?: (() => void) | undefined;
+  readonly isDirty?: boolean;
+  /**
+   * Count of unsaved changes (from useCompositionDraft.changeCount).
+   * Used in DiscardChangesConfirm heading.
+   */
+  readonly changeCount?: number;
   /**
    * Count of cards that may be illegal in the current format (from useCascadeCheck).
-   * Used to check before Save. 0 = no warning.
+   * Used to check before Save. 0 = no warning. N > 5 = SaveCascadeConfirmModal.
    */
   readonly cascadeCheckCount?: number;
+  /**
+   * The PUT body to send on Save (built by caller from compositionDraft).
+   */
+  readonly saveDraftPayload?: IPutDeckBody | undefined;
+  /**
+   * Called after a successful Save so the route can clear localStorage + exit Edit.
+   */
+  readonly onSaveSuccess?: (() => void) | undefined;
+  /**
+   * Called when the user confirms discarding changes (Cancel → Discard, or
+   * nav-away → Discard). Route clears localStorage + exits Edit.
+   */
+  readonly onConfirmDiscard?: (() => void) | undefined;
+  /**
+   * Ref pointing to the Edit-toggle button; passed to DraftRestoreModal
+   * so focus returns there after restore/discard.
+   */
+  readonly editButtonRef?: React.RefObject<HTMLButtonElement | null> | undefined;
 }
 
 /**
@@ -50,11 +75,18 @@ interface IDeckDetailHeaderProps {
  *
  * Right side (action bar):
  *   - StatusDropdown
- *   - Edit button (⊘ placeholder — U12 wires the ?edit=1 toggle)
+ *   - Edit button (view mode) / Cancel + Save buttons (edit mode)
  *   - ⋯ overflow menu with "Untrack" action
  *
- * The Edit button is a stub in U11 (renders disabled with the label "Edit").
- * U12 will replace it with the actual toggle.
+ * Save flow (U13):
+ *  1. Check cascadeCheckCount > 5 → SaveCascadeConfirmModal.
+ *  2. Else → usePutDeckMutation immediately.
+ *  3. Success → onSaveSuccess() (caller clears localStorage + exits Edit).
+ *  4. 5xx/network → re-enable buttons, show inline error, draft preserved.
+ *
+ * Cancel flow (U13):
+ *  - isDirty → DiscardChangesConfirm → Discard → onConfirmDiscard().
+ *  - Clean → navigate to view immediately.
  */
 export function DeckDetailHeader({
   deckId,
@@ -63,15 +95,33 @@ export function DeckDetailHeader({
   tags,
   mode,
   onEnterEdit,
-  onExitEdit,
+  isDirty = false,
+  changeCount = 0,
   cascadeCheckCount = 0,
+  saveDraftPayload,
+  onSaveSuccess,
+  onConfirmDiscard,
+  editButtonRef,
 }: IDeckDetailHeaderProps): React.ReactElement {
   const navigate = useNavigate();
   const { show: showToast } = useToast();
   const untrackMutation = useUntrackDeckMutation();
+  const putMutation = usePutDeckMutation(deckId);
+
+  // Always create a fallback ref; use the provided one if available.
+  const _fallbackEditBtnRef = React.useRef<HTMLButtonElement | null>(null);
+  const editBtnRef = editButtonRef ?? _fallbackEditBtnRef;
 
   const [overflowOpen, setOverflowOpen] = React.useState(false);
   const overflowRef = React.useRef<HTMLDivElement>(null);
+
+  // Modal visibility state
+  const [discardOpen, setDiscardOpen] = React.useState(false);
+  const [cascadeConfirmOpen, setCascadeConfirmOpen] = React.useState(false);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
+
+  // In-flight guard — disables Cancel + Save while PUT is pending (R19).
+  const isSaving = putMutation.isPending;
 
   // Close overflow on click-outside
   React.useEffect(() => {
@@ -100,106 +150,187 @@ export function DeckDetailHeader({
     });
   }
 
+  // ---- Save flow ----
+
+  function executeSave(): void {
+    if (!saveDraftPayload) return;
+    setSaveError(null);
+    putMutation.mutate(saveDraftPayload, {
+      onSuccess: () => {
+        onSaveSuccess?.();
+      },
+      onError: () => {
+        // R19a: inline error adjacent to Save; draft preserved in localStorage.
+        setSaveError('Save failed — try again');
+      },
+    });
+  }
+
+  function handleSaveClick(): void {
+    if (isSaving) return;
+    if (cascadeCheckCount > 5) {
+      // R21: gate Save with cascade confirm
+      setCascadeConfirmOpen(true);
+    } else {
+      executeSave();
+    }
+  }
+
+  function handleCascadeConfirm(): void {
+    setCascadeConfirmOpen(false);
+    executeSave();
+  }
+
+  function handleCascadeCancel(): void {
+    setCascadeConfirmOpen(false);
+  }
+
+  // ---- Cancel flow ----
+
+  function handleCancelClick(): void {
+    if (isSaving) return;
+    if (isDirty) {
+      setDiscardOpen(true);
+    } else {
+      // Clean — exit immediately without confirm.
+      void navigate({ to: '/decks/$deckId', params: { deckId: String(deckId) }, search: { edit: undefined } });
+    }
+  }
+
+  function handleKeepEditing(): void {
+    setDiscardOpen(false);
+  }
+
+  function handleConfirmDiscard(): void {
+    setDiscardOpen(false);
+    onConfirmDiscard?.();
+  }
+
   return (
-    <div className={styles.header} data-testid="deck-detail-header">
-      {/* ---- Breadcrumb ---- */}
-      <Link to="/home" search={{ tag: [] }} className={styles.breadcrumb} aria-label="Back to Decks">
-        <span aria-hidden="true">&#8592;</span> Decks
-      </Link>
+    <>
+      <div className={styles.header} data-testid="deck-detail-header">
+        {/* ---- Breadcrumb ---- */}
+        <Link to="/home" search={{ tag: [] }} className={styles.breadcrumb} aria-label="Back to Decks">
+          <span aria-hidden="true">&#8592;</span> Decks
+        </Link>
 
-      {/* ---- Title + tags row ---- */}
-      <div className={styles.titleArea}>
-        <div className={styles.titleRow}>
-          <div className={styles.titleName}>
-            <DeckNameInline deckId={deckId} name={deckName} mode={mode} />
-          </div>
+        {/* ---- Title + tags row ---- */}
+        <div className={styles.titleArea}>
+          <div className={styles.titleRow}>
+            <div className={styles.titleName}>
+              <DeckNameInline deckId={deckId} name={deckName} mode={mode} />
+            </div>
 
-          {/* ---- Action bar ---- */}
-          <div className={styles.actionBar} data-testid="deck-detail-action-bar">
-            <StatusDropdown deckId={deckId} currentStatus={status} />
+            {/* ---- Action bar ---- */}
+            <div className={styles.actionBar} data-testid="deck-detail-action-bar">
+              <StatusDropdown deckId={deckId} currentStatus={status} />
 
-            {mode === 'edit' ? (
-              /* Edit mode: Cancel + Save buttons */
-              <>
-                <button
-                  type="button"
-                  className={styles.cancelBtn}
-                  aria-label="Cancel editing and return to view"
-                  data-testid="deck-detail-cancel-btn"
-                  onClick={onExitEdit}
-                >
-                  Cancel
-                </button>
-                {/* Save button — U13 wires the actual mutation.
-                    For U12 this checks the cascade count and logs a placeholder.
-                    U13 will replace the console.log with the real modal/mutation. */}
-                <button
-                  type="button"
-                  className={styles.saveBtn}
-                  aria-label="Save deck composition"
-                  data-testid="deck-detail-save-btn"
-                  onClick={() => {
-                    // U13-STUB: if cascadeCheckCount > 5, show SaveCascadeConfirmModal
-                    // U13-STUB: wire usePutDeckMutation on Save
-                    void cascadeCheckCount; // referenced to satisfy TS; U13 uses this
-                  }}
-                >
-                  Save
-                </button>
-              </>
-            ) : (
-              /* View mode: Edit button */
-              <button
-                type="button"
-                className={styles.editBtn}
-                aria-label="Edit deck composition"
-                data-testid="deck-detail-edit-btn"
-                onClick={onEnterEdit}
-              >
-                Edit
-              </button>
-            )}
-
-            {/* ⋯ overflow menu */}
-            <div className={styles.overflow} ref={overflowRef}>
-              <button
-                type="button"
-                className={styles.overflowTrigger}
-                aria-label="More deck actions"
-                aria-expanded={overflowOpen}
-                aria-haspopup="menu"
-                onClick={() => setOverflowOpen((prev) => !prev)}
-                data-testid="deck-detail-overflow-btn"
-              >
-                <span aria-hidden="true">&#8943;</span>
-              </button>
-              {overflowOpen && (
-                <div
-                  className={styles.overflowMenu}
-                  role="menu"
-                  aria-label="Deck actions"
-                  data-testid="deck-detail-overflow-menu"
-                >
+              {mode === 'edit' ? (
+                /* Edit mode: Cancel + Save buttons + inline error */
+                <>
                   <button
                     type="button"
-                    role="menuitem"
-                    className={styles.overflowItem}
-                    onClick={handleUntrack}
-                    disabled={untrackMutation.isPending}
-                    aria-label="Untrack this deck"
-                    data-testid="deck-detail-untrack-btn"
+                    className={styles.cancelBtn}
+                    aria-label="Cancel editing and return to view"
+                    data-testid="deck-detail-cancel-btn"
+                    onClick={handleCancelClick}
+                    disabled={isSaving}
                   >
-                    {untrackMutation.isPending ? 'Removing…' : 'Untrack'}
+                    Cancel
                   </button>
-                </div>
+                  <div className={styles.saveWrapper}>
+                    <button
+                      type="button"
+                      className={styles.saveBtn}
+                      aria-label="Save deck composition"
+                      data-testid="deck-detail-save-btn"
+                      onClick={handleSaveClick}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? 'Saving…' : 'Save'}
+                    </button>
+                    {saveError != null && (
+                      <span
+                        className={styles.saveError}
+                        role="alert"
+                        data-testid="deck-detail-save-error"
+                      >
+                        {saveError}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* View mode: Edit button */
+                <button
+                  ref={editBtnRef}
+                  type="button"
+                  className={styles.editBtn}
+                  aria-label="Edit deck composition"
+                  data-testid="deck-detail-edit-btn"
+                  onClick={onEnterEdit}
+                >
+                  Edit
+                </button>
               )}
+
+              {/* ⋯ overflow menu */}
+              <div className={styles.overflow} ref={overflowRef}>
+                <button
+                  type="button"
+                  className={styles.overflowTrigger}
+                  aria-label="More deck actions"
+                  aria-expanded={overflowOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setOverflowOpen((prev) => !prev)}
+                  data-testid="deck-detail-overflow-btn"
+                >
+                  <span aria-hidden="true">&#8943;</span>
+                </button>
+                {overflowOpen && (
+                  <div
+                    className={styles.overflowMenu}
+                    role="menu"
+                    aria-label="Deck actions"
+                    data-testid="deck-detail-overflow-menu"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={styles.overflowItem}
+                      onClick={handleUntrack}
+                      disabled={untrackMutation.isPending}
+                      aria-label="Untrack this deck"
+                      data-testid="deck-detail-untrack-btn"
+                    >
+                      {untrackMutation.isPending ? 'Removing…' : 'Untrack'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tags row below the name */}
-        <TagChipRow deckId={deckId} tags={tags} />
+          {/* Tags row below the name */}
+          <TagChipRow deckId={deckId} tags={tags} />
+        </div>
       </div>
-    </div>
+
+      {/* DiscardChangesConfirm — shown on dirty Cancel or nav-away */}
+      <DiscardChangesConfirm
+        open={discardOpen}
+        changeCount={changeCount}
+        onKeepEditing={handleKeepEditing}
+        onDiscard={handleConfirmDiscard}
+      />
+
+      {/* SaveCascadeConfirmModal — shown when N > 5 illegal cards */}
+      <SaveCascadeConfirmModal
+        open={cascadeConfirmOpen}
+        illegalCount={cascadeCheckCount}
+        onConfirm={handleCascadeConfirm}
+        onCancel={handleCascadeCancel}
+      />
+    </>
   );
 }

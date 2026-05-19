@@ -109,6 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Also clear the theme hint — without this, a shared device can leak the
     // previous user's theme to the next sign-in via the pre-hydration script.
     try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* private mode */ }
+    // Clear all composition draft keys (ra-deck-draft-*) so a new user on a
+    // shared device cannot see previous user's unsaved deck edits.
+    // Per-user UX prefs (ra-deck-sidebar-expanded, ra-shelf-retired-expanded) stay.
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('ra-deck-draft-'))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch { /* private mode */ }
     setToken(null);
     setUser(null);
     setSettingsState(undefined);
@@ -143,6 +151,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     localStorage.removeItem(STORAGE_KEY);
     try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* private mode */ }
+    // Clear all composition draft keys (ra-deck-draft-*) so a deleted account's
+    // deck draft data does not remain on the device.
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('ra-deck-draft-'))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch { /* private mode */ }
     setToken(null);
     setUser(null);
     setSettingsState(undefined);
