@@ -48,6 +48,7 @@ function buildDetailResponse(
     pendingCount: 0,
     decisions: [],
     shoppingLine: null,
+    legality: { category: 'incomplete', reasons: [] },
     ...overrides,
   };
 }
