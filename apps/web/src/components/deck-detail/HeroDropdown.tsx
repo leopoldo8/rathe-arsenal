@@ -185,11 +185,6 @@ export function HeroDropdown({
           }}
         >
           <span className={styles.selectedName}>{selectedHero.name}</span>
-          <span className={styles.optionMeta}>
-            {selectedHero.legalFormats.length > 0
-              ? selectedHero.legalFormats.join(', ')
-              : ''}
-          </span>
           <button
             type="button"
             className={styles.clearBtn}

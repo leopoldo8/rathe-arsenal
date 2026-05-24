@@ -36,6 +36,7 @@ function buildDetailResponse(
     fabraryUlid: null,
     name: 'Dorinthea Ironsong — Classic Constructed',
     hero: 'Dorinthea Ironsong',
+    heroIdentifier: 'dorinthea-ironsong',
     format: 'Classic Constructed',
     status: 'building',
     tags: [],

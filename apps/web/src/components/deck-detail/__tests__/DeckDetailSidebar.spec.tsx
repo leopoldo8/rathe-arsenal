@@ -34,6 +34,12 @@ vi.mock('../ShoppingPanel', () => ({
   ShoppingPanel: () => <div data-testid="shopping-panel-mock" />,
 }));
 
+// useHeroesQuery hits useApiClient which requires <AuthProvider>; mock with
+// an empty result so the sidebar falls through to the CardArt SVG placeholder.
+vi.mock('../../../api/catalog', () => ({
+  useHeroesQuery: () => ({ data: { heroes: [] }, isLoading: false, isFetching: false }),
+}));
+
 // SidebarCollapseToggle — use real component (it's simple)
 
 // ---------------------------------------------------------------------------
