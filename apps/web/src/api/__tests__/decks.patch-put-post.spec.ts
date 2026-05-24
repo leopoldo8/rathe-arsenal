@@ -204,7 +204,7 @@ describe('usePutDeckMutation', () => {
 
     act(() => {
       result.current.mutate({
-        cards: [{ cardIdentifier: 'pummel-wtr', quantity: 3 }],
+        cards: [{ cardIdentifier: 'pummel-wtr', quantity: 3, slot: 'mainboard' }],
         heroIdentifier: 'katsu-the-wanderer-wtr',
         format: 'blitz',
       });
@@ -259,7 +259,7 @@ describe('usePutDeckMutation', () => {
 
     act(() => {
       result.current.mutate({
-        cards: [{ cardIdentifier: 'pummel-wtr', quantity: 3 }],
+        cards: [{ cardIdentifier: 'pummel-wtr', quantity: 3, slot: 'mainboard' }],
         heroIdentifier: 'katsu-the-wanderer-wtr',
         format: 'blitz',
       });
