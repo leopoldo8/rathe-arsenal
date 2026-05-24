@@ -65,7 +65,14 @@ export class CatalogService {
         young: card.young,
         legalFormats: [...card.legalFormats] as string[],
         imageUrl: card.imageUrl
-          ? { small: card.imageUrl.small, large: card.imageUrl.large }
+          ? {
+              small: card.imageUrl.small,
+              large: card.imageUrl.large,
+              sources: card.imageUrl.sources.map((s) => ({
+                small: s.small,
+                large: s.large,
+              })),
+            }
           : null,
       });
     }

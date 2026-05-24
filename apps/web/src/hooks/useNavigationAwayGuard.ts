@@ -34,6 +34,18 @@ interface INavigationAwayGuardOptions {
 }
 
 /**
+ * Return shape of {@link useNavigationAwayGuard}.
+ *
+ * `bypassNext()` lets the caller suppress the guard for one navigation —
+ * needed when an explicit user action already gathered consent (e.g. the
+ * Cancel button's own discard modal). Without it, the guard would fire a
+ * second modal as soon as the post-confirm navigation starts.
+ */
+export interface INavigationAwayGuardResult {
+  readonly bypassNext: () => void;
+}
+
+/**
  * useNavigationAwayGuard — installs TanStack Router's `useBlocker` +
  * browser `beforeunload` guard to protect unsaved composition draft state.
  */
@@ -41,26 +53,35 @@ export function useNavigationAwayGuard({
   isDirty,
   isEditMode,
   onBlock,
-}: INavigationAwayGuardOptions): void {
+}: INavigationAwayGuardOptions): INavigationAwayGuardResult {
   const shouldBlock = isDirty && isEditMode;
 
   // Stable ref to onBlock so the blocker closure doesn't stale-close over it.
   const onBlockRef = useRef(onBlock);
   onBlockRef.current = onBlock;
 
+  // One-shot bypass — set by the caller right before an intentional nav
+  // (e.g. the Cancel-button discard flow that already collected consent).
+  const bypassNextRef = useRef(false);
+
   // TanStack Router `useBlocker` — intercepts in-app navigation.
   // blockerFn returns a Promise<boolean>: true = block, false = allow.
   useBlocker({
     condition: shouldBlock,
-    blockerFn: (): Promise<boolean> =>
-      new Promise<boolean>((resolve) => {
+    blockerFn: (): Promise<boolean> => {
+      if (bypassNextRef.current) {
+        bypassNextRef.current = false;
+        return Promise.resolve(false);
+      }
+      return new Promise<boolean>((resolve) => {
         // proceed() → allow navigation (return false = don't block)
         // stay()    → cancel navigation (return true = block)
         onBlockRef.current(
           () => resolve(false),
           () => resolve(true),
         );
-      }),
+      });
+    },
   });
 
   // Browser `beforeunload` — covers tab close / page refresh.
@@ -75,4 +96,10 @@ export function useNavigationAwayGuard({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [shouldBlock]);
+
+  return {
+    bypassNext: () => {
+      bypassNextRef.current = true;
+    },
+  };
 }

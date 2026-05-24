@@ -38,10 +38,17 @@
   font-size: var(--ra-text-small);
   color: var(--ra-fg-primary);
   text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   padding: 0 var(--ra-space-1);
+  /* Clamp at 2 lines; overflow becomes a 3-dot ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.2;
+  /* Keep tile heights aligned across rows by reserving 2 lines of height
+     even when the name only takes 1. */
+  min-height: calc(var(--ra-text-small) * 1.2 * 2);
 }
 
 .controls {
