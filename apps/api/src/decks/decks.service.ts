@@ -173,6 +173,62 @@ export class DecksService {
       }
     }
 
+    // Batch-load tag names for every deck in this list. Frontend U7 declares
+    // `status` and `tags` as required fields on the list item; without this
+    // join the `/home` page crashes with "deck.tags is not iterable".
+    const tagRowsByDeckId = new Map<number, string[]>();
+    {
+      const tagRows = await this.dataSource.query<Array<{ trackedDeckId: number; name: string }>>(
+        `SELECT tdt."trackedDeckId" AS "trackedDeckId", tag.name AS "name"
+           FROM tracked_deck_tag tdt
+           INNER JOIN deck_tag tag ON tag.id = tdt."tagId"
+           WHERE tdt."trackedDeckId" IN (${decks.map((_, i) => `$${i + 1}`).join(', ')})
+           ORDER BY tdt."attachedAt" ASC`,
+        decks.map((d) => d.id),
+      );
+      for (const row of tagRows ?? []) {
+        const list = tagRowsByDeckId.get(row.trackedDeckId) ?? [];
+        list.push(row.name);
+        tagRowsByDeckId.set(row.trackedDeckId, list);
+      }
+    }
+
+    // Batch-load deck_card rows for every deck so we can compute legality
+    // in-memory per deck. Frontend U14 declares `legality` as required on the
+    // list item (the DeckCard icon reads `deck.legality.category`).
+    const deckCardsByDeckId = new Map<number, DeckCardEntity[]>();
+    {
+      const allDeckCards = await this.deckCardRepo.find({
+        where: { trackedDeckId: In(decks.map((d) => d.id)) },
+      });
+      for (const row of allDeckCards) {
+        const list = deckCardsByDeckId.get(row.trackedDeckId) ?? [];
+        list.push(row);
+        deckCardsByDeckId.set(row.trackedDeckId, list);
+      }
+    }
+
+    const legalityByDeckId = new Map<number, IDeckLegality>();
+    for (const deck of decks) {
+      const cards = deckCardsByDeckId.get(deck.id) ?? [];
+      const result = computeDeckLegality(
+        {
+          heroIdentifier: deck.heroIdentifier ?? '',
+          cards: cards.map((row) => ({
+            cardIdentifier: row.cardIdentifier,
+            quantity: row.quantity,
+            slot: row.slot,
+          })),
+        },
+        catalog,
+        deck.format as TSupportedFormat,
+      );
+      legalityByDeckId.set(deck.id, {
+        category: result.category,
+        reasons: result.reasons,
+      });
+    }
+
     const trackedDecks = decks.map((deck): ITrackedDeckListItem => {
       const snap = snapshotByDeckId.get(deck.id) ?? null;
       const previewMeta = snap
@@ -184,6 +240,10 @@ export class DecksService {
         name: deck.name,
         hero: deck.hero,
         format: deck.format,
+        status: deck.status,
+        tags: tagRowsByDeckId.get(deck.id) ?? [],
+        updatedAt: deck.updatedAt.toISOString(),
+        legality: legalityByDeckId.get(deck.id) ?? { category: 'illegal', reasons: [] },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: snap
           ? {

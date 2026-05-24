@@ -100,7 +100,7 @@ const AUTH_SURFACES = [
 async function seedAuth(page: Page): Promise<string | null> {
   try {
     // Navigate to BASE_URL first so localStorage is on the correct origin.
-    await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 15000 });
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
     const result = await page.evaluate(
       async ([apiBase, email, pass]) => {
@@ -143,7 +143,7 @@ async function applyDarkTheme(page: Page): Promise<void> {
  * Returns null if no deck link is present (empty collection).
  */
 async function resolveDeckUrl(page: Page): Promise<string | null> {
-  await page.goto(`${BASE_URL}/home`, { waitUntil: 'networkidle', timeout: 15000 });
+  await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(SETTLE_MS);
   return page.evaluate(() => {
     const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
@@ -161,7 +161,7 @@ async function captureAndCompare(
   url: string,
   snapshotName: string,
 ): Promise<void> {
-  await page.goto(`${BASE_URL}${url}`, { waitUntil: 'networkidle', timeout: 20000 });
+  await page.goto(`${BASE_URL}${url}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await applyDarkTheme(page);
   await page.waitForTimeout(SETTLE_MS);
   await expect(page).toHaveScreenshot(`${snapshotName}.png`, {
@@ -214,7 +214,7 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
         return;
       }
 
-      await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 15000 });
       await page.evaluate((token: string) => {
         localStorage.setItem('rathe-arsenal:jwt', token);
         localStorage.setItem('rathe-arsenal:theme', 'dark');
@@ -246,7 +246,7 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
         // Navigate to /home first to discover available tags from the page.
         // If no tags exist, skip (fixture has no tagged decks).
         targetUrl = '/home';
-        await page.goto(`${BASE_URL}${targetUrl}`, { waitUntil: 'networkidle', timeout: 20000 });
+        await page.goto(`${BASE_URL}${targetUrl}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
         await applyDarkTheme(page);
         await page.waitForTimeout(SETTLE_MS);
         const firstTag = await page.evaluate(() => {
