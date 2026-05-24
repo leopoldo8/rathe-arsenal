@@ -210,6 +210,15 @@ describe('DecksService', () => {
         name: deck.name,
         hero: deck.hero,
         format: deck.format,
+        status: deck.status,
+        tags: [],
+        updatedAt: deck.updatedAt.toISOString(),
+        legality: {
+          category: 'incomplete',
+          reasons: [
+            'Deck has 0 mainboard cards but Classic Constructed requires at least 60.',
+          ],
+        },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: {
           rawPercent: snapshot.rawPercent,
