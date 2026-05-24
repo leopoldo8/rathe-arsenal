@@ -19,10 +19,16 @@ export interface IHeroListItem {
    */
   readonly legalFormats: readonly string[];
   /**
-   * Card face image URLs in small and large WebP sizes.
-   * Null when the source catalog entry has no image code.
+   * Card face image. `sources` is the ordered fallback list — CardArt and
+   * CardLightbox cycle through these on `<img>` `onError` so heroes that
+   * only ship foiled / alternate-art variants still render.
+   * Null when the source catalog entry has no image code at all.
    */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  readonly imageUrl: {
+    readonly small: string;
+    readonly large: string;
+    readonly sources: readonly { readonly small: string; readonly large: string }[];
+  } | null;
 }
 
 export interface IHeroListResponse {

@@ -185,9 +185,12 @@ export function DeckDetailSidebar({
         : null,
     [heroIdentifier, heroesQuery.data],
   );
-  const heroImageUrl = heroCard?.imageUrl
-    ? { small: heroCard.imageUrl, large: heroCard.imageUrl }
-    : null;
+  const heroImageUrl = heroCard?.imageUrl ?? null;
+  const heroLightboxSources = heroImageUrl
+    ? heroImageUrl.sources && heroImageUrl.sources.length > 0
+      ? heroImageUrl.sources.map((s) => s.large)
+      : [heroImageUrl.large]
+    : [];
   const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
 
   return (
@@ -219,6 +222,17 @@ export function DeckDetailSidebar({
                 value={compositionDraft.format}
                 onChange={onSetFormat}
               />
+              {/* Legality badge stays visible in Edit so the user can see the
+                  status of the saved composition without leaving the canvas.
+                  Reflects the last save — the in-progress cascade check sits
+                  on the canvas as its own banner. */}
+              <div
+                className={styles.legalitySlot}
+                data-testid="sidebar-edit-legality-slot"
+                aria-label={`Legality: ${legality.category}`}
+              >
+                <LegalityBadge legality={legality} format={compositionDraft.format} />
+              </div>
             </div>
           ) : (
             <div className={styles.heroBlock} data-testid="sidebar-hero-block">
@@ -232,7 +246,7 @@ export function DeckDetailSidebar({
                   cost={null}
                   type="Hero"
                   missing={false}
-                  size="md"
+                  size="sm"
                   imageUrl={heroImageUrl}
                   onClick={
                     heroImageUrl
@@ -361,7 +375,7 @@ export function DeckDetailSidebar({
       {heroLightboxOpen && heroImageUrl && (
         <CardLightbox
           imageUrl={heroImageUrl.large}
-          sources={[heroImageUrl.large]}
+          sources={heroLightboxSources}
           name={heroDisplayName ?? 'Hero'}
           onClose={() => setHeroLightboxOpen(false)}
         />

@@ -158,12 +158,18 @@ describe('CatalogService — U17 listHeroes()', () => {
       expect(hero.name.length).toBeGreaterThan(0);
       expect(typeof hero.young).toBe('boolean'); // U2 normalization: never undefined
       expect(Array.isArray(hero.legalFormats)).toBe(true);
-      // imageUrl is either null or { small, large }
+      // imageUrl carries small + large + sources fallback list. sources lets
+      // the frontend cycle through alternate-art / foil-only URLs when the
+      // canonical S3 path 404s — heroes that ship only in Armory Decks
+      // or judge promos require this.
       if (hero.imageUrl !== null) {
         expect(typeof hero.imageUrl.small).toBe('string');
         expect(typeof hero.imageUrl.large).toBe('string');
-        // Slim projection: no sources[] array
-        expect((hero.imageUrl as Record<string, unknown>)['sources']).toBeUndefined();
+        expect(Array.isArray(hero.imageUrl.sources)).toBe(true);
+        for (const src of hero.imageUrl.sources) {
+          expect(typeof src.small).toBe('string');
+          expect(typeof src.large).toBe('string');
+        }
       }
     }
   });
@@ -184,12 +190,13 @@ describe('CatalogService — U17 listHeroes()', () => {
     const json = JSON.stringify(response);
     const sizeInBytes = Buffer.byteLength(json, 'utf8');
 
-    // Assert — the slim projection (small/large only, no sources[] mirror list,
-    // no power/defense/cost/keywords/subtypes/sets/specializations) must stay
-    // well under 60KB for the full ~143-hero set. The plan estimated ~22KB
-    // (before accounting for the full S3 URL lengths); actual is ~51KB.
-    // This ceiling guards against accidentally including bulky fields in future.
-    expect(sizeInBytes).toBeLessThan(60_000);
+    // Assert — projection now carries small/large + the `sources` fallback
+    // list so heroes that only ship in foiled/alt-art variants render. With
+    // ~5 sources/hero on average the full ~143-hero set lands around 170KB,
+    // still cached once per session (`staleTime: Infinity`). Ceiling is set
+    // to 250KB to leave headroom for catalog growth without losing the
+    // "don't accidentally include bulky fields" guard.
+    expect(sizeInBytes).toBeLessThan(250_000);
   });
 
   it('does NOT include non-hero cards', () => {

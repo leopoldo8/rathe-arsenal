@@ -310,7 +310,11 @@ function DeckDetailPageWithData({
       cost: entry.cost ?? null,
       type: entry.type,
       imageUrl: entry.imageUrl
-        ? { small: entry.imageUrl.small, large: entry.imageUrl.large }
+        ? {
+            small: entry.imageUrl.small,
+            large: entry.imageUrl.large,
+            sources: entry.imageUrl.sources,
+          }
         : null,
       legalFormats: [],
       legalHeroes: [],
@@ -396,7 +400,7 @@ function DeckDetailPageWithData({
   // Store blocker proceed/stay callbacks when the guard fires.
   const navGuardCallbacksRef = useRef<{ proceed: () => void; stay: () => void } | null>(null);
 
-  useNavigationAwayGuard({
+  const navGuard = useNavigationAwayGuard({
     isDirty: compositionDraft.isDirty,
     isEditMode: mode === 'edit',
     onBlock: (proceed, stay) => {
@@ -437,6 +441,11 @@ function DeckDetailPageWithData({
 
   function handleSaveSuccess(): void {
     compositionDraft.clearPersistedDraft();
+    // Same reason as handleConfirmDiscard: the save just completed, but the
+    // composition draft's `isDirty` won't flip false until the next deck
+    // detail refetch lands. Bypass the guard so the post-save navigation
+    // doesn't open a spurious DiscardChangesConfirm.
+    navGuard.bypassNext();
     void navigate({
       to: '/decks/$deckId',
       params: { deckId },
@@ -447,6 +456,10 @@ function DeckDetailPageWithData({
   function handleConfirmDiscard(): void {
     compositionDraft.clearPersistedDraft();
     compositionDraft.reset();
+    // The header's Cancel modal already collected consent — bypass the
+    // nav-away guard so it does not fire a second DiscardChangesConfirm
+    // as soon as `onExitEdit` triggers the post-confirm navigation.
+    navGuard.bypassNext();
     onExitEdit();
   }
 

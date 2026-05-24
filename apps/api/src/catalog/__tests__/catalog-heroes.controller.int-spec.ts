@@ -83,29 +83,32 @@ describe('CatalogController — GET /catalog/heroes (U17)', () => {
     }
   });
 
-  it('slim projection does NOT include sources[] on imageUrl', () => {
+  it('exposes sources[] on imageUrl so foiled/alt-art heroes still render', () => {
     // Act
     const response = controller.getHeroes();
 
-    // Assert — the sources[] array (fallback mirrors) must be stripped to keep
-    // the payload lean; the frontend uses small/large directly.
+    // Assert — sources[] is required for the frontend's <img onError> cycle.
+    // Heroes that only ship in foiled Armory Decks would otherwise fall
+    // through to the SVG placeholder even when a working URL exists.
     for (const hero of response.heroes) {
       if (hero.imageUrl !== null) {
-        expect((hero.imageUrl as Record<string, unknown>)['sources']).toBeUndefined();
+        expect(Array.isArray(hero.imageUrl.sources)).toBe(true);
       }
     }
   });
 
-  it('JSON serialization stays under 60KB (slim projection sanity check)', () => {
+  it('JSON serialization stays under 250KB (sanity check vs accidental bulk)', () => {
     // Act
     const response = controller.getHeroes();
     const json = JSON.stringify(response);
     const sizeInBytes = Buffer.byteLength(json, 'utf8');
 
-    // Assert — slim projection guard (small/large only, no sources[], no
-    // engine-internal fields). Plan estimated ~22KB; actual ~51KB due to
-    // full S3 URL lengths. Ceiling guards against accidental bulk additions.
-    expect(sizeInBytes).toBeLessThan(60_000);
+    // Assert — the projection now includes the sources fallback list so heroes
+    // with foiled/alt-art-only printings still render. Full ~143-hero set
+    // lands ~170KB; ceiling sits at 250KB to leave catalog-growth headroom
+    // while still catching accidental bulk additions (no power/defense/cost/
+    // keywords/subtypes/sets/specializations).
+    expect(sizeInBytes).toBeLessThan(250_000);
   });
 
   it('does NOT contain non-hero cards in the result', () => {

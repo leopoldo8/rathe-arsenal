@@ -30,8 +30,16 @@ export interface IEditableCardRowProps {
   readonly slot: TDraftSlot;
   /** Card type — drives the SVG fallback glyph when no image is available. */
   readonly type: string;
-  /** Public image URLs (WebP small/large). null when the catalog has no image. */
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  /**
+   * Public image URLs (WebP small/large) plus optional `sources` fallback
+   * list. CardArt cycles through `sources` on `<img>` `onError` so cards that
+   * only ship foiled artwork (Armory Decks, judge promos) still render.
+   */
+  readonly imageUrl: {
+    readonly small: string;
+    readonly large: string;
+    readonly sources?: readonly { readonly small: string; readonly large: string }[];
+  } | null;
   /** Called with the new quantity when the stepper changes. */
   readonly onQuantityChange: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
   /** Called when the remove button is pressed. */
@@ -92,9 +100,13 @@ export function EditableCardRow({
 
   function handleArtClick(): void {
     if (!onOpenLightbox || !imageUrl) return;
+    const sources =
+      imageUrl.sources && imageUrl.sources.length > 0
+        ? imageUrl.sources.map((s) => s.large)
+        : [imageUrl.large];
     onOpenLightbox({
       imageUrl: imageUrl.large,
-      sources: [imageUrl.large],
+      sources,
       name,
     });
   }

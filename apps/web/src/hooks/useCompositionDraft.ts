@@ -34,7 +34,16 @@ export interface IDraftCard {
   readonly pitch: number | null;
   readonly cost: number | null;
   readonly type: string;
-  readonly imageUrl: { readonly small: string; readonly large: string } | null;
+  /**
+   * Card face image. `sources` is the ordered fallback list — CardArt cycles
+   * through these `<img>` URLs on `onError` so cards that only publish foiled
+   * artwork (Armory Decks, judge promos) still render in the gallery.
+   */
+  readonly imageUrl: {
+    readonly small: string;
+    readonly large: string;
+    readonly sources?: readonly { readonly small: string; readonly large: string }[];
+  } | null;
   /** Legality fields surfaced by the /catalog/search U17 extension. */
   readonly legalFormats: readonly string[];
   readonly legalHeroes: readonly string[];
@@ -98,7 +107,11 @@ export interface ICompositionDraftInitialPayload {
     readonly pitch: number | null;
     readonly cost: number | null;
     readonly type: string;
-    readonly imageUrl: { readonly small: string; readonly large: string } | null;
+    readonly imageUrl: {
+      readonly small: string;
+      readonly large: string;
+      readonly sources?: readonly { readonly small: string; readonly large: string }[];
+    } | null;
     readonly legalFormats?: readonly string[];
     readonly legalHeroes?: readonly string[];
     readonly bannedFormats?: readonly string[];

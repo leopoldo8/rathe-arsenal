@@ -53,10 +53,16 @@ export interface IHeroListItem {
   /** Formats in which this hero is legal (e.g. ["CC", "Blitz"]). */
   readonly legalFormats: readonly string[];
   /**
-   * Public URL for the hero card image (small WebP). Null when the catalog
-   * has no image for this hero card.
+   * Card face image with fallback `sources` list. CardArt and CardLightbox
+   * cycle through `sources` on `<img>` `onError` so heroes that only ship
+   * foiled or alternate-art variants still render. Null when the source
+   * catalog entry has no image code.
    */
-  readonly imageUrl: string | null;
+  readonly imageUrl: {
+    readonly small: string;
+    readonly large: string;
+    readonly sources: readonly { readonly small: string; readonly large: string }[];
+  } | null;
 }
 
 export interface IHeroListResponse {
