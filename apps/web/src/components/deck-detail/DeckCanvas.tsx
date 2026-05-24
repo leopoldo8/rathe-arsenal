@@ -415,6 +415,8 @@ function EditBody({
                       quantity={card.quantity}
                       slot={card.slot}
                       pitch={card.pitch}
+                      type={card.type}
+                      imageUrl={card.imageUrl}
                       onQuantityChange={(id, sl, qty) => {
                         if (qty <= 0) {
                           onRemoveCard?.(id, sl);
