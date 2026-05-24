@@ -45,7 +45,11 @@ function makeHero(overrides: Partial<IHeroListItem> = {}): IHeroListItem {
     name: 'Katsu, the Wanderer',
     young: false,
     legalFormats: ['CC', 'Blitz'],
-    imageUrl: 'https://d3o8hx28f8uam3.cloudfront.net/card/katsu-the-wanderer-wtr.webp',
+    imageUrl: {
+      small: 'https://d3o8hx28f8uam3.cloudfront.net/card/small/katsu-the-wanderer-wtr.webp',
+      large: 'https://d3o8hx28f8uam3.cloudfront.net/card/large/katsu-the-wanderer-wtr.webp',
+      sources: [],
+    },
     ...overrides,
   };
 }
