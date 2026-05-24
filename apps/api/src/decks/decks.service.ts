@@ -235,6 +235,12 @@ export class DecksService {
       const previewMeta = snap
         ? this.derivePreviewMeta(snap.breakdown)
         : { heroImageUrl: null, representativeCards: [] };
+      // Fallback: scratch decks (no snapshot) and snapshots that don't carry
+      // a hero entry still need to show the hero on the home tile. Resolve
+      // via catalog using heroIdentifier when present, otherwise look up by
+      // hero display name for legacy Fabrary decks pre-T+5000 backfill.
+      const heroImageUrl =
+        previewMeta.heroImageUrl ?? this.resolveHeroImageFromCatalog(deck);
       return {
         id: deck.id,
         fabraryUlid: deck.fabraryUlid,
@@ -253,7 +259,7 @@ export class DecksService {
               computedAt: snap.computedAt.toISOString(),
             }
           : null,
-        heroImageUrl: previewMeta.heroImageUrl,
+        heroImageUrl,
         representativeCards: previewMeta.representativeCards,
       };
     });
@@ -395,6 +401,33 @@ export class DecksService {
    * working `-RF` (rainbow foil) or `HER###-RF` reprint URLs even when the
    * canonical set/number 403's.
    */
+  /**
+   * Resolves the hero card image straight from the catalog for a deck. Used
+   * as a fallback when the snapshot breakdown doesn't carry a hero entry
+   * (scratch decks before first compute, decks where the breakdown predates
+   * the slot=hero convention). Matches by heroIdentifier first; falls back
+   * to display-name match for legacy Fabrary decks with NULL heroIdentifier.
+   * Returns null when no match exists.
+   */
+  private resolveHeroImageFromCatalog(deck: TrackedDeckEntity): {
+    small: string;
+    smallSources: readonly string[];
+  } | null {
+    let heroCard = deck.heroIdentifier
+      ? catalog.cards.find((c) => c.cardIdentifier === deck.heroIdentifier)
+      : undefined;
+    if (!heroCard && deck.hero) {
+      heroCard = catalog.cards.find(
+        (c) => c.types.includes(Type.Hero) && c.name === deck.hero,
+      );
+    }
+    if (!heroCard?.imageUrl) return null;
+    return {
+      small: heroCard.imageUrl.small,
+      smallSources: this.projectSmallSources(heroCard.imageUrl),
+    };
+  }
+
   private projectSmallSources(imageUrl: {
     small: string;
     sources: readonly { small: string }[];

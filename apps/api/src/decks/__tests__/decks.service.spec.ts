@@ -26,8 +26,12 @@ function buildTrackedDeck(
     userId: USER_ID,
     fabraryUlid: '01H0000000000000000000AAAA',
     name: 'Bravo Showstopper',
-    hero: 'Bravo',
-    heroIdentifier: 'bravo-showstopper',
+    // Test-only hero string that is intentionally NOT in the catalog so the
+    // heroImageUrl fallback (`resolveHeroImageFromCatalog`) returns null —
+    // keeps the legacy "null when no snapshot hero entry" assertions valid.
+    // Tests that specifically exercise the catalog fallback override this.
+    hero: 'Mock Hero Not In Catalog',
+    heroIdentifier: 'mock-hero-not-in-catalog',
     format: 'Classic Constructed',
     status: 'building',
     trackedAt: new Date('2025-01-15T10:00:00Z'),
@@ -214,10 +218,8 @@ describe('DecksService', () => {
         tags: [],
         updatedAt: deck.updatedAt.toISOString(),
         legality: {
-          category: 'incomplete',
-          reasons: [
-            'Deck has 0 mainboard cards but Classic Constructed requires at least 60.',
-          ],
+          category: 'illegal',
+          reasons: ['Hero not recognized — please re-select in Edit mode'],
         },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: {
