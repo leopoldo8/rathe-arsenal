@@ -4,7 +4,7 @@
 
 .row {
   display: grid;
-  /* slot icon | card info | stepper | [warning icon] | remove button */
+  /* thumbnail | card info | stepper | [warning icon] | remove button */
   grid-template-columns: auto 1fr auto auto auto;
   align-items: center;
   gap: var(--ra-space-3);
@@ -21,11 +21,9 @@
   border-color: var(--ra-border-strong);
 }
 
-.slotIcon {
-  color: var(--ra-fg-muted);
-  width: 14px;
-  height: 14px;
+.thumb {
   flex-shrink: 0;
+  line-height: 0;
 }
 
 .cardInfo {

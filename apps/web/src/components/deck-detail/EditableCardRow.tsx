@@ -9,7 +9,7 @@
  */
 import React from 'react';
 import type { TDraftSlot } from '../../hooks/useCompositionDraft';
-import { SlotIcon, type TSlotGroup } from './DeckCanvas';
+import { CardArt } from '../card-art/CardArt';
 import { CardRowLegalityWarning } from './CardRowLegalityWarning';
 import styles from './EditableCardRow.module.css';
 
@@ -28,6 +28,10 @@ export interface IEditableCardRowProps {
   readonly slot: TDraftSlot;
   /** Card pitch (1=red, 2=yellow, 3=blue, null=colorless). */
   readonly pitch: number | null;
+  /** Card type — drives the SVG fallback glyph when no image is available. */
+  readonly type: string;
+  /** Public image URLs (WebP small/large). null when the catalog has no image. */
+  readonly imageUrl: { readonly small: string; readonly large: string } | null;
   /** Called with the new quantity when the stepper changes. */
   readonly onQuantityChange: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
   /** Called when the remove button is pressed. */
@@ -58,6 +62,8 @@ export function EditableCardRow({
   quantity,
   slot,
   pitch,
+  type,
+  imageUrl,
   onQuantityChange,
   onRemove,
   illegalCardIds,
@@ -86,8 +92,8 @@ export function EditableCardRow({
           ? 'blue'
           : null;
 
-  // Map TDraftSlot to TSlotGroup for the icon (they are the same union)
-  const slotGroup = slot as TSlotGroup;
+  const cardArtPitch = (pitch === 1 || pitch === 2 || pitch === 3 ? pitch : null) as
+    | 1 | 2 | 3 | null;
 
   return (
     <li
@@ -95,8 +101,18 @@ export function EditableCardRow({
       data-testid={`editable-card-row-${cardIdentifier}`}
       data-slot={slot}
     >
-      {/* Slot icon */}
-      <SlotIcon group={slotGroup} className={styles.slotIcon} />
+      {/* Card thumbnail */}
+      <div className={styles.thumb} aria-hidden="true">
+        <CardArt
+          name={name}
+          pitch={cardArtPitch}
+          cost={null}
+          type={type}
+          missing={false}
+          size="xs"
+          imageUrl={imageUrl}
+        />
+      </div>
 
       {/* Card name + meta */}
       <div className={styles.cardInfo}>
