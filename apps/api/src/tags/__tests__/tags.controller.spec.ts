@@ -51,7 +51,7 @@ describe('TagsController', () => {
 
       // Assert
       expect(tagsService.list).toHaveBeenCalledWith(MOCK_USER.userId);
-      expect(result).toBe(expected);
+      expect(result).toEqual({ tags: expected });
     });
   });
 
