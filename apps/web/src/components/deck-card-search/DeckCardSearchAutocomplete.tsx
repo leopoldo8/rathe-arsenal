@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { ISearchCardResult, useSearchCardsQuery } from '../../api/catalog';
-import { SlotPicker, type TDeckSlot } from './SlotPicker';
+import type { TDeckSlot } from './SlotPicker';
 import styles from './DeckCardSearchAutocomplete.module.css';
 
 // ---------------------------------------------------------------------------
@@ -30,10 +30,11 @@ export type { TDeckSlot };
 export interface IDeckCardSearchAutocompleteProps {
   /**
    * Called when the user selects a card from the dropdown.
-   * Receives the full `ISearchCardResult` (including the U17 legality fields)
-   * plus the currently selected slot.
+   * Receives the full `ISearchCardResult` (including the U17 legality fields).
+   * The deck slot is a property of the card type and is derived by the
+   * caller, not chosen here.
    */
-  readonly onPick: (card: ISearchCardResult, slot: TDeckSlot) => void;
+  readonly onPick: (card: ISearchCardResult) => void;
 
   /**
    * Placeholder text for the search input. Defaults to "Search card name...".
@@ -44,11 +45,6 @@ export interface IDeckCardSearchAutocompleteProps {
    * Label for the search input. Defaults to "Search cards".
    */
   readonly label?: string;
-
-  /**
-   * When true, the SlotPicker is rendered above the input. Defaults to false.
-   */
-  readonly showSlotPicker?: boolean;
 
   /**
    * Ref forwarded to the underlying input so external callers can focus it.
@@ -62,16 +58,15 @@ export interface IDeckCardSearchAutocompleteProps {
 
 /**
  * DeckCardSearchAutocomplete — reusable WAI-ARIA combobox for searching
- * catalog cards, parameterized via `onPick(card, slot)`. Manages search
- * query, debounce (250ms), keyboard navigation, ARIA combobox semantics,
- * and EMPTY_RESULTS stable ref.
+ * catalog cards, parameterized via `onPick(card)`. Manages search query,
+ * debounce (250ms), keyboard navigation, ARIA combobox semantics, and
+ * EMPTY_RESULTS stable ref.
  *
  * No internal mutation — callers supply the `onPick` callback and decide
  * what to do with the selected card (add to collection, add to deck, etc.).
- *
- * When `showSlotPicker` is true, a `SlotPicker` renders above the input and
- * the selected slot is passed to `onPick`. When false (the default), the
- * slot is always `"mainboard"`.
+ * The deck slot is a property of the card type (a Weapon goes to `weapon`,
+ * an Equipment to `equipment`, etc.) and is derived by the caller from
+ * `card.types`, never chosen by the user.
  *
  * Keyboard interaction follows WAI-ARIA Authoring Practices combobox pattern:
  * ArrowDown/Up navigate options, Enter selects, Escape closes the dropdown
@@ -81,14 +76,12 @@ export function DeckCardSearchAutocomplete({
   onPick,
   placeholder = 'Search card name...',
   label = 'Search cards',
-  showSlotPicker = false,
   inputRef: externalInputRef,
 }: IDeckCardSearchAutocompleteProps): React.ReactElement {
   const [inputValue, setInputValue] = useState<string>('');
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
-  const [slot, setSlot] = useState<TDeckSlot>('mainboard');
 
   const internalInputRef = useRef<HTMLInputElement>(null);
   const inputRefToUse = externalInputRef ?? internalInputRef;
@@ -137,10 +130,10 @@ export function DeckCardSearchAutocomplete({
 
   const handleSelect = useCallback(
     (card: ISearchCardResult) => {
-      onPick(card, slot);
+      onPick(card);
       inputRefToUse.current?.focus();
     },
-    [onPick, slot, inputRefToUse],
+    [onPick, inputRefToUse],
   );
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>): void => {
@@ -183,10 +176,6 @@ export function DeckCardSearchAutocomplete({
 
   return (
     <div ref={rootRef} className={styles.root}>
-      {showSlotPicker ? (
-        <SlotPicker value={slot} onChange={setSlot} />
-      ) : null}
-
       <label id={labelId} htmlFor={`${labelId}-input`} className={styles.label}>
         {label}
       </label>

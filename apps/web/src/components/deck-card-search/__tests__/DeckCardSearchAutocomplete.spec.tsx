@@ -96,14 +96,9 @@ describe('DeckCardSearchAutocomplete — basic rendering', () => {
     expect(screen.getByLabelText(/search and add cards to your library/i)).toBeInTheDocument();
   });
 
-  it('does not render the slot picker by default', () => {
+  it('never renders the slot picker (slot is derived from card.types by the caller)', () => {
     renderComponent();
     expect(screen.queryByRole('group', { name: /deck slot/i })).not.toBeInTheDocument();
-  });
-
-  it('renders the slot picker when showSlotPicker is true', () => {
-    renderComponent({ showSlotPicker: true });
-    expect(screen.getByRole('group', { name: /deck slot/i })).toBeInTheDocument();
   });
 });
 
@@ -175,7 +170,7 @@ describe('DeckCardSearchAutocomplete — keyboard navigation', () => {
     vi.clearAllMocks();
   });
 
-  it('opens dropdown and navigates with ArrowDown then Enter to call onPick with card and slot', async () => {
+  it('opens dropdown and navigates with ArrowDown then Enter to call onPick with the card', async () => {
     const { onPick } = renderComponent();
     const input = screen.getByRole('searchbox');
 
@@ -200,7 +195,6 @@ describe('DeckCardSearchAutocomplete — keyboard navigation', () => {
     expect(onPick).toHaveBeenCalledOnce();
     expect(onPick).toHaveBeenCalledWith(
       expect.objectContaining({ cardIdentifier: 'briar-wizard-of-the-black-oak' }),
-      'mainboard',
     );
   });
 
@@ -236,54 +230,12 @@ describe('DeckCardSearchAutocomplete — keyboard navigation', () => {
   });
 });
 
-describe('DeckCardSearchAutocomplete — onPick slot forwarding', () => {
+describe('DeckCardSearchAutocomplete — onPick payload', () => {
   beforeEach(() => {
     mockSearchData = { results: [mockSearchResult] };
     mockIsFetching = false;
     mockIsSuccess = true;
     vi.clearAllMocks();
-  });
-
-  it('onPick receives slot mainboard by default', async () => {
-    const { onPick } = renderComponent({ showSlotPicker: false });
-    const input = screen.getByRole('searchbox');
-
-    await userEvent.type(input, 'Br');
-
-    await waitFor(() => {
-      expect(screen.getByRole('listbox')).toBeInTheDocument();
-    });
-
-    const option = screen.getByRole('option', { name: /Briar/i });
-    await userEvent.click(option);
-
-    expect(onPick).toHaveBeenCalledWith(
-      expect.objectContaining({ cardIdentifier: 'briar-wizard-of-the-black-oak' }),
-      'mainboard',
-    );
-  });
-
-  it('onPick receives weapon slot after changing slot picker to weapon', async () => {
-    const { onPick } = renderComponent({ showSlotPicker: true });
-    const input = screen.getByRole('searchbox');
-
-    // Switch slot to weapon
-    const weaponButton = screen.getByRole('radio', { name: /weapon slot/i });
-    await userEvent.click(weaponButton);
-
-    await userEvent.type(input, 'Br');
-
-    await waitFor(() => {
-      expect(screen.getByRole('listbox')).toBeInTheDocument();
-    });
-
-    const option = screen.getByRole('option', { name: /Briar/i });
-    await userEvent.click(option);
-
-    expect(onPick).toHaveBeenCalledWith(
-      expect.objectContaining({ cardIdentifier: 'briar-wizard-of-the-black-oak' }),
-      'weapon',
-    );
   });
 
   it('onPick card payload includes legalFormats, legalHeroes, bannedFormats from U17', async () => {
@@ -305,7 +257,6 @@ describe('DeckCardSearchAutocomplete — onPick slot forwarding', () => {
         legalHeroes: [],
         bannedFormats: [],
       }),
-      expect.any(String),
     );
   });
 });

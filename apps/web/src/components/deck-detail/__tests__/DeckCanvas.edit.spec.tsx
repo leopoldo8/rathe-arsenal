@@ -104,27 +104,24 @@ vi.mock('../../deck-card-search/DeckCardSearchAutocomplete', () => ({
   DeckCardSearchAutocomplete: ({
     onPick,
   }: {
-    onPick: (card: { cardIdentifier: string; name: string; pitch: number | null; classes: string[]; types: string[]; ownedQuantity: number; imageUrl: null; legalFormats: string[]; legalHeroes: string[]; bannedFormats: string[] }, slot: string) => void;
+    onPick: (card: { cardIdentifier: string; name: string; pitch: number | null; classes: string[]; types: string[]; ownedQuantity: number; imageUrl: null; legalFormats: string[]; legalHeroes: string[]; bannedFormats: string[] }) => void;
   }) => (
     <div data-testid="autocomplete-mock">
       <button
         data-testid="pick-card-btn"
         onClick={() =>
-          onPick(
-            {
-              cardIdentifier: 'test-card-picked',
-              name: 'Test Card',
-              pitch: 1,
-              classes: ['ninja'],
-              types: ['attack'],
-              ownedQuantity: 1,
-              imageUrl: null,
-              legalFormats: ['Classic Constructed'],
-              legalHeroes: [],
-              bannedFormats: [],
-            },
-            'mainboard',
-          )
+          onPick({
+            cardIdentifier: 'test-card-picked',
+            name: 'Test Card',
+            pitch: 1,
+            classes: ['ninja'],
+            types: ['attack'],
+            ownedQuantity: 1,
+            imageUrl: null,
+            legalFormats: ['Classic Constructed'],
+            legalHeroes: [],
+            bannedFormats: [],
+          })
         }
       >
         Pick Card
@@ -294,7 +291,6 @@ describe('DeckCanvas Edit mode — adding cards', () => {
     await userEvent.click(screen.getByTestId('pick-card-btn'));
     expect(onAddCard).toHaveBeenCalledWith(
       expect.objectContaining({ cardIdentifier: 'test-card-picked' }),
-      'mainboard',
     );
   });
 

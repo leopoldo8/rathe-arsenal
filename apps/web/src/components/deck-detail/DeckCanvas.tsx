@@ -196,7 +196,7 @@ interface IDeckCanvasProps {
   // --- Edit-mode props (U12) ---
   readonly compositionDraft?: ICompositionDraft;
   readonly cascadeCheck?: ICascadeCheckResult;
-  readonly onAddCard?: (card: ISearchCardResult, slot: TDraftSlot) => void;
+  readonly onAddCard?: (card: ISearchCardResult) => void;
   readonly onUpdateQuantity?: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
   readonly onRemoveCard?: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
@@ -277,7 +277,7 @@ export function DeckCanvas({
 interface IEditBodyProps {
   readonly compositionDraft: ICompositionDraft | undefined;
   readonly cascadeCheck: ICascadeCheckResult | undefined;
-  readonly onAddCard: ((card: ISearchCardResult, slot: TDraftSlot) => void) | undefined;
+  readonly onAddCard: ((card: ISearchCardResult) => void) | undefined;
   readonly onUpdateQuantity: ((cardIdentifier: string, slot: TDraftSlot, quantity: number) => void) | undefined;
   readonly onRemoveCard: ((cardIdentifier: string, slot: TDraftSlot) => void) | undefined;
   readonly onRemoveIllegalCards: ((ids: ReadonlySet<string>) => void) | undefined;
@@ -326,8 +326,8 @@ function EditBody({
     slotGroups.get(group)!.push(card);
   }
 
-  function handlePick(card: ISearchCardResult, slot: TDeckSlot): void {
-    onAddCard?.(card, slot as TDraftSlot);
+  function handlePick(card: ISearchCardResult): void {
+    onAddCard?.(card);
   }
 
   function handleRemoveIllegal(ids: ReadonlySet<string>): void {
@@ -373,7 +373,6 @@ function EditBody({
         <DeckCardSearchAutocomplete
           onPick={handlePick}
           label="Add cards to deck"
-          showSlotPicker={true}
           inputRef={autocompleteRef}
         />
       </div>

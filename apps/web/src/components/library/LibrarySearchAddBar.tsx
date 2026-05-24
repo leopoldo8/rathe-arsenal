@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
 import { LIBRARY_QUERY_KEY } from '../../api/library';
-import { DeckCardSearchAutocomplete, type TDeckSlot } from '../deck-card-search/DeckCardSearchAutocomplete';
+import { DeckCardSearchAutocomplete } from '../deck-card-search/DeckCardSearchAutocomplete';
 import styles from './LibrarySearchAddBar.module.css';
 
 interface ILibrarySearchAddBarProps {
@@ -29,7 +29,7 @@ export function LibrarySearchAddBar({
   const addCardMutation = useAddCardMutation();
 
   const handlePick = useCallback(
-    (card: ISearchCardResult, _slot: TDeckSlot) => {
+    (card: ISearchCardResult) => {
       addCardMutation.mutate(
         { cardIdentifier: card.cardIdentifier, quantity: 1 },
         {
@@ -50,7 +50,6 @@ export function LibrarySearchAddBar({
       <DeckCardSearchAutocomplete
         onPick={handlePick}
         label="Search and add cards to your library"
-        showSlotPicker={false}
         {...(inputRef ? { inputRef } : {})}
       />
       {addCardMutation.isError ? (

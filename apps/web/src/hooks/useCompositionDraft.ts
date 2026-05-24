@@ -51,7 +51,12 @@ export interface ICompositionDraftResult {
   readonly draft: ICompositionDraft;
   readonly setHero: (heroIdentifier: string | null) => void;
   readonly setFormat: (format: string) => void;
-  readonly addCard: (card: ISearchCardResult, slot: TDraftSlot) => void;
+  /**
+   * Adds a card to the draft. The destination slot is derived from the
+   * card's `types` (a Weapon goes to `weapon`, etc.) — slot is a property
+   * of the card type, never a user choice.
+   */
+  readonly addCard: (card: ISearchCardResult) => void;
   readonly updateQuantity: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
   readonly removeCard: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly removeIllegalCards: (illegalCardIds: ReadonlySet<string>) => void;
@@ -207,6 +212,26 @@ function normaliseDraftSlot(slot: string): TDraftSlot {
     return 'mainboard';
   }
   return 'other';
+}
+
+/**
+ * Derives the deck slot from a card's `types` array. The slot is a property
+ * of the card type, not a user choice — a Weapon goes to `weapon`, an
+ * Equipment to `equipment`, etc. Anything else lands in `mainboard`.
+ *
+ * Matches `normaliseDraftSlot` semantics so an imported deck (slot string
+ * from the API) and an in-edit pick (types array) converge on the same value.
+ */
+export function inferSlotFromCardTypes(
+  types: readonly string[],
+): TDraftSlot {
+  for (const t of types) {
+    const s = t.toLowerCase();
+    if (s.includes('hero')) return 'hero';
+    if (s.includes('weapon')) return 'weapon';
+    if (s.includes('equipment')) return 'equipment';
+  }
+  return 'mainboard';
 }
 
 function buildInitialDraft(payload: ICompositionDraftInitialPayload): ICompositionDraft {
@@ -398,12 +423,12 @@ export function useCompositionDraft(
     dispatch({ type: 'SET_FORMAT', format });
   }, []);
 
-  const addCard = useCallback((card: ISearchCardResult, slot: TDraftSlot) => {
+  const addCard = useCallback((card: ISearchCardResult) => {
     const draftCard: IDraftCard = {
       cardIdentifier: card.cardIdentifier,
       name: card.name,
       quantity: 1,
-      slot,
+      slot: inferSlotFromCardTypes(card.types),
       pitch: card.pitch,
       cost: null,
       type: card.types[0] ?? 'unknown',

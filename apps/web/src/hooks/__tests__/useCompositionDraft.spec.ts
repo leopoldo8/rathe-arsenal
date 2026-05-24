@@ -176,7 +176,7 @@ describe('useCompositionDraft — addCard', () => {
       useCompositionDraft('deck-1', INITIAL_PAYLOAD),
     );
     act(() => {
-      result.current.addCard(MOCK_CARD_RESULT, 'mainboard');
+      result.current.addCard(MOCK_CARD_RESULT);
     });
     expect(result.current.draft.cards).toHaveLength(2);
     expect(
@@ -195,7 +195,7 @@ describe('useCompositionDraft — addCard', () => {
       name: 'Pummel',
     };
     act(() => {
-      result.current.addCard(pummelResult, 'mainboard');
+      result.current.addCard(pummelResult);
     });
     // The existing pummel has qty 3, adding again should push to 4
     const pummel = result.current.draft.cards.find(
@@ -210,7 +210,7 @@ describe('useCompositionDraft — addCard', () => {
       useCompositionDraft('deck-1', INITIAL_PAYLOAD),
     );
     act(() => {
-      result.current.addCard(MOCK_CARD_RESULT, 'mainboard');
+      result.current.addCard(MOCK_CARD_RESULT);
     });
     expect(result.current.isDirty).toBe(true);
   });
@@ -220,7 +220,7 @@ describe('useCompositionDraft — addCard', () => {
       useCompositionDraft('deck-1', INITIAL_PAYLOAD),
     );
     act(() => {
-      result.current.addCard(MOCK_CARD_RESULT, 'mainboard');
+      result.current.addCard(MOCK_CARD_RESULT);
     });
     expect(result.current.changeCount).toBe(1);
   });
@@ -341,7 +341,7 @@ describe('useCompositionDraft — reset', () => {
     );
     act(() => {
       result.current.setHero('dorinthea-ironsong-wtr');
-      result.current.addCard(MOCK_CARD_RESULT, 'mainboard');
+      result.current.addCard(MOCK_CARD_RESULT);
     });
     act(() => {
       result.current.reset();
@@ -387,7 +387,7 @@ describe('useCompositionDraft — empty deck (R22)', () => {
       useCompositionDraft('scratch-deck-1', EMPTY_PAYLOAD),
     );
     act(() => {
-      result.current.addCard(MOCK_CARD_RESULT, 'mainboard');
+      result.current.addCard(MOCK_CARD_RESULT);
     });
     expect(result.current.draft.cards).toHaveLength(1);
     expect(result.current.isDirty).toBe(true);
