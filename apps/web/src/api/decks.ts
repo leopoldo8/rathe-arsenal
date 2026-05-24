@@ -44,7 +44,11 @@ export interface IPatchDeckBody {
 // ---------------------------------------------------------------------------
 
 export interface IPutDeckBody {
-  readonly cards: readonly { readonly cardIdentifier: string; readonly quantity: number }[];
+  readonly cards: readonly {
+    readonly cardIdentifier: string;
+    readonly quantity: number;
+    readonly slot: 'mainboard' | 'equipment' | 'weapon' | 'hero';
+  }[];
   readonly heroIdentifier: string | null;
   readonly format: string;
 }
