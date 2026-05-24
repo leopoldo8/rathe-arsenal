@@ -1,4 +1,5 @@
 import { IShoppingLineAggregate } from '../../stores/dtos/shopping-line.response.dto';
+import { IDeckLegality } from './tracked-deck-detail.response.dto';
 
 export { IShoppingLineAggregate };
 
@@ -31,6 +32,14 @@ export interface ITrackedDeckListItem {
   readonly name: string;
   readonly hero: string;
   readonly format: string;
+  /** Lifecycle label. Required by the v2 home shelves (U9). */
+  readonly status: 'idea' | 'building' | 'ready' | 'active' | 'retired';
+  /** Tag names attached to this deck. Empty array when none. Required by v2 home tag filter (U9). */
+  readonly tags: readonly string[];
+  /** Last time any field on this deck was modified. Required by v2 list rendering (U7). */
+  readonly updatedAt: string;
+  /** Legality assessment against the deck's configured format. Required by v2 DeckCard icon (U14). */
+  readonly legality: IDeckLegality;
   readonly trackedAt: string;
   readonly latestSnapshot: {
     readonly rawPercent: number;
