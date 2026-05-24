@@ -107,7 +107,9 @@ describe('useHeroesQuery', () => {
     expect(hero?.name).toBe('Katsu, the Wanderer');
     expect(hero?.young).toBe(false);
     expect(hero?.legalFormats).toEqual(['CC', 'Blitz']);
-    expect(typeof hero?.imageUrl).toBe('string');
+    expect(typeof hero?.imageUrl?.small).toBe('string');
+    expect(typeof hero?.imageUrl?.large).toBe('string');
+    expect(Array.isArray(hero?.imageUrl?.sources)).toBe(true);
   });
 
   it('handles heroes with null imageUrl without crashing', async () => {
