@@ -164,10 +164,10 @@ export interface ITrackedDeckDetailResponse {
    */
   readonly shoppingLine?: IShoppingLineResponse | null;
   /**
-   * Legality verdict for this deck in its format (U5 v2 deck management).
-   * Present on scratch deck responses from `POST /decks`.
-   * Optional on existing `GET /decks/:id` responses until U6 adds it
-   * to the standard detail read path.
+   * Legality verdict for this deck in its format. Returned by every endpoint
+   * that produces a detail response (POST, GET, PATCH, PUT). The frontend
+   * `LegalityBadge` and `DeckDetailSidebar` read `legality.category` without
+   * a null check.
    */
-  readonly legality?: IDeckLegality;
+  readonly legality: IDeckLegality;
 }

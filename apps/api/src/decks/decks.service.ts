@@ -542,6 +542,27 @@ export class DecksService {
       }
     }
 
+    // Compute legality in-memory using the catalog singleton, same pipeline
+    // as POST/PUT/PATCH. Frontend (DeckDetailSidebar, LegalityBadge) reads
+    // `deck.legality.category` without a null check, so this field must
+    // always be present on the detail response.
+    const legalityResult = computeDeckLegality(
+      {
+        heroIdentifier: deck.heroIdentifier ?? '',
+        cards: deckCards.map((row) => ({
+          cardIdentifier: row.cardIdentifier,
+          quantity: row.quantity,
+          slot: row.slot,
+        })),
+      },
+      catalog,
+      deck.format as TSupportedFormat,
+    );
+    const legality: IDeckLegality = {
+      category: legalityResult.category,
+      reasons: legalityResult.reasons,
+    };
+
     return {
       id: deck.id,
       fabraryUlid: deck.fabraryUlid,
@@ -559,6 +580,7 @@ export class DecksService {
       pendingCount,
       decisions,
       shoppingLine,
+      legality,
     };
   }
 
