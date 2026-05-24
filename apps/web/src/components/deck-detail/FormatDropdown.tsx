@@ -15,8 +15,8 @@ import styles from './FormatDropdown.module.css';
 export const SUPPORTED_FORMATS = [
   { value: 'Classic Constructed', label: 'Classic Constructed' },
   { value: 'Blitz', label: 'Blitz' },
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Sealed', label: 'Sealed' },
+  { value: 'Living Legend', label: 'Living Legend' },
+  { value: 'Silver Age', label: 'Silver Age' },
 ] as const;
 
 export type TSupportedFormat = (typeof SUPPORTED_FORMATS)[number]['value'];

@@ -13,7 +13,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
-import { ITagResponse } from './dto/tag-response.dto';
+import { ITagListResponse, ITagResponse } from './dto/tag-response.dto';
 import { TagsService } from './tags.service';
 
 // Throttle constant — matches auth.controller.ts convention.
@@ -37,8 +37,9 @@ export class TagsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
-  async list(@CurrentUser() user: ICurrentUser): Promise<ITagResponse[]> {
-    return this.tagsService.list(user.userId);
+  async list(@CurrentUser() user: ICurrentUser): Promise<ITagListResponse> {
+    const tags = await this.tagsService.list(user.userId);
+    return { tags };
   }
 
   /**

@@ -292,15 +292,16 @@ describe('useCompositionDraft — 500ms debounce write', () => {
     expect(Array.isArray(parsed.cards)).toBe(true);
   });
 
-  it('also writes initial state after 500ms (even when not dirty)', () => {
+  it('does NOT write initial state on mount when draft matches the loaded payload', () => {
+    // Regression guard: persisting a clean draft caused the DraftRestoreModal
+    // to appear on the user's first-ever Edit entry for a freshly imported
+    // deck, even though they had not made any changes. The write must be
+    // gated on `isDirty`.
     renderHook(() => useCompositionDraft(DECK_ID, EMPTY_PAYLOAD));
     act(() => {
       vi.advanceTimersByTime(500);
     });
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      draftStorageKey(DECK_ID),
-      expect.any(String),
-    );
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
   });
 });
 

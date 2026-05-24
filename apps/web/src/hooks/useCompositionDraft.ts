@@ -372,13 +372,23 @@ export function useCompositionDraft(
 
   const [draft, dispatch] = useReducer(draftReducer, initial);
 
+  const isDirty = useMemo(() => isDraftDirty(initial, draft), [initial, draft]);
+  const changeCount = useMemo(() => computeChangeCount(initial, draft), [initial, draft]);
+
   // Debounced localStorage write — 500ms after the last change.
+  // Skip when the draft is clean (matches the loaded payload). The mount-time
+  // effect would otherwise persist an unchanged draft and trigger the
+  // "Restore unsaved changes?" modal on next Edit entry even when the user
+  // hasn't touched anything. We do NOT clear here: a pre-existing persisted
+  // draft from a previous session must survive mount so the restore modal
+  // can offer it. Save and Discard paths clear explicitly.
   useEffect(() => {
+    if (!isDirty) return;
     const timer = setTimeout(() => {
       writeStoredDraft(deckId, draft);
     }, 500);
     return () => clearTimeout(timer);
-  }, [deckId, draft]);
+  }, [deckId, draft, isDirty]);
 
   const setHero = useCallback((heroIdentifier: string | null) => {
     dispatch({ type: 'SET_HERO', heroIdentifier });
@@ -435,9 +445,6 @@ export function useCompositionDraft(
   const readPersistedDraft = useCallback((): TCompositionDraftPayload | null => {
     return readStoredDraft(deckId);
   }, [deckId]);
-
-  const isDirty = useMemo(() => isDraftDirty(initial, draft), [initial, draft]);
-  const changeCount = useMemo(() => computeChangeCount(initial, draft), [initial, draft]);
 
   return {
     draft,
