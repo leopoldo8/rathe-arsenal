@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
 import { FormatDropdown } from './FormatDropdown';
 import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
 import { LegalityBadge } from './LegalityBadge';
+import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
+import { useHeroesQuery } from '../../api/catalog';
 import type { TDeckStatus, IDeckLegality } from '../../api/decks';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
@@ -170,6 +173,23 @@ export function DeckDetailSidebar({
 
   const readinessClass = getReadinessClass(effectivePercent);
 
+  // Look up the hero card image so the sidebar can render the actual art
+  // instead of a generic placeholder. The heroes query is shared with the
+  // Edit-mode HeroDropdown (`HEROES_QUERY_KEY`) so this read is cache-hit
+  // on every navigation after the first.
+  const heroesQuery = useHeroesQuery();
+  const heroCard = useMemo(
+    () =>
+      heroIdentifier
+        ? heroesQuery.data?.heroes.find((h) => h.cardIdentifier === heroIdentifier) ?? null
+        : null,
+    [heroIdentifier, heroesQuery.data],
+  );
+  const heroImageUrl = heroCard?.imageUrl
+    ? { small: heroCard.imageUrl, large: heroCard.imageUrl }
+    : null;
+  const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
+
   return (
     <div
       className={styles.sidebar}
@@ -202,19 +222,24 @@ export function DeckDetailSidebar({
             </div>
           ) : (
             <div className={styles.heroBlock} data-testid="sidebar-hero-block">
-              {/* Hero art thumbnail placeholder — the actual art is a CSS background
-                  on the placeholder div. No <img> to avoid broken-image flicker when
-                  heroIdentifier has no image in the catalog. */}
-              <div
-                className={styles.heroThumb}
-                aria-label={heroDisplayName ? `Hero: ${heroDisplayName}` : 'Hero placeholder'}
-                role="img"
-                data-testid="sidebar-hero-thumb"
-              >
-                {/* Inner glyph placeholder */}
-                <span className={styles.heroThumb__glyph} aria-hidden="true">
-                  &#9670;
-                </span>
+              {/* Hero art thumbnail — pulls the real image from the heroes
+                  catalog query when available, otherwise CardArt's SVG
+                  fallback renders. Click opens the fullscreen lightbox. */}
+              <div className={styles.heroThumb} data-testid="sidebar-hero-thumb">
+                <CardArt
+                  name={heroDisplayName ?? 'Hero'}
+                  pitch={null}
+                  cost={null}
+                  type="Hero"
+                  missing={false}
+                  size="md"
+                  imageUrl={heroImageUrl}
+                  onClick={
+                    heroImageUrl
+                      ? () => setHeroLightboxOpen(true)
+                      : undefined
+                  }
+                />
               </div>
 
               <div className={styles.heroMeta}>
@@ -332,6 +357,15 @@ export function DeckDetailSidebar({
           </section>
         )}
       </div>
+
+      {heroLightboxOpen && heroImageUrl && (
+        <CardLightbox
+          imageUrl={heroImageUrl.large}
+          sources={[heroImageUrl.large]}
+          name={heroDisplayName ?? 'Hero'}
+          onClose={() => setHeroLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -30,6 +30,7 @@ function buildDetailResponse(
     fabraryUlid: null,
     name: 'Dorinthea Ironsong — Classic Constructed',
     hero: 'Dorinthea Ironsong',
+    heroIdentifier: 'dorinthea-ironsong',
     format: 'Classic Constructed',
     status: 'idea',
     tags: [],
@@ -149,6 +150,7 @@ describe('DecksController POST /decks (int-spec)', () => {
         id: 100,
         name: 'Briar, Warden of Thorns — Living Legend',
         hero: 'Briar, Warden of Thorns',
+        heroIdentifier: 'briar-warden-of-thorns',
         format: 'Living Legend',
         legality: {
           category: 'incomplete',

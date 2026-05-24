@@ -306,6 +306,11 @@ function EditBody({
   onSetFormat,
 }: IEditBodyProps): React.ReactElement {
   const autocompleteRef = React.useRef<HTMLInputElement>(null);
+  const [editLightbox, setEditLightbox] = React.useState<{
+    readonly imageUrl: string;
+    readonly sources: readonly string[];
+    readonly name: string;
+  } | null>(null);
 
   // If no draft yet (shouldn't happen after U12 wiring, but guard gracefully)
   if (!compositionDraft || !cascadeCheck) {
@@ -414,7 +419,6 @@ function EditBody({
                       name={card.name}
                       quantity={card.quantity}
                       slot={card.slot}
-                      pitch={card.pitch}
                       type={card.type}
                       imageUrl={card.imageUrl}
                       onQuantityChange={(id, sl, qty) => {
@@ -425,6 +429,7 @@ function EditBody({
                         }
                       }}
                       onRemove={(id, sl) => onRemoveCard?.(id, sl)}
+                      onOpenLightbox={setEditLightbox}
                     />
                   ))}
                 </ul>
@@ -432,6 +437,15 @@ function EditBody({
             );
           })}
         </div>
+      )}
+
+      {editLightbox && (
+        <CardLightbox
+          imageUrl={editLightbox.imageUrl}
+          sources={editLightbox.sources}
+          name={editLightbox.name}
+          onClose={() => setEditLightbox(null)}
+        />
       )}
     </div>
   );

@@ -564,11 +564,26 @@ export class DecksService {
       reasons: legalityResult.reasons,
     };
 
+    // Resolve heroIdentifier when null. Decks imported from Fabrary before
+    // the T+5000 hero-backfill migration can have null heroIdentifier even
+    // though `deck.hero` (display name) is set. Mirror the same lookup the
+    // PUT save path uses so the Edit-mode HeroDropdown pre-fills correctly.
+    let resolvedHeroIdentifier = deck.heroIdentifier;
+    if (resolvedHeroIdentifier == null && deck.hero) {
+      const heroCard = catalog.cards.find(
+        (c) => c.types.includes(Type.Hero) && c.name === deck.hero,
+      );
+      if (heroCard) {
+        resolvedHeroIdentifier = heroCard.cardIdentifier;
+      }
+    }
+
     return {
       id: deck.id,
       fabraryUlid: deck.fabraryUlid,
       name: deck.name,
       hero: deck.hero,
+      heroIdentifier: resolvedHeroIdentifier,
       format: deck.format,
       status: deck.status,
       tags: tagRows.map((r) => r.name),
@@ -638,6 +653,7 @@ export class DecksService {
       fabraryUlid: null,
       name: saved.name,
       hero: saved.hero,
+      heroIdentifier: saved.heroIdentifier,
       format: saved.format,
       status: saved.status,
       tags: [],
@@ -1051,6 +1067,7 @@ export class DecksService {
       fabraryUlid: updatedDeck.fabraryUlid,
       name: updatedDeck.name,
       hero: updatedDeck.hero,
+      heroIdentifier: resolvedHeroIdentifier,
       format: updatedDeck.format,
       status: updatedDeck.status,
       tags: tagRows.map((r) => r.name),

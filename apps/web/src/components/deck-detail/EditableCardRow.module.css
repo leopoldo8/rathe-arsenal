@@ -1,131 +1,114 @@
 /* ============================================================
-   EditableCardRow — per-card editable row in Edit mode (U12)
+   EditableCardRow — Edit-mode gallery tile (card art primary)
    ============================================================ */
 
-.row {
-  display: grid;
-  /* thumbnail | card info | stepper | [warning icon] | remove button */
-  grid-template-columns: auto 1fr auto auto auto;
-  align-items: center;
-  gap: var(--ra-space-3);
-  padding: var(--ra-space-2) var(--ra-space-4);
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-2);
   background: var(--ra-bg-surface);
   border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-sm);
+  border-radius: var(--ra-radius-md);
   transition:
     border-color var(--ra-duration) var(--ra-ease),
     background-color var(--ra-duration) var(--ra-ease);
 }
 
-.row:hover {
+.tile:hover {
   border-color: var(--ra-border-strong);
 }
 
-.thumb {
-  flex-shrink: 0;
-  line-height: 0;
+.art {
+  position: relative;
+  display: flex;
+  justify-content: center;
 }
 
-.cardInfo {
-  min-width: 0;
+.warningOverlay {
+  position: absolute;
+  top: var(--ra-space-1);
+  right: var(--ra-space-1);
 }
 
-.cardName {
+.name {
   font-family: var(--ra-font-display);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-primary);
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-bottom: var(--ra-space-1);
+  padding: 0 var(--ra-space-1);
 }
 
-.cardMeta {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-fg-muted);
-  letter-spacing: 0.04em;
-}
-
-/* Quantity stepper */
-.stepper {
+.controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--ra-space-2);
-  flex-shrink: 0;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
 }
 
 .stepperBtn {
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: transparent;
+  background: var(--ra-bg-raised);
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
-  color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
   cursor: pointer;
   line-height: 1;
+  padding: 0;
   transition:
     border-color var(--ra-duration) var(--ra-ease),
-    color var(--ra-duration) var(--ra-ease);
-  flex-shrink: 0;
+    background-color var(--ra-duration) var(--ra-ease);
 }
 
-.stepperBtn:hover:not(:disabled) {
-  border-color: var(--ra-accent);
-  color: var(--ra-accent-body);
-}
-
-.stepperBtn:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 1px;
-}
-
-.stepperBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.stepperBtn:hover {
+  border-color: var(--ra-border-strong);
+  background: var(--ra-bg-surface);
 }
 
 .stepperQty {
-  font-family: var(--ra-font-mono);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
-  color: var(--ra-accent);
-  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
   min-width: 1.5ch;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Remove button */
 .removeBtn {
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-muted);
-  font-size: 1rem;
   cursor: pointer;
+  padding: 0;
   transition:
-    border-color var(--ra-duration) var(--ra-ease),
     color var(--ra-duration) var(--ra-ease),
-    background var(--ra-duration) var(--ra-ease);
-  flex-shrink: 0;
+    border-color var(--ra-duration) var(--ra-ease);
 }
 
 .removeBtn:hover {
-  border-color: var(--ra-ready-low);
-  color: var(--ra-ready-low);
-  background: var(--ra-ready-low-bg);
-}
-
-.removeBtn:focus-visible {
-  outline: 2px solid var(--ra-ready-low);
-  outline-offset: 1px;
+  color: var(--ra-fg-primary);
+  border-color: var(--ra-border-strong);
 }

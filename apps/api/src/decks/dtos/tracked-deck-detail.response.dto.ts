@@ -114,6 +114,13 @@ export interface ITrackedDeckDetailResponse {
   readonly fabraryUlid: string | null;
   readonly name: string;
   readonly hero: string;
+  /**
+   * Hero catalog identifier (e.g. "kayo-armed-and-dangerous"). Null only when
+   * the deck pre-dates the T+5000 hero-backfill migration AND the catalog has
+   * no hero matching `hero` (display name). Required by the Edit-mode
+   * HeroDropdown to pre-fill the current selection.
+   */
+  readonly heroIdentifier: string | null;
   readonly format: string;
   /**
    * User-assigned lifecycle label (U4).
