@@ -426,6 +426,10 @@ function DeckDetailPageWithData({
     cards: compositionDraft.draft.cards.map((c) => ({
       cardIdentifier: c.cardIdentifier,
       quantity: c.quantity,
+      // `other` is a frontend-only fallback for unknown stored slot strings;
+      // the backend enum allows only the four real deck slots.
+      slot: (c.slot === 'other' ? 'mainboard' : c.slot) as
+        | 'mainboard' | 'equipment' | 'weapon' | 'hero',
     })),
     heroIdentifier: compositionDraft.draft.heroIdentifier,
     format: compositionDraft.draft.format,

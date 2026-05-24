@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Not, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
@@ -35,6 +35,7 @@ import {
   computeDeckLegality,
   computeEffectiveReadiness,
   TSupportedFormat,
+  Type,
 } from '@rathe-arsenal/engine';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
 import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
@@ -804,7 +805,7 @@ export class DecksService {
     // -------------------------------------------------------------------------
     // Steps 1–5: inside a single transaction.
     // -------------------------------------------------------------------------
-    const { deck: updatedDeck, tagRows, readinessInsideTransaction } =
+    const { deck: updatedDeck, tagRows, readinessInsideTransaction, resolvedHeroIdentifier } =
       await this.dataSource.transaction(async (manager) => {
         // Step 1: Ownership check.
         const deck = await manager.findOne(TrackedDeckEntity, {
@@ -812,6 +813,30 @@ export class DecksService {
         });
         if (!deck) {
           throw new NotFoundException('Tracked deck not found');
+        }
+
+        // Step 1.5: Resolve heroIdentifier when null. Decks imported from
+        // Fabrary before the T+5000 hero-backfill migration can have a null
+        // heroIdentifier even though `deck.hero` (display name) is set. Look
+        // it up by display name in the catalog so the user can save without
+        // first opening the HeroDropdown.
+        let heroIdentifier = dto.heroIdentifier;
+        if (heroIdentifier == null) {
+          if (deck.heroIdentifier != null) {
+            heroIdentifier = deck.heroIdentifier;
+          } else if (deck.hero) {
+            const heroCard = catalog.cards.find(
+              (c) => c.types.includes(Type.Hero) && c.name === deck.hero,
+            );
+            if (heroCard) {
+              heroIdentifier = heroCard.cardIdentifier;
+            }
+          }
+        }
+        if (heroIdentifier == null) {
+          throw new BadRequestException(
+            `Cannot resolve hero for this deck. Pick a hero from the dropdown before saving.`,
+          );
         }
 
         // Step 2: Delete existing deck_card rows.
@@ -836,7 +861,7 @@ export class DecksService {
           TrackedDeckEntity,
           { id: deckId },
           {
-            heroIdentifier: dto.heroIdentifier,
+            heroIdentifier,
             format: dto.format,
           },
         );
@@ -916,6 +941,7 @@ export class DecksService {
           deck: reloadedDeck,
           tagRows: tagRowsInTx ?? [],
           readinessInsideTransaction: transactionReadiness,
+          resolvedHeroIdentifier: heroIdentifier,
         };
       });
 
@@ -984,7 +1010,7 @@ export class DecksService {
     });
 
     const deckInputForLegality = {
-      heroIdentifier: dto.heroIdentifier,
+      heroIdentifier: resolvedHeroIdentifier,
       cards: freshCardsForLegality.map((row) => ({
         cardIdentifier: row.cardIdentifier,
         quantity: row.quantity,
