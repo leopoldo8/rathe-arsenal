@@ -24,7 +24,7 @@ import { EditableCardRow } from './EditableCardRow';
 import { HeroDropdown } from './HeroDropdown';
 import { FormatDropdown } from './FormatDropdown';
 import { CascadeWarningPanelBanner } from './CascadeWarningPanel';
-import { DeckCardSearchAutocomplete, type TDeckSlot } from '../deck-card-search/DeckCardSearchAutocomplete';
+import { DeckCardSearchAutocomplete } from '../deck-card-search/DeckCardSearchAutocomplete';
 import type { IBreakdown, IDecisionEntry, IBreakdownEntry } from '../../api/deck-detail';
 import type { TDecisionState } from './SubstitutionRow';
 import type { ICompositionDraft, IDraftCard, TDraftSlot } from '../../hooks/useCompositionDraft';
