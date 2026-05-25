@@ -61,17 +61,12 @@
 }
 
 .heroThumb {
-  width: 48px;
-  height: 64px;
+  /* Let CardArt own its dimensions (size="sm" => 72px width, 7:10 aspect).
+     Forcing a fixed 48x64 box clipped the top of the rendered card art. */
   flex-shrink: 0;
-  background: var(--ra-bg-muted);
-  border: 1px solid var(--ra-border-subtle);
-  border-radius: var(--ra-radius-sm);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ra-fg-muted);
-  font-size: 1.25rem;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .heroThumb__glyph {

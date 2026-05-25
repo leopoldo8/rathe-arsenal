@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './CardLightbox.module.css';
 import { setCssVar } from '../../lib/dom/setCssVar';
 
@@ -102,7 +103,14 @@ export function CardLightbox({
     setCssVar(el, '--tilt-y', `${tilt.y}deg`);
   }, [tilt]);
 
-  return (
+  // Portal to <body> so the lightbox escapes any ancestor that contains it
+  // (sticky/overflow sidebar, transformed parent, etc). Without this, a
+  // mount inside `DeckDetailSidebar` (sticky + overflow-y:auto) would clip
+  // the backdrop and leave the navbar/page chrome visible behind it.
+  if (typeof document === 'undefined') {
+    return null as unknown as React.ReactElement;
+  }
+  return createPortal(
     <div
       className={styles.backdrop}
       role="dialog"
@@ -173,6 +181,7 @@ export function CardLightbox({
       <p className={styles.caption} aria-hidden="true">
         {name}
       </p>
-    </div>
+    </div>,
+    document.body,
   );
 }
