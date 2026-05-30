@@ -22,10 +22,13 @@ import styles from './CascadeWarningPanel.module.css';
 // Shared sub-component: warning content
 // ---------------------------------------------------------------------------
 
+type TDraftCard = ICompositionDraft['cards'][number];
+
 interface IWarningContentProps {
   readonly count: number;
   readonly format: string;
   readonly illegalCardIds: ReadonlySet<string>;
+  readonly illegalCards: readonly TDraftCard[];
   readonly onRemoveIllegal: (ids: ReadonlySet<string>) => void;
   readonly textClassName: string;
 }
@@ -34,6 +37,7 @@ function WarningContent({
   count,
   format,
   illegalCardIds,
+  illegalCards,
   onRemoveIllegal,
   textClassName,
 }: IWarningContentProps): React.ReactElement {
@@ -42,6 +46,31 @@ function WarningContent({
       <p className={textClassName} data-testid="cascade-warning-text">
         {count} {count === 1 ? 'card' : 'cards'} may be illegal in {format}.
       </p>
+
+      {illegalCards.length > 0 ? (
+        <ul className={styles.illegalList} data-testid="cascade-illegal-list">
+          {illegalCards.map((card) => (
+            <li
+              key={`${card.cardIdentifier}::${card.slot}`}
+              className={styles.illegalItem}
+              data-testid={`cascade-illegal-item-${card.cardIdentifier}`}
+            >
+              <span className={styles.illegalQty}>{card.quantity}&times;</span>
+              <span className={styles.illegalName}>{card.name}</span>
+              <button
+                type="button"
+                className={styles.removeOneBtn}
+                data-testid={`cascade-remove-${card.cardIdentifier}`}
+                aria-label={`Remove ${card.name} from deck`}
+                onClick={() => onRemoveIllegal(new Set([card.cardIdentifier]))}
+              >
+                &#x2715;
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       <button
         type="button"
         className={styles.removeBtn}
@@ -49,10 +78,18 @@ function WarningContent({
         onClick={() => onRemoveIllegal(illegalCardIds)}
         aria-label={`Remove ${count} illegal ${count === 1 ? 'card' : 'cards'} from deck`}
       >
-        Remove illegal cards
+        Remove {count === 1 ? 'illegal card' : 'all illegal cards'}
       </button>
     </>
   );
+}
+
+/** Resolves the draft cards flagged illegal, in draft order. */
+function selectIllegalCards(
+  draft: ICompositionDraft,
+  illegalCardIds: ReadonlySet<string>,
+): readonly TDraftCard[] {
+  return draft.cards.filter((c) => illegalCardIds.has(c.cardIdentifier));
 }
 
 // ---------------------------------------------------------------------------
@@ -83,11 +120,12 @@ export function CascadeWarningPanelSidebar({
       role="status"
       aria-live="polite"
     >
-      <h4 className={styles.sidebarTitle}>Cascade Warning</h4>
+      <h4 className={styles.sidebarTitle}>Illegal Cards</h4>
       <WarningContent
         count={cascadeCheck.count}
         format={draft.format}
         illegalCardIds={cascadeCheck.illegalCardIds}
+        illegalCards={selectIllegalCards(draft, cascadeCheck.illegalCardIds)}
         onRemoveIllegal={onRemoveIllegal}
         textClassName={styles.sidebarBody ?? ''}
       />
@@ -161,6 +199,7 @@ export function CascadeWarningPanelBanner({
             count={cascadeCheck.count}
             format={draft.format}
             illegalCardIds={cascadeCheck.illegalCardIds}
+            illegalCards={selectIllegalCards(draft, cascadeCheck.illegalCardIds)}
             onRemoveIllegal={onRemoveIllegal}
             textClassName={styles.bannerBodyText ?? ''}
           />

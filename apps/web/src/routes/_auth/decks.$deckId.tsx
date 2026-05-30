@@ -24,6 +24,7 @@ import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
 import { useCascadeCheck } from '../../hooks/useCascadeCheck';
+import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChangesConfirm';
 import type { ITagResponse } from '../../api/tags';
@@ -328,7 +329,36 @@ function DeckDetailPageWithData({
   }, [snapshot, deck.heroIdentifier, deck.format]);
 
   const compositionDraft = useCompositionDraft(deckId, draftInitialPayload);
-  const cascadeCheck = useCascadeCheck(compositionDraft.draft);
+
+  // Resolve the draft hero's `Hero` enum (e.g. "Kayo") from the heroes catalog.
+  // The cascade check matches each card's `legalHeroes` (enum values) against
+  // this — comparing against the raw heroIdentifier (a cardIdentifier) would
+  // flag every hero-restricted card as illegal. Also drives the live hero name
+  // shown in the sidebar while editing.
+  const heroesQuery = useHeroesQuery();
+  const draftHeroCard = React.useMemo(
+    () =>
+      compositionDraft.draft.heroIdentifier
+        ? heroesQuery.data?.heroes.find(
+            (h) => h.cardIdentifier === compositionDraft.draft.heroIdentifier,
+          ) ?? null
+        : null,
+    [compositionDraft.draft.heroIdentifier, heroesQuery.data],
+  );
+  const draftHeroEnum = draftHeroCard?.hero ?? null;
+
+  const cascadeCheck = useCascadeCheck(compositionDraft.draft, draftHeroEnum);
+
+  // In Edit mode the sidebar must reflect the LIVE draft hero/format, not the
+  // last-saved deck values, so switching the hero updates the displayed name.
+  const isEditing = mode === 'edit';
+  const sidebarHeroIdentifier = isEditing
+    ? compositionDraft.draft.heroIdentifier
+    : deck.heroIdentifier ?? null;
+  const sidebarHeroName = isEditing
+    ? draftHeroCard?.name ?? deck.hero
+    : deck.hero;
+  const sidebarFormat = isEditing ? compositionDraft.draft.format : deck.format;
 
   // ---------------------------------------------------------------------------
   // Draft restore modal (U13) — check localStorage on Edit entry
@@ -487,10 +517,10 @@ function DeckDetailPageWithData({
         }
         sidebar={
           <DeckDetailSidebar
-            heroIdentifier={deck.heroIdentifier ?? null}
+            heroIdentifier={sidebarHeroIdentifier}
             heroName={null}
-            heroLegacy={deck.hero}
-            format={deck.format}
+            heroLegacy={sidebarHeroName}
+            format={sidebarFormat}
             legality={deck.legality}
             fabraryUlid={deck.fabraryUlid ?? null}
             status={deck.status}

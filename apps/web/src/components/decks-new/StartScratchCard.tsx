@@ -10,10 +10,12 @@
  *  - HeroDropdown from apps/web/src/components/deck-detail/HeroDropdown.tsx
  *  - FormatDropdown from apps/web/src/components/deck-detail/FormatDropdown.tsx
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCreateScratchDeckMutation } from '../../api/decks';
+import { useHeroesQuery } from '../../api/catalog';
 import { ApiError } from '../../lib/api-client';
+import { isHeroLegalForFormat } from '../../lib/hero-legality';
 import { HeroDropdown } from '../deck-detail/HeroDropdown';
 import { FormatDropdown } from '../deck-detail/FormatDropdown';
 import styles from './StartScratchCard.module.css';
@@ -31,12 +33,26 @@ import styles from './StartScratchCard.module.css';
 export function StartScratchCard(): React.ReactElement {
   const navigate = useNavigate();
   const createMutation = useCreateScratchDeckMutation();
+  const heroesQuery = useHeroesQuery();
 
   const [heroIdentifier, setHeroIdentifier] = useState<string | null>(null);
   const [format, setFormat] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const canSubmit = heroIdentifier !== null && format.length > 0;
+  // Block submission when the chosen hero is not legal in the chosen format
+  // (e.g. an adult hero selected before switching to Silver Age). The
+  // HeroDropdown renders the inline error; here we just gate the button.
+  const heroIllegalForFormat = useMemo<boolean>(() => {
+    if (heroIdentifier === null || format.length === 0) return false;
+    const hero = heroesQuery.data?.heroes.find(
+      (h) => h.cardIdentifier === heroIdentifier,
+    );
+    if (!hero) return false;
+    return !isHeroLegalForFormat(hero, format);
+  }, [heroIdentifier, format, heroesQuery.data]);
+
+  const canSubmit =
+    heroIdentifier !== null && format.length > 0 && !heroIllegalForFormat;
   const isSubmitting = createMutation.isPending;
 
   function handleSubmit(): void {
@@ -73,6 +89,7 @@ export function StartScratchCard(): React.ReactElement {
       <div className={styles.fields}>
         <HeroDropdown
           value={heroIdentifier}
+          filterFormat={format}
           onChange={(id) => {
             setHeroIdentifier(id);
             setErrorMessage(null);

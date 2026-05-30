@@ -178,6 +178,57 @@ describe('HeroDropdown — selected state display', () => {
   });
 });
 
+describe('HeroDropdown — format filtering', () => {
+  it('hides heroes not legal in the active format from the list', async () => {
+    render(
+      <HeroDropdown value={null} onChange={() => undefined} filterFormat="Blitz" />,
+    );
+    const input = screen.getByTestId('hero-dropdown-input');
+    await userEvent.click(input);
+    // Katsu and Dorinthea are Blitz-legal; Briar (CC only) is filtered out.
+    expect(screen.getByTestId('hero-option-katsu-the-wanderer-wtr')).toBeInTheDocument();
+    expect(screen.getByTestId('hero-option-dorinthea-ironsong-wtr')).toBeInTheDocument();
+    expect(screen.queryByTestId('hero-option-briar-warbearer-evr')).not.toBeInTheDocument();
+  });
+
+  it('shows every hero when no format filter is applied', async () => {
+    render(<HeroDropdown value={null} onChange={() => undefined} filterFormat="" />);
+    const input = screen.getByTestId('hero-dropdown-input');
+    await userEvent.click(input);
+    expect(screen.getByTestId('hero-option-briar-warbearer-evr')).toBeInTheDocument();
+  });
+
+  it('renders an error state when the selected hero is illegal in the format', () => {
+    render(
+      <HeroDropdown
+        value="briar-warbearer-evr"
+        onChange={() => undefined}
+        filterFormat="Blitz"
+      />,
+    );
+    const error = screen.getByTestId('hero-dropdown-format-error');
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveTextContent('Blitz');
+    expect(screen.getByTestId('hero-dropdown-selected')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('does NOT render an error state when the selected hero is legal in the format', () => {
+    render(
+      <HeroDropdown
+        value="katsu-the-wanderer-wtr"
+        onChange={() => undefined}
+        filterFormat="Blitz"
+      />,
+    );
+    expect(
+      screen.queryByTestId('hero-dropdown-format-error'),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe('HeroDropdown — keyboard navigation', () => {
   it('allows Enter to select the highlighted hero', async () => {
     const mockOnChange = vi.fn();

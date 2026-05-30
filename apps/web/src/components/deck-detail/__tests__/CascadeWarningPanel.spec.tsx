@@ -130,6 +130,86 @@ describe('CascadeWarningPanelSidebar — N>0', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Illegal-card list (item 2) + title (item 1)
+// ---------------------------------------------------------------------------
+
+const POPULATED_DRAFT: ICompositionDraft = {
+  cards: [
+    {
+      cardIdentifier: 'illegal-card-0',
+      name: 'Snatch',
+      quantity: 3,
+      slot: 'mainboard',
+      pitch: 1,
+      cost: 0,
+      type: 'Action',
+      imageUrl: null,
+      legalFormats: ['Blitz'],
+      legalHeroes: [],
+      bannedFormats: [],
+    },
+    {
+      cardIdentifier: 'legal-card',
+      name: 'Sink Below',
+      quantity: 2,
+      slot: 'mainboard',
+      pitch: 3,
+      cost: 0,
+      type: 'Defense Reaction',
+      imageUrl: null,
+      legalFormats: ['Classic Constructed'],
+      legalHeroes: [],
+      bannedFormats: [],
+    },
+  ],
+  heroIdentifier: 'katsu-the-wanderer-wtr',
+  format: 'Classic Constructed',
+};
+
+describe('CascadeWarningPanelSidebar — illegal card list', () => {
+  it('renames the sidebar title to "Illegal Cards"', () => {
+    render(
+      <CascadeWarningPanelSidebar
+        draft={POPULATED_DRAFT}
+        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        onRemoveIllegal={() => undefined}
+      />,
+    );
+    expect(screen.getByText('Illegal Cards')).toBeInTheDocument();
+  });
+
+  it('lists each illegal card with its quantity and name', () => {
+    render(
+      <CascadeWarningPanelSidebar
+        draft={POPULATED_DRAFT}
+        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        onRemoveIllegal={() => undefined}
+      />,
+    );
+    const item = screen.getByTestId('cascade-illegal-item-illegal-card-0');
+    expect(item).toHaveTextContent('Snatch');
+    expect(item).toHaveTextContent('3');
+    // The legal card is NOT listed
+    expect(
+      screen.queryByTestId('cascade-illegal-item-legal-card'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('per-card remove button calls onRemoveIllegal with just that card id', async () => {
+    const mockRemove = vi.fn();
+    render(
+      <CascadeWarningPanelSidebar
+        draft={POPULATED_DRAFT}
+        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        onRemoveIllegal={mockRemove}
+      />,
+    );
+    await userEvent.click(screen.getByTestId('cascade-remove-illegal-card-0'));
+    expect(mockRemove).toHaveBeenCalledWith(new Set(['illegal-card-0']));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Banner variant tests
 // ---------------------------------------------------------------------------
 

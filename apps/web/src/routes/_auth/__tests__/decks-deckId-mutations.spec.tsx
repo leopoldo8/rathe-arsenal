@@ -153,6 +153,13 @@ vi.mock('../../../components/deck-detail/DeckCanvas', () => ({
   ),
 }));
 
+// Heroes catalog query — the route resolves the draft hero enum + cascade
+// from this. Stubbed so it does not hit the real api-client/auth context.
+vi.mock('../../../api/catalog', () => ({
+  useHeroesQuery: () => ({ data: { heroes: [] }, isLoading: false, isFetching: false }),
+  HEROES_QUERY_KEY: ['catalog-heroes'],
+}));
+
 // ---------------------------------------------------------------------------
 // API mock state — mutable so each test can configure it
 // ---------------------------------------------------------------------------

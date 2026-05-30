@@ -35,9 +35,18 @@ vi.mock('../ShoppingPanel', () => ({
 }));
 
 // useHeroesQuery hits useApiClient which requires <AuthProvider>; mock with
-// an empty result so the sidebar falls through to the CardArt SVG placeholder.
+// a mutable holder so individual tests can seed catalog heroes. Defaults to
+// empty so the sidebar falls through to the CardArt SVG placeholder.
+const { heroesHolder } = vi.hoisted(() => ({
+  heroesHolder: { heroes: [] as unknown[] },
+}));
+
 vi.mock('../../../api/catalog', () => ({
-  useHeroesQuery: () => ({ data: { heroes: [] }, isLoading: false, isFetching: false }),
+  useHeroesQuery: () => ({
+    data: { heroes: heroesHolder.heroes },
+    isLoading: false,
+    isFetching: false,
+  }),
 }));
 
 // SidebarCollapseToggle — use real component (it's simple)
@@ -77,6 +86,29 @@ function renderSidebar(props: Partial<React.ComponentProps<typeof DeckDetailSide
 describe('DeckDetailSidebar — hero block', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    heroesHolder.heroes = [];
+  });
+
+  it('prefers the resolved catalog hero name over heroLegacy (live edit follows heroIdentifier)', () => {
+    // Simulates the route binding heroIdentifier to the live draft hero while
+    // heroLegacy still carries the previously-saved name. The displayed name
+    // must follow the catalog-resolved hero, not the stale legacy string.
+    heroesHolder.heroes = [
+      {
+        cardIdentifier: 'kayo-berserker-runeblood',
+        name: 'Kayo, Berserker',
+        hero: 'Kayo',
+        young: false,
+        legalFormats: ['Classic Constructed'],
+        imageUrl: null,
+      },
+    ];
+    renderSidebar({
+      heroIdentifier: 'kayo-berserker-runeblood',
+      heroName: null,
+      heroLegacy: 'Arakni', // stale saved name
+    });
+    expect(screen.getByTestId('sidebar-hero-name')).toHaveTextContent('Kayo, Berserker');
   });
 
   it('renders the hero name in the hero block', () => {

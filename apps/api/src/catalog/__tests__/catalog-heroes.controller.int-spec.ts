@@ -53,7 +53,7 @@ describe('CatalogController — GET /catalog/heroes (U17)', () => {
     expect(response.heroes.length).toBeGreaterThanOrEqual(143);
   });
 
-  it('each hero carries the documented slim shape: cardIdentifier, name, young, legalFormats, imageUrl', () => {
+  it('each hero carries the documented slim shape: cardIdentifier, name, hero, young, legalFormats, imageUrl', () => {
     // Act
     const response = controller.getHeroes();
 
@@ -64,6 +64,9 @@ describe('CatalogController — GET /catalog/heroes (U17)', () => {
       expect(hero.cardIdentifier.length).toBeGreaterThan(0);
       expect(typeof hero.name).toBe('string');
       expect(hero.name.length).toBeGreaterThan(0);
+      // `hero` is the Hero enum value (e.g. "Kayo"); present for every hero card.
+      expect(typeof hero.hero).toBe('string');
+      expect((hero.hero ?? '').length).toBeGreaterThan(0);
       expect(typeof hero.young).toBe('boolean');
       expect(Array.isArray(hero.legalFormats)).toBe(true);
       if (hero.imageUrl !== null) {

@@ -62,6 +62,7 @@ export class CatalogService {
       heroes.push({
         cardIdentifier: card.cardIdentifier,
         name: card.name,
+        hero: card.hero ?? null,
         young: card.young,
         legalFormats: [...card.legalFormats] as string[],
         imageUrl: card.imageUrl

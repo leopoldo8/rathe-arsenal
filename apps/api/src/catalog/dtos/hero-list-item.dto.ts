@@ -9,6 +9,14 @@ export interface IHeroListItem {
   readonly cardIdentifier: string;
   readonly name: string;
   /**
+   * The `Hero` enum value for this hero card (e.g. "Kayo", "Dorinthea").
+   * This is what per-card `legalHeroes` lists reference — NOT the
+   * cardIdentifier. The web cascade check needs it to compare a card's
+   * `legalHeroes` against the deck's selected hero. Null only if the
+   * catalog entry has no hero enum (should not happen for hero cards).
+   */
+  readonly hero: string | null;
+  /**
    * True for "young hero" versions designated for Blitz / Silver Age.
    * Always a boolean (never undefined) — coerced by U2 catalog normalization.
    */

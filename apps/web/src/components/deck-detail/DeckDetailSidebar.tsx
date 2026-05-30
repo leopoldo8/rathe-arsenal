@@ -168,7 +168,6 @@ export function DeckDetailSidebar({
     writeSidebarExpanded(expanded);
   }, [expanded]);
 
-  const heroDisplayName = heroName ?? heroLegacy;
   const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
 
   const readinessClass = getReadinessClass(effectivePercent);
@@ -185,6 +184,10 @@ export function DeckDetailSidebar({
         : null,
     [heroIdentifier, heroesQuery.data],
   );
+  // Prefer the resolved hero card's name so the displayed name follows the
+  // live `heroIdentifier` (which the route binds to the draft while editing),
+  // falling back to the legacy display string for heroes not in the catalog.
+  const heroDisplayName = heroCard?.name ?? heroName ?? heroLegacy;
   const heroImageUrl = heroCard?.imageUrl ?? null;
   const heroLightboxSources = heroImageUrl
     ? heroImageUrl.sources && heroImageUrl.sources.length > 0
