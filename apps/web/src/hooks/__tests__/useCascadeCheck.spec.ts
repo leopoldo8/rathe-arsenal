@@ -145,24 +145,26 @@ describe('useCascadeCheck — banned format', () => {
 });
 
 describe('useCascadeCheck — hero restriction', () => {
+  // legalHeroes holds Hero ENUM values (e.g. "Katsu"), matched against the
+  // resolved hero enum passed as the 2nd arg — NOT the draft heroIdentifier.
   it('flags card with hero restriction when current hero not in legalHeroes', () => {
     const draft = makeDraft(
-      [makeCard('ninja-card', { legalHeroes: ['katsu-the-wanderer-wtr'] })],
+      [makeCard('ninja-card', { legalHeroes: ['Katsu'] })],
       'Classic Constructed',
-      'dorinthea-ironsong-wtr', // not in legalHeroes
+      'katsu-the-wanderer-wtr',
     );
-    const { result } = renderHook(() => useCascadeCheck(draft));
+    const { result } = renderHook(() => useCascadeCheck(draft, 'Dorinthea'));
     expect(result.current.count).toBe(1);
     expect(result.current.illegalCardIds.has('ninja-card')).toBe(true);
   });
 
   it('does not flag card when hero is in legalHeroes', () => {
     const draft = makeDraft(
-      [makeCard('ninja-card', { legalHeroes: ['katsu-the-wanderer-wtr'] })],
+      [makeCard('ninja-card', { legalHeroes: ['Katsu'] })],
       'Classic Constructed',
-      'katsu-the-wanderer-wtr', // in legalHeroes
+      'katsu-the-wanderer-wtr',
     );
-    const { result } = renderHook(() => useCascadeCheck(draft));
+    const { result } = renderHook(() => useCascadeCheck(draft, 'Katsu'));
     expect(result.current.count).toBe(0);
   });
 
@@ -172,18 +174,18 @@ describe('useCascadeCheck — hero restriction', () => {
       'Classic Constructed',
       'dorinthea-ironsong-wtr',
     );
-    const { result } = renderHook(() => useCascadeCheck(draft));
+    const { result } = renderHook(() => useCascadeCheck(draft, 'Dorinthea'));
     expect(result.current.count).toBe(0);
   });
 
-  it('does not flag hero-restricted card when draft heroIdentifier is null', () => {
+  it('does not flag hero-restricted card when the hero enum is unresolved', () => {
     const draft = makeDraft(
-      [makeCard('ninja-card', { legalHeroes: ['katsu-the-wanderer-wtr'] })],
+      [makeCard('ninja-card', { legalHeroes: ['Katsu'] })],
       'Classic Constructed',
       null, // no hero set
     );
-    const { result } = renderHook(() => useCascadeCheck(draft));
-    // When no hero is set, the hero restriction cannot be evaluated → conservative
+    const { result } = renderHook(() => useCascadeCheck(draft, null));
+    // When the hero enum is unresolved, the restriction cannot be evaluated → conservative
     expect(result.current.count).toBe(0);
   });
 });
@@ -223,15 +225,16 @@ describe('useCascadeCheck — format change recomputes cascade', () => {
 });
 
 describe('useCascadeCheck — hero change recomputes cascade', () => {
-  it('returns different results when hero changes', () => {
-    const cards = [
-      makeCard('ninja-card', { legalHeroes: ['katsu-the-wanderer-wtr'] }),
-    ];
-    const katsuDraft = makeDraft(cards, 'Classic Constructed', 'katsu-the-wanderer-wtr');
-    const dorinthaaDraft = makeDraft(cards, 'Classic Constructed', 'dorinthea-ironsong-wtr');
+  it('returns different results when the resolved hero enum changes', () => {
+    const cards = [makeCard('ninja-card', { legalHeroes: ['Katsu'] })];
+    const draft = makeDraft(cards, 'Classic Constructed', 'katsu-the-wanderer-wtr');
 
-    const { result: katsuResult } = renderHook(() => useCascadeCheck(katsuDraft));
-    const { result: dorinthaResult } = renderHook(() => useCascadeCheck(dorinthaaDraft));
+    const { result: katsuResult } = renderHook(() =>
+      useCascadeCheck(draft, 'Katsu'),
+    );
+    const { result: dorinthaResult } = renderHook(() =>
+      useCascadeCheck(draft, 'Dorinthea'),
+    );
 
     expect(katsuResult.current.count).toBe(0); // legal for Katsu
     expect(dorinthaResult.current.count).toBe(1); // illegal for Dorinthea

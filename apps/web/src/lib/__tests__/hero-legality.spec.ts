@@ -5,6 +5,7 @@ import type { IHeroListItem } from '../../api/catalog';
 const adultHero: IHeroListItem = {
   cardIdentifier: 'dorinthea-ironsong-wtr',
   name: 'Dorinthea Ironsong',
+  hero: 'Dorinthea',
   young: false,
   legalFormats: ['Classic Constructed', 'Living Legend'],
   imageUrl: null,
@@ -13,6 +14,7 @@ const adultHero: IHeroListItem = {
 const youngHero: IHeroListItem = {
   cardIdentifier: 'dorinthea-wtr',
   name: 'Dorinthea',
+  hero: 'Dorinthea',
   young: true,
   legalFormats: ['Blitz', 'Silver Age'],
   imageUrl: null,

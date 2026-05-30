@@ -88,6 +88,71 @@
   line-height: var(--ra-leading-snug);
 }
 
+/* Shared: per-card illegal list */
+.illegalList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+}
+
+.illegalItem {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-1) 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+}
+
+.illegalQty {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  flex-shrink: 0;
+  min-inline-size: 2.5ch;
+}
+
+.illegalName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeOneBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-caption);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.removeOneBtn:hover {
+  background: var(--ra-ready-low-bg);
+  border-color: var(--ra-ready-low);
+}
+
+.removeOneBtn:focus-visible {
+  outline: 2px solid var(--ra-ready-low);
+  outline-offset: 2px;
+}
+
 /* Shared: Remove illegal cards button */
 .removeBtn {
   display: inline-flex;

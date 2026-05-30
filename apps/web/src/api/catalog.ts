@@ -48,6 +48,13 @@ export interface ISearchCardsResponse {
 export interface IHeroListItem {
   readonly cardIdentifier: string;
   readonly name: string;
+  /**
+   * The `Hero` enum value (e.g. "Kayo", "Dorinthea") — what per-card
+   * `legalHeroes` lists reference. Distinct from `cardIdentifier`. Null
+   * only when the catalog entry has no hero enum. Used by the cascade
+   * check to match cards against the selected hero.
+   */
+  readonly hero: string | null;
   /** True when this is the young (non-adult) version of the hero. */
   readonly young: boolean;
   /** Formats in which this hero is legal (e.g. ["CC", "Blitz"]). */

@@ -43,6 +43,7 @@ function makeHero(overrides: Partial<IHeroListItem> = {}): IHeroListItem {
   return {
     cardIdentifier: 'katsu-the-wanderer-wtr',
     name: 'Katsu, the Wanderer',
+    hero: 'Katsu',
     young: false,
     legalFormats: ['CC', 'Blitz'],
     imageUrl: {

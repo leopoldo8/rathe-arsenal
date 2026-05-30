@@ -36,11 +36,17 @@ export interface ICascadeCheckResult {
  * is treated as potentially legal (conservative fallback — avoid false flags).
  *
  * When `legalHeroes` is empty the card has no hero restriction (all heroes).
+ *
+ * IMPORTANT: `legalHeroes` holds Hero ENUM values (e.g. "Kayo", "Dorinthea"),
+ * NOT cardIdentifiers. The match must be against the deck hero's enum value
+ * (`heroEnum`), which the caller resolves from the heroes catalog — comparing
+ * against the draft `heroIdentifier` (a cardIdentifier) would never match and
+ * would flag every hero-restricted card as illegal.
  */
 function isCardIllegal(
   card: ICompositionDraft['cards'][number],
   format: string,
-  heroIdentifier: string | null,
+  heroEnum: string | null,
 ): boolean {
   // Check: card is explicitly banned in this format
   if ((card.bannedFormats ?? []).includes(format)) return true;
@@ -48,11 +54,12 @@ function isCardIllegal(
   // Check: card is format-restricted and current format not in legal list
   if (card.legalFormats.length > 0 && !card.legalFormats.includes(format)) return true;
 
-  // Check: card is hero-restricted and current hero not in legal list
+  // Check: card is hero-restricted and current hero not in legal list.
+  // Skip when the hero enum is unresolved (null) to avoid false positives.
   if (
     card.legalHeroes.length > 0 &&
-    heroIdentifier !== null &&
-    !card.legalHeroes.includes(heroIdentifier)
+    heroEnum !== null &&
+    !card.legalHeroes.includes(heroEnum)
   ) {
     return true;
   }
@@ -60,14 +67,23 @@ function isCardIllegal(
   return false;
 }
 
-export function useCascadeCheck(draft: ICompositionDraft): ICascadeCheckResult {
+/**
+ * @param draft     The current composition draft.
+ * @param heroEnum  The deck hero's `Hero` enum value (e.g. "Kayo"), resolved
+ *                  by the caller from the heroes catalog via the draft's
+ *                  `heroIdentifier`. Null when no hero is set or unresolved.
+ */
+export function useCascadeCheck(
+  draft: ICompositionDraft,
+  heroEnum: string | null = null,
+): ICascadeCheckResult {
   return useMemo<ICascadeCheckResult>(() => {
     const illegal = new Set<string>();
     for (const card of draft.cards) {
-      if (isCardIllegal(card, draft.format, draft.heroIdentifier)) {
+      if (isCardIllegal(card, draft.format, heroEnum)) {
         illegal.add(card.cardIdentifier);
       }
     }
     return { illegalCardIds: illegal, count: illegal.size };
-  }, [draft]);
+  }, [draft, heroEnum]);
 }
