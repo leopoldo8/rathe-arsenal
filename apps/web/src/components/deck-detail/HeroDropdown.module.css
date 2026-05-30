@@ -116,6 +116,19 @@
   min-block-size: 36px;
 }
 
+/* Error variant: selected hero is illegal in the active format */
+.selectedDisplayError {
+  background: var(--ra-ready-low-bg);
+  border-color: var(--ra-ready-low);
+}
+
+.fieldError {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+}
+
 .selectedName {
   flex: 1;
   min-width: 0;

@@ -73,6 +73,31 @@ vi.mock('../../../api/decks', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock catalog API — StartScratchCard calls useHeroesQuery directly to gate
+// submission by hero/format legality. The hero used by these tests is
+// Classic-Constructed-legal so the gating never blocks the happy paths.
+// ---------------------------------------------------------------------------
+
+vi.mock('../../../api/catalog', () => ({
+  useHeroesQuery: () => ({
+    data: {
+      heroes: [
+        {
+          cardIdentifier: 'dorinthea-ironsong-wtr',
+          name: 'Dorinthea Ironsong',
+          young: false,
+          legalFormats: ['Classic Constructed', 'Blitz'],
+          imageUrl: null,
+        },
+      ],
+    },
+    isLoading: false,
+    isFetching: false,
+  }),
+  HEROES_QUERY_KEY: ['catalog-heroes'],
+}));
+
+// ---------------------------------------------------------------------------
 // Mock HeroDropdown (from deck-detail) — simple controlled input
 // ---------------------------------------------------------------------------
 

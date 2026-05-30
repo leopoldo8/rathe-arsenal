@@ -18,6 +18,7 @@ import React, {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { useHeroesQuery, type IHeroListItem } from '../../api/catalog';
+import { isHeroLegalForFormat } from '../../lib/hero-legality';
 import styles from './HeroDropdown.module.css';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,13 @@ export interface IHeroDropdownProps {
   readonly onChange: (heroIdentifier: string | null) => void;
   /** Label text shown above the combobox. */
   readonly label?: string;
+  /**
+   * When set to a concrete format (e.g. "Silver Age"), heroes not legal in
+   * that format are removed from the selectable list, and an already-selected
+   * hero that is illegal renders an error state. Empty string means no
+   * constraint (every hero is selectable).
+   */
+  readonly filterFormat?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +63,7 @@ export function HeroDropdown({
   value,
   onChange,
   label = 'Hero',
+  filterFormat = '',
 }: IHeroDropdownProps): React.ReactElement {
   const heroesQuery = useHeroesQuery();
   const heroesRaw = heroesQuery.data?.heroes;
@@ -78,12 +87,18 @@ export function HeroDropdown({
     [value, heroes],
   );
 
-  // Filter heroes based on the current input value
+  // Whether the currently selected hero is illegal in the active format.
+  // Drives the error state on the selected display.
+  const isSelectedIllegal =
+    selectedHero !== null && !isHeroLegalForFormat(selectedHero, filterFormat);
+
+  // Filter heroes by the active format first, then by the typed name.
   const filteredHeroes = useMemo<readonly IHeroListItem[]>(() => {
+    const byFormat = heroes.filter((h) => isHeroLegalForFormat(h, filterFormat));
     const trimmed = inputValue.trim().toLowerCase();
-    if (trimmed.length < MIN_FILTER_LENGTH) return heroes;
-    return heroes.filter((h) => h.name.toLowerCase().includes(trimmed));
-  }, [heroes, inputValue]);
+    if (trimmed.length < MIN_FILTER_LENGTH) return byFormat;
+    return byFormat.filter((h) => h.name.toLowerCase().includes(trimmed));
+  }, [heroes, inputValue, filterFormat]);
 
   // Reset active index when filtered list changes
   useEffect(() => {
@@ -166,8 +181,13 @@ export function HeroDropdown({
           {label}
         </span>
         <div
-          className={styles.selectedDisplay}
+          className={
+            isSelectedIllegal
+              ? `${styles.selectedDisplay} ${styles.selectedDisplayError}`
+              : styles.selectedDisplay
+          }
           data-testid="hero-dropdown-selected"
+          aria-invalid={isSelectedIllegal || undefined}
           role="button"
           tabIndex={0}
           aria-label={`Selected hero: ${selectedHero.name}. Click to change.`}
@@ -195,6 +215,15 @@ export function HeroDropdown({
             &#x2715;
           </button>
         </div>
+        {isSelectedIllegal ? (
+          <p
+            className={styles.fieldError}
+            role="alert"
+            data-testid="hero-dropdown-format-error"
+          >
+            {selectedHero.name} is not legal in {filterFormat}.
+          </p>
+        ) : null}
       </div>
     );
   }
