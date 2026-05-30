@@ -194,10 +194,13 @@ function makeDraft(cards: ICompositionDraft['cards'] = []): ICompositionDraft {
 }
 
 function makeCascadeResult(count: number): ICascadeCheckResult {
-  const ids = new Set<string>(
-    Array.from({ length: count }, (_, i) => `illegal-card-${i}`),
-  );
-  return { illegalCardIds: ids, count };
+  const idList = Array.from({ length: count }, (_, i) => `illegal-card-${i}`);
+  const ids = new Set<string>(idList);
+  return {
+    illegalCardIds: ids,
+    count,
+    reasons: new Map(idList.map((id) => [id, 'format' as const])),
+  };
 }
 
 // ---------------------------------------------------------------------------

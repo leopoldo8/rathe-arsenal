@@ -118,9 +118,21 @@
 .illegalName {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.illegalNameText {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.illegalReason {
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+  line-height: var(--ra-leading-snug);
 }
 
 .removeOneBtn {

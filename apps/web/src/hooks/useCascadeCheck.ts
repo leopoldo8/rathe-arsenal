@@ -15,13 +15,42 @@
  *  - `illegalCardIds`: Set of cardIdentifiers that appear to violate the
  *    current format/hero combination.
  *  - `count`: size of the set (convenience accessor).
+ *  - `reasons`: per-card reason so the UI can explain WHY a card is illegal
+ *    (format vs hero/class scope) instead of always blaming the format.
  */
 import { useMemo } from 'react';
 import type { ICompositionDraft } from './useCompositionDraft';
 
+/**
+ * Why a card is flagged illegal:
+ *  - `banned`  — explicitly banned in the current format.
+ *  - `format`  — the card is not legal in the current format.
+ *  - `hero`    — the card's hero/class scope excludes the deck's hero.
+ */
+export type TCascadeReason = 'banned' | 'format' | 'hero';
+
 export interface ICascadeCheckResult {
   readonly illegalCardIds: ReadonlySet<string>;
   readonly count: number;
+  readonly reasons: ReadonlyMap<string, TCascadeReason>;
+}
+
+/**
+ * Human-readable label for a cascade reason. Only the format-related reasons
+ * mention the format — a hero/class mismatch must NOT be blamed on the format.
+ */
+export function cascadeReasonLabel(
+  reason: TCascadeReason,
+  format: string,
+): string {
+  switch (reason) {
+    case 'banned':
+      return `Banned in ${format}`;
+    case 'format':
+      return `Not legal in ${format}`;
+    case 'hero':
+      return 'Not legal for this hero';
+  }
 }
 
 /**
@@ -43,16 +72,18 @@ export interface ICascadeCheckResult {
  * against the draft `heroIdentifier` (a cardIdentifier) would never match and
  * would flag every hero-restricted card as illegal.
  */
-function isCardIllegal(
+function cardIllegalReason(
   card: ICompositionDraft['cards'][number],
   format: string,
   heroEnum: string | null,
-): boolean {
+): TCascadeReason | null {
   // Check: card is explicitly banned in this format
-  if ((card.bannedFormats ?? []).includes(format)) return true;
+  if ((card.bannedFormats ?? []).includes(format)) return 'banned';
 
   // Check: card is format-restricted and current format not in legal list
-  if (card.legalFormats.length > 0 && !card.legalFormats.includes(format)) return true;
+  if (card.legalFormats.length > 0 && !card.legalFormats.includes(format)) {
+    return 'format';
+  }
 
   // Check: card is hero-restricted and current hero not in legal list.
   // Skip when the hero enum is unresolved (null) to avoid false positives.
@@ -61,10 +92,10 @@ function isCardIllegal(
     heroEnum !== null &&
     !card.legalHeroes.includes(heroEnum)
   ) {
-    return true;
+    return 'hero';
   }
 
-  return false;
+  return null;
 }
 
 /**
@@ -79,11 +110,14 @@ export function useCascadeCheck(
 ): ICascadeCheckResult {
   return useMemo<ICascadeCheckResult>(() => {
     const illegal = new Set<string>();
+    const reasons = new Map<string, TCascadeReason>();
     for (const card of draft.cards) {
-      if (isCardIllegal(card, draft.format, heroEnum)) {
+      const reason = cardIllegalReason(card, draft.format, heroEnum);
+      if (reason !== null) {
         illegal.add(card.cardIdentifier);
+        reasons.set(card.cardIdentifier, reason);
       }
     }
-    return { illegalCardIds: illegal, count: illegal.size };
+    return { illegalCardIds: illegal, count: illegal.size, reasons };
   }, [draft, heroEnum]);
 }
