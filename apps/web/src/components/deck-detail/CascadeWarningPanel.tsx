@@ -15,7 +15,11 @@
  */
 import React, { useState } from 'react';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
-import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
+import {
+  cascadeReasonLabel,
+  type ICascadeCheckResult,
+  type TCascadeReason,
+} from '../../hooks/useCascadeCheck';
 import styles from './CascadeWarningPanel.module.css';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +33,7 @@ interface IWarningContentProps {
   readonly format: string;
   readonly illegalCardIds: ReadonlySet<string>;
   readonly illegalCards: readonly TDraftCard[];
+  readonly reasons: ReadonlyMap<string, TCascadeReason>;
   readonly onRemoveIllegal: (ids: ReadonlySet<string>) => void;
   readonly textClassName: string;
 }
@@ -38,36 +43,53 @@ function WarningContent({
   format,
   illegalCardIds,
   illegalCards,
+  reasons,
   onRemoveIllegal,
   textClassName,
 }: IWarningContentProps): React.ReactElement {
   return (
     <>
+      {/* Format is intentionally NOT named here: a card can be illegal for the
+          hero/class, not the format, so a blanket "illegal in {format}" would
+          misattribute the reason. Per-card reasons appear in the list below. */}
       <p className={textClassName} data-testid="cascade-warning-text">
-        {count} {count === 1 ? 'card' : 'cards'} may be illegal in {format}.
+        {count} {count === 1 ? 'card' : 'cards'} may be illegal.
       </p>
 
       {illegalCards.length > 0 ? (
         <ul className={styles.illegalList} data-testid="cascade-illegal-list">
-          {illegalCards.map((card) => (
-            <li
-              key={`${card.cardIdentifier}::${card.slot}`}
-              className={styles.illegalItem}
-              data-testid={`cascade-illegal-item-${card.cardIdentifier}`}
-            >
-              <span className={styles.illegalQty}>{card.quantity}&times;</span>
-              <span className={styles.illegalName}>{card.name}</span>
-              <button
-                type="button"
-                className={styles.removeOneBtn}
-                data-testid={`cascade-remove-${card.cardIdentifier}`}
-                aria-label={`Remove ${card.name} from deck`}
-                onClick={() => onRemoveIllegal(new Set([card.cardIdentifier]))}
+          {illegalCards.map((card) => {
+            const reason = reasons.get(card.cardIdentifier);
+            return (
+              <li
+                key={`${card.cardIdentifier}::${card.slot}`}
+                className={styles.illegalItem}
+                data-testid={`cascade-illegal-item-${card.cardIdentifier}`}
               >
-                &#x2715;
-              </button>
-            </li>
-          ))}
+                <span className={styles.illegalQty}>{card.quantity}&times;</span>
+                <span className={styles.illegalName}>
+                  <span className={styles.illegalNameText}>{card.name}</span>
+                  {reason ? (
+                    <span
+                      className={styles.illegalReason}
+                      data-testid={`cascade-reason-${card.cardIdentifier}`}
+                    >
+                      {cascadeReasonLabel(reason, format)}
+                    </span>
+                  ) : null}
+                </span>
+                <button
+                  type="button"
+                  className={styles.removeOneBtn}
+                  data-testid={`cascade-remove-${card.cardIdentifier}`}
+                  aria-label={`Remove ${card.name} from deck`}
+                  onClick={() => onRemoveIllegal(new Set([card.cardIdentifier]))}
+                >
+                  &#x2715;
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 
@@ -126,6 +148,7 @@ export function CascadeWarningPanelSidebar({
         format={draft.format}
         illegalCardIds={cascadeCheck.illegalCardIds}
         illegalCards={selectIllegalCards(draft, cascadeCheck.illegalCardIds)}
+        reasons={cascadeCheck.reasons}
         onRemoveIllegal={onRemoveIllegal}
         textClassName={styles.sidebarBody ?? ''}
       />
@@ -200,6 +223,7 @@ export function CascadeWarningPanelBanner({
             format={draft.format}
             illegalCardIds={cascadeCheck.illegalCardIds}
             illegalCards={selectIllegalCards(draft, cascadeCheck.illegalCardIds)}
+            reasons={cascadeCheck.reasons}
             onRemoveIllegal={onRemoveIllegal}
             textClassName={styles.bannerBodyText ?? ''}
           />

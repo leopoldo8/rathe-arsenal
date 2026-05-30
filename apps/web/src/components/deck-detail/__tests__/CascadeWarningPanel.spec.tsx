@@ -17,7 +17,10 @@ import {
   CascadeWarningPanelBanner,
 } from '../CascadeWarningPanel';
 import type { ICompositionDraft } from '../../../hooks/useCompositionDraft';
-import type { ICascadeCheckResult } from '../../../hooks/useCascadeCheck';
+import type {
+  ICascadeCheckResult,
+  TCascadeReason,
+} from '../../../hooks/useCascadeCheck';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -29,11 +32,16 @@ const DRAFT: ICompositionDraft = {
   format: 'Classic Constructed',
 };
 
-function makeCascadeResult(count: number): ICascadeCheckResult {
-  const ids = new Set<string>(
-    Array.from({ length: count }, (_, i) => `illegal-card-${i}`),
+function makeCascadeResult(
+  count: number,
+  reason: TCascadeReason = 'format',
+): ICascadeCheckResult {
+  const idList = Array.from({ length: count }, (_, i) => `illegal-card-${i}`);
+  const ids = new Set<string>(idList);
+  const reasons = new Map<string, TCascadeReason>(
+    idList.map((id) => [id, reason]),
   );
-  return { illegalCardIds: ids, count };
+  return { illegalCardIds: ids, count, reasons };
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +73,7 @@ describe('CascadeWarningPanelSidebar — N>0', () => {
     expect(screen.getByTestId('cascade-warning-sidebar')).toBeInTheDocument();
   });
 
-  it('shows the card count and format in the warning text', () => {
+  it('shows the card count in the warning text without blaming the format', () => {
     render(
       <CascadeWarningPanelSidebar
         draft={DRAFT}
@@ -75,7 +83,8 @@ describe('CascadeWarningPanelSidebar — N>0', () => {
     );
     const text = screen.getByTestId('cascade-warning-text');
     expect(text.textContent).toContain('3 cards');
-    expect(text.textContent).toContain('Classic Constructed');
+    // The summary must NOT name the format — reasons are per-card below.
+    expect(text.textContent).not.toContain('Classic Constructed');
   });
 
   it('renders "Remove illegal cards" button', () => {
@@ -166,12 +175,21 @@ const POPULATED_DRAFT: ICompositionDraft = {
   format: 'Classic Constructed',
 };
 
+/** Single-illegal-card result for `illegal-card-0` with the given reason. */
+function oneCardResult(reason: TCascadeReason): ICascadeCheckResult {
+  return {
+    illegalCardIds: new Set(['illegal-card-0']),
+    count: 1,
+    reasons: new Map<string, TCascadeReason>([['illegal-card-0', reason]]),
+  };
+}
+
 describe('CascadeWarningPanelSidebar — illegal card list', () => {
   it('renames the sidebar title to "Illegal Cards"', () => {
     render(
       <CascadeWarningPanelSidebar
         draft={POPULATED_DRAFT}
-        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        cascadeCheck={oneCardResult('format')}
         onRemoveIllegal={() => undefined}
       />,
     );
@@ -182,7 +200,7 @@ describe('CascadeWarningPanelSidebar — illegal card list', () => {
     render(
       <CascadeWarningPanelSidebar
         draft={POPULATED_DRAFT}
-        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        cascadeCheck={oneCardResult('format')}
         onRemoveIllegal={() => undefined}
       />,
     );
@@ -200,12 +218,38 @@ describe('CascadeWarningPanelSidebar — illegal card list', () => {
     render(
       <CascadeWarningPanelSidebar
         draft={POPULATED_DRAFT}
-        cascadeCheck={{ illegalCardIds: new Set(['illegal-card-0']), count: 1 }}
+        cascadeCheck={oneCardResult('format')}
         onRemoveIllegal={mockRemove}
       />,
     );
     await userEvent.click(screen.getByTestId('cascade-remove-illegal-card-0'));
     expect(mockRemove).toHaveBeenCalledWith(new Set(['illegal-card-0']));
+  });
+
+  it('shows a hero/class reason — not the format — for a hero-illegal card', () => {
+    render(
+      <CascadeWarningPanelSidebar
+        draft={POPULATED_DRAFT}
+        cascadeCheck={oneCardResult('hero')}
+        onRemoveIllegal={() => undefined}
+      />,
+    );
+    const reason = screen.getByTestId('cascade-reason-illegal-card-0');
+    expect(reason).toHaveTextContent('Not legal for this hero');
+    expect(reason.textContent).not.toContain('Classic Constructed');
+  });
+
+  it('names the format only for a format-illegal card', () => {
+    render(
+      <CascadeWarningPanelSidebar
+        draft={POPULATED_DRAFT}
+        cascadeCheck={oneCardResult('format')}
+        onRemoveIllegal={() => undefined}
+      />,
+    );
+    expect(
+      screen.getByTestId('cascade-reason-illegal-card-0'),
+    ).toHaveTextContent('Not legal in Classic Constructed');
   });
 });
 
