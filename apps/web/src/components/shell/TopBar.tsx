@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
+import { VariantQueuePill } from '../variant-queue/VariantQueuePill';
 import LogoMark from '../../assets/logo-mark.svg?react';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
 import styles from './TopBar.module.css';
@@ -71,6 +72,7 @@ export function TopBar(): React.ReactElement {
 
       {/* Right controls */}
       <div className={styles.controls}>
+        <VariantQueuePill />
         <ThemeToggle />
         <UserMenu />
       </div>
