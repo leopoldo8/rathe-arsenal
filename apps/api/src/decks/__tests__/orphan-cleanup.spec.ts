@@ -28,7 +28,6 @@ import { SubstituteDecisionEntity } from '../../database/entities/substitute-dec
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { VariantFetchService } from '../../stores/variant-fetch.service';
 import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
@@ -167,7 +166,6 @@ describe('Orphan substitute-decision cleanup (DecksService.updateComposition ste
         { provide: AuthzService, useValue: createMock<AuthzService>() },
         { provide: SubstitutionService, useValue: createMock<SubstitutionService>() },
         { provide: ShoppingLineService, useValue: createMock<ShoppingLineService>() },
-        { provide: VariantFetchService, useValue: createMock<VariantFetchService>() },
         { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: createMock<CatalogService>() },
         { provide: CollectionReadService, useValue: collectionReadService },

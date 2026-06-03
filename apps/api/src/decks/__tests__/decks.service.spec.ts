@@ -10,7 +10,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { VariantFetchService } from '../../stores/variant-fetch.service';
 import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { DecksService } from '../decks.service';
@@ -67,7 +66,6 @@ describe('DecksService', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let variantFetchService: jest.Mocked<VariantFetchService>;
   let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
 
@@ -80,7 +78,6 @@ describe('DecksService', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    variantFetchService = createMock<VariantFetchService>();
     decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
 
@@ -89,9 +86,6 @@ describe('DecksService', () => {
 
     // Default: aggregate shopping line returns null (no tracked decks / all Path A).
     shoppingLineService.computeAggregate.mockResolvedValue(null);
-
-    // Default: no in-progress variant fetch.
-    variantFetchService.getProgress.mockReturnValue(undefined);
 
     // Default: no collection cards owned. Individual tests override as needed.
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
@@ -121,7 +115,6 @@ describe('DecksService', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: VariantFetchService, useValue: variantFetchService },
         { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
       ],
@@ -855,52 +848,6 @@ const trackedDeck = result.trackedDecks[0]!;
       };
     }
 
-    it('should include variantFetchProgress on populated shopping line when a fetch is active', async () => {
-      // Arrange
-      const deck = buildTrackedDeck();
-      const snapshot = buildSnapshotWithMissing();
-      const populatedLine = buildPopulatedShoppingLine();
-
-      trackedDeckRepo.findOne.mockResolvedValue(deck);
-      deckCardRepo.find.mockResolvedValue(buildDeckCards());
-      snapshotRepo.findOne.mockResolvedValue(snapshot);
-      decisionsService.countRejected.mockResolvedValue(0);
-      decisionsService.list.mockResolvedValue([]);
-      shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
-      substitutionService.deriveSnapshotFields.mockReturnValue({
-        path: 'C',
-        fidelityPercent: 80,
-      });
-
-      variantFetchService.getProgress.mockReturnValue({
-        fetchId: 'fetch-uuid-001',
-        total: 1,
-        completed: 0,
-        failed: 0,
-        inProgress: true,
-        startedAt: new Date(),
-        cards: new Map(),
-        globalFailed: false,
-      });
-
-      // Act
-      const result = await service.getDetail(USER_ID, 1);
-
-      // Assert
-      expect(result.shoppingLine).not.toBeNull();
-      const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
-      expect(sl.kind).toBe('populated');
-      expect(sl.variantFetchProgress).toEqual({
-        fetchId: 'fetch-uuid-001',
-        total: 1,
-        completed: 0,
-        failed: 0,
-        inProgress: true,
-        cards: {},
-      });
-      expect(variantFetchService.getProgress).toHaveBeenCalledWith('1');
-    });
-
     it('(regression: getDetail bug fix) auto-recompute passes exclusion set when snapshot is missing', async () => {
       // Arrange: no existing snapshot → auto-recompute path triggered.
       const deck = buildTrackedDeck();
@@ -930,8 +877,9 @@ const trackedDeck = result.trackedDecks[0]!;
       expect(exclusionsArg.has('rejected-proxy-x')).toBe(true);
     });
 
-    it('should serialize the per-card status Map to an object on variantFetchProgress', async () => {
-      // Arrange
+    it('should NOT include variantFetchProgress on populated shopping line (removed in Task 12A)', async () => {
+      // variantFetchProgress is no longer populated by DecksService.getDetail()
+      // (Task 12A). The web reads progress from GET /variant-jobs instead.
       const deck = buildTrackedDeck();
       const snapshot = buildSnapshotWithMissing();
       const populatedLine = buildPopulatedShoppingLine();
@@ -947,101 +895,14 @@ const trackedDeck = result.trackedDecks[0]!;
         fidelityPercent: 80,
       });
 
-      variantFetchService.getProgress.mockReturnValue({
-        fetchId: 'fetch-uuid-002',
-        total: 2,
-        completed: 1,
-        failed: 1,
-        inProgress: false,
-        startedAt: new Date(),
-        cards: new Map([
-          ['card-a', 'done'],
-          ['card-b', 'failed'],
-        ]),
-        globalFailed: false,
-      });
-
       // Act
       const result = await service.getDetail(USER_ID, 1);
 
-      // Assert
-      const sl = result.shoppingLine as {
-        variantFetchProgress?: {
-          cards?: Record<string, string>;
-        };
-      };
-      expect(sl.variantFetchProgress?.cards).toEqual({
-        'card-a': 'done',
-        'card-b': 'failed',
-      });
-    });
-
-    it('should NOT include variantFetchProgress when no progress entry exists', async () => {
-      // Arrange
-      const deck = buildTrackedDeck();
-      const snapshot = buildSnapshotWithMissing();
-      const populatedLine = buildPopulatedShoppingLine();
-
-      trackedDeckRepo.findOne.mockResolvedValue(deck);
-      deckCardRepo.find.mockResolvedValue(buildDeckCards());
-      snapshotRepo.findOne.mockResolvedValue(snapshot);
-      decisionsService.countRejected.mockResolvedValue(0);
-      decisionsService.list.mockResolvedValue([]);
-      shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
-      substitutionService.deriveSnapshotFields.mockReturnValue({
-        path: 'C',
-        fidelityPercent: 80,
-      });
-
-      variantFetchService.getProgress.mockReturnValue(undefined);
-
-      // Act
-      const result = await service.getDetail(USER_ID, 1);
-
-      // Assert
+      // Assert: variantFetchProgress is always absent now
       expect(result.shoppingLine).not.toBeNull();
       const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
       expect(sl.kind).toBe('populated');
       expect(sl.variantFetchProgress).toBeUndefined();
-    });
-
-    it('should NOT add variantFetchProgress to non-populated shopping lines (unscraped)', async () => {
-      // Arrange
-      const deck = buildTrackedDeck();
-      const snapshot = buildSnapshotWithMissing();
-
-      trackedDeckRepo.findOne.mockResolvedValue(deck);
-      deckCardRepo.find.mockResolvedValue(buildDeckCards());
-      snapshotRepo.findOne.mockResolvedValue(snapshot);
-      decisionsService.countRejected.mockResolvedValue(0);
-      decisionsService.list.mockResolvedValue([]);
-      shoppingLineService.computeForBreakdown.mockResolvedValue({
-        kind: 'unscraped',
-      });
-      substitutionService.deriveSnapshotFields.mockReturnValue({
-        path: 'C',
-        fidelityPercent: 80,
-      });
-
-      variantFetchService.getProgress.mockReturnValue({
-        fetchId: 'fetch-uuid-002',
-        total: 1,
-        completed: 0,
-        failed: 0,
-        inProgress: true,
-        startedAt: new Date(),
-        cards: new Map(),
-        globalFailed: false,
-      });
-
-      // Act
-      const result = await service.getDetail(USER_ID, 1);
-
-      // Assert: unscraped kind should NOT get variantFetchProgress
-      expect(result.shoppingLine).not.toBeNull();
-      const sl = result.shoppingLine as { kind: string; variantFetchProgress?: object };
-      expect(sl.kind).toBe('unscraped');
-      expect(sl).not.toHaveProperty('variantFetchProgress');
     });
 
     it('should include rejectedCount, approvedCount, pendingCount, and decisions in response', async () => {

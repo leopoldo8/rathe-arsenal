@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
-import { IFetchCard } from './variant-fetch.service';
+import { IFetchCard } from './types/fetch-card';
 
 /**
  * Resolves a list of cardIdentifiers to IFetchCard via the store_stock table.

@@ -8,7 +8,7 @@ import { StoreEntity } from '../database/entities/store.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { StoreStockVariantEntity } from '../database/entities/store-stock-variant.entity';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
-import { IFetchCard } from './variant-fetch.service';
+import { IFetchCard } from './types/fetch-card';
 import { deriveStoreStock } from './store-stock-derivation';
 
 // ---------------------------------------------------------------------------

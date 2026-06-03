@@ -5,7 +5,7 @@ import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
-import { IFetchCard } from './variant-fetch.service';
+import { IFetchCard } from './types/fetch-card';
 
 const POLL_MS = 3000;
 

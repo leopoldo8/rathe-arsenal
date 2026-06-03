@@ -19,7 +19,6 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { StoreEntity } from '../database/entities/store.entity';
 import { IBreakdown } from './dtos/tracked-deck-detail.response.dto';
 import { VariantFetchService } from '../stores/variant-fetch.service';
-import { IVariantFetchProgressDto } from '../stores/dtos/shopping-line.response.dto';
 import { VariantFetchQueueService } from '../stores/variant-fetch-queue.service';
 import { ResolveJobCardsService } from '../stores/resolve-job-cards.service';
 
@@ -52,20 +51,10 @@ export interface IVariantFetchStartedResponse {
   readonly jobStatus: string;
 }
 
-/**
- * Response when a fetch is already in progress for this deck (202 Accepted).
- */
-export interface IVariantFetchInProgressResponse {
-  readonly status: 'in_progress';
-  readonly fetchId: string;
-  readonly progress: IVariantFetchProgressDto;
-}
-
 export type TVariantFetchResponse =
   | IVariantFetchNothingResponse
   | IVariantFetchFreshResponse
-  | IVariantFetchStartedResponse
-  | IVariantFetchInProgressResponse;
+  | IVariantFetchStartedResponse;
 
 /**
  * POST /decks/:deckId/fetch-variants
@@ -79,7 +68,7 @@ export type TVariantFetchResponse =
  *
  * Response codes:
  *   200 — nothing_to_fetch (no missing cards) OR already_fresh
- *   202 — started (job enqueued) OR in_progress (duplicate call while old fetch running)
+ *   202 — started (job enqueued; idempotent — returns the existing job if one is pending/running)
  *   403 — user does not own the deck
  */
 @Controller('decks/:deckId')
@@ -127,26 +116,7 @@ export class VariantFetchController {
 
     const cardIdentifiers = [...new Set(missing.map((m) => m.cardIdentifier))];
 
-    // Step 2: check if a fetch is already in progress (legacy in-memory path).
-    const existingProgress = this.variantFetchService.getProgress(deckIdStr);
-    if (existingProgress?.inProgress) {
-      const progressDto: IVariantFetchProgressDto = {
-        fetchId: existingProgress.fetchId,
-        total: existingProgress.total,
-        completed: existingProgress.completed,
-        failed: existingProgress.failed,
-        inProgress: existingProgress.inProgress,
-        cards: Object.fromEntries(existingProgress.cards),
-      };
-      res.status(HttpStatus.ACCEPTED);
-      return {
-        status: 'in_progress',
-        fetchId: existingProgress.fetchId,
-        progress: progressDto,
-      };
-    }
-
-    // Step 3: load store entity (single-store Phase 1b).
+    // Step 2: load store entity (single-store Phase 1b).
     const store = await this.storeRepo.findOne({
       where: { slug: DEFAULT_STORE_SLUG, active: true },
     });
@@ -155,7 +125,7 @@ export class VariantFetchController {
       throw new NotFoundException('Store not found');
     }
 
-    // Step 4: check freshness before spawning a new job.
+    // Step 3: check freshness before spawning a new job.
     const freshCheck = await this.variantFetchService.isFreshForDeck(
       store.id,
       deckIdStr,
@@ -167,7 +137,7 @@ export class VariantFetchController {
       return { status: 'already_fresh' };
     }
 
-    // Step 5: resolve store_stock rows to IFetchCard (shared service).
+    // Step 4: resolve store_stock rows to IFetchCard (shared service).
     const fetchCards = await this.resolveJobCards.resolve(store.id, cardIdentifiers);
 
     if (fetchCards.length === 0) {
@@ -176,7 +146,7 @@ export class VariantFetchController {
       return { status: 'nothing_to_fetch' };
     }
 
-    // Step 6: enqueue the job (idempotent — returns existing pending/running job if any).
+    // Step 5: enqueue the job (idempotent — returns existing pending/running job if any).
     const job = await this.queue.enqueue(userId, deckId, store.id, fetchCards);
 
     res.status(HttpStatus.ACCEPTED);

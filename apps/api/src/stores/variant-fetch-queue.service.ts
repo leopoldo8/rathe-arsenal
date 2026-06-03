@@ -6,7 +6,7 @@ import {
   IVariantJobCard,
   VariantFetchJobEntity,
 } from '../database/entities/variant-fetch-job.entity';
-import { IFetchCard } from './variant-fetch.service';
+import { IFetchCard } from './types/fetch-card';
 
 export const RATE_LIMIT_MS = 1500;
 export const ORPHAN_RECLAIM_MS = 5 * 60 * 1000;
