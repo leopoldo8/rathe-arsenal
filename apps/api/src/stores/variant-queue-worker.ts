@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   const workerId = `worker-${randomUUID()}`;
   const resolveCards = (job: VariantFetchJobEntity): Promise<IFetchCard[]> =>
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     try {
       await drainOnce({ queue, processor, resolveCards, workerId });

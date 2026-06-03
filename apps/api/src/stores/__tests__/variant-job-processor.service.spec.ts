@@ -24,7 +24,7 @@ describe('VariantJobProcessorService', () => {
     const stockRepo = createMock<Repository<StoreStockEntity>>();
     const queue = createMock<VariantFetchQueueService>();
     const dataSource = createMock<DataSource>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (dataSource.transaction as jest.Mock).mockImplementation((fn: (em: unknown) => Promise<unknown>) => fn(createMock()));
 
     const moduleRef = await Test.createTestingModule({
@@ -64,7 +64,7 @@ describe('VariantJobProcessorService', () => {
     const stockRepo = createMock<Repository<StoreStockEntity>>();
     const queue = createMock<VariantFetchQueueService>();
     const dataSource = createMock<DataSource>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (dataSource.transaction as jest.Mock).mockImplementation((fn: (em: unknown) => Promise<unknown>) => fn(createMock()));
 
     const moduleRef = await Test.createTestingModule({
