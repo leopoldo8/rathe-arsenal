@@ -9,12 +9,14 @@ import {
   DeckReadinessSnapshotEntity,
   StoreStockVariantEntity,
 } from '../database/entities';
+import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { CardNameMatcherService } from './card-name-matcher.service';
 import { SbraubleScraperService } from './sbrauble-scraper.service';
 import { SbraubleDetailParserService } from './sbrauble-detail-parser.service';
 import { StoreIngestionService } from './store-ingestion.service';
 import { ShoppingLineService } from './shopping-line.service';
 import { VariantFetchService } from './variant-fetch.service';
+import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { AdminStoresController } from './admin/admin-stores.controller';
 import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
 
@@ -42,6 +44,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
       TrackedDeckEntity,
       DeckReadinessSnapshotEntity,
       StoreStockVariantEntity,
+      VariantFetchJobEntity,
     ]),
   ],
   controllers: [AdminStoresController],
@@ -52,6 +55,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
     StoreIngestionService,
     ShoppingLineService,
     VariantFetchService,
+    VariantFetchQueueService,
     AdminApiKeyGuard,
   ],
   exports: [
@@ -61,6 +65,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
     StoreIngestionService,
     ShoppingLineService,
     VariantFetchService,
+    VariantFetchQueueService,
   ],
 })
 export class StoresModule {}
