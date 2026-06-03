@@ -882,13 +882,17 @@ if (require.main === module) {
 }
 ```
 
-> `resolveCards` maps `job.cards[].cardIdentifier` → `IFetchCard` (productUrl +
-> listing snapshot). Extract the controller's existing card-resolution logic
-> (the part that builds `IFetchCard[]` from `store_stock` rows) into a shared
-> provider registered as `RESOLVE_JOB_CARDS`, so both the enqueue endpoint and
-> the worker use one implementation. For never-fetched cards with no
-> `store_stock` row, derive the detail `productUrl` from the catalog/listing URL
-> the deck snapshot already carries.
+> `resolveCards` maps `job.cards[].cardIdentifier` → `IFetchCard` by loading
+> `store_stock` rows for those identifiers and reading `productUrl` +
+> `priceCents` (listing snapshot) + `quantity`, EXACTLY as the existing
+> `variant-fetch.controller.ts` already does (it loads `store_stock` rows, maps
+> to `IFetchCard`, and SKIPS cards whose row has no `productUrl`). Extract that
+> existing logic into a shared provider/service (e.g.
+> `ResolveJobCardsService.resolve(storeId, cardIdentifiers): Promise<IFetchCard[]>`)
+> and use it from BOTH the enqueue endpoint (Task 6) and the worker.
+> `productUrl` always comes from `store_stock` — the repurposed listing URL-sync
+> (Task 12) keeps it fresh. Cards with no `store_stock` row are skipped (no
+> detail URL); log the skipped count.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1196,21 +1200,30 @@ git commit -m "feat(web): deck-detail reads variant progress from the jobs queue
 
 ---
 
-## Task 12: Retire in-memory machinery + listing scrape; flip worker
+## Task 12: Repurpose listing to URL/name sync; retire in-memory machinery; worker runs both
 
 **Files:**
-- Modify: `apps/api/src/stores/variant-fetch.service.ts` (remove `progressMap`, `activeFetchSet`, `startFetch`, `getProgress`, cleanup timers — keep `IFetchCard` export or move it to a shared types file)
-- Modify: `apps/api/src/decks/decks.service.ts` (the shopping-line `variantFetchProgress` population via `getProgress` — replace with reading the job, or drop if the web now reads `/variant-jobs`)
-- Modify: Railway `scrapper-worker` start command
-- Modify: `docs/phase-1-followups.md` (record the retirement + lazy `store_stock`)
+- Modify: `apps/api/src/stores/sbrauble-scraper.service.ts` (stop parsing obfuscated `.price`/`.qty`; parse only name + product URL per `.card-item`)
+- Modify: `apps/api/src/stores/store-ingestion.service.ts` (URL/name sync mode: upsert `store_stock` `productUrl`+`productNameRaw` only; do NOT write price/quantity; remove/skip the delta guard for this mode)
+- Modify: `apps/api/src/stores/variant-fetch.service.ts` (remove `progressMap`, `activeFetchSet`, `startFetch`, `getProgress`, cleanup timers — move `IFetchCard` to a shared types file)
+- Modify: `apps/api/src/decks/decks.service.ts` (drop `variantFetchProgress` via `getProgress` — web reads `/variant-jobs`)
+- Modify: `apps/api/src/stores/variant-queue-worker.ts` (also run the URL-sync on a ~24h interval inside the continuous loop)
+- Modify: Railway `scrapper-worker` start command (DEPLOY STEP — owner runs it)
+- Modify: `docs/phase-1-followups.md`
 
-- [ ] **Step 1: Move `IFetchCard` to `apps/api/src/stores/types/fetch-card.ts`** and update imports in the queue service, processor, worker, and controller.
+- [ ] **Step 1: Simplify the listing parse.** In `sbrauble-scraper.service.ts`, change `parsePage` to extract only `rawName` + product `href` (detail URL) per `.card-item`; drop the `.price`/`.qty` parsing and the `parsePriceAndStock` call. Yield `{ rawName, productUrl }` (price/quantity no longer parsed here). Update the scraped-product type + the existing scraper unit tests/fixtures to the URL/name-only shape.
 
-- [ ] **Step 2: Delete the in-memory machinery** from `variant-fetch.service.ts`. If the file becomes empty, delete it and its spec; otherwise keep only still-used helpers. Run `pnpm --filter @rathe-arsenal/api test` and fix any references.
+- [ ] **Step 2: URL-sync ingestion.** In `store-ingestion.service.ts`, add (or switch `runScrape` to) a mode that upserts `store_stock` `productUrl` + `productNameRaw` for matched cards WITHOUT writing `priceCents`/`quantity` and WITHOUT the delta-guard reconciliation (no zeroing). Keep the name→cardIdentifier matcher. Update its unit tests.
 
-- [ ] **Step 3: Stop populating `variantFetchProgress` from `getProgress`** in `decks.service.ts` (the web reads `/variant-jobs` now). Remove the now-dead `IVariantFetchProgressDto` plumbing if unused, or leave the field optional/absent.
+- [ ] **Step 3: Move `IFetchCard`** to `apps/api/src/stores/types/fetch-card.ts`; update imports in the queue service, processor, worker, resolver, and controller.
 
-- [ ] **Step 4: Run the full API + web suites + typecheck + lint**
+- [ ] **Step 4: Delete the in-memory machinery** from `variant-fetch.service.ts` (progressMap/activeFetchSet/startFetch/getProgress/timers). If the file becomes empty, delete it + its spec. Run `pnpm --filter @rathe-arsenal/api test` and fix references.
+
+- [ ] **Step 5: Stop populating `variantFetchProgress` via `getProgress`** in `decks.service.ts`; remove dead `IVariantFetchProgressDto` plumbing if unused.
+
+- [ ] **Step 6: Worker runs both.** In `variant-queue-worker.ts`, run the URL-sync (`store-ingestion` URL-sync mode) on a ~24h cadence alongside the ~3s queue drain (track `lastSyncAt` in-process; trigger when elapsed).
+
+- [ ] **Step 7: Full suites + typecheck + lint**
 
 Run:
 ```
@@ -1220,17 +1233,16 @@ pnpm --filter @rathe-arsenal/api lint && pnpm --filter @rathe-arsenal/web lint
 ```
 Expected: all green.
 
-- [ ] **Step 5: Flip the Railway worker start command**
-
-Change the `scrapper-worker` service start command to `node dist/stores/variant-queue-worker.js`
-(continuous). The listing cron (`scrape-stores.js`) is no longer scheduled. Record this in `docs/phase-1-followups.md`.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Commit** (code only — the Railway start-command flip is a DEPLOY step the owner runs)
 
 ```bash
 git add apps/api/ docs/phase-1-followups.md
-git commit -m "chore(api): retire in-memory variant progress + listing cron; continuous worker"
+git commit -m "feat(api): repurpose listing to URL sync; continuous worker; retire in-memory progress"
 ```
+
+> DEPLOY STEP (owner, not the agent): change the `scrapper-worker` Railway start
+> command to `node dist/stores/variant-queue-worker.js` (continuous). Run the
+> `AddVariantFetchJob` migration on deploy.
 
 ---
 

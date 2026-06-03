@@ -34,7 +34,13 @@ the durable source of truth going forward.
 
 **Goals**
 - Make the (already-working) detail fetch the source of `store_stock` and
-  `store_stock_variant`, retiring the obfuscated listing path.
+  `store_stock_variant` PRICE/STOCK.
+- Repurpose the listing scrape into a **URL/name catalog sync**: it still
+  enumerates products and their plain-text detail URLs + names (NOT obfuscated),
+  but stops parsing the obfuscated `.price`/`.qty` fields and stops the
+  stock-reconciliation delta guard. This keeps `store_stock.productUrl` fresh so
+  the detail queue knows where to fetch — the listing is the only source of each
+  card's sbrauble detail URL, so it cannot be fully retired.
 - Replace the ephemeral, single-page, in-memory progress with a **robust,
   DB-backed work queue** that:
   - is visible across pages (global header pill → expandable panel),
@@ -176,17 +182,24 @@ process (`variant-queue-worker.js`).
 - **Cleanup:** remove the in-memory progress wiring from deck-detail,
   `ShoppingLine`, and `ShoppingPanel` that depended on `getProgress(deckId)`.
 
-## 8. Retirement of the listing scrape
+## 8. Repurposing the listing scrape (URL/name sync)
 
-- The listing path (`SbraubleScraperService`) leaves the price/stock flow. The
-  worker start command changes (cron one-shot → continuous drainer). Dead
-  listing code removal is decided during planning.
-- `cupula-dt` stays `active` (it is our store); the `paused_delta_guard` state
-  becomes irrelevant (we no longer run the listing). No force-override (which
-  would zero the table) is performed.
-- **Legacy `store_stock`:** the 3205 rows from Apr 22 stay (not deleted),
-  displayed with their age ("last checked"), refreshed lazily as cards are
-  fetched. No catalog-wide backfill.
+The listing is the ONLY source of each card's sbrauble detail URL (the
+plain-text `<a href=…?view=ecom/item&edicao=…&cardID=…&card=…>` on every
+`.card-item`). It therefore cannot be retired — it is repurposed:
+
+- `SbraubleScraperService` stops parsing the obfuscated `.price`/`.qty` fields.
+  It parses only name + product (detail) URL per card, keeps the existing
+  name→cardIdentifier matcher, and upserts `store_stock` rows with a fresh
+  `productUrl` (and name), WITHOUT touching `priceCents`/`quantity` and WITHOUT
+  the stock-reconciliation delta guard (no zeroing → no `paused_delta_guard` →
+  no failure emails).
+- Price/stock for those rows are filled by the detail queue/worker.
+- The continuous worker process runs BOTH: the queue drainer (every ~3s) and a
+  periodic URL-sync (e.g. every 24h) that runs the simplified listing parse.
+- **Legacy `store_stock`:** the 3205 rows from Apr 22 already carry `productUrl`,
+  so detail fetches work for them immediately. Their price/stock refresh lazily
+  as cards are fetched; the URL-sync keeps URLs current and discovers new cards.
 
 ## 9. Edge cases & failure handling
 
@@ -198,9 +211,12 @@ process (`variant-queue-worker.js`).
 - **Empty job (all cards already fresh):** `POST` returns a "nothing/fresh"
   status without creating a job (mirrors current `already_fresh`).
 - **Store rate-limit contention:** none — single serialized stream by design.
-- **Never-fetched card in shopping line:** no `store_stock` row → shown as
-  "price not loaded — Get exact prices", with the existing relative-time label
-  for rows that do exist.
+- **Never-fetched card in shopping line:** the row exists (URL-sync keeps a
+  `store_stock` row with `productUrl` but possibly stale/empty price/stock) →
+  shown as "price not loaded — Get exact prices" until the detail fetch fills it.
+- **Card with no `store_stock` row at all (URL unknown):** cannot be detail-
+  fetched (no detail URL). The enqueue endpoint skips it (logs how many were
+  skipped); it is surfaced as unavailable until the next URL-sync discovers it.
 
 ## 10. Testing strategy (TDD)
 
@@ -230,8 +246,11 @@ process (`variant-queue-worker.js`).
   (long-lived), repurposed from the listing cron.
 - **Queue widget:** global header pill → expandable per-deck panel with
   aggregate ETA; auto-hides when idle.
-- **`store_stock`:** kept; writer changes to detail-derived (min in-stock price
-  + summed quantity).
+- **`store_stock`:** kept. Price/stock written by the detail worker (min
+  in-stock price + summed quantity); `productUrl`/name kept fresh by the
+  repurposed listing URL-sync.
+- **Listing:** repurposed to URL/name sync (no obfuscated price/stock parse, no
+  delta guard), NOT retired — it is the only source of detail URLs.
 - **Worker:** single-instance, long-lived, `SKIP LOCKED` claims + orphan
   reclaim.
 - **Trigger:** unchanged — manual "Get exact prices" CTA, which now enqueues.
