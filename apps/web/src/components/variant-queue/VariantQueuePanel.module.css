@@ -59,6 +59,7 @@
 
 .barFill {
   display: block;
+  width: var(--ra-progress, 0%);
   height: 100%;
   border-radius: var(--ra-radius-full);
   background: var(--ra-ready-high);
