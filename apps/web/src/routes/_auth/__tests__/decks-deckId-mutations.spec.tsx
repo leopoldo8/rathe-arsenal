@@ -237,6 +237,16 @@ vi.mock('../../../api/variant-fetch', () => ({
   }),
 }));
 
+vi.mock('../../../api/variant-jobs', () => ({
+  useVariantJobsQuery: () => ({
+    data: { jobs: [], etaSeconds: 0 },
+    isLoading: false,
+    isError: false,
+  }),
+  VARIANT_JOBS_QUERY_KEY: ['variant-jobs'],
+  hasActiveJobs: (data: { jobs: unknown[] }) => data.jobs.length > 0,
+}));
+
 // ---------------------------------------------------------------------------
 // The route component — imported after all mocks
 // ---------------------------------------------------------------------------
