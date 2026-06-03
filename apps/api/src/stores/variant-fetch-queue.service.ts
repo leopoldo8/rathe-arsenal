@@ -19,7 +19,7 @@ export class VariantFetchQueueService {
   ) {}
 
   async enqueue(
-    userId: number,
+    userId: string,
     deckId: number,
     storeId: number,
     cards: readonly IFetchCard[],
@@ -80,7 +80,7 @@ export class VariantFetchQueueService {
     );
   }
 
-  async listForUser(userId: number): Promise<VariantFetchJobEntity[]> {
+  async listForUser(userId: string): Promise<VariantFetchJobEntity[]> {
     // QueryBuilder (not raw query) so counters hydrate as numbers — a raw
     // pg query returns int columns as strings, which would corrupt the DTO
     // mapping and computeEtaSeconds.

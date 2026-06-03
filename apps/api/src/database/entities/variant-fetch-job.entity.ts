@@ -30,8 +30,8 @@ export class VariantFetchJobEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'int' })
-  userId!: number;
+  @Column({ type: 'uuid' })
+  userId!: string;
 
   @Column({ type: 'int' })
   deckId!: number;

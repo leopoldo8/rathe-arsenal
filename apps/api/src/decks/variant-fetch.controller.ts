@@ -10,17 +10,18 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
-import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { StoreEntity } from '../database/entities/store.entity';
 import { IBreakdown } from './dtos/tracked-deck-detail.response.dto';
-import { IFetchCard, VariantFetchService } from '../stores/variant-fetch.service';
+import { VariantFetchService } from '../stores/variant-fetch.service';
 import { IVariantFetchProgressDto } from '../stores/dtos/shopping-line.response.dto';
+import { VariantFetchQueueService } from '../stores/variant-fetch-queue.service';
+import { ResolveJobCardsService } from '../stores/resolve-job-cards.service';
 
 /** Throttle: 10 trigger requests per 10 minutes per IP. */
 const TEN_MINUTES_MS = 10 * 60 * 1_000;
@@ -43,12 +44,12 @@ export interface IVariantFetchFreshResponse {
 }
 
 /**
- * Response when a new fetch was started (202 Accepted).
+ * Response when a new fetch job was enqueued (202 Accepted).
  */
 export interface IVariantFetchStartedResponse {
   readonly status: 'started';
-  readonly fetchId: string;
-  readonly total: number;
+  readonly jobId: string;
+  readonly jobStatus: string;
 }
 
 /**
@@ -69,7 +70,7 @@ export type TVariantFetchResponse =
 /**
  * POST /decks/:deckId/fetch-variants
  *
- * Triggers an async detail-page fetch for the deck's missing cards.
+ * Enqueues a variant-fetch job for the deck's missing cards.
  *
  * Authentication stack:
  *   1. Global ThrottlerGuard: rate-limits by IP.
@@ -78,7 +79,7 @@ export type TVariantFetchResponse =
  *
  * Response codes:
  *   200 — nothing_to_fetch (no missing cards) OR already_fresh
- *   202 — started (new fetch) OR in_progress (duplicate call)
+ *   202 — started (job enqueued) OR in_progress (duplicate call while old fetch running)
  *   403 — user does not own the deck
  */
 @Controller('decks/:deckId')
@@ -86,10 +87,10 @@ export type TVariantFetchResponse =
 export class VariantFetchController {
   constructor(
     private readonly variantFetchService: VariantFetchService,
+    private readonly queue: VariantFetchQueueService,
+    private readonly resolveJobCards: ResolveJobCardsService,
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
-    @InjectRepository(StoreStockEntity)
-    private readonly storeStockRepo: Repository<StoreStockEntity>,
     @InjectRepository(StoreEntity)
     private readonly storeRepo: Repository<StoreEntity>,
   ) {}
@@ -101,9 +102,8 @@ export class VariantFetchController {
     @CurrentUser() user: ICurrentUser,
     @Res({ passthrough: true }) res: Response,
   ): Promise<TVariantFetchResponse> {
-    void user; // ownership verified by OwnsTrackedDeckGuard
-
     const deckIdStr = String(deckId);
+    const userId = user.userId;
 
     // Step 1: load the latest snapshot to extract missing card identifiers.
     const latestSnapshot = await this.snapshotRepo.findOne({
@@ -127,7 +127,7 @@ export class VariantFetchController {
 
     const cardIdentifiers = [...new Set(missing.map((m) => m.cardIdentifier))];
 
-    // Step 2: check if a fetch is already in progress.
+    // Step 2: check if a fetch is already in progress (legacy in-memory path).
     const existingProgress = this.variantFetchService.getProgress(deckIdStr);
     if (existingProgress?.inProgress) {
       const progressDto: IVariantFetchProgressDto = {
@@ -155,7 +155,7 @@ export class VariantFetchController {
       throw new NotFoundException('Store not found');
     }
 
-    // Step 4: check freshness before spawning a new loop.
+    // Step 4: check freshness before spawning a new job.
     const freshCheck = await this.variantFetchService.isFreshForDeck(
       store.id,
       deckIdStr,
@@ -167,35 +167,8 @@ export class VariantFetchController {
       return { status: 'already_fresh' };
     }
 
-    // Step 5: load store_stock rows to build IFetchCard list.
-    const stockRows = await this.storeStockRepo.find({
-      where: {
-        storeId: store.id,
-        cardIdentifier: In(cardIdentifiers),
-      },
-    });
-
-    const stockByIdentifier = new Map<string, StoreStockEntity>();
-    for (const row of stockRows) {
-      stockByIdentifier.set(row.cardIdentifier, row);
-    }
-
-    // Build IFetchCard for every card that has a productUrl in stock.
-    // Cards without a stock row are skipped (no URL to fetch).
-    const fetchCards: IFetchCard[] = cardIdentifiers
-      .map((id): IFetchCard | null => {
-        const row = stockByIdentifier.get(id);
-        if (!row?.productUrl) {
-          return null;
-        }
-        return {
-          cardIdentifier: id,
-          productUrl: row.productUrl,
-          listingPriceCents: row.priceCents,
-          listingQuantity: row.quantity,
-        };
-      })
-      .filter((c): c is IFetchCard => c !== null);
+    // Step 5: resolve store_stock rows to IFetchCard (shared service).
+    const fetchCards = await this.resolveJobCards.resolve(store.id, cardIdentifiers);
 
     if (fetchCards.length === 0) {
       // All missing cards lack a product URL — treat as nothing to fetch.
@@ -203,22 +176,14 @@ export class VariantFetchController {
       return { status: 'nothing_to_fetch' };
     }
 
-    // Step 6: start the fetch.
-    // VariantFetchService.startFetch() is synchronous (returns fetchId immediately)
-    // and internally attaches a .catch() to the async orchestration loop.
-    // Belt-and-suspenders: the returned fetchId confirms the loop was started.
-    const fetchId = this.variantFetchService.startFetch(
-      deckIdStr,
-      store.id,
-      fetchCards,
-    );
+    // Step 6: enqueue the job (idempotent — returns existing pending/running job if any).
+    const job = await this.queue.enqueue(userId, deckId, store.id, fetchCards);
 
     res.status(HttpStatus.ACCEPTED);
     return {
       status: 'started',
-      fetchId,
-      total: fetchCards.length,
+      jobId: job.id,
+      jobStatus: job.status,
     };
   }
 }
-

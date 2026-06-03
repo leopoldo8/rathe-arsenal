@@ -18,6 +18,7 @@ import { ShoppingLineService } from './shopping-line.service';
 import { VariantFetchService } from './variant-fetch.service';
 import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
+import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { AdminStoresController } from './admin/admin-stores.controller';
 import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
 
@@ -58,6 +59,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
     VariantFetchService,
     VariantFetchQueueService,
     VariantJobProcessorService,
+    ResolveJobCardsService,
     AdminApiKeyGuard,
   ],
   exports: [
@@ -69,6 +71,7 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
     VariantFetchService,
     VariantFetchQueueService,
     VariantJobProcessorService,
+    ResolveJobCardsService,
   ],
 })
 export class StoresModule {}

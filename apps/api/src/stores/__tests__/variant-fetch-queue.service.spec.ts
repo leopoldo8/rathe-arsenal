@@ -23,7 +23,7 @@ describe('VariantFetchQueueService', () => {
   it('returns the existing pending/running job for a deck instead of duplicating', async () => {
     const existing = { id: 'job-1', status: EVariantFetchJobStatus.Pending } as VariantFetchJobEntity;
     repo.findOne.mockResolvedValue(existing);
-    const result = await service.enqueue(7, 42, 1, [{ cardIdentifier: 'a-red', productUrl: 'u', listingPriceCents: null, listingQuantity: 0 }]);
+    const result = await service.enqueue('user-uuid-1', 42, 1, [{ cardIdentifier: 'a-red', productUrl: 'u', listingPriceCents: null, listingQuantity: 0 }]);
     expect(result.id).toBe('job-1');
     expect(repo.save).not.toHaveBeenCalled();
   });

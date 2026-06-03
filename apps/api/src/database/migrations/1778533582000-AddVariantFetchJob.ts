@@ -23,7 +23,7 @@ export class AddVariantFetchJob1778533582000 implements MigrationInterface {
             isPrimary: true,
             default: 'uuid_generate_v4()',
           },
-          { name: 'userId', type: 'int' },
+          { name: 'userId', type: 'uuid' },
           { name: 'deckId', type: 'int' },
           { name: 'storeId', type: 'int' },
           {
