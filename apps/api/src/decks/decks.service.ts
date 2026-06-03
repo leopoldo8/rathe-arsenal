@@ -8,7 +8,6 @@ import { SubstituteDecisionEntity } from '../database/entities/substitute-decisi
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
-import { VariantFetchService } from '../stores/variant-fetch.service';
 import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
@@ -26,10 +25,6 @@ import {
   ITrackedDeckDetailResponse,
   ITrackedDeckDetailSnapshot,
 } from './dtos/tracked-deck-detail.response.dto';
-import {
-  IShoppingLinePopulated,
-  IVariantFetchProgressDto,
-} from '../stores/dtos/shopping-line.response.dto';
 import {
   catalog,
   computeDeckLegality,
@@ -58,7 +53,6 @@ export class DecksService {
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
-    private readonly variantFetchService: VariantFetchService,
     private readonly decisionsService: DecisionsService,
     private readonly collectionReadService: CollectionReadService,
     private readonly catalogService: CatalogService,
@@ -552,28 +546,6 @@ export class DecksService {
       shoppingLine = await this.shoppingLineService.computeForBreakdown(
         snapshotDto.breakdown,
       );
-    }
-
-    // Attach in-memory variant fetch progress to the populated shopping line
-    // when a fetch is active or recently completed for this deck.
-    // The field is absent (undefined) when no progress entry exists — this
-    // is the frontend's polling stop condition.
-    if (shoppingLine?.kind === 'populated') {
-      const rawProgress = this.variantFetchService.getProgress(String(deckId));
-      if (rawProgress !== undefined) {
-        const progressDto: IVariantFetchProgressDto = {
-          fetchId: rawProgress.fetchId,
-          total: rawProgress.total,
-          completed: rawProgress.completed,
-          failed: rawProgress.failed,
-          inProgress: rawProgress.inProgress,
-          cards: Object.fromEntries(rawProgress.cards),
-        };
-        shoppingLine = {
-          ...(shoppingLine as IShoppingLinePopulated),
-          variantFetchProgress: progressDto,
-        };
-      }
     }
 
     // Compute legality in-memory using the catalog singleton, same pipeline

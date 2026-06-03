@@ -14,6 +14,8 @@ import {
   useClearDeckRejectionsMutation,
 } from '../../api/decisions';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
+import { useVariantJobsQuery } from '../../api/variant-jobs';
+import type { IVariantFetchProgress } from '../../api/shopping-line';
 import { useToast } from '../../components/ui/Toast/useToast';
 import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
 import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
@@ -95,6 +97,28 @@ function DeckDetailPage(): React.ReactElement {
   const clearRejectionsMutation = useClearDeckRejectionsMutation(deckId);
   const variantFetchMutation = useVariantFetchMutation(deckId);
 
+  // Derive this deck's variant-fetch progress from the global jobs queue.
+  // useVariantJobsQuery self-polls every 4 s while any job is active,
+  // so the deck-detail refetch loop (pollingStartedAt) is no longer the
+  // primary source of progress updates — it remains for backward compat
+  // but the jobs query drives the live progress display.
+  const variantJobsQuery = useVariantJobsQuery();
+  const variantJobsProgress: IVariantFetchProgress | undefined =
+    (() => {
+      const numericDeckId = Number(deckId);
+      const job = variantJobsQuery.data?.jobs.find(
+        (j) => j.deckId === numericDeckId,
+      );
+      if (job == null) return undefined;
+      return {
+        fetchId: job.jobId,
+        total: job.total,
+        completed: job.completed,
+        failed: job.failed,
+        inProgress: job.status === 'pending' || job.status === 'running',
+      };
+    })();
+
   // Stable callback passed to ShoppingPanel so that it can notify the page
   // when polling begins or ends. The page updates pollingStartedAt which
   // flows back into useDeckDetailQuery to control refetchInterval.
@@ -123,6 +147,10 @@ function DeckDetailPage(): React.ReactElement {
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
     variantFetchMutation.data?.status === 'already_fresh';
+
+  // Cooldown from mutation: already_fresh means no new job was queued.
+  // Also derive from jobs: if no job exists for this deck, defer to mutation state.
+  // (variantJobsProgress already encodes inProgress=false when the job is done/absent)
 
   if (detailQuery.isLoading) {
     return <DeckDetailSkeleton />;
@@ -176,6 +204,7 @@ function DeckDetailPage(): React.ReactElement {
       mode={mode}
       tagsForHeader={tagsForHeader}
       snapshot={snapshot}
+      variantJobsProgress={variantJobsProgress}
       onEnterEdit={handleEnterEdit}
       onExitEdit={handleExitEdit}
       onMarkOwned={(cardIdentifier) => {
@@ -239,6 +268,13 @@ interface IDeckDetailPageWithDataProps {
   readonly mode: 'view' | 'edit';
   readonly tagsForHeader: ITagResponse[];
   readonly snapshot: IDeckDetailResponse['latestSnapshot'];
+  /**
+   * Variant-fetch progress derived from the global jobs queue.
+   * When defined, this overrides the `variantFetchProgress` field embedded
+   * in `deck.shoppingLine` so the progress bar reflects the queue state
+   * rather than the old in-memory progress store.
+   */
+  readonly variantJobsProgress: IVariantFetchProgress | undefined;
   readonly onEnterEdit: () => void;
   readonly onExitEdit: () => void;
   readonly onMarkOwned: (cardIdentifier: string) => void;
@@ -268,6 +304,7 @@ function DeckDetailPageWithData({
   mode,
   tagsForHeader,
   snapshot,
+  variantJobsProgress,
   onEnterEdit,
   onExitEdit,
   onMarkOwned,
@@ -495,6 +532,25 @@ function DeckDetailPageWithData({
 
   const isPathC = snapshot?.path === 'C';
 
+  // Build the shopping data to pass to the sidebar.
+  // When the jobs queue provides progress for this deck, inject it as the
+  // authoritative `variantFetchProgress`, overriding whatever the deck-detail
+  // API response carried (which may be stale or absent on the new queue path).
+  const rawShoppingData = deck.shoppingLine ?? null;
+  const shoppingData = React.useMemo(() => {
+    if (
+      rawShoppingData == null ||
+      rawShoppingData.kind !== 'populated' ||
+      variantJobsProgress == null
+    ) {
+      return rawShoppingData;
+    }
+    return {
+      ...rawShoppingData,
+      variantFetchProgress: variantJobsProgress,
+    };
+  }, [rawShoppingData, variantJobsProgress]);
+
   return (
     <>
       <DeckDetailLayout
@@ -528,7 +584,7 @@ function DeckDetailPageWithData({
             rawPercent={snapshot?.rawPercent ?? 0}
             provisionedCards={snapshot ? countProvisionedCards(snapshot.breakdown) : 0}
             totalCards={deck.totalCards}
-            shoppingData={deck.shoppingLine ?? null}
+            shoppingData={shoppingData}
             onFetchVariants={onFetchVariants}
             fetchMutationStatus={fetchMutationStatus as import('../../components/ShoppingLine').TVariantFetchMutationStatus}
             isCooldownActive={isCooldownActive}

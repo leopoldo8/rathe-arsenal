@@ -59,6 +59,11 @@ vi.mock('../../../api/user-settings', () => ({
   fetchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
 }));
 
+// Mock VariantQueuePill so it renders a recognizable marker in every test
+vi.mock('../../variant-queue/VariantQueuePill', () => ({
+  VariantQueuePill: () => <div data-testid="variant-queue-pill-mock" />,
+}));
+
 // Mock Radix DropdownMenu (UserMenu dependency) — render children directly
 vi.mock('@radix-ui/react-dropdown-menu', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
@@ -141,6 +146,11 @@ describe('AppShell — happy path', () => {
     expect(nav).toHaveTextContent('Library');
     expect(nav).toHaveTextContent('Swaps');
     expect(nav).not.toHaveTextContent('Import');
+  });
+
+  it('mounts the variant queue pill in the header', () => {
+    render(<AppShell><div /></AppShell>);
+    expect(screen.getByTestId('variant-queue-pill-mock')).toBeInTheDocument();
   });
 });
 

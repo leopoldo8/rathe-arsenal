@@ -13,3 +13,7 @@ export { StoreStockVariantEntity } from './store-stock-variant.entity';
 export { ReviewAggregateEntity } from './review-aggregate.entity';
 export { DeckTagEntity } from './deck-tag.entity';
 export { TrackedDeckTagEntity } from './tracked-deck-tag.entity';
+export {
+  VariantFetchJobEntity,
+  EVariantFetchJobStatus,
+} from './variant-fetch-job.entity';

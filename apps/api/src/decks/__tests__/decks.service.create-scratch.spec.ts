@@ -9,7 +9,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { VariantFetchService } from '../../stores/variant-fetch.service';
 import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
@@ -72,7 +71,6 @@ describe('DecksService.createScratch', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let variantFetchService: jest.Mocked<VariantFetchService>;
   let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
@@ -85,14 +83,12 @@ describe('DecksService.createScratch', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    variantFetchService = createMock<VariantFetchService>();
     decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
 
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
     shoppingLineService.computeAggregate.mockResolvedValue(null);
-    variantFetchService.getProgress.mockReturnValue(undefined);
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
     decisionsService.countRejected.mockResolvedValue(0);
     decisionsService.list.mockResolvedValue([]);
@@ -117,7 +113,6 @@ describe('DecksService.createScratch', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: VariantFetchService, useValue: variantFetchService },
         { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },

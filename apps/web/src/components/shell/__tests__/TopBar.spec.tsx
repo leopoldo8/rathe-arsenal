@@ -42,6 +42,11 @@ vi.mock('../../../assets/logo-mark.svg?react', () => ({
   default: () => <svg data-testid="logo-mark" aria-hidden="true" />,
 }));
 
+// VariantQueuePill — self-hiding; mock it so tests don't need the variant-jobs API
+vi.mock('../../variant-queue/VariantQueuePill', () => ({
+  VariantQueuePill: () => null,
+}));
+
 // ThemeToggle dependencies
 vi.mock('../../../components/ui/Toast/useToast', () => ({
   useToast: () => ({ show: vi.fn() }),

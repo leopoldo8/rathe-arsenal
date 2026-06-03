@@ -102,8 +102,7 @@ describe('SbraubleScraperService', () => {
       // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — fixture has 6 cards but one is "Sob consulta" (still yielded)
-      // and 5 others are normal
+      // Assert — fixture has 6 cards; all are yielded regardless of listing price/stock text
       expect(products).toHaveLength(6);
     });
 
@@ -122,6 +121,22 @@ describe('SbraubleScraperService', () => {
       expect(products.at(0)?.rawName).toBe('A Drop in the Ocean (Blue)');
       expect(products.at(1)?.rawName).toBe('Aether Crackers (Cold Foil)');
       expect(products.at(2)?.rawName).toBe('5 Copper');
+    });
+
+    it('should construct absolute product URLs from relative listing hrefs', async () => {
+      // Arrange
+      const pageHtml = loadFixture('cupula-dt-listing-page.html');
+      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
+      fetchGuard.guardedFetch
+        .mockResolvedValueOnce(makeGuardResult(pageHtml))
+        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+
+      // Act
+      const products = await collect(service.scrapeStore(makeStore()));
+
+      // Assert — URLs are absolute https:// with the store hostname
+      expect(products.at(0)?.productUrl).toMatch(/^https:\/\/www\.cupuladt\.com\.br\//);
+      expect(products.at(0)?.productUrl).toContain('cardID=WTR001');
     });
 
     it('should construct guardedFetch allowHosts from store baseUrl hostname (strict equality)', async () => {
@@ -144,11 +159,11 @@ describe('SbraubleScraperService', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Happy path: price parsing
+  // Listing yields sentinel price/stock (obfuscated CSS sprite — not parsed)
   // -------------------------------------------------------------------------
 
-  describe('price parsing', () => {
-    it('should convert "R$ 0,25" to 25 cents', async () => {
+  describe('listing price/stock sentinel values', () => {
+    it('should yield priceCents=null for every product regardless of listing content', async () => {
       // Arrange
       const pageHtml = loadFixture('cupula-dt-listing-page.html');
       const emptyHtml = loadFixture('cupula-dt-empty-page.html');
@@ -159,11 +174,11 @@ describe('SbraubleScraperService', () => {
       // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — first product is "A Drop in the Ocean (Blue)" at R$ 0,25
-      expect(products.at(0)?.priceCents).toBe(25);
+      // Assert — listing no longer parses the obfuscated price; detail queue provides real values
+      expect(products.every((p) => p.priceCents === null)).toBe(true);
     });
 
-    it('should convert "R$ 49,90" to 4990 cents', async () => {
+    it('should yield quantity=0 for every product regardless of listing content', async () => {
       // Arrange
       const pageHtml = loadFixture('cupula-dt-listing-page.html');
       const emptyHtml = loadFixture('cupula-dt-empty-page.html');
@@ -174,11 +189,11 @@ describe('SbraubleScraperService', () => {
       // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — second product is "Aether Crackers (Cold Foil)" at R$ 49,90
-      expect(products.at(1)?.priceCents).toBe(4990);
+      // Assert
+      expect(products.every((p) => p.quantity === 0)).toBe(true);
     });
 
-    it('should handle thousands separator: "R$ 1.234,50" → 123450 cents', async () => {
+    it('should yield priceCents=null and quantity=0 for a "Sob consulta" card too', async () => {
       // Arrange
       const pageHtml = loadFixture('cupula-dt-listing-page.html');
       const emptyHtml = loadFixture('cupula-dt-empty-page.html');
@@ -189,94 +204,7 @@ describe('SbraubleScraperService', () => {
       // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — fourth product "Blessing of Deliverance" at R$ 1.234,50
-      expect(products.at(3)?.priceCents).toBe(123450);
-    });
-
-    it('should convert "R$ 2,00" to 200 cents', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — third product "5 Copper" at R$ 2,00
-      expect(products.at(2)?.priceCents).toBe(200);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Happy path: stock parsing
-  // -------------------------------------------------------------------------
-
-  describe('stock parsing', () => {
-    it('should parse "37 unid." as quantity 37', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — first product has 37 units
-      expect(products.at(0)?.quantity).toBe(37);
-    });
-
-    it('should parse "1 unid." as quantity 1', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — second product has 1 unit
-      expect(products.at(1)?.quantity).toBe(1);
-    });
-
-    it('should parse "Esgotado" as quantity 0', async () => {
-      // Arrange — the "Sob consulta" product in the fixture also has "Esgotado" stock
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — fifth product "Amplify the Arknight" is "Esgotado"
-      expect(products.at(4)?.quantity).toBe(0);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Edge case: "Sob consulta" price
-  // -------------------------------------------------------------------------
-
-  describe('"Sob consulta" price', () => {
-    it('should yield the product with priceCents=null and quantity=0', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — fifth product "Amplify the Arknight" has "Sob consulta" price
+      // Assert — "Amplify the Arknight" had "Sob consulta" on the listing; same sentinel as others
       const sobConsulta = products.find((p) => p.rawName === 'Amplify the Arknight');
       expect(sobConsulta).toBeDefined();
       expect(sobConsulta!.priceCents).toBeNull();

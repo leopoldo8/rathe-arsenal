@@ -5,11 +5,11 @@ import { deckDetailQueryKey } from './deck-detail';
 /**
  * Response from `POST /api/decks/:deckId/fetch-variants`.
  *
- * Mirrors the backend `IVariantFetchResponse` shape from Unit 5.
- * Three possible status values:
- *  - 'started'        202 — a new async fetch loop has been started
- *  - 'in_progress'    202 — a fetch is already running; returns existing state
- *  - 'already_fresh'  200 — all missing cards have recent variant data
+ * Mirrors the backend `IVariantFetchResponse` shape.
+ * Possible status values:
+ *  - 'started'          202 — job enqueued; jobId + jobStatus returned
+ *  - 'in_progress'      202 — a fetch is already running; returns existing state (legacy)
+ *  - 'already_fresh'    200 — all missing cards have recent variant data
  *  - 'nothing_to_fetch' 200 — deck has no missing cards
  */
 export type TVariantFetchStatus =
@@ -18,10 +18,13 @@ export type TVariantFetchStatus =
   | 'already_fresh'
   | 'nothing_to_fetch';
 
+/**
+ * New queue-based response: POST enqueues a job and returns its ID + initial status.
+ */
 export interface IVariantFetchStartedResponse {
   readonly status: 'started';
-  readonly fetchId: string;
-  readonly total: number;
+  readonly jobId: string;
+  readonly jobStatus: 'pending' | 'running';
 }
 
 export interface IVariantFetchInProgressResponse {

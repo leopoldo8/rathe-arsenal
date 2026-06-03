@@ -17,6 +17,7 @@ import { TestDeckService } from './test/test-deck.service';
 import { ReSolveController } from './re-solve/re-solve.controller';
 import { ReSolveService } from './re-solve/re-solve.service';
 import { VariantFetchController } from './variant-fetch.controller';
+import { VariantJobsController } from './variant-jobs.controller';
 import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
 import { DecisionsModule } from './decisions/decisions.module';
@@ -44,6 +45,7 @@ import { HeroIdentifierExistsInCatalog } from './validators/hero-identifier-exis
     TestDeckController,
     ReSolveController,
     VariantFetchController,
+    VariantJobsController,
   ],
   providers: [
     DecksImportService,

@@ -18,6 +18,7 @@ import {
   ReviewAggregateEntity,
   DeckTagEntity,
   TrackedDeckTagEntity,
+  VariantFetchJobEntity,
 } from './entities';
 
 /**
@@ -54,6 +55,7 @@ import {
             ReviewAggregateEntity,
             DeckTagEntity,
             TrackedDeckTagEntity,
+            VariantFetchJobEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.

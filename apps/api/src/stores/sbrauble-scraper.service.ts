@@ -6,7 +6,6 @@ import { FetchGuardService } from '../common/fetch-guard/fetch-guard.service';
 import { StoreEntity } from '../database/entities/store.entity';
 import { IScrapedProduct } from './types/scraped-product';
 import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
-import { parsePriceCents, parseQuantity } from './utils/price-stock-parsers';
 
 /**
  * Whitelist regex for store.listingPath.
@@ -42,27 +41,19 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 30_000;
 
 /**
- * Price strings that indicate the product has no public price.
- * Rows with these values are yielded with priceCents=null and quantity=0.
- *
- * Listing-level check only. The detail parser uses isUnavailablePrice() from
- * utils/price-stock-parsers.ts, which uses the same string set but applies
- * different logic: it excludes the row entirely rather than yielding it with null.
- */
-const UNAVAILABLE_PRICE_STRINGS = new Set(['sob consulta', 'indisponível', 'indisponivel']);
-
-/**
  * Scrapes a Sbrauble-platform e-commerce store (Phase 1b: Cúpula DT only).
  *
  * Responsibilities:
  * - Validate the store's listingPath against the ecom whitelist regex.
  * - Fetch paginated listing pages through FetchGuardService (zero direct fetch() calls).
- * - Parse product cards (name, price, stock, URL) via cheerio.
+ * - Parse product cards (name + URL only) via cheerio. Price/stock are NOT read from
+ *   the listing — the store obfuscates them via CSS sprites. priceCents is always null
+ *   and quantity is always 0; the detail-page queue fills in real values.
  * - Enforce the per-store rate limit between page fetches using store.lastFetchedAt.
  * - Yield IScrapedProduct records as an async generator (no memory buffering).
  * - Surface structured ScraperError instances for all error conditions.
  *
- * No database writes — the ingestion layer (Unit 4) handles persistence.
+ * No database writes — the ingestion layer handles persistence.
  * Rate limit enforcement requires the caller to persist store.lastFetchedAt
  * after each fetch via the repository injected into this service.
  */
@@ -79,14 +70,15 @@ export class SbraubleScraperService {
   /**
    * Scrapes all listing pages for the given store.
    *
-   * Yields IScrapedProduct for each valid product row. Rows with out-of-allow-list
-   * product URLs are dropped with a warn log rather than aborting the generator.
+   * Yields IScrapedProduct for each valid product row. Each row contains only
+   * rawName and productUrl from the listing; priceCents is always null and
+   * quantity is always 0 (price/stock come from the detail-page queue instead).
+   * Rows with out-of-allow-list product URLs are dropped with a warn log.
    *
    * Throws ScraperError for unrecoverable conditions:
    * - INVALID_STORE_LISTING_PATH — listingPath fails whitelist regex (before first fetch)
    * - PAGINATION_RUNAWAY — more than MAX_PAGES pages fetched without termination
-   * - PARSE_FAILED — stock text cannot be parsed
-   * - PRICE_UNPARSEABLE — price text is non-empty but not a known BRL format
+   * - PARSE_FAILED — fetch failure
    */
   async *scrapeStore(store: StoreEntity): AsyncGenerator<IScrapedProduct> {
     this.validateListingPath(store.listingPath);
@@ -211,8 +203,13 @@ export class SbraubleScraperService {
   /**
    * Parses the HTML body of a listing page and returns all valid product rows.
    *
-   * Invalid rows (bad product URL host/protocol) are dropped with a warn log.
-   * Price and stock parsing errors throw ScraperError to abort the current page.
+   * Extracts only rawName (from `.card-desc .title a` text) and productUrl
+   * (from `.card-desc .title a` href). Price and stock are NOT read from the
+   * listing — the CSS-sprite obfuscation makes them unreliable. Both fields
+   * are set to their sentinel values (priceCents=null, quantity=0) so the
+   * detail-page queue can supply the real values later.
+   *
+   * Rows with out-of-allow-list product URLs are dropped with a warn log.
    */
   private parsePage(html: string, baseUrl: string, baseHostname: string): IScrapedProduct[] {
     const $ = cheerio.load(html);
@@ -226,8 +223,6 @@ export class SbraubleScraperService {
 
     cards.each((_i, el) => {
       const rawName = $(el).find('.card-desc .title a').text().trim();
-      const rawPrice = $(el).find('.card-desc .price').text().trim();
-      const rawStock = $(el).find('.card-desc .qty').text().trim();
       const rawHref = $(el).find('.card-desc .title a').attr('href') ?? '';
 
       if (!rawName) {
@@ -241,10 +236,8 @@ export class SbraubleScraperService {
         return; // warn already logged inside resolveProductUrl
       }
 
-      // Parse price and stock
-      const { priceCents, quantity } = this.parsePriceAndStock(rawPrice, rawStock);
-
-      products.push({ rawName, priceCents, quantity, productUrl });
+      // Price and stock come from the detail-page queue; listing always yields sentinel values.
+      products.push({ rawName, priceCents: null, quantity: 0, productUrl });
     });
 
     return products;
@@ -296,39 +289,6 @@ export class SbraubleScraperService {
     }
 
     return resolved.toString();
-  }
-
-  /**
-   * Parses the raw price and stock strings from a product row.
-   *
-   * Price formats:
-   *   "R$ 49,90"     → 4990
-   *   "R$ 0,25"      → 25
-   *   "R$ 1.234,50"  → 123450  (thousands separator "." is stripped)
-   *   "Sob consulta" → null    (quantity forced to 0)
-   *   "Indisponível" → null    (quantity forced to 0)
-   *
-   * Stock formats:
-   *   "37 unid."  → 37
-   *   "1 unid."   → 1
-   *   "Esgotado"  → 0
-   *
-   * Throws ScraperError(PRICE_UNPARSEABLE) if the price string is non-empty
-   * but does not match any recognized format.
-   * Throws ScraperError(PARSE_FAILED) if the stock string cannot be parsed.
-   */
-  private parsePriceAndStock(rawPrice: string, rawStock: string): { priceCents: number | null; quantity: number } {
-    const priceNormalized = rawPrice.trim().toLowerCase();
-
-    // Unavailable price — yield with null price and zero quantity
-    if (UNAVAILABLE_PRICE_STRINGS.has(priceNormalized)) {
-      return { priceCents: null, quantity: 0 };
-    }
-
-    const priceCents = parsePriceCents(rawPrice);
-    const quantity = parseQuantity(rawStock);
-
-    return { priceCents, quantity };
   }
 
 }

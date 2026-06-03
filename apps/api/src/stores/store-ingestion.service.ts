@@ -41,6 +41,15 @@ export interface IScrapeRunSummary {
 }
 
 /**
+ * Summary returned by `runUrlSync()`.
+ */
+export interface IUrlSyncSummary {
+  readonly productsFetched: number;
+  readonly productsMatched: number;
+  readonly rowsUpserted: number;
+}
+
+/**
  * Structured product record held in the in-memory staging map while iterating
  * the scraper stream.
  */
@@ -142,6 +151,83 @@ export class StoreIngestionService {
       );
       throw err;
     }
+  }
+
+  /**
+   * Runs a lightweight URL/name sync for the given store.
+   *
+   * Unlike `runScrape`, this method:
+   * - Does NOT create a `store_scrape_run` row.
+   * - Does NOT run the delta guard.
+   * - Does NOT zero out disappeared cards.
+   * - Updates ONLY `productUrl` and `productNameRaw` on existing rows, and
+   *   inserts new rows with `priceCents: null, quantity: 0`.
+   *
+   * Existing `priceCents` and `quantity` values are intentionally preserved —
+   * the detail-page queue is responsible for keeping them current.
+   */
+  async runUrlSync(storeSlug: string): Promise<IUrlSyncSummary> {
+    const store = await this.storeRepo.findOne({ where: { slug: storeSlug } });
+    if (!store) {
+      throw new NotFoundException(`Store not found: ${storeSlug}`);
+    }
+    if (!store.active) {
+      throw new NotFoundException(`Store is inactive: ${storeSlug}`);
+    }
+
+    let productsFetched = 0;
+    let productsMatched = 0;
+    let rowsUpserted = 0;
+    const now = new Date();
+
+    for await (const product of this.scraper.scrapeStore(store)) {
+      productsFetched++;
+
+      const matchResults = await this.matcher.match(store.slug, product.rawName);
+      if (matchResults.length === 0) {
+        continue;
+      }
+
+      productsMatched++;
+
+      for (const { cardIdentifier } of matchResults) {
+        const existing = await this.stockRepo.findOne({
+          where: { storeId: store.id, cardIdentifier },
+        });
+
+        if (existing) {
+          // Update only productUrl + productNameRaw; preserve priceCents/quantity.
+          await this.stockRepo.update(
+            { storeId: store.id, cardIdentifier },
+            { productUrl: product.productUrl, productNameRaw: product.rawName },
+          );
+        } else {
+          // New row: insert with sentinel price/stock.
+          await this.stockRepo.save(
+            this.stockRepo.create({
+              storeId: store.id,
+              cardIdentifier,
+              priceCents: null,
+              quantity: 0,
+              productUrl: product.productUrl,
+              productNameRaw: product.rawName,
+              lastFetchedAt: now,
+            }),
+          );
+        }
+
+        rowsUpserted++;
+      }
+    }
+
+    this.logger.log('URL sync completed', {
+      storeSlug,
+      productsFetched,
+      productsMatched,
+      rowsUpserted,
+    });
+
+    return { productsFetched, productsMatched, rowsUpserted };
   }
 
   // ---------------------------------------------------------------------------

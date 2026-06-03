@@ -10,20 +10,24 @@ import { Repository } from 'typeorm';
 import type { Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { StoreStockEntity } from '../../database/entities/store-stock.entity';
 import { StoreEntity } from '../../database/entities/store.entity';
 import { OwnsTrackedDeckGuard } from '../../auth/guards/owns-tracked-deck.guard';
+import { IFetchCard } from '../../stores/types/fetch-card';
 import {
-  IFetchCard,
   IFreshCheckResult,
   VariantFetchService,
 } from '../../stores/variant-fetch.service';
-import { IVariantFetchProgress } from '../../stores/types/variant-fetch-progress';
 import { VariantFetchController } from '../variant-fetch.controller';
 import {
   IShoppingLinePopulated,
   IVariantFetchProgressDto,
 } from '../../stores/dtos/shopping-line.response.dto';
+import {
+  EVariantFetchJobStatus,
+  VariantFetchJobEntity,
+} from '../../database/entities/variant-fetch-job.entity';
+import { VariantFetchQueueService } from '../../stores/variant-fetch-queue.service';
+import { ResolveJobCardsService } from '../../stores/resolve-job-cards.service';
 
 // ---------------------------------------------------------------------------
 // Test constants
@@ -71,38 +75,25 @@ function buildSnapshot(
   };
 }
 
-function buildStockRow(
-  cardIdentifier: string,
-  overrides: Partial<StoreStockEntity> = {},
-): StoreStockEntity {
+function buildJob(overrides: Partial<VariantFetchJobEntity> = {}): VariantFetchJobEntity {
   return {
-    id: 100,
+    id: 'job-uuid-001',
+    userId: 1,
+    deckId: DECK_ID,
     storeId: 1,
-    cardIdentifier,
-    productNameRaw: cardIdentifier,
-    priceCents: 5000,
-    quantity: 4,
-    productUrl: `https://www.cupuladt.com.br/cards/${cardIdentifier}`,
-    lastFetchedAt: new Date('2026-04-13T09:00:00Z'),
-    store: {} as StoreStockEntity['store'],
-    ...overrides,
-  };
-}
-
-function buildProgress(
-  overrides: Partial<IVariantFetchProgress> = {},
-): IVariantFetchProgress {
-  return {
-    fetchId: 'fetch-uuid-001',
-    total: 3,
-    completed: 1,
+    status: EVariantFetchJobStatus.Pending,
+    cards: [],
+    total: 2,
+    completed: 0,
     failed: 0,
-    inProgress: true,
-    startedAt: new Date(),
-    cards: new Map(),
-    globalFailed: false,
+    enqueuedAt: new Date(),
+    startedAt: null,
+    finishedAt: null,
+    claimedAt: null,
+    claimedBy: null,
+    error: null,
     ...overrides,
-  };
+  } as VariantFetchJobEntity;
 }
 
 // ---------------------------------------------------------------------------
@@ -120,8 +111,9 @@ async function buildApp(opts: {
   userId: string;
   guardAllows: boolean;
   variantFetchService: jest.Mocked<VariantFetchService>;
+  queueService: jest.Mocked<VariantFetchQueueService>;
+  resolveJobCards: jest.Mocked<ResolveJobCardsService>;
   snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
-  storeStockRepo: jest.Mocked<Repository<StoreStockEntity>>;
   storeRepo: jest.Mocked<Repository<StoreEntity>>;
 }): Promise<INestApplication> {
   const { userId, guardAllows } = opts;
@@ -139,13 +131,11 @@ async function buildApp(opts: {
     controllers: [VariantFetchController],
     providers: [
       { provide: VariantFetchService, useValue: opts.variantFetchService },
+      { provide: VariantFetchQueueService, useValue: opts.queueService },
+      { provide: ResolveJobCardsService, useValue: opts.resolveJobCards },
       {
         provide: getRepositoryToken(DeckReadinessSnapshotEntity),
         useValue: opts.snapshotRepo,
-      },
-      {
-        provide: getRepositoryToken(StoreStockEntity),
-        useValue: opts.storeStockRepo,
       },
       {
         provide: getRepositoryToken(StoreEntity),
@@ -161,7 +151,10 @@ async function buildApp(opts: {
 
   // Inject the authenticated user into req.user (simulates JwtAuthGuard).
   app.use((req: Request, _res: Response, next: NextFunction) => {
-    (req as Request & { user: { userId: string } }).user = { userId };
+    (req as Request & { user: { userId: string; email: string } }).user = {
+      userId,
+      email: 'test@example.com',
+    };
     next();
   });
 
@@ -175,10 +168,11 @@ async function buildApp(opts: {
 
 function makeServiceMocks() {
   const variantFetchService = createMock<VariantFetchService>();
+  const queueService = createMock<VariantFetchQueueService>();
+  const resolveJobCards = createMock<ResolveJobCardsService>();
   const snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
-  const storeStockRepo = createMock<Repository<StoreStockEntity>>();
   const storeRepo = createMock<Repository<StoreEntity>>();
-  return { variantFetchService, snapshotRepo, storeStockRepo, storeRepo };
+  return { variantFetchService, queueService, resolveJobCards, snapshotRepo, storeRepo };
 }
 
 // ---------------------------------------------------------------------------
@@ -194,29 +188,29 @@ describe('VariantFetchController (e2e)', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Scenario 1: Happy path — triggers a new fetch, returns 202 started
+  // Scenario 1: Happy path — enqueues a job, returns 202 started
   // -------------------------------------------------------------------------
-  describe('POST /decks/:deckId/fetch-variants — happy: starts new fetch', () => {
-    it('returns 202 with fetchId and total when fetch is started', async () => {
+  describe('POST /decks/:deckId/fetch-variants — happy: enqueues new job', () => {
+    it('returns 202 with jobId and status when a job is enqueued', async () => {
       // Arrange
       const mocks = makeServiceMocks();
       const missing = [
         { cardIdentifier: 'card-a', quantity: 2 },
         { cardIdentifier: 'card-b', quantity: 1 },
       ];
+      const fetchCards: IFetchCard[] = [
+        { cardIdentifier: 'card-a', productUrl: 'https://example.com/card-a', listingPriceCents: 5000, listingQuantity: 2 },
+        { cardIdentifier: 'card-b', productUrl: 'https://example.com/card-b', listingPriceCents: 3000, listingQuantity: 1 },
+      ];
 
       mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
       mocks.storeRepo.findOne.mockResolvedValue(buildStore());
-      mocks.variantFetchService.getProgress.mockReturnValue(undefined);
       mocks.variantFetchService.isFreshForDeck.mockResolvedValue({
         fresh: false,
         inProgress: false,
       } satisfies IFreshCheckResult);
-      mocks.storeStockRepo.find.mockResolvedValue([
-        buildStockRow('card-a'),
-        buildStockRow('card-b'),
-      ]);
-      mocks.variantFetchService.startFetch.mockReturnValue('fetch-uuid-new');
+      mocks.resolveJobCards.resolve.mockResolvedValue(fetchCards);
+      mocks.queueService.enqueue.mockResolvedValue(buildJob({ id: 'job-new-001' }));
 
       app = await buildApp({
         userId: USER_ID,
@@ -230,17 +224,51 @@ describe('VariantFetchController (e2e)', () => {
         .expect(HttpStatus.ACCEPTED)
         .expect((res) => {
           expect(res.body.status).toBe('started');
-          expect(res.body.fetchId).toBe('fetch-uuid-new');
-          expect(res.body.total).toBe(2);
+          expect(res.body.jobId).toBe('job-new-001');
+          expect(res.body.jobStatus).toBe('pending');
         });
 
-      expect(mocks.variantFetchService.startFetch).toHaveBeenCalledWith(
-        String(DECK_ID),
+      expect(mocks.queueService.enqueue).toHaveBeenCalledTimes(1);
+      expect(mocks.queueService.enqueue).toHaveBeenCalledWith(
+        expect.any(String),
+        DECK_ID,
         1,
-        expect.arrayContaining<IFetchCard>([
-          expect.objectContaining({ cardIdentifier: 'card-a' }),
-          expect.objectContaining({ cardIdentifier: 'card-b' }),
-        ]),
+        fetchCards,
+      );
+    });
+
+    it('passes resolved cards (from ResolveJobCardsService) to the queue', async () => {
+      // Arrange
+      const mocks = makeServiceMocks();
+      const missing = [{ cardIdentifier: 'card-x', quantity: 1 }];
+      const resolvedCards: IFetchCard[] = [
+        { cardIdentifier: 'card-x', productUrl: 'https://example.com/card-x', listingPriceCents: null, listingQuantity: 1 },
+      ];
+
+      mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
+      mocks.storeRepo.findOne.mockResolvedValue(buildStore());
+      mocks.variantFetchService.isFreshForDeck.mockResolvedValue({
+        fresh: false,
+        inProgress: false,
+      } satisfies IFreshCheckResult);
+      mocks.resolveJobCards.resolve.mockResolvedValue(resolvedCards);
+      mocks.queueService.enqueue.mockResolvedValue(buildJob());
+
+      app = await buildApp({ userId: USER_ID, guardAllows: true, ...mocks });
+
+      await request(app.getHttpServer())
+        .post(`/decks/${DECK_ID}/fetch-variants`)
+        .expect(HttpStatus.ACCEPTED);
+
+      expect(mocks.resolveJobCards.resolve).toHaveBeenCalledWith(
+        1,
+        expect.arrayContaining(['card-x']),
+      );
+      expect(mocks.queueService.enqueue).toHaveBeenCalledWith(
+        expect.any(String),
+        DECK_ID,
+        1,
+        resolvedCards,
       );
     });
   });
@@ -256,7 +284,6 @@ describe('VariantFetchController (e2e)', () => {
 
       mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
       mocks.storeRepo.findOne.mockResolvedValue(buildStore());
-      mocks.variantFetchService.getProgress.mockReturnValue(undefined);
       mocks.variantFetchService.isFreshForDeck.mockResolvedValue({
         fresh: true,
         inProgress: false,
@@ -276,7 +303,7 @@ describe('VariantFetchController (e2e)', () => {
           expect(res.body.status).toBe('already_fresh');
         });
 
-      expect(mocks.variantFetchService.startFetch).not.toHaveBeenCalled();
+      expect(mocks.queueService.enqueue).not.toHaveBeenCalled();
     });
   });
 
@@ -299,7 +326,7 @@ describe('VariantFetchController (e2e)', () => {
         .post(`/decks/${DECK_ID}/fetch-variants`)
         .expect(HttpStatus.FORBIDDEN);
 
-      expect(mocks.variantFetchService.startFetch).not.toHaveBeenCalled();
+      expect(mocks.queueService.enqueue).not.toHaveBeenCalled();
     });
   });
 
@@ -328,7 +355,7 @@ describe('VariantFetchController (e2e)', () => {
           expect(res.body.status).toBe('nothing_to_fetch');
         });
 
-      expect(mocks.variantFetchService.startFetch).not.toHaveBeenCalled();
+      expect(mocks.queueService.enqueue).not.toHaveBeenCalled();
     });
 
     it('returns 200 nothing_to_fetch when no snapshot exists', async () => {
@@ -350,78 +377,31 @@ describe('VariantFetchController (e2e)', () => {
           expect(res.body.status).toBe('nothing_to_fetch');
         });
     });
-  });
 
-  // -------------------------------------------------------------------------
-  // Scenario 8: Second POST while first is running — 202 in_progress
-  // -------------------------------------------------------------------------
-  describe('POST /decks/:deckId/fetch-variants — edge: duplicate while in progress', () => {
-    it('returns 202 in_progress with existing fetchId when a fetch is already active', async () => {
+    it('returns 200 nothing_to_fetch when all resolved cards have no productUrl', async () => {
       // Arrange
       const mocks = makeServiceMocks();
-      const missing = [{ cardIdentifier: 'card-a', quantity: 1 }];
-      const existingProgress = buildProgress({ fetchId: 'fetch-existing' });
+      mocks.snapshotRepo.findOne.mockResolvedValue(
+        buildSnapshot([{ cardIdentifier: 'card-a', quantity: 1 }]),
+      );
+      mocks.storeRepo.findOne.mockResolvedValue(buildStore());
+      mocks.variantFetchService.isFreshForDeck.mockResolvedValue({
+        fresh: false,
+        inProgress: false,
+      } satisfies IFreshCheckResult);
+      // ResolveJobCardsService returns empty (all cards lack productUrl).
+      mocks.resolveJobCards.resolve.mockResolvedValue([]);
 
-      mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
-      mocks.variantFetchService.getProgress.mockReturnValue(existingProgress);
+      app = await buildApp({ userId: USER_ID, guardAllows: true, ...mocks });
 
-      app = await buildApp({
-        userId: USER_ID,
-        guardAllows: true,
-        ...mocks,
-      });
-
-      // Act & Assert
       await request(app.getHttpServer())
         .post(`/decks/${DECK_ID}/fetch-variants`)
-        .expect(HttpStatus.ACCEPTED)
+        .expect(HttpStatus.OK)
         .expect((res) => {
-          expect(res.body.status).toBe('in_progress');
-          expect(res.body.fetchId).toBe('fetch-existing');
-          expect(res.body.progress.inProgress).toBe(true);
+          expect(res.body.status).toBe('nothing_to_fetch');
         });
 
-      // Must NOT spawn a duplicate loop.
-      expect(mocks.variantFetchService.startFetch).not.toHaveBeenCalled();
-    });
-
-    it('serializes the per-card status Map as a plain object under progress.cards', async () => {
-      // Arrange: progress has a populated Map with three cards in different states.
-      const mocks = makeServiceMocks();
-      const missing = [{ cardIdentifier: 'card-a', quantity: 1 }];
-      const cardsMap = new Map<string, 'pending' | 'done' | 'failed'>([
-        ['card-a', 'done'],
-        ['card-b', 'pending'],
-        ['card-c', 'failed'],
-      ]);
-      const existingProgress = buildProgress({
-        fetchId: 'fetch-with-cards',
-        total: 3,
-        completed: 1,
-        failed: 1,
-        cards: cardsMap,
-      });
-
-      mocks.snapshotRepo.findOne.mockResolvedValue(buildSnapshot(missing));
-      mocks.variantFetchService.getProgress.mockReturnValue(existingProgress);
-
-      app = await buildApp({
-        userId: USER_ID,
-        guardAllows: true,
-        ...mocks,
-      });
-
-      // Act & Assert: the Map must be flattened into a JSON-friendly object.
-      await request(app.getHttpServer())
-        .post(`/decks/${DECK_ID}/fetch-variants`)
-        .expect(HttpStatus.ACCEPTED)
-        .expect((res) => {
-          expect(res.body.progress.cards).toEqual({
-            'card-a': 'done',
-            'card-b': 'pending',
-            'card-c': 'failed',
-          });
-        });
+      expect(mocks.queueService.enqueue).not.toHaveBeenCalled();
     });
   });
 
