@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { AppModule } from '../app.module';
 import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
@@ -48,6 +47,9 @@ function sleep(ms: number): Promise<void> {
 
 async function main(): Promise<void> {
   const logger = new Logger('VariantQueueWorker');
+  // Imported dynamically so loading this module for unit tests does not pull in
+  // AppModule's eager environment validation (which has no env in CI/test).
+  const { AppModule } = await import('../app.module');
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
   const queue = app.get(VariantFetchQueueService);
   const processor = app.get(VariantJobProcessorService);
