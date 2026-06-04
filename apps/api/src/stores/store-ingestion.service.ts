@@ -220,6 +220,10 @@ export class StoreIngestionService {
       }
     }
 
+    // Persist the sync timestamp so the worker can skip the full re-scrape on a
+    // restart that happens within the sync interval.
+    await this.storeRepo.update({ id: store.id }, { lastUrlSyncAt: now });
+
     this.logger.log('URL sync completed', {
       storeSlug,
       productsFetched,
@@ -228,6 +232,19 @@ export class StoreIngestionService {
     });
 
     return { productsFetched, productsMatched, rowsUpserted };
+  }
+
+  /**
+   * Returns the timestamp of the store's last completed URL sync, or null if it
+   * has never synced. The worker seeds its in-memory cadence clock from this so
+   * redeploys within the sync interval don't re-scrape the whole catalog.
+   */
+  async getLastUrlSyncAt(storeSlug: string): Promise<Date | null> {
+    const store = await this.storeRepo.findOne({
+      where: { slug: storeSlug },
+      select: ['id', 'lastUrlSyncAt'],
+    });
+    return store?.lastUrlSyncAt ?? null;
   }
 
   // ---------------------------------------------------------------------------

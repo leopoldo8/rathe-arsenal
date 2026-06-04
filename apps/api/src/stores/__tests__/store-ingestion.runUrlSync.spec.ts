@@ -29,6 +29,7 @@ function makeStore(overrides: Partial<StoreEntity> = {}): StoreEntity {
     active: true,
     lastScrapedAt: null,
     lastFetchedAt: null,
+    lastUrlSyncAt: null,
     createdAt: new Date('2026-01-01'),
     ...overrides,
   } as StoreEntity;
@@ -252,6 +253,53 @@ describe('StoreIngestionService.runUrlSync', () => {
       expect(stockRepo.findOne).not.toHaveBeenCalled();
       expect(stockRepo.update).not.toHaveBeenCalled();
       expect(stockRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Sync timestamp persistence
+  // ---------------------------------------------------------------------------
+
+  describe('lastUrlSyncAt persistence', () => {
+    it('updates store.lastUrlSyncAt after a completed sync', async () => {
+      storeRepo.findOne.mockResolvedValue(makeStore());
+      (scraper.scrapeStore as jest.Mock).mockReturnValue(makeStream([]));
+
+      await service.runUrlSync('cupula-dt');
+
+      const storeUpdate = (storeRepo.update as jest.Mock).mock.calls.find(
+        (call) => (call[0] as { id?: number }).id === 1,
+      );
+      expect(storeUpdate).toBeDefined();
+      const fields = storeUpdate![1] as Record<string, unknown>;
+      expect(fields.lastUrlSyncAt).toBeInstanceOf(Date);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getLastUrlSyncAt
+  // ---------------------------------------------------------------------------
+
+  describe('getLastUrlSyncAt', () => {
+    it('returns the stored timestamp when the store has synced', async () => {
+      const synced = new Date('2026-06-01T00:00:00Z');
+      storeRepo.findOne.mockResolvedValue(makeStore({ lastUrlSyncAt: synced }));
+
+      const result = await service.getLastUrlSyncAt('cupula-dt');
+
+      expect(result).toEqual(synced);
+    });
+
+    it('returns null when the store has never synced', async () => {
+      storeRepo.findOne.mockResolvedValue(makeStore({ lastUrlSyncAt: null }));
+
+      expect(await service.getLastUrlSyncAt('cupula-dt')).toBeNull();
+    });
+
+    it('returns null when the store does not exist', async () => {
+      storeRepo.findOne.mockResolvedValue(null);
+
+      expect(await service.getLastUrlSyncAt('unknown')).toBeNull();
     });
   });
 
