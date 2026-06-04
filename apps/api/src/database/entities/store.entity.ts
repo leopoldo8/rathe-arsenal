@@ -66,6 +66,15 @@ export class StoreEntity {
   @Column({ type: 'timestamptz', nullable: true })
   lastFetchedAt!: Date | null;
 
+  /**
+   * Timestamp of the last completed URL/name sync (productUrl discovery).
+   * The variant queue worker reads this on boot so a redeploy within the sync
+   * interval skips the full catalog re-scrape instead of repeating it every
+   * restart.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  lastUrlSyncAt!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }

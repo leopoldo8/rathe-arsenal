@@ -59,8 +59,16 @@ async function main(): Promise<void> {
   const resolveCards = (job: VariantFetchJobEntity): Promise<IFetchCard[]> =>
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
 
-  // Initialize to 0 so the sync runs immediately on startup.
-  let lastSyncAt = 0;
+  // Seed the cadence clock from the persisted last-sync timestamp so a restart
+  // within the sync interval skips the full catalog re-scrape. Falls back to 0
+  // (sync immediately) when the store has never synced.
+  const persistedSyncAt = await ingestion.getLastUrlSyncAt(DEFAULT_STORE_SLUG);
+  let lastSyncAt = persistedSyncAt ? persistedSyncAt.getTime() : 0;
+  logger.log({
+    event: 'variant-worker.started',
+    lastUrlSyncAt: persistedSyncAt ? persistedSyncAt.toISOString() : null,
+    willSyncOnBoot: shouldRunSync(lastSyncAt, Date.now()),
+  });
 
   while (true) {
     // URL/name sync cadence: run once on startup and then every ~24h.
