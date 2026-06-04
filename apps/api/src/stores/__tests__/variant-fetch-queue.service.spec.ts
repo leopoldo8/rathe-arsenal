@@ -28,6 +28,22 @@ describe('VariantFetchQueueService', () => {
     expect(repo.save).not.toHaveBeenCalled();
   });
 
+  it('claimNext returns null on an empty queue (TypeORM UPDATE returns [rows, rowCount])', async () => {
+    // For UPDATE statements Repository.query() resolves to `[rows, rowCount]`,
+    // so an empty queue is `[[], 0]` — not a flat `[]`. claimNext must unwrap it
+    // and return null instead of a truthy empty array.
+    repo.query.mockResolvedValue([[], 0]);
+    const result = await service.claimNext('worker-1');
+    expect(result).toBeNull();
+  });
+
+  it('claimNext returns the claimed job from the [rows, rowCount] shape', async () => {
+    const job = { id: 'job-9', cards: [{ cardIdentifier: 'a-red', status: 'pending' }] } as VariantFetchJobEntity;
+    repo.query.mockResolvedValue([[job], 1]);
+    const result = await service.claimNext('worker-1');
+    expect(result?.id).toBe('job-9');
+  });
+
   it('computes ETA as remaining cards times the rate limit', () => {
     const eta = service.computeEtaSeconds([
       { total: 10, completed: 4, failed: 0 } as VariantFetchJobEntity,

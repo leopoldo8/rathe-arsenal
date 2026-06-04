@@ -42,7 +42,7 @@ export class VariantFetchQueueService {
   }
 
   async claimNext(workerId: string): Promise<VariantFetchJobEntity | null> {
-    const rows: VariantFetchJobEntity[] = await this.jobRepo.query(
+    const result = await this.jobRepo.query(
       `UPDATE variant_fetch_job SET status = $1, "claimedAt" = now(), "claimedBy" = $2, "startedAt" = COALESCE("startedAt", now())
        WHERE id = (
          SELECT id FROM variant_fetch_job WHERE status = $3
@@ -50,7 +50,11 @@ export class VariantFetchQueueService {
        ) RETURNING *`,
       [EVariantFetchJobStatus.Running, workerId, EVariantFetchJobStatus.Pending],
     );
-    return rows[0] ?? null;
+    // TypeORM's Repository.query() returns `[rows, rowCount]` for UPDATE/DELETE
+    // statements — not a flat rows array. Unwrap the rows before indexing, or an
+    // empty queue yields a truthy `[]` that downstream code mistakes for a job.
+    const rows: VariantFetchJobEntity[] = Array.isArray(result?.[0]) ? result[0] : result;
+    return rows?.[0] ?? null;
   }
 
   async reclaimOrphans(): Promise<void> {
