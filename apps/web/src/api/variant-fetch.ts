@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { deckDetailQueryKey } from './deck-detail';
+import { VARIANT_JOBS_QUERY_KEY } from './variant-jobs';
 
 /**
  * Response from `POST /api/decks/:deckId/fetch-variants`.
@@ -74,6 +75,13 @@ export function useVariantFetchMutation(deckId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: deckDetailQueryKey(deckId),
+      });
+      // Refresh the global queue immediately so the navbar indicator + drawer
+      // appear on click. Without this, the variant-jobs query only polls while
+      // a job is already active, so a freshly enqueued job stayed invisible
+      // until a manual page reload.
+      void queryClient.invalidateQueries({
+        queryKey: VARIANT_JOBS_QUERY_KEY,
       });
     },
   });
