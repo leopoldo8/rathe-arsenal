@@ -10,6 +10,7 @@ import { StoreStockVariantEntity } from '../database/entities/store-stock-varian
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { IFetchCard } from './types/fetch-card';
 import { deriveStoreStock } from './store-stock-derivation';
+import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
 
 // ---------------------------------------------------------------------------
 // Constants — match variant-fetch.service.ts
@@ -67,21 +68,45 @@ export class VariantJobProcessorService {
 
     const hostname = new URL(store.baseUrl).hostname;
 
+    let failedCount = 0;
+    let blockedCount = 0;
+
     for (const card of cards) {
       try {
         await this.fetchAndPersist(store, hostname, card);
         await this.queue.markCardResult(job.id, card.cardIdentifier, true);
       } catch (err) {
+        failedCount += 1;
+        const isBlocked =
+          err instanceof ScraperError &&
+          err.code === EScraperErrorCode.DETAIL_PAGE_BLOCKED_OR_EMPTY;
+        if (isBlocked) blockedCount += 1;
         this.logger.warn({
+          // A blocked/challenge page is an infra signal (store is serving us a
+          // stripped page), distinct from a per-card parse bug. Tagging the
+          // event lets telemetry show whether the block is transient.
+          event: isBlocked ? 'detail.blocked_or_empty' : 'detail.fetch_failed',
           msg: 'Card variant fetch failed',
           cardIdentifier: card.cardIdentifier,
+          storeSlug: store.slug,
           error: (err as Error).message,
         });
         await this.queue.markCardResult(job.id, card.cardIdentifier, false);
       }
     }
 
-    await this.queue.finish(job.id, null);
+    // Surface a failed job (status = Failed) when no card succeeded, so the UI
+    // reports an honest error instead of a green "done" with no prices. When
+    // every failure was a block page, say so — it points at the store, not the
+    // card data.
+    const allFailed = cards.length > 0 && failedCount === cards.length;
+    const finishError = allFailed
+      ? blockedCount === cards.length
+        ? 'Store is currently unreachable (blocked or empty pages). Try again later.'
+        : `All ${cards.length} card fetches failed.`
+      : null;
+
+    await this.queue.finish(job.id, finishError);
   }
 
   // ---------------------------------------------------------------------------
