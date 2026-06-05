@@ -35,6 +35,16 @@ export enum EScraperErrorCode {
    * The scrape run is aborted before the first HTTP request is made.
    */
   INVALID_STORE_LISTING_PATH = 'INVALID_STORE_LISTING_PATH',
+
+  /**
+   * A card detail page contained no `.table-cards-row` table at all. A real
+   * detail page always renders that table (even when every variant is sold
+   * out), so its total absence means the response was a block/challenge page
+   * or otherwise malformed — NOT a card that is legitimately out of stock.
+   * The card fetch is marked failed rather than silently recorded as a
+   * successful "no price" result.
+   */
+  DETAIL_PAGE_BLOCKED_OR_EMPTY = 'DETAIL_PAGE_BLOCKED_OR_EMPTY',
 }
 
 export class ScraperError extends Error {

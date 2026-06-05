@@ -9,6 +9,7 @@ import { FetchGuardService } from '../../common/fetch-guard/fetch-guard.service'
 import { StoreEntity } from '../../database/entities/store.entity';
 import { StoreStockEntity } from '../../database/entities/store-stock.entity';
 import { VariantFetchJobEntity, EVariantFetchJobStatus } from '../../database/entities/variant-fetch-job.entity';
+import { EScraperErrorCode, ScraperError } from '../errors/scraper.errors';
 
 describe('VariantJobProcessorService', () => {
   it('derives and upserts store_stock from parsed variants and marks the card done', async () => {
@@ -95,5 +96,45 @@ describe('VariantJobProcessorService', () => {
     expect(queue.markCardResult).toHaveBeenCalledWith('job-1', 'good-red', true);
     expect(queue.finish).toHaveBeenCalledTimes(1);
     expect(queue.finish).toHaveBeenCalledWith('job-1', null);
+  });
+
+  it('finishes the job with a blocked error when every card hits a block page', async () => {
+    const fetchGuard = createMock<FetchGuardService>();
+    fetchGuard.guardedFetch.mockResolvedValue({ status: 200, headers: {}, body: new Uint8Array(Buffer.from('<html></html>')) } as never);
+    const parser = createMock<SbraubleDetailParserService>();
+    // Every card's detail page is a block page → parser throws.
+    parser.parseDetailPage.mockImplementation(() => {
+      throw new ScraperError(EScraperErrorCode.DETAIL_PAGE_BLOCKED_OR_EMPTY, 'blocked');
+    });
+    const storeRepo = createMock<Repository<StoreEntity>>();
+    storeRepo.findOne.mockResolvedValue({ id: 1, slug: 'cupula-dt', baseUrl: 'https://www.cupuladt.com.br', lastFetchedAt: null, rateLimitMs: 0 } as never);
+    const stockRepo = createMock<Repository<StoreStockEntity>>();
+    const queue = createMock<VariantFetchQueueService>();
+    const dataSource = createMock<DataSource>();
+    (dataSource.transaction as jest.Mock).mockImplementation((fn: (em: unknown) => Promise<unknown>) => fn(createMock()));
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        VariantJobProcessorService,
+        { provide: FetchGuardService, useValue: fetchGuard },
+        { provide: SbraubleDetailParserService, useValue: parser },
+        { provide: VariantFetchQueueService, useValue: queue },
+        { provide: getRepositoryToken(StoreEntity), useValue: storeRepo },
+        { provide: getRepositoryToken(StoreStockEntity), useValue: stockRepo },
+        { provide: getDataSourceToken(), useValue: dataSource },
+      ],
+    }).compile();
+    const processor = moduleRef.get(VariantJobProcessorService);
+
+    const job = { id: 'job-2', storeId: 1, status: EVariantFetchJobStatus.Running, cards: [{ cardIdentifier: 'a-red', status: 'pending' }] } as VariantFetchJobEntity;
+    await processor.process(job, [{ cardIdentifier: 'a-red', productUrl: 'https://www.cupuladt.com.br/x', listingPriceCents: null, listingQuantity: 0 }]);
+
+    // Card marked failed; the store_stock row is NOT overwritten with null
+    // (a transient block must not destroy good price data); job finishes Failed.
+    expect(queue.markCardResult).toHaveBeenCalledWith('job-2', 'a-red', false);
+    expect(stockRepo.upsert).not.toHaveBeenCalled();
+    expect(queue.finish).toHaveBeenCalledTimes(1);
+    const finishArg = (queue.finish as jest.Mock).mock.calls[0][1];
+    expect(finishArg).toMatch(/unreachable|blocked/i);
   });
 });

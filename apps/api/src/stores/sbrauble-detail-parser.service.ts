@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as cheerio from 'cheerio';
 import { IScrapedVariant } from './types/scraped-variant';
 import { parsePriceCents, parseQuantity, isUnavailablePrice } from './utils/price-stock-parsers';
+import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
 
 /**
  * cheerio v1.x exposes element types via domhandler, which is not always
@@ -42,16 +43,23 @@ export class SbraubleDetailParserService {
    * price string cannot be parsed as BRL currency.
    * Throws ScraperError(PARSE_FAILED) if a stock string is unrecognized.
    *
-   * Returns an empty array when no `.table-cards-row` elements are found
-   * (e.g., malformed HTML) and logs a warning.
+   * Throws ScraperError(DETAIL_PAGE_BLOCKED_OR_EMPTY) when the page contains no
+   * `.table-cards-row` table at all. A real detail page always renders that
+   * table (even when every variant is sold out), so its absence means the
+   * response was a block/challenge page or otherwise malformed. Raising here
+   * (instead of returning `[]`) prevents a blocked fetch from being recorded as
+   * a successful "no price" result. Returns `[]` only when the table exists but
+   * every row is filtered out (genuinely out of stock / unavailable).
    */
   parseDetailPage(html: string): IScrapedVariant[] {
     const $ = cheerio.load(html);
     const rows = $('.table-cards-row');
 
     if (rows.length === 0) {
-      this.logger.warn({ msg: 'No .table-cards-row elements found in detail page HTML' });
-      return [];
+      throw new ScraperError(
+        EScraperErrorCode.DETAIL_PAGE_BLOCKED_OR_EMPTY,
+        `No .table-cards-row elements found in detail page HTML (htmlLength=${html.length}) — likely a block/challenge page`,
+      );
     }
 
     const variants: IScrapedVariant[] = [];

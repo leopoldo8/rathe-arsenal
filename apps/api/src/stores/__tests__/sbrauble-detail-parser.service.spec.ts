@@ -253,27 +253,30 @@ describe('SbraubleDetailParserService', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Error: malformed HTML (missing .table-cards-row) returns empty array with warning
+  // Error: a page with no .table-cards-row table at all is a block/challenge
+  // page, not an out-of-stock card. It must throw so the worker marks the card
+  // failed instead of recording a false "no price" success.
   // -------------------------------------------------------------------------
 
-  describe('malformed HTML', () => {
-    it('should return empty array when no .table-cards-row elements are found', () => {
-      // Arrange — HTML with no variant rows at all
+  describe('blocked / malformed HTML (no table)', () => {
+    it('should throw DETAIL_PAGE_BLOCKED_OR_EMPTY when no .table-cards-row elements are found', () => {
       const html = '<html><body><div class="some-other-element">nothing here</div></body></html>';
 
-      // Act
-      const variants = service.parseDetailPage(html);
-
-      // Assert — no rows found, empty array returned (no throw)
-      expect(variants).toHaveLength(0);
+      expect(() => service.parseDetailPage(html)).toThrow(ScraperError);
+      try {
+        service.parseDetailPage(html);
+      } catch (err) {
+        expect((err as ScraperError).code).toBe(EScraperErrorCode.DETAIL_PAGE_BLOCKED_OR_EMPTY);
+      }
     });
 
-    it('should return empty array for completely empty HTML string', () => {
-      // Act
-      const variants = service.parseDetailPage('');
-
-      // Assert
-      expect(variants).toHaveLength(0);
+    it('should throw DETAIL_PAGE_BLOCKED_OR_EMPTY for a completely empty HTML string', () => {
+      expect(() => service.parseDetailPage('')).toThrow(ScraperError);
+      try {
+        service.parseDetailPage('');
+      } catch (err) {
+        expect((err as ScraperError).code).toBe(EScraperErrorCode.DETAIL_PAGE_BLOCKED_OR_EMPTY);
+      }
     });
   });
 
