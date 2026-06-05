@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const { jobsHolder } = vi.hoisted(() => ({ jobsHolder: { data: { jobs: [] as unknown[], etaSeconds: 0 } } }));
@@ -48,5 +48,15 @@ describe('VariantQueuePill', () => {
     jobsHolder.data = { jobs: [], etaSeconds: 0 } as never;
     render(<VariantQueuePill />);
     expect(screen.queryByTestId('variant-queue-pill')).not.toBeInTheDocument();
+  });
+
+  it('opens the drawer when an external open request fires (Get exact prices)', async () => {
+    jobsHolder.data = { jobs: [{ jobId: 'j1', deckId: 42, deckName: 'Kayo Aggro', status: 'running', total: 18, completed: 0, failed: 0 }], etaSeconds: 27 } as never;
+    const { requestOpenVariantQueueDrawer } = await import('../variantQueueDrawerBus');
+    render(<VariantQueuePill />);
+    // Drawer starts closed (button visible, panel absent).
+    expect(screen.queryByTestId('variant-queue-panel')).not.toBeInTheDocument();
+    await act(async () => { requestOpenVariantQueueDrawer(); });
+    expect(screen.getByTestId('variant-queue-panel')).toHaveTextContent('Kayo Aggro');
   });
 });

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useVariantJobsQuery, hasActiveJobs } from '../../api/variant-jobs';
 import { VariantQueueDrawer } from './VariantQueueDrawer';
+import { subscribeOpenVariantQueueDrawer } from './variantQueueDrawerBus';
 import QueueIcon from '../../assets/icons/queue.svg?react';
 import styles from './VariantQueuePill.module.css';
 
@@ -14,6 +15,9 @@ import styles from './VariantQueuePill.module.css';
 export function VariantQueuePill(): React.ReactElement | null {
   const { data } = useVariantJobsQuery();
   const [open, setOpen] = useState(false);
+
+  // Pop open when a "Get exact prices" click elsewhere requests it.
+  useEffect(() => subscribeOpenVariantQueueDrawer(() => setOpen(true)), []);
 
   if (!data || data.jobs.length === 0) return null;
 
