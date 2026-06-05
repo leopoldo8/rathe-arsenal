@@ -14,6 +14,7 @@ import {
   useClearDeckRejectionsMutation,
 } from '../../api/decisions';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
+import { requestOpenVariantQueueDrawer } from '../../components/variant-queue/variantQueueDrawerBus';
 import { useVariantJobsQuery } from '../../api/variant-jobs';
 import type { IVariantFetchProgress } from '../../api/shopping-line';
 import { useToast } from '../../components/ui/Toast/useToast';
@@ -130,7 +131,13 @@ function DeckDetailPage(): React.ReactElement {
   );
 
   const handleFetchVariants = useCallback(() => {
-    variantFetchMutation.mutate();
+    variantFetchMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        // Pop the queue drawer open the moment a job is enqueued, so the user
+        // sees live progress without hunting for the navbar icon.
+        if (data.status === 'started') requestOpenVariantQueueDrawer();
+      },
+    });
   }, [variantFetchMutation]);
 
   // Retry handler for ShoppingLine error state: invalidates the deck-detail
