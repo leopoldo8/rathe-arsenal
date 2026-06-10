@@ -45,6 +45,13 @@ export enum EScraperErrorCode {
    * successful "no price" result.
    */
   DETAIL_PAGE_BLOCKED_OR_EMPTY = 'DETAIL_PAGE_BLOCKED_OR_EMPTY',
+
+  /**
+   * A request to the Firecrawl /scrape API failed (non-2xx status, non-JSON
+   * body, or a response missing the expected `data.rawHtml` field). Surfaced
+   * as a per-card failure so the job reports an honest error.
+   */
+  FIRECRAWL_REQUEST_FAILED = 'FIRECRAWL_REQUEST_FAILED',
 }
 
 export class ScraperError extends Error {
