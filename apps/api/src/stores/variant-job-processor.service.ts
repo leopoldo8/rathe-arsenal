@@ -11,6 +11,7 @@ import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.en
 import { IFetchCard } from './types/fetch-card';
 import { deriveStoreStock } from './store-stock-derivation';
 import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
+import { FirecrawlClientService } from './firecrawl-client.service';
 
 // ---------------------------------------------------------------------------
 // Constants — match variant-fetch.service.ts
@@ -46,6 +47,7 @@ export class VariantJobProcessorService {
     private readonly fetchGuard: FetchGuardService,
     private readonly parser: SbraubleDetailParserService,
     private readonly queue: VariantFetchQueueService,
+    private readonly firecrawl: FirecrawlClientService,
     @InjectRepository(StoreEntity) private readonly storeRepo: Repository<StoreEntity>,
     @InjectRepository(StoreStockEntity) private readonly stockRepo: Repository<StoreStockEntity>,
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -144,18 +146,24 @@ export class VariantJobProcessorService {
       }
     }
 
-    // Step 2: fetch detail page
-    const result = await this.fetchGuard.guardedFetch(card.productUrl, {
-      allowHosts: [hostname],
-      maxBytes: MAX_BYTES,
-      timeoutMs: REQUEST_TIMEOUT_MS,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RatheArsenal/1.0)',
-        Accept: 'text/html',
-      },
-    });
-
-    const html = Buffer.from(result.body).toString('utf-8');
+    // Step 2: fetch detail page. Firecrawl (when enabled) routes through
+    // residential proxies to clear the store's Cloudflare challenge; otherwise
+    // fetch directly via the SSRF-guarded client.
+    let html: string;
+    if (this.firecrawl.isEnabled()) {
+      html = await this.firecrawl.scrapeHtml(card.productUrl);
+    } else {
+      const result = await this.fetchGuard.guardedFetch(card.productUrl, {
+        allowHosts: [hostname],
+        maxBytes: MAX_BYTES,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; RatheArsenal/1.0)',
+          Accept: 'text/html',
+        },
+      });
+      html = Buffer.from(result.body).toString('utf-8');
+    }
 
     // Step 3: persist lastFetchedAt to DB immediately after fetch
     const now = new Date();

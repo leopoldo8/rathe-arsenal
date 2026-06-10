@@ -10,6 +10,15 @@ import { StoreEntity } from '../../database/entities/store.entity';
 import { StoreStockEntity } from '../../database/entities/store-stock.entity';
 import { VariantFetchJobEntity, EVariantFetchJobStatus } from '../../database/entities/variant-fetch-job.entity';
 import { EScraperErrorCode, ScraperError } from '../errors/scraper.errors';
+import { FirecrawlClientService } from '../firecrawl-client.service';
+
+// createMock auto-mocks isEnabled() to a truthy proxy; force it false so these
+// tests exercise the direct-fetch path.
+function disabledFirecrawl(): ReturnType<typeof createMock<FirecrawlClientService>> {
+  const m = createMock<FirecrawlClientService>();
+  m.isEnabled.mockReturnValue(false);
+  return m;
+}
 
 describe('VariantJobProcessorService', () => {
   it('derives and upserts store_stock from parsed variants and marks the card done', async () => {
@@ -36,6 +45,7 @@ describe('VariantJobProcessorService', () => {
         { provide: VariantFetchQueueService, useValue: queue },
         { provide: getRepositoryToken(StoreEntity), useValue: storeRepo },
         { provide: getRepositoryToken(StoreStockEntity), useValue: stockRepo },
+        { provide: FirecrawlClientService, useValue: disabledFirecrawl() },
         { provide: getDataSourceToken(), useValue: dataSource },
       ],
     }).compile();
@@ -76,6 +86,7 @@ describe('VariantJobProcessorService', () => {
         { provide: VariantFetchQueueService, useValue: queue },
         { provide: getRepositoryToken(StoreEntity), useValue: storeRepo },
         { provide: getRepositoryToken(StoreStockEntity), useValue: stockRepo },
+        { provide: FirecrawlClientService, useValue: disabledFirecrawl() },
         { provide: getDataSourceToken(), useValue: dataSource },
       ],
     }).compile();
@@ -121,6 +132,7 @@ describe('VariantJobProcessorService', () => {
         { provide: VariantFetchQueueService, useValue: queue },
         { provide: getRepositoryToken(StoreEntity), useValue: storeRepo },
         { provide: getRepositoryToken(StoreStockEntity), useValue: stockRepo },
+        { provide: FirecrawlClientService, useValue: disabledFirecrawl() },
         { provide: getDataSourceToken(), useValue: dataSource },
       ],
     }).compile();
@@ -136,5 +148,43 @@ describe('VariantJobProcessorService', () => {
     expect(queue.finish).toHaveBeenCalledTimes(1);
     const finishArg = (queue.finish as jest.Mock).mock.calls[0][1];
     expect(finishArg).toMatch(/unreachable|blocked/i);
+  });
+
+  it('fetches via Firecrawl (not the direct client) when Firecrawl is enabled', async () => {
+    const fetchGuard = createMock<FetchGuardService>();
+    const parser = createMock<SbraubleDetailParserService>();
+    parser.parseDetailPage.mockReturnValue([
+      { edition: 'PEN', condition: 'NM', finish: 'non-foil', priceCents: 500, quantity: 2 },
+    ]);
+    const firecrawl = createMock<FirecrawlClientService>();
+    firecrawl.isEnabled.mockReturnValue(true);
+    firecrawl.scrapeHtml.mockResolvedValue('<div class="table-cards-row">...</div>');
+    const storeRepo = createMock<Repository<StoreEntity>>();
+    storeRepo.findOne.mockResolvedValue({ id: 1, slug: 'cupula-dt', baseUrl: 'https://www.cupuladt.com.br', lastFetchedAt: null, rateLimitMs: 0 } as never);
+    const stockRepo = createMock<Repository<StoreStockEntity>>();
+    const queue = createMock<VariantFetchQueueService>();
+    const dataSource = createMock<DataSource>();
+    (dataSource.transaction as jest.Mock).mockImplementation((fn: (em: unknown) => Promise<unknown>) => fn(createMock()));
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        VariantJobProcessorService,
+        { provide: FetchGuardService, useValue: fetchGuard },
+        { provide: SbraubleDetailParserService, useValue: parser },
+        { provide: VariantFetchQueueService, useValue: queue },
+        { provide: getRepositoryToken(StoreEntity), useValue: storeRepo },
+        { provide: getRepositoryToken(StoreStockEntity), useValue: stockRepo },
+        { provide: FirecrawlClientService, useValue: firecrawl },
+        { provide: getDataSourceToken(), useValue: dataSource },
+      ],
+    }).compile();
+    const processor = moduleRef.get(VariantJobProcessorService);
+
+    const job = { id: 'job-3', storeId: 1, status: EVariantFetchJobStatus.Running, cards: [{ cardIdentifier: 'a-red', status: 'pending' }] } as VariantFetchJobEntity;
+    await processor.process(job, [{ cardIdentifier: 'a-red', productUrl: 'https://www.cupuladt.com.br/x', listingPriceCents: null, listingQuantity: 0 }]);
+
+    expect(firecrawl.scrapeHtml).toHaveBeenCalledWith('https://www.cupuladt.com.br/x');
+    expect(fetchGuard.guardedFetch).not.toHaveBeenCalled();
+    expect(queue.markCardResult).toHaveBeenCalledWith('job-3', 'a-red', true);
   });
 });

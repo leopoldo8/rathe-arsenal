@@ -20,6 +20,18 @@ export enum ENodeEnv {
   Production = 'production',
 }
 
+/**
+ * Strategy for fetching store detail/listing pages.
+ * - `direct`: FetchGuardService hits the store directly (free, but blocked by
+ *   the store's Cloudflare challenge from datacenter IPs).
+ * - `firecrawl`: routes the fetch through Firecrawl's /scrape API, which solves
+ *   the challenge via residential proxies. Requires FIRECRAWL_API_KEY.
+ */
+export enum EScraperFetchProvider {
+  Direct = 'direct',
+  Firecrawl = 'firecrawl',
+}
+
 export class EnvDto {
   @IsEnum(ENodeEnv)
   NODE_ENV!: ENodeEnv;
@@ -113,6 +125,24 @@ export class EnvDto {
   @IsString()
   @IsNotEmpty()
   ADMIN_API_KEY?: string;
+
+  /**
+   * Detail-page fetch strategy. Defaults to `direct`. Set to `firecrawl` to
+   * route store detail fetches through Firecrawl (requires FIRECRAWL_API_KEY) —
+   * needed because the store's Cloudflare challenge blocks datacenter IPs.
+   */
+  @IsOptional()
+  @IsEnum(EScraperFetchProvider)
+  SCRAPER_FETCH_PROVIDER: EScraperFetchProvider = EScraperFetchProvider.Direct;
+
+  /**
+   * Firecrawl API key. Used only when SCRAPER_FETCH_PROVIDER=firecrawl; when
+   * absent the fetcher falls back to `direct` with a startup warning (no boot
+   * failure, so the flag can be flipped before the key is wired).
+   */
+  @IsOptional()
+  @IsString()
+  FIRECRAWL_API_KEY?: string;
 }
 
 /**
