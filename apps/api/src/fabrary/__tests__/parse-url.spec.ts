@@ -24,6 +24,18 @@ describe('parseFabraryUrl', () => {
     expect(result).toBe('01KNQ1FHZ77B3FHT33DJY3RDX3');
   });
 
+  it('should accept the www. subdomain host', () => {
+    // Arrange — the frontend URL regex accepts www.fabrary.net, so the
+    // backend parser must too, otherwise pasting a www URL silently fails.
+    const url = 'https://www.fabrary.net/decks/01KNQ1FHZ77B3FHT33DJY3RDX3';
+
+    // Act
+    const result = parseFabraryUrl(url);
+
+    // Assert
+    expect(result).toBe('01KNQ1FHZ77B3FHT33DJY3RDX3');
+  });
+
   it('should throw INVALID_URL for a non-fabrary host', () => {
     // Arrange
     const url = 'https://example.com/decks/01KNQ1FHZ77B3FHT33DJY3RDX3';
