@@ -188,7 +188,7 @@ importers:
         version: 7.2.2
       ts-jest:
         specifier: ^29.2.5
-        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@types/node@22.19.17)(typescript@5.9.3)))(typescript@5.9.3)
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17))(typescript@5.9.3)
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.19.17)(typescript@5.9.3)
@@ -314,11 +314,11 @@ importers:
   packages/engine:
     dependencies:
       '@flesh-and-blood/cards':
-        specifier: ^3.6.243
-        version: 3.6.243
+        specifier: ^4.0.8
+        version: 4.0.8
       '@flesh-and-blood/types':
-        specifier: ^3.6.243
-        version: 3.6.243
+        specifier: ^4.0.8
+        version: 4.0.8
     devDependencies:
       '@types/jest':
         specifier: ^29.5.14
@@ -331,7 +331,7 @@ importers:
         version: 29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@types/node@22.19.17)(typescript@5.9.3))
       ts-jest:
         specifier: ^29.2.5
-        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@types/node@22.19.17)(typescript@5.9.3)))(typescript@5.9.3)
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17))(typescript@5.9.3)
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -1196,11 +1196,11 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@flesh-and-blood/cards@3.6.243':
-    resolution: {integrity: sha512-8+WXNW67npPevoKrbJIQYZzDvhYMB/QYLI5enFiHgpQfIL0u84Y7A0tcZwZNPDAmh3NF4oU4qjb+hOMZwJUu4Q==}
+  '@flesh-and-blood/cards@4.0.8':
+    resolution: {integrity: sha512-wxN2Pkxn8A64Mfokh3kpzUrKRJdFdXWa8nnkniu5+r2cwSd4zDFxlcyGsBKGH5nvywOaoWE9kDz/if7mNnegpg==}
 
-  '@flesh-and-blood/types@3.6.243':
-    resolution: {integrity: sha512-Swl0ZEnoLVZ9ek1cnJjE+OnSAMmY6MSVhzPWLEhAiFFuAnLCk5f1Ec8xYKVxvcBVcChHriL7W7EwYWkQ8CIpjw==}
+  '@flesh-and-blood/types@4.0.8':
+    resolution: {integrity: sha512-7LocrFY8DwMQxd7MusCqS3uTufHKBf/KXxpsrZEEgpwYCWTcSYJJH0F1cicrqtRMefqvRUhdai4o1507fFHB+Q==}
 
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
@@ -7265,11 +7265,11 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@flesh-and-blood/cards@3.6.243':
+  '@flesh-and-blood/cards@4.0.8':
     dependencies:
-      '@flesh-and-blood/types': 3.6.243
+      '@flesh-and-blood/types': 4.0.8
 
-  '@flesh-and-blood/types@3.6.243': {}
+  '@flesh-and-blood/types@4.0.8': {}
 
   '@floating-ui/core@1.7.5':
     dependencies:
@@ -12755,7 +12755,7 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  ts-jest@29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@types/node@22.19.17)(typescript@5.9.3)))(typescript@5.9.3):
+  ts-jest@29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17))(typescript@5.9.3):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
