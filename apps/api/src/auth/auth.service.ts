@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserEntity } from '../database/entities/user.entity';
+import { EUserRole, UserEntity } from '../database/entities/user.entity';
 import { EmailService } from '../email/email.service';
 import { EmailDeliveryError } from '../email/errors';
 import { PasswordHasherService } from './services/password-hasher.service';
@@ -142,7 +142,7 @@ export class AuthService {
     this.logger.log({ event: 'auth.sign_in.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, role: user.role },
       // U12: include settings for first-paint theme correctness. Nullish fallback
       // guards against NULL preferences on rows created before migration 1776621087000.
       settings: { theme: user.preferences?.theme ?? 'dark' },
@@ -167,7 +167,7 @@ export class AuthService {
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, role: user.role },
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }
@@ -214,14 +214,14 @@ export class AuthService {
     this.logger.log({ event: 'auth.reset_password.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, role: user.role },
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }
 
   async getMe(
     currentUser: ICurrentUser,
-  ): Promise<{ id: string; email: string; settings: IAuthSettings }> {
+  ): Promise<{ id: string; email: string; role: EUserRole; settings: IAuthSettings }> {
     // JwtStrategy.validate() already rejected soft-deleted users, so the NULL
     // path here is only reachable on a narrow race (concurrent hard-delete, or
     // the row vanished mid-request). Fail loudly instead of returning synthetic
@@ -233,6 +233,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      role: user.role,
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }

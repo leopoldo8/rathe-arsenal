@@ -14,10 +14,12 @@ import { CatalogController } from '../catalog.controller';
 import { CatalogService } from '../catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 
 const MOCK_USER: ICurrentUser = {
   userId: 'user-uuid-u17-ctrl',
   email: 'test@rathe-arsenal.test',
+  role: EUserRole.User,
 };
 
 describe('CatalogController — GET /catalog/heroes (U17)', () => {

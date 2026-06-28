@@ -62,7 +62,7 @@ import { ThemeToggle } from '../ThemeToggle';
 
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
-    user: { id: 'u1', email: 'hero@rathe.gg' },
+    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' },
     token: 'jwt-token',
     isLoading: false,
     setSettings: vi.fn(),

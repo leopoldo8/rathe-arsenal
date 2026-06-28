@@ -63,6 +63,14 @@ vi.mock('@radix-ui/react-toggle-group', () => ({
   ),
 }));
 
+// Store-admin API — stub the hooks so the admin section renders without a
+// QueryClientProvider. `triggerMutate` is captured to assert the click wiring.
+const { triggerMutate } = vi.hoisted(() => ({ triggerMutate: vi.fn() }));
+vi.mock('../../../api/store-admin', () => ({
+  useUrlSyncStatusQuery: () => ({ data: { state: 'idle', lastUrlSyncAt: null, lastProductCount: null } }),
+  useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
+}));
+
 // DeleteAccountModal — smoke-stub so settings tests focus on the page layout
 vi.mock('../../../components/delete-account-modal', () => ({
   DeleteAccountModal: ({
@@ -90,7 +98,7 @@ const noopAsync = async () => {
 
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
-    user: { id: 'u1', email: 'hero@rathe.gg' },
+    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' },
     token: 'jwt',
     isLoading: false,
     setSettings: vi.fn(),
@@ -162,7 +170,7 @@ describe('SettingsPage — happy path: 3 sections rendered', () => {
 
 describe('SettingsPage — Profile section', () => {
   it('displays the authenticated user email', () => {
-    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg' } }));
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg', role: 'user' } }));
     expect(screen.getByText('archer@rathe.gg')).toBeInTheDocument();
   });
 
@@ -245,5 +253,22 @@ describe('SettingsPage — A11y: heading levels', () => {
   it('does not use <h3> or deeper for section headings', () => {
     renderSettings();
     expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+  });
+});
+
+describe('SettingsPage — admin store-sync section', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('is hidden for a regular user', () => {
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' } }));
+    expect(screen.queryByTestId('store-sync-trigger')).not.toBeInTheDocument();
+  });
+
+  it('is shown for an admin and triggers the sync on click', async () => {
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin' } }));
+    const button = screen.getByTestId('store-sync-trigger');
+    expect(button).toBeInTheDocument();
+    await userEvent.click(button);
+    expect(triggerMutate).toHaveBeenCalledTimes(1);
   });
 });

@@ -68,12 +68,28 @@ export class StoreEntity {
 
   /**
    * Timestamp of the last completed URL/name sync (productUrl discovery).
-   * The variant queue worker reads this on boot so a redeploy within the sync
-   * interval skips the full catalog re-scrape instead of repeating it every
-   * restart.
    */
   @Column({ type: 'timestamptz', nullable: true })
   lastUrlSyncAt!: Date | null;
+
+  /** Number of products fetched by the last completed URL sync (for status display). */
+  @Column({ type: 'int', nullable: true })
+  lastUrlSyncProductCount!: number | null;
+
+  /**
+   * Set when the owner requests an on-demand URL sync; cleared atomically when
+   * the worker claims it. Non-null = a sync is queued and waiting for the worker.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  urlSyncRequestedAt!: Date | null;
+
+  /**
+   * Set when the worker claims a requested sync; cleared when it finishes.
+   * Non-null = a sync is currently running. Doubles as the claim lock that
+   * prevents the 3s worker loop from starting the ~minutes-long sync twice.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  urlSyncRunningAt!: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

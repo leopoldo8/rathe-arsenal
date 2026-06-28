@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AuthContext, IAuthSettings, IAuthUser } from './AuthContext';
+import { AuthContext, IAuthSettings, IAuthUser, TUserRole } from './AuthContext';
 import { THEME_STORAGE_KEY } from '../styles/theme-init';
 import { authFetch as apiFetch, AuthFetchError } from '../lib/auth-fetch';
 
@@ -31,6 +31,7 @@ function applyTheme(theme: 'dark' | 'light'): void {
 interface IAuthMeResponse {
   id: string;
   email: string;
+  role: TUserRole;
   settings: IAuthSettings;
 }
 
@@ -64,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     apiFetch<IAuthMeResponse>('/auth/me', {}, token)
       .then((res) => {
-        setUser({ id: res.id, email: res.email });
+        // Default to 'user' if an older server response omits role (fail-safe:
+        // never grant admin UI on a missing field).
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user' });
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
         if (res.settings?.theme) {

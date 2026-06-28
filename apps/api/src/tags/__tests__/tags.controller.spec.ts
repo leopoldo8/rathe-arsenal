@@ -6,6 +6,7 @@ import { TagsController } from '../tags.controller';
 import { TagsService } from '../tags.service';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import { ITagResponse } from '../dto/tag-response.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 
 // Throttler metadata keys used by the @Throttle decorator (v6 internals).
 // The decorator calls: Reflect.defineMetadata('THROTTLER:LIMIT' + name, limit, fn)
@@ -14,7 +15,7 @@ const THROTTLER_LIMIT_KEY = 'THROTTLER:LIMITdefault';
 const THROTTLER_TTL_KEY = 'THROTTLER:TTLdefault';
 const MINUTE_MS = 60 * 1000;
 
-const MOCK_USER: ICurrentUser = { userId: 'user-uuid-test', email: 'test@test.local' };
+const MOCK_USER: ICurrentUser = { userId: 'user-uuid-test', email: 'test@test.local', role: EUserRole.User };
 
 describe('TagsController', () => {
   let controller: TagsController;

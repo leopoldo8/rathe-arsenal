@@ -9,6 +9,7 @@ import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { AuthError, EAuthErrorCode } from '../errors';
 import { ICurrentUser } from '../dtos/current-user.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 
 /**
  * Lightweight e2e test for Unit 1 (A5 + A4 + A6). We mount AuthController with
@@ -27,7 +28,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService = createMock<AuthService>();
     authService.signIn.mockResolvedValue({
       jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com' },
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User },
       settings: { theme: 'dark' },
     });
     authService.signUp.mockResolvedValue({
@@ -75,6 +76,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         (req as Request & { user?: ICurrentUser }).user = {
           userId,
           email: `${userId}@example.com`,
+          role: EUserRole.User,
         };
       }
       next();

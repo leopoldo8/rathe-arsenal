@@ -21,7 +21,9 @@ import { VariantJobProcessorService } from './variant-job-processor.service';
 import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { FirecrawlClientService } from './firecrawl-client.service';
 import { AdminStoresController } from './admin/admin-stores.controller';
+import { StoreAdminController } from './admin/store-admin.controller';
 import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 /**
  * Phase 1b stores module. Owns the store-data vertical:
@@ -50,8 +52,9 @@ import { AdminApiKeyGuard } from './admin/admin-api-key.guard';
       VariantFetchJobEntity,
     ]),
   ],
-  controllers: [AdminStoresController],
+  controllers: [AdminStoresController, StoreAdminController],
   providers: [
+    AdminGuard,
     CardNameMatcherService,
     SbraubleScraperService,
     SbraubleDetailParserService,

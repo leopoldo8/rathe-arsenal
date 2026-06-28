@@ -6,6 +6,7 @@ import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
 import { PatchThemeDto } from '../dtos/user-settings.dto';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 
 function buildController(serviceOverrides: Partial<{
   getSettings: jest.Mock;
@@ -19,7 +20,7 @@ function buildController(serviceOverrides: Partial<{
   return { controller, service };
 }
 
-const MOCK_USER: ICurrentUser = { userId: 'user-1', email: 'test@example.com' };
+const MOCK_USER: ICurrentUser = { userId: 'user-1', email: 'test@example.com', role: EUserRole.User };
 
 describe('UsersController.getSettings', () => {
   it('delegates to service.getSettings with the authenticated user id', async () => {

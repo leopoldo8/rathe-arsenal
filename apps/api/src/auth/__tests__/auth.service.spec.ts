@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
-import { UserEntity } from '../../database/entities/user.entity';
+import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { EmailService } from '../../email/email.service';
 import { EmailDeliveryError, EEmailErrorCode } from '../../email/errors';
 import { AuthService } from '../auth.service';
@@ -312,15 +312,22 @@ describe('AuthService.resetPassword', () => {
 });
 
 describe('AuthService.getMe', () => {
-  function makeCurrentUser(overrides: Partial<{ userId: string; email: string }> = {}) {
-    return { userId: 'user-1', email: 'hero@rathe.gg', ...overrides };
+  function makeCurrentUser(overrides: Partial<{ userId: string; email: string; role: EUserRole }> = {}) {
+    return { userId: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User, ...overrides };
   }
 
-  it('returns id, email, and settings.theme=dark for user without preferences (default)', async () => {
-    const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg' };
+  it('returns id, email, role, and settings.theme=dark for user without preferences (default)', async () => {
+    const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User };
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
     const result = await service.getMe(makeCurrentUser());
-    expect(result).toEqual({ id: 'user-1', email: 'hero@rathe.gg', settings: { theme: 'dark' } });
+    expect(result).toEqual({ id: 'user-1', email: 'hero@rathe.gg', role: 'user', settings: { theme: 'dark' } });
+  });
+
+  it('returns role=admin for an admin user', async () => {
+    const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg', role: EUserRole.Admin };
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    const result = await service.getMe(makeCurrentUser());
+    expect(result.role).toBe('admin');
   });
 
   it('returns settings.theme=light when user.preferences.theme=light', async () => {

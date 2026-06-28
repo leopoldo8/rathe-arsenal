@@ -152,3 +152,55 @@
   outline: 2px solid var(--ra-ready-low);
   outline-offset: 2px;
 }
+
+/* ---- Admin: store catalog sync ---- */
+.syncRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  flex-wrap: wrap;
+  margin-top: var(--ra-space-2);
+}
+
+.syncBtn {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-accent-body);
+  background: none;
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-md);
+  padding: var(--ra-space-2) var(--ra-space-4);
+  cursor: pointer;
+  transition: background-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease),
+              border-color var(--ra-duration) var(--ra-ease);
+}
+
+.syncBtn:hover:not(:disabled) {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent);
+}
+
+.syncBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.syncBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.syncStatus {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+}
+
+.syncError {
+  margin: var(--ra-space-2) 0 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-ready-low);
+}
