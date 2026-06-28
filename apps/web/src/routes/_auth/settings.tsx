@@ -3,7 +3,58 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
 import styles from './settings.module.css';
+
+/**
+ * Admin-only control to trigger the store catalog URL-sync (productUrl + name
+ * discovery via Firecrawl). Rendered only for `role === 'admin'`, so its
+ * admin-gated API calls never fire for regular users.
+ */
+function StoreSyncAdminSection() {
+  const { data: status } = useUrlSyncStatusQuery();
+  const trigger = useTriggerUrlSyncMutation();
+  const busy = status?.state === 'queued' || status?.state === 'running' || trigger.isPending;
+
+  const statusLine = (() => {
+    if (status?.state === 'running') return 'Syncing catalog… this takes a few minutes.';
+    if (status?.state === 'queued') return 'Queued — the worker will start shortly.';
+    if (status?.lastUrlSyncAt) {
+      const when = new Date(status.lastUrlSyncAt).toLocaleString();
+      return `Last sync: ${status.lastProductCount ?? 0} products · ${when}`;
+    }
+    return 'Never synced.';
+  })();
+
+  return (
+    <section className={styles.section} aria-labelledby="section-store-sync">
+      <span className={styles.eyebrow}>Admin</span>
+      <h2 id="section-store-sync" className={styles.sectionHeading}>
+        Store catalog sync
+      </h2>
+      <p className={styles.dangerCopy}>
+        Re-scans the store to discover new cards&rsquo; product pages (e.g. after a
+        new set release). Runs in the background via Firecrawl — trigger it once
+        when a set drops.
+      </p>
+      <div className={styles.syncRow}>
+        <button
+          type="button"
+          className={styles.syncBtn}
+          disabled={busy}
+          onClick={() => trigger.mutate()}
+          data-testid="store-sync-trigger"
+        >
+          {busy ? 'Sync in progress…' : 'Sync store catalog'}
+        </button>
+        <span className={styles.syncStatus} data-testid="store-sync-status">{statusLine}</span>
+      </div>
+      {trigger.isError && (
+        <p className={styles.syncError}>Could not queue the sync. Try again.</p>
+      )}
+    </section>
+  );
+}
 
 export const Route = createFileRoute('/_auth/settings')({
   component: SettingsPage,
@@ -51,6 +102,9 @@ export function SettingsPage() {
           <ThemeToggle />
         </div>
       </section>
+
+      {/* ---- Admin: store catalog sync (owner/admin only) ---- */}
+      {user?.role === 'admin' && <StoreSyncAdminSection />}
 
       {/* ---- Section 3: Account ---- */}
       <section

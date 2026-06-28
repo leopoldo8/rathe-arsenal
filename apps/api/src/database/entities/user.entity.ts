@@ -7,6 +7,16 @@ import {
 } from 'typeorm';
 
 /**
+ * Authorization role. `admin` unlocks owner/operator surfaces (e.g. the manual
+ * store URL-sync trigger). Promote a user by setting this column — there is no
+ * env allowlist. Default `user`.
+ */
+export enum EUserRole {
+  User = 'user',
+  Admin = 'admin',
+}
+
+/**
  * User entity. Locked here as part of the Clerk → DIY auth swap so the
  * AuthService can rely on the columns. Phase 0 plan Unit 2 originally
  * specified `id` as Clerk's userId string; the swap plan replaces that
@@ -19,6 +29,10 @@ import {
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  /** Authorization role (see EUserRole). Column default lives in the migration. */
+  @Column({ type: 'varchar', length: 20, default: EUserRole.User })
+  role!: EUserRole;
 
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 255 })

@@ -56,6 +56,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (user.emailVerifiedAt === null) {
       throw new UnauthorizedException();
     }
-    return { userId: user.id, email: user.email ?? '' };
+    return { userId: user.id, email: user.email ?? '', role: user.role };
   }
 }

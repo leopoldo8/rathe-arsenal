@@ -23,7 +23,7 @@ const noopAsync = async (): Promise<void> => {
 
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
-    user: { id: 'u1', email: 'hero@rathe.gg' },
+    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' },
     token: 'jwt',
     isLoading: false,
     setSettings: () => { /* stub */ },

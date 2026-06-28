@@ -14,6 +14,7 @@ import { SourcesController } from '../sources/sources.controller';
 import { PatchSourceDto } from '../sources/dtos/patch-source.dto';
 import { FabraryImportService } from '../sources/fabrary-import.service';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -22,7 +23,7 @@ import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 const USER_ID = 'user-uuid-ctrl-001';
 const CSV_SOURCE_ID = 'csv-source-ctrl-uuid-001';
 
-const mockCurrentUser: ICurrentUser = { userId: USER_ID, email: 'test@example.com' };
+const mockCurrentUser: ICurrentUser = { userId: USER_ID, email: 'test@example.com', role: EUserRole.User };
 
 function buildSource(overrides: Partial<CsvSourceEntity> = {}): CsvSourceEntity {
   return {

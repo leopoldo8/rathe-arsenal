@@ -1,8 +1,11 @@
 import { createContext } from 'react';
 
+export type TUserRole = 'user' | 'admin';
+
 export interface IAuthUser {
   id: string;
   email: string;
+  role: TUserRole;
 }
 
 export interface IAuthSettings {

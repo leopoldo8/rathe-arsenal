@@ -49,6 +49,14 @@ export interface IUrlSyncSummary {
   readonly rowsUpserted: number;
 }
 
+export type TUrlSyncState = 'idle' | 'queued' | 'running';
+
+export interface IUrlSyncStatus {
+  readonly state: TUrlSyncState;
+  readonly lastUrlSyncAt: string | null;
+  readonly lastProductCount: number | null;
+}
+
 /**
  * Structured product record held in the in-memory staging map while iterating
  * the scraper stream.
@@ -220,9 +228,11 @@ export class StoreIngestionService {
       }
     }
 
-    // Persist the sync timestamp so the worker can skip the full re-scrape on a
-    // restart that happens within the sync interval.
-    await this.storeRepo.update({ id: store.id }, { lastUrlSyncAt: now });
+    // Persist the sync timestamp + product count for status display.
+    await this.storeRepo.update(
+      { id: store.id },
+      { lastUrlSyncAt: now, lastUrlSyncProductCount: productsFetched },
+    );
 
     this.logger.log('URL sync completed', {
       storeSlug,
@@ -245,6 +255,69 @@ export class StoreIngestionService {
       select: ['id', 'lastUrlSyncAt'],
     });
     return store?.lastUrlSyncAt ?? null;
+  }
+
+  /**
+   * Queues an on-demand URL sync for the store (owner-triggered). The worker
+   * picks it up on its next loop. Idempotent: re-requesting just refreshes the
+   * timestamp.
+   */
+  async requestUrlSync(storeSlug: string): Promise<void> {
+    const store = await this.storeRepo.findOne({ where: { slug: storeSlug } });
+    if (!store) {
+      throw new NotFoundException(`Store not found: ${storeSlug}`);
+    }
+    await this.storeRepo.update({ id: store.id }, { urlSyncRequestedAt: new Date() });
+  }
+
+  /**
+   * Atomically claims one queued URL sync, if any: clears `urlSyncRequestedAt`
+   * and sets `urlSyncRunningAt` (the claim lock that stops the fast worker loop
+   * from starting the long sync twice). Returns the store slug to run, or null.
+   */
+  async claimPendingUrlSync(): Promise<string | null> {
+    const result = await this.storeRepo.query(
+      `UPDATE store SET "urlSyncRequestedAt" = NULL, "urlSyncRunningAt" = now()
+       WHERE id = (
+         SELECT id FROM store WHERE "urlSyncRequestedAt" IS NOT NULL AND "urlSyncRunningAt" IS NULL
+         ORDER BY "urlSyncRequestedAt" FOR UPDATE SKIP LOCKED LIMIT 1
+       ) RETURNING slug`,
+    );
+    // TypeORM returns `[rows, rowCount]` for UPDATE; unwrap before indexing.
+    const rows: Array<{ slug: string }> = Array.isArray(result?.[0]) ? result[0] : result;
+    return rows?.[0]?.slug ?? null;
+  }
+
+  /** Clears the running lock after a claimed sync finishes (success or failure). */
+  async markUrlSyncIdle(storeSlug: string): Promise<void> {
+    await this.storeRepo.update({ slug: storeSlug }, { urlSyncRunningAt: null });
+  }
+
+  /** Current URL-sync state + last-run summary, for the owner status display. */
+  async getUrlSyncStatus(storeSlug: string): Promise<IUrlSyncStatus> {
+    const store = await this.storeRepo.findOne({
+      where: { slug: storeSlug },
+      select: [
+        'id',
+        'lastUrlSyncAt',
+        'lastUrlSyncProductCount',
+        'urlSyncRequestedAt',
+        'urlSyncRunningAt',
+      ],
+    });
+    if (!store) {
+      throw new NotFoundException(`Store not found: ${storeSlug}`);
+    }
+    const state: TUrlSyncState = store.urlSyncRunningAt
+      ? 'running'
+      : store.urlSyncRequestedAt
+        ? 'queued'
+        : 'idle';
+    return {
+      state,
+      lastUrlSyncAt: store.lastUrlSyncAt?.toISOString() ?? null,
+      lastProductCount: store.lastUrlSyncProductCount ?? null,
+    };
   }
 
   // ---------------------------------------------------------------------------

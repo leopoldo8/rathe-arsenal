@@ -10,14 +10,6 @@ import { IFetchCard } from './types/fetch-card';
 
 const POLL_MS = 3000;
 
-/**
- * Minimum elapsed time between URL/name sync runs.
- * On startup the sync is triggered immediately (lastSyncAt = 0).
- */
-const URL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-const DEFAULT_STORE_SLUG = 'cupula-dt';
-
 export interface IDrainDeps {
   readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext'>;
   readonly processor: Pick<VariantJobProcessorService, 'process'>;
@@ -33,12 +25,33 @@ export async function drainOnce(deps: IDrainDeps): Promise<void> {
   await deps.processor.process(job, cards);
 }
 
+export interface IUrlSyncDeps {
+  readonly ingestion: Pick<
+    StoreIngestionService,
+    'claimPendingUrlSync' | 'runUrlSync' | 'markUrlSyncIdle'
+  >;
+  readonly logger: Pick<Logger, 'log' | 'error'>;
+}
+
 /**
- * Returns true when enough time has elapsed since the last URL sync to
- * justify running another one. Keeps all cadence logic testable without I/O.
+ * Runs one queued URL sync if the owner has requested one. URL sync is no
+ * longer on an automatic cadence — it is owner-triggered only (see
+ * docs/research/scraper-cost-scaling.md) to keep Firecrawl credit spend
+ * controlled. The claim is atomic + lock-guarded so the fast worker loop never
+ * starts the long sync twice.
  */
-export function shouldRunSync(lastSyncAt: number, nowMs: number): boolean {
-  return nowMs - lastSyncAt >= URL_SYNC_INTERVAL_MS;
+export async function runPendingUrlSync(deps: IUrlSyncDeps): Promise<void> {
+  const slug = await deps.ingestion.claimPendingUrlSync();
+  if (!slug) return;
+  deps.logger.log({ event: 'url-sync.claimed', storeSlug: slug });
+  try {
+    const summary = await deps.ingestion.runUrlSync(slug);
+    deps.logger.log({ event: 'url-sync.completed', storeSlug: slug, ...summary });
+  } catch (err) {
+    deps.logger.error({ event: 'url-sync.error', storeSlug: slug, error: (err as Error).message });
+  } finally {
+    await deps.ingestion.markUrlSyncIdle(slug);
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -59,35 +72,14 @@ async function main(): Promise<void> {
   const resolveCards = (job: VariantFetchJobEntity): Promise<IFetchCard[]> =>
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
 
-  // Seed the cadence clock from the persisted last-sync timestamp so a restart
-  // within the sync interval skips the full catalog re-scrape. Falls back to 0
-  // (sync immediately) when the store has never synced.
-  const persistedSyncAt = await ingestion.getLastUrlSyncAt(DEFAULT_STORE_SLUG);
-  let lastSyncAt = persistedSyncAt ? persistedSyncAt.getTime() : 0;
-  logger.log({
-    event: 'variant-worker.started',
-    lastUrlSyncAt: persistedSyncAt ? persistedSyncAt.toISOString() : null,
-    willSyncOnBoot: shouldRunSync(lastSyncAt, Date.now()),
-  });
+  logger.log({ event: 'variant-worker.started' });
 
   while (true) {
-    // URL/name sync cadence: run once on startup and then every ~24h.
-    if (shouldRunSync(lastSyncAt, Date.now())) {
-      lastSyncAt = Date.now();
-      try {
-        const summary = await ingestion.runUrlSync(DEFAULT_STORE_SLUG);
-        logger.log({
-          event: 'url-sync.completed',
-          storeSlug: DEFAULT_STORE_SLUG,
-          ...summary,
-        });
-      } catch (err) {
-        logger.error({
-          event: 'url-sync.error',
-          storeSlug: DEFAULT_STORE_SLUG,
-          error: (err as Error).message,
-        });
-      }
+    // Owner-triggered URL sync (no automatic cadence).
+    try {
+      await runPendingUrlSync({ ingestion, logger });
+    } catch (err) {
+      logger.error({ event: 'url-sync.claim_error', error: (err as Error).message });
     }
 
     try {

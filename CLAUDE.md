@@ -12,6 +12,7 @@ this order before doing non-trivial work.
 | [`docs/dev-fixtures.md`](docs/dev-fixtures.md) | Test deck URLs + sign-up/import helper for local screenshots and QA. |
 | [`docs/phase-1-followups.md`](docs/phase-1-followups.md) | Debt ledger. Every Phase 0/1 trade-off + trigger to revisit. |
 | [`docs/research/ip-posture.md`](docs/research/ip-posture.md) | LSS card-image IP stance. Consult before any monetization surface or asset pipeline change. |
+| [`docs/research/scraper-cost-scaling.md`](docs/research/scraper-cost-scaling.md) | Store scraper / Firecrawl cost model. Consult before adding stores, changing url-sync cadence, or any periodic-crawl work. |
 
 ## Philosophy (one-line each, full context in the linked docs)
 

@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { FetchGuardService } from '../../common/fetch-guard/fetch-guard.service';
 import { StoreEntity } from '../../database/entities/store.entity';
 import { SbraubleScraperService } from '../sbrauble-scraper.service';
+import { FirecrawlClientService } from '../firecrawl-client.service';
 import { EScraperErrorCode, ScraperError } from '../errors/scraper.errors';
 import { IScrapedProduct } from '../types/scraped-product';
 
@@ -69,11 +70,16 @@ describe('SbraubleScraperService', () => {
     fetchGuard = createMock<FetchGuardService>();
     storeRepository = createMock<Repository<StoreEntity>>();
     storeRepository.update.mockResolvedValue({ affected: 1, generatedMaps: [], raw: [] });
+    // Disabled Firecrawl → these tests exercise the direct fetchGuard path.
+    // (createMock auto-mocks isEnabled() to a truthy proxy, so force it false.)
+    const firecrawl = createMock<FirecrawlClientService>();
+    firecrawl.isEnabled.mockReturnValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SbraubleScraperService,
         { provide: FetchGuardService, useValue: fetchGuard },
+        { provide: FirecrawlClientService, useValue: firecrawl },
         { provide: getRepositoryToken(StoreEntity), useValue: storeRepository },
       ],
     }).compile();
@@ -468,6 +474,31 @@ describe('SbraubleScraperService', () => {
       // Assert — global fetch never called directly
       expect(globalFetchSpy).not.toHaveBeenCalled();
       globalFetchSpy.mockRestore();
+    });
+  });
+
+  describe('Firecrawl-enabled listing fetch', () => {
+    it('fetches listing pages via Firecrawl (not the direct client) when enabled', async () => {
+      const enabledFirecrawl = createMock<FirecrawlClientService>();
+      enabledFirecrawl.isEnabled.mockReturnValue(true);
+      // Empty listing page → parse yields nothing → loop ends after page 1.
+      enabledFirecrawl.scrapeHtml.mockResolvedValue('<html><body></body></html>');
+      const directFetch = createMock<FetchGuardService>();
+
+      const mod: TestingModule = await Test.createTestingModule({
+        providers: [
+          SbraubleScraperService,
+          { provide: FetchGuardService, useValue: directFetch },
+          { provide: FirecrawlClientService, useValue: enabledFirecrawl },
+          { provide: getRepositoryToken(StoreEntity), useValue: storeRepository },
+        ],
+      }).compile();
+      const svc = mod.get<SbraubleScraperService>(SbraubleScraperService);
+
+      await collect(svc.scrapeStore(makeStore()));
+
+      expect(enabledFirecrawl.scrapeHtml).toHaveBeenCalledTimes(1);
+      expect(directFetch.guardedFetch).not.toHaveBeenCalled();
     });
   });
 });

@@ -6,6 +6,7 @@ import { FetchGuardService } from '../common/fetch-guard/fetch-guard.service';
 import { StoreEntity } from '../database/entities/store.entity';
 import { IScrapedProduct } from './types/scraped-product';
 import { EScraperErrorCode, ScraperError } from './errors/scraper.errors';
+import { FirecrawlClientService } from './firecrawl-client.service';
 
 /**
  * Whitelist regex for store.listingPath.
@@ -63,6 +64,7 @@ export class SbraubleScraperService {
 
   constructor(
     private readonly fetchGuard: FetchGuardService,
+    private readonly firecrawl: FirecrawlClientService,
     @InjectRepository(StoreEntity)
     private readonly storeRepository: Repository<StoreEntity>,
   ) {}
@@ -92,16 +94,22 @@ export class SbraubleScraperService {
 
       let htmlBody: string;
       try {
-        const result = await this.fetchGuard.guardedFetch(pageUrl, {
-          allowHosts: [baseHostname],
-          maxBytes: MAX_BYTES,
-          timeoutMs: REQUEST_TIMEOUT_MS,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; RatheArsenal/1.0)',
-            'Accept': 'text/html',
-          },
-        });
-        htmlBody = Buffer.from(result.body).toString('utf-8');
+        if (this.firecrawl.isEnabled()) {
+          // Firecrawl clears the store's Cloudflare challenge (datacenter IPs
+          // are otherwise served a stripped page) via residential proxies.
+          htmlBody = await this.firecrawl.scrapeHtml(pageUrl);
+        } else {
+          const result = await this.fetchGuard.guardedFetch(pageUrl, {
+            allowHosts: [baseHostname],
+            maxBytes: MAX_BYTES,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; RatheArsenal/1.0)',
+              'Accept': 'text/html',
+            },
+          });
+          htmlBody = Buffer.from(result.body).toString('utf-8');
+        }
       } catch (err) {
         throw new ScraperError(
           EScraperErrorCode.PARSE_FAILED,

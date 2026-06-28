@@ -40,7 +40,7 @@ function renderModal(opts: IRenderOpts) {
     /* test stub */
   };
   const stubAuthContext: IAuthContext = {
-    user: { id: 'u1', email: 'a@b.com' },
+    user: { id: 'u1', email: 'a@b.com', role: 'user' },
     token: 'jwt-token',
     isLoading: false,
     signUp: async () => ({}),

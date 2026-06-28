@@ -7,6 +7,7 @@ import { CsvController } from '../csv/csv.controller';
 import { CsvUploadService } from '../csv/csv-upload.service';
 import { CsvUploadExceptionFilter } from '../csv/csv-upload-exception.filter';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { EUserRole } from '../../database/entities/user.entity';
 import {
   ICreatedResponse,
   IUpdatedResponse,
@@ -96,6 +97,7 @@ describe('CsvController (e2e)', () => {
         (req as Request & { user?: ICurrentUser }).user = {
           userId,
           email: `${userId}@example.com`,
+          role: EUserRole.User,
         };
       }
       next();

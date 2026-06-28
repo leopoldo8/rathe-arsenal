@@ -1,6 +1,9 @@
+import { EUserRole } from '../../database/entities/user.entity';
+
 export interface IAuthUser {
   id: string;
   email: string;
+  role: EUserRole;
 }
 
 /**

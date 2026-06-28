@@ -1,6 +1,4 @@
-import { drainOnce, shouldRunSync } from '../variant-queue-worker';
-
-const URL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // must match the worker constant
+import { drainOnce, runPendingUrlSync } from '../variant-queue-worker';
 
 describe('drainOnce', () => {
   it('reclaims orphans, claims a job, resolves its cards, and processes it', async () => {
@@ -22,32 +20,38 @@ describe('drainOnce', () => {
   });
 });
 
-describe('shouldRunSync', () => {
-  it('returns true when lastSyncAt is 0 (startup — never synced)', () => {
-    const now = Date.now();
-    expect(shouldRunSync(0, now)).toBe(true);
+describe('runPendingUrlSync', () => {
+  const logger = { log: jest.fn(), error: jest.fn() };
+
+  it('does nothing when no sync is queued', async () => {
+    const ingestion = {
+      claimPendingUrlSync: jest.fn().mockResolvedValue(null),
+      runUrlSync: jest.fn(),
+      markUrlSyncIdle: jest.fn(),
+    };
+    await runPendingUrlSync({ ingestion, logger } as never);
+    expect(ingestion.runUrlSync).not.toHaveBeenCalled();
+    expect(ingestion.markUrlSyncIdle).not.toHaveBeenCalled();
   });
 
-  it('returns true when more than 24h has elapsed since the last sync', () => {
-    const now = Date.now();
-    const lastSyncAt = now - URL_SYNC_INTERVAL_MS - 1;
-    expect(shouldRunSync(lastSyncAt, now)).toBe(true);
+  it('runs the claimed slug and always clears the running lock', async () => {
+    const ingestion = {
+      claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
+      runUrlSync: jest.fn().mockResolvedValue({ productsFetched: 5, productsMatched: 4, rowsUpserted: 4 }),
+      markUrlSyncIdle: jest.fn(),
+    };
+    await runPendingUrlSync({ ingestion, logger } as never);
+    expect(ingestion.runUrlSync).toHaveBeenCalledWith('cupula-dt');
+    expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
   });
 
-  it('returns true when exactly 24h has elapsed', () => {
-    const now = Date.now();
-    const lastSyncAt = now - URL_SYNC_INTERVAL_MS;
-    expect(shouldRunSync(lastSyncAt, now)).toBe(true);
-  });
-
-  it('returns false when less than 24h has elapsed since the last sync', () => {
-    const now = Date.now();
-    const lastSyncAt = now - URL_SYNC_INTERVAL_MS + 1000; // 1 second short
-    expect(shouldRunSync(lastSyncAt, now)).toBe(false);
-  });
-
-  it('returns false immediately after a sync (elapsed ~ 0)', () => {
-    const now = Date.now();
-    expect(shouldRunSync(now, now)).toBe(false);
+  it('clears the running lock even when the sync throws', async () => {
+    const ingestion = {
+      claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
+      runUrlSync: jest.fn().mockRejectedValue(new Error('blocked')),
+      markUrlSyncIdle: jest.fn(),
+    };
+    await runPendingUrlSync({ ingestion, logger } as never);
+    expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
   });
 });
