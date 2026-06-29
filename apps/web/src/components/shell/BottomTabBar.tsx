@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
 import styles from './BottomTabBar.module.css';
 
@@ -39,14 +40,6 @@ function ReviewsIcon(): React.ReactElement {
   );
 }
 
-// /home is handled separately with a typed Link+search prop.
-// /library and /swaps use string-typed `to` so TypeScript does not enforce
-// their route-specific search params here — their validateSearch accepts empty.
-const OTHER_TAB_ITEMS: readonly ITabItem[] = [
-  { to: '/library', label: 'Library', icon: <LibraryIcon /> },
-  { to: '/swaps', label: 'Swaps', icon: <ReviewsIcon /> },
-];
-
 /**
  * BottomTabBar — fixed bottom navigation, visible only <960px.
  * 3 equal-width items with icon + short label.
@@ -54,12 +47,21 @@ const OTHER_TAB_ITEMS: readonly ITabItem[] = [
  * Active state uses brass accent.
  */
 export function BottomTabBar(): React.ReactElement {
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
+
+  // /home is handled separately with a typed Link+search prop.
+  // /library and /swaps use string-typed `to` so TypeScript does not enforce
+  // their route-specific search params here — their validateSearch accepts empty.
+  const otherTabItems: readonly ITabItem[] = [
+    { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon /> },
+    { to: '/swaps', label: t('shell.navSwaps'), icon: <ReviewsIcon /> },
+  ];
 
   const homeActive = pathname === '/home' || pathname.startsWith('/home/');
 
   return (
-    <nav className={styles.nav} aria-label="Mobile primary">
+    <nav className={styles.nav} aria-label={t('shell.mobileNavAriaLabel')}>
       {/* /home needs explicit search prop for the U9 validateSearch */}
       <Link
         to="/home"
@@ -69,10 +71,10 @@ export function BottomTabBar(): React.ReactElement {
         aria-current={homeActive ? 'page' : undefined}
       >
         <span className={styles.icon}><HomeIcon /></span>
-        <span className={styles.label}>Home</span>
+        <span className={styles.label}>{t('shell.navHome')}</span>
       </Link>
 
-      {OTHER_TAB_ITEMS.map((item) => {
+      {otherTabItems.map((item) => {
         const isActive = pathname === item.to || pathname.startsWith(item.to + '/');
         return (
           <Link

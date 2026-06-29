@@ -106,38 +106,38 @@ import { TopBar } from '../TopBar';
 describe('TopBar — nav items', () => {
   it('renders exactly 3 nav links', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
     const links = nav.querySelectorAll('a');
     expect(links).toHaveLength(3);
   });
 
   it('renders the Home nav link', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(nav).toHaveTextContent('Home');
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(nav).toHaveTextContent('Início');
   });
 
   it('renders the Library nav link', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(nav).toHaveTextContent('Library');
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(nav).toHaveTextContent('Biblioteca');
   });
 
   it('renders the Swaps nav link', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(nav).toHaveTextContent('Swaps');
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(nav).toHaveTextContent('Trocas');
   });
 
   it('does not render an Import nav link', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
     expect(nav).not.toHaveTextContent('Import');
   });
 
   it('does not render a link to /import', () => {
     render(<TopBar />);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
     const importLinks = nav.querySelectorAll('[data-to="/import"]');
     expect(importLinks).toHaveLength(0);
   });
@@ -147,7 +147,7 @@ describe('TopBar — A11y', () => {
   it('primary nav has aria-label="Primary"', () => {
     render(<TopBar />);
     expect(
-      screen.getByRole('navigation', { name: 'Primary' }),
+      screen.getByRole('navigation', { name: 'Principal' }),
     ).toBeInTheDocument();
   });
 
@@ -160,13 +160,13 @@ describe('TopBar — A11y', () => {
 describe('TopBar — brand wordmark', () => {
   it('renders the "Rathe" wordmark text', () => {
     render(<TopBar />);
-    const link = screen.getByRole('link', { name: /Rathe Arsenal home/i });
+    const link = screen.getByRole('link', { name: /Rathe Arsenal início/i });
     expect(link).toHaveTextContent('Rathe');
   });
 
   it('renders the "Arsenal" wordmark text', () => {
     render(<TopBar />);
-    const link = screen.getByRole('link', { name: /Rathe Arsenal home/i });
+    const link = screen.getByRole('link', { name: /Rathe Arsenal início/i });
     expect(link).toHaveTextContent('Arsenal');
   });
 });

@@ -59,42 +59,42 @@ function renderAnonymous() {
 // ---------------------------------------------------------------------------
 
 describe('NotFoundState — happy path (authenticated)', () => {
-  it('renders the "Off the map." heading', () => {
+  it('renders the "Fora do mapa." heading', () => {
     renderAuthenticated();
-    expect(screen.getByRole('heading', { name: /off the map/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /fora do mapa/i })).toBeInTheDocument();
   });
 
   it('renders the body copy', () => {
     renderAuthenticated();
     expect(
-      screen.getByText(/this page isn't part of your arsenal/i),
+      screen.getByText(/esta página não faz parte do seu arsenal/i),
     ).toBeInTheDocument();
   });
 
-  it('renders the "Back to home" CTA pointing to /home', () => {
+  it('renders the "Voltar ao início" CTA pointing to /home', () => {
     renderAuthenticated();
-    const cta = screen.getByRole('link', { name: /back to home/i });
+    const cta = screen.getByRole('link', { name: /voltar ao início/i });
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveAttribute('href', '/home');
   });
 });
 
 describe('NotFoundState — happy path (anonymous)', () => {
-  it('renders the "Off the map." heading', () => {
+  it('renders the "Fora do mapa." heading', () => {
     renderAnonymous();
-    expect(screen.getByRole('heading', { name: /off the map/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /fora do mapa/i })).toBeInTheDocument();
   });
 
   it('renders the body copy', () => {
     renderAnonymous();
     expect(
-      screen.getByText(/this page isn't part of your arsenal/i),
+      screen.getByText(/esta página não faz parte do seu arsenal/i),
     ).toBeInTheDocument();
   });
 
-  it('renders the "Sign in" CTA pointing to /sign-in', () => {
+  it('renders the "Entrar" CTA pointing to /sign-in', () => {
     renderAnonymous();
-    const cta = screen.getByRole('link', { name: /sign in/i });
+    const cta = screen.getByRole('link', { name: /entrar/i });
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveAttribute('href', '/sign-in');
   });
@@ -104,6 +104,6 @@ describe('NotFoundState — A11y', () => {
   it('heading renders as <h1>', () => {
     renderAuthenticated();
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveTextContent(/off the map/i);
+    expect(h1).toHaveTextContent(/fora do mapa/i);
   });
 });

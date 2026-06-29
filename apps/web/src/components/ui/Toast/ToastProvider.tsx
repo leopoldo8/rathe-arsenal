@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import * as RadixToast from '@radix-ui/react-toast';
+import { useTranslation } from 'react-i18next';
 import {
   ToastContext,
 } from './ToastContext';
@@ -151,6 +152,7 @@ interface IToastItemProps {
 }
 
 function ToastItem({ toast, duration, onDismiss }: IToastItemProps): React.ReactElement {
+  const { t } = useTranslation();
   const kindClass = styles[`toast--${toast.kind}`] ?? '';
 
   return (
@@ -169,7 +171,7 @@ function ToastItem({ toast, duration, onDismiss }: IToastItemProps): React.React
 
       <div className={styles.toastActions}>
         {toast.kind === 'error' && toast.retry != null && (
-          <RadixToast.Action altText="Retry" asChild>
+          <RadixToast.Action altText={t('ui.toastRetry')} asChild>
             <button
               type="button"
               className={styles.retryButton}
@@ -178,11 +180,11 @@ function ToastItem({ toast, duration, onDismiss }: IToastItemProps): React.React
                 onDismiss();
               }}
             >
-              Retry
+              {t('ui.toastRetry')}
             </button>
           </RadixToast.Action>
         )}
-        <RadixToast.Close className={styles.closeButton} aria-label="Dismiss">
+        <RadixToast.Close className={styles.closeButton} aria-label={t('ui.toastDismissAriaLabel')}>
           &times;
         </RadixToast.Close>
       </div>
@@ -205,6 +207,8 @@ function ConsolidatedToastItem({
   duration,
   onDismiss,
 }: IConsolidatedToastItemProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <RadixToast.Root
       className={`${styles.toast} ${styles['toast--error']}`}
@@ -215,13 +219,13 @@ function ConsolidatedToastItem({
     >
       <div className={styles.toastContent}>
         <RadixToast.Title className={styles.toastTitle} asChild>
-          <p>{toast.count} changes failed</p>
+          <p>{t('ui.toastChangesFailed', { count: toast.count })}</p>
         </RadixToast.Title>
       </div>
 
       <div className={styles.toastActions}>
         {toast.retries.length > 0 && (
-          <RadixToast.Action altText="Retry all" asChild>
+          <RadixToast.Action altText={t('ui.toastRetryAll')} asChild>
             <button
               type="button"
               className={styles.retryButton}
@@ -230,11 +234,11 @@ function ConsolidatedToastItem({
                 onDismiss();
               }}
             >
-              Retry all
+              {t('ui.toastRetryAll')}
             </button>
           </RadixToast.Action>
         )}
-        <RadixToast.Close className={styles.closeButton} aria-label="Dismiss">
+        <RadixToast.Close className={styles.closeButton} aria-label={t('ui.toastDismissAriaLabel')}>
           &times;
         </RadixToast.Close>
       </div>

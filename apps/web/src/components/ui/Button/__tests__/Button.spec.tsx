@@ -86,7 +86,7 @@ describe('Button — loading state', () => {
     render(<Button loading>Save</Button>);
     // Children "Save" should not be visible text — spinner replaces it
     expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.getByText('Carregando')).toBeInTheDocument();
   });
 
   it('does not invoke onClick when loading', async () => {

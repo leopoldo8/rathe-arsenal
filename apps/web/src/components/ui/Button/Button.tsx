@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './Button.module.css';
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,7 @@ export function Button({
   type = 'button',
   ...rest
 }: IButtonProps): React.ReactElement {
+  const { t } = useTranslation();
   const isDisabled = disabled || loading;
 
   const classes = [
@@ -88,7 +90,7 @@ export function Button({
       {loading ? (
         <>
           <span className={styles.spinner} aria-hidden="true" />
-          <span className="sr-only">Loading</span>
+          <span className="sr-only">{t('common.loading')}</span>
         </>
       ) : (
         <>

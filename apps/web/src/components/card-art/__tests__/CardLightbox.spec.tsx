@@ -89,14 +89,14 @@ describe('CardLightbox — happy path', () => {
 
   it('renders close button with accessible label', () => {
     render(<CardLightbox {...DEFAULT_PROPS} />);
-    const closeBtn = screen.getByRole('button', { name: /close fullscreen preview/i });
+    const closeBtn = screen.getByRole('button', { name: /fechar visualização em tela cheia/i });
     expect(closeBtn).toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', () => {
     const onClose = vi.fn();
     render(<CardLightbox {...DEFAULT_PROPS} onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: /close fullscreen preview/i }));
+    fireEvent.click(screen.getByRole('button', { name: /fechar visualização em tela cheia/i }));
     // The button's onClick fires AND the click bubbles to the backdrop's onClick.
     // Both call onClose — this is the component's designed behavior (no stopPropagation
     // on the button, since both the button and backdrop have the same dismiss action).
@@ -183,7 +183,7 @@ describe('CardLightbox — prefers-reduced-motion: reduce', () => {
 
   it('is fully accessible regardless of motion preference', () => {
     render(<CardLightbox {...DEFAULT_PROPS} />);
-    expect(screen.getByRole('button', { name: /close fullscreen preview/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /fechar visualização em tela cheia/i })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: DEFAULT_PROPS.name })).toBeInTheDocument();
   });
 });

@@ -43,9 +43,9 @@ describe('Skeleton — happy path', () => {
     expect(screen.getByRole('status', { name: 'Loading deck cards' })).toBeInTheDocument();
   });
 
-  it('defaults aria-label to "Loading"', () => {
+  it('defaults aria-label to the locale-appropriate loading label (PT-BR: "Carregando")', () => {
     render(<Skeleton />);
-    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Carregando' })).toBeInTheDocument();
   });
 
   it('applies rounded class when rounded=true', () => {

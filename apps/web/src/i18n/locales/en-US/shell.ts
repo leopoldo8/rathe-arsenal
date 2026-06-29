@@ -1,1 +1,19 @@
-export const shell = {} as const;
+export const shell = {
+  navHome: 'Home',
+  navLibrary: 'Library',
+  navSwaps: 'Swaps',
+  primaryNavAriaLabel: 'Primary',
+  mobileNavAriaLabel: 'Mobile primary',
+  brandAriaLabel: 'Rathe Arsenal home',
+  userMenuAriaLabel: 'User menu',
+  settingsLink: 'Settings',
+  signOut: 'Sign out',
+  notFoundHeading: 'Off the map.',
+  notFoundBody: "This page isn't part of your arsenal.",
+  notFoundCtaAuthenticated: 'Back to home',
+  notFoundCtaAnon: 'Sign in',
+  themeAriaLabel: 'Theme',
+  themeLightAriaLabel: 'Light theme',
+  themeDarkAriaLabel: 'Dark theme',
+  themeServerSyncError: "Saved locally — didn't reach the server. Will retry on next change.",
+} as const;

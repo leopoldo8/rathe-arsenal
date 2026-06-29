@@ -1,1 +1,3 @@
-export const common = {} as const;
+export const common = {
+  loading: 'Loading',
+} as const;

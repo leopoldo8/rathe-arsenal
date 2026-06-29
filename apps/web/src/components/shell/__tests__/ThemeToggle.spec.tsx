@@ -137,14 +137,14 @@ describe('ThemeToggle — happy path', () => {
 });
 
 describe('ThemeToggle — error path (divergence copy)', () => {
-  it('shows toast with exact divergence copy when PATCH returns 500', async () => {
+  it('shows toast with divergence copy when PATCH returns 500', async () => {
     patchMock.mockRejectedValue(new AuthFetchError('Server error', 500));
     renderToggle();
     fireEvent.click(screen.getByTestId('theme-toggle-light'));
     await waitFor(() => expect(toastShow).toHaveBeenCalled());
     expect(toastShow).toHaveBeenCalledWith({
       kind: 'error',
-      message: "Saved locally — didn't reach the server. Will retry on next change.",
+      message: 'Salvo localmente — não chegou ao servidor. Tente novamente ao mudar.',
     });
   });
 
