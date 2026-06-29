@@ -143,15 +143,15 @@ describe('LibraryStatsBar — freshness label: null data', () => {
 });
 
 describe('LibraryStatsBar — accessibility', () => {
-  it('has aria-label "Collection statistics" on the container', () => {
+  it('has aria-label "Estatísticas da coleção" on the container (pt-BR default)', () => {
     render(<LibraryStatsBar stats={makeStats()} />);
-    expect(screen.getByRole('region', { name: /collection statistics/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /estatísticas da coleção/i })).toBeInTheDocument();
   });
 
-  it('pitch breakdown container has aria-label', () => {
+  it('pitch breakdown container has aria-label (pt-BR default)', () => {
     render(<LibraryStatsBar stats={makeStats()} />);
     expect(
-      screen.getByRole('generic', { name: /pitch breakdown/i }),
+      screen.getByRole('generic', { name: /distribuição de pitch/i }),
     ).toBeInTheDocument();
   });
 });

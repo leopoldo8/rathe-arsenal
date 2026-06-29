@@ -18,6 +18,7 @@
  * Touch targets are ≥ 44×44 on both buttons per .impeccable.md.
  */
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import styles from './DiscardChangesConfirm.module.css';
 
@@ -37,6 +38,7 @@ export function DiscardChangesConfirm({
   onKeepEditing,
   onDiscard,
 }: IDiscardChangesConfirmProps): React.ReactElement {
+  const { t } = useTranslation();
   const keepEditingRef = useRef<HTMLButtonElement | null>(null);
   // Track whether a button was explicitly clicked so that onOpenChange
   // doesn't double-fire the handler (Radix fires onOpenChange after the
@@ -79,10 +81,10 @@ export function DiscardChangesConfirm({
           aria-describedby={undefined}
         >
           <AlertDialog.Title className={styles.title}>
-            Discard {changeCount} {changeCount === 1 ? 'change' : 'changes'}?
+            {t('decks.discardCount', { count: changeCount })}
           </AlertDialog.Title>
           <AlertDialog.Description className={styles.description}>
-            Your unsaved edits to this deck will be lost.
+            {t('decks.discardDesc')}
           </AlertDialog.Description>
 
           <div className={styles.footer}>
@@ -92,11 +94,11 @@ export function DiscardChangesConfirm({
                 ref={keepEditingRef}
                 type="button"
                 className={styles.keepBtn}
-                aria-label="Keep editing"
+                aria-label={t('decks.keepEditing')}
                 onClick={handleKeepEditing}
                 data-testid="discard-confirm-keep-btn"
               >
-                Keep editing
+                {t('decks.keepEditing')}
               </button>
             </AlertDialog.Cancel>
 
@@ -105,11 +107,11 @@ export function DiscardChangesConfirm({
               <button
                 type="button"
                 className={styles.discardBtn}
-                aria-label="Discard changes"
+                aria-label={t('decks.discardChanges')}
                 onClick={handleDiscard}
                 data-testid="discard-confirm-discard-btn"
               >
-                Discard changes
+                {t('decks.discardChanges')}
               </button>
             </AlertDialog.Action>
           </div>

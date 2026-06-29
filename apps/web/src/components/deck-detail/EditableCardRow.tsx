@@ -10,6 +10,7 @@
  * step before removing — decrement at qty=1 → qty=0 → auto-remove.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDraftSlot } from '../../hooks/useCompositionDraft';
 import { CardArt } from '../card-art/CardArt';
 import { CardRowLegalityWarning } from './CardRowLegalityWarning';
@@ -83,6 +84,7 @@ export function EditableCardRow({
   illegalCardIds,
   format,
 }: IEditableCardRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const isIllegal = illegalCardIds !== undefined && illegalCardIds.has(cardIdentifier);
 
   function handleDecrement(): void {
@@ -146,11 +148,11 @@ export function EditableCardRow({
 
       {/* Quantity stepper + remove */}
       <div className={styles.controls}>
-        <div className={styles.stepper} role="group" aria-label={`Quantity for ${name}`}>
+        <div className={styles.stepper} role="group" aria-label={t('decks.cardQuantityGroupAria', { name })}>
           <button
             type="button"
             className={styles.stepperBtn}
-            aria-label={`Decrease quantity of ${name}`}
+            aria-label={t('decks.decreaseQuantityAria', { name })}
             data-testid={`decrement-${cardIdentifier}`}
             onClick={handleDecrement}
           >
@@ -162,7 +164,7 @@ export function EditableCardRow({
           <button
             type="button"
             className={styles.stepperBtn}
-            aria-label={`Increase quantity of ${name}`}
+            aria-label={t('decks.increaseQuantityAria', { name })}
             data-testid={`increment-${cardIdentifier}`}
             onClick={handleIncrement}
           >
@@ -173,7 +175,7 @@ export function EditableCardRow({
         <button
           type="button"
           className={styles.removeBtn}
-          aria-label={`Remove ${name} from deck`}
+          aria-label={t('decks.removeCardAria', { name })}
           data-testid={`remove-${cardIdentifier}`}
           onClick={() => onRemove(cardIdentifier, slot)}
         >

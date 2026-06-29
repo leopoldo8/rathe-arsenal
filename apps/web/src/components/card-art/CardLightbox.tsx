@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import styles from './CardLightbox.module.css';
 import { setCssVar } from '../../lib/dom/setCssVar';
 
@@ -34,6 +35,7 @@ export function CardLightbox({
   name,
   onClose,
 }: ICardLightboxProps): React.ReactElement {
+  const { t } = useTranslation();
   const candidateList = sources && sources.length > 0 ? sources : [imageUrl];
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
@@ -124,7 +126,7 @@ export function CardLightbox({
         ref={closeButtonRef}
         className={styles.closeButton}
         onClick={onClose}
-        aria-label="Close fullscreen preview"
+        aria-label={t('ui.closeFullscreenPreview')}
         data-testid="card-lightbox-close"
       >
         &#10005;
@@ -141,7 +143,7 @@ export function CardLightbox({
           <div
             className={styles.skeleton}
             role="status"
-            aria-label={`Loading ${name}`}
+            aria-label={t('ui.loadingCardArt', { name })}
             data-testid="card-lightbox-skeleton"
           />
         )}
@@ -156,7 +158,7 @@ export function CardLightbox({
             data-testid="card-lightbox-error"
           >
             <span className={styles.errorGlyph} aria-hidden="true">&#9670;</span>
-            <span className={styles.errorTitle}>Card art unavailable</span>
+            <span className={styles.errorTitle}>{t('ui.cardArtUnavailable')}</span>
             <span className={styles.errorBody}>{name}</span>
           </div>
         )}

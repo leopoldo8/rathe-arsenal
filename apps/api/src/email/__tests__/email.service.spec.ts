@@ -54,9 +54,9 @@ describe('EmailService', () => {
       (service as any).resend = { emails: { send: sendMock } };
     });
 
-    it('calls resend.emails.send with rendered template (happy path)', async () => {
+    it('calls resend.emails.send with rendered EN-US template when locale is en-US', async () => {
       sendMock.mockResolvedValue({ data: { id: 'msg_1' }, error: null });
-      await service.sendVerificationEmail('a@b.com', 'https://example.com/verify');
+      await service.sendVerificationEmail('a@b.com', 'https://example.com/verify', 'en-US');
       expect(sendMock).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'a@b.com',
@@ -64,6 +64,16 @@ describe('EmailService', () => {
           subject: expect.stringContaining('Verify'),
           html: expect.stringContaining('https://example.com/verify'),
           text: expect.stringContaining('https://example.com/verify'),
+        }),
+      );
+    });
+
+    it('calls resend.emails.send with PT-BR template when locale is pt-BR (default)', async () => {
+      sendMock.mockResolvedValue({ data: { id: 'msg_2' }, error: null });
+      await service.sendVerificationEmail('a@b.com', 'https://example.com/verify');
+      expect(sendMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subject: expect.stringContaining('Verifique'),
         }),
       );
     });

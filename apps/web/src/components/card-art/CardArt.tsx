@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './CardArt.module.css';
 
 import AttackGlyph from './glyphs/attack.svg?react';
@@ -143,6 +144,7 @@ export function CardArt({
   onClick,
   widthOverride,
 }: ICardArtProps): React.ReactElement {
+  const { t } = useTranslation();
   const width = widthOverride ?? SIZE_WIDTH_MAP[size];
   const height = Math.round(width * ASPECT_RATIO);
 
@@ -428,7 +430,7 @@ export function CardArt({
         data-pitch={dataPitch}
         data-testid="card-art"
         onClick={onClick}
-        aria-label={`Open ${name} fullscreen`}
+        aria-label={t('ui.openFullscreen', { name })}
       >
         {inner}
       </button>

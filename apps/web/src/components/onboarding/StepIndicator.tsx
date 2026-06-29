@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './StepIndicator.module.css';
 
 // ---------------------------------------------------------------------------
@@ -25,11 +26,7 @@ const ROMAN_NUMERALS: Record<number, string> = {
   3: 'III',
 };
 
-const STEP_LABELS: Record<number, string> = {
-  1: 'Paste deck',
-  2: 'Confirm library',
-  3: 'Review subs',
-};
+// STEP_LABELS are resolved inside the component via t() so they are locale-aware.
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,17 +52,31 @@ function resolveState(stepNumber: number, currentStep: number): TStepState {
  * descriptive aria-label that announces "Step N of 3: Label (state)".
  */
 export function StepIndicator({ currentStep }: IStepIndicatorProps): React.ReactElement {
+  const { t } = useTranslation();
   const steps = [1, 2, 3] as const;
+
+  const stepLabels: Record<number, string> = {
+    1: t('onboarding.stepLabel1'),
+    2: t('onboarding.stepLabel2'),
+    3: t('onboarding.stepLabel3'),
+  };
+
+  const stepStates: Record<string, string> = {
+    complete: t('onboarding.stepStateComplete'),
+    current: t('onboarding.stepStateCurrent'),
+    upcoming: t('onboarding.stepStateUpcoming'),
+  };
 
   return (
     <nav
-      aria-label={`Step ${currentStep} of 3`}
+      aria-label={t('onboarding.stepNavAriaLabel', { current: currentStep, total: 3 })}
       className={styles.stepIndicator}
     >
       <ol className={styles.stepList} role="list">
         {steps.map((stepNumber, index) => {
           const state = resolveState(stepNumber, currentStep);
-          const label = STEP_LABELS[stepNumber] ?? '';
+          const label = stepLabels[stepNumber] ?? '';
+          const stateLabel = stepStates[state] ?? state;
           const roman = ROMAN_NUMERALS[stepNumber] ?? '';
           const isLast = index === steps.length - 1;
 
@@ -76,7 +87,7 @@ export function StepIndicator({ currentStep }: IStepIndicatorProps): React.React
                   styles.step,
                   styles[`step--${state}`],
                 ].join(' ')}
-                aria-label={`Step ${stepNumber} of 3: ${label}, ${state}`}
+                aria-label={t('onboarding.stepItemAriaLabel', { number: stepNumber, total: 3, label, state: stateLabel })}
                 aria-current={state === 'current' ? 'step' : undefined}
               >
                 <span className={styles.stepNumeral} aria-hidden="true">

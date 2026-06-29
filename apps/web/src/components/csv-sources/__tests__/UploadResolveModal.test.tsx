@@ -1,6 +1,8 @@
 /**
  * Tests for UploadResolveModal (U9).
  * Covers all three variants and verifies action buttons fire the right params.
+ *
+ * Assertions use PT-BR strings (i18n default in test harness).
  */
 
 import React from 'react';
@@ -64,7 +66,7 @@ const partialOverlapResponse: IPartialOverlapUploadResponse = {
 // ---------------------------------------------------------------------------
 
 describe('UploadResolveModal — created variant (with skipped rows)', () => {
-  it('renders the skipped rows count in the title', () => {
+  it('renders the skipped rows count in the title (pt-BR)', () => {
     // Arrange & Act
     render(
       <UploadResolveModal
@@ -75,11 +77,11 @@ describe('UploadResolveModal — created variant (with skipped rows)', () => {
       />,
     );
 
-    // Assert
-    expect(screen.getByText(/3 rows? could not be matched/i)).toBeInTheDocument();
+    // Assert: "3 linhas não puderam ser mapeadas"
+    expect(screen.getByText(/3 linha/i)).toBeInTheDocument();
   });
 
-  it('lists each skipped row by row number and name', () => {
+  it('lists each skipped row by row number and name (pt-BR)', () => {
     render(
       <UploadResolveModal
         open
@@ -89,12 +91,12 @@ describe('UploadResolveModal — created variant (with skipped rows)', () => {
       />,
     );
 
-    expect(screen.getByText('Row 2')).toBeInTheDocument();
-    expect(screen.getByText('Row 3')).toBeInTheDocument();
+    expect(screen.getByText('Linha 2')).toBeInTheDocument();
+    expect(screen.getByText('Linha 3')).toBeInTheDocument();
     expect(screen.getByText('Unknown Card 1')).toBeInTheDocument();
   });
 
-  it('calls onClose when Close button is clicked', async () => {
+  it('calls onClose when Fechar button is clicked (pt-BR)', async () => {
     const onClose = vi.fn();
     render(
       <UploadResolveModal
@@ -105,7 +107,7 @@ describe('UploadResolveModal — created variant (with skipped rows)', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /close/i }));
+    await userEvent.click(screen.getByRole('button', { name: /fechar/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
@@ -115,7 +117,7 @@ describe('UploadResolveModal — created variant (with skipped rows)', () => {
 // ---------------------------------------------------------------------------
 
 describe('UploadResolveModal — exact-match variant', () => {
-  it('renders "This file is already imported" title', () => {
+  it('renders "Este arquivo já foi importado" title (pt-BR)', () => {
     render(
       <UploadResolveModal
         open
@@ -124,10 +126,10 @@ describe('UploadResolveModal — exact-match variant', () => {
         onAction={vi.fn()}
       />,
     );
-    expect(screen.getByText(/this file is already imported/i)).toBeInTheDocument();
+    expect(screen.getByText(/este arquivo já foi importado/i)).toBeInTheDocument();
   });
 
-  it('clicking "Import as separate copy" fires onAction with action=separate', async () => {
+  it('clicking "Importar como cópia separada" fires onAction with action=separate (pt-BR)', async () => {
     const onAction = vi.fn();
     render(
       <UploadResolveModal
@@ -138,11 +140,11 @@ describe('UploadResolveModal — exact-match variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /import as separate copy/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar como cópia separada/i }));
     expect(onAction).toHaveBeenCalledWith('separate', undefined);
   });
 
-  it('clicking "Replace existing" fires onAction with action=replace + existingSourceId', async () => {
+  it('clicking "Substituir existente" fires onAction with action=replace + existingSourceId (pt-BR)', async () => {
     const onAction = vi.fn();
     render(
       <UploadResolveModal
@@ -153,11 +155,11 @@ describe('UploadResolveModal — exact-match variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /replace existing/i }));
+    await userEvent.click(screen.getByRole('button', { name: /substituir existente/i }));
     expect(onAction).toHaveBeenCalledWith('replace', 'src-existing');
   });
 
-  it('clicking Cancel calls onClose', async () => {
+  it('clicking Cancelar calls onClose (pt-BR)', async () => {
     const onClose = vi.fn();
     render(
       <UploadResolveModal
@@ -168,7 +170,7 @@ describe('UploadResolveModal — exact-match variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
@@ -178,7 +180,7 @@ describe('UploadResolveModal — exact-match variant', () => {
 // ---------------------------------------------------------------------------
 
 describe('UploadResolveModal — partial-overlap variant', () => {
-  it('renders "Update existing source?" title', () => {
+  it('renders "Atualizar fonte existente?" title (pt-BR)', () => {
     render(
       <UploadResolveModal
         open
@@ -187,7 +189,7 @@ describe('UploadResolveModal — partial-overlap variant', () => {
         onAction={vi.fn()}
       />,
     );
-    expect(screen.getByText(/update existing source\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/atualizar fonte existente\?/i)).toBeInTheDocument();
   });
 
   it('shows existing label in the description', () => {
@@ -202,7 +204,7 @@ describe('UploadResolveModal — partial-overlap variant', () => {
     expect(screen.getByText(/my collection/i)).toBeInTheDocument();
   });
 
-  it('shows added and increased counts in delta table', () => {
+  it('shows added and increased counts in delta table (pt-BR labels)', () => {
     render(
       <UploadResolveModal
         open
@@ -211,11 +213,11 @@ describe('UploadResolveModal — partial-overlap variant', () => {
         onAction={vi.fn()}
       />,
     );
-    expect(screen.getByText('New cards')).toBeInTheDocument();
-    expect(screen.getByText('Increased')).toBeInTheDocument();
+    expect(screen.getByText('Novos cards')).toBeInTheDocument();
+    expect(screen.getByText('Aumentado')).toBeInTheDocument();
   });
 
-  it('clicking "Update existing" fires onAction with update + existingSourceId', async () => {
+  it('clicking "Atualizar existente" fires onAction with update + existingSourceId (pt-BR)', async () => {
     const onAction = vi.fn();
     render(
       <UploadResolveModal
@@ -226,11 +228,11 @@ describe('UploadResolveModal — partial-overlap variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /update existing/i }));
+    await userEvent.click(screen.getByRole('button', { name: /atualizar existente/i }));
     expect(onAction).toHaveBeenCalledWith('update', 'src-overlap');
   });
 
-  it('clicking "Replace with new" fires onAction with replace + existingSourceId', async () => {
+  it('clicking "Substituir com novo" fires onAction with replace + existingSourceId (pt-BR)', async () => {
     const onAction = vi.fn();
     render(
       <UploadResolveModal
@@ -241,11 +243,11 @@ describe('UploadResolveModal — partial-overlap variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /replace with new/i }));
+    await userEvent.click(screen.getByRole('button', { name: /substituir com novo/i }));
     expect(onAction).toHaveBeenCalledWith('replace', 'src-overlap');
   });
 
-  it('clicking "Import as separate copy" fires onAction with separate', async () => {
+  it('clicking "Importar como cópia separada" fires onAction with separate (pt-BR)', async () => {
     const onAction = vi.fn();
     render(
       <UploadResolveModal
@@ -256,7 +258,7 @@ describe('UploadResolveModal — partial-overlap variant', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /import as separate copy/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar como cópia separada/i }));
     expect(onAction).toHaveBeenCalledWith('separate', undefined);
   });
 });

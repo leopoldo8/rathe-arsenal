@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import styles from './DeckDetailEmptyState.module.css';
@@ -29,24 +30,26 @@ interface IDeckDetailEmptyStateProps {
  *   the snapshot arrives. No CTA — auto-refresh is the contract.
  */
 export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): React.ReactElement {
+  const { t } = useTranslation();
+
   if (kind === 'computing') {
     return (
       <section className={styles.container} aria-labelledby="deck-empty-heading">
         <div className={styles.diamond} aria-hidden="true">◆</div>
 
         <h1 id="deck-empty-heading" className={styles.heading}>
-          Computing readiness&hellip;
+          {t('decks.computingReadiness')}
         </h1>
 
         <p className={styles.body}>
-          We&rsquo;re checking what you can play. This takes a few seconds for new decks.
+          {t('decks.computingReadinessDesc')}
         </p>
 
         <div className={styles.computingIndicator}>
           <Skeleton
             width="160px"
             height="0.875rem"
-            aria-label="Computing readiness"
+            aria-label={t('decks.computingReadinessAria')}
           />
         </div>
       </section>
@@ -58,20 +61,20 @@ export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): Reac
       <div className={styles.diamond} aria-hidden="true">◆</div>
 
       <h1 id="deck-empty-heading" className={styles.heading}>
-        This deck isn&rsquo;t in your arsenal.
+        {t('decks.deckNotInArsenal')}
       </h1>
 
       <p className={styles.body}>
-        It may have been removed, or the link is stale.
+        {t('decks.deckNotInArsenalDesc')}
       </p>
 
       <div className={styles.ctaGroup}>
         <Link to="/home" search={{ tag: [] }} className={styles.primaryCta}>
-          Back to home
+          {t('decks.backToHome')}
         </Link>
 
         <Link to="/add-cards/fabrary" className={styles.secondaryCta}>
-          Track a Fabrary deck
+          {t('decks.trackFabraryDeck')}
         </Link>
       </div>
     </section>

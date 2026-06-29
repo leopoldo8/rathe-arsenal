@@ -121,36 +121,36 @@ describe('DeleteSourceModal — preview loads', () => {
     renderModal();
     // Wait for preview to finish loading (no more skeleton)
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /type.*delete.*to confirm/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
     });
 
-    const confirmBtn = screen.getByRole('button', { name: /delete source/i });
+    const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).toBeDisabled();
   });
 
   it('Confirm button enables after typing DELETE', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /type.*delete.*to confirm/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
     });
 
-    const input = screen.getByRole('textbox', { name: /type.*delete.*to confirm/i });
+    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
     await userEvent.type(input, 'DELETE');
 
-    const confirmBtn = screen.getByRole('button', { name: /delete source/i });
+    const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).not.toBeDisabled();
   });
 
   it('Confirm button stays disabled for lowercase "delete"', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /type.*delete.*to confirm/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
     });
 
-    const input = screen.getByRole('textbox', { name: /type.*delete.*to confirm/i });
+    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
     await userEvent.type(input, 'delete');
 
-    const confirmBtn = screen.getByRole('button', { name: /delete source/i });
+    const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).toBeDisabled();
   });
 });
@@ -177,11 +177,11 @@ describe('DeleteSourceModal — successful deletion', () => {
     });
 
     // Type DELETE
-    const input = screen.getByRole('textbox', { name: /type.*delete.*to confirm/i });
+    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
     await userEvent.type(input, 'DELETE');
 
     // Click confirm
-    const confirmBtn = screen.getByRole('button', { name: /delete source/i });
+    const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     await userEvent.click(confirmBtn);
 
     await waitFor(() => {
@@ -210,9 +210,9 @@ describe('DeleteSourceModal — recomputeWarning variant', () => {
       expect(bodyText).toMatch(/2 card/);
     });
 
-    const input = screen.getByRole('textbox', { name: /type.*delete.*to confirm/i });
+    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
     await userEvent.type(input, 'DELETE');
-    await userEvent.click(screen.getByRole('button', { name: /delete source/i }));
+    await userEvent.click(screen.getByRole('button', { name: /excluir fonte/i }));
 
     await waitFor(() => {
       // Should have been called twice — success + warning

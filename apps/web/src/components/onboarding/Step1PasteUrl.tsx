@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import { useImportDecksMutation, IImportDecksResponse } from '../../api/decks';
 import styles from './Step1PasteUrl.module.css';
@@ -32,16 +33,13 @@ export interface IStep1PasteUrlProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a user-facing validation error string for the given URL string,
- * or null if the URL is valid in format.
+ * Returns true if the URL has a valid Fabrary deck URL format, or the URL is empty.
+ * Empty string is not an error (user hasn't typed yet).
  */
-function validateUrlFormat(url: string): string | null {
+function isValidFabraryFormat(url: string): boolean {
   const trimmed = url.trim();
-  if (!trimmed) return null; // empty = not yet entered
-  if (!FABRARY_URL_REGEX.test(trimmed)) {
-    return 'Must be a valid Fabrary deck URL (e.g. https://fabrary.net/decks/…)';
-  }
-  return null;
+  if (!trimmed) return true;
+  return FABRARY_URL_REGEX.test(trimmed);
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +58,7 @@ function validateUrlFormat(url: string): string | null {
  * Skip always routes to /home (handled by parent wizard).
  */
 export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): React.ReactElement {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -69,9 +68,10 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
 
   const importMutation = useImportDecksMutation();
 
-  const formatError = validateUrlFormat(url);
+  const urlIsValid = isValidFabraryFormat(url);
+  const formatError = urlIsValid ? null : t('onboarding.step1FormatError');
   const hasUrl = url.trim().length > 0;
-  const canSubmit = hasUrl && !formatError && !importMutation.isPending;
+  const canSubmit = hasUrl && urlIsValid && !importMutation.isPending;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>): void {
     setUrl(e.target.value);
@@ -90,9 +90,7 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
 
     const timeoutHandle = setTimeout(() => {
       controller.abort();
-      setSubmitError(
-        'That URL took too long to respond — the deck may be unreachable or the server is unavailable.',
-      );
+      setSubmitError(t('onboarding.step1TimeoutError'));
     }, UNREACHABLE_TIMEOUT_MS);
 
     try {
@@ -106,13 +104,11 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
       if (urlError) {
         const code = urlError.code;
         if (code === 'private_deck') {
-          setSubmitError(
-            'That deck is set to private on Fabrary. Make it public or use a different URL.',
-          );
+          setSubmitError(t('onboarding.step1PrivateDeckError'));
           return;
         }
         if (code === 'not_fab_deck') {
-          setSubmitError('That URL does not appear to be a Flesh and Blood deck.');
+          setSubmitError(t('onboarding.step1NotFabError'));
           return;
         }
         setSubmitError(urlError.message);
@@ -122,7 +118,7 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
       // Skipped: already tracked
       const skipped = response.skipped[0];
       if (skipped) {
-        setSubmitError(`Deck already tracked: ${skipped.reason}`);
+        setSubmitError(t('onboarding.step1AlreadyTrackedError', { reason: skipped.reason }));
         return;
       }
 
@@ -134,7 +130,7 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
         return;
       }
       setSubmitError(
-        error instanceof Error ? error.message : 'Failed to import deck. Please try again.',
+        error instanceof Error ? error.message : t('onboarding.step1GenericError'),
       );
     } finally {
       abortRef.current = null;
@@ -146,23 +142,20 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
 
   return (
     <div className={styles.step}>
-      <div className={styles.eyebrow}>Step 1 of 3</div>
-      <h1 className={styles.heading}>First, a deck</h1>
-      <p className={styles.body}>
-        Paste any Fabrary deck URL. We will use it to understand what you want to play and how
-        ready your collection is.
-      </p>
+      <div className={styles.eyebrow}>{t('onboarding.step1Eyebrow')}</div>
+      <h1 className={styles.heading}>{t('onboarding.step1Heading')}</h1>
+      <p className={styles.body}>{t('onboarding.step1Body')}</p>
 
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
         <div className={styles.fieldGroup}>
           <label className={styles.label} htmlFor={inputId}>
-            Fabrary deck URL
+            {t('onboarding.step1Label')}
           </label>
           <input
             id={inputId}
             type="url"
             className={[styles.input, hasError ? styles['input--error'] : ''].filter(Boolean).join(' ')}
-            placeholder="https://fabrary.net/decks/…"
+            placeholder={t('onboarding.step1Placeholder')}
             value={url}
             onChange={handleChange}
             aria-invalid={hasError}
@@ -184,7 +177,7 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
             onClick={onSkip}
             disabled={importMutation.isPending}
           >
-            Skip for now
+            {t('onboarding.skipForNow')}
           </Button>
           <Button
             type="submit"
@@ -192,7 +185,7 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
             disabled={!canSubmit}
             loading={importMutation.isPending}
           >
-            Continue
+            {t('onboarding.continueButton')}
           </Button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem } from '../../api/decks';
 import { DeckCard } from './DeckCard';
 import styles from './ReadinessShelves.module.css';
@@ -17,7 +18,7 @@ type TReadinessTier = 'ready' | 'almost' | 'needs';
 
 interface IShelfConfig {
   readonly tier: TReadinessTier;
-  readonly label: string;
+  readonly labelKey: string;
   readonly rangeLabel: string;
   readonly tierClass: string;
 }
@@ -29,19 +30,19 @@ interface IShelfConfig {
 const SHELF_CONFIGS: readonly IShelfConfig[] = [
   {
     tier: 'ready',
-    label: 'Ready to play',
+    labelKey: 'home.readyShelfLabel',
     rangeLabel: '≥80%',
     tierClass: styles.diamondHigh!,
   },
   {
     tier: 'almost',
-    label: 'Almost there',
+    labelKey: 'home.almostShelfLabel',
     rangeLabel: '50–80%',
     tierClass: styles.diamondMid!,
   },
   {
     tier: 'needs',
-    label: 'Needs collection',
+    labelKey: 'home.needsShelfLabel',
     rangeLabel: '<50%',
     tierClass: styles.diamondLow!,
   },
@@ -83,6 +84,10 @@ function ReadinessShelf({
   onUntrack,
   untrackingDeckId,
 }: IReadinessShelfProps): React.ReactElement {
+  const { t } = useTranslation();
+  const deckCountLabel = decks.length === 1
+    ? t('home.deckCountSingular')
+    : t('home.deckCountPlural', { count: decks.length });
   return (
     <section className={styles.shelf} aria-labelledby={headingId}>
       <div className={styles.shelfHead}>
@@ -92,10 +97,10 @@ function ReadinessShelf({
             aria-hidden="true"
           />
           <h2 id={headingId} className={styles.shelfHeading}>
-            {config.label}
+            {t(config.labelKey)}
           </h2>
           <span className={styles.shelfCount}>
-            {decks.length} {decks.length === 1 ? 'deck' : 'decks'} &middot; {config.rangeLabel}
+            {deckCountLabel} &middot; {config.rangeLabel}
           </span>
         </div>
       </div>

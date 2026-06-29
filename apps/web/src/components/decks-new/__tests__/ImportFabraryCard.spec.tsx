@@ -44,10 +44,10 @@ function resolveImportWith(result: IImportDecksResponse): void {
 }
 
 function submitUrl(url: string): void {
-  fireEvent.change(screen.getByLabelText('Fabrary deck URL'), {
+  fireEvent.change(screen.getByLabelText('URL do baralho do Fabrary'), {
     target: { value: url },
   });
-  fireEvent.click(screen.getByRole('button', { name: /track deck/i }));
+  fireEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
 }
 
 describe('ImportFabraryCard', () => {
@@ -109,7 +109,7 @@ describe('ImportFabraryCard', () => {
     submitUrl(VALID_URL);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/already tracking/i)).toBeInTheDocument();
+    expect(screen.getByText(/acompanhando este baralho/i)).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

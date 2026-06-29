@@ -63,11 +63,11 @@ describe('LibraryGrid — happy path: renders all cards', () => {
     expect(items).toHaveLength(20);
   });
 
-  it('each cell has an aria-label with the card name and owned quantity', () => {
+  it('each cell has an aria-label with the card name and owned quantity (pt-BR)', () => {
     const card = makeCard({ name: 'Hammer of Sol', ownedQuantity: 3 });
     render(<LibraryGrid cards={[card]} group="flat" />);
     expect(
-      screen.getByRole('listitem', { name: /Hammer of Sol.*owned: 3/i }),
+      screen.getByRole('listitem', { name: /Hammer of Sol.*na coleção: 3/i }),
     ).toBeInTheDocument();
   });
 
@@ -83,7 +83,7 @@ describe('LibraryGrid — happy path: renders all cards', () => {
 });
 
 describe('LibraryGrid — grouping by type', () => {
-  it('groups cards by type and renders a section header', () => {
+  it('groups cards by type and renders a section header (type headings stay in English — game data)', () => {
     const cards = [
       makeCard({ cardIdentifier: 'A1', name: 'Hammer', types: ['attack'] }),
       makeCard({ cardIdentifier: 'D1', name: 'Shield', types: ['defense'] }),
@@ -106,20 +106,20 @@ describe('LibraryGrid — grouping by type', () => {
 });
 
 describe('LibraryGrid — grouping by pitch', () => {
-  it('groups cards by pitch label', () => {
+  it('groups cards by pitch label (pt-BR pitch headings)', () => {
     const cards = [
       makeCard({ cardIdentifier: 'R1', name: 'Red Card', pitch: 1 }),
       makeCard({ cardIdentifier: 'B1', name: 'Blue Card', pitch: 3 }),
     ];
     render(<LibraryGrid cards={cards} group="pitch" />);
-    expect(screen.getByRole('heading', { name: 'Red' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Blue' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Vermelho' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Azul' })).toBeInTheDocument();
   });
 
-  it('groups null-pitch cards as Colorless', () => {
+  it('groups null-pitch cards as Incolor (pt-BR)', () => {
     const cards = [makeCard({ name: 'Equipment', pitch: null })];
     render(<LibraryGrid cards={cards} group="pitch" />);
-    expect(screen.getByRole('heading', { name: 'Colorless' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Incolor' })).toBeInTheDocument();
   });
 });
 
@@ -160,7 +160,7 @@ describe('LibraryGrid — grouping toggle: no refetch', () => {
     // Rerender with pitch grouping — same cards, no refetch
     rerender(<LibraryGrid cards={cards} group="pitch" />);
     expect(screen.queryByRole('heading', { name: 'attack' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Red' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Vermelho' })).toBeInTheDocument();
   });
 });
 
@@ -172,17 +172,17 @@ describe('LibraryGrid — accessibility', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
   });
 
-  it('each cell aria-label includes name and owned quantity', () => {
+  it('each cell aria-label includes name and owned quantity (pt-BR)', () => {
     const card = makeCard({ name: 'Surging Strike', ownedQuantity: 2 });
     render(<LibraryGrid cards={[card]} group="flat" />);
     expect(
-      screen.getByRole('listitem', { name: /Surging Strike.*owned: 2/i }),
+      screen.getByRole('listitem', { name: /Surging Strike.*na coleção: 2/i }),
     ).toBeInTheDocument();
   });
 });
 
 describe('LibraryGrid — Action subtype split (group=type)', () => {
-  it('renders separate "Attack Action" and "Non-Attack Action" headings', () => {
+  it('renders separate "Attack Action" and "Non-Attack Action" headings (game data — stays English)', () => {
     const cards = [
       makeCard({
         cardIdentifier: 'A1',
@@ -258,9 +258,9 @@ describe('LibraryGrid — stable in-group sort', () => {
     // The display order doesn't depend on the input array; alpha → beta → charlie.
     const items = screen.getAllByRole('listitem');
     expect(items.map((el) => el.getAttribute('aria-label'))).toEqual([
-      'Alpha, owned: 1',
-      'Bravo, owned: 1',
-      'Charlie, owned: 1',
+      'Alpha, na coleção: 1',
+      'Bravo, na coleção: 1',
+      'Charlie, na coleção: 1',
     ]);
   });
 
@@ -272,7 +272,7 @@ describe('LibraryGrid — stable in-group sort', () => {
     ];
     const { rerender } = render(<LibraryGrid cards={cards} group="flat" />);
     let items = screen.getAllByRole('listitem');
-    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, owned: 1');
+    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, na coleção: 1');
 
     // Simulate API refetch returning cards in a different array order
     // (e.g. Postgres reordered after a row mutation). Bravo's qty
@@ -287,7 +287,7 @@ describe('LibraryGrid — stable in-group sort', () => {
       />,
     );
     items = screen.getAllByRole('listitem');
-    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, owned: 1');
-    expect(items[1]?.getAttribute('aria-label')).toBe('Bravo, owned: 2');
+    expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, na coleção: 1');
+    expect(items[1]?.getAttribute('aria-label')).toBe('Bravo, na coleção: 2');
   });
 });

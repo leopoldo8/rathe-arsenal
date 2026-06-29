@@ -88,7 +88,7 @@ describe('DeckCardSearchAutocomplete — basic rendering', () => {
 
   it('renders the search input with the default label', () => {
     renderComponent();
-    expect(screen.getByLabelText(/search cards/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/buscar cartas/i)).toBeInTheDocument();
   });
 
   it('renders a custom label when provided', () => {
@@ -98,7 +98,7 @@ describe('DeckCardSearchAutocomplete — basic rendering', () => {
 
   it('never renders the slot picker (slot is derived from card.types by the caller)', () => {
     renderComponent();
-    expect(screen.queryByRole('group', { name: /deck slot/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /slot do baralho/i })).not.toBeInTheDocument();
   });
 });
 
@@ -277,7 +277,7 @@ describe('DeckCardSearchAutocomplete — empty results state', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('listbox')).toBeInTheDocument();
-      expect(screen.getByText(/no cards found/i)).toBeInTheDocument();
+      expect(screen.getByText(/nenhuma carta encontrada/i)).toBeInTheDocument();
     });
   });
 });

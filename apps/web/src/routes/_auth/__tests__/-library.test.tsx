@@ -3,6 +3,8 @@
  *
  * Tests LibraryPageInner (testable inner component) with all external
  * dependencies mocked.
+ *
+ * Assertions use PT-BR strings (i18n default in test harness).
  */
 
 import React from 'react';
@@ -171,20 +173,20 @@ describe('LibraryPage — error state', () => {
     });
   });
 
-  it('renders error alert', () => {
+  it('renders error alert (pt-BR)', () => {
     renderLibraryPage();
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/something went wrong loading your library/i)).toBeInTheDocument();
+    expect(screen.getByText(/algo deu errado ao carregar sua biblioteca/i)).toBeInTheDocument();
   });
 
-  it('renders retry button', () => {
+  it('renders retry button (pt-BR)', () => {
     renderLibraryPage();
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument();
   });
 
   it('calls refetch when retry is clicked', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+    await userEvent.click(screen.getByRole('button', { name: /tentar novamente/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });
@@ -198,14 +200,14 @@ describe('LibraryPage — empty state: 0 cards', () => {
     });
   });
 
-  it('renders LibraryEmptyState when cards.length === 0', () => {
+  it('renders LibraryEmptyState when cards.length === 0 (pt-BR)', () => {
     renderLibraryPage();
-    expect(screen.getByText(/your library is empty/i)).toBeInTheDocument();
+    expect(screen.getByText(/sua biblioteca está vazia/i)).toBeInTheDocument();
   });
 
-  it('renders the single Add cards CTA pointing to /add-cards', () => {
+  it('renders the single Add cards CTA pointing to /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /add cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cards/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
@@ -231,7 +233,7 @@ describe('LibraryPage — populated: 20 cards', () => {
     });
   });
 
-  it('renders 20 grid cells (one per library card)', async () => {
+  it('renders 20 grid cells (one per library card) with pt-BR aria-labels', async () => {
     renderLibraryPage();
     // Cells are scoped under the grid lists rendered by LibraryGrid; the
     // rail also renders its own <ul>s for class/talent/set toggles, so a
@@ -239,28 +241,28 @@ describe('LibraryPage — populated: 20 cards', () => {
     // pattern that LibraryGrid attaches to every card cell.
     await waitFor(() => {
       const cells = screen.getAllByRole('listitem', {
-        name: /Card \d+, owned: 1/,
+        name: /Card \d+, na coleção: 1/,
       });
       expect(cells).toHaveLength(20);
     });
   });
 
-  it('exposes the in-rail "Search your collection" input', () => {
+  it('exposes the in-rail "Buscar na coleção" placeholder (pt-BR)', () => {
     renderLibraryPage();
     expect(
-      screen.getByPlaceholderText(/search your collection/i),
+      screen.getByPlaceholderText(/buscar na coleção/i),
     ).toBeInTheDocument();
   });
 
-  it('exposes a header link to /add-cards', () => {
+  it('exposes a header link to /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /add cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cards/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
   it('does not show empty state', () => {
     renderLibraryPage();
-    expect(screen.queryByText(/your library is empty/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sua biblioteca está vazia/i)).not.toBeInTheDocument();
   });
 });
 
@@ -273,9 +275,9 @@ describe('LibraryPage — header navigation', () => {
     });
   });
 
-  it('exposes a single "Add cards" link in the header — sources go through /add-cards', () => {
+  it('exposes a single "Adicionar cards" link in the header — sources go through /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /add cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cards/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
@@ -363,17 +365,17 @@ describe('LibraryPage — accessibility', () => {
     });
   });
 
-  it('rail search input is labelled', () => {
+  it('rail search input is labelled (pt-BR)', () => {
     renderLibraryPage();
     const input = screen.getByLabelText(
-      /search the cards in your library by name/i,
+      /buscar cards na biblioteca por nome/i,
     );
     expect(input.tagName.toLowerCase()).toBe('input');
     expect(input).toHaveAttribute('type', 'search');
   });
 
-  it('rail filter sections are landmarked', () => {
+  it('rail filter sections are landmarked (pt-BR)', () => {
     renderLibraryPage();
-    expect(screen.getByLabelText(/library filters/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/filtros da biblioteca/i)).toBeInTheDocument();
   });
 });

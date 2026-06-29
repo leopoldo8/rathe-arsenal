@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { IVariantFetchProgress } from '../api/shopping-line';
 import styles from './ShoppingLineFetchControls.module.css';
 
@@ -24,6 +25,7 @@ export function VariantFetchCta({
   isPending,
   isError,
 }: IVariantFetchCtaProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles.ctaWrapper}>
       <button
@@ -34,14 +36,14 @@ export function VariantFetchCta({
         data-pending={String(isPending)}
         className={styles.ctaBtn}
       >
-        {isPending ? 'Starting...' : 'Get exact prices'}
+        {isPending ? t('decks.startingBtn') : t('decks.getExactPrices')}
       </button>
       {isError && (
         <span
           role="alert"
           className={styles.ctaError}
         >
-          Failed to start. Please try again.
+          {t('decks.failedToStart')}
         </span>
       )}
     </div>
@@ -57,6 +59,7 @@ interface IVariantFetchProgressProps {
 }
 
 export function VariantFetchProgress({ progress }: IVariantFetchProgressProps) {
+  const { t } = useTranslation();
   const processed = progress.completed + progress.failed;
   const current = Math.min(processed + 1, progress.total);
 
@@ -67,7 +70,7 @@ export function VariantFetchProgress({ progress }: IVariantFetchProgressProps) {
       className={styles.progress}
     >
       <span>
-        Checking card {current} of {progress.total}...
+        {t('decks.checkingCard', { current, total: progress.total })}
       </span>
     </div>
   );
@@ -88,13 +91,14 @@ export function PartialFailureNotice({
   onRetry,
   isPending,
 }: IPartialFailureNoticeProps) {
+  const { t } = useTranslation();
   const updated = progress.completed;
   const total = progress.total;
 
   return (
     <div className={styles.failureNotice}>
       <span>
-        {updated} of {total} updated &mdash; {progress.failed} failed.
+        {t('decks.partialUpdateMsg', { updated, total, failed: progress.failed })}
       </span>
       <button
         type="button"
@@ -103,7 +107,7 @@ export function PartialFailureNotice({
         data-pending={String(isPending)}
         className={styles.failureRetryBtn}
       >
-        {isPending ? 'Retrying...' : 'Retry failed'}
+        {isPending ? t('decks.retryingBtn') : t('decks.retryFailedBtn')}
       </button>
     </div>
   );

@@ -68,7 +68,7 @@ describe('AggregateCallout', () => {
   it('has aria-label "Aggregate shopping line"', () => {
     render(<AggregateCallout aggregateShoppingLine={POPULATED_AGG} />);
     expect(
-      screen.getByRole('complementary', { name: /aggregate shopping line/i }),
+      screen.getByRole('complementary', { name: /resumo de compra/i }),
     ).toBeInTheDocument();
   });
 

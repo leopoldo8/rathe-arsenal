@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -57,6 +58,7 @@ export function BreakdownSections({
   onResetSubstitute,
   pendingSubstituteId = null,
 }: IBreakdownSectionsProps): React.ReactElement {
+  const { t } = useTranslation();
   const notOwned = breakdown.notOwned ?? breakdown.missing;
 
   // Single lightbox at the section root — only one card can be expanded
@@ -78,13 +80,13 @@ export function BreakdownSections({
         <div className={styles.section__header}>
           <div className={styles.section__diamond} />
           <h2 id="section-exact" className={styles.section__title}>
-            Exact matches
+            {t('decks.exactMatches')}
           </h2>
-          <span className={styles.section__count}>{sumQuantities(breakdown.exact)} cards</span>
+          <span className={styles.section__count}>{t('decks.exactMatchesCount', { count: sumQuantities(breakdown.exact) })}</span>
         </div>
 
         {breakdown.exact.length === 0 ? (
-          <p className={styles.section__empty}>No exact matches</p>
+          <p className={styles.section__empty}>{t('decks.noExactMatches')}</p>
         ) : (
           <div className={styles.cardGrid}>
             {breakdown.exact.map((entry) => (
@@ -125,17 +127,17 @@ export function BreakdownSections({
         <div className={styles.section__header}>
           <div className={styles.section__diamond} />
           <h2 id="section-subs" className={styles.section__title}>
-            Swaps
+            {t('decks.swaps')}
           </h2>
           <span className={styles.section__count}>
-            {breakdown.substituted.length} active
+            {t('decks.activeSwapsCount', { count: breakdown.substituted.length })}
           </span>
         </div>
 
         {breakdown.substituted.length === 0 ? (
-          <p className={styles.section__empty}>No swaps needed</p>
+          <p className={styles.section__empty}>{t('decks.noSwapsNeeded')}</p>
         ) : (
-          <ul className={styles.subList} aria-label="Swap proposals">
+          <ul className={styles.subList} aria-label={t('decks.swapProposalsAria')}>
             {breakdown.substituted.map((entry) => {
               const subId = entry.match.substitute.cardIdentifier;
               const decision = resolveDecision(decisions, subId);
@@ -161,22 +163,22 @@ export function BreakdownSections({
         <div className={styles.section__header}>
           <div className={[styles.section__diamond, styles['section__diamond--low']].join(' ')} />
           <h2 id="section-not-owned" className={styles.section__title}>
-            Not owned
+            {t('decks.notOwned')}
           </h2>
-          <span className={styles.section__count}>{sumQuantities(notOwned)} cards</span>
+          <span className={styles.section__count}>{t('decks.exactMatchesCount', { count: sumQuantities(notOwned) })}</span>
         </div>
 
         {notOwned.length === 0 ? (
           <div className={styles.emptyAllPlayable}>
             <p className={styles.emptyAllPlayable__title}>
-              All playable — no substitutions needed.
+              {t('decks.allPlayable')}
             </p>
             <p className={styles.emptyAllPlayable__sub}>
-              Your collection covers every slot in this deck.
+              {t('decks.collectionCoversAll')}
             </p>
           </div>
         ) : (
-          <ul className={styles.missList} aria-label="Cards not in collection">
+          <ul className={styles.missList} aria-label={t('decks.cardsNotInCollectionAria')}>
             {notOwned.map((entry) => (
               <li
                 key={`${entry.cardIdentifier}-${entry.slot}`}

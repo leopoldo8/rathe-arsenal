@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useDecksQuery, useUntrackDeckMutation } from '../../api/decks';
 import { PopulatedHomeHero } from '../../components/home/PopulatedHomeHero';
 import { StatusShelves } from '../../components/home/StatusShelves';
@@ -32,6 +33,7 @@ export const Route = createFileRoute('/_auth/home')({
  * at least one of the active tags are shown in the StatusShelves.
  */
 function HomePage(): React.ReactElement {
+  const { t } = useTranslation();
   const decksQuery = useDecksQuery();
   const untrackMutation = useUntrackDeckMutation();
   const { tag: activeFilterTags } = Route.useSearch();
@@ -62,7 +64,7 @@ function HomePage(): React.ReactElement {
   // Filter activeFilterTags to only include tags that exist in the user's decks
   // (unknown tags from hand-crafted URLs are silently ignored).
   const validActiveFilterTags = useMemo(
-    () => activeFilterTags.filter((t) => availableTags.includes(t)),
+    () => activeFilterTags.filter((tag) => availableTags.includes(tag)),
     [activeFilterTags, availableTags],
   );
 
@@ -88,7 +90,7 @@ function HomePage(): React.ReactElement {
   if (decksQuery.isError) {
     return (
       <section role="alert" className={styles.errorSection}>
-        <h2 className={styles.errorHeading}>Something went wrong loading your decks</h2>
+        <h2 className={styles.errorHeading}>{t('home.errorHeading')}</h2>
         <p className={styles.errorMessage}>
           {(decksQuery.error as Error).message}
         </p>
@@ -97,7 +99,7 @@ function HomePage(): React.ReactElement {
           size="sm"
           onClick={() => decksQuery.refetch()}
         >
-          Retry
+          {t('home.retryButton')}
         </Button>
       </section>
     );
@@ -145,32 +147,33 @@ function HomePage(): React.ReactElement {
  * while the decks query is in-flight.
  */
 function HomeSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section aria-busy="true" aria-live="polite" className={styles.skeleton}>
       {/* Hero skeleton */}
       <div className={styles.skeletonHero}>
         <div className={styles.skeletonHeroLeft}>
-          <Skeleton width="120px" height="14px" aria-label="Loading eyebrow" />
-          <Skeleton width="200px" height="36px" aria-label="Loading headline" />
-          <Skeleton width="280px" height="16px" aria-label="Loading summary" />
+          <Skeleton width="120px" height="14px" aria-label={t('home.loadingEyebrow')} />
+          <Skeleton width="200px" height="36px" aria-label={t('home.loadingHeadline')} />
+          <Skeleton width="280px" height="16px" aria-label={t('home.loadingSummary')} />
         </div>
         <div className={styles.skeletonStats}>
-          <Skeleton width="60px" height="56px" aria-label="Loading stat" />
-          <Skeleton width="60px" height="56px" aria-label="Loading stat" />
-          <Skeleton width="80px" height="56px" aria-label="Loading stat" />
+          <Skeleton width="60px" height="56px" aria-label={t('home.loadingStat')} />
+          <Skeleton width="60px" height="56px" aria-label={t('home.loadingStat')} />
+          <Skeleton width="80px" height="56px" aria-label={t('home.loadingStat')} />
         </div>
       </div>
 
       {/* Shelf skeletons */}
       {([0, 1] as const).map((i) => (
         <div key={i} className={styles.skeletonShelf}>
-          <Skeleton width="160px" height="20px" aria-label="Loading shelf heading" />
+          <Skeleton width="160px" height="20px" aria-label={t('home.loadingShelfHeading')} />
           <div className={styles.skeletonGrid}>
             {([0, 1, 2] as const).map((j) => (
               <div key={j} className={styles.skeletonCard}>
-                <Skeleton width="70%" height="18px" aria-label="Loading deck name" />
-                <Skeleton width="50%" height="14px" aria-label="Loading deck meta" />
-                <Skeleton width="80px" height="32px" aria-label="Loading readiness" />
+                <Skeleton width="70%" height="18px" aria-label={t('home.loadingDeckName')} />
+                <Skeleton width="50%" height="14px" aria-label={t('home.loadingDeckMeta')} />
+                <Skeleton width="80px" height="32px" aria-label={t('home.loadingReadiness')} />
               </div>
             ))}
           </div>

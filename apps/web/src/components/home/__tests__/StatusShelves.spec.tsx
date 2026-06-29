@@ -117,11 +117,11 @@ describe('StatusShelves', () => {
     renderShelves(decks);
 
     // Use level: 2 to match only the shelf h2 headings, not status labels in DeckCard rows
-    expect(screen.getByRole('heading', { name: /active/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /ready/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /building/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /idea/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /retired/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ativo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pronto/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /construindo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ideia/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /aposentado/i, level: 2 })).toBeInTheDocument();
   });
 
   it('skips empty status groups', () => {
@@ -129,11 +129,11 @@ describe('StatusShelves', () => {
     renderShelves(decks);
 
     // Use level: 2 to match only the shelf h2 headings
-    expect(screen.getByRole('heading', { name: /active/i, level: 2 })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /ready/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /building/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /idea/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /retired/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ativo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /pronto/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /construindo/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /ideia/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /aposentado/i, level: 2 })).not.toBeInTheDocument();
   });
 
   it('retired shelf starts collapsed by default', () => {
@@ -148,7 +148,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'My Retired Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     fireEvent.click(toggle);
 
     expect(screen.getByText('My Retired Deck')).toBeInTheDocument();
@@ -158,7 +158,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'My Retired Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     fireEvent.click(toggle);
 
     expect(localStorageMock['ra-shelf-retired-expanded']).toBe('true');
@@ -177,7 +177,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -212,14 +212,14 @@ describe('StatusShelves', () => {
       ];
       renderShelves(decks);
 
-      expect(screen.getByText(/all your decks are retired/i)).toBeInTheDocument();
+      expect(screen.getByText(/todos os seus decks estão aposentados/i)).toBeInTheDocument();
     });
 
     it('empty-state block has "Expand to view" button that expands the shelf', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const expandBtn = screen.getByRole('button', { name: /expand to view/i });
+      const expandBtn = screen.getByRole('button', { name: /expandir para ver/i });
       expect(expandBtn).toBeInTheDocument();
       fireEvent.click(expandBtn);
       expect(screen.getByText('Deck A')).toBeInTheDocument();
@@ -229,7 +229,7 @@ describe('StatusShelves', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const link = screen.getByRole('link', { name: /add new deck/i });
+      const link = screen.getByRole('link', { name: /adicionar novo deck/i });
       expect(link).toHaveAttribute('href', '/decks/new');
     });
 
@@ -237,15 +237,15 @@ describe('StatusShelves', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+      const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
       fireEvent.click(toggle);
 
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
 
     it('does NOT render empty-state block when user has zero decks total', () => {
       renderShelves([]);
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
 
     it('does NOT render empty-state block when some decks are non-retired', () => {
@@ -255,7 +255,7 @@ describe('StatusShelves', () => {
       ];
       renderShelves(decks);
 
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
   });
 
@@ -293,7 +293,7 @@ describe('StatusShelves', () => {
 
       expect(screen.getByText('Active Deck')).toBeInTheDocument();
       // building shelf should be hidden (no casual deck matches 'league')
-      expect(screen.queryByRole('heading', { name: /building/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /construindo/i })).not.toBeInTheDocument();
     });
 
     it('ORs two active filter tags', () => {

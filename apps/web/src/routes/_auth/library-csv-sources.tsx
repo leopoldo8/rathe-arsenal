@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useCsvSourcesQuery } from '../../api/csv-sources';
 import { CsvSourceList } from '../../components/csv-sources/CsvSourceList';
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/_auth/library-csv-sources')({
 });
 
 function LibraryCsvSourcesPage(): React.ReactElement {
+  const { t } = useTranslation();
   const sourcesQuery = useCsvSourcesQuery();
 
   if (sourcesQuery.isLoading) {
@@ -26,19 +28,17 @@ function LibraryCsvSourcesPage(): React.ReactElement {
   return (
     <div className={styles.page}>
       <Link to="/add-cards" className={styles.backLink}>
-        <span aria-hidden="true">←</span> Add cards
+        <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
       </Link>
 
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>
-            <span aria-hidden="true">◆</span> Imports management
+            <span aria-hidden="true">◆</span> {t('csvSources.csvSourcesEyebrow')}
           </p>
-          <h1 className={styles.title}>Library sources</h1>
+          <h1 className={styles.title}>{t('csvSources.csvSourcesTitle')}</h1>
           <p className={styles.subtitle}>
-            Each source is a snapshot of cards you've imported — toggle one off
-            to remove its contribution from your library without losing the
-            file. Manual entries and Fabrary imports show up here too.
+            {t('csvSources.csvSourcesSubtitle')}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -47,7 +47,7 @@ function LibraryCsvSourcesPage(): React.ReactElement {
             search={DEFAULT_LIBRARY_SEARCH}
             className={styles.viewLibraryLink}
           >
-            <span aria-hidden="true">→</span> View library
+            {t('csvSources.csvSourcesViewLibraryLink')}
           </Link>
           <UploadCsvButton />
         </div>
@@ -63,9 +63,9 @@ function LibraryCsvSourcesPage(): React.ReactElement {
         {sources.length === 0 ? (
           <CsvSourcesEmptyState
             onUpload={() => {
-              // Programmatically trigger the upload button's hidden input.
+              // Use a stable data attribute to find the upload trigger regardless of locale.
               const fileInputLabel = document.querySelector<HTMLLabelElement>(
-                'label[aria-label="Upload CSV file"]',
+                'label[data-upload-csv-trigger="true"]',
               );
               fileInputLabel?.click();
             }}
@@ -76,13 +76,13 @@ function LibraryCsvSourcesPage(): React.ReactElement {
 
         {sourcesQuery.isError && (
           <div role="alert" className={styles.errorBanner}>
-            Failed to load library sources.{' '}
+            {t('csvSources.csvSourcesErrorBanner')}{' '}
             <button
               type="button"
               className={styles.retryBtn}
               onClick={() => sourcesQuery.refetch()}
             >
-              Retry
+              {t('csvSources.csvSourcesRetryButton')}
             </button>
           </div>
         )}
@@ -92,23 +92,24 @@ function LibraryCsvSourcesPage(): React.ReactElement {
 }
 
 function CsvSourcesSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <div className={styles.page} aria-busy="true" aria-live="polite">
-      <Skeleton width="120px" height="14px" aria-label="Loading back link" />
+      <Skeleton width="120px" height="14px" aria-label={t('common.loadingBackLink')} />
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
-          <Skeleton width="160px" height="14px" aria-label="Loading eyebrow" />
-          <Skeleton width="240px" height="36px" aria-label="Loading title" />
-          <Skeleton width="100%" height="48px" aria-label="Loading subtitle" />
+          <Skeleton width="160px" height="14px" aria-label={t('common.loadingEyebrow')} />
+          <Skeleton width="240px" height="36px" aria-label={t('common.loadingTitle')} />
+          <Skeleton width="100%" height="48px" aria-label={t('common.loadingSubtitle')} />
         </div>
       </header>
       <main className={styles.content}>
         <div className={styles.skeletonRows}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={styles.skeletonRow}>
-              <Skeleton width="36px" height="20px" aria-label="Loading toggle" />
-              <Skeleton width="60%" height="20px" aria-label="Loading label" />
-              <Skeleton width="80px" height="16px" aria-label="Loading count" />
+              <Skeleton width="36px" height="20px" aria-label={t('common.loadingToggle')} />
+              <Skeleton width="60%" height="20px" aria-label={t('common.loadingLabel')} />
+              <Skeleton width="80px" height="16px" aria-label={t('common.loadingCount')} />
             </div>
           ))}
         </div>

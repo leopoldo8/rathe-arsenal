@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { useToast } from '../ui/Toast/useToast';
 import { patchUserSettings } from '../../api/user-settings';
@@ -23,6 +24,7 @@ function getInitialTheme(): TTheme {
  *     is out of Plan A scope and planned as follow-up.
  */
 export function ThemeToggle(): React.ReactElement {
+  const { t } = useTranslation();
   const [theme, setTheme] = useState<TTheme>(getInitialTheme);
   const auth = useAuth();
   const toast = useToast();
@@ -50,7 +52,7 @@ export function ThemeToggle(): React.ReactElement {
       console.error('[theme-toggle] server PATCH failed', err);
       toast.show({
         kind: 'error',
-        message: "Saved locally — didn't reach the server. Will retry on next change.",
+        message: t('shell.themeServerSyncError'),
       });
     });
   }
@@ -60,12 +62,12 @@ export function ThemeToggle(): React.ReactElement {
       type="single"
       value={theme}
       onValueChange={handleThemeChange}
-      aria-label="Theme"
+      aria-label={t('shell.themeAriaLabel')}
       className={styles.root}
     >
       <ToggleGroup.Item
         value="light"
-        aria-label="Light theme"
+        aria-label={t('shell.themeLightAriaLabel')}
         className={styles.item}
         data-testid="theme-toggle-light"
       >
@@ -94,7 +96,7 @@ export function ThemeToggle(): React.ReactElement {
       </ToggleGroup.Item>
       <ToggleGroup.Item
         value="dark"
-        aria-label="Dark theme"
+        aria-label={t('shell.themeDarkAriaLabel')}
         className={styles.item}
         data-testid="theme-toggle-dark"
       >

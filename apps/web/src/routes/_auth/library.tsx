@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useLibraryQuery } from '../../api/library';
 import { LibraryStatsBar } from '../../components/library/LibraryStatsBar';
@@ -38,6 +39,7 @@ interface ILibraryPageInnerProps {
 export function LibraryPageInner({
   initialSearch = DEFAULT_LIBRARY_SEARCH,
 }: ILibraryPageInnerProps): React.ReactElement {
+  const { t } = useTranslation();
   const libraryQuery = useLibraryQuery();
   const navigate = useNavigate();
 
@@ -106,10 +108,10 @@ export function LibraryPageInner({
   if (libraryQuery.isError) {
     return (
       <section role="alert" className={styles.errorSection}>
-        <h2 className={styles.errorHeading}>Something went wrong loading your library</h2>
+        <h2 className={styles.errorHeading}>{t('library.errorHeading')}</h2>
         <p className={styles.errorMessage}>{(libraryQuery.error as Error).message}</p>
         <Button variant="secondary" size="sm" onClick={() => libraryQuery.refetch()}>
-          Retry
+          {t('library.retryButton')}
         </Button>
       </section>
     );
@@ -120,8 +122,8 @@ export function LibraryPageInner({
     return (
       <div className={styles.page}>
         <header className={styles.pageHeader}>
-          <p className={styles.eyebrow}>Your collection</p>
-          <h1 className={styles.title}>Library</h1>
+          <p className={styles.eyebrow}>{t('library.collectionEyebrow')}</p>
+          <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
         </header>
         {/* The recently-added banner is mounted on the empty path too so
             an import that didn't resolve to any countable cards still
@@ -141,29 +143,29 @@ export function LibraryPageInner({
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>
             <span className={styles.eyebrowNum}>{stats?.uniqueCount ?? 0}</span>{' '}
-            unique
+            {t('library.uniqueEyebrow')}
             <span className={styles.eyebrowSep} aria-hidden="true">
               ·
             </span>
             <span className={styles.eyebrowNum}>{stats?.totalCopies ?? 0}</span>{' '}
-            copies
+            {t('library.copiesEyebrow')}
           </p>
-          <h1 className={styles.title}>Library</h1>
+          <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
         </div>
         <div className={styles.headerActions}>
           <button
             type="button"
             className={styles.filtersButton}
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open filters"
+            aria-label={t('library.openFiltersAriaLabel')}
           >
-            Filters
+            {t('library.filtersButton')}
             {activeFilterCount > 0 && (
               <span className={styles.filtersButtonCount}>{activeFilterCount}</span>
             )}
           </button>
           <Link to="/add-cards" className={styles.addCardsLink}>
-            <span aria-hidden="true">→</span> Add cards
+            <span aria-hidden="true">→</span> {t('library.addCardsLink')}
           </Link>
         </div>
       </header>
@@ -187,7 +189,7 @@ export function LibraryPageInner({
           <div className={styles.gridRow}>
             {filteredCards.length === 0 ? (
               <div className={styles.noResults} role="status">
-                <p className={styles.noResultsTitle}>No cards match this combination.</p>
+                <p className={styles.noResultsTitle}>{t('library.noMatchTitle')}</p>
                 <button
                   type="button"
                   className={styles.noResultsClear}
@@ -202,7 +204,7 @@ export function LibraryPageInner({
                     });
                   }}
                 >
-                  Clear filters
+                  {t('library.clearFiltersButton')}
                 </button>
               </div>
             ) : (
@@ -246,28 +248,29 @@ export function LibraryPage(): React.ReactElement {
 // ---------------------------------------------------------------------------
 
 function LibrarySkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section aria-busy="true" aria-live="polite" className={styles.skeleton}>
       <div className={styles.skeletonHeader}>
-        <Skeleton width="120px" height="14px" aria-label="Loading eyebrow" />
-        <Skeleton width="200px" height="36px" aria-label="Loading title" />
+        <Skeleton width="120px" height="14px" aria-label={t('common.loadingEyebrow')} />
+        <Skeleton width="200px" height="36px" aria-label={t('common.loadingTitle')} />
       </div>
       <div className={styles.skeletonLayout}>
         <div className={styles.skeletonRail}>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={styles.skeletonRailSection}>
-              <Skeleton width="80px" height="11px" aria-label="Loading filter label" />
-              <Skeleton width="100%" height="32px" aria-label="Loading filter input" />
+              <Skeleton width="80px" height="11px" aria-label={t('common.loadingFilterLabel')} />
+              <Skeleton width="100%" height="32px" aria-label={t('common.loadingFilterInput')} />
             </div>
           ))}
         </div>
         <div className={styles.skeletonGrid}>
-          <Skeleton width="100%" height="52px" aria-label="Loading stats" />
+          <Skeleton width="100%" height="52px" aria-label={t('common.loadingStats')} />
           <div className={styles.skeletonGridCells}>
             {Array.from({ length: 16 }).map((_, i) => (
               <div key={i} className={styles.skeletonCell}>
-                <Skeleton width="100%" height="160px" aria-label="Loading card" />
-                <Skeleton width="80%" height="12px" aria-label="Loading card name" />
+                <Skeleton width="100%" height="160px" aria-label={t('common.loadingCard')} />
+                <Skeleton width="80%" height="12px" aria-label={t('common.loadingCardName')} />
               </div>
             ))}
           </div>

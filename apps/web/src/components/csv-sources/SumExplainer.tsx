@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import styles from './SumExplainer.module.css';
 
@@ -9,6 +10,7 @@ import styles from './SumExplainer.module.css';
  * Uses Radix `Collapsible` for accessibility (keyboard + screen-reader).
  */
 export function SumExplainer(): React.ReactElement {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -27,20 +29,18 @@ export function SumExplainer(): React.ReactElement {
             <span className={styles.triggerIcon} aria-hidden="true">
               {open ? '▾' : '▸'}
             </span>
-            How duplicate cards are handled
+            {t('csvSources.sumExplainerTrigger')}
           </button>
         </Collapsible.Trigger>
       </div>
 
       <Collapsible.Content className={styles.content}>
         <p className={styles.body}>
-          Cards that appear in multiple CSV sources are <strong>summed</strong>,
-          not overwritten. Your total owned copies reflect the combined quantities
-          across all active sources.
+          {t('csvSources.sumExplainerBodyPre')} <strong>{t('csvSources.sumExplainerBodyHighlight')}</strong>{t('csvSources.sumExplainerBodyPost')}
         </p>
 
         {/* Visual two-box-plus-total diagram */}
-        <div className={styles.diagram} aria-label="Sum diagram: Source A + Source B = Total">
+        <div className={styles.diagram} aria-label={t('csvSources.sumExplainerDiagramAriaLabel')}>
           <div className={styles.diagramBox}>
             <span className={styles.diagramLabel}>Source A</span>
             <span className={styles.diagramValue}>3×</span>
@@ -65,8 +65,7 @@ export function SumExplainer(): React.ReactElement {
         </div>
 
         <p className={styles.footnote}>
-          To avoid double-counting physical cards you own, deactivate sources you no
-          longer need rather than deleting them.
+          {t('csvSources.sumExplainerFootnote')}
         </p>
       </Collapsible.Content>
     </Collapsible.Root>

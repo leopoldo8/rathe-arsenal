@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVariantJobsQuery, hasActiveJobs } from '../../api/variant-jobs';
 import { VariantQueueDrawer } from './VariantQueueDrawer';
 import { subscribeOpenVariantQueueDrawer } from './variantQueueDrawerBus';
@@ -13,6 +14,7 @@ import styles from './VariantQueuePill.module.css';
  * Self-hides when there is nothing to show.
  */
 export function VariantQueuePill(): React.ReactElement | null {
+  const { t } = useTranslation();
   const { data } = useVariantJobsQuery();
   const [open, setOpen] = useState(false);
 
@@ -27,10 +29,10 @@ export function VariantQueuePill(): React.ReactElement | null {
 
   const activeCount = data.jobs.filter((j) => j.status === 'pending' || j.status === 'running').length;
   const label = active
-    ? `Price fetch queue — ${activeCount} in progress`
+    ? t('variantQueue.pillActive', { count: activeCount })
     : anyFailed
-      ? 'Price fetch queue — finished with errors'
-      : 'Price fetch queue — done';
+      ? t('variantQueue.pillFailed')
+      : t('variantQueue.pillDone');
 
   return (
     <div className={styles.root}>

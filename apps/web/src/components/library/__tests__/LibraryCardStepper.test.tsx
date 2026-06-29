@@ -57,7 +57,7 @@ beforeEach(() => {
 describe('LibraryCardStepper — base controls', () => {
   it('disables the − button when no source is contributing', () => {
     render(<LibraryCardStepper card={makeCard({ contributions: [] })} />);
-    expect(screen.getByRole('button', { name: /Remove one/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Remover um/i })).toBeDisabled();
   });
 
   it('enables the − button when at least one source contributes', () => {
@@ -71,7 +71,7 @@ describe('LibraryCardStepper — base controls', () => {
         })}
       />,
     );
-    expect(screen.getByRole('button', { name: /Remove one/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Remover um/i })).not.toBeDisabled();
   });
 
   it('disables the + button when ownedQuantity already reached the cap', () => {
@@ -81,7 +81,7 @@ describe('LibraryCardStepper — base controls', () => {
         maxQuantity={20}
       />,
     );
-    expect(screen.getByRole('button', { name: /Add one/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Adicionar um/i })).toBeDisabled();
   });
 });
 
@@ -97,7 +97,7 @@ describe('LibraryCardStepper — single-source decrement', () => {
         })}
       />,
     );
-    await userEvent.click(screen.getByRole('button', { name: /Remove one/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
     expect(decrementMutate).toHaveBeenCalledWith({
       cardIdentifier: 'WTR001',
       sourceId: 's1',
@@ -118,7 +118,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
 
   it('opens a picker menu instead of decrementing immediately', async () => {
     render(<LibraryCardStepper card={MULTI_SOURCE_CARD} />);
-    await userEvent.click(screen.getByRole('button', { name: /Remove one/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
     expect(decrementMutate).not.toHaveBeenCalled();
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(
@@ -131,7 +131,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
 
   it('toggles aria-expanded on the trigger as the picker opens and closes', async () => {
     render(<LibraryCardStepper card={MULTI_SOURCE_CARD} />);
-    const trigger = screen.getByRole('button', { name: /Remove one/i });
+    const trigger = screen.getByRole('button', { name: /Remover um/i });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -139,7 +139,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
 
   it('decrements the picked source on row click', async () => {
     render(<LibraryCardStepper card={MULTI_SOURCE_CARD} />);
-    await userEvent.click(screen.getByRole('button', { name: /Remove one/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
     await userEvent.click(
       screen.getByRole('menuitem', { name: /Fabrary: Kayo Brute Bash/i }),
     );
@@ -154,7 +154,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
 describe('LibraryCardStepper — add', () => {
   it('mutates +1 manual on click', async () => {
     render(<LibraryCardStepper card={makeCard({ ownedQuantity: 0 })} />);
-    await userEvent.click(screen.getByRole('button', { name: /Add one/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Adicionar um/i }));
     expect(addMutate).toHaveBeenCalledWith({
       cardIdentifier: 'WTR001',
       quantity: 1,

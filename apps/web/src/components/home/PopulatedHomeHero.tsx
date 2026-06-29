@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem } from '../../api/decks';
 import styles from './PopulatedHomeHero.module.css';
 
@@ -66,6 +67,7 @@ export function PopulatedHomeHero({
   decks,
   totalCardsMissing,
 }: IPopulatedHomeHeroProps): React.ReactElement {
+  const { t } = useTranslation();
   // Non-retired decks — all three stats are scoped to this subset (U9 R12a)
   const activeDecks = decks.filter((d) => d.status !== 'retired');
 
@@ -87,32 +89,32 @@ export function PopulatedHomeHero({
   return (
     <header className={styles.hero}>
       <div className={styles.heroLeft}>
-        <div className={styles.eyebrow}>Your armory</div>
-        <h1 className={styles.headline}>Your Decks</h1>
+        <div className={styles.eyebrow}>{t('home.armoryEyebrow')}</div>
+        <h1 className={styles.headline}>{t('home.yourDecksHeading')}</h1>
         <p className={styles.summary}>
           {readyCount > 0 && (
             <span className={styles.summaryReady}>
-              {readyCount} ready to play
+              {t('home.summaryReady', { count: readyCount })}
             </span>
           )}
           {almostCount > 0 && (
             <span className={styles.summaryAlmost}>
-              {readyCount > 0 ? ' · ' : ''}{almostCount} almost there
+              {readyCount > 0 ? ' · ' : ''}{t('home.summaryAlmost', { count: almostCount })}
             </span>
           )}
           {needsCount > 0 && (
             <span className={styles.summaryNeeds}>
-              {(readyCount > 0 || almostCount > 0) ? ' · ' : ''}{needsCount} to build
+              {(readyCount > 0 || almostCount > 0) ? ' · ' : ''}{t('home.summaryNeeds', { count: needsCount })}
             </span>
           )}
         </p>
       </div>
 
-      <div className={styles.heroStats} aria-label="Collection statistics">
+      <div className={styles.heroStats} aria-label={t('home.collectionStatsLabel')}>
         {/* Stat 1: Active (non-retired) deck count — secondary */}
         <div className={styles.stat}>
           <div className={styles.statNumber}>{activeLibraryCount}</div>
-          <div className={styles.statLabel}>Decks</div>
+          <div className={styles.statLabel}>{t('home.decksStatLabel')}</div>
         </div>
 
         {/* Stat 2: Average readiness over non-retired decks — secondary */}
@@ -120,7 +122,7 @@ export function PopulatedHomeHero({
           <div className={styles.statNumber}>
             {avgReadiness !== null ? `${avgReadiness}%` : '--'}
           </div>
-          <div className={styles.statLabel}>Avg ready</div>
+          <div className={styles.statLabel}>{t('home.avgReadyStatLabel')}</div>
         </div>
 
         {/* Stat 3: Cards missing — same secondary treatment as the other
@@ -130,7 +132,7 @@ export function PopulatedHomeHero({
         {totalCardsMissing !== null && (
           <div className={styles.stat}>
             <div className={styles.statNumber}>{totalCardsMissing}</div>
-            <div className={styles.statLabel}>Cards missing</div>
+            <div className={styles.statLabel}>{t('home.cardsMissingStatLabel')}</div>
           </div>
         )}
 
@@ -138,7 +140,7 @@ export function PopulatedHomeHero({
             Uses TanStack <Link> instead of a bare <a>. */}
         <div className={styles.importAction}>
           <Link to="/decks/new" className={styles.trackLink}>
-            Add new deck
+            {t('home.addNewDeckCta')}
           </Link>
         </div>
       </div>

@@ -79,7 +79,7 @@ describe('StatusDropdown — ARIA', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Change deck status — currently Idea',
+      'Alterar status do baralho — atualmente Ideia',
     );
   });
 
@@ -88,7 +88,7 @@ describe('StatusDropdown — ARIA', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Change deck status — currently Active',
+      'Alterar status do baralho — atualmente Ativo',
     );
   });
 
@@ -96,7 +96,7 @@ describe('StatusDropdown — ARIA', () => {
     renderDropdown('building');
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-label',
-      'Change deck status — currently Building',
+      'Alterar status do baralho — atualmente Construindo',
     );
   });
 
@@ -105,7 +105,7 @@ describe('StatusDropdown — ARIA', () => {
     // The trigger should contain the status label text
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     // StatusBullet renders the label as a span
-    expect(screen.getByText('Ready')).toBeInTheDocument();
+    expect(screen.getByText('Pronto')).toBeInTheDocument();
   });
 });
 
@@ -142,7 +142,7 @@ describe('StatusDropdown — happy path (opening dropdown)', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Active'),
+      el.textContent?.includes('Ativo'),
     );
     expect(activeOption).toBeDefined();
     fireEvent.click(activeOption!);
@@ -159,14 +159,14 @@ describe('StatusDropdown — happy path (opening dropdown)', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Active'),
+      el.textContent?.includes('Ativo'),
     );
     fireEvent.click(activeOption!);
 
     await waitFor(() => {
       expect(screen.getByRole('combobox')).toHaveAttribute(
         'aria-label',
-        'Change deck status — currently Active',
+        'Alterar status do baralho — atualmente Ativo',
       );
     });
   });
@@ -203,7 +203,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Active'),
+      el.textContent?.includes('Ativo'),
     );
     fireEvent.click(activeOption!);
 
@@ -212,7 +212,7 @@ describe('StatusDropdown — error path', () => {
     expect(spies.toast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining('Could not update status'),
+        message: expect.stringContaining('Não foi possível atualizar o status'),
         retry: expect.any(Function),
         returnFocusRef: expect.any(Object),
       }),
@@ -225,14 +225,14 @@ describe('StatusDropdown — error path', () => {
 
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Change deck status — currently Idea',
+      'Alterar status do baralho — atualmente Ideia',
     );
 
     // Select Active
     fireEvent.click(trigger);
     await waitFor(() => screen.getAllByRole('option').length === 5);
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Active'),
+      el.textContent?.includes('Ativo'),
     );
     fireEvent.click(activeOption!);
 
@@ -240,7 +240,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => {
       expect(trigger).toHaveAttribute(
         'aria-label',
-        'Change deck status — currently Active',
+        'Alterar status do baralho — atualmente Ativo',
       );
     });
 
@@ -250,7 +250,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => {
       expect(trigger).toHaveAttribute(
         'aria-label',
-        'Change deck status — currently Idea',
+        'Alterar status do baralho — atualmente Ideia',
       );
     });
   });
@@ -260,7 +260,7 @@ describe('StatusDropdown — error path', () => {
     fireEvent.click(screen.getByRole('combobox'));
     await waitFor(() => screen.getAllByRole('option').length === 5);
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Active'),
+      el.textContent?.includes('Ativo'),
     );
     fireEvent.click(activeOption!);
 

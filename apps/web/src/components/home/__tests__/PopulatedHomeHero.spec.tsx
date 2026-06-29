@@ -72,7 +72,7 @@ const THREE_DECKS = [makeDeck(90, 1), makeDeck(65, 2), makeDeck(30, 3)];
 describe('PopulatedHomeHero', () => {
   it('renders "Your Decks" heading', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
-    expect(screen.getByRole('heading', { name: /your decks/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /seus decks/i })).toBeInTheDocument();
   });
 
   it('renders deck count stat', () => {
@@ -85,7 +85,7 @@ describe('PopulatedHomeHero', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
     // avg of 90, 65, 30 = 61.67, Math.round => 62
     expect(screen.getByText('62%')).toBeInTheDocument();
-    expect(screen.getByText('Avg ready')).toBeInTheDocument();
+    expect(screen.getByText('Média pronto')).toBeInTheDocument();
   });
 
   it('renders cards missing stat with the same treatment as other stats', () => {
@@ -94,12 +94,12 @@ describe('PopulatedHomeHero', () => {
     // Stat 3 reads as a uniform triplet with stats 1 & 2 — no primary
     // treatment class anymore.
     expect(missingEl).not.toHaveClass('ra-hero-primary-stat');
-    expect(screen.getByText('Cards missing')).toBeInTheDocument();
+    expect(screen.getByText('Cards faltando')).toBeInTheDocument();
   });
 
   it('does not render cards missing stat when totalCardsMissing is null', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
-    expect(screen.queryByText('Cards missing')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cards faltando')).not.toBeInTheDocument();
   });
 
   it('does not apply .ra-readiness-display to any hero stat number', () => {
@@ -113,9 +113,9 @@ describe('PopulatedHomeHero', () => {
 
   it('renders summary text reflecting tier counts', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
-    expect(screen.getByText(/1 ready to play/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 almost there/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 to build/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 prontos para jogar/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 quase lá/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 para montar/i)).toBeInTheDocument();
   });
 
   it('renders "--" avg readiness when no deck has a snapshot', () => {
@@ -128,7 +128,7 @@ describe('PopulatedHomeHero', () => {
 
   it('renders "Add new deck" CTA linking to /decks/new (renamed from Track new deck per R44)', () => {
     render(<PopulatedHomeHero decks={THREE_DECKS} totalCardsMissing={null} />);
-    const cta = screen.getByRole('link', { name: /add new deck/i });
+    const cta = screen.getByRole('link', { name: /adicionar novo deck/i });
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveAttribute('href', '/decks/new');
   });

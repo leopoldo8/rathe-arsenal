@@ -200,7 +200,7 @@ describe('DecksNewPage — /decks/new', () => {
   it('renders heading "Add new deck"', () => {
     renderPage();
     expect(
-      screen.getByRole('heading', { name: /add new deck/i }),
+      screen.getByRole('heading', { name: /adicionar novo baralho/i }),
     ).toBeInTheDocument();
   });
 
@@ -219,7 +219,7 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('renders the back-to-home link', () => {
     renderPage();
-    const back = screen.getByRole('link', { name: /home/i });
+    const back = screen.getByRole('link', { name: /início/i });
     expect(back).toHaveAttribute('href', '/home');
   });
 
@@ -229,19 +229,19 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('ImportFabraryCard: renders the Fabrary URL input', () => {
     renderPage();
-    expect(screen.getByLabelText(/Fabrary deck URL/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL do baralho do Fabrary/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /track deck/i }),
+      screen.getByRole('button', { name: /rastrear baralho/i }),
     ).toBeInTheDocument();
   });
 
   it('ImportFabraryCard: calls import mutation with correct payload on valid URL', async () => {
     renderPage();
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
     expect(importMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         urls: ['https://fabrary.net/decks/01HABCDEFG12345'],
@@ -257,11 +257,11 @@ describe('DecksNewPage — /decks/new', () => {
       },
     );
     renderPage();
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.objectContaining({
         to: '/decks/$deckId',
@@ -273,12 +273,12 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('ImportFabraryCard: rejects an invalid URL without calling the mutation', async () => {
     renderPage();
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
     expect(importMutate).not.toHaveBeenCalled();
     expect(
-      screen.getByText(/Not a valid Fabrary deck URL/i),
+      screen.getByText(/Não é uma URL de baralho Fabrary válida/i),
     ).toBeInTheDocument();
   });
 
@@ -289,21 +289,21 @@ describe('DecksNewPage — /decks/new', () => {
       },
     );
     renderPage();
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
     expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
   });
 
   it('ImportFabraryCard: does not opt into inventory seeding', async () => {
     renderPage();
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /track deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
     const [payload] = importMutate.mock.calls[0] as [
       { seedInventory?: boolean },
     ];

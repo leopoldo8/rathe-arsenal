@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/useAuth';
+import i18n from '../i18n';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -12,6 +13,7 @@ export function useApiClient(): <T>(path: string, init?: RequestInit) => Promise
   return async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     if (token) headers.set('Authorization', `Bearer ${token}`);
+    if (!headers.has('Accept-Language')) headers.set('Accept-Language', i18n.language);
     // Default Content-Type to application/json only for serialised bodies.
     // FormData must be left untouched so the browser can attach the multipart
     // boundary; without that, multer/NestJS rejects the upload as malformed

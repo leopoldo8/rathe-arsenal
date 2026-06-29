@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import styles from './DeckDetailSkeleton.module.css';
 
@@ -16,46 +17,48 @@ import styles from './DeckDetailSkeleton.module.css';
  * `prefers-reduced-motion` collapse at the CSS layer.
  */
 export function DeckDetailSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
-    <div className={styles.layout} role="status" aria-busy="true" aria-label="Loading deck details">
+    <div className={styles.layout} role="status" aria-busy="true" aria-label={t('decks.loadingDeckDetails')}>
       {/* Column A — readiness hero placeholder */}
       <div className={styles.colA}>
-        <Skeleton height="180px" aria-label="Loading readiness score" />
+        <Skeleton height="180px" aria-label={t('decks.loadingReadinessScore')} />
         <div className={styles.heroLine}>
-          <Skeleton height="1rem" aria-label="Loading" />
+          <Skeleton height="1rem" aria-label={t('decks.loading')} />
         </div>
-        <Skeleton height="1rem" width="60%" aria-label="Loading" />
+        <Skeleton height="1rem" width="60%" aria-label={t('decks.loading')} />
       </div>
 
       {/* Column B — breakdown placeholders */}
       <div className={styles.colB}>
         <div className={styles.sectionTitle}>
-          <Skeleton height="1.25rem" width="40%" aria-label="Loading" />
+          <Skeleton height="1.25rem" width="40%" aria-label={t('decks.loading')} />
         </div>
         <div className={styles.card}>
-          <Skeleton height="72px" aria-label="Loading card row" />
+          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
         </div>
         <div className={styles.card}>
-          <Skeleton height="72px" aria-label="Loading card row" />
+          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
         </div>
         <div className={styles.card}>
-          <Skeleton height="72px" aria-label="Loading card row" />
+          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
         </div>
 
         <div className={styles.sectionTitle}>
-          <Skeleton height="1.25rem" width="40%" aria-label="Loading" />
+          <Skeleton height="1.25rem" width="40%" aria-label={t('decks.loading')} />
         </div>
         <div className={styles.card}>
-          <Skeleton height="72px" aria-label="Loading card row" />
+          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
         </div>
         <div className={styles.card}>
-          <Skeleton height="72px" aria-label="Loading card row" />
+          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
         </div>
       </div>
 
       {/* Column C — shopping panel placeholder */}
       <div className={styles.colC}>
-        <Skeleton height="220px" aria-label="Loading shopping panel" />
+        <Skeleton height="220px" aria-label={t('decks.loadingShoppingPanel')} />
       </div>
     </div>
   );

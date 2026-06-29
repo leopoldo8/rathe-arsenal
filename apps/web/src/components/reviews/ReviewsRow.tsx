@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -54,6 +55,7 @@ export function ReviewsRow({
   onToggleSelect,
   onAction,
 }: IReviewsRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const rowId = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
   const checkboxId = `review-row-${rowId}`;
 
@@ -127,12 +129,12 @@ export function ReviewsRow({
     }
   }
 
-  const tierLabel =
-    row.tier === 1
-      ? 'Tier I — Close'
-      : row.tier === 2
-        ? 'Tier II — Loose'
-        : 'Tier III — Distant';
+  const tierLabels: Record<number, string> = {
+    1: t('reviews.tierI'),
+    2: t('reviews.tierII'),
+    3: t('reviews.tierIII'),
+  };
+  const tierLabel = tierLabels[row.tier] ?? t('reviews.tierIII');
   const confidencePct = `${row.confidence}%`;
 
   // --confidence drives the confidence bar fill width via CSS (continuous value).
@@ -205,7 +207,7 @@ export function ReviewsRow({
             className={styles.checkbox}
             checked={isSelected}
             onChange={() => onToggleSelect(rowId)}
-            aria-label={`Select ${row.cardIdentifier} substitution`}
+            aria-label={t('reviews.selectSubAria', { cardIdentifier: row.cardIdentifier })}
           />
         </div>
 
@@ -238,15 +240,15 @@ export function ReviewsRow({
         <div className={styles.collapsedDecision}>
           <span
             className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${row.decision}`]}`}
-            aria-label={`Decision: ${row.decision}`}
+            aria-label={isApproved ? t('reviews.decisionApprovedAria') : t('reviews.decisionRejectedAria')}
           >
             {isApproved ? (
               <>
-                <span aria-hidden="true">✓</span> Approved
+                <span aria-hidden="true">✓</span> {t('reviews.decisionApproved')}
               </>
             ) : (
               <>
-                <span aria-hidden="true">✕</span> Rejected
+                <span aria-hidden="true">✕</span> {t('reviews.decisionRejected')}
               </>
             )}
           </span>
@@ -256,9 +258,9 @@ export function ReviewsRow({
             onClick={() => setIsExpanded(true)}
             aria-expanded={false}
             aria-controls={`row-actions-${rowId}`}
-            aria-label={`Change decision for ${row.cardIdentifier} swap`}
+            aria-label={t('reviews.changeDecisionAria', { cardIdentifier: row.cardIdentifier })}
           >
-            Change <span aria-hidden="true">▾</span>
+            {t('reviews.change')} <span aria-hidden="true">▾</span>
           </button>
         </div>
       </div>
@@ -281,7 +283,7 @@ export function ReviewsRow({
           className={styles.checkbox}
           checked={isSelected}
           onChange={() => onToggleSelect(rowId)}
-          aria-label={`Select ${row.cardIdentifier} substitution`}
+          aria-label={t('reviews.selectSubAria', { cardIdentifier: row.cardIdentifier })}
         />
       </div>
 
@@ -289,7 +291,7 @@ export function ReviewsRow({
       <div
         className={styles.cardPair}
         role="group"
-        aria-label={`${row.cardIdentifier} substituted by ${row.substituteName}`}
+        aria-label={t('reviews.cardPairAria', { cardIdentifier: row.cardIdentifier, substituteName: row.substituteName })}
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
@@ -323,7 +325,7 @@ export function ReviewsRow({
           <div
             className={styles.confidenceBar}
             role="meter"
-            aria-label={`Confidence ${confidencePct}`}
+            aria-label={t('reviews.confidenceAria', { pct: confidencePct })}
             aria-valuenow={row.confidence}
             aria-valuemin={0}
             aria-valuemax={100}
@@ -349,27 +351,27 @@ export function ReviewsRow({
           >
             {isApproved ? (
               <>
-                <span aria-hidden="true">✓</span> Approved
+                <span aria-hidden="true">✓</span> {t('reviews.decisionApproved')}
               </>
             ) : (
               <>
-                <span aria-hidden="true">✕</span> Rejected
+                <span aria-hidden="true">✕</span> {t('reviews.decisionRejected')}
               </>
             )}
           </span>
         )}
 
         {/* Per-row actions */}
-        <div className={styles.actions} role="group" aria-label="Row actions">
+        <div className={styles.actions} role="group" aria-label={t('reviews.rowActionsAria')}>
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--approve']}`}
             disabled={approveDisabled}
             onClick={handleApprove}
             aria-pressed={isApproved}
-            aria-label={`Approve ${row.cardIdentifier} as substitute`}
+            aria-label={t('reviews.approveAria', { cardIdentifier: row.cardIdentifier })}
           >
-            Approve
+            {t('reviews.approve')}
           </button>
           <button
             type="button"
@@ -377,18 +379,18 @@ export function ReviewsRow({
             disabled={rejectDisabled}
             onClick={handleReject}
             aria-pressed={isRejected}
-            aria-label={`Reject ${row.cardIdentifier} as substitute`}
+            aria-label={t('reviews.rejectAria', { cardIdentifier: row.cardIdentifier })}
           >
-            Reject
+            {t('reviews.reject')}
           </button>
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--reset']}`}
             disabled={resetDisabled}
             onClick={handleReset}
-            aria-label={`Reset decision for ${row.cardIdentifier}`}
+            aria-label={t('reviews.resetDecisionAria', { cardIdentifier: row.cardIdentifier })}
           >
-            Reset
+            {t('reviews.reset')}
           </button>
           {hasDec && (
             <button
@@ -397,9 +399,9 @@ export function ReviewsRow({
               onClick={() => setIsExpanded(false)}
               aria-expanded={true}
               aria-controls={`row-actions-${rowId}`}
-              aria-label={`Collapse ${row.cardIdentifier} swap`}
+              aria-label={t('reviews.collapseAria', { cardIdentifier: row.cardIdentifier })}
             >
-              Done <span aria-hidden="true">▴</span>
+              {t('reviews.done')} <span aria-hidden="true">▴</span>
             </button>
           )}
         </div>

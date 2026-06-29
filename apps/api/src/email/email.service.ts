@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { EEmailErrorCode, EmailDeliveryError } from './errors';
 import { renderVerificationEmail } from './templates/verification-email.template';
 import { renderPasswordResetEmail } from './templates/password-reset-email.template';
@@ -24,13 +25,13 @@ export class EmailService {
     }
   }
 
-  async sendVerificationEmail(to: string, link: string): Promise<void> {
-    const rendered = renderVerificationEmail({ link, appName: APP_NAME });
+  async sendVerificationEmail(to: string, link: string, locale: TLocale = 'pt-BR'): Promise<void> {
+    const rendered = renderVerificationEmail({ link, appName: APP_NAME, locale });
     await this.send(to, rendered.subject, rendered.html, rendered.text, link);
   }
 
-  async sendPasswordResetEmail(to: string, link: string): Promise<void> {
-    const rendered = renderPasswordResetEmail({ link, appName: APP_NAME });
+  async sendPasswordResetEmail(to: string, link: string, locale: TLocale = 'pt-BR'): Promise<void> {
+    const rendered = renderPasswordResetEmail({ link, appName: APP_NAME, locale });
     await this.send(to, rendered.subject, rendered.html, rendered.text, link);
   }
 

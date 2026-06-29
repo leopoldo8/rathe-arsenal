@@ -1,10 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
-import { STATUS_LABELS } from './status-labels';
+import { STATUS_KEY_MAP } from './status-labels';
 import styles from './StatusBullet.module.css';
 
-// Re-export STATUS_LABELS so callers can import from a single location
-export { STATUS_LABELS } from './status-labels';
+// Re-export STATUS_KEY_MAP so callers (home shelves/cards) localize from one source
+export { STATUS_KEY_MAP } from './status-labels';
 
 interface IStatusBulletProps {
   /** The deck lifecycle status to display. */
@@ -28,6 +29,8 @@ export function StatusBullet({
   showLabel = true,
   className,
 }: IStatusBulletProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <span className={`${styles.wrapper}${className ? ` ${className}` : ''}`}>
       {/* 8px filled circle coloured via the semantic status token */}
@@ -37,7 +40,7 @@ export function StatusBullet({
         data-status={status}
       />
       {showLabel ? (
-        <span>{STATUS_LABELS[status]}</span>
+        <span>{t(STATUS_KEY_MAP[status])}</span>
       ) : null}
     </span>
   );

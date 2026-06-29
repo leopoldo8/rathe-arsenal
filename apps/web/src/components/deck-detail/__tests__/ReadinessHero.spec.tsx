@@ -124,13 +124,13 @@ describe('ReadinessHero — absolute count display', () => {
 describe('ReadinessHero — Fabrary link', () => {
   it('renders a link to Fabrary with the correct ULID', () => {
     renderHero({ fabraryUlid: 'abc123ulid' });
-    const link = screen.getByRole('link', { name: /view on fabrary/i });
+    const link = screen.getByRole('link', { name: /ver no fabrary/i });
     expect(link).toHaveAttribute('href', 'https://fabrary.com/decks/abc123ulid');
   });
 
   it('opens the Fabrary link in a new tab', () => {
     renderHero({ fabraryUlid: 'abc123ulid' });
-    const link = screen.getByRole('link', { name: /view on fabrary/i });
+    const link = screen.getByRole('link', { name: /ver no fabrary/i });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
@@ -143,7 +143,7 @@ describe('ReadinessHero — Fabrary link', () => {
 describe('ReadinessHero — raw/fidelity row', () => {
   it('renders the raw and fidelity percentages', () => {
     renderHero({ rawPercent: 55.0, fidelityPercent: 80.0 });
-    expect(screen.getByText(/raw 55\.0%/i)).toBeInTheDocument();
-    expect(screen.getByText(/fidelity 80\.0%/i)).toBeInTheDocument();
+    expect(screen.getByText(/bruto 55\.0%/i)).toBeInTheDocument();
+    expect(screen.getByText(/fidelidade 80\.0%/i)).toBeInTheDocument();
   });
 });

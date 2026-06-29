@@ -1,4 +1,5 @@
-import { IBreakdown, ISubstitutedEntry } from '../api/deck-detail';
+import { useTranslation } from 'react-i18next';
+import { IBreakdown } from '../api/deck-detail';
 import { IShoppingLineResponse } from '../api/shopping-line';
 import { BreakdownList } from './breakdown-list';
 import { ShoppingLine } from './ShoppingLine';
@@ -37,29 +38,6 @@ function pitchDataAttr(pitch: number | null | undefined): string | undefined {
   return undefined;
 }
 
-function pitchLabel(pitch: number | null | undefined): string {
-  switch (pitch) {
-    case 1:
-      return 'Red';
-    case 2:
-      return 'Yellow';
-    case 3:
-      return 'Blue';
-    default:
-      return 'Colorless';
-  }
-}
-
-function summarizeTiers(substituted: readonly ISubstitutedEntry[]): string {
-  let tier1 = 0;
-  let tier2 = 0;
-  for (const entry of substituted) {
-    if (entry.match.tier === 1) tier1 += entry.original.quantity;
-    else if (entry.match.tier === 2) tier2 += entry.original.quantity;
-  }
-  return `${tier1} ${tier1 === 1 ? 'card' : 'cards'} swapped with a close match, ${tier2} with a looser match`;
-}
-
 function countNotOwned(breakdown: IBreakdown): number {
   const notOwned = breakdown.notOwned ?? breakdown.missing;
   return notOwned.reduce((sum, e) => sum + e.quantity, 0);
@@ -85,10 +63,18 @@ export function PathCResult({
   pendingCard = null,
   shoppingLine,
 }: IPathCResultProps) {
+  const { t } = useTranslation();
   const displayFidelity = Math.round(fidelityPercent * 10) / 10;
   const notOwned = breakdown.notOwned ?? breakdown.missing;
   const missingCount = countNotOwned(breakdown);
-  const tierSummary = summarizeTiers(breakdown.substituted);
+
+  // Compute per-tier counts for the summary line
+  let tier1 = 0;
+  let tier2 = 0;
+  for (const entry of breakdown.substituted) {
+    if (entry.match.tier === 1) tier1 += entry.original.quantity;
+    else if (entry.match.tier === 2) tier2 += entry.original.quantity;
+  }
 
   const handleTrackProximal = (): void => {
     if (onTrackProximalVersion) {
@@ -102,22 +88,23 @@ export function PathCResult({
 
   return (
     <section
-      aria-label="Closest playable version"
+      aria-label={t('decks.closestPlayableVersionAria')}
       className={styles.section}
     >
       <header className={styles.header}>
         <div className={styles.eyebrow}>
-          APPROXIMATION
+          {t('decks.approximation')}
         </div>
         <div className={styles.fidelityNumber}>
           {displayFidelity}%
         </div>
         <div className={styles.fidelitySubline}>
-          of this deck can be assembled or substituted from your collection.
+          {t('decks.pathCFidelitySubline')}
         </div>
         <div className={styles.tierSummary}>
-          {tierSummary},{' '}
-          {missingCount} {missingCount === 1 ? 'card' : 'cards'} still missing.
+          {t('decks.tierSwappedClose', { count: tier1 })},{' '}
+          {t('decks.tierSwappedLoose', { count: tier2 })},{' '}
+          {t('decks.stillMissing', { count: missingCount })}
         </div>
       </header>
 
@@ -127,13 +114,13 @@ export function PathCResult({
           onClick={handleTrackProximal}
           className={styles.ctaTrack}
         >
-          Track proximal version
+          {t('decks.trackProximalVersion')}
         </button>
         <a
           href={`#${MISSING_SECTION_ID}`}
           className={styles.ctaMissing}
         >
-          Show me what&rsquo;s missing
+          {t('decks.showMeMissing')}
         </a>
       </div>
 
@@ -148,15 +135,15 @@ export function PathCResult({
 
       <section
         id={MISSING_SECTION_ID}
-        aria-label="Still missing"
+        aria-label={t('decks.stillMissingAria')}
         className={styles.missingSection}
       >
         <h3 className={styles.missingSectionHeader}>
-          Still missing ({missingCount})
+          {t('decks.stillMissingSection', { count: missingCount })}
         </h3>
         {notOwned.length === 0 ? (
           <p className={styles.missingEmpty}>
-            All cards accounted for!
+            {t('decks.pathCAllAccountedFor')}
           </p>
         ) : (
           <ul className={styles.missingList}>
@@ -166,7 +153,7 @@ export function PathCResult({
                 className={styles.missingItem}
               >
                 <span
-                  aria-label={pitchLabel(undefined)}
+                  aria-label={t('decks.pitchColorless')}
                   className={styles.pitchDot}
                   data-pitch={pitchDataAttr(undefined)}
                 />

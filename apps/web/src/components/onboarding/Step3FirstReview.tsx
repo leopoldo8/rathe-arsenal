@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { CardArt } from '../card-art/CardArt';
@@ -47,6 +48,7 @@ export function Step3FirstReview({
   onBack,
   onSkip,
 }: IStep3FirstReviewProps): React.ReactElement {
+  const { t } = useTranslation();
   const [timedOut, setTimedOut] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -110,18 +112,15 @@ export function Step3FirstReview({
   if (isLoading && timedOut) {
     return (
       <div className={styles.step}>
-        <div className={styles.eyebrow}>Step 3 of 3</div>
-        <h1 className={styles.heading}>Almost ready…</h1>
-        <p className={styles.body}>
-          Substitution computation is taking longer than expected. You can continue — your decks
-          are already tracked and will be ready shortly.
-        </p>
+        <div className={styles.eyebrow}>{t('onboarding.step3Eyebrow')}</div>
+        <h1 className={styles.heading}>{t('onboarding.step3AlmostHeading')}</h1>
+        <p className={styles.body}>{t('onboarding.step3AlmostBody')}</p>
         <div className={styles.actions}>
           <Button type="button" variant="ghost" onClick={onBack}>
-            Back
+            {t('onboarding.backButton')}
           </Button>
           <Button type="button" variant="primary" onClick={onComplete}>
-            Continue without review
+            {t('onboarding.continueWithoutReview')}
           </Button>
         </div>
       </div>
@@ -132,15 +131,13 @@ export function Step3FirstReview({
   if (isLoading) {
     return (
       <div className={styles.step}>
-        <div className={styles.eyebrow}>Step 3 of 3</div>
-        <h1 className={styles.heading}>Computing substitutions…</h1>
-        <p className={styles.body}>
-          We are analysing your collection against the deck. This only takes a moment.
-        </p>
-        <ul className={styles.subList} aria-label="Loading substitutions">
+        <div className={styles.eyebrow}>{t('onboarding.step3Eyebrow')}</div>
+        <h1 className={styles.heading}>{t('onboarding.step3ComputingHeading')}</h1>
+        <p className={styles.body}>{t('onboarding.step3ComputingBody')}</p>
+        <ul className={styles.subList} aria-label={t('onboarding.loadingSubstitutionsLabel')}>
           {[0, 1, 2].map((i) => (
             <li key={i} className={styles.subSkeleton}>
-              <Skeleton height="80px" aria-label="Computing your first substitutions…" />
+              <Skeleton height="80px" aria-label={t('onboarding.computingSubstitutionsAria')} />
             </li>
           ))}
         </ul>
@@ -152,21 +149,19 @@ export function Step3FirstReview({
   if (previewSubs.length === 0) {
     return (
       <div className={styles.step}>
-        <div className={styles.eyebrow}>Step 3 of 3</div>
-        <h1 className={styles.heading}>Looking good!</h1>
-        <p className={styles.body}>
-          No pending substitutions found. Your collection covers this deck well.
-        </p>
+        <div className={styles.eyebrow}>{t('onboarding.step3Eyebrow')}</div>
+        <h1 className={styles.heading}>{t('onboarding.step3LookingGoodHeading')}</h1>
+        <p className={styles.body}>{t('onboarding.step3LookingGoodBody')}</p>
         <div className={styles.actions}>
           <Button type="button" variant="ghost" onClick={onBack}>
-            Back
+            {t('onboarding.backButton')}
           </Button>
           <div className={styles.actionsRight}>
             <Button type="button" variant="ghost" onClick={onSkip}>
-              Skip for now
+              {t('onboarding.skipForNow')}
             </Button>
             <Button type="button" variant="primary" onClick={onComplete}>
-              Enter the armory
+              {t('onboarding.enterArmory')}
             </Button>
           </div>
         </div>
@@ -177,14 +172,11 @@ export function Step3FirstReview({
   // --- Substitution review ---
   return (
     <div className={styles.step}>
-      <div className={styles.eyebrow}>Step 3 of 3</div>
-      <h1 className={styles.heading}>Substitutions are honest</h1>
-      <p className={styles.body}>
-        When a card is missing, we propose a tier-scored swap with a reason. You can reject any
-        of them — readiness updates instantly.
-      </p>
+      <div className={styles.eyebrow}>{t('onboarding.step3Eyebrow')}</div>
+      <h1 className={styles.heading}>{t('onboarding.step3ReviewHeading')}</h1>
+      <p className={styles.body}>{t('onboarding.step3ReviewBody')}</p>
 
-      <ul className={styles.subList} aria-label="Substitution previews">
+      <ul className={styles.subList} aria-label={t('onboarding.substitutionPreviewsLabel')}>
         {previewSubs.map((sub) => (
           <SubstitutionPreviewRow
             key={sub.original.cardIdentifier}
@@ -199,14 +191,14 @@ export function Step3FirstReview({
 
       <div className={styles.actions}>
         <Button type="button" variant="ghost" onClick={onBack}>
-          Back
+          {t('onboarding.backButton')}
         </Button>
         <div className={styles.actionsRight}>
           <Button type="button" variant="ghost" onClick={onSkip}>
-            Skip for now
+            {t('onboarding.skipForNow')}
           </Button>
           <Button type="button" variant="primary" onClick={onComplete}>
-            Enter the armory
+            {t('onboarding.enterArmory')}
           </Button>
         </div>
       </div>
@@ -229,6 +221,7 @@ function SubstitutionPreviewRow({
   deckId: _deckId,
   onDecide,
 }: ISubstitutionPreviewRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const { original, match } = sub;
   const [localDecision, setLocalDecision] = useState<'approved' | 'rejected' | null>(null);
 
@@ -242,8 +235,8 @@ function SubstitutionPreviewRow({
     onDecide(original.cardIdentifier, 'rejected');
   }
 
-  const approveLabel = `Approve substitution: ${match.substitute.name} for ${original.slot}`;
-  const rejectLabel = `Reject substitution: ${match.substitute.name} for ${original.slot}`;
+  const approveLabel = t('onboarding.approveSubAriaLabel', { substitute: match.substitute.name, original: original.slot });
+  const rejectLabel = t('onboarding.rejectSubAriaLabel', { substitute: match.substitute.name, original: original.slot });
 
   return (
     <li className={styles.subRow}>
@@ -288,7 +281,7 @@ function SubstitutionPreviewRow({
           aria-label={approveLabel}
           aria-pressed={localDecision === 'approved'}
         >
-          Approve
+          {t('onboarding.approveButton')}
         </Button>
         <Button
           type="button"
@@ -298,7 +291,7 @@ function SubstitutionPreviewRow({
           aria-label={rejectLabel}
           aria-pressed={localDecision === 'rejected'}
         >
-          Reject
+          {t('onboarding.rejectButton')}
         </Button>
       </div>
     </li>

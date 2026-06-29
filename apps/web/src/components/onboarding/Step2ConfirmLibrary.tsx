@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import { CardArt } from '../card-art/CardArt';
 import { IImportDecksResponse } from '../../api/decks';
@@ -33,18 +34,19 @@ export function Step2ConfirmLibrary({
   onBack,
   onSkip,
 }: IStep2ConfirmLibraryProps): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <div className={styles.step}>
-      <div className={styles.eyebrow}>Step 2 of 3</div>
-      <h1 className={styles.heading}>Your library</h1>
+      <div className={styles.eyebrow}>{t('onboarding.step2Eyebrow')}</div>
+      <h1 className={styles.heading}>{t('onboarding.step2Heading')}</h1>
       <p className={styles.body}>
         {importedDecks.length === 1
-          ? 'We found your deck. Confirm it looks right before we compute substitutions.'
-          : `We found ${importedDecks.length} decks. Confirm they look right before we compute substitutions.`}
+          ? t('onboarding.step2BodySingle')
+          : t('onboarding.step2BodyMultiple', { count: importedDecks.length })}
       </p>
 
       {importedDecks.length > 0 && (
-        <ul className={styles.deckGrid} aria-label="Imported decks">
+        <ul className={styles.deckGrid} aria-label={t('onboarding.importedDecksLabel')}>
           {importedDecks.map((deck) => (
             <li key={deck.trackedDeckId} className={styles.deckItem}>
               <DeckPreviewCard deck={deck} />
@@ -55,14 +57,14 @@ export function Step2ConfirmLibrary({
 
       <div className={styles.actions}>
         <Button type="button" variant="ghost" onClick={onBack}>
-          Back
+          {t('onboarding.backButton')}
         </Button>
         <div className={styles.actionsRight}>
           <Button type="button" variant="ghost" onClick={onSkip}>
-            Skip for now
+            {t('onboarding.skipForNow')}
           </Button>
           <Button type="button" variant="primary" onClick={onComplete}>
-            Continue
+            {t('onboarding.continueButton')}
           </Button>
         </div>
       </div>
@@ -79,6 +81,7 @@ interface IDeckPreviewCardProps {
 }
 
 function DeckPreviewCard({ deck }: IDeckPreviewCardProps): React.ReactElement {
+  const { t } = useTranslation();
   const readiness = deck.readinessSnapshot?.effectivePercent;
 
   return (
@@ -98,7 +101,7 @@ function DeckPreviewCard({ deck }: IDeckPreviewCardProps): React.ReactElement {
         </span>
         {readiness !== undefined && (
           <span className={styles.previewReadiness}>
-            {readiness.toFixed(0)}% ready
+            {t('onboarding.readinessPercent', { percent: readiness.toFixed(0) })}
           </span>
         )}
       </div>

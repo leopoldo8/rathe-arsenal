@@ -1,4 +1,5 @@
 import { useState, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ShoppingLine, TVariantFetchMutationStatus } from '../ShoppingLine';
 import { IShoppingLineResponse } from '../../api/shopping-line';
@@ -43,6 +44,7 @@ export function ShoppingPanel({
   onPollingChange,
   onRetry,
 }: IShoppingPanelProps): React.ReactElement {
+  const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const titleId = useId();
 
@@ -69,7 +71,7 @@ export function ShoppingPanel({
       {/* Desktop: sticky aside column — hidden on mobile via CSS */}
       <aside
         className={styles.panel}
-        aria-label="Shopping list"
+        aria-label={t('decks.shoppingList')}
         data-testid="shopping-panel-desktop"
       >
         <div className={styles.panel__inner}>{panelContent}</div>
@@ -81,9 +83,9 @@ export function ShoppingPanel({
           type="button"
           className={styles.mobileBar__btn}
           onClick={() => setSheetOpen(true)}
-          aria-label="View shopping list"
+          aria-label={t('decks.viewShoppingList')}
         >
-          <span>View shopping list{mobileLabelPrice}</span>
+          <span>{t('decks.viewShoppingListWithPrice', { price: mobileLabelPrice })}</span>
           <span className={styles.mobileBar__arrow} aria-hidden="true">&#8679;</span>
         </button>
       </div>
@@ -100,13 +102,13 @@ export function ShoppingPanel({
           >
             <div className={styles.sheet__header}>
               <Dialog.Title id={titleId} className={styles.sheet__title}>
-                Shopping list
+                {t('decks.shoppingList')}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <button
                   type="button"
                   className={styles.sheet__close}
-                  aria-label="Close shopping list"
+                  aria-label={t('decks.closeShoppingList')}
                 >
                   <span aria-hidden="true">&#10005;</span>
                 </button>

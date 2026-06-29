@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
@@ -22,6 +23,7 @@ interface ILightboxState {
 }
 
 function AddCardsManualPage(): React.ReactElement {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   // Counter incremented on every successful add. The result row reads
@@ -62,20 +64,18 @@ function AddCardsManualPage(): React.ReactElement {
     <div className={styles.page}>
       <header className={styles.subviewHeader}>
         <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> Add cards
+          <span aria-hidden="true">←</span> {t('decks.addCardsTitle')}
         </Link>
         <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">I</span> Manual
+          <span className={styles.numeral} aria-hidden="true">I</span> {t('decks.manualEyebrow')}
         </p>
-        <h1 className={styles.title}>Search the catalog</h1>
-        <p className={styles.subtitle}>
-          Type a card name. Pick a quantity (1–3) and add it to your library.
-        </p>
+        <h1 className={styles.title}>{t('decks.searchCatalogTitle')}</h1>
+        <p className={styles.subtitle}>{t('decks.searchCatalogSubtitle')}</p>
       </header>
 
       <div className={styles.searchBox}>
         <label className={styles.label} htmlFor={inputId}>
-          Card name
+          {t('decks.cardNameLabel')}
         </label>
         <input
           id={inputId}
@@ -84,7 +84,7 @@ function AddCardsManualPage(): React.ReactElement {
           autoComplete="off"
           spellCheck={false}
           autoFocus
-          placeholder="Type a card name (min 2 chars)"
+          placeholder={t('decks.cardNamePlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
           className={styles.input}
@@ -93,17 +93,15 @@ function AddCardsManualPage(): React.ReactElement {
 
       {/* States — order matters for clarity. */}
       {!showResults && (
-        <p className={styles.emptyHint}>
-          Start typing to search the catalog.
-        </p>
+        <p className={styles.emptyHint}>{t('decks.startTypingHint')}</p>
       )}
 
       {isEmptyResult && (
-        <p className={styles.emptyHint}>No cards match &ldquo;{debounced}&rdquo;.</p>
+        <p className={styles.emptyHint}>{t('decks.noCardsMatchQuery', { query: debounced })}</p>
       )}
 
       {showResults && results.length > 0 && (
-        <ul className={styles.results} aria-label="Search results">
+        <ul className={styles.results} aria-label={t('decks.searchResultsAria')}>
           {results.map((card) => (
             <ResultRow
               // `addsCommitted` is folded into the row key so each row
@@ -144,6 +142,7 @@ function ResultRow({
   isPending,
   onOpenLightbox,
 }: IResultRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const [qty, setQty] = useState(1);
   const [thumbFailed, setThumbFailed] = useState(false);
   const primaryType = card.types[0] ?? '—';
@@ -174,7 +173,7 @@ function ResultRow({
           className={styles.thumb}
           onClick={handleThumbClick}
           disabled={!card.imageUrl}
-          aria-label={card.imageUrl ? `Preview ${card.name}` : `${card.name} (no preview)`}
+          aria-label={card.imageUrl ? t('decks.cardPreviewAria', { name: card.name }) : t('decks.cardNoPreviewAria', { name: card.name })}
         >
           {showThumbImage ? (
             <img
@@ -208,7 +207,7 @@ function ResultRow({
             {pitchToneClass !== null && (
               <span
                 className={`${styles.pitchPip} ${styles[pitchToneClass]}`}
-                aria-label={`${pitchLabelFor(card.pitch)} pitch`}
+                aria-label={t('decks.pitchAria', { pitch: pitchLabelFor(card.pitch) })}
               >
                 &#9670;
               </span>
@@ -223,7 +222,7 @@ function ResultRow({
               <>
                 <span className={styles.rowSep} aria-hidden="true">·</span>
                 <span className={styles.ownedTag}>
-                  Owned: <strong>{card.ownedQuantity}</strong>
+                  {t('decks.ownedCountLabel', { count: card.ownedQuantity })}
                 </span>
               </>
             )}
@@ -235,14 +234,14 @@ function ResultRow({
         <div
           className={styles.stepper}
           role="group"
-          aria-label={`Quantity for ${card.name}`}
+          aria-label={t('decks.quantityForAria', { name: card.name })}
         >
           <button
             type="button"
             className={styles.stepBtn}
             onClick={() => bump(-1)}
             disabled={qty <= QTY_MIN}
-            aria-label="Decrease quantity"
+            aria-label={t('decks.decreaseCardQtyAria')}
           >
             −
           </button>
@@ -254,7 +253,7 @@ function ResultRow({
             className={styles.stepBtn}
             onClick={() => bump(+1)}
             disabled={qty >= QTY_MAX}
-            aria-label="Increase quantity"
+            aria-label={t('decks.increaseCardQtyAria')}
           >
             +
           </button>
@@ -265,7 +264,7 @@ function ResultRow({
           onClick={() => onAdd(card, qty)}
           disabled={isPending}
         >
-          Add
+          {t('decks.addCardBtn')}
         </button>
       </div>
     </li>

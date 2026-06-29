@@ -122,7 +122,7 @@ describe('Scenario 1: CTA renders when isEstimated is true', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
 
-    expect(screen.getByRole('button', { name: /get exact prices/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /obter preços exatos/i })).toBeInTheDocument();
   });
 
   it('does not render "Get exact prices" CTA when isEstimated is false', () => {
@@ -131,7 +131,7 @@ describe('Scenario 1: CTA renders when isEstimated is true', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
 
-    expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
   });
 
   it('does not render CTA when onFetchVariants callback is not provided', () => {
@@ -139,7 +139,7 @@ describe('Scenario 1: CTA renders when isEstimated is true', () => {
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
   });
 });
 
@@ -153,7 +153,7 @@ describe('Scenario 2: clicking CTA triggers mutation and shows progress', () => 
     const onFetchVariants = vi.fn();
 
     render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-    fireEvent.click(screen.getByRole('button', { name: /get exact prices/i }));
+    fireEvent.click(screen.getByRole('button', { name: /obter preços exatos/i }));
 
     expect(onFetchVariants).toHaveBeenCalledOnce();
   });
@@ -165,9 +165,9 @@ describe('Scenario 2: clicking CTA triggers mutation and shows progress', () => 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
     // CTA should be replaced by progress indicator
-    expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.getByText(/checking card/i)).toBeInTheDocument();
+    expect(screen.getByText(/verificando carta/i)).toBeInTheDocument();
   });
 });
 
@@ -182,7 +182,7 @@ describe('Scenario 3: estimated badge lifecycle', () => {
     render(<ShoppingLine data={data} />);
 
     expect(screen.getByTestId('estimated-badge')).toBeInTheDocument();
-    expect(screen.getByTestId('estimated-badge')).toHaveTextContent('estimated');
+    expect(screen.getByTestId('estimated-badge')).toHaveTextContent('estimado');
   });
 
   it('renders a tilde prefix on the price when isEstimated is true', () => {
@@ -191,7 +191,7 @@ describe('Scenario 3: estimated badge lifecycle', () => {
     render(<ShoppingLine data={data} />);
 
     // The tilde is in a separate span with aria-label="estimated price"
-    expect(screen.getByLabelText(/estimated price/i)).toHaveTextContent('~');
+    expect(screen.getByLabelText(/preço estimado/i)).toHaveTextContent('~');
   });
 
   it('does not render the "estimated" badge when isEstimated is false', () => {
@@ -207,7 +207,7 @@ describe('Scenario 3: estimated badge lifecycle', () => {
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.queryByLabelText(/estimated price/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/preço estimado/i)).not.toBeInTheDocument();
   });
 
   it('does not render the estimated badge when isEstimated is absent (older responses)', () => {
@@ -236,8 +236,8 @@ describe('Scenario 4: cooldown state replaces CTA with "up to date" message', ()
       />,
     );
 
-    expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/prices are up to date/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/preços atualizados/i)).toBeInTheDocument();
   });
 
   it('renders CTA button when isCooldownActive is false', () => {
@@ -251,7 +251,7 @@ describe('Scenario 4: cooldown state replaces CTA with "up to date" message', ()
       />,
     );
 
-    expect(screen.getByRole('button', { name: /get exact prices/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /obter preços exatos/i })).toBeInTheDocument();
   });
 
   it('button is disabled and shows "Starting..." when fetchMutationStatus is pending', () => {
@@ -265,7 +265,7 @@ describe('Scenario 4: cooldown state replaces CTA with "up to date" message', ()
       />,
     );
 
-    const btn = screen.getByRole('button', { name: /starting/i });
+    const btn = screen.getByRole('button', { name: /iniciando/i });
     expect(btn).toBeDisabled();
   });
 });
@@ -281,7 +281,7 @@ describe('Scenario 5: progress indicator text', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByText(/checking card 1 of 12/i)).toBeInTheDocument();
+    expect(screen.getByText(/verificando carta 1 de 12/i)).toBeInTheDocument();
   });
 
   it('shows "Checking card 3 of 12..." when 2 cards have been processed', () => {
@@ -290,7 +290,7 @@ describe('Scenario 5: progress indicator text', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByText(/checking card 3 of 12/i)).toBeInTheDocument();
+    expect(screen.getByText(/verificando carta 3 de 12/i)).toBeInTheDocument();
   });
 
   it('shows "Checking card 12 of 12..." when 11 cards have been processed', () => {
@@ -299,7 +299,7 @@ describe('Scenario 5: progress indicator text', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByText(/checking card 12 of 12/i)).toBeInTheDocument();
+    expect(screen.getByText(/verificando carta 12 de 12/i)).toBeInTheDocument();
   });
 
   it('does not exceed total in the progress label', () => {
@@ -309,7 +309,7 @@ describe('Scenario 5: progress indicator text', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByText(/checking card 12 of 12/i)).toBeInTheDocument();
+    expect(screen.getByText(/verificando carta 12 de 12/i)).toBeInTheDocument();
   });
 });
 
@@ -329,8 +329,8 @@ describe('Scenario 6: partial failure notice', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByText(/8 of 12 updated/i)).toBeInTheDocument();
-    expect(screen.getByText(/4 failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/8 de 12 atualizadas/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 falharam/i)).toBeInTheDocument();
   });
 
   it('renders "Retry failed" button in the partial failure notice', () => {
@@ -344,7 +344,7 @@ describe('Scenario 6: partial failure notice', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: /retry failed/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente as falhas/i })).toBeInTheDocument();
   });
 
   it('calls onFetchVariants when "Retry failed" button is clicked', () => {
@@ -358,7 +358,7 @@ describe('Scenario 6: partial failure notice', () => {
     const onFetchVariants = vi.fn();
 
     render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-    fireEvent.click(screen.getByRole('button', { name: /retry failed/i }));
+    fireEvent.click(screen.getByRole('button', { name: /tentar novamente as falhas/i }));
 
     expect(onFetchVariants).toHaveBeenCalledOnce();
   });
@@ -374,7 +374,7 @@ describe('Scenario 6: partial failure notice', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.queryByText(/retry failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tentar novamente as falhas/i)).not.toBeInTheDocument();
   });
 });
 
@@ -649,7 +649,7 @@ describe('onPollingChange callback', () => {
 describe('backward compatibility: existing 6 states unaffected', () => {
   it('null (Path A) still renders success empty state', () => {
     render(<ShoppingLine data={null} />);
-    expect(screen.getByText(/you have everything you need for this deck/i)).toBeInTheDocument();
+    expect(screen.getByText(/você tem tudo o que precisa para este baralho/i)).toBeInTheDocument();
   });
 
   it('unscraped still renders nothing', () => {
@@ -659,7 +659,7 @@ describe('backward compatibility: existing 6 states unaffected', () => {
 
   it('error still renders degraded state', () => {
     render(<ShoppingLine data={{ kind: 'error', reason: 'db_error' }} />);
-    expect(screen.getByText(/shopping line temporarily unavailable/i)).toBeInTheDocument();
+    expect(screen.getByText(/lista de compras temporariamente indisponível/i)).toBeInTheDocument();
   });
 
   it('populated without isEstimated renders normally without badge or CTA', () => {
@@ -669,7 +669,7 @@ describe('backward compatibility: existing 6 states unaffected', () => {
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
     expect(screen.queryByTestId('estimated-badge')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /get exact prices/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /obter preços exatos/i })).not.toBeInTheDocument();
   });
 });
 
@@ -698,7 +698,7 @@ describe('per-card failure indicator', () => {
     expect(badges[0]).toHaveTextContent(/failed/i);
     expect(badges[0]).toHaveAttribute(
       'aria-label',
-      `Failed to fetch variants for ${BASE_LINE.cardName}`,
+      `Falha ao buscar variantes para ${BASE_LINE.cardName}`,
     );
   });
 

@@ -84,7 +84,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Deck is incomplete',
+        'Baralho incompleto',
       );
     });
   });
@@ -95,7 +95,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Deck is illegal in this format',
+        'Baralho ilegal neste formato',
       );
     });
   });
@@ -106,7 +106,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Deck is incomplete — reason not available.',
+        'Baralho incompleto — motivo não disponível.',
       );
     });
   });
@@ -190,7 +190,7 @@ describe('CardRowLegalityWarning — a11y', () => {
       />,
     );
     const icon = screen.getByTestId('card-legality-warning-pummel-wtr-1');
-    expect(icon).toHaveAttribute('aria-label', 'Not legal in Classic Constructed');
+    expect(icon).toHaveAttribute('aria-label', 'Inválido em Classic Constructed');
   });
 
   it('warning icon has aria-describedby pointing to the tooltip element id', () => {

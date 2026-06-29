@@ -7,7 +7,7 @@
  *  - isBulkPending=true disables all action buttons
  *  - isSelected=true renders selected class / checkbox checked
  *  - Space key on the card pair triggers onToggleSelect
- *  - Decision badge shows "Approved" for approved rows, "Rejected" for rejected rows,
+ *  - Decision badge shows "Aprovado" for approved rows, "Rejeitado" for rejected rows,
  *    absent for pending rows
  *  - Confidence bar has correct aria-valuenow
  */
@@ -117,7 +117,7 @@ describe('ReviewsRow — rendering', () => {
 
   it('renders confidence bar with correct aria-valuenow', () => {
     renderRow(makeRow({ confidence: 72 }));
-    const bar = screen.getByRole('meter', { name: /Confidence/i });
+    const bar = screen.getByRole('meter', { name: /Confiança/i });
     expect(bar).toHaveAttribute('aria-valuenow', '72');
   });
 });
@@ -125,18 +125,18 @@ describe('ReviewsRow — rendering', () => {
 describe('ReviewsRow — decision badge', () => {
   it('shows no decision badge for pending rows', () => {
     renderRow(makeRow({ decision: 'pending' }));
-    expect(screen.queryByText('Approved')).not.toBeInTheDocument();
-    expect(screen.queryByText('Rejected')).not.toBeInTheDocument();
+    expect(screen.queryByText('Aprovado')).not.toBeInTheDocument();
+    expect(screen.queryByText('Rejeitado')).not.toBeInTheDocument();
   });
 
-  it('shows "Approved" badge for approved rows', () => {
+  it('shows "Aprovado" badge for approved rows', () => {
     renderRow(makeRow({ decision: 'approved' }));
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getByText('Aprovado')).toBeInTheDocument();
   });
 
-  it('shows "Rejected" badge for rejected rows', () => {
+  it('shows "Rejeitado" badge for rejected rows', () => {
     renderRow(makeRow({ decision: 'rejected' }));
-    expect(screen.getByText('Rejected')).toBeInTheDocument();
+    expect(screen.getByText('Rejeitado')).toBeInTheDocument();
   });
 });
 
@@ -146,7 +146,7 @@ describe('ReviewsRow — per-row actions', () => {
     // both look up by substitute, so the write must use the same identifier.
     const onAction = vi.fn();
     renderRow(makeRow(), { onAction });
-    await userEvent.click(screen.getByRole('button', { name: /Approve ARC012/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ARC012/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
@@ -161,7 +161,7 @@ describe('ReviewsRow — per-row actions', () => {
   it('calls onAction with REJECTED operation keyed by substituteIdentifier', async () => {
     const onAction = vi.fn();
     renderRow(makeRow(), { onAction });
-    await userEvent.click(screen.getByRole('button', { name: /Reject ARC012/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ARC012/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
@@ -177,8 +177,8 @@ describe('ReviewsRow — per-row actions', () => {
     const onAction = vi.fn();
     renderRow(makeRow({ decision: 'approved' }), { onAction });
     // Decided rows render collapsed by default — expand to access action buttons.
-    await userEvent.click(screen.getByRole('button', { name: /change decision/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão/i }));
     expect(onAction).toHaveBeenCalledOnce();
     const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toBeDefined();
@@ -193,9 +193,9 @@ describe('ReviewsRow — per-row actions', () => {
 describe('ReviewsRow — disabled state', () => {
   it('disables all action buttons when isBulkPending=true', () => {
     renderRow(makeRow(), { isBulkPending: true });
-    const approveBtn = screen.getByRole('button', { name: /Approve ARC012/i });
-    const rejectBtn = screen.getByRole('button', { name: /Reject ARC012/i });
-    const resetBtn = screen.getByRole('button', { name: /Reset decision/i });
+    const approveBtn = screen.getByRole('button', { name: /Aprovar ARC012/i });
+    const rejectBtn = screen.getByRole('button', { name: /Rejeitar ARC012/i });
+    const resetBtn = screen.getByRole('button', { name: /Redefinir decisão/i });
     expect(approveBtn).toBeDisabled();
     expect(rejectBtn).toBeDisabled();
     expect(resetBtn).toBeDisabled();
@@ -204,7 +204,7 @@ describe('ReviewsRow — disabled state', () => {
   it('does NOT call onAction when Approve is clicked while isBulkPending', async () => {
     const onAction = vi.fn();
     renderRow(makeRow(), { isBulkPending: true, onAction });
-    const approveBtn = screen.getByRole('button', { name: /Approve ARC012/i });
+    const approveBtn = screen.getByRole('button', { name: /Aprovar ARC012/i });
     await userEvent.click(approveBtn);
     expect(onAction).not.toHaveBeenCalled();
   });
@@ -232,7 +232,7 @@ describe('ReviewsRow — selection', () => {
     const onToggleSelect = vi.fn();
     renderRow(makeRow(), { onToggleSelect });
     const group = screen.getByRole('group', {
-      name: /ARC012 substituted by Fyendal Spring Tunic/i,
+      name: /ARC012 substituído por Fyendal Spring Tunic/i,
     });
     group.focus();
     await userEvent.keyboard(' ');

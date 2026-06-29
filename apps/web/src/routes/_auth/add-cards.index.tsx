@@ -1,5 +1,6 @@
 import React from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
 import styles from './add-cards.module.css';
 
@@ -15,93 +16,72 @@ export const Route = createFileRoute('/_auth/add-cards/')({
 
 export { AddCardsPage };
 
+type TMethodKey = 'manual' | 'csv' | 'fabrary';
+
 interface IMethod {
   readonly to: '/add-cards/manual' | '/add-cards/csv' | '/add-cards/fabrary';
   readonly numeral: string;
-  readonly title: string;
-  readonly summary: string;
-  readonly cta: string;
-  readonly notes: readonly string[];
+  readonly key: TMethodKey;
 }
 
-const METHODS: readonly IMethod[] = [
-  {
-    to: '/add-cards/manual',
-    numeral: 'I',
-    title: 'Manual',
-    summary:
-      'Search the catalog by name and add cards one by one. Best for quick adjustments after a single trade or a recent pull.',
-    cta: 'Search the catalog',
-    notes: ['One card at a time', 'Up to 3× per add'],
-  },
-  {
-    to: '/add-cards/csv',
-    numeral: 'II',
-    title: 'CSV import',
-    summary:
-      'Upload a Fabrary or compatible CSV export. The import becomes a toggleable source you can deactivate later from sources management.',
-    cta: 'Upload a file',
-    notes: ['Bulk', 'Toggleable source'],
-  },
-  {
-    to: '/add-cards/fabrary',
-    numeral: 'III',
-    title: 'Fabrary deck',
-    summary:
-      'Paste a Fabrary deck URL — every card the deck uses lands in your library as a new source. The deck itself stays where it is, no tracking added.',
-    cta: 'Paste a link',
-    notes: ['Deck → library only', 'No deck tracking'],
-  },
+const METHOD_DEFS: readonly IMethod[] = [
+  { to: '/add-cards/manual', numeral: 'I', key: 'manual' },
+  { to: '/add-cards/csv', numeral: 'II', key: 'csv' },
+  { to: '/add-cards/fabrary', numeral: 'III', key: 'fabrary' },
 ];
 
 function AddCardsPage(): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.page}>
       <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
-        <span aria-hidden="true">←</span> Library
+        <span aria-hidden="true">←</span> {t('shell.navLibrary')}
       </Link>
       <header className={styles.pageHeader}>
         <p className={styles.eyebrow}>
-          <span aria-hidden="true">◆</span> Three paths
+          <span aria-hidden="true">◆</span> {t('decks.addCardsEyebrow')}
         </p>
-        <h1 className={styles.title}>Add cards</h1>
-        <p className={styles.subtitle}>
-          Three ways to grow your arsenal — pick whichever fits the moment.
-        </p>
+        <h1 className={styles.title}>{t('decks.addCardsTitle')}</h1>
+        <p className={styles.subtitle}>{t('decks.addCardsSubtitle')}</p>
       </header>
 
-      <ul className={styles.gallery} aria-label="Methods">
-        {METHODS.map((method) => (
-          <li key={method.to} className={styles.galleryItem}>
-            <Link to={method.to} className={styles.method}>
-              <div className={styles.methodHeader}>
-                <span className={styles.methodNumeral} aria-hidden="true">
-                  {method.numeral}
+      <ul className={styles.gallery} aria-label={t('decks.addCardsMethodsAria')}>
+        {METHOD_DEFS.map((method) => {
+          const titleKey = `decks.method${method.key.charAt(0).toUpperCase() + method.key.slice(1)}Title` as const;
+          const summaryKey = `decks.method${method.key.charAt(0).toUpperCase() + method.key.slice(1)}Summary` as const;
+          const ctaKey = `decks.method${method.key.charAt(0).toUpperCase() + method.key.slice(1)}Cta` as const;
+          const note1Key = `decks.method${method.key.charAt(0).toUpperCase() + method.key.slice(1)}Note1` as const;
+          const note2Key = `decks.method${method.key.charAt(0).toUpperCase() + method.key.slice(1)}Note2` as const;
+          return (
+            <li key={method.to} className={styles.galleryItem}>
+              <Link to={method.to} className={styles.method}>
+                <div className={styles.methodHeader}>
+                  <span className={styles.methodNumeral} aria-hidden="true">
+                    {method.numeral}
+                  </span>
+                  <h2 className={styles.methodTitle}>{t(titleKey)}</h2>
+                </div>
+                <p className={styles.methodSummary}>{t(summaryKey)}</p>
+                <ul className={styles.methodNotes} aria-hidden="true">
+                  <li className={styles.methodNote}>{t(note1Key)}</li>
+                  <li className={styles.methodNote}>{t(note2Key)}</li>
+                </ul>
+                <span className={styles.methodCta}>
+                  <span className={styles.methodCtaArrow} aria-hidden="true">
+                    →
+                  </span>{' '}
+                  {t(ctaKey)}
                 </span>
-                <h2 className={styles.methodTitle}>{method.title}</h2>
-              </div>
-              <p className={styles.methodSummary}>{method.summary}</p>
-              <ul className={styles.methodNotes} aria-hidden="true">
-                {method.notes.map((note) => (
-                  <li key={note} className={styles.methodNote}>
-                    {note}
-                  </li>
-                ))}
-              </ul>
-              <span className={styles.methodCta}>
-                <span className={styles.methodCtaArrow} aria-hidden="true">
-                  →
-                </span>{' '}
-                {method.cta}
-              </span>
-            </Link>
-          </li>
-        ))}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
 
       <footer className={styles.pageFooter}>
         <Link to="/library-csv-sources" className={styles.manageLink}>
-          Manage library sources
+          {t('decks.manageLibrarySources')}
         </Link>
       </footer>
     </div>

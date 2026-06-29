@@ -27,7 +27,7 @@ describe('VariantQueuePill', () => {
     const panel = screen.getByTestId('variant-queue-panel');
     expect(panel).toHaveTextContent('Kayo Aggro');
     expect(panel).toHaveTextContent('30/45');
-    expect(panel).toHaveTextContent('In progress');
+    expect(panel).toHaveTextContent('Em andamento');
   });
 
   it('groups queued jobs separately from completed/failed ones', async () => {
@@ -38,10 +38,10 @@ describe('VariantQueuePill', () => {
     render(<VariantQueuePill />);
     await userEvent.click(screen.getByTestId('variant-queue-pill'));
     const panel = screen.getByTestId('variant-queue-panel');
-    expect(panel).toHaveTextContent('Queued');
+    expect(panel).toHaveTextContent('Na fila');
     expect(panel).toHaveTextContent('Waiting Deck');
-    expect(panel).toHaveTextContent('Recently completed');
-    expect(panel).toHaveTextContent(/could not reach the store/i);
+    expect(panel).toHaveTextContent('Concluído recentemente');
+    expect(panel).toHaveTextContent(/Não foi possível alcançar a loja/i);
   });
 
   it('renders nothing when there are no jobs', () => {

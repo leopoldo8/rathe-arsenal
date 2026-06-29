@@ -88,7 +88,7 @@ describe('Toast — happy path', () => {
     });
 
     expect(screen.getByText('Save failed')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument();
   });
 
   it('invokes retry callback when Retry is clicked', () => {
@@ -104,7 +104,7 @@ describe('Toast — happy path', () => {
     });
 
     // Use fireEvent to avoid userEvent timer interactions
-    const retryBtn = screen.getByRole('button', { name: /retry/i });
+    const retryBtn = screen.getByRole('button', { name: /tentar novamente/i });
     fireEvent.click(retryBtn);
 
     expect(retry).toHaveBeenCalledOnce();
@@ -128,7 +128,7 @@ describe('Toast — dismiss behaviour', () => {
 
     expect(screen.getByText('Action complete')).toBeInTheDocument();
 
-    const closeBtn = screen.getByRole('button', { name: /dismiss/i });
+    const closeBtn = screen.getByRole('button', { name: /fechar/i });
     fireEvent.click(closeBtn);
 
     await waitFor(
@@ -171,7 +171,7 @@ describe('Toast — burst consolidation', () => {
       vi.advanceTimersByTime(600);
     });
 
-    expect(screen.getByText('3 changes failed')).toBeInTheDocument();
+    expect(screen.getByText('3 alterações falharam')).toBeInTheDocument();
     expect(screen.queryByText('Error 1')).not.toBeInTheDocument();
     expect(screen.queryByText('Error 2')).not.toBeInTheDocument();
     expect(screen.queryByText('Error 3')).not.toBeInTheDocument();
@@ -192,7 +192,7 @@ describe('Toast — burst consolidation', () => {
       vi.advanceTimersByTime(600);
     });
 
-    const retryAllBtn = screen.getByRole('button', { name: /retry all/i });
+    const retryAllBtn = screen.getByRole('button', { name: /tentar novamente tudo/i });
     fireEvent.click(retryAllBtn);
 
     expect(retry1).toHaveBeenCalledOnce();
@@ -260,7 +260,7 @@ describe('Toast — focus return', () => {
 
     expect(screen.getByText('Action done')).toBeInTheDocument();
 
-    const closeBtn = screen.getByRole('button', { name: /dismiss/i });
+    const closeBtn = screen.getByRole('button', { name: /fechar/i });
     fireEvent.click(closeBtn);
 
     await waitFor(

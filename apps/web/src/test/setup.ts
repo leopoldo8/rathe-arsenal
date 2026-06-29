@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+// Import the i18n singleton for its init side-effect and to reset locale
+// before each test, so all tests run with a deterministic pt-BR default.
+import i18n from '../i18n';
 
 // Stub ResizeObserver — jsdom does not implement it and Radix UI's Popover
 // and Select primitives use it internally via @radix-ui/react-use-size.
@@ -26,6 +29,13 @@ if (typeof window !== 'undefined' && typeof window.ResizeObserver === 'undefined
  *   and setPointerCapture() on elements. We stub these as no-ops so pointer
  *   events dispatched during tests do not throw.
  */
+// Reset locale to pt-BR before every test so component assertions are
+// deterministic regardless of the machine's navigator.language or any
+// locale switch made by a previous test.
+beforeEach(async () => {
+  await i18n.changeLanguage('pt-BR');
+});
+
 afterEach(() => {
   cleanup();
 });

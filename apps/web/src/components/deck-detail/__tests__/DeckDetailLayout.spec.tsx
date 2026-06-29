@@ -54,9 +54,9 @@ describe('DeckDetailLayout — structure', () => {
     expect(header).toContainElement(screen.getByTestId('header-slot'));
   });
 
-  it('renders sidebar inside an <aside> element with aria-label "Deck details"', () => {
+  it('renders sidebar inside an <aside> element with aria-label "Detalhes do baralho"', () => {
     renderLayout();
-    const aside = screen.getByRole('complementary', { name: 'Deck details' });
+    const aside = screen.getByRole('complementary', { name: 'Detalhes do baralho' });
     expect(aside).toBeInTheDocument();
     expect(aside).toContainElement(screen.getByTestId('sidebar-slot'));
   });

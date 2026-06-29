@@ -1,6 +1,7 @@
 import React from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import styles from './UserMenu.module.css';
 
@@ -48,6 +49,7 @@ function SignOutIcon(): React.ReactElement {
 }
 
 export function UserMenu(): React.ReactElement {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
 
   function handleSignOut(): void {
@@ -56,7 +58,7 @@ export function UserMenu(): React.ReactElement {
 
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className={styles.trigger} aria-label="User menu" type="button">
+      <DropdownMenu.Trigger className={styles.trigger} aria-label={t('shell.userMenuAriaLabel')} type="button">
         <span className={styles.avatar} aria-hidden="true">
           {user?.email?.charAt(0).toUpperCase() ?? 'U'}
         </span>
@@ -82,7 +84,7 @@ export function UserMenu(): React.ReactElement {
           <DropdownMenu.Item asChild>
             <Link to="/settings" className={styles.item}>
               <SettingsIcon />
-              Settings
+              {t('shell.settingsLink')}
             </Link>
           </DropdownMenu.Item>
 
@@ -90,7 +92,7 @@ export function UserMenu(): React.ReactElement {
 
           <DropdownMenu.Item className={styles.item} onSelect={handleSignOut}>
             <SignOutIcon />
-            Sign out
+            {t('shell.signOut')}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

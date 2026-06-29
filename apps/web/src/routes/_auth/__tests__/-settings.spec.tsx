@@ -2,7 +2,7 @@
  * Settings page tests — Unit 7 (Onda 3)
  *
  * Covers:
- *  - Happy path: renders 3 sections (Profile, Theme, Account)
+ *  - Happy path: renders 4 sections (Profile, Theme, Language, Account)
  *  - Theme toggle: clicking updates document.documentElement.dataset.theme
  *  - A11y: heading levels (<h1> page, <h2> each section)
  *  - Profile section: shows user email read-only (no display-name field)
@@ -88,6 +88,12 @@ vi.mock('../../../components/delete-account-modal', () => ({
     ) : null,
 }));
 
+// LanguageToggle — stub so these layout tests don't double-bind the single
+// captured Radix onValueChange; the real toggle is covered in its own spec.
+vi.mock('../../../components/shell/LanguageToggle', () => ({
+  LanguageToggle: () => <div data-testid="language-toggle" />,
+}));
+
 import { SettingsPage } from '../settings';
 
 // ----- Helpers -----
@@ -125,7 +131,7 @@ function renderSettings(authCtx: IAuthContext = makeAuthContext()) {
 
 // ----- Tests -----
 
-describe('SettingsPage — happy path: 3 sections rendered', () => {
+describe('SettingsPage — happy path: 4 sections rendered', () => {
   beforeEach(() => {
     document.documentElement.dataset.theme = 'dark';
   });
@@ -138,33 +144,40 @@ describe('SettingsPage — happy path: 3 sections rendered', () => {
   it('renders the page <h1> heading', () => {
     renderSettings();
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveTextContent(/account settings/i);
+    expect(h1).toHaveTextContent(/configurações da conta/i);
   });
 
   it('renders a Profile section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('profile'))).toBe(true);
+    expect(labels.some((t) => t.includes('perfil'))).toBe(true);
   });
 
   it('renders a Theme section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('theme'))).toBe(true);
+    expect(labels.some((t) => t.includes('tema'))).toBe(true);
+  });
+
+  it('renders a Language section with an <h2> heading (PT-BR default)', () => {
+    renderSettings();
+    const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
+    const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
+    expect(labels.some((t) => t.includes('idioma'))).toBe(true);
   });
 
   it('renders an Account/Danger section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('danger'))).toBe(true);
+    expect(labels.some((t) => t.includes('perigo'))).toBe(true);
   });
 
-  it('renders exactly 3 <h2> section headings', () => {
+  it('renders exactly 4 <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
   });
 });
 
@@ -219,20 +232,20 @@ describe('SettingsPage — Account section: delete modal trigger', () => {
   it('renders a "Delete my account" button', () => {
     renderSettings();
     expect(
-      screen.getByRole('button', { name: /delete my account/i }),
+      screen.getByRole('button', { name: /excluir minha conta/i }),
     ).toBeInTheDocument();
   });
 
   it('opens the delete-account modal when the button is clicked', async () => {
     renderSettings();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+    await userEvent.click(screen.getByRole('button', { name: /excluir minha conta/i }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
   it('closes the modal when Cancel is clicked inside it', async () => {
     renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+    await userEvent.click(screen.getByRole('button', { name: /excluir minha conta/i }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
@@ -245,9 +258,9 @@ describe('SettingsPage — A11y: heading levels', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
-  it('has exactly three <h2> section headings', () => {
+  it('has exactly four <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
   });
 
   it('does not use <h3> or deeper for section headings', () => {

@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem } from '../api/decks';
 import styles from './tracked-deck-card.module.css';
 
@@ -15,11 +16,12 @@ function getReadinessTier(percent: number): 'high' | 'mid' | 'low' {
 }
 
 export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckCardProps) {
+  const { t } = useTranslation();
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
 
   function handleUntrack(): void {
     const confirmed = window.confirm(
-      `Untrack "${deck.name}"? This will remove the deck and all its readiness data.`,
+      t('decks.untrackConfirm', { name: deck.name }),
     );
     if (confirmed) {
       onUntrack(deck.id);
@@ -43,11 +45,11 @@ export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckC
             className={styles.readinessPercent}
             data-tier={getReadinessTier(effectivePercent)}
           >
-            {effectivePercent.toFixed(1)}% ready
+            {t('decks.readinessPercent', { percent: effectivePercent.toFixed(1) })}
           </div>
         ) : (
           <div className={styles.noReadiness}>
-            No readiness data yet
+            {t('decks.noReadinessData')}
           </div>
         )}
       </Link>
@@ -57,7 +59,7 @@ export function TrackedDeckCard({ deck, onUntrack, isUntracking }: ITrackedDeckC
           disabled={isUntracking}
           className={styles.untrackBtn}
         >
-          {isUntracking ? 'Removing...' : 'Untrack'}
+          {isUntracking ? t('decks.removing') : t('decks.untrack')}
         </button>
       </div>
     </div>

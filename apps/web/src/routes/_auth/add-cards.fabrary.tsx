@@ -1,5 +1,6 @@
 import React, { useId, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useFabraryLibraryImportMutation } from '../../api/fabrary-import';
 import { ApiError } from '../../lib/api-client';
 import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
@@ -25,6 +26,7 @@ type TStatus =
   | { state: 'error'; message: string };
 
 function AddCardsFabraryPage(): React.ReactElement {
+  const { t } = useTranslation();
   const inputId = useId();
   const helpId = useId();
   const importMutation = useFabraryLibraryImportMutation();
@@ -40,7 +42,7 @@ function AddCardsFabraryPage(): React.ReactElement {
     if (!localValid) {
       setStatus({
         state: 'error',
-        message: 'Not a valid Fabrary deck URL — expected https://fabrary.net/decks/…',
+        message: t('decks.importFailedLocal'),
       });
       return;
     }
@@ -60,7 +62,7 @@ function AddCardsFabraryPage(): React.ReactElement {
           const message =
             err instanceof ApiError
               ? err.message
-              : (err as Error).message || 'Import failed.';
+              : (err as Error).message || t('decks.importErrorDefault');
           setStatus({ state: 'error', message });
         },
       },
@@ -77,21 +79,19 @@ function AddCardsFabraryPage(): React.ReactElement {
     <div className={styles.page}>
       <header className={styles.subviewHeader}>
         <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> Add cards
+          <span aria-hidden="true">←</span> {t('decks.addCardsTitle')}
         </Link>
         <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">III</span> Fabrary deck
+          <span className={styles.numeral} aria-hidden="true">III</span>{' '}
+          {t('decks.addCardsFabraryEyebrow')}
         </p>
-        <h1 className={styles.title}>Import from Fabrary</h1>
-        <p className={styles.subtitle}>
-          We import the cards, not the deck. The Fabrary deck stays where it is —
-          your library gets a new source with every card the deck uses.
-        </p>
+        <h1 className={styles.title}>{t('decks.importFromFabraryTitle')}</h1>
+        <p className={styles.subtitle}>{t('decks.importFabraryLibrarySubtitle')}</p>
       </header>
 
       <div className={styles.form}>
         <label className={styles.label} htmlFor={inputId}>
-          Fabrary deck URL
+          {t('decks.fabraryDeckUrlLabel')}
         </label>
         <input
           id={inputId}
@@ -113,8 +113,7 @@ function AddCardsFabraryPage(): React.ReactElement {
           disabled={status.state === 'submitting'}
         />
         <p id={helpId} className={styles.helpText}>
-          Public Fabrary deck links work — e.g. a community brew someone shared
-          with you.
+          {t('decks.fabraryUrlHelp')}
         </p>
         <button
           type="button"
@@ -122,20 +121,20 @@ function AddCardsFabraryPage(): React.ReactElement {
           onClick={submit}
           disabled={status.state === 'submitting' || trimmed.length === 0}
         >
-          {status.state === 'submitting' ? 'Importing…' : 'Import to library'}
+          {status.state === 'submitting' ? t('decks.importingBtn') : t('decks.importToLibraryBtn')}
         </button>
       </div>
 
       {status.state === 'submitting' && (
         <p className={styles.progress} role="status" aria-live="polite">
           <span className={styles.progressDiamond} aria-hidden="true">◆</span>
-          Fetching deck → parsing cards → adding to library…
+          {t('decks.fetchingDeckProgress')}
         </p>
       )}
 
       {status.state === 'error' && (
         <section className={styles.errorCallout} role="alert">
-          <p className={styles.errorTitle}>Import failed</p>
+          <p className={styles.errorTitle}>{t('decks.importFailed')}</p>
           <p className={styles.errorBody}>{status.message}</p>
         </section>
       )}

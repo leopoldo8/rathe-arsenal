@@ -1,4 +1,5 @@
 import './styles/global.css';
+import './i18n'; // side-effect: initialise the i18next singleton on app boot
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

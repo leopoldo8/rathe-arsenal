@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -40,11 +42,13 @@ interface ISubstitutionRowProps {
   readonly isPending?: boolean;
 }
 
-function getTierLabel(tier: number): string {
-  if (tier === 1) return 'Tier I — Close';
-  if (tier === 2) return 'Tier II — Loose';
-  if (tier === 3) return 'Tier III — Distant';
-  return `Tier ${tier}`;
+type TTranslate = TFunction;
+
+function getTierLabel(tier: number, t: TTranslate): string {
+  if (tier === 1) return t('decks.tierI');
+  if (tier === 2) return t('decks.tierII');
+  if (tier === 3) return t('decks.tierIII');
+  return t('decks.tierLabel', { tier });
 }
 
 /**
@@ -80,6 +84,7 @@ export function SubstitutionRow({
   onReset,
   isPending = false,
 }: ISubstitutionRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const substituteId = match.substitute.cardIdentifier;
   const originalName = original.name;
   const substituteName = match.substitute.name;
@@ -215,7 +220,7 @@ export function SubstitutionRow({
               </span>
             </div>
             <div className={styles.collapsedMeta}>
-              <span className={styles.row__tier}>{getTierLabel(match.tier)}</span>
+              <span className={styles.row__tier}>{getTierLabel(match.tier, t)}</span>
               <span className={styles.row__scoreLabel}>{scorePercent}%</span>
             </div>
           </div>
@@ -227,11 +232,11 @@ export function SubstitutionRow({
             >
               {isApproved ? (
                 <>
-                  <span aria-hidden="true">&#10003;</span> Approved
+                  <span aria-hidden="true">&#10003;</span> {t('decks.decisionApproved')}
                 </>
               ) : (
                 <>
-                  <span aria-hidden="true">&#10005;</span> Rejected
+                  <span aria-hidden="true">&#10005;</span> {t('decks.decisionRejected')}
                 </>
               )}
             </span>
@@ -241,9 +246,9 @@ export function SubstitutionRow({
               onClick={() => setIsExpanded(true)}
               disabled={isPending}
               aria-expanded={false}
-              aria-label={`Change decision for ${originalName} swap`}
+              aria-label={t('decks.changeDecisionAria', { name: originalName })}
             >
-              Change <span aria-hidden="true">&#9662;</span>
+              {t('decks.changeDecisionBtn')}
             </button>
           </div>
         </div>
@@ -270,7 +275,7 @@ export function SubstitutionRow({
 
         <div className={styles.row__meta}>
           <span className={styles.row__arrow} aria-hidden="true">&#8594;</span>
-          <span className={styles.row__tier}>{getTierLabel(match.tier)}</span>
+          <span className={styles.row__tier}>{getTierLabel(match.tier, t)}</span>
           <div className={styles.row__scoreBar}>
             <div ref={scoreFillRef} className={styles.row__scoreFill} />
           </div>
@@ -281,11 +286,11 @@ export function SubstitutionRow({
             >
               {isApproved ? (
                 <>
-                  <span aria-hidden="true">&#10003;</span> Approved
+                  <span aria-hidden="true">&#10003;</span> {t('decks.decisionApproved')}
                 </>
               ) : (
                 <>
-                  <span aria-hidden="true">&#10005;</span> Rejected
+                  <span aria-hidden="true">&#10005;</span> {t('decks.decisionRejected')}
                 </>
               )}
             </span>
@@ -316,9 +321,9 @@ export function SubstitutionRow({
           onClick={handleApprove}
           disabled={approveDisabled}
           aria-pressed={isApproved}
-          aria-label={`Approve substitution: ${originalName} for ${substituteName}`}
+          aria-label={t('decks.approveSubstitutionAria', { original: originalName, substitute: substituteName })}
         >
-          <span aria-hidden="true">&#10003;</span> Approve
+          <span aria-hidden="true">&#10003;</span> {t('decks.approveBtn')}
         </button>
 
         <button
@@ -333,9 +338,9 @@ export function SubstitutionRow({
           onClick={handleReject}
           disabled={rejectDisabled}
           aria-pressed={isRejected}
-          aria-label={`Reject substitution: ${originalName} for ${substituteName}`}
+          aria-label={t('decks.rejectSubstitutionAria', { original: originalName, substitute: substituteName })}
         >
-          <span aria-hidden="true">&#10005;</span> Reject
+          <span aria-hidden="true">&#10005;</span> {t('decks.rejectBtn')}
         </button>
 
         <button
@@ -345,9 +350,9 @@ export function SubstitutionRow({
             .join(' ')}
           onClick={handleReset}
           disabled={resetDisabled}
-          aria-label={`Reset decision: ${originalName} for ${substituteName}`}
+          aria-label={t('decks.resetDecisionAria', { original: originalName, substitute: substituteName })}
         >
-          <span aria-hidden="true">&#8635;</span> Reset
+          <span aria-hidden="true">&#8635;</span> {t('decks.resetBtn')}
         </button>
 
         {hasDec && (
@@ -358,9 +363,9 @@ export function SubstitutionRow({
               .join(' ')}
             onClick={() => setIsExpanded(false)}
             aria-expanded={true}
-            aria-label={`Collapse ${originalName} swap`}
+            aria-label={t('decks.collapseSwapAria', { name: originalName })}
           >
-            Done <span aria-hidden="true">&#9652;</span>
+            {t('decks.doneDecisionBtn')}
           </button>
         )}
       </div>

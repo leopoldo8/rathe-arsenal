@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './Skeleton.module.css';
 import { setCssVar } from '../../../lib/dom/setCssVar';
 
@@ -11,7 +12,7 @@ interface ISkeletonProps {
   readonly rounded?: boolean;
   /** Additional CSS class for custom layout overrides. */
   readonly className?: string;
-  /** Accessible label for screen readers. Defaults to 'Loading'. */
+  /** Accessible label for screen readers. Defaults to the locale-appropriate loading label. */
   readonly 'aria-label'?: string;
 }
 
@@ -31,8 +32,11 @@ export function Skeleton({
   height = '1em',
   rounded = false,
   className,
-  'aria-label': ariaLabel = 'Loading',
+  'aria-label': ariaLabel,
 }: ISkeletonProps): React.ReactElement {
+  const { t } = useTranslation();
+  const resolvedAriaLabel = ariaLabel ?? t('common.loading');
+
   const classes = [
     styles.skeleton,
     rounded ? styles['skeleton--rounded'] : null,
@@ -52,7 +56,7 @@ export function Skeleton({
     <span
       ref={elRef}
       role="status"
-      aria-label={ariaLabel}
+      aria-label={resolvedAriaLabel}
       aria-busy="true"
       className={classes}
     />

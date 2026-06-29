@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePatchDeckMutation } from '../../api/decks';
 import { useCreateTagMutation, useTagsQuery } from '../../api/tags';
 import type { ITagResponse } from '../../api/tags';
@@ -47,6 +48,7 @@ export function TagAutocompleteCombobox({
   existingTagIds,
   onClose,
 }: ITagAutocompleteComboboxProps): React.ReactElement {
+  const { t } = useTranslation();
   const inputId = useId();
   const listboxId = useId();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -247,7 +249,7 @@ export function TagAutocompleteCombobox({
         id={inputId}
         className={styles.input}
         role="combobox"
-        aria-label="Search or create a tag"
+        aria-label={t('decks.tagSearchAria')}
         aria-autocomplete="list"
         aria-controls={listboxId}
         aria-expanded={isOpen}
@@ -263,7 +265,7 @@ export function TagAutocompleteCombobox({
         <ul
           id={listboxId}
           role="listbox"
-          aria-label="Tag suggestions"
+          aria-label={t('decks.tagSuggestionsAria')}
           className={styles.listbox}
         >
           {filteredTags.map((tag, i) => (
@@ -295,8 +297,7 @@ export function TagAutocompleteCombobox({
                 handleCreateAndAttach(query.trim());
               }}
             >
-              {/* JSX text-node: safe React rendering */}
-              Create &ldquo;{query.trim()}&rdquo;
+              {t('decks.createTagOption', { query: query.trim() })}
             </li>
           ) : null}
 
@@ -308,26 +309,22 @@ export function TagAutocompleteCombobox({
               className={styles.errorFooter}
             >
               {inlineError.kind === '422-cap' ? (
-                <span>
-                  You&rsquo;ve reached the 200-tag limit. Remove an unused tag first.
-                </span>
+                <span>{t('decks.tagLimitError')}</span>
               ) : inlineError.kind === '5xx-create' ? (
                 <>
-                  <span>Couldn&rsquo;t create the tag — try again.</span>
+                  <span>{t('decks.tagCreateError')}</span>
                   <button
                     type="button"
                     className={styles.retryBtn}
                     onClick={inlineError.retry}
                   >
-                    Retry
+                    {t('decks.retry')}
                   </button>
                 </>
               ) : inlineError.kind === 'partial-failure' ? (
-                <span>
-                  Tag created but couldn&rsquo;t attach — pick it from the list.
-                </span>
+                <span>{t('decks.tagCreateAttachError')}</span>
               ) : inlineError.kind === '5xx-attach' ? (
-                <span>Couldn&rsquo;t attach the tag — try again.</span>
+                <span>{t('decks.tagAttachError')}</span>
               ) : null}
             </li>
           ) : null}

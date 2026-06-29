@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import type {
   IExactMatchUploadResponse,
@@ -41,29 +42,31 @@ interface IUploadResolveModalProps {
 // ---------------------------------------------------------------------------
 
 function SkipReasonLabel({ reason }: { reason: ISkippedCsvRow['reason'] }): React.ReactElement {
+  const { t } = useTranslation();
   const labels: Record<ISkippedCsvRow['reason'], string> = {
-    'no-match': 'Card not found in catalog',
-    'ambiguous': 'Multiple cards match — no set column to disambiguate',
-    'invalid-quantity': 'Invalid quantity (must be a positive integer)',
-    'empty-name': 'Empty card name',
+    'no-match': t('csvSources.skipReasonNoMatch'),
+    'ambiguous': t('csvSources.skipReasonAmbiguous'),
+    'invalid-quantity': t('csvSources.skipReasonInvalidQuantity'),
+    'empty-name': t('csvSources.skipReasonEmptyName'),
   };
   return <>{labels[reason]}</>;
 }
 
 function DeltaTable({ delta }: { delta: ICsvDelta }): React.ReactElement {
+  const { t } = useTranslation();
   const rows = [
-    { label: 'New cards', count: delta.added.length, sign: '+', cls: styles.deltaAdded },
-    { label: 'Increased', count: delta.increased.length, sign: '+', cls: styles.deltaAdded },
-    { label: 'Decreased', count: delta.decreased.length, sign: '-', cls: styles.deltaRemoved },
-    { label: 'Removed', count: delta.removed.length, sign: '-', cls: styles.deltaRemoved },
+    { label: t('csvSources.deltaNewCards'), count: delta.added.length, sign: '+', cls: styles.deltaAdded },
+    { label: t('csvSources.deltaIncreased'), count: delta.increased.length, sign: '+', cls: styles.deltaAdded },
+    { label: t('csvSources.deltaDecreased'), count: delta.decreased.length, sign: '-', cls: styles.deltaRemoved },
+    { label: t('csvSources.deltaRemoved'), count: delta.removed.length, sign: '-', cls: styles.deltaRemoved },
   ].filter((r) => r.count > 0);
 
   if (rows.length === 0) {
-    return <p className={styles.deltaEmpty}>No changes detected.</p>;
+    return <p className={styles.deltaEmpty}>{t('csvSources.deltaNoChanges')}</p>;
   }
 
   return (
-    <table className={styles.deltaTable} aria-label="Change summary">
+    <table className={styles.deltaTable} aria-label={t('csvSources.deltaChangeSummaryAriaLabel')}>
       <tbody>
         {rows.map((row) => (
           <tr key={row.label}>
@@ -89,21 +92,26 @@ function SkippedRowsVariant({
   response: ICreatedUploadResponse | IUpdatedUploadResponse | IReplacedUploadResponse;
   onClose: () => void;
 }): React.ReactElement {
+  const { t } = useTranslation();
   const { skippedRows } = response;
+  const n = skippedRows.length;
+  const title = n === 1
+    ? t('csvSources.skippedRowsTitleSingular', { n })
+    : t('csvSources.skippedRowsTitlePlural', { n });
 
   return (
     <>
       <Dialog.Title className={styles.title}>
-        {skippedRows.length} row{skippedRows.length !== 1 ? 's' : ''} could not be matched
+        {title}
       </Dialog.Title>
       <Dialog.Description className={styles.description}>
-        The import completed, but the following rows could not be resolved to catalog cards.
+        {t('csvSources.skippedRowsDescription')}
       </Dialog.Description>
 
-      <div className={styles.skippedList} role="list" aria-label="Unresolved rows">
+      <div className={styles.skippedList} role="list" aria-label={t('csvSources.unresolvedRowsAriaLabel')}>
         {skippedRows.map((row) => (
           <div key={row.rowNumber} className={styles.skippedRow} role="listitem">
-            <span className={styles.skippedRowNum}>Row {row.rowNumber}</span>
+            <span className={styles.skippedRowNum}>{t('csvSources.rowLabel', { n: row.rowNumber })}</span>
             <span className={styles.skippedName}>{row.name || '(empty)'}</span>
             <span className={styles.skippedReason}>
               <SkipReasonLabel reason={row.reason} />
@@ -114,7 +122,7 @@ function SkippedRowsVariant({
 
       <div className={styles.footer}>
         <button type="button" className={styles.btnPrimary} onClick={onClose}>
-          Close
+          {t('csvSources.closeButton')}
         </button>
       </div>
     </>
@@ -134,13 +142,14 @@ function ExactMatchVariant({
   onClose: () => void;
   onAction: IUploadResolveModalProps['onAction'];
 }): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <>
       <Dialog.Title className={styles.title}>
-        This file is already imported
+        {t('csvSources.exactMatchTitle')}
       </Dialog.Title>
       <Dialog.Description className={styles.description}>
-        You already have a source with the same cards. What would you like to do?
+        {t('csvSources.exactMatchDescription')}
       </Dialog.Description>
 
       <div className={styles.footer}>
@@ -149,21 +158,21 @@ function ExactMatchVariant({
           className={styles.btnTertiary}
           onClick={onClose}
         >
-          Cancel
+          {t('csvSources.cancelButton2')}
         </button>
         <button
           type="button"
           className={styles.btnSecondary}
           onClick={() => onAction('replace', response.existingSourceId)}
         >
-          Replace existing
+          {t('csvSources.replaceExistingButton')}
         </button>
         <button
           type="button"
           className={styles.btnPrimary}
           onClick={() => onAction('separate', undefined)}
         >
-          Import as separate copy
+          {t('csvSources.importAsSeparateCopyButton')}
         </button>
       </div>
     </>
@@ -183,12 +192,13 @@ function PartialOverlapVariant({
   onClose: () => void;
   onAction: IUploadResolveModalProps['onAction'];
 }): React.ReactElement {
+  const { t } = useTranslation();
   const label = response.existingLabel ?? 'existing source';
 
   return (
     <>
       <Dialog.Title className={styles.title}>
-        Update existing source?
+        {t('csvSources.partialOverlapTitle')}
       </Dialog.Title>
       <Dialog.Description className={styles.description}>
         This looks like an updated version of &ldquo;{label}&rdquo;.
@@ -202,28 +212,28 @@ function PartialOverlapVariant({
           className={styles.btnTertiary}
           onClick={onClose}
         >
-          Cancel
+          {t('csvSources.cancelButton3')}
         </button>
         <button
           type="button"
           className={styles.btnSecondary}
           onClick={() => onAction('replace', response.existingSourceId)}
         >
-          Replace with new
+          {t('csvSources.replaceWithNewButton')}
         </button>
         <button
           type="button"
           className={styles.btnSecondary}
           onClick={() => onAction('separate', undefined)}
         >
-          Import as separate copy
+          {t('csvSources.importAsSeparateCopyButton')}
         </button>
         <button
           type="button"
           className={styles.btnPrimary}
           onClick={() => onAction('update', response.existingSourceId)}
         >
-          Update existing
+          {t('csvSources.updateExistingButton')}
         </button>
       </div>
     </>

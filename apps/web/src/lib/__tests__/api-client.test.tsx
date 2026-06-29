@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useApiClient } from '../api-client';
+import i18n from '../../i18n';
 
 // useApiClient calls useAuth() internally; mock the hook so the test does not
 // have to mount the AuthProvider.
@@ -58,5 +59,11 @@ describe('useApiClient — Content-Type handling', () => {
     const { result } = renderHook(() => useApiClient());
     await result.current('/test');
     expect(getRequestHeaders().has('Content-Type')).toBe(false);
+  });
+
+  it('sets Accept-Language to the active i18n locale', async () => {
+    const { result } = renderHook(() => useApiClient());
+    await result.current('/test');
+    expect(getRequestHeaders().get('Accept-Language')).toBe(i18n.language);
   });
 });

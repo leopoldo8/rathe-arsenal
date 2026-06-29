@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 3,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "ac_gap::test localstorage unavailability for in memory language fallback by mocking setitem to throw and asserting the language still applies without propagating the error",
+      "text": "Test localStorage unavailability for in-memory language fallback by mocking setItem to throw and asserting the language still applies without propagating the error.",
+      "signal": "ac_gap",
+      "scope": "i18n,storage",
+      "status": "candidate",
+      "features": [
+        "i18n"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "P1-AC8 (i18n,storage)"
+      ],
+      "created": "2026-06-29T20:28:45Z",
+      "last_seen": "2026-06-29T20:28:45Z"
+    },
+    {
+      "id": "L-002",
+      "key": "spec_precision_gap::assert runtime missing key fallback behavior with an unknown key not just that fallbacklng config equals the expected locale",
+      "text": "Assert runtime missing-key fallback behavior with an unknown key, not just that fallbackLng config equals the expected locale.",
+      "signal": "spec_precision_gap",
+      "scope": "i18n,testing",
+      "status": "candidate",
+      "features": [
+        "i18n"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "P1-AC7 (i18n,testing)"
+      ],
+      "created": "2026-06-29T20:28:51Z",
+      "last_seen": "2026-06-29T20:28:51Z"
+    }
+  ]
+}

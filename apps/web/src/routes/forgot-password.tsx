@@ -1,9 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeRateLimit } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
 
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/forgot-password')({
 });
 
 function ForgotPasswordPage(): React.ReactElement {
+  const { t } = useTranslation();
   const { forgotPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -30,7 +32,7 @@ function ForgotPasswordPage(): React.ReactElement {
       // Rate limit is user-visible (they actually need to wait). Any other
       // error is silently swallowed to avoid leaking account existence.
       if (err instanceof AuthFetchError && err.status === 429) {
-        setError(formatRateLimitMessage(err.retryAfterSeconds));
+        setError(localizeRateLimit(err.retryAfterSeconds, t));
       } else {
         setSent(true);
       }
@@ -42,17 +44,16 @@ function ForgotPasswordPage(): React.ReactElement {
   if (sent) {
     return (
       <AuthLayout
-        title="Check your email"
-        tagline="The raven has flown."
-        footer={<Link to="/sign-in" className={styles.footerLink}>Back to sign in</Link>}
+        title={t('auth.forgotSentTitle')}
+        tagline={t('auth.forgotSentTagline')}
+        footer={<Link to="/sign-in" className={styles.footerLink}>{t('auth.backToSignIn')}</Link>}
       >
         <div className={styles.infoBox}>
           <div className={styles.infoIcon} aria-hidden="true">✉</div>
           <div>
-            <p className={styles.infoTitle}>Sent to your inbox</p>
+            <p className={styles.infoTitle}>{t('auth.forgotSentToInbox')}</p>
             <p className={styles.infoCopy}>
-              If an account exists for that email, we sent a password reset link.
-              Check your spam folder if you don&apos;t see it in 2 minutes.
+              {t('auth.forgotSentCopy')}
             </p>
           </div>
         </div>
@@ -62,19 +63,19 @@ function ForgotPasswordPage(): React.ReactElement {
 
   return (
     <AuthLayout
-      title="Forgot password"
-      subtitle="We'll email you a reset link."
-      tagline="Lost the key? We'll forge another."
+      title={t('auth.forgotTitle')}
+      subtitle={t('auth.forgotSubtitle')}
+      tagline={t('auth.forgotTagline')}
       error={error}
-      footer={<Link to="/sign-in" className={styles.footerLink}>Back to sign in</Link>}
+      footer={<Link to="/sign-in" className={styles.footerLink}>{t('auth.backToSignIn')}</Link>}
     >
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <label className={styles.label} htmlFor="forgot-email">Email</label>
+        <label className={styles.label} htmlFor="forgot-email">{t('auth.emailLabel')}</label>
         <input
           id="forgot-email"
           className={styles.input}
           type="email"
-          placeholder="hero@rathe.gg"
+          placeholder={t('auth.emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
@@ -86,7 +87,7 @@ function ForgotPasswordPage(): React.ReactElement {
           aria-disabled={loading ? 'true' : undefined}
           aria-busy={loading ? 'true' : undefined}
         >
-          {loading ? 'Sending…' : 'Send reset link'}
+          {loading ? t('auth.sending') : t('auth.sendResetLinkBtn')}
         </button>
       </form>
     </AuthLayout>

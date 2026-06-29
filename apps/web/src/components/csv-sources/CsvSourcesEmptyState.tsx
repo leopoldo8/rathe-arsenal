@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './CsvSourcesEmptyState.module.css';
 
 interface ICsvSourcesEmptyStateProps {
@@ -12,8 +13,9 @@ interface ICsvSourcesEmptyStateProps {
 export function CsvSourcesEmptyState({
   onUpload,
 }: ICsvSourcesEmptyStateProps): React.ReactElement {
+  const { t } = useTranslation();
   return (
-    <div className={styles.root} role="region" aria-label="No CSV sources">
+    <div className={styles.root} role="region" aria-label={t('csvSources.emptyAriaLabel')}>
       <div className={styles.icon} aria-hidden="true">
         <svg
           width="48"
@@ -45,20 +47,19 @@ export function CsvSourcesEmptyState({
         </svg>
       </div>
 
-      <h2 className={styles.heading}>No CSVs imported yet</h2>
+      <h2 className={styles.heading}>{t('csvSources.emptyHeading')}</h2>
 
       <p className={styles.body}>
-        Upload your first CSV to seed your library from a collection you already
-        have. Duplicates across sources are summed, not overwritten.
+        {t('csvSources.emptyBody')}
       </p>
 
       <button
         type="button"
         className={styles.cta}
         onClick={onUpload}
-        aria-label="Upload a CSV to import your collection"
+        aria-label={t('csvSources.emptyUploadAriaLabel')}
       >
-        Upload CSV
+        {t('csvSources.emptyUploadButton')}
       </button>
     </div>
   );

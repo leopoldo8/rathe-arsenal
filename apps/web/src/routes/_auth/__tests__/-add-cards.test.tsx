@@ -81,8 +81,8 @@ function renderInRouter(node: React.ReactNode): ReturnType<typeof render> {
 describe('AddCardsPage — gallery', () => {
   it('renders the page title and subtitle', () => {
     renderInRouter(<AddCardsPage />);
-    expect(screen.getByRole('heading', { name: /^Add cards$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Three ways to grow your arsenal/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Adicionar cartas$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Três formas de expandir/i)).toBeInTheDocument();
   });
 
   it('renders three method cards as links to the matching subroutes', () => {
@@ -116,22 +116,22 @@ describe('AddCardsFabraryPage', () => {
 
   it('rejects an obviously invalid URL on submit', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /Import to library/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Importar para biblioteca/i }));
     expect(fabraryMutate).not.toHaveBeenCalled();
     expect(
-      screen.getByText(/Not a valid Fabrary deck URL/i),
+      screen.getByText(/Não é uma URL de baralho Fabrary válida/i),
     ).toBeInTheDocument();
   });
 
   it('calls the import mutation when a valid URL is submitted', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /Import to library/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Importar para biblioteca/i }));
     expect(fabraryMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'https://fabrary.net/decks/01HABCDEFG12345',
@@ -144,13 +144,13 @@ describe('AddCardsFabraryPage', () => {
     fabraryMutationState.isPending = true;
     renderInRouter(<AddCardsFabraryPage />);
     fabraryMutationState.isPending = false; // restore for next test
-    const button = screen.getByRole('button', { name: /Import to library/i });
+    const button = screen.getByRole('button', { name: /Importar para biblioteca/i });
     expect(button).toBeDisabled();
   });
 
   it('Enter on the input triggers submission when the URL is valid', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Fabrary deck URL/i);
+    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
@@ -160,7 +160,7 @@ describe('AddCardsFabraryPage', () => {
 
   it('renders the back-to-add-cards link', () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const back = screen.getByRole('link', { name: /Add cards/i });
+    const back = screen.getByRole('link', { name: /Adicionar cartas/i });
     expect(back).toHaveAttribute('href', '/add-cards');
   });
 });

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import styles from './readiness-header.module.css';
 
 interface IReadinessHeaderProps {
@@ -23,6 +24,7 @@ export function ReadinessHeader({
   hero,
   format,
 }: IReadinessHeaderProps) {
+  const { t } = useTranslation();
   const fabraryUrl = `https://fabrary.com/decks/${fabraryUlid}`;
 
   return (
@@ -41,7 +43,7 @@ export function ReadinessHeader({
           {effectivePercent.toFixed(1)}%
         </span>
         <span className={styles.readinessSubline}>
-          effective ({rawPercent.toFixed(1)}% raw)
+          {t('decks.effectiveReadinessSubline', { raw: rawPercent.toFixed(1) })}
         </span>
       </div>
       <a

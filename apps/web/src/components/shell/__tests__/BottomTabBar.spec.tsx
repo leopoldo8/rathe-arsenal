@@ -47,24 +47,24 @@ import { BottomTabBar } from '../BottomTabBar';
 describe('BottomTabBar — tab items', () => {
   it('renders exactly 3 tab links', () => {
     render(<BottomTabBar />);
-    const nav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
     const links = nav.querySelectorAll('a');
     expect(links).toHaveLength(3);
   });
 
   it('renders the Home tab', () => {
     render(<BottomTabBar />);
-    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Início')).toBeInTheDocument();
   });
 
   it('renders the Library tab', () => {
     render(<BottomTabBar />);
-    expect(screen.getByText('Library')).toBeInTheDocument();
+    expect(screen.getByText('Biblioteca')).toBeInTheDocument();
   });
 
   it('renders the Swaps tab', () => {
     render(<BottomTabBar />);
-    expect(screen.getByText('Swaps')).toBeInTheDocument();
+    expect(screen.getByText('Trocas')).toBeInTheDocument();
   });
 
   it('does not render an Import tab', () => {
@@ -74,7 +74,7 @@ describe('BottomTabBar — tab items', () => {
 
   it('does not render a link to /import', () => {
     render(<BottomTabBar />);
-    const nav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
     const importLinks = nav.querySelectorAll('[data-to="/import"]');
     expect(importLinks).toHaveLength(0);
   });
@@ -84,7 +84,7 @@ describe('BottomTabBar — A11y', () => {
   it('has aria-label="Mobile primary"', () => {
     render(<BottomTabBar />);
     expect(
-      screen.getByRole('navigation', { name: 'Mobile primary' }),
+      screen.getByRole('navigation', { name: 'Navegação principal' }),
     ).toBeInTheDocument();
   });
 });

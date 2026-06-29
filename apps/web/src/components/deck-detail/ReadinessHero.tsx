@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './ReadinessHero.module.css';
 import { setCssVar } from '../../lib/dom/setCssVar';
 
@@ -46,6 +47,7 @@ export function ReadinessHero({
   totalCards,
   provisionedCards,
 }: IReadinessHeroProps): React.ReactElement {
+  const { t } = useTranslation();
   const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
   const readinessClass = getReadinessClass(effectivePercent);
 
@@ -66,7 +68,7 @@ export function ReadinessHero({
             rel="noopener noreferrer"
             className={styles.hero__fabraryLink}
           >
-            View on Fabrary &#x2197;
+            {t('decks.viewOnFabraryLink')}
           </a>
         )}
       </div>
@@ -90,13 +92,16 @@ export function ReadinessHero({
             <span className={styles.readiness__sym}>%</span>
           </div>
           <div className={styles.readiness__label}>
-            Effective Ready
+            {t('decks.effectiveReady')}
             <span className={styles.readiness__count}>
-              {' '}&middot;{' '}{provisionedCards}/{totalCards} cartas
+              {' '}&middot;{' '}{t('decks.provisionedCount', { provisioned: provisionedCards, total: totalCards })}
             </span>
           </div>
           <div className={styles.readiness__raw}>
-            Raw {rawPercent.toFixed(1)}% &#183; Fidelity {(Math.round(fidelityPercent * 10) / 10).toFixed(1)}%
+            {t('decks.rawFidelity', {
+              raw: rawPercent.toFixed(1),
+              fidelity: (Math.round(fidelityPercent * 10) / 10).toFixed(1),
+            })}
           </div>
         </div>
       </div>

@@ -121,13 +121,13 @@ describe('DeckCard', () => {
 
   it('renders "No readiness data yet" when snapshot is null', () => {
     renderDeckCard(makeDeck({ latestSnapshot: null }));
-    expect(screen.getByText(/no readiness data yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/sem dados de prontidão/i)).toBeInTheDocument();
   });
 
   it('calls onUntrack with deck.id after confirm', () => {
     const onUntrack = vi.fn();
     renderDeckCard(makeDeck({ id: 42 }), onUntrack);
-    const buttons = screen.getAllByRole('button', { name: /untrack/i });
+    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
     const firstButton = buttons[0];
     expect(firstButton).toBeDefined();
     fireEvent.click(firstButton!);
@@ -138,7 +138,7 @@ describe('DeckCard', () => {
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
     const onUntrack = vi.fn();
     renderDeckCard(makeDeck());
-    const buttons = screen.getAllByRole('button', { name: /untrack/i });
+    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
     const firstButton = buttons[0];
     expect(firstButton).toBeDefined();
     fireEvent.click(firstButton!);
@@ -150,7 +150,7 @@ describe('DeckCard', () => {
     // The pin is icon-only, so the loading state is signalled by the
     // disabled attribute + aria-busy. The aria-label stays stable so
     // assistive tech still announces the deck name.
-    const btn = screen.getByRole('button', { name: /untrack/i });
+    const btn = screen.getByRole('button', { name: /remover rastreamento/i });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('aria-busy', 'true');
   });
@@ -167,14 +167,14 @@ describe('DeckCard', () => {
   describe('(U9) status row', () => {
     it('renders the status label below the deck name', () => {
       renderDeckCard(makeDeck({ status: 'active' }));
-      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Ativo')).toBeInTheDocument();
     });
 
     it('renders different status labels for each status value', () => {
       const statuses: ITrackedDeckListItem['status'][] = [
         'idea', 'building', 'ready', 'active', 'retired',
       ];
-      const expectedLabels = ['Idea', 'Building', 'Ready', 'Active', 'Retired'];
+      const expectedLabels = ['Ideia', 'Construindo', 'Pronto', 'Ativo', 'Aposentado'];
       statuses.forEach((status, i) => {
         const { unmount } = renderDeckCard(makeDeck({ status }));
         expect(screen.getByText(expectedLabels[i]!)).toBeInTheDocument();

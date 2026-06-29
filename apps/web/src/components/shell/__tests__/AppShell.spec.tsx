@@ -140,11 +140,11 @@ describe('AppShell — happy path', () => {
 
   it('renders primary nav with Home, Library, Swaps links (no Import)', () => {
     render(<AppShell><div /></AppShell>);
-    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
     expect(nav).toBeInTheDocument();
-    expect(nav).toHaveTextContent('Home');
-    expect(nav).toHaveTextContent('Library');
-    expect(nav).toHaveTextContent('Swaps');
+    expect(nav).toHaveTextContent('Início');
+    expect(nav).toHaveTextContent('Biblioteca');
+    expect(nav).toHaveTextContent('Trocas');
     expect(nav).not.toHaveTextContent('Import');
   });
 
@@ -162,9 +162,9 @@ describe('AppShell — A11y landmarks', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument();
   });
 
-  it('primary nav has aria-label="Primary"', () => {
+  it('primary nav has the correct aria-label in PT-BR', () => {
     render(<AppShell><div /></AppShell>);
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
   });
 
   it('main content has role=main', () => {
@@ -176,17 +176,17 @@ describe('AppShell — A11y landmarks', () => {
 describe('AppShell — responsive: bottom tab bar', () => {
   afterEach(() => vi.clearAllMocks());
 
-  it('renders mobile nav with aria-label="Mobile primary" when matchMedia matches', () => {
+  it('renders mobile nav with the correct aria-label when matchMedia matches', () => {
     // matches=true means we ARE below 960px — show bottom tab bar
     mockMatchMedia(true);
     render(<AppShell><div /></AppShell>);
-    expect(screen.getByRole('navigation', { name: 'Mobile primary' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument();
   });
 
   it('does not render mobile nav when matchMedia does not match (>=960px)', () => {
     mockMatchMedia(false);
     render(<AppShell><div /></AppShell>);
-    expect(screen.queryByRole('navigation', { name: 'Mobile primary' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navegação principal' })).not.toBeInTheDocument();
   });
 });
 
@@ -225,7 +225,7 @@ describe('AppShell — sign out', () => {
 
   it('clicking Sign out in user menu calls signOut', async () => {
     render(<AppShell><div /></AppShell>);
-    const signOutItem = screen.getByText(/Sign out/i);
+    const signOutItem = screen.getByText(/Sair/i);
     await userEvent.click(signOutItem);
     expect(mockSignOut).toHaveBeenCalledOnce();
   });

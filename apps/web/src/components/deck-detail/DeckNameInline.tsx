@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePatchDeckMutation } from '../../api/decks';
 import styles from './DeckNameInline.module.css';
 
@@ -38,6 +39,7 @@ export function DeckNameInline({
   name,
   mode,
 }: IDeckNameInlineProps): React.ReactElement {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -110,7 +112,7 @@ export function DeckNameInline({
         ref={inputRef}
         id={inputId}
         className={styles.inlineInput}
-        aria-label="Deck name"
+        aria-label={t('decks.deckNameLabel')}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commitEdit}
@@ -133,7 +135,7 @@ export function DeckNameInline({
       ref={displayButtonRef}
       type="button"
       className={styles.displayButton}
-      aria-label={`Edit deck name — currently ${name}`}
+      aria-label={t('decks.editDeckNameAria', { name })}
       onClick={openEdit}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

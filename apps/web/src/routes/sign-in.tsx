@@ -1,9 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './sign-in.module.css';
 
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/sign-in')({
 });
 
 function SignInPage(): React.ReactElement {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -23,17 +25,15 @@ function SignInPage(): React.ReactElement {
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     setError('');
-    if (!email || !password) { setError('All fields are required'); return; }
+    if (!email || !password) { setError(t('auth.allFieldsRequired')); return; }
     setLoading(true);
     try {
       await signIn(email, password);
       void navigate({ to: '/' });
     } catch (err) {
-      if (err instanceof AuthFetchError && err.status === 429) {
-        setError(formatRateLimitMessage(err.retryAfterSeconds));
-      } else {
-        setError((err as Error).message);
-        // Focus password field for quick retry after invalid-credentials error
+      setError(localizeAuthError(err, t));
+      // Focus password field for quick retry on a non-rate-limit error.
+      if (!(err instanceof AuthFetchError && err.status === 429)) {
         passwordRef.current?.focus();
       }
     } finally {
@@ -43,38 +43,38 @@ function SignInPage(): React.ReactElement {
 
   return (
     <AuthLayout
-      title="Sign in"
-      subtitle="Welcome back, Hero."
-      tagline="Welcome back to the armory."
+      title={t('auth.signInTitle')}
+      subtitle={t('auth.signInSubtitle')}
+      tagline={t('auth.signInTagline')}
       error={error}
       footer={
         <>
-          <Link to="/forgot-password" className={styles.footerLink}>Forgot password?</Link>
+          <Link to="/forgot-password" className={styles.footerLink}>{t('auth.forgotPasswordLink')}</Link>
           <span>
-            No account?{' '}
-            <Link to="/sign-up" className={styles.footerLink}>Create one</Link>
+            {t('auth.noAccountText')}{' '}
+            <Link to="/sign-up" className={styles.footerLink}>{t('auth.createOneLink')}</Link>
           </span>
         </>
       }
     >
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <label className={styles.label} htmlFor="sign-in-email">Email</label>
+        <label className={styles.label} htmlFor="sign-in-email">{t('auth.emailLabel')}</label>
         <input
           id="sign-in-email"
           className={styles.input}
           type="email"
-          placeholder="hero@rathe.gg"
+          placeholder={t('auth.emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           required
         />
-        <label className={styles.label} htmlFor="sign-in-password">Password</label>
+        <label className={styles.label} htmlFor="sign-in-password">{t('auth.passwordLabel')}</label>
         <input
           id="sign-in-password"
           className={styles.input}
           type="password"
-          placeholder="Password"
+          placeholder={t('auth.passwordPlaceholder')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
@@ -87,7 +87,7 @@ function SignInPage(): React.ReactElement {
           aria-disabled={loading ? 'true' : undefined}
           aria-busy={loading ? 'true' : undefined}
         >
-          {loading ? 'Signing in…' : 'Sign in'}
+          {loading ? t('auth.signingIn') : t('auth.signInBtn')}
         </button>
       </form>
     </AuthLayout>
