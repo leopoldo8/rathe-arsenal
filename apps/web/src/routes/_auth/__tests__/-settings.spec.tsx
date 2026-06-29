@@ -144,21 +144,21 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
   it('renders the page <h1> heading', () => {
     renderSettings();
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveTextContent(/account settings/i);
+    expect(h1).toHaveTextContent(/configurações da conta/i);
   });
 
   it('renders a Profile section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('profile'))).toBe(true);
+    expect(labels.some((t) => t.includes('perfil'))).toBe(true);
   });
 
   it('renders a Theme section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('theme'))).toBe(true);
+    expect(labels.some((t) => t.includes('tema'))).toBe(true);
   });
 
   it('renders a Language section with an <h2> heading (PT-BR default)', () => {
@@ -172,7 +172,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('danger'))).toBe(true);
+    expect(labels.some((t) => t.includes('perigo'))).toBe(true);
   });
 
   it('renders exactly 4 <h2> section headings', () => {
@@ -232,20 +232,20 @@ describe('SettingsPage — Account section: delete modal trigger', () => {
   it('renders a "Delete my account" button', () => {
     renderSettings();
     expect(
-      screen.getByRole('button', { name: /delete my account/i }),
+      screen.getByRole('button', { name: /excluir minha conta/i }),
     ).toBeInTheDocument();
   });
 
   it('opens the delete-account modal when the button is clicked', async () => {
     renderSettings();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+    await userEvent.click(screen.getByRole('button', { name: /excluir minha conta/i }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
   it('closes the modal when Cancel is clicked inside it', async () => {
     renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /delete my account/i }));
+    await userEvent.click(screen.getByRole('button', { name: /excluir minha conta/i }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();

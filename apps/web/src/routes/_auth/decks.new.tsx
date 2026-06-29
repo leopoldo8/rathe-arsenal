@@ -1,5 +1,6 @@
 import React from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ImportFabraryCard } from '../../components/decks-new/ImportFabraryCard';
 import { StartScratchCard } from '../../components/decks-new/StartScratchCard';
 import styles from './decks.new.module.css';
@@ -19,16 +20,15 @@ export { DecksNewPage };
  * Layout: two cards side-by-side on desktop (≥768px), stacked on mobile.
  */
 function DecksNewPage(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <div className={styles.page}>
       <header className={styles.subviewHeader}>
         <Link to="/home" search={{ tag: [] }} className={styles.back}>
-          <span aria-hidden="true">←</span> Home
+          <span aria-hidden="true">←</span> {t('decks.backToHome')}
         </Link>
-        <h1 className={styles.title}>Add new deck</h1>
-        <p className={styles.subtitle}>
-          Import an existing Fabrary deck or start one from scratch.
-        </p>
+        <h1 className={styles.title}>{t('decks.addNewDeck')}</h1>
+        <p className={styles.subtitle}>{t('decks.addNewDeckSubtitle')}</p>
       </header>
 
       <div className={styles.cards}>

@@ -14,31 +14,28 @@ import styles from './settings.module.css';
  * admin-gated API calls never fire for regular users.
  */
 function StoreSyncAdminSection() {
+  const { t } = useTranslation();
   const { data: status } = useUrlSyncStatusQuery();
   const trigger = useTriggerUrlSyncMutation();
   const busy = status?.state === 'queued' || status?.state === 'running' || trigger.isPending;
 
   const statusLine = (() => {
-    if (status?.state === 'running') return 'Syncing catalog… this takes a few minutes.';
-    if (status?.state === 'queued') return 'Queued — the worker will start shortly.';
+    if (status?.state === 'running') return t('settings.syncingCatalog');
+    if (status?.state === 'queued') return t('settings.syncQueued');
     if (status?.lastUrlSyncAt) {
       const when = new Date(status.lastUrlSyncAt).toLocaleString();
-      return `Last sync: ${status.lastProductCount ?? 0} products · ${when}`;
+      return t('settings.lastSync', { count: status.lastProductCount ?? 0, when });
     }
-    return 'Never synced.';
+    return t('settings.neverSynced');
   })();
 
   return (
     <section className={styles.section} aria-labelledby="section-store-sync">
-      <span className={styles.eyebrow}>Admin</span>
+      <span className={styles.eyebrow}>{t('settings.adminEyebrow')}</span>
       <h2 id="section-store-sync" className={styles.sectionHeading}>
-        Store catalog sync
+        {t('settings.storeCatalogSync')}
       </h2>
-      <p className={styles.dangerCopy}>
-        Re-scans the store to discover new cards&rsquo; product pages (e.g. after a
-        new set release). Runs in the background via Firecrawl — trigger it once
-        when a set drops.
-      </p>
+      <p className={styles.dangerCopy}>{t('settings.syncCatalogDesc')}</p>
       <div className={styles.syncRow}>
         <button
           type="button"
@@ -47,12 +44,12 @@ function StoreSyncAdminSection() {
           onClick={() => trigger.mutate()}
           data-testid="store-sync-trigger"
         >
-          {busy ? 'Sync in progress…' : 'Sync store catalog'}
+          {busy ? t('settings.syncInProgress') : t('settings.syncStoreCatalog')}
         </button>
         <span className={styles.syncStatus} data-testid="store-sync-status">{statusLine}</span>
       </div>
       {trigger.isError && (
-        <p className={styles.syncError}>Could not queue the sync. Try again.</p>
+        <p className={styles.syncError}>{t('settings.couldNotQueueSync')}</p>
       )}
     </section>
   );
@@ -80,28 +77,28 @@ export function SettingsPage() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.pageHeading}>Account settings</h1>
+      <h1 className={styles.pageHeading}>{t('settings.accountSettings')}</h1>
 
       {/* ---- Section 1: Profile ---- */}
       <section className={styles.section} aria-labelledby="section-profile">
-        <span className={styles.eyebrow}>Profile</span>
+        <span className={styles.eyebrow}>{t('settings.profileEyebrow')}</span>
         <h2 id="section-profile" className={styles.sectionHeading}>
-          Your profile
+          {t('settings.yourProfile')}
         </h2>
         <div className={styles.emailRow}>
-          <span className={styles.emailLabel}>Email address</span>
+          <span className={styles.emailLabel}>{t('settings.emailAddress')}</span>
           <span className={styles.emailValue}>{user?.email ?? '—'}</span>
         </div>
       </section>
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">
-        <span className={styles.eyebrow}>Appearance</span>
+        <span className={styles.eyebrow}>{t('settings.appearanceEyebrow')}</span>
         <h2 id="section-theme" className={styles.sectionHeading}>
-          Theme
+          {t('settings.theme')}
         </h2>
         <div className={styles.themeRow}>
-          <span className={styles.themeLabel}>Color theme</span>
+          <span className={styles.themeLabel}>{t('settings.colorTheme')}</span>
           <ThemeToggle />
         </div>
       </section>
@@ -126,25 +123,21 @@ export function SettingsPage() {
         className={`${styles.section} ${styles.accountSection}`}
         aria-labelledby="section-account"
       >
-        <span className={styles.eyebrow}>Account</span>
+        <span className={styles.eyebrow}>{t('settings.accountEyebrow')}</span>
         <h2
           id="section-account"
           className={`${styles.sectionHeading} ${styles.accountSectionHeading}`}
         >
-          Danger zone
+          {t('settings.dangerZone')}
         </h2>
-        <p className={styles.dangerCopy}>
-          Deleting your account marks it for permanent removal after 30 days.
-          You will be signed out immediately and your collection, tracked decks,
-          and readiness history will be erased.
-        </p>
+        <p className={styles.dangerCopy}>{t('settings.deleteAccountWarning')}</p>
         <div className={styles.accountActions}>
           <button
             type="button"
             className={styles.deleteBtn}
             onClick={() => setDeleteOpen(true)}
           >
-            Delete my account
+            {t('settings.deleteMyAccount')}
           </button>
         </div>
       </section>

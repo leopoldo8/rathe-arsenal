@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ISearchCardResult, useSearchCardsQuery } from '../../api/catalog';
 import type { TDeckSlot } from './SlotPicker';
 import styles from './DeckCardSearchAutocomplete.module.css';
@@ -74,10 +75,13 @@ export interface IDeckCardSearchAutocompleteProps {
  */
 export function DeckCardSearchAutocomplete({
   onPick,
-  placeholder = 'Search card name...',
-  label = 'Search cards',
+  placeholder,
+  label,
   inputRef: externalInputRef,
 }: IDeckCardSearchAutocompleteProps): React.ReactElement {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('decks.searchCardsLabel');
+  const resolvedPlaceholder = placeholder ?? t('decks.searchCardsPlaceholder');
   const [inputValue, setInputValue] = useState<string>('');
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -177,7 +181,7 @@ export function DeckCardSearchAutocomplete({
   return (
     <div ref={rootRef} className={styles.root}>
       <label id={labelId} htmlFor={`${labelId}-input`} className={styles.label}>
-        {label}
+        {resolvedLabel}
       </label>
 
       <div
@@ -199,7 +203,7 @@ export function DeckCardSearchAutocomplete({
           aria-activedescendant={activeDescendantId}
           aria-labelledby={labelId}
           value={inputValue}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           className={styles.input}
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -248,8 +252,8 @@ export function DeckCardSearchAutocomplete({
                   <span className={styles.optionClass}>{classStr}</span>
                 ) : null}
                 {card.ownedQuantity > 0 ? (
-                  <span className={styles.ownedBadge} aria-label={`owned: ${card.ownedQuantity}`}>
-                    owned: {card.ownedQuantity}
+                  <span className={styles.ownedBadge} aria-label={t('decks.ownedBadgeAria', { count: card.ownedQuantity })}>
+                    {t('decks.ownedBadge', { count: card.ownedQuantity })}
                   </span>
                 ) : null}
               </li>
@@ -262,7 +266,7 @@ export function DeckCardSearchAutocomplete({
               aria-disabled="true"
               className={styles.optionEmpty}
             >
-              No cards found for &ldquo;{debouncedQuery}&rdquo;
+              {t('decks.noCardsFound', { query: debouncedQuery })}
             </li>
           ) : null}
         </ul>

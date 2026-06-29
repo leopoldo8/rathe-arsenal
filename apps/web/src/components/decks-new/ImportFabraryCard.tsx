@@ -7,6 +7,8 @@
  */
 import React, { useId, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useImportDecksMutation } from '../../api/decks';
 import { ApiError } from '../../lib/api-client';
 import styles from './ImportFabraryCard.module.css';
@@ -21,19 +23,19 @@ const URL_REGEX = /^https?:\/\/(www\.)?fabrary\.net\/decks\/[A-Za-z0-9]+/;
  * Maps a backend Fabrary import error code to a user-facing message.
  * Falls back to the backend message (then a generic line) for unknown codes.
  */
-function messageForImportError(code: string, fallback: string): string {
+function messageForImportError(t: TFunction, code: string, fallback: string): string {
   switch (code) {
     case 'INVALID_URL':
     case 'INVALID_ULID':
-      return 'That does not look like a valid Fabrary deck URL.';
+      return t('decks.invalidFabraryUrlLocal');
     case 'FETCH_FAILED':
     case 'CREDENTIAL_EXPIRED':
-      return 'We could not reach Fabrary to fetch that deck. Please try again in a moment.';
+      return t('decks.fabraryFetchFailed');
     case 'INVALID_PAYLOAD':
     case 'UNKNOWN_CARD':
-      return 'We could not read that Fabrary deck — it may use cards we do not support yet.';
+      return t('decks.fabraryInvalidDeck');
     default:
-      return fallback || 'We could not track this deck. Please try again.';
+      return fallback || t('decks.couldNotTrackDeck');
   }
 }
 
@@ -57,6 +59,7 @@ type TStatus =
  * (`/decks/:deckId` without `edit` search param).
  */
 export function ImportFabraryCard(): React.ReactElement {
+  const { t } = useTranslation();
   const inputId = useId();
   const helpId = useId();
   const importMutation = useImportDecksMutation();
@@ -72,7 +75,7 @@ export function ImportFabraryCard(): React.ReactElement {
     if (!localValid) {
       setStatus({
         state: 'error',
-        message: 'Not a valid Fabrary deck URL — expected https://fabrary.net/decks/…',
+        message: t('decks.invalidFabraryUrlLocal'),
       });
       return;
     }
@@ -96,7 +99,7 @@ export function ImportFabraryCard(): React.ReactElement {
           if (failed) {
             setStatus({
               state: 'error',
-              message: messageForImportError(failed.code, failed.message),
+              message: messageForImportError(t, failed.code, failed.message),
             });
             return;
           }
@@ -107,22 +110,22 @@ export function ImportFabraryCard(): React.ReactElement {
               state: 'error',
               message:
                 skippedDeck.reason === 'ALREADY_TRACKED'
-                  ? 'You are already tracking this deck.'
-                  : 'This deck was skipped and not tracked.',
+                  ? t('decks.alreadyTrackingDeck')
+                  : t('decks.deckSkipped'),
             });
             return;
           }
 
           setStatus({
             state: 'error',
-            message: 'We could not track this deck. Please try again.',
+            message: t('decks.couldNotTrackDeck'),
           });
         },
         onError: (err) => {
           const message =
             err instanceof ApiError
               ? err.message
-              : (err as Error).message || 'Failed to track deck.';
+              : (err as Error).message || t('decks.couldNotTrackDeck');
           setStatus({ state: 'error', message });
         },
       },
@@ -137,14 +140,14 @@ export function ImportFabraryCard(): React.ReactElement {
 
   return (
     <div className={styles.card} data-testid="import-fabrary-card">
-      <h2 className={styles.cardTitle}>Import from Fabrary</h2>
+      <h2 className={styles.cardTitle}>{t('decks.importFromFabrary')}</h2>
       <p className={styles.cardSubtitle}>
-        Paste a Fabrary deck URL — we&apos;ll track it and run readiness analysis.
+        {t('decks.importFabrarySubtitle')}
       </p>
 
       <div className={styles.form}>
         <label className={styles.label} htmlFor={inputId}>
-          Fabrary deck URL
+          {t('decks.fabraryDeckUrlLabel')}
         </label>
         <input
           id={inputId}
@@ -165,8 +168,7 @@ export function ImportFabraryCard(): React.ReactElement {
           disabled={status.state === 'submitting'}
         />
         <p id={helpId} className={styles.helpText}>
-          Public Fabrary deck links work — e.g. a community brew someone shared
-          with you.
+          {t('decks.fabraryUrlHelp')}
         </p>
         <button
           type="button"
@@ -174,20 +176,20 @@ export function ImportFabraryCard(): React.ReactElement {
           onClick={submit}
           disabled={status.state === 'submitting' || trimmed.length === 0}
         >
-          {status.state === 'submitting' ? 'Tracking…' : 'Track deck'}
+          {status.state === 'submitting' ? t('decks.trackingDeckBtn') : t('decks.trackDeckBtn')}
         </button>
       </div>
 
       {status.state === 'submitting' && (
         <p className={styles.progress} role="status" aria-live="polite">
           <span className={styles.progressDiamond} aria-hidden="true">◆</span>
-          Deck tracked. Redirecting…
+          {t('decks.deckTrackedRedirecting')}
         </p>
       )}
 
       {status.state === 'error' && (
         <section className={styles.errorCallout} role="alert">
-          <p className={styles.errorTitle}>Failed to track deck:</p>
+          <p className={styles.errorTitle}>{t('decks.failedToTrackDeck')}</p>
           <p className={styles.errorBody}>{status.message}</p>
         </section>
       )}

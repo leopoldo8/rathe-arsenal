@@ -12,6 +12,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { useCreateScratchDeckMutation } from '../../api/decks';
 import { useHeroesQuery } from '../../api/catalog';
 import { ApiError } from '../../lib/api-client';
@@ -31,6 +32,7 @@ import styles from './StartScratchCard.module.css';
  * can start building immediately.
  */
 export function StartScratchCard(): React.ReactElement {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const createMutation = useCreateScratchDeckMutation();
   const heroesQuery = useHeroesQuery();
@@ -72,7 +74,7 @@ export function StartScratchCard(): React.ReactElement {
           const message =
             err instanceof ApiError
               ? err.message
-              : (err as Error).message || 'Failed to create deck.';
+              : (err as Error).message || t('decks.failedToCreateDeck');
           setErrorMessage(message);
         },
       },
@@ -81,10 +83,8 @@ export function StartScratchCard(): React.ReactElement {
 
   return (
     <div className={styles.card} data-testid="start-scratch-card">
-      <h2 className={styles.cardTitle}>Start from scratch</h2>
-      <p className={styles.cardSubtitle}>
-        Pick a hero and format — we&apos;ll create a blank deck ready to build.
-      </p>
+      <h2 className={styles.cardTitle}>{t('decks.startFromScratch')}</h2>
+      <p className={styles.cardSubtitle}>{t('decks.startScratchSubtitle')}</p>
 
       <div className={styles.fields}>
         <HeroDropdown
@@ -106,7 +106,7 @@ export function StartScratchCard(): React.ReactElement {
 
       {errorMessage !== null && (
         <section className={styles.errorCallout} role="alert" data-testid="scratch-error">
-          <p className={styles.errorTitle}>Failed to create deck:</p>
+          <p className={styles.errorTitle}>{t('decks.failedToCreateDeck')}</p>
           <p className={styles.errorBody}>{errorMessage}</p>
         </section>
       )}
@@ -118,7 +118,7 @@ export function StartScratchCard(): React.ReactElement {
         disabled={!canSubmit || isSubmitting}
         data-testid="start-building-btn"
       >
-        {isSubmitting ? 'Creating…' : 'Start building'}
+        {isSubmitting ? t('decks.creating') : t('decks.startBuilding')}
       </button>
     </div>
   );
