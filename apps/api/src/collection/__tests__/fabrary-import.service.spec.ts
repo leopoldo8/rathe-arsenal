@@ -257,4 +257,23 @@ describe('FabraryImportService', () => {
     expect(persisted.label).toBe('Fabrary: Kayo Brute Bash');
     expect(persisted.active).toBe(true);
   });
+
+  it('disambiguates the label with a "#N" counter when re-importing the same deck', async () => {
+    fabraryService.fetchDeck.mockResolvedValue(buildDeck());
+    // The user already imported this deck once.
+    (manager.find as jest.Mock).mockResolvedValue([
+      { label: 'Fabrary: Kayo Brute Bash' },
+    ]);
+
+    await service.importFromUrl(USER_ID, VALID_URL);
+
+    const sourceCall = manager.save.mock.calls.find(
+      (call) =>
+        typeof call[1] === 'object' &&
+        !Array.isArray(call[1]) &&
+        (call[1] as { kind?: string }).kind === 'csv',
+    );
+    const persisted = sourceCall?.[1] as Partial<CsvSourceEntity>;
+    expect(persisted.label).toBe('#2 Fabrary: Kayo Brute Bash');
+  });
 });

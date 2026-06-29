@@ -14,6 +14,7 @@ import { DecisionsService } from '../../decks/decisions/decisions.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { CsvParserService, computeContentHash } from './csv-parser.service';
 import { DuplicateDetectionService, computeDelta } from './duplicate-detection.service';
+import { nextDedupedLabel } from '../sources/source-label.util';
 import { IResolvedCsvRow } from './csv.types';
 import { TCsvUploadAction } from './dtos/upload-csv.request.dto';
 import {
@@ -180,9 +181,11 @@ export class CsvUploadService {
     action: TCsvUploadAction = 'separate',
   ): Promise<ICreatedResponse> {
     const hash = computeContentHash(resolved);
-    const label = originalFilename ?? 'Imported CSV';
+    const baseLabel = originalFilename ?? 'Imported CSV';
 
     const result = await this.dataSource.transaction(async (manager: EntityManager) => {
+      const label = await this.dedupeSourceLabel(manager, userId, baseLabel);
+
       const source = manager.create(CsvSourceEntity, {
         userId,
         kind: 'csv',
@@ -412,6 +415,32 @@ export class CsvUploadService {
       this.logger.warn('AUTHZ_DENIED csv_source', { sourceId, userId });
       throw new NotFoundException('CSV source not found');
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Label de-duplication
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Resolves a collision-free label for a new `kind='csv'` source. Reads the
+   * user's existing csv source labels inside the caller's transaction so the
+   * "#N" counter reflects the committed state. See `nextDedupedLabel`.
+   */
+  private async dedupeSourceLabel(
+    manager: EntityManager,
+    userId: string,
+    baseLabel: string,
+  ): Promise<string> {
+    const existing = await manager.find(CsvSourceEntity, {
+      where: { userId, kind: 'csv' },
+      select: { label: true },
+    });
+
+    const existingLabels = (existing ?? [])
+      .map((s) => s.label)
+      .filter((l): l is string => typeof l === 'string' && l.length > 0);
+
+    return nextDedupedLabel(baseLabel, existingLabels);
   }
 
   // ---------------------------------------------------------------------------

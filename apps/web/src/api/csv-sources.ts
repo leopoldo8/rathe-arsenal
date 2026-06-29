@@ -249,7 +249,12 @@ export function usePatchCsvSourceMutation() {
 
 /**
  * One-shot query to preview the impact of deleting a source.
- * GET /api/collection/sources/:id?preview=true
+ * DELETE /api/collection/sources/:id?preview=true
+ *
+ * The preview shares the DELETE route with the real deletion; `?preview=true`
+ * makes the backend run a read-only impact check instead of deleting. The
+ * method must be DELETE — a GET to this path has no handler and 404s, which
+ * surfaced as "Failed to load impact preview" in the delete modal.
  *
  * Returns the fetch function directly so the caller can invoke it lazily
  * when opening the delete modal (not a persistent query).
@@ -257,7 +262,10 @@ export function usePatchCsvSourceMutation() {
 export function usePreviewDeleteCsvSource() {
   const apiFetch = useApiClient();
   return (sourceId: string) =>
-    apiFetch<IPreviewDeleteResult>(`/collection/sources/${sourceId}?preview=true`);
+    apiFetch<IPreviewDeleteResult>(
+      `/collection/sources/${sourceId}?preview=true`,
+      { method: 'DELETE' },
+    );
 }
 
 // ---------------------------------------------------------------------------
