@@ -187,6 +187,42 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
   });
 
+  describe('locale threading — Accept-Language → service call (T17)', () => {
+    it('passes en-US to authService.signUp when Accept-Language: en-US is sent', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .set('Accept-Language', 'en-US')
+        .set('X-Forwarded-For', '203.0.113.50')
+        .send({ email: 'locale@b.com', password: 'longenoughpassword' });
+      expect(authService.signUp).toHaveBeenCalledWith('locale@b.com', 'longenoughpassword', 'en-US');
+    });
+
+    it('passes pt-BR to authService.signUp when Accept-Language header is absent', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/sign-up')
+        .set('X-Forwarded-For', '203.0.113.51')
+        .send({ email: 'nolocale@b.com', password: 'longenoughpassword' });
+      expect(authService.signUp).toHaveBeenCalledWith('nolocale@b.com', 'longenoughpassword', 'pt-BR');
+    });
+
+    it('passes en-US to authService.resendVerification when Accept-Language: en-US', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/resend-verification')
+        .set('Accept-Language', 'en-US')
+        .set('X-Forwarded-For', '203.0.113.52')
+        .send({ email: 'locale@b.com' });
+      expect(authService.resendVerification).toHaveBeenCalledWith('locale@b.com', 'en-US');
+    });
+
+    it('passes pt-BR to authService.requestPasswordReset when Accept-Language header is absent', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/forgot-password')
+        .set('X-Forwarded-For', '203.0.113.53')
+        .send({ email: 'nolocale@b.com' });
+      expect(authService.requestPasswordReset).toHaveBeenCalledWith('nolocale@b.com', 'pt-BR');
+    });
+  });
+
   describe('delete-account (A8 / Unit 2, 5/hour per IP)', () => {
     it('returns 200 and calls deleteAccount(userId, password) on happy path', async () => {
       const res = await request(app.getHttpServer())

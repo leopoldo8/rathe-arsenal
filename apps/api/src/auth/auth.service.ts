@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EUserRole, UserEntity } from '../database/entities/user.entity';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { EmailService } from '../email/email.service';
 import { EmailDeliveryError } from '../email/errors';
 import { PasswordHasherService } from './services/password-hasher.service';
@@ -39,7 +40,7 @@ export class AuthService {
     this.isDev = this.config.get<string>('NODE_ENV') !== 'production';
   }
 
-  async signUp(email: string, password: string): Promise<IGenericAuthAcceptedResponse> {
+  async signUp(email: string, password: string, locale: TLocale = 'pt-BR'): Promise<IGenericAuthAcceptedResponse> {
     // A4: always return the same generic 202 response whether the email exists
     // or not. Short-circuit for existing emails so we never attempt to save a
     // new row (which would trigger a unique-constraint violation that leaks
@@ -67,7 +68,7 @@ export class AuthService {
     const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
 
     try {
-      await this.emailService.sendVerificationEmail(email, link);
+      await this.emailService.sendVerificationEmail(email, link, locale);
     } catch (err) {
       this.logger.error({ event: 'auth.sign_up.email_failed', userId: saved.id });
       if (err instanceof EmailDeliveryError) {
@@ -91,7 +92,7 @@ export class AuthService {
    * exists and is still unverified. Mirrors the email-enumeration-safe pattern
    * used by requestPasswordReset().
    */
-  async resendVerification(email: string): Promise<IGenericAuthAcceptedResponse> {
+  async resendVerification(email: string, locale: TLocale = 'pt-BR'): Promise<IGenericAuthAcceptedResponse> {
     const user = await this.users.findOne({ where: { email } });
     if (!user) {
       this.logger.log({ event: 'auth.resend_verification.unknown_email' });
@@ -109,7 +110,7 @@ export class AuthService {
 
     const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
     try {
-      await this.emailService.sendVerificationEmail(email, link);
+      await this.emailService.sendVerificationEmail(email, link, locale);
     } catch (_err) {
       this.logger.error({ event: 'auth.resend_verification.email_failed', userId: user.id });
       // Swallow — the user sees a generic 202 either way to avoid leaking existence.
@@ -172,7 +173,7 @@ export class AuthService {
     };
   }
 
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string, locale: TLocale = 'pt-BR'): Promise<void> {
     const user = await this.users.findOne({ where: { email } });
     if (!user) {
       // Do not leak account existence on this endpoint
@@ -186,7 +187,7 @@ export class AuthService {
 
     const link = `${this.baseUrl}/reset-password?token=${rawToken}`;
     try {
-      await this.emailService.sendPasswordResetEmail(email, link);
+      await this.emailService.sendPasswordResetEmail(email, link, locale);
     } catch (_err) {
       this.logger.error({ event: 'auth.password_reset.email_failed', userId: user.id });
       // Swallow — the user sees generic success either way

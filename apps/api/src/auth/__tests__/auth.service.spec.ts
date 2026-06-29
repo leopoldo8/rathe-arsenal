@@ -56,7 +56,7 @@ describe('AuthService.signUp', () => {
     const result = await service.signUp('a@b.com', 'longenoughpassword');
     expect(result.message).toContain('verification link');
     expect(result._devVerificationLink).toContain('/verify-email?token=');
-    expect(email.sendVerificationEmail).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='));
+    expect(email.sendVerificationEmail).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'pt-BR');
   });
 
   it('A4: returns the same generic message when the email already exists (no leak)', async () => {
@@ -85,6 +85,17 @@ describe('AuthService.signUp', () => {
       code: EAuthErrorCode.EmailDeliveryFailed,
     });
   });
+
+  it('forwards the locale to sendVerificationEmail (T17)', async () => {
+    const sendVerification = jest.fn().mockResolvedValue(undefined);
+    const { service } = buildService({ sendVerification });
+    await service.signUp('a@b.com', 'longenoughpassword', 'en-US');
+    expect(sendVerification).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.stringContaining('/verify-email?token='),
+      'en-US',
+    );
+  });
 });
 
 describe('AuthService.resendVerification', () => {
@@ -106,7 +117,7 @@ describe('AuthService.resendVerification', () => {
     });
     const result = await service.resendVerification('a@b.com');
     expect(result.message).toContain('verification link');
-    expect(sendVerification).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='));
+    expect(sendVerification).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'pt-BR');
     expect(save).toHaveBeenCalled();
     // Token hash was rotated (not the stale one)
     expect(user.verificationTokenHash).not.toBe(tokens.hashToken('old'));
@@ -141,6 +152,29 @@ describe('AuthService.resendVerification', () => {
     expect(sendVerification).not.toHaveBeenCalled();
     expect(save).not.toHaveBeenCalled();
     expect(result._devVerificationLink).toBeUndefined();
+  });
+
+  it('forwards the locale to sendVerificationEmail (T17)', async () => {
+    const tokens = new TokenGeneratorService();
+    const user: Partial<UserEntity> = {
+      id: 'u1',
+      email: 'a@b.com',
+      emailVerifiedAt: null,
+      verificationTokenHash: tokens.hashToken('old'),
+      verificationTokenExpiresAt: new Date(Date.now() - 1000),
+    };
+    const sendVerification = jest.fn().mockResolvedValue(undefined);
+    const { service } = buildService({
+      findOne: jest.fn().mockResolvedValue(user),
+      save: jest.fn().mockResolvedValue(user),
+      sendVerification,
+    });
+    await service.resendVerification('a@b.com', 'en-US');
+    expect(sendVerification).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.stringContaining('/verify-email?token='),
+      'en-US',
+    );
   });
 });
 
@@ -269,7 +303,7 @@ describe('AuthService.requestPasswordReset', () => {
       sendReset,
     });
     await service.requestPasswordReset('a@b.com');
-    expect(sendReset).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/reset-password?token='));
+    expect(sendReset).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/reset-password?token='), 'pt-BR');
   });
 
   it('returns silently for an unknown email (no leak)', async () => {
@@ -277,6 +311,21 @@ describe('AuthService.requestPasswordReset', () => {
     const { service } = buildService({ sendReset });
     await service.requestPasswordReset('unknown@b.com');
     expect(sendReset).not.toHaveBeenCalled();
+  });
+
+  it('forwards the locale to sendPasswordResetEmail (T17)', async () => {
+    const user: Partial<UserEntity> = { id: 'u1', email: 'a@b.com' };
+    const sendReset = jest.fn().mockResolvedValue(undefined);
+    const { service } = buildService({
+      findOne: jest.fn().mockResolvedValue(user),
+      sendReset,
+    });
+    await service.requestPasswordReset('a@b.com', 'en-US');
+    expect(sendReset).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.stringContaining('/reset-password?token='),
+      'en-US',
+    );
   });
 });
 

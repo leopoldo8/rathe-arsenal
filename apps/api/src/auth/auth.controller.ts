@@ -13,6 +13,8 @@ import { DeleteAccountDto } from './dtos/delete-account.dto';
 import { AuthService } from './auth.service';
 import { AuthError } from './errors';
 import { mapAuthError } from './auth-error.mapper';
+import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
+import { TLocale } from '../common/i18n/resolve-locale';
 
 // A5: per-IP rate-limit windows for auth endpoints. ttl values are in
 // milliseconds as required by @nestjs/throttler v6.
@@ -27,9 +29,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: HOUR_MS } })
   @Post('sign-up')
   @HttpCode(HttpStatus.ACCEPTED)
-  async signUp(@Body() dto: SignUpDto) {
+  async signUp(@Body() dto: SignUpDto, @AcceptLanguage() locale: TLocale) {
     try {
-      return await this.authService.signUp(dto.email, dto.password);
+      return await this.authService.signUp(dto.email, dto.password, locale);
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
@@ -66,8 +68,8 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: HOUR_MS } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    await this.authService.requestPasswordReset(dto.email);
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @AcceptLanguage() locale: TLocale) {
+    await this.authService.requestPasswordReset(dto.email, locale);
     return { ok: true };
   }
 
@@ -91,9 +93,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: HOUR_MS } })
   @Post('resend-verification')
   @HttpCode(HttpStatus.ACCEPTED)
-  async resendVerification(@Body() dto: ResendVerificationDto) {
+  async resendVerification(@Body() dto: ResendVerificationDto, @AcceptLanguage() locale: TLocale) {
     try {
-      return await this.authService.resendVerification(dto.email);
+      return await this.authService.resendVerification(dto.email, locale);
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
