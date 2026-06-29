@@ -103,7 +103,7 @@ describe('LibrarySearchAddBar — rendering', () => {
   it('renders a search input labeled "Search and add cards to your library"', () => {
     renderBar();
     expect(
-      screen.getByLabelText(/search and add cards to your library/i),
+      screen.getByLabelText(/buscar e adicionar cards à biblioteca/i),
     ).toBeInTheDocument();
   });
 
@@ -116,7 +116,7 @@ describe('LibrarySearchAddBar — rendering', () => {
     mockMutationIsError = true;
     renderBar();
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(/failed to add card/i);
+    expect(alert).toHaveTextContent(/falha ao adicionar o card/i);
   });
 });
 
@@ -130,7 +130,7 @@ describe('LibrarySearchAddBar — interaction (user picks a card)', () => {
 
   it('calls useAddCardMutation.mutate when a card option is clicked', async () => {
     renderBar();
-    const input = screen.getByLabelText(/search and add cards to your library/i);
+    const input = screen.getByLabelText(/buscar e adicionar cards à biblioteca/i);
     await userEvent.type(input, 'Br');
 
     await waitFor(() => {
@@ -156,7 +156,7 @@ describe('LibrarySearchAddBar — interaction (user picks a card)', () => {
     renderBar({ onAdded });
 
     // Directly simulate a pick via input + click
-    const input = screen.getByLabelText(/search and add cards to your library/i);
+    const input = screen.getByLabelText(/buscar e adicionar cards à biblioteca/i);
     userEvent.type(input, 'Br').then(async () => {
       await waitFor(() => screen.getByRole('listbox'));
       const option = screen.getByRole('option', { name: /Briar/i });

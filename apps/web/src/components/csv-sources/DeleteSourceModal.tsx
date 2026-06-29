@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import type { ICsvSource, IPreviewDeleteResult } from '../../api/csv-sources';
 import {
@@ -39,6 +40,7 @@ export function DeleteSourceModal({
   onClose,
   onDeleted,
 }: IDeleteSourceModalProps): React.ReactElement {
+  const { t } = useTranslation();
   const { show } = useToast();
   const previewFetch = usePreviewDeleteCsvSource();
   const deleteMutation = useDeleteCsvSourceMutation();
@@ -71,7 +73,7 @@ export function DeleteSourceModal({
         setPreview(result);
       })
       .catch((err: unknown) => {
-        setPreviewError('Failed to load impact preview. Please try again.');
+        setPreviewError(t('csvSources.deletePreviewError'));
         void err;
       })
       .finally(() => {
@@ -85,18 +87,20 @@ export function DeleteSourceModal({
   async function handleConfirm(): Promise<void> {
     if (!isConfirmed || isDeleting) return;
 
+    const label = source.label ?? source.originalFilename ?? 'CSV';
+
     try {
       const result = await deleteMutation.mutateAsync(source.id);
       onDeleted();
-      show({ kind: 'success', message: `"${source.label ?? source.originalFilename ?? 'CSV'}" deleted.` });
+      show({ kind: 'success', message: t('csvSources.deleteSuccessToast', { label }) });
       if (result.recomputeWarning === true) {
         show({
           kind: 'info',
-          message: 'Source deleted. Readiness numbers may be stale — refresh to recompute.',
+          message: t('csvSources.deleteWarningToast'),
         });
       }
     } catch (_err) {
-      show({ kind: 'error', message: 'Failed to delete source. Please try again.' });
+      show({ kind: 'error', message: t('csvSources.deleteErrorToast') });
     }
   }
 
@@ -114,10 +118,10 @@ export function DeleteSourceModal({
         <Dialog.Overlay className={styles.overlay} />
         <Dialog.Content className={styles.content}>
           <Dialog.Title className={styles.title}>
-            Delete &ldquo;{label}&rdquo;?
+            {t('csvSources.deleteModalTitle', { label })}
           </Dialog.Title>
           <Dialog.Description className={styles.description}>
-            This action is permanent and cannot be undone.
+            {t('csvSources.deleteModalDescription')}
           </Dialog.Description>
 
           {/* Step 1: Impact preview */}
@@ -131,20 +135,19 @@ export function DeleteSourceModal({
           ) : preview !== null ? (
             <div className={styles.preview}>
               <p className={styles.previewSummary}>
-                Deleting this source will remove{' '}
+                {t('csvSources.deletePreviewSummaryPrefix')}{' '}
                 <strong>{preview.cardsRemoved}</strong> card
-                {preview.cardsRemoved !== 1 ? 's' : ''} from your library.
+                {preview.cardsRemoved !== 1 ? 's' : ''} {t('csvSources.deletePreviewSummarySuffix')}
                 {affectedCount > 0 && (
                   <>
                     {' '}
-                    {affectedCount} deck{affectedCount !== 1 ? 's' : ''} will
-                    drop in readiness.
+                    {t('csvSources.deletePreviewDecksWarning', { count: affectedCount })}
                   </>
                 )}
               </p>
 
               {preview.affectedDecks.length > 0 && (
-                <ul className={styles.affectedDeckList} aria-label="Affected decks">
+                <ul className={styles.affectedDeckList} aria-label={t('csvSources.affectedDecksAriaLabel')}>
                   {preview.affectedDecks.map((deck) => (
                     <li key={deck.id} className={styles.affectedDeckItem}>
                       <span className={styles.deckName}>{deck.name}</span>
@@ -162,13 +165,13 @@ export function DeleteSourceModal({
           {isDeleting ? (
             <div className={styles.deletingMessage} role="status" aria-live="polite">
               <span className={styles.spinner} aria-hidden="true" />
-              Removing source and recomputing readiness across{' '}
-              {affectedCount} deck{affectedCount !== 1 ? 's' : ''}…
+              {t('csvSources.deletingMessagePrefix')}{' '}
+              {affectedCount} deck{affectedCount !== 1 ? 's' : ''}{t('csvSources.deletingMessageSuffix')}
             </div>
           ) : (
             <div className={styles.confirmGate}>
               <label htmlFor={confirmInputId} className={styles.confirmLabel}>
-                Type <strong>DELETE</strong> to confirm
+                {t('csvSources.confirmInputLabelPre')} <strong>DELETE</strong> {t('csvSources.confirmInputLabelPost')}
               </label>
               <input
                 ref={confirmInputRef}
@@ -185,7 +188,7 @@ export function DeleteSourceModal({
                 spellCheck={false}
               />
               <span id={`${confirmInputId}-hint`} className="sr-only">
-                Type the word DELETE in uppercase to enable the confirm button.
+                {t('csvSources.confirmInputSrOnlyHint')}
               </span>
             </div>
           )}
@@ -198,7 +201,7 @@ export function DeleteSourceModal({
               onClick={onClose}
               disabled={isDeleting}
             >
-              Cancel
+              {t('csvSources.cancelButton')}
             </button>
             <button
               type="button"
@@ -210,10 +213,10 @@ export function DeleteSourceModal({
               {isDeleting ? (
                 <>
                   <span className={styles.spinner} aria-hidden="true" />
-                  Deleting…
+                  {t('csvSources.deletingButton')}
                 </>
               ) : (
-                'Delete source'
+                t('csvSources.deleteSourceButton')
               )}
             </button>
           </div>

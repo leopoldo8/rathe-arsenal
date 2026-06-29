@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
 import styles from './LibraryEmptyState.module.css';
 
@@ -12,6 +13,7 @@ import styles from './LibraryEmptyState.module.css';
  * decision surface.
  */
 export function LibraryEmptyState(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section className={styles.container} aria-labelledby="library-empty-heading">
       <div className={styles.diamond} aria-hidden="true">
@@ -19,15 +21,15 @@ export function LibraryEmptyState(): React.ReactElement {
       </div>
 
       <h2 id="library-empty-heading" className={styles.heading}>
-        Your library is empty
+        {t('library.emptyHeading')}
       </h2>
 
       <p className={styles.body}>
-        Three ways to grow your arsenal — pick whichever fits the moment.
+        {t('library.emptyBody')}
       </p>
 
       <Link to="/add-cards" className={styles.primaryCta}>
-        <span aria-hidden="true">→</span> Add cards
+        <span aria-hidden="true">→</span> {t('library.emptyAddCards')}
       </Link>
     </section>
   );

@@ -2,6 +2,8 @@
  * Tests for LibraryFilterRail — replaces the old LibraryFilters tests.
  * Covers the new control set: pitch pills, class/talent/set toggle rows
  * with counts, search-within input, snap-thresholds slider, clear-all.
+ *
+ * Assertions use PT-BR strings (i18n default in test harness).
  */
 
 import React from 'react';
@@ -58,9 +60,9 @@ function renderRail(props: Partial<React.ComponentProps<typeof LibraryFilterRail
 }
 
 describe('LibraryFilterRail — search input', () => {
-  it('exposes a labeled search input', () => {
+  it('exposes a labeled search input (pt-BR label)', () => {
     renderRail();
-    const input = screen.getByLabelText(/search the cards in your library by name/i);
+    const input = screen.getByLabelText(/buscar cards na biblioteca por nome/i);
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute('type', 'search');
   });
@@ -68,38 +70,38 @@ describe('LibraryFilterRail — search input', () => {
   it('emits onSearchChange when the user types', async () => {
     const onSearchChange = vi.fn();
     renderRail({ onSearchChange });
-    const input = screen.getByLabelText(/search the cards/i);
+    const input = screen.getByLabelText(/buscar cards/i);
     await userEvent.type(input, 'a');
     expect(onSearchChange).toHaveBeenCalledWith('a');
   });
 
   it('renders the matching chip with the matching count when search is at least 2 chars', () => {
     renderRail({ searchQuery: 'sh', matchingCount: 7 });
-    expect(screen.getByText(/matching:/i)).toBeInTheDocument();
+    expect(screen.getByText(/correspondendo:/i)).toBeInTheDocument();
     // The count is rendered in a span inside the chip — scope by aria-live.
-    const chip = screen.getByText(/matching:/i).closest('p');
-    expect(chip).toHaveTextContent(/Matching:\s*7/i);
+    const chip = screen.getByText(/correspondendo:/i).closest('p');
+    expect(chip).toHaveTextContent(/Correspondendo:\s*7/i);
   });
 
   it('hides the matching chip below 2 chars', () => {
     renderRail({ searchQuery: 's' });
-    expect(screen.queryByText(/matching:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/correspondendo:/i)).not.toBeInTheDocument();
   });
 });
 
 describe('LibraryFilterRail — pitch pills', () => {
-  it('renders four pitch pills as toggle buttons', () => {
+  it('renders four pitch pills as toggle buttons (pt-BR labels)', () => {
     renderRail();
-    expect(screen.getByRole('checkbox', { name: /Red pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Yellow pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Blue pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Colorless pitch/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Vermelho pitch/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Amarelo pitch/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Azul pitch/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Incolor pitch/i })).toBeInTheDocument();
   });
 
   it('toggles the pitch in onChange when clicked', async () => {
     const onChange = vi.fn();
     renderRail({ onChange });
-    await userEvent.click(screen.getByRole('checkbox', { name: /Red pitch/i }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ pitches: ['red'] }),
     );
@@ -111,7 +113,7 @@ describe('LibraryFilterRail — pitch pills', () => {
       value: { ...EMPTY_FILTERS, pitches: ['red'] },
       onChange,
     });
-    await userEvent.click(screen.getByRole('checkbox', { name: /Red pitch/i }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ pitches: [] }),
     );
@@ -121,9 +123,9 @@ describe('LibraryFilterRail — pitch pills', () => {
 describe('LibraryFilterRail — class/talent/set accordion sections', () => {
   it('collapses by default and reveals options when expanded', async () => {
     renderRail();
-    // Brute is hidden behind the collapsed Class accordion.
+    // Brute is hidden behind the collapsed Classe accordion.
     expect(screen.queryByRole('checkbox', { name: /Brute/i })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Class/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Classe/i }));
     expect(screen.getByRole('checkbox', { name: /Brute/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Ranger/i })).toBeInTheDocument();
   });
@@ -140,16 +142,16 @@ describe('LibraryFilterRail — class/talent/set accordion sections', () => {
     renderRail({
       cards: [makeCard({ classes: ['Brute'] })],
     });
-    await userEvent.click(screen.getByRole('button', { name: /Talent/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Talento/i }));
     expect(
-      screen.getByText(/none of your cards carry a talent yet/i),
+      screen.getByText(/nenhum dos seus cards tem um talento ainda/i),
     ).toBeInTheDocument();
   });
 
   it('emits onChange with the new selection when a row is toggled', async () => {
     const onChange = vi.fn();
     renderRail({ onChange });
-    await userEvent.click(screen.getByRole('button', { name: /Class/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Classe/i }));
     await userEvent.click(screen.getByRole('checkbox', { name: /Brute/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ classes: ['Brute'] }),
@@ -158,7 +160,7 @@ describe('LibraryFilterRail — class/talent/set accordion sections', () => {
 
   it('exposes aria-expanded on the accordion trigger', async () => {
     renderRail();
-    const trigger = screen.getByRole('button', { name: /Class/i });
+    const trigger = screen.getByRole('button', { name: /Classe/i });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -166,16 +168,16 @@ describe('LibraryFilterRail — class/talent/set accordion sections', () => {
 });
 
 describe('LibraryFilterRail — card-size slider', () => {
-  it('renders the slider with the current value', () => {
+  it('renders the slider with the current value (pt-BR aria-label)', () => {
     renderRail({ value: { ...EMPTY_FILTERS, cardSize: 160 } });
-    const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
     expect(slider).toHaveValue('160');
   });
 
   it('snaps onChange to a configured threshold when dragged', () => {
     const onChange = vi.fn();
     renderRail({ onChange });
-    const slider = screen.getByRole('slider', { name: /card size in pixels/i });
+    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
     fireEvent.change(slider, { target: { value: '162' } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ cardSize: 160 }),
@@ -184,12 +186,12 @@ describe('LibraryFilterRail — card-size slider', () => {
 });
 
 describe('LibraryFilterRail — group-by segmented control', () => {
-  it('renders all four group options as radios', () => {
+  it('renders all four group options as radios (pt-BR labels for Type/Flat)', () => {
     renderRail();
-    expect(screen.getByRole('radio', { name: /^Type$/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Tipo$/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^Pitch$/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^Set$/ })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /^Flat$/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Lista$/ })).toBeInTheDocument();
   });
 
   it('marks the active group with aria-checked=true', () => {
@@ -198,7 +200,7 @@ describe('LibraryFilterRail — group-by segmented control', () => {
       'aria-checked',
       'true',
     );
-    expect(screen.getByRole('radio', { name: /^Type$/ })).toHaveAttribute(
+    expect(screen.getByRole('radio', { name: /^Tipo$/ })).toHaveAttribute(
       'aria-checked',
       'false',
     );
@@ -206,7 +208,7 @@ describe('LibraryFilterRail — group-by segmented control', () => {
 });
 
 describe('LibraryFilterRail — clear all', () => {
-  it('renders the clear-all button with the active filter count when filters exist', () => {
+  it('renders the clear-all button with the active filter count when filters exist (pt-BR)', () => {
     renderRail({
       value: {
         ...EMPTY_FILTERS,
@@ -214,14 +216,14 @@ describe('LibraryFilterRail — clear all', () => {
         classes: ['Brute'],
       },
     });
-    expect(screen.getByRole('button', { name: /clear all filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /limpar todos os filtros/i })).toBeInTheDocument();
     expect(screen.getByText(/\(2\)/)).toBeInTheDocument();
   });
 
   it('hides the clear-all button when no filter is active', () => {
     renderRail();
     expect(
-      screen.queryByRole('button', { name: /clear all filters/i }),
+      screen.queryByRole('button', { name: /limpar todos os filtros/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -234,7 +236,7 @@ describe('LibraryFilterRail — clear all', () => {
       onChange,
       onSearchChange,
     });
-    await userEvent.click(screen.getByRole('button', { name: /clear all/i }));
+    await userEvent.click(screen.getByRole('button', { name: /limpar todos/i }));
     expect(onSearchChange).toHaveBeenCalledWith('');
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({

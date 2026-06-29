@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useUploadCsvMutation,
   type IUploadCsvResponse,
@@ -25,6 +26,7 @@ interface IUploadCsvButtonProps {
  * - >2MB file: inline validation error; no network request.
  */
 export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.ReactElement {
+  const { t } = useTranslation();
   const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { show } = useToast();
@@ -75,13 +77,13 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
         setPendingFile(file);
         setModalResponse(result);
       } else {
-        show({ kind: 'success', message: 'CSV imported successfully.' });
+        show({ kind: 'success', message: t('csvSources.uploadSuccessToast') });
       }
     } catch (err) {
       const message =
         err instanceof ApiError
           ? `Upload failed: ${err.message}`
-          : 'Upload failed. Please try again.';
+          : t('csvSources.uploadErrorDefault');
       show({ kind: 'error', message });
     } finally {
       setUploading(false);
@@ -98,7 +100,7 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
     if (!file) return;
 
     if (file.size > MAX_SIZE_BYTES) {
-      setSizeError('File too large — maximum size is 2 MB.');
+      setSizeError(t('csvSources.fileSizeError'));
       e.target.value = '';
       return;
     }
@@ -130,9 +132,9 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
         type="button"
         className={styles.btn}
         onClick={onTrigger}
-        aria-label="Upload a CSV to import your collection"
+        aria-label={t('csvSources.onTriggerAriaLabel')}
       >
-        Upload CSV
+        {t('csvSources.uploadButtonLabel')}
       </button>
     );
   }
@@ -142,16 +144,17 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
       <label
         htmlFor={fileInputId}
         className={`${styles.btn} ${uploading ? styles.btnLoading : ''}`}
-        aria-label="Upload CSV file"
+        aria-label={t('csvSources.uploadAriaLabel')}
         aria-busy={uploading}
+        data-upload-csv-trigger="true"
       >
         {uploading ? (
           <>
             <span className={styles.spinner} aria-hidden="true" />
-            <span>Uploading {uploadingFilename ?? 'file'}…</span>
+            <span>{t('csvSources.uploadingLabel', { filename: uploadingFilename ?? 'file' })}</span>
           </>
         ) : (
-          'Upload CSV'
+          t('csvSources.uploadButtonLabel')
         )}
       </label>
 
@@ -163,7 +166,7 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
         className={styles.fileInput}
         disabled={uploading}
         onChange={handleFileChange}
-        aria-label="Select CSV file to upload"
+        aria-label={t('csvSources.fileInputAriaLabel')}
       />
 
       {sizeError !== null && (

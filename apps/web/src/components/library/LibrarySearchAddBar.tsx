@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { ISearchCardResult } from '../../api/catalog';
 import { useAddCardMutation } from '../../api/collection';
@@ -25,6 +26,7 @@ export function LibrarySearchAddBar({
   inputRef,
   onAdded,
 }: ILibrarySearchAddBarProps): React.ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const addCardMutation = useAddCardMutation();
 
@@ -49,12 +51,12 @@ export function LibrarySearchAddBar({
     <>
       <DeckCardSearchAutocomplete
         onPick={handlePick}
-        label="Search and add cards to your library"
+        label={t('library.searchAndAddLabel')}
         {...(inputRef ? { inputRef } : {})}
       />
       {addCardMutation.isError ? (
         <div role="alert" className={styles.errorMsg}>
-          Failed to add card. Please try again.
+          {t('library.addCardError')}
         </div>
       ) : null}
     </>

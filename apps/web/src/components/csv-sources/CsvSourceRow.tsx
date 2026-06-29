@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Switch from '@radix-ui/react-switch';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import type { ICsvSource } from '../../api/csv-sources';
@@ -30,6 +31,7 @@ interface ICsvSourceRowProps {
  * - Delete opens DeleteSourceModal
  */
 export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const { show } = useToast();
   const patchMutation = usePatchCsvSourceMutation();
 
@@ -52,7 +54,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
       { sourceId: source.id, active: checked },
       {
         onError: () => {
-          show({ kind: 'error', message: 'Failed to update source. Changes reverted.' });
+          show({ kind: 'error', message: t('csvSources.updateSourceError') });
         },
       },
     );
@@ -77,7 +79,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
       { sourceId: source.id, label: trimmed },
       {
         onError: () => {
-          show({ kind: 'error', message: 'Failed to rename source.' });
+          show({ kind: 'error', message: t('csvSources.renameSourceError') });
         },
       },
     );
@@ -101,7 +103,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
           checked={source.active}
           onCheckedChange={handleToggle}
           className={styles.switch}
-          aria-label={`Toggle "${displayLabel}" active`}
+          aria-label={t('csvSources.toggleAriaLabel', { label: displayLabel })}
         >
           <Switch.Thumb className={styles.switchThumb} />
         </Switch.Root>
@@ -118,7 +120,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
               onBlur={commitEdit}
               onKeyDown={handleLabelKeyDown}
               className={styles.labelInput}
-              aria-label="Edit source name"
+              aria-label={t('csvSources.editSourceNameAriaLabel')}
               aria-describedby={`${labelInputId}-hint`}
               autoComplete="off"
             />
@@ -127,8 +129,8 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
               type="button"
               className={styles.labelBtn}
               onClick={startEdit}
-              aria-label={`Rename "${displayLabel}"`}
-              title="Click to rename"
+              aria-label={t('csvSources.renameAriaLabel', { label: displayLabel })}
+              title={t('csvSources.renameTitle')}
             >
               {displayLabel}
             </button>
@@ -142,7 +144,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
         {/* Metadata */}
         <div className={styles.meta}>
           <span className={styles.cardCount}>
-            {cardCount.toLocaleString()} card{cardCount !== 1 ? 's' : ''}
+            {cardCount.toLocaleString()} {cardCount !== 1 ? t('csvSources.cardPlural') : t('csvSources.cardSingular')}
           </span>
           <span className={styles.date} title={new Date(source.createdAt).toLocaleString()}>
             {relativeDate}
@@ -155,7 +157,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
             <button
               type="button"
               className={styles.menuTrigger}
-              aria-label={`Options for "${displayLabel}"`}
+              aria-label={t('csvSources.optionsAriaLabel', { label: displayLabel })}
             >
               •••
             </button>
@@ -170,14 +172,14 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
                 className={styles.menuItem}
                 onSelect={startEdit}
               >
-                Rename
+                {t('csvSources.renameMenuItem')}
               </DropdownMenu.Item>
               <DropdownMenu.Separator className={styles.menuSeparator} />
               <DropdownMenu.Item
                 className={`${styles.menuItem} ${styles.menuItemDestructive}`}
                 onSelect={() => setDeleteModalOpen(true)}
               >
-                Delete
+                {t('csvSources.deleteMenuItem')}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>

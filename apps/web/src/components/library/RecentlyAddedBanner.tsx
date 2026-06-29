@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   consumeRecentlyAddedSource,
 } from './RecentlyAddedBanner.helpers';
@@ -16,6 +17,7 @@ import styles from './RecentlyAddedBanner.module.css';
  * dropping the banner before the user ever saw it).
  */
 export function RecentlyAddedBanner(): React.ReactElement | null {
+  const { t } = useTranslation();
   const [payload, setPayload] = useState<IRecentlyAddedSource | null>(() =>
     consumeRecentlyAddedSource(),
   );
@@ -24,24 +26,24 @@ export function RecentlyAddedBanner(): React.ReactElement | null {
 
   const verb =
     payload.kind === 'fabrary'
-      ? 'imported from Fabrary'
+      ? t('library.bannerVerbFabrary')
       : payload.kind === 'csv'
-        ? 'imported from CSV'
-        : 'added';
+        ? t('library.bannerVerbCsv')
+        : t('library.bannerVerbAdded');
 
   return (
     <aside className={styles.banner} role="status" aria-live="polite">
       <span className={styles.diamond} aria-hidden="true">◆</span>
       <p className={styles.body}>
         <span className={styles.count}>{payload.cardCount}</span>{' '}
-        {payload.cardCount === 1 ? 'card' : 'cards'} {verb} as{' '}
+        {payload.cardCount === 1 ? t('library.bannerCardSingular') : t('library.bannerCardPlural')} {verb} {t('library.bannerAs')}{' '}
         <em>{payload.label}</em>.
       </p>
       <button
         type="button"
         className={styles.dismiss}
         onClick={() => setPayload(null)}
-        aria-label="Dismiss notification"
+        aria-label={t('library.bannerDismissAriaLabel')}
       >
         ✕
       </button>

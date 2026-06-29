@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useUploadCsvMutation } from '../../api/csv-sources';
 import { ApiError } from '../../lib/api-client';
@@ -22,6 +23,7 @@ type TStatus =
   | { state: 'error'; message: string };
 
 function AddCardsCsvPage(): React.ReactElement {
+  const { t } = useTranslation();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dropRef = useRef<HTMLDivElement | null>(null);
@@ -107,15 +109,14 @@ function AddCardsCsvPage(): React.ReactElement {
     <div className={styles.page}>
       <header className={styles.subviewHeader}>
         <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> Add cards
+          {t('csvSources.addCsvBackLink')}
         </Link>
         <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">II</span> CSV import
+          <span className={styles.numeral} aria-hidden="true">II</span> {t('csvSources.addCsvEyebrow')}
         </p>
-        <h1 className={styles.title}>Import a CSV</h1>
+        <h1 className={styles.title}>{t('csvSources.addCsvTitle')}</h1>
         <p className={styles.subtitle}>
-          Drop a Fabrary or compatible CSV — name + quantity columns are required;
-          set and pitch are optional.
+          {t('csvSources.addCsvSubtitle')}
         </p>
       </header>
 
@@ -126,24 +127,24 @@ function AddCardsCsvPage(): React.ReactElement {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         role="region"
-        aria-label="CSV drop zone"
+        aria-label={t('csvSources.addCsvDropZoneAriaLabel')}
       >
         <span className={styles.dropDiamond} aria-hidden="true">
           ◆
         </span>
         {status.state === 'uploading' ? (
           <p className={styles.dropTitle} aria-live="polite">
-            Uploading <em>{status.filename}</em>…
+            {t('csvSources.addCsvUploadingLabel', { filename: status.filename })}
           </p>
         ) : (
           <>
             <p className={styles.dropTitle}>
               {isDragging
-                ? 'Release to upload.'
-                : 'Drop a CSV here, or click to choose a file.'}
+                ? t('csvSources.addCsvDragOverTitle')
+                : t('csvSources.addCsvDropTitle')}
             </p>
             <p className={styles.dropHint}>
-              Up to 2 MB. Each upload becomes a new toggleable source.
+              {t('csvSources.addCsvDropHint')}
             </p>
             <input
               ref={fileInputRef}
@@ -154,7 +155,7 @@ function AddCardsCsvPage(): React.ReactElement {
               onChange={handlePick}
             />
             <label htmlFor={inputId} className={styles.dropButton}>
-              Choose a file
+              {t('csvSources.addCsvChooseFile')}
             </label>
           </>
         )}
@@ -162,17 +163,17 @@ function AddCardsCsvPage(): React.ReactElement {
 
       {status.state === 'error' && (
         <section className={styles.errorCallout} role="alert">
-          <p className={styles.errorTitle}>Upload failed</p>
+          <p className={styles.errorTitle}>{t('csvSources.addCsvErrorTitle')}</p>
           <p className={styles.errorBody}>{status.message}</p>
           <button type="button" className={styles.secondaryAction} onClick={reset}>
-            Try another file
+            {t('csvSources.addCsvTryAnotherFile')}
           </button>
         </section>
       )}
 
       <footer className={styles.subviewFooter}>
         <Link to="/library-csv-sources" className={styles.manageLink}>
-          → Manage existing CSV sources
+          {t('csvSources.addCsvManageLink')}
         </Link>
       </footer>
     </div>

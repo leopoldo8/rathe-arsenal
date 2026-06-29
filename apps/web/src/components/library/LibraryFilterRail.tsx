@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ILibraryCard } from '../../api/library';
 import {
   CARD_SIZE_STEPS,
@@ -58,21 +59,21 @@ interface ILibraryFilterRailProps {
 
 const PITCH_OPTIONS: ReadonlyArray<{
   readonly value: TPitch;
-  readonly label: string;
+  readonly labelKey: string;
   readonly glyph: string;
   readonly tone: 'red' | 'yellow' | 'blue' | 'colorless';
 }> = [
-  { value: 'red', label: 'Red', glyph: 'I', tone: 'red' },
-  { value: 'yellow', label: 'Yellow', glyph: 'II', tone: 'yellow' },
-  { value: 'blue', label: 'Blue', glyph: 'III', tone: 'blue' },
-  { value: 'colorless', label: 'Colorless', glyph: '◇', tone: 'colorless' },
+  { value: 'red', labelKey: 'library.pitchRedLabel', glyph: 'I', tone: 'red' },
+  { value: 'yellow', labelKey: 'library.pitchYellowLabel', glyph: 'II', tone: 'yellow' },
+  { value: 'blue', labelKey: 'library.pitchBlueLabel', glyph: 'III', tone: 'blue' },
+  { value: 'colorless', labelKey: 'library.pitchColorlessLabel', glyph: '◇', tone: 'colorless' },
 ];
 
-const GROUP_OPTIONS: ReadonlyArray<{ readonly value: TGroupBy; readonly label: string }> = [
-  { value: 'type', label: 'Type' },
-  { value: 'pitch', label: 'Pitch' },
-  { value: 'set', label: 'Set' },
-  { value: 'flat', label: 'Flat' },
+const GROUP_OPTIONS: ReadonlyArray<{ readonly value: TGroupBy; readonly labelKey: string }> = [
+  { value: 'type', labelKey: 'library.groupTypeLabel' },
+  { value: 'pitch', labelKey: 'library.groupPitchLabel' },
+  { value: 'set', labelKey: 'library.groupSetLabel' },
+  { value: 'flat', labelKey: 'library.groupFlatLabel' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -112,6 +113,7 @@ export function LibraryFilterRail({
   setNames,
   variant = 'rail',
 }: ILibraryFilterRailProps): React.ReactElement {
+  const { t } = useTranslation();
   const searchId = useId();
   const sizeSliderId = useId();
 
@@ -176,13 +178,13 @@ export function LibraryFilterRail({
   return (
     <aside
       className={`${styles.rail} ${variant === 'drawer' ? styles['rail--drawer'] : ''}`}
-      aria-label="Library filters"
+      aria-label={t('library.libraryFiltersLabel')}
     >
       <div className={styles.rail__inner}>
         {/* Search */}
         <section className={styles.section} aria-labelledby={`${searchId}-label`}>
           <label className={styles.label} htmlFor={searchId} id={`${searchId}-label`}>
-            Search
+            {t('library.searchLabel')}
           </label>
           <input
             id={searchId}
@@ -190,15 +192,15 @@ export function LibraryFilterRail({
             inputMode="search"
             autoComplete="off"
             spellCheck={false}
-            placeholder="Search your collection"
+            placeholder={t('library.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.currentTarget.value)}
             className={styles.searchInput}
-            aria-label="Search the cards in your library by name"
+            aria-label={t('library.searchAriaLabel')}
           />
           {searchQuery.trim().length >= 2 && (
             <p className={styles.matchingChip} aria-live="polite">
-              Matching: <span className={styles.matchingNum}>{matchingCount}</span>
+              {t('library.matchingLabel')} <span className={styles.matchingNum}>{matchingCount}</span>
             </p>
           )}
         </section>
@@ -206,11 +208,13 @@ export function LibraryFilterRail({
         {/* Pitch */}
         <section className={styles.section} aria-labelledby="ra-rail-pitch">
           <h3 className={styles.label} id="ra-rail-pitch">
-            <span className={styles.diamond} aria-hidden="true">◆</span> Pitch
+            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupPitchLabel')}
           </h3>
           <div className={styles.pitchRow} role="group" aria-labelledby="ra-rail-pitch">
             {PITCH_OPTIONS.map((opt) => {
               const checked = value.pitches.includes(opt.value);
+              const pitchDisplayLabel = t(opt.labelKey);
+              const action = checked ? t('library.pitchRemoveFromFilter') : t('library.pitchAddToFilter');
               return (
                 <button
                   key={opt.value}
@@ -219,12 +223,12 @@ export function LibraryFilterRail({
                   aria-checked={checked}
                   className={`${styles.pitchPill} ${styles[`pitchPill--${opt.tone}`]} ${checked ? styles['pitchPill--on'] : ''}`}
                   onClick={() => togglePitch(opt.value)}
-                  aria-label={`${opt.label} pitch — ${checked ? 'remove from filter' : 'add to filter'}`}
+                  aria-label={`${pitchDisplayLabel} pitch — ${action}`}
                 >
                   <span className={styles.pitchPip} aria-hidden="true">
                     {opt.glyph}
                   </span>
-                  <span className={styles.pitchLabel}>{opt.label}</span>
+                  <span className={styles.pitchLabel}>{pitchDisplayLabel}</span>
                 </button>
               );
             })}
@@ -234,31 +238,31 @@ export function LibraryFilterRail({
         {/* Class */}
         <ToggleSection
           headingId="ra-rail-class"
-          label="Class"
+          label={t('library.classSectionLabel')}
           options={allClasses}
           selected={value.classes}
           onToggle={(c) => toggleString('classes', c)}
-          emptyHint="No classes in your collection yet."
+          emptyHint={t('library.noClassesHint')}
         />
 
         {/* Talent */}
         <ToggleSection
           headingId="ra-rail-talent"
-          label="Talent"
+          label={t('library.talentSectionLabel')}
           options={allTalents}
           selected={value.talents}
-          onToggle={(t) => toggleString('talents', t)}
-          emptyHint="None of your cards carry a talent yet."
+          onToggle={(s) => toggleString('talents', s)}
+          emptyHint={t('library.noTalentsHint')}
         />
 
         {/* Set */}
         <ToggleSection
           headingId="ra-rail-set"
-          label="Set"
+          label={t('library.setSectionLabel')}
           options={allSets}
           selected={value.sets}
           onToggle={(s) => toggleString('sets', s)}
-          emptyHint="No sets in your collection yet."
+          emptyHint={t('library.noSetsHint')}
           formatLabel={(code) => {
             const name = setNames?.[code];
             return name ? (
@@ -276,7 +280,7 @@ export function LibraryFilterRail({
         {/* Card size slider */}
         <section className={styles.section} aria-labelledby={`${sizeSliderId}-label`}>
           <h3 className={styles.label} id={`${sizeSliderId}-label`}>
-            <span className={styles.diamond} aria-hidden="true">◆</span> Card size
+            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.cardSizeLabel')}
           </h3>
           <div className={styles.sliderRow}>
             <input
@@ -289,7 +293,7 @@ export function LibraryFilterRail({
               list={`${sizeSliderId}-ticks`}
               value={value.cardSize}
               onChange={handleSizeChange}
-              aria-label="Card size in pixels"
+              aria-label={t('library.cardSizeAriaLabel')}
               aria-valuemin={CARD_SIZE_MIN}
               aria-valuemax={CARD_SIZE_MAX}
               aria-valuenow={value.cardSize}
@@ -311,7 +315,7 @@ export function LibraryFilterRail({
         {/* Group by */}
         <section className={styles.section} aria-labelledby="ra-rail-group">
           <h3 className={styles.label} id="ra-rail-group">
-            <span className={styles.diamond} aria-hidden="true">◆</span> Group by
+            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupByLabel')}
           </h3>
           <div
             className={styles.segmentControl}
@@ -327,7 +331,7 @@ export function LibraryFilterRail({
                 className={`${styles.segmentBtn} ${value.group === opt.value ? styles['segmentBtn--active'] : ''}`}
                 onClick={() => onChange({ ...value, group: opt.value })}
               >
-                {opt.label}
+                {t(opt.labelKey)}
               </button>
             ))}
           </div>
@@ -336,7 +340,7 @@ export function LibraryFilterRail({
         {/* Footer — clear all */}
         {activeFilterCount > 0 && (
           <button type="button" className={styles.clearAll} onClick={clearAll}>
-            Clear all filters
+            {t('library.clearAllFilters')}
             <span className={styles.clearAllCount} aria-hidden="true">
               ({activeFilterCount})
             </span>

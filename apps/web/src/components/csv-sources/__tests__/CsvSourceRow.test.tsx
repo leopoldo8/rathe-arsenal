@@ -101,7 +101,7 @@ describe('CsvSourceRow', () => {
     it('calls patchMutation.mutate with active=false when toggled off', async () => {
       renderRow(buildSource({ active: true }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /toggle.*my collection.*active/i });
+      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
       await userEvent.click(toggleBtn);
 
       expect(mockMutate).toHaveBeenCalledWith(
@@ -113,7 +113,7 @@ describe('CsvSourceRow', () => {
     it('calls patchMutation.mutate with active=true when toggled on', async () => {
       renderRow(buildSource({ active: false }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /toggle.*my collection.*active/i });
+      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
       await userEvent.click(toggleBtn);
 
       expect(mockMutate).toHaveBeenCalledWith(
@@ -130,7 +130,7 @@ describe('CsvSourceRow', () => {
 
       renderRow(buildSource({ active: true }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /toggle.*my collection.*active/i });
+      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
       await userEvent.click(toggleBtn);
 
       expect(mockShow).toHaveBeenCalledWith(
@@ -143,19 +143,19 @@ describe('CsvSourceRow', () => {
     it('shows input when label is clicked', async () => {
       renderRow(buildSource());
 
-      const labelBtn = screen.getByRole('button', { name: /rename.*my collection/i });
+      const labelBtn = screen.getByRole('button', { name: /renomear.*my collection/i });
       await userEvent.click(labelBtn);
 
-      expect(screen.getByRole('textbox', { name: /edit source name/i })).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: /editar nome da fonte/i })).toBeInTheDocument();
     });
 
     it('calls patch with new label on Enter', async () => {
       renderRow(buildSource());
 
-      const labelBtn = screen.getByRole('button', { name: /rename.*my collection/i });
+      const labelBtn = screen.getByRole('button', { name: /renomear.*my collection/i });
       await userEvent.click(labelBtn);
 
-      const input = screen.getByRole('textbox', { name: /edit source name/i });
+      const input = screen.getByRole('textbox', { name: /editar nome da fonte/i });
       await userEvent.tripleClick(input);
       await userEvent.keyboard('New Name{Enter}');
 
@@ -168,16 +168,16 @@ describe('CsvSourceRow', () => {
     it('discards edit on Escape', async () => {
       renderRow(buildSource());
 
-      const labelBtn = screen.getByRole('button', { name: /rename.*my collection/i });
+      const labelBtn = screen.getByRole('button', { name: /renomear.*my collection/i });
       await userEvent.click(labelBtn);
 
-      const input = screen.getByRole('textbox', { name: /edit source name/i });
+      const input = screen.getByRole('textbox', { name: /editar nome da fonte/i });
       await userEvent.tripleClick(input);
       await userEvent.keyboard('Partial{Escape}');
 
       // Input should be gone, original label visible
       await waitFor(() => {
-        expect(screen.queryByRole('textbox', { name: /edit source name/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', { name: /editar nome da fonte/i })).not.toBeInTheDocument();
       });
       expect(mockMutate).not.toHaveBeenCalled();
     });
@@ -187,10 +187,10 @@ describe('CsvSourceRow', () => {
     it('opens DeleteSourceModal when Delete is clicked in the menu', async () => {
       renderRow(buildSource());
 
-      const menuBtn = screen.getByRole('button', { name: /options for.*my collection/i });
+      const menuBtn = screen.getByRole('button', { name: /opções para.*my collection/i });
       await userEvent.click(menuBtn);
 
-      const deleteItem = screen.getByText('Delete');
+      const deleteItem = screen.getByText('Excluir');
       await userEvent.click(deleteItem);
 
       await waitFor(() => {

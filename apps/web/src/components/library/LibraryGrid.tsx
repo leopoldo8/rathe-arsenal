@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -183,12 +184,13 @@ function LibraryCardCell({
   cardSize,
   onOpenLightbox,
 }: ILibraryCardCellProps): React.ReactElement {
+  const { t } = useTranslation();
   const typeStr = primaryType(card.types, card.subtypes);
   const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
     <li
       className={styles.cell}
-      aria-label={`${card.name}, owned: ${card.ownedQuantity}`}
+      aria-label={t('library.cardCellAriaLabel', { name: card.name, qty: card.ownedQuantity })}
     >
       <LibraryCardStepper card={card} />
       <div className={styles.art}>
@@ -206,7 +208,7 @@ function LibraryCardCell({
       </div>
       <div className={styles.meta}>
         <span className={styles.name}>{card.name}</span>
-        <span className={styles.qtyBadge} aria-label={`Owned: ${card.ownedQuantity}`}>
+        <span className={styles.qtyBadge} aria-label={t('library.ownedAriaLabel', { qty: card.ownedQuantity })}>
           ×{card.ownedQuantity}
         </span>
       </div>
@@ -230,6 +232,7 @@ export function LibraryGrid({
   setNames,
   cardSize,
 }: ILibraryGridProps): React.ReactElement {
+  const { t } = useTranslation();
   const groups = groupCards(cards, group);
 
   const [lightbox, setLightbox] = useState<
@@ -241,10 +244,22 @@ export function LibraryGrid({
     | null
   >(null);
 
+  const pitchGroupLabels: Readonly<Record<string, string>> = {
+    Red: t('library.pitchRedGroupLabel'),
+    Yellow: t('library.pitchYellowGroupLabel'),
+    Blue: t('library.pitchBlueGroupLabel'),
+    Colorless: t('library.pitchColorlessGroupLabel'),
+  };
+
   function headingFor(key: string): string {
-    if (group !== 'set') return key;
-    const name = setNames?.[key];
-    return name ? `${key} · ${name}` : key;
+    if (group === 'set') {
+      const name = setNames?.[key];
+      return name ? `${key} · ${name}` : key;
+    }
+    if (group === 'pitch') {
+      return pitchGroupLabels[key] ?? key;
+    }
+    return key;
   }
 
   function openLightbox(card: ILibraryCard): void {
@@ -264,7 +279,7 @@ export function LibraryGrid({
             <h2 className={styles.groupHeading}>{headingFor(groupKey)}</h2>
           )}
           <CardGrid
-            ariaLabel={group !== 'flat' ? headingFor(groupKey) : 'Library cards'}
+            ariaLabel={group !== 'flat' ? headingFor(groupKey) : t('library.libraryCardsAriaLabel')}
             cardSize={cardSize}
           >
             {groupCards.map((card) => (

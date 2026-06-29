@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LibraryFilterRail } from './LibraryFilterRail';
 import type { ILibraryFiltersValue } from './LibraryFilterRail';
 import type { ILibraryCard } from '../../api/library';
@@ -35,6 +36,7 @@ export function LibraryFilterDrawer({
   matchingCount,
   setNames,
 }: ILibraryFilterDrawerProps): React.ReactElement | null {
+  const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -66,17 +68,17 @@ export function LibraryFilterDrawer({
         className={styles.drawer}
         role="dialog"
         aria-modal="true"
-        aria-label="Library filters"
+        aria-label={t('library.libraryFiltersLabel')}
         onClick={(e) => e.stopPropagation()}
       >
         <header className={styles.header}>
-          <h2 className={styles.title}>Filters</h2>
+          <h2 className={styles.title}>{t('library.filtersHeading')}</h2>
           <button
             ref={closeButtonRef}
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            aria-label="Close filters"
+            aria-label={t('library.closeFiltersAriaLabel')}
           >
             ✕
           </button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useAddCardMutation,
   useDecrementCardMutation,
@@ -30,6 +31,7 @@ export function LibraryCardStepper({
   card,
   maxQuantity = 20,
 }: ILibraryCardStepperProps): React.ReactElement {
+  const { t } = useTranslation();
   const addMutation = useAddCardMutation();
   const decrementMutation = useDecrementCardMutation();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -108,7 +110,7 @@ export function LibraryCardStepper({
           handleDecrementClick();
         }}
         disabled={!canDecrement || isPending}
-        aria-label={`Remove one ${card.name}`}
+        aria-label={t('library.removeOneCard', { name: card.name })}
         aria-haspopup={
           removableContributions.length > 1 ? 'menu' : undefined
         }
@@ -129,7 +131,7 @@ export function LibraryCardStepper({
           handleAdd();
         }}
         disabled={!canAdd || isPending}
-        aria-label={`Add one ${card.name}`}
+        aria-label={t('library.addOneCard', { name: card.name })}
       >
         +
       </button>
@@ -139,10 +141,10 @@ export function LibraryCardStepper({
           id={popoverId}
           role="menu"
           className={styles.picker}
-          aria-label={`Remove 1× from which source? (${card.name})`}
+          aria-label={t('library.removeFromSourceQuestion', { name: card.name })}
         >
           <p className={styles.pickerHeading}>
-            <span aria-hidden="true">◆</span> Remove 1× from
+            <span aria-hidden="true">◆</span> {t('library.removeOneFrom')}
           </p>
           <ul className={styles.pickerList}>
             {removableContributions.map((contribution) => (
