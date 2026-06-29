@@ -9,9 +9,10 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — Phase 1 (T1–T5) committed ✅; Phase 2 (extraction) next.
+**Status**: In Progress — Phase 1 (T1–T5) committed ✅; T8 committed ✅; remaining Phase 2 tasks next.
 
 > Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
+> T8 done: `9aebf93` — library + csvSources namespaces filled, 18 components/routes wired, 9 test files updated to PT-BR. Gate: 1323 passed.
 
 ---
 
@@ -259,14 +260,14 @@ T18 [P] ─┘
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] No hardcoded user-facing literal remains (grep audit)
-- [ ] Area tests updated to PT-BR and green
-- [ ] Gate passes: `pnpm --filter @rathe-arsenal/web typecheck && pnpm --filter @rathe-arsenal/web test`
-- [ ] Test count: existing ≥8 (library 5 + csv-sources 3) preserved/updated
+- [x] No hardcoded user-facing literal remains (grep audit)
+- [x] Area tests updated to PT-BR and green
+- [x] Gate passes: `pnpm --filter @rathe-arsenal/web typecheck && pnpm --filter @rathe-arsenal/web test`
+- [x] Test count: existing ≥8 (library 5 + csv-sources 3) preserved/updated
 
 **Tests**: unit · **Gate**: Quick-web
 
-**Commit**: `feat(web): localize library and csv sources`
+**Commit**: `feat(web): localize library and csv sources` → `9aebf93`
 
 ---
 
