@@ -168,6 +168,13 @@ describe('ReviewsBulkBar — Reset selected', () => {
     expect(ops).toHaveLength(3);
     expect(ops!.every((op) => op.reset === true)).toBe(true);
     expect(ops!.every((op) => (op as unknown as Record<string, unknown>).decision === undefined)).toBe(true);
+    // SWAPGRP-16: reset ops are keyed by the SUBSTITUTE identifier (not the original),
+    // exactly like approve/reject. Guards the reset branch of buildOperations.
+    expect(ops!.map((op) => op.cardIdentifier).sort()).toEqual([
+      'SUB-ARC001',
+      'SUB-ELE005',
+      'SUB-MST003',
+    ]);
   });
 });
 
