@@ -37,10 +37,11 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: **Phase 2 (all frontend extraction) COMPLETE & committed.** Next: Phase 3 (T13, T14) frontend locale transport + auth error i18n.
-- **Completed**: Planning; Phase 1 (T1–T5 + fixes); main merge `8c1aef9`; Phase 2a (T6/T7/T8); 2b (T9 `15019a4`, T10 `f8688b8`); 2c (T11 `a9621e3`, T12 `105fa10`); T12b gap fix `02fbb6d` (12 root components + skeleton labels) + residual fix `ba476b2`. Repo-wide residual sweep CLEAN; web suite green (1327). Notable bumps handled by the orchestrator: a 2b session-limit cutoff (parcial T10 verified+committed), and a T12b worktree/concurrent-agent tangle (adopted the complete green worktree commit `02fbb6d`, discarded a parcial dupe, then fixed 3 missed residuals).
+- **Phase / Task**: **Phase 3 (frontend transport + auth error i18n) COMPLETE & committed.** Next: Phase 4 (T15–T18 backend i18n).
+- **Completed**: Planning; Phase 1; main merge `8c1aef9`; Phase 2 (2a/2b/2c + T12b `02fbb6d` + residual `ba476b2`); Phase 3 — T13 `54849ca` (Accept-Language in both wrappers + AuthFetchError.code), T14 `62c6c8c` (apiErrors namespace + localizeAuthError helper, applied to 6 auth surfaces, removed English formatRateLimitMessage), plus `6190ba2` (status-label residual + 2 lint errors the build gate surfaced). All web gates green: typecheck + lint + 1340 tests.
 - **In-progress** (file:line): none — between phases.
-- **Next step**: dispatch Phase 3 worker (Sonnet) — T13 (inject `Accept-Language` in `lib/auth-fetch.ts` + `lib/api-client.ts`; add `code` to `AuthFetchError` from the envelope) → T14 (map `AuthFetchError.code`→`t('apiErrors.<EAuthErrorCode>')` at auth catch sites; fill `apiErrors` namespace). Then Phase 4 (T15–T18 backend), Verifier (Opus).
+- **Lesson**: the extraction gate was Quick-web (typecheck + test, NO lint), so `no-unused-vars` from the t()-migration (orphan STATUS_LABELS imports) + an English status-label residual only surfaced at the Phase-3 build gate. Future per-task gates on extraction-style work should include lint.
+- **Next step**: dispatch Phase 4 worker (Sonnet) — T15 (`resolveLocale` + `@AcceptLanguage()` decorator), T16 (localized email templates + EmailService locale param), T17 (thread locale through auth controllers/service), T18 (expose error `code` on the API envelope). Backend = NestJS + Jest (`pnpm --filter @rathe-arsenal/api test` / `test:e2e`). Then Verifier (Opus).
 - **Blockers**: none.
 - **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
 - **Main integration**: done at this checkpoint; future main changes integrate at the next clean-tree checkpoint.
