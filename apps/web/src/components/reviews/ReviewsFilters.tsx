@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Popover from '@radix-ui/react-popover';
 import type { IReviewsFilters } from './ReviewsFilters.helpers';
 import { DEFAULT_FILTERS } from './ReviewsFilters.helpers';
@@ -36,6 +37,8 @@ export function ReviewsFilters({
   availableHeroes,
   onChange,
 }: IReviewsFiltersProps): React.ReactElement {
+  const { t } = useTranslation();
+
   const tierCount = filters.tier.length;
   const deckCount = filters.deck.length;
   const heroCount = filters.hero.length;
@@ -50,8 +53,8 @@ export function ReviewsFilters({
   }
 
   return (
-    <div className={styles.bar} role="group" aria-label="Filters">
-      <span className={styles.label}>Filters</span>
+    <div className={styles.bar} role="group" aria-label={t('reviews.filtersAria')}>
+      <span className={styles.label}>{t('reviews.filtersLabel')}</span>
 
       {/* Tier filter */}
       <TierFilter
@@ -92,9 +95,9 @@ export function ReviewsFilters({
           type="button"
           className={styles.clearBtn}
           onClick={clearAll}
-          aria-label={`Clear all ${activeCount} active filters`}
+          aria-label={t('reviews.clearAllAria', { count: activeCount })}
         >
-          Clear ({activeCount})
+          {t('reviews.clearBtn', { count: activeCount })}
         </button>
       )}
     </div>
@@ -111,6 +114,7 @@ interface ITierFilterProps {
 }
 
 function TierFilter({ value, onChange }: ITierFilterProps): React.ReactElement {
+  const { t } = useTranslation();
   const active = value.length > 0;
 
   function toggle(tier: 1 | 2 | 3): void {
@@ -128,16 +132,16 @@ function TierFilter({ value, onChange }: ITierFilterProps): React.ReactElement {
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
           aria-pressed={active}
         >
-          Tier{active ? ` (${value.join(', ')})` : ''}
+          {t('reviews.tierChip')}{active ? ` (${value.join(', ')})` : ''}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={styles.popoverContent} align="start" sideOffset={6}>
-          <p className={styles.popoverLabel}>Tier</p>
+          <p className={styles.popoverLabel}>{t('reviews.tierPopoverLabel')}</p>
           {([1, 2, 3] as const).map((tier) => (
             <CheckboxItem
               key={tier}
-              label={`Tier ${tier}`}
+              label={t('reviews.tierCheckboxLabel', { tier })}
               checked={value.includes(tier)}
               onChange={() => toggle(tier)}
             />
@@ -160,6 +164,7 @@ interface IDeckFilterProps {
 }
 
 function DeckFilter({ value, decks, onChange }: IDeckFilterProps): React.ReactElement {
+  const { t } = useTranslation();
   const active = value.length > 0;
 
   function toggle(id: string): void {
@@ -175,12 +180,12 @@ function DeckFilter({ value, decks, onChange }: IDeckFilterProps): React.ReactEl
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
           aria-pressed={active}
         >
-          Deck{active ? ` (${value.length})` : ''}
+          {t('reviews.deckChip')}{active ? ` (${value.length})` : ''}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={styles.popoverContent} align="start" sideOffset={6}>
-          <p className={styles.popoverLabel}>Deck</p>
+          <p className={styles.popoverLabel}>{t('reviews.deckPopoverLabel')}</p>
           {decks.map((deck) => (
             <CheckboxItem
               key={deck.id}
@@ -207,6 +212,7 @@ interface IHeroFilterProps {
 }
 
 function HeroFilter({ value, heroes, onChange }: IHeroFilterProps): React.ReactElement {
+  const { t } = useTranslation();
   const active = value.length > 0;
 
   function toggle(hero: string): void {
@@ -224,12 +230,12 @@ function HeroFilter({ value, heroes, onChange }: IHeroFilterProps): React.ReactE
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
           aria-pressed={active}
         >
-          Hero{active ? ` (${value.length})` : ''}
+          {t('reviews.heroChip')}{active ? ` (${value.length})` : ''}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={styles.popoverContent} align="start" sideOffset={6}>
-          <p className={styles.popoverLabel}>Hero</p>
+          <p className={styles.popoverLabel}>{t('reviews.heroPopoverLabel')}</p>
           {heroes.map((hero) => (
             <CheckboxItem
               key={hero}
@@ -256,6 +262,7 @@ interface IConfidenceFilterProps {
 }
 
 function ConfidenceFilter({ min, max, onChange }: IConfidenceFilterProps): React.ReactElement {
+  const { t } = useTranslation();
   const minId = useId();
   const maxId = useId();
   const isDefault = min === 0 && max === 100;
@@ -268,15 +275,15 @@ function ConfidenceFilter({ min, max, onChange }: IConfidenceFilterProps): React
           className={`${styles.chip} ${!isDefault ? styles['chip--active'] : ''}`}
           aria-pressed={!isDefault}
         >
-          Confidence{!isDefault ? ` (${min}–${max})` : ''}
+          {t('reviews.confidenceChip')}{!isDefault ? ` (${min}–${max})` : ''}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={styles.popoverContent} align="start" sideOffset={6}>
-          <p className={styles.popoverLabel}>Confidence range</p>
+          <p className={styles.popoverLabel}>{t('reviews.confidenceRangeLabel')}</p>
           <div className={styles.rangeRow}>
             <label htmlFor={minId} className={styles.rangeLabel}>
-              Min
+              {t('reviews.confidenceMinLabel')}
             </label>
             <input
               id={minId}
@@ -294,7 +301,7 @@ function ConfidenceFilter({ min, max, onChange }: IConfidenceFilterProps): React
           </div>
           <div className={styles.rangeRow}>
             <label htmlFor={maxId} className={styles.rangeLabel}>
-              Max
+              {t('reviews.confidenceMaxLabel')}
             </label>
             <input
               id={maxId}

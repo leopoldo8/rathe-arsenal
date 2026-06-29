@@ -500,10 +500,10 @@ describe('deriveUniqueDecks', () => {
 // ============================================================================
 
 describe('SwapsPage — page heading', () => {
-  it('renders "Swaps" as the h1 heading', () => {
+  it('renders "Substituições" as the h1 heading', () => {
     mockReviewsData = { rows: [] };
     renderPage();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Swaps');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Substituições');
   });
 
   it('has exactly one h1', () => {
@@ -556,7 +556,7 @@ describe('SwapsPage — approve action moves row to Approved tab', () => {
     };
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve SINGLE001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar SINGLE001/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
@@ -566,7 +566,7 @@ describe('SwapsPage — approve action moves row to Approved tab', () => {
     expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-SINGLE001', decision: 'APPROVED' });
 
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: 'Approved 1 swap' }),
+      expect.objectContaining({ kind: 'success', message: '1 substituição aprovada' }),
     );
   });
 
@@ -591,7 +591,7 @@ describe('SwapsPage — reject action', () => {
     };
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Reject REJ001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar REJ001/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
@@ -599,7 +599,7 @@ describe('SwapsPage — reject action', () => {
     expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-REJ001', decision: 'REJECTED' });
 
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: 'Rejected 1 swap' }),
+      expect.objectContaining({ kind: 'success', message: '1 substituição rejeitada' }),
     );
   });
 });
@@ -613,8 +613,8 @@ describe('SwapsPage — reset action', () => {
     renderPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for APP001/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision for APP001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para APP001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para APP001/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
@@ -622,7 +622,7 @@ describe('SwapsPage — reset action', () => {
     expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-APP001', reset: true });
 
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: 'Reset 1 swap' }),
+      expect.objectContaining({ kind: 'success', message: '1 substituição redefinida' }),
     );
   });
 });
@@ -637,7 +637,7 @@ describe('SwapsPage — bulk operations', () => {
       await userEvent.click(cb);
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /approve 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
@@ -645,7 +645,7 @@ describe('SwapsPage — bulk operations', () => {
     expect((ops! as Array<{ decision: string }>).every((op) => op.decision === 'APPROVED')).toBe(true);
 
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: 'Approved 3 swaps' }),
+      expect.objectContaining({ kind: 'success', message: '3 substituições aprovadas' }),
     );
   });
 
@@ -658,7 +658,7 @@ describe('SwapsPage — bulk operations', () => {
       await userEvent.click(cb);
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /reject 2 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar 2 substituições/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toHaveLength(2);
@@ -681,7 +681,7 @@ describe('SwapsPage — bulk operations', () => {
       await userEvent.click(cb);
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /reset 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir 3 substituições/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
     expect(ops).toHaveLength(3);
@@ -698,12 +698,12 @@ describe('SwapsPage — bulk operations', () => {
     }
 
     // Bulk bar should be visible
-    expect(screen.getByRole('region', { name: /bulk actions/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /Ações em lote/i })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /approve 2 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
 
     // Selection cleared — bulk bar should disappear
-    expect(screen.queryByRole('region', { name: /bulk actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /Ações em lote/i })).not.toBeInTheDocument();
   });
 });
 
@@ -718,12 +718,12 @@ describe('SwapsPage — network error', () => {
     mockReviewsData = { rows: [makeRow()] };
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve ARC001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ARC001/i }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: "Some changes couldn't be saved — please try again",
+        message: 'Algumas alterações não puderam ser salvas — tente novamente',
       }),
     );
   });
@@ -749,12 +749,12 @@ describe('SwapsPage — transactionError', () => {
     for (const cb of checkboxes) {
       await userEvent.click(cb);
     }
-    await userEvent.click(screen.getByRole('button', { name: /approve 2 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: "Some changes couldn't be saved — please try again",
+        message: 'Algumas alterações não puderam ser salvas — tente novamente',
       }),
     );
   });
@@ -781,12 +781,12 @@ describe('SwapsPage — NOT_ACCESSIBLE partial failure', () => {
     for (const cb of checkboxes) {
       await userEvent.click(cb);
     }
-    await userEvent.click(screen.getByRole('button', { name: /approve 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',
-        message: 'Approved 2 swaps',
+        message: '2 substituições aprovadas',
       }),
     );
   });
@@ -804,10 +804,10 @@ describe('SwapsPage — tab badge counts', () => {
     };
     renderPage();
 
-    const pendingTab = screen.getByRole('tab', { name: /Pending/i });
+    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
     expect(pendingTab).toHaveTextContent('3');
 
-    const approvedTab = screen.getByRole('tab', { name: /Approved/i });
+    const approvedTab = screen.getByRole('tab', { name: /Aprovado/i });
     expect(approvedTab).toHaveTextContent('1');
   });
 
@@ -825,7 +825,7 @@ describe('SwapsPage — tab badge counts', () => {
     renderPage();
 
     // Even though tier=2 filter is active, pending tab badge = 3 (all pending rows)
-    const pendingTab = screen.getByRole('tab', { name: /Pending/i });
+    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
     expect(pendingTab).toHaveTextContent('3');
   });
 });
@@ -889,7 +889,7 @@ describe('SwapsPage — empty states', () => {
   it('shows no-subs variant when total row count is 0', () => {
     mockReviewsData = { rows: [] };
     renderPage();
-    expect(screen.getByText(/All playable as written/i)).toBeInTheDocument();
+    expect(screen.getByText(/Todos jogáveis como estão/i)).toBeInTheDocument();
   });
 
   it('shows all-reviewed variant in Pending tab when pending=0 but others>0', () => {
@@ -901,7 +901,7 @@ describe('SwapsPage — empty states', () => {
       ],
     };
     renderPage();
-    expect(screen.getByText(/All caught up/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tudo em dia/i)).toBeInTheDocument();
   });
 
   it('Approved tab shows populated rows when approved rows exist', () => {
@@ -923,26 +923,26 @@ describe('SwapsPage — buttons disabled while mutation pending', () => {
     mockReviewsData = { rows: [makeRow({ cardIdentifier: 'ROW001' })] };
     renderPage();
 
-    expect(screen.getByRole('button', { name: /Approve ROW001/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reject ROW001/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reset decision/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Aprovar ROW001/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Rejeitar ROW001/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Redefinir decisão/i })).toBeDisabled();
   });
 });
 
 describe('SwapsPage — accessibility', () => {
-  it('has exactly one <h1> with text Swaps', () => {
+  it('has exactly one <h1> with text Substituições', () => {
     mockReviewsData = { rows: [] };
     renderPage();
     const headings = screen.getAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent('Swaps');
+    expect(headings[0]).toHaveTextContent('Substituições');
   });
 
   it('bulk bar has aria-live="polite" when rows are selected', async () => {
     mockReviewsData = { rows: [makeRow()] };
     renderPage();
     await userEvent.click(screen.getByRole('checkbox'));
-    const bulkBar = screen.getByRole('region', { name: /bulk actions/i });
+    const bulkBar = screen.getByRole('region', { name: /Ações em lote/i });
     expect(bulkBar).toHaveAttribute('aria-live', 'polite');
   });
 });
@@ -966,7 +966,7 @@ describe('Fix regression — approve/reject sends substituteIdentifier, not orig
     };
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve ORIG-1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ORIG-1/i }));
 
     expect(mockBulkMutate).toHaveBeenCalledOnce();
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision?: string }>;
@@ -984,7 +984,7 @@ describe('Fix regression — approve/reject sends substituteIdentifier, not orig
     };
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Reject ORIG-1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ORIG-1/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision?: string }>;
     expect(ops[0]?.cardIdentifier).toBe('SUB-1');
@@ -1000,8 +1000,8 @@ describe('Fix regression — approve/reject sends substituteIdentifier, not orig
     renderPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-1/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para ORIG-1/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
     expect(ops[0]?.cardIdentifier).toBe('SUB-1');
@@ -1045,7 +1045,7 @@ describe('Cross-page sync — query invalidation on approve/reject', () => {
     const { queryClient } = renderPage();
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve SYNC001/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar SYNC001/i }));
 
     // onSuccess was reached (toast confirms the flow ran end-to-end)
     expect(mockShowToast).toHaveBeenCalledWith(
@@ -1110,7 +1110,7 @@ describe('Cross-page sync — bulk operation sends substitute-keyed operations',
       await userEvent.click(cb);
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /approve 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops).toHaveLength(3);

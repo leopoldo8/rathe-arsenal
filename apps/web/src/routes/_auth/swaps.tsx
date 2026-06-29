@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   useReviewsQuery,
   useBulkReviewsMutation,
   resolveActionLabel,
-  buildSuccessMessage,
 } from '../../api/reviews';
 import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
 import { useToast } from '../../components/ui/Toast/useToast';
@@ -71,6 +71,7 @@ export const Route = createFileRoute('/_auth/swaps')({
 // ---------------------------------------------------------------------------
 
 export function SwapsPage(): React.ReactElement {
+  const { t } = useTranslation();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const { show } = useToast();
@@ -178,12 +179,20 @@ export function SwapsPage(): React.ReactElement {
           if (result.transactionError) {
             show({
               kind: 'error',
-              message: "Some changes couldn't be saved — please try again",
+              message: t('reviews.errorToast'),
             });
           } else {
+            // Map English action label to i18n key base.
+            const toastKeyMap: Record<string, string> = {
+              Approved: 'toastApproved',
+              Rejected: 'toastRejected',
+              Reset: 'toastReset',
+              Updated: 'toastUpdated',
+            };
+            const toastBase = toastKeyMap[actionLabel] ?? 'toastUpdated';
             show({
               kind: 'success',
-              message: buildSuccessMessage(actionLabel, result.succeeded),
+              message: t(`reviews.${toastBase}`, { count: result.succeeded }),
             });
           }
         },
@@ -191,12 +200,12 @@ export function SwapsPage(): React.ReactElement {
           // Network / 4xx / 5xx — consolidated single error toast.
           show({
             kind: 'error',
-            message: "Some changes couldn't be saved — please try again",
+            message: t('reviews.errorToast'),
           });
         },
       });
     },
-    [bulkMutation, show],
+    [bulkMutation, show, t],
   );
 
   // --- Navigate to approved tab (empty state CTA) ---
@@ -228,10 +237,8 @@ export function SwapsPage(): React.ReactElement {
     <div className={styles.page}>
       {/* Page heading */}
       <div className={styles.header}>
-        <h1 className={styles.heading}>Swaps</h1>
-        <p className={styles.subtitle}>
-          Approve or reject substitution suggestions across all your tracked decks.
-        </p>
+        <h1 className={styles.heading}>{t('reviews.heading')}</h1>
+        <p className={styles.subtitle}>{t('reviews.subtitle')}</p>
       </div>
 
       {/* Filters bar */}

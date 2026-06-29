@@ -56,75 +56,76 @@ function renderFilters(
 describe('ReviewsFilters — chip visibility', () => {
   it('renders the Tier filter chip', () => {
     renderFilters();
+    // "Tier" is unchanged in PT-BR (game term)
     expect(screen.getByRole('button', { name: /^Tier$/i })).toBeInTheDocument();
   });
 
   it('renders the Confidence filter chip', () => {
     renderFilters();
-    expect(screen.getByRole('button', { name: /^Confidence$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Confiança$/i })).toBeInTheDocument();
   });
 
   it('renders the Deck filter chip when availableDecks is non-empty', () => {
     renderFilters();
-    expect(screen.getByRole('button', { name: /^Deck$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Baralho$/i })).toBeInTheDocument();
   });
 
   it('renders the Hero filter chip when availableHeroes is non-empty', () => {
     renderFilters();
-    expect(screen.getByRole('button', { name: /^Hero$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Herói$/i })).toBeInTheDocument();
   });
 });
 
 describe('ReviewsFilters — active state labels', () => {
   it('Tier chip shows active tiers in label when tier filter is set', () => {
     renderFilters({ tier: [1, 2] });
-    // Chip label should include the active tier values
+    // Chip label should include the active tier values (Tier unchanged in PT-BR)
     expect(screen.getByRole('button', { name: /Tier \(1, 2\)/i })).toBeInTheDocument();
   });
 
   it('Confidence chip shows range in label when confidence is not default', () => {
     renderFilters({ confidenceMin: 30, confidenceMax: 80 });
-    expect(screen.getByRole('button', { name: /Confidence \(30–80\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confiança \(30–80\)/i })).toBeInTheDocument();
   });
 
   it('Deck chip shows count in label when deck filter is set', () => {
     renderFilters({ deck: ['1'] });
-    expect(screen.getByRole('button', { name: /Deck \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Baralho \(1\)/i })).toBeInTheDocument();
   });
 
   it('Hero chip shows count in label when hero filter is set', () => {
     renderFilters({ hero: ['Dromai'] });
-    expect(screen.getByRole('button', { name: /Hero \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Herói \(1\)/i })).toBeInTheDocument();
   });
 });
 
 describe('ReviewsFilters — clear button', () => {
   it('does not render Clear button when all filters are default', () => {
     renderFilters();
-    expect(screen.queryByRole('button', { name: /Clear/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Limpar/i })).not.toBeInTheDocument();
   });
 
   it('renders Clear button when tier filter is active', () => {
     renderFilters({ tier: [1] });
-    expect(screen.getByRole('button', { name: /Clear/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Limpar/i })).toBeInTheDocument();
   });
 
   it('renders Clear button when confidence is non-default', () => {
     renderFilters({ confidenceMin: 20 });
-    expect(screen.getByRole('button', { name: /Clear/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Limpar/i })).toBeInTheDocument();
   });
 
   it('Clear button shows active filter count', () => {
     // tier (1) + deck (1) = 2 active
     renderFilters({ tier: [1], deck: ['1'] });
-    // The clear button's accessible name comes from its aria-label.
-    expect(screen.getByRole('button', { name: /Clear all 2 active filters/i })).toBeInTheDocument();
+    // The clear button's accessible name comes from its aria-label (PT-BR).
+    expect(screen.getByRole('button', { name: /Limpar todos os 2 filtros ativos/i })).toBeInTheDocument();
   });
 
   it('clicking Clear calls onChange with DEFAULT_FILTERS', async () => {
     const onChange = vi.fn();
     renderFilters({ tier: [1, 3], deck: ['2'] }, onChange);
-    await userEvent.click(screen.getByRole('button', { name: /Clear/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Limpar/i }));
     expect(onChange).toHaveBeenCalledWith(DEFAULT_FILTERS);
   });
 });

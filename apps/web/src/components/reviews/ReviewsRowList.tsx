@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ReviewsRow } from './ReviewsRow';
 import { ReviewsEmptyState } from './ReviewsEmptyState';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
@@ -58,6 +59,8 @@ export function ReviewsRowList({
   onAction,
   onNavigateApproved,
 }: IReviewsRowListProps): React.ReactElement {
+  const { t } = useTranslation();
+
   // --- Loading ---
   if (isLoading) {
     return <ReviewsRowListSkeleton />;
@@ -67,9 +70,9 @@ export function ReviewsRowList({
   if (isError) {
     return (
       <div role="alert" className={styles.error}>
-        <p className={styles.errorMessage}>Something went wrong loading reviews.</p>
+        <p className={styles.errorMessage}>{t('reviews.errorMessage')}</p>
         <button type="button" className={styles.retryBtn} onClick={onRetry}>
-          Retry
+          {t('reviews.retry')}
         </button>
       </div>
     );
@@ -106,7 +109,7 @@ export function ReviewsRowList({
     <div
       className={styles.list}
       role="list"
-      aria-label={`Substitution reviews — ${rows.length} items`}
+      aria-label={t('reviews.reviewsListAria', { count: rows.length })}
     >
       {rows.map((row) => {
         const id = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
@@ -131,27 +134,29 @@ export function ReviewsRowList({
 // ---------------------------------------------------------------------------
 
 function ReviewsRowListSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <div
       aria-busy="true"
       aria-live="polite"
       className={styles.skeleton}
-      aria-label="Loading reviews"
+      aria-label={t('reviews.loadingReviewsAria')}
     >
       {Array.from({ length: SKELETON_COUNT }, (_, i) => (
         <div key={i} className={styles.skeletonRow}>
-          <Skeleton width="1rem" height="1rem" aria-label="Loading checkbox" />
-          <Skeleton width="72px" height="103px" aria-label="Loading card" />
-          <Skeleton width="2rem" height="1.25rem" aria-label="Loading connector" />
-          <Skeleton width="72px" height="103px" aria-label="Loading card" />
+          <Skeleton width="1rem" height="1rem" aria-label={t('reviews.loadingCheckbox')} />
+          <Skeleton width="72px" height="103px" aria-label={t('reviews.loadingCard')} />
+          <Skeleton width="2rem" height="1.25rem" aria-label={t('reviews.loadingConnector')} />
+          <Skeleton width="72px" height="103px" aria-label={t('reviews.loadingCard')} />
           <div className={styles.skeletonMeta}>
-            <Skeleton width="140px" height="14px" aria-label="Loading deck name" />
-            <Skeleton width="80px" height="14px" aria-label="Loading tier" />
-            <Skeleton width="200px" height="12px" aria-label="Loading rationale" />
+            <Skeleton width="140px" height="14px" aria-label={t('reviews.loadingDeckName')} />
+            <Skeleton width="80px" height="14px" aria-label={t('reviews.loadingTier')} />
+            <Skeleton width="200px" height="12px" aria-label={t('reviews.loadingRationale')} />
             <div className={styles.skeletonActions}>
-              <Skeleton width="72px" height="32px" aria-label="Loading action" />
-              <Skeleton width="72px" height="32px" aria-label="Loading action" />
-              <Skeleton width="64px" height="32px" aria-label="Loading action" />
+              <Skeleton width="72px" height="32px" aria-label={t('reviews.loadingAction')} />
+              <Skeleton width="72px" height="32px" aria-label={t('reviews.loadingAction')} />
+              <Skeleton width="64px" height="32px" aria-label={t('reviews.loadingAction')} />
             </div>
           </div>
         </div>

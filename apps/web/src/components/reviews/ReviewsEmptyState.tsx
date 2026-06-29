@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './ReviewsEmptyState.module.css';
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,30 @@ export function ReviewsEmptyState({
   variant,
   onNavigate,
 }: IReviewsEmptyStateProps): React.ReactElement {
-  const content = VARIANT_CONTENT[variant];
+  const { t } = useTranslation();
+
+  const variantContent: Record<
+    TEmptyVariant,
+    { readonly heading: string; readonly body: string; readonly cta: string | null }
+  > = {
+    'no-subs': {
+      heading: t('reviews.noSubsHeading'),
+      body: t('reviews.noSubsBody'),
+      cta: t('reviews.noSubsCta'),
+    },
+    'all-reviewed': {
+      heading: t('reviews.allReviewedHeading'),
+      body: t('reviews.allReviewedBody'),
+      cta: t('reviews.allReviewedCta'),
+    },
+    'no-results': {
+      heading: t('reviews.noResultsHeading'),
+      body: t('reviews.noResultsBody'),
+      cta: null,
+    },
+  };
+
+  const content = variantContent[variant];
 
   return (
     <div className={styles.container} role="status" aria-live="polite">
@@ -48,28 +72,3 @@ export function ReviewsEmptyState({
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Content map
-// ---------------------------------------------------------------------------
-
-const VARIANT_CONTENT: Record<
-  TEmptyVariant,
-  { readonly heading: string; readonly body: string; readonly cta: string | null }
-> = {
-  'no-subs': {
-    heading: 'All playable as written',
-    body: 'No substitutions in any deck — your collection covers every card.',
-    cta: 'Back to home',
-  },
-  'all-reviewed': {
-    heading: 'All caught up',
-    body: "You've reviewed every pending substitution. Check the Approved or Rejected tabs to revisit earlier decisions.",
-    cta: 'View approved',
-  },
-  'no-results': {
-    heading: 'No matches',
-    body: 'No substitutions match the current filters. Try clearing a filter.',
-    cta: null,
-  },
-};

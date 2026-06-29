@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
 import styles from './ReviewsBulkBar.module.css';
@@ -51,6 +52,7 @@ export function ReviewsBulkBar({
   onBulkAction,
   onClearSelection,
 }: IReviewsBulkBarProps): React.ReactElement | null {
+  const { t } = useTranslation();
   const count = selectedIds.size;
 
   // Only render when at least one row is selected.
@@ -98,23 +100,21 @@ export function ReviewsBulkBar({
     onBulkAction(buildOperations('RESET'));
   }
 
-  const selectionLabel = count === 1 ? '1 selected' : `${count} selected`;
-
   return (
     <div
       className={styles.bar}
       role="region"
-      aria-label="Bulk actions"
+      aria-label={t('reviews.bulkActionsAria')}
       aria-live="polite"
       aria-atomic="false"
     >
       {isAtCap && (
         <div role="status" className={styles.capHint}>
-          Capped at {BULK_MAX_OPS} — only the first {BULK_MAX_OPS} selected will be applied.
+          {t('reviews.cappedHint', { max: BULK_MAX_OPS })}
         </div>
       )}
       <div className={styles.inner}>
-        <span className={styles.count}>{selectionLabel}</span>
+        <span className={styles.count}>{t('reviews.selectedCount', { count })}</span>
 
         <div className={styles.actions}>
           <button
@@ -122,9 +122,9 @@ export function ReviewsBulkBar({
             className={`${styles.btn} ${styles['btn--approve']}`}
             disabled={isBulkPending}
             onClick={handleApprove}
-            aria-label={`Approve ${count} selected substitutions`}
+            aria-label={t('reviews.approveSelectedAria', { count })}
           >
-            Approve selected
+            {t('reviews.approveSelected')}
           </button>
 
           <button
@@ -132,9 +132,9 @@ export function ReviewsBulkBar({
             className={`${styles.btn} ${styles['btn--reject']}`}
             disabled={isBulkPending}
             onClick={handleReject}
-            aria-label={`Reject ${count} selected substitutions`}
+            aria-label={t('reviews.rejectSelectedAria', { count })}
           >
-            Reject selected
+            {t('reviews.rejectSelected')}
           </button>
 
           <button
@@ -142,9 +142,9 @@ export function ReviewsBulkBar({
             className={`${styles.btn} ${styles['btn--reset']}`}
             disabled={isBulkPending}
             onClick={handleReset}
-            aria-label={`Reset ${count} selected substitutions to pending`}
+            aria-label={t('reviews.resetSelectedAria', { count })}
           >
-            Reset selected
+            {t('reviews.resetSelected')}
           </button>
         </div>
 
@@ -152,10 +152,10 @@ export function ReviewsBulkBar({
           type="button"
           className={styles.clearBtn}
           onClick={onClearSelection}
-          aria-label="Clear selection"
+          aria-label={t('reviews.clearSelectionAria')}
           disabled={isBulkPending}
         >
-          Clear
+          {t('reviews.clear')}
         </button>
       </div>
     </div>

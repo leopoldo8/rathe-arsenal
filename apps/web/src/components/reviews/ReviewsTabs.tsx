@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as RadixTabs from '@radix-ui/react-tabs';
 import type { TReviewState } from '../../api/reviews';
 import styles from './ReviewsTabs.module.css';
@@ -24,17 +25,6 @@ interface IReviewsTabsProps {
 }
 
 // ---------------------------------------------------------------------------
-// Tab definitions
-// ---------------------------------------------------------------------------
-
-const TABS: ReadonlyArray<{ readonly value: TTabValue; readonly label: string }> = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'all', label: 'All' },
-];
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -52,14 +42,23 @@ export function ReviewsTabs({
   onChange,
   children,
 }: IReviewsTabsProps): React.ReactElement {
+  const { t } = useTranslation();
+
+  const tabs: ReadonlyArray<{ readonly value: TTabValue; readonly label: string }> = [
+    { value: 'pending', label: t('reviews.tabPending') },
+    { value: 'approved', label: t('reviews.tabApproved') },
+    { value: 'rejected', label: t('reviews.tabRejected') },
+    { value: 'all', label: t('reviews.tabAll') },
+  ];
+
   function handleValueChange(v: string): void {
     onChange(v as TTabValue);
   }
 
   return (
     <RadixTabs.Root value={value} onValueChange={handleValueChange} className={styles.root}>
-      <RadixTabs.List className={styles.tabList} aria-label="Review state filter">
-        {TABS.map((tab) => {
+      <RadixTabs.List className={styles.tabList} aria-label={t('reviews.tabListAria')}>
+        {tabs.map((tab) => {
           const count = counts[tab.value];
           return (
             <RadixTabs.Trigger

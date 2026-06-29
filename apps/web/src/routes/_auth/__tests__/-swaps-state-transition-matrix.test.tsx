@@ -248,7 +248,7 @@ describe('State transition (1): pending → approve via /swaps', () => {
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve ORIG-1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ORIG-1/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops).toHaveLength(1);
@@ -267,7 +267,7 @@ describe('State transition (1): pending → approve via /swaps', () => {
     // With state=pending filter, the approved row should NOT be visible
     expect(screen.queryByTestId('reviews-row')).not.toBeInTheDocument();
     // All-reviewed empty state should appear instead
-    expect(screen.getByText(/All caught up/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tudo em dia/i)).toBeInTheDocument();
   });
 
   it('tab counters: pending decrements, approved increments after refetch', () => {
@@ -278,8 +278,8 @@ describe('State transition (1): pending → approve via /swaps', () => {
     };
     renderSwapsPage();
 
-    const pendingTab = screen.getByRole('tab', { name: /Pending/i });
-    const approvedTab = screen.getByRole('tab', { name: /Approved/i });
+    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
+    const approvedTab = screen.getByRole('tab', { name: /Aprovado/i });
     expect(pendingTab).toHaveTextContent('0');
     expect(approvedTab).toHaveTextContent('1');
   });
@@ -293,7 +293,7 @@ describe('State transition (3): pending → reject via /swaps', () => {
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Reject ORIG-2/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ORIG-2/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops[0]).toMatchObject({ cardIdentifier: 'SUB-2', decision: 'REJECTED' });
@@ -330,8 +330,8 @@ describe('State transition (5): approved → reject via /swaps [user-reported bu
     renderSwapsPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-A/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reject ORIG-A/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-A/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ORIG-A/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops).toHaveLength(1);
@@ -353,7 +353,7 @@ describe('State transition (5): approved → reject via /swaps [user-reported bu
     // CRITICAL: approved tab with state=approved filter should show 0 rows (the rejected row filtered out)
     expect(screen.queryByTestId('reviews-row')).not.toBeInTheDocument();
     // The empty state for the approved tab with no results shows "No matches"
-    expect(screen.getByText(/No matches/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sem correspondências/i)).toBeInTheDocument();
   });
 
   it('after reject + refetch, row APPEARS in Rejected tab', () => {
@@ -375,8 +375,8 @@ describe('State transition (5): approved → reject via /swaps [user-reported bu
     };
     renderSwapsPage();
 
-    const approvedTab = screen.getByRole('tab', { name: /Approved/i });
-    const rejectedTab = screen.getByRole('tab', { name: /Rejected/i });
+    const approvedTab = screen.getByRole('tab', { name: /Aprovado/i });
+    const rejectedTab = screen.getByRole('tab', { name: /Rejeitado/i });
     expect(approvedTab).toHaveTextContent('0');
     expect(rejectedTab).toHaveTextContent('1');
   });
@@ -412,8 +412,8 @@ describe('State transition (7): approved → reset via /swaps', () => {
     renderSwapsPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-R/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-R/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-R/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para ORIG-R/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
     expect(ops).toHaveLength(1);
@@ -452,8 +452,8 @@ describe('State transition (9): rejected → approve via /swaps', () => {
     renderSwapsPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-J/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Approve ORIG-J/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-J/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ORIG-J/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops[0]).toMatchObject({ cardIdentifier: 'SUB-J', decision: 'APPROVED' });
@@ -490,8 +490,8 @@ describe('State transition (11): rejected → reset via /swaps', () => {
     renderSwapsPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG-K/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG-K/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-K/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para ORIG-K/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
     expect(ops[0]).toMatchObject({ cardIdentifier: 'SUB-K', reset: true });
@@ -533,7 +533,7 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     };
     renderSwapsPage();
 
-    const resetBtn = screen.getByRole('button', { name: /Reset decision for PEND001/i });
+    const resetBtn = screen.getByRole('button', { name: /Redefinir decisão para PEND001/i });
     // Per spec: Reset is only enabled when there is a decision to clear.
     // A pending row has no decision — Reset should be disabled.
     expect(resetBtn).toBeDisabled();
@@ -547,8 +547,8 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     renderSwapsPage();
 
     // Decided rows render collapsed — expand to inspect button state.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for APP001/i }));
-    const approveBtn = screen.getByRole('button', { name: /Approve APP001/i });
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para APP001/i }));
+    const approveBtn = screen.getByRole('button', { name: /Aprovar APP001/i });
     // Per spec: Approve is disabled (or aria-pressed=true) when already approved.
     expect(approveBtn).toBeDisabled();
   });
@@ -560,8 +560,8 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /change decision for REJ001/i }));
-    const rejectBtn = screen.getByRole('button', { name: /Reject REJ001/i });
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para REJ001/i }));
+    const rejectBtn = screen.getByRole('button', { name: /Rejeitar REJ001/i });
     // Per spec: Reject is disabled when already rejected.
     expect(rejectBtn).toBeDisabled();
   });
@@ -573,10 +573,10 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /change decision for APP002/i }));
-    expect(screen.getByRole('button', { name: /Approve APP002/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reject APP002/i })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reset decision for APP002/i })).not.toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para APP002/i }));
+    expect(screen.getByRole('button', { name: /Aprovar APP002/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Rejeitar APP002/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Redefinir decisão para APP002/i })).not.toBeDisabled();
   });
 
   it('on a PENDING row: Approve and Reject are enabled, Reset is disabled', () => {
@@ -586,9 +586,9 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     };
     renderSwapsPage();
 
-    expect(screen.getByRole('button', { name: /Approve PEND002/i })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reject PEND002/i })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reset decision for PEND002/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Aprovar PEND002/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Rejeitar PEND002/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Redefinir decisão para PEND002/i })).toBeDisabled();
   });
 
   it('on a REJECTED row: Approve and Reset are enabled, Reject is disabled', async () => {
@@ -598,10 +598,10 @@ describe('Bug: ReviewsRow does not disable buttons based on current decision sta
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /change decision for REJ002/i }));
-    expect(screen.getByRole('button', { name: /Approve REJ002/i })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reject REJ002/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Reset decision for REJ002/i })).not.toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para REJ002/i }));
+    expect(screen.getByRole('button', { name: /Aprovar REJ002/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Rejeitar REJ002/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Redefinir decisão para REJ002/i })).not.toBeDisabled();
   });
 });
 
@@ -663,10 +663,10 @@ describe('Cross-cutting: tab counter consistency — pending+approved+rejected =
     };
     renderSwapsPage();
 
-    const pendingTab = screen.getByRole('tab', { name: /Pending/i });
-    const approvedTab = screen.getByRole('tab', { name: /Approved/i });
-    const rejectedTab = screen.getByRole('tab', { name: /Rejected/i });
-    const allTab = screen.getByRole('tab', { name: /^All/i });
+    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
+    const approvedTab = screen.getByRole('tab', { name: /Aprovado/i });
+    const rejectedTab = screen.getByRole('tab', { name: /Rejeitado/i });
+    const allTab = screen.getByRole('tab', { name: /^Todos/i });
 
     // Extract numeric counts from tab text (format: "Pending 2", "Approved 1", etc.)
     const getText = (el: HTMLElement) => el.textContent ?? '';
@@ -739,7 +739,7 @@ describe('Cross-cutting: bulk reject atomicity — 3 rows end in rejected', () =
     }
 
     // Bulk reject
-    await userEvent.click(screen.getByRole('button', { name: /reject 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar 3 substituições/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
     expect(ops).toHaveLength(3);
@@ -782,7 +782,7 @@ describe('Cross-cutting: bulk reset atomicity — 3 rejected rows return to pend
       await userEvent.click(cb);
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /reset 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir 3 substituições/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ reset?: boolean }>;
     expect(ops).toHaveLength(3);
@@ -835,12 +835,12 @@ describe('Cross-cutting: bulk transactionError — error toast shown', () => {
     for (const cb of checkboxes) {
       await userEvent.click(cb);
     }
-    await userEvent.click(screen.getByRole('button', { name: /approve 3 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining("couldn't be saved"),
+        message: expect.stringContaining('Algumas alterações'),
       }),
     );
   });
@@ -868,11 +868,11 @@ describe('Cross-cutting: bulk transactionError — error toast shown', () => {
     for (const cb of checkboxes) {
       await userEvent.click(cb);
     }
-    await userEvent.click(screen.getByRole('button', { name: /approve 2 selected/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
 
     // Success toast with the actual succeeded count (2), not the total ops (2)
     expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: 'Approved 2 swaps' }),
+      expect.objectContaining({ kind: 'success', message: '2 substituições aprovadas' }),
     );
   });
 });
@@ -908,7 +908,7 @@ describe('Cross-cutting: multi-surface race — approve on /swaps invalidates de
     const { queryClient } = renderSwapsPage();
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve SYNC1/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar SYNC1/i }));
 
     // Verify toast fired (proves onSuccess ran)
     expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
@@ -1008,7 +1008,7 @@ describe('All transitions: operations keyed by substituteIdentifier, not origina
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Approve ORIG/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar ORIG/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string }>;
     expect(ops[0]?.cardIdentifier).toBe('SUB');
@@ -1023,8 +1023,8 @@ describe('All transitions: operations keyed by substituteIdentifier, not origina
     renderSwapsPage();
 
     // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reject ORIG/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ORIG/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string }>;
     expect(ops[0]?.cardIdentifier).toBe('SUB');
@@ -1038,8 +1038,8 @@ describe('All transitions: operations keyed by substituteIdentifier, not origina
     };
     renderSwapsPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /change decision for ORIG/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Reset decision for ORIG/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para ORIG/i }));
 
     const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string }>;
     expect(ops[0]?.cardIdentifier).toBe('SUB');
