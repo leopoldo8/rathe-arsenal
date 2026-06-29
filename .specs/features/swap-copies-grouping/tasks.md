@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/swap-copies-grouping/design.md`
-**Status**: In Progress — Phase 1 done (T1 `eed37c6`, T2 `e21c9fc`, T3 `9b155c1`); Phase 2 next (T4, T5)
+**Status**: Implemented — Phase 1 (T1 `eed37c6`, T2 `e21c9fc`, T3 `9b155c1`), Phase 2 (T4 `a2df54a`, T5 `eb4719b`); awaiting independent Verifier
 
 ---
 
