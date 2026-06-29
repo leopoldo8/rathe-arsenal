@@ -42,8 +42,31 @@ i18n.on('languageChanged', (lng: string) => {
   }
 });
 
+// Persisted-language cache that never throws on write. i18next's built-in
+// localStorage detector calls `localStorage.setItem` UNGUARDED, so a failing
+// write (private browsing / quota exceeded) propagates synchronously out of
+// `changeLanguage` and would throw on a language switch. We route the cache
+// write through a guarded detector that swallows storage errors — the language
+// still applies in-memory and the switch never throws (spec P1-AC8; mirrors the
+// ThemeToggle try/catch around localStorage). Reads stay on the built-in
+// 'localStorage' detector, whose lookup path is already guarded.
+const languageDetector = new LanguageDetector();
+languageDetector.addDetector({
+  name: 'safeLocalStorage',
+  // Cache-only detector (see detection.caches); never in the lookup order, so
+  // lookup is a no-op and the built-in 'localStorage' detector handles reads.
+  lookup: () => undefined,
+  cacheUserLanguage: (lng: string): void => {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lng);
+    } catch {
+      // Storage unavailable — honor the in-memory language, never throw.
+    }
+  },
+});
+
 void i18n
-  .use(LanguageDetector)
+  .use(languageDetector)
   .use(initReactI18next)
   .init({
     // Each catalog is nested under the default `translation` namespace so our
@@ -61,7 +84,8 @@ void i18n
     load: 'currentOnly',
     detection: {
       order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      // Writes go through the guarded cache; reads use the built-in detector.
+      caches: ['safeLocalStorage'],
       lookupLocalStorage: LANG_STORAGE_KEY,
       // Normalize detected locale to our two supported tags.
       convertDetectedLanguage,
