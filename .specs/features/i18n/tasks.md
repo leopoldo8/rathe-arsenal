@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — Phase 1 ✅; Phase 2a (T6/T7/T8) ✅; `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`) ✅; Phase 2c (T11 `a9621e3`, T12 `105fa10`) ✅. Next: Phase 3 (T13 Accept-Language + error codes, T14 server error messages).
+**Status**: In Progress — Phase 1 ✅; Phase 2a (T6/T7/T8) ✅; `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`) ✅; Phase 2c (T11 `a9621e3`, T12 `105fa10`) ✅. **Verification found a coverage gap**: 12 root `components/*.tsx` (ShoppingLine*, StoreProductLink, readiness/test: path-c-result/TestDeckResult/substitution-row/breakdown-list/readiness-header, tracking: mark-owned-button/tracked-deck-card, delete-account-modal) + residual skeleton `aria-label="Loading…"` were missed by T6–T12 (subfolder-scoped). **T12b** closes it. Next: T12b → Phase 3 (T13, T14).
 
 > Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
 > T8 done: `9aebf93` — library + csvSources namespaces filled, 18 components/routes wired, 9 test files updated to PT-BR. Gate: 1323 passed.
