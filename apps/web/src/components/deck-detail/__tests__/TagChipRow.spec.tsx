@@ -67,41 +67,41 @@ describe('TagChipRow — happy path', () => {
 
   it('clicking × calls usePatchDeckMutation with removeTagIds', () => {
     render(<TagChipRow deckId={1} tags={[TAG_LIGA]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Remove tag liga local' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remover tag liga local' }));
     expect(mockMutate).toHaveBeenCalledWith({ removeTagIds: [1] });
   });
 
   it('each chip remove button has the correct aria-label', () => {
     render(<TagChipRow deckId={1} tags={[TAG_LIGA, TAG_COMP]} />);
     expect(
-      screen.getByRole('button', { name: 'Remove tag liga local' }),
+      screen.getByRole('button', { name: 'Remover tag liga local' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Remove tag competitivo' }),
+      screen.getByRole('button', { name: 'Remover tag competitivo' }),
     ).toBeInTheDocument();
   });
 
   it('renders an "+ add tag" button when no combobox is open', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
     expect(
-      screen.getByRole('button', { name: 'Add a tag to this deck' }),
+      screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }),
     ).toBeInTheDocument();
   });
 
   it('clicking "+ add tag" mounts the TagAutocompleteCombobox', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Add a tag to this deck' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }));
     expect(screen.getByTestId('tag-combobox')).toBeInTheDocument();
   });
 
   it('closing the combobox unmounts it and restores the add button', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Add a tag to this deck' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }));
     // Close the combobox via the mock's close button
     fireEvent.click(screen.getByText('close'));
     expect(screen.queryByTestId('tag-combobox')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Add a tag to this deck' }),
+      screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }),
     ).toBeInTheDocument();
   });
 });
@@ -121,7 +121,7 @@ describe('TagChipRow — XSS defense', () => {
     render(<TagChipRow deckId={1} tags={[XSS_TAG]} />);
     // React escapes attribute values — the raw string is used
     const removeBtn = screen.getByRole('button', {
-      name: `Remove tag ${XSS_TAG.name}`,
+      name: `Remover tag ${XSS_TAG.name}`,
     });
     expect(removeBtn).toBeInTheDocument();
   });
@@ -130,7 +130,7 @@ describe('TagChipRow — XSS defense', () => {
 describe('TagChipRow — empty state', () => {
   it('renders only the add button when tags array is empty', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    const addBtn = screen.getByRole('button', { name: 'Add a tag to this deck' });
+    const addBtn = screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' });
     expect(addBtn).toBeInTheDocument();
   });
 });

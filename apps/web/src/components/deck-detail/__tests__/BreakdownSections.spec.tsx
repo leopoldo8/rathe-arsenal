@@ -121,7 +121,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      expect(screen.getByText('No exact matches')).toBeInTheDocument();
+      expect(screen.getByText('Sem correspondências exatas')).toBeInTheDocument();
     });
   });
 
@@ -151,9 +151,9 @@ describe('BreakdownSections', () => {
         />,
       );
       // Decided rows render collapsed by default — expand to inspect Approve.
-      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
+      fireEvent.click(screen.getByRole('button', { name: /alterar decisão/i }));
       const approveBtn = screen.getByRole('button', {
-        name: /approve substitution/i,
+        name: /aprovar substituição/i,
       });
       expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
     });
@@ -168,9 +168,9 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
+      fireEvent.click(screen.getByRole('button', { name: /alterar decisão/i }));
       const rejectBtn = screen.getByRole('button', {
-        name: /reject substitution/i,
+        name: /rejeitar substituição/i,
       });
       expect(rejectBtn).toHaveAttribute('aria-pressed', 'true');
     });
@@ -187,7 +187,7 @@ describe('BreakdownSections', () => {
           onApproveSubstitute={onApprove}
         />,
       );
-      fireEvent.click(screen.getByRole('button', { name: /approve substitution/i }));
+      fireEvent.click(screen.getByRole('button', { name: /aprovar substituição/i }));
       expect(onApprove).toHaveBeenCalledWith('open-the-floodgates');
     });
 
@@ -203,7 +203,7 @@ describe('BreakdownSections', () => {
           onRejectSubstitute={onReject}
         />,
       );
-      fireEvent.click(screen.getByRole('button', { name: /reject substitution/i }));
+      fireEvent.click(screen.getByRole('button', { name: /rejeitar substituição/i }));
       expect(onReject).toHaveBeenCalledWith('open-the-floodgates');
     });
 
@@ -217,7 +217,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      expect(screen.getByText('No swaps needed')).toBeInTheDocument();
+      expect(screen.getByText('Sem substituições necessárias')).toBeInTheDocument();
     });
   });
 
@@ -232,7 +232,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      expect(screen.getByRole('button', { name: /mark owned/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /marcar como possuída/i })).toBeInTheDocument();
     });
 
     it('calls onMarkOwned when MarkOwnedButton is clicked', () => {
@@ -246,7 +246,7 @@ describe('BreakdownSections', () => {
           pendingCard={null}
         />,
       );
-      fireEvent.click(screen.getByRole('button', { name: /mark owned/i }));
+      fireEvent.click(screen.getByRole('button', { name: /marcar como possuída/i }));
       expect(onMarkOwned).toHaveBeenCalledWith('rhinar');
     });
 
@@ -261,7 +261,7 @@ describe('BreakdownSections', () => {
         />,
       );
       expect(
-        screen.getByText(/all playable — no substitutions needed/i),
+        screen.getByText(/tudo jogável/i),
       ).toBeInTheDocument();
     });
 
@@ -277,7 +277,7 @@ describe('BreakdownSections', () => {
       );
       // The "Cards not in collection" labeled list
       expect(
-        screen.getByRole('list', { name: /cards not in collection/i }),
+        screen.getByRole('list', { name: /cartas não na coleção/i }),
       ).toBeInTheDocument();
     });
   });
@@ -298,8 +298,8 @@ describe('BreakdownSections', () => {
         />,
       );
       // Approved row collapsed by default — expand to inspect Approve.
-      fireEvent.click(screen.getByRole('button', { name: /change decision/i }));
-      const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
+      fireEvent.click(screen.getByRole('button', { name: /alterar decisão/i }));
+      const approveBtn = screen.getByRole('button', { name: /aprovar substituição/i });
       expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
     });
   });

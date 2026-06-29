@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { DeckNameInline } from './DeckNameInline';
 import { TagChipRow } from './TagChipRow';
@@ -103,6 +104,7 @@ export function DeckDetailHeader({
   onConfirmDiscard,
   editButtonRef,
 }: IDeckDetailHeaderProps): React.ReactElement {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { show: showToast } = useToast();
   const untrackMutation = useUntrackDeckMutation();
@@ -144,7 +146,7 @@ export function DeckDetailHeader({
       onError: (err) => {
         showToast({
           kind: 'error',
-          message: `Failed to untrack deck: ${(err as Error).message}`,
+          message: t('decks.untrackFailedToast', { message: (err as Error).message }),
         });
       },
     });
@@ -161,7 +163,7 @@ export function DeckDetailHeader({
       },
       onError: () => {
         // R19a: inline error adjacent to Save; draft preserved in localStorage.
-        setSaveError('Save failed — try again');
+        setSaveError(t('decks.saveFailed'));
       },
     });
   }
@@ -210,8 +212,8 @@ export function DeckDetailHeader({
     <>
       <div className={styles.header} data-testid="deck-detail-header">
         {/* ---- Breadcrumb ---- */}
-        <Link to="/home" search={{ tag: [] }} className={styles.breadcrumb} aria-label="Back to Decks">
-          <span aria-hidden="true">&#8592;</span> Decks
+        <Link to="/home" search={{ tag: [] }} className={styles.breadcrumb} aria-label={t('decks.backToDecksAria')}>
+          {t('decks.backToDecksLabel')}
         </Link>
 
         {/* ---- Title + tags row ---- */}
@@ -231,23 +233,23 @@ export function DeckDetailHeader({
                   <button
                     type="button"
                     className={styles.cancelBtn}
-                    aria-label="Cancel editing and return to view"
+                    aria-label={t('decks.cancelEditAria')}
                     data-testid="deck-detail-cancel-btn"
                     onClick={handleCancelClick}
                     disabled={isSaving}
                   >
-                    Cancel
+                    {t('decks.cancel')}
                   </button>
                   <div className={styles.saveWrapper}>
                     <button
                       type="button"
                       className={styles.saveBtn}
-                      aria-label="Save deck composition"
+                      aria-label={t('decks.saveDeckAria')}
                       data-testid="deck-detail-save-btn"
                       onClick={handleSaveClick}
                       disabled={isSaving}
                     >
-                      {isSaving ? 'Saving…' : 'Save'}
+                      {isSaving ? t('decks.saving') : t('decks.save')}
                     </button>
                     {saveError != null && (
                       <span
@@ -266,11 +268,11 @@ export function DeckDetailHeader({
                   ref={editBtnRef}
                   type="button"
                   className={styles.editBtn}
-                  aria-label="Edit deck composition"
+                  aria-label={t('decks.editDeckAria')}
                   data-testid="deck-detail-edit-btn"
                   onClick={onEnterEdit}
                 >
-                  Edit
+                  {t('decks.edit')}
                 </button>
               )}
 
@@ -279,7 +281,7 @@ export function DeckDetailHeader({
                 <button
                   type="button"
                   className={styles.overflowTrigger}
-                  aria-label="More deck actions"
+                  aria-label={t('decks.moreDeckActionsAria')}
                   aria-expanded={overflowOpen}
                   aria-haspopup="menu"
                   onClick={() => setOverflowOpen((prev) => !prev)}
@@ -291,7 +293,7 @@ export function DeckDetailHeader({
                   <div
                     className={styles.overflowMenu}
                     role="menu"
-                    aria-label="Deck actions"
+                    aria-label={t('decks.deckActionsMenuAria')}
                     data-testid="deck-detail-overflow-menu"
                   >
                     <button
@@ -300,10 +302,10 @@ export function DeckDetailHeader({
                       className={styles.overflowItem}
                       onClick={handleUntrack}
                       disabled={untrackMutation.isPending}
-                      aria-label="Untrack this deck"
+                      aria-label={t('decks.untrackThisDeckAria')}
                       data-testid="deck-detail-untrack-btn"
                     >
-                      {untrackMutation.isPending ? 'Removing…' : 'Untrack'}
+                      {untrackMutation.isPending ? t('decks.removing') : t('decks.untrack')}
                     </button>
                   </div>
                 )}

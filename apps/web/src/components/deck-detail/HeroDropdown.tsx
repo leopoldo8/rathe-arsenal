@@ -17,6 +17,7 @@ import React, {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useHeroesQuery, type IHeroListItem } from '../../api/catalog';
 import { isHeroLegalForFormat } from '../../lib/hero-legality';
 import styles from './HeroDropdown.module.css';
@@ -41,7 +42,7 @@ export interface IHeroDropdownProps {
    * Pass null when the user clears the selection.
    */
   readonly onChange: (heroIdentifier: string | null) => void;
-  /** Label text shown above the combobox. */
+  /** Label text shown above the combobox. Defaults to the localized "Hero" label. */
   readonly label?: string;
   /**
    * When set to a concrete format (e.g. "Silver Age"), heroes not legal in
@@ -62,15 +63,18 @@ export interface IHeroDropdownProps {
 export function HeroDropdown({
   value,
   onChange,
-  label = 'Hero',
+  label,
   filterFormat = '',
 }: IHeroDropdownProps): React.ReactElement {
+  const { t } = useTranslation();
   const heroesQuery = useHeroesQuery();
   const heroesRaw = heroesQuery.data?.heroes;
   const heroes = useMemo<readonly IHeroListItem[]>(
     () => heroesRaw ?? [],
     [heroesRaw],
   );
+
+  const labelText = label ?? t('decks.heroLabel');
 
   const [inputValue, setInputValue] = useState<string>('');
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -178,7 +182,7 @@ export function HeroDropdown({
     return (
       <div className={styles.root} data-testid="hero-dropdown">
         <span id={labelId} className={styles.label}>
-          {label}
+          {labelText}
         </span>
         <div
           className={
@@ -190,7 +194,7 @@ export function HeroDropdown({
           aria-invalid={isSelectedIllegal || undefined}
           role="button"
           tabIndex={0}
-          aria-label={`Selected hero: ${selectedHero.name}. Click to change.`}
+          aria-label={t('decks.selectedHeroAria', { name: selectedHero.name })}
           onClick={() => {
             setIsOpen(true);
             setInputValue('');
@@ -208,7 +212,7 @@ export function HeroDropdown({
           <button
             type="button"
             className={styles.clearBtn}
-            aria-label="Clear hero selection"
+            aria-label={t('decks.clearHeroAria')}
             data-testid="hero-dropdown-clear"
             onClick={handleClear}
           >
@@ -221,7 +225,7 @@ export function HeroDropdown({
             role="alert"
             data-testid="hero-dropdown-format-error"
           >
-            {selectedHero.name} is not legal in {filterFormat}.
+            {t('decks.heroNotLegal', { name: selectedHero.name, format: filterFormat })}
           </p>
         ) : null}
       </div>
@@ -231,7 +235,7 @@ export function HeroDropdown({
   return (
     <div ref={rootRef} className={styles.root} data-testid="hero-dropdown">
       <span id={labelId} className={styles.label}>
-        {label}
+        {labelText}
       </span>
 
       <div
@@ -255,10 +259,10 @@ export function HeroDropdown({
           data-testid="hero-dropdown-input"
           placeholder={
             heroesQuery.isLoading
-              ? 'Loading heroes...'
+              ? t('decks.loadingHeroes')
               : value
-                ? selectedHero?.name ?? 'Select a hero'
-                : 'Search hero...'
+                ? selectedHero?.name ?? t('decks.selectHero')
+                : t('decks.searchHero')
           }
           value={inputValue}
           className={styles.input}
@@ -313,7 +317,7 @@ export function HeroDropdown({
               className={styles.optionEmpty}
               data-testid="hero-dropdown-empty"
             >
-              No heroes found
+              {t('decks.noHeroesFound')}
             </li>
           ) : null}
         </ul>

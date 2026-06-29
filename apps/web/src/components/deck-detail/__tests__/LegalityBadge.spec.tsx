@@ -67,12 +67,12 @@ describe('LegalityBadge — legal variant', () => {
   it('has aria-label "Deck is legal in {format}"', () => {
     renderBadge({ category: 'legal', reasons: [] });
     const badge = screen.getByTestId('legality-badge');
-    expect(badge).toHaveAttribute('aria-label', 'Deck is legal in Classic Constructed');
+    expect(badge).toHaveAttribute('aria-label', 'Baralho válido em Classic Constructed');
   });
 
   it('includes "Legal" and the format abbreviation in the text', () => {
     renderBadge({ category: 'legal', reasons: [] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Legal');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Válido');
     expect(screen.getByTestId('legality-badge')).toHaveTextContent('CC');
   });
 
@@ -85,7 +85,7 @@ describe('LegalityBadge — legal variant', () => {
     renderBadge({ category: 'legal', reasons: [] }, 'Blitz');
     expect(screen.getByTestId('legality-badge')).toHaveAttribute(
       'aria-label',
-      'Deck is legal in Blitz',
+      'Baralho válido em Blitz',
     );
   });
 });
@@ -108,17 +108,17 @@ describe('LegalityBadge — incomplete variant', () => {
 
   it('includes "Incomplete" in the badge text', () => {
     renderBadge({ category: 'incomplete', reasons: [] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incomplete');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto');
   });
 
   it('parses X/Y pattern from reasons for the badge text', () => {
     renderBadge({ category: 'incomplete', reasons: ['Deck has 58/60 cards'] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incomplete · 58/60 cards');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto · 58/60 cartas');
   });
 
   it('shows fallback "Incomplete" when reasons is empty', () => {
     renderBadge({ category: 'incomplete', reasons: [] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incomplete');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto');
   });
 
   it('click opens the reasons popover', async () => {
@@ -154,7 +154,7 @@ describe('LegalityBadge — incomplete variant', () => {
     fireEvent.click(screen.getByTestId('legality-badge'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent('incomplete');
+      expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent('incompleto');
     });
   });
 });
@@ -177,13 +177,13 @@ describe('LegalityBadge — illegal variant', () => {
 
   it('includes "Illegal" and first-reason short form in the badge text', () => {
     renderBadge({ category: 'illegal', reasons: ['4× card exceeds limit'] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Illegal');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Ilegal');
     expect(screen.getByTestId('legality-badge')).toHaveTextContent('4× card exceeds limit');
   });
 
   it('shows "Illegal" fallback when reasons is empty', () => {
     renderBadge({ category: 'illegal', reasons: [] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Illegal');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Ilegal');
   });
 
   it('click opens popover with full reasons list', async () => {
@@ -213,7 +213,7 @@ describe('LegalityBadge — edge cases', () => {
 
     await waitFor(() => {
       const popover = screen.getByTestId('legality-reasons-popover');
-      expect(popover).toHaveTextContent('Deck is incomplete — reason not available.');
+      expect(popover).toHaveTextContent('Baralho incompleto — motivo não disponível.');
     });
   });
 
@@ -223,7 +223,7 @@ describe('LegalityBadge — edge cases', () => {
 
     await waitFor(() => {
       const popover = screen.getByTestId('legality-reasons-popover');
-      expect(popover).toHaveTextContent('Deck is incomplete — reason not available.');
+      expect(popover).toHaveTextContent('Baralho incompleto — motivo não disponível.');
     });
   });
 });

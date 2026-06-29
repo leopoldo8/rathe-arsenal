@@ -40,17 +40,17 @@ function renderConfirm(overrides: Partial<Parameters<typeof DiscardChangesConfir
 describe('DiscardChangesConfirm — rendering', () => {
   it('renders heading with N changes', () => {
     renderConfirm({ changeCount: 3 });
-    expect(screen.getByText('Discard 3 changes?')).toBeInTheDocument();
+    expect(screen.getByText('Descartar 3 alterações?')).toBeInTheDocument();
   });
 
   it('uses singular "change" when changeCount is 1', () => {
     renderConfirm({ changeCount: 1 });
-    expect(screen.getByText('Discard 1 change?')).toBeInTheDocument();
+    expect(screen.getByText('Descartar 1 alteração?')).toBeInTheDocument();
   });
 
   it('renders body text', () => {
     renderConfirm();
-    expect(screen.getByText('Your unsaved edits to this deck will be lost.')).toBeInTheDocument();
+    expect(screen.getByText('Suas edições não salvas neste baralho serão perdidas.')).toBeInTheDocument();
   });
 
   it('renders both buttons', () => {
@@ -61,12 +61,12 @@ describe('DiscardChangesConfirm — rendering', () => {
 
   it('does not render when open is false', () => {
     renderConfirm({ open: false });
-    expect(screen.queryByText(/Discard/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Descartar/)).not.toBeInTheDocument();
   });
 
   it('reflects literal changeCount in heading (N=7)', () => {
     renderConfirm({ changeCount: 7 });
-    expect(screen.getByText('Discard 7 changes?')).toBeInTheDocument();
+    expect(screen.getByText('Descartar 7 alterações?')).toBeInTheDocument();
   });
 });
 
@@ -133,6 +133,6 @@ describe('DiscardChangesConfirm — a11y: button layout', () => {
 describe('DiscardChangesConfirm — count heading reflects literal changeCount', () => {
   it('user changes 2 card quantities + swaps hero → changeCount=3 → heading reads "Discard 3 changes?"', () => {
     renderConfirm({ changeCount: 3 });
-    expect(screen.getByRole('heading', { name: /Discard 3 changes\?/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Descartar 3 alterações\?/ })).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import * as Select from '@radix-ui/react-select';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
 import { usePatchDeckMutation } from '../../api/decks';
 import { useToast } from '../ui/Toast/useToast';
@@ -14,6 +15,15 @@ const ALL_STATUSES: readonly TDeckStatus[] = [
   'active',
   'retired',
 ];
+
+/** Maps TDeckStatus values to their i18n catalog keys. */
+const STATUS_KEY_MAP: Record<TDeckStatus, string> = {
+  idea: 'decks.statusIdea',
+  building: 'decks.statusBuilding',
+  ready: 'decks.statusReady',
+  active: 'decks.statusActive',
+  retired: 'decks.statusRetired',
+};
 
 interface IStatusDropdownProps {
   /** The deck whose status we are editing. */
@@ -37,6 +47,7 @@ export function StatusDropdown({
   deckId,
   currentStatus,
 }: IStatusDropdownProps): React.ReactElement {
+  const { t } = useTranslation();
   const { show: showToast } = useToast();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -65,7 +76,7 @@ export function StatusDropdown({
           setLocalStatus(previousStatusRef.current);
           showToast({
             kind: 'error',
-            message: 'Could not update status — please try again.',
+            message: t('decks.statusUpdateError'),
             retry: () => {
               patchMutation.mutate({ status: nextStatus });
             },
@@ -77,7 +88,7 @@ export function StatusDropdown({
   }
 
   const isInFlight = patchMutation.isPending;
-  const currentLabel = STATUS_LABELS[localStatus];
+  const currentLabel = t(STATUS_KEY_MAP[localStatus]);
 
   return (
     <Select.Root
@@ -88,7 +99,7 @@ export function StatusDropdown({
       <Select.Trigger
         ref={triggerRef}
         className={styles.trigger}
-        aria-label={`Change deck status — currently ${currentLabel}`}
+        aria-label={t('decks.changeStatusAria', { label: currentLabel })}
       >
         <StatusBullet status={localStatus} />
         <span className={styles.triggerIcon} aria-hidden="true">

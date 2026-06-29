@@ -13,6 +13,8 @@
  * that misleads keyboard users into expecting more. See U14 plan KTD.
  */
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { LegalityReasonsPopover } from './LegalityReasonsPopover';
 import type { IDeckLegality } from '../../api/decks';
 import styles from './LegalityBadge.module.css';
@@ -47,10 +49,13 @@ export interface ILegalityBadgeProps {
 // Component
 // ---------------------------------------------------------------------------
 
+type TTranslate = TFunction;
+
 /**
  * Renders one of three visual variants based on `legality.category`.
  */
 export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.ReactElement {
+  const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const abbrev = abbrevFormat(format);
 
@@ -59,14 +64,14 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
     return (
       <span
         className={`${styles.badge} ${styles['badge--legal']}`}
-        aria-label={`Deck is legal in ${format}`}
+        aria-label={t('decks.deckLegalAria', { format })}
         data-testid="legality-badge"
         data-legality="legal"
       >
         <span className={styles.badgeIcon} aria-hidden="true">
           ✓
         </span>
-        <span className={styles.badgeText}>Legal {abbrev}</span>
+        <span className={styles.badgeText}>{t('decks.legalBadgeText', { abbrev })}</span>
       </span>
     );
   }
@@ -76,8 +81,8 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
 
   // Derive the chip label text
   const labelText = isIncomplete
-    ? buildIncompleteLabel(legality.reasons)
-    : buildIllegalLabel(legality.reasons);
+    ? buildIncompleteLabel(legality.reasons, t)
+    : buildIllegalLabel(legality.reasons, t);
 
   return (
     <LegalityReasonsPopover
@@ -113,28 +118,31 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
  * Derives the subtitle text for an incomplete deck from the first reason
  * or a structured "X/Y cards" pattern within the reasons array.
  */
-function buildIncompleteLabel(reasons: readonly string[]): string {
-  if (reasons.length === 0) return 'Incomplete';
+function buildIncompleteLabel(reasons: readonly string[], t: TTranslate): string {
+  if (reasons.length === 0) return t('decks.incomplete');
 
   // Try to parse "X/Y cards" pattern from any reason
   for (const reason of reasons) {
     const match = reason.match(/(\d+)\/(\d+)/);
     if (match) {
-      return `Incomplete · ${match[0]} cards`;
+      return t('decks.incompleteWithCount', {
+        count: Number(match[1]),
+        total: Number(match[2]),
+      });
     }
   }
 
-  return 'Incomplete';
+  return t('decks.incomplete');
 }
 
 /**
  * Derives the subtitle text for an illegal deck from the first reason.
  */
-function buildIllegalLabel(reasons: readonly string[]): string {
-  if (reasons.length === 0) return 'Illegal';
+function buildIllegalLabel(reasons: readonly string[], t: TTranslate): string {
+  if (reasons.length === 0) return t('decks.illegal');
 
-  // Take first reason, truncate to ~40 chars for the chip
+  // Take first reason, truncate to ~37 chars for the chip
   const first = reasons[0] ?? '';
-  if (first.length <= 40) return `Illegal · ${first}`;
-  return `Illegal · ${first.slice(0, 37)}…`;
+  const reason = first.length <= 37 ? first : first.slice(0, 37);
+  return t('decks.illegalWithReason', { reason });
 }

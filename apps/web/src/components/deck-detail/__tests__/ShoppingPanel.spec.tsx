@@ -56,7 +56,7 @@ describe('ShoppingPanel', () => {
     it('desktop panel has accessible label "Shopping list"', () => {
       render(<ShoppingPanel data={null} />);
       expect(
-        screen.getByRole('complementary', { name: /shopping list/i }),
+        screen.getByRole('complementary', { name: /lista de compras/i }),
       ).toBeInTheDocument();
     });
   });
@@ -71,7 +71,7 @@ describe('ShoppingPanel', () => {
 
     it('shows "View shopping list" text in the bar', () => {
       render(<ShoppingPanel data={null} />);
-      expect(screen.getByText(/view shopping list/i)).toBeInTheDocument();
+      expect(screen.getByText(/ver lista de compras/i)).toBeInTheDocument();
     });
 
     it('shows the total cost in the bar when data is populated', () => {
@@ -80,7 +80,7 @@ describe('ShoppingPanel', () => {
       // (4990 cents → R$ 49,90). Asserting just /view shopping list/ would pass
       // even if the price was never rendered — assert the full label here.
       expect(
-        screen.getByText(/view shopping list.*R\$.*49/i),
+        screen.getByText(/ver lista de compras.*R\$.*49/i),
       ).toBeInTheDocument();
     });
   });
@@ -88,7 +88,7 @@ describe('ShoppingPanel', () => {
   describe('mobile bottom sheet', () => {
     it('opens the dialog sheet when mobile bar is clicked', async () => {
       render(<ShoppingPanel data={null} />);
-      const bar = screen.getByRole('button', { name: /view shopping list/i });
+      const bar = screen.getByRole('button', { name: /ver lista de compras/i });
       fireEvent.click(bar);
       await waitFor(() => {
         expect(screen.getByTestId('shopping-panel-sheet')).toBeInTheDocument();
@@ -97,21 +97,21 @@ describe('ShoppingPanel', () => {
 
     it('sheet has a "Shopping list" heading', async () => {
       render(<ShoppingPanel data={null} />);
-      fireEvent.click(screen.getByRole('button', { name: /view shopping list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /ver lista de compras/i }));
       await waitFor(() => {
         expect(
-          screen.getByRole('heading', { name: /shopping list/i }),
+          screen.getByRole('heading', { name: /lista de compras/i }),
         ).toBeInTheDocument();
       });
     });
 
     it('sheet is closed when X button is clicked', async () => {
       render(<ShoppingPanel data={null} />);
-      fireEvent.click(screen.getByRole('button', { name: /view shopping list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /ver lista de compras/i }));
       await waitFor(() => {
         expect(screen.getByTestId('shopping-panel-sheet')).toBeInTheDocument();
       });
-      fireEvent.click(screen.getByRole('button', { name: /close shopping list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /fechar lista de compras/i }));
       await waitFor(() => {
         expect(screen.queryByTestId('shopping-panel-sheet')).not.toBeInTheDocument();
       });
@@ -119,13 +119,13 @@ describe('ShoppingPanel', () => {
 
     it('sheet dialog has aria-labelledby pointing to the title', async () => {
       render(<ShoppingPanel data={null} />);
-      fireEvent.click(screen.getByRole('button', { name: /view shopping list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /ver lista de compras/i }));
       await waitFor(() => {
         const sheet = screen.getByTestId('shopping-panel-sheet');
         const labelId = sheet.getAttribute('aria-labelledby');
         expect(labelId).toBeTruthy();
         const title = document.getElementById(labelId!);
-        expect(title).toHaveTextContent(/shopping list/i);
+        expect(title).toHaveTextContent(/lista de compras/i);
       });
     });
   });

@@ -82,7 +82,7 @@ describe('CascadeWarningPanelSidebar — N>0', () => {
       />,
     );
     const text = screen.getByTestId('cascade-warning-text');
-    expect(text.textContent).toContain('3 cards');
+    expect(text.textContent).toContain('3 cartas');
     // The summary must NOT name the format — reasons are per-card below.
     expect(text.textContent).not.toContain('Classic Constructed');
   });
@@ -134,7 +134,7 @@ describe('CascadeWarningPanelSidebar — N>0', () => {
       />,
     );
     const text = screen.getByTestId('cascade-warning-text');
-    expect(text.textContent).toContain('1 card may be illegal');
+    expect(text.textContent).toContain('1 carta pode ser ilegal');
   });
 });
 
@@ -193,7 +193,7 @@ describe('CascadeWarningPanelSidebar — illegal card list', () => {
         onRemoveIllegal={() => undefined}
       />,
     );
-    expect(screen.getByText('Illegal Cards')).toBeInTheDocument();
+    expect(screen.getByText('Cartas Ilegais')).toBeInTheDocument();
   });
 
   it('lists each illegal card with its quantity and name', () => {
@@ -320,7 +320,7 @@ describe('CascadeWarningPanelBanner — N>0', () => {
     expect(screen.getByTestId('cascade-remove-illegal-btn')).toBeInTheDocument();
 
     // Click the header to collapse
-    const bannerHeader = screen.getByRole('button', { name: /may be illegal/i });
+    const bannerHeader = screen.getByRole('button', { name: /podem ser ilegais/i });
     await userEvent.click(bannerHeader);
 
     // Now collapsed → remove button no longer visible

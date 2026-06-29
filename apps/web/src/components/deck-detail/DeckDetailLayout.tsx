@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './DeckDetailLayout.module.css';
 
 interface IDeckDetailLayoutProps {
@@ -33,11 +34,13 @@ export function DeckDetailLayout({
   sidebar,
   canvas,
 }: IDeckDetailLayoutProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.page} data-testid="deck-detail-layout">
       <header className={styles.header}>{header}</header>
       <div className={styles.body}>
-        <aside className={styles.sidebar} aria-label="Deck details">
+        <aside className={styles.sidebar} aria-label={t('decks.deckDetailsSidebarAria')}>
           {sidebar}
         </aside>
         <main className={styles.canvas}>{canvas}</main>

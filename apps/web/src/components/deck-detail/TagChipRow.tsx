@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ITagResponse } from '../../api/tags';
 import { usePatchDeckMutation } from '../../api/decks';
 import { TagAutocompleteCombobox } from './TagAutocompleteCombobox';
@@ -23,6 +24,7 @@ interface ITagChipRowProps {
  * The "+ add tag" button mounts TagAutocompleteCombobox inline when clicked.
  */
 export function TagChipRow({ deckId, tags }: ITagChipRowProps): React.ReactElement {
+  const { t } = useTranslation();
   const [showCombobox, setShowCombobox] = useState(false);
   const patchMutation = usePatchDeckMutation(deckId);
 
@@ -31,7 +33,7 @@ export function TagChipRow({ deckId, tags }: ITagChipRowProps): React.ReactEleme
   }
 
   return (
-    <div className={styles.row} role="group" aria-label="Deck tags">
+    <div className={styles.row} role="group" aria-label={t('decks.deckTagsAria')}>
       {tags.map((tag) => (
         <span key={tag.id} className={styles.chip}>
           {/* JSX text-node: safe React rendering, no raw HTML injection */}
@@ -39,7 +41,7 @@ export function TagChipRow({ deckId, tags }: ITagChipRowProps): React.ReactEleme
           <button
             type="button"
             className={styles.removeBtn}
-            aria-label={`Remove tag ${tag.name}`}
+            aria-label={t('decks.removeTagAria', { name: tag.name })}
             onClick={() => handleRemoveTag(tag.id)}
           >
             <span aria-hidden="true">×</span>
@@ -50,7 +52,7 @@ export function TagChipRow({ deckId, tags }: ITagChipRowProps): React.ReactEleme
       {showCombobox ? (
         <TagAutocompleteCombobox
           deckId={deckId}
-          existingTagIds={tags.map((t) => t.id)}
+          existingTagIds={tags.map((tag) => tag.id)}
           onClose={() => setShowCombobox(false)}
         />
       ) : (
@@ -58,10 +60,10 @@ export function TagChipRow({ deckId, tags }: ITagChipRowProps): React.ReactEleme
           type="button"
           className={styles.addBtn}
           onClick={() => setShowCombobox(true)}
-          aria-label="Add a tag to this deck"
+          aria-label={t('decks.addTagAria')}
         >
           <span aria-hidden="true">+</span>
-          <span>add tag</span>
+          <span>{t('decks.addTagLabel')}</span>
         </button>
       )}
     </div>

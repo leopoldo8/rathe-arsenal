@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './SidebarCollapseToggle.module.css';
 
 interface ISidebarCollapseToggleProps {
@@ -28,20 +29,22 @@ export function SidebarCollapseToggle({
   expanded,
   onToggle,
 }: ISidebarCollapseToggleProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
       className={styles.toggle}
       onClick={onToggle}
       aria-expanded={expanded}
-      aria-label={expanded ? 'Hide deck details' : 'Show deck details'}
+      aria-label={expanded ? t('decks.hideDeckDetails') : t('decks.showDeckDetails')}
       data-testid="sidebar-collapse-toggle"
     >
       <span className={styles.toggle__chevron} aria-hidden="true">
         {expanded ? '▼' : '▶'}
       </span>
       <span className={styles.toggle__label}>
-        {expanded ? 'Hide details' : 'Show details'}
+        {expanded ? t('decks.hideDetails') : t('decks.showDetails')}
       </span>
     </button>
   );

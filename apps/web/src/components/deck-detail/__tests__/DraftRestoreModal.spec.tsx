@@ -39,8 +39,8 @@ function renderModal(overrides: Partial<Parameters<typeof DraftRestoreModal>[0]>
 describe('DraftRestoreModal — rendering', () => {
   it('renders heading and description when open', () => {
     renderModal();
-    expect(screen.getByText('Unsaved changes from your previous edit')).toBeInTheDocument();
-    expect(screen.getByText(/You have unsaved changes from a previous session/)).toBeInTheDocument();
+    expect(screen.getByText('Alterações não salvas da sua edição anterior')).toBeInTheDocument();
+    expect(screen.getByText(/Você tem alterações não salvas/)).toBeInTheDocument();
   });
 
   it('renders Restore and Discard buttons', () => {
@@ -51,7 +51,7 @@ describe('DraftRestoreModal — rendering', () => {
 
   it('does not render when open is false', () => {
     renderModal({ open: false });
-    expect(screen.queryByText('Unsaved changes from your previous edit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Alterações não salvas da sua edição anterior')).not.toBeInTheDocument();
   });
 });
 

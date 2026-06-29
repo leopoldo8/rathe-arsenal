@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import styles from './MarkOwnedButton.module.css';
 
 interface IMarkOwnedButtonProps {
@@ -19,6 +20,7 @@ export function MarkOwnedButton({
   isPending,
   pendingCard,
 }: IMarkOwnedButtonProps): React.ReactElement {
+  const { t } = useTranslation();
   const isThisCardPending = isPending && pendingCard === cardIdentifier;
 
   function handleClick(e: React.MouseEvent<HTMLButtonElement>): void {
@@ -40,7 +42,7 @@ export function MarkOwnedButton({
       disabled={isPending}
       aria-busy={isThisCardPending}
     >
-      {isThisCardPending ? 'Saving...' : 'Mark owned'}
+      {isThisCardPending ? t('decks.markOwnedSaving') : t('decks.markOwned')}
     </button>
   );
 }

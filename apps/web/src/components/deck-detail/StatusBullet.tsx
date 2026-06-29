@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
 import { STATUS_LABELS } from './status-labels';
 import styles from './StatusBullet.module.css';
@@ -15,6 +16,15 @@ interface IStatusBulletProps {
   readonly className?: string;
 }
 
+/** Maps TDeckStatus values to their i18n catalog keys. */
+const STATUS_KEY_MAP: Record<TDeckStatus, string> = {
+  idea: 'decks.statusIdea',
+  building: 'decks.statusBuilding',
+  ready: 'decks.statusReady',
+  active: 'decks.statusActive',
+  retired: 'decks.statusRetired',
+};
+
 /**
  * StatusBullet — an 8px filled circle coloured from `--ra-status-{status}`
  * alongside an optional sibling text label.
@@ -28,6 +38,8 @@ export function StatusBullet({
   showLabel = true,
   className,
 }: IStatusBulletProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <span className={`${styles.wrapper}${className ? ` ${className}` : ''}`}>
       {/* 8px filled circle coloured via the semantic status token */}
@@ -37,7 +49,7 @@ export function StatusBullet({
         data-status={status}
       />
       {showLabel ? (
-        <span>{STATUS_LABELS[status]}</span>
+        <span>{t(STATUS_KEY_MAP[status])}</span>
       ) : null}
     </span>
   );

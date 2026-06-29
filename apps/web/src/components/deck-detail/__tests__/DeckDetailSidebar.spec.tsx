@@ -138,7 +138,7 @@ describe('DeckDetailSidebar — hero block', () => {
 
   it('shows "No hero set" when heroIdentifier is null and heroLegacy is empty', () => {
     renderSidebar({ heroIdentifier: null, heroName: null, heroLegacy: '' });
-    expect(screen.getByTestId('sidebar-hero-name')).toHaveTextContent('No hero set');
+    expect(screen.getByTestId('sidebar-hero-name')).toHaveTextContent('Sem herói definido');
   });
 });
 
@@ -151,19 +151,19 @@ describe('DeckDetailSidebar — legality badge slot', () => {
   it('shows "✓ Legal" placeholder for legal decks', () => {
     renderSidebar({ legality: { category: 'legal', reasons: [] } });
     const slot = screen.getByTestId('sidebar-legality-slot');
-    expect(slot).toHaveTextContent('Legal');
+    expect(slot).toHaveTextContent('Válido');
   });
 
   it('shows "◌ Incomplete" placeholder for incomplete decks', () => {
     renderSidebar({ legality: { category: 'incomplete', reasons: ['Missing hero'] } });
     const slot = screen.getByTestId('sidebar-legality-slot');
-    expect(slot).toHaveTextContent('Incomplete');
+    expect(slot).toHaveTextContent('Incompleto');
   });
 
   it('shows "✗ Illegal" placeholder for illegal decks', () => {
     renderSidebar({ legality: { category: 'illegal', reasons: ['4× card exceeds limit'] } });
     const slot = screen.getByTestId('sidebar-legality-slot');
-    expect(slot).toHaveTextContent('Illegal');
+    expect(slot).toHaveTextContent('Ilegal');
   });
 
   it('has aria-label describing the legality category', () => {

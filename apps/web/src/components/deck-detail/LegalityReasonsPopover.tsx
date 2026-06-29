@@ -13,6 +13,7 @@
  *  - Trigger must carry `aria-haspopup="dialog"` (set by the caller).
  */
 import React, { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Popover from '@radix-ui/react-popover';
 import type { IDeckLegality } from '../../api/decks';
 import styles from './LegalityReasonsPopover.module.css';
@@ -36,8 +37,6 @@ export interface ILegalityReasonsPopoverProps {
 // Component
 // ---------------------------------------------------------------------------
 
-const FALLBACK_REASON = 'Deck is incomplete — reason not available.';
-
 /**
  * Wraps the trigger in a Radix Popover. Popover body lists reasons[].
  */
@@ -47,12 +46,14 @@ export function LegalityReasonsPopover({
   reasons,
   category,
 }: ILegalityReasonsPopoverProps): React.ReactElement {
+  const { t } = useTranslation();
   const headingId = useId();
 
   const headingText =
-    category === 'incomplete' ? 'Deck is incomplete' : 'Deck is illegal in this format';
+    category === 'incomplete' ? t('decks.deckIncompleteHeading') : t('decks.deckIllegalHeading');
 
-  const displayReasons = reasons.length > 0 ? reasons : [FALLBACK_REASON];
+  const fallbackReason = t('decks.legalityFallback');
+  const displayReasons = reasons.length > 0 ? reasons : [fallbackReason];
 
   return (
     <Popover.Root>

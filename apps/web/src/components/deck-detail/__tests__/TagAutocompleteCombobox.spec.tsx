@@ -209,19 +209,19 @@ describe('TagAutocompleteCombobox — Create flow', () => {
   it('shows Create option when typed value has no exact match', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    expect(screen.getByText(/Create/i)).toBeInTheDocument();
+    expect(screen.getByText(/Criar/i)).toBeInTheDocument();
   });
 
   it('does NOT show Create option when typed value exactly matches an existing tag', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'liga local' } });
-    expect(screen.queryByText(/Create/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Criar/i)).not.toBeInTheDocument();
   });
 
   it('clicking Create option calls useCreateTagMutation then usePatchDeckMutation', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     fireEvent.pointerDown(createOption);
     expect(spies.create).toHaveBeenCalledWith(
       { name: 'novaTag' },
@@ -290,15 +290,15 @@ describe('TagAutocompleteCombobox — error 422 (tag cap)', () => {
   it('shows the 200-cap inline error when POST returns 422', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    expect(screen.getByText(/200-tag limit/i)).toBeInTheDocument();
+    expect(screen.getByText(/limite de 200 tags/i)).toBeInTheDocument();
   });
 
   it('dropdown stays open after 422 error', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
@@ -306,7 +306,7 @@ describe('TagAutocompleteCombobox — error 422 (tag cap)', () => {
   it('typed text is preserved after 422 error', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
     expect(getInput()).toHaveValue('novaTag');
   });
@@ -325,25 +325,25 @@ describe('TagAutocompleteCombobox — error 5xx create', () => {
   it('shows 5xx inline error message', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    expect(screen.getByText(/couldn.*t create the tag/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível criar a tag/i)).toBeInTheDocument();
   });
 
   it('shows Retry button after 5xx create error', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument();
   });
 
   it('clicking Retry re-fires useCreateTagMutation', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    act(() => { fireEvent.click(screen.getByRole('button', { name: /retry/i })); });
+    act(() => { fireEvent.click(screen.getByRole('button', { name: /tentar novamente/i })); });
     // createMutate should have been called again (total 2 times)
     expect(spies.create).toHaveBeenCalledTimes(2);
   });
@@ -362,15 +362,15 @@ describe('TagAutocompleteCombobox — error partial failure (create ok, attach f
   it('shows partial-failure inline error when PATCH after create fails', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    expect(screen.getByText(/couldn.*t attach/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível anexar/i)).toBeInTheDocument();
   });
 
   it('after partial failure, new tag appears in the filtered list for retry', () => {
     renderCombobox();
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
-    const createOption = screen.getByText(/Create/i).closest('[role="option"]')!;
+    const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
     // The newly created tag name should be visible in the listbox
     const options = screen.getAllByRole('option');
@@ -394,7 +394,7 @@ describe('TagAutocompleteCombobox — error 5xx attach existing', () => {
     fireEvent.change(getInput(), { target: { value: 'lig' } });
     const ligaOption = screen.getByText('liga local').closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(ligaOption); });
-    expect(screen.getByText(/couldn.*t attach the tag/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível anexar a tag/i)).toBeInTheDocument();
   });
 
   it('dropdown stays open after 5xx attach error', () => {
@@ -421,13 +421,13 @@ describe('TagAutocompleteCombobox — errors clear on input', () => {
     fireEvent.change(getInput(), { target: { value: 'lig' } });
     const ligaOption = screen.getByText('liga local').closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(ligaOption); });
-    expect(screen.getByText(/couldn.*t attach the tag/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível anexar a tag/i)).toBeInTheDocument();
     // Type again — error should clear
     act(() => {
       fireEvent.change(getInput(), { target: { value: 'liga loc' } });
     });
     await waitFor(() => {
-      expect(screen.queryByText(/couldn.*t attach the tag/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/não foi possível anexar a tag/i)).not.toBeInTheDocument();
     });
   });
 });

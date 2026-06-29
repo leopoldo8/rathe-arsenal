@@ -12,7 +12,7 @@
  *    tabIndex=-1 so Tab would skip it.
  *  - Edge case (a11y): SR-only <h1> inside the button keeps the document heading
  *    outline contribution even though the visible element is a button.
- *  - ARIA: button has aria-label="Edit deck name — currently {name}".
+ *  - ARIA: button has aria-label="Editar nome do baralho — atualmente{name}".
  *  - ARIA: inline input has aria-label="Deck name".
  *  - Touch target: button has min-block-size: 44px via CSS class.
  */
@@ -65,11 +65,11 @@ describe('DeckNameInline — view mode display button', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a button with aria-label "Edit deck name — currently {name}"', () => {
+  it('renders a button with aria-label "Editar nome do baralho — atualmente{name}"', () => {
     renderView('Test Deck');
     expect(
       screen.getByRole('button', {
-        name: 'Edit deck name — currently Test Deck',
+        name: 'Editar nome do baralho — atualmente Test Deck',
       }),
     ).toBeInTheDocument();
   });
@@ -85,7 +85,7 @@ describe('DeckNameInline — view mode display button', () => {
   it('clicking the button switches to inline input pre-filled with the name', async () => {
     renderView('Kayo Blinding Blade');
     fireEvent.click(screen.getByRole('button'));
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue('Kayo Blinding Blade');
   });
@@ -94,7 +94,7 @@ describe('DeckNameInline — view mode display button', () => {
     renderView('Kayo Blinding Blade');
     const btn = screen.getByRole('button');
     fireEvent.keyDown(btn, { key: 'Enter' });
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     expect(input).toBeInTheDocument();
   });
 
@@ -102,7 +102,7 @@ describe('DeckNameInline — view mode display button', () => {
     renderView('Kayo Blinding Blade');
     const btn = screen.getByRole('button');
     fireEvent.keyDown(btn, { key: ' ' });
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     expect(input).toBeInTheDocument();
   });
 });
@@ -116,7 +116,7 @@ describe('DeckNameInline — inline input commit', () => {
     renderView('Old Name');
     fireEvent.click(screen.getByRole('button'));
 
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     fireEvent.change(input, { target: { value: 'New Name' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -130,7 +130,7 @@ describe('DeckNameInline — inline input commit', () => {
     renderView('Old Name');
     fireEvent.click(screen.getByRole('button'));
 
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     fireEvent.change(input, { target: { value: 'New Name' } });
     fireEvent.blur(input);
 
@@ -144,7 +144,7 @@ describe('DeckNameInline — inline input commit', () => {
     renderView('Same Name');
     fireEvent.click(screen.getByRole('button'));
 
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     // Value already equals the name — blur without changing
     fireEvent.blur(input);
 
@@ -161,7 +161,7 @@ describe('DeckNameInline — edge cases', () => {
     renderView('Kayo Blinding Blade');
     fireEvent.click(screen.getByRole('button'));
 
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.blur(input);
 
@@ -171,7 +171,7 @@ describe('DeckNameInline — edge cases', () => {
     await waitFor(() => {
       expect(
         screen.getByRole('button', {
-          name: 'Edit deck name — currently Kayo Blinding Blade',
+          name: 'Editar nome do baralho — atualmente Kayo Blinding Blade',
         }),
       ).toBeInTheDocument();
     });
@@ -181,7 +181,7 @@ describe('DeckNameInline — edge cases', () => {
     renderView('Kayo Blinding Blade');
     fireEvent.click(screen.getByRole('button'));
 
-    const input = await screen.findByRole('textbox', { name: 'Deck name' });
+    const input = await screen.findByRole('textbox', { name: 'Nome do baralho' });
     fireEvent.change(input, { target: { value: 'something else' } });
     fireEvent.keyDown(input, { key: 'Escape' });
 
@@ -191,7 +191,7 @@ describe('DeckNameInline — edge cases', () => {
     await waitFor(() => {
       expect(
         screen.getByRole('button', {
-          name: 'Edit deck name — currently Kayo Blinding Blade',
+          name: 'Editar nome do baralho — atualmente Kayo Blinding Blade',
         }),
       ).toBeInTheDocument();
     });
@@ -231,7 +231,7 @@ describe('DeckNameInline — a11y', () => {
   it('inline input aria-label is "Deck name"', async () => {
     renderView('Test Deck');
     fireEvent.click(screen.getByRole('button'));
-    const input = await screen.findByLabelText('Deck name');
+    const input = await screen.findByLabelText('Nome do baralho');
     expect(input).toBeInTheDocument();
   });
 });

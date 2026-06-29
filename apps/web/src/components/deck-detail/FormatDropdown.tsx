@@ -5,6 +5,7 @@
  * format string from the 4 supported formats. Does NOT import the engine.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Select from '@radix-ui/react-select';
 import styles from './FormatDropdown.module.css';
 
@@ -30,7 +31,7 @@ export interface IFormatDropdownProps {
   readonly value: string;
   /** Called when the user selects a new format. */
   readonly onChange: (format: string) => void;
-  /** Label text shown above the dropdown. */
+  /** Label text shown above the dropdown. Defaults to the localized "Format" label. */
   readonly label?: string;
 }
 
@@ -44,12 +45,15 @@ export interface IFormatDropdownProps {
 export function FormatDropdown({
   value,
   onChange,
-  label = 'Format',
+  label,
 }: IFormatDropdownProps): React.ReactElement {
+  const { t } = useTranslation();
+  const labelText = label ?? t('decks.formatLabel');
+
   return (
     <div className={styles.root} data-testid="format-dropdown">
       <label className={styles.label} htmlFor="format-dropdown-trigger">
-        {label}
+        {labelText}
       </label>
       <Select.Root value={value} onValueChange={onChange}>
         <Select.Trigger
@@ -58,7 +62,7 @@ export function FormatDropdown({
           aria-label={`Format: ${value}`}
           data-testid="format-dropdown-trigger"
         >
-          <Select.Value placeholder="Select format" />
+          <Select.Value placeholder={t('decks.selectFormat')} />
           <Select.Icon className={styles.icon} aria-hidden="true">
             &#x25BC;
           </Select.Icon>

@@ -14,6 +14,7 @@
  * The Save-flow N>5 confirm is wired in U13.
  */
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
 import {
   cascadeReasonLabel,
@@ -47,13 +48,14 @@ function WarningContent({
   onRemoveIllegal,
   textClassName,
 }: IWarningContentProps): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <>
       {/* Format is intentionally NOT named here: a card can be illegal for the
           hero/class, not the format, so a blanket "illegal in {format}" would
           misattribute the reason. Per-card reasons appear in the list below. */}
       <p className={textClassName} data-testid="cascade-warning-text">
-        {count} {count === 1 ? 'card' : 'cards'} may be illegal.
+        {t('decks.illegalCardCount', { count })}
       </p>
 
       {illegalCards.length > 0 ? (
@@ -82,7 +84,7 @@ function WarningContent({
                   type="button"
                   className={styles.removeOneBtn}
                   data-testid={`cascade-remove-${card.cardIdentifier}`}
-                  aria-label={`Remove ${card.name} from deck`}
+                  aria-label={t('decks.removeCardFromDeckAria', { name: card.name })}
                   onClick={() => onRemoveIllegal(new Set([card.cardIdentifier]))}
                 >
                   &#x2715;
@@ -98,9 +100,9 @@ function WarningContent({
         className={styles.removeBtn}
         data-testid="cascade-remove-illegal-btn"
         onClick={() => onRemoveIllegal(illegalCardIds)}
-        aria-label={`Remove ${count} illegal ${count === 1 ? 'card' : 'cards'} from deck`}
+        aria-label={t('decks.removeIllegalCard', { count })}
       >
-        Remove {count === 1 ? 'illegal card' : 'all illegal cards'}
+        {t('decks.removeIllegalCard', { count })}
       </button>
     </>
   );
@@ -133,6 +135,7 @@ export function CascadeWarningPanelSidebar({
   cascadeCheck,
   onRemoveIllegal,
 }: ICascadeWarningPanelSidebarProps): React.ReactElement | null {
+  const { t } = useTranslation();
   if (cascadeCheck.count === 0) return null;
 
   return (
@@ -142,7 +145,7 @@ export function CascadeWarningPanelSidebar({
       role="status"
       aria-live="polite"
     >
-      <h4 className={styles.sidebarTitle}>Illegal Cards</h4>
+      <h4 className={styles.sidebarTitle}>{t('decks.illegalCardsSidebarTitle')}</h4>
       <WarningContent
         count={cascadeCheck.count}
         format={draft.format}
@@ -175,6 +178,7 @@ export function CascadeWarningPanelBanner({
   cascadeCheck,
   onRemoveIllegal,
 }: ICascadeWarningPanelBannerProps): React.ReactElement | null {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
 
   if (cascadeCheck.count === 0) return null;
@@ -201,8 +205,7 @@ export function CascadeWarningPanelBanner({
         }}
       >
         <p className={styles.bannerTitle}>
-          {cascadeCheck.count}{' '}
-          {cascadeCheck.count === 1 ? 'card' : 'cards'} may be illegal
+          {t('decks.illegalCardCount', { count: cascadeCheck.count })}
         </p>
         <span
           className={

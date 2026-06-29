@@ -60,7 +60,7 @@ function renderRow(props: Partial<React.ComponentProps<typeof SubstitutionRow>> 
 // Decided rows (approved/rejected) render collapsed by default — expand
 // them via the "Change" button so the action buttons become accessible.
 function expandIfCollapsed(): void {
-  const changeBtn = screen.queryByRole('button', { name: /change decision/i });
+  const changeBtn = screen.queryByRole('button', { name: /alterar decisão/i });
   if (changeBtn) fireEvent.click(changeBtn);
 }
 
@@ -79,19 +79,19 @@ describe('SubstitutionRow', () => {
 
     it('Approve button is enabled', () => {
       renderRow({ decision: 'pending' });
-      const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
+      const approveBtn = screen.getByRole('button', { name: /aprovar substituição/i });
       expect(approveBtn).not.toBeDisabled();
     });
 
     it('Reject button is enabled', () => {
       renderRow({ decision: 'pending' });
-      const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
+      const rejectBtn = screen.getByRole('button', { name: /rejeitar substituição/i });
       expect(rejectBtn).not.toBeDisabled();
     });
 
     it('Reset button is disabled (no decision to clear)', () => {
       renderRow({ decision: 'pending' });
-      const resetBtn = screen.getByRole('button', { name: /reset decision/i });
+      const resetBtn = screen.getByRole('button', { name: /redefinir decisão/i });
       expect(resetBtn).toBeDisabled();
     });
 
@@ -105,35 +105,35 @@ describe('SubstitutionRow', () => {
     it('Approve button shows pressed state (aria-pressed=true)', () => {
       renderRow({ decision: 'approved' });
       expandIfCollapsed();
-      const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
+      const approveBtn = screen.getByRole('button', { name: /aprovar substituição/i });
       expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('Approve button is disabled (already approved)', () => {
       renderRow({ decision: 'approved' });
       expandIfCollapsed();
-      const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
+      const approveBtn = screen.getByRole('button', { name: /aprovar substituição/i });
       expect(approveBtn).toBeDisabled();
     });
 
     it('Reject button is enabled', () => {
       renderRow({ decision: 'approved' });
       expandIfCollapsed();
-      const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
+      const rejectBtn = screen.getByRole('button', { name: /rejeitar substituição/i });
       expect(rejectBtn).not.toBeDisabled();
     });
 
     it('Reset button is enabled', () => {
       renderRow({ decision: 'approved' });
       expandIfCollapsed();
-      const resetBtn = screen.getByRole('button', { name: /reset decision/i });
+      const resetBtn = screen.getByRole('button', { name: /redefinir decisão/i });
       expect(resetBtn).not.toBeDisabled();
     });
 
     it('shows the Approved decision badge in collapsed state', () => {
       renderRow({ decision: 'approved' });
       // Collapsed by default — big badge visible without expansion.
-      expect(screen.getByText(/^Approved$/)).toBeInTheDocument();
+      expect(screen.getByText(/^Aprovado$/)).toBeInTheDocument();
     });
   });
 
@@ -141,34 +141,34 @@ describe('SubstitutionRow', () => {
     it('Reject button shows pressed state (aria-pressed=true)', () => {
       renderRow({ decision: 'rejected' });
       expandIfCollapsed();
-      const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
+      const rejectBtn = screen.getByRole('button', { name: /rejeitar substituição/i });
       expect(rejectBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('Reject button is disabled (already rejected)', () => {
       renderRow({ decision: 'rejected' });
       expandIfCollapsed();
-      const rejectBtn = screen.getByRole('button', { name: /reject substitution/i });
+      const rejectBtn = screen.getByRole('button', { name: /rejeitar substituição/i });
       expect(rejectBtn).toBeDisabled();
     });
 
     it('Approve button is enabled', () => {
       renderRow({ decision: 'rejected' });
       expandIfCollapsed();
-      const approveBtn = screen.getByRole('button', { name: /approve substitution/i });
+      const approveBtn = screen.getByRole('button', { name: /aprovar substituição/i });
       expect(approveBtn).not.toBeDisabled();
     });
 
     it('Reset button is enabled', () => {
       renderRow({ decision: 'rejected' });
       expandIfCollapsed();
-      const resetBtn = screen.getByRole('button', { name: /reset decision/i });
+      const resetBtn = screen.getByRole('button', { name: /redefinir decisão/i });
       expect(resetBtn).not.toBeDisabled();
     });
 
     it('shows the Rejected decision badge in collapsed state', () => {
       renderRow({ decision: 'rejected' });
-      expect(screen.getByText(/^Rejected$/)).toBeInTheDocument();
+      expect(screen.getByText(/^Rejeitado$/)).toBeInTheDocument();
     });
   });
 
@@ -176,14 +176,14 @@ describe('SubstitutionRow', () => {
     it('calls onApprove with the substitute identifier when Approve is clicked', () => {
       const onApprove = vi.fn();
       renderRow({ decision: 'pending', onApprove });
-      fireEvent.click(screen.getByRole('button', { name: /approve substitution/i }));
+      fireEvent.click(screen.getByRole('button', { name: /aprovar substituição/i }));
       expect(onApprove).toHaveBeenCalledWith('open-the-floodgates');
     });
 
     it('calls onReject with the substitute identifier when Reject is clicked', () => {
       const onReject = vi.fn();
       renderRow({ decision: 'pending', onReject });
-      fireEvent.click(screen.getByRole('button', { name: /reject substitution/i }));
+      fireEvent.click(screen.getByRole('button', { name: /rejeitar substituição/i }));
       expect(onReject).toHaveBeenCalledWith('open-the-floodgates');
     });
 
@@ -191,7 +191,7 @@ describe('SubstitutionRow', () => {
       const onReset = vi.fn();
       renderRow({ decision: 'approved', onReset });
       expandIfCollapsed();
-      fireEvent.click(screen.getByRole('button', { name: /reset decision/i }));
+      fireEvent.click(screen.getByRole('button', { name: /redefinir decisão/i }));
       expect(onReset).toHaveBeenCalledWith('open-the-floodgates');
     });
 
@@ -199,7 +199,7 @@ describe('SubstitutionRow', () => {
       const onApprove = vi.fn();
       renderRow({ decision: 'approved', onApprove });
       expandIfCollapsed();
-      fireEvent.click(screen.getByRole('button', { name: /approve substitution/i }));
+      fireEvent.click(screen.getByRole('button', { name: /aprovar substituição/i }));
       expect(onApprove).not.toHaveBeenCalled();
     });
   });
@@ -225,10 +225,10 @@ describe('SubstitutionRow', () => {
     it('action buttons have descriptive aria-labels', () => {
       renderRow({ decision: 'pending' });
       expect(
-        screen.getByRole('button', { name: /Approve substitution: Pummel for Open the Floodgates/i }),
+        screen.getByRole('button', { name: /Aprovar substituição: Pummel por Open the Floodgates/i }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /Reject substitution: Pummel for Open the Floodgates/i }),
+        screen.getByRole('button', { name: /Rejeitar substituição: Pummel por Open the Floodgates/i }),
       ).toBeInTheDocument();
     });
   });

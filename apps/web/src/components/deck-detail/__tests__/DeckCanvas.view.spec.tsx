@@ -229,9 +229,9 @@ describe('DeckCanvas — View mode structure', () => {
 
   it('renders three sections: Exact matches, Swaps, Not owned', () => {
     renderCanvas();
-    expect(screen.getByRole('heading', { name: 'Exact matches' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Swaps' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Not owned' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Correspondências exatas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Substituições' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Não possui' })).toBeInTheDocument();
   });
 
   it('renders section count spans for all three sections', () => {
@@ -242,9 +242,9 @@ describe('DeckCanvas — View mode structure', () => {
       }),
     });
     // Exact matches section count
-    expect(screen.getByText('3 cards')).toBeInTheDocument(); // sum of MOCK_ENTRY_EXACT quantity=3
+    expect(screen.getByText('3 cartas')).toBeInTheDocument(); // sum of MOCK_ENTRY_EXACT quantity=3
     // Not owned count
-    expect(screen.getByText('2 cards')).toBeInTheDocument(); // sum of MOCK_ENTRY_NOT_OWNED quantity=2
+    expect(screen.getByText('2 cartas')).toBeInTheDocument(); // sum of MOCK_ENTRY_NOT_OWNED quantity=2
   });
 });
 
@@ -270,17 +270,17 @@ describe('DeckCanvas — ModifiedViewBanner (R38)', () => {
 describe('DeckCanvas — Empty states', () => {
   it('shows "No exact matches" when exact array is empty', () => {
     renderCanvas();
-    expect(screen.getByText('No exact matches')).toBeInTheDocument();
+    expect(screen.getByText('Sem correspondências exatas')).toBeInTheDocument();
   });
 
   it('shows "No swaps needed" when substituted array is empty', () => {
     renderCanvas();
-    expect(screen.getByText('No swaps needed')).toBeInTheDocument();
+    expect(screen.getByText('Sem substituições necessárias')).toBeInTheDocument();
   });
 
   it('shows "All playable" state when not-owned is empty', () => {
     renderCanvas({ breakdown: buildBreakdown({ notOwned: [] }) });
-    expect(screen.getByText(/All playable/)).toBeInTheDocument();
+    expect(screen.getByText(/Tudo jogável/)).toBeInTheDocument();
   });
 
   it('shows exact card content when exact is non-empty', () => {

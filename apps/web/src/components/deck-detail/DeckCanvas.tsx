@@ -14,6 +14,7 @@
  */
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -305,6 +306,7 @@ function EditBody({
   onSetHero,
   onSetFormat,
 }: IEditBodyProps): React.ReactElement {
+  const { t } = useTranslation();
   const autocompleteRef = React.useRef<HTMLInputElement>(null);
   const [editLightbox, setEditLightbox] = React.useState<{
     readonly imageUrl: string;
@@ -316,7 +318,7 @@ function EditBody({
   if (!compositionDraft || !cascadeCheck) {
     return (
       <div className={styles.editCanvas} data-testid="deck-canvas-edit">
-        <p className={styles.editEmptyState}>Loading composition…</p>
+        <p className={styles.editEmptyState}>{t('decks.loadingComposition')}</p>
       </div>
     );
   }
@@ -377,7 +379,7 @@ function EditBody({
       <div className={styles.editSearch}>
         <DeckCardSearchAutocomplete
           onPick={handlePick}
-          label="Add cards to deck"
+          label={t('decks.addCardsToDeck')}
           inputRef={autocompleteRef}
         />
       </div>
@@ -386,10 +388,10 @@ function EditBody({
       {totalCards === 0 ? (
         <div className={styles.editEmptyState} data-testid="edit-empty-state">
           <p className={styles.editEmptyState__title}>
-            No cards in this deck yet.
+            {t('decks.noCardsYet')}
           </p>
           <p className={styles.editEmptyState__sub}>
-            Search above to add cards and start building your deck.
+            {t('decks.searchToAddCards')}
           </p>
         </div>
       ) : (
@@ -411,7 +413,7 @@ function EditBody({
                 </div>
 
                 {/* Editable card rows */}
-                <ul className={styles.editCardList} aria-label={`${group} cards`}>
+                <ul className={styles.editCardList} aria-label={t('decks.slotGroupCardsAria', { group })}>
                   {cards.map((card) => (
                     <EditableCardRow
                       key={`${card.cardIdentifier}-${card.slot}`}
@@ -489,6 +491,7 @@ function ViewBody({
   onClearRejections,
   isClearingRejections,
 }: IViewBodyProps): React.ReactElement {
+  const { t } = useTranslation();
   const notOwned = breakdown.notOwned ?? breakdown.missing;
 
   // Single lightbox for exact and not-owned grids.
@@ -519,15 +522,15 @@ function ViewBody({
         <div className={styles.section__header}>
           <SectionDiamond variant="exact" />
           <h2 id="canvas-section-exact" className={styles.section__title}>
-            Exact matches
+            {t('decks.exactMatches')}
           </h2>
           <span className={styles.section__count}>
-            {sumQuantities(breakdown.exact)} cards
+            {t('decks.exactMatchesCount', { count: sumQuantities(breakdown.exact) })}
           </span>
         </div>
 
         {breakdown.exact.length === 0 ? (
-          <p className={styles.section__empty}>No exact matches</p>
+          <p className={styles.section__empty}>{t('decks.noExactMatches')}</p>
         ) : (
           <ExactMatchesGrid
             entries={breakdown.exact}
@@ -541,17 +544,17 @@ function ViewBody({
         <div className={styles.section__header}>
           <SectionDiamond variant="swaps" />
           <h2 id="canvas-section-swaps" className={styles.section__title}>
-            Swaps
+            {t('decks.swaps')}
           </h2>
           <span className={styles.section__count}>
-            {breakdown.substituted.length} active
+            {t('decks.activeSwapsCount', { count: breakdown.substituted.length })}
           </span>
         </div>
 
         {breakdown.substituted.length === 0 ? (
-          <p className={styles.section__empty}>No swaps needed</p>
+          <p className={styles.section__empty}>{t('decks.noSwapsNeeded')}</p>
         ) : (
-          <ul className={styles.subList} aria-label="Swap proposals">
+          <ul className={styles.subList} aria-label={t('decks.swapProposalsAria')}>
             {breakdown.substituted.map((entry) => {
               const subId = entry.match.substitute.cardIdentifier;
               const decision = resolveDecision(decisions, subId);
@@ -577,24 +580,24 @@ function ViewBody({
         <div className={styles.section__header}>
           <SectionDiamond variant="not-owned" />
           <h2 id="canvas-section-not-owned" className={styles.section__title}>
-            Not owned
+            {t('decks.notOwned')}
           </h2>
           <span className={styles.section__count}>
-            {sumQuantities(notOwned)} cards
+            {t('decks.exactMatchesCount', { count: sumQuantities(notOwned) })}
           </span>
         </div>
 
         {notOwned.length === 0 ? (
           <div className={styles.emptyAllPlayable}>
             <p className={styles.emptyAllPlayable__title}>
-              All playable — no substitutions needed.
+              {t('decks.allPlayable')}
             </p>
             <p className={styles.emptyAllPlayable__sub}>
-              Your collection covers every slot in this deck.
+              {t('decks.collectionCoversAll')}
             </p>
           </div>
         ) : (
-          <ul className={styles.missList} aria-label="Cards not in collection">
+          <ul className={styles.missList} aria-label={t('decks.cardsNotInCollectionAria')}>
             {notOwned.map((entry) => {
               const slotGroup = resolveSlotGroup(entry.slot);
               return (

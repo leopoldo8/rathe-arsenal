@@ -12,6 +12,7 @@
  *  - Tooltip opens on focus + hover (Radix default); Escape dismisses.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import styles from './CardRowLegalityWarning.module.css';
 
@@ -29,7 +30,7 @@ export interface ICardRowLegalityWarningProps {
   readonly cardIdentifier: string;
   /**
    * Optional per-card reason text from the cascade check.
-   * Defaults to "Card is not legal in {format}" when absent.
+   * Defaults to the localized "Card is not legal in {format}" when absent.
    */
   readonly reason?: string;
 }
@@ -47,8 +48,9 @@ export function CardRowLegalityWarning({
   cardIdentifier,
   reason,
 }: ICardRowLegalityWarningProps): React.ReactElement {
+  const { t } = useTranslation();
   const tooltipId = `card-legality-tooltip-${cardIdentifier}`;
-  const tooltipText = reason ?? `Card is not legal in ${format}`;
+  const tooltipText = reason ?? t('decks.cardNotLegalTooltip', { format });
 
   return (
     <Tooltip.Provider delayDuration={300}>
@@ -56,7 +58,7 @@ export function CardRowLegalityWarning({
         <Tooltip.Trigger asChild>
           <span
             className={styles.warningIcon}
-            aria-label={`Not legal in ${format}`}
+            aria-label={t('decks.cardNotLegalAria', { format })}
             aria-describedby={tooltipId}
             role="img"
             tabIndex={0}

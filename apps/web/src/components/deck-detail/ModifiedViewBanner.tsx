@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import styles from './ModifiedViewBanner.module.css';
 
 interface IModifiedViewBannerProps {
@@ -34,13 +35,13 @@ export function ModifiedViewBanner({
   onClearRejections,
   isClearing,
 }: IModifiedViewBannerProps): React.ReactElement {
-  const subLabel = rejectedCount === 1 ? 'swap' : 'swaps';
+  const { t } = useTranslation();
 
   return (
     <div role="status" className={styles.banner}>
       <div className={styles.banner__message}>
-        <strong className={styles.banner__strong}>Modified view.</strong>{' '}
-        You have rejected {rejectedCount} {subLabel} for this deck.
+        <strong className={styles.banner__strong}>{t('decks.modifiedView')}</strong>{' '}
+        {t('decks.rejectedSwaps', { count: rejectedCount })}
       </div>
       <button
         type="button"
@@ -49,7 +50,7 @@ export function ModifiedViewBanner({
         disabled={isClearing}
         aria-busy={isClearing}
       >
-        {isClearing ? 'Clearing...' : 'Clear rejections ↺'}
+        {isClearing ? t('decks.clearingRejections') : t('decks.clearRejections')}
       </button>
     </div>
   );

@@ -6,6 +6,7 @@
  * Layout: [Cancel] [Confirm save]
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import styles from './SaveCascadeConfirmModal.module.css';
 
@@ -25,6 +26,8 @@ export function SaveCascadeConfirmModal({
   onConfirm,
   onCancel,
 }: ISaveCascadeConfirmModalProps): React.ReactElement {
+  const { t } = useTranslation();
+
   // Radix fires onOpenChange(false) on Escape — treat as Cancel.
   function handleOpenChange(nextOpen: boolean): void {
     if (!nextOpen) {
@@ -41,12 +44,10 @@ export function SaveCascadeConfirmModal({
           aria-describedby={undefined}
         >
           <AlertDialog.Title className={styles.title}>
-            {illegalCount} illegal {illegalCount === 1 ? 'card' : 'cards'} in this deck
+            {t('decks.illegalCardsInDeck', { count: illegalCount })}
           </AlertDialog.Title>
           <AlertDialog.Description className={styles.description}>
-            This deck contains {illegalCount} card{illegalCount === 1 ? '' : 's'} that{' '}
-            {illegalCount === 1 ? 'is' : 'are'} not legal in the selected format. You can
-            still save, but the deck will be flagged as illegal.
+            {t('decks.saveCascadeDesc', { count: illegalCount })}
           </AlertDialog.Description>
 
           <div className={styles.footer}>
@@ -55,11 +56,11 @@ export function SaveCascadeConfirmModal({
               <button
                 type="button"
                 className={styles.cancelBtn}
-                aria-label="Cancel"
+                aria-label={t('decks.cancel')}
                 onClick={onCancel}
                 data-testid="cascade-confirm-cancel-btn"
               >
-                Cancel
+                {t('decks.cancel')}
               </button>
             </AlertDialog.Cancel>
 
@@ -68,11 +69,11 @@ export function SaveCascadeConfirmModal({
               <button
                 type="button"
                 className={styles.confirmBtn}
-                aria-label="Confirm save"
+                aria-label={t('decks.confirmSave')}
                 onClick={onConfirm}
                 data-testid="cascade-confirm-save-btn"
               >
-                Confirm save
+                {t('decks.confirmSave')}
               </button>
             </AlertDialog.Action>
           </div>

@@ -13,6 +13,7 @@
  * Button layout: [Discard] [Restore] (Restore is the safe primary, rightmost).
  */
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import styles from './DraftRestoreModal.module.css';
 
@@ -32,6 +33,7 @@ export function DraftRestoreModal({
   onDiscard,
   returnFocusRef,
 }: IDraftRestoreModalProps): React.ReactElement {
+  const { t } = useTranslation();
   const restoreRef = useRef<HTMLButtonElement | null>(null);
   // Track whether a button was explicitly clicked so that onOpenChange
   // doesn't double-fire the handler (Radix fires onOpenChange after the
@@ -81,10 +83,10 @@ export function DraftRestoreModal({
           aria-describedby={undefined}
         >
           <AlertDialog.Title className={styles.title}>
-            Unsaved changes from your previous edit
+            {t('decks.draftRestoreTitle')}
           </AlertDialog.Title>
           <AlertDialog.Description className={styles.description}>
-            You have unsaved changes from a previous session. Restore them?
+            {t('decks.draftRestoreDesc')}
           </AlertDialog.Description>
 
           <div className={styles.footer}>
@@ -93,11 +95,11 @@ export function DraftRestoreModal({
               <button
                 type="button"
                 className={styles.discardBtn}
-                aria-label="Discard"
+                aria-label={t('decks.discard')}
                 onClick={handleDiscard}
                 data-testid="draft-restore-discard-btn"
               >
-                Discard
+                {t('decks.discard')}
               </button>
             </AlertDialog.Cancel>
 
@@ -107,11 +109,11 @@ export function DraftRestoreModal({
                 ref={restoreRef}
                 type="button"
                 className={styles.restoreBtn}
-                aria-label="Restore"
+                aria-label={t('decks.restore')}
                 onClick={handleRestore}
                 data-testid="draft-restore-restore-btn"
               >
-                Restore
+                {t('decks.restore')}
               </button>
             </AlertDialog.Action>
           </div>

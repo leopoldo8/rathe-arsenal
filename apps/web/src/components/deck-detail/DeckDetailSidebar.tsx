@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
@@ -155,6 +156,7 @@ export function DeckDetailSidebar({
   onSetHero,
   onSetFormat,
 }: IDeckDetailSidebarProps): React.ReactElement {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(readSidebarExpanded);
 
   function handleToggle(): void {
@@ -265,7 +267,7 @@ export function DeckDetailSidebar({
                   className={styles.heroName}
                   data-testid="sidebar-hero-name"
                 >
-                  {heroIdentifier ? heroDisplayName : heroDisplayName || 'No hero set'}
+                  {heroIdentifier ? heroDisplayName : heroDisplayName || t('decks.noHeroSet')}
                 </h2>
                 <span className={styles.formatPill} data-testid="sidebar-format-pill">
                   {format}
@@ -297,11 +299,11 @@ export function DeckDetailSidebar({
           {/* Dim overlay scoped to this block only when in Edit mode */}
           {mode === 'edit' && (
             <div className={styles.readinessDimOverlay} aria-hidden="true">
-              <span className={styles.readinessDimLabel}>Will recompute on Save</span>
+              <span className={styles.readinessDimLabel}>{t('decks.willRecomputeOnSave')}</span>
             </div>
           )}
           <h3 id="sidebar-readiness-title" className={styles.blockTitle}>
-            Readiness
+            {t('decks.readiness')}
           </h3>
           <div className={styles.readinessBlock} data-testid="sidebar-readiness-block">
             {/* .ra-readiness-display is the reserved brass treatment for effectivePercent */}
@@ -313,13 +315,13 @@ export function DeckDetailSidebar({
             </div>
             <div className={styles.readinessMeta}>
               <div className={styles.readinessMeta__label}>
-                Effective Ready
+                {t('decks.effectiveReady')}
                 <span className={styles.readinessMeta__count}>
-                  {' '}&middot;{' '}{provisionedCards}/{totalCards} cartas
+                  {' '}&middot;{' '}{t('decks.provisionedCount', { provisioned: provisionedCards, total: totalCards })}
                 </span>
               </div>
               <div className={styles.readinessMeta__raw}>
-                Raw {rawPercent.toFixed(1)}%
+                {t('decks.rawValue', { value: rawPercent.toFixed(1) })}
               </div>
             </div>
           </div>
@@ -345,7 +347,7 @@ export function DeckDetailSidebar({
           data-testid="sidebar-shopping-block"
         >
           <h3 id="sidebar-shopping-title" className={styles.blockTitle}>
-            Shopping
+            {t('decks.shopping')}
           </h3>
           <ShoppingPanel
             data={shoppingData}
@@ -366,9 +368,9 @@ export function DeckDetailSidebar({
               rel="noopener noreferrer"
               className={styles.fabraryLink}
               data-testid="sidebar-fabrary-link"
-              aria-label="View deck on Fabrary (opens in new tab)"
+              aria-label={t('decks.viewOnFabraryAria')}
             >
-              View on Fabrary
+              {t('decks.viewOnFabrary')}
               <span aria-hidden="true"> &#x2197;</span>
             </a>
           </section>
