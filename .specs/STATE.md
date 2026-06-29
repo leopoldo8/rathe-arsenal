@@ -37,10 +37,10 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: Phase 2a (T6–T8) complete & committed; `origin/main` merged into the branch. Next: Phase 2b (T9 deck-detail, T10 decks/add-cards/settings) via a Sonnet worker.
-- **Completed**: Planning; Phase 1 (T1–T5 + fixes `569a0ee`/`23c6a08`); Phase 2a — T6 `a30c38e`, T7 `2c33794`, T8 `9aebf93`; main merge `8c1aef9` (PRs #100–#103, 2 CSV conflicts resolved). Post-merge gate green: web typecheck + 1327 tests, api 816 tests.
+- **Phase / Task**: Phase 2b (T9 `15019a4`, T10 `f8688b8`) complete & committed. Next: Phase 2c (T11 reviews/swaps/variant-queue, T12 auth pages) via a Sonnet worker.
+- **Completed**: Planning; Phase 1 (T1–T5 + fixes); Phase 2a (T6/T7/T8); main merge `8c1aef9`; Phase 2b — T9 `15019a4` (deck-detail), T10 `f8688b8` (decks/add-cards/settings, incl. merged ImportFabraryCard). The 2b worker hit a session limit mid-T10; orchestrator verified the parcial diff (gate green 1327 tests, no weakened/skipped tests, catalog parity intact, no residual English) and committed T10.
 - **In-progress** (file:line): none — between phases.
-- **Next step**: dispatch Phase 2b worker (Sonnet) — T9 (deck-detail) + T10 (decks routes/add-cards/new/deck-card-search/settings copy). T10 must extract the MERGED `ImportFabraryCard.tsx` (new Fabrary error strings) and translate the new `ImportFabraryCard.spec.tsx` to PT-BR. Then 2c (T11 reviews/swaps/variant-queue, T12 auth pages).
+- **Next step**: dispatch Phase 2c worker (Sonnet) — T11 (reviews/swaps/variant-queue) + T12 (auth pages static strings + auth-layout). Then Phase 3 (T13 Accept-Language + error code, T14 auth error i18n), Phase 4 (T15–T18 backend), Verifier (Opus).
 - **Blockers**: none.
 - **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
 - **Main integration**: done at this checkpoint; future main changes integrate at the next clean-tree checkpoint.

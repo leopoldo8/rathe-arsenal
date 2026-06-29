@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — Phase 1 ✅; Phase 2a (T6 `a30c38e`, T7 `2c33794`, T8 `9aebf93`) ✅; `origin/main` merged (`8c1aef9`, PRs #100–#103). Next: Phase 2b (T9, T10).
+**Status**: In Progress — Phase 1 ✅; Phase 2a (T6/T7/T8) ✅; `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`) ✅. Next: Phase 2c (T11 reviews/swaps/variant-queue, T12 auth pages).
 
 > Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
 > T8 done: `9aebf93` — library + csvSources namespaces filled, 18 components/routes wired, 9 test files updated to PT-BR. Gate: 1323 passed.
@@ -272,7 +272,7 @@ T18 [P] ─┘
 
 ---
 
-### T9: Extract — deck detail [P]
+### T9: Extract — deck detail [D]
 
 **What**: `t()` extraction for the deck-detail surface (largest area, ~75 strings); fill `decks` namespace (detail keys).
 **Where**: `apps/web/src/components/deck-detail/**`; namespace `decks.ts`
@@ -283,14 +283,14 @@ T18 [P] ─┘
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] No hardcoded user-facing literal remains in `deck-detail/**` (grep audit)
-- [ ] Area tests updated to PT-BR and green
-- [ ] Gate passes: `pnpm --filter @rathe-arsenal/web typecheck && pnpm --filter @rathe-arsenal/web test`
-- [ ] Test count: existing ≥21 preserved/updated; no deletions
+- [x] No hardcoded user-facing literal remains in `deck-detail/**` (grep audit)
+- [x] Area tests updated to PT-BR and green
+- [x] Gate passes: `pnpm --filter @rathe-arsenal/web typecheck && pnpm --filter @rathe-arsenal/web test`
+- [x] Test count: existing ≥21 preserved/updated; no deletions
 
 **Tests**: unit · **Gate**: Quick-web
 
-**Commit**: `feat(web): localize deck detail`
+**Commit**: `feat(web): localize deck detail` → `15019a4`
 
 ---
 
