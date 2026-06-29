@@ -37,10 +37,11 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: spec/design/tasks owner-approved; entering Execute — Phase 1 (T1–T5) via per-phase sub-agent workers.
-- **Completed**: spec.md, design.md, tasks.md (all owner-approved), STATE.md decisions AD-001..AD-004.
-- **In-progress** (file:line): none — about to dispatch Phase 1 worker.
-- **Next step**: dispatch Phase 1 frontend-foundation worker (T1 catalogs → T2 bootstrap → T3 test setup → T4 wiring → T5 LanguageToggle).
+- **Phase / Task**: Phase 1 (T1–T5) complete & committed. Next: Phase 2 (frontend extraction, T6–T12) via a Sonnet worker.
+- **Completed**: Planning (spec/design/tasks). Phase 1 — T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`; fixes `569a0ee` (lockfile), `23c6a08` (parity typing). Full web suite green (1323 passed, typecheck + lint clean).
+- **In-progress** (file:line): none — between phases.
+- **Next step**: dispatch Phase 2 worker (Sonnet) — extract ~390 strings area-by-area (T6 shell/ui → T7 home/onboarding → T8 library/csv → T9 deck-detail → T10 decks/add-cards/settings copy → T11 reviews/swaps/variant-queue → T12 auth pages), each filling its namespace files + updating its area tests to PT-BR default.
 - **Blockers**: none.
-- **Uncommitted files**: `.specs/**` (committed at branch start), `.agents/` + `apps/web/test-results/` untracked (not part of this feature).
-- **Branch**: feat/i18n-pt-br-en-us (created from main @ 4dbbe1f)
+- **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
+- **Uncommitted files**: `.agents/` + `apps/web/test-results/` untracked (not part of this feature).
+- **Branch**: feat/i18n-pt-br-en-us

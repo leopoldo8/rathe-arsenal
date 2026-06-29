@@ -9,7 +9,9 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: Draft
+**Status**: In Progress — Phase 1 (T1–T5) committed ✅; Phase 2 (extraction) next.
+
+> Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
 
 ---
 
