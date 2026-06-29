@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — Phase 1 ✅; Phase 2a (T6/T7/T8) ✅; `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`) ✅. Next: Phase 2c (T11 reviews/swaps/variant-queue, T12 auth pages).
+**Status**: In Progress — Phase 1 ✅; Phase 2a (T6/T7/T8) ✅; `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`) ✅; Phase 2c (T11 `a9621e3`, T12 `105fa10`) ✅. Next: Phase 3 (T13 Accept-Language + error codes, T14 server error messages).
 
 > Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
 > T8 done: `9aebf93` — library + csvSources namespaces filled, 18 components/routes wired, 9 test files updated to PT-BR. Gate: 1323 passed.
@@ -74,8 +74,8 @@ T2,T3 ──┬→ T6  [P]
         ├→ T8  [P]
         ├→ T9  [P]
         ├→ T10 [P]
-        ├→ T11 [P]
-        └→ T12 [P]
+        ├→ T11 [✅]
+        └→ T12 [✅]
 ```
 
 ### Phase 3: Locale transport + error i18n, frontend (Sequential)
@@ -317,7 +317,7 @@ T18 [P] ─┘
 
 ---
 
-### T11: Extract — reviews + swaps + variant-queue [P]
+### T11: Extract — reviews + swaps + variant-queue [✅ a9621e3]
 
 **What**: `t()` extraction; fill `reviews` (+ `variantQueue`) namespaces.
 **Where**: `apps/web/src/components/reviews/**`, `apps/web/src/components/variant-queue/**`, `apps/web/src/routes/_auth/reviews.tsx`, `swaps.tsx`; namespaces `{reviews,variantQueue}.ts`
@@ -339,7 +339,7 @@ T18 [P] ─┘
 
 ---
 
-### T12: Extract — auth pages (static strings) + auth-layout [P]
+### T12: Extract — auth pages (static strings) + auth-layout [✅ 105fa10]
 
 **What**: `t()` extraction for auth route UI (labels, headings, buttons, placeholders) — **not** server error messages (T14). Fill `auth` namespace.
 **Where**: `apps/web/src/routes/sign-in.tsx`, `sign-up.tsx`, `forgot-password.tsx`, `reset-password.tsx`, `verify-email.tsx`, `check-your-email.tsx`, `apps/web/src/components/auth-layout/**`; namespace `auth.ts`
