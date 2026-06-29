@@ -37,11 +37,12 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: Phase 1 (T1–T5) complete & committed. Next: Phase 2 (frontend extraction, T6–T12) via a Sonnet worker.
-- **Completed**: Planning (spec/design/tasks). Phase 1 — T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`; fixes `569a0ee` (lockfile), `23c6a08` (parity typing). Full web suite green (1323 passed, typecheck + lint clean).
+- **Phase / Task**: Phase 2a (T6–T8) complete & committed; `origin/main` merged into the branch. Next: Phase 2b (T9 deck-detail, T10 decks/add-cards/settings) via a Sonnet worker.
+- **Completed**: Planning; Phase 1 (T1–T5 + fixes `569a0ee`/`23c6a08`); Phase 2a — T6 `a30c38e`, T7 `2c33794`, T8 `9aebf93`; main merge `8c1aef9` (PRs #100–#103, 2 CSV conflicts resolved). Post-merge gate green: web typecheck + 1327 tests, api 816 tests.
 - **In-progress** (file:line): none — between phases.
-- **Next step**: dispatch Phase 2 worker (Sonnet) — extract ~390 strings area-by-area (T6 shell/ui → T7 home/onboarding → T8 library/csv → T9 deck-detail → T10 decks/add-cards/settings copy → T11 reviews/swaps/variant-queue → T12 auth pages), each filling its namespace files + updating its area tests to PT-BR default.
+- **Next step**: dispatch Phase 2b worker (Sonnet) — T9 (deck-detail) + T10 (decks routes/add-cards/new/deck-card-search/settings copy). T10 must extract the MERGED `ImportFabraryCard.tsx` (new Fabrary error strings) and translate the new `ImportFabraryCard.spec.tsx` to PT-BR. Then 2c (T11 reviews/swaps/variant-queue, T12 auth pages).
 - **Blockers**: none.
 - **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
+- **Main integration**: done at this checkpoint; future main changes integrate at the next clean-tree checkpoint.
 - **Uncommitted files**: `.agents/` + `apps/web/test-results/` untracked (not part of this feature).
-- **Branch**: feat/i18n-pt-br-en-us
+- **Branch**: feat/i18n-pt-br-en-us (now includes origin/main @ 512faf2)

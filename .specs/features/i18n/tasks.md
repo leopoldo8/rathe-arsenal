@@ -9,10 +9,11 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — Phase 1 (T1–T5) committed ✅; T8 committed ✅; remaining Phase 2 tasks next.
+**Status**: In Progress — Phase 1 ✅; Phase 2a (T6 `a30c38e`, T7 `2c33794`, T8 `9aebf93`) ✅; `origin/main` merged (`8c1aef9`, PRs #100–#103). Next: Phase 2b (T9, T10).
 
 > Phase 1 done: T1 `6833121`, T2 `edeca54`, T3 `e11302b`, T4 `d15971a`, T5 `641f1df`. Two foundation fixes landed during P1 (latent in the worker scaffold, surfaced by the first real keys): catalog **parity typing** `23c6a08` (literal `typeof ptBR` → structural key parity) and **translation-namespace nesting** (in `641f1df`; catalogs were keyed straight to the locale, turning namespaces into i18next namespaces and breaking dotted lookups). Full web suite green: 1323 passed.
 > T8 done: `9aebf93` — library + csvSources namespaces filled, 18 components/routes wired, 9 test files updated to PT-BR. Gate: 1323 passed.
+> **Phase 2a complete + origin/main merged** (`8c1aef9`, PRs #100–#103: Fabrary import fixes, source-label dedupe, generalized source management). Two CSV conflicts in already-extracted files resolved (backlink route `/add-cards` + aria-hidden arrow adopted from main; manage-link wording reconciled into the catalog). Post-merge gate green: web typecheck + 1327 tests, api 816 tests. **T10 impact**: `decks-new/ImportFabraryCard.tsx` gained new Fabrary error strings and a new English `ImportFabraryCard.spec.tsx` — T10 must extract the merged component and translate that spec to PT-BR.
 
 ---
 
@@ -295,7 +296,7 @@ T18 [P] ─┘
 
 ### T10: Extract — decks routes + add-cards + new + deck-card-search + settings copy [P]
 
-**What**: `t()` extraction; extend `decks` namespace (+`settings` static copy not covered by T5).
+**What**: `t()` extraction; extend `decks` namespace (+`settings` static copy not covered by T5). **Post-main-merge**: `decks-new/ImportFabraryCard.tsx` carries new Fabrary import-failure strings (#100/#102) and ships a new English `ImportFabraryCard.spec.tsx` — extract the merged component and translate that spec's assertions to PT-BR.
 **Where**: `apps/web/src/components/decks-new/**`, `apps/web/src/components/deck-card-search/**`, `apps/web/src/routes/_auth/decks.$deckId.tsx`, `decks.new.tsx`, `add-cards.tsx`, `add-cards.index.tsx`, `add-cards.manual.tsx`, `add-cards.fabrary.tsx`, `settings.tsx` (remaining copy); namespaces `{decks,settings}.ts`
 **Depends on**: T2, T3
 **Reuses**: scaffold
@@ -307,7 +308,8 @@ T18 [P] ─┘
 - [ ] No hardcoded user-facing literal remains in these files (grep audit)
 - [ ] Area tests updated to PT-BR and green
 - [ ] Gate passes: `pnpm --filter @rathe-arsenal/web typecheck && pnpm --filter @rathe-arsenal/web test`
-- [ ] Test count: existing decks-new 1 + deck-card-search 2 + relevant `routes/_auth` specs preserved/updated
+- [ ] `ImportFabraryCard.spec.tsx` (added by main merge) updated to PT-BR assertions
+- [ ] Test count: existing decks-new 1 + deck-card-search 2 + ImportFabraryCard.spec + relevant `routes/_auth` specs preserved/updated
 
 **Tests**: unit · **Gate**: Quick-web
 

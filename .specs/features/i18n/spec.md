@@ -101,7 +101,7 @@ Every ambiguity is resolved or recorded here — nothing is left silently unclea
 
 **Acceptance Criteria**:
 
-1. WHEN a non-auth user-facing error is surfaced (e.g. "Source not found", validation failures) THEN the system SHALL present it in the active language via the same code-based strategy as P2.
+1. WHEN a non-auth user-facing error is surfaced (e.g. "Source not found", Fabrary import failures (PRs #100/#102, merged from main), validation failures) THEN the system SHALL present it in the active language via the same code-based strategy as P2.
 
 ---
 
