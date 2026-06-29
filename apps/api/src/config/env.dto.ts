@@ -85,6 +85,17 @@ export class EnvDto {
     '42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com,fabrary.net';
 
   /**
+   * User-Agent sent with Fabrary AppSync requests. Fabrary's WAF Bot Control
+   * rejects non-browser clients (HTTP 403 WAFForbiddenException), so this must
+   * look like a real browser. Overridable to rotate it without a redeploy if
+   * Bot Control tightens. Default lives in AwsIamTransport.
+   */
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  FABRARY_USER_AGENT?: string;
+
+  /**
    * When true, the scraper worker is permitted to run (both via the Railway
    * cron entry point and the admin endpoint). Defaults to false so local dev
    * and CI never accidentally hit Cúpula DT. Must be explicitly set to true

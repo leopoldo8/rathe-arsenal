@@ -27,8 +27,8 @@ function LibraryCsvSourcesPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <Link to="/add-cards/csv" className={styles.backLink}>
-        {t('csvSources.csvSourcesBackLink')}
+      <Link to="/add-cards" className={styles.backLink}>
+        <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
       </Link>
 
       <header className={styles.pageHeader}>

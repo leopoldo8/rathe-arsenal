@@ -33,6 +33,7 @@ function buildDeckFixture(ulid: string, name: string): IDeckImportDto {
     weapons: [
       { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
     ],
+    inventory: [],
   };
 }
 

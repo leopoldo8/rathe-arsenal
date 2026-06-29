@@ -46,6 +46,7 @@ function buildDeck(overrides: Partial<IDeckImportDto> = {}): IDeckImportDto {
     weapons: [
       { cardIdentifier: 'savage-sash', quantity: 1, slot: 'weapon' },
     ],
+    inventory: [],
     ...overrides,
   };
 }
@@ -101,6 +102,36 @@ describe('aggregateAsResolvedRows', () => {
     expect(rows[0]?.rowNumber).toBe(1);
     expect(rows[1]?.rowNumber).toBe(2);
     expect(rows.every((r, i) => r.rowNumber === i + 1)).toBe(true);
+  });
+
+  it('includes inventory cards (Fabrary "Inventory" section) in the resolved rows', () => {
+    const deck = buildDeck({
+      mainboard: [],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'cast-bones-red', quantity: 3, slot: 'mainboard' },
+      ],
+    });
+    const rows = aggregateAsResolvedRows(deck);
+    const castBones = rows.find((r) => r.cardIdentifier === 'cast-bones-red');
+    expect(castBones?.quantity).toBe(3);
+  });
+
+  it('sums deck and inventory quantities for a card held in both', () => {
+    const deck = buildDeck({
+      mainboard: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 1, slot: 'mainboard' },
+      ],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 1, slot: 'mainboard' },
+      ],
+    });
+    const rows = aggregateAsResolvedRows(deck);
+    const reckless = rows.find((r) => r.cardIdentifier === 'reckless-swing-blue');
+    expect(reckless?.quantity).toBe(2);
   });
 });
 
@@ -225,5 +256,24 @@ describe('FabraryImportService', () => {
     expect(persisted.sourceUrl).toBe(VALID_URL);
     expect(persisted.label).toBe('Fabrary: Kayo Brute Bash');
     expect(persisted.active).toBe(true);
+  });
+
+  it('disambiguates the label with a "#N" counter when re-importing the same deck', async () => {
+    fabraryService.fetchDeck.mockResolvedValue(buildDeck());
+    // The user already imported this deck once.
+    (manager.find as jest.Mock).mockResolvedValue([
+      { label: 'Fabrary: Kayo Brute Bash' },
+    ]);
+
+    await service.importFromUrl(USER_ID, VALID_URL);
+
+    const sourceCall = manager.save.mock.calls.find(
+      (call) =>
+        typeof call[1] === 'object' &&
+        !Array.isArray(call[1]) &&
+        (call[1] as { kind?: string }).kind === 'csv',
+    );
+    const persisted = sourceCall?.[1] as Partial<CsvSourceEntity>;
+    expect(persisted.label).toBe('#2 Fabrary: Kayo Brute Bash');
   });
 });

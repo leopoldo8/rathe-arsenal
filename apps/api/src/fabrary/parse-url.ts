@@ -1,6 +1,6 @@
 import { EFabraryErrorCode, FabraryImportError } from './errors';
 
-const FABRARY_HOST = 'fabrary.net';
+const FABRARY_HOSTS = new Set(['fabrary.net', 'www.fabrary.net']);
 const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
 /**
@@ -19,10 +19,10 @@ export function parseFabraryUrl(url: string): string {
     );
   }
 
-  if (parsed.hostname !== FABRARY_HOST) {
+  if (!FABRARY_HOSTS.has(parsed.hostname)) {
     throw new FabraryImportError(
       EFabraryErrorCode.INVALID_URL,
-      `Expected host ${FABRARY_HOST}, got ${parsed.hostname}`,
+      `Expected a fabrary.net host, got ${parsed.hostname}`,
     );
   }
 

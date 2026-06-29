@@ -21,6 +21,18 @@ const REFRESH_BUFFER_MS = 60_000;
 const APPSYNC_MAX_BYTES = 512_000;
 const APPSYNC_TIMEOUT_MS = 10_000;
 
+/**
+ * Fabrary's AppSync API sits behind AWS WAF Bot Control, which rejects any
+ * request whose User-Agent does not look like a real browser (HTTP 403
+ * WAFForbiddenException). Node's native fetch sends no User-Agent at all, so we
+ * present a browser-like one — the same request Fabrary's own web client makes,
+ * just from the server instead of the browser. Overridable via
+ * FABRARY_USER_AGENT so it can be rotated without a redeploy if Bot Control
+ * tightens further.
+ */
+const DEFAULT_FABRARY_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
 @Injectable()
 export class AwsIamTransport {
   private readonly logger = new Logger(AwsIamTransport.name);
@@ -28,6 +40,7 @@ export class AwsIamTransport {
   private readonly identityPoolId: string;
   private readonly appsyncEndpoint: string;
   private readonly allowHosts: string[];
+  private readonly userAgent: string;
   private cachedCredentials: ICachedCredentials | null = null;
 
   constructor(
@@ -43,6 +56,11 @@ export class AwsIamTransport {
       .split(',')
       .map((h) => h.trim())
       .filter(Boolean);
+
+    this.userAgent = this.configService.get<string>(
+      'FABRARY_USER_AGENT',
+      DEFAULT_FABRARY_USER_AGENT,
+    );
 
     this.cognitoClient = new CognitoIdentityClient({ region });
   }
@@ -95,6 +113,11 @@ export class AwsIamTransport {
         headers[key] = value;
       }
     }
+
+    // Added after signing (unsigned header): SigV4 only validates the signed
+    // header set, while AWS WAF Bot Control inspects the raw request and needs
+    // a browser-like User-Agent to let it through.
+    headers['User-Agent'] = this.userAgent;
 
     const result = await this.fetchGuardService.guardedFetch(this.appsyncEndpoint, {
       allowHosts: this.allowHosts,

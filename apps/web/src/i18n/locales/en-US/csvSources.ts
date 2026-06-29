@@ -94,7 +94,7 @@ export const csvSources = {
   skipReasonEmptyName: 'Empty card name',
 
   // Library CSV sources route
-  csvSourcesBackLink: '← Add cards · CSV',
+  csvSourcesBackLink: 'Add cards',
   csvSourcesEyebrow: 'Imports management',
   csvSourcesTitle: 'Library sources',
   csvSourcesSubtitle: "Each source is a snapshot of cards you've imported — toggle one off to remove its contribution from your library without losing the file. Manual entries and Fabrary imports show up here too.",
@@ -115,5 +115,5 @@ export const csvSources = {
   addCsvChooseFile: 'Choose a file',
   addCsvErrorTitle: 'Upload failed',
   addCsvTryAnotherFile: 'Try another file',
-  addCsvManageLink: '→ Manage existing CSV sources',
+  addCsvManageLink: '→ Manage library sources',
 } as const;

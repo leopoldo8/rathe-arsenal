@@ -17,6 +17,26 @@ import styles from './ImportFabraryCard.module.css';
 
 const URL_REGEX = /^https?:\/\/(www\.)?fabrary\.net\/decks\/[A-Za-z0-9]+/;
 
+/**
+ * Maps a backend Fabrary import error code to a user-facing message.
+ * Falls back to the backend message (then a generic line) for unknown codes.
+ */
+function messageForImportError(code: string, fallback: string): string {
+  switch (code) {
+    case 'INVALID_URL':
+    case 'INVALID_ULID':
+      return 'That does not look like a valid Fabrary deck URL.';
+    case 'FETCH_FAILED':
+    case 'CREDENTIAL_EXPIRED':
+      return 'We could not reach Fabrary to fetch that deck. Please try again in a moment.';
+    case 'INVALID_PAYLOAD':
+    case 'UNKNOWN_CARD':
+      return 'We could not read that Fabrary deck — it may use cards we do not support yet.';
+    default:
+      return fallback || 'We could not track this deck. Please try again.';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Status type
 // ---------------------------------------------------------------------------
@@ -68,10 +88,35 @@ export function ImportFabraryCard(): React.ReactElement {
               params: { deckId: String(imported.trackedDeckId) },
               search: { edit: undefined },
             });
-          } else {
-            // Deck was skipped (already tracked) — navigate to home
-            void navigate({ to: '/home', search: { tag: [] } });
+            return;
           }
+
+          // No deck imported — surface why instead of silently redirecting.
+          const failed = result.errors[0];
+          if (failed) {
+            setStatus({
+              state: 'error',
+              message: messageForImportError(failed.code, failed.message),
+            });
+            return;
+          }
+
+          const skippedDeck = result.skipped[0];
+          if (skippedDeck) {
+            setStatus({
+              state: 'error',
+              message:
+                skippedDeck.reason === 'ALREADY_TRACKED'
+                  ? 'You are already tracking this deck.'
+                  : 'This deck was skipped and not tracked.',
+            });
+            return;
+          }
+
+          setStatus({
+            state: 'error',
+            message: 'We could not track this deck. Please try again.',
+          });
         },
         onError: (err) => {
           const message =

@@ -288,6 +288,46 @@ describe('CsvUploadService', () => {
       expect(result.kind).toBe('created');
       expect(duplicateDetectionService.detect).not.toHaveBeenCalled();
     });
+
+    it('disambiguates the label with a "#N" counter when the name already exists', async () => {
+      // Arrange
+      csvParserService.parse.mockReturnValue(buildParseResult([
+        { rowNumber: 2, cardIdentifier: 'command-and-conquer', quantity: 3 },
+      ]));
+
+      const manager = createMock<EntityManager>();
+      // The user already has a source named after this file.
+      manager.find.mockResolvedValue([
+        { label: 'collection.csv' },
+      ] as never);
+      (manager.create as jest.Mock).mockImplementation(
+        (_entity: unknown, data: unknown) => data,
+      );
+      manager.save.mockResolvedValueOnce(buildSource());
+      manager.save.mockResolvedValueOnce([]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(
+        async (fn: (em: EntityManager) => Promise<unknown>) => fn(manager),
+      );
+
+      // Act
+      await service.handle(
+        USER_ID,
+        buildBuffer(),
+        'separate',
+        undefined,
+        'collection.csv',
+      );
+
+      // Assert: the created csv source carries the de-duplicated label.
+      const sourceCreate = (manager.create as jest.Mock).mock.calls.find(
+        (call) =>
+          typeof call[1] === 'object' &&
+          (call[1] as { kind?: string }).kind === 'csv',
+      );
+      const payload = sourceCreate?.[1] as { label?: string };
+      expect(payload.label).toBe('#2 collection.csv');
+    });
   });
 
   // ---------------------------------------------------------------------------

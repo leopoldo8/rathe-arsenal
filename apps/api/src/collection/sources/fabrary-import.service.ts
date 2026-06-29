@@ -16,6 +16,7 @@ import {
 } from '../../fabrary/dtos/deck-import.dto';
 import { computeContentHash } from '../csv/csv-parser.service';
 import type { IResolvedCsvRow } from '../csv/csv.types';
+import { nextDedupedLabel } from './source-label.util';
 import { DecisionsService } from '../../decks/decisions/decisions.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 
@@ -43,8 +44,9 @@ export interface IFabraryImportResult {
  * column is enough for both UI and analytics needs today.
  *
  * The library import is additive only (no replace / merge flows): each
- * call creates a fresh source. Re-importing the same deck creates a
- * duplicate source the user can prune from `/library-csv-sources`.
+ * call creates a fresh source. Re-importing the same deck creates another
+ * source whose label is disambiguated with a "#N" counter (see
+ * `dedupeSourceLabel`); the user can prune extras from `/library-csv-sources`.
  */
 @Injectable()
 export class FabraryImportService {
@@ -102,10 +104,12 @@ export class FabraryImportService {
 
     const totalCopies = resolved.reduce((sum, r) => sum + r.quantity, 0);
     const hash = computeContentHash(resolved);
-    const label = `Fabrary: ${deck.name}`;
+    const baseLabel = `Fabrary: ${deck.name}`;
 
     const savedSource = await this.dataSource.transaction(
       async (manager: EntityManager) => {
+        const label = await this.dedupeSourceLabel(manager, userId, baseLabel);
+
         const source = manager.create(CsvSourceEntity, {
           userId,
           kind: 'csv',
@@ -153,6 +157,29 @@ export class FabraryImportService {
   }
 
   /**
+   * Resolves a collision-free label for the new source, reading existing csv
+   * source labels inside the caller's transaction. Re-importing the same deck
+   * yields "#2 Fabrary: {name}", "#3 Fabrary: {name}", and so on. See
+   * `nextDedupedLabel`.
+   */
+  private async dedupeSourceLabel(
+    manager: EntityManager,
+    userId: string,
+    baseLabel: string,
+  ): Promise<string> {
+    const existing = await manager.find(CsvSourceEntity, {
+      where: { userId, kind: 'csv' },
+      select: { label: true },
+    });
+
+    const existingLabels = (existing ?? [])
+      .map((s) => s.label)
+      .filter((l): l is string => typeof l === 'string' && l.length > 0);
+
+    return nextDedupedLabel(baseLabel, existingLabels);
+  }
+
+  /**
    * Same recompute pattern as `SourcesService.recomputeReadinessForUser`.
    * Failures are logged and swallowed so a non-critical recompute never
    * fails the import response.
@@ -191,10 +218,13 @@ export class FabraryImportService {
 }
 
 /**
- * Flattens the four Fabrary slot arrays (hero + mainboard + equipment +
- * weapons) into a single list keyed by cardIdentifier with summed
- * quantities. Hero is counted as quantity 1. Skips any zero-qty entries
- * defensively.
+ * Flattens the Fabrary slot arrays (hero + mainboard + equipment +
+ * weapons + inventory) into a single list keyed by cardIdentifier with
+ * summed quantities. Hero is counted as quantity 1. The `inventory` slot
+ * holds the deck's "Inventory" section — copies the owner keeps for the
+ * deck — which belong in the library alongside the played cards. The
+ * "Maybe" section is never fetched, so it is never aggregated here. Skips
+ * any zero-qty entries defensively.
  *
  * Exported separately for direct unit testing; pure function with no DI.
  */
@@ -210,6 +240,7 @@ export function aggregateAsResolvedRows(
     deck.mainboard,
     deck.equipment,
     deck.weapons,
+    deck.inventory,
   ];
 
   for (const list of cardLists) {
