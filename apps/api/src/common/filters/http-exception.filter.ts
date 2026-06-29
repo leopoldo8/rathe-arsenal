@@ -23,10 +23,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       });
     }
 
+    const payloadIsString = typeof payload === 'string';
+    const errorMessage = payloadIsString
+      ? payload
+      : (payload as { message?: string }).message ?? payload;
+    const code = !payloadIsString ? (payload as { code?: string }).code : undefined;
+
     response.status(status).json({
       success: false,
       statusCode: status,
-      error: typeof payload === 'string' ? payload : (payload as { message?: string }).message ?? payload,
+      error: errorMessage,
+      ...(typeof code === 'string' ? { code } : {}),
       timestamp: new Date().toISOString(),
     });
   }

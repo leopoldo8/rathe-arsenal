@@ -8,6 +8,7 @@ import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { AuthError, EAuthErrorCode } from '../errors';
+import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
 import { ICurrentUser } from '../dtos/current-user.dto';
 import { EUserRole } from '../../database/entities/user.entity';
 
@@ -55,6 +56,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
     );
+    app.useGlobalFilters(new HttpExceptionFilter());
     // Mirror main.ts: trust the first forwarded hop so req.ip reflects the
     // real client IP from X-Forwarded-For (what the throttler uses for per-IP
     // attribution).
@@ -184,6 +186,34 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   describe('regression: A4 dead-code removal', () => {
     it('EAuthErrorCode no longer has an EmailInUse entry', () => {
       expect((EAuthErrorCode as Record<string, string>).EmailInUse).toBeUndefined();
+    });
+  });
+
+  describe('error envelope includes stable code (T18)', () => {
+    it('auth error response body includes code when AuthService throws an AuthError', async () => {
+      authService.signIn.mockRejectedValueOnce(
+        new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password'),
+      );
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .set('X-Forwarded-For', '203.0.113.60')
+        .send({ email: 'a@b.com', password: 'wrongpass1' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('INVALID_CREDENTIALS');
+      expect(res.body.error).toBeDefined();
+      expect(res.body.success).toBe(false);
+    });
+
+    it('error response without a code does not include code field in the envelope', async () => {
+      // ValidationPipe throws a BadRequestException without a code field
+      const res = await request(app.getHttpServer())
+        .post('/auth/sign-in')
+        .set('X-Forwarded-For', '203.0.113.61')
+        .send({ email: 'not-an-email', password: 'longenoughpassword' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBeUndefined();
     });
   });
 
