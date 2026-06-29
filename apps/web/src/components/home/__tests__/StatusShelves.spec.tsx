@@ -117,11 +117,11 @@ describe('StatusShelves', () => {
     renderShelves(decks);
 
     // Use level: 2 to match only the shelf h2 headings, not status labels in DeckCard rows
-    expect(screen.getByRole('heading', { name: /active/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /ready/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /building/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /idea/i, level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /retired/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ativo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pronto/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /construindo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ideia/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /aposentado/i, level: 2 })).toBeInTheDocument();
   });
 
   it('skips empty status groups', () => {
@@ -129,11 +129,11 @@ describe('StatusShelves', () => {
     renderShelves(decks);
 
     // Use level: 2 to match only the shelf h2 headings
-    expect(screen.getByRole('heading', { name: /active/i, level: 2 })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /ready/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /building/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /idea/i, level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /retired/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ativo/i, level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /pronto/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /construindo/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /ideia/i, level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /aposentado/i, level: 2 })).not.toBeInTheDocument();
   });
 
   it('retired shelf starts collapsed by default', () => {
@@ -293,7 +293,7 @@ describe('StatusShelves', () => {
 
       expect(screen.getByText('Active Deck')).toBeInTheDocument();
       // building shelf should be hidden (no casual deck matches 'league')
-      expect(screen.queryByRole('heading', { name: /building/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /construindo/i })).not.toBeInTheDocument();
     });
 
     it('ORs two active filter tags', () => {

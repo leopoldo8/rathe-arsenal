@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
-import { StatusBullet, STATUS_LABELS } from '../deck-detail/StatusBullet';
+import { StatusBullet, STATUS_KEY_MAP } from '../deck-detail/StatusBullet';
 import styles from './DeckCard.module.css';
 
 // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ export function DeckCard({
             Small caps styling via CSS. */}
         <div className={styles.statusRow}>
           <StatusBullet status={deck.status} showLabel={false} />
-          <span className={styles.statusLabel}>{STATUS_LABELS[deck.status]}</span>
+          <span className={styles.statusLabel}>{t(STATUS_KEY_MAP[deck.status])}</span>
         </div>
 
         {/* Format pill + legality icon (2-state: ✓ legal / ✗ incomplete or illegal) */}

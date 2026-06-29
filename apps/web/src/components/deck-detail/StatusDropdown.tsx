@@ -5,7 +5,7 @@ import type { TDeckStatus } from '../../api/decks';
 import { usePatchDeckMutation } from '../../api/decks';
 import { useToast } from '../ui/Toast/useToast';
 import { StatusBullet } from './StatusBullet';
-import { STATUS_LABELS } from './status-labels';
+import { STATUS_KEY_MAP } from './status-labels';
 import styles from './StatusDropdown.module.css';
 
 const ALL_STATUSES: readonly TDeckStatus[] = [
@@ -16,14 +16,6 @@ const ALL_STATUSES: readonly TDeckStatus[] = [
   'retired',
 ];
 
-/** Maps TDeckStatus values to their i18n catalog keys. */
-const STATUS_KEY_MAP: Record<TDeckStatus, string> = {
-  idea: 'decks.statusIdea',
-  building: 'decks.statusBuilding',
-  ready: 'decks.statusReady',
-  active: 'decks.statusActive',
-  retired: 'decks.statusRetired',
-};
 
 interface IStatusDropdownProps {
   /** The deck whose status we are editing. */

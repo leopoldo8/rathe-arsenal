@@ -2,7 +2,7 @@ import React, { useId, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, TDeckStatus } from '../../api/decks';
-import { STATUS_LABELS } from '../deck-detail/StatusBullet';
+import { STATUS_KEY_MAP } from '../deck-detail/StatusBullet';
 import { DeckCard } from './DeckCard';
 import styles from './StatusShelves.module.css';
 
@@ -118,7 +118,7 @@ function StatusShelf({
             aria-hidden="true"
           />
           <h2 id={headingId} className={styles.shelfHeading}>
-            {STATUS_LABELS[status]}
+            {t(STATUS_KEY_MAP[status])}
           </h2>
           <span className={styles.shelfCount}>
             {deckCountLabel}
@@ -182,7 +182,7 @@ function RetiredShelf({
             aria-hidden="true"
           />
           <h2 id={headingId} className={styles.shelfHeading}>
-            {STATUS_LABELS['retired']}
+            {t(STATUS_KEY_MAP['retired'])}
           </h2>
           <span className={styles.shelfCount}>
             {deckCountLabel}

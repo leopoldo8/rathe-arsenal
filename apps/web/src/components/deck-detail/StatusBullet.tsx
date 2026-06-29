@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
-import { STATUS_LABELS } from './status-labels';
+import { STATUS_KEY_MAP } from './status-labels';
 import styles from './StatusBullet.module.css';
 
-// Re-export STATUS_LABELS so callers can import from a single location
-export { STATUS_LABELS } from './status-labels';
+// Re-export STATUS_KEY_MAP so callers (home shelves/cards) localize from one source
+export { STATUS_KEY_MAP } from './status-labels';
 
 interface IStatusBulletProps {
   /** The deck lifecycle status to display. */
@@ -15,15 +15,6 @@ interface IStatusBulletProps {
   /** Additional CSS class applied to the root element. */
   readonly className?: string;
 }
-
-/** Maps TDeckStatus values to their i18n catalog keys. */
-const STATUS_KEY_MAP: Record<TDeckStatus, string> = {
-  idea: 'decks.statusIdea',
-  building: 'decks.statusBuilding',
-  ready: 'decks.statusReady',
-  active: 'decks.statusActive',
-  retired: 'decks.statusRetired',
-};
 
 /**
  * StatusBullet — an 8px filled circle coloured from `--ra-status-{status}`

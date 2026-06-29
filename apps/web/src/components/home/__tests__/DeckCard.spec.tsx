@@ -167,14 +167,14 @@ describe('DeckCard', () => {
   describe('(U9) status row', () => {
     it('renders the status label below the deck name', () => {
       renderDeckCard(makeDeck({ status: 'active' }));
-      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Ativo')).toBeInTheDocument();
     });
 
     it('renders different status labels for each status value', () => {
       const statuses: ITrackedDeckListItem['status'][] = [
         'idea', 'building', 'ready', 'active', 'retired',
       ];
-      const expectedLabels = ['Idea', 'Building', 'Ready', 'Active', 'Retired'];
+      const expectedLabels = ['Ideia', 'Construindo', 'Pronto', 'Ativo', 'Aposentado'];
       statuses.forEach((status, i) => {
         const { unmount } = renderDeckCard(makeDeck({ status }));
         expect(screen.getByText(expectedLabels[i]!)).toBeInTheDocument();
