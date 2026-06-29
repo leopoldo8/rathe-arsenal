@@ -16,6 +16,8 @@ interface IReviewsRowProps {
   readonly row: IReviewRow;
   readonly isSelected: boolean;
   readonly isBulkPending: boolean;
+  /** Number of identical copies collapsed into this group. Defaults to 1 (no badge). */
+  readonly count?: number;
   readonly onToggleSelect: (id: TReviewRowId) => void;
   readonly onAction: (operations: IBulkOperation[]) => void;
 }
@@ -52,6 +54,7 @@ export function ReviewsRow({
   row,
   isSelected,
   isBulkPending,
+  count = 1,
   onToggleSelect,
   onAction,
 }: IReviewsRowProps): React.ReactElement {
@@ -217,6 +220,14 @@ export function ReviewsRow({
             ◆
           </span>
           <div className={styles.collapsedThumb}>{substituteThumb}</div>
+          {count > 1 && (
+            <span
+              className={styles.copiesBadge}
+              aria-label={t('reviews.copiesBadgeAria', { count })}
+            >
+              {t('reviews.copiesBadge', { count })}
+            </span>
+          )}
         </div>
 
         <div className={styles.collapsedSummary}>
@@ -306,6 +317,14 @@ export function ReviewsRow({
           {substituteThumb}
           <span className={styles.cardLabel}>{row.substituteName}</span>
         </div>
+        {count > 1 && (
+          <span
+            className={styles.copiesBadge}
+            aria-label={t('reviews.copiesBadgeAria', { count })}
+          >
+            {t('reviews.copiesBadge', { count })}
+          </span>
+        )}
       </div>
 
       {/* Meta column */}
@@ -369,9 +388,13 @@ export function ReviewsRow({
             disabled={approveDisabled}
             onClick={handleApprove}
             aria-pressed={isApproved}
-            aria-label={t('reviews.approveAria', { cardIdentifier: row.cardIdentifier })}
+            aria-label={
+              count > 1
+                ? t('reviews.approveAllAria', { count, cardIdentifier: row.cardIdentifier })
+                : t('reviews.approveAria', { cardIdentifier: row.cardIdentifier })
+            }
           >
-            {t('reviews.approve')}
+            {count > 1 ? t('reviews.approveAll') : t('reviews.approve')}
           </button>
           <button
             type="button"
@@ -379,18 +402,26 @@ export function ReviewsRow({
             disabled={rejectDisabled}
             onClick={handleReject}
             aria-pressed={isRejected}
-            aria-label={t('reviews.rejectAria', { cardIdentifier: row.cardIdentifier })}
+            aria-label={
+              count > 1
+                ? t('reviews.rejectAllAria', { count, cardIdentifier: row.cardIdentifier })
+                : t('reviews.rejectAria', { cardIdentifier: row.cardIdentifier })
+            }
           >
-            {t('reviews.reject')}
+            {count > 1 ? t('reviews.rejectAll') : t('reviews.reject')}
           </button>
           <button
             type="button"
             className={`${styles.actionBtn} ${styles['actionBtn--reset']}`}
             disabled={resetDisabled}
             onClick={handleReset}
-            aria-label={t('reviews.resetDecisionAria', { cardIdentifier: row.cardIdentifier })}
+            aria-label={
+              count > 1
+                ? t('reviews.resetAllAria', { count, cardIdentifier: row.cardIdentifier })
+                : t('reviews.resetDecisionAria', { cardIdentifier: row.cardIdentifier })
+            }
           >
-            {t('reviews.reset')}
+            {count > 1 ? t('reviews.resetAll') : t('reviews.reset')}
           </button>
           {hasDec && (
             <button
