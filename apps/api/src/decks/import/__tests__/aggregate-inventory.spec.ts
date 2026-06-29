@@ -100,4 +100,47 @@ describe('aggregateInventory', () => {
     expect(result.has('crown-of-seeds')).toBe(true);
     expect(result.has('anothos')).toBe(true);
   });
+
+  it('seeds the deck Inventory section (cards the owner holds) into the collection', () => {
+    const deck: IDeckImportDto = {
+      ulid: '01H0000000000000000000001',
+      name: 'Inventory Deck',
+      format: 'Classic Constructed',
+      hero: { cardIdentifier: 'hero-001', name: 'Test Hero' },
+      mainboard: [
+        { cardIdentifier: 'snatch-red', quantity: 3, slot: 'mainboard' },
+      ],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'cast-bones-red', quantity: 2, slot: 'mainboard' },
+      ],
+    };
+
+    const result = aggregateInventory([deck]);
+
+    expect(result.get('cast-bones-red')).toBe(2);
+  });
+
+  it('sums played and Inventory copies for a card held in both within a deck', () => {
+    const deck: IDeckImportDto = {
+      ulid: '01H0000000000000000000001',
+      name: 'Both Sections Deck',
+      format: 'Classic Constructed',
+      hero: { cardIdentifier: 'hero-001', name: 'Test Hero' },
+      mainboard: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 2, slot: 'mainboard' },
+      ],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 1, slot: 'mainboard' },
+      ],
+    };
+
+    const result = aggregateInventory([deck]);
+
+    // The owner holds 2 played + 1 in the Inventory section = 3 copies.
+    expect(result.get('reckless-swing-blue')).toBe(3);
+  });
 });
