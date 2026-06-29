@@ -20,6 +20,7 @@ import userEvent from '@testing-library/user-event';
 import { ReviewsBulkBar } from '../ReviewsBulkBar';
 import type { IReviewRow, IBulkOperation, TReviewRowId } from '../../../api/reviews';
 import { makeReviewRowId } from '../../../api/reviews';
+import type { IReviewRowGroup } from '../../../routes/_auth/-swaps.helpers';
 
 // ---- Fixtures ----
 
@@ -50,6 +51,10 @@ const ROW_A = makeRow({ trackedDeckId: 1, cardIdentifier: 'ARC001', substituteId
 const ROW_B = makeRow({ trackedDeckId: 2, cardIdentifier: 'ELE005', substituteIdentifier: 'SUB-ELE005', decision: 'approved' });
 const ROW_C = makeRow({ trackedDeckId: 1, cardIdentifier: 'MST003', substituteIdentifier: 'SUB-MST003', decision: 'rejected' });
 
+const GROUP_A: IReviewRowGroup = { row: ROW_A, count: 1 };
+const GROUP_B: IReviewRowGroup = { row: ROW_B, count: 1 };
+const GROUP_C: IReviewRowGroup = { row: ROW_C, count: 1 };
+
 const ID_A = makeReviewRowId(1, 'ARC001', 'SUB-ARC001');
 const ID_B = makeReviewRowId(2, 'ELE005', 'SUB-ELE005');
 const ID_C = makeReviewRowId(1, 'MST003', 'SUB-MST003');
@@ -62,7 +67,7 @@ function makeSet(...ids: TReviewRowId[]): ReadonlySet<TReviewRowId> {
 
 interface IRenderBarOpts {
   selectedIds?: ReadonlySet<TReviewRowId>;
-  rows?: readonly IReviewRow[];
+  groups?: readonly IReviewRowGroup[];
   isBulkPending?: boolean;
   onBulkAction?: (ops: IBulkOperation[]) => void;
   onClearSelection?: () => void;
@@ -77,7 +82,7 @@ function renderBar(opts: IRenderBarOpts = {}) {
     ...render(
       <ReviewsBulkBar
         selectedIds={opts.selectedIds ?? makeSet()}
-        rows={opts.rows ?? [ROW_A, ROW_B, ROW_C]}
+        groups={opts.groups ?? [GROUP_A, GROUP_B, GROUP_C]}
         isBulkPending={opts.isBulkPending ?? false}
         onBulkAction={onBulkAction}
         onClearSelection={onClearSelection}
@@ -217,5 +222,39 @@ describe('ReviewsBulkBar — accessibility', () => {
     expect(screen.getByRole('button', { name: /Aprovar 1 substituição/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Rejeitar 1 substituição/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Redefinir 1 substituição/i })).toBeInTheDocument();
+  });
+});
+
+describe('ReviewsBulkBar — one op per selected group regardless of copy count (SWAPGRP-16)', () => {
+  it('a group with count=2 still produces exactly one APPROVED operation', async () => {
+    const groupWith2Copies: IReviewRowGroup = { row: ROW_A, count: 2 };
+    const onBulkAction = vi.fn();
+    renderBar({
+      selectedIds: makeSet(ID_A),
+      groups: [groupWith2Copies, GROUP_B],
+      onBulkAction,
+    });
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 1 substituição/i }));
+    expect(onBulkAction).toHaveBeenCalledOnce();
+    const ops = onBulkAction.mock.calls[0]?.[0] as IBulkOperation[] | undefined;
+    // Only 1 op emitted for the 1 selected group — even though the group has count=2.
+    expect(ops).toHaveLength(1);
+    expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-ARC001', decision: 'APPROVED' });
+  });
+
+  it('selecting a group with one substitute does not produce an op for the same original with a different substitute', async () => {
+    // ROW_A and ROW_B share the same trackedDeckId but have different substituteIdentifiers.
+    // Selecting only GROUP_A (SUB-ARC001) must not emit an op for GROUP_B (SUB-ELE005).
+    const onBulkAction = vi.fn();
+    renderBar({
+      selectedIds: makeSet(ID_A), // only GROUP_A selected
+      groups: [GROUP_A, GROUP_B],
+      onBulkAction,
+    });
+    await userEvent.click(screen.getByRole('button', { name: /Aprovar 1 substituição/i }));
+    const ops = onBulkAction.mock.calls[0]?.[0] as IBulkOperation[] | undefined;
+    expect(ops).toHaveLength(1);
+    expect(ops![0]?.cardIdentifier).toBe('SUB-ARC001'); // GROUP_A's substituteIdentifier
+    expect(ops!.some((op) => op.cardIdentifier === 'SUB-ELE005')).toBe(false);
   });
 });

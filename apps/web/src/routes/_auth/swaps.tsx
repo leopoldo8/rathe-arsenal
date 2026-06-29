@@ -7,6 +7,7 @@ import {
   resolveActionLabel,
 } from '../../api/reviews';
 import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
+import type { IReviewRowGroup } from './-swaps.helpers';
 import { useToast } from '../../components/ui/Toast/useToast';
 import { ReviewsTabs } from '../../components/reviews/ReviewsTabs';
 import type { TTabValue } from '../../components/reviews/ReviewsTabs';
@@ -14,7 +15,7 @@ import { ReviewsFilters } from '../../components/reviews/ReviewsFilters';
 import type { IReviewsFilters } from '../../components/reviews/ReviewsFilters.helpers';
 import { ReviewsRowList } from '../../components/reviews/ReviewsRowList';
 import { ReviewsBulkBar } from '../../components/reviews/ReviewsBulkBar';
-import { applyFilters, computeTabCounts, deriveUniqueDecks } from './-swaps.helpers';
+import { applyFilters, computeTabCounts, deriveUniqueDecks, groupReviewRows } from './-swaps.helpers';
 import type { ISwapsSearch } from './-swaps.helpers';
 import styles from './swaps.module.css';
 
@@ -24,6 +25,9 @@ import styles from './swaps.module.css';
 
 /** Stable empty array used as fallback for allRows to avoid a new reference each render. */
 const EMPTY_ROWS: readonly IReviewRow[] = [];
+
+/** Stable empty array used as fallback for allGroups to avoid a new reference each render. */
+const EMPTY_GROUPS: readonly IReviewRowGroup[] = [];
 
 // ---------------------------------------------------------------------------
 // Route
@@ -93,7 +97,16 @@ export function SwapsPage(): React.ReactElement {
     [reviewsData],
   );
 
-  // Derive available decks + heroes from the full row set for filter chips.
+  // Group identical rows (same deck + original + substitute) into single groups.
+  // Computed once from allRows; all downstream (filter, counts, list, bulk bar)
+  // operate on groups so numbers and keys are consistent (SWAPGRP-01, 06, 13, 14).
+  const allGroups = useMemo(
+    () => (allRows.length > 0 ? groupReviewRows(allRows) : EMPTY_GROUPS),
+    [allRows],
+  );
+
+  // Derive available decks + heroes from the full row set (raw rows, not groups —
+  // each copy may add context but the filter options are the same either way).
   const availableDecks = useMemo(
     () => deriveUniqueDecks(allRows),
     [allRows],
@@ -104,17 +117,18 @@ export function SwapsPage(): React.ReactElement {
     [allRows],
   );
 
-  // Apply tab filter (state) then attribute filters.
-  const filteredRows = useMemo(
-    () => applyFilters(allRows, search),
-    [allRows, search],
+  // Apply tab filter (state) then attribute filters over groups.
+  const filteredGroups = useMemo(
+    () => applyFilters(allGroups, search),
+    [allGroups, search],
   );
 
   // Tab counts based on state only (no attribute filters — counts should reflect
-  // total rows in each state, not the attribute-filtered subset).
+  // total groups in each state, not the attribute-filtered subset). One unit per
+  // group keeps tab badge consistent with the list (SWAPGRP-13).
   const tabCounts = useMemo(
-    () => computeTabCounts(allRows),
-    [allRows],
+    () => computeTabCounts(allGroups),
+    [allGroups],
   );
 
   // --- URL state writers ---
@@ -256,14 +270,14 @@ export function SwapsPage(): React.ReactElement {
         onChange={setActiveTab}
       >
         <ReviewsRowList
-          rows={filteredRows}
+          groups={filteredGroups}
           isLoading={reviewsQuery.isLoading}
           isError={reviewsQuery.isError}
           onRetry={() => reviewsQuery.refetch()}
           selectedIds={selectedIds}
           isBulkPending={bulkMutation.isPending}
           activeState={search.state}
-          totalRowCount={allRows.length}
+          totalRowCount={allGroups.length}
           onToggleSelect={handleToggleSelect}
           onAction={handleAction}
           onNavigateApproved={handleNavigateApproved}
@@ -273,7 +287,7 @@ export function SwapsPage(): React.ReactElement {
       {/* Sticky bulk bar */}
       <ReviewsBulkBar
         selectedIds={selectedIds}
-        rows={allRows}
+        groups={allGroups}
         isBulkPending={bulkMutation.isPending}
         onBulkAction={handleAction}
         onClearSelection={handleClearSelection}

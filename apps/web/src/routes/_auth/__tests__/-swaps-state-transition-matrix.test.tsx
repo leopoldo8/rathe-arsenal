@@ -30,7 +30,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IReviewRow, IBulkUpsertResult } from '../../../api/reviews';
 import { REVIEWS_QUERY_KEY } from '../../../api/reviews';
 import { applyFilters, computeTabCounts } from '../-swaps.helpers';
-import type { ISwapsSearch } from '../-swaps.helpers';
+import type { ISwapsSearch, IReviewRowGroup } from '../-swaps.helpers';
 
 // ============================================================================
 // Mocks
@@ -177,6 +177,10 @@ function makeRow(overrides: Partial<IReviewRow> = {}): IReviewRow {
     substituteType: 'action',
     ...overrides,
   };
+}
+
+function toGroups(rows: readonly IReviewRow[]): IReviewRowGroup[] {
+  return rows.map((row) => ({ row, count: 1 }));
 }
 
 // ============================================================================
@@ -395,11 +399,11 @@ describe('State transition (5): approved → reject via /swaps [user-reported bu
       confidenceMin: 0,
       confidenceMax: 100,
     };
-    const result = applyFilters(rows, search);
+    const result = applyFilters(toGroups(rows), search);
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('APPROVED');
+    expect(result[0]?.row.cardIdentifier).toBe('APPROVED');
     // The rejected row MUST NOT appear in the approved filter
-    expect(result.some((r) => r.cardIdentifier === 'REJECTED')).toBe(false);
+    expect(result.some(({ row: r }) => r.cardIdentifier === 'REJECTED')).toBe(false);
   });
 });
 
@@ -709,7 +713,7 @@ describe('Cross-cutting: tab counter consistency — pending+approved+rejected =
         ),
       ];
 
-      const counts = computeTabCounts(rows);
+      const counts = computeTabCounts(toGroups(rows));
       expect(counts.pending + counts.approved + counts.rejected).toBe(counts.all);
       expect(counts.all).toBe(tc.total);
     }
@@ -942,7 +946,7 @@ describe('Cross-cutting: rejected substitute excluded from listSubstitutionRows'
     const rows = [
       makeRow({ cardIdentifier: 'EXCL', decision: 'rejected' }),
     ];
-    const result = applyFilters(rows, {
+    const result = applyFilters(toGroups(rows), {
       state: 'pending',
       tier: [],
       deck: [],
@@ -957,7 +961,7 @@ describe('Cross-cutting: rejected substitute excluded from listSubstitutionRows'
     const rows = [
       makeRow({ cardIdentifier: 'EXCL', decision: 'rejected' }),
     ];
-    const result = applyFilters(rows, {
+    const result = applyFilters(toGroups(rows), {
       state: 'rejected',
       tier: [],
       deck: [],
@@ -966,14 +970,14 @@ describe('Cross-cutting: rejected substitute excluded from listSubstitutionRows'
       confidenceMax: 100,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('EXCL');
+    expect(result[0]?.row.cardIdentifier).toBe('EXCL');
   });
 
   it('applyFilters: a rejected row is visible under state=all (not excluded globally)', () => {
     const rows = [
       makeRow({ cardIdentifier: 'EXCL', decision: 'rejected' }),
     ];
-    const result = applyFilters(rows, {
+    const result = applyFilters(toGroups(rows), {
       state: 'all',
       tier: [],
       deck: [],

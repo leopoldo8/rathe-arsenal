@@ -53,13 +53,17 @@ export function groupReviewRows(rows: readonly IReviewRow[]): readonly IReviewRo
 // ---------------------------------------------------------------------------
 
 /**
- * Filters `allRows` according to the active tab state and attribute filters.
+ * Filters groups according to the active tab state and attribute filters.
+ * Predicate reads `group.row.*` — equivalent to filtering raw rows then grouping
+ * because every copy in a group shares these attributes (SWAPGRP-17).
  */
 export function applyFilters(
-  rows: readonly IReviewRow[],
+  groups: readonly IReviewRowGroup[],
   search: ISwapsSearch,
-): readonly IReviewRow[] {
-  return rows.filter((row) => {
+): readonly IReviewRowGroup[] {
+  return groups.filter((group) => {
+    const row = group.row;
+
     // Tab filter (state)
     if (search.state !== 'all' && row.decision !== search.state) return false;
 
@@ -85,10 +89,11 @@ export function applyFilters(
 }
 
 /**
- * Derives per-state counts for the tab badges from the full row set.
- * The "All" count is the total regardless of state.
+ * Derives per-state counts for the tab badges from the grouped row set.
+ * Counts one unit per group — keeps tab numbers consistent with grouped list
+ * (SWAPGRP-13).
  */
-export function computeTabCounts(rows: readonly IReviewRow[]): {
+export function computeTabCounts(groups: readonly IReviewRowGroup[]): {
   pending: number;
   approved: number;
   rejected: number;
@@ -98,13 +103,13 @@ export function computeTabCounts(rows: readonly IReviewRow[]): {
   let approved = 0;
   let rejected = 0;
 
-  for (const row of rows) {
-    if (row.decision === 'pending') pending++;
-    else if (row.decision === 'approved') approved++;
-    else if (row.decision === 'rejected') rejected++;
+  for (const group of groups) {
+    if (group.row.decision === 'pending') pending++;
+    else if (group.row.decision === 'approved') approved++;
+    else if (group.row.decision === 'rejected') rejected++;
   }
 
-  return { pending, approved, rejected, all: rows.length };
+  return { pending, approved, rejected, all: groups.length };
 }
 
 /**
