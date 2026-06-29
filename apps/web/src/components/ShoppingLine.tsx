@@ -251,7 +251,7 @@ function PopulatedShoppingLine({
 
   return (
     <section
-      aria-label="Shopping line"
+      aria-label={t('decks.shoppingLineAria')}
       className={styles.section}
     >
       {/* Section header */}

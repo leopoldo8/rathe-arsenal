@@ -91,7 +91,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
           </span>
           <span
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
-            title="Preços estimados a partir de lojas parceiras. Pode ficar defasado quando o scraper não roda por alguns dias."
+            title={t('library.estimatedPricesTooltip')}
           >
             {isStale && <span aria-hidden="true">◆ </span>}
             {freshnessLabel}

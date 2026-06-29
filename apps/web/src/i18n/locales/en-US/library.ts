@@ -103,4 +103,6 @@ export const library = {
   // Library route — no results
   noMatchTitle: 'No cards match this combination.',
   clearFiltersButton: 'Clear filters',
+  estimatedPricesTooltip:
+    "Estimated prices from partner stores. May be stale when the scraper hasn't run for a few days.",
 } as const;

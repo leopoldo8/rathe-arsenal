@@ -299,6 +299,8 @@ export const decks = {
   shoppingUpdated: 'updated {{when}}',
   pricesMayHaveChanged: '(prices may have changed)',
   estimatedPriceAria: 'estimated price',
+  shoppingLineAria: 'Shopping line',
+  stillMissingAria: 'Still missing',
   estimatedPriceTooltip: "Price is estimated from listing data. Click 'Get exact prices' for accurate variant pricing.",
   estimated: 'estimated',
   shoppingHeadlineWith: 'With ',

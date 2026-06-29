@@ -135,7 +135,7 @@ export function PathCResult({
 
       <section
         id={MISSING_SECTION_ID}
-        aria-label="Still missing"
+        aria-label={t('decks.stillMissingAria')}
         className={styles.missingSection}
       >
         <h3 className={styles.missingSectionHeader}>
