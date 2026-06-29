@@ -37,10 +37,10 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: Phase 2b (T9 `15019a4`, T10 `f8688b8`) complete & committed. Next: Phase 2c (T11 reviews/swaps/variant-queue, T12 auth pages) via a Sonnet worker.
-- **Completed**: Planning; Phase 1 (T1–T5 + fixes); Phase 2a (T6/T7/T8); main merge `8c1aef9`; Phase 2b — T9 `15019a4` (deck-detail), T10 `f8688b8` (decks/add-cards/settings, incl. merged ImportFabraryCard). The 2b worker hit a session limit mid-T10; orchestrator verified the parcial diff (gate green 1327 tests, no weakened/skipped tests, catalog parity intact, no residual English) and committed T10.
+- **Phase / Task**: **Phase 2 (all frontend extraction) COMPLETE & committed.** Next: Phase 3 (T13, T14) frontend locale transport + auth error i18n.
+- **Completed**: Planning; Phase 1 (T1–T5 + fixes); main merge `8c1aef9`; Phase 2a (T6/T7/T8); 2b (T9 `15019a4`, T10 `f8688b8`); 2c (T11 `a9621e3`, T12 `105fa10`); T12b gap fix `02fbb6d` (12 root components + skeleton labels) + residual fix `ba476b2`. Repo-wide residual sweep CLEAN; web suite green (1327). Notable bumps handled by the orchestrator: a 2b session-limit cutoff (parcial T10 verified+committed), and a T12b worktree/concurrent-agent tangle (adopted the complete green worktree commit `02fbb6d`, discarded a parcial dupe, then fixed 3 missed residuals).
 - **In-progress** (file:line): none — between phases.
-- **Next step**: dispatch Phase 2c worker (Sonnet) — T11 (reviews/swaps/variant-queue) + T12 (auth pages static strings + auth-layout). Then Phase 3 (T13 Accept-Language + error code, T14 auth error i18n), Phase 4 (T15–T18 backend), Verifier (Opus).
+- **Next step**: dispatch Phase 3 worker (Sonnet) — T13 (inject `Accept-Language` in `lib/auth-fetch.ts` + `lib/api-client.ts`; add `code` to `AuthFetchError` from the envelope) → T14 (map `AuthFetchError.code`→`t('apiErrors.<EAuthErrorCode>')` at auth catch sites; fill `apiErrors` namespace). Then Phase 4 (T15–T18 backend), Verifier (Opus).
 - **Blockers**: none.
 - **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
 - **Main integration**: done at this checkpoint; future main changes integrate at the next clean-tree checkpoint.
