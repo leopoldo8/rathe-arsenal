@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/i18n/design.md`
-**Status**: In Progress — **Phase 1 + Phase 2 (all extraction) ✅ COMPLETE**. Phase 2a (T6/T7/T8); `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`); Phase 2c (T11 `a9621e3`, T12 `105fa10`); **T12b** (gap fix: 12 root `components/*.tsx` + skeleton `Loading` labels) `02fbb6d` + residual coverage fix `ba476b2`. Repo-wide residual sweep CLEAN; full web suite green (1327). **Phase 3 ✅ COMPLETE**: T13 `54849ca` (Accept-Language in both wrappers + AuthFetchError.code), T14 `62c6c8c` (apiErrors namespace + localizeAuthError helper across 6 auth surfaces; removed English formatRateLimitMessage) + `6190ba2` (status-label residual + 2 lint errors the build gate surfaced). All web gates green (typecheck + lint + 1340 tests). Next: **Phase 4** (T15–T18 backend i18n: resolveLocale/decorator, localized emails, locale threading, error `code` on envelope).
+**Status**: In Progress — **Phase 1 + Phase 2 (all extraction) ✅ COMPLETE**. Phase 2a (T6/T7/T8); `origin/main` merged (`8c1aef9`); Phase 2b (T9 `15019a4`, T10 `f8688b8`); Phase 2c (T11 `a9621e3`, T12 `105fa10`); **T12b** (gap fix: 12 root `components/*.tsx` + skeleton `Loading` labels) `02fbb6d` + residual coverage fix `ba476b2`. Repo-wide residual sweep CLEAN; full web suite green (1327). **Phase 3 ✅ COMPLETE**: T13 `54849ca` (Accept-Language in both wrappers + AuthFetchError.code), T14 `62c6c8c` (apiErrors namespace + localizeAuthError helper across 6 auth surfaces; removed English formatRateLimitMessage) + `6190ba2` (status-label residual + 2 lint errors the build gate surfaced). All web gates green (typecheck + lint + 1340 tests). **Phase 4 ✅ COMPLETE**: T15 `020937e` (resolveLocale/decorator), T16 `21b2ccd` (localized emails), T17 `920d252` (locale threading), T18 `a99eef6` (error code on envelope).
 
 > Coverage-gap lesson: T6–T12 were scoped to `components/` SUBFOLDERS, so 12 files at the `components/` ROOT (ShoppingLine*, readiness/test, tracking, delete-account-modal) + skeleton `aria-label="Loading…"` slipped through; also a `LibraryStatsBar` tooltip was translated-but-hardcoded (would render PT under EN-US). Caught by a repo-wide residual sweep at Phase-2 close, fixed in `02fbb6d`/`ba476b2`. Future area-decompositions must include root-level files, not just subfolders.
 
@@ -425,7 +425,9 @@ T18 [P] ─┘
 
 **Tests**: unit · **Gate**: Quick-api
 
-**Commit**: `feat(api): Accept-Language resolver + decorator`
+**Commit**: `feat(api): Accept-Language resolver + decorator` → `020937e`
+
+**Status**: ✅ Done
 
 ---
 
@@ -447,7 +449,9 @@ T18 [P] ─┘
 
 **Tests**: unit · **Gate**: Quick-api
 
-**Commit**: `feat(api): localized verification and password-reset emails`
+**Commit**: `feat(api): localized verification and password-reset emails` → `21b2ccd`
+
+**Status**: ✅ Done
 
 ---
 
@@ -469,7 +473,9 @@ T18 [P] ─┘
 
 **Tests**: unit + e2e · **Gate**: Full-api
 
-**Commit**: `feat(api): pass request locale to auth emails`
+**Commit**: `feat(api): pass request locale to auth emails` → `920d252`
+
+**Status**: ✅ Done
 
 ---
 
@@ -491,7 +497,9 @@ T18 [P] ─┘
 
 **Tests**: unit + e2e · **Gate**: Full-api
 
-**Commit**: `feat(api): expose stable error code on the error envelope`
+**Commit**: `feat(api): expose stable error code on the error envelope` → `a99eef6`
+
+**Status**: ✅ Done
 
 ---
 
