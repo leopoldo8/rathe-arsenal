@@ -38,6 +38,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: SWAPGRP-14 (a11y)
 - last seen: 2026-06-29T23:29:10Z
 
+### L-005 — When testing batch operations with an identifier-keyed payload, assert the identifier field across ALL action variants (approve, reject, AND reset) — tests that check only boolean flags (e.g. reset: true) can survive key-field mutations.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `components,bulk-actions` · harmful: 0
+- features: swap-copies-grouping
+- evidence: ReviewsBulkBar.tsx:82 (components,bulk-actions)
+- last seen: 2026-06-29T23:55:00Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 5,
+  "next_id": 6,
   "lessons": [
     {
       "id": "L-001",
@@ -76,6 +76,24 @@
       ],
       "created": "2026-06-29T23:29:10Z",
       "last_seen": "2026-06-29T23:29:10Z"
+    },
+    {
+      "id": "L-005",
+      "key": "surviving_mutant::when testing batch operations with an identifier keyed payload assert the identifier field across all action variants approve reject and reset tests that check only boolean flags can survive key field mutations",
+      "text": "When testing batch operations with an identifier-keyed payload, assert the identifier field across ALL action variants (approve, reject, AND reset) — tests that check only boolean flags (e.g. reset: true) can survive key-field mutations.",
+      "signal": "surviving_mutant",
+      "scope": "components,bulk-actions",
+      "status": "candidate",
+      "features": [
+        "swap-copies-grouping"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "ReviewsBulkBar.tsx:82 (components,bulk-actions)"
+      ],
+      "created": "2026-06-29T23:55:00Z",
+      "last_seen": "2026-06-29T23:55:00Z"
     }
   ]
 }
