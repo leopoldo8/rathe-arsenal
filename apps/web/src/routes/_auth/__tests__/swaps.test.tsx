@@ -1147,3 +1147,70 @@ describe('Cross-page sync — bulk operation sends substitute-keyed operations',
     });
   });
 });
+
+// ============================================================================
+// SWAPGRP-14: list aria-count reflects grouped rows, not raw copies
+// ============================================================================
+
+describe('SwapsPage — SWAPGRP-14: list aria-count reflects group count, not raw copy count', () => {
+  it('aria-label on the row list says "1 itens" when 2 identical pending copies form 1 group', () => {
+    // Two rows that are identical (same trackedDeckId + cardIdentifier + substituteIdentifier)
+    // are collapsed by groupReviewRows into a single group with count=2.
+    // ReviewsRowList renders with aria-label={t('reviews.reviewsListAria', { count: groups.length })}.
+    // groups.length is 1 (one group), NOT 2 (two raw copies).
+    // pt-BR key: 'Avaliações de substituições — {{count}} itens'
+    // This test fails if ReviewsRowList mistakenly uses raw row count instead of groups.length.
+    mockReviewsData = {
+      rows: [
+        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
+        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
+      ],
+    };
+    renderPage();
+
+    // Only 1 group row rendered — 2 identical copies collapse into 1.
+    expect(screen.getAllByTestId('reviews-row')).toHaveLength(1);
+
+    // The list aria-label must reflect 1 group, not 2 raw copies.
+    // getByRole throws if the name does not match, so this assertion is mutation-killing:
+    // a bug using raw count (2) instead of groups.length (1) would make the query fail.
+    const list = screen.getByRole('list', { name: /Avaliações de substituições — 1 itens/i });
+    expect(list).toBeInTheDocument();
+  });
+});
+
+// ============================================================================
+// SWAPGRP-15: selection uniquely identifies each group
+// ============================================================================
+
+describe('SwapsPage — SWAPGRP-15: selection uniquely identifies groups (same original, different substitute)', () => {
+  it('toggling group A checkbox does not check group B (distinct substituteIdentifiers → distinct ids)', async () => {
+    // Two rows share the same original card (cardIdentifier) but have different
+    // substitutes (substituteIdentifier). groupReviewRows produces two separate groups
+    // because grouping key includes the substitute: `${trackedDeckId}:${cardIdentifier}:${substituteIdentifier}`.
+    // Clicking group A's checkbox must not affect group B — makeReviewRowId produces
+    // distinct composite ids: (1:ORIG-SHARED:SUB-A) ≠ (1:ORIG-SHARED:SUB-B).
+    mockReviewsData = {
+      rows: [
+        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-A', decision: 'pending' }),
+        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-B', decision: 'pending' }),
+      ],
+    };
+    renderPage();
+
+    // Both groups render as separate rows.
+    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
+
+    // Before any selection there are exactly 2 row checkboxes (bulk bar is hidden).
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+
+    // Click group A's checkbox (first row).
+    await userEvent.click(checkboxes[0]!);
+
+    // Group A is now selected.
+    expect(checkboxes[0]).toBeChecked();
+    // Group B must remain unselected — selection ids are distinct.
+    expect(checkboxes[1]).not.toBeChecked();
+  });
+});

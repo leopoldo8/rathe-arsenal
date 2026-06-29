@@ -351,3 +351,46 @@ describe('ReviewsRow — count prop: action invocation on grouped row', () => {
     });
   });
 });
+
+// SWAPGRP-05 (collapsed branch): copies badge in the collapsed (decided) render mode.
+// The existing SWAPGRP-05 tests only cover the expanded/pending state. The collapsed branch
+// at ReviewsRow.tsx:223 (`count > 1`) was found to have a surviving mutant (M3a) in the
+// verifier report — flipping the guard to `count >= 1` was not caught by any existing test.
+describe('ReviewsRow — count prop: copies badge in COLLAPSED (decided) state', () => {
+  it('shows no copies badge in collapsed state when count=1 (SWAPGRP-05 collapsed)', () => {
+    // A decided row renders collapsed by default (without clicking "Alterar decisão").
+    // The collapsed branch guard at ReviewsRow.tsx:223 is `count > 1`.
+    // With count=1 the badge must be absent. A mutation that flips the guard to
+    // `count >= 1` would make this test fail, killing mutant M3a.
+    renderRow(makeRow({ decision: 'approved' }), { count: 1 });
+    // Row starts collapsed — no "Alterar decisão" click; badge must not appear.
+    expect(screen.queryByText(/× \d+/)).not.toBeInTheDocument();
+  });
+
+  it('shows "× 2" copies badge in collapsed state when count=2 (SWAPGRP-05 collapsed + SWAPGRP-03)', () => {
+    // A decided row with count=2 must show the badge in the collapsed view.
+    // Existing SWAPGRP-03 tests only cover the expanded view (pending rows).
+    renderRow(makeRow({ decision: 'approved' }), { count: 2 });
+    // Row starts collapsed — badge should be immediately visible without expansion.
+    expect(screen.getByText('× 2')).toBeInTheDocument();
+  });
+});
+
+// SWAPGRP-12: a grouped row (count>1) with an existing decision derives its state
+// from the single `(deck, substitute)` decision key, which is identical for every copy
+// in the group. The collapsed view must reflect that decided state for the whole group.
+describe('ReviewsRow — decision state for grouped (count>1) rows (SWAPGRP-12)', () => {
+  it('shows "Aprovado" decision badge in collapsed state for approved grouped row (SWAPGRP-12)', () => {
+    // All copies in a group share the same (deck, substitute) decision key.
+    // The row.decision field of the representative row is the single source of truth.
+    // The collapsed view must render the "Aprovado" decision badge for the whole group.
+    renderRow(makeRow({ decision: 'approved' }), { count: 2 });
+    expect(screen.getByText('Aprovado')).toBeInTheDocument();
+  });
+
+  it('shows "Rejeitado" decision badge in collapsed state for rejected grouped row (SWAPGRP-12)', () => {
+    // Same as above, but for the rejected state.
+    renderRow(makeRow({ decision: 'rejected' }), { count: 2 });
+    expect(screen.getByText('Rejeitado')).toBeInTheDocument();
+  });
+});
