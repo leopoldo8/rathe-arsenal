@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { LanguageToggle } from '../../components/shell/LanguageToggle';
+import { useTranslation } from 'react-i18next';
 import { useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
 import styles from './settings.module.css';
 
@@ -72,6 +74,7 @@ export const Route = createFileRoute('/_auth/settings')({
  */
 export function SettingsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -100,6 +103,18 @@ export function SettingsPage() {
         <div className={styles.themeRow}>
           <span className={styles.themeLabel}>Color theme</span>
           <ThemeToggle />
+        </div>
+      </section>
+
+      {/* ---- Section: Language ---- */}
+      <section className={styles.section} aria-labelledby="section-language">
+        <span className={styles.eyebrow}>{t('settings.languageEyebrow')}</span>
+        <h2 id="section-language" className={styles.sectionHeading}>
+          {t('settings.languageHeading')}
+        </h2>
+        <div className={styles.themeRow}>
+          <span className={styles.themeLabel}>{t('settings.languageLabel')}</span>
+          <LanguageToggle />
         </div>
       </section>
 

@@ -2,7 +2,7 @@
  * Settings page tests — Unit 7 (Onda 3)
  *
  * Covers:
- *  - Happy path: renders 3 sections (Profile, Theme, Account)
+ *  - Happy path: renders 4 sections (Profile, Theme, Language, Account)
  *  - Theme toggle: clicking updates document.documentElement.dataset.theme
  *  - A11y: heading levels (<h1> page, <h2> each section)
  *  - Profile section: shows user email read-only (no display-name field)
@@ -88,6 +88,12 @@ vi.mock('../../../components/delete-account-modal', () => ({
     ) : null,
 }));
 
+// LanguageToggle — stub so these layout tests don't double-bind the single
+// captured Radix onValueChange; the real toggle is covered in its own spec.
+vi.mock('../../../components/shell/LanguageToggle', () => ({
+  LanguageToggle: () => <div data-testid="language-toggle" />,
+}));
+
 import { SettingsPage } from '../settings';
 
 // ----- Helpers -----
@@ -125,7 +131,7 @@ function renderSettings(authCtx: IAuthContext = makeAuthContext()) {
 
 // ----- Tests -----
 
-describe('SettingsPage — happy path: 3 sections rendered', () => {
+describe('SettingsPage — happy path: 4 sections rendered', () => {
   beforeEach(() => {
     document.documentElement.dataset.theme = 'dark';
   });
@@ -155,6 +161,13 @@ describe('SettingsPage — happy path: 3 sections rendered', () => {
     expect(labels.some((t) => t.includes('theme'))).toBe(true);
   });
 
+  it('renders a Language section with an <h2> heading (PT-BR default)', () => {
+    renderSettings();
+    const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
+    const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
+    expect(labels.some((t) => t.includes('idioma'))).toBe(true);
+  });
+
   it('renders an Account/Danger section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
@@ -162,9 +175,9 @@ describe('SettingsPage — happy path: 3 sections rendered', () => {
     expect(labels.some((t) => t.includes('danger'))).toBe(true);
   });
 
-  it('renders exactly 3 <h2> section headings', () => {
+  it('renders exactly 4 <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
   });
 });
 
@@ -245,9 +258,9 @@ describe('SettingsPage — A11y: heading levels', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
-  it('has exactly three <h2> section headings', () => {
+  it('has exactly four <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
   });
 
   it('does not use <h3> or deeper for section headings', () => {

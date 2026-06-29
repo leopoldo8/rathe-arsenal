@@ -46,11 +46,15 @@ void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    // Resources keyed by locale; cast needed because our `as const` stubs
-    // produce narrow literal types not assignable to the ResourceLanguage index.
+    // Each catalog is nested under the default `translation` namespace so our
+    // hierarchical keys resolve with the default `.` keySeparator — e.g.
+    // `t('settings.languageHeading')`. Keying the locale directly to the
+    // catalog would instead make `common`/`settings`/... i18next NAMESPACES,
+    // breaking dotted lookups. Cast because our `as const` catalogs produce
+    // narrow literal types not assignable to the ResourceLanguage index.
     resources: {
-      'pt-BR': ptBR as Record<string, Record<string, unknown>>,
-      'en-US': enUS as Record<string, Record<string, unknown>>,
+      'pt-BR': { translation: ptBR as Record<string, unknown> },
+      'en-US': { translation: enUS as Record<string, unknown> },
     },
     supportedLngs: ['pt-BR', 'en-US'],
     fallbackLng: 'pt-BR',

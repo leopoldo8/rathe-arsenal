@@ -1,1 +1,6 @@
-export const settings = {} as const;
+export const settings = {
+  languageEyebrow: 'Language',
+  languageHeading: 'Interface language',
+  languageLabel: 'Language',
+  languageToggleAria: 'Select language',
+} as const;
