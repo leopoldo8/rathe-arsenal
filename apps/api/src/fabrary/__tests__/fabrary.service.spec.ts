@@ -128,7 +128,7 @@ describe('FabraryService', () => {
       expect(allCards.find((c) => c.cardIdentifier === 'unknown-card-xyz')).toBeUndefined();
     });
 
-    it('should exclude sideboard-only cards', async () => {
+    it('should route sideboard cards to inventory, not the deck (Fabrary "Inventory" section)', async () => {
       // Arrange
       transport.post.mockResolvedValue(fixture);
 
@@ -156,9 +156,63 @@ describe('FabraryService', () => {
       // Act
       const result = await service.fetchDeck('01HTXYZ1234567890ABCDEFGH');
 
-      // Assert -- sideboard-only-card (quantity=0, sideboardQuantity=3) should be excluded
-      const allCards = [...result.mainboard, ...result.equipment, ...result.weapons];
-      expect(allCards.find((c) => c.cardIdentifier === 'sideboard-only-card')).toBeUndefined();
+      // Assert -- sideboard-only-card (quantity=0, sideboardQuantity=3) is the
+      // deck's "Inventory" section: excluded from the playable deck slots but
+      // present in `inventory` with its sideboard quantity.
+      const deckCards = [...result.mainboard, ...result.equipment, ...result.weapons];
+      expect(deckCards.find((c) => c.cardIdentifier === 'sideboard-only-card')).toBeUndefined();
+
+      const invCard = result.inventory.find((c) => c.cardIdentifier === 'sideboard-only-card');
+      expect(invCard).toBeDefined();
+      expect(invCard?.quantity).toBe(3);
+    });
+
+    it('should include a card in both the deck and inventory when it has quantity and sideboardQuantity', async () => {
+      // Arrange -- a card present in both the deck (quantity) and the
+      // Inventory section (sideboardQuantity), like reckless-swing in a real deck.
+      transport.post.mockResolvedValue({
+        data: {
+          getDeck: {
+            deckId: '01HTXYZ1234567890ABCDEFGH',
+            name: 'Both Sections',
+            format: 'Classic Constructed',
+            heroIdentifier: 'kayo',
+            hero: { cardIdentifier: 'kayo', name: 'Kayo' },
+            deckCards: [
+              { cardIdentifier: 'reckless-swing-blue', quantity: 1, sideboardQuantity: 1 },
+            ],
+          },
+        },
+      });
+
+      catalogService.getCard.mockImplementation(
+        (identifier: string) =>
+          ({
+            cardIdentifier: identifier,
+            name: identifier,
+            classes: [],
+            talents: [],
+            types: ['Action'],
+            pitch: null,
+            power: null,
+            defense: null,
+            cost: null,
+            keywords: [],
+            subtypes: [],
+            legalHeroes: [],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub omits `sets`/`imageUrl` from ICatalogCard; only the fields read by the service under test are required
+          }) as any,
+      );
+
+      // Act
+      const result = await service.fetchDeck('01HTXYZ1234567890ABCDEFGH');
+
+      // Assert -- the deck portion keeps quantity 1, the inventory portion holds the extra copy.
+      const deckCard = result.mainboard.find((c) => c.cardIdentifier === 'reckless-swing-blue');
+      expect(deckCard?.quantity).toBe(1);
+
+      const invCard = result.inventory.find((c) => c.cardIdentifier === 'reckless-swing-blue');
+      expect(invCard?.quantity).toBe(1);
     });
 
     it('should throw INVALID_PAYLOAD when GraphQL returns errors', async () => {

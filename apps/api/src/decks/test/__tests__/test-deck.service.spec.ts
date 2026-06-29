@@ -45,6 +45,7 @@ function buildDeckFixture(overrides: Partial<IDeckImportDto> = {}): IDeckImportD
     weapons: [
       { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
     ],
+    inventory: [],
     ...overrides,
   };
 }

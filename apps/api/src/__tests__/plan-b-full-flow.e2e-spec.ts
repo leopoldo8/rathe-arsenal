@@ -120,6 +120,7 @@ const FIXTURE_DECK_DTO: IDeckImportDto = {
       slot: 'weapon',
     },
   ],
+  inventory: [],
 };
 
 // ---------------------------------------------------------------------------

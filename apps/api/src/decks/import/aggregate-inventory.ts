@@ -1,9 +1,15 @@
 import { IDeckImportDto } from '../../fabrary/dtos/deck-import.dto';
 
 /**
- * Aggregates card quantities across multiple decks using max-wins semantics.
- * For each card identifier, the result contains the maximum quantity seen
- * across all input decks (not the sum).
+ * Aggregates card quantities across multiple decks to seed a collection.
+ *
+ * Within a single deck, the copies the owner holds of a card are the
+ * played copies (mainboard + equipment + weapons + hero) PLUS the copies
+ * kept in the deck's "Inventory" section, so those are summed per card.
+ * Across decks, max-wins semantics apply (decks share cards, so the owner
+ * needs the largest single-deck requirement, not the sum across decks).
+ *
+ * The "Maybe" section is never fetched, so it never contributes here.
  */
 export function aggregateInventory(
   decks: readonly IDeckImportDto[],
@@ -11,16 +17,20 @@ export function aggregateInventory(
   const inventory = new Map<string, number>();
 
   for (const deck of decks) {
-    const allEntries = [
-      ...deck.mainboard,
-      ...deck.equipment,
-      ...deck.weapons,
-      { cardIdentifier: deck.hero.cardIdentifier, quantity: 1, slot: 'hero' as const },
-    ];
+    const perDeck = new Map<string, number>();
+    const addCopies = (cardIdentifier: string, quantity: number): void => {
+      perDeck.set(cardIdentifier, (perDeck.get(cardIdentifier) ?? 0) + quantity);
+    };
 
-    for (const entry of allEntries) {
-      const current = inventory.get(entry.cardIdentifier) ?? 0;
-      inventory.set(entry.cardIdentifier, Math.max(current, entry.quantity));
+    for (const entry of deck.mainboard) addCopies(entry.cardIdentifier, entry.quantity);
+    for (const entry of deck.equipment) addCopies(entry.cardIdentifier, entry.quantity);
+    for (const entry of deck.weapons) addCopies(entry.cardIdentifier, entry.quantity);
+    for (const entry of deck.inventory) addCopies(entry.cardIdentifier, entry.quantity);
+    addCopies(deck.hero.cardIdentifier, 1);
+
+    for (const [cardIdentifier, quantity] of perDeck) {
+      const current = inventory.get(cardIdentifier) ?? 0;
+      inventory.set(cardIdentifier, Math.max(current, quantity));
     }
   }
 
