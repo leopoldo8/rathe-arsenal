@@ -20,6 +20,34 @@ export interface ISwapsSearch {
   readonly confidenceMax: number;
 }
 
+export interface IReviewRowGroup {
+  readonly row: IReviewRow;
+  readonly count: number;
+}
+
+// ---------------------------------------------------------------------------
+// Grouping helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Groups identical Swaps rows (same trackedDeckId + cardIdentifier + substituteIdentifier)
+ * into a single `IReviewRowGroup`. Preserves first-seen order; `row` is the first
+ * occurrence; `count` is the number of rows merged.
+ */
+export function groupReviewRows(rows: readonly IReviewRow[]): readonly IReviewRowGroup[] {
+  const map = new Map<string, IReviewRowGroup>();
+  for (const row of rows) {
+    const key = `${row.trackedDeckId}:${row.cardIdentifier}:${row.substituteIdentifier}`;
+    const existing = map.get(key);
+    if (existing) {
+      map.set(key, { row: existing.row, count: existing.count + 1 });
+    } else {
+      map.set(key, { row, count: 1 });
+    }
+  }
+  return Array.from(map.values());
+}
+
 // ---------------------------------------------------------------------------
 // Filter helpers
 // ---------------------------------------------------------------------------

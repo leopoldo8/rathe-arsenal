@@ -225,7 +225,7 @@ describe('ReviewsRow — selection', () => {
     const onToggleSelect = vi.fn();
     renderRow(makeRow(), { onToggleSelect });
     await userEvent.click(screen.getByRole('checkbox'));
-    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012'));
+    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012', 'ELE020'));
   });
 
   it('calls onToggleSelect with Space key on card pair group', async () => {
@@ -236,6 +236,6 @@ describe('ReviewsRow — selection', () => {
     });
     group.focus();
     await userEvent.keyboard(' ');
-    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012'));
+    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012', 'ELE020'));
   });
 });

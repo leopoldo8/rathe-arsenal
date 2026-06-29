@@ -46,11 +46,15 @@ export interface IReviewsResponse {
   readonly rows: readonly IReviewRow[];
 }
 
-/** Unique composite key for a review row — trackedDeckId + cardIdentifier. */
+/** Unique composite key for a review row — trackedDeckId + cardIdentifier + substituteIdentifier. */
 export type TReviewRowId = `${number}:${string}`;
 
-export function makeReviewRowId(trackedDeckId: number, cardIdentifier: string): TReviewRowId {
-  return `${trackedDeckId}:${cardIdentifier}`;
+export function makeReviewRowId(
+  trackedDeckId: number,
+  cardIdentifier: string,
+  substituteIdentifier: string,
+): TReviewRowId {
+  return `${trackedDeckId}:${cardIdentifier}:${substituteIdentifier}`;
 }
 
 // ---------------------------------------------------------------------------

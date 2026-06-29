@@ -56,7 +56,7 @@ export function ReviewsRow({
   onAction,
 }: IReviewsRowProps): React.ReactElement {
   const { t } = useTranslation();
-  const rowId = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
+  const rowId = makeReviewRowId(row.trackedDeckId, row.cardIdentifier, row.substituteIdentifier);
   const checkboxId = `review-row-${rowId}`;
 
   const isApproved = row.decision === 'approved';

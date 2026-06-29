@@ -112,7 +112,7 @@ export function ReviewsRowList({
       aria-label={t('reviews.reviewsListAria', { count: rows.length })}
     >
       {rows.map((row) => {
-        const id = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
+        const id = makeReviewRowId(row.trackedDeckId, row.cardIdentifier, row.substituteIdentifier);
         return (
           <div key={id} role="listitem">
             <ReviewsRow

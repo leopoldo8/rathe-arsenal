@@ -64,7 +64,7 @@ export function ReviewsBulkBar({
     decision: 'APPROVED' | 'REJECTED' | 'RESET',
   ): IBulkOperation[] {
     return rows
-      .filter((row) => selectedIds.has(makeReviewRowId(row.trackedDeckId, row.cardIdentifier)))
+      .filter((row) => selectedIds.has(makeReviewRowId(row.trackedDeckId, row.cardIdentifier, row.substituteIdentifier)))
       .slice(0, BULK_MAX_OPS)
       .map((row): IBulkOperation => {
         if (decision === 'RESET') {

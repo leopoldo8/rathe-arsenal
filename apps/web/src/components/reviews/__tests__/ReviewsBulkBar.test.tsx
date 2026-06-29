@@ -50,9 +50,9 @@ const ROW_A = makeRow({ trackedDeckId: 1, cardIdentifier: 'ARC001', substituteId
 const ROW_B = makeRow({ trackedDeckId: 2, cardIdentifier: 'ELE005', substituteIdentifier: 'SUB-ELE005', decision: 'approved' });
 const ROW_C = makeRow({ trackedDeckId: 1, cardIdentifier: 'MST003', substituteIdentifier: 'SUB-MST003', decision: 'rejected' });
 
-const ID_A = makeReviewRowId(1, 'ARC001');
-const ID_B = makeReviewRowId(2, 'ELE005');
-const ID_C = makeReviewRowId(1, 'MST003');
+const ID_A = makeReviewRowId(1, 'ARC001', 'SUB-ARC001');
+const ID_B = makeReviewRowId(2, 'ELE005', 'SUB-ELE005');
+const ID_C = makeReviewRowId(1, 'MST003', 'SUB-MST003');
 
 function makeSet(...ids: TReviewRowId[]): ReadonlySet<TReviewRowId> {
   return new Set(ids);
