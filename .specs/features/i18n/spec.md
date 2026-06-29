@@ -120,22 +120,22 @@ Every ambiguity is resolved or recorded here — nothing is left silently unclea
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| I18N-01 | P1: i18n infra (provider, config, detector, PT-BR fallback) | Execute | Implementing (Phase 1 ✅) |
-| I18N-02 | P1: first-visit detection + localStorage persistence | Execute | Implementing (Phase 1 ✅) |
-| I18N-03 | P1: language switcher in UI (Settings; mirror ThemeToggle) | Execute | Implementing (Phase 1 ✅) |
-| I18N-04 | P1: `<html lang>` reflects active language | Execute | Implementing (Phase 1 ✅) |
-| I18N-05 | P1: all frontend UI strings extracted to pt-BR/en-US catalogs | Execute | Implementing (Phase 2 ✅ — repo-wide residual sweep clean) |
-| I18N-06 | P1: missing-key fallback to PT-BR, no crash / no blank | Execute | Implementing (Phase 1 ✅) |
-| I18N-07 | P2: `Accept-Language` propagation from client to API | Design | Pending |
-| I18N-08 | P2: auth emails (verify, reset) rendered in request locale | Design | Pending |
-| I18N-09 | P2: auth error messages localized via stable codes | Design | Pending |
-| I18N-10 | P3: remaining API/validation errors localized | - | Pending |
+| I18N-01 | P1: i18n infra (provider, config, detector, PT-BR fallback) | Execute | ✅ Verified (9afb58d) |
+| I18N-02 | P1: first-visit detection + localStorage persistence | Execute | ✅ Verified (9afb58d) |
+| I18N-03 | P1: language switcher in UI (Settings; mirror ThemeToggle) | Execute | ✅ Verified (9afb58d) |
+| I18N-04 | P1: `<html lang>` reflects active language | Execute | ✅ Verified (9afb58d) |
+| I18N-05 | P1: all frontend UI strings extracted to pt-BR/en-US catalogs | Execute | ✅ Verified (9afb58d) |
+| I18N-06 | P1: missing-key fallback to PT-BR, no crash / no blank | Execute | ✅ Verified (9afb58d — runtime path tested) |
+| I18N-07 | P2: `Accept-Language` propagation from client to API | Execute | ✅ Verified (9afb58d) |
+| I18N-08 | P2: auth emails (verify, reset) rendered in request locale | Execute | ✅ Verified (9afb58d) |
+| I18N-09 | P2: auth error messages localized via stable codes | Execute | ✅ Verified (9afb58d) |
+| I18N-10 | P3: remaining API/validation errors localized | - | ⏸️ Deferred (P3 follow-up — out of T1–T18 scope) |
 
 **ID format:** `I18N-[NUMBER]`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 10 total, 0 mapped to tasks yet, P1 (01–06) is the MVP slice.
+**Coverage:** 10 total; I18N-01–09 ✅ Verified by the independent Verifier pass (`.specs/features/i18n/validation.md`); I18N-10 deferred per spec (P3). P1 (01–06) is the MVP slice.
 
 ---
 
