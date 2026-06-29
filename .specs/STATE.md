@@ -37,11 +37,12 @@
 ## Handoff
 
 - **Feature**: i18n — `.specs/features/i18n/`
-- **Phase / Task**: **Phase 3 (frontend transport + auth error i18n) COMPLETE & committed.** Next: Phase 4 (T15–T18 backend i18n).
-- **Completed**: Planning; Phase 1; main merge `8c1aef9`; Phase 2 (2a/2b/2c + T12b `02fbb6d` + residual `ba476b2`); Phase 3 — T13 `54849ca` (Accept-Language in both wrappers + AuthFetchError.code), T14 `62c6c8c` (apiErrors namespace + localizeAuthError helper, applied to 6 auth surfaces, removed English formatRateLimitMessage), plus `6190ba2` (status-label residual + 2 lint errors the build gate surfaced). All web gates green: typecheck + lint + 1340 tests.
-- **In-progress** (file:line): none — between phases.
-- **Lesson**: the extraction gate was Quick-web (typecheck + test, NO lint), so `no-unused-vars` from the t()-migration (orphan STATUS_LABELS imports) + an English status-label residual only surfaced at the Phase-3 build gate. Future per-task gates on extraction-style work should include lint.
-- **Next step**: dispatch Phase 4 worker (Sonnet) — T15 (`resolveLocale` + `@AcceptLanguage()` decorator), T16 (localized email templates + EmailService locale param), T17 (thread locale through auth controllers/service), T18 (expose error `code` on the API envelope). Backend = NestJS + Jest (`pnpm --filter @rathe-arsenal/api test` / `test:e2e`). Then Verifier (Opus).
+- **Phase / Task**: **ALL FOUR PHASES COMPLETE & committed.** Next: independent Verifier (Opus) over the whole feature, then owner-facing wrap-up.
+- **Completed**: Planning; Phase 1; main merge `8c1aef9`; Phase 2 (2a/2b/2c + T12b `02fbb6d` + residual `ba476b2`); Phase 3 — T13 `54849ca`, T14 `62c6c8c`, `6190ba2`; Phase 4 — T15 `020937e` (resolveLocale + decorator), T16 `21b2ccd` (localized emails), T17 `920d252` (locale threading), T18 `a99eef6` (error `code` on envelope), specs `309f719`. Gates: web typecheck+lint+1340 tests green; api typecheck + 849 unit green; api auth e2e (17, mocked) green.
+- **In-progress** (file:line): none — feature implementation done; awaiting Verifier.
+- **Known env limitation (NOT a regression)**: 2 DB-backed e2e (`theme-persistence.e2e-spec`, `plan-b-full-flow.e2e-spec`) fail locally with "Unable to connect to the database" (no local PostgreSQL on :5432; no docker-compose in repo). They are pre-existing, non-i18n full-flow tests; CI runs them with a Postgres service. Verified failure cause is DB connect, independent of code.
+- **Lesson**: the extraction gate was Quick-web (typecheck + test, NO lint), so `no-unused-vars` + an English status-label residual only surfaced at the Phase-3 build gate. Future per-task gates on extraction-style work should include lint.
+- **Next step**: dispatch the Verifier (Opus) — spec-anchored coverage re-derivation (evidence-or-zero) + discrimination sensor (scratch-state mutations) over the i18n diff; writes `.specs/features/i18n/validation.md`; returns PASS/FAIL + ranked gaps. Then surface result + offer PR to the owner.
 - **Blockers**: none.
 - **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
 - **Main integration**: done at this checkpoint; future main changes integrate at the next clean-tree checkpoint.
