@@ -29,4 +29,13 @@ export const settings = {
   lastSync: 'Última sincronização: {{count}} produtos · {{when}}',
   neverSynced: 'Nunca sincronizado.',
   couldNotQueueSync: 'Não foi possível enfileirar a sincronização. Tente novamente.',
+  // delete-account-modal.tsx
+  deleteAccountModalTitle: 'Excluir sua conta',
+  deleteAccountModalDesc: 'Sua conta e todos os dados vinculados (coleção, baralhos acompanhados, histórico de prontidão) serão permanentemente excluídos após 30 dias. Você será desconectado imediatamente.',
+  reenterPasswordLabel: 'Redigite sua senha',
+  deleteAccountAcknowledge: 'Entendo que minha conta e todos os dados serão permanentemente excluídos',
+  incorrectPassword: 'Senha incorreta',
+  couldNotDeleteAccount: 'Não foi possível excluir sua conta. Tente novamente.',
+  deleting: 'Excluindo…',
+  cancel: 'Cancelar',
 } as const;

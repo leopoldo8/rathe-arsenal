@@ -94,7 +94,7 @@ describe('ShoppingLine: null (Path A)', () => {
   it('renders the "you have everything you need" message', () => {
     render(<ShoppingLine data={null} />);
     expect(
-      screen.getByText(/you have everything you need for this deck/i),
+      screen.getByText(/você tem tudo o que precisa para este baralho/i),
     ).toBeInTheDocument();
   });
 });
@@ -120,7 +120,7 @@ describe('ShoppingLine: kind=error', () => {
     const data: IShoppingLineResponse = { kind: 'error', reason: 'db_error' };
     render(<ShoppingLine data={data} />);
     expect(
-      screen.getByText(/shopping line temporarily unavailable/i),
+      screen.getByText(/lista de compras temporariamente indisponível/i),
     ).toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe('ShoppingLine: kind=error', () => {
     const data: IShoppingLineResponse = { kind: 'error', reason: 'db_error' };
     render(<ShoppingLine data={data} />);
     expect(
-      screen.queryByText(/you have everything you need/i),
+      screen.queryByText(/você tem tudo/i),
     ).not.toBeInTheDocument();
   });
 });
@@ -141,19 +141,19 @@ describe('ShoppingLine: kind=populated, availableCardCount=0', () => {
   it('renders the no-stock message', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
     expect(
-      screen.getByText(/no missing cards currently in stock/i),
+      screen.getByText(/nenhuma carta faltante no momento em estoque/i),
     ).toBeInTheDocument();
   });
 
   it('renders the freshness subtitle', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
-    expect(screen.getByText(/last checked 2h ago/i)).toBeInTheDocument();
+    expect(screen.getByText(/último check 2h ago/i)).toBeInTheDocument();
   });
 
   it('renders the substitution editor CTA', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
     expect(
-      screen.getByText(/try the substitution editor/i),
+      screen.getByText(/experimente o editor de substituição/i),
     ).toBeInTheDocument();
   });
 });
@@ -165,27 +165,27 @@ describe('ShoppingLine: kind=populated, availableCardCount=0', () => {
 describe('ShoppingLine: kind=populated, partial availability', () => {
   it('renders the section heading', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByRole('heading', { name: /shopping line/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /lista de compras/i })).toBeInTheDocument();
   });
 
   it('renders the headline affordance with correct amounts', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByText(/with r\$ 49,90 at cupula dt you close 1 of 2 missing cards/i)).toBeInTheDocument();
+    expect(screen.getByText(/com r\$ 49,90 na cupula dt você fecha 1 de 2 cartas faltantes/i)).toBeInTheDocument();
   });
 
   it('renders the "In stock" sub-group header', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByText(/in stock \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/em estoque \(1\)/i)).toBeInTheDocument();
   });
 
   it('renders the "Unavailable" sub-group header', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByText(/unavailable \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/indisponível \(1\)/i)).toBeInTheDocument();
   });
 
   it('renders a View link for the available card', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    const link = screen.getByRole('link', { name: /open rhinar.*cupula dt.*new tab/i });
+    const link = screen.getByRole('link', { name: /abrir rhinar.*cupula dt.*nova aba/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(link).toHaveAttribute('target', '_blank');
@@ -193,19 +193,19 @@ describe('ShoppingLine: kind=populated, partial availability', () => {
 
   it('renders the freshness timestamp', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByText(/updated 2h ago/i)).toBeInTheDocument();
+    expect(screen.getByText(/atualizado 2h ago/i)).toBeInTheDocument();
   });
 });
 
 describe('ShoppingLine: kind=populated, all available', () => {
   it('renders the headline showing N of N cards', () => {
     render(<ShoppingLine data={POPULATED_FULL} />);
-    expect(screen.getByText(/with r\$ 49,90 at cupula dt you close 1 of 1 missing card/i)).toBeInTheDocument();
+    expect(screen.getByText(/com r\$ 49,90 na cupula dt você fecha 1 de 1 carta faltante/i)).toBeInTheDocument();
   });
 
   it('does not render an Unavailable sub-group', () => {
     render(<ShoppingLine data={POPULATED_FULL} />);
-    expect(screen.queryByText(/unavailable/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/indisponível/i)).not.toBeInTheDocument();
   });
 });
 

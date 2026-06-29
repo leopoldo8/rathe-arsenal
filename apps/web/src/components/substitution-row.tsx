@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { IBreakdownEntry, ISubstitutionMatch } from '../api/deck-detail';
 import styles from './substitution-row.module.css';
 
@@ -41,6 +42,7 @@ export function SubstitutionRow({
   anyPending = false,
   curveWarning = false,
 }: ISubstitutionRowProps) {
+  const { t } = useTranslation();
   const disabled = isPending || anyPending;
 
   function handleReject(): void {
@@ -71,7 +73,7 @@ export function SubstitutionRow({
             type="button"
             onClick={handleReject}
             disabled={disabled}
-            aria-label="Reject this substitution"
+            aria-label={t('decks.rejectThisSubstitutionAria')}
             className={styles.rejectBtn}
           >
             &times;
@@ -87,7 +89,7 @@ export function SubstitutionRow({
           className={styles.curveWarning}
         >
           <span aria-hidden="true">&#9888;</span>
-          Pitch curve broken: no valid alternative for this slot.
+          {t('decks.pitchCurveBroken')}
         </div>
       )}
     </div>

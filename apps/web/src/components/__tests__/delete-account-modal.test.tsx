@@ -95,22 +95,22 @@ describe('DeleteAccountModal', () => {
     const deleteAccount = vi.fn();
     renderModal({ deleteAccount });
 
-    const submit = screen.getByRole('button', { name: /delete my account/i });
+    const submit = screen.getByRole('button', { name: /excluir minha conta/i });
     expect(submit).toBeDisabled();
 
     // Type password only — still disabled.
-    await user.type(screen.getByLabelText(/re-enter your password/i), 'hunter2');
+    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
     expect(submit).toBeDisabled();
 
     // Check the checkbox — enabled.
     await user.click(
-      screen.getByLabelText(/i understand my account and all data will be permanently deleted/i),
+      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
     );
     expect(submit).toBeEnabled();
 
     // Uncheck — disabled again.
     await user.click(
-      screen.getByLabelText(/i understand my account and all data will be permanently deleted/i),
+      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
     );
     expect(submit).toBeDisabled();
   });
@@ -121,11 +121,11 @@ describe('DeleteAccountModal', () => {
     const onDeleted = vi.fn();
     renderModal({ deleteAccount, onDeleted });
 
-    await user.type(screen.getByLabelText(/re-enter your password/i), 'hunter2');
+    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
     await user.click(
-      screen.getByLabelText(/i understand my account and all data will be permanently deleted/i),
+      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
     );
-    await user.click(screen.getByRole('button', { name: /delete my account/i }));
+    await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 
     await waitFor(() => expect(deleteAccount).toHaveBeenCalledWith('hunter2'));
     expect(onDeleted).toHaveBeenCalledTimes(1);
@@ -140,14 +140,14 @@ describe('DeleteAccountModal', () => {
     const onDeleted = vi.fn();
     renderModal({ deleteAccount, onClose, onDeleted });
 
-    await user.type(screen.getByLabelText(/re-enter your password/i), 'wrongpw');
+    await user.type(screen.getByLabelText(/redigite sua senha/i), 'wrongpw');
     await user.click(
-      screen.getByLabelText(/i understand my account and all data will be permanently deleted/i),
+      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
     );
-    await user.click(screen.getByRole('button', { name: /delete my account/i }));
+    await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(/incorrect password/i),
+      expect(screen.getByRole('alert')).toHaveTextContent(/senha incorreta/i),
     );
 
     // Modal is still rendered (Radix AlertDialog uses role="alertdialog").
@@ -155,7 +155,7 @@ describe('DeleteAccountModal', () => {
     expect(onDeleted).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     // Submit button is re-enabled (not stuck in submitting state).
-    expect(screen.getByRole('button', { name: /delete my account/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /excluir minha conta/i })).toBeEnabled();
   });
 
   it('shows the shared rate-limit message on 429', async () => {
@@ -165,11 +165,11 @@ describe('DeleteAccountModal', () => {
       .mockRejectedValue(new AuthFetchError('Too Many Requests', 429, 120));
     renderModal({ deleteAccount });
 
-    await user.type(screen.getByLabelText(/re-enter your password/i), 'hunter2');
+    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
     await user.click(
-      screen.getByLabelText(/i understand my account and all data will be permanently deleted/i),
+      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
     );
-    await user.click(screen.getByRole('button', { name: /delete my account/i }));
+    await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 
     await waitFor(() => {
       const alert = screen.getByRole('alert');

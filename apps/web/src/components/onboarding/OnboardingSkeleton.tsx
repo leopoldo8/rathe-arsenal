@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { StepIndicator } from './StepIndicator';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import styles from './OnboardingSkeleton.module.css';
@@ -20,11 +21,12 @@ import styles from './OnboardingSkeleton.module.css';
  * The inner Skeleton primitives each have their own aria-label.
  */
 export function OnboardingSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section
       aria-busy="true"
       aria-live="polite"
-      aria-label="Loading onboarding"
+      aria-label={t('common.loadingOnboarding')}
       className={styles.skeleton}
     >
       <div className={styles.indicatorRegion}>
@@ -33,20 +35,20 @@ export function OnboardingSkeleton(): React.ReactElement {
 
       <div className={styles.body}>
         <div className={styles.headingRow}>
-          <Skeleton width="180px" height="14px" aria-label="Loading step label" />
-          <Skeleton width="260px" height="28px" aria-label="Loading step heading" />
-          <Skeleton width="100%" height="14px" aria-label="Loading step description" />
+          <Skeleton width="180px" height="14px" aria-label={t('common.loadingStepLabel')} />
+          <Skeleton width="260px" height="28px" aria-label={t('common.loadingStepHeading')} />
+          <Skeleton width="100%" height="14px" aria-label={t('common.loadingStepDesc')} />
         </div>
 
         <Skeleton
           width="100%"
           height="2.625rem"
-          aria-label="Loading deck URL input"
+          aria-label={t('common.loadingDeckUrlInput')}
         />
 
         <div className={styles.footer}>
-          <Skeleton width="120px" height="2.25rem" aria-label="Loading primary action" />
-          <Skeleton width="96px" height="2.25rem" aria-label="Loading secondary action" />
+          <Skeleton width="120px" height="2.25rem" aria-label={t('common.loadingPrimaryAction')} />
+          <Skeleton width="96px" height="2.25rem" aria-label={t('common.loadingSecondaryAction')} />
         </div>
       </div>
     </section>

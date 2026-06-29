@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import styles from './mark-owned-button.module.css';
 
 interface IMarkOwnedButtonProps {
@@ -13,6 +14,7 @@ export function MarkOwnedButton({
   isPending,
   pendingCard,
 }: IMarkOwnedButtonProps) {
+  const { t } = useTranslation();
   const isThisCardPending = isPending && pendingCard === cardIdentifier;
 
   return (
@@ -26,7 +28,7 @@ export function MarkOwnedButton({
       data-pending={isPending ? 'true' : undefined}
       data-this-pending={isThisCardPending ? 'true' : undefined}
     >
-      {isThisCardPending ? 'Saving...' : 'I own this'}
+      {isThisCardPending ? t('decks.markOwnedSaving') : t('decks.iOwnThis')}
     </button>
   );
 }

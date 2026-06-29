@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { IBreakdown } from '../api/deck-detail';
 import { ITestDeckResponse } from '../api/test-deck';
 import { BreakdownList } from './breakdown-list';
@@ -45,13 +46,14 @@ export function TestDeckResult({
   onTrackAndSeed,
   isTracking,
 }: ITestDeckResultProps) {
+  const { t } = useTranslation();
   const breakdown: IBreakdown = result.breakdown as unknown as IBreakdown;
   const displayEffective = Math.round(result.effectivePercent * 10) / 10;
   const displayRaw = Math.round(result.rawPercent * 10) / 10;
 
   return (
     <section
-      aria-label="Test deck result"
+      aria-label={t('decks.testDeckResultAria')}
       className={styles.section}
     >
       <header className={styles.header}>
@@ -84,7 +86,7 @@ export function TestDeckResult({
               {displayEffective}%
             </div>
             <div className={styles.readinessSubline}>
-              Effective readiness ({displayRaw}% exact)
+              {t('decks.effectiveReadinessExact', { raw: displayRaw })}
             </div>
           </div>
 
@@ -138,19 +140,20 @@ function PathBadge({ path }: { readonly path: 'A' | 'B' | 'C' }) {
 }
 
 function AlreadyTrackedCallout({ trackedDeckId }: { readonly trackedDeckId: number }) {
+  const { t } = useTranslation();
   return (
     <div
       role="status"
       className={styles.alreadyTrackedCallout}
     >
-      <strong className={styles.alreadyTrackedHeading}>This deck is already tracked.</strong>
+      <strong className={styles.alreadyTrackedHeading}>{t('decks.alreadyTrackedHeading')}</strong>
       <Link
         to="/decks/$deckId"
         params={{ deckId: String(trackedDeckId) }}
         search={{ edit: undefined }}
         className={styles.alreadyTrackedLink}
       >
-        Go to deck &rarr;
+        {t('decks.goToDeck')}
       </Link>
     </div>
   );
@@ -163,6 +166,7 @@ interface ITrackActionsProps {
 }
 
 function TrackActions({ onTrack, onTrackAndSeed, isTracking }: ITrackActionsProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles.trackActions}>
       <button
@@ -171,7 +175,7 @@ function TrackActions({ onTrack, onTrackAndSeed, isTracking }: ITrackActionsProp
         onClick={onTrack}
         className={`${styles.trackBtn} ${styles['trackBtn--primary']}`}
       >
-        {isTracking ? 'Tracking...' : 'Track this deck'}
+        {isTracking ? t('decks.trackingBtn') : t('decks.trackThisDeck')}
       </button>
       <button
         type="button"
@@ -179,7 +183,7 @@ function TrackActions({ onTrack, onTrackAndSeed, isTracking }: ITrackActionsProp
         onClick={onTrackAndSeed}
         className={`${styles.trackBtn} ${styles['trackBtn--secondary']}`}
       >
-        Track + add cards to collection
+        {t('decks.trackAndAddCards')}
       </button>
     </div>
   );

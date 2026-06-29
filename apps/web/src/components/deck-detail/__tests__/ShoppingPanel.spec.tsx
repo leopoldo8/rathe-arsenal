@@ -135,7 +135,7 @@ describe('ShoppingPanel', () => {
       render(<ShoppingPanel data={null} />);
       // ShoppingLine null → Path A message
       expect(
-        screen.getAllByText(/you have everything you need/i).length,
+        screen.getAllByText(/você tem tudo o que precisa para este baralho/i).length,
       ).toBeGreaterThan(0);
     });
   });

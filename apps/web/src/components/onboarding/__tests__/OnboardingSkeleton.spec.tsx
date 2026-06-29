@@ -32,23 +32,23 @@ describe('OnboardingSkeleton — happy path', () => {
 
   it('renders skeleton placeholder elements with aria-label attributes', () => {
     render(<OnboardingSkeleton />);
-    expect(screen.getByRole('status', { name: /loading step heading/i })).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /loading deck url input/i })).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /loading primary action/i })).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /loading secondary action/i })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /carregando título da etapa/i })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /carregando campo de url do baralho/i })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /carregando ação principal/i })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /carregando ação secundária/i })).toBeInTheDocument();
   });
 });
 
 describe('OnboardingSkeleton — a11y', () => {
   it('wrapper section carries aria-busy="true"', () => {
     render(<OnboardingSkeleton />);
-    const wrapper = screen.getByRole('region', { name: /loading onboarding/i });
+    const wrapper = screen.getByRole('region', { name: /carregando integração/i });
     expect(wrapper).toHaveAttribute('aria-busy', 'true');
   });
 
   it('wrapper section carries aria-live="polite"', () => {
     render(<OnboardingSkeleton />);
-    const wrapper = screen.getByRole('region', { name: /loading onboarding/i });
+    const wrapper = screen.getByRole('region', { name: /carregando integração/i });
     expect(wrapper).toHaveAttribute('aria-live', 'polite');
   });
 });

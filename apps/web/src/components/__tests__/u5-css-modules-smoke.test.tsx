@@ -159,7 +159,7 @@ describe('TestDeckResult — Path A (no PathBadge, TrackActions)', () => {
         isTracking={false}
       />,
     );
-    expect(screen.getByRole('region', { name: /test deck result/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /resultado do teste de baralho/i })).toBeInTheDocument();
     expect(screen.getByText('Dorinthea CC')).toBeInTheDocument();
     // Path A: no badge rendered
     expect(screen.queryByText('SUBBED')).not.toBeInTheDocument();
@@ -231,7 +231,7 @@ describe('TestDeckResult — Path C', () => {
         isTracking={false}
       />,
     );
-    expect(screen.getByText('APPROXIMATION')).toBeInTheDocument();
+    expect(screen.getByText('APROXIMAÇÃO')).toBeInTheDocument();
   });
 });
 
@@ -250,8 +250,8 @@ describe('TestDeckResult — AlreadyTracked', () => {
         isTracking={false}
       />,
     );
-    expect(screen.getByText(/this deck is already tracked/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /go to deck/i })).toBeInTheDocument();
+    expect(screen.getByText(/este baralho já está acompanhado/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ir ao baralho/i })).toBeInTheDocument();
   });
 });
 
@@ -268,8 +268,8 @@ describe('PathCResult', () => {
         fidelityPercent={72.5}
       />,
     );
-    expect(screen.getByRole('region', { name: /closest playable version/i })).toBeInTheDocument();
-    expect(screen.getByText('APPROXIMATION')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /versão mais próxima jogável/i })).toBeInTheDocument();
+    expect(screen.getByText('APROXIMAÇÃO')).toBeInTheDocument();
   });
 
   it('renders the fidelity percentage', async () => {
@@ -311,9 +311,9 @@ describe('BreakdownList', () => {
         pendingCard={null}
       />,
     );
-    expect(screen.getByText(/^exact \(1\)$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^swaps \(1\)$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^not owned \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^exato \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^substituições \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^não possui \(1\)$/i)).toBeInTheDocument();
   });
 
   it('shows empty-state messages when breakdown is empty', async () => {
@@ -326,9 +326,9 @@ describe('BreakdownList', () => {
         pendingCard={null}
       />,
     );
-    expect(screen.getByText(/no exact matches/i)).toBeInTheDocument();
-    expect(screen.getByText(/no swaps/i)).toBeInTheDocument();
-    expect(screen.getByText(/all cards accounted for/i)).toBeInTheDocument();
+    expect(screen.getByText(/sem correspondências exatas/i)).toBeInTheDocument();
+    expect(screen.getByText(/sem substituições/i)).toBeInTheDocument();
+    expect(screen.getByText(/todas as cartas contabilizadas/i)).toBeInTheDocument();
   });
 
   it('does not carry inline style= attributes on the container', async () => {
@@ -387,7 +387,7 @@ describe('SubstitutionRow (legacy)', () => {
       />,
     );
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.getByText(/pitch curve broken/i)).toBeInTheDocument();
+    expect(screen.getByText(/curva de pitch quebrada/i)).toBeInTheDocument();
   });
 
   it('does not carry inline style= attributes on the row', async () => {
@@ -418,7 +418,7 @@ describe('TrackedDeckCard', () => {
       />,
     );
     expect(screen.getByText('Rhinar OTK')).toBeInTheDocument();
-    expect(screen.getByText(/85\.0% ready/i)).toBeInTheDocument();
+    expect(screen.getByText(/85\.0% pronto/i)).toBeInTheDocument();
   });
 
   it('attaches the correct data-tier attribute for a high-readiness deck', async () => {
@@ -443,7 +443,7 @@ describe('TrackedDeckCard', () => {
         isUntracking={false}
       />,
     );
-    expect(screen.getByText(/no readiness data yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/sem dados de prontidão ainda/i)).toBeInTheDocument();
   });
 
   it('does not carry inline style= attributes on the card wrapper', async () => {

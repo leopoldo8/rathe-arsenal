@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { validateProductUrl } from './StoreProductLink.helpers';
 
 interface IStoreProductLinkProps {
@@ -36,6 +37,7 @@ export function StoreProductLink({
   cardName,
   children,
 }: IStoreProductLinkProps) {
+  const { t } = useTranslation();
   const isValidUrl = validateProductUrl(url, storeHostname);
 
   if (!isValidUrl) {
@@ -48,7 +50,7 @@ export function StoreProductLink({
       target="_blank"
       rel="noopener noreferrer"
       referrerPolicy="no-referrer"
-      aria-label={`Open ${cardName} on ${storeName} in a new tab`}
+      aria-label={t('decks.openCardOnStore', { cardName, storeName })}
     >
       {children}
     </a>

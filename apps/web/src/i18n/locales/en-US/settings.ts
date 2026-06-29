@@ -29,4 +29,13 @@ export const settings = {
   lastSync: 'Last sync: {{count}} products · {{when}}',
   neverSynced: 'Never synced.',
   couldNotQueueSync: 'Could not queue the sync. Try again.',
+  // delete-account-modal.tsx
+  deleteAccountModalTitle: 'Delete your account',
+  deleteAccountModalDesc: 'Your account and all linked data (collection, tracked decks, readiness history) will be permanently deleted after 30 days. You will be signed out immediately.',
+  reenterPasswordLabel: 'Re-enter your password',
+  deleteAccountAcknowledge: 'I understand my account and all data will be permanently deleted',
+  incorrectPassword: 'Incorrect password',
+  couldNotDeleteAccount: 'Could not delete your account. Please try again.',
+  deleting: 'Deleting…',
+  cancel: 'Cancel',
 } as const;

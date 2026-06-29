@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { IShoppingLineVariant } from '../api/shopping-line';
 import { formatBrl } from '../utils/format-brl';
 import { isFoilFinish } from './ShoppingLineVariantBreakdown.helpers';
@@ -8,6 +9,7 @@ interface IVariantBreakdownTableProps {
 }
 
 export function VariantBreakdownTable({ variants }: IVariantBreakdownTableProps) {
+  const { t } = useTranslation();
   return (
     <table className={styles.table}>
       <thead>
@@ -16,31 +18,31 @@ export function VariantBreakdownTable({ variants }: IVariantBreakdownTableProps)
             scope="col"
             className={`${styles.th} ${styles['th--first']}`}
           >
-            Edition
+            {t('decks.variantEditionCol')}
           </th>
           <th
             scope="col"
             className={styles.th}
           >
-            Condition
+            {t('decks.variantConditionCol')}
           </th>
           <th
             scope="col"
             className={styles.th}
           >
-            Finish
+            {t('decks.variantFinishCol')}
           </th>
           <th
             scope="col"
             className={`${styles.th} ${styles['th--right']}`}
           >
-            Price
+            {t('decks.variantPriceCol')}
           </th>
           <th
             scope="col"
             className={`${styles.th} ${styles['th--right']} ${styles['th--last']}`}
           >
-            Qty
+            {t('decks.variantQtyCol')}
           </th>
         </tr>
       </thead>
@@ -58,7 +60,8 @@ interface IVariantRowProps {
 }
 
 function VariantRow({ variant }: IVariantRowProps) {
-  const finishLabel = isFoilFinish(variant.finish) ? variant.finish : 'Non-foil';
+  const { t } = useTranslation();
+  const finishLabel = isFoilFinish(variant.finish) ? variant.finish : t('decks.nonFoil');
 
   return (
     <tr>

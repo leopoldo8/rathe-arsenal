@@ -1,5 +1,6 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
 import { formatRateLimitMessage } from '../auth/rate-limit-message';
@@ -25,6 +26,7 @@ interface IDeleteAccountModalProps {
  *  - Password input receives focus on open (via Radix `autoFocus` or ref).
  */
 export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountModalProps) {
+  const { t } = useTranslation();
   const { deleteAccount } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -66,14 +68,14 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
     } catch (err) {
       if (err instanceof AuthFetchError) {
         if (err.status === 401) {
-          setPasswordError('Incorrect password');
+          setPasswordError(t('settings.incorrectPassword'));
         } else if (err.status === 429) {
           setError(formatRateLimitMessage(err.retryAfterSeconds));
         } else {
-          setError(err.message || 'Could not delete your account. Please try again.');
+          setError(err.message || t('settings.couldNotDeleteAccount'));
         }
       } else {
-        setError('Could not delete your account. Please try again.');
+        setError(t('settings.couldNotDeleteAccount'));
       }
       setSubmitting(false);
     }
@@ -92,18 +94,16 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
         <AlertDialog.Overlay className={styles.overlay} />
         <AlertDialog.Content className={styles.content}>
           <AlertDialog.Title className={styles.title}>
-            Delete your account
+            {t('settings.deleteAccountModalTitle')}
           </AlertDialog.Title>
           <AlertDialog.Description className={styles.description}>
-            Your account and all linked data (collection, tracked decks,
-            readiness history) will be permanently deleted after 30 days. You
-            will be signed out immediately.
+            {t('settings.deleteAccountModalDesc')}
           </AlertDialog.Description>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.fieldGroup}>
               <label htmlFor={passwordInputId} className={styles.fieldLabel}>
-                Re-enter your password
+                {t('settings.reenterPasswordLabel')}
               </label>
               <input
                 ref={passwordRef}
@@ -141,7 +141,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
                 className={styles.checkboxInput}
               />
               <label htmlFor={confirmCheckboxId} className={styles.checkboxLabel}>
-                I understand my account and all data will be permanently deleted
+                {t('settings.deleteAccountAcknowledge')}
               </label>
             </div>
 
@@ -158,7 +158,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
                   disabled={submitting}
                   className={styles.cancelBtn}
                 >
-                  Cancel
+                  {t('settings.cancel')}
                 </button>
               </AlertDialog.Cancel>
               <button
@@ -167,7 +167,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
                 aria-disabled={submitDisabled}
                 className={styles.submitBtn}
               >
-                {submitting ? 'Deleting…' : 'Delete my account'}
+                {submitting ? t('settings.deleting') : t('settings.deleteMyAccount')}
               </button>
             </div>
           </form>

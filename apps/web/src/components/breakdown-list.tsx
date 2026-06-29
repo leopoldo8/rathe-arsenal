@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { IBreakdown } from '../api/deck-detail';
 import { SubstitutionRow } from './substitution-row';
 import { MarkOwnedButton } from './mark-owned-button';
@@ -33,6 +34,7 @@ export function BreakdownList({
   pendingRejection = null,
   curveWarnings,
 }: IBreakdownListProps) {
+  const { t } = useTranslation();
   const anyRejectionPending = pendingRejection !== null;
 
   // Use the engine-computed notOwned list. Fall back to missing for legacy
@@ -43,11 +45,11 @@ export function BreakdownList({
       {/* Exact matches */}
       <section>
         <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--exact']}`}>
-          Exact ({breakdown.exact.length})
+          {t('decks.breakdownExactHeading', { count: breakdown.exact.length })}
         </h3>
         {breakdown.exact.length === 0 ? (
           <p className={styles.emptyMsg}>
-            No exact matches
+            {t('decks.noExactMatches')}
           </p>
         ) : (
           <ul className={styles.exactList}>
@@ -69,11 +71,11 @@ export function BreakdownList({
       {/* Swaps */}
       <section>
         <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--substituted']}`}>
-          Swaps ({breakdown.substituted.length})
+          {t('decks.breakdownSwapsHeading', { count: breakdown.substituted.length })}
         </h3>
         {breakdown.substituted.length === 0 ? (
           <p className={styles.emptyMsg}>
-            No swaps
+            {t('decks.breakdownNoSwaps')}
           </p>
         ) : (
           <div>
@@ -98,11 +100,11 @@ export function BreakdownList({
           of whether a substitution suggestion exists. */}
       <section>
         <h3 className={`${styles.sectionHeading} ${styles['sectionHeading--notOwned']}`}>
-          Not owned ({notOwned.length})
+          {t('decks.breakdownNotOwnedHeading', { count: notOwned.length })}
         </h3>
         {notOwned.length === 0 ? (
           <p className={styles.emptyMsg}>
-            All cards accounted for!
+            {t('decks.breakdownAllAccountedFor')}
           </p>
         ) : (
           <ul className={styles.notOwnedList}>

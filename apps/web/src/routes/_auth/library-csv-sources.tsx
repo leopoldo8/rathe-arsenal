@@ -92,23 +92,24 @@ function LibraryCsvSourcesPage(): React.ReactElement {
 }
 
 function CsvSourcesSkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <div className={styles.page} aria-busy="true" aria-live="polite">
-      <Skeleton width="120px" height="14px" aria-label="Loading back link" />
+      <Skeleton width="120px" height="14px" aria-label={t('common.loadingBackLink')} />
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
-          <Skeleton width="160px" height="14px" aria-label="Loading eyebrow" />
-          <Skeleton width="240px" height="36px" aria-label="Loading title" />
-          <Skeleton width="100%" height="48px" aria-label="Loading subtitle" />
+          <Skeleton width="160px" height="14px" aria-label={t('common.loadingEyebrow')} />
+          <Skeleton width="240px" height="36px" aria-label={t('common.loadingTitle')} />
+          <Skeleton width="100%" height="48px" aria-label={t('common.loadingSubtitle')} />
         </div>
       </header>
       <main className={styles.content}>
         <div className={styles.skeletonRows}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={styles.skeletonRow}>
-              <Skeleton width="36px" height="20px" aria-label="Loading toggle" />
-              <Skeleton width="60%" height="20px" aria-label="Loading label" />
-              <Skeleton width="80px" height="16px" aria-label="Loading count" />
+              <Skeleton width="36px" height="20px" aria-label={t('common.loadingToggle')} />
+              <Skeleton width="60%" height="20px" aria-label={t('common.loadingLabel')} />
+              <Skeleton width="80px" height="16px" aria-label={t('common.loadingCount')} />
             </div>
           ))}
         </div>

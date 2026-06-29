@@ -650,7 +650,7 @@ describe('OnboardingWizard — R60 guard (OnboardingPage): redirect to /decks/ne
     mockUseDecksQuery.mockReturnValue(makeDecksQueryLoading());
     renderOnboardingPage();
     // The skeleton carries aria-busy to communicate the loading state (R59).
-    const skeleton = screen.getByRole('region', { name: /loading onboarding/i });
+    const skeleton = screen.getByRole('region', { name: /carregando integração/i });
     expect(skeleton).toHaveAttribute('aria-busy', 'true');
   });
 

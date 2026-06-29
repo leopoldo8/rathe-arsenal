@@ -127,8 +127,8 @@ export function DeleteSourceModal({
           {/* Step 1: Impact preview */}
           {loadingPreview ? (
             <div className={styles.previewSkeleton}>
-              <Skeleton width="100%" height="20px" aria-label="Loading impact preview" />
-              <Skeleton width="80%" height="16px" aria-label="Loading impact preview" />
+              <Skeleton width="100%" height="20px" aria-label={t('common.loadingImpactPreview')} />
+              <Skeleton width="80%" height="16px" aria-label={t('common.loadingImpactPreview')} />
             </div>
           ) : previewError !== null ? (
             <p className={styles.previewError} role="alert">{previewError}</p>

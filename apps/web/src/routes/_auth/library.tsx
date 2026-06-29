@@ -248,28 +248,29 @@ export function LibraryPage(): React.ReactElement {
 // ---------------------------------------------------------------------------
 
 function LibrarySkeleton(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section aria-busy="true" aria-live="polite" className={styles.skeleton}>
       <div className={styles.skeletonHeader}>
-        <Skeleton width="120px" height="14px" aria-label="Loading eyebrow" />
-        <Skeleton width="200px" height="36px" aria-label="Loading title" />
+        <Skeleton width="120px" height="14px" aria-label={t('common.loadingEyebrow')} />
+        <Skeleton width="200px" height="36px" aria-label={t('common.loadingTitle')} />
       </div>
       <div className={styles.skeletonLayout}>
         <div className={styles.skeletonRail}>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={styles.skeletonRailSection}>
-              <Skeleton width="80px" height="11px" aria-label="Loading filter label" />
-              <Skeleton width="100%" height="32px" aria-label="Loading filter input" />
+              <Skeleton width="80px" height="11px" aria-label={t('common.loadingFilterLabel')} />
+              <Skeleton width="100%" height="32px" aria-label={t('common.loadingFilterInput')} />
             </div>
           ))}
         </div>
         <div className={styles.skeletonGrid}>
-          <Skeleton width="100%" height="52px" aria-label="Loading stats" />
+          <Skeleton width="100%" height="52px" aria-label={t('common.loadingStats')} />
           <div className={styles.skeletonGridCells}>
             {Array.from({ length: 16 }).map((_, i) => (
               <div key={i} className={styles.skeletonCell}>
-                <Skeleton width="100%" height="160px" aria-label="Loading card" />
-                <Skeleton width="80%" height="12px" aria-label="Loading card name" />
+                <Skeleton width="100%" height="160px" aria-label={t('common.loadingCard')} />
+                <Skeleton width="80%" height="12px" aria-label={t('common.loadingCardName')} />
               </div>
             ))}
           </div>

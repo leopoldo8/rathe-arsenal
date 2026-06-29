@@ -72,14 +72,14 @@ describe('ShoppingLine — Path A (data=null)', () => {
   it('renders the "you have everything you need" message', () => {
     render(<ShoppingLine data={PATH_A_DATA} />);
     expect(
-      screen.getByText(/you have everything you need for this deck/i),
+      screen.getByText(/você tem tudo o que precisa para este baralho/i),
     ).toBeInTheDocument();
   });
 
   it('does not render a shopping section heading', () => {
     render(<ShoppingLine data={PATH_A_DATA} />);
     expect(
-      screen.queryByRole('heading', { name: /shopping line/i }),
+      screen.queryByRole('heading', { name: /lista de compras/i }),
     ).not.toBeInTheDocument();
   });
 });
@@ -92,20 +92,20 @@ describe('ShoppingLine — Path B (populated with available cards)', () => {
   it('renders the shopping line section heading', () => {
     render(<ShoppingLine data={PATH_B_DATA} />);
     expect(
-      screen.getByRole('heading', { name: /shopping line/i }),
+      screen.getByRole('heading', { name: /lista de compras/i }),
     ).toBeInTheDocument();
   });
 
   it('renders the headline affordance with cost and store name', () => {
     render(<ShoppingLine data={PATH_B_DATA} />);
     expect(
-      screen.getByText(/with r\$ 39,90 at cupula dt you close 2 of 2 missing cards/i),
+      screen.getByText(/com r\$ 39,90 na cupula dt você fecha 2 de 2 cartas faltantes/i),
     ).toBeInTheDocument();
   });
 
   it('renders an "In stock" line group', () => {
     render(<ShoppingLine data={PATH_B_DATA} />);
-    expect(screen.getByText(/in stock \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/em estoque \(1\)/i)).toBeInTheDocument();
   });
 });
 
@@ -122,14 +122,14 @@ describe('ShoppingLine — kind=unscraped (neutral fallback, R59)', () => {
   it('does not render a "shopping line" heading', () => {
     render(<ShoppingLine data={PATH_UNSCRAPED_DATA} />);
     expect(
-      screen.queryByRole('heading', { name: /shopping line/i }),
+      screen.queryByRole('heading', { name: /lista de compras/i }),
     ).not.toBeInTheDocument();
   });
 
   it('does not render the Path A "everything you need" message', () => {
     render(<ShoppingLine data={PATH_UNSCRAPED_DATA} />);
     expect(
-      screen.queryByText(/you have everything you need/i),
+      screen.queryByText(/você tem tudo/i),
     ).not.toBeInTheDocument();
   });
 });
@@ -142,25 +142,25 @@ describe('ShoppingLine — error state', () => {
   it('renders the temporarily-unavailable message', () => {
     render(<ShoppingLine data={ERROR_DATA} />);
     expect(
-      screen.getByText(/shopping line temporarily unavailable/i),
+      screen.getByText(/lista de compras temporariamente indisponível/i),
     ).toBeInTheDocument();
   });
 
   it('renders a Retry button when onRetry is provided', () => {
     const onRetry = vi.fn();
     render(<ShoppingLine data={ERROR_DATA} onRetry={onRetry} />);
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument();
   });
 
   it('does not render a Retry button when onRetry is absent', () => {
     render(<ShoppingLine data={ERROR_DATA} />);
-    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /tentar novamente/i })).not.toBeInTheDocument();
   });
 
   it('calls onRetry when Retry is clicked', () => {
     const onRetry = vi.fn();
     render(<ShoppingLine data={ERROR_DATA} onRetry={onRetry} />);
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /tentar novamente/i }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
@@ -173,7 +173,7 @@ describe('ShoppingLine — error state', () => {
 
     const onRetry = vi.fn();
     render(<ShoppingLine data={ERROR_DATA} onRetry={onRetry} />);
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /tentar novamente/i }));
 
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(onRetry).toHaveBeenCalledTimes(1);

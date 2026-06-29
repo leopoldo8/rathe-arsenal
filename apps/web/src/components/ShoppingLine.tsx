@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   IShoppingLinePopulated,
   IShoppingLineResponse,
@@ -124,12 +125,13 @@ export function ShoppingLine({
 // Empty state (Path A)
 
 function PathAEmptyState() {
+  const { t } = useTranslation();
   return (
     <div
       role="status"
       className={styles.pathAEmpty}
     >
-      You have everything you need for this deck.
+      {t('decks.shoppingPathAEmpty')}
     </div>
   );
 }
@@ -142,19 +144,20 @@ interface IErrorStateProps {
 }
 
 function ErrorState({ onRetry, message }: IErrorStateProps) {
+  const { t } = useTranslation();
   return (
     <div
       role="status"
       className={styles.errorState}
     >
-      <span>{message ?? 'Shopping line temporarily unavailable.'}</span>
+      <span>{message ?? t('decks.shoppingUnavailable')}</span>
       {onRetry !== undefined && (
         <button
           type="button"
           onClick={onRetry}
           className={styles.errorRetryBtn}
         >
-          Retry
+          {t('decks.retry')}
         </button>
       )}
     </div>
@@ -178,6 +181,7 @@ function PopulatedShoppingLine({
   isCooldownActive,
   onPollingChange,
 }: IPopulatedProps) {
+  const { t } = useTranslation();
   const {
     storeName,
     storeHostname,
@@ -253,15 +257,15 @@ function PopulatedShoppingLine({
       {/* Section header */}
       <header className={styles.header}>
         <h2 className={styles.headerTitle}>
-          Shopping line &middot; {storeName}
+          {t('decks.shoppingLineTitle', { storeName })}
         </h2>
         <span
           className={styles.headerFreshness}
           data-freshness={freshnessKey}
           title={lastFetchedAt}
         >
-          updated {relativeTime}
-          {veryStale && ' (prices may have changed)'}
+          {t('decks.shoppingUpdated', { when: relativeTime })}
+          {veryStale && t('decks.pricesMayHaveChanged')}
         </span>
       </header>
 
@@ -270,11 +274,11 @@ function PopulatedShoppingLine({
         <div aria-live="polite">
           {availableCardCount > 0 ? (
             <p className={styles.headlinePrimary}>
-              With{' '}
+              {t('decks.shoppingHeadlineWith')}
               {isEstimated && (
                 <span
-                  aria-label="estimated price"
-                  title="Price is estimated from listing data. Click 'Get exact prices' for accurate variant pricing."
+                  aria-label={t('decks.estimatedPriceAria')}
+                  title={t('decks.estimatedPriceTooltip')}
                   className={styles.estimateTilde}
                 >
                   ~
@@ -286,21 +290,21 @@ function PopulatedShoppingLine({
                   className={styles.estimatedBadge}
                   data-testid="estimated-badge"
                 >
-                  estimated
+                  {t('decks.estimated')}
                 </span>
               )}{' '}
-              at {storeName} you close{' '}
-              {availableCardCount} of {totalMissing} missing{' '}
-              {totalMissing === 1 ? 'card' : 'cards'}.
+              {t('decks.shoppingHeadlineAt', { storeName })}{' '}
+              {availableCardCount}{' '}
+              {t('decks.shoppingHeadlineMissingCards', { count: totalMissing, total: totalMissing })}.
               {veryStale && (
                 <span className={styles.headlineStaleWarning}>
-                  (prices may have changed)
+                  {t('decks.pricesMayHaveChanged')}
                 </span>
               )}
             </p>
           ) : (
             <p className={styles.headlineEmpty}>
-              No missing cards currently in stock at {storeName}.
+              {t('decks.shoppingHeadlineEmpty', { storeName })}
             </p>
           )}
         </div>
@@ -308,12 +312,12 @@ function PopulatedShoppingLine({
         {/* No-stock CTA */}
         {availableCardCount === 0 && (
           <p className={styles.noStockCta}>
-            last checked {relativeTime} &mdash;{' '}
+            {t('decks.shoppingLastChecked', { when: relativeTime })} &mdash;{' '}
             <a
               href="#breakdown"
               className={styles.noStockCtaLink}
             >
-              Try the substitution editor to find alternatives
+              {t('decks.trySubstitutionEditor')}
             </a>
           </p>
         )}
@@ -336,7 +340,7 @@ function PopulatedShoppingLine({
         {showCta && (
           isCooldownActive ? (
             <p className={styles.cooldownMsg}>
-              Prices are up to date.
+              {t('decks.pricesUpToDate')}
             </p>
           ) : (
             <VariantFetchCta
@@ -353,7 +357,7 @@ function PopulatedShoppingLine({
         <div className={styles.cardList}>
           {availableLines.length > 0 && (
             <LineGroup
-              label={`In stock (${availableLines.length})`}
+              label={t('decks.inStockGroup', { count: availableLines.length })}
               lines={availableLines}
               storeHostname={storeHostname}
               storeName={storeName}
@@ -366,7 +370,7 @@ function PopulatedShoppingLine({
 
           {unavailableLines.length > 0 && (
             <LineGroup
-              label={`Unavailable (${unavailableLines.length})`}
+              label={t('decks.unavailableGroup', { count: unavailableLines.length })}
               lines={unavailableLines}
               storeHostname={storeHostname}
               storeName={storeName}
@@ -448,6 +452,7 @@ function LineItem({
   muted,
   fetchStatus,
 }: ILineItemProps) {
+  const { t } = useTranslation();
   const {
     cardName,
     quantityNeeded,
@@ -472,12 +477,12 @@ function LineItem({
   // Build quantity label
   const quantityLabel: string = (() => {
     if (isPartiallyAvailable) {
-      return `${quantityAvailable} of ${quantityNeeded} copies available`;
+      return t('decks.quantityCopiesAvailable', { available: quantityAvailable, needed: quantityNeeded });
     }
     if (quantityAvailable >= quantityNeeded) {
-      return `${quantityNeeded} of ${quantityNeeded}`;
+      return t('decks.quantityOfNeeded', { available: quantityNeeded, needed: quantityNeeded });
     }
-    return `${quantityAvailable} of ${quantityNeeded} in stock`;
+    return t('decks.quantityInStock', { available: quantityAvailable, needed: quantityNeeded });
   })();
 
   // Build primary price label
@@ -493,13 +498,13 @@ function LineItem({
       // Cheapest variant is first (sorted ascending by priceCents on backend)
       return formatVariantPrice(cheapestVariant);
     }
-    if (unitPriceCents === null) return 'price on request';
+    if (unitPriceCents === null) return t('decks.priceOnRequest');
     // Listing-only or no variant data — use tilde prefix
     return `~${formatBrl(unitPriceCents)}`;
   })();
 
   // Build unavailable status label
-  const unavailableLabel = isVerifiedZero ? 'Out of stock (verified)' : 'not in stock';
+  const unavailableLabel = isVerifiedZero ? t('decks.outOfStockVerified') : t('decks.notInStock');
 
   const hasExpandableVariants = Boolean(
     hasVariantData && variants && variants.length > 1,
@@ -518,7 +523,7 @@ function LineItem({
           {fetchStatus === 'failed' && (
             <span
               role="status"
-              aria-label={`Failed to fetch variants for ${cardName}`}
+              aria-label={t('decks.failedToFetchVariants', { name: cardName })}
               data-testid="line-item-fetch-failed"
               className={styles.lineItemFailedBadge}
             >
@@ -553,7 +558,7 @@ function LineItem({
             cardName={cardName}
           >
             <span className={styles.lineItemViewLink}>
-              View
+              {t('decks.viewLink')}
             </span>
           </StoreProductLink>
         )}
@@ -567,7 +572,7 @@ function LineItem({
           className={styles.variantDetails}
         >
           <summary className={styles.variantSummary}>
-            {additionalVariantCount} more variant{additionalVariantCount !== 1 ? 's' : ''}
+            {t('decks.variantMoreCount', { count: additionalVariantCount })}
           </summary>
           <VariantBreakdownTable variants={variants} />
         </details>
