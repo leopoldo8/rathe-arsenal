@@ -165,29 +165,29 @@ same-original/different-substitute group.
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| SWAPGRP-01 | P1: See identical copies as one row (Swaps single row) | Design | Pending |
-| SWAPGRP-02 | P1: See identical copies as one row (deck-detail single row) | Design | Pending |
-| SWAPGRP-03 | P1: See identical copies as one row (copies indicator N>1) | Design | Pending |
-| SWAPGRP-04 | P1: See identical copies as one row (different substitute → separate) | Design | Pending |
-| SWAPGRP-05 | P1: See identical copies as one row (N=1 unchanged) | Design | Pending |
-| SWAPGRP-06 | P1: See identical copies as one row (unique key/identity) | Design | Pending |
-| SWAPGRP-07 | P1: Decide once for all copies (approve all) | Design | Pending |
-| SWAPGRP-08 | P1: Decide once for all copies (reject all) | Design | Pending |
-| SWAPGRP-09 | P1: Decide once for all copies (reset all) | Design | Pending |
-| SWAPGRP-10 | P1: Decide once for all copies (labels communicate "all" when N>1) | Design | Pending |
-| SWAPGRP-11 | P1: Decide once for all copies (N=1 labels unchanged) | Design | Pending |
-| SWAPGRP-12 | P1: Decide once for all copies (state from single decision) | Design | Pending |
-| SWAPGRP-13 | P1: Consistent counts (tab counts over groups) | Design | Pending |
-| SWAPGRP-14 | P1: Consistent counts (list aria-count over groups) | Design | Pending |
-| SWAPGRP-15 | P1: Consistent selection (unique group selection) | Design | Pending |
-| SWAPGRP-16 | P1: Consistent selection (one operation per selected group) | Design | Pending |
-| SWAPGRP-17 | P1: Consistent counts (filters operate on groups) | Design | Pending |
+| SWAPGRP-01 | P1: See identical copies as one row (Swaps single row) | Design | ✅ Verified |
+| SWAPGRP-02 | P1: See identical copies as one row (deck-detail single row) | Design | ✅ Verified |
+| SWAPGRP-03 | P1: See identical copies as one row (copies indicator N>1) | Design | ✅ Verified |
+| SWAPGRP-04 | P1: See identical copies as one row (different substitute → separate) | Design | ✅ Verified |
+| SWAPGRP-05 | P1: See identical copies as one row (N=1 unchanged) | Design | ❌ Needs Fix (collapsed state badge untested; surviving mutant) |
+| SWAPGRP-06 | P1: See identical copies as one row (unique key/identity) | Design | ✅ Verified |
+| SWAPGRP-07 | P1: Decide once for all copies (approve all) | Design | ✅ Verified |
+| SWAPGRP-08 | P1: Decide once for all copies (reject all) | Design | ✅ Verified |
+| SWAPGRP-09 | P1: Decide once for all copies (reset all) | Design | ✅ Verified |
+| SWAPGRP-10 | P1: Decide once for all copies (labels communicate "all" when N>1) | Design | ✅ Verified |
+| SWAPGRP-11 | P1: Decide once for all copies (N=1 labels unchanged) | Design | ✅ Verified |
+| SWAPGRP-12 | P1: Decide once for all copies (state from single decision) | Design | ⚠️ Spec-precision gap |
+| SWAPGRP-13 | P1: Consistent counts (tab counts over groups) | Design | ✅ Verified |
+| SWAPGRP-14 | P1: Consistent counts (list aria-count over groups) | Design | ❌ Needs Fix (no test evidence) |
+| SWAPGRP-15 | P1: Consistent selection (unique group selection) | Design | ⚠️ Spec-precision gap |
+| SWAPGRP-16 | P1: Consistent selection (one operation per selected group) | Design | ✅ Verified |
+| SWAPGRP-17 | P1: Consistent counts (filters operate on groups) | Design | ✅ Verified |
 
 **ID format:** `SWAPGRP-[NUMBER]`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 17 total, 0 mapped to tasks, 17 unmapped (Tasks phase pending)
+**Coverage:** 17 total | 13 Verified | 2 Needs Fix (SWAPGRP-05, 14) | 2 Spec-precision gap (SWAPGRP-12, 15)
 
 ---
 

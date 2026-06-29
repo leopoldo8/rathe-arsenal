@@ -26,6 +26,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: P1-AC7 (i18n,testing)
 - last seen: 2026-06-29T20:28:51Z
 
+### L-003 — When a component has multiple render branches (collapsed + expanded), test the badge/indicator visibility for BOTH branches with count=1 — the collapsed-state badge is not reached by pending-row tests.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `components` · harmful: 0
+- features: swap-copies-grouping
+- evidence: ReviewsRow.tsx:223 (components)
+- last seen: 2026-06-29T23:29:00Z
+
+### L-004 — When an accessible count (aria-label, aria-count) is derived from a computed list (e.g. groups.length vs raw copy count), add a test that asserts the aria text reflects the derived count, not the raw source count.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `a11y` · harmful: 0
+- features: swap-copies-grouping
+- evidence: SWAPGRP-14 (a11y)
+- last seen: 2026-06-29T23:29:10Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
