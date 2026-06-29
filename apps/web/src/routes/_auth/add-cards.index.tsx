@@ -101,7 +101,7 @@ function AddCardsPage(): React.ReactElement {
 
       <footer className={styles.pageFooter}>
         <Link to="/library-csv-sources" className={styles.manageLink}>
-          Manage CSV sources
+          Manage library sources
         </Link>
       </footer>
     </div>
