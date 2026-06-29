@@ -4,7 +4,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeRateLimit } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
 
@@ -32,7 +32,7 @@ function ForgotPasswordPage(): React.ReactElement {
       // Rate limit is user-visible (they actually need to wait). Any other
       // error is silently swallowed to avoid leaking account existence.
       if (err instanceof AuthFetchError && err.status === 429) {
-        setError(formatRateLimitMessage(err.retryAfterSeconds));
+        setError(localizeRateLimit(err.retryAfterSeconds, t));
       } else {
         setSent(true);
       }

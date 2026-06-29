@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeRateLimit } from '../auth/localize-auth-error';
 import styles from './delete-account-modal.module.css';
 
 interface IDeleteAccountModalProps {
@@ -70,9 +70,9 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: IDeleteAccountM
         if (err.status === 401) {
           setPasswordError(t('settings.incorrectPassword'));
         } else if (err.status === 429) {
-          setError(formatRateLimitMessage(err.retryAfterSeconds));
+          setError(localizeRateLimit(err.retryAfterSeconds, t));
         } else {
-          setError(err.message || t('settings.couldNotDeleteAccount'));
+          setError(t('settings.couldNotDeleteAccount'));
         }
       } else {
         setError(t('settings.couldNotDeleteAccount'));

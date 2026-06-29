@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
 
@@ -29,7 +30,7 @@ function VerifyEmailPage(): React.ReactElement {
         // A3: verified users land on /onboarding per R43
         setTimeout(() => void navigate({ to: '/onboarding' }), 1500);
       })
-      .catch((err: Error) => { setStatus('error'); setErrorMsg(err.message); });
+      .catch((err: unknown) => { setStatus('error'); setErrorMsg(localizeAuthError(err, t)); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

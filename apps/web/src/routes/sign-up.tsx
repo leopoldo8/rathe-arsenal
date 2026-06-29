@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
 
@@ -30,11 +29,7 @@ function SignUpPage(): React.ReactElement {
       await signUp(email, password);
       void navigate({ to: '/check-your-email' });
     } catch (err) {
-      if (err instanceof AuthFetchError && err.status === 429) {
-        setError(formatRateLimitMessage(err.retryAfterSeconds));
-      } else {
-        setError((err as Error).message);
-      }
+      setError(localizeAuthError(err, t));
     } finally {
       setLoading(false);
     }

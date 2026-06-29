@@ -4,7 +4,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
-import { formatRateLimitMessage } from '../auth/rate-limit-message';
+import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './sign-in.module.css';
 
@@ -31,11 +31,9 @@ function SignInPage(): React.ReactElement {
       await signIn(email, password);
       void navigate({ to: '/' });
     } catch (err) {
-      if (err instanceof AuthFetchError && err.status === 429) {
-        setError(formatRateLimitMessage(err.retryAfterSeconds));
-      } else {
-        setError((err as Error).message);
-        // Focus password field for quick retry after invalid-credentials error
+      setError(localizeAuthError(err, t));
+      // Focus password field for quick retry on a non-rate-limit error.
+      if (!(err instanceof AuthFetchError && err.status === 429)) {
         passwordRef.current?.focus();
       }
     } finally {

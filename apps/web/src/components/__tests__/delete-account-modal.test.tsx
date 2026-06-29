@@ -173,8 +173,8 @@ describe('DeleteAccountModal', () => {
 
     await waitFor(() => {
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveTextContent(/too many attempts/i);
-      expect(alert).toHaveTextContent(/2 minutes/i);
+      expect(alert).toHaveTextContent(/muitas tentativas/i);
+      expect(alert).toHaveTextContent(/2 minutos/i);
     });
   });
 
