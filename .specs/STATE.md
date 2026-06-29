@@ -44,15 +44,15 @@
 
 ## Handoff
 
-- **Feature**: i18n — `.specs/features/i18n/` — **✅ COMPLETE & VERIFIED (PASS).** Ready for delivery; only the owner's call on opening the PR remains.
-- **Phase / Task**: All four phases (T1–T18) implemented & committed; independent Verifier passed on the second run.
-- **Verification**: Two independent Verifier passes (Opus, author ≠ verifier). Run #1 returned FAIL on two P1 gaps — P1-AC8 (localStorage-unavailable path threw out of `changeLanguage`: a REAL impl gap, not just missing evidence) and P1-AC7 (runtime missing-key fallback was config-only). Fix `9afb58d` added a guarded `safeLocalStorage` cache detector in `apps/web/src/i18n/index.ts` (mirrors the ThemeToggle try/catch) + 3 tests. Run #2 → **PASS**: 12/12 non-deferred ACs spec-anchored, 0 spec-precision gaps, sensor 8/8 mutations killed (incl. the new guard mutation), gate green. Report: `.specs/features/i18n/validation.md`.
-- **Completed commits**: Phase 1; main merge `8c1aef9`; Phase 2 (2a/2b/2c + `02fbb6d` + `ba476b2`); Phase 3 — `54849ca`, `62c6c8c`, `6190ba2`; Phase 4 — T15 `020937e`, T16 `21b2ccd`, T17 `920d252`, T18 `a99eef6`; specs `309f719`; handoff `ab22073`; **gap fix `9afb58d`**.
-- **Gate (Verifier run #2)**: web typecheck + lint + **1343 tests** green; api typecheck + **849 unit** green; api e2e 29 passed (incl. auth.controller mocked, 17). 2 DB-backed e2e (`theme-persistence`, `plan-b-full-flow`) fail LOCALLY only — KNOWN ENV LIMITATION (no local PostgreSQL on :5432; CI runs them with a Postgres service), cause verified as DB connect, non-i18n.
-- **Requirement status**: I18N-01–09 ✅ Verified; I18N-10 ⏸️ Deferred (P3, out of T1–T18 scope, per spec).
-- **Lessons**: candidates L-001 (test localStorage-unavailable in-memory fallback) + L-002 (assert runtime missing-key fallback, not just config) recorded in `.specs/lessons.json` / `LESSONS.md`. Earlier process lesson: extraction-style per-task gates should include lint (a residual surfaced only at the Phase-3 build gate).
-- **Next step**: Owner decision — open PR `feat/i18n-pt-br-en-us` → `main` (branch is +38 commits ahead; `origin` = github.com/leopoldo8/rathe-arsenal). Nothing else outstanding for this feature. P3 (I18N-10, non-auth error localization) is a separate future follow-up.
+- **Feature**: swap-copies-grouping — `.specs/features/swap-copies-grouping/` — **✅ COMPLETE & VERIFIED (PASS).** Frontend-only grouping of identical per-copy substitutions on the Swaps page + deck-detail breakdown (AD-005). Awaiting owner's call on integration (PR/merge).
+- **Phase / Task**: Phase 1 (Swaps) + Phase 2 (deck-detail), 5 tasks, all done via Sonnet phase-workers; Verifier (Opus) PASS on iteration 2.
+- **Verification**: Independent Verifier (Opus, author ≠ verifier). Run #1 → FAIL on 4 coverage gaps (SWAPGRP-05 collapsed surviving mutant, SWAPGRP-12/14/15 uncovered) — all test-only, impl correct. Fix `3c21c38` added 6 tests; reset-key hardening `b3e3d9c` killed the residual L-005 mutant. Run #2 → **PASS**: 17/17 ACs spec-anchored, 0 gaps, discrimination sensor clean. Report: `.specs/features/swap-copies-grouping/validation.md`.
+- **Completed commits**: plan `2166108`; Phase 1 — T1 `eed37c6`, T2 `e21c9fc`, T3 `9b155c1`; Phase 2 — T4 `a2df54a`, T5 `eb4719b`; verifier docs `436e10a`/`f01e555`; fix `3c21c38`; reset hardening `b3e3d9c`.
+- **Gate**: web `pnpm --filter @rathe-arsenal/web test` **1393 passed / 1 skipped** (pre-existing `contrast.spec.ts` describe.skip, not in branch diff) + typecheck + lint green. No backend/engine/api changes (frontend-only).
+- **Requirement status**: SWAPGRP-01–17 ✅ Verified.
+- **Lessons**: L-005 (assert bulk reset ops keyed by substitute id, not just `reset: true`) recorded; addressed in `b3e3d9c`.
+- **Next step**: Owner decision — integrate `feat/swap-copies-grouping` (branched off `origin/main` @ `436d8bb`). Optional self-validation: Playwright visual baselines change (the `× N` badge + grouped rows on Swaps + deck-detail) — refresh via `pnpm --filter @rathe-arsenal/web test:visual:update` when convenient. Engine per-copy expansion root cause logged in `docs/phase-1-followups.md` (revisit only if true per-copy partial decisions are wanted).
 - **Blockers**: none.
-- **Model policy**: Phases 2–4 in Sonnet, Verifier in Opus (owner-set).
+- **Model policy**: phase workers in Sonnet, Verifier in Opus (owner-set this session).
 - **Uncommitted files**: `.agents/` + `apps/web/test-results/` untracked (not part of this feature).
-- **Branch**: feat/i18n-pt-br-en-us (includes origin/main @ 512faf2)
+- **Branch**: feat/swap-copies-grouping (off origin/main @ 436d8bb).
