@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/reset-password')({
 });
 
 function ResetPasswordPage(): React.ReactElement {
+  const { t } = useTranslation();
   const { token } = Route.useSearch();
   const { resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -25,8 +27,8 @@ function ResetPasswordPage(): React.ReactElement {
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     setError('');
-    if (!token) { setError('Missing reset token'); return; }
-    if (newPassword.length < 10) { setError('Password must be at least 10 characters'); return; }
+    if (!token) { setError(t('auth.resetMissingToken')); return; }
+    if (newPassword.length < 10) { setError(t('auth.resetPasswordTooShort')); return; }
     setLoading(true);
     try {
       await resetPassword(token, newPassword);
@@ -44,19 +46,19 @@ function ResetPasswordPage(): React.ReactElement {
 
   return (
     <AuthLayout
-      title="Set a new password"
-      subtitle="Choose carefully — your arsenal awaits."
-      tagline="A new key, a new campaign."
+      title={t('auth.resetTitle')}
+      subtitle={t('auth.resetSubtitle')}
+      tagline={t('auth.resetTagline')}
       error={error}
-      footer={<Link to="/sign-in" className={styles.footerLink}>Back to sign in</Link>}
+      footer={<Link to="/sign-in" className={styles.footerLink}>{t('auth.backToSignIn')}</Link>}
     >
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <label className={styles.label} htmlFor="reset-password">New password</label>
+        <label className={styles.label} htmlFor="reset-password">{t('auth.newPasswordLabel')}</label>
         <input
           id="reset-password"
           className={styles.input}
           type="password"
-          placeholder="At least 10 characters"
+          placeholder={t('auth.passwordMinPlaceholder')}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
@@ -69,7 +71,7 @@ function ResetPasswordPage(): React.ReactElement {
           aria-disabled={loading ? 'true' : undefined}
           aria-busy={loading ? 'true' : undefined}
         >
-          {loading ? 'Resetting…' : 'Update password'}
+          {loading ? t('auth.resetting') : t('auth.updatePasswordBtn')}
         </button>
       </form>
     </AuthLayout>

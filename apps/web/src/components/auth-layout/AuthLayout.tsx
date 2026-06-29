@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DeckboxDecoration } from '../shell/DeckboxDecoration';
 import styles from './AuthLayout.module.css';
 
@@ -35,6 +36,7 @@ export function AuthLayout({
   children,
   footer,
 }: IAuthLayoutProps): React.ReactElement {
+  const { t } = useTranslation();
   const [isNarrow, setIsNarrow] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia(NARROW_QUERY).matches;
@@ -59,17 +61,16 @@ export function AuthLayout({
             </div>
             <div className={styles.artTagline}>
               <p className={styles.artTaglineText}>
-                {tagline ?? 'Your arsenal, forged.'}
+                {tagline ?? t('auth.decorationDefaultTagline')}
               </p>
               <p className={styles.artCopy}>
-                Track your Flesh and Blood decks. See which cards you own, which
-                have substitutes, and what it would cost to finish the build.
+                {t('auth.decorationCopy')}
               </p>
             </div>
           </div>
           <blockquote className={styles.artQuote}>
-            &ldquo;A warrior prepares the blade before the battle, not during it.&rdquo;
-            <cite className={styles.artCite}>— Rathe proverb</cite>
+            &ldquo;{t('auth.decorationQuote')}&rdquo;
+            <cite className={styles.artCite}>{t('auth.decorationQuoteCite')}</cite>
           </blockquote>
         </div>
       )}

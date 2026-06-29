@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/verify-email')({
 });
 
 function VerifyEmailPage(): React.ReactElement {
+  const { t } = useTranslation();
   const { token } = Route.useSearch();
   const { verifyEmail } = useAuth();
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ function VerifyEmailPage(): React.ReactElement {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    if (!token) { setStatus('error'); setErrorMsg('No verification token provided.'); return; }
+    if (!token) { setStatus('error'); setErrorMsg(t('auth.verifyNoToken')); return; }
     verifyEmail(token)
       .then(() => {
         setStatus('success');
@@ -34,12 +36,12 @@ function VerifyEmailPage(): React.ReactElement {
   if (status === 'error') {
     return (
       <AuthLayout
-        title="Verification failed"
-        tagline="The seal could not be set."
-        footer={<Link to="/sign-up" className={styles.footerLink}>Sign up again</Link>}
+        title={t('auth.verifyFailedTitle')}
+        tagline={t('auth.verifyFailedTagline')}
+        footer={<Link to="/sign-up" className={styles.footerLink}>{t('auth.signUpAgainLink')}</Link>}
       >
         <div role="alert" className={styles.infoBox}>
-          <p>{errorMsg || 'This link is invalid or has expired.'}</p>
+          <p>{errorMsg || t('auth.verifyExpiredFallback')}</p>
         </div>
       </AuthLayout>
     );
@@ -48,23 +50,23 @@ function VerifyEmailPage(): React.ReactElement {
   if (status === 'success') {
     return (
       <AuthLayout
-        title="Email verified"
-        subtitle="Welcome to the arsenal."
-        tagline="The seal is set."
-        footer={<Link to="/onboarding" className={styles.footerLink}>Continue to onboarding →</Link>}
+        title={t('auth.verifySuccessTitle')}
+        subtitle={t('auth.verifySuccessSubtitle')}
+        tagline={t('auth.verifySuccessTagline')}
+        footer={<Link to="/onboarding" className={styles.footerLink}>{t('auth.continueToOnboarding')}</Link>}
       >
         <div className={styles.successBanner} role="status">
-          <span>Your email is confirmed. Redirecting…</span>
+          <span>{t('auth.verifySuccessMsg')}</span>
         </div>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="Verifying…" tagline="The seal is being set.">
+    <AuthLayout title={t('auth.verifyingTitle')} tagline={t('auth.verifyingTagline')}>
       <div className={styles.statusPending}>
         <div className={styles.statusIcon} aria-hidden="true">◆</div>
-        <p className={styles.statusMeta}>Confirming seal…</p>
+        <p className={styles.statusMeta}>{t('auth.verifyingMsg')}</p>
       </div>
     </AuthLayout>
   );
