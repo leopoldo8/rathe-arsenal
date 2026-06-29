@@ -374,6 +374,28 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ---
 
+## Engine emits one substituted entry per missing copy (root cause behind UI copy-grouping)
+
+### Engine Pass 2 expands missing copies into per-copy `substituted` entries
+
+**Status:** Open. Worked around in the UI (2026-06-29, `feat/swap-copies-grouping`, AD-005) — not fixed at the root.
+
+**Posture:** `packages/engine/src/readiness/compute.ts` Pass 2 loops `for (i = 0; i < missingQty; i++)` and pushes one `ISubstitutedEntry` per missing copy, each with `original.quantity: 1` (lines ~201-227). A deck missing N copies of the same card that all resolve to the same substitute yields N identical `substituted` entries. Both the Swaps page (`/swaps`) and the deck-detail breakdown (`/decks/:id`) rendered these as N duplicate rows (with a latent React key collision).
+
+**Why deferred:** The owner chose a frontend-only fix this session. The decision model is binary per `(userId, deckId, substituteIdentifier)`, so a single "accept all" decision already covers every copy — grouping identical entries in the UI removes the duplicate rows without touching the engine, backend, or migrations. Fixing it in the engine would change fidelity/notOwned math and require recomputing persisted snapshots.
+
+**Trigger to revisit:** when true per-copy partial decisions are needed (e.g. "substitute 1 of 2 copies, still want to acquire the 2nd real copy" persisted across reloads). That requires the engine to cap substitution count per `(card, substitute)` from a quantity-aware decision, plus a `substitute_decision` schema change + migration. Until then, the UI grouping (AD-005) is sufficient.
+
+**When triggered, the work is:**
+1. Engine: aggregate same-substitute copies into one `substituted` entry carrying `quantity: N` (keep distinct-substitute copies separate), and honor an approved-quantity cap when recomputing.
+2. Backend: carry `quantity` on `ISubstitutionRow`; add an approved-count column to `substitute_decision` (+ migration); update `listSubstitutionRows` + `bulkUpsert`.
+3. Frontend: replace the client-side grouping (in `-swaps.helpers.ts` / `BreakdownSections.helpers.ts`) with the server-provided quantity, and add the per-copy accept control.
+4. Re-verify fidelity, notOwned, and readiness math against the new aggregation.
+
+**Where documented:** This entry. Cross-referenced from `.specs/STATE.md` AD-005 and `.specs/features/swap-copies-grouping/`.
+
+---
+
 ## How to use this file
 
 When starting Phase 1:
