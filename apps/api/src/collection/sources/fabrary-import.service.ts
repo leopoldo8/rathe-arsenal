@@ -191,10 +191,13 @@ export class FabraryImportService {
 }
 
 /**
- * Flattens the four Fabrary slot arrays (hero + mainboard + equipment +
- * weapons) into a single list keyed by cardIdentifier with summed
- * quantities. Hero is counted as quantity 1. Skips any zero-qty entries
- * defensively.
+ * Flattens the Fabrary slot arrays (hero + mainboard + equipment +
+ * weapons + inventory) into a single list keyed by cardIdentifier with
+ * summed quantities. Hero is counted as quantity 1. The `inventory` slot
+ * holds the deck's "Inventory" section — copies the owner keeps for the
+ * deck — which belong in the library alongside the played cards. The
+ * "Maybe" section is never fetched, so it is never aggregated here. Skips
+ * any zero-qty entries defensively.
  *
  * Exported separately for direct unit testing; pure function with no DI.
  */
@@ -210,6 +213,7 @@ export function aggregateAsResolvedRows(
     deck.mainboard,
     deck.equipment,
     deck.weapons,
+    deck.inventory,
   ];
 
   for (const list of cardLists) {

@@ -46,6 +46,7 @@ function buildDeck(overrides: Partial<IDeckImportDto> = {}): IDeckImportDto {
     weapons: [
       { cardIdentifier: 'savage-sash', quantity: 1, slot: 'weapon' },
     ],
+    inventory: [],
     ...overrides,
   };
 }
@@ -101,6 +102,36 @@ describe('aggregateAsResolvedRows', () => {
     expect(rows[0]?.rowNumber).toBe(1);
     expect(rows[1]?.rowNumber).toBe(2);
     expect(rows.every((r, i) => r.rowNumber === i + 1)).toBe(true);
+  });
+
+  it('includes inventory cards (Fabrary "Inventory" section) in the resolved rows', () => {
+    const deck = buildDeck({
+      mainboard: [],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'cast-bones-red', quantity: 3, slot: 'mainboard' },
+      ],
+    });
+    const rows = aggregateAsResolvedRows(deck);
+    const castBones = rows.find((r) => r.cardIdentifier === 'cast-bones-red');
+    expect(castBones?.quantity).toBe(3);
+  });
+
+  it('sums deck and inventory quantities for a card held in both', () => {
+    const deck = buildDeck({
+      mainboard: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 1, slot: 'mainboard' },
+      ],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'reckless-swing-blue', quantity: 1, slot: 'mainboard' },
+      ],
+    });
+    const rows = aggregateAsResolvedRows(deck);
+    const reckless = rows.find((r) => r.cardIdentifier === 'reckless-swing-blue');
+    expect(reckless?.quantity).toBe(2);
   });
 });
 

@@ -24,6 +24,7 @@ describe('aggregateInventory', () => {
       weapons: [
         { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
       ],
+      inventory: [],
     };
 
     const result = aggregateInventory([deck]);
@@ -48,6 +49,7 @@ describe('aggregateInventory', () => {
       ],
       equipment: [],
       weapons: [],
+      inventory: [],
     };
 
     const deckB: IDeckImportDto = {
@@ -62,6 +64,7 @@ describe('aggregateInventory', () => {
       ],
       equipment: [],
       weapons: [],
+      inventory: [],
     };
 
     const result = aggregateInventory([deckA, deckB]);
@@ -87,6 +90,7 @@ describe('aggregateInventory', () => {
       weapons: [
         { cardIdentifier: 'anothos', quantity: 1, slot: 'weapon' },
       ],
+      inventory: [],
     };
 
     const result = aggregateInventory([deck]);

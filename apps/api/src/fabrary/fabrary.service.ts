@@ -103,19 +103,15 @@ export class FabraryService {
     const mainboard: IDeckCardEntry[] = [];
     const equipment: IDeckCardEntry[] = [];
     const weapons: IDeckCardEntry[] = [];
+    const inventory: IDeckCardEntry[] = [];
 
     for (const rawCard of deck.deckCards) {
-      // Skip sideboard-only cards
-      if (rawCard.quantity === 0 && rawCard.sideboardQuantity > 0) {
-        this.logger.debug({
-          msg: 'Skipping sideboard-only card',
-          cardIdentifier: rawCard.cardIdentifier,
-          sideboardQuantity: rawCard.sideboardQuantity,
-        });
-        continue;
-      }
-
-      if (rawCard.quantity === 0) {
+      // A card may contribute to the deck (`quantity`), to the deck's
+      // "Inventory" section (`sideboardQuantity` — Fabrary labels this
+      // section "Inventory", not "Sideboard"), or to both. Cards in
+      // neither are skipped; in particular the "Maybe" section
+      // (`maybeQuantity`) is never fetched, so it never reaches here.
+      if (rawCard.quantity <= 0 && rawCard.sideboardQuantity <= 0) {
         continue;
       }
 
@@ -128,6 +124,7 @@ export class FabraryService {
             msg: 'Unknown card dropped from import',
             cardIdentifier: rawCard.cardIdentifier,
             quantity: rawCard.quantity,
+            sideboardQuantity: rawCard.sideboardQuantity,
           });
           continue;
         }
@@ -135,25 +132,38 @@ export class FabraryService {
       }
 
       const slot = this.classifyCard(catalogCard.types, catalogCard.subtypes);
-      const entry: IDeckCardEntry = {
-        cardIdentifier: rawCard.cardIdentifier,
-        quantity: rawCard.quantity,
-        slot,
-      };
 
-      switch (slot) {
-        case 'equipment':
-          equipment.push(entry);
-          break;
-        case 'weapon':
-          weapons.push(entry);
-          break;
-        case 'hero':
-          // Hero cards in deckCards are handled separately via deck.hero
-          break;
-        default:
-          mainboard.push(entry);
-          break;
+      // Hero copies inside deckCards are represented separately via deck.hero.
+      if (slot === 'hero') {
+        continue;
+      }
+
+      if (rawCard.quantity > 0) {
+        const entry: IDeckCardEntry = {
+          cardIdentifier: rawCard.cardIdentifier,
+          quantity: rawCard.quantity,
+          slot,
+        };
+
+        switch (slot) {
+          case 'equipment':
+            equipment.push(entry);
+            break;
+          case 'weapon':
+            weapons.push(entry);
+            break;
+          default:
+            mainboard.push(entry);
+            break;
+        }
+      }
+
+      if (rawCard.sideboardQuantity > 0) {
+        inventory.push({
+          cardIdentifier: rawCard.cardIdentifier,
+          quantity: rawCard.sideboardQuantity,
+          slot,
+        });
       }
     }
 
@@ -168,6 +178,7 @@ export class FabraryService {
       mainboard,
       equipment,
       weapons,
+      inventory,
     };
 
     this.logger.log({
@@ -177,6 +188,7 @@ export class FabraryService {
       mainboardCount: mainboard.length,
       equipmentCount: equipment.length,
       weaponCount: weapons.length,
+      inventoryCount: inventory.length,
     });
 
     return result;
