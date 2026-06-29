@@ -121,13 +121,13 @@ describe('DeckCard', () => {
 
   it('renders "No readiness data yet" when snapshot is null', () => {
     renderDeckCard(makeDeck({ latestSnapshot: null }));
-    expect(screen.getByText(/no readiness data yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/sem dados de prontidão/i)).toBeInTheDocument();
   });
 
   it('calls onUntrack with deck.id after confirm', () => {
     const onUntrack = vi.fn();
     renderDeckCard(makeDeck({ id: 42 }), onUntrack);
-    const buttons = screen.getAllByRole('button', { name: /untrack/i });
+    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
     const firstButton = buttons[0];
     expect(firstButton).toBeDefined();
     fireEvent.click(firstButton!);
@@ -138,7 +138,7 @@ describe('DeckCard', () => {
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
     const onUntrack = vi.fn();
     renderDeckCard(makeDeck());
-    const buttons = screen.getAllByRole('button', { name: /untrack/i });
+    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
     const firstButton = buttons[0];
     expect(firstButton).toBeDefined();
     fireEvent.click(firstButton!);
@@ -150,7 +150,7 @@ describe('DeckCard', () => {
     // The pin is icon-only, so the loading state is signalled by the
     // disabled attribute + aria-busy. The aria-label stays stable so
     // assistive tech still announces the deck name.
-    const btn = screen.getByRole('button', { name: /untrack/i });
+    const btn = screen.getByRole('button', { name: /remover rastreamento/i });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('aria-busy', 'true');
   });

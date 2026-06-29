@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
 import { StatusBullet, STATUS_LABELS } from '../deck-detail/StatusBullet';
 import styles from './DeckCard.module.css';
@@ -100,12 +101,13 @@ export function DeckCard({
   isUntracking,
   activeFilterTags = [],
 }: IDeckCardProps): React.ReactElement {
+  const { t } = useTranslation();
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
   const tier = effectivePercent !== null ? resolveReadinessTier(effectivePercent) : null;
 
   function handleUntrack(): void {
     const confirmed = window.confirm(
-      `Untrack "${deck.name}"? This will remove the deck and all its readiness data.`,
+      t('home.untrackConfirmMsg', { deckName: deck.name }),
     );
     if (confirmed) {
       onUntrack(deck.id);
@@ -175,8 +177,8 @@ export function DeckCard({
           <span className={styles.formatPill}>{deck.format}</span>
           <span
             className={`${styles.legalityIcon} ${isLegal ? styles.legalityLegal : styles.legalityIllegal}`}
-            aria-label={isLegal ? 'Legal' : 'Not legal'}
-            title={isLegal ? 'Legal' : legalityCategory === 'incomplete' ? 'Incomplete' : 'Illegal'}
+            aria-label={isLegal ? t('home.legalityLegalLabel') : t('home.legalityNotLegalLabel')}
+            title={isLegal ? t('home.legalityLegalTitle') : legalityCategory === 'incomplete' ? t('home.legalityIncompleteTitle') : t('home.legalityIllegalTitle')}
           >
             {isLegal ? '✓' : '✗'}
           </span>
@@ -186,7 +188,7 @@ export function DeckCard({
             Active filter tags are promoted to the front so they are
             always visible in the card (R7). */}
         {visibleTags.length > 0 && (
-          <div className={styles.tagRow} aria-label="Tags">
+          <div className={styles.tagRow} aria-label={t('home.tagsRowLabel')}>
             {visibleTags.map((tag) => (
               <span
                 key={tag}
@@ -196,7 +198,7 @@ export function DeckCard({
               </span>
             ))}
             {tagOverflow > 0 && (
-              <span className={styles.tagOverflow} aria-label={`${tagOverflow} more tags`}>
+              <span className={styles.tagOverflow} aria-label={t('home.moreTagsAriaLabel', { count: tagOverflow })}>
                 +{tagOverflow}
               </span>
             )}
@@ -204,7 +206,7 @@ export function DeckCard({
         )}
 
         {effectivePercent === null && (
-          <div className={styles.cardNoReadiness}>No readiness data yet</div>
+          <div className={styles.cardNoReadiness}>{t('home.noReadinessData')}</div>
         )}
       </Link>
 
@@ -477,13 +479,14 @@ interface IHeroLifeTokenProps {
  * class for typographic continuity.
  */
 function HeroLifeToken({ percent, tier }: IHeroLifeTokenProps): React.ReactElement {
+  const { t } = useTranslation();
   const display = Math.round(Math.max(0, Math.min(100, percent)));
   const tierClass = styles[`heroLifeToken--${tier}`] ?? '';
   return (
     <div
       className={`${styles.heroLifeToken} ${tierClass}`}
       role="meter"
-      aria-label={`Readiness ${display}%, ${tier}`}
+      aria-label={t('home.readinessMeterAriaLabel', { display, tier })}
       aria-valuenow={display}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -569,6 +572,7 @@ interface IUntrackPinProps {
 }
 
 function UntrackPin({ onClick, disabled, deckName }: IUntrackPinProps): React.ReactElement {
+  const { t } = useTranslation();
   // The pin is split into two co-located elements:
   //  - .untrackPinVisual (z-index: 1, aria-hidden, pointer-events: none):
   //    sits BEHIND the deckbox so the box visually covers it during the
@@ -599,9 +603,9 @@ function UntrackPin({ onClick, disabled, deckName }: IUntrackPinProps): React.Re
         className={styles.untrackPinHit}
         onClick={onClick}
         disabled={disabled}
-        aria-label={`Untrack ${deckName}`}
+        aria-label={t('home.untrackAriaLabel', { deckName })}
         aria-busy={disabled}
-        title="Untrack"
+        title={t('home.untrackTitle')}
       />
     </>
   );

@@ -20,13 +20,13 @@ describe('OnboardingSkeleton — happy path', () => {
 
   it('renders the step indicator at step 1', () => {
     render(<OnboardingSkeleton />);
-    const nav = screen.getByRole('navigation', { name: /step 1 of 3/i });
+    const nav = screen.getByRole('navigation', { name: /passo 1 de 3/i });
     expect(nav).toBeInTheDocument();
   });
 
   it('step 1 item is marked as current step', () => {
     render(<OnboardingSkeleton />);
-    const currentStep = screen.getByRole('listitem', { name: /step 1 of 3: paste deck, current/i });
+    const currentStep = screen.getByRole('listitem', { name: /passo 1 de 3: colar deck, atual/i });
     expect(currentStep).toHaveAttribute('aria-current', 'step');
   });
 

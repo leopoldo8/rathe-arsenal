@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListResponse } from '../../api/decks';
 import { formatBrl } from '../../utils/format-brl';
 import styles from './AggregateCallout.module.css';
@@ -29,6 +30,7 @@ interface IAggregateCalloutProps {
 export function AggregateCallout({
   aggregateShoppingLine,
 }: IAggregateCalloutProps): React.ReactElement | null {
+  const { t } = useTranslation();
   const agg = aggregateShoppingLine;
 
   if (!agg) return null;
@@ -37,12 +39,12 @@ export function AggregateCallout({
   if (agg.completableDecks === 0) return null;
 
   return (
-    <aside className={styles.callout} aria-label="Aggregate shopping line">
+    <aside className={styles.callout} aria-label={t('home.aggregateShoppingLineLabel')}>
       <span className={styles.cost}>{formatBrl(agg.totalCostCents)}</span>{' '}
       <span className={styles.body}>
-        completaria{' '}
+        {t('home.aggregateCompletionVerb')}{' '}
         <strong className={styles.strong}>{agg.completableDecks}</strong>{' '}
-        de {agg.totalDecks} decks na{' '}
+        {t('home.aggregateDeckConnector', { total: agg.totalDecks })}{' '}
         <span className={styles.storeName}>{agg.storeName}</span>
       </span>
     </aside>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { StepIndicator } from './StepIndicator';
 import { Step1PasteUrl, IStep1Result } from './Step1PasteUrl';
 import { Step2ConfirmLibrary } from './Step2ConfirmLibrary';
@@ -33,6 +34,7 @@ interface IWizardState {
  * Completing step 3 routes to /home.
  */
 export function OnboardingWizard(): React.ReactElement {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [state, setState] = useState<IWizardState>({
@@ -73,7 +75,7 @@ export function OnboardingWizard(): React.ReactElement {
   const importedDeckIds = state.importedDecks.map((d) => d.trackedDeckId);
 
   return (
-    <section className={styles.wizard} aria-label="Onboarding wizard">
+    <section className={styles.wizard} aria-label={t('onboarding.wizardAriaLabel')}>
       <StepIndicator totalSteps={3} currentStep={state.step} />
 
       <div className={styles.body}>

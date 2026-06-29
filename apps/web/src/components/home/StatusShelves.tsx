@@ -1,5 +1,6 @@
 import React, { useId, useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, TDeckStatus } from '../../api/decks';
 import { STATUS_LABELS } from '../deck-detail/StatusBullet';
 import { DeckCard } from './DeckCard';
@@ -103,6 +104,10 @@ function StatusShelf({
   onUntrack,
   untrackingDeckId,
 }: IStatusShelfProps): React.ReactElement {
+  const { t } = useTranslation();
+  const deckCountLabel = decks.length === 1
+    ? t('home.deckCountSingular')
+    : t('home.deckCountPlural', { count: decks.length });
   return (
     <section className={styles.shelf} aria-labelledby={headingId}>
       <div className={styles.shelfHead}>
@@ -116,7 +121,7 @@ function StatusShelf({
             {STATUS_LABELS[status]}
           </h2>
           <span className={styles.shelfCount}>
-            {decks.length} {decks.length === 1 ? 'deck' : 'decks'}
+            {deckCountLabel}
           </span>
         </div>
       </div>
@@ -154,7 +159,12 @@ function RetiredShelf({
   untrackingDeckId,
   isAllRetired,
 }: IRetiredShelfProps): React.ReactElement {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState<boolean>(readRetiredExpanded);
+
+  const deckCountLabel = decks.length === 1
+    ? t('home.deckCountSingular')
+    : t('home.deckCountPlural', { count: decks.length });
 
   function handleToggle(): void {
     const next = !expanded;
@@ -175,7 +185,7 @@ function RetiredShelf({
             {STATUS_LABELS['retired']}
           </h2>
           <span className={styles.shelfCount}>
-            {decks.length} {decks.length === 1 ? 'deck' : 'decks'}
+            {deckCountLabel}
           </span>
         </div>
         <button
@@ -184,7 +194,7 @@ function RetiredShelf({
           aria-expanded={expanded}
           aria-controls={`${headingId}-content`}
           onClick={handleToggle}
-          aria-label={expanded ? 'Collapse retired decks' : 'Expand retired decks'}
+          aria-label={expanded ? t('home.retiredCollapseAriaLabel') : t('home.retiredExpandAriaLabel')}
         >
           <span
             className={`${styles.chevron} ${expanded ? styles.chevronUp : ''}`}
@@ -198,17 +208,17 @@ function RetiredShelf({
           non-retired deck. */}
       {isAllRetired && !expanded && (
         <div className={styles.allRetiredEmptyState}>
-          All your decks are retired.{' '}
+          {t('home.allRetiredEmptyState')}{' '}
           <button
             type="button"
             className={styles.allRetiredExpandBtn}
             onClick={handleToggle}
           >
-            Expand to view
+            {t('home.expandToView')}
           </button>{' '}
           ·{' '}
           <Link to="/decks/new" className={styles.allRetiredAddLink}>
-            Add new deck
+            {t('home.addNewDeckLink')}
           </Link>
         </div>
       )}

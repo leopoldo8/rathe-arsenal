@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './TagFilterChips.module.css';
 
 // ---------------------------------------------------------------------------
@@ -44,12 +45,13 @@ export function TagFilterChips({
   activeFilterTags,
   onFilterChange,
 }: ITagFilterChipsProps): React.ReactElement | null {
+  const { t } = useTranslation();
   if (availableTags.length === 0) return null;
 
   function handleToggle(tag: string): void {
     const isActive = activeFilterTags.includes(tag);
     const newTags = isActive
-      ? activeFilterTags.filter((t) => t !== tag)
+      ? activeFilterTags.filter((activeTag) => activeTag !== tag)
       : [...activeFilterTags, tag];
     onFilterChange(newTags);
   }
@@ -61,9 +63,9 @@ export function TagFilterChips({
   const hasActive = activeFilterTags.length > 0;
 
   return (
-    <div className={styles.container} role="group" aria-label="Filter by tag">
+    <div className={styles.container} role="group" aria-label={t('home.filterByTagGroupLabel')}>
       <span className={styles.label} aria-hidden="true">
-        Tags
+        {t('home.tagsLabel')}
       </span>
       <div className={styles.chips}>
         {availableTags.map((tag) => {
@@ -75,7 +77,7 @@ export function TagFilterChips({
               className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
               onClick={() => handleToggle(tag)}
               aria-pressed={isActive}
-              aria-label={`Filter by tag: ${tag}`}
+              aria-label={t('home.filterByTagAriaLabel', { tag })}
             >
               {tag}
             </button>
@@ -87,9 +89,9 @@ export function TagFilterChips({
           type="button"
           className={styles.clearBtn}
           onClick={handleClear}
-          aria-label="Clear all tag filters"
+          aria-label={t('home.clearAllTagFiltersAriaLabel')}
         >
-          Clear
+          {t('home.clearButton')}
         </button>
       )}
     </div>

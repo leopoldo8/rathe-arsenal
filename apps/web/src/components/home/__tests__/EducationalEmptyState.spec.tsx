@@ -58,26 +58,26 @@ function renderEmpty(collectionCardCount = 0) {
 describe('EducationalEmptyState', () => {
   it('renders the welcome heading', () => {
     renderEmpty();
-    expect(screen.getByRole('heading', { name: /welcome, hero/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /bem-vindo, herói/i })).toBeInTheDocument();
   });
 
   it('renders the 3-step explainer', () => {
     renderEmpty();
-    expect(screen.getByText(/paste a deck/i)).toBeInTheDocument();
-    expect(screen.getByText(/see your readiness/i)).toBeInTheDocument();
-    expect(screen.getByText(/approve.*buy/i)).toBeInTheDocument();
+    expect(screen.getByText(/cole um deck/i)).toBeInTheDocument();
+    expect(screen.getByText(/veja sua prontidão/i)).toBeInTheDocument();
+    expect(screen.getByText(/aprovar e comprar/i)).toBeInTheDocument();
   });
 
   it('renders the primary CTA link pointing to /decks/new', () => {
     renderEmpty();
-    const importLink = screen.getByRole('link', { name: /track your first deck/i });
+    const importLink = screen.getByRole('link', { name: /rastrear seu primeiro deck/i });
     expect(importLink).toBeInTheDocument();
     expect(importLink).toHaveAttribute('href', '/decks/new');
   });
 
   it('renders the "Skip to Library" secondary link', () => {
     renderEmpty();
-    const skipLink = screen.getByRole('link', { name: /skip to library/i });
+    const skipLink = screen.getByRole('link', { name: /ir para a biblioteca/i });
     expect(skipLink).toBeInTheDocument();
     expect(skipLink).toHaveAttribute('href', '/library');
   });
@@ -85,18 +85,18 @@ describe('EducationalEmptyState', () => {
   it('shows collection card count hint when count > 0', () => {
     renderEmpty(5);
     expect(screen.getByText(/5/)).toBeInTheDocument();
-    expect(screen.getByText(/cards in your collection/i)).toBeInTheDocument();
+    expect(screen.getByText(/na sua coleção/i)).toBeInTheDocument();
   });
 
   it('does not show collection count hint when count is 0', () => {
     renderEmpty(0);
-    expect(screen.queryByText(/cards in your collection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/na sua coleção/i)).not.toBeInTheDocument();
   });
 
   it('renders the manual card add section', () => {
     renderEmpty();
     expect(
-      screen.getByText(/want to add cards without a csv/i),
+      screen.getByText(/quer adicionar cards sem um csv/i),
     ).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import styles from './CongratsAllPlayable.module.css';
 
@@ -21,17 +22,15 @@ export interface ICongratsAllPlayableProps {
  * The step indicator shows step III as complete. Single CTA routes to /home.
  */
 export function CongratsAllPlayable({ onComplete }: ICongratsAllPlayableProps): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <div className={styles.container}>
-      <div className={styles.eyebrow}>Step 3 of 3</div>
+      <div className={styles.eyebrow}>{t('onboarding.congratsEyebrow')}</div>
       <div className={styles.badge} aria-hidden="true">100%</div>
-      <h1 className={styles.heading}>You are fully playable!</h1>
-      <p className={styles.body}>
-        Incredible — your collection already covers everything in your deck. No substitutions
-        needed. Head to your armory to see the full breakdown.
-      </p>
+      <h1 className={styles.heading}>{t('onboarding.congratsHeading')}</h1>
+      <p className={styles.body}>{t('onboarding.congratsBody')}</p>
       <Button type="button" variant="primary" size="lg" onClick={onComplete}>
-        Go to my decks
+        {t('onboarding.goToMyDecks')}
       </Button>
     </div>
   );

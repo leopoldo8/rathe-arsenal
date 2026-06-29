@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import styles from './EducationalEmptyState.module.css';
 
@@ -30,69 +31,59 @@ interface IEducationalEmptyStateProps {
 export function EducationalEmptyState({
   collectionCardCount,
 }: IEducationalEmptyStateProps): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <section className={styles.container}>
       <div className={styles.intro}>
-        <h1 className={styles.heading}>Welcome, Hero.</h1>
-        <p className={styles.lead}>
-          Your armory is empty. Track a deck to see how ready your collection
-          is &mdash; we&apos;ll surface owned cards, valid substitutes, and
-          exactly what&apos;s missing.
-        </p>
+        <h1 className={styles.heading}>{t('home.welcomeHeading')}</h1>
+        <p className={styles.lead}>{t('home.emptyLead')}</p>
         {collectionCardCount > 0 && (
           <p className={styles.collectionHint}>
-            You already have{' '}
+            {t('home.collectionHintPrefix')}{' '}
             <strong>{collectionCardCount}</strong>{' '}
-            {collectionCardCount === 1 ? 'card' : 'cards'} in your collection.
+            {collectionCardCount === 1 ? t('home.collectionHintCard') : t('home.collectionHintCards')}{' '}
+            {t('home.collectionHintSuffix')}
           </p>
         )}
       </div>
 
-      <div className={styles.steps} role="list" aria-label="How it works">
+      <div className={styles.steps} role="list" aria-label={t('home.howItWorksLabel')}>
         <div className={styles.step} role="listitem">
           <div className={styles.stepNumber} aria-hidden="true">01</div>
-          <h4 className={styles.stepTitle}>Paste a deck</h4>
-          <p className={styles.stepBody}>
-            From Fabrary, or pick a meta deck we&apos;ve indexed.
-          </p>
+          <h4 className={styles.stepTitle}>{t('home.step1Title')}</h4>
+          <p className={styles.stepBody}>{t('home.step1Body')}</p>
         </div>
         <div className={styles.step} role="listitem">
           <div className={styles.stepNumber} aria-hidden="true">02</div>
-          <h4 className={styles.stepTitle}>See your readiness</h4>
-          <p className={styles.stepBody}>
-            We&apos;ll cross-reference your collection and show what you own,
-            what substitutes are valid, and exactly what&apos;s missing.
-          </p>
+          <h4 className={styles.stepTitle}>{t('home.step2Title')}</h4>
+          <p className={styles.stepBody}>{t('home.step2Body')}</p>
         </div>
         <div className={styles.step} role="listitem">
           <div className={styles.stepNumber} aria-hidden="true">03</div>
-          <h4 className={styles.stepTitle}>Approve &amp; buy</h4>
-          <p className={styles.stepBody}>
-            Approve or reject each swap. Shop the missing cards in one
-            click.
-          </p>
+          <h4 className={styles.stepTitle}>{t('home.step3Title')}</h4>
+          <p className={styles.stepBody}>{t('home.step3Body')}</p>
         </div>
       </div>
 
       <div className={styles.cta}>
         <a href="/decks/new" className={styles.importLink}>
           <Button variant="primary" size="lg">
-            Track your first deck
+            {t('home.trackFirstDeckCta')}
           </Button>
         </a>
 
         <a href="/library" className={styles.skipLink}>
-          Skip to Library
+          {t('home.skipToLibrary')}
         </a>
       </div>
 
       <div className={styles.manualAdd}>
         <p className={styles.manualAddText}>
-          Want to add cards without a CSV?{' '}
+          {t('home.manualAddPrefix')}{' '}
           <a href="/library" className={styles.manualAddLink}>
-            Go to Library
+            {t('home.manualAddLinkText')}
           </a>{' '}
-          to search and add individual cards.
+          {t('home.manualAddSuffix')}
         </p>
       </div>
     </section>

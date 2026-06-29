@@ -148,7 +148,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'My Retired Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     fireEvent.click(toggle);
 
     expect(screen.getByText('My Retired Deck')).toBeInTheDocument();
@@ -158,7 +158,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'My Retired Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     fireEvent.click(toggle);
 
     expect(localStorageMock['ra-shelf-retired-expanded']).toBe('true');
@@ -177,7 +177,7 @@ describe('StatusShelves', () => {
     const decks = [makeDeck(1, 'retired', 'Deck')];
     renderShelves(decks);
 
-    const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+    const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -212,14 +212,14 @@ describe('StatusShelves', () => {
       ];
       renderShelves(decks);
 
-      expect(screen.getByText(/all your decks are retired/i)).toBeInTheDocument();
+      expect(screen.getByText(/todos os seus decks estão aposentados/i)).toBeInTheDocument();
     });
 
     it('empty-state block has "Expand to view" button that expands the shelf', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const expandBtn = screen.getByRole('button', { name: /expand to view/i });
+      const expandBtn = screen.getByRole('button', { name: /expandir para ver/i });
       expect(expandBtn).toBeInTheDocument();
       fireEvent.click(expandBtn);
       expect(screen.getByText('Deck A')).toBeInTheDocument();
@@ -229,7 +229,7 @@ describe('StatusShelves', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const link = screen.getByRole('link', { name: /add new deck/i });
+      const link = screen.getByRole('link', { name: /adicionar novo deck/i });
       expect(link).toHaveAttribute('href', '/decks/new');
     });
 
@@ -237,15 +237,15 @@ describe('StatusShelves', () => {
       const decks = [makeDeck(1, 'retired', 'Deck A')];
       renderShelves(decks);
 
-      const toggle = screen.getByRole('button', { name: /expand retired decks/i });
+      const toggle = screen.getByRole('button', { name: /expandir decks aposentados/i });
       fireEvent.click(toggle);
 
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
 
     it('does NOT render empty-state block when user has zero decks total', () => {
       renderShelves([]);
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
 
     it('does NOT render empty-state block when some decks are non-retired', () => {
@@ -255,7 +255,7 @@ describe('StatusShelves', () => {
       ];
       renderShelves(decks);
 
-      expect(screen.queryByText(/all your decks are retired/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/todos os seus decks estão aposentados/i)).not.toBeInTheDocument();
     });
   });
 

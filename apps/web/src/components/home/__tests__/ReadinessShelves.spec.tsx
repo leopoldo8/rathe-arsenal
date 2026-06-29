@@ -92,9 +92,9 @@ describe('ReadinessShelves', () => {
   it('renders all three shelves when decks span all tiers', () => {
     renderShelves([DECK_READY, DECK_ALMOST, DECK_NEEDS]);
 
-    expect(screen.getByRole('heading', { name: /ready to play/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /almost there/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /needs collection/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pronto para jogar/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /quase lá/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /precisa de coleção/i })).toBeInTheDocument();
   });
 
   it('renders correct number of shelves when decks span all tiers', () => {
@@ -108,28 +108,28 @@ describe('ReadinessShelves', () => {
     const allReady = [makeDeck(1, 80, 'A'), makeDeck(2, 95, 'B'), makeDeck(3, 100, 'C')];
     renderShelves(allReady);
 
-    expect(screen.getByRole('heading', { name: /ready to play/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /almost there/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pronto para jogar/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /quase lá/i })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: /needs collection/i }),
+      screen.queryByRole('heading', { name: /precisa de coleção/i }),
     ).not.toBeInTheDocument();
   });
 
   it('places null-snapshot decks in the Needs Collection shelf', () => {
     renderShelves([DECK_NO_SNAPSHOT]);
 
-    expect(screen.getByRole('heading', { name: /needs collection/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /precisa de coleção/i })).toBeInTheDocument();
     expect(screen.getByText('No Snapshot Deck')).toBeInTheDocument();
   });
 
   it('places 50% deck in the Almost There shelf (boundary)', () => {
     renderShelves([makeDeck(1, 50)]);
-    expect(screen.getByRole('heading', { name: /almost there/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /quase lá/i })).toBeInTheDocument();
   });
 
   it('places 80% deck in Ready to Play shelf (boundary)', () => {
     renderShelves([makeDeck(1, 80)]);
-    expect(screen.getByRole('heading', { name: /ready to play/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pronto para jogar/i })).toBeInTheDocument();
   });
 
   it('each shelf is a section with aria-labelledby pointing to its h2', () => {
@@ -170,10 +170,10 @@ describe('ReadinessShelves', () => {
     renderShelves([DECK_READY]);
 
     expect(
-      screen.queryByRole('heading', { name: /almost there/i }),
+      screen.queryByRole('heading', { name: /quase lá/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: /needs collection/i }),
+      screen.queryByRole('heading', { name: /precisa de coleção/i }),
     ).not.toBeInTheDocument();
   });
 });
