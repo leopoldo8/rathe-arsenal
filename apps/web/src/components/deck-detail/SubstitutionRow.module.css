@@ -369,3 +369,15 @@
   border-color: var(--ra-fg-secondary);
   color: var(--ra-fg-primary);
 }
+
+/* Copies badge — × N indicator shown on grouped rows (count > 1).
+   Reuses the existing ×{quantity} visual idiom from BreakdownSections
+   (cardCell__qty / missRow__qty). SWAPGRP-03 */
+.row__copiesBadge {
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-caption);
+  color: var(--ra-accent);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}

@@ -232,4 +232,114 @@ describe('SubstitutionRow', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('grouped row (count prop) — SWAPGRP-03, SWAPGRP-05, SWAPGRP-10, SWAPGRP-11, SWAPGRP-07', () => {
+    it('renders × N copies badge when count > 1 (SWAPGRP-03)', () => {
+      // Arrange
+      renderRow({ count: 2 });
+
+      // Act / Assert — badge text is rendered (pending state → expanded mode visible)
+      expect(screen.getByText('× 2')).toBeInTheDocument();
+    });
+
+    it('copies badge carries accessible aria-label when count > 1', () => {
+      // Arrange
+      renderRow({ count: 2 });
+
+      // Assert — badge has aria-label "2 cópias" (pt-BR swapCopiesBadgeAria)
+      expect(screen.getByLabelText('2 cópias')).toBeInTheDocument();
+    });
+
+    it('renders no copies badge when count is 1 (SWAPGRP-05)', () => {
+      // Arrange — default single-copy row
+      renderRow({ count: 1 });
+
+      // Assert — no badge rendered (count <= 1 → unchanged)
+      expect(screen.queryByText(/× \d/)).not.toBeInTheDocument();
+    });
+
+    it('renders no copies badge when count is omitted (SWAPGRP-05)', () => {
+      // Arrange — count omitted (default 1)
+      renderRow();
+
+      // Assert
+      expect(screen.queryByText(/× \d/)).not.toBeInTheDocument();
+    });
+
+    it('approve button uses "all copies" label when count > 1 (SWAPGRP-10)', () => {
+      // Arrange
+      renderRow({ count: 2 });
+
+      // Assert — button text is "Aprovar todas" (pt-BR approveAllBtn)
+      expect(
+        screen.getByRole('button', { name: /Aprovar todas as 2 cópias: Pummel por Open the Floodgates/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('reject button uses "all copies" label when count > 1 (SWAPGRP-10)', () => {
+      // Arrange
+      renderRow({ count: 2 });
+
+      // Assert
+      expect(
+        screen.getByRole('button', { name: /Rejeitar todas as 2 cópias: Pummel por Open the Floodgates/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('approve button uses standard label when count is 1 (SWAPGRP-11)', () => {
+      // Arrange
+      renderRow({ count: 1 });
+
+      // Assert — standard aria (no "all copies")
+      expect(
+        screen.getByRole('button', { name: /Aprovar substituição: Pummel por Open the Floodgates/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Aprovar todas as/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('clicking approve on count=2 group calls onApprove exactly once with substituteId (SWAPGRP-07)', () => {
+      // Arrange
+      const onApprove = vi.fn();
+      renderRow({ count: 2, onApprove });
+
+      // Act
+      fireEvent.click(
+        screen.getByRole('button', { name: /Aprovar todas as 2 cópias/i }),
+      );
+
+      // Assert — exactly one call with the substitute identifier
+      expect(onApprove).toHaveBeenCalledTimes(1);
+      expect(onApprove).toHaveBeenCalledWith('open-the-floodgates');
+    });
+
+    it('reset button uses "all copies" aria when count > 1 and row is decided (SWAPGRP-10)', () => {
+      // Arrange — reset only available when hasDec (approved or rejected)
+      const onReset = vi.fn();
+      renderRow({ count: 2, decision: 'approved', onReset });
+      expandIfCollapsed();
+
+      // Assert
+      expect(
+        screen.getByRole('button', { name: /Redefinir todas as 2 cópias/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('clicking reset on count=2 approved group calls onReset exactly once with substituteId (SWAPGRP-09)', () => {
+      // Arrange
+      const onReset = vi.fn();
+      renderRow({ count: 2, decision: 'approved', onReset });
+      expandIfCollapsed();
+
+      // Act
+      fireEvent.click(
+        screen.getByRole('button', { name: /Redefinir todas as 2 cópias/i }),
+      );
+
+      // Assert — exactly one reset call
+      expect(onReset).toHaveBeenCalledTimes(1);
+      expect(onReset).toHaveBeenCalledWith('open-the-floodgates');
+    });
+  });
 });

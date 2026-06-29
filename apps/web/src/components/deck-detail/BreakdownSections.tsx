@@ -5,6 +5,7 @@ import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { IBreakdown, IDecisionEntry } from '../../api/deck-detail';
 import { SubstitutionRow, TDecisionState } from './SubstitutionRow';
+import { groupSubstitutedEntries } from './BreakdownSections.helpers';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import styles from './BreakdownSections.module.css';
 
@@ -60,6 +61,10 @@ export function BreakdownSections({
 }: IBreakdownSectionsProps): React.ReactElement {
   const { t } = useTranslation();
   const notOwned = breakdown.notOwned ?? breakdown.missing;
+
+  // Group identical substituted entries — one group per (original, slot, substitute).
+  // SWAPGRP-02: renders one row per group; SWAPGRP-06: key includes substitute id.
+  const subGroups = groupSubstitutedEntries(breakdown.substituted);
 
   // Single lightbox at the section root — only one card can be expanded
   // at a time across exact + not-owned grids. SubstitutionRow owns its
@@ -130,20 +135,21 @@ export function BreakdownSections({
             {t('decks.swaps')}
           </h2>
           <span className={styles.section__count}>
-            {t('decks.activeSwapsCount', { count: breakdown.substituted.length })}
+            {t('decks.activeSwapsCount', { count: subGroups.length })}
           </span>
         </div>
 
-        {breakdown.substituted.length === 0 ? (
+        {subGroups.length === 0 ? (
           <p className={styles.section__empty}>{t('decks.noSwapsNeeded')}</p>
         ) : (
           <ul className={styles.subList} aria-label={t('decks.swapProposalsAria')}>
-            {breakdown.substituted.map((entry) => {
+            {subGroups.map((group) => {
+              const { entry, count } = group;
               const subId = entry.match.substitute.cardIdentifier;
               const decision = resolveDecision(decisions, subId);
               return (
                 <SubstitutionRow
-                  key={`${entry.original.cardIdentifier}-${entry.original.slot}`}
+                  key={`${entry.original.cardIdentifier}-${entry.original.slot}-${subId}`}
                   original={entry.original}
                   match={entry.match}
                   decision={decision}
@@ -151,6 +157,7 @@ export function BreakdownSections({
                   onReject={onRejectSubstitute}
                   onReset={onResetSubstitute}
                   isPending={pendingSubstituteId === subId}
+                  count={count}
                 />
               );
             })}
