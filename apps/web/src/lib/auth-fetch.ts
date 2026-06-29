@@ -7,11 +7,15 @@
  * Retry-After parsing so a 429 response carries `retryAfterSeconds` end-to-end.
  */
 
+import i18n from '../i18n';
+
 export class AuthFetchError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly retryAfterSeconds: number | null = null,
+    /** Stable machine code from the API error envelope (e.g. EAuthErrorCode), for client-side localization. Null when the server omits it. */
+    public readonly code: string | null = null,
   ) {
     super(message);
     this.name = 'AuthFetchError';
@@ -37,13 +41,15 @@ export async function authFetch<T>(
 ): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (!headers.has('Accept-Language')) headers.set('Accept-Language', i18n.language);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const res = await fetch(`/api${path}`, { ...init, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     const message = body.error ?? body.message ?? res.statusText;
     const retryAfter = parseRetryAfter(res.headers.get('Retry-After'));
-    throw new AuthFetchError(message, res.status, retryAfter);
+    const code = typeof body.code === 'string' ? body.code : null;
+    throw new AuthFetchError(message, res.status, retryAfter, code);
   }
   return (await res.json()) as T;
 }
