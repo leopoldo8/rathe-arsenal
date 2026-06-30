@@ -28,7 +28,7 @@ const FOCUSABLE_SELECTOR = [
 
 export interface IUseFocusTrapOptions {
   /** If provided, this element receives initial focus when the trap activates. */
-  initialFocusRef?: RefObject<HTMLElement>;
+  initialFocusRef?: RefObject<HTMLElement | null>;
   /**
    * When true (default), focus returns to the opener element on deactivation
    * or unmount.
@@ -48,7 +48,7 @@ export interface IUseFocusTrapOptions {
  *  - When inactive: no-op; the keydown listener is not registered.
  */
 export function useFocusTrap(
-  containerRef: RefObject<HTMLElement>,
+  containerRef: RefObject<HTMLElement | null>,
   active: boolean,
   opts?: IUseFocusTrapOptions,
 ): void {

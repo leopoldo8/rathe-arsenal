@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './CardLightbox.module.css';
 import { setCssVar } from '../../lib/dom/setCssVar';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export interface ICardLightboxProps {
   /**
@@ -45,6 +46,10 @@ export function CardLightbox({
   const cardRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useRef<boolean>(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Trap Tab/Shift+Tab inside the lightbox; restore focus to opener on close.
+  useFocusTrap(containerRef, true, { initialFocusRef: closeButtonRef });
 
   useEffect(() => {
     // Capture reduced-motion preference once. We intentionally do NOT
@@ -65,10 +70,8 @@ export function CardLightbox({
       }
     };
     document.addEventListener('keydown', onKey);
-    // Focus the close button so keyboard users can immediately dismiss
-    // without tabbing through the overlay.
-    closeButtonRef.current?.focus();
     // Lock body scroll while the lightbox is open.
+    // Note: initial focus is handled by useFocusTrap (initialFocusRef → closeButtonRef).
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -114,6 +117,7 @@ export function CardLightbox({
   }
   return createPortal(
     <div
+      ref={containerRef}
       className={styles.backdrop}
       role="dialog"
       aria-modal="true"
