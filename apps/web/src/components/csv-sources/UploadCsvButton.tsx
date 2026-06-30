@@ -82,7 +82,7 @@ export function UploadCsvButton({ onTrigger }: IUploadCsvButtonProps): React.Rea
     } catch (err) {
       const message =
         err instanceof ApiError
-          ? `Upload failed: ${err.message}`
+          ? t('csvSources.uploadFailedWithError', { error: err.message })
           : t('csvSources.uploadErrorDefault');
       show({ kind: 'error', message });
     } finally {

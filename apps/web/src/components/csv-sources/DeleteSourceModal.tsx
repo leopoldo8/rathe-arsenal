@@ -136,8 +136,9 @@ export function DeleteSourceModal({
             <div className={styles.preview}>
               <p className={styles.previewSummary}>
                 {t('csvSources.deletePreviewSummaryPrefix')}{' '}
-                <strong>{preview.cardsRemoved}</strong> card
-                {preview.cardsRemoved !== 1 ? 's' : ''} {t('csvSources.deletePreviewSummarySuffix')}
+                <strong>{preview.cardsRemoved}</strong>{' '}
+                {t('csvSources.cardsNoun', { count: preview.cardsRemoved })}{' '}
+                {t('csvSources.deletePreviewSummarySuffix')}
                 {affectedCount > 0 && (
                   <>
                     {' '}
@@ -152,7 +153,9 @@ export function DeleteSourceModal({
                     <li key={deck.id} className={styles.affectedDeckItem}>
                       <span className={styles.deckName}>{deck.name}</span>
                       <span className={styles.deckPct}>
-                        {Math.round(deck.currentEffectivePercent)}% ready
+                        {t('csvSources.readyLabel', {
+                          pct: Math.round(deck.currentEffectivePercent),
+                        })}
                       </span>
                     </li>
                   ))}
@@ -166,7 +169,9 @@ export function DeleteSourceModal({
             <div className={styles.deletingMessage} role="status" aria-live="polite">
               <span className={styles.spinner} aria-hidden="true" />
               {t('csvSources.deletingMessagePrefix')}{' '}
-              {affectedCount} deck{affectedCount !== 1 ? 's' : ''}{t('csvSources.deletingMessageSuffix')}
+              {affectedCount}{' '}
+              {t('csvSources.decksNoun', { count: affectedCount })}
+              {t('csvSources.deletingMessageSuffix')}
             </div>
           ) : (
             <div className={styles.confirmGate}>

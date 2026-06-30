@@ -207,7 +207,7 @@ function ResultRow({
             {pitchToneClass !== null && (
               <span
                 className={`${styles.pitchPip} ${styles[pitchToneClass]}`}
-                aria-label={t('decks.pitchAria', { pitch: t(pitchKeyFor(card.pitch)) })}
+                aria-label={t('decks.pitchAria', { pitch: t(pitchLabelKeyFor(card.pitch)) })}
               >
                 &#9670;
               </span>
@@ -291,11 +291,11 @@ function resolvePitchToneClass(
 
 /**
  * Returns the i18n key for the pitch color label so the colour name can be
- * rendered in the user's active locale (UXUI-08).
+ * rendered in the user's active locale.
  */
-function pitchKeyFor(pitch: number | null): string {
-  if (pitch === 1) return 'decks.pitchColorRed';
-  if (pitch === 2) return 'decks.pitchColorYellow';
-  if (pitch === 3) return 'decks.pitchColorBlue';
-  return 'decks.pitchColorNone';
+function pitchLabelKeyFor(pitch: number | null): string {
+  if (pitch === 1) return 'library.pitchRedLabel';
+  if (pitch === 2) return 'library.pitchYellowLabel';
+  if (pitch === 3) return 'library.pitchBlueLabel';
+  return 'library.pitchNoneLabel';
 }

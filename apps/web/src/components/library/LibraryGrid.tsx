@@ -253,12 +253,16 @@ export function LibraryGrid({
 
   function headingFor(key: string): string {
     if (group === 'set') {
+      if (key === 'Unknown') return t('library.setUnknownGroupLabel');
       const name = setNames?.[key];
       return name ? `${key} · ${name}` : key;
     }
     if (group === 'pitch') {
       return pitchGroupLabels[key] ?? key;
     }
+    // Localize the generic fallback type heading; real game type names
+    // (Equipment, Weapon, Action, …) stay as the data provides them.
+    if (key === 'Other') return t('library.typeOtherGroupLabel');
     return key;
   }
 

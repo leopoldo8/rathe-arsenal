@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 4,
+  "next_id": 7,
   "lessons": [
     {
       "id": "L-001",
@@ -43,10 +43,64 @@
     },
     {
       "id": "L-003",
-      "key": "spec_precision_gap::when a spec ac defines a precise css property value aspect ratio overflow font color token for a css only fix add a targeted guard assertion in design guards spec ts for that exact value guard visual alone creates gaps when visual is ci deferred and no existing guard covers the specific property",
-      "text": "When a spec AC defines a precise CSS property value (aspect-ratio, overflow, font/color token) for a CSS-only fix, add a targeted guard assertion in design-guards.spec.ts for that exact value. Guard+visual alone creates gaps when visual is CI-deferred and no existing guard covers the specific property.",
+      "key": "surviving_mutant::when a component has multiple render branches collapsed expanded test the badge indicator visibility for both branches with count 1 the collapsed state badge is not reached by pending row tests",
+      "text": "When a component has multiple render branches (collapsed + expanded), test the badge/indicator visibility for BOTH branches with count=1 — the collapsed-state badge is not reached by pending-row tests.",
+      "signal": "surviving_mutant",
+      "scope": "components",
+      "status": "candidate",
+      "features": [
+        "swap-copies-grouping"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "ReviewsRow.tsx:223 (components)"
+      ],
+      "created": "2026-06-29T23:29:00Z",
+      "last_seen": "2026-06-29T23:29:00Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::when an accessible count aria label aria count is derived from a computed list e g groups length vs raw copy count add a test that asserts the aria text reflects the derived count not the raw source count",
+      "text": "When an accessible count (aria-label, aria-count) is derived from a computed list (e.g. groups.length vs raw copy count), add a test that asserts the aria text reflects the derived count, not the raw source count.",
+      "signal": "ac_gap",
+      "scope": "a11y",
+      "status": "candidate",
+      "features": [
+        "swap-copies-grouping"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "SWAPGRP-14 (a11y)"
+      ],
+      "created": "2026-06-29T23:29:10Z",
+      "last_seen": "2026-06-29T23:29:10Z"
+    },
+    {
+      "id": "L-005",
+      "key": "surviving_mutant::when testing batch operations with an identifier keyed payload assert the identifier field across all action variants approve reject and reset tests that check only boolean flags can survive key field mutations",
+      "text": "When testing batch operations with an identifier-keyed payload, assert the identifier field across ALL action variants (approve, reject, AND reset) — tests that check only boolean flags (e.g. reset: true) can survive key-field mutations.",
+      "signal": "surviving_mutant",
+      "scope": "components,bulk-actions",
+      "status": "candidate",
+      "features": [
+        "swap-copies-grouping"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "ReviewsBulkBar.tsx:82 (components,bulk-actions)"
+      ],
+      "created": "2026-06-29T23:55:00Z",
+      "last_seen": "2026-06-29T23:55:00Z"
+    },
+    {
+      "id": "L-006",
+      "key": "spec_precision_gap::when a spec ac fixes a precise css value aspect ratio overflow font color token in css only add a value pinning assertion in design guards spec ts guard visual alone leaves the value unlocked when the visual gate is ci deferred",
+      "text": "When a spec AC fixes a precise CSS value (aspect-ratio, overflow, font/color token) in CSS only, add a value-pinning assertion in design-guards.spec.ts — guard+visual alone leaves the value unlocked when the visual gate is CI-deferred.",
       "signal": "spec_precision_gap",
-      "scope": "",
+      "scope": "css,testing",
       "status": "candidate",
       "features": [
         "uxui-remediation"
@@ -54,10 +108,10 @@
       "recurrence": 1,
       "harmful": 0,
       "evidence": [
-        "UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06 AC3, UXUI-14 AC3"
+        ".specs/features/uxui-remediation/validation.md (UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06/14) (css,testing)"
       ],
-      "created": "2026-06-30T05:45:46Z",
-      "last_seen": "2026-06-30T05:45:46Z"
+      "created": "2026-06-30T13:00:27Z",
+      "last_seen": "2026-06-30T13:00:27Z"
     }
   ]
 }

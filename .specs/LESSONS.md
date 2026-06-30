@@ -26,11 +26,29 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: P1-AC7 (i18n,testing)
 - last seen: 2026-06-29T20:28:51Z
 
-### L-003 — When a spec AC defines a precise CSS property value (aspect-ratio, overflow, font/color token) for a CSS-only fix, add a targeted guard assertion in design-guards.spec.ts for that exact value. Guard+visual alone creates gaps when visual is CI-deferred and no existing guard covers the specific property.
-- signal: `spec_precision_gap` · recurrence: 1 feature(s) · harmful: 0
+### L-003 — When a component has multiple render branches (collapsed + expanded), test the badge/indicator visibility for BOTH branches with count=1 — the collapsed-state badge is not reached by pending-row tests.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `components` · harmful: 0
+- features: swap-copies-grouping
+- evidence: ReviewsRow.tsx:223 (components)
+- last seen: 2026-06-29T23:29:00Z
+
+### L-004 — When an accessible count (aria-label, aria-count) is derived from a computed list (e.g. groups.length vs raw copy count), add a test that asserts the aria text reflects the derived count, not the raw source count.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `a11y` · harmful: 0
+- features: swap-copies-grouping
+- evidence: SWAPGRP-14 (a11y)
+- last seen: 2026-06-29T23:29:10Z
+
+### L-005 — When testing batch operations with an identifier-keyed payload, assert the identifier field across ALL action variants (approve, reject, AND reset) — tests that check only boolean flags (e.g. reset: true) can survive key-field mutations.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `components,bulk-actions` · harmful: 0
+- features: swap-copies-grouping
+- evidence: ReviewsBulkBar.tsx:82 (components,bulk-actions)
+- last seen: 2026-06-29T23:55:00Z
+
+### L-006 — When a spec AC fixes a precise CSS value (aspect-ratio, overflow, font/color token) in CSS only, add a value-pinning assertion in design-guards.spec.ts — guard+visual alone leaves the value unlocked when the visual gate is CI-deferred.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `css,testing` · harmful: 0
 - features: uxui-remediation
-- evidence: UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06 AC3, UXUI-14 AC3
-- last seen: 2026-06-30T05:45:46Z
+- evidence: .specs/features/uxui-remediation/validation.md (UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06/14) (css,testing)
+- last seen: 2026-06-30T13:00:27Z
 
 ## Quarantined (failed when applied — ignore)
 

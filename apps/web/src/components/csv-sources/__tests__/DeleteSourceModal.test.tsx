@@ -105,7 +105,8 @@ describe('DeleteSourceModal — preview loads', () => {
       // The previewSummary contains text with a <strong> around the number.
       // document.body.textContent collapses all text nodes including across elements.
       const bodyText = document.body.textContent ?? '';
-      expect(bodyText).toMatch(/5 card/);
+      // pt-BR default locale renders the pluralized noun "cartas".
+      expect(bodyText).toMatch(/5 carta/);
     });
   });
 
@@ -173,7 +174,7 @@ describe('DeleteSourceModal — successful deletion', () => {
     // Wait for preview to load
     await waitFor(() => {
       const bodyText = document.body.textContent ?? '';
-      expect(bodyText).toMatch(/3 card/);
+      expect(bodyText).toMatch(/3 carta/);
     });
 
     // Type DELETE
@@ -207,7 +208,7 @@ describe('DeleteSourceModal — recomputeWarning variant', () => {
 
     await waitFor(() => {
       const bodyText = document.body.textContent ?? '';
-      expect(bodyText).toMatch(/2 card/);
+      expect(bodyText).toMatch(/2 carta/);
     });
 
     const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });

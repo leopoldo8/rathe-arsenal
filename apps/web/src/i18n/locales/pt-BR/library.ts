@@ -36,6 +36,11 @@ export const library = {
   pitchColorlessLabel: 'Incolor',
   pitchAddToFilter: 'adicionar ao filtro',
   pitchRemoveFromFilter: 'remover do filtro',
+  pitchFilterAria: '{{pitch}} pitch — {{action}}',
+  pitchNoneLabel: 'Sem',
+  // LibraryGrid — generic fallback group headings (real type/set names stay as data)
+  typeOtherGroupLabel: 'Outros',
+  setUnknownGroupLabel: 'Desconhecido',
 
   // LibraryFilterRail — toggle sections
   classSectionLabel: 'Classe',

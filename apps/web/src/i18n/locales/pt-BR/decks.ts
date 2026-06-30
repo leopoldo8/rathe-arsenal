@@ -167,6 +167,14 @@ export const decks = {
   resetDecisionAria: 'Redefinir decisão: {{original}} por {{substitute}}',
   changeDecisionAria: 'Alterar decisão para {{name}}',
   collapseSwapAria: 'Recolher substituição de {{name}}',
+  swapCopiesBadge: '× {{count}}',
+  swapCopiesBadgeAria: '{{count}} cópias',
+  approveAllBtn: 'Aprovar todas',
+  rejectAllBtn: 'Rejeitar todas',
+  resetAllBtn: 'Redefinir todas',
+  approveAllSubstitutionAria: 'Aprovar todas as {{count}} cópias: {{original}} por {{substitute}}',
+  rejectAllSubstitutionAria: 'Rejeitar todas as {{count}} cópias: {{original}} por {{substitute}}',
+  resetAllSubstitutionAria: 'Redefinir todas as {{count}} cópias: {{original}} por {{substitute}}',
   // TagAutocompleteCombobox
   tagSearchAria: 'Pesquisar ou criar uma tag',
   tagSuggestionsAria: 'Sugestões de tag',
@@ -250,10 +258,6 @@ export const decks = {
   cardPreviewAria: 'Visualizar {{name}}',
   cardNoPreviewAria: '{{name}} (sem visualização)',
   pitchAria: 'pitch {{pitch}}',
-  pitchColorRed: 'Vermelho',
-  pitchColorYellow: 'Amarelo',
-  pitchColorBlue: 'Azul',
-  pitchColorNone: 'Sem',
   quantityForAria: 'Quantidade para {{name}}',
   decreaseCardQtyAria: 'Diminuir quantidade',
   increaseCardQtyAria: 'Aumentar quantidade',
@@ -283,6 +287,12 @@ export const decks = {
   // path-c-result.tsx
   closestPlayableVersionAria: 'Versão mais próxima jogável',
   approximation: 'APROXIMAÇÃO',
+  // decks.$deckId.tsx — Path C banner (closest-playable-version)
+  pathCBannerHeadline: 'Versão mais próxima jogável.',
+  pathCBannerMissing_one:
+    'Falta {{count}} carta neste baralho. Você está em {{fidelity}}% de fidelidade.',
+  pathCBannerMissing_other:
+    'Faltam {{count}} cartas neste baralho. Você está em {{fidelity}}% de fidelidade.',
   pathCFidelitySubline: 'deste baralho pode ser montado ou substituído da sua coleção.',
   tierSwappedClose_one: '{{count}} carta substituída com correspondência próxima',
   tierSwappedClose_other: '{{count}} cartas substituídas com correspondência próxima',
@@ -294,6 +304,24 @@ export const decks = {
   stillMissingSection: 'Ainda faltando ({{count}})',
   pathCAllAccountedFor: 'Todas as cartas contabilizadas!',
   pitchColorless: 'Sem cor',
+  // decks.$deckId.tsx — runtime error / mutation toasts
+  retryShoppingLineToast: 'Tentando novamente lista de compras…',
+  failedToLoadDeck: 'Falha ao carregar baralho: {{error}}',
+  failedToMarkCard: 'Falha ao marcar carta: {{error}}',
+  failedToClearRejections: 'Falha ao limpar rejeições: {{error}}',
+  // decisions.ts — substitution mutation error toasts
+  failedDecideSubstitution: 'Falha ao {{decision}} substituição',
+  failedResetDecision: 'Falha ao redefinir decisão de substituição',
+  // DeckDetailSidebar
+  legalityAria: 'Legalidade: {{category}}',
+  heroFallback: 'Herói',
+  // SubstitutionRow
+  substitutionRowAria: 'Substituição: {{original}} por {{substitute}}, Nível {{tier}}, {{score}}% de confiança, decisão: {{decision}}',
+  decisionAria: 'Decisão: {{decision}}',
+  // FormatDropdown
+  formatAria: 'Formato: {{format}}',
+  // TestDeckResult — PathBadge aria
+  pathTabAria: 'Caminho {{path}}',
   // readiness-header.tsx
   effectiveReadinessSubline: 'efetiva ({{raw}}% bruto)',
   // ShoppingLine.tsx

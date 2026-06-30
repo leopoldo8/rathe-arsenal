@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
+import type { TReviewRowId, IBulkOperation } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
+import type { IReviewRowGroup } from '../../routes/_auth/-swaps.helpers';
 import styles from './ReviewsBulkBar.module.css';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +11,7 @@ import styles from './ReviewsBulkBar.module.css';
 
 interface IReviewsBulkBarProps {
   readonly selectedIds: ReadonlySet<TReviewRowId>;
-  readonly rows: readonly IReviewRow[];
+  readonly groups: readonly IReviewRowGroup[];
   readonly isBulkPending: boolean;
   readonly onBulkAction: (operations: IBulkOperation[]) => void;
   readonly onClearSelection: () => void;
@@ -47,7 +48,7 @@ const BULK_MAX_OPS = 200;
  */
 export function ReviewsBulkBar({
   selectedIds,
-  rows,
+  groups,
   isBulkPending,
   onBulkAction,
   onClearSelection,
@@ -74,10 +75,16 @@ export function ReviewsBulkBar({
   function buildOperations(
     decision: 'APPROVED' | 'REJECTED' | 'RESET',
   ): IBulkOperation[] {
-    return rows
-      .filter((row) => selectedIds.has(makeReviewRowId(row.trackedDeckId, row.cardIdentifier)))
+    // One op per selected group — regardless of how many raw copies the group
+    // represents. The op is keyed by substituteIdentifier (SWAPGRP-16).
+    return groups
+      .filter((group) => {
+        const { row } = group;
+        return selectedIds.has(makeReviewRowId(row.trackedDeckId, row.cardIdentifier, row.substituteIdentifier));
+      })
       .slice(0, BULK_MAX_OPS)
-      .map((row): IBulkOperation => {
+      .map((group): IBulkOperation => {
+        const { row } = group;
         if (decision === 'RESET') {
           return {
             trackedDeckId: row.trackedDeckId,

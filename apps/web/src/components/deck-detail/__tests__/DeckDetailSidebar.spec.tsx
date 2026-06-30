@@ -165,7 +165,7 @@ describe('DeckDetailSidebar — legality badge slot', () => {
     renderSidebar({ legality: { category: 'legal', reasons: [] } });
     expect(screen.getByTestId('sidebar-legality-slot')).toHaveAttribute(
       'aria-label',
-      'Legality: legal',
+      'Legalidade: legal',
     );
   });
 });

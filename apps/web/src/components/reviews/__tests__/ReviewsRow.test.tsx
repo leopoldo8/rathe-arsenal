@@ -59,6 +59,7 @@ function renderRow(
   opts: {
     isSelected?: boolean;
     isBulkPending?: boolean;
+    count?: number;
     onToggleSelect?: (id: ReturnType<typeof makeReviewRowId>) => void;
     onAction?: (...args: unknown[]) => void;
   } = {},
@@ -74,6 +75,7 @@ function renderRow(
         row={row}
         isSelected={opts.isSelected ?? false}
         isBulkPending={opts.isBulkPending ?? false}
+        {...(opts.count !== undefined ? { count: opts.count } : {})}
         onToggleSelect={onToggleSelect}
         onAction={onAction}
       />,
@@ -225,7 +227,7 @@ describe('ReviewsRow — selection', () => {
     const onToggleSelect = vi.fn();
     renderRow(makeRow(), { onToggleSelect });
     await userEvent.click(screen.getByRole('checkbox'));
-    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012'));
+    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012', 'ELE020'));
   });
 
   it('calls onToggleSelect with Space key on card pair group', async () => {
@@ -236,6 +238,159 @@ describe('ReviewsRow — selection', () => {
     });
     group.focus();
     await userEvent.keyboard(' ');
-    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012'));
+    expect(onToggleSelect).toHaveBeenCalledWith(makeReviewRowId(1, 'ARC012', 'ELE020'));
+  });
+});
+
+// SWAPGRP-03, SWAPGRP-05: Copies badge visibility
+describe('ReviewsRow — count prop: copies badge', () => {
+  it('shows "× 2" copies badge when count=2 (SWAPGRP-03)', () => {
+    renderRow(makeRow(), { count: 2 });
+    // copiesBadge i18n key: '× {{count}}' → '× 2'
+    expect(screen.getByText('× 2')).toBeInTheDocument();
+  });
+
+  it('shows no copies badge when count is omitted / defaults to 1 (SWAPGRP-05)', () => {
+    renderRow(makeRow());
+    expect(screen.queryByText(/× \d+/)).not.toBeInTheDocument();
+  });
+
+  it('shows no copies badge when count is explicitly 1 (SWAPGRP-05)', () => {
+    renderRow(makeRow(), { count: 1 });
+    expect(screen.queryByText(/× \d+/)).not.toBeInTheDocument();
+  });
+});
+
+// SWAPGRP-10: "all copies" labels when N>1; SWAPGRP-11: standard labels when N=1
+describe('ReviewsRow — count prop: action labels', () => {
+  it('approve button aria uses "all copies" variant when count=2 (SWAPGRP-10)', () => {
+    renderRow(makeRow(), { count: 2 });
+    // approveAllAria: 'Aprovar todas as {{count}} cópias de {{cardIdentifier}}'
+    expect(
+      screen.getByRole('button', { name: /Aprovar todas as 2 cópias de ARC012/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('reject button aria uses "all copies" variant when count=2 (SWAPGRP-10)', () => {
+    renderRow(makeRow(), { count: 2 });
+    expect(
+      screen.getByRole('button', { name: /Rejeitar todas as 2 cópias de ARC012/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('approve button aria uses standard label when count=1 (SWAPGRP-11)', () => {
+    renderRow(makeRow(), { count: 1 });
+    // Standard: approveAria = 'Aprovar {{cardIdentifier}} como substituto'
+    expect(
+      screen.getByRole('button', { name: /Aprovar ARC012 como substituto/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Aprovar todas/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('approve button uses "Aprovar todas" text when count=2', () => {
+    renderRow(makeRow(), { count: 2 });
+    // approveAll: 'Aprovar todas'
+    expect(screen.getByRole('button', { name: /Aprovar todas as 2 cópias de ARC012/i })).toHaveTextContent('Aprovar todas');
+  });
+});
+
+// SWAPGRP-07: approve on grouped row issues exactly one operation keyed by substituteIdentifier
+describe('ReviewsRow — count prop: action invocation on grouped row', () => {
+  it('approve on count=2 group calls onAction exactly once with substituteIdentifier (SWAPGRP-07)', async () => {
+    const onAction = vi.fn();
+    renderRow(makeRow(), { count: 2, onAction });
+    await userEvent.click(
+      screen.getByRole('button', { name: /Aprovar todas as 2 cópias de ARC012/i }),
+    );
+    expect(onAction).toHaveBeenCalledOnce();
+    const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
+    expect(ops).toBeDefined();
+    expect(ops).toHaveLength(1);
+    expect(ops![0]).toMatchObject({
+      trackedDeckId: 1,
+      cardIdentifier: 'ELE020', // substituteIdentifier, not the original 'ARC012'
+      decision: 'APPROVED',
+    });
+  });
+
+  it('reject on count=2 group calls onAction exactly once with substituteIdentifier (SWAPGRP-08)', async () => {
+    const onAction = vi.fn();
+    renderRow(makeRow(), { count: 2, onAction });
+    await userEvent.click(
+      screen.getByRole('button', { name: /Rejeitar todas as 2 cópias de ARC012/i }),
+    );
+    expect(onAction).toHaveBeenCalledOnce();
+    const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
+    expect(ops).toBeDefined();
+    expect(ops).toHaveLength(1);
+    expect(ops![0]).toMatchObject({
+      trackedDeckId: 1,
+      cardIdentifier: 'ELE020', // substituteIdentifier
+      decision: 'REJECTED',
+    });
+  });
+
+  it('reset on count=2 approved group calls onAction exactly once (SWAPGRP-09)', async () => {
+    const onAction = vi.fn();
+    renderRow(makeRow({ decision: 'approved' }), { count: 2, onAction });
+    // Decided rows start collapsed — expand first
+    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão/i }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /Redefinir todas as 2 cópias de ARC012/i }),
+    );
+    expect(onAction).toHaveBeenCalledOnce();
+    const ops = onAction.mock.calls[0]?.[0] as unknown[] | undefined;
+    expect(ops).toBeDefined();
+    expect(ops).toHaveLength(1);
+    expect(ops![0]).toMatchObject({
+      trackedDeckId: 1,
+      cardIdentifier: 'ELE020', // substituteIdentifier
+      reset: true,
+    });
+  });
+});
+
+// SWAPGRP-05 (collapsed branch): copies badge in the collapsed (decided) render mode.
+// The existing SWAPGRP-05 tests only cover the expanded/pending state. The collapsed branch
+// at ReviewsRow.tsx:223 (`count > 1`) was found to have a surviving mutant (M3a) in the
+// verifier report — flipping the guard to `count >= 1` was not caught by any existing test.
+describe('ReviewsRow — count prop: copies badge in COLLAPSED (decided) state', () => {
+  it('shows no copies badge in collapsed state when count=1 (SWAPGRP-05 collapsed)', () => {
+    // A decided row renders collapsed by default (without clicking "Alterar decisão").
+    // The collapsed branch guard at ReviewsRow.tsx:223 is `count > 1`.
+    // With count=1 the badge must be absent. A mutation that flips the guard to
+    // `count >= 1` would make this test fail, killing mutant M3a.
+    renderRow(makeRow({ decision: 'approved' }), { count: 1 });
+    // Row starts collapsed — no "Alterar decisão" click; badge must not appear.
+    expect(screen.queryByText(/× \d+/)).not.toBeInTheDocument();
+  });
+
+  it('shows "× 2" copies badge in collapsed state when count=2 (SWAPGRP-05 collapsed + SWAPGRP-03)', () => {
+    // A decided row with count=2 must show the badge in the collapsed view.
+    // Existing SWAPGRP-03 tests only cover the expanded view (pending rows).
+    renderRow(makeRow({ decision: 'approved' }), { count: 2 });
+    // Row starts collapsed — badge should be immediately visible without expansion.
+    expect(screen.getByText('× 2')).toBeInTheDocument();
+  });
+});
+
+// SWAPGRP-12: a grouped row (count>1) with an existing decision derives its state
+// from the single `(deck, substitute)` decision key, which is identical for every copy
+// in the group. The collapsed view must reflect that decided state for the whole group.
+describe('ReviewsRow — decision state for grouped (count>1) rows (SWAPGRP-12)', () => {
+  it('shows "Aprovado" decision badge in collapsed state for approved grouped row (SWAPGRP-12)', () => {
+    // All copies in a group share the same (deck, substitute) decision key.
+    // The row.decision field of the representative row is the single source of truth.
+    // The collapsed view must render the "Aprovado" decision badge for the whole group.
+    renderRow(makeRow({ decision: 'approved' }), { count: 2 });
+    expect(screen.getByText('Aprovado')).toBeInTheDocument();
+  });
+
+  it('shows "Rejeitado" decision badge in collapsed state for rejected grouped row (SWAPGRP-12)', () => {
+    // Same as above, but for the rejected state.
+    renderRow(makeRow({ decision: 'rejected' }), { count: 2 });
+    expect(screen.getByText('Rejeitado')).toBeInTheDocument();
   });
 });
