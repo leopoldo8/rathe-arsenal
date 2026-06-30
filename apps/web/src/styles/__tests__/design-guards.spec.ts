@@ -341,3 +341,100 @@ describe('window.confirm ban (T21)', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Spec-precision gap closers — UXUI-07, UXUI-02, UXUI-06, UXUI-14 (T18-era)
+//
+// Five CSS-value ACs whose fix is correct in the code but was not pinned by
+// any test assertion (they relied on the visual snapshot which is CI-deferred).
+// These guards lock the exact token/value so regressions are caught locally.
+// ---------------------------------------------------------------------------
+
+describe('UXUI-07 AC1 — home skeleton card aspect-ratio (T18)', () => {
+  const HOME_CSS = path.join(SRC_ROOT, 'routes/_auth/home.module.css');
+
+  it('.skeletonCard declares aspect-ratio: 200/240 (deckbox vessel ratio)', () => {
+    const content = fs.readFileSync(HOME_CSS, 'utf-8');
+    // The .skeletonCard rule block must contain the deckbox aspect-ratio.
+    expect(content).toMatch(/\.skeletonCard\s*\{[^}]*aspect-ratio\s*:\s*200\/240/s);
+  });
+
+  it('.skeletonCard does NOT use the old min-height: 140px floor', () => {
+    const content = fs.readFileSync(HOME_CSS, 'utf-8');
+    expect(content).not.toContain('min-height: 140px');
+  });
+});
+
+describe('UXUI-07 AC2 — DeckDetailSkeleton grid matches loaded layout (T18)', () => {
+  const SKELETON_CSS = path.join(
+    SRC_ROOT,
+    'components/deck-detail/DeckDetailSkeleton.module.css',
+  );
+
+  it('layout uses 280px 1fr columns inside a min-width: 1280px media query', () => {
+    const content = fs.readFileSync(SKELETON_CSS, 'utf-8');
+    // Both the breakpoint and the column values must be present in the file.
+    expect(content).toMatch(/min-width\s*:\s*1280px/);
+    expect(content).toMatch(/grid-template-columns\s*:\s*280px\s+1fr/);
+  });
+
+  it('old 3-col 1fr 2fr 1fr pattern is absent', () => {
+    const content = fs.readFileSync(SKELETON_CSS, 'utf-8');
+    // The old 3-column grid that was removed with T12 dead-code cleanup.
+    expect(content).not.toMatch(/1fr\s+2fr\s+1fr/);
+  });
+});
+
+describe('UXUI-02 AC2 — LibraryCardStepper overflow: visible allows focus ring (T6)', () => {
+  const STEPPER_CSS = path.join(
+    SRC_ROOT,
+    'components/library/LibraryCardStepper.module.css',
+  );
+
+  it('.stepper wrapper uses overflow: visible so the focus ring is not clipped', () => {
+    const content = fs.readFileSync(STEPPER_CSS, 'utf-8');
+    // The .stepper rule block must explicitly set overflow: visible.
+    expect(content).toMatch(/\.stepper\s*\{[^}]*overflow\s*:\s*visible/s);
+  });
+});
+
+describe('UXUI-06 AC3 — SumExplainer card-name uses var(--ra-text-caption) token (T13)', () => {
+  const SUM_CSS = path.join(
+    SRC_ROOT,
+    'components/csv-sources/SumExplainer.module.css',
+  );
+
+  it('.diagramCard font-size uses var(--ra-text-caption) not a raw rem value', () => {
+    const content = fs.readFileSync(SUM_CSS, 'utf-8');
+    // The .diagramCard rule block must reference the caption token.
+    expect(content).toMatch(/\.diagramCard\s*\{[^}]*font-size\s*:\s*var\(--ra-text-caption\)/s);
+  });
+
+  it('SumExplainer.module.css does NOT contain the banned raw 0.65rem font-size', () => {
+    const content = fs.readFileSync(SUM_CSS, 'utf-8');
+    expect(content).not.toContain('0.65rem');
+  });
+});
+
+describe('UXUI-14 AC3 — ReadinessHero sub-labels use --ra-fg-secondary not --ra-fg-muted (T11)', () => {
+  const HERO_CSS = path.join(
+    SRC_ROOT,
+    'components/deck-detail/ReadinessHero.module.css',
+  );
+
+  it('.readiness__label uses color: var(--ra-fg-secondary)', () => {
+    const content = fs.readFileSync(HERO_CSS, 'utf-8');
+    expect(content).toMatch(/\.readiness__label\s*\{[^}]*color\s*:\s*var\(--ra-fg-secondary\)/s);
+  });
+
+  it('.readiness__label does NOT use var(--ra-fg-muted)', () => {
+    const content = fs.readFileSync(HERO_CSS, 'utf-8');
+    // Must not find --ra-fg-muted inside the .readiness__label block.
+    expect(content).not.toMatch(/\.readiness__label\s*\{[^}]*var\(--ra-fg-muted\)/s);
+  });
+
+  it('.readiness__raw uses color: var(--ra-fg-secondary)', () => {
+    const content = fs.readFileSync(HERO_CSS, 'utf-8');
+    expect(content).toMatch(/\.readiness__raw\s*\{[^}]*color\s*:\s*var\(--ra-fg-secondary\)/s);
+  });
+});
