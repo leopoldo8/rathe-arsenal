@@ -229,10 +229,11 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: `ReadinessHero` (existing) · **Requirement**: UXUI-14 (D1)
 **Tools**: MCP NONE · Skill `impeccable:layout` (optional, for the canvas banner placement)
 **Done when**:
-- [ ] Populated deck-detail renders ReadinessHero in the canvas; exactly one hero-scale `.ra-readiness-display`; sidebar duplicate removed; sub-labels `--ra-fg-secondary`
-- [ ] DOM test asserts hero renders in canvas region + single instance; update prior sidebar-readiness tests to the new structure
-- [ ] Full gate (visual — covered by T23 fixture repair) — defer visual to CI if no DB
-**Tests**: unit (+ visual) · **Gate**: full
+- [x] Populated deck-detail renders ReadinessHero in the canvas; exactly one hero-scale `.ra-readiness-display`; sidebar duplicate removed; sub-labels `--ra-fg-secondary`
+- [x] DOM test asserts hero renders in canvas region + single instance; update prior sidebar-readiness tests to the new structure
+- [x] Full gate (visual — covered by T23 fixture repair) — defer visual to CI if no DB
+**Status**: ✅ Complete · **Commit**: aaf8352
+**Tests**: unit (+ visual) · **Gate**: full (visual deferred to CI per env note)
 
 ### T12: Remove dead code
 **What**: Delete the 3 unused components + dead 3-col CSS, after grep-confirming no static/dynamic refs.
@@ -240,9 +241,10 @@ T22 → T23 → T24
 **Depends on**: T11 · **Reuses**: — · **Requirement**: UXUI-11
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] grep confirms zero imports (static + dynamic string) before deletion
-- [ ] Files removed; dead CSS trimmed
-- [ ] Build gate passes (typecheck + lint + tests)
+- [x] grep confirms zero imports (static + dynamic string) before deletion
+- [x] Files removed; dead CSS trimmed
+- [x] Build gate passes (typecheck + lint + tests)
+**Status**: ✅ Complete · **Commit**: 07e73e0
 **Tests**: none (build gate) · **Gate**: build
 
 ### T13: Token drift sweep [P]
@@ -251,10 +253,11 @@ T22 → T23 → T24
 **Depends on**: T2 · **Reuses**: `--ra-accent`, `--ra-ready-high`, `--ra-text-caption`, `color-mix` · **Requirement**: UXUI-06
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] No raw `#d69e2e`/`#38a169` in `apps/web/src`; SVGs use `currentColor`+`color:var(--ra-accent)`
-- [ ] Stale-hex guard assertion appended to `design-guards.spec.ts` (passes)
-- [ ] Full gate (visual re-baseline DeckCard/TopBar/lightbox surfaces) — defer visual to CI if no DB
+- [x] No raw `#d69e2e`/`#38a169` in `apps/web/src`; SVGs use `currentColor`+`color:var(--ra-accent)`
+- [x] Stale-hex guard assertion appended to `design-guards.spec.ts` (passes)
+- [x] Full gate (visual re-baseline DeckCard/TopBar/lightbox surfaces) — defer visual to CI if no DB
 **Tests**: unit (guard) (+ visual) · **Gate**: full
+**Status**: ✅ Complete · **Commit**: c40a18e
 
 ### T14: Close i18n leaks [P]
 **What**: Route SumExplainer strings, add-cards pitch labels, and substitution-row "Tier" through `t()` with keys in both locales.
@@ -262,10 +265,11 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: `t()` per AD-001 · **Requirement**: UXUI-08
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] No hardcoded user-facing literal in the 3 components; keys present in both locales
-- [ ] DOM tests render under pt-BR and assert localized text (no English leak)
-- [ ] Quick gate passes
+- [x] No hardcoded user-facing literal in the 3 components; keys present in both locales
+- [x] DOM tests render under pt-BR and assert localized text (no English leak)
+- [x] Quick gate passes
 **Tests**: unit · **Gate**: quick
+**Status**: ✅ Complete · **Commit**: 6c58a15
 
 ### T15: Reduced-motion for transform animations [P]
 **What**: Add per-component `prefers-reduced-motion: reduce` overrides for transform motion.
@@ -273,10 +277,11 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: global reduce baseline pattern · **Requirement**: UXUI-09
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] Each file defines a reduce override collapsing its transform (dropIn / `.method:hover`)
-- [ ] Guard/CSS assertion in `design-guards.spec.ts` confirms the reduce block exists
-- [ ] Build gate passes
+- [x] Each file defines a reduce override collapsing its transform (dropIn / `.method:hover`)
+- [x] Guard/CSS assertion in `design-guards.spec.ts` confirms the reduce block exists
+- [x] Build gate passes
 **Tests**: unit (guard) · **Gate**: build
+**Status**: ✅ Complete · **Commit**: f8eb6f2
 
 ### T16: SPA `<Link>` in EducationalEmptyState [P]
 **What**: Replace 3 bare `<a href="/...">` with TanStack `<Link>`.
@@ -284,10 +289,11 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: `@tanstack/react-router` `Link` · **Requirement**: UXUI-12
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] All 3 CTAs render `Link` (router-managed), no bare `<a href>`
-- [ ] DOM test asserts router Link usage
-- [ ] Quick gate passes
+- [x] All 3 CTAs render `Link` (router-managed), no bare `<a href>`
+- [x] DOM test asserts router Link usage
+- [x] Quick gate passes
 **Tests**: unit · **Gate**: quick
+**Status**: ✅ Complete · **Commit**: 03e0169
 
 ### T17: Signature & typography discipline [P]
 **What**: add-cards numerals → `--ra-font-display` (drop glow); CardLightbox caption → `var(--ra-font-display)`.
@@ -295,10 +301,11 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: `--ra-font-display` · **Requirement**: UXUI-17 (D4)
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] Numerals use display font, no glow; caption uses the font token; ornament font reserved to `.ra-readiness-display`
-- [ ] Guard/CSS assertion confirms numerals not using `--ra-font-ornament`
-- [ ] Build gate passes
+- [x] Numerals use display font, no glow; caption uses the font token; ornament font reserved to `.ra-readiness-display`
+- [x] Guard/CSS assertion confirms numerals not using `--ra-font-ornament`
+- [x] Build gate passes
 **Tests**: unit (guard) · **Gate**: build
+**Status**: ✅ Complete · **Commit**: 12d915c
 
 ### T18: Skeleton ↔ loaded parity [P]
 **What**: Reshape home + deck-detail skeletons to match their loaded layouts.
