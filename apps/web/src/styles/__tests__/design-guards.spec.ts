@@ -213,3 +213,55 @@ describe('gradient-text ban (T10)', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T13: Stale-hex ban
+//
+// No *.module.css or *.tsx source file under apps/web/src/ may contain the
+// raw brass hex `#d69e2e` or its rgba form (214,158,46) — all usages must
+// reference `var(--ra-accent)` or `color-mix(in srgb, var(--ra-accent) …)`.
+// Similarly, raw green `#38a169` must not appear (should use `--ra-ready-high`).
+//
+// Rationale: T10 fixed the gradient-clip; T6 fixed mark-owned-button green;
+// T13 sweeps the remaining drift and locks it as a regression guard.
+// ---------------------------------------------------------------------------
+
+describe('stale-hex ban (T13)', () => {
+  /** Matches the raw brass hex (case-insensitive) */
+  const STALE_BRASS_HEX = /#d69e2e/i;
+  /** Matches the rgba form of the brass color */
+  const STALE_BRASS_RGBA = /rgba\(\s*214\s*,\s*158\s*,\s*46/;
+  /** Matches the raw green hex that should use --ra-ready-high */
+  const STALE_GREEN_HEX = /#38a169/i;
+
+  const allSourceFiles: string[] = [
+    ...cssModuleFiles,
+    ...tsxSourceFiles,
+  ];
+
+  it('no source file contains raw #d69e2e or rgba(214,158,46)', () => {
+    const violations: string[] = [];
+
+    for (const file of allSourceFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (STALE_BRASS_HEX.test(content) || STALE_BRASS_RGBA.test(content)) {
+        violations.push(path.relative(SRC_ROOT, file));
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it('no source file contains raw #38a169', () => {
+    const violations: string[] = [];
+
+    for (const file of allSourceFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (STALE_GREEN_HEX.test(content)) {
+        violations.push(path.relative(SRC_ROOT, file));
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});

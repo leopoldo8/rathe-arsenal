@@ -290,7 +290,7 @@ function DeckBoxVessel({
         <path
           d="M62 32 L 138 32 L 158 58 L 42 58 Z"
           fill="url(#vsl-rim)"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="0.9"
         />
 
@@ -301,7 +301,7 @@ function DeckBoxVessel({
           <path
             d="M62 32 L 138 32 L 158 58 L 42 58 Z"
             fill="url(#vsl-lid)"
-            stroke="#d69e2e"
+            stroke="currentColor"
             strokeWidth="1.1"
           />
           {/* Inner brass detail — proportional inset trapezoid.
@@ -314,7 +314,7 @@ function DeckBoxVessel({
           <path
             d="M68 34 L 132 34 L 149 56 L 51 56 Z"
             fill="none"
-            stroke="#d69e2e"
+            stroke="currentColor"
             strokeWidth="0.4"
             opacity="0.45"
           />
@@ -329,7 +329,7 @@ function DeckBoxVessel({
             fontFamily="UnifrakturCook, serif"
             fontWeight="700"
             fontSize="20"
-            fill="#d69e2e"
+            fill="currentColor"
           >
             R
           </text>
@@ -378,7 +378,7 @@ function DeckBoxVessel({
         <path
           d="M42 58 L 158 58 L 158 222 L 42 222 Z"
           fill="url(#vsl-front)"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="1.4"
         />
 
@@ -386,7 +386,7 @@ function DeckBoxVessel({
         <path
           d="M48 64 L 152 64 L 152 216 L 48 216 Z"
           fill="none"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="0.6"
           opacity="0.55"
         />
