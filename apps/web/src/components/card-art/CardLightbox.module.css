@@ -140,7 +140,7 @@
 }
 
 .caption {
-  font-family: 'Cinzel', Georgia, serif;
+  font-family: var(--ra-font-display);
   font-size: var(--ra-text-md);
   color: var(--ra-accent);
   letter-spacing: 0.1em;

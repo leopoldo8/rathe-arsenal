@@ -296,3 +296,30 @@ describe('reduced-motion overrides present (T15)', () => {
     expect(missing).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T17 — typography discipline guard (UXUI-17)
+//
+// 1. .methodNumeral in add-cards.module.css must use --ra-font-display, not
+//    --ra-font-ornament. Ornament is reserved for a single decorative surface
+//    and should not drift into interactive numeral labels.
+// 2. .caption in CardLightbox.module.css must not reference the raw 'Cinzel'
+//    font stack — it must use var(--ra-font-display) so the lightbox caption
+//    stays in sync with the display token.
+// ---------------------------------------------------------------------------
+
+describe('typography discipline (T17)', () => {
+  const ADD_CARDS_CSS = path.join(SRC_ROOT, 'routes/_auth/add-cards.module.css');
+  const LIGHTBOX_CSS = path.join(SRC_ROOT, 'components/card-art/CardLightbox.module.css');
+
+  it('.methodNumeral does not use --ra-font-ornament', () => {
+    const content = fs.readFileSync(ADD_CARDS_CSS, 'utf-8');
+    // Find the .methodNumeral rule block and assert it does not reference ornament font
+    expect(content).not.toMatch(/\.methodNumeral\s*\{[^}]*--ra-font-ornament[^}]*\}/s);
+  });
+
+  it('CardLightbox .caption does not use a raw Cinzel font stack', () => {
+    const content = fs.readFileSync(LIGHTBOX_CSS, 'utf-8');
+    expect(content).not.toMatch(/'Cinzel'/);
+  });
+});

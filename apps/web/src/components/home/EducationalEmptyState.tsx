@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
 import { Button } from '../ui/Button/Button';
 import styles from './EducationalEmptyState.module.css';
 
@@ -73,7 +74,7 @@ export function EducationalEmptyState({
           </Button>
         </Link>
 
-        <Link to="/library" className={styles.skipLink}>
+        <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.skipLink}>
           {t('home.skipToLibrary')}
         </Link>
       </div>
@@ -81,7 +82,7 @@ export function EducationalEmptyState({
       <div className={styles.manualAdd}>
         <p className={styles.manualAddText}>
           {t('home.manualAddPrefix')}{' '}
-          <Link to="/library" className={styles.manualAddLink}>
+          <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.manualAddLink}>
             {t('home.manualAddLinkText')}
           </Link>{' '}
           {t('home.manualAddSuffix')}
