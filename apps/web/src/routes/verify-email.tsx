@@ -41,7 +41,7 @@ function VerifyEmailPage(): React.ReactElement {
         tagline={t('auth.verifyFailedTagline')}
         footer={<Link to="/sign-up" className={styles.footerLink}>{t('auth.signUpAgainLink')}</Link>}
       >
-        <div role="alert" className={styles.infoBox}>
+        <div role="alert" className={styles.errorBox}>
           <p>{errorMsg || t('auth.verifyExpiredFallback')}</p>
         </div>
       </AuthLayout>

@@ -277,8 +277,8 @@
   flex-direction: column;
   gap: var(--ra-space-2);
   padding: var(--ra-space-5);
-  background: var(--ra-bg-surface);
-  border: 1px solid var(--ra-border-strong);
+  background: var(--ra-ready-low-bg);
+  border: 1px solid var(--ra-ready-low-border);
   border-radius: var(--ra-radius-md);
 }
 
