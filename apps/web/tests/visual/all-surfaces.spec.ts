@@ -261,6 +261,22 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
         targetUrl = `/home?tag=${encodeURIComponent(firstTag)}`;
       }
 
+      // Onboarding: intercept /api/decks to return an empty deck list so
+      // the 3-step wizard renders. Without this the fixture user's existing
+      // decks trigger the R60 guard → redirect to /decks/new instead of
+      // showing the wizard (UXUI-16). Stubbing is scoped to this page
+      // instance; it does not affect other tests.
+      // NOTE: cannot be run locally (no DB) — baseline captured in CI.
+      if (surface.name === 'onboarding') {
+        await page.route('**/api/decks', async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ trackedDecks: [] }),
+          });
+        });
+      }
+
       await captureAndCompare(page, surface.name, targetUrl, surface.name);
     });
   }
