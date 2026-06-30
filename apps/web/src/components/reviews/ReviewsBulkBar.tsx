@@ -51,12 +51,23 @@ export function ReviewsBulkBar({
   isBulkPending,
   onBulkAction,
   onClearSelection,
-}: IReviewsBulkBarProps): React.ReactElement | null {
+}: IReviewsBulkBarProps): React.ReactElement {
   const { t } = useTranslation();
   const count = selectedIds.size;
 
-  // Only render when at least one row is selected.
-  if (count === 0) return null;
+  // Pre-mount the aria-live region even when nothing is selected so screen
+  // readers can announce the bar appearing when the first row is checked
+  // (UXUI-13 AC5). Interactive controls are hidden until count > 0.
+  if (count === 0) {
+    return (
+      <div
+        role="region"
+        aria-label={t('reviews.bulkActionsAria')}
+        aria-live="polite"
+        aria-atomic="false"
+      />
+    );
+  }
 
   const isAtCap = count > BULK_MAX_OPS;
 

@@ -137,6 +137,12 @@ describe('DeckCardSearchAutocomplete — ARIA attributes', () => {
     // Without results, activedescendant should be absent
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
+
+  it('combobox wrapper does NOT have aria-owns (deprecated, UXUI-13 AC3)', () => {
+    renderComponent();
+    const combobox = screen.getByRole('combobox');
+    expect(combobox).not.toHaveAttribute('aria-owns');
+  });
 });
 
 describe('DeckCardSearchAutocomplete — empty query behavior', () => {

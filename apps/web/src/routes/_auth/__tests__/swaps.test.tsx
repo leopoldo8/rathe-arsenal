@@ -702,8 +702,9 @@ describe('SwapsPage — bulk operations', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
 
-    // Selection cleared — bulk bar should disappear
-    expect(screen.queryByRole('region', { name: /Ações em lote/i })).not.toBeInTheDocument();
+    // Selection cleared — bulk "Aprovar 2 substituições" button should disappear
+    // (The aria-live region stays mounted; only interactive controls hide)
+    expect(screen.queryByRole('button', { name: /Aprovar 2 substituições/i })).not.toBeInTheDocument();
   });
 });
 

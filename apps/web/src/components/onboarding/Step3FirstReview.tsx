@@ -226,13 +226,21 @@ function SubstitutionPreviewRow({
   const [localDecision, setLocalDecision] = useState<'approved' | 'rejected' | null>(null);
 
   function handleApprove(): void {
-    setLocalDecision('approved');
-    onDecide(original.cardIdentifier, 'approved');
+    if (localDecision === 'approved') {
+      setLocalDecision(null);
+    } else {
+      setLocalDecision('approved');
+      onDecide(original.cardIdentifier, 'approved');
+    }
   }
 
   function handleReject(): void {
-    setLocalDecision('rejected');
-    onDecide(original.cardIdentifier, 'rejected');
+    if (localDecision === 'rejected') {
+      setLocalDecision(null);
+    } else {
+      setLocalDecision('rejected');
+      onDecide(original.cardIdentifier, 'rejected');
+    }
   }
 
   const approveLabel = t('onboarding.approveSubAriaLabel', { substitute: match.substitute.name, original: original.slot });

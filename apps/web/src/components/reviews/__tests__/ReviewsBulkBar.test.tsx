@@ -2,7 +2,7 @@
  * ReviewsBulkBar tests
  *
  * Covers:
- *  - Returns null (nothing rendered) when selectedIds is empty
+ *  - Pre-mounts aria-live region even when no rows are selected (UXUI-13 AC5)
  *  - Renders selection count when 1 or more rows selected
  *  - Approve selected calls onBulkAction with APPROVED operations for selected rows
  *  - Reject selected calls onBulkAction with REJECTED operations
@@ -89,9 +89,14 @@ function renderBar(opts: IRenderBarOpts = {}) {
 // ---- Tests ----
 
 describe('ReviewsBulkBar — visibility', () => {
-  it('renders nothing when selectedIds is empty', () => {
+  it('pre-mounts an aria-live region even when no rows are selected (UXUI-13 AC5)', () => {
     const { container } = renderBar({ selectedIds: makeSet() });
-    expect(container.firstChild).toBeNull();
+    // Must NOT return null — must render the live region
+    expect(container.firstChild).not.toBeNull();
+    // The bar itself should not show interactive buttons when no rows selected
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // But the aria-live region IS in the DOM
+    expect(container.querySelector('[aria-live]')).toBeInTheDocument();
   });
 
   it('renders the bar when at least one row is selected', () => {

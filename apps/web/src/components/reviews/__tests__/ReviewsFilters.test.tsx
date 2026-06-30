@@ -130,20 +130,24 @@ describe('ReviewsFilters — clear button', () => {
   });
 });
 
-describe('ReviewsFilters — aria-pressed', () => {
-  it('Tier chip has aria-pressed=false when no tier selected', () => {
+describe('ReviewsFilters — ARIA (UXUI-13 AC1)', () => {
+  it('Tier chip trigger does NOT have aria-pressed (Radix manages aria-expanded)', () => {
     renderFilters();
-    expect(screen.getByRole('button', { name: /^Tier$/i })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(screen.getByRole('button', { name: /^Tier$/i })).not.toHaveAttribute('aria-pressed');
   });
 
-  it('Tier chip has aria-pressed=true when tier is active', () => {
-    renderFilters({ tier: [2] });
-    expect(screen.getByRole('button', { name: /Tier \(2\)/i })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+  it('Deck chip trigger does NOT have aria-pressed', () => {
+    renderFilters();
+    expect(screen.getByRole('button', { name: /^Baralho$/i })).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('Hero chip trigger does NOT have aria-pressed', () => {
+    renderFilters();
+    expect(screen.getByRole('button', { name: /^Herói$/i })).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('Confidence chip trigger does NOT have aria-pressed', () => {
+    renderFilters();
+    expect(screen.getByRole('button', { name: /^Confiança$/i })).not.toHaveAttribute('aria-pressed');
   });
 });
