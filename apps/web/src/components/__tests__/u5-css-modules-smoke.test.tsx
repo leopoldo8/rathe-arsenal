@@ -11,18 +11,19 @@
  *  - PathCResult
  *  - BreakdownList
  *  - SubstitutionRow (legacy)
- *  - TrackedDeckCard
- *  - ReadinessHeader
+ *
+ * NOTE: TrackedDeckCard and ReadinessHeader describe blocks were removed when
+ * those components were deleted as dead code (UXUI-11 / T12). Their tests
+ * were orphaned by the deletion and removed here accordingly.
  */
 
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import type { IBreakdown, IBreakdownEntry, ISubstitutionMatch } from '../../api/deck-detail';
 import type { ITestDeckResponse } from '../../api/test-deck';
-import type { ITrackedDeckListItem } from '../../api/decks';
 
 // ---------------------------------------------------------------------------
-// Mock TanStack Router (Link component used by TestDeckResult + TrackedDeckCard)
+// Mock TanStack Router (Link component used by TestDeckResult)
 // ---------------------------------------------------------------------------
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, className, ...rest }: {
@@ -122,26 +123,6 @@ const RESULT_ALREADY_TRACKED: ITestDeckResponse = {
   ...RESULT_PATH_A,
   alreadyTracked: true,
   trackedDeckId: 42,
-};
-
-const DECK_LIST_ITEM: ITrackedDeckListItem = {
-  id: 1,
-  fabraryUlid: 'deck-ulid',
-  name: 'Rhinar OTK',
-  hero: 'Rhinar',
-  format: 'CC',
-  trackedAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-  status: 'building',
-  tags: [],
-  legality: { category: 'legal', reasons: [] },
-  latestSnapshot: {
-    effectivePercent: 85.0,
-    rawPercent: 82.0,
-    computedAt: '2026-01-01T00:00:00.000Z',
-  },
-  heroImageUrl: null,
-  representativeCards: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -403,124 +384,3 @@ describe('SubstitutionRow (legacy)', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// TrackedDeckCard
-// ---------------------------------------------------------------------------
-
-describe('TrackedDeckCard', () => {
-  it('renders the deck name and readiness percentage', async () => {
-    const { TrackedDeckCard } = await import('../tracked-deck-card');
-    render(
-      <TrackedDeckCard
-        deck={DECK_LIST_ITEM}
-        onUntrack={vi.fn()}
-        isUntracking={false}
-      />,
-    );
-    expect(screen.getByText('Rhinar OTK')).toBeInTheDocument();
-    expect(screen.getByText(/85\.0% pronto/i)).toBeInTheDocument();
-  });
-
-  it('attaches the correct data-tier attribute for a high-readiness deck', async () => {
-    const { TrackedDeckCard } = await import('../tracked-deck-card');
-    const { container } = render(
-      <TrackedDeckCard
-        deck={DECK_LIST_ITEM}
-        onUntrack={vi.fn()}
-        isUntracking={false}
-      />,
-    );
-    const readinessEl = container.querySelector('[data-tier]');
-    expect(readinessEl?.getAttribute('data-tier')).toBe('high');
-  });
-
-  it('shows "no readiness data yet" when latestSnapshot is null', async () => {
-    const { TrackedDeckCard } = await import('../tracked-deck-card');
-    render(
-      <TrackedDeckCard
-        deck={{ ...DECK_LIST_ITEM, latestSnapshot: null }}
-        onUntrack={vi.fn()}
-        isUntracking={false}
-      />,
-    );
-    expect(screen.getByText(/sem dados de prontidão ainda/i)).toBeInTheDocument();
-  });
-
-  it('does not carry inline style= attributes on the card wrapper', async () => {
-    const { TrackedDeckCard } = await import('../tracked-deck-card');
-    const { container } = render(
-      <TrackedDeckCard
-        deck={DECK_LIST_ITEM}
-        onUntrack={vi.fn()}
-        isUntracking={false}
-      />,
-    );
-    const card = container.firstElementChild;
-    expect(card?.getAttribute('style')).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// ReadinessHeader
-// ---------------------------------------------------------------------------
-
-describe('ReadinessHeader', () => {
-  it('renders the deck name and readiness percentage', async () => {
-    const { ReadinessHeader } = await import('../readiness-header');
-    render(
-      <ReadinessHeader
-        effectivePercent={92.3}
-        rawPercent={88.1}
-        fabraryUlid="abc123"
-        deckName="Dorinthea CC"
-        hero="Dorinthea"
-        format="CC"
-      />,
-    );
-    expect(screen.getByText('Dorinthea CC')).toBeInTheDocument();
-    expect(screen.getByText(/92\.3%/)).toBeInTheDocument();
-    expect(screen.getByText(/view on fabrary/i)).toBeInTheDocument();
-  });
-
-  it('attaches the correct data-tier for each readiness band', async () => {
-    const { ReadinessHeader } = await import('../readiness-header');
-
-    const bands: Array<[number, 'high' | 'mid' | 'low']> = [
-      [85, 'high'],
-      [65, 'mid'],
-      [35, 'low'],
-    ];
-
-    for (const [percent, tier] of bands) {
-      const { container, unmount } = render(
-        <ReadinessHeader
-          effectivePercent={percent}
-          rawPercent={percent}
-          fabraryUlid="x"
-          deckName="Test"
-          hero="H"
-          format="CC"
-        />,
-      );
-      const display = container.querySelector('[data-tier]');
-      expect(display?.getAttribute('data-tier')).toBe(tier);
-      unmount();
-    }
-  });
-
-  it('does not carry inline style= attributes on the header wrapper', async () => {
-    const { ReadinessHeader } = await import('../readiness-header');
-    const { container } = render(
-      <ReadinessHeader
-        effectivePercent={80}
-        rawPercent={78}
-        fabraryUlid="x"
-        deckName="Test"
-        hero="H"
-        format="CC"
-      />,
-    );
-    const wrapper = container.firstElementChild;
-    expect(wrapper?.getAttribute('style')).toBeNull();
-  });
-});

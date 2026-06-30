@@ -47,16 +47,17 @@ function hasBlockSizeAtLeast44(css: string, className: string): boolean {
   );
   const match = blockRe.exec(css);
   if (!match) return false;
-  const body = match[1];
+  // Non-null assertion: match is truthy so match[1] is the captured group string.
+  const body = match[1]!;
 
   if (/min-block-size\s*:\s*44px/.test(body)) return true;
   if (/min-height\s*:\s*44px/.test(body)) return true;
 
   // block-size or height >= 44
   const bsMatch = /block-size\s*:\s*(\d+)px/.exec(body);
-  if (bsMatch && parseInt(bsMatch[1], 10) >= 44) return true;
+  if (bsMatch && parseInt(bsMatch[1]!, 10) >= 44) return true;
   const hMatch = /height\s*:\s*(\d+)px/.exec(body);
-  if (hMatch && parseInt(hMatch[1], 10) >= 44) return true;
+  if (hMatch && parseInt(hMatch[1]!, 10) >= 44) return true;
 
   return false;
 }
@@ -72,15 +73,16 @@ function hasInlineSizeAtLeast44(css: string, className: string): boolean {
   );
   const match = blockRe.exec(css);
   if (!match) return false;
-  const body = match[1];
+  // Non-null assertion: match is truthy so match[1] is the captured group string.
+  const body = match[1]!;
 
   if (/min-inline-size\s*:\s*44px/.test(body)) return true;
   if (/min-width\s*:\s*44px/.test(body)) return true;
 
   const isMatch = /inline-size\s*:\s*(\d+)px/.exec(body);
-  if (isMatch && parseInt(isMatch[1], 10) >= 44) return true;
+  if (isMatch && parseInt(isMatch[1]!, 10) >= 44) return true;
   const wMatch = /width\s*:\s*(\d+)px/.exec(body);
-  if (wMatch && parseInt(wMatch[1], 10) >= 44) return true;
+  if (wMatch && parseInt(wMatch[1]!, 10) >= 44) return true;
 
   return false;
 }
