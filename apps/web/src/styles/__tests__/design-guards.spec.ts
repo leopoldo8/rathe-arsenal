@@ -84,3 +84,57 @@ describe('design-guards scaffold — file enumeration (T2)', () => {
 //   T13 → stale-hex ban: no raw #d69e2e / #38a169
 //   T21 → window.confirm ban: no window.confirm in non-test TSX
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// T3: Focus-suppression ban
+//
+// No CSS module may have `outline: none` inside a bare `:focus` rule block
+// (i.e., `:focus {` — not `:focus-visible` and not `:focus:not(...)`) without
+// also providing a sibling `:focus-visible` rule that sets `outline` with
+// `var(--ra-accent)` in the same file.
+//
+// Rationale: the canonical pattern is:
+//   :focus-visible { outline: 2px solid var(--ra-accent); outline-offset: 2px; }
+//   :focus:not(:focus-visible) { outline: none; }
+// After T3's fix, no file should have the old suppression pattern.
+// ---------------------------------------------------------------------------
+
+describe('focus-suppression ban (T3)', () => {
+  /**
+   * Match a bare `:focus {` rule block (not `:focus-visible`, not `:focus:not`)
+   * that contains `outline: none` or `outline:none`.
+   *
+   * The regex relies on the fact that:
+   *  - `:focus-visible {` has `-visible` between `:focus` and `{` → won't match
+   *  - `:focus:not(...) {` has `:not(...)` between `:focus` and `{` → won't match
+   *  - bare `:focus {` has only optional whitespace then `{` → will match
+   *
+   * We use the `s` (dotAll) flag to cross newlines within the rule block.
+   */
+  const BARE_FOCUS_OUTLINE_NONE = /:focus\s*\{[^}]*outline\s*:\s*none/s;
+
+  /**
+   * Match a `:focus-visible` rule block that sets `outline` with `var(--ra-accent)`.
+   * The `[^}]*` ensures we stay within the same rule block before the closing `}`.
+   */
+  const FOCUS_VISIBLE_WITH_ACCENT =
+    /:focus-visible\s*\{[^}]*outline[^:]*:[^}]*var\(--ra-accent\)/s;
+
+  it('no css module has bare :focus{outline:none} without a sibling :focus-visible{outline:...accent}', () => {
+    const violations: string[] = [];
+
+    for (const file of cssModuleFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+
+      // Only flag files that have the suppression pattern AND lack the companion.
+      if (
+        BARE_FOCUS_OUTLINE_NONE.test(content) &&
+        !FOCUS_VISIBLE_WITH_ACCENT.test(content)
+      ) {
+        violations.push(path.relative(SRC_ROOT, file));
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});
