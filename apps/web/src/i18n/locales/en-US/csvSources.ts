@@ -23,6 +23,10 @@ export const csvSources = {
   sumExplainerBodyPost: ', not overwritten. Your total owned copies reflect the combined quantities across all active sources.',
   sumExplainerFootnote: 'To avoid double-counting physical cards you own, deactivate sources you no longer need rather than deleting them.',
   sumExplainerDiagramAriaLabel: 'Sum diagram: Source A + Source B = Total',
+  sumExplainerSourceA: 'Source A',
+  sumExplainerSourceB: 'Source B',
+  sumExplainerTotal: 'Total',
+  sumExplainerExampleCard: 'Lightning Press',
 
   // CsvSourceList
   csvSourcesListAriaLabel: 'CSV sources',
@@ -58,9 +62,6 @@ export const csvSources = {
   decksNoun_one: 'deck',
   decksNoun_other: 'decks',
   readyLabel: '{{pct}}% ready',
-  sumExplainerSourceA: 'Source A',
-  sumExplainerSourceB: 'Source B',
-  sumExplainerTotal: 'Total',
   csvOverSizeLimit: 'File is over the 2 MB limit ({{size}} MB).',
   csvUnexpectedResult: 'Unexpected upload result: {{kind}}',
   csvUploadFailed: 'Upload failed.',

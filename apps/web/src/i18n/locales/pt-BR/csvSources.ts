@@ -23,6 +23,10 @@ export const csvSources = {
   sumExplainerBodyPost: ', não substituídos. Suas cópias totais refletem as quantidades combinadas de todas as fontes ativas.',
   sumExplainerFootnote: 'Para evitar contagem dupla de cards físicos que você possui, desative as fontes que não são mais necessárias em vez de excluí-las.',
   sumExplainerDiagramAriaLabel: 'Diagrama de soma: Fonte A + Fonte B = Total',
+  sumExplainerSourceA: 'Fonte A',
+  sumExplainerSourceB: 'Fonte B',
+  sumExplainerTotal: 'Total',
+  sumExplainerExampleCard: 'Raio Sob Pressão',
 
   // CsvSourceList
   csvSourcesListAriaLabel: 'Fontes CSV',
@@ -58,9 +62,6 @@ export const csvSources = {
   decksNoun_one: 'baralho',
   decksNoun_other: 'baralhos',
   readyLabel: '{{pct}}% pronto',
-  sumExplainerSourceA: 'Fonte A',
-  sumExplainerSourceB: 'Fonte B',
-  sumExplainerTotal: 'Total',
   csvOverSizeLimit: 'O arquivo excede o limite de 2 MB ({{size}} MB).',
   csvUnexpectedResult: 'Resultado de upload inesperado: {{kind}}',
   csvUploadFailed: 'Falha no upload.',

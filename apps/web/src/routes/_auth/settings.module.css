@@ -149,7 +149,7 @@
 }
 
 .deleteBtn:focus-visible {
-  outline: 2px solid var(--ra-ready-low);
+  outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
 

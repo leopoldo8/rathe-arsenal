@@ -424,3 +424,32 @@ describe('CardArt — type glyph resolution', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Button mode a11y (UXUI-13 AC4)
+// ---------------------------------------------------------------------------
+describe('CardArt — button mode ARIA (UXUI-13 AC4)', () => {
+  it('wraps in a button when onClick is provided', () => {
+    render(<CardArt {...BASE_PROPS} onClick={() => {}} />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('inner svg has aria-hidden when onClick is provided', () => {
+    const { container } = render(<CardArt {...BASE_PROPS} onClick={() => {}} />);
+    // The main card SVG should be aria-hidden in button mode
+    // (the button itself carries the accessible label)
+    const hiddenSvgs = container.querySelectorAll('svg[aria-hidden="true"]');
+    expect(hiddenSvgs.length).toBeGreaterThan(0);
+  });
+
+  it('svg does NOT have role="img" when onClick is provided', () => {
+    render(<CardArt {...BASE_PROPS} onClick={() => {}} />);
+    // In button mode, the svg should not act as an img
+    expect(screen.queryByRole('img', { name: BASE_PROPS.name })).not.toBeInTheDocument();
+  });
+
+  it('svg has role="img" when onClick is NOT provided (default div mode)', () => {
+    render(<CardArt {...BASE_PROPS} />);
+    expect(screen.getByRole('img', { name: BASE_PROPS.name })).toBeInTheDocument();
+  });
+});

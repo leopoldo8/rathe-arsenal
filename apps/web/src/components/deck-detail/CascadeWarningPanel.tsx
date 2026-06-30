@@ -190,19 +190,12 @@ export function CascadeWarningPanelBanner({
       role="status"
       aria-live="polite"
     >
-      <div
+      <button
+        type="button"
         className={styles.bannerHeader}
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
         aria-controls="cascade-banner-body"
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setExpanded((prev) => !prev);
-          }
-        }}
       >
         <p className={styles.bannerTitle}>
           {t('decks.illegalCardCount', { count: cascadeCheck.count })}
@@ -217,7 +210,7 @@ export function CascadeWarningPanelBanner({
         >
           &#x25BC;
         </span>
-      </div>
+      </button>
 
       {expanded ? (
         <div id="cascade-banner-body" className={styles.bannerBody}>

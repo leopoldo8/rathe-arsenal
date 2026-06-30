@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
 import { StatusBullet, STATUS_KEY_MAP } from '../deck-detail/StatusBullet';
+import { useToast } from '../ui/Toast/useToast';
 import styles from './DeckCard.module.css';
 
 // ---------------------------------------------------------------------------
@@ -100,19 +101,52 @@ export function DeckCard({
   onUntrack,
   isUntracking,
   activeFilterTags = [],
-}: IDeckCardProps): React.ReactElement {
+}: IDeckCardProps): React.ReactElement | null {
   const { t } = useTranslation();
+  const { show } = useToast();
+  const [isOptimisticallyRemoved, setIsOptimisticallyRemoved] = useState(false);
+  const untrackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
   const tier = effectivePercent !== null ? resolveReadinessTier(effectivePercent) : null;
 
+  // Cleanup on unmount — cancel any pending untrack timer to prevent
+  // stale mutation from firing after the component is removed.
+  useEffect(() => {
+    return () => {
+      if (untrackTimerRef.current !== null) {
+        clearTimeout(untrackTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Optimistic untrack: hide the card immediately, schedule the mutation
+  // after the undo window (4.8s ≈ toast duration). Undo cancels the timer
+  // and restores the card without ever calling onUntrack.
   function handleUntrack(): void {
-    const confirmed = window.confirm(
-      t('home.untrackConfirmMsg', { deckName: deck.name }),
-    );
-    if (confirmed) {
+    setIsOptimisticallyRemoved(true);
+
+    untrackTimerRef.current = setTimeout(() => {
+      untrackTimerRef.current = null;
       onUntrack(deck.id);
-    }
+    }, 4800);
+
+    show({
+      kind: 'info',
+      message: t('home.untrackToastMsg', { deckName: deck.name }),
+      action: {
+        label: t('home.undoUntrack'),
+        onClick: () => {
+          if (untrackTimerRef.current !== null) {
+            clearTimeout(untrackTimerRef.current);
+            untrackTimerRef.current = null;
+          }
+          setIsOptimisticallyRemoved(false);
+        },
+      },
+    });
   }
+
+  if (isOptimisticallyRemoved) return null;
 
   const cardClasses = [
     styles.card,
@@ -290,7 +324,7 @@ function DeckBoxVessel({
         <path
           d="M62 32 L 138 32 L 158 58 L 42 58 Z"
           fill="url(#vsl-rim)"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="0.9"
         />
 
@@ -301,7 +335,7 @@ function DeckBoxVessel({
           <path
             d="M62 32 L 138 32 L 158 58 L 42 58 Z"
             fill="url(#vsl-lid)"
-            stroke="#d69e2e"
+            stroke="currentColor"
             strokeWidth="1.1"
           />
           {/* Inner brass detail — proportional inset trapezoid.
@@ -314,7 +348,7 @@ function DeckBoxVessel({
           <path
             d="M68 34 L 132 34 L 149 56 L 51 56 Z"
             fill="none"
-            stroke="#d69e2e"
+            stroke="currentColor"
             strokeWidth="0.4"
             opacity="0.45"
           />
@@ -329,7 +363,7 @@ function DeckBoxVessel({
             fontFamily="UnifrakturCook, serif"
             fontWeight="700"
             fontSize="20"
-            fill="#d69e2e"
+            fill="currentColor"
           >
             R
           </text>
@@ -378,7 +412,7 @@ function DeckBoxVessel({
         <path
           d="M42 58 L 158 58 L 158 222 L 42 222 Z"
           fill="url(#vsl-front)"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="1.4"
         />
 
@@ -386,7 +420,7 @@ function DeckBoxVessel({
         <path
           d="M48 64 L 152 64 L 152 216 L 48 216 Z"
           fill="none"
-          stroke="#d69e2e"
+          stroke="currentColor"
           strokeWidth="0.6"
           opacity="0.55"
         />

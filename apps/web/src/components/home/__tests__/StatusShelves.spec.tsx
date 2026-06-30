@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StatusShelves } from '../StatusShelves';
 import { ITrackedDeckListItem, TDeckStatus } from '../../../api/decks';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
 
 // ---------------------------------------------------------------------------
 // Mock TanStack Router — Link renders as a plain <a>
@@ -66,12 +67,14 @@ function renderShelves(
   onUntrack = vi.fn(),
 ) {
   return render(
-    <StatusShelves
-      decks={decks}
-      onUntrack={onUntrack}
-      untrackingDeckId={null}
-      activeFilterTags={activeFilterTags}
-    />,
+    <ToastProvider>
+      <StatusShelves
+        decks={decks}
+        onUntrack={onUntrack}
+        untrackingDeckId={null}
+        activeFilterTags={activeFilterTags}
+      />
+    </ToastProvider>,
   );
 }
 
@@ -190,10 +193,13 @@ describe('StatusShelves', () => {
     ];
     renderShelves(decks);
 
-    // Each rendered shelf should be a region with aria-labelledby → h2
+    // Each rendered shelf should be a region with aria-labelledby → h2.
+    // Filter to only shelf regions (those with aria-labelledby) since the
+    // ToastProvider also mounts a region (viewport) without aria-labelledby.
     const sections = screen.getAllByRole('region');
-    expect(sections.length).toBeGreaterThanOrEqual(2);
-    sections.forEach((section) => {
+    const shelfSections = sections.filter((s) => s.getAttribute('aria-labelledby') != null);
+    expect(shelfSections.length).toBeGreaterThanOrEqual(2);
+    shelfSections.forEach((section) => {
       const labelledById = section.getAttribute('aria-labelledby');
       expect(labelledById).toBeTruthy();
       if (labelledById) {

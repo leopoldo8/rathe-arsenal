@@ -44,6 +44,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: ReviewsBulkBar.tsx:82 (components,bulk-actions)
 - last seen: 2026-06-29T23:55:00Z
 
+### L-006 — When a spec AC fixes a precise CSS value (aspect-ratio, overflow, font/color token) in CSS only, add a value-pinning assertion in design-guards.spec.ts — guard+visual alone leaves the value unlocked when the visual gate is CI-deferred.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `css,testing` · harmful: 0
+- features: uxui-remediation
+- evidence: .specs/features/uxui-remediation/validation.md (UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06/14) (css,testing)
+- last seen: 2026-06-30T13:00:27Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

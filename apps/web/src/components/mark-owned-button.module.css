@@ -2,14 +2,18 @@
 
 .btn {
   cursor: pointer;
-  background: #38a169;
+  background: var(--ra-ready-high);
   color: #fff;
   border: none;
   border-radius: 4px;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* When the whole batch is in-flight (not this card) */

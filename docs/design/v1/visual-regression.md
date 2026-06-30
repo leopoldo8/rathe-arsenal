@@ -85,6 +85,53 @@ When a new surface is added to the product:
    initial baseline.
 3. Commit the new snapshot with the surface implementation.
 
+## Re-baseline after uxui-remediation pass — ✅ DONE (commit `dc04225`)
+
+**Status:** completed locally against a running stack (api + web + Postgres).
+All 21 visual surfaces pass (`pnpm --filter @rathe-arsenal/web test:visual`).
+Five baselines were rewritten — `auth-onboarding` (now the wizard),
+`auth-deck-detail`, `auth-deck-detail-edit` (populated deck + ReadinessHero),
+`auth-library`, `auth-settings`. The remaining surfaces' changes (wordmark
+brass, deckbox SVG token, etc.) fall under the 1% `maxDiffPixelRatio`
+threshold, so they pass against their existing baselines without a rewrite.
+CI re-verifies on its own Postgres service.
+
+The table below is kept as the record of which surfaces this branch touched.
+Historically (before the stack was available locally) these snapshots would
+have **diverged from the code** until `test:visual:update` ran in an
+environment with the dev server + seeded Postgres.
+
+Run `playwright test --update-snapshots` (or the alias `test:visual:update`)
+on these surfaces after merging the remediation branch:
+
+| Surface | Why it changed |
+|---------|----------------|
+| `auth-onboarding` | Fixture now stubs `/api/decks` → wizard renders (was capturing `/decks/new`). |
+| `auth-deck-detail` | ReadinessHero mounted full-width in canvas (T11); new layout + guard. |
+| `auth-deck-detail-edit` | Same ReadinessHero layout in edit mode. |
+| `auth-home` / `auth-home-mixed` / `auth-home-tag-filter` / `auth-home-retired-collapsed` | DeckCard deckbox SVG now uses `currentColor` + `color: var(--ra-accent)` token. |
+| `auth-add-cards-manual` | Roman numeral steps now use `--ra-font-display` (no glow). |
+| `anon-sign-in` / `anon-sign-up` / `anon-forgot-password` | Auth error alert: `.errorStripe` span removed; error tokens applied. |
+| `auth-deck-detail` (shell) | TopBar wordmark: gradient-clip removed, solid `var(--ra-accent)`. |
+| `auth-deck-detail` (lightbox flow) | CardLightbox caption token + shimmer animation clean-up. |
+| `auth-home` (skeletons) | Home skeleton card: `aspect-ratio: 200/240`; deck-detail skeleton grid aligned. |
+| `auth-swaps` / any surface with substitution rows | Touch targets ≥44 px on substitution-row controls. |
+| `auth-add-cards-manual` | Add-cards roman numerals `--ra-font-display`, no glow. |
+| `auth-deck-detail` (Path C banner) | Side-stripe removed; replaced with perimeter border + bg wash. |
+
+**Procedure:**
+
+```sh
+# With dev server running (pnpm dev) and fixture user seeded:
+pnpm --filter @rathe-arsenal/web test:visual:update
+git add apps/web/tests/visual/__snapshots__/
+git commit -m "chore(web): update visual regression baselines — uxui-remediation pass"
+```
+
+After this commit the visual suite should be green on every listed surface.
+
+---
+
 ## CI integration
 
 The visual suite is not gated in CI at launch (see E3 decision). It runs

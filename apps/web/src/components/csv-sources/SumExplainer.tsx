@@ -44,7 +44,7 @@ export function SumExplainer(): React.ReactElement {
           <div className={styles.diagramBox}>
             <span className={styles.diagramLabel}>{t('csvSources.sumExplainerSourceA')}</span>
             <span className={styles.diagramValue}>3×</span>
-            <span className={styles.diagramCard}>Lightning Press</span>
+            <span className={styles.diagramCard}>{t('csvSources.sumExplainerExampleCard')}</span>
           </div>
 
           <span className={styles.diagramPlus} aria-hidden="true">+</span>
@@ -52,7 +52,7 @@ export function SumExplainer(): React.ReactElement {
           <div className={styles.diagramBox}>
             <span className={styles.diagramLabel}>{t('csvSources.sumExplainerSourceB')}</span>
             <span className={styles.diagramValue}>2×</span>
-            <span className={styles.diagramCard}>Lightning Press</span>
+            <span className={styles.diagramCard}>{t('csvSources.sumExplainerExampleCard')}</span>
           </div>
 
           <span className={styles.diagramEquals} aria-hidden="true">=</span>
@@ -60,7 +60,7 @@ export function SumExplainer(): React.ReactElement {
           <div className={`${styles.diagramBox} ${styles.diagramTotal}`}>
             <span className={styles.diagramLabel}>{t('csvSources.sumExplainerTotal')}</span>
             <span className={styles.diagramValue}>5×</span>
-            <span className={styles.diagramCard}>Lightning Press</span>
+            <span className={styles.diagramCard}>{t('csvSources.sumExplainerExampleCard')}</span>
           </div>
         </div>
 

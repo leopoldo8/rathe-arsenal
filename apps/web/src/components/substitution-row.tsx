@@ -62,7 +62,7 @@ export function SubstitutionRow({
           {match.substitute.name}
         </span>
         <span className={styles.tierBadge}>
-          Tier {match.tier}
+          {t('decks.tierLabel', { tier: match.tier })}
         </span>
         <span className={styles.score}>
           ({(match.score * 100).toFixed(0)}%)

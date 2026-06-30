@@ -146,7 +146,7 @@ function HomePage(): React.ReactElement {
  * HomeSkeleton — mirrors the populated layout to avoid a flash of empty state
  * while the decks query is in-flight.
  */
-function HomeSkeleton(): React.ReactElement {
+export function HomeSkeleton(): React.ReactElement {
   const { t } = useTranslation();
   return (
     <section aria-busy="true" aria-live="polite" className={styles.skeleton}>
@@ -170,7 +170,7 @@ function HomeSkeleton(): React.ReactElement {
           <Skeleton width="160px" height="20px" aria-label={t('home.loadingShelfHeading')} />
           <div className={styles.skeletonGrid}>
             {([0, 1, 2] as const).map((j) => (
-              <div key={j} className={styles.skeletonCard}>
+              <div key={j} className={styles.skeletonCard} data-testid="skeleton-deck-card">
                 <Skeleton width="70%" height="18px" aria-label={t('home.loadingDeckName')} />
                 <Skeleton width="50%" height="14px" aria-label={t('home.loadingDeckMeta')} />
                 <Skeleton width="80px" height="32px" aria-label={t('home.loadingReadiness')} />

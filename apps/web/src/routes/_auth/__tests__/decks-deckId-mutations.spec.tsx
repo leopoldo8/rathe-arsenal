@@ -124,12 +124,10 @@ vi.mock('../../../components/deck-detail/DeckDetailHeader', () => ({
   DeckDetailHeader: () => <div data-testid="deck-detail-header" />,
 }));
 
-// DeckDetailSidebar — smoke stub
+// DeckDetailSidebar — smoke stub (no readiness block: removed per UXUI-14)
 vi.mock('../../../components/deck-detail/DeckDetailSidebar', () => ({
   DeckDetailSidebar: () => (
-    <div data-testid="deck-detail-sidebar">
-      <div data-testid="readiness-hero" />
-    </div>
+    <div data-testid="deck-detail-sidebar" />
   ),
 }));
 
@@ -387,6 +385,41 @@ describe('DeckDetailPage — populated state', () => {
     // The English literals the extraction had missed must be gone.
     expect(canvas).not.toHaveTextContent('APPROXIMATION');
     expect(canvas).not.toHaveTextContent('This deck is missing');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T11 (UXUI-14) — ReadinessHero mounted in canvas, not sidebar
+// ---------------------------------------------------------------------------
+
+describe('DeckDetailPage — ReadinessHero canvas placement (UXUI-14)', () => {
+  beforeEach(() => {
+    mockQueryState = 'success-populated';
+    mockDeckData = buildDeck();
+  });
+
+  it('renders ReadinessHero inside the canvas region', () => {
+    // AC1: effectivePercent SHALL be displayed as the dominant element at the top
+    // of the main canvas (UXUI-14 AC1).
+    renderPage();
+    const canvas = screen.getByTestId('layout-canvas');
+    const hero = screen.getByTestId('readiness-hero');
+    expect(canvas).toContainElement(hero);
+  });
+
+  it('ReadinessHero is NOT inside the sidebar region (AC2: duplicate removed)', () => {
+    // AC2: the duplicate readiness block in DeckDetailSidebar SHALL be removed
+    // (UXUI-14 AC2).
+    renderPage();
+    const sidebar = screen.getByTestId('layout-sidebar');
+    expect(sidebar).not.toContainElement(screen.queryByTestId('readiness-hero'));
+  });
+
+  it('exactly one ReadinessHero instance rendered on the page', () => {
+    // AC2: signature is not shown twice at hero scale (UXUI-14 AC2).
+    renderPage();
+    const heroes = screen.getAllByTestId('readiness-hero');
+    expect(heroes).toHaveLength(1);
   });
 });
 

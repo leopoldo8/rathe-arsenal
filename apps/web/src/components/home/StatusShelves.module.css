@@ -79,8 +79,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-block-size: 44px;
+  min-inline-size: 44px;
   background: transparent;
   border: 1px solid var(--ra-border-subtle);
   border-radius: var(--ra-radius-sm);

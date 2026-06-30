@@ -108,6 +108,7 @@
   height: 100%;
   z-index: 1;
   overflow: visible;
+  color: var(--ra-accent);
 }
 
 .vesselFront {
@@ -117,6 +118,7 @@
   height: 100%;
   z-index: 3;
   overflow: visible;
+  color: var(--ra-accent);
 }
 
 /* Tier saturation — applied to BOTH SVG layers so the whole vessel
@@ -201,7 +203,7 @@
   background-color: #2a0808;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.4),
-    inset 0 0 0 1px rgba(214, 158, 46, 0.3);
+    inset 0 0 0 1px color-mix(in srgb, var(--ra-accent) 30%, transparent);
   /* Idle: tucked behind hero with opacity 0 so they don't show
      through. They reveal on hover as they rise above the hero. */
   opacity: 0;
@@ -631,10 +633,10 @@
   /* Natural position: pin's left edge flush with the deckbox's
      painted right edge. */
   right: 11%;
-  /* Visual 22×22; padding 6px → 34px hit/visual target. */
+  /* Visual 22×22; padding 11px → 44px hit area. */
   width: 22px;
   height: 22px;
-  padding: 6px;
+  padding: 11px;
   box-sizing: content-box;
   display: flex;
   align-items: center;

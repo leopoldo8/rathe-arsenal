@@ -22,7 +22,7 @@ interface ILightboxState {
   readonly name: string;
 }
 
-function AddCardsManualPage(): React.ReactElement {
+export function AddCardsManualPage(): React.ReactElement {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -289,6 +289,10 @@ function resolvePitchToneClass(
   return null;
 }
 
+/**
+ * Returns the i18n key for the pitch color label so the colour name can be
+ * rendered in the user's active locale.
+ */
 function pitchLabelKeyFor(pitch: number | null): string {
   if (pitch === 1) return 'library.pitchRedLabel';
   if (pitch === 2) return 'library.pitchYellowLabel';

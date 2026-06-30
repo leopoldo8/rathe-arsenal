@@ -5,6 +5,7 @@ import type { IVariantJob } from '../../api/variant-jobs';
 import { setCssVar } from '../../lib/dom/setCssVar';
 import QueueIcon from '../../assets/icons/queue.svg?react';
 import styles from './VariantQueueDrawer.module.css';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface IVariantQueueDrawerProps {
   readonly open: boolean;
@@ -107,12 +108,16 @@ export function VariantQueueDrawer({
 }: IVariantQueueDrawerProps): React.ReactElement | null {
   const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+
+  // Trap Tab/Shift+Tab inside the drawer; restore focus to opener on close.
+  useFocusTrap(drawerRef, open, { initialFocusRef: closeButtonRef });
 
   useEffect(() => {
     if (!open) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
+    // Note: initial focus is handled by useFocusTrap (initialFocusRef → closeButtonRef).
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -142,6 +147,7 @@ export function VariantQueueDrawer({
   return (
     <div className={styles.backdrop} onClick={onClose} data-testid="variant-queue-backdrop">
       <aside
+        ref={drawerRef}
         className={styles.drawer}
         role="dialog"
         aria-modal="true"

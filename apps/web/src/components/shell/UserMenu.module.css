@@ -16,7 +16,7 @@
     border-color var(--ra-duration) var(--ra-ease),
     color var(--ra-duration) var(--ra-ease),
     background-color var(--ra-duration) var(--ra-ease);
-  min-block-size: 36px;
+  min-block-size: 44px;
 }
 
 .trigger:hover {

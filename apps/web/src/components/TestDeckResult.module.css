@@ -98,7 +98,6 @@
 .alreadyTrackedCallout {
   background: color-mix(in oklch, var(--ra-ready-mid) 6%, var(--ra-bg-surface));
   border: 1px solid var(--ra-ready-mid-border);
-  border-left: 4px solid var(--ra-ready-mid);
   border-radius: var(--ra-radius-md);
   padding: 0.875rem var(--ra-space-4);
   display: flex;

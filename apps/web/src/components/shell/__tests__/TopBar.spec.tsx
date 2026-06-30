@@ -10,6 +10,14 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SRC_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../..',
+);
 
 // --- Mocks ---
 
@@ -168,5 +176,32 @@ describe('TopBar — brand wordmark', () => {
     render(<TopBar />);
     const link = screen.getByRole('link', { name: /Rathe Arsenal início/i });
     expect(link).toHaveTextContent('Arsenal');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T10 (UXUI-05): .brandRathe must use solid var(--ra-accent), no gradient clip.
+// Tests read TopBar.module.css directly (jsdom cannot apply CSS Modules).
+// ---------------------------------------------------------------------------
+
+describe('TopBar — .brandRathe solid brass wordmark (T10 / UXUI-05)', () => {
+  const css = fs.readFileSync(
+    path.join(SRC_ROOT, 'components/shell/TopBar.module.css'),
+    'utf-8',
+  );
+
+  it('.brandRathe uses var(--ra-accent) for color', () => {
+    const re = /\.brandRathe\s*\{[^}]*color\s*:\s*var\(--ra-accent\)/s;
+    expect(re.test(css)).toBe(true);
+  });
+
+  it('.brandRathe does NOT use background-clip: text', () => {
+    expect(css).not.toMatch(/background-clip\s*:\s*text/);
+  });
+
+  it('.brandRathe does NOT set color: transparent', () => {
+    // gradient-clip pattern requires transparent text color; should be gone
+    const CLIP_BLOCK = /\.brandRathe\s*\{[^}]*color\s*:\s*transparent/s;
+    expect(CLIP_BLOCK.test(css)).toBe(false);
   });
 });

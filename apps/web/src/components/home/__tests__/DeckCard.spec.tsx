@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DeckCard } from '../DeckCard';
 import { ITrackedDeckListItem } from '../../../api/decks';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
 
 // ---------------------------------------------------------------------------
 // Mock TanStack Router — Link renders as a plain <a> so tests don't need
@@ -67,7 +68,9 @@ function renderDeckCard(
   isUntracking = false,
 ) {
   return render(
-    <DeckCard deck={deck} onUntrack={onUntrack} isUntracking={isUntracking} />,
+    <ToastProvider>
+      <DeckCard deck={deck} onUntrack={onUntrack} isUntracking={isUntracking} />
+    </ToastProvider>,
   );
 }
 
@@ -77,7 +80,11 @@ function renderDeckCard(
 
 describe('DeckCard', () => {
   beforeEach(() => {
-    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders deck name', () => {
@@ -124,27 +131,6 @@ describe('DeckCard', () => {
     expect(screen.getByText(/sem dados de prontidão/i)).toBeInTheDocument();
   });
 
-  it('calls onUntrack with deck.id after confirm', () => {
-    const onUntrack = vi.fn();
-    renderDeckCard(makeDeck({ id: 42 }), onUntrack);
-    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
-    const firstButton = buttons[0];
-    expect(firstButton).toBeDefined();
-    fireEvent.click(firstButton!);
-    expect(onUntrack).toHaveBeenCalledWith(42);
-  });
-
-  it('does not call onUntrack when confirm is cancelled', () => {
-    vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
-    const onUntrack = vi.fn();
-    renderDeckCard(makeDeck());
-    const buttons = screen.getAllByRole('button', { name: /remover rastreamento/i });
-    const firstButton = buttons[0];
-    expect(firstButton).toBeDefined();
-    fireEvent.click(firstButton!);
-    expect(onUntrack).not.toHaveBeenCalled();
-  });
-
   it('shows loading state when isUntracking=true', () => {
     renderDeckCard(makeDeck(), vi.fn(), true);
     // The pin is icon-only, so the loading state is signalled by the
@@ -162,6 +148,63 @@ describe('DeckCard', () => {
     // No standalone "View" button — clicking the deckbox is the action.
     expect(screen.queryByRole('link', { name: /^view/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^view/i })).not.toBeInTheDocument();
+  });
+
+  describe('optimistic untrack + undo toast (UXUI-15)', () => {
+    it('hides the card immediately on untrack click', () => {
+      const onUntrack = vi.fn();
+      renderDeckCard(makeDeck({ id: 42, name: 'Test Deck' }), onUntrack);
+      // Card is visible
+      expect(screen.getByRole('article')).toBeInTheDocument();
+
+      const btn = screen.getByRole('button', { name: /remover rastreamento/i });
+      fireEvent.click(btn);
+
+      // Card hidden (optimistic remove)
+      expect(screen.queryByRole('article')).not.toBeInTheDocument();
+      // Mutation NOT called yet (within undo window)
+      expect(onUntrack).not.toHaveBeenCalled();
+    });
+
+    it('calls onUntrack after the undo window expires', () => {
+      const onUntrack = vi.fn();
+      renderDeckCard(makeDeck({ id: 42 }), onUntrack);
+
+      const btn = screen.getByRole('button', { name: /remover rastreamento/i });
+      fireEvent.click(btn);
+
+      // Advance past the 4.8s undo window
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(onUntrack).toHaveBeenCalledWith(42);
+    });
+
+    it('undo restores the card and cancels the mutation', () => {
+      const onUntrack = vi.fn();
+      renderDeckCard(makeDeck({ id: 42, name: 'Test Deck' }), onUntrack);
+
+      const btn = screen.getByRole('button', { name: /remover rastreamento/i });
+      fireEvent.click(btn);
+
+      // Card hidden
+      expect(screen.queryByRole('article')).not.toBeInTheDocument();
+
+      // Click Undo in the toast
+      const undoBtn = screen.getByRole('button', { name: /desfazer/i });
+      fireEvent.click(undoBtn);
+
+      // Card restored
+      expect(screen.getByRole('article')).toBeInTheDocument();
+
+      // Advance past the undo window — mutation must NOT fire
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(onUntrack).not.toHaveBeenCalled();
+    });
   });
 
   describe('(U9) status row', () => {
@@ -217,12 +260,14 @@ describe('DeckCard', () => {
       });
       // activeFilterTags = ['liga local'] — should be promoted to visible
       render(
-        <DeckCard
-          deck={deck}
-          onUntrack={vi.fn()}
-          isUntracking={false}
-          activeFilterTags={['liga local']}
-        />,
+        <ToastProvider>
+          <DeckCard
+            deck={deck}
+            onUntrack={vi.fn()}
+            isUntracking={false}
+            activeFilterTags={['liga local']}
+          />
+        </ToastProvider>,
       );
       expect(screen.getByText('liga local')).toBeInTheDocument();
       // 'e' should be pushed out (liga local took a slot)

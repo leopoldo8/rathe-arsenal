@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
 import { Button } from '../ui/Button/Button';
 import styles from './EducationalEmptyState.module.css';
 
@@ -66,23 +68,23 @@ export function EducationalEmptyState({
       </div>
 
       <div className={styles.cta}>
-        <a href="/decks/new" className={styles.importLink}>
+        <Link to="/decks/new" className={styles.importLink}>
           <Button variant="primary" size="lg">
             {t('home.trackFirstDeckCta')}
           </Button>
-        </a>
+        </Link>
 
-        <a href="/library" className={styles.skipLink}>
+        <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.skipLink}>
           {t('home.skipToLibrary')}
-        </a>
+        </Link>
       </div>
 
       <div className={styles.manualAdd}>
         <p className={styles.manualAddText}>
           {t('home.manualAddPrefix')}{' '}
-          <a href="/library" className={styles.manualAddLink}>
+          <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.manualAddLink}>
             {t('home.manualAddLinkText')}
-          </a>{' '}
+          </Link>{' '}
           {t('home.manualAddSuffix')}
         </p>
       </div>

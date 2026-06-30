@@ -27,7 +27,6 @@
   padding: 2px;
   cursor: pointer;
   transition: background var(--ra-duration) var(--ra-ease);
-  outline: none;
 }
 
 .switch[data-state="checked"] {
@@ -35,7 +34,12 @@
 }
 
 .switch:focus-visible {
-  box-shadow: 0 0 0 2px var(--ra-accent);
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.switch:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .switchThumb {
@@ -95,7 +99,12 @@
   box-sizing: border-box;
 }
 
-.labelInput:focus {
+.labelInput:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.labelInput:focus:not(:focus-visible) {
   outline: none;
 }
 
@@ -213,4 +222,15 @@
   height: 1px;
   background: var(--ra-border-subtle);
   margin: var(--ra-space-1) 0;
+}
+
+/* -----------------------------------------------------------------------
+ * Reduced-motion: collapse the dropIn translate for users who prefer no
+ * animation (UXUI-09 / T15). The opacity fade is preserved as a subtle
+ * entrance cue that does not involve motion.
+ * --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .menuContent {
+    animation: none;
+  }
 }

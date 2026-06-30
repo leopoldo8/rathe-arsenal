@@ -3,4 +3,7 @@
 .svg {
   width: 100%;
   max-width: 220px;
+  /* Propagates --ra-accent to currentColor so all stroke/fill="currentColor"
+   * paths inside the SVG pick up the accent color (UXUI-06 / T13). */
+  color: var(--ra-accent);
 }

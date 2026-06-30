@@ -151,13 +151,12 @@
 }
 
 .methodNumeral {
-  font-family: var(--ra-font-ornament);
+  font-family: var(--ra-font-display);
   font-size: 2.5rem;
   font-weight: var(--ra-weight-black);
   line-height: 1;
   color: var(--ra-accent);
   letter-spacing: 0;
-  text-shadow: 0 0 24px var(--ra-accent-soft-bg);
 }
 
 .methodTitle {
@@ -280,5 +279,15 @@
   }
   .methodNumeral {
     font-size: 2rem;
+  }
+}
+
+/* -----------------------------------------------------------------------
+ * Reduced-motion: collapse .method:hover translateY(-2px) for users who
+ * prefer no motion (UXUI-09 / T15).
+ * --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .method:hover {
+    transform: none;
   }
 }

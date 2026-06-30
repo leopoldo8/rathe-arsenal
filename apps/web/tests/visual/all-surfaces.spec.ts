@@ -146,7 +146,13 @@ async function resolveDeckUrl(page: Page): Promise<string | null> {
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(SETTLE_MS);
   return page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    // Exclude the "track new deck" CTA (`/decks/new`), which the home hero
+    // renders before the deck cards — a bare `a[href^="/decks/"]` would match
+    // it first and resolve deck-detail to the add-deck page instead of a real
+    // deck. Only `/decks/<id>` links are real decks.
+    const link = document.querySelector<HTMLAnchorElement>(
+      'a[href^="/decks/"]:not([href^="/decks/new"])',
+    );
     return link?.getAttribute('href') ?? null;
   });
 }
@@ -223,22 +229,39 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
 
       let targetUrl = surface.url;
 
-      // Resolve the deck-detail URL at runtime.
+      // deck-detail: resolve the populated deck URL and guard that
+      // ReadinessHero has rendered before snapshotting (UXUI-16).
+      // Fails loudly if the deck data hasn't arrived — prevents silent
+      // skeleton/empty-state captures.
       if (surface.name === 'deck-detail') {
         if (!deckUrl) {
           test.skip(true, 'Skipping deck-detail — no tracked deck found on /home');
           return;
         }
-        targetUrl = deckUrl;
+        await page.goto(`${BASE_URL}${deckUrl}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await applyDarkTheme(page);
+        await page.waitForTimeout(SETTLE_MS);
+        // Guard: .ra-readiness-display must be visible — confirms a populated
+        // deck rendered. If this times out the test fails loudly instead of
+        // silently capturing a skeleton.
+        await page.waitForSelector('.ra-readiness-display', { state: 'visible', timeout: 8000 });
+        await expect(page).toHaveScreenshot(`${surface.name}.png`, { fullPage: true, maxDiffPixelRatio: 0.01 });
+        return;
       }
 
-      // v2 U16: deck-detail-edit — navigate to deck ?edit=1 for Edit-mode snapshot.
+      // deck-detail-edit: same URL in edit mode + same populated-deck guard.
       if (surface.name === 'deck-detail-edit') {
         if (!deckUrl) {
           test.skip(true, 'Skipping deck-detail-edit — no tracked deck found on /home');
           return;
         }
-        targetUrl = deckUrl + '?edit=1';
+        await page.goto(`${BASE_URL}${deckUrl}?edit=1`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await applyDarkTheme(page);
+        await page.waitForTimeout(SETTLE_MS);
+        // Guard: same readiness check for edit mode.
+        await page.waitForSelector('.ra-readiness-display', { state: 'visible', timeout: 8000 });
+        await expect(page).toHaveScreenshot(`${surface.name}.png`, { fullPage: true, maxDiffPixelRatio: 0.01 });
+        return;
       }
 
       // v2 U16: home-tag-filter — activate the first available tag filter chip.
@@ -259,6 +282,22 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
         }
         // Append the first tag to the URL as a filter param.
         targetUrl = `/home?tag=${encodeURIComponent(firstTag)}`;
+      }
+
+      // Onboarding: intercept /api/decks to return an empty deck list so
+      // the 3-step wizard renders. Without this the fixture user's existing
+      // decks trigger the R60 guard → redirect to /decks/new instead of
+      // showing the wizard (UXUI-16). Stubbing is scoped to this page
+      // instance; it does not affect other tests.
+      // NOTE: cannot be run locally (no DB) — baseline captured in CI.
+      if (surface.name === 'onboarding') {
+        await page.route('**/api/decks', async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ trackedDecks: [] }),
+          });
+        });
       }
 
       await captureAndCompare(page, surface.name, targetUrl, surface.name);

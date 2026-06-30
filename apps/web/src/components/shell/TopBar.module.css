@@ -50,26 +50,19 @@
   }
 }
 
-/* "Rathe" — UnifrakturCook with brass gradient (dark) / ember solid (light) */
+/* "Rathe" — UnifrakturCook solid brass (UXUI-05: gradient clip removed) */
 .brandRathe {
   font-family: var(--ra-font-gothic);
   font-weight: 700;
   font-size: 22px;
   line-height: 0.9;
   letter-spacing: 0.5px;
-  background: linear-gradient(180deg, #f7e29a 0%, #d69e2e 55%, #a56619 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  color: var(--ra-accent);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
 :global([data-theme='light']) .brandRathe {
-  background: none;
-  -webkit-background-clip: initial;
-  background-clip: initial;
   color: var(--ra-brand-ember);
-  filter: none;
 }
 
 /* "Arsenal" — UI font UPPERCASE with brass eyebrow rule (dark) / steel (light) */
@@ -82,7 +75,7 @@
   color: #f0d289;
   padding: 4px 0 0;
   margin: 3px 0 0;
-  border-top: 1.5px solid rgba(214, 158, 46, 0.5);
+  border-top: 1.5px solid color-mix(in srgb, var(--ra-accent) 50%, transparent);
   text-align: center;
 }
 

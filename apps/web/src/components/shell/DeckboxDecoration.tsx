@@ -44,23 +44,23 @@ export function DeckboxDecoration(): React.ReactElement {
           <path d="M24 36 L 60 32 L 60 14 L 24 18 Z" />
         </clipPath>
       </defs>
-      <path d="M36 28 L 72 24 L 72 96 L 36 96 Z" fill="#3a0f0f" stroke="#d69e2e" strokeWidth="0.6" />
-      <path d="M60 32 L 72 24 L 72 96 L 60 96 Z" fill="url(#ra-box-side)" stroke="#d69e2e" strokeWidth="0.8" />
-      <path d="M24 36 L 60 32 L 60 96 L 24 96 Z" fill="url(#ra-box-front)" stroke="#d69e2e" strokeWidth="1" />
-      <path d="M27 41 L 57 37 L 57 92 L 27 92 Z" fill="none" stroke="#d69e2e" strokeWidth="0.5" opacity="0.75" />
+      <path d="M36 28 L 72 24 L 72 96 L 36 96 Z" fill="#3a0f0f" stroke="currentColor" strokeWidth="0.6" />
+      <path d="M60 32 L 72 24 L 72 96 L 60 96 Z" fill="url(#ra-box-side)" stroke="currentColor" strokeWidth="0.8" />
+      <path d="M24 36 L 60 32 L 60 96 L 24 96 Z" fill="url(#ra-box-front)" stroke="currentColor" strokeWidth="1" />
+      <path d="M27 41 L 57 37 L 57 92 L 27 92 Z" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.75" />
       <text
         x="42" y="72" textAnchor="middle"
         fontFamily="UnifrakturCook, serif"
         fontWeight="700" fontSize="26"
-        fill="#d69e2e"
+        fill="currentColor"
       >
         R
       </text>
-      <path d="M36 28 L 72 24 L 78 12 L 42 16 Z" fill="#3a0f0f" stroke="#d69e2e" strokeWidth="0.8" />
-      <path d="M42 16 L 78 12 L 78 6 L 42 10 Z" fill="url(#ra-lid-top)" stroke="#d69e2e" strokeWidth="0.8" />
-      <path d="M38.5 26.5 L 70.5 23 L 75 14 L 44 17.5 Z" fill="none" stroke="#d69e2e" strokeWidth="0.35" opacity="0.55" />
-      <path d="M24 36 L 60 32 L 72 24 L 36 28 Z" fill="#120303" stroke="#d69e2e" strokeWidth="0.9" />
-      <path d="M27 35.2 L 58 31.5 L 69 24.9 L 38 28.6 Z" fill="none" stroke="#d69e2e" strokeWidth="0.3" opacity="0.55" />
+      <path d="M36 28 L 72 24 L 78 12 L 42 16 Z" fill="#3a0f0f" stroke="currentColor" strokeWidth="0.8" />
+      <path d="M42 16 L 78 12 L 78 6 L 42 10 Z" fill="url(#ra-lid-top)" stroke="currentColor" strokeWidth="0.8" />
+      <path d="M38.5 26.5 L 70.5 23 L 75 14 L 44 17.5 Z" fill="none" stroke="currentColor" strokeWidth="0.35" opacity="0.55" />
+      <path d="M24 36 L 60 32 L 72 24 L 36 28 Z" fill="#120303" stroke="currentColor" strokeWidth="0.9" />
+      <path d="M27 35.2 L 58 31.5 L 69 24.9 L 38 28.6 Z" fill="none" stroke="currentColor" strokeWidth="0.3" opacity="0.55" />
       <g clipPath="url(#ra-above-rim)">
         <g clipPath="url(#ra-clip-card-back)">
           <path d="M36 34.9 L 72 30.9 L 72 2 L 36 6 Z" fill="#faf3e0" stroke="#b5a67c" strokeWidth="0.45" />

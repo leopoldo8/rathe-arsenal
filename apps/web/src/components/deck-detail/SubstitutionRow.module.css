@@ -159,6 +159,7 @@
   align-items: center;
   gap: var(--ra-space-1);
   transition: all var(--ra-duration) var(--ra-ease);
+  min-block-size: 44px;
 }
 
 .changeBtn:hover:not(:disabled),
@@ -317,6 +318,7 @@
   align-items: center;
   gap: var(--ra-space-1);
   transition: all var(--ra-duration) var(--ra-ease);
+  min-block-size: 44px;
 }
 
 .row__btn:disabled {

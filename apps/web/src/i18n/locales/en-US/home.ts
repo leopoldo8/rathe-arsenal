@@ -40,6 +40,8 @@ export const home = {
   untrackAriaLabel: 'Untrack {{deckName}}',
   untrackTitle: 'Untrack',
   readinessMeterAriaLabel: 'Readiness {{display}}%, {{tier}}',
+  untrackToastMsg: '"{{deckName}}" removed from tracking.',
+  undoUntrack: 'Undo',
 
   // PopulatedHomeHero
   armoryEyebrow: 'Your armory',

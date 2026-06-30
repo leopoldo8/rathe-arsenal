@@ -123,3 +123,17 @@ describe('ImportFabraryCard', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
+
+describe('ImportFabraryCard — error callout danger treatment (UXUI-10)', () => {
+  it('error callout carries the danger-family CSS class (errorCallout, not infoBox)', () => {
+    resolveImportWith({
+      ...EMPTY_RESPONSE,
+      errors: [{ url: VALID_URL, code: 'FETCH_FAILED', message: 'Fetch failed' }],
+    });
+    render(<ImportFabraryCard />);
+    submitUrl(VALID_URL);
+    const alertEl = screen.getByRole('alert');
+    // CSS modules are compiled (class names hashed), so use partial match
+    expect(alertEl.className).toContain('errorCallout');
+  });
+});

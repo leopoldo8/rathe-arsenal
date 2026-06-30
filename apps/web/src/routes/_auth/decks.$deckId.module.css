@@ -1,71 +1,6 @@
 /* ============================================================
-   Deck Detail Page — 3-column layout (R24)
+   Deck Detail Page — error + Path C states
    ============================================================ */
-
-.page {
-  /* Extra bottom padding on mobile so the sticky bar doesn't obscure content */
-  padding-bottom: 80px;
-}
-
-@media (min-width: 960px) {
-  .page {
-    padding-bottom: 0;
-  }
-}
-
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
-  color: var(--ra-accent-body);
-  text-decoration: none;
-  margin-bottom: var(--ra-space-6);
-  transition: color var(--ra-duration) var(--ra-ease);
-}
-
-.backLink:hover {
-  color: var(--ra-accent-hover);
-}
-
-.backLink:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* 3-column grid: Hero (1fr) | Breakdown (2fr) | Shopping (1fr) */
-.layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--ra-space-6);
-  align-items: start;
-}
-
-@media (min-width: 960px) {
-  .layout {
-    grid-template-columns: 1fr 2fr 1fr;
-  }
-}
-
-/* Column A — Hero + meta */
-.colA {
-  /* ReadinessHero fills this column */
-}
-
-/* Column B — Breakdown sections */
-.colB {
-  min-width: 0;
-}
-
-/* Column C — Shopping panel (desktop sticky aside)
-   On mobile the ShoppingPanel renders its own sticky bar */
-.colC {
-  /* ShoppingPanel manages its own sticky positioning */
-}
 
 /* ---- Error states ---- */
 .errorMsg {
@@ -106,8 +41,8 @@
 .pathCBanner {
   /* Perimeter border using path-c-border token */
   border: 1px solid var(--ra-path-c-border);
-  /* Left border overrides with ember accent (3px ornamental) */
-  border-left: 3px solid var(--ra-ember);
+  /* Top border provides ember accent per design (side-stripe banned per UXUI-04) */
+  border-top: 3px solid var(--ra-ember);
   border-radius: var(--ra-radius-md);
   padding: var(--ra-space-5);
   margin-bottom: var(--ra-space-4);

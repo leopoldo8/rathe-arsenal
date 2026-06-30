@@ -95,7 +95,7 @@
 }
 
 .diagramCard {
-  font-size: 0.65rem;
+  font-size: var(--ra-text-caption);
   color: var(--ra-fg-muted);
   text-align: center;
   white-space: nowrap;

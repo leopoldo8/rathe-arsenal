@@ -130,7 +130,6 @@ function TierFilter({ value, onChange }: ITierFilterProps): React.ReactElement {
         <button
           type="button"
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
-          aria-pressed={active}
         >
           {t('reviews.tierChip')}{active ? ` (${value.join(', ')})` : ''}
         </button>
@@ -178,7 +177,6 @@ function DeckFilter({ value, decks, onChange }: IDeckFilterProps): React.ReactEl
         <button
           type="button"
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
-          aria-pressed={active}
         >
           {t('reviews.deckChip')}{active ? ` (${value.length})` : ''}
         </button>
@@ -228,7 +226,6 @@ function HeroFilter({ value, heroes, onChange }: IHeroFilterProps): React.ReactE
         <button
           type="button"
           className={`${styles.chip} ${active ? styles['chip--active'] : ''}`}
-          aria-pressed={active}
         >
           {t('reviews.heroChip')}{active ? ` (${value.length})` : ''}
         </button>
@@ -273,7 +270,6 @@ function ConfidenceFilter({ min, max, onChange }: IConfidenceFilterProps): React
         <button
           type="button"
           className={`${styles.chip} ${!isDefault ? styles['chip--active'] : ''}`}
-          aria-pressed={!isDefault}
         >
           {t('reviews.confidenceChip')}{!isDefault ? ` (${min}–${max})` : ''}
         </button>

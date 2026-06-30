@@ -188,7 +188,6 @@ export function DeckCardSearchAutocomplete({
         role="combobox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
-        aria-owns={listboxId}
         aria-haspopup="listbox"
         className={styles.comboboxWrapper}
       >

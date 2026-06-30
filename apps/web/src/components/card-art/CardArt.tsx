@@ -247,8 +247,9 @@ export function CardArt({
         width={width}
         height={height}
         preserveAspectRatio="none"
-        role="img"
-        aria-label={name}
+        role={onClick ? undefined : 'img'}
+        aria-label={onClick ? undefined : name}
+        aria-hidden={onClick ? true : undefined}
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Diagonal hatch pattern definition (used only when missing=true) */}

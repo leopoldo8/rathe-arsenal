@@ -15,8 +15,8 @@
 .header {
   /* Perimeter border (path-c-border token) */
   border: 1px solid var(--ra-path-c-border);
-  /* Left border overrides with ember accent */
-  border-left: 3px solid var(--ra-ember);
+  /* Top border provides ember accent per design (side-stripe banned per UXUI-04) */
+  border-top: 3px solid var(--ra-ember);
   border-radius: var(--ra-radius-md);
   padding: var(--ra-space-5);
   background: var(--ra-path-c-bg);
