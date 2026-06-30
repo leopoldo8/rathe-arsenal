@@ -146,7 +146,13 @@ async function resolveDeckUrl(page: Page): Promise<string | null> {
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(SETTLE_MS);
   return page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    // Exclude the "track new deck" CTA (`/decks/new`), which the home hero
+    // renders before the deck cards — a bare `a[href^="/decks/"]` would match
+    // it first and resolve deck-detail to the add-deck page instead of a real
+    // deck. Only `/decks/<id>` links are real decks.
+    const link = document.querySelector<HTMLAnchorElement>(
+      'a[href^="/decks/"]:not([href^="/decks/new"])',
+    );
     return link?.getAttribute('href') ?? null;
   });
 }
