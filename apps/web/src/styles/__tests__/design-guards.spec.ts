@@ -185,3 +185,31 @@ describe('side-stripe ban (T9)', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T10: Gradient-text ban
+//
+// No CSS module may use `background-clip: text` (which requires setting
+// `color: transparent` and creates inaccessible, high-contrast-insensitive
+// text rendering).
+//
+// After T10, the `.brandRathe` wordmark uses solid `color: var(--ra-accent)`
+// instead of a gradient clip. Any re-introduction of the pattern will fail
+// this guard.
+// ---------------------------------------------------------------------------
+
+describe('gradient-text ban (T10)', () => {
+  it('no css module uses background-clip: text', () => {
+    const GRADIENT_TEXT = /background-clip\s*:\s*text/;
+    const violations: string[] = [];
+
+    for (const file of cssModuleFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (GRADIENT_TEXT.test(content)) {
+        violations.push(path.relative(SRC_ROOT, file));
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});
