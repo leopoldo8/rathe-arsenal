@@ -108,9 +108,10 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: focusable-selector convention from the 3 dialogs · **Requirement**: UXUI-03
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] Hook records opener, focuses initial element, cycles Tab at both ends, restores focus on deactivate, no-ops when inactive
-- [ ] Unit tests cover: forward-cycle at last element, backward-cycle at first, restore-on-close, inactive no-op
-- [ ] Quick gate passes; test count recorded
+- [x] Hook records opener, focuses initial element, cycles Tab at both ends, restores focus on deactivate, no-ops when inactive
+- [x] Unit tests cover: forward-cycle at last element, backward-cycle at first, restore-on-close, inactive no-op
+- [x] Quick gate passes; test count recorded (1347 passed, 4 new)
+**Status**: ✅ Complete · **Commit**: f694c21
 **Tests**: unit · **Gate**: quick
 
 ### T2: Scaffold `design-guards.spec.ts` [P]
@@ -119,8 +120,9 @@ T22 → T23 → T24
 **Depends on**: None · **Reuses**: node `fs`/`glob` already available to vitest · **Requirement**: UXUI-04/05/06/15 (foundation)
 **Tools**: MCP NONE · Skill NONE
 **Done when**:
-- [ ] Helper enumerates target files; meta-assertion passes (e.g., "found >0 css modules")
-- [ ] Quick gate passes
+- [x] Helper enumerates target files; meta-assertion passes (e.g., "found >0 css modules")
+- [x] Quick gate passes
+**Status**: ✅ Complete · **Commit**: 2d9ecf0
 **Tests**: unit · **Gate**: quick
 
 ### T3: Standardize focus-visible — suppression group
