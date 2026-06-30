@@ -4,12 +4,12 @@ import { ReviewsRow } from './ReviewsRow';
 import { ReviewsEmptyState } from './ReviewsEmptyState';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import type {
-  IReviewRow,
   TReviewRowId,
   IBulkOperation,
   TReviewState,
 } from '../../api/reviews';
 import { makeReviewRowId } from '../../api/reviews';
+import type { IReviewRowGroup } from '../../routes/_auth/-swaps.helpers';
 import styles from './ReviewsRowList.module.css';
 
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import styles from './ReviewsRowList.module.css';
 // ---------------------------------------------------------------------------
 
 interface IReviewsRowListProps {
-  readonly rows: readonly IReviewRow[];
+  readonly groups: readonly IReviewRowGroup[];
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly onRetry: () => void;
@@ -47,7 +47,7 @@ const SKELETON_COUNT = 5;
  * (inline retry), and empty states (no-subs, all-reviewed, no-results).
  */
 export function ReviewsRowList({
-  rows,
+  groups,
   isLoading,
   isError,
   onRetry,
@@ -79,7 +79,7 @@ export function ReviewsRowList({
   }
 
   // --- Empty states ---
-  if (rows.length === 0) {
+  if (groups.length === 0) {
     if (totalRowCount === 0) {
       // No substitutions at all across any deck.
       return (
@@ -109,10 +109,11 @@ export function ReviewsRowList({
     <div
       className={styles.list}
       role="list"
-      aria-label={t('reviews.reviewsListAria', { count: rows.length })}
+      aria-label={t('reviews.reviewsListAria', { count: groups.length })}
     >
-      {rows.map((row) => {
-        const id = makeReviewRowId(row.trackedDeckId, row.cardIdentifier);
+      {groups.map((group) => {
+        const { row } = group;
+        const id = makeReviewRowId(row.trackedDeckId, row.cardIdentifier, row.substituteIdentifier);
         return (
           <div key={id} role="listitem">
             <ReviewsRow
@@ -121,6 +122,7 @@ export function ReviewsRowList({
               isBulkPending={isBulkPending}
               onToggleSelect={onToggleSelect}
               onAction={onAction}
+              {...(group.count > 1 ? { count: group.count } : {})}
             />
           </div>
         );

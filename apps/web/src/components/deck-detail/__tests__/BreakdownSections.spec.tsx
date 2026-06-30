@@ -74,6 +74,44 @@ const FULL_BREAKDOWN: IBreakdown = {
   notOwned: [NOT_OWNED_ENTRY],
 };
 
+// Two identical entries (same original + same substitute) — should collapse to 1 group
+const DOUBLED_BREAKDOWN: IBreakdown = {
+  exact: [EXACT_ENTRY],
+  substituted: [
+    { original: SUB_ORIGINAL, match: SUB_MATCH },
+    { original: SUB_ORIGINAL, match: SUB_MATCH },
+  ],
+  missing: [NOT_OWNED_ENTRY],
+  notOwned: [NOT_OWNED_ENTRY],
+};
+
+// Different substitute — should produce 2 rows
+const ALT_MATCH = {
+  substitute: {
+    cardIdentifier: 'razor-reflex',
+    name: 'Razor Reflex',
+    classes: ['ninja'],
+    pitch: 1 as const,
+    power: null,
+    defense: null,
+    keywords: [],
+    imageUrl: null,
+  },
+  tier: 2,
+  score: 0.7,
+  rationale: 'Alternative option.',
+};
+
+const TWO_DISTINCT_BREAKDOWN: IBreakdown = {
+  exact: [EXACT_ENTRY],
+  substituted: [
+    { original: SUB_ORIGINAL, match: SUB_MATCH },
+    { original: SUB_ORIGINAL, match: ALT_MATCH },
+  ],
+  missing: [NOT_OWNED_ENTRY],
+  notOwned: [NOT_OWNED_ENTRY],
+};
+
 const EMPTY_BREAKDOWN: IBreakdown = {
   exact: [],
   substituted: [],
@@ -279,6 +317,102 @@ describe('BreakdownSections', () => {
       expect(
         screen.getByRole('list', { name: /cartas não na coleção/i }),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('substitution grouping (SWAPGRP-02, SWAPGRP-03, SWAPGRP-04, SWAPGRP-07)', () => {
+    it('renders exactly one SubstitutionRow for 2 identical substituted entries (SWAPGRP-02)', () => {
+      // Arrange — 2 raw entries that collapse to 1 group
+      render(
+        <BreakdownSections
+          breakdown={DOUBLED_BREAKDOWN}
+          decisions={NO_DECISIONS}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+        />,
+      );
+
+      // Assert — substitute name appears (it does appear multiple times in RTL),
+      // but only ONE <li> (listitem) exists in the swap proposals list
+      const subList = screen.getByRole('list', { name: /propostas de substituição/i });
+      const rows = subList.querySelectorAll('li');
+      expect(rows).toHaveLength(1);
+    });
+
+    it('section count reflects groups (1 group for 2 identical raw entries) (SWAPGRP-02)', () => {
+      // Arrange
+      render(
+        <BreakdownSections
+          breakdown={DOUBLED_BREAKDOWN}
+          decisions={NO_DECISIONS}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+        />,
+      );
+
+      // Assert — "1 ativa" (pt-BR activeSwapsCount_one) appears, NOT "2 ativas"
+      expect(screen.getByText('1 ativa')).toBeInTheDocument();
+      expect(screen.queryByText('2 ativas')).not.toBeInTheDocument();
+    });
+
+    it('renders the × N badge on a group with count 2 (SWAPGRP-03)', () => {
+      // Arrange
+      render(
+        <BreakdownSections
+          breakdown={DOUBLED_BREAKDOWN}
+          decisions={NO_DECISIONS}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+        />,
+      );
+
+      // Assert — copies badge shows × 2
+      expect(screen.getByText('× 2')).toBeInTheDocument();
+    });
+
+    it('renders two rows for same-original/different-substitute entries (SWAPGRP-04)', () => {
+      // Arrange — 2 entries with same original but different substitutes → 2 groups
+      render(
+        <BreakdownSections
+          breakdown={TWO_DISTINCT_BREAKDOWN}
+          decisions={NO_DECISIONS}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+        />,
+      );
+
+      // Assert — 2 rows in the swap list
+      const subList = screen.getByRole('list', { name: /propostas de substituição/i });
+      const rows = subList.querySelectorAll('li');
+      expect(rows).toHaveLength(2);
+    });
+
+    it('approving a count=2 group calls onApproveSubstitute exactly once (SWAPGRP-07)', () => {
+      // Arrange
+      const onApprove = vi.fn();
+      render(
+        <BreakdownSections
+          breakdown={DOUBLED_BREAKDOWN}
+          decisions={NO_DECISIONS}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+          onApproveSubstitute={onApprove}
+        />,
+      );
+
+      // Act — click approve on the grouped row
+      fireEvent.click(
+        screen.getByRole('button', { name: /Aprovar todas as 2 cópias/i }),
+      );
+
+      // Assert — exactly one call with the substitute identifier
+      expect(onApprove).toHaveBeenCalledTimes(1);
+      expect(onApprove).toHaveBeenCalledWith('open-the-floodgates');
     });
   });
 

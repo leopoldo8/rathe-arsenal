@@ -40,6 +40,13 @@ interface ISubstitutionRowProps {
    * True when this row's mutation is in flight.
    */
   readonly isPending?: boolean;
+  /**
+   * Number of identical substitution copies merged into this group.
+   * Defaults to 1 (no badge, single-copy labels).
+   * When > 1: shows a × N badge and "all copies" action labels/arias.
+   * SWAPGRP-03, SWAPGRP-05, SWAPGRP-10, SWAPGRP-11
+   */
+  readonly count?: number;
 }
 
 type TTranslate = TFunction;
@@ -83,11 +90,15 @@ export function SubstitutionRow({
   onReject,
   onReset,
   isPending = false,
+  count = 1,
 }: ISubstitutionRowProps): React.ReactElement {
   const { t } = useTranslation();
   const substituteId = match.substitute.cardIdentifier;
   const originalName = original.name;
   const substituteName = match.substitute.name;
+
+  // SWAPGRP-03, SWAPGRP-10: when count > 1, show copies badge and "all" action labels
+  const isGrouped = count > 1;
 
   const isApproved = decision === 'approved';
   const isRejected = decision === 'rejected';
@@ -213,6 +224,14 @@ export function SubstitutionRow({
               &#8594;
             </span>
             {substituteThumb}
+            {isGrouped && (
+              <span
+                className={styles.row__copiesBadge}
+                aria-label={t('decks.swapCopiesBadgeAria', { count })}
+              >
+                {t('decks.swapCopiesBadge', { count })}
+              </span>
+            )}
           </div>
 
           <div className={styles.collapsedSummary}>
@@ -280,6 +299,14 @@ export function SubstitutionRow({
         </div>
 
         <div className={styles.row__meta}>
+          {isGrouped && (
+            <span
+              className={styles.row__copiesBadge}
+              aria-label={t('decks.swapCopiesBadgeAria', { count })}
+            >
+              {t('decks.swapCopiesBadge', { count })}
+            </span>
+          )}
           <span className={styles.row__arrow} aria-hidden="true">&#8594;</span>
           <span className={styles.row__tier}>{getTierLabel(match.tier, t)}</span>
           <div className={styles.row__scoreBar}>
@@ -327,9 +354,14 @@ export function SubstitutionRow({
           onClick={handleApprove}
           disabled={approveDisabled}
           aria-pressed={isApproved}
-          aria-label={t('decks.approveSubstitutionAria', { original: originalName, substitute: substituteName })}
+          aria-label={
+            isGrouped
+              ? t('decks.approveAllSubstitutionAria', { count, original: originalName, substitute: substituteName })
+              : t('decks.approveSubstitutionAria', { original: originalName, substitute: substituteName })
+          }
         >
-          <span aria-hidden="true">&#10003;</span> {t('decks.approveBtn')}
+          <span aria-hidden="true">&#10003;</span>{' '}
+          {isGrouped ? t('decks.approveAllBtn') : t('decks.approveBtn')}
         </button>
 
         <button
@@ -344,9 +376,14 @@ export function SubstitutionRow({
           onClick={handleReject}
           disabled={rejectDisabled}
           aria-pressed={isRejected}
-          aria-label={t('decks.rejectSubstitutionAria', { original: originalName, substitute: substituteName })}
+          aria-label={
+            isGrouped
+              ? t('decks.rejectAllSubstitutionAria', { count, original: originalName, substitute: substituteName })
+              : t('decks.rejectSubstitutionAria', { original: originalName, substitute: substituteName })
+          }
         >
-          <span aria-hidden="true">&#10005;</span> {t('decks.rejectBtn')}
+          <span aria-hidden="true">&#10005;</span>{' '}
+          {isGrouped ? t('decks.rejectAllBtn') : t('decks.rejectBtn')}
         </button>
 
         <button
@@ -356,9 +393,14 @@ export function SubstitutionRow({
             .join(' ')}
           onClick={handleReset}
           disabled={resetDisabled}
-          aria-label={t('decks.resetDecisionAria', { original: originalName, substitute: substituteName })}
+          aria-label={
+            isGrouped
+              ? t('decks.resetAllSubstitutionAria', { count, original: originalName, substitute: substituteName })
+              : t('decks.resetDecisionAria', { original: originalName, substitute: substituteName })
+          }
         >
-          <span aria-hidden="true">&#8635;</span> {t('decks.resetBtn')}
+          <span aria-hidden="true">&#8635;</span>{' '}
+          {isGrouped ? t('decks.resetAllBtn') : t('decks.resetBtn')}
         </button>
 
         {hasDec && (

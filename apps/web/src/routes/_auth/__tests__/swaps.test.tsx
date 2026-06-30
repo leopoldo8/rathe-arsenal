@@ -44,7 +44,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IReviewRow, IBulkUpsertResult } from '../../../api/reviews';
 import { applyFilters, computeTabCounts, deriveUniqueDecks } from '../-swaps.helpers';
-import type { ISwapsSearch } from '../-swaps.helpers';
+import type { ISwapsSearch, IReviewRowGroup } from '../-swaps.helpers';
 
 // ============================================================================
 // Mocks
@@ -208,6 +208,15 @@ function make10PendingRows(): IReviewRow[] {
   );
 }
 
+/**
+ * Wraps raw `IReviewRow[]` into `IReviewRowGroup[]` (each row as a count-1 group)
+ * for use in `applyFilters` / `computeTabCounts` unit tests after the T3 signature
+ * change.
+ */
+function toGroups(rows: readonly IReviewRow[]): IReviewRowGroup[] {
+  return rows.map((row) => ({ row, count: 1 }));
+}
+
 // ============================================================================
 // Wrapper
 // ============================================================================
@@ -271,6 +280,8 @@ afterEach(() => {
 // ============================================================================
 // UNIT TESTS — applyFilters
 // ============================================================================
+// NOTE: applyFilters now operates on IReviewRowGroup[]. Unit tests wrap raw row
+// fixtures with toGroups() and access result members via result[N].row.* .
 
 describe('applyFilters — state filter', () => {
   const rows: IReviewRow[] = [
@@ -279,26 +290,26 @@ describe('applyFilters — state filter', () => {
     makeRow({ cardIdentifier: 'R1', decision: 'rejected' }),
   ];
 
-  it('state=pending returns only pending rows', () => {
-    const result = applyFilters(rows, { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
+  it('state=pending returns only pending groups', () => {
+    const result = applyFilters(toGroups(rows), { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('P1');
+    expect(result[0]?.row.cardIdentifier).toBe('P1');
   });
 
-  it('state=approved returns only approved rows', () => {
-    const result = applyFilters(rows, { state: 'approved', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
+  it('state=approved returns only approved groups', () => {
+    const result = applyFilters(toGroups(rows), { state: 'approved', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('A1');
+    expect(result[0]?.row.cardIdentifier).toBe('A1');
   });
 
-  it('state=rejected returns only rejected rows', () => {
-    const result = applyFilters(rows, { state: 'rejected', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
+  it('state=rejected returns only rejected groups', () => {
+    const result = applyFilters(toGroups(rows), { state: 'rejected', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('R1');
+    expect(result[0]?.row.cardIdentifier).toBe('R1');
   });
 
-  it('state=all returns all rows', () => {
-    const result = applyFilters(rows, { state: 'all', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
+  it('state=all returns all groups', () => {
+    const result = applyFilters(toGroups(rows), { state: 'all', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
     expect(result).toHaveLength(3);
   });
 });
@@ -313,20 +324,20 @@ describe('applyFilters — tier filter', () => {
 
   const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
 
-  it('no tier filter returns all rows', () => {
-    expect(applyFilters(rows, baseSearch)).toHaveLength(4);
+  it('no tier filter returns all groups', () => {
+    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(4);
   });
 
-  it('tier=[2] returns only tier-2 rows', () => {
-    const result = applyFilters(rows, { ...baseSearch, tier: [2] });
+  it('tier=[2] returns only tier-2 groups', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, tier: [2] });
     expect(result).toHaveLength(2);
-    result.forEach((r) => expect(r.tier).toBe(2));
+    result.forEach(({ row: r }) => expect(r.tier).toBe(2));
   });
 
-  it('tier=[1,3] returns tier-1 and tier-3 rows', () => {
-    const result = applyFilters(rows, { ...baseSearch, tier: [1, 3] });
+  it('tier=[1,3] returns tier-1 and tier-3 groups', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, tier: [1, 3] });
     expect(result).toHaveLength(2);
-    expect(result.map((r) => r.tier).sort()).toEqual([1, 3]);
+    expect(result.map(({ row: r }) => r.tier).sort()).toEqual([1, 3]);
   });
 });
 
@@ -339,20 +350,20 @@ describe('applyFilters — deck filter', () => {
 
   const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
 
-  it('no deck filter returns all rows', () => {
-    expect(applyFilters(rows, baseSearch)).toHaveLength(3);
+  it('no deck filter returns all groups', () => {
+    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(3);
   });
 
-  it('deck=[1] returns only rows from trackedDeckId=1', () => {
-    const result = applyFilters(rows, { ...baseSearch, deck: ['1'] });
+  it('deck=[1] returns only groups from trackedDeckId=1', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, deck: ['1'] });
     expect(result).toHaveLength(2);
-    result.forEach((r) => expect(r.trackedDeckId).toBe(1));
+    result.forEach(({ row: r }) => expect(r.trackedDeckId).toBe(1));
   });
 
-  it('deck=[2] returns only rows from trackedDeckId=2', () => {
-    const result = applyFilters(rows, { ...baseSearch, deck: ['2'] });
+  it('deck=[2] returns only groups from trackedDeckId=2', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, deck: ['2'] });
     expect(result).toHaveLength(1);
-    expect(result[0]?.trackedDeckId).toBe(2);
+    expect(result[0]?.row.trackedDeckId).toBe(2);
   });
 });
 
@@ -365,18 +376,18 @@ describe('applyFilters — hero filter', () => {
 
   const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
 
-  it('no hero filter returns all rows', () => {
-    expect(applyFilters(rows, baseSearch)).toHaveLength(3);
+  it('no hero filter returns all groups', () => {
+    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(3);
   });
 
-  it('hero=[Briar] returns only Briar rows', () => {
-    const result = applyFilters(rows, { ...baseSearch, hero: ['Briar'] });
+  it('hero=[Briar] returns only Briar groups', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, hero: ['Briar'] });
     expect(result).toHaveLength(2);
-    result.forEach((r) => expect(r.hero).toBe('Briar'));
+    result.forEach(({ row: r }) => expect(r.hero).toBe('Briar'));
   });
 
-  it('hero=[Dromai,Briar] returns all rows when all heroes selected', () => {
-    const result = applyFilters(rows, { ...baseSearch, hero: ['Dromai', 'Briar'] });
+  it('hero=[Dromai,Briar] returns all groups when all heroes selected', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, hero: ['Dromai', 'Briar'] });
     expect(result).toHaveLength(3);
   });
 });
@@ -391,24 +402,24 @@ describe('applyFilters — confidence range', () => {
 
   const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
 
-  it('full range returns all rows', () => {
-    expect(applyFilters(rows, baseSearch)).toHaveLength(4);
+  it('full range returns all groups', () => {
+    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(4);
   });
 
-  it('min=50 excludes rows below 50', () => {
-    const result = applyFilters(rows, { ...baseSearch, confidenceMin: 50 });
+  it('min=50 excludes groups below 50', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMin: 50 });
     expect(result).toHaveLength(3); // 50, 80, 100
-    result.forEach((r) => expect(r.confidence).toBeGreaterThanOrEqual(50));
+    result.forEach(({ row: r }) => expect(r.confidence).toBeGreaterThanOrEqual(50));
   });
 
-  it('max=80 excludes rows above 80', () => {
-    const result = applyFilters(rows, { ...baseSearch, confidenceMax: 80 });
+  it('max=80 excludes groups above 80', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMax: 80 });
     expect(result).toHaveLength(3); // 20, 50, 80
-    result.forEach((r) => expect(r.confidence).toBeLessThanOrEqual(80));
+    result.forEach(({ row: r }) => expect(r.confidence).toBeLessThanOrEqual(80));
   });
 
-  it('min=50, max=80 returns rows in [50, 80]', () => {
-    const result = applyFilters(rows, { ...baseSearch, confidenceMin: 50, confidenceMax: 80 });
+  it('min=50, max=80 returns groups in [50, 80]', () => {
+    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMin: 50, confidenceMax: 80 });
     expect(result).toHaveLength(2); // 50, 80
   });
 });
@@ -421,8 +432,8 @@ describe('applyFilters — combinations', () => {
     makeRow({ cardIdentifier: 'COMBO4', tier: 2, hero: 'Briar', confidence: 30, decision: 'pending' }),
   ];
 
-  it('tier=2 + hero=Briar + confidence>=60 returns only matching row', () => {
-    const result = applyFilters(rows, {
+  it('tier=2 + hero=Briar + confidence>=60 returns only matching group', () => {
+    const result = applyFilters(toGroups(rows), {
       state: 'pending',
       tier: [2],
       deck: [],
@@ -431,7 +442,7 @@ describe('applyFilters — combinations', () => {
       confidenceMax: 100,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]?.cardIdentifier).toBe('COMBO1');
+    expect(result[0]?.row.cardIdentifier).toBe('COMBO1');
   });
 });
 
@@ -440,31 +451,44 @@ describe('applyFilters — combinations', () => {
 // ============================================================================
 
 describe('computeTabCounts', () => {
-  it('returns zeros for empty rows', () => {
+  it('returns zeros for empty groups', () => {
     const counts = computeTabCounts([]);
     expect(counts).toEqual({ pending: 0, approved: 0, rejected: 0, all: 0 });
   });
 
-  it('counts pending rows correctly', () => {
+  it('counts pending groups correctly', () => {
     const rows = [
       makeRow({ decision: 'pending' }),
       makeRow({ decision: 'pending' }),
       makeRow({ decision: 'approved' }),
     ];
-    const counts = computeTabCounts(rows);
+    const counts = computeTabCounts(toGroups(rows));
     expect(counts.pending).toBe(2);
     expect(counts.approved).toBe(1);
     expect(counts.rejected).toBe(0);
     expect(counts.all).toBe(3);
   });
 
-  it('all count = total row count regardless of state', () => {
+  it('all count = total group count regardless of state', () => {
     const rows = [
       makeRow({ decision: 'pending' }),
       makeRow({ decision: 'approved' }),
       makeRow({ decision: 'rejected' }),
     ];
-    expect(computeTabCounts(rows).all).toBe(3);
+    expect(computeTabCounts(toGroups(rows)).all).toBe(3);
+  });
+
+  it('counts groups not raw copies — group with count=2 counts as 1 unit (SWAPGRP-13)', () => {
+    // A group that represents 2 identical copies must count as 1 in the tab badge,
+    // not as 2. This keeps the list row count consistent with the tab badge count.
+    const groups: IReviewRowGroup[] = [
+      { row: makeRow({ cardIdentifier: 'DUP1', substituteIdentifier: 'ELE-DUP1', decision: 'pending' }), count: 2 },
+      { row: makeRow({ cardIdentifier: 'DUP2', substituteIdentifier: 'ELE-DUP2', decision: 'approved' }), count: 1 },
+    ];
+    const counts = computeTabCounts(groups);
+    expect(counts.pending).toBe(1);   // 1 group, not 2 copies
+    expect(counts.approved).toBe(1);
+    expect(counts.all).toBe(2);       // 2 groups total, not 3 raw copies
   });
 });
 
@@ -1121,5 +1145,72 @@ describe('Cross-page sync — bulk operation sends substitute-keyed operations',
       expect(op.cardIdentifier).not.toMatch(/^ARC/);
       expect(op.decision).toBe('APPROVED');
     });
+  });
+});
+
+// ============================================================================
+// SWAPGRP-14: list aria-count reflects grouped rows, not raw copies
+// ============================================================================
+
+describe('SwapsPage — SWAPGRP-14: list aria-count reflects group count, not raw copy count', () => {
+  it('aria-label on the row list says "1 itens" when 2 identical pending copies form 1 group', () => {
+    // Two rows that are identical (same trackedDeckId + cardIdentifier + substituteIdentifier)
+    // are collapsed by groupReviewRows into a single group with count=2.
+    // ReviewsRowList renders with aria-label={t('reviews.reviewsListAria', { count: groups.length })}.
+    // groups.length is 1 (one group), NOT 2 (two raw copies).
+    // pt-BR key: 'Avaliações de substituições — {{count}} itens'
+    // This test fails if ReviewsRowList mistakenly uses raw row count instead of groups.length.
+    mockReviewsData = {
+      rows: [
+        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
+        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
+      ],
+    };
+    renderPage();
+
+    // Only 1 group row rendered — 2 identical copies collapse into 1.
+    expect(screen.getAllByTestId('reviews-row')).toHaveLength(1);
+
+    // The list aria-label must reflect 1 group, not 2 raw copies.
+    // getByRole throws if the name does not match, so this assertion is mutation-killing:
+    // a bug using raw count (2) instead of groups.length (1) would make the query fail.
+    const list = screen.getByRole('list', { name: /Avaliações de substituições — 1 itens/i });
+    expect(list).toBeInTheDocument();
+  });
+});
+
+// ============================================================================
+// SWAPGRP-15: selection uniquely identifies each group
+// ============================================================================
+
+describe('SwapsPage — SWAPGRP-15: selection uniquely identifies groups (same original, different substitute)', () => {
+  it('toggling group A checkbox does not check group B (distinct substituteIdentifiers → distinct ids)', async () => {
+    // Two rows share the same original card (cardIdentifier) but have different
+    // substitutes (substituteIdentifier). groupReviewRows produces two separate groups
+    // because grouping key includes the substitute: `${trackedDeckId}:${cardIdentifier}:${substituteIdentifier}`.
+    // Clicking group A's checkbox must not affect group B — makeReviewRowId produces
+    // distinct composite ids: (1:ORIG-SHARED:SUB-A) ≠ (1:ORIG-SHARED:SUB-B).
+    mockReviewsData = {
+      rows: [
+        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-A', decision: 'pending' }),
+        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-B', decision: 'pending' }),
+      ],
+    };
+    renderPage();
+
+    // Both groups render as separate rows.
+    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
+
+    // Before any selection there are exactly 2 row checkboxes (bulk bar is hidden).
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+
+    // Click group A's checkbox (first row).
+    await userEvent.click(checkboxes[0]!);
+
+    // Group A is now selected.
+    expect(checkboxes[0]).toBeChecked();
+    // Group B must remain unselected — selection ids are distinct.
+    expect(checkboxes[1]).not.toBeChecked();
   });
 });
