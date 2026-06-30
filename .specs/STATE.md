@@ -36,6 +36,15 @@
 
 ## Handoff
 
+- **Feature**: uxui-remediation — `.specs/features/uxui-remediation/` — **📋 PLANNED, awaiting Execute go-ahead.** Owner said "plan, don't implement yet."
+- **Phase / Task**: Specify + Discuss + Design + Tasks complete. `spec.md` (17 reqs UXUI-01..17), `context.md` (decisions D1–D4), `design.md` (3 shared mechanisms + 1 layout change + guards), `tasks.md` (24 atomic tasks across 6 phases; matrix/parallelism/gates + 3 validation tables all green). Source of truth: `docs/audit/uxui-2026-06-29/MAP.md` (81 findings → 12 themes + 4 decisions) + `cluster-*.md` + `_global-crosscheck.md`.
+- **Decisions locked (owner)**: D1 mount ReadinessHero as canvas banner · D2 wordmark solid brass · D3 light-theme toggle left as-is (no change) · D4 logged default (tighten add-cards numerals + CardLightbox caption; ratify hero-stats/eyebrows as intentional exceptions). Scope = systemic themes T1–T12 + D1/D2 + standalone P1s (home `window.confirm`, visual-fixture repair); per-surface P2/P3 long-tail deferred to a documented backlog in spec.md.
+- **Next step**: On owner go-ahead, run Execute. 6 phases (>3) → offer one worker per phase (offer-then-confirm), then the always-on Verifier. Tools default MCP/Skill NONE; optional `impeccable:polish`/`layout` on visual tasks (open question in tasks.md).
+- **Decision candidates to ratify at Execute** (append to Decisions as AD-005/006 if kept): canonical `:focus-visible` convention + guard; no-raw-brand-hex guard.
+- **Env caveat**: visual re-baseline (Phase 5, T22–T24) needs dev server + seeded Postgres; if no local DB, defer snapshot regen to CI (mirrors the i18n known-env limitation below), keep unit+typecheck+lint+guards as the local gate.
+- **Branch**: currently on `main` (caller switched + fast-forwarded to origin/main @ 431543e before the audit). Execute should start a feature branch (e.g. `feat/uxui-remediation`).
+
+### Prior feature (reference)
 - **Feature**: i18n — `.specs/features/i18n/` — **✅ COMPLETE & VERIFIED (PASS).** Ready for delivery; only the owner's call on opening the PR remains.
 - **Phase / Task**: All four phases (T1–T18) implemented & committed; independent Verifier passed on the second run.
 - **Verification**: Two independent Verifier passes (Opus, author ≠ verifier). Run #1 returned FAIL on two P1 gaps — P1-AC8 (localStorage-unavailable path threw out of `changeLanguage`: a REAL impl gap, not just missing evidence) and P1-AC7 (runtime missing-key fallback was config-only). Fix `9afb58d` added a guarded `safeLocalStorage` cache detector in `apps/web/src/i18n/index.ts` (mirrors the ThemeToggle try/catch) + 3 tests. Run #2 → **PASS**: 12/12 non-deferred ACs spec-anchored, 0 spec-precision gaps, sensor 8/8 mutations killed (incl. the new guard mutation), gate green. Report: `.specs/features/i18n/validation.md`.
