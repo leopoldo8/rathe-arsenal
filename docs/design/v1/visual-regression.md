@@ -85,13 +85,21 @@ When a new surface is added to the product:
    initial baseline.
 3. Commit the new snapshot with the surface implementation.
 
-## Pending re-baseline after uxui-remediation pass
+## Re-baseline after uxui-remediation pass — ✅ DONE (commit `dc04225`)
 
-The `feat/uxui-remediation` branch intentionally changed the following
-surfaces. Their existing snapshots in `tests/visual/__snapshots__/` will
-**diverge from the code** until `pnpm --filter @rathe-arsenal/web test:visual:update`
-is run in an environment with the dev server + seeded Postgres (i.e. CI or
-a local env with `pnpm dev` running).
+**Status:** completed locally against a running stack (api + web + Postgres).
+All 21 visual surfaces pass (`pnpm --filter @rathe-arsenal/web test:visual`).
+Five baselines were rewritten — `auth-onboarding` (now the wizard),
+`auth-deck-detail`, `auth-deck-detail-edit` (populated deck + ReadinessHero),
+`auth-library`, `auth-settings`. The remaining surfaces' changes (wordmark
+brass, deckbox SVG token, etc.) fall under the 1% `maxDiffPixelRatio`
+threshold, so they pass against their existing baselines without a rewrite.
+CI re-verifies on its own Postgres service.
+
+The table below is kept as the record of which surfaces this branch touched.
+Historically (before the stack was available locally) these snapshots would
+have **diverged from the code** until `test:visual:update` ran in an
+environment with the dev server + seeded Postgres.
 
 Run `playwright test --update-snapshots` (or the alias `test:visual:update`)
 on these surfaces after merging the remediation branch:
