@@ -42,7 +42,7 @@ export function SumExplainer(): React.ReactElement {
         {/* Visual two-box-plus-total diagram */}
         <div className={styles.diagram} aria-label={t('csvSources.sumExplainerDiagramAriaLabel')}>
           <div className={styles.diagramBox}>
-            <span className={styles.diagramLabel}>Source A</span>
+            <span className={styles.diagramLabel}>{t('csvSources.sumExplainerSourceA')}</span>
             <span className={styles.diagramValue}>3×</span>
             <span className={styles.diagramCard}>Lightning Press</span>
           </div>
@@ -50,7 +50,7 @@ export function SumExplainer(): React.ReactElement {
           <span className={styles.diagramPlus} aria-hidden="true">+</span>
 
           <div className={styles.diagramBox}>
-            <span className={styles.diagramLabel}>Source B</span>
+            <span className={styles.diagramLabel}>{t('csvSources.sumExplainerSourceB')}</span>
             <span className={styles.diagramValue}>2×</span>
             <span className={styles.diagramCard}>Lightning Press</span>
           </div>
@@ -58,7 +58,7 @@ export function SumExplainer(): React.ReactElement {
           <span className={styles.diagramEquals} aria-hidden="true">=</span>
 
           <div className={`${styles.diagramBox} ${styles.diagramTotal}`}>
-            <span className={styles.diagramLabel}>Total</span>
+            <span className={styles.diagramLabel}>{t('csvSources.sumExplainerTotal')}</span>
             <span className={styles.diagramValue}>5×</span>
             <span className={styles.diagramCard}>Lightning Press</span>
           </div>

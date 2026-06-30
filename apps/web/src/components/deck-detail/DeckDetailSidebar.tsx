@@ -234,7 +234,7 @@ export function DeckDetailSidebar({
               <div
                 className={styles.legalitySlot}
                 data-testid="sidebar-edit-legality-slot"
-                aria-label={`Legality: ${legality.category}`}
+                aria-label={t('decks.legalityAria', { category: legality.category })}
               >
                 <LegalityBadge legality={legality} format={compositionDraft.format} />
               </div>
@@ -246,7 +246,7 @@ export function DeckDetailSidebar({
                   fallback renders. Click opens the fullscreen lightbox. */}
               <div className={styles.heroThumb} data-testid="sidebar-hero-thumb">
                 <CardArt
-                  name={heroDisplayName ?? 'Hero'}
+                  name={heroDisplayName ?? t('decks.heroFallback')}
                   pitch={null}
                   cost={null}
                   type="Hero"
@@ -277,7 +277,7 @@ export function DeckDetailSidebar({
                 <div
                   className={styles.legalitySlot}
                   data-testid="sidebar-legality-slot"
-                  aria-label={`Legality: ${legality.category}`}
+                  aria-label={t('decks.legalityAria', { category: legality.category })}
                 >
                   <LegalityBadge legality={legality} format={format} />
                 </div>
@@ -381,7 +381,7 @@ export function DeckDetailSidebar({
         <CardLightbox
           imageUrl={heroImageUrl.large}
           sources={heroLightboxSources}
-          name={heroDisplayName ?? 'Hero'}
+          name={heroDisplayName ?? t('decks.heroFallback')}
           onClose={() => setHeroLightboxOpen(false)}
         />
       )}

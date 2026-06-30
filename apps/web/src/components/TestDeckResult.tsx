@@ -123,6 +123,7 @@ export function TestDeckResult({
  * Uses data-path attribute + CSS Module rules (low-cardinality enum pattern).
  */
 function PathBadge({ path }: { readonly path: 'A' | 'B' | 'C' }) {
+  const { t } = useTranslation();
   // Path A has no badge per spec — omit to preserve signal strength on B/C.
   if (path === 'A') return null;
 
@@ -130,7 +131,7 @@ function PathBadge({ path }: { readonly path: 'A' | 'B' | 'C' }) {
 
   return (
     <span
-      aria-label={`Path ${path}`}
+      aria-label={t('decks.pathTabAria', { path })}
       className={styles.pathBadge}
       data-path={path}
     >

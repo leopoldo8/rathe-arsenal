@@ -59,7 +59,7 @@ export function FormatDropdown({
         <Select.Trigger
           id="format-dropdown-trigger"
           className={styles.trigger}
-          aria-label={`Format: ${value}`}
+          aria-label={t('decks.formatAria', { format: value })}
           data-testid="format-dropdown-trigger"
         >
           <Select.Value placeholder={t('decks.selectFormat')} />

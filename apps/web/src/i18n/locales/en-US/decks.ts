@@ -279,6 +279,12 @@ export const decks = {
   // path-c-result.tsx
   closestPlayableVersionAria: 'Closest playable version',
   approximation: 'APPROXIMATION',
+  // decks.$deckId.tsx — Path C banner (closest-playable-version)
+  pathCBannerHeadline: 'Closest playable version.',
+  pathCBannerMissing_one:
+    'This deck is missing {{count}} card. You’re currently at {{fidelity}}% fidelity.',
+  pathCBannerMissing_other:
+    'This deck is missing {{count}} cards. You’re currently at {{fidelity}}% fidelity.',
   pathCFidelitySubline: 'of this deck can be assembled or substituted from your collection.',
   tierSwappedClose_one: '{{count}} card swapped with a close match',
   tierSwappedClose_other: '{{count}} cards swapped with a close match',
@@ -290,6 +296,24 @@ export const decks = {
   stillMissingSection: 'Still missing ({{count}})',
   pathCAllAccountedFor: 'All cards accounted for!',
   pitchColorless: 'Colorless',
+  // decks.$deckId.tsx — runtime error / mutation toasts
+  retryShoppingLineToast: 'Retrying shopping line…',
+  failedToLoadDeck: 'Failed to load deck: {{error}}',
+  failedToMarkCard: 'Failed to mark card: {{error}}',
+  failedToClearRejections: 'Failed to clear rejections: {{error}}',
+  // decisions.ts — substitution mutation error toasts
+  failedDecideSubstitution: 'Failed to {{decision}} substitution',
+  failedResetDecision: 'Failed to reset substitution decision',
+  // DeckDetailSidebar
+  legalityAria: 'Legality: {{category}}',
+  heroFallback: 'Hero',
+  // SubstitutionRow
+  substitutionRowAria: 'Substitution: {{original}} for {{substitute}}, Tier {{tier}}, {{score}}% confidence, decision: {{decision}}',
+  decisionAria: 'Decision: {{decision}}',
+  // FormatDropdown
+  formatAria: 'Format: {{format}}',
+  // TestDeckResult — PathBadge aria
+  pathTabAria: 'Path {{path}}',
   // readiness-header.tsx
   effectiveReadinessSubline: 'effective ({{raw}}% raw)',
   // ShoppingLine.tsx

@@ -223,7 +223,7 @@ export function LibraryFilterRail({
                   aria-checked={checked}
                   className={`${styles.pitchPill} ${styles[`pitchPill--${opt.tone}`]} ${checked ? styles['pitchPill--on'] : ''}`}
                   onClick={() => togglePitch(opt.value)}
-                  aria-label={`${pitchDisplayLabel} pitch — ${action}`}
+                  aria-label={t('library.pitchFilterAria', { pitch: pitchDisplayLabel, action })}
                 >
                   <span className={styles.pitchPip} aria-hidden="true">
                     {opt.glyph}

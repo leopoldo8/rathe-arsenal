@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   IBreakdown,
   IDeckDetailResponse,
@@ -72,6 +73,7 @@ function DeckDetailPage(): React.ReactElement {
   const navigate = useNavigate();
   const { show: showToast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   // Derive current mode from ?edit=1 search param
   const mode = edit === '1' ? 'edit' : 'view';
@@ -147,9 +149,9 @@ function DeckDetailPage(): React.ReactElement {
     void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
     showToast({
       kind: 'error',
-      message: 'Retrying shopping line…',
+      message: t('decks.retryShoppingLineToast'),
     });
-  }, [queryClient, deckId, showToast]);
+  }, [queryClient, deckId, showToast, t]);
 
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
@@ -167,14 +169,14 @@ function DeckDetailPage(): React.ReactElement {
     return (
       <div>
         <p className={styles.errorMsg}>
-          Failed to load deck: {(detailQuery.error as Error).message}
+          {t('decks.failedToLoadDeck', { error: (detailQuery.error as Error).message })}
         </p>
         <button
           type="button"
           className={styles.retryBtn}
           onClick={() => void detailQuery.refetch()}
         >
-          Retry
+          {t('decks.retry')}
         </button>
       </div>
     );
@@ -219,7 +221,7 @@ function DeckDetailPage(): React.ReactElement {
           onError: (err) => {
             showToast({
               kind: 'error',
-              message: `Failed to mark card: ${(err as Error).message}`,
+              message: t('decks.failedToMarkCard', { error: (err as Error).message }),
               retry: () => markOwnedMutation.mutate(cardIdentifier),
             });
           },
@@ -248,7 +250,7 @@ function DeckDetailPage(): React.ReactElement {
           onError: (err) => {
             showToast({
               kind: 'error',
-              message: `Failed to clear rejections: ${(err as Error).message}`,
+              message: t('decks.failedToClearRejections', { error: (err as Error).message }),
               retry: () => clearRejectionsMutation.mutate(undefined),
             });
           },
@@ -329,6 +331,7 @@ function DeckDetailPageWithData({
   onPollingChange,
   onShoppingRetry,
 }: IDeckDetailPageWithDataProps): React.ReactElement {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Ref to the Edit button for DraftRestoreModal focus return.
@@ -611,19 +614,17 @@ function DeckDetailPageWithData({
             {mode === 'view' && isPathC && snapshot && (
               <div role="status" className={styles.pathCBanner}>
                 <div className={styles.pathCBanner__eyebrow}>
-                  APPROXIMATION
+                  {t('decks.approximation')}
                 </div>
                 <strong className={styles.pathCBanner__strong}>
-                  Closest playable version.
+                  {t('decks.pathCBannerHeadline')}
                 </strong>{' '}
-                This deck is missing{' '}
-                {countNotOwnedCards(snapshot.breakdown)}{' '}
-                {countNotOwnedCards(snapshot.breakdown) === 1
-                  ? 'card'
-                  : 'cards'}
-                . You&rsquo;re currently at{' '}
-                {(Math.round(snapshot.fidelityPercent * 10) / 10).toFixed(1)}%
-                fidelity.
+                {t('decks.pathCBannerMissing', {
+                  count: countNotOwnedCards(snapshot.breakdown),
+                  fidelity: (
+                    Math.round(snapshot.fidelityPercent * 10) / 10
+                  ).toFixed(1),
+                })}
               </div>
             )}
             <DeckCanvas

@@ -52,7 +52,7 @@ export function ReadinessHeader({
         rel="noopener noreferrer"
         className={styles.fabraryLink}
       >
-        View on Fabrary
+        {t('decks.viewOnFabrary')}
       </a>
     </div>
   );

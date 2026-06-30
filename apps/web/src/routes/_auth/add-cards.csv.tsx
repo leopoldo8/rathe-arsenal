@@ -37,7 +37,9 @@ function AddCardsCsvPage(): React.ReactElement {
     if (file.size > MAX_BYTES) {
       setStatus({
         state: 'error',
-        message: `File is over the 2 MB limit (${(file.size / 1024 / 1024).toFixed(2)} MB).`,
+        message: t('csvSources.csvOverSizeLimit', {
+          size: (file.size / 1024 / 1024).toFixed(2),
+        }),
       });
       return;
     }
@@ -64,14 +66,14 @@ function AddCardsCsvPage(): React.ReactElement {
           // does — we'd rather surface the surprise than silently swallow.
           setStatus({
             state: 'error',
-            message: `Unexpected upload result: ${response.kind}`,
+            message: t('csvSources.csvUnexpectedResult', { kind: response.kind }),
           });
         },
         onError: (err) => {
           const message =
             err instanceof ApiError
               ? err.message
-              : (err as Error).message || 'Upload failed.';
+              : (err as Error).message || t('csvSources.csvUploadFailed');
           setStatus({ state: 'error', message });
         },
       },
