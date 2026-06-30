@@ -19,6 +19,7 @@ export function MarkOwnedButton({
 
   return (
     <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         onMarkOwned(cardIdentifier);

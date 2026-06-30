@@ -28,11 +28,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Visual icon stays 16px; padding extends hit area to ≥44px (UXUI-02). */
   width: 16px;
   height: 16px;
-  min-block-size: 16px;
-  min-inline-size: 16px;
-  padding: 0;
+  padding: 14px;
+  box-sizing: content-box;
   background: transparent;
   border: none;
   border-radius: 50%;
