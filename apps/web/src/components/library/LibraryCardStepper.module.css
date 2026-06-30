@@ -23,8 +23,8 @@
 }
 
 .btn {
-  width: 28px;
-  height: 28px;
+  min-block-size: 44px;
+  min-inline-size: 44px;
   background: var(--ra-bg-surface);
   border: 0;
   border-right: 1px solid var(--ra-border);

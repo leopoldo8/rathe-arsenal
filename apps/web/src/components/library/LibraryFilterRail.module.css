@@ -132,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  min-block-size: 32px;
+  min-block-size: 44px;
   padding: var(--ra-space-1) var(--ra-space-3);
   background: var(--ra-bg-sunken);
   border: 1px solid var(--ra-border);
@@ -216,7 +216,7 @@
   justify-content: space-between;
   gap: var(--ra-space-3);
   width: 100%;
-  min-block-size: 32px;
+  min-block-size: 44px;
   padding: var(--ra-space-2) 0;
   background: transparent;
   border: 0;
@@ -287,7 +287,7 @@
 }
 
 .toggleList--dense .toggleRow {
-  min-block-size: 30px;
+  min-block-size: 44px;
   padding-block: var(--ra-space-1);
 }
 
@@ -297,7 +297,7 @@
   align-items: center;
   gap: var(--ra-space-2);
   width: 100%;
-  min-block-size: 36px;
+  min-block-size: 44px;
   padding: var(--ra-space-1) var(--ra-space-2);
   background: transparent;
   border: 0;
@@ -470,7 +470,7 @@
 }
 
 .segmentBtn {
-  min-block-size: 30px;
+  min-block-size: 44px;
   padding: var(--ra-space-1) var(--ra-space-2);
   background: var(--ra-bg-sunken);
   border: 0;

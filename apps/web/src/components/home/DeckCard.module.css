@@ -631,10 +631,10 @@
   /* Natural position: pin's left edge flush with the deckbox's
      painted right edge. */
   right: 11%;
-  /* Visual 22×22; padding 6px → 34px hit/visual target. */
+  /* Visual 22×22; padding 11px → 44px hit area. */
   width: 22px;
   height: 22px;
-  padding: 6px;
+  padding: 11px;
   box-sizing: content-box;
   display: flex;
   align-items: center;

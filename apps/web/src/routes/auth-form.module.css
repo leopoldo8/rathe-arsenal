@@ -154,7 +154,7 @@
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   cursor: pointer;
-  min-block-size: 36px;
+  min-block-size: 44px;
   transition:
     border-color var(--ra-duration) var(--ra-ease),
     color var(--ra-duration) var(--ra-ease),
