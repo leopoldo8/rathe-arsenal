@@ -223,22 +223,39 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
 
       let targetUrl = surface.url;
 
-      // Resolve the deck-detail URL at runtime.
+      // deck-detail: resolve the populated deck URL and guard that
+      // ReadinessHero has rendered before snapshotting (UXUI-16).
+      // Fails loudly if the deck data hasn't arrived — prevents silent
+      // skeleton/empty-state captures.
       if (surface.name === 'deck-detail') {
         if (!deckUrl) {
           test.skip(true, 'Skipping deck-detail — no tracked deck found on /home');
           return;
         }
-        targetUrl = deckUrl;
+        await page.goto(`${BASE_URL}${deckUrl}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await applyDarkTheme(page);
+        await page.waitForTimeout(SETTLE_MS);
+        // Guard: .ra-readiness-display must be visible — confirms a populated
+        // deck rendered. If this times out the test fails loudly instead of
+        // silently capturing a skeleton.
+        await page.waitForSelector('.ra-readiness-display', { state: 'visible', timeout: 8000 });
+        await expect(page).toHaveScreenshot(`${surface.name}.png`, { fullPage: true, maxDiffPixelRatio: 0.01 });
+        return;
       }
 
-      // v2 U16: deck-detail-edit — navigate to deck ?edit=1 for Edit-mode snapshot.
+      // deck-detail-edit: same URL in edit mode + same populated-deck guard.
       if (surface.name === 'deck-detail-edit') {
         if (!deckUrl) {
           test.skip(true, 'Skipping deck-detail-edit — no tracked deck found on /home');
           return;
         }
-        targetUrl = deckUrl + '?edit=1';
+        await page.goto(`${BASE_URL}${deckUrl}?edit=1`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await applyDarkTheme(page);
+        await page.waitForTimeout(SETTLE_MS);
+        // Guard: same readiness check for edit mode.
+        await page.waitForSelector('.ra-readiness-display', { state: 'visible', timeout: 8000 });
+        await expect(page).toHaveScreenshot(`${surface.name}.png`, { fullPage: true, maxDiffPixelRatio: 0.01 });
+        return;
       }
 
       // v2 U16: home-tag-filter — activate the first available tag filter chip.
