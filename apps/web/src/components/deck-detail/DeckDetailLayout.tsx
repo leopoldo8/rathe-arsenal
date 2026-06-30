@@ -13,7 +13,8 @@ interface IDeckDetailLayoutProps {
    */
   readonly sidebar: React.ReactNode;
   /**
-   * The main canvas area (breakdown sections).
+   * The main canvas area (ReadinessHero banner + breakdown sections).
+   * ReadinessHero renders full-width at the top of this region per UXUI-14.
    */
   readonly canvas: React.ReactNode;
 }

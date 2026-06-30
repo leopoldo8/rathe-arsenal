@@ -62,11 +62,6 @@ const defaultProps = {
   format: 'Classic Constructed',
   legality: { category: 'legal', reasons: [] as string[] } satisfies IDeckLegality,
   fabraryUlid: 'abc123ulid' as string | null,
-  status: 'building' as const,
-  effectivePercent: 87.5,
-  rawPercent: 75.0,
-  provisionedCards: 52,
-  totalCards: 60,
   shoppingData: null,
   onFetchVariants: vi.fn(),
   fetchMutationStatus: 'idle' as const,
@@ -194,20 +189,25 @@ describe('DeckDetailSidebar — fabrary link', () => {
   });
 });
 
-describe('DeckDetailSidebar — readiness block', () => {
-  it('renders the readiness block', () => {
+// Updated per UXUI-14 AC2: the duplicate readiness block has been moved to
+// ReadinessHero in the canvas. The sidebar MUST NOT render the readiness block.
+describe('DeckDetailSidebar — readiness block removed (UXUI-14 AC2)', () => {
+  it('does NOT render the sidebar readiness section (moved to ReadinessHero in canvas)', () => {
     renderSidebar();
-    expect(screen.getByTestId('sidebar-readiness-block')).toBeInTheDocument();
+    // AC2: duplicate readiness block SHALL be removed from DeckDetailSidebar
+    expect(screen.queryByTestId('sidebar-readiness-section')).not.toBeInTheDocument();
   });
 
-  it('displays the effectivePercent value', () => {
-    renderSidebar({ effectivePercent: 87.5 });
-    expect(screen.getByTestId('sidebar-readiness-block')).toHaveTextContent('87.5');
+  it('does NOT render the sidebar readiness block data-testid', () => {
+    renderSidebar();
+    // AC2: the .ra-readiness-display signature is not shown twice at hero scale
+    expect(screen.queryByTestId('sidebar-readiness-block')).not.toBeInTheDocument();
   });
 
-  it('displays the provisioned/total cards ratio', () => {
-    renderSidebar({ provisionedCards: 52, totalCards: 60 });
-    expect(screen.getByTestId('sidebar-readiness-block')).toHaveTextContent('52/60');
+  it('does NOT render a .ra-readiness-display element in the sidebar (R7 preserved)', () => {
+    const { container } = renderSidebar();
+    // AC4: .ra-readiness-display only appears once — exclusively in ReadinessHero (canvas)
+    expect(container.querySelector('.ra-readiness-display')).toBeNull();
   });
 });
 

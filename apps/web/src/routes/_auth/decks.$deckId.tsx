@@ -23,6 +23,7 @@ import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmp
 import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout';
 import { DeckDetailHeader } from '../../components/deck-detail/DeckDetailHeader';
 import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSidebar';
+import { ReadinessHero } from '../../components/deck-detail/ReadinessHero';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
@@ -586,11 +587,6 @@ function DeckDetailPageWithData({
             format={sidebarFormat}
             legality={deck.legality}
             fabraryUlid={deck.fabraryUlid ?? null}
-            status={deck.status}
-            effectivePercent={snapshot?.effectivePercent ?? 0}
-            rawPercent={snapshot?.rawPercent ?? 0}
-            provisionedCards={snapshot ? countProvisionedCards(snapshot.breakdown) : 0}
-            totalCards={deck.totalCards}
             shoppingData={shoppingData}
             onFetchVariants={onFetchVariants}
             fetchMutationStatus={fetchMutationStatus as import('../../components/ShoppingLine').TVariantFetchMutationStatus}
@@ -607,6 +603,20 @@ function DeckDetailPageWithData({
         }
         canvas={
           <>
+            {/* ReadinessHero — full-width banner at top of canvas (UXUI-14 D1).
+                Receives the same readiness data the sidebar previously used.
+                This is the sole .ra-readiness-display instance on the page (R7). */}
+            <ReadinessHero
+              effectivePercent={snapshot?.effectivePercent ?? 0}
+              rawPercent={snapshot?.rawPercent ?? 0}
+              fidelityPercent={snapshot?.fidelityPercent ?? 0}
+              fabraryUlid={deck.fabraryUlid ?? null}
+              deckName={deck.name}
+              hero={sidebarHeroName}
+              format={sidebarFormat}
+              totalCards={deck.totalCards}
+              provisionedCards={snapshot ? countProvisionedCards(snapshot.breakdown) : 0}
+            />
             {/* Path C banner — only in view mode */}
             {mode === 'view' && isPathC && snapshot && (
               <div role="status" className={styles.pathCBanner}>

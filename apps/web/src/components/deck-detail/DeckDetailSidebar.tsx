@@ -9,7 +9,7 @@ import { LegalityBadge } from './LegalityBadge';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { useHeroesQuery } from '../../api/catalog';
-import type { TDeckStatus, IDeckLegality } from '../../api/decks';
+import type { IDeckLegality } from '../../api/decks';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
@@ -66,17 +66,6 @@ interface IDeckDetailSidebarProps {
    */
   readonly fabraryUlid: string | null;
   /**
-   * Deck lifecycle status for the readiness block label context.
-   */
-  readonly status: TDeckStatus;
-  /**
-   * Readiness display values.
-   */
-  readonly effectivePercent: number;
-  readonly rawPercent: number;
-  readonly provisionedCards: number;
-  readonly totalCards: number;
-  /**
    * Shopping panel data + controls — forwarded to ShoppingPanel.
    */
   readonly shoppingData: IShoppingLineResponse | null;
@@ -91,8 +80,8 @@ interface IDeckDetailSidebarProps {
   // ---------------------------------------------------------------------------
 
   /**
-   * Current render mode. 'edit' dims the readiness block and shows
-   * the cascade warning panel + hero/format dropdowns (on desktop).
+   * Current render mode. 'edit' shows the cascade warning panel +
+   * hero/format dropdowns (on desktop).
    */
   readonly mode?: 'view' | 'edit';
   /**
@@ -120,13 +109,15 @@ interface IDeckDetailSidebarProps {
 /**
  * DeckDetailSidebar — View-mode sidebar for the deck detail page (U11).
  *
- * Contains four blocks:
+ * Contains three blocks:
  *  1. Hero block — art thumbnail placeholder + hero name + format pill +
  *     legality badge slot (U14 fills the real badge).
- *  2. Readiness block — reuses the `.ra-readiness-display` treatment.
- *  3. Shopping summary line — mounts ShoppingPanel (inline on desktop,
+ *  2. Shopping summary line — mounts ShoppingPanel (inline on desktop,
  *     bottom sheet on mobile via the existing Dialog pattern in ShoppingPanel).
- *  4. Fabrary link — conditional on `fabraryUlid !== null`.
+ *  3. Fabrary link — conditional on `fabraryUlid !== null`.
+ *
+ * The readiness block (previously block 2) has been moved to ReadinessHero
+ * in the canvas area per UXUI-14 (D1). The sidebar no longer renders readiness.
  *
  * Below 1280px the sidebar is a collapsible card rendered directly under the
  * header strip. The `ra-deck-sidebar-expanded` localStorage key persists the
@@ -139,10 +130,6 @@ export function DeckDetailSidebar({
   format,
   legality,
   fabraryUlid,
-  effectivePercent,
-  rawPercent,
-  provisionedCards,
-  totalCards,
   shoppingData,
   onFetchVariants,
   fetchMutationStatus,
@@ -171,8 +158,6 @@ export function DeckDetailSidebar({
   }, [expanded]);
 
   const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
-
-  const readinessClass = getReadinessClass(effectivePercent);
 
   // Look up the hero card image so the sidebar can render the actual art
   // instead of a generic placeholder. The heroes query is shared with the
@@ -286,47 +271,6 @@ export function DeckDetailSidebar({
           )}
         </section>
 
-        {/* ---- Block 2: Readiness ----
-            In Edit mode, dims with overlay scoped to this block ONLY.
-            The overlay is position:absolute within the block container.
-            Other sidebar blocks (cascade panel, shopping, fabrary) render
-            at full opacity below this block. */}
-        <section
-          className={[styles.block, mode === 'edit' ? styles['block--dimmed'] : ''].filter(Boolean).join(' ')}
-          aria-labelledby="sidebar-readiness-title"
-          data-testid="sidebar-readiness-section"
-        >
-          {/* Dim overlay scoped to this block only when in Edit mode */}
-          {mode === 'edit' && (
-            <div className={styles.readinessDimOverlay} aria-hidden="true">
-              <span className={styles.readinessDimLabel}>{t('decks.willRecomputeOnSave')}</span>
-            </div>
-          )}
-          <h3 id="sidebar-readiness-title" className={styles.blockTitle}>
-            {t('decks.readiness')}
-          </h3>
-          <div className={styles.readinessBlock} data-testid="sidebar-readiness-block">
-            {/* .ra-readiness-display is the reserved brass treatment for effectivePercent */}
-            <div className={`ra-readiness-display ${styles.readinessDisplay} ${readinessClass}`}>
-              <span className={styles.readinessDisplay__num}>
-                {effectivePercent.toFixed(1)}
-              </span>
-              <span className={styles.readinessDisplay__sym}>%</span>
-            </div>
-            <div className={styles.readinessMeta}>
-              <div className={styles.readinessMeta__label}>
-                {t('decks.effectiveReady')}
-                <span className={styles.readinessMeta__count}>
-                  {' '}&middot;{' '}{t('decks.provisionedCount', { provisioned: provisionedCards, total: totalCards })}
-                </span>
-              </div>
-              <div className={styles.readinessMeta__raw}>
-                {t('decks.rawValue', { value: rawPercent.toFixed(1) })}
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* ---- Cascade Warning Panel — Edit mode only, desktop only (N > 0) ---- */}
         {mode === 'edit' &&
           cascadeCheck !== undefined &&
@@ -389,12 +333,3 @@ export function DeckDetailSidebar({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getReadinessClass(percent: number): string {
-  if (percent >= 80) return styles['readiness--high'] ?? '';
-  if (percent >= 50) return styles['readiness--mid'] ?? '';
-  return styles['readiness--low'] ?? '';
-}

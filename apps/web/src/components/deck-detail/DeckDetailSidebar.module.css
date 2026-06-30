@@ -118,111 +118,11 @@
   color: var(--ra-fg-muted);
 }
 
-/* ---- Readiness block ---- */
-.readinessBlock {
-  display: flex;
-  flex-direction: row;
-  gap: var(--ra-space-4);
-  align-items: center;
-}
-
-/* Signature readiness display — mirrors ReadinessHero's .readiness */
-.readinessDisplay {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.readinessDisplay__num {
-  font-family: var(--ra-font-ornament);
-  font-size: var(--ra-text-h2);
-  font-weight: var(--ra-weight-black);
-  letter-spacing: 0.02em;
-  line-height: 1;
-}
-
-.readinessDisplay__sym {
-  font-family: var(--ra-font-ornament);
-  font-size: var(--ra-text-small);
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: 0;
-}
-
-/* Readiness colour variants */
-.readiness--high .readinessDisplay__num,
-.readiness--high .readinessDisplay__sym {
-  color: var(--ra-ready-high);
-}
-
-.readiness--mid .readinessDisplay__num,
-.readiness--mid .readinessDisplay__sym {
-  color: var(--ra-ready-mid-accent);
-}
-
-.readiness--low .readinessDisplay__num,
-.readiness--low .readinessDisplay__sym {
-  color: var(--ra-ready-low);
-}
-
-.readinessMeta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ra-space-1);
-  min-width: 0;
-}
-
-.readinessMeta__label {
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-snug);
-}
-
-.readinessMeta__count {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-fg-muted);
-}
-
-.readinessMeta__raw {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-fg-muted);
-  letter-spacing: 0.04em;
-}
-
 /* ---- Edit mode: Hero/Format dropdowns block ---- */
 .editHeroBlock {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-4);
-}
-
-/* ---- Edit mode: Readiness block dim ---- */
-.block--dimmed {
-  position: relative;
-  /* Block still renders its content, but the overlay dims it */
-}
-
-/* The dim overlay covers ONLY this block container */
-.readinessDimOverlay {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in oklch, var(--ra-bg-surface) 75%, transparent);
-  border-radius: inherit;
-  z-index: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: var(--ra-space-2) var(--ra-space-3);
-  pointer-events: none;
-}
-
-.readinessDimLabel {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-fg-muted);
-  letter-spacing: 0.04em;
-  font-style: italic;
 }
 
 /* ---- Fabrary link ---- */
