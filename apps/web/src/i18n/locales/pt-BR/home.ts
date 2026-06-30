@@ -40,6 +40,8 @@ export const home = {
   untrackAriaLabel: 'Remover rastreamento de {{deckName}}',
   untrackTitle: 'Remover rastreamento',
   readinessMeterAriaLabel: 'Prontidão {{display}}%, {{tier}}',
+  untrackToastMsg: '"{{deckName}}" removido do rastreamento.',
+  undoUntrack: 'Desfazer',
 
   // PopulatedHomeHero
   armoryEyebrow: 'Seu arsenal',

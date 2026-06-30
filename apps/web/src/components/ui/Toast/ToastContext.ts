@@ -17,6 +17,14 @@ export interface IToastPayload {
   readonly retry?: () => void;
   /** Element to return focus to when toast is dismissed. */
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
+  /**
+   * Optional generic action button. Shown alongside the close button.
+   * Used for "Undo" patterns (e.g. optimistic untrack with deferred mutation).
+   */
+  readonly action?: {
+    readonly label: string;
+    readonly onClick: () => void;
+  };
 }
 
 export interface IToastContext {

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ITrackedDeckListItem, IRepresentativeCard } from '../../api/decks';
 import { StatusBullet, STATUS_KEY_MAP } from '../deck-detail/StatusBullet';
+import { useToast } from '../ui/Toast/useToast';
 import styles from './DeckCard.module.css';
 
 // ---------------------------------------------------------------------------
@@ -100,19 +101,52 @@ export function DeckCard({
   onUntrack,
   isUntracking,
   activeFilterTags = [],
-}: IDeckCardProps): React.ReactElement {
+}: IDeckCardProps): React.ReactElement | null {
   const { t } = useTranslation();
+  const { show } = useToast();
+  const [isOptimisticallyRemoved, setIsOptimisticallyRemoved] = useState(false);
+  const untrackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const effectivePercent = deck.latestSnapshot?.effectivePercent ?? null;
   const tier = effectivePercent !== null ? resolveReadinessTier(effectivePercent) : null;
 
+  // Cleanup on unmount — cancel any pending untrack timer to prevent
+  // stale mutation from firing after the component is removed.
+  useEffect(() => {
+    return () => {
+      if (untrackTimerRef.current !== null) {
+        clearTimeout(untrackTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Optimistic untrack: hide the card immediately, schedule the mutation
+  // after the undo window (4.8s ≈ toast duration). Undo cancels the timer
+  // and restores the card without ever calling onUntrack.
   function handleUntrack(): void {
-    const confirmed = window.confirm(
-      t('home.untrackConfirmMsg', { deckName: deck.name }),
-    );
-    if (confirmed) {
+    setIsOptimisticallyRemoved(true);
+
+    untrackTimerRef.current = setTimeout(() => {
+      untrackTimerRef.current = null;
       onUntrack(deck.id);
-    }
+    }, 4800);
+
+    show({
+      kind: 'info',
+      message: t('home.untrackToastMsg', { deckName: deck.name }),
+      action: {
+        label: t('home.undoUntrack'),
+        onClick: () => {
+          if (untrackTimerRef.current !== null) {
+            clearTimeout(untrackTimerRef.current);
+            untrackTimerRef.current = null;
+          }
+          setIsOptimisticallyRemoved(false);
+        },
+      },
+    });
   }
+
+  if (isOptimisticallyRemoved) return null;
 
   const cardClasses = [
     styles.card,

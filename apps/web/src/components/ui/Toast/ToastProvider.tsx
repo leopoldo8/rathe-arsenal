@@ -184,6 +184,20 @@ function ToastItem({ toast, duration, onDismiss }: IToastItemProps): React.React
             </button>
           </RadixToast.Action>
         )}
+        {toast.action != null && (
+          <RadixToast.Action altText={toast.action.label} asChild>
+            <button
+              type="button"
+              className={styles.retryButton}
+              onClick={() => {
+                toast.action!.onClick();
+                onDismiss();
+              }}
+            >
+              {toast.action.label}
+            </button>
+          </RadixToast.Action>
+        )}
         <RadixToast.Close className={styles.closeButton} aria-label={t('ui.toastDismissAriaLabel')}>
           &times;
         </RadixToast.Close>

@@ -323,3 +323,21 @@ describe('typography discipline (T17)', () => {
     expect(content).not.toMatch(/'Cinzel'/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// window.confirm ban (T21)
+//
+// DeckCard replaced window.confirm with optimistic-remove + undo toast.
+// Guard ensures no non-test source file re-introduces window.confirm, which
+// blocks the browser thread and cannot be tested in jsdom / Playwright.
+// ---------------------------------------------------------------------------
+
+describe('window.confirm ban (T21)', () => {
+  it('no non-test TSX source file uses window.confirm', () => {
+    const violations = tsxSourceFiles.filter((f) => {
+      const content = fs.readFileSync(f, 'utf-8');
+      return content.includes('window.confirm');
+    });
+    expect(violations).toEqual([]);
+  });
+});
