@@ -83,8 +83,7 @@ export function AuthLayout({
 
           {error != null && error !== '' && (
             <div role="alert" className={styles.errorAlert}>
-              <span className={styles.errorStripe} aria-hidden="true" />
-              <span className={styles.errorText}>{error}</span>
+              {error}
             </div>
           )}
 

@@ -138,3 +138,50 @@ describe('focus-suppression ban (T3)', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T9: Side-stripe ban
+//
+// No CSS module may use a colored `border-left` or `border-right` with a
+// pixel value greater than 1px on callouts / cards / list items.
+//
+// Exemption: CSS-drawn chevron patterns use `currentColor` as their color
+// (e.g. `.chevron { border-right: 2px solid currentColor }`). These are
+// geometric arrows, not decorative brand stripes, and are excluded by
+// checking for `currentColor` on the same declaration.
+//
+// After T9, the only remaining > 1px side-border usages are chevrons
+// (which use currentColor). Any re-introduction of colored side-stripes
+// will fail this guard.
+// ---------------------------------------------------------------------------
+
+describe('side-stripe ban (T9)', () => {
+  /**
+   * Detects a line with `border-left` or `border-right` where the pixel
+   * value is > 1 AND the color is NOT `currentColor` (i.e. a real color
+   * token / hex / rgba that acts as a decorative stripe).
+   *
+   * The regex matches: `border-(left|right): <N>px` where N >= 2.
+   * Lines containing `currentColor` are considered CSS-drawn chevrons and
+   * are skipped.
+   */
+  const STRIPE_PX = /border-(?:left|right)\s*:\s*[2-9]\d*px/;
+  const EXEMPT_CURRENT_COLOR = /currentColor/;
+
+  it('no css module has a colored border-left/right > 1px stripe (chevrons excluded)', () => {
+    const violations: string[] = [];
+
+    for (const file of cssModuleFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      const lines = content.split('\n');
+
+      for (const line of lines) {
+        if (STRIPE_PX.test(line) && !EXEMPT_CURRENT_COLOR.test(line)) {
+          violations.push(`${path.relative(SRC_ROOT, file)}: ${line.trim()}`);
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});

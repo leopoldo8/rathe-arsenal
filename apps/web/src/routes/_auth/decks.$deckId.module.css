@@ -106,8 +106,8 @@
 .pathCBanner {
   /* Perimeter border using path-c-border token */
   border: 1px solid var(--ra-path-c-border);
-  /* Left border overrides with ember accent (3px ornamental) */
-  border-left: 3px solid var(--ra-ember);
+  /* Top border provides ember accent per design (side-stripe banned per UXUI-04) */
+  border-top: 3px solid var(--ra-ember);
   border-radius: var(--ra-radius-md);
   padding: var(--ra-space-5);
   margin-bottom: var(--ra-space-4);

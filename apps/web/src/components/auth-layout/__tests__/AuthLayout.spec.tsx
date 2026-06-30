@@ -133,4 +133,17 @@ describe('AuthLayout — inline error pattern', () => {
     );
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  // T9 (UXUI-04): errorStripe span removed — no decorative aria-hidden child inside the alert.
+  it('error alert has no decorative aria-hidden child (errorStripe removed per UXUI-04)', () => {
+    render(
+      <AuthLayout title="Sign in" error="Bad credentials">
+        <form />
+      </AuthLayout>,
+    );
+    const alert = screen.getByRole('alert');
+    // After T9, alert renders the error string directly — no <span aria-hidden="true"> stripe.
+    const hiddenChildren = alert.querySelectorAll('[aria-hidden="true"]');
+    expect(hiddenChildren).toHaveLength(0);
+  });
 });
