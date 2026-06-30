@@ -26,6 +26,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: P1-AC7 (i18n,testing)
 - last seen: 2026-06-29T20:28:51Z
 
+### L-003 — When a spec AC defines a precise CSS property value (aspect-ratio, overflow, font/color token) for a CSS-only fix, add a targeted guard assertion in design-guards.spec.ts for that exact value. Guard+visual alone creates gaps when visual is CI-deferred and no existing guard covers the specific property.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · harmful: 0
+- features: uxui-remediation
+- evidence: UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06 AC3, UXUI-14 AC3
+- last seen: 2026-06-30T05:45:46Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

@@ -283,23 +283,23 @@ surfaces have no real visual regression coverage — masking any regression from
 
 | Requirement ID | Story | Theme/Decision | Phase | Status |
 | -------------- | ----- | -------------- | ----- | ------ |
-| UXUI-01 | P1 focus-visible | T1 | Tasks | Pending |
-| UXUI-02 | P1 touch targets | T2 | Tasks | Pending |
-| UXUI-03 | P1 modal focus | T3 | Tasks | Pending |
-| UXUI-04 | P1 side-stripes | T4 | Tasks | Pending |
-| UXUI-05 | P1 wordmark brass | D2 | Tasks | Pending |
-| UXUI-14 | P1 readiness focal point | D1 | Design+Tasks | Pending |
-| UXUI-15 | P1 native confirm | home ban | Tasks | Pending |
-| UXUI-16 | P1 visual fixtures | B coverage | Tasks | Pending |
-| UXUI-06 | P2 token drift | T5 | Tasks | Pending |
-| UXUI-07 | P2 skeleton parity | T6 | Tasks | Pending |
-| UXUI-08 | P2 i18n leaks | T7 | Tasks | Pending |
-| UXUI-09 | P2 reduced-motion | T8 | Tasks | Pending |
-| UXUI-10 | P2 error states | T9 | Tasks | Pending |
-| UXUI-11 | P2 dead code | T10 | Tasks | Pending |
-| UXUI-12 | P2 SPA nav | T11 | Tasks | Pending |
-| UXUI-13 | P2 ARIA | T12 | Tasks | Pending |
-| UXUI-17 | P3 signature/type | D4 | Tasks | Pending |
+| UXUI-01 | P1 focus-visible | T1 | Tasks | ✅ Verified |
+| UXUI-02 | P1 touch targets | T2 | Tasks | ✅ Verified (AC2 spec-precision gap) |
+| UXUI-03 | P1 modal focus | T3 | Tasks | ✅ Verified |
+| UXUI-04 | P1 side-stripes | T4 | Tasks | ✅ Verified |
+| UXUI-05 | P1 wordmark brass | D2 | Tasks | ✅ Verified |
+| UXUI-14 | P1 readiness focal point | D1 | Design+Tasks | ✅ Verified (AC3 spec-precision gap) |
+| UXUI-15 | P1 native confirm | home ban | Tasks | ✅ Verified |
+| UXUI-16 | P1 visual fixtures | B coverage | Tasks | ⚠️ Deferred-to-CI (env-blocked; fixture code verified) |
+| UXUI-06 | P2 token drift | T5 | Tasks | ✅ Verified (AC3/AC4 spec-precision gap) |
+| UXUI-07 | P2 skeleton parity | T6 | Tasks | ✅ Verified (AC1/AC2 spec-precision gap) |
+| UXUI-08 | P2 i18n leaks | T7 | Tasks | ✅ Verified |
+| UXUI-09 | P2 reduced-motion | T8 | Tasks | ✅ Verified |
+| UXUI-10 | P2 error states | T9 | Tasks | ✅ Verified |
+| UXUI-11 | P2 dead code | T10 | Tasks | ✅ Verified |
+| UXUI-12 | P2 SPA nav | T11 | Tasks | ✅ Verified |
+| UXUI-13 | P2 ARIA | T12 | Tasks | ✅ Verified |
+| UXUI-17 | P3 signature/type | D4 | Tasks | ✅ Verified |
 
 **Coverage:** 17 requirements; mapping to tasks happens in Tasks phase. D3 resolved as no-op.
 
