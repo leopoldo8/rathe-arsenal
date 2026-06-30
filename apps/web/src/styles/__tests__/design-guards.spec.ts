@@ -265,3 +265,34 @@ describe('stale-hex ban (T13)', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T15 — reduced-motion guard (UXUI-09)
+//
+// CsvSourceRow.module.css (dropIn animation) and add-cards.module.css
+// (.method:hover) must each contain a `@media (prefers-reduced-motion: reduce)`
+// block that collapses the transform. This guard locks the override as a
+// regression sentinel — any removal re-triggers the CSS review.
+// ---------------------------------------------------------------------------
+
+describe('reduced-motion overrides present (T15)', () => {
+  const REDUCED_MOTION_RE = /prefers-reduced-motion\s*:\s*reduce/;
+
+  const REQUIRED_CSS_FILES = [
+    path.join(SRC_ROOT, 'components/csv-sources/CsvSourceRow.module.css'),
+    path.join(SRC_ROOT, 'routes/_auth/add-cards.module.css'),
+  ];
+
+  it('each motion-animating CSS module contains a prefers-reduced-motion block', () => {
+    const missing: string[] = [];
+
+    for (const file of REQUIRED_CSS_FILES) {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (!REDUCED_MOTION_RE.test(content)) {
+        missing.push(path.relative(SRC_ROOT, file));
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+});

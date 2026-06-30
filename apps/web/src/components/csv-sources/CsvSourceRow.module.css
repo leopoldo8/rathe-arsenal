@@ -223,3 +223,14 @@
   background: var(--ra-border-subtle);
   margin: var(--ra-space-1) 0;
 }
+
+/* -----------------------------------------------------------------------
+ * Reduced-motion: collapse the dropIn translate for users who prefer no
+ * animation (UXUI-09 / T15). The opacity fade is preserved as a subtle
+ * entrance cue that does not involve motion.
+ * --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .menuContent {
+    animation: none;
+  }
+}

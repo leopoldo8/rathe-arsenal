@@ -12,7 +12,6 @@ export function DeckboxDecoration(): React.ReactElement {
       overflow="visible"
       className={styles.svg}
       aria-hidden="true"
-      style={{ color: 'var(--ra-accent)' }}
     >
       <defs>
         <linearGradient id="ra-box-front" x1="0" y1="0" x2="1" y2="0">

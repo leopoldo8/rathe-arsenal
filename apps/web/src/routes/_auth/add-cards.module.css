@@ -282,3 +282,13 @@
     font-size: 2rem;
   }
 }
+
+/* -----------------------------------------------------------------------
+ * Reduced-motion: collapse .method:hover translateY(-2px) for users who
+ * prefer no motion (UXUI-09 / T15).
+ * --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .method:hover {
+    transform: none;
+  }
+}
