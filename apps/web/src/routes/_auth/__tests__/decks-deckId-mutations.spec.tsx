@@ -369,6 +369,25 @@ describe('DeckDetailPage — populated state', () => {
     expect(screen.getByTestId('deck-detail-sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('deck-canvas')).toBeInTheDocument();
   });
+
+  it('renders the Path C approximation banner localized in pt-BR (no hardcoded English)', () => {
+    // The banner only shows for Path C snapshots in view mode. It was a
+    // residual hardcoded-English block (I18N-05); this guards the localization.
+    mockQueryState = 'success-populated';
+    mockDeckData = buildDeck({
+      latestSnapshot: { ...buildSnapshot(), path: 'C', fidelityPercent: 12.34 },
+    });
+    renderPage();
+    const canvas = screen.getByTestId('layout-canvas');
+    expect(canvas).toHaveTextContent('APROXIMAÇÃO');
+    expect(canvas).toHaveTextContent('Versão mais próxima jogável.');
+    expect(canvas).toHaveTextContent(
+      'Você está em 12.3% de fidelidade.',
+    );
+    // The English literals the extraction had missed must be gone.
+    expect(canvas).not.toHaveTextContent('APPROXIMATION');
+    expect(canvas).not.toHaveTextContent('This deck is missing');
+  });
 });
 
 describe('DeckDetailPage — mutation Toast routing', () => {
@@ -395,7 +414,7 @@ describe('DeckDetailPage — mutation Toast routing', () => {
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining('Failed to clear rejections'),
+        message: expect.stringContaining('Falha ao limpar rejeições'),
       }),
     );
   });

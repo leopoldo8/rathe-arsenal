@@ -479,7 +479,7 @@ describe('ReadinessHeader', () => {
     );
     expect(screen.getByText('Dorinthea CC')).toBeInTheDocument();
     expect(screen.getByText(/92\.3%/)).toBeInTheDocument();
-    expect(screen.getByText(/view on fabrary/i)).toBeInTheDocument();
+    expect(screen.getByText(/ver no fabrary/i)).toBeInTheDocument();
   });
 
   it('attaches the correct data-tier for each readiness band', async () => {

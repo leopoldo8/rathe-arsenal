@@ -129,7 +129,13 @@ export function SubstitutionRow({
     .join(' ');
 
   const scorePercent = Math.round(match.score * 100);
-  const rowAriaLabel = `Substitution: ${originalName} for ${substituteName}, Tier ${match.tier}, ${scorePercent}% confidence, decision: ${decision}`;
+  const rowAriaLabel = t('decks.substitutionRowAria', {
+    original: originalName,
+    substitute: substituteName,
+    tier: match.tier,
+    score: scorePercent,
+    decision,
+  });
 
   // --score drives the confidence bar fill width via CSS (continuous value).
   // First-paint race is acceptable for the confidence bar — it is decorative.
@@ -228,7 +234,7 @@ export function SubstitutionRow({
           <div className={styles.collapsedDecision}>
             <span
               className={`${styles.bigDecisionBadge} ${styles[`bigDecisionBadge--${decision}`]}`}
-              aria-label={`Decision: ${decision}`}
+              aria-label={t('decks.decisionAria', { decision })}
             >
               {isApproved ? (
                 <>

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import i18n from '../i18n';
 import { useApiClient } from '../lib/api-client';
 import { deckDetailQueryKey, IDeckDetailResponse } from './deck-detail';
 import { IToastPayload } from '../components/ui/Toast/ToastProvider';
@@ -194,7 +195,7 @@ export function useDecideSubstitutionMutation(
       // failures arrive within 500ms — R59 burst-consolidation contract).
       showToast?.({
         kind: 'error',
-        message: `Failed to ${variables.decision} substitution`,
+        message: i18n.t('decks.failedDecideSubstitution', { decision: variables.decision }),
         retry: () => {
           // Re-fire the same mutation so "Retry all" wires back through onMutate.
           // The query client reference is stable; re-invoke via mutation.
@@ -262,7 +263,7 @@ export function useResetDecisionsMutation(
 
       showToast?.({
         kind: 'error',
-        message: 'Failed to reset substitution decision',
+        message: i18n.t('decks.failedResetDecision'),
       });
     },
 
