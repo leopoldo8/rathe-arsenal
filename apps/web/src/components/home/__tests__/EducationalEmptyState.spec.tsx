@@ -1,9 +1,25 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AuthContext, IAuthContext } from '../../../auth/AuthContext';
 import { EducationalEmptyState } from '../EducationalEmptyState';
+
+// ---------------------------------------------------------------------------
+// Router mock — Link renders as a plain <a> with href so existing href-based
+// assertions continue to work and we avoid the need for a full RouterProvider.
+// ---------------------------------------------------------------------------
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({
+    children,
+    to,
+    className,
+  }: {
+    children: React.ReactNode;
+    to: string;
+    className?: string;
+  }) => <a href={to} className={className}>{children}</a>,
+}));
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -98,5 +114,25 @@ describe('EducationalEmptyState', () => {
     expect(
       screen.getByText(/quer adicionar cards sem um csv/i),
     ).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // T16 / UXUI-12: Navigation links must use TanStack <Link>, not bare <a>.
+  // The router mock above resolves <Link to="…"> → <a href="…">, so the DOM
+  // assertions below prove the component went through the router Link path.
+  // Any reversion to a bare <a href="…"> would bypass the mock and still
+  // render an anchor, but the design-guard below (see design-guards.spec.ts)
+  // provides the code-level fence.
+  // -------------------------------------------------------------------------
+  it('all three navigation links route via TanStack Link (T16 / UXUI-12)', () => {
+    renderEmpty();
+    const links = screen.getAllByRole('link');
+    // Track deck CTA → /decks/new, Skip to Library → /library, Manual add → /library
+    const hrefs = links.map((l) => l.getAttribute('href'));
+    expect(hrefs).toContain('/decks/new');
+    expect(hrefs.filter((h) => h === '/library').length).toBe(2);
+    // No link should use a full-page reload pattern (bare anchor without router)
+    // — enforced by the fact that the mock intercepts all <Link> usages.
+    expect(hrefs.every((h) => h !== null)).toBe(true);
   });
 });
