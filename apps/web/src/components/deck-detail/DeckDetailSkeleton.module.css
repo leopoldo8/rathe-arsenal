@@ -1,7 +1,5 @@
-/* ============================================================
-   DeckDetailSkeleton — loading placeholder for the 3-column layout.
-   Mirrors the populated grid breakpoints from decks.$deckId.module.css.
-   ============================================================ */
+/* DeckDetailSkeleton — matches DeckDetailLayout breakpoints (UXUI-07).
+   Single-col below 1280px; 280px sidebar + 1fr canvas at ≥1280px. */
 
 .layout {
   display: grid;
@@ -10,37 +8,27 @@
   align-items: start;
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1280px) {
   .layout {
-    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-columns: 280px 1fr;
+    gap: var(--ra-space-8);
   }
 }
 
-/* Column A */
-.colA {
+.sidebar {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-3);
 }
 
-/* Column B */
-.colB {
+.canvas {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-3);
   min-width: 0;
 }
 
-/* Column C */
-.colC {
-  /* ShoppingPanel manages its own sticky positioning */
-}
-
 .sectionTitle {
-  margin-top: var(--ra-space-2);
-}
-
-.heroLine {
   margin-top: var(--ra-space-2);
 }
 

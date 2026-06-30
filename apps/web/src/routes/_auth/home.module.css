@@ -83,5 +83,5 @@
   background-color: var(--ra-bg-surface);
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-md);
-  min-height: 140px;
+  aspect-ratio: 200/240;
 }

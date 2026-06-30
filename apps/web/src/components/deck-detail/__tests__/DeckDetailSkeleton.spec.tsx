@@ -50,3 +50,15 @@ describe('DeckDetailSkeleton — a11y', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('DeckDetailSkeleton — two-column structure (UXUI-07)', () => {
+  it('renders a sidebar section', () => {
+    render(<DeckDetailSkeleton />);
+    expect(screen.getByTestId('deck-detail-skeleton-sidebar')).toBeInTheDocument();
+  });
+
+  it('renders a canvas section', () => {
+    render(<DeckDetailSkeleton />);
+    expect(screen.getByTestId('deck-detail-skeleton-canvas')).toBeInTheDocument();
+  });
+});
