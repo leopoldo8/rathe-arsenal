@@ -39,6 +39,11 @@ vi.mock('../../shell/DeckboxDecoration', () => ({
 
 // Router mock — Link renders as a plain <a> with href, matching the pattern
 // used across other component tests (e.g. Footer.spec.tsx).
+//
+// The mock also stamps `data-tsr-link="true"` on the rendered anchor so the
+// DISC-06 assertions below can discriminate a real TanStack `<Link>` from a
+// hand-written `<a href="/about">` (see Footer.spec.tsx for the same
+// pattern applied to AC5/DISC-04).
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     children,
@@ -48,7 +53,7 @@ vi.mock('@tanstack/react-router', () => ({
     children: React.ReactNode;
     to: string;
     className?: string;
-  }) => <a href={to} className={className}>{children}</a>,
+  }) => <a href={to} className={className} data-tsr-link="true">{children}</a>,
 }));
 
 import { AuthLayout } from '../AuthLayout';
@@ -174,6 +179,7 @@ describe('AuthLayout — disclaimer link (DISC-06)', () => {
     );
     const aboutLink = screen.getByRole('link', { name: 'Sobre' });
     expect(aboutLink).toHaveAttribute('href', '/about');
+    expect(aboutLink).toHaveAttribute('data-tsr-link', 'true');
   });
 
   it('still renders the /about link when a footer prop IS passed (unconditional, independent of footer)', () => {
@@ -185,5 +191,6 @@ describe('AuthLayout — disclaimer link (DISC-06)', () => {
     expect(screen.getByText('Custom footer content')).toBeInTheDocument();
     const aboutLink = screen.getByRole('link', { name: 'Sobre' });
     expect(aboutLink).toHaveAttribute('href', '/about');
+    expect(aboutLink).toHaveAttribute('data-tsr-link', 'true');
   });
 });

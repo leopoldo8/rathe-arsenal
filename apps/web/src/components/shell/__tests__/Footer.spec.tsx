@@ -23,8 +23,16 @@ const VERBATIM_EN_DISCLAIMER =
 
 // ---------------------------------------------------------------------------
 // Router mock — Link renders as a plain <a> with href so href-based
-// assertions can confirm SPA navigation (not a bare anchor) without a full
-// RouterProvider, matching the pattern used across other shell/route tests.
+// assertions can confirm SPA navigation without a full RouterProvider,
+// matching the pattern used across other shell/route tests.
+//
+// The mock also stamps `data-tsr-link="true"` on the rendered anchor. This
+// marker only appears when the component under test actually imports and
+// invokes the mocked `Link` — a hand-written `<a href="/about">` bypasses
+// the mock entirely and renders without the attribute, even though the
+// resulting `href` looks identical. This is what lets the AC5/DISC-04
+// assertion below discriminate TanStack `<Link>` (SPA navigation) from a
+// bare anchor (full-page reload), which a plain `href` check cannot do.
 // ---------------------------------------------------------------------------
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -35,7 +43,7 @@ vi.mock('@tanstack/react-router', () => ({
     children: React.ReactNode;
     to: string;
     className?: string;
-  }) => <a href={to} className={className}>{children}</a>,
+  }) => <a href={to} className={className} data-tsr-link="true">{children}</a>,
 }));
 
 describe('Footer', () => {
@@ -61,5 +69,10 @@ describe('Footer', () => {
     render(<Footer />);
     const aboutLink = screen.getByRole('link', { name: 'About' });
     expect(aboutLink).toHaveAttribute('href', '/about');
+    // Proves the mocked TanStack `Link` was actually invoked (see mock
+    // comment above) — a bare `<a href="/about">` would bypass the mock and
+    // lack this marker, so this discriminates SPA `<Link>` from a
+    // full-reload anchor, which the href assertion alone cannot (AC5).
+    expect(aboutLink).toHaveAttribute('data-tsr-link', 'true');
   });
 });

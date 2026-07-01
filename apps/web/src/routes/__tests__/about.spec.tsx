@@ -27,6 +27,11 @@ const VERBATIM_EN_DISCLAIMER =
 // `createFileRoute` is stubbed to return the options object as-is, since the
 // route registration itself is not under test here (only the AboutPage
 // component's rendered output is).
+//
+// The mock also stamps `data-tsr-link="true"` on the rendered anchor so the
+// "back to /home" assertion below can discriminate a real TanStack `<Link>`
+// from a hand-written `<a href="/home">` (see Footer.spec.tsx for the same
+// pattern applied to AC5/DISC-04).
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     children,
@@ -36,7 +41,7 @@ vi.mock('@tanstack/react-router', () => ({
     children: React.ReactNode;
     to: string;
     className?: string;
-  }) => <a href={to} className={className}>{children}</a>,
+  }) => <a href={to} className={className} data-tsr-link="true">{children}</a>,
   createFileRoute: () => (options: unknown) => options,
 }));
 
@@ -68,9 +73,10 @@ describe('/about route (DISC-03)', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('renders a back link to /home', () => {
+  it('renders a back link to /home via router <Link>, not a bare anchor', () => {
     render(<AboutPage />);
     const backLink = screen.getByRole('link', { name: /voltar para a home/i });
     expect(backLink).toHaveAttribute('href', '/home');
+    expect(backLink).toHaveAttribute('data-tsr-link', 'true');
   });
 });
