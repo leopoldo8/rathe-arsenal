@@ -141,7 +141,10 @@ describe('AppErrorBoundary — Sentry capture wiring (OBS-02)', () => {
 
     // (b) fallback half: the fallback function handed to Sentry.ErrorBoundary
     // must render RootErrorFallback (role=alert, level-1 heading).
-    const { fallback } = errorBoundaryMock.mock.calls[0][0];
+    const { fallback } = errorBoundaryMock.mock.calls[0]![0] as {
+      children: React.ReactNode;
+      fallback: () => React.ReactElement;
+    };
     render(fallback());
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
