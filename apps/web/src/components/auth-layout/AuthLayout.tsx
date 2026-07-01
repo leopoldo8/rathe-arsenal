@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { DeckboxDecoration } from '../shell/DeckboxDecoration';
 import styles from './AuthLayout.module.css';
@@ -27,6 +28,11 @@ const NARROW_QUERY = '(max-width: 719px)';
  * Error states follow the design spec:
  *  - `error` prop renders a styled inline alert (role="alert") using --ra-status-low tone,
  *    replacing the old plain-text `<p style={{ color: 'red' }}>` patterns.
+ *
+ * DISC-06: a persistent fan-content disclaimer line + /about link renders at
+ * the bottom of the layout unconditionally — independent of the optional
+ * `footer` prop — so every anon auth route (sign-in, sign-up, etc.) carries
+ * the LSS notice per the "every page" requirement in ip-posture.md.
  */
 export function AuthLayout({
   title,
@@ -51,48 +57,58 @@ export function AuthLayout({
   }, []);
 
   return (
-    <div className={styles.split}>
-      {/* Left decoration panel — hidden <720px */}
-      {!isNarrow && (
-        <div className={styles.art} aria-hidden="true">
-          <div className={styles.artContent}>
-            <div className={styles.artMark}>
-              <DeckboxDecoration />
+    <div className={styles.page}>
+      <div className={styles.split}>
+        {/* Left decoration panel — hidden <720px */}
+        {!isNarrow && (
+          <div className={styles.art} aria-hidden="true">
+            <div className={styles.artContent}>
+              <div className={styles.artMark}>
+                <DeckboxDecoration />
+              </div>
+              <div className={styles.artTagline}>
+                <p className={styles.artTaglineText}>
+                  {tagline ?? t('auth.decorationDefaultTagline')}
+                </p>
+                <p className={styles.artCopy}>
+                  {t('auth.decorationCopy')}
+                </p>
+              </div>
             </div>
-            <div className={styles.artTagline}>
-              <p className={styles.artTaglineText}>
-                {tagline ?? t('auth.decorationDefaultTagline')}
-              </p>
-              <p className={styles.artCopy}>
-                {t('auth.decorationCopy')}
-              </p>
-            </div>
+            <blockquote className={styles.artQuote}>
+              &ldquo;{t('auth.decorationQuote')}&rdquo;
+              <cite className={styles.artCite}>{t('auth.decorationQuoteCite')}</cite>
+            </blockquote>
           </div>
-          <blockquote className={styles.artQuote}>
-            &ldquo;{t('auth.decorationQuote')}&rdquo;
-            <cite className={styles.artCite}>{t('auth.decorationQuoteCite')}</cite>
-          </blockquote>
+        )}
+
+        {/* Right form panel */}
+        <div className={styles.form}>
+          <div className={styles.formInner}>
+            <h1 className={styles.heading}>{title}</h1>
+            {subtitle != null && <p className={styles.sub}>{subtitle}</p>}
+
+            {error != null && error !== '' && (
+              <div role="alert" className={styles.errorAlert}>
+                {error}
+              </div>
+            )}
+
+            {children}
+
+            {footer != null && (
+              <div className={styles.footer}>{footer}</div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Right form panel */}
-      <div className={styles.form}>
-        <div className={styles.formInner}>
-          <h1 className={styles.heading}>{title}</h1>
-          {subtitle != null && <p className={styles.sub}>{subtitle}</p>}
-
-          {error != null && error !== '' && (
-            <div role="alert" className={styles.errorAlert}>
-              {error}
-            </div>
-          )}
-
-          {children}
-
-          {footer != null && (
-            <div className={styles.footer}>{footer}</div>
-          )}
-        </div>
+      {/* DISC-06: persistent disclaimer, independent of the optional footer prop */}
+      <div className={styles.disclaimerBar}>
+        <p className={styles.disclaimerText}>{t('about.disclaimer')}</p>
+        <Link to="/about" className={styles.disclaimerLink}>
+          {t('about.footerLinkLabel')}
+        </Link>
       </div>
     </div>
   );

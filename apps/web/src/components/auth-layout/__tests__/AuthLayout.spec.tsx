@@ -8,6 +8,7 @@
  *  - Responsive: form usable at 320px (no horizontal scroll — structural check)
  *  - Sign-in invalid credentials: upgraded error pattern rendered (not plain red)
  *  - Error is keyboard-reachable
+ *  - DISC-06: persistent disclaimer /about link at the bottom of the layout
  */
 
 import React from 'react';
@@ -34,6 +35,20 @@ function mockMatchMedia(matches: boolean) {
 // Mock SVGR deckbox — AuthLayout left panel uses it
 vi.mock('../../shell/DeckboxDecoration', () => ({
   DeckboxDecoration: () => <div data-testid="deckbox-decoration" />,
+}));
+
+// Router mock — Link renders as a plain <a> with href, matching the pattern
+// used across other component tests (e.g. Footer.spec.tsx).
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({
+    children,
+    to,
+    className,
+  }: {
+    children: React.ReactNode;
+    to: string;
+    className?: string;
+  }) => <a href={to} className={className}>{children}</a>,
 }));
 
 import { AuthLayout } from '../AuthLayout';
@@ -145,5 +160,30 @@ describe('AuthLayout — inline error pattern', () => {
     // After T9, alert renders the error string directly — no <span aria-hidden="true"> stripe.
     const hiddenChildren = alert.querySelectorAll('[aria-hidden="true"]');
     expect(hiddenChildren).toHaveLength(0);
+  });
+});
+
+describe('AuthLayout — disclaimer link (DISC-06)', () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it('renders a link to /about at the bottom of the layout even when no footer prop is passed', () => {
+    render(
+      <AuthLayout title="Sign in">
+        <form><button type="submit">Submit</button></form>
+      </AuthLayout>,
+    );
+    const aboutLink = screen.getByRole('link', { name: 'Sobre' });
+    expect(aboutLink).toHaveAttribute('href', '/about');
+  });
+
+  it('still renders the /about link when a footer prop IS passed (unconditional, independent of footer)', () => {
+    render(
+      <AuthLayout title="Sign in" footer={<span>Custom footer content</span>}>
+        <form />
+      </AuthLayout>,
+    );
+    expect(screen.getByText('Custom footer content')).toBeInTheDocument();
+    const aboutLink = screen.getByRole('link', { name: 'Sobre' });
+    expect(aboutLink).toHaveAttribute('href', '/about');
   });
 });
