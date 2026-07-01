@@ -2,13 +2,19 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { initApiSentry } from './observability/sentry';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+
+  // OBS-03: ConfigModule has loaded .env by this point, so SENTRY_DSN is
+  // readable here. No-op when absent (dev/CI without a DSN).
+  initApiSentry(app.get(ConfigService).get<string>('SENTRY_DSN'));
 
   // A5: Railway terminates TLS and forwards the client IP in X-Forwarded-For.
   // `trust proxy = 1` tells Express to use the first forwarded IP as req.ip,
