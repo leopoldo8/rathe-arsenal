@@ -42,8 +42,7 @@ describe('initWebSentry', () => {
     initWebSentry(dsn);
 
     expect(initMock).toHaveBeenCalledTimes(1);
-    const [options] = initMock.mock.calls[0];
-    expect(options).toEqual({
+    expect(initMock).toHaveBeenCalledWith({
       dsn,
       sendDefaultPii: false,
       tracesSampleRate: 0,
