@@ -82,3 +82,68 @@ describe('AppErrorBoundary', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Capture-wiring tests — companion to the suite above.
+ *
+ * AC3 is a conjunction: "captured by Sentry AND a fallback UI renders". The
+ * suite above proves the fallback-render half with the real (un-mocked)
+ * `@sentry/react` module. It cannot prove the capture half, because there is
+ * no spy on `Sentry.ErrorBoundary` / `captureException` to observe.
+ *
+ * These tests mock `@sentry/react` (same pattern as
+ * `observability/__tests__/sentry.spec.ts`) so `Sentry.ErrorBoundary` becomes
+ * a test double, then assert AppErrorBoundary actually delegates to it — not
+ * a plain React error boundary — with `RootErrorFallback` as its `fallback`.
+ * `Sentry.ErrorBoundary` is what performs the capture, so proving AppErrorBoundary
+ * renders it (and not some hand-rolled boundary) is what proves the error is
+ * routed to Sentry.
+ *
+ * The mock is applied via `vi.doMock` + `vi.resetModules()` + a dynamic
+ * import, scoped to this describe block only, so the suite above keeps
+ * exercising the real SDK unaffected.
+ */
+describe('AppErrorBoundary — Sentry capture wiring (OBS-02)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.doUnmock('@sentry/react');
+    vi.resetModules();
+  });
+
+  it('delegates to Sentry.ErrorBoundary with RootErrorFallback as its fallback', async () => {
+    const errorBoundaryMock = vi.fn(
+      ({ children }: { children: React.ReactNode; fallback: () => React.ReactElement }) => (
+        <div data-testid="sentry-error-boundary-mock">{children}</div>
+      ),
+    );
+
+    vi.doMock('@sentry/react', () => ({
+      ErrorBoundary: (props: { children: React.ReactNode; fallback: () => React.ReactElement }) =>
+        errorBoundaryMock(props),
+    }));
+
+    const { AppErrorBoundary: MockedAppErrorBoundary } = await import('../AppErrorBoundary');
+
+    render(
+      <MockedAppErrorBoundary>
+        <p>content</p>
+      </MockedAppErrorBoundary>,
+    );
+
+    // (a) capture-wiring half: AppErrorBoundary must render Sentry's
+    // ErrorBoundary (the primitive that performs the capture) — a plain
+    // React error boundary would never invoke this mock.
+    expect(errorBoundaryMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('sentry-error-boundary-mock')).toBeInTheDocument();
+
+    // (b) fallback half: the fallback function handed to Sentry.ErrorBoundary
+    // must render RootErrorFallback (role=alert, level-1 heading).
+    const { fallback } = errorBoundaryMock.mock.calls[0][0];
+    render(fallback());
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  });
+});
