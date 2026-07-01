@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/main.js",
+    "start": "node --enable-source-maps dist/main.js",
     "test": "jest",
     "test:int": "jest --testRegex '.*\\.int-spec\\.ts$' --forceExit",
     "test:e2e": "jest --testRegex '.*\\.e2e-spec\\.ts$' --forceExit",
