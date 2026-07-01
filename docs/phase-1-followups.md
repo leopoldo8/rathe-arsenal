@@ -360,6 +360,8 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 **Why deferred to Phase 2.** Phase 1 (v1 foundation, closed beta, ~47-person Pelotas FaB community) does not activate any monetization surface. No ads, no Patreon, no affiliate links, no paid tier. The IP posture question only becomes binding at the moment the first monetization surface ships — and that belongs to Phase 2, not Phase 1. Phase 1 can and should surface the required disclaimer in the footer / `/about` / `README.md` as a low-cost preparatory step, but the full activation checklist is Phase 2 work.
 
+**Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, `.specs/features/pre-launch-hardening/`; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
+
 **Phase 2 trigger to revisit:** any of —
 - First activation of display ads (AdSense / Ezoic / direct) anywhere in the product
 - First Patreon page creation or first donation surface (even a "Buy me a coffee" link)

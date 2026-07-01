@@ -91,6 +91,8 @@ Verbatim text to surface in-product and in the repository:
 
 The disclaimer is a hard requirement of the LSS policy. It is not a best-effort nicety.
 
+**Status (2026-07-01) — disclaimer surfaces are LIVE.** Shipped in `feat/pre-launch-hardening` (`.specs/features/pre-launch-hardening/`): placement #1 (site footer, in the authenticated app shell, linking to `/about`), #2 (the `/about` page with the full disclaimer + fan-project context), and #3 (`README.md` top-of-file block) are all live, plus the disclaimer on the anonymous auth screens. Text is localized (pt-BR / en-US) with the en-US string verbatim from this section. Placements #4 (app-store listing) and #5 (Patreon "About") remain deferred until those surfaces exist. The remaining Phase 2 activation-checklist items (screenshot evidence archive, takedown dry-run, legal-counsel read) still stand — this covers only the disclaimer-live requirement, not the full monetization gate.
+
 ---
 
 ## Operational Rules
@@ -136,7 +138,7 @@ Rathe Arsenal does not activate any monetization surface until all of the follow
 
 - [ ] **Re-retrieve the full LSS policy** through a real-browser session (Playwright MCP protocol, same as Phase 1b compliance log). Paste verbatim Content Creation, Platforms and Services, Fan Fiction, and Disclaimer sections into a new revision of this file. Update the `last-updated` frontmatter.
 - [ ] **Diff the re-retrieved policy against the 2026-04-19 extract in this file.** Flag any clause change affecting direct/indirect monetization, card image usage, or disclaimer requirements. If the diff is material, re-run this entire decision before proceeding.
-- [ ] **Disclaimer surfaces are live** — footer on every route, `/about` page section, `README.md` header block, Patreon "About" section (if Patreon activates). Screenshot evidence archived in `docs/research/ip-posture-evidence/`.
+- [~] **Disclaimer surfaces are live** — ✅ footer (authenticated shell), ✅ `/about` page section, ✅ `README.md` header block, ✅ anonymous auth screens, all shipped 2026-07-01 in `feat/pre-launch-hardening`. Still pending: Patreon "About" section (if Patreon activates) and screenshot evidence archived in `docs/research/ip-posture-evidence/`.
 - [ ] **Takedown path is exercised at least once** — add a dry-run admin command that removes a chosen card image from the rendered surface within 5 minutes, end-to-end, before Phase 2 ships. This proves Rule #5 is real, not aspirational.
 - [ ] **Patreon tier design is reviewed against Rule #3** — written rationale for each tier's perks, confirming none gate IP-dependent features. File: `docs/research/patreon-tier-design.md` (create when Patreon activates).
 - [ ] **Ad placement plan is reviewed against Rule #2** — wireframes or screenshots of each ad slot, no interstitial/popup/autoplay. File: `docs/research/ad-placement-plan.md` (create when ads activate).
