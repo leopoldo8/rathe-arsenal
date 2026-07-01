@@ -1,4 +1,11 @@
 import { ArgumentsHost, BadRequestException, HttpException, UnauthorizedException } from '@nestjs/common';
+
+const captureExceptionMock = jest.fn();
+
+jest.mock('@sentry/node', () => ({
+  captureException: (...args: unknown[]) => captureExceptionMock(...args),
+}));
+
 import { HttpExceptionFilter } from '../http-exception.filter';
 
 function makeHost(jsonMock: jest.Mock) {
@@ -73,5 +80,61 @@ describe('HttpExceptionFilter', () => {
     expect(body.error).toBe('Simple string error');
     expect(body.statusCode).toBe(422);
     expect(body.code).toBeUndefined();
+  });
+
+  describe('Sentry capture (OBS-04)', () => {
+    beforeEach(() => {
+      captureExceptionMock.mockClear();
+    });
+
+    it('captures a non-HttpException to Sentry and preserves the response envelope', () => {
+      const jsonMock = jest.fn();
+      const host = makeHost(jsonMock);
+      const exception = new Error('Something went wrong');
+
+      filter.catch(exception, host);
+
+      expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+      expect(captureExceptionMock).toHaveBeenCalledWith(exception);
+
+      const body = jsonMock.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(body.success).toBe(false);
+      expect(body.statusCode).toBe(500);
+      expect(body.error).toBe('Internal server error');
+      expect(typeof body.timestamp).toBe('string');
+    });
+
+    it('captures an HttpException with status >= 500 to Sentry and preserves the response envelope', () => {
+      const jsonMock = jest.fn();
+      const host = makeHost(jsonMock);
+      const exception = new HttpException('Server exploded', 500);
+
+      filter.catch(exception, host);
+
+      expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+      expect(captureExceptionMock).toHaveBeenCalledWith(exception);
+
+      const body = jsonMock.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(body.success).toBe(false);
+      expect(body.statusCode).toBe(500);
+      expect(body.error).toBe('Server exploded');
+      expect(typeof body.timestamp).toBe('string');
+    });
+
+    it('does NOT capture a 4xx HttpException to Sentry, and still preserves the response envelope', () => {
+      const jsonMock = jest.fn();
+      const host = makeHost(jsonMock);
+      const exception = new HttpException('Bad input', 400);
+
+      filter.catch(exception, host);
+
+      expect(captureExceptionMock).not.toHaveBeenCalled();
+
+      const body = jsonMock.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(body.success).toBe(false);
+      expect(body.statusCode).toBe(400);
+      expect(body.error).toBe('Bad input');
+      expect(typeof body.timestamp).toBe('string');
+    });
   });
 });
