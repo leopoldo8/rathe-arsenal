@@ -121,12 +121,12 @@ Every ambiguity is resolved or recorded here — nothing is left silently unclea
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| DISC-01 | P1: Disclaimer | Design | Pending |
-| DISC-02 | P1: Disclaimer (footer verbatim en / pt) | Design | Pending |
-| DISC-03 | P1: Disclaimer (/about page) | Design | Pending |
-| DISC-04 | P1: Disclaimer (SPA link + i18n parity) | Design | Pending |
-| DISC-05 | P1: Disclaimer (README block) | Design | Pending |
-| DISC-06 | Disclaimer (anon AuthLayout) | Design | Pending |
+| DISC-01 | P1: Disclaimer | Execute | Implementing (T2 `81ae4f1`) |
+| DISC-02 | P1: Disclaimer (footer verbatim en / pt) | Execute | Implementing (T1 `3c0580f`) |
+| DISC-03 | P1: Disclaimer (/about page) | Execute | Implementing (T3 `3faacec`) |
+| DISC-04 | P1: Disclaimer (SPA link + i18n parity) | Execute | Implementing (T1 `3c0580f`) |
+| DISC-05 | P1: Disclaimer (README block) | Execute | Implementing (T5 `db23df8`) |
+| DISC-06 | Disclaimer (anon AuthLayout) | Execute | Implementing (T4 `8a0e21c`) |
 | OBS-01 | P1: Sentry web init (DSN-gated) | Design | Pending |
 | OBS-02 | P1: Sentry web error boundary | Design | Pending |
 | OBS-03 | P1: Sentry api init (DSN-gated) | Design | Pending |

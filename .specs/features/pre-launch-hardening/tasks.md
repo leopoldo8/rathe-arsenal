@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/pre-launch-hardening/design.md`
-**Status**: Draft
+**Status**: In Progress — Phase 1 ✅ (T1 `3c0580f`, web 1502 passed) · Phase 2 ✅ (T2 `81ae4f1`, T3 `3faacec`, T4 `8a0e21c`, T5 `db23df8`, web 1512 passed)
 
 ---
 
@@ -121,10 +121,10 @@ T13
 **Tools**: MCP: NONE · Skill: NONE (optional `impeccable:polish` — see MCP/Skills question)
 
 **Done when**:
-- [ ] `Footer` renders the disclaimer text and an `/about` link; mounted in `AppShell` after `<main>`.
-- [ ] Unit test: renders disclaimer in en-US and pt-BR (locale-switched); `/about` link resolves via router `<Link>` (href `/about`), not a bare anchor.
-- [ ] CSS keeps the footer clear of the fixed `BottomTabBar` (<960px) — bottom spacing.
-- [ ] Gate passes: `pnpm --filter @rathe-arsenal/web test`
+- [x] `Footer` renders the disclaimer text and an `/about` link; mounted in `AppShell` after `<main>`.
+- [x] Unit test: renders disclaimer in en-US and pt-BR (locale-switched); `/about` link resolves via router `<Link>` (href `/about`), not a bare anchor.
+- [x] CSS keeps the footer clear of the fixed `BottomTabBar` (<960px) — bottom spacing.
+- [x] Gate passes: `pnpm --filter @rathe-arsenal/web test`
 
 **Tests**: unit · **Gate**: quick (web)
 **Commit**: `feat(web): persistent disclaimer footer in AppShell (DISC-01)`
@@ -142,10 +142,10 @@ T13
 **Tools**: MCP: NONE · Skill: NONE (optional `impeccable:polish`)
 
 **Done when**:
-- [ ] `/about` renders (a) the disclaimer and (b) a fan-project context section (`fanProjectBody`).
-- [ ] Unit test asserts both sections present; renders without an auth wrapper (public).
-- [ ] Back link navigates via `<Link>`.
-- [ ] Gate passes: `pnpm --filter @rathe-arsenal/web test`
+- [x] `/about` renders (a) the disclaimer and (b) a fan-project context section (`fanProjectBody`).
+- [x] Unit test asserts both sections present; renders without an auth wrapper (public).
+- [x] Back link navigates via `<Link>`.
+- [x] Gate passes: `pnpm --filter @rathe-arsenal/web test`
 
 **Tests**: unit · **Gate**: quick (web)
 **Commit**: `feat(web): public /about route with fan-project disclaimer (DISC-03)`
@@ -163,9 +163,9 @@ T13
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `AuthLayout` renders a disclaimer/`about` link at the bottom regardless of the `footer` prop.
-- [ ] Unit test asserts the `/about` link (href `/about`) is present in a rendered `AuthLayout`.
-- [ ] Gate passes: `pnpm --filter @rathe-arsenal/web test`
+- [x] `AuthLayout` renders a disclaimer/`about` link at the bottom regardless of the `footer` prop.
+- [x] Unit test asserts the `/about` link (href `/about`) is present in a rendered `AuthLayout`.
+- [x] Gate passes: `pnpm --filter @rathe-arsenal/web test`
 
 **Tests**: unit · **Gate**: quick (web)
 **Commit**: `feat(web): disclaimer link on anon AuthLayout (DISC-06)`
@@ -183,9 +183,9 @@ T13
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `README.md` contains the verbatim disclaimer line above the setup instructions.
-- [ ] Grep confirms the exact string is present.
-- [ ] Gate: build (web) unaffected (doc-only).
+- [x] `README.md` contains the verbatim disclaimer line above the setup instructions.
+- [x] Grep confirms the exact string is present.
+- [x] Gate: build (web) unaffected (doc-only).
 
 **Tests**: none (doc) · **Gate**: build (doc-only; grep in Done-when)
 **Commit**: `docs: add LSS fan-content disclaimer block to README (DISC-05)`
