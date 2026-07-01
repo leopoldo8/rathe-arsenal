@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/pre-launch-hardening/design.md`
-**Status**: In Progress — Phase 1 ✅ (T1 `3c0580f`, web 1502 passed) · Phase 2 ✅ (T2 `81ae4f1`, T3 `3faacec`, T4 `8a0e21c`, T5 `db23df8`, web 1512 passed)
+**Status**: All tasks committed — awaiting Verifier. Phase 1 ✅ (T1 `3c0580f`) · Phase 2 ✅ (T2 `81ae4f1`, T3 `3faacec`, T4 `8a0e21c`, T5 `db23df8`) · Phase 3 ✅ (T6 `c84331f`, T7 `5910092`, T8 `0b8357c`) · Phase 4 ✅ (T9 `46f82e3`, T10 `52024b8`, T11 `80cfb2c`, T12 `67a5ad2`) · Phase 5 ✅ (T13 `3b676df`). Web 1522 passed · Api 857 passed.
 
 ---
 
