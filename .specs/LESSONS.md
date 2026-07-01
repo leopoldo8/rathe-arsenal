@@ -50,6 +50,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: .specs/features/uxui-remediation/validation.md (UXUI-07 AC1/AC2, UXUI-02 AC2, UXUI-06/14) (css,testing)
 - last seen: 2026-06-30T13:00:27Z
 
+### L-007 — When a component is mounted inside a container (e.g. Footer inside AppShell), add at least one container-level test asserting the mounted child's content renders, not only a standalone test of the child component.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web/components` · harmful: 0
+- features: pre-launch-hardening
+- evidence: AC1 (DISC-01) — apps/web/src/components/shell/__tests__/AppShell.spec.tsx (no footer assertion) (web/components)
+- last seen: 2026-07-01T04:04:00Z
+
+### L-008 — When an AC requires a specific SPA-router component (e.g. TanStack <Link>) rather than any element with the right href, assert that the mocked component was invoked, not just the resulting href/DOM output, since router mocks render both identically.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web/routing` · harmful: 0
+- features: pre-launch-hardening
+- evidence: AC5 (DISC-04) — apps/web/src/components/shell/__tests__/Footer.spec.tsx:59-64 (mutant: swapped <Link> for raw <a>, survived) (web/routing)
+- last seen: 2026-07-01T04:04:00Z
+
+### L-009 — When an AC is a conjunction (X AND Y), assert both halves independently — do not let one half's test (e.g. fallback UI render) stand in for the other (e.g. error-reporting capture call).
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `web/observability` · harmful: 0
+- features: pre-launch-hardening
+- evidence: AC3 (OBS-02) — apps/web/src/components/error/__tests__/AppErrorBoundary.spec.tsx (capture half of the AND conjunction unasserted) (web/observability)
+- last seen: 2026-07-01T04:04:01Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

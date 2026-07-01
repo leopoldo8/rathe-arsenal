@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 7,
+  "next_id": 10,
   "lessons": [
     {
       "id": "L-001",
@@ -112,6 +112,60 @@
       ],
       "created": "2026-06-30T13:00:27Z",
       "last_seen": "2026-06-30T13:00:27Z"
+    },
+    {
+      "id": "L-007",
+      "key": "ac_gap::when a component is mounted inside a container e g footer inside appshell add at least one container level test asserting the mounted child s content renders not only a standalone test of the child component",
+      "text": "When a component is mounted inside a container (e.g. Footer inside AppShell), add at least one container-level test asserting the mounted child's content renders, not only a standalone test of the child component.",
+      "signal": "ac_gap",
+      "scope": "web/components",
+      "status": "candidate",
+      "features": [
+        "pre-launch-hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC1 (DISC-01) — apps/web/src/components/shell/__tests__/AppShell.spec.tsx (no footer assertion) (web/components)"
+      ],
+      "created": "2026-07-01T04:04:00Z",
+      "last_seen": "2026-07-01T04:04:00Z"
+    },
+    {
+      "id": "L-008",
+      "key": "surviving_mutant::when an ac requires a specific spa router component e g tanstack link rather than any element with the right href assert that the mocked component was invoked not just the resulting href dom output since router mocks render both identically",
+      "text": "When an AC requires a specific SPA-router component (e.g. TanStack <Link>) rather than any element with the right href, assert that the mocked component was invoked, not just the resulting href/DOM output, since router mocks render both identically.",
+      "signal": "surviving_mutant",
+      "scope": "web/routing",
+      "status": "candidate",
+      "features": [
+        "pre-launch-hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC5 (DISC-04) — apps/web/src/components/shell/__tests__/Footer.spec.tsx:59-64 (mutant: swapped <Link> for raw <a>, survived) (web/routing)"
+      ],
+      "created": "2026-07-01T04:04:00Z",
+      "last_seen": "2026-07-01T04:04:00Z"
+    },
+    {
+      "id": "L-009",
+      "key": "spec_precision_gap::when an ac is a conjunction x and y assert both halves independently do not let one half s test e g fallback ui render stand in for the other e g error reporting capture call",
+      "text": "When an AC is a conjunction (X AND Y), assert both halves independently — do not let one half's test (e.g. fallback UI render) stand in for the other (e.g. error-reporting capture call).",
+      "signal": "spec_precision_gap",
+      "scope": "web/observability",
+      "status": "candidate",
+      "features": [
+        "pre-launch-hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC3 (OBS-02) — apps/web/src/components/error/__tests__/AppErrorBoundary.spec.tsx (capture half of the AND conjunction unasserted) (web/observability)"
+      ],
+      "created": "2026-07-01T04:04:01Z",
+      "last_seen": "2026-07-01T04:04:01Z"
     }
   ]
 }

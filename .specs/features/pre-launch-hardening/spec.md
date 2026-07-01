@@ -121,24 +121,24 @@ Every ambiguity is resolved or recorded here — nothing is left silently unclea
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| DISC-01 | P1: Disclaimer | Execute | Implementing (T2 `81ae4f1`) |
-| DISC-02 | P1: Disclaimer (footer verbatim en / pt) | Execute | Implementing (T1 `3c0580f`) |
-| DISC-03 | P1: Disclaimer (/about page) | Execute | Implementing (T3 `3faacec`) |
-| DISC-04 | P1: Disclaimer (SPA link + i18n parity) | Execute | Implementing (T1 `3c0580f`) |
-| DISC-05 | P1: Disclaimer (README block) | Execute | Implementing (T5 `db23df8`) |
-| DISC-06 | Disclaimer (anon AuthLayout) | Execute | Implementing (T4 `8a0e21c`) |
-| OBS-01 | P1: Sentry web init (DSN-gated) | Design | Pending |
-| OBS-02 | P1: Sentry web error boundary | Design | Pending |
-| OBS-03 | P1: Sentry api init (DSN-gated) | Design | Pending |
-| OBS-04 | P1: Sentry api filter capture (5xx only) | Design | Pending |
-| OBS-05 | P1: Sentry env validation + `.env.example` | Design | Pending |
-| OBS-06 | P1: Sentry privacy config | Design | Pending |
-| OBS-07 | P1: Sentry web sourcemap upload (token-gated) | Design | Pending |
-| OBS-08 | P1: Sentry api sourcemaps (`--enable-source-maps`) | Design | Pending |
+| DISC-01 | P1: Disclaimer | Execute | ✅ Verified (T2 `81ae4f1`, AppShell test `eba3940`) |
+| DISC-02 | P1: Disclaimer (footer verbatim en / pt) | Execute | ✅ Verified (T1 `3c0580f`) |
+| DISC-03 | P1: Disclaimer (/about page) | Execute | ✅ Verified (T3 `3faacec`) |
+| DISC-04 | P1: Disclaimer (SPA link + i18n parity) | Execute | ✅ Verified (T1 `3c0580f`, Link-marker `4797afb`) |
+| DISC-05 | P1: Disclaimer (README block) | Execute | ✅ Verified (T5 `db23df8`) |
+| DISC-06 | Disclaimer (anon AuthLayout) | Execute | ✅ Verified (T4 `8a0e21c`) |
+| OBS-01 | P1: Sentry web init (DSN-gated) | Execute | ✅ Verified (T6 `c84331f`) |
+| OBS-02 | P1: Sentry web error boundary | Execute | ✅ Verified (T7 `5910092`, capture-wiring `30db0f6`) |
+| OBS-03 | P1: Sentry api init (DSN-gated) | Execute | ✅ Verified (T10 `52024b8`) |
+| OBS-04 | P1: Sentry api filter capture (5xx only) | Execute | ✅ Verified (T11 `80cfb2c`) |
+| OBS-05 | P1: Sentry env validation + `.env.example` | Execute | ✅ Verified (T9 `46f82e3`, T13 `3b676df`) |
+| OBS-06 | P1: Sentry privacy config | Execute | ✅ Verified (T6/T10) |
+| OBS-07 | P1: Sentry web sourcemap upload (token-gated) | Execute | ✅ Verified (T8 `0b8357c`) |
+| OBS-08 | P1: Sentry api sourcemaps (`--enable-source-maps`) | Execute | ✅ Verified (T12 `67a5ad2`) |
 
 **ID format:** `[CATEGORY]-[NUMBER]`
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
-**Coverage:** 14 total, 0 mapped to tasks yet.
+**Coverage:** 14 total, all 14 ✅ Verified (independent Verifier PASS, iteration 2 — `validation.md`).
 
 ---
 
