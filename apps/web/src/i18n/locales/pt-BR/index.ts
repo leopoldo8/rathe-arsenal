@@ -11,6 +11,7 @@ import { reviews } from './reviews';
 import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
+import { about } from './about';
 
 export const ptBR = {
   common,
@@ -26,6 +27,7 @@ export const ptBR = {
   variantQueue,
   settings,
   ui,
+  about,
 } as const;
 
 /**
