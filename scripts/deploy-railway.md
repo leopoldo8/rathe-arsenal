@@ -29,6 +29,15 @@ and the bundled React SPA from the root path. One Postgres addon. One URL.
    - `ADMIN_API_KEY=<64-char random hex>` (Phase 1b — shared secret for `POST /api/admin/stores/:slug/scrape`; see "Generate admin API key" below; required when `STORE_SCRAPER_ENABLED=true`)
 4. **Set health check**: `/api/health` (already in `railway.json`).
 5. **Generate domain**: Service -> Settings -> Generate Domain. Note the URL.
+6. **Set start command**: Service -> Settings -> Deploy -> Custom Start Command ->
+   `pnpm --filter @rathe-arsenal/api start`. `railway.json` only defines the
+   `buildCommand` — there is no repo-level `startCommand`, so the dashboard's
+   custom start command is the only place this is configured. The api's own
+   `start` script runs `node --enable-source-maps dist/main.js`; if the
+   dashboard is ever set to something else (e.g. a bare `node dist/main.js`
+   copied by hand), it must still include `--enable-source-maps` so captured
+   server stack traces resolve to TypeScript source instead of minified
+   `dist/*.js` (OBS-08).
 
 ## Generate JWT secret
 

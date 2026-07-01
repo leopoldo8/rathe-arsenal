@@ -12,6 +12,8 @@ export const shell = {
   notFoundBody: 'Esta página não faz parte do seu arsenal.',
   notFoundCtaAuthenticated: 'Voltar ao início',
   notFoundCtaAnon: 'Entrar',
+  errorFallbackHeading: 'Algo se rompeu.',
+  errorFallbackBody: 'Um erro interrompeu esta tela. Recarregue a página para continuar.',
   themeAriaLabel: 'Tema',
   themeLightAriaLabel: 'Tema claro',
   themeDarkAriaLabel: 'Tema escuro',

@@ -12,6 +12,8 @@ export const shell = {
   notFoundBody: "This page isn't part of your arsenal.",
   notFoundCtaAuthenticated: 'Back to home',
   notFoundCtaAnon: 'Sign in',
+  errorFallbackHeading: 'Something tore.',
+  errorFallbackBody: 'An error interrupted this screen. Reload the page to continue.',
   themeAriaLabel: 'Theme',
   themeLightAriaLabel: 'Light theme',
   themeDarkAriaLabel: 'Dark theme',

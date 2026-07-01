@@ -154,6 +154,14 @@ export class EnvDto {
   @IsOptional()
   @IsString()
   FIRECRAWL_API_KEY?: string;
+
+  /**
+   * Sentry DSN for api error reporting. Optional — when absent, initApiSentry
+   * skips init entirely so local dev and CI never attempt to report errors.
+   */
+  @IsOptional()
+  @IsString()
+  SENTRY_DSN?: string;
 }
 
 /**

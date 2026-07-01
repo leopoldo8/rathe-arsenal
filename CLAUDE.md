@@ -31,6 +31,11 @@ this order before doing non-trivial work.
 - **Active plans**: none in flight (Plan A merged, Plan B not yet
   written). Phase 1c plan + addendum exist but are on hold pending
   owner decision on whether to execute or defer further.
+- **Recently shipped** (spec-driven, `.specs/features/`): i18n (pt-BR /
+  en-US), uxui-remediation (a11y + design-token discipline), and
+  pre-launch-hardening (LSS fan-content disclaimer surface + opt-in
+  Sentry error monitoring — PR #109, in review). See `.specs/STATE.md`
+  for the current handoff snapshot.
 - **Retired ceremonies** (do not propose): Gate 2 presencial
   walkthrough, A17 tier-2 external labeler session, 3-5 tester
   observation rounds, formal pre-release user studies.

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TopBar } from './TopBar';
 import { BottomTabBar } from './BottomTabBar';
+import { Footer } from './Footer';
 import styles from './AppShell.module.css';
 
 interface IAppShellProps {
@@ -15,6 +16,7 @@ const MOBILE_BREAKPOINT_QUERY = '(max-width: 959px)';
  * Renders:
  *  - TopBar (sticky header with wordmark/logo-mark, primary nav, theme toggle, user menu)
  *  - Main content area (<main>)
+ *  - Footer (persistent fan-content disclaimer, DISC-01)
  *  - BottomTabBar (fixed bottom, only on <960px viewport)
  *
  * The primary nav inside TopBar is CSS-hidden <960px; the BottomTabBar is
@@ -43,6 +45,7 @@ export function AppShell({ children }: IAppShellProps): React.ReactElement {
     <div className={styles.shell}>
       <TopBar />
       <main className={styles.main}>{children}</main>
+      <Footer />
       {isMobile && <BottomTabBar />}
     </div>
   );

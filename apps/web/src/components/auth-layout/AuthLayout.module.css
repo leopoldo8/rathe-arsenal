@@ -1,10 +1,16 @@
 /* AuthLayout — split-panel auth layout */
 
-.split {
+.page {
   display: flex;
+  flex-direction: column;
   min-block-size: 100dvh;
   background-color: var(--ra-bg-canvas);
   color: var(--ra-fg-primary);
+}
+
+.split {
+  display: flex;
+  flex: 1;
 }
 
 /* Left decoration panel — 40-50% width on wide screens */
@@ -159,4 +165,49 @@
   .heading {
     font-size: var(--ra-text-h2);
   }
+}
+
+/* DISC-06: persistent disclaimer bar — bottom of layout, independent of
+   the optional `footer` prop. Mirrors the AppShell Footer treatment. */
+.disclaimerBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-4) var(--ra-space-6);
+  border-top: 1px solid var(--ra-border-subtle);
+}
+
+.disclaimerText {
+  margin: 0;
+  flex: 1 1 auto;
+  min-inline-size: 240px;
+  max-inline-size: 640px;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.disclaimerLink {
+  flex-shrink: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.disclaimerLink:hover {
+  color: var(--ra-fg-primary);
+}
+
+.disclaimerLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+  border-radius: var(--ra-radius-sm);
 }

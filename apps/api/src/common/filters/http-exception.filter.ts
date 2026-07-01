@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -21,6 +22,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
         method: request.method,
         error: exception instanceof Error ? exception.message : 'unknown',
       });
+      // OBS-04: report unhandled/server-side errors only — 4xx client errors
+      // (expected validation/auth failures) are excluded to avoid noise.
+      Sentry.captureException(exception);
     }
 
     const payloadIsString = typeof payload === 'string';
