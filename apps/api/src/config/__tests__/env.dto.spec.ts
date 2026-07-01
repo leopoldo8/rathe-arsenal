@@ -133,4 +133,17 @@ describe('validateEnv', () => {
       expect(dto.STORE_ALLOW_HOSTS).toBe('');
     });
   });
+
+  describe('SENTRY_DSN (OBS-05)', () => {
+    it('succeeds when SENTRY_DSN is absent (optional field)', () => {
+      const dto = validateEnv(valid);
+      expect(dto.SENTRY_DSN).toBeUndefined();
+    });
+
+    it('accepts a present SENTRY_DSN string', () => {
+      const dsn = 'https://x@y.ingest.sentry.io/1';
+      const dto = validateEnv({ ...valid, SENTRY_DSN: dsn });
+      expect(dto.SENTRY_DSN).toBe(dsn);
+    });
+  });
 });
