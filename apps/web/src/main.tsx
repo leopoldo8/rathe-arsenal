@@ -6,7 +6,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { AuthProvider } from './auth/AuthProvider';
 import { ToastProvider } from './components/ui/Toast/Toast';
+import { AppErrorBoundary } from './components/error/AppErrorBoundary';
+import { initWebSentry } from './observability/sentry';
 import { routeTree } from './routeTree.gen';
+
+initWebSentry();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,12 +28,14 @@ declare module '@tanstack/react-router' {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <RouterProvider router={router} />
-        </ToastProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </AppErrorBoundary>
   </React.StrictMode>,
 );
