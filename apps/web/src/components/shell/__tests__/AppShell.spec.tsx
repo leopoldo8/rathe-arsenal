@@ -230,3 +230,27 @@ describe('AppShell — sign out', () => {
     expect(mockSignOut).toHaveBeenCalledOnce();
   });
 });
+
+// DISC-01 AC1: "WHEN any authenticated shell route renders THEN the AppShell
+// SHALL render a persistent footer containing the localized disclaimer text
+// and a link to /about." Footer.spec.tsx only exercises Footer standalone —
+// this asserts the composed AppShell actually mounts it, closing the
+// integration gap flagged by the verifier (Fix 1).
+describe('AppShell — footer / disclaimer (DISC-01)', () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it('renders the localized disclaimer text from the mounted Footer', () => {
+    render(<AppShell><div>child</div></AppShell>);
+    expect(
+      screen.getByText(
+        'A Rathe Arsenal não tem nenhuma afiliação com a Legend Story Studios. Flesh and Blood™ e os nomes de coleções são marcas registradas da Legend Story Studios®. Personagens e nomes podem estar protegidos por direitos autorais.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('renders a link to /about from the mounted Footer', () => {
+    render(<AppShell><div>child</div></AppShell>);
+    const aboutLink = screen.getByRole('link', { name: 'Sobre' });
+    expect(aboutLink).toHaveAttribute('href', '/about');
+  });
+});
