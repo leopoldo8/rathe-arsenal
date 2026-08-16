@@ -438,3 +438,130 @@ describe('UXUI-14 AC3 — ReadinessHero sub-labels use --ra-fg-secondary not --r
     expect(content).toMatch(/\.readiness__raw\s*\{[^}]*color\s*:\s*var\(--ra-fg-secondary\)/s);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Product-redesign foundation (FND-01..FND-07) — pins the literals each
+// acceptance criterion fixes, so a future token-file edit that drifts from
+// the handoff is caught locally rather than only in a visual diff.
+// ---------------------------------------------------------------------------
+
+const TOKENS_CSS = path.join(SRC_ROOT, 'styles/tokens.css');
+const GLOBAL_CSS = path.join(SRC_ROOT, 'styles/global.css');
+const TOPBAR_CSS = path.join(SRC_ROOT, 'components/shell/TopBar.module.css');
+
+describe('FND-01 — seven pitch colors + -ink companions defined in both themes', () => {
+  const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
+  // tokens.css declares :root (shared), a dark theme block, and a light
+  // theme block — split on the light-theme selector to check each in isolation.
+  const lightStart = content.indexOf(':root[data-theme="light"]');
+  const darkBlock = content.slice(0, lightStart);
+  const lightBlock = content.slice(lightStart);
+
+  const BASE_PITCH_TOKENS = [
+    '--ra-pitch-red',
+    '--ra-pitch-yellow',
+    '--ra-pitch-blue',
+    '--ra-pitch-colorless',
+    '--ra-pitch-weapon',
+    '--ra-pitch-hero',
+    '--ra-pitch-equipment',
+  ];
+
+  const INK_PITCH_TOKENS = [
+    '--ra-pitch-red-ink',
+    '--ra-pitch-yellow-ink',
+    '--ra-pitch-blue-ink',
+    '--ra-pitch-colorless-ink',
+    '--ra-pitch-weapon-ink',
+    '--ra-pitch-hero-ink',
+    '--ra-pitch-equipment-ink',
+  ];
+
+  it('lightStart resolves (sanity check the split point exists)', () => {
+    expect(lightStart).toBeGreaterThan(-1);
+  });
+
+  for (const token of [...BASE_PITCH_TOKENS, ...INK_PITCH_TOKENS]) {
+    it(`${token} is defined in the dark theme block`, () => {
+      expect(darkBlock).toMatch(new RegExp(`${token}\\s*:`));
+    });
+
+    it(`${token} is defined in the light theme block`, () => {
+      expect(lightBlock).toMatch(new RegExp(`${token}\\s*:`));
+    });
+  }
+
+  it('the four genuinely new -ink hexes are present (dark red/blue, light yellow)', () => {
+    expect(darkBlock).toMatch(/--ra-pitch-red-ink:\s*#d97068/);
+    expect(darkBlock).toMatch(/--ra-pitch-blue-ink:\s*#6fa0d8/);
+    expect(lightBlock).toMatch(/--ra-pitch-yellow-ink:\s*var\(--ra-accent-body\)/);
+  });
+});
+
+describe('FND-02/03 — font family tokens (Hanken Grotesque UI, Newsreader display)', () => {
+  const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
+
+  it('--ra-font-ui uses Hanken Grotesque', () => {
+    expect(content).toMatch(/--ra-font-ui:\s*"Hanken Grotesque"/);
+  });
+
+  it('--ra-font-display uses Newsreader', () => {
+    expect(content).toMatch(/--ra-font-display:\s*"Newsreader"/);
+  });
+
+  it('--ra-font-mono still uses JetBrains Mono (orchestrator ruling — kept, not dropped)', () => {
+    expect(content).toMatch(/--ra-font-mono:\s*"JetBrains Mono"/);
+  });
+
+  it('--ra-font-serif still uses IBM Plex Serif (orchestrator ruling — kept, not dropped)', () => {
+    expect(content).toMatch(/--ra-font-serif:\s*"IBM Plex Serif"/);
+  });
+});
+
+describe('FND-06 — nav active-item alpha and TopBar border treatment', () => {
+  it('--ra-accent-soft-bg carries the handoff literal rgba(208,168,76,.14) in dark', () => {
+    const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
+    expect(content).toMatch(/--ra-accent-soft-bg:\s*rgba\(208,\s*168,\s*76,\s*0\.14\)/);
+  });
+
+  it('TopBar .navLink[data-active] sets border-color: transparent (no border in the nav rule)', () => {
+    const content = fs.readFileSync(TOPBAR_CSS, 'utf-8');
+    expect(content).toMatch(
+      /\.navLink\[data-active='true'\]\s*\{[^}]*border-color\s*:\s*transparent/s,
+    );
+  });
+});
+
+describe('§3.3 — global.css h2 no longer shouts uppercase; body text is the redesign density', () => {
+  it('h2, .ra-h2 block does not set text-transform', () => {
+    const content = fs.readFileSync(GLOBAL_CSS, 'utf-8');
+    const h2Block = content.match(/h2,\s*\n?\.ra-h2\s*\{([^}]*)\}/s);
+    expect(h2Block).not.toBeNull();
+    expect(h2Block?.[1]).not.toMatch(/text-transform/);
+  });
+
+  it('--ra-text-body is 0.875rem (14px, the app-wide density change)', () => {
+    const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
+    expect(content).toMatch(/--ra-text-body:\s*0\.875rem/);
+  });
+});
+
+describe('§4.1 — radius scale supersedes the old 4px cap (R6)', () => {
+  const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
+
+  it('--ra-radius-sm is 9px', () => {
+    expect(content).toMatch(/--ra-radius-sm:\s*9px/);
+  });
+
+  it('--ra-radius-md is 11px', () => {
+    expect(content).toMatch(/--ra-radius-md:\s*11px/);
+  });
+
+  it('--ra-radius-lg is 14px', () => {
+    expect(content).toMatch(/--ra-radius-lg:\s*14px/);
+  });
+
+  it('--ra-radius-xl is 16px', () => {
+    expect(content).toMatch(/--ra-radius-xl:\s*16px/);
+  });
+});
