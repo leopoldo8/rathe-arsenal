@@ -306,7 +306,7 @@ describe('Plan B full flow (E2E, U11)', () => {
 
       const rows: unknown = reviewsRes.body.rows;
       expect(Array.isArray(rows)).toBe(true);
-      const pendingRows = rows as Array<{ trackedDeckId: number; cardIdentifier: string }>;
+      const pendingRows = rows as Array<{ trackedDeckId: number; substituteIdentifier: string }>;
       expect(pendingRows.length).toBeGreaterThanOrEqual(1);
 
       // Grab the first pending row to approve in the next step.
@@ -314,8 +314,14 @@ describe('Plan B full flow (E2E, U11)', () => {
       expect(firstRow).toBeDefined();
       expect(firstRow?.trackedDeckId).toBe(deckId);
 
-      const pendingCardIdentifier = firstRow?.cardIdentifier;
-      expect(typeof pendingCardIdentifier).toBe('string');
+      // Decisions are keyed by the SUBSTITUTE id, not the original card's id
+      // (review-aggregate.service.ts's own "Fix 1" comment documents this;
+      // using original.cardIdentifier here was the pre-existing bug this
+      // e2e test never caught, because approval was inert before D7 --
+      // any cardIdentifier "succeeded" the bulk write without needing to
+      // match a real row, so a wrong key never showed up as a failure).
+      const pendingSubstituteIdentifier = firstRow?.substituteIdentifier;
+      expect(typeof pendingSubstituteIdentifier).toBe('string');
 
       // -----------------------------------------------------------------------
       // Step 6: GET /api/decks → capture effectivePercent before approval
@@ -346,7 +352,7 @@ describe('Plan B full flow (E2E, U11)', () => {
           operations: [
             {
               trackedDeckId: deckId,
-              cardIdentifier: pendingCardIdentifier,
+              cardIdentifier: pendingSubstituteIdentifier,
               decision: 'APPROVED',
             },
           ],
@@ -357,15 +363,25 @@ describe('Plan B full flow (E2E, U11)', () => {
       expect(bulkRes.body.failed).toHaveLength(0);
 
       // -----------------------------------------------------------------------
-      // Step 8: GET /api/decks → effectivePercent should be ≥ before (approval
-      // accepts the proposed substitute, keeping the card covered; re-compute
-      // with approved exclusion does NOT remove coverage — approved means
-      // "I'm OK with this substitute", not "exclude it").
+      // Step 8: GET /api/decks → effectivePercent should be strictly higher
+      // than before approval.
       //
-      // The exact value depends on the full deck composition. Rather than
-      // asserting a precise number, we verify:
-      //   a) the deck is still tracked
-      //   b) effectivePercent ≥ 0 (snapshot was recomputed successfully)
+      // D7/SWAP-13: only *approved* substitutions count toward
+      // effectivePercent. Before this approval, the engine had already
+      // found the coax-a-commotion-red substitution (breakdown.substituted
+      // is non-empty, which is why step 5's GET /api/reviews returned
+      // pending rows at all) but it did not count -- effectiveBefore
+      // reflects exact-owned coverage only. The shim's bulk-approve call
+      // above updates every swap_suggestion row in the deck matching that
+      // substitute identifier, which -- because both missing copies of
+      // emissary-of-tides-red resolve to the same substitute and collapse
+      // into one persisted group (quantity=2, AD-007) -- approves both
+      // copies in a single write. The very next recompute (triggered by
+      // bulkUpsert's post-commit phase) then finds the same substitution
+      // again with its key now present in approvedIdentifiers, so it
+      // counts. This is the D7 owner-accepted behavior change from the
+      // pre-redesign engine, where every found substitution counted
+      // unconditionally and approval was inert.
       // -----------------------------------------------------------------------
       const decksAfterApproveRes = await request(server)
         .get('/api/decks')
@@ -384,9 +400,10 @@ describe('Plan B full flow (E2E, U11)', () => {
       const effectiveAfterApprove =
         deckRowAfterApprove?.latestSnapshot?.effectivePercent ?? 0;
 
-      // Approval keeps the substitute active — effectivePercent should stay
-      // the same or increase (approved subs are never excluded from coverage).
-      expect(effectiveAfterApprove).toBeGreaterThanOrEqual(effectiveBefore);
+      // D7/SWAP-13: the pending substitution did not count before approval;
+      // approving it moves the deck from "found but not counted" to
+      // "counted" -- effectivePercent must strictly rise, not just hold.
+      expect(effectiveAfterApprove).toBeGreaterThan(effectiveBefore);
 
       // -----------------------------------------------------------------------
       // Step 9: PATCH /api/collection/sources/:id with active=false
