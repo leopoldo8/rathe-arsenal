@@ -1,8 +1,9 @@
 ---
 title: "feat: Deck Management v2 — editable decks, user categorization, detail redesign"
 type: feat
-status: active
+status: completed
 date: 2026-05-11
+completed: 2026-05-19
 origin: docs/brainstorms/2026-05-11-v2-deck-management-requirements.md
 ---
 

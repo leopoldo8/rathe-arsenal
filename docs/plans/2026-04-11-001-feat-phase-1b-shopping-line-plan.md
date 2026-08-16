@@ -1,9 +1,10 @@
 ---
 title: "feat: Phase 1b -- Store Data & Shopping Line (Liga FaB / Sbrauble Scraper, Cúpula DT Anchor)"
 type: feat
-status: active
+status: completed
 state: "Units 0–6 merged to main; Unit 7 (Gate 2 accuracy verification) pending"
 date: 2026-04-11
+completed: 2026-04-12
 origin: docs/brainstorms/2026-04-08-fab-deck-readiness-flow-requirements.md
 phase-0-plan: docs/plans/2026-04-08-001-feat-fab-deck-readiness-phase-0-plan.md
 phase-1a-plan: docs/plans/2026-04-10-001-feat-phase-1a-product-core-plan.md
