@@ -6,6 +6,7 @@ import {
   POWER_DELTA_WEIGHT,
 } from './constants';
 import { composeRationale } from './rationale';
+import { buildExclusionKey, TExclusionKey } from './exclusion-key';
 
 function hasClassIntersection(a: readonly string[], b: readonly string[]): boolean {
   const setB = new Set(b);
@@ -130,9 +131,11 @@ export function scoreCandidate(
  * the missing card, filters to those present in `remainingInventory`, and
  * returns the highest-scoring candidate whose score clears the tier floor.
  *
- * Candidates whose identifiers are in `excludedIdentifiers` are skipped —
- * this is the hook the interactive swap editor (Unit 7) uses to honor
- * persisted rejections during re-solve.
+ * Candidates rejected for this exact `(missingCard, slot, candidate)` triple
+ * are skipped — this is the hook the interactive swap editor uses to honor
+ * persisted rejections during re-solve. The key is slot-scoped so a
+ * rejection made against one slot never suppresses a different slot's
+ * still-untouched suggestion for the same card pair.
  *
  * Returns `null` when no candidate at this tier meets the floor.
  */
@@ -141,7 +144,8 @@ export function findTierMatch(
   remainingInventory: ReadonlyMap<string, number>,
   catalog: ICatalog,
   config: ITierConfig,
-  excludedIdentifiers: ReadonlySet<string> = new Set(),
+  slot: string,
+  excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
 ): ISubstitutionMatch | null {
   const candidates = new Set<ICatalogCard>();
 
@@ -163,8 +167,14 @@ export function findTierMatch(
     // Skip self
     if (candidate.cardIdentifier === missingCard.cardIdentifier) continue;
 
-    // Skip rejected candidates (Unit 7: persisted rejections).
-    if (excludedIdentifiers.has(candidate.cardIdentifier)) continue;
+    // Skip rejected candidates (persisted, slot-scoped rejections).
+    if (
+      excludedIdentifiers.has(
+        buildExclusionKey(missingCard.cardIdentifier, slot, candidate.cardIdentifier),
+      )
+    ) {
+      continue;
+    }
 
     // Must be in inventory
     const owned = remainingInventory.get(candidate.cardIdentifier) ?? 0;

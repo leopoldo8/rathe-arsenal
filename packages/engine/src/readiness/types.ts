@@ -55,6 +55,13 @@ export interface IBreakdownEntry {
 export interface ISubstitutedEntry {
   readonly original: IBreakdownEntry;
   readonly match: ISubstitutionMatch;
+  /**
+   * True iff this suggestion's `(original, slot, substitute)` key is present
+   * in the `approvedIdentifiers` set passed to `computeEffectiveReadiness`.
+   * A pending (unapproved) substitution is still found and reported here --
+   * it just does not count toward `effectivePercent` (D7/SWAP-13).
+   */
+  readonly approved: boolean;
 }
 
 export interface IReadinessBreakdown {

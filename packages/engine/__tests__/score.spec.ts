@@ -10,6 +10,7 @@ import {
 } from '../src/substitution/constants';
 import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Type, Talent } from '../src';
 import { buildIndices } from '../src/catalog/indices';
+import { buildExclusionKey } from '../src/substitution/exclusion-key';
 
 /**
  * Helper to create a frozen ICatalogCard with sensible defaults.
@@ -293,7 +294,7 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
       const inventory = new Map([['no-kw-p5', 1]]);
 
       // Tier 1 rejects on power delta hard cap
-      expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG)).toBeNull();
+      expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard')).toBeNull();
 
       // Tier 2 accepts and clears the floor
       const tier2Result = findTierMatch(
@@ -301,6 +302,7 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
         inventory,
         catalog,
         TIER_2_CONFIG,
+        'mainboard',
       );
       expect(tier2Result).not.toBeNull();
       expect(tier2Result!.tier).toBe(2);
@@ -396,7 +398,7 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
       const catalog = makeCatalog([missing, candidate]);
       const inventory = new Map([['below-floor', 1]]);
 
-      expect(findTierMatch(missing, inventory, catalog, TIER_2_CONFIG)).toBeNull();
+      expect(findTierMatch(missing, inventory, catalog, TIER_2_CONFIG, 'mainboard')).toBeNull();
     });
   });
 });
@@ -428,7 +430,7 @@ describe('findTierMatch', () => {
       ['ok', 1],
     ]);
 
-    const result = findTierMatch(missing, inventory, catalog, TIER_1_CONFIG);
+    const result = findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard');
 
     expect(result).not.toBeNull();
     expect(result!.substitute.cardIdentifier).toBe('perfect');
@@ -443,7 +445,7 @@ describe('findTierMatch', () => {
     const catalog = makeCatalog([missing, candidate]);
     const inventory = new Map([['b', 1]]);
 
-    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG)).toBeNull();
+    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard')).toBeNull();
   });
 
   it('does not pick itself as a candidate', () => {
@@ -451,7 +453,7 @@ describe('findTierMatch', () => {
     const catalog = makeCatalog([card]);
     const inventory = new Map([['only', 3]]);
 
-    expect(findTierMatch(card, inventory, catalog, TIER_1_CONFIG)).toBeNull();
+    expect(findTierMatch(card, inventory, catalog, TIER_1_CONFIG, 'mainboard')).toBeNull();
   });
 
   it('skips candidates whose identifiers appear in the excluded set', () => {
@@ -482,11 +484,84 @@ describe('findTierMatch', () => {
       inventory,
       catalog,
       TIER_1_CONFIG,
-      new Set(['excluded-best']),
+      'mainboard',
+      new Set([buildExclusionKey('missing', 'mainboard', 'excluded-best')]),
     );
 
     expect(result).not.toBeNull();
     expect(result!.substitute.cardIdentifier).toBe('fallback');
+  });
+
+  it('a substitute rejected in one slot is still proposable for the same original card in a different slot', () => {
+    // Regression fixture for the original cross-original suppression bug
+    // (§1/§4): the exclusion key must be slot-aware so a rejection scoped
+    // to slot A never suppresses slot B's independent, untouched suggestion
+    // for the same (original, substitute) pair.
+    const missing = makeCard({ cardIdentifier: 'missing', pitch: 1 });
+    const only = makeCard({
+      cardIdentifier: 'only',
+      pitch: 1,
+      power: 3,
+      defense: 3,
+      keywords: [Keyword.GoAgain],
+    });
+
+    const catalog = makeCatalog([missing, only]);
+    const inventory = new Map([['only', 1]]);
+    const excluded = new Set([buildExclusionKey('missing', 'slot-a', 'only')]);
+
+    // Slot A: the exact rejected triple -- suppressed.
+    expect(
+      findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'slot-a', excluded),
+    ).toBeNull();
+
+    // Slot B: same original + same substitute, different slot -- untouched.
+    const slotBResult = findTierMatch(
+      missing,
+      inventory,
+      catalog,
+      TIER_1_CONFIG,
+      'slot-b',
+      excluded,
+    );
+    expect(slotBResult).not.toBeNull();
+    expect(slotBResult!.substitute.cardIdentifier).toBe('only');
+  });
+
+  it('the same substitute rejected against one original card is still proposable against a different original card', () => {
+    // Regression fixture for the pre-existing bug this design fixes: the old
+    // exclusion set suppressed by substitute-identifier alone, so rejecting
+    // "only" for one original card silently suppressed it for every other
+    // original card too. The triple key must scope the rejection to this
+    // exact original card.
+    const missingA = makeCard({ cardIdentifier: 'missing-a', pitch: 1 });
+    const missingB = makeCard({ cardIdentifier: 'missing-b', pitch: 1 });
+    const shared = makeCard({
+      cardIdentifier: 'shared-sub',
+      pitch: 1,
+      power: 3,
+      defense: 3,
+      keywords: [Keyword.GoAgain],
+    });
+
+    const catalog = makeCatalog([missingA, missingB, shared]);
+    const inventory = new Map([['shared-sub', 1]]);
+    const excluded = new Set([buildExclusionKey('missing-a', 'mainboard', 'shared-sub')]);
+
+    expect(
+      findTierMatch(missingA, inventory, catalog, TIER_1_CONFIG, 'mainboard', excluded),
+    ).toBeNull();
+
+    const otherOriginalResult = findTierMatch(
+      missingB,
+      inventory,
+      catalog,
+      TIER_1_CONFIG,
+      'mainboard',
+      excluded,
+    );
+    expect(otherOriginalResult).not.toBeNull();
+    expect(otherOriginalResult!.substitute.cardIdentifier).toBe('shared-sub');
   });
 
   it('returns null at tier 1 but finds a match at tier 2 for the same inventory', () => {
@@ -506,8 +581,8 @@ describe('findTierMatch', () => {
     const catalog = makeCatalog([missing, tier2Only]);
     const inventory = new Map([['tier2-only', 1]]);
 
-    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG)).toBeNull();
-    const tier2Result = findTierMatch(missing, inventory, catalog, TIER_2_CONFIG);
+    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard')).toBeNull();
+    const tier2Result = findTierMatch(missing, inventory, catalog, TIER_2_CONFIG, 'mainboard');
     expect(tier2Result).not.toBeNull();
     expect(tier2Result!.tier).toBe(2);
     expect(tier2Result!.score).toBeGreaterThanOrEqual(TIER_2_FLOOR_SCORE);
@@ -520,6 +595,6 @@ describe('findTierMatch', () => {
     const catalog = makeCatalog([missing, candidate]);
     const inventory = new Map<string, number>();
 
-    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG)).toBeNull();
+    expect(findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard')).toBeNull();
   });
 });

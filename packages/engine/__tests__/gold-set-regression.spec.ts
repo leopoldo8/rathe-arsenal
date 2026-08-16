@@ -151,6 +151,7 @@ describe('Gate 4 gold-set regression (Phase 0 SOFT_CONFIDENCE floor)', () => {
           inventory,
           catalog,
           TIER_1_CONFIG,
+          'mainboard',
         );
 
         expect(match).not.toBeNull();
@@ -178,7 +179,7 @@ describe('Gate 4 gold-set regression (Phase 0 SOFT_CONFIDENCE floor)', () => {
       const inventory = new Map<string, number>([
         [entry.proposedSubstitute, 3],
       ]);
-      const match = findTierMatch(missingCard, inventory, catalog, TIER_1_CONFIG);
+      const match = findTierMatch(missingCard, inventory, catalog, TIER_1_CONFIG, 'mainboard');
       if (match !== null && match.tier === 1) tier1Yes += 1;
     }
 

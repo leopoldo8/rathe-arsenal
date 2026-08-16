@@ -3,6 +3,7 @@ import { ISubstitutionMatch, IPitchTolerance } from '../substitution/types';
 import { DEFAULT_PITCH_TOLERANCE } from '../substitution/constants';
 import { computePitchCurve, computePitchDelta, isWithinTolerance } from '../substitution/pitch-curve';
 import { findSubstitution } from '../substitution/find-substitution';
+import { buildExclusionKey, TExclusionKey } from '../substitution/exclusion-key';
 import {
   IBreakdownEntry,
   IEffectiveReadinessResult,
@@ -74,15 +75,26 @@ interface IDeck {
  * Pure function -- no side effects, no async, deterministic.
  *
  * The optional `excludedIdentifiers` set lets the interactive swap editor
- * (Unit 7) re-solve a deck while skipping substitutes the user has
- * explicitly rejected. Passing an empty set preserves Phase 0 behavior.
+ * re-solve a deck while skipping substitutes the user has explicitly
+ * rejected. Passing an empty set preserves Phase 0 behavior.
+ *
+ * The optional `approvedIdentifiers` set (D7/SWAP-13) gates what counts
+ * toward `effectivePercent`: a substitution the engine finds is always
+ * reported in `breakdown.substituted[]` (with `approved` reflecting whether
+ * its key is in this set), but only approved substitutions add to
+ * `substitutedCount`. `rawPercent`, `fidelityPercent`, `path`, `notOwned`,
+ * and inventory reservation are all unaffected by approval -- see
+ * `design/07-swaps.md` §0 for the full rationale. Passing an empty set (the
+ * default) preserves today's stricter "nothing counts until approved"
+ * ceiling for every existing 5-arg call site.
  */
 export function computeEffectiveReadiness(
   deck: IDeck,
   inventory: ReadonlyMap<string, number>,
   catalog: ICatalog,
   tolerance: IPitchTolerance = DEFAULT_PITCH_TOLERANCE,
-  excludedIdentifiers: ReadonlySet<string> = new Set(),
+  excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+  approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
 ): IEffectiveReadinessResult {
   // Mutable working copy of inventory quantities
   const remainingInventory = new Map<string, number>();
@@ -203,6 +215,7 @@ export function computeEffectiveReadiness(
         catalogCard,
         remainingInventory,
         catalog,
+        deckCard.slot,
         excludedIdentifiers,
       );
 
@@ -224,9 +237,20 @@ export function computeEffectiveReadiness(
             ...entryMeta,
           });
 
-          substituted.push(Object.freeze({ original: originalEntry, match }));
+          const approved = approvedIdentifiers.has(
+            buildExclusionKey(deckCard.cardIdentifier, deckCard.slot, match.substitute.cardIdentifier),
+          );
+
+          substituted.push(Object.freeze({ original: originalEntry, match, approved }));
           substitutions.push(match);
-          substitutedCount += 1;
+          // Only approved substitutions count toward effectivePercent
+          // (D7/SWAP-13). Everything else in this branch -- inventory
+          // consumption, remainingMissing, pitch-curve tracking -- stays
+          // unconditional: approval changes what counts, never what the
+          // engine found or which substitute it reserved.
+          if (approved) {
+            substitutedCount += 1;
+          }
           remainingMissing -= 1;
 
           // Consume from inventory.
