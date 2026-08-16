@@ -66,6 +66,10 @@ describe('resolveActiveNavKey — Swaps', () => {
   it('activates Swaps on a /swaps/ sub-route', () => {
     expect(resolveActiveNavKey('/swaps/123')).toBe('swaps');
   });
+
+  it('does NOT activate Swaps on /reviews — it is a route-level redirect to /swaps and never renders its own page (§5.2)', () => {
+    expect(resolveActiveNavKey('/reviews')).toBe(null);
+  });
 });
 
 describe('resolveActiveNavKey — no match', () => {
