@@ -26,10 +26,52 @@ Given by the owner before leaving, 2026-08-16:
 
 Decisions taken without the owner, or departures from the agreed plan. Empty means nothing has diverged yet.
 
-### DEV-01 — Prototype kept out of version control
-- **What**: the two `.dc.html` prototype files and their screenshots are fetched into `.specs/features/product-redesign/prototype/` and that directory is gitignored.
-- **Why**: they are large throwaway artifacts carrying an inline-styled runtime the handoff explicitly says must not be ported. Every literal value that matters (tokens, geometry, keyframes, copy) is already in the committed `design-handoff.md`. Keeping the bundle local gives every implementation agent a visual reference without putting a misleading "reference implementation" into the PR.
-- **Reversible**: yes — remove the gitignore entry and commit the folder.
+### DEV-01 — Prototype bundle not mirrored into the repo (revised)
+- **Original plan**: fetch the two `.dc.html` prototype files into a gitignored `prototype/` directory so every implementation agent has a visual reference.
+- **What actually happened**: the Claude Design read tool is available only in the orchestrator's session, not in subagents' tool registries. A subagent dispatched to fetch the bundle could not reach it and correctly stopped rather than improvising.
+- **Decision**: drop the mirror. Implementation agents work from `design-handoff.md`, which carries every literal that matters — hex values, px geometry, the full keyframe blocks, the mask expressions and the copy. The orchestrator pulls individual screenshots directly at verification time, when there is a built screen to compare them against, rather than pre-fetching a bundle nobody has a use for yet.
+- **Why this is acceptable**: the handoff is unusually complete for a design document. The prototype's marginal value is confirming that the written values compose into the intended look, which is a verification question, not an implementation one.
+- **Reversible**: yes — the orchestrator can fetch and commit the bundle at any point.
+
+### DEV-03 — Swap workstream split, engine ahead of screen
+- **What**: the swaps workstream is split in two. The engine, migration, persistence and endpoints (Half A) land immediately after the foundation. The Swaps screen (Half B) stays late in the order.
+- **Why**: D7 changes what `effectivePercent` means. Home renders an average-readiness KPI and per-deck readiness meta; deck detail renders `raw`, `fidelity`, `pct` and the 90px medallion. Building those two phases against today's engine would bake the old numbers into their fixtures, and every one of those assertions would turn red when the engine change eventually landed — forcing a retrofit of two phases' tests. Landing the engine change first means those phases are written against correct numbers from the start.
+- **Cost**: Half A has to leave the existing Swaps screen functional during the window before Half B rebuilds it, since every phase must be committable with a green suite. The swaps design owns that question.
+- **Reversible**: yes, but expensively — reverting the order after Home and deck detail are built recreates exactly the retrofit this avoids.
+
+### DEV-04 — Local Postgres brought up in Docker
+- **What**: a `postgres:16-alpine` container named `rathe-arsenal-pg` on port 5432, with the exact credentials the repo's `.env` already points at (`postgresql://postgres:dev@localhost:5432/rathe_arsenal`). No config file was changed; the container was shaped to fit the existing configuration.
+- **Why**: every prior feature recorded "no local PostgreSQL" as a known limitation, which pushed the DB-backed API e2e suite to CI-only and left `scripts/screenshot-all-surfaces.ts` — the repo's own self-validation tool, which captures ~64 screenshots across both themes and both viewports — unusable locally. Both are exactly the automated verification this run needs, and the owner's validation philosophy puts them ahead of anything manual. Docker was already running on this machine.
+- **Scope of the change**: none in the repository. The container is infrastructure on the developer's machine.
+- **Reversible**: yes, completely — `docker rm -f rathe-arsenal-pg`. Nothing in the repo depends on it existing.
+- **Note for the owner**: this also means the `## Known env limitation` line in `.specs/STATE.md` is now out of date. Left alone for the moment rather than edited mid-run.
+
+## Baseline before any change
+
+Captured 2026-08-16 on `feat/product-redesign` at commit `8c22ed2`, after `pnpm install`:
+
+| Check | Result |
+|-------|--------|
+| `pnpm typecheck` | Green — `apps/web`, `apps/api`, `packages/engine` |
+| `apps/api` unit | 857 passed / 857, 72 suites |
+| `apps/web` unit | 1525 passed, 1 skipped, 120 files |
+| `packages/engine` unit | 232 passed / 232, 13 suites |
+| **Total** | **2614 passing, 1 skipped** |
+
+The single skip is the `describe.skip` block in `apps/web/src/styles/__tests__/contrast.spec.ts` covering borderline dark tokens with documented body-size failures. Phase 1 must un-skip it — see the ruling in `design/01-foundation.md` §9. Any other skip appearing later in this run is a regression introduced by this run.
+
+## Shared files — collision map
+
+These are touched by more than one phase and are the reason implementation runs **sequentially per phase**, with parallelism only *within* a phase across genuinely disjoint files.
+
+| File | Rule |
+|------|------|
+| `apps/web/src/i18n/locales/pt-BR/index.ts` and `en-US/index.ts` | Every phase that adds a namespace edits both. Sequential phases make this safe. |
+| `apps/web/src/routeTree.gen.ts` | Generated. Any phase adding a route runs the generator; nobody hand-edits it. |
+| `apps/web/tests/visual/__snapshots__/` | The foundation's token swap invalidates every baseline. Each later phase regenerates the baselines for screens it touches, in the same commit. |
+| `apps/web/src/styles/tokens.css`, `global.css` | Owned by the foundation phase. No later phase may modify them; a later phase that needs a new token asks for it rather than adding one locally. |
+
+Git worktree isolation is deliberately not used: nine worktrees each editing the same two locale index files would produce merge work strictly worse than running in order.
 
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.

@@ -1,8 +1,8 @@
 # P1: Swaps — Screen and Lifecycle — Design
 
-**Spec**: `.specs/features/product-redesign/spec.md` (story "P1: Swaps — screen and lifecycle", SWAP-01..12)
+**Spec**: `.specs/features/product-redesign/spec.md` (story "P1: Swaps — screen and lifecycle", SWAP-01..15)
 **Handoff**: `.specs/features/product-redesign/design-handoff.md` §10 "Swaps"
-**Decisions**: `.specs/STATE.md` AD-005, AD-006, AD-007
+**Decisions**: `.specs/STATE.md` AD-005, AD-006, AD-007; `spec.md` D7, D8, D9
 **Status**: Draft
 
 This is the highest-risk workstream in the redesign (AD-006: "the most likely source of silent bugs"). Every section below traces back to a specific line in the engine, the entities, or the handoff so the next reader can verify a claim instead of trusting it.
@@ -11,11 +11,37 @@ Sections 11-13 (Code Reuse Analysis, Tech Decisions, Requirement Traceability) a
 
 ---
 
-## 0. Blocking decision — does approval move the readiness number?
+## Landing sequence — Half A and Half B
 
-This has to be resolved before Tasks, because it decides whether this workstream touches only `apps/api`/`apps/web`, or also `packages/engine` output shape and the P1 Deck detail / P2 Medallion stories.
+This workstream splits into two independently landable halves, because they have different, asymmetric dependents.
 
-**The conflict.** `computeEffectiveReadiness` (`packages/engine/src/readiness/compute.ts:256-257`) computes:
+**Half A — engine, persistence, API.** §0 (readiness gating), §1 (current model), §2 (identity/reconciliation), §3 (per-copy vs. per-group), §4 (suppression), §5 (schema/migration), §6 (five endpoints), §8 (error handling), and the engine/API portions of §9, §11, §12, §13. No frontend work.
+
+**Half B — the Swaps screen.** §7 in full (tabs, in-place confirmation, reason panel, outcome control, `× N` grouping, filter rail/bulk/`all`), plus the web portions of §9, §11, §12, §13.
+
+**Dependency direction: Half A before Home and Deck detail, not just before Half B.** §0 redefines what `effectivePercent` means. Home renders an average-readiness KPI and per-deck readiness meta (HOME-01, HOME-06); Deck detail renders `raw`/`fidelity`/`pct` and the 90px medallion (DECK-04, CMP-01/02). If either of those phases is built and its test fixtures written against today's engine — where a pending substitution already counts — every readiness assertion in them goes red the moment Half A ships later. Half A therefore has to land immediately after the Foundation phase, **ahead of Home and Deck detail** in the implementation order, so those phases are written against the correct numbers from the start rather than needing a fixture rewrite after the fact. Half B has no such upstream pressure — nothing depends on the Swaps *screen* existing, only on the engine change — so it stays where D1's suggested order already puts it, late in the sequence, and can land any time after Half A.
+
+### The gap between Half A landing and Half B landing
+
+Half A drops `substitute_decision` and retires the `decisions.controller.ts` sub-resource and `ReviewsController`'s backing store (§5, §6) — but the **currently shipped** `/swaps` route (pre-redesign) still calls `GET /api/reviews`, `POST /decks/:trackedDeckId/decisions`, and `POST /api/reviews/bulk` until Half B replaces it with the new screen. If Half A ships those endpoints gone, the still-deployed old screen 404s on every request — a broken intermediate state, which the repo's phase-landing convention (VIS-01: baselines never sit red; every phase commits to a working app) doesn't allow.
+
+**Half A keeps the three old endpoints alive as a thin, explicitly temporary compatibility shim**, re-implemented against `swap_suggestion` instead of `substitute_decision` + snapshot-JSONB derivation:
+
+- `GET /api/reviews` → rebuilds `ISubstitutionRow[]` (today's exact response shape) from `swap_suggestion` rows instead of `ReviewAggregateService.listSubstitutionRows`'s snapshot-breakdown-plus-decision-join. `swap_suggestion` already carries a superset of what `ISubstitutionRow` needs (slot, confidence, tier, rationale — card metadata resolved from the catalog as §5 already does for the new reads). `status = 'retired'` rows are excluded, same as they always would have been invisible under the old model (a retired row has no old-model analogue, so this isn't a behavior change for the old screen).
+- `POST /decks/:trackedDeckId/decisions` (approve/reject a bare `cardIdentifier`) → the old DTO has no `slot` and no original card, only the substitute's identifier — exactly the ambiguity §2/§4 exist to fix. The shim resolves this the only way it can without changing the old screen's contract: **apply the decision to every `swap_suggestion` row in that deck whose `substituteIdentifier` matches**, deliberately reproducing today's over-broad, substitute-only-keyed behavior (§1) rather than the new pair-scoped one. This is correct for a shim — it's byte-for-byte what the old screen already does today — and explicitly wrong as a permanent behavior, which is why it's deleted, not kept as a code path, the moment Half B ships.
+- `POST /api/reviews/bulk` → same per-row translation, looped over the operations array. The old contract's atomicity (`DecisionsService.bulkUpsert`'s single-transaction guarantee) is preserved for the shim specifically, since it's a bounded, temporary piece of code, not the permanent bulk-action design in §7 (which already accepts the weaker per-endpoint guarantee for the *new* five-endpoint model — the shim and the final design have different atomicity properties for different reasons, and that's fine because the shim is deleted before anyone depends on it long-term).
+
+**What a user sees, precisely.** The old screen keeps working, unmodified — same requests, same response shapes. What changes immediately on Half A landing, for every user, is the readiness number itself (§0's accepted consequence): every deck's `pct` drops to its exact-owned level the moment Half A ships, because no `swap_suggestion` row has ever been approved yet (D8 — nothing migrated forward) and the old screen has no "approve" action that writes into the new model in a way that raises it back up... except it does, via the shim above, which is precisely why the shim exists: without it, a user could never get back to 100% until Half B shipped, weeks later. With it, the old screen's existing Approve button still works, still raises `pct`, just via the coarser substitute-only matching it always used.
+
+This shim is deleted in the same commit that lands Half B's new endpoints and screen — it's throwaway code by construction, not a second product to maintain, and should be labeled as such in its own file header (`// TEMPORARY — deleted when apps/web's redesigned Swaps screen ships; see .specs/features/product-redesign/design/07-swaps.md`).
+
+---
+
+## 0. Readiness gating (D7, SWAP-13) — settled: only approved substitutions count
+
+**Resolved by the owner.** `effectivePercent` (the medallion/hero `pct`) counts only exact-owned cards plus **approved** substitutions. A pending, undecided substitution is still found and reported, but does not move the number until approved. This is option (i) from the earlier draft of this section, confirmed rather than defaulted-to.
+
+**Today's behavior** (`packages/engine/src/readiness/compute.ts:256-257`):
 
 ```ts
 const effectivePercent = totalCards > 0
@@ -23,21 +49,57 @@ const effectivePercent = totalCards > 0
   : 0;
 ```
 
-`substitutedCount` is incremented for *every* substitution the engine finds (`compute.ts:229`), independent of any decision. There is no concept of "found but not yet approved" in the current readiness number — a pending, undecided substitution already counts as if it were applied. The only lever that exists today is `excludedIdentifiers`, which removes a substitution from being found at all (used for rejections).
+`substitutedCount` increments for *every* match the engine finds (`compute.ts:229`), independent of any decision — there is no "found but not counted" concept today. The only existing lever, `excludedIdentifiers`, removes a substitution from being *found* at all (rejections). This design adds the missing lever for approval, at the same place.
 
-The handoff's lifecycle rules (§10, rule 1) say: *"Aprovada = aplicada ao deck. Não é um log — é um estado ativo. A troca está valendo na lista efetiva do deck (é o que faz a prontidão fechar)."* Read literally, this means the readiness percentage should be **lower while a suggestion is pending** and rise when it's approved. SWAP-04 ("contribute to readiness") and SWAP-05 ("readiness SHALL recompute" on revert) both read as requiring an observable change, not just a status flag — if revert doesn't move a number, "readiness SHALL recompute" has nothing to do.
+### Input shape: a second branded set, same encoding as exclusion
 
-**Three ways to build it**, in increasing order of blast radius:
+`computeEffectiveReadiness` gains a sixth parameter, keeping the branded-key discipline from §4 (same collision reasoning applies: approval is scoped to a specific slot, not just a card pair):
 
-| Option | What changes | Engine change | Cross-workstream impact |
-|---|---|---|---|
-| **(i) Approval gates the percentage** | `pct` on the medallion and deck hero is lower while a swap is pending, and rises when approved. | None — pure arithmetic over data the API already has: `confirmedPercent = (exactCount + Σ quantity of substituted entries whose swap_suggestion row is 'approved') / totalCards`. The engine still emits every substitution it finds; the API layer decides which ones count toward the *displayed* number. | **Yes.** Redefines what `pct` means everywhere it's shown — DECK-04 ("`raw`, `fidelity` and `pct` presented as distinct values"), CMP-01/02 (medallion ring color thresholds keyed off `pct`). Those two stories' designs must agree on this before either ships. |
-| **(ii) Approval gates the decklist rendering only** | A pending swap's slot still renders as "missing" in the decklist/analysis panels; an approved swap's slot renders as covered by the substitute. The top-line `pct` stays as computed today (counts every found substitution). | None. | Frontend-only in the Deck detail story; smaller blast radius than (i) but still touches DECK-04/DECK-06 rendering rules. |
-| **(iii) Status only** | Approve/reject/revert/restore only change the row's `status` and the Aplicadas/Recusadas/Pendentes bucket. Nothing about readiness display changes. | None. | None outside this story — but it leaves SWAP-05 ("readiness SHALL recompute") with no observable effect, which reads as quietly dropping part of the requirement. |
+```ts
+export function computeEffectiveReadiness(
+  deck: IDeck,
+  inventory: ReadonlyMap<string, number>,
+  catalog: ICatalog,
+  tolerance: IPitchTolerance = DEFAULT_PITCH_TOLERANCE,
+  excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+  approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+): IEffectiveReadinessResult
+```
 
-**This design does not pick one.** It is a product decision (what "prontidão" means) that this workstream cannot make unilaterally because it's load-bearing for two sibling P1/P2 stories that have their own design docs. Everything below is written so it works under (i) or (ii) — the swap-suggestion schema, reconciliation, and five endpoints are identical either way; only `confirmedPercent`'s existence and who reads it changes. **Flagging (iii) as not recommended**: it makes SWAP-05 a no-op requirement, which is the kind of silent scope drop this doc is explicitly asked not to do.
+Two sets, not one richer decision map, because they're consumed at two different points in the algorithm for two different reasons: `excludedIdentifiers` filters *candidates* inside `findTierMatch`'s search loop (§4 — a rejected pair must never be found, so a fallback candidate can be tried instead). `approvedIdentifiers` is checked *after* a match is already found, in `compute.ts`'s Pass 2 loop, purely to decide whether that copy counts toward `substitutedCount`. Collapsing both into one `Map<TExclusionKey, 'approved' | 'rejected'>` would work too, but two sets keeps each call site's intent legible (`excludedIdentifiers` reads as "don't find these," `approvedIdentifiers` reads as "count these") and keeps the change additive — every existing 5-arg call site still compiles with the new 6th parameter defaulting to "nothing approved," which is the correct new default (see below), not an accident of omission.
 
-Recommendation if a default is needed to keep moving: **(i)**, because it's what SWAP-04's literal text says ("contribute to readiness") and it costs zero engine work — it's a read-time aggregation the API already has the inputs for. But the DECK-04/CMP-01 design docs need to confirm this before implementation, since they own the medallion and analysis-row copy.
+**Inventory reservation is unaffected by approval.** A pending substitution still consumes its substitute's inventory in `remainingInventory` exactly as an approved one does (`compute.ts:233-234`, unchanged) — this keeps allocation deterministic within a single compute call: two different original cards can't both be assigned the same physical copy just because neither substitution has been approved yet. Only the *counting* toward `effectivePercent` differs, nothing about *which* substitute is chosen.
+
+### What `substituted` means now, precisely
+
+`breakdown.substituted[]` is unchanged in *what* it contains — every found match, approved or pending, exactly as today (a rejected pair is still never found at all, so it never appears here; that part of the model doesn't change). What's new: `ISubstitutedEntry` gains one field:
+
+```ts
+export interface ISubstitutedEntry {
+  readonly original: IBreakdownEntry;
+  readonly match: ISubstitutionMatch;
+  readonly approved: boolean; // new — true iff approvedIdentifiers contains this entry's key
+}
+```
+
+This is the exact, inspectable answer to "found but not counted" vs. "found and counted": `substitutedCount` and `effectivePercent` sum only entries where `approved === true`; the Swaps screen and the deck detail's "trocas sugeridas" panel keep rendering every entry in `breakdown.substituted[]` regardless of `approved` (they show pending suggestions precisely because they're the thing the user is being asked to act on). `notOwned` (`compute.ts:262-284`) is **unchanged** — it's still the union of `missing` plus every `substituted` entry's original card, regardless of `approved`. A card with a pending, unapproved substitute is exactly as "not owned" as one with an approved substitute or no substitute at all; approval doesn't change what the user physically owns, only what the engine currently treats as covering the slot for readiness purposes.
+
+### Pipeline order (ties §2, §4, and this section together)
+
+1. Load the deck's `swap_suggestion` rows; partition into `approvedIdentifiers` (`status = 'approved'`) and `excludedIdentifiers` (`status = 'rejected'`) — one query, two in-memory sets, both built with `buildExclusionKey`.
+2. Call `computeEffectiveReadiness` with both sets.
+3. Group the fresh `breakdown.substituted[]` by the quadruple key (§2 step 1) — independent of each entry's `approved` flag, which only affected the percentage in step 2, not the grouping.
+4. Reconcile the fresh groups against all persisted rows (§2), including the `approved` ones — reconciliation never reads `entry.approved`; it only compares quadruple keys. A row's `status` moving to `'approved'` happens exclusively through `POST /swaps/:id/approve` (§6), never through this pipeline.
+
+### Knock-on for DECK-04 — what `raw`, `fidelity`, and `pct` each mean now
+
+Flagging this precisely rather than leaving the deck-surfaces workstream to guess, since none of the three changed the same way:
+
+- **`raw` (`rawPercent`)** — unchanged. Exact-owned-copies percentage; never counted substitutions, before or after this design.
+- **`fidelity` (`fidelityPercent`)** — unchanged, and **deliberately not gated by approval**. `computeFidelity` (`packages/engine/src/readiness/compute-fidelity.ts`) is computed over `breakdown` as a tier-weighted quality score of the *substitution plan the engine found*, regardless of whether the user has acted on it yet — it answers "how good would this deck be if the suggested plan were used," not "how ready is it right now." This is a scope boundary chosen deliberately to keep this change to exactly what D7 asked for (SWAP-13 says "effective percentage," not fidelity); if the deck-surfaces workstream wants fidelity to also gate by approval, that's a separate decision for that story's own design doc, not inherited from this one.
+- **`pct` (`effectivePercent`)** — new meaning: exact-owned plus only *approved* substitutions. This is now literally "what you can play right now," and it drops for every deck with unreviewed pending suggestions the moment this ships (the owner's own stated, accepted consequence in D7).
+- **Path (A/B/C) is unaffected.** `computePath` (`packages/engine/src/readiness/compute-path.ts`) classifies purely from `breakdown.missing.length` / `breakdown.substituted.length` — both unchanged in what they contain — so a deck with 3 pending, unapproved substitutions and nothing missing is still **Path B**, exactly as before.
+- **The resulting tension, handed to DECK-04 rather than resolved here:** a deck can now be Path B (spec's DECK-03 "status strip renders `--ready` tone with no actions" is keyed off completeness, i.e. Path, not `pct`) while `pct` sits below 100 because its substitutions are still pending. If the status strip's tone/copy is driven by Path (as DECK-02/DECK-03's acceptance criteria read — "incomplete" vs "complete" are about missing cards, not approval), a deck can show a `--ready`-toned strip next to a medallion that isn't at 100. Whether that's the intended reading of "complete" post-D7, or whether DECK-03's completeness check needs to additionally require `pct === 100` (i.e., fully *approved*, not just fully *coverable*), is a call for the Deck detail design doc — this section only makes the disagreement visible, since it's a direct consequence of the change made here.
 
 ---
 
@@ -171,17 +233,15 @@ export function buildExclusionKey(
 
 This is a real, if contained, engine signature change (two exported functions in `packages/engine/src/substitution/`, one call site in `packages/engine/src/readiness/compute.ts`), not a one-line tweak — flagging it plainly rather than understating it, since `findSubstitution` is re-exported from the package's public `index.ts` and any consumer calling it directly (none found outside `compute.ts` as of this design, per a repo-wide grep) would need updating too. `excludedIdentifiers` stays `ReadonlySet<TExclusionKey>` (a branded `string`, still trivially serializable, still zero DB dependency in the engine) — only its arity changed, not its type shape.
 
-**Branding matters here, not just style.** Every call site that currently builds a bare-identifier `Set<string>` and passes it through compiles fine today; if the encoding changes but the type stays `Set<string>`, those call sites keep compiling while silently suppressing nothing (a rejected pair would never match a triple-encoded key). Branding `TExclusionKey` and requiring `ReadonlySet<TExclusionKey>` on `computeEffectiveReadiness`'s 5th parameter turns every un-migrated caller into a compile error. Call sites that must be updated to build triple-keyed sets via `buildExclusionKey`:
+**Branding matters here, not just style.** Every call site that currently builds a bare-identifier `Set<string>` and passes it through compiles fine today; if the encoding changes but the type stays `Set<string>`, those call sites keep compiling while silently suppressing nothing (a rejected pair would never match a triple-encoded key). Branding `TExclusionKey` and requiring `ReadonlySet<TExclusionKey>` on `computeEffectiveReadiness`'s 5th parameter turns every un-migrated caller into a compile error. The same call sites also need the 6th parameter added now (§0 — `approvedIdentifiers`), so this table covers both in one pass:
 
-| File | Line(s) | What it does today |
-|---|---|---|
-| `apps/api/src/decks/decisions/decisions.service.ts` | `loadExclusions` (153-159) | Returns `Set<string>` of bare rejected `cardIdentifier`. Superseded — see §7, this method's role moves to a swap-suggestion query. |
-| `apps/api/src/collection/collection.service.ts` | 109, 116 | Consumes `loadExclusions` output as `excludedIdentifiers`. |
-| `apps/api/src/decks/decks.service.ts` | 921, 991 | Same — `updateComposition`'s in-transaction and post-commit readiness calls. |
-| `apps/api/src/decks/test/test-deck.service.ts` | 192 | Test helper wrapping `computeEffectiveReadiness`. |
-| `apps/api/src/substitution/substitution.service.ts` | 46, 84, 92, 121 | `runReadiness`/`computeAndStoreReadiness`/`computeReadinessWithExclusions`. |
-
-All five need to build their exclusion set from `swap_suggestion` rows with `status = 'rejected'` (pair-scoped: `cardIdentifier` + `substituteIdentifier` per row, run through `buildExclusionKey`) instead of `substitute_decision`.
+| File | Line(s) | What it does today | What it needs now |
+|---|---|---|---|
+| `apps/api/src/decks/decisions/decisions.service.ts` | `loadExclusions` (153-159) | Returns `Set<string>` of bare rejected `cardIdentifier`. | Superseded — see §7. Replaced by a single `swap_suggestion` query per deck returning both `status = 'rejected'` and `status = 'approved'` rows, partitioned in memory into `excludedIdentifiers`/`approvedIdentifiers` (§0 step 1) — one round trip, not two. |
+| `apps/api/src/collection/collection.service.ts` | 109, 116 | Consumes `loadExclusions` output as `excludedIdentifiers`. | Loads and passes both sets. |
+| `apps/api/src/decks/decks.service.ts` | 921, 991 | Same — `updateComposition`'s in-transaction and post-commit readiness calls. | Loads and passes both sets; also the site where `currentDeckSlots` (§2) is naturally already available (`freshCards`/`deckInput.cards`), so reconciliation's slot-existence check is cheap to wire in here. |
+| `apps/api/src/decks/test/test-deck.service.ts` | 192 | Test helper wrapping `computeEffectiveReadiness`. | Gains an `approvedIdentifiers` parameter (default empty, matching the engine's new default). |
+| `apps/api/src/substitution/substitution.service.ts` | 46, 84, 92, 121 | `runReadiness`/`computeAndStoreReadiness`/`computeReadinessWithExclusions`. | All three gain the second set; `computeAndStoreReadiness` is the natural home for invoking `SwapsReconciliationService` after the compute call, since it's already the single choke point every recompute path routes through. |
 
 ---
 
@@ -309,16 +369,16 @@ Indexes:
 
 Name/pitch/type/imageUrl for original and substitute are **not** stored on the row — they're resolved at read time from the in-process catalog (`CatalogService.getCard`), same pattern `ReviewAggregateService.lookupName`/`lookupType` already use (`review-aggregate.service.ts:449-470`). This keeps the row small and immune to catalog data changing under it (a snapshot approach here would go stale the same way legacy `substitute_decision` had no way to record it at all).
 
-### Migration path for existing data
+### Migration path for existing data — settled (D8, SWAP-15)
 
-Per §1, legacy `substitute_decision` rows only ever recorded the *substitute's* identifier — never the original — so there is no way to reconstruct the new pair-scoped key from the row alone. The two states carry very different amounts of real signal:
+**Legacy `substitute_decision` rows are discarded, not reconstructed.** Neither `approved` nor `rejected` rows are carried forward into `swap_suggestion`. Consequences, stated plainly rather than left implicit:
 
-- **`approved` rows are inert today** (§1 — nothing reads them to change engine output). Carrying them forward under the new schema would require inventing an original-card/slot pairing that was never recorded, and a wrong guess here risks exactly the "corrupting readiness" scenario the spec warns about. **Recommendation: do not migrate `approved` rows forward.** They're dropped. Flagging plainly: this means the Aplicadas tab is empty for every existing user on day one, including the ~47 in the closed pre-launch cohort — this is a visible, if low-stakes, data-loss consequence of the schema replacement and should be said out loud before the migration ships, not discovered after.
-- **`rejected` rows are the one legacy state with a live behavioral consequence** (SWAP-03 exists specifically to keep a rejected pair from resurfacing) — losing this silently means previously-refused suggestions can reappear once. Two migration variants, either buildable, owner picks:
-  - **(a) Best-effort snapshot join.** For each deck with a legacy rejected row, join against that deck's latest `deck_readiness_snapshot.breakdown.substituted[]` to find every `(original, slot)` currently paired with the rejected substitute id, and insert one `swap_suggestion` row per match with `status = 'rejected'`, `rejectionReason = null` (not previously captured), `quantity` from the per-copy count in that snapshot. Decks whose latest snapshot doesn't currently show that substitute are skipped — no fabricated slot. This reproduces the *current, correct* suppressions as closely as the data allows, but anything not resolvable at migration time is silently dropped.
-  - **(b) Deck-wide wildcard rows.** Skip the join; carry each legacy rejected `(trackedDeckId, substituteIdentifier)` forward as-is, without an original/slot (or with a sentinel `cardIdentifier = '*'`, `slot = '*'` that the exclusion-set builder special-cases to match any pair with that substitute id for that deck). This exactly reproduces today's over-broad suppression behavior — no better, no worse than what users already experience — with near-zero migration risk, and it self-corrects over time as fresh pair-keyed rejections replace the wildcard ones through normal use.
+- Aplicadas starts empty for every existing user on day one, including the ~47 in the closed pre-launch cohort.
+- Every previously-rejected suggestion is proposed once more — SWAP-03's guarantee ("a rejected pair is never re-proposed while it stays rejected") restarts clean from this migration forward; it does not retroactively cover decisions made under the old model.
 
-  Both are legitimate; (a) is more correct but has silent-drop risk, (b) is a straight carry-forward of an already-known bug. This is a genuine trade-off between "fix the bug now, lose some suppression history" and "keep today's behavior exactly, fix forward" — **flagging for an explicit owner call**, not deciding it here.
+Two reconstruction approaches were considered and rejected, recorded here so the question isn't reopened: a best-effort join against each deck's latest `deck_readiness_snapshot.breakdown.substituted[]` to recover an `(original, slot)` pairing for legacy rejections, and a deck-wide wildcard carry-forward that skips the join entirely. Both were rejected for the same underlying reason — **the legacy table never recorded the original card or the slot**, only the substitute's identifier (§1), so anything beyond a guess risks exactly the "corrupting readiness" scenario the spec warns against, for a table that reconstructs, at best, an approximation of already-known-buggy suppression behavior (§1's cross-original suppression bug). Discarding is the only option that doesn't risk building new bugs on top of the old table's missing data.
+
+**The old table is dropped in the same migration that creates `swap_suggestion`**, not staged across a release. This follows the repo's own precedent (`1776621085000-ReplaceRejectedSubstituteWithDecision.ts` dropped `rejected_substitute` and created its replacement in one migration, not two), and there's no operational reason to keep a now-orphaned table around at closed-beta scale. The migration's `down()` recreates the `substitute_decision` **table shape** for rollback safety, but **cannot restore its data** — the rows were deleted by `up()` and D8 is explicit that they are not reconstructed from anywhere. This has to be stated plainly in the migration file's own header comment (mirroring how `1776621085000`'s header documents its own design rationale), not left for the next reader to infer from a `down()` that silently produces an empty table where data used to be. Acceptable given the closed-beta, staging-adjacent scale the owner has already accepted for D7's analogous effect — but it's a one-way door, and the comment should say so in those terms.
 
 ---
 
@@ -397,9 +457,13 @@ The handoff's "Endpoints implícitos" list (§10) only names the five mutations 
 
 ## 7. Frontend
 
-### Regression surface — flagging before designing over it
+### Filter rail, bulk actions and the `all` tab — settled (D9, SWAP-14): all three survive
 
-The handoff's Swaps section (§10) describes three tabs, a row layout, and the reject-reason panel — it does not show a filter rail or a bulk-actions bar. The **currently shipped** `/swaps` route has both: `ReviewsFilters` (tier/deck/hero/confidence-range chips), `ReviewsBulkBar` (multi-select bulk approve/reject/reset), and a fourth `all` tab state in `validateSearch` (`swaps.tsx:39-43`) that isn't one of the handoff's three tabs. The spec's cross-cutting goal is explicit: *"Nothing already shipped regresses."* The handoff, read literally, drops all three. **This is flagged, not resolved silently** — recommended default (conservative, reversible): keep `ReviewsFilters` and `ReviewsBulkBar` as an additional row above the handoff's tab/row layout, restyled to the new tokens, and keep `all` as a fourth, non-handoff tab state reachable via the filter rail rather than a visible tab pill. This preserves every existing capability while still landing the handoff's three-tab visual design as the default view.
+The handoff's Swaps section (§10) describes three tabs, a row layout, and the reject-reason panel — it draws no filter rail and no bulk-actions bar. The **currently shipped** `/swaps` route has both, confirmed against the live code: `ReviewsFilters` (tier/deck/hero/confidence-range chips), `ReviewsBulkBar` (multi-select bulk approve/reject/reset), and a genuine fourth tab — `ReviewsTabs`' `TTabValue = TReviewState | 'all'` (`ReviewsTabs.tsx:11`) renders `all` as a real pill (`{ value: 'all', label: t('reviews.tabAll') }`, `ReviewsTabs.tsx:51`), not a hidden filter state. The owner has confirmed all three survive, adapted into the handoff's layout — this section states how, and marks plainly what's invented versus carried forward as-is.
+
+- **`all` tab**: kept as a **fourth tab pill**, styled with the handoff's tab visual language (gold active state, same `bg rgba(208,168,76,.14)` / `--acc` treatment FND-01 already establishes for nav) rather than demoted to a filter-rail toggle. This is the more conservative of two options considered — it preserves the exact existing information architecture (a real tab, not a repurposed affordance) and only changes the tab bar's skin, not its structure. **Invented**: the handoff only draws three tabs: a fourth pill alongside them, and its label/position in the row, are this design's addition.
+- **Filter rail** (tier, deck, hero, confidence range): kept as a collapsible chip row between the tab bar and the row list. **Invented, but borrowed rather than freehand**: the handoff already specifies a chip/pill visual language elsewhere for filtering — Library's pitch chips and class/talent/set facets (handoff §7, referenced by LIB-01) — so this reuses that existing pattern's token surface (`--surface`, `--line`, `--acc` for the active/selected state) applied to Swaps' four filter dimensions, rather than inventing a new filter chrome. Collapsed behind a single "Filtros" trigger by default so it doesn't compete visually with the handoff's clean row list when unused.
+- **Bulk actions**: kept, with one necessary behavior change flagged plainly. Today's `POST /api/reviews/bulk` (`DecisionsService.bulkUpsert`) is atomic — up to 200 operations in one DB transaction, all-or-nothing. The new lifecycle (§6) has no equivalent "upsert a decision" primitive; it has five status-scoped endpoints (approve/reject/revert/restore/outcome). A bulk action under the new model has to become **N sequential calls to whichever single endpoint matches the selected rows' current status and the chosen bulk action** (e.g. "bulk approve" only ever targets `pending` rows and calls `POST /swaps/:id/approve` once per selected id) — not one atomic transaction. This is a real reduction in the transactional guarantee compared to today: a bulk action can now partially succeed. The bulk bar surfaces this honestly rather than implying atomicity it no longer has — on completion it reports success/failure counts (e.g. "8 de 10 aprovadas — 2 falharam"), and failed rows stay selected so the user can retry. **Invented**: the partial-failure reporting UI itself; the underlying five-endpoint dispatch is a direct consequence of §6's endpoint design, not a new choice made here.
 
 ### Data layer changes
 
@@ -445,7 +509,22 @@ One component renders every row in every tab; only its trailing action cluster v
 
 ### Elapsed time ("há 3 dias")
 
-No existing helper for this in the repo (checked — not found). Needs either `Intl.RelativeTimeFormat` (locale-aware, no new catalog entries, but needs a small wrapper to pick the right unit — days vs hours vs "agora") or per-unit catalog entries following the `_one`/`_other` plural convention already used throughout `reviews.ts` (e.g. `elapsedDays_one: 'há {{count}} dia'`, `elapsedDays_other: 'há {{count}} dias'`). **Recommendation: `Intl.RelativeTimeFormat`** — it's a standard web API (no new dependency), locale-correct for both `pt-BR` and `en-US` automatically, and avoids hand-maintaining unit-boundary logic in the catalog. Flagging as unverified against this repo's target browser/runtime matrix — the design assumes Node ≥ 13 / evergreen browsers, which `Intl.RelativeTimeFormat` has supported since 2020, but this wasn't independently confirmed against the repo's browserslist config.
+No existing helper for this in the repo (checked — not found), and no dedicated i18next relative-time plugin is installed. Checked the repo's browser-target assumptions directly rather than leaving this unverified: there is no `browserslist` config anywhere in the repo (checked `apps/web/package.json` and root `package.json`), so there's no formal baseline to fail against — but `design/01-foundation.md` (§1.4) already specifies dark-theme tokens using CSS `color-mix(in oklch, ...)`, a 2023-era feature. `Intl.RelativeTimeFormat` has been supported in every evergreen browser since 2020, strictly older than what the redesign's own foundation phase already assumes elsewhere, so there's no independent browser-support risk in using it here.
+
+**Recommendation, revised from the earlier draft of this section: `Intl.RelativeTimeFormat`, but wired through i18next's formatter API, never called bare.** The app already routes every other string through `i18next`/`react-i18next` (`apps/web/src/i18n/index.ts`), including a live language switch that updates `i18n.language` and `document.documentElement.lang` at runtime (Settings' language toggle, per the i18n bootstrap's own doc comment). A standalone `new Intl.RelativeTimeFormat('pt-BR')` call with a hardcoded locale would not react to that switch — the elapsed-time string would stay frozen to whatever locale was active when the component first rendered, which is a real, findable bug, not a style nitpick. Instead, register a custom i18next formatter once, at bootstrap, keyed off the active language:
+
+```ts
+// apps/web/src/i18n/index.ts, alongside the existing i18n.on('languageChanged', ...) registration
+i18n.services.formatter?.add('relativeTime', (value: Date, lng) => {
+  const diffSeconds = (value.getTime() - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(lng, { numeric: 'auto' });
+  // unit selection (days vs hours vs "agora") lives in one small helper here,
+  // not duplicated at every call site.
+  return formatRelativeTimeUnit(rtf, diffSeconds);
+});
+```
+
+used in catalog strings as `t('swaps.elapsedSince', { date: row.appliedAt, formatFn: 'relativeTime' })` (i18next's standard formatter-interpolation syntax). This keeps elapsed time inside the same localization pipeline as every other string in the app, reacting to the language toggle exactly like the rest of the UI, and needs no new catalog entries beyond the one interpolation key — no per-unit `_one`/`_other` plural table (that convention is reserved for count-based pluralization elsewhere in `reviews.ts`, e.g. `selectedCount_one`/`_other`; relative-time unit selection is `Intl`'s job, not the catalog's).
 
 ### i18n
 
@@ -474,12 +553,28 @@ Every new string needs both catalogs (cross-cutting requirement 1). Extending `a
   - Same original card occupies *two different slots*, both proposing the same substitute: reject the substitution in one slot, assert the other slot's suggestion is untouched (the reason §4's key became a triple instead of a pair — without this case in the suite, a pair-keyed implementation would pass every other test and still ship the bug §4 exists to prevent).
   - Fallback preserved: construct a fixture where the top-scoring candidate is triple-excluded but a lower-tier candidate is still valid; assert the engine returns the fallback candidate rather than reporting the card as fully missing (the reason the exclusion check lives inside `findTierMatch`'s loop, not as a post-filter in `compute.ts`).
 - `computeEffectiveReadiness`: existing per-copy expansion tests stay green unchanged (Pass 2 loop untouched); add a case asserting two copies of the same original can resolve to two different substitutes when inventory of the first substitute is exhausted mid-loop (grounds the "one row per group, not per original card" decision in §3).
+- New cases for §0's `approvedIdentifiers` gating: a found match with an empty `approvedIdentifiers` set does not count toward `effectivePercent` (the new default); the same match with its key present in `approvedIdentifiers` does count; `ISubstitutedEntry.approved` reflects the flag correctly on both; `notOwned` is identical in both cases (proves the gating doesn't leak into ownership accounting); inventory is consumed identically in both cases (proves gating doesn't change *which* substitute is chosen, only whether it counts).
+
+**Existing tests this design invalidates or requires updating — found by search, not assumed:**
+
+`packages/engine/__tests__/readiness.spec.ts` currently asserts `effectivePercent === 100` (or another value that assumes every found substitution counts) with no concept of approval, because that concept didn't exist before this design. Every one of these needs either a passed-in `approvedIdentifiers` covering the fixture's matches (to keep asserting the old ceiling value where that's still what the test is about) or an updated expected value (where the test's real subject is the new gating itself):
+- `'performs a single tier 1 substitution for a missing mainboard card'` (~line 120) — asserts `effectivePercent === 100` from a bare match with no approval step.
+- `'rejects substitution when pitch curve tolerance would be exceeded'` (~line 286) — the in-tolerance counterpart also asserts 100 on a bare match.
+- `describe('path field')` → `'returns Path B when all missing copies are covered by substitutions'` (~line 344) — Path itself is unaffected (§0), but its `effectivePercent === 100` assertion is not.
+- `describe('fidelityPercent field (Path C)')` → `'returns Path B with tier-1-weighted fidelity below 100 when substitutions cover all missing'` (~line 438) — `fidelityPercent`'s own assertion is unaffected (§0 — fidelity is deliberately not gated), but its `effectivePercent === 100` assertion is.
+- `describe('tier 2 substitution in readiness')` → `'falls through to tier 2 when no tier 1 candidate is available'` (~line 488) — same pattern.
+- `'(regression) rawPercent, effectivePercent, slot, quantity are unchanged by U11'` (~line 746) — this test's actual purpose (proving an unrelated enrichment change, U11, didn't alter substitution behavior) is still valid; recommend passing `approvedIdentifiers` covering every match in its fixture so the assertion stays decoupled from D7's concern rather than conflating two unrelated regressions in one expected value.
+- `describe('excludedIdentifiers parameter (re-solve)')` → `'empty exclusion set matches the default no-exclusion behavior'` (~line 603) — a *differential* comparison (`withEmptySet.effectivePercent` vs `withoutArg.effectivePercent`), not an absolute value; likely unaffected since both sides compute under the same (absent) approval state, but flagged to verify against the exact fixture rather than assumed safe.
+
+`apps/api/src/__tests__/plan-b-full-flow.e2e-spec.ts` (DB-backed, **CI-only**) is the one test outside `packages/engine` that exercises the real pipeline end-to-end rather than a mocked `computeEffectiveReadiness` — and its own comments document the exact pre-D7 assumption as intended behavior: *"Approval keeps the substitute active — effectivePercent should stay [the same/≥]"* (steps 6-8, ~lines 321-401). Under D7 this is backwards: `effectivePercent` should be **lower before approval and rise after it**, not stay flat. This test needs a real rewrite of that assertion, not a value tweak — its step 10 (source toggle removes inventory, `effectivePercent` should drop, ~line 401) is orthogonal to D7 and stays correct as-is.
+
+**Checked and confirmed *not* invalidated**, so the next reader doesn't have to re-derive this: `apps/api/src/collection/__tests__/collection.service.spec.ts`, `apps/api/src/decks/__tests__/orphan-cleanup.spec.ts`, `apps/api/src/decks/__tests__/decks.service.update-composition.spec.ts`, and `apps/api/src/substitution/__tests__/substitution.service.spec.ts` all `jest.mock` `computeEffectiveReadiness` at the module boundary — their fixtures assign `effectivePercent`/`rawPercent` directly rather than deriving them from the real function, so D7's internal semantic change doesn't reach them. They only need their **production call sites** updated to pass the new 6th argument (§0's pipeline-order table) — `decks.service.update-composition.spec.ts:563` (`expect(firstCallArgs[4]).toBeInstanceOf(Set)`) specifically should gain a sibling assertion for `firstCallArgs[5]` once that argument exists, since the file already asserts on call-argument shape and would otherwise silently stop covering it. `apps/api/src/reviews/__tests__/review-aggregate.service.spec.ts` and `apps/api/src/reviews/__tests__/state-transition-matrix.spec.ts` carry `effectivePercent`/`rawPercent` in their fixtures too, but the functions under test (`deriveVerdictAndBracket`, `deriveCounters`) only read `breakdown.missing.length`/`breakdown.substituted.length` — never the percent values — so these fixtures are inert with respect to D7. Every `apps/web` test file that references a readiness percentage (`StatusShelves.spec.tsx`, `DeckCard.spec.tsx`, `PopulatedHomeHero.spec.tsx`, `DeckDetailSidebar.spec.tsx`, `ReadinessHero.spec.tsx`, and others found by search) consumes a mocked API response, never the engine directly — `apps/web` has no dependency on `@rathe-arsenal/engine` anywhere near readiness code (confirmed by search; its only two engine imports, `HeroDropdown.tsx` and `useCascadeCheck.ts`, are catalog lookups unrelated to substitution). These files are not invalidated by this design, but their fixture *values* will eventually need review once real API responses reflect D7's new numbers — that review belongs to the Home and Deck detail phases' own build sessions, since they own those fixtures, not to this design.
 
 **API (`apps/api`, unit + e2e):**
 - `reconcileSwapSuggestions` (pure function, §2): exhaustive table-driven unit tests, no database — every branch as a separate case: insert, update-in-place, un-retire, retire-pending (position left the deck), retire-approved-orphan (position left the deck), rejected-untouched, **and the two cases that must be visibly distinguished from each other**: (a) unmatched row whose `(cardIdentifier, slot)` is absent from `currentDeckSlots` → `retire` mutation, versus (b) unmatched row whose `(cardIdentifier, slot)` is still present in `currentDeckSlots` (substitute currently at zero owned) → no mutation at all, row unchanged. (b) is the direct test for the spec's "row SHALL still render... rather than disappearing silently" edge case; without a test asserting *no mutation*, an implementation that retires on every unmatched row would still pass every other case in this list. Plus the "no persisted rows + no fresh groups" and "many persisted rows, one fresh group" edges.
 - `SwapsController` unit tests (mocked service) for the idempotency/state-machine table in §6 — one test per legal/no-op/illegal cell.
-- `SwapsController` **e2e** (`.e2e-spec.ts`, DB-backed, **CI-only** per this repo's documented local-Postgres gap): approve → revert → reject → restore full lifecycle against a real deck, asserting `swap_suggestion` rows and recomputed readiness at each step; the reject-cascade scenario (rejecting one pair changes another row); the migration's `up`/`down` against a seeded `substitute_decision` table for both variant (a) and (b) if the owner picks a path in §5.
-- Migration test: run `up` then `down` against a snapshot of representative `substitute_decision` data, assert no orphaned rows and no FK violations — standard for this repo's migration style (see the existing pattern implied by `1776621085000`'s explicit `down()`).
+- `SwapsController` **e2e** (`.e2e-spec.ts`, DB-backed, **CI-only** per this repo's documented local-Postgres gap): approve → revert → reject → restore full lifecycle against a real deck, asserting `swap_suggestion` rows and recomputed readiness at each step (readiness assertions here follow §0's gated semantics, not the old ones); the reject-cascade scenario (rejecting one pair changes another row).
+- Migration test: run `up` against a seeded `substitute_decision` table, assert every row is gone and `swap_suggestion` exists empty (D8 — discard, not reconstruct). Run `down` and assert it recreates the `substitute_decision` table shape but with **zero rows** — the assertion is specifically that `down` does not error and does not fabricate data, not that it restores the pre-migration state, since §5 is explicit that restoration is impossible.
 
 **Web (`apps/web`, component/unit, Vitest + Testing Library, no Playwright browser needed for these):**
 - `reconcileSwapSuggestions`-adjacent pure helpers (`applyFilters`, `computeTabCounts` adapted for §7) — direct port of existing test coverage for `-swaps.helpers.ts`, updated for the new row shape.
@@ -490,16 +585,26 @@ Every new string needs both catalogs (cross-cutting requirement 1). Extending `a
 
 ---
 
-## 10. Summary — everything flagged as "cannot be built as specified" or needing an explicit owner call
+## 10. Summary — resolved decisions and what's still genuinely open
 
-1. **§0 — Does approval move the readiness percentage?** The handoff's lifecycle text reads as yes; the current engine has no such gating at all. Three options given; this workstream's design works under any of them, but the choice is cross-workstream (DECK-04, CMP-01/02) and must be made before Tasks, not defaulted here.
-2. **§2 — Natural key must include `slot`.** `deck_card` has no unique constraint preventing duplicate `(cardIdentifier, slot)` pairs across rows; the frontend's current triple key (no slot) and the handoff's implicit model both undercount this. Not a handoff conflict exactly, but a gap the handoff's data model (`Swap { id, deckId, slot, ... }` — it does list `slot`!) already anticipated and the current codebase's decision/grouping keys did not honor.
-3. **§4 — The current rejection-suppression mechanism suppresses by substitute-card-only, not by pair.** This is a pre-existing bug, not a redesign decision, but AD-006's "rejected-pair suppression input" phrasing requires fixing it as part of this work — flagged so it isn't mistaken for new scope creep.
-4. **§5 — Migration cannot preserve `approved` decisions at all**, and can only *approximate* `rejected` decisions (two variants offered, differing in fidelity vs. risk). This is a real, user-visible data-loss point (empty Aplicadas tab for existing users on day one) that needs explicit owner sign-off before the migration ships, not a place to pick silently.
-5. **§7 — The handoff's Swaps screen has no filter rail, no bulk-action bar, and only three tab states**, while the shipped page has both plus a fourth `all` state. Read literally, adopting the handoff regresses functionality the spec's own cross-cutting goal says must survive. Recommended a conservative default (keep both, layered above the handoff's row design) but this is presented as a flag, not a unilateral resolution.
-6. **§7 — No existing "elapsed time" helper in the repo.** Recommended `Intl.RelativeTimeFormat` over new catalog entries, but did not independently verify it against the repo's actual browser support target.
+### Resolved by the owner this round (D7/SWAP-13, D8/SWAP-15, D9/SWAP-14)
 
-Two things that looked like open questions on a first pass turned out to have a determinable answer once checked against the engine's actual behavior, so they're resolved in the sections above rather than left as flags: whether the natural key needs `slot` (§2 — yes, `deck_card` has no constraint preventing duplicate `(cardIdentifier, slot)` pairs), and whether a substitute dropping to zero owned copies should retire its row (§2 — no, the edge case explicitly forbids the row disappearing, so it's a display-layer concern at `GET /api/swaps`, not a reconciliation-layer one).
+- **Readiness gating (§0).** Only approved substitutions count toward `effectivePercent`/`pct`. Designed concretely: a branded second set (`approvedIdentifiers`, same `TExclusionKey` encoding as exclusion), a new `ISubstitutedEntry.approved` field, `fidelityPercent` and `rawPercent` and `path` explicitly left ungated, and the resulting DECK-04 tension (Path B completeness vs. a sub-100 `pct`) handed off precisely rather than resolved here (see "still open," below).
+- **Legacy migration (§5).** Discard, don't reconstruct — both `approved` and `rejected` legacy rows. Two reconstruction approaches were considered and rejected on the record. Old table dropped in the same migration; `down()` cannot restore the discarded data and must say so in its own header comment.
+- **Filter rail, bulk actions, `all` tab (§7).** All three survive, adapted into the handoff's layout: `all` as a fourth tab pill, the filter rail as a collapsible chip row borrowing Library's existing chip visual language, bulk actions re-dispatched as N single-endpoint calls with honest partial-failure reporting (down from today's atomic transaction — a real, flagged reduction in guarantee, not silently absorbed).
+- **Elapsed time (§7).** `Intl.RelativeTimeFormat`, wired through a custom i18next formatter keyed to `i18n.language` rather than called bare — verified against the repo's actual (nonexistent) browserslist config and against `design/01-foundation.md`'s own newer CSS baseline, not left unverified.
+
+### Resolved without needing an owner call (determinable from the code)
+
+- **Natural key includes `slot` (§2)** — `deck_card` has no constraint preventing duplicate `(cardIdentifier, slot)` pairs.
+- **A substitute dropping to zero owned copies does not retire its row (§2)** — the spec's edge case forbids the row disappearing; it's a display-time concern at `GET /api/swaps`, not a reconciliation-time one.
+- **The exclusion key is a triple, not a pair (§4)** — a pair-only key would let one slot's rejection silently retire an untouched sibling row in a different slot.
+- **The current rejection-suppression mechanism suppresses by substitute-card-only, not by pair (§1, §4)** — a pre-existing bug, not new scope; AD-006's "rejected-pair suppression input" phrasing is what requires fixing it here.
+
+### Still genuinely open — needs a call from outside this document
+
+1. **The DECK-04/CMP-01 tension §0 surfaces.** A deck can now be Path B (no missing cards, substitutions cover the gap) while `pct` sits below 100 because those substitutions are pending. Whether the Deck detail status strip's "complete" tone should key off Path (today's behavior, unaffected by this design) or additionally require `pct === 100` is a call for that story's own design doc — this document only makes the disagreement visible.
+2. **Whether the compatibility shim in the "Landing sequence" section (below) is acceptable** as a temporary measure, or whether Half A and Half B should instead be forced into a single atomic release to avoid building and then deleting shim code. Recommended the shim (keeps every phase committable with a green suite, per the repo's stated philosophy of small landable increments); flagging the alternative since it trades implementation cost for a smaller total diff.
 
 ---
 
@@ -543,9 +648,12 @@ Two things that looked like open questions on a first pass turned out to have a 
 | Card metadata (name/pitch/image) on the row | Not stored — resolved at read time from the catalog (§5, §11) | Matches the existing `ReviewAggregateService` pattern; avoids the row going stale if catalog data changes, and avoids a second place recording data the catalog already owns. |
 | Rejection reason storage | Enum key, never the localized label (§5, §7) | The quoted reason in Recusadas must track the active locale at render time, not freeze to whichever locale was active when the chip was clicked. |
 | Retirement condition for an unmatched row | Only when `(cardIdentifier, slot)` has left the deck; never for "substitute currently at zero owned" (§2) | Directly required by the spec's edge case forbidding a silently-disappearing row; the zero-owned case is a display concern, not a lifecycle one. |
-| Legacy data migration for `approved` rows | Dropped, not migrated (§5) | No original-card/slot was ever recorded for them; a wrong reconstructed guess risks corrupting readiness, which the spec explicitly warns against. |
+| Legacy data migration, `approved` and `rejected` rows alike | Both dropped, not migrated (§5, D8) | No original-card/slot was ever recorded for either; a wrong reconstructed guess risks corrupting readiness, which the spec explicitly warns against. Old table dropped in the same migration, `down()` cannot restore the data. |
 | GET list endpoint | New `GET /api/swaps`, successor to `GET /api/reviews` (§6) | The handoff's endpoint list only names the five mutations; a list endpoint is required by the frontend and this makes the assumption explicit rather than silently inheriting the old route. |
-| Filter rail / bulk bar / `all` state | Kept, restyled (§7) | Spec's cross-cutting goal requires nothing shipped regresses; the handoff's silence on these isn't the same as a decision to remove them. Flagged for owner confirmation regardless (§10). |
+| Filter rail / bulk bar / `all` state | Kept, restyled (§7, D9) | Spec's cross-cutting goal requires nothing shipped regresses; confirmed shipped behavior, not the handoff's silence being read as removal. |
+| Readiness-gating input shape | Second branded set, `approvedIdentifiers: ReadonlySet<TExclusionKey>` (§0, D7) | Mirrors `excludedIdentifiers`'s existing shape and the slot-aware branding from §4; two sets keep each call site's intent legible (don't-find vs. do-count) rather than merging into one richer decision map. |
+| Whether `fidelityPercent` gates by approval | No — deliberately unchanged (§0) | D7/SWAP-13 says "effective percentage" specifically; extending gating to fidelity is a separate decision left to whichever story owns that number's display. |
+| Half A / Half B landing order | Half A ships ahead of Home and Deck detail, not just ahead of Half B; temporary compatibility shim keeps the old Swaps screen working in between (Landing sequence section) | Home/Deck detail render `pct`/`raw`/`fidelity` and would need fixture rewrites if built against pre-D7 numbers; a shim avoids a broken intermediate state between Half A and Half B, matching the repo's every-phase-committable convention. |
 
 ---
 
@@ -565,6 +673,9 @@ Two things that looked like open questions on a first pass turned out to have a 
 | SWAP-10 (post-play outcome control) | §5 (`outcome`), §6 (`SwapOutcomeDto`), §7 |
 | SWAP-11 (`× N` grouping, one decision for all copies) | §3, §7 (`SwapRow`) |
 | SWAP-12 (row visual contract: struck-through outgoing, gold-bordered incoming, slot, confidence band color) | §7 (`SwapRow`) |
+| SWAP-13 (only approved substitutions count toward the effective percentage; pending never inflates it) | §0 (in full — Half A) |
+| SWAP-14 (filter rail, bulk actions, `all` tab survive, adapted into the handoff's layout) | §7 (Half B) |
+| SWAP-15 (legacy `substitute_decision` rows discarded, not mapped forward) | §5 (Half A) |
 | Edge case: substitute's owned count drops to zero → row still renders, accurate count | §2, §6 (`GET /api/swaps` live `ownedCount`) |
 | Edge case: approved suggestion's slot removed by a deck edit → retired, readiness not corrupted | §2 |
 | Edge case: rejection without a reason succeeds, no quoted reason shown | §7 (`SwapRow`) |
