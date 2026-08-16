@@ -22,6 +22,18 @@ Given by the owner before leaving, 2026-08-16:
 4. **Do not silently drop shipped behavior.** If a handoff screen omits something the app already does, it survives unless a recorded decision says otherwise (this already produced D6 and D9).
 5. Every user-facing string lands in both `pt-BR` and `en-US` in the same change that introduces it.
 
+## Test-quality brief
+
+Every implementation phase inherits this. It is distilled from `.specs/LESSONS.md`, which records tests that passed while the bug they were supposed to catch survived. This redesign is unusually exposed to L-006, because the handoff specifies hundreds of exact values and a test that only checks "an element rendered" leaves every one of them free to drift.
+
+1. **Pin exact values that an acceptance criterion fixes.** When a criterion names a literal — a token, a px size, an aspect ratio, a duration, a keyframe percentage — assert that literal, in `apps/web/src/styles/__tests__/design-guards.spec.ts` when it lives in CSS. A guard that only checks the class exists does not protect the value inside it. (L-006)
+2. **Test the container, not only the component.** If a phase mounts something inside a shell, assert the child's content renders through the parent, not merely that the child works standalone. (L-007)
+3. **Assert the mechanism, not the artifact it happens to produce.** When a criterion requires a specific router component, assert that component was invoked — a mocked `Link` and a bare anchor produce identical DOM. The same applies to any wrapper whose presence is the point. (L-008)
+4. **Split conjunctions.** An "X and Y" criterion needs two independent assertions. A fallback rendering does not prove the error was reported. (L-009)
+5. **Cover every render branch at the boundary.** A component with collapsed and expanded states needs the indicator tested in both, at count = 1. (L-003)
+6. **Assert the identifier across every variant of a batched action**, not just the boolean that distinguishes them. (L-005)
+7. **A skipped test is a failing test.** Nothing in this run may add a `skip` or a `todo`. The one inherited skip must be gone by the end of phase 1.
+
 ## Deviations
 
 Decisions taken without the owner, or departures from the agreed plan. Empty means nothing has diverged yet.
@@ -56,7 +68,10 @@ Captured 2026-08-16 on `feat/product-redesign` at commit `8c22ed2`, after `pnpm 
 | `apps/api` unit | 857 passed / 857, 72 suites |
 | `apps/web` unit | 1525 passed, 1 skipped, 120 files |
 | `packages/engine` unit | 232 passed / 232, 13 suites |
-| **Total** | **2614 passing, 1 skipped** |
+| `apps/api` e2e | 31 passed / 31, 5 suites — **run locally for the first time**, against the DEV-04 container |
+| **Total** | **2645 passing, 1 skipped** |
+
+The e2e line is the payoff for DEV-04. `theme-persistence.e2e-spec.ts` and `plan-b-full-flow.e2e-spec.ts` are the two suites `.specs/STATE.md` records as CI-only for want of a local database; both pass here. Every phase of this run can now be verified against the same suite CI will run, instead of discovering database-layer breakage only after the PR is open.
 
 The single skip is the `describe.skip` block in `apps/web/src/styles/__tests__/contrast.spec.ts` covering borderline dark tokens with documented body-size failures. Phase 1 must un-skip it — see the ruling in `design/01-foundation.md` §9. Any other skip appearing later in this run is a regression introduced by this run.
 

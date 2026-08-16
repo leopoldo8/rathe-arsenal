@@ -124,6 +124,8 @@ incomplete → "{missing} faltando · {owned}/{total}" in --warn
 no snapshot → "Rascunho · sem lista" in --dim-2 (--ra-fg-muted)
 ```
 
+The same meta line carries the restored legality icon (§2.5's preserve/reshape/drop table) — an illegality-only marker appended after the readiness text, rendered only when `deck.legality.category === 'illegal'`. Legal and incomplete-but-legal decks show no icon here at all; this is the one exception to "the deckbox face has no room for a 4th signal" because it doesn't live on the box face, it lives in the text line below it, and only appears for the minority case worth flagging.
+
 This is a straight restyle of `resolveReadinessTier`'s three states (today: high/mid/low tiers with 80/50 thresholds driving card border color) — HOME-06 doesn't specify numeric thresholds, only the three states (complete / incomplete / no-list), so the existing `effectivePercent === 100` (or `null` breakdown with nothing missing) / `missing > 0` / `latestSnapshot === null` branches map directly without touching `resolveReadinessTier`'s math.
 
 **Preserve / reshape / drop table for everything `StatusShelves`/`DeckCard` ship today:**
@@ -161,39 +163,56 @@ Today, "Edit" on deck detail means exactly one thing: entering composition-draft
 
 The handoff's `design-handoff.md` §6 describes something that is neither of those: a dedicated `max-width:820px` panel with Name, Format, a 4-segment Status control, Tags, and **Notes** — no cards, no hero swap, no quantities anywhere in it. EDIT-02..04's acceptance criteria match this metadata-only screen exactly. Composition editing is not named in any requirement ID in this spec and is not drawn in any of the handoff's 11 screens.
 
-**Resolution**: EDIT-02..04 is a **new screen** at a **new route**, `/decks/$deckId/edit` (file `decks.$deckId.edit.tsx`), distinct from the existing `?edit=1` search-param mechanism on `/decks/$deckId`. It absorbs what `DeckNameInline`/`StatusDropdown`/`TagChipRow` do inline today (those three become redundant in the header once this screen exists — see §5.2) plus the two genuinely new pieces (Notes, a bundled danger zone). Composition editing (cards/hero/quantities/cascade-check/draft-persistence) is **preserved entirely unchanged**, reachable through a different, explicitly-relabeled entry point since "Editar" is now claimed by this new screen — see the open item in §4.6.
+**Resolution**: EDIT-02..04 is a **new screen** at a **new route**, `/decks/$deckId/edit` (file `decks.$deckId.edit.tsx`), distinct from the existing `?edit=1` search-param mechanism on `/decks/$deckId`. It absorbs what `DeckNameInline`/`StatusDropdown`/`TagChipRow` do inline today (those three become redundant in the header once this screen exists — see §5.2) plus the two genuinely new pieces (Notes, a bundled danger zone). Composition editing (cards/hero/quantities/cascade-check/draft-persistence) is **preserved entirely unchanged**, reachable through a different, explicitly-relabeled entry point since "Editar" is now claimed by this new screen — see §4.7.
 
 ### 4.2 Fields
 
 | Field | Control | Mutation | Notes |
 |---|---|---|---|
 | Name | text input | `usePatchDeckMutation({ name })` | Reuses the mutation `DeckNameInline` already calls; the inline header control is retired once this exists (§5.2). |
-| Format | `FormatDropdown` (existing component, reused as-is) | **New**: `format` added to `IPatchDeckBody` | See §4.3 — this is the one genuinely new backend surface this screen requires. |
+| Format | `FormatDropdown` (existing component, reused as-is) | **New**: `format` added to `IPatchDeckBody` | See §4.4 — this is the one genuinely new backend surface this screen requires. |
 | Status | 4-segment control (Ativo/Construindo/Ideia/Aposentado) | `usePatchDeckMutation({ status })` | Same mutation `StatusDropdown` already calls. See §2.2 for the collapse-must-not-write rule this control has to satisfy. |
 | Tags | `TagChipRow` + `TagAutocompleteCombobox` (existing components, reused as-is) | `usePatchDeckMutation({ addTagIds, removeTagIds })` | No change from today's behavior, just relocated from the header into this panel. |
-| Notes | textarea, 88px | **New** field end to end | Does not exist in `IPatchDeckBody`, `IPutDeckBody`, `IDeckDetailResponse`, or any deck DTO today. Requires a schema column + API field, not just a frontend change. Flagged — this is new backend scope this workstream did not previously carry. |
+| Notes | textarea, 88px | `usePatchDeckMutation({ notes })` | New field end to end — see §4.3. In scope for this workstream per EDIT-02, not deferred. |
 
-### 4.3 Format: PATCH, not PUT — and why that's not optional
+### 4.3 Notes — additive backend design
+
+EDIT-02 lists Notes among the edit screen's fields explicitly; this is in scope, not scope creep. Design:
+
+- **Schema**: one nullable `text` column on `tracked_deck` (e.g. `notes text NULL`). Additive migration only — no backfill needed, existing rows get `NULL` and the UI treats `null` the same as an empty string (empty textarea).
+- **Length cap**: enforced with a `class-validator` decorator on the PATCH DTO, e.g. `@IsOptional() @MaxLength(2000) notes?: string` — following the repo's existing `class-validator`-on-DTO convention (`git-workflow.md`/`patterns.md`'s standard). 2000 chars is a starting cap sized for a free-text notes field, not derived from a handoff spec (the handoff draws an 88px textarea, which is a visual height, not a character limit) — confirm with the owner if a different cap is wanted.
+- **DTO**: `IPatchDeckBody.notes?: string | null` alongside the new `format` field (§4.4), same endpoint, same mutation, same invalidation (`DECKS_QUERY_KEY` + `deckDetailQueryKey` + `TAGS_QUERY_KEY` already covers it — notes doesn't affect the tag list, but reusing the existing invalidation set is harmless and keeps one PATCH contract instead of two).
+- **Response**: `IDeckDetailResponse.notes: string | null` — the one new field the detail response needs to carry so the edit screen can pre-fill the textarea on load.
+
+This is a small, self-contained, additive change (one column, one DTO field, one validator) — the same shape and size as the `format` addition in §4.4, not a larger undertaking.
+
+### 4.4 Format: PATCH, not PUT — and why that's not optional
 
 `IPatchDeckBody` today has no `format` field; the only existing way to change format is `usePutDeckMutation`, which requires and replaces the **entire card list** in one transactional call. Routing this screen's format select through PUT would mean either (a) round-tripping every card in the deck through a metadata-only screen just to change one enum field, with any gap in that payload silently deleting cards, or (b) building a partial-PUT variant that doesn't exist. Neither is acceptable for a field that's conceptually pure metadata.
 
 **Resolution**: add `format?: TSupportedFormat` to `IPatchDeckBody`, handled server-side as a metadata-only update with no composition side effects (the existing `usePatchDeckMutation`'s invalidation of `DECKS_QUERY_KEY` + `deckDetailQueryKey` + `TAGS_QUERY_KEY` already covers what changes downstream — home list format pill, detail header, no library impact since format doesn't gate ownership). This is new backend scope, small and self-contained (one field on an existing endpoint), and is the safer of the two options considered — the rejected alternative (route format through PUT) was rejected specifically because it turns a metadata edit into a data-loss hazard if the payload assembly on this new screen is ever incomplete.
 
-### 4.4 Danger zone (EDIT-04)
+**This makes format editable from two screens — resolved by removing the overlap, not managing it.** Composition-edit mode's sidebar (`DeckDetailSidebar`, edit-mode branch) currently shows `FormatDropdown` alongside `HeroDropdown`, feeding `compositionDraft.format` into the eventual `usePutDeckMutation` PUT payload. Once the metadata screen owns format canonically, **`FormatDropdown` is removed from composition-edit's UI** — format becomes read-only display data within composition edit, not an editable control there. It doesn't disappear from the composition draft's *data* entirely: `useCascadeCheck` needs the current format to evaluate card legality (illegal-card warnings), so `compositionDraft.format` stays populated (seeded from the deck's live format on draft init, same as today), it just has no UI control writing to it. This removes the write-overlap at the source rather than reconciling two mutation paths for the same field: format changes flow exclusively through the metadata screen's PATCH from this point on.
+
+One residual, narrow gap from this: if a user opens composition edit, the draft caches the format value at that moment; if they then separately change format via the metadata screen without saving or discarding the composition draft, and later restore that stale draft via `DraftRestoreModal`, the restored draft still carries the format value from whenever it was cached, not the newer PATCHed one. This is the same category of staleness `DraftRestoreModal` already accepts for card data (a restored draft can already be stale relative to inventory changes made elsewhere) — not a new class of risk this design introduces, so no additional mechanism is proposed to close it.
+
+### 4.5 Danger zone (EDIT-04)
 
 - **"Aposentar deck"** — `usePatchDeckMutation({ status: 'retired' })`, the same mutation `StatusDropdown` already fires for this status value. No new endpoint.
 - **"Excluir deck"** — `useUntrackDeckMutation()` (`DELETE /decks/:deckId`). The existing i18n string for this action already frames it correctly for this danger-zone context: *"Untrack '{{name}}'? This will remove the deck and all its readiness data"* — this is a genuine delete of tracking + snapshot data, not a soft hide, so "Excluir" is the accurate label and no semantic gap exists between the handoff's copy and today's endpoint behavior.
 - **Confirmation** (EDIT-04's explicit requirement): today's only delete-confirmation pattern in the app is `delete-account-modal.tsx` (Settings) — a Radix `AlertDialog` with a checkbox-gated destructive submit. Deck deletion is lower-stakes than account deletion (no password re-entry needed), so reuse the `AlertDialog` + destructive-styled confirm button pattern without the password/checkbox gating — a single "type the deck name to confirm" or a plain "Delete / Cancel" `AlertDialog` is sufficient. Exact confirmation friction (typed name vs. plain confirm) is agent's discretion; default to a plain `AlertDialog` (no typed confirmation) since decks are recoverable via re-import and this isn't account-destroying.
 
-### 4.5 Draft persistence on this screen
+### 4.6 Draft persistence on this screen — and why the two screens' dirty state can't collide
 
-The composition-edit mode's draft machinery (`useCompositionDraft`, `readStoredDraft`, `DraftRestoreModal`, `useNavigationAwayGuard`, `DiscardChangesConfirm`, `SaveCascadeConfirmModal`) is scoped to **composition** state (cards/hero/format-as-part-of-composition) and stays exactly as-is on the existing `?edit=1` flow (§4.6) — none of it needs to move.
+The composition-edit mode's draft machinery (`useCompositionDraft`, `readStoredDraft`, `DraftRestoreModal`, `useNavigationAwayGuard`, `DiscardChangesConfirm`, `SaveCascadeConfirmModal`) is scoped to **composition** state (cards/hero, format now read-only per §4.4) and stays exactly as-is on the existing `?edit=1` flow — none of it needs to move.
 
 This new metadata screen does **not** get the same localStorage draft-and-restore treatment (no cross-session recovery for a typed name or a toggled status) — that machinery exists specifically because composition edits are large and slow to redo; a name/format/status/tags/notes edit is small and fast to redo. It **does** need a lighter nav-away guard so a stray click doesn't silently discard a typed name or notes paragraph: reuse `DiscardChangesConfirm` (already generic — takes `changeCount` and open/keep-editing/discard callbacks, no composition-specific coupling) wired to a simple local `isDirty` boolean (any field differs from the loaded deck), not the full `useNavigationAwayGuard` + `useCompositionDraft` pairing built for composition state.
 
-### 4.6 Open item: relabeling the composition-edit entry point
+**Can both screens be dirty at once, and if so what happens?** The two screens live at different routes (`/decks/$deckId/edit` for metadata, `/decks/$deckId?edit=1` for composition) reached only by navigating from the shared view page (`/decks/$deckId`) — neither links directly to the other, so a single browser tab can only have one of them mounted at a time. Composition edit's `useNavigationAwayGuard` already blocks in-app navigation away from a dirty draft with `DiscardChangesConfirm`, which covers navigating *to* the metadata screen the same way it covers navigating to `/home` today — so a user can't silently leave a dirty composition draft to open the metadata screen without being asked first. The reverse (leaving the metadata screen dirty to enter composition edit) is covered by that screen's own lighter guard from this section. Because the two screens' persisted state doesn't overlap either — the metadata screen persists nothing to localStorage, only the composition draft does, and §4.4 removed format as the one field either screen could otherwise fight over — there's no scenario where saving on one screen silently clobbers unsaved state the other screen owns. The one residual edge case (a stale composition draft's cached format value, restored after a later metadata-screen format change) is named and accepted in §4.4, not newly introduced here.
 
-Since "Editar" on the deck-detail hero banner now means "open the metadata screen" (DECK-01, matching the handoff literally), the existing composition-edit mode (`?edit=1`) needs a different, explicit entry point and label — it cannot also be called "Editar" without colliding with the new screen's meaning. **Default, so implementation isn't blocked**: place it as an action in the decklist section's header, next to the Por tipo/Por custo/Lista toggle (DECK-07), labeled "Editar cartas" / "Edit cards" — contextually closest to what it actually edits. Composition editing's own header UI (`DeckDetailHeader`'s Cancel/Save pair, cascade-check flow, `DraftRestoreModal`) is otherwise unchanged; only the trigger's location and label move. **Flagged for a quick owner confirmation** since neither the handoff nor the spec draws this entry point at all — but this is the kind of naming call that shouldn't block the rest of the phase.
+### 4.7 Composition-edit entry point: the decklist section header, not the hero banner
+
+Resolved, not left open. "Editar" on the deck-detail hero banner goes to the metadata screen exactly as the handoff draws it (DECK-01, §5.2). Composition editing (`?edit=1`) gets its own action in the **decklist section header**, next to the Por tipo/Por custo/Lista toggle (DECK-07), labeled "Editar cartas" / "Edit cards" — beside the thing it edits, not buried in the "···" overflow menu (§5.2), since composition editing is the more consequential of the two edit paths and shouldn't be harder to find than renaming a deck. Composition editing's own header UI (`DeckDetailHeader`'s Cancel/Save pair, cascade-check flow, `DraftRestoreModal`) is otherwise unchanged; only the trigger's location and label move.
 
 ---
 
@@ -213,7 +232,7 @@ Handoff: single-column `max-width:1180px` stack — hero banner (bleeds full-wid
 - Breadcrumb "← Decks" — reuses the existing `styles.breadcrumb` link pattern from `DeckDetailHeader`.
 - Status chip (`"Ativo ▾"`) — **this is `StatusDropdown`, relocated into the banner, unchanged in behavior.** It's the surviving five-value status control referenced in §2.2 — `ready` stays directly settable here even though the edit screen's segmented control only shows four labels.
 - "Editar" button (border `--acc`) — navigates to `/decks/$deckId/edit` (§4).
-- "···" button — the existing overflow menu, minus Untrack (moved into the edit screen's danger zone, §4.4); if nothing else needs to live there, this button may have zero items and can be dropped — flagged as agent's discretion pending what else, if anything, lands in it.
+- "···" button — the existing overflow menu, minus Untrack (moved into the edit screen's danger zone, §4.5); if nothing else needs to live there, this button may have zero items and can be dropped — flagged as agent's discretion pending what else, if anything, lands in it.
 - Eyebrow `12px uppercase #c6a678` ("CLASSIC CONSTRUCTED · LIGA LOCAL") — `#c6a678` has no existing slot; closest existing token is `--ra-accent-deep`-family but not an exact match. Define as a new locally-scoped literal (`--hero-eyebrow-ink: #c6a678`) rather than forcing a token-file addition for a single decorative eyebrow color, consistent with how `01-foundation.md` treats other single-consumer handoff literals.
 - Deck title (Newsreader 34px) — reuses `DeckNameInline`'s *display* half only (the click-to-edit affordance is retired here since renaming now lives in the edit screen, §4.2) — renders as static text, not an inline-editable control, once the edit screen exists.
 - Hero name (13px) — reuses `DeckDetailSidebar`'s hero-name resolution logic (`heroCard?.name ?? heroName ?? heroLegacy`), not the sidebar component itself.
@@ -278,12 +297,14 @@ Per `01-foundation.md`, everything else on this page — colors, type, spacing, 
 
 | Change | Type | Owner |
 |---|---|---|
-| `IPatchDeckBody.format?: TSupportedFormat` | New field on existing endpoint | This workstream (§4.3) |
-| Deck `notes` field (schema column + `IPatchDeckBody.notes?`, `IDeckDetailResponse.notes`) | New field, new column | This workstream (§4.2) — flagged as new backend scope beyond a token-driven restyle |
+| `IPatchDeckBody.format?: TSupportedFormat` | New field on existing endpoint | This workstream (§4.4) |
+| Deck `notes` field (nullable `text` column, `IPatchDeckBody.notes?`, `IDeckDetailResponse.notes`, `class-validator` length cap) | New field, new column — additive, no backfill | This workstream (§4.3), in scope per EDIT-02 |
 | Pitch distribution / cost curve | Client-side derivation from existing `IBreakdownEntry[]` | No backend change (§5.4) |
 | `THomeGroup` + `GROUP_OF` mapping | Frontend-only display grouping | This workstream (§2.2) — no schema/API change, D5 compliant |
-| Swap `confidence` (numeric) | Not delivered by this workstream | SWAP workstream, phase 7 (§5.5) |
+| Swap `score` (numeric, 0..1 confidence) | Already exists end to end — engine → snapshot JSONB → API DTO → web type → rendered today in `SubstitutionRow` | No new plumbing; this workstream only adds color-banding (§5.5) |
+| D7 readiness gating (`effectivePercent`/`fidelityPercent` count only approved substitutions) | Engine change to `computeEffectiveReadiness`/`computeFidelity` | Swaps workstream's engine/API half, landing before this phase per the coordinator; this workstream designs DECK-04 against the gated meaning (§5.4) but does not implement the gate |
 | `CardArt` missing-count corner badge | New optional prop on existing component | This workstream (§5.6) |
+| Per-tile illegal-only legality icon (Home) | Reuses existing `deck.legality.category` on `ITrackedDeckListItem` | This workstream (§2.5) — no new query |
 
 ---
 
@@ -294,7 +315,7 @@ Per `01-foundation.md`, everything else on this page — colors, type, spacing, 
 | Format PATCH fails (new field) | Same pattern as existing `usePatchDeckMutation` error handling in `StatusDropdown` — optimistic revert + toast with retry | No different from today's status-change error UX |
 | Notes PATCH fails | Same pattern; inline field-level error preferred over a toast since notes can be long — mirrors `DeckDetailHeader`'s `saveError` inline-adjacent-to-button pattern | Notes stay in the form, not lost |
 | Deck deletion fails | `AlertDialog` stays open, inline error shown, matches `delete-account-modal.tsx`'s existing 4xx/5xx handling shape | User isn't silently returned to a deck that wasn't actually deleted |
-| Swaps route doesn't exist yet (phase-order gap, §5.5) | "Ver trocas" simply doesn't render | No broken link, no 404 |
+| Swaps route doesn't exist yet (§5.5) | "Ver trocas" simply doesn't render | No broken link, no 404 |
 | Deckbox/medallion receive `heroArtUrl: null` | Both black-box contracts (§1) specify a non-broken fallback | No layout break, matches Edge Cases in spec.md |
 
 ---
@@ -305,14 +326,17 @@ Per `01-foundation.md`, everything else on this page — colors, type, spacing, 
 |---|---|---|
 | 5→4 status collapse | Read-side only; write path (edit screen) keeps `ready` reachable and never auto-rewrites it to `active` | D5 explicitly forbids changing the status vocabulary or the edit screen's expressible values (EDIT-03) |
 | Group headers on Home | Not `.ra-h2` — own class, `--ra-font-ui` + `--ra-text-subtitle` + 700, `text-transform: none` | Resolves the item `01-foundation.md` explicitly deferred to this phase; handoff specifies a body-family treatment, not the display serif |
-| "Editar" on deck detail | Points at a new dedicated metadata screen (`/decks/$deckId/edit`), not the existing composition-edit mode | Matches the handoff's §6 screen and EDIT-02..04 literally; composition editing is unaddressed by any requirement ID and is preserved unchanged under a different, flagged entry point |
-| Format editing mutation | New `format` field on `IPatchDeckBody` (PATCH), not routed through `usePutDeckMutation` (PUT) | PUT requires the full card list; any incomplete payload from a metadata-only screen would silently delete cards |
-| Notes field | New backend scope (schema + DTO + API), not a frontend-only addition | No existing slot anywhere in the deck data model |
-| Trocas sugeridas data source at phase 5 | Existing `decisions`/`ISubstitutionMatch.tier` model with a provisional tier→confidence-band mapping | The new `Swap.confidence` model ships in phase 7, after this phase; sequencing gap flagged for the orchestrator, not silently absorbed |
+| "Editar" on deck detail | Points at a new dedicated metadata screen (`/decks/$deckId/edit`), not the existing composition-edit mode | Matches the handoff's §6 screen and EDIT-02..04 literally; composition editing is unaddressed by any requirement ID and is preserved unchanged under a different, now-resolved entry point (§4.7) |
+| Composition-edit entry point | Decklist section header, beside the view toggle — not the "···" overflow | It is the more consequential of the two edit paths and shouldn't be harder to find than renaming a deck |
+| Format editing mutation | New `format` field on `IPatchDeckBody` (PATCH), not routed through `usePutDeckMutation` (PUT); `FormatDropdown` removed from composition-edit's UI | PUT requires the full card list; any incomplete payload from a metadata-only screen would silently delete cards. Removing format from composition-edit's UI (while keeping it as read-only draft data for cascade-check) eliminates the two-screen write overlap at the source |
+| Notes field | Small additive backend change: nullable `text` column, `class-validator` length cap, one PATCH field | In scope per EDIT-02, not deferred; additive migration needs no backfill |
+| Trocas sugeridas confidence | `ISubstitutionMatch.score` (0..1), already verified to travel engine → snapshot JSONB → API DTO → web → today's `SubstitutionRow` render | No new plumbing exists to build; only the handoff's color bands (≥90/70–89/<70) are new, applied to a value already in hand |
+| DECK-04's raw/fidelity/pct | Defined under D7-gated semantics (approved-only substitutions count toward `effectivePercent`/`fidelityPercent`) | The swaps workstream's engine/API half now lands before this phase per the coordinator, so gating is live when this card ships; the gate itself is that workstream's change, not this one's |
 | Decklist "by type" grouping | New grouping function over `entry.type`, `groupBySlot`/`resolveSlotGroup` only covers the Hero/Weapon/Equipment split | `groupBySlot` collapses all mainboard cards into one bucket; the handoff wants three type-based sub-buckets within mainboard |
 | AggregateCallout | Preserved, relocated below the status groups | No slot in the handoff, but deleting a working data-driven feature the handoff's designer never saw is a worse default than keeping it |
 | Retired-shelf collapse | Preserved on the Aposentados group specifically | Handoff draws no collapse affordance, but always-expanded is a regression for heavy users; flagged for confirmation |
-| Per-tile legality icon (Home) | Dropped | No room on the new deckbox face; legality is one click away on deck detail — flagged as a real (not free) loss |
+| Per-tile legality icon (Home) | Brought back, exception-based: meta line beneath the box, illegal decks only | No room on the deckbox face itself (hero art, monogram, name, format and medallion already fill it); legality is worth a glance precisely when it fails, not on every tile |
+| Tag-chip promotion on tiles | Stays dropped | Tags remain reachable and do their filtering work through the header's filter chips — a per-tile chip is redundant with a filter the user already has open; recorded as a deliberate loss, not an oversight |
 
 ---
 
@@ -341,28 +365,27 @@ Every new/changed string needs both `pt-BR` and `en-US` catalog entries, followi
 | DECK-02 | §5.3 |
 | DECK-03 | §5.3 |
 | DECK-04 | §5.4 |
-| DECK-05 | §5.5 (phase-order gap flagged) |
+| DECK-05 | §5.5 |
 | DECK-06 | §5.6 |
 | DECK-07 | §5.6 |
 | DECK-08 | §5.6 |
 | DECK-09 | §5.3 |
 | EDIT-01 | §3 |
-| EDIT-02 | §4.1, §4.2 |
+| EDIT-02 | §4.1, §4.2, §4.3, §4.4 |
 | EDIT-03 | §2.2, §4.2 |
-| EDIT-04 | §4.4 |
+| EDIT-04 | §4.5 |
 
-Not covered here: CMP (medallion internals), BOX (deckbox internals), LIB, SWAP (backend lifecycle + full Swaps screen), the Settings panel of "P2: New/Edit/Settings", AUTH — each is owned by a different workstream and consumed here only through the black-box contracts in §1 or the explicitly-flagged sequencing gap in §5.5.
+Not covered here: CMP (medallion internals), BOX (deckbox internals), LIB, SWAP (the full Swaps screen and lifecycle endpoints; the engine gating change in D7 is consumed but not implemented here), the Settings panel of "P2: New/Edit/Settings", AUTH — each is owned by a different workstream and consumed here only through the black-box contracts in §1 or the explicit engine dependency named in §5.4.
 
 ---
 
 ## 11. Open items requiring confirmation before or during implementation
 
-1. **Composition-edit entry point label/location** (§4.6) — default given (decklist-header "Editar cartas"), needs a quick owner confirmation since neither the handoff nor spec draws it.
-2. **Per-tile legality icon removal on Home** (§2.5) — a real loss for users scanning many decks at once, not obviously acceptable; flagged rather than silently dropped.
-3. **Retired-shelf collapse behavior** (§2.5) — this workstream's addition, not in the handoff; confirm it's wanted before implementing.
-4. **AggregateCallout's continued existence** (§2.6) — same category as #3.
-5. **Notes field backend scope** (§4.2, §6) — new column + DTO + API surface; confirm this is accepted as part of this workstream rather than deferred.
-6. **Format-on-PATCH backend scope** (§4.3, §6) — smaller than #5 but still new backend work; confirm accepted.
-7. **DECK/SWAP phase-order gap** (§5.5) — flagged for the orchestrator; this design proceeds with a provisional data source but does not resolve the sequencing question.
-8. **Overflow ("···") button's fate on the hero banner** (§5.2) — may end up empty once Untrack moves to the danger zone; confirm whether anything else belongs there or it should be dropped.
-9. **"Comprar tudo" bulk-buy action** (§5.3) — assumed to reuse existing `ShoppingPanel` bulk functionality; confirm that functionality exists in the form DECK-02 implies.
+1. **Retired-shelf collapse behavior** (§2.5) — this workstream's addition, not in the handoff; confirm it's wanted before implementing.
+2. **AggregateCallout's continued existence** (§2.6) — same category as #1.
+3. **Notes length cap** (§4.3) — 2000 chars is this workstream's starting default, not derived from the handoff; confirm or adjust.
+4. **D7 gating mechanism** (§5.4) — this design assumes the engine change partitions `breakdown.substituted` into approved-only with pending matches moved to a separate bucket, so `fidelityPercent` inherits the gate for free; confirm that's the actual shape of the swaps workstream's engine diff before the analysis card ships, since a different implementation shape could mean `fidelityPercent` needs its own explicit gating fix.
+5. **Overflow ("···") button's fate on the hero banner** (§5.2) — may end up empty once Untrack moves to the danger zone; confirm whether anything else belongs there or it should be dropped.
+6. **"Comprar tudo" bulk-buy action** (§5.3) — assumed to reuse existing `ShoppingPanel` bulk functionality; confirm that functionality exists in the form DECK-02 implies.
+
+Resolved by the coordinator and no longer open: the composition-edit entry point (§4.7 — decklist section header), the trocas-sugeridas confidence source (§5.5 — `match.score`, already wired end to end), the notes field's backend scope (§4.3 — in scope, additive), and the per-tile legality icon / tag-chip-promotion verdicts (§2.5 — icon restored exception-based, tag chips stay dropped by design).

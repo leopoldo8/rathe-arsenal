@@ -60,7 +60,7 @@ LIB-01's literal text only names the sidebar. Reading `library.tsx`, `LibraryFil
 | "Matching N" live chip under search | Yes — `aria-live="polite"` paragraph, shown when query ≥ 2 chars | Not shown (static mock) | Keep — it's assistive-tech-relevant live feedback, not visual chrome the handoff would have any reason to depict. |
 | "Clear all filters" footer button (with active count) | Yes — conditional on `activeFilterCount > 0` | Not shown | Keep. |
 | No-results state + "Clear filters" action | Yes — `styles.noResults` block in `library.tsx` | Not shown | Keep. |
-| Per-card quantity stepper (`LibraryCardStepper`, +/− on hover, multi-source decrement popover fed by `contributions`) | Yes — biggest interactive surface on a grid cell today | **Not shown** — the handoff's card spec is "badge ×N no rodapé direito" only, no stepper | **Highest regression risk on this page.** The handoff's card is a read-only tile; today's card is a live quantity editor. Keep `LibraryCardStepper` mounted exactly as today (hover-revealed, popover for multi-source rows) and treat the handoff's "×N badge" as describing the *default/unhovered* state of the same cell, not a different, simpler component. |
+| Per-card quantity stepper (`LibraryCardStepper`, +/− on hover, multi-source decrement popover fed by `contributions`) | Yes — biggest interactive surface on a grid cell today | **Not shown** — the handoff's card spec is "badge ×N no rodapé direito" only, no stepper | **Decided, not just flagged: the stepper survives.** See §3.4 — the affordance wins where it competes with the handoff's static tile. |
 | Card art lightbox on click | Yes — `CardLightbox`, opens when `imageUrl` present | Not shown | Keep. |
 | Recently-added banner | Yes — `RecentlyAddedBanner`, mounted above the grid and on the empty state | Not shown | Keep — post-import confirmation, orthogonal to the redesign. |
 
@@ -94,7 +94,7 @@ Gap: use `--ra-space-3` (12px), not a new 11px token — same reasoning 01-found
 
 No logic change — `groupCards()` in `LibraryGrid.tsx` already handles `type | pitch | set | flat` client-side with no refetch, which is exactly LIB-03's requirement. Restyle the segmented control to the new token set only.
 
-### 3.3 Pitch colors in Library stats (LIB-04) — contrast conflict, resolve conservatively
+### 3.3 Pitch colors in Library stats (LIB-04) — resolved via upstream token addition
 
 The task brief requires Library stats pitch counts to use the foundation's `--ra-pitch-*` tokens. Today's `LibraryStatsBar.module.css` pills use a *different*, older token family — `--ra-card-frame-{red,yellow,blue,colorless}-ink/-bg` — and that family exists specifically because the raw swatch color isn't legible as text.
 
@@ -109,12 +109,19 @@ Computing the identical WCAG formula `01-foundation.md` §0 verified itself, aga
 
 Using the raw pitch tokens as pill *text* color would regress two of four pills below AA-body — a direct violation of the spec's "nothing already shipped regresses" goal and cross-cutting requirement 2, and the existing `contrast.spec.ts` won't catch it because that suite tests token-pair matrix rows, not this component's actual usage.
 
-**Resolution — conservative, not a hand-wave**: this workstream does not own `tokens.css` (01-foundation does), so it doesn't invent new global tokens unilaterally. Two options, in order of preference:
+**Resolved, not a fallback**: this workstream does not own `tokens.css`, so it doesn't invent new global tokens unilaterally — it requested them (§7) and the request has been accepted. The owner has directed the foundation workstream to add a text-safe `--ra-pitch-{red,yellow,blue,colorless}-ink` companion per pitch color (dark + light), with contrast assertions, in `01-foundation.md`/`tokens.css`. This design uses those four companions uniformly for pitch-colored **text** (pill counts, and anywhere else a pitch value labels itself in text); the raw `--ra-pitch-*` tokens remain for **fills, borders, and swatches** only — the dot, the pill background, the border. Yellow and colorless already pass as raw text today, but they still get `-ink` companions rather than a mixed rule (two tokens with a suffix, two without) — uniform consumption is simpler to implement and to audit, and matches the coordinator's "per pitch colour" instruction.
 
-1. **Preferred — request two new tokens from 01-foundation**: `--ra-pitch-red-ink` and `--ra-pitch-blue-ink` (yellow and colorless don't need companions; they already pass), following the exact pattern `--ra-card-frame-*-ink` already establishes and that 01-foundation itself uses for other satellite tokens (§1.7 of that doc). A lightened red (≈25% white-mixed, e.g. `#c0473e` → approximately `#d07568`) computes to ≈5.56:1 on `--ra-bg-surface` — comfortably clears AA-body — proving the fix is tractable; 01-foundation should compute and verify the final hex against `contrast.spec.ts`'s own formula, the same way it did for every other satellite token in that document. This is logged as a **cross-workstream dependency**, not designed as if already granted.
-2. **Fallback if 01-foundation is not revisited before this phase lands**: keep pill background + border on the raw `--ra-pitch-*` tokens (satisfies "shown in its pitch color" via the swatch, exactly how the pills already read today — colored badge, not colored digits) and set pill text to `--ra-fg-primary` uniformly. This ships LIB-04 compliant and AA-safe without waiting on another phase, at the cost of the count digits themselves not being pitch-tinted (only their container is).
+**No neutral-color fallback.** A generic `--ra-fg-primary` fallback was considered in an earlier draft and is explicitly rejected — it would ship AA-safe but throw away the pitch color-coding that makes the pills legible at a glance, which is the entire point of LIB-04.
 
-Apply the same token swap (`--ra-card-frame-*` → `--ra-pitch-*`, or the `-ink` companion once available) to the sidebar's pitch filter chips (`LibraryFilterRail.module.css` `.pitchPill--*`) for consistency — not a hard LIB requirement, but the handoff's "4 chips com bolinha colorida e borda na cor" describes the same visual language, and leaving the sidebar on the old token family while the stats bar moves to the new one would visibly split the two pitch-color systems on one screen.
+**Sequencing note**: this workstream's PR should not land the pill markup ahead of 01-foundation defining the four `-ink` tokens, or `var(--ra-pitch-red-ink)` resolves to nothing. As a syntactic safety net only (not a design fallback — purely so an out-of-order merge degrades gracefully instead of rendering invisible text), reference each with its raw counterpart as the CSS `var()` fallback: `color: var(--ra-pitch-red-ink, var(--ra-pitch-red));`. That still shows pitch-colored text if the ink token isn't defined yet; it just may be under-contrast until both land together.
+
+Apply the same `-ink`-for-text / raw-for-fill split to the sidebar's pitch filter chips (`LibraryFilterRail.module.css` `.pitchPill--*`) for consistency — not a hard LIB requirement, but the handoff's "4 chips com bolinha colorida e borda na cor" describes the same visual language, and leaving the sidebar on the old token family while the stats bar moves to the new one would visibly split the two pitch-color systems on one screen.
+
+### 3.4 Card cell — the quantity stepper survives (departure from the handoff, ruled)
+
+Standing rule for this workstream, confirmed by the coordinator: **a handoff omission is not an instruction to delete shipped behavior.** The handoff's Library card is a static screenshot — thumbnail, name, `×N` badge, nothing else. The shipped card is a live quantity editor: `LibraryCardStepper` renders +/− controls on hover, and for a card whose owned copies are split across more than one active source, decrementing opens a popover (fed by `ILibraryCard.contributions`) so the user picks which source to decrement. That is real, exercised functionality with no equivalent in the mock, and the mock's silence about it is a static-screenshot limitation, not a design intent to remove it.
+
+**Decision**: `LibraryCardStepper` stays mounted on every cell exactly as it works today, restyled to the new tokens only. The handoff's `×N` badge is read as describing the cell's *default, unhovered* resting state (which already matches — `LibraryCardCell` already renders a `×{ownedQuantity}` badge at rest, per `LibraryGrid.tsx`); the stepper and popover are the interaction layer that appears on hover/focus, layered on top of that resting state rather than replacing it. No functional change, no scope reduction — restyle only. This is the one place in this workstream where the handoff's static visual and shipped functionality genuinely compete for the same footprint on the card, and the affordance wins.
 
 ---
 
@@ -156,7 +163,7 @@ async list(userId: string): Promise<CsvSourceEntity[]> {
 }
 ```
 
-This is a **query relaxation on an existing endpoint**, not a new API surface. Do **not** also relax `assertOwnsCsvSource` to allow the manual source through PATCH/DELETE — that guard encodes a deliberate product decision documented directly on the entity, not an oversight, and this workstream has no requirement that overrides it. The frontend's `SourceRow` renders the manual row without a `Switch` (a static "Sempre ativa" / "Always active" label in place of the toggle) and without the "···" overflow menu, while still showing its type badge, label ("Manual entries" / "Entradas manuais"), and card count like any other row. This satisfies LIB-05's "each source SHALL show its type badge, name, card count, import date, active label and a toggle" for CSV/Fabrary rows and deliberately special-cases the one row where "and a toggle" cannot apply without reopening a decision this workstream doesn't own. Flagged in §8 as needing confirmation, since it's a literal partial-compliance call.
+This is a **query relaxation on an existing endpoint**, not a new API surface. Do **not** also relax `assertOwnsCsvSource` to allow the manual source through PATCH/DELETE — that guard encodes a deliberate product decision documented directly on the entity, not an oversight, and this workstream has no requirement that overrides it. The frontend's `SourceRow` renders the manual row without a `Switch` (a static "Sempre ativa" / "Always active" label in place of the toggle) and without the "···" overflow menu, while still showing its type badge, label ("Manual entries" / "Entradas manuais"), and card count like any other row. This satisfies LIB-05's "each source SHALL show its type badge, name, card count, import date, active label and a toggle" for CSV/Fabrary rows and deliberately special-cases the one row where "and a toggle" cannot apply without reopening a decision this workstream doesn't own. Flagged in §14 (open item 1) as needing confirmation, since it's a literal partial-compliance call.
 
 One consequence of including manual rows: `createdAt` exists on the manual source (set at `ensureManualSource` time), so "import date" renders fine; there is no `originalFilename` (already nullable, existing UI already guards for it).
 
@@ -269,11 +276,11 @@ The handoff's footer text is `name, set, quantity, pitch`. Reading `csv-parser.s
 - **Optional**: `set` (aliases: `set`, `set code`) — `resolveHeader` returns `null` when no alias matches, and the parser falls through to name-only resolution (ambiguous when a name maps to multiple pitch variants; `set` disambiguates but isn't mandatory).
 - **There is no `pitch` column at all.** The parser never reads one. Pitch is either embedded in the name itself via a trailing suffix pattern the Fabrary/PTCG-style exporters produce (`PITCH_SUFFIX_PATTERN = /^(.+?)\s*\((red|yellow|blue)\)$/i`, e.g. `"Bare Fangs (red)"`) or resolved from the catalog's own pitch value once the identifier is found. A user who adds a `pitch` column following the handoff's stated format gets it silently ignored, not an error — worth stating in the dropzone copy so nobody wonders why their explicit pitch column did nothing.
 
-**Corrected dropzone footer text**: "Required: `name`, `quantity`. Optional: `set` (disambiguates same-named cards across editions). Pitch is read from the card name (e.g. `\"Bare Fangs (red)\"`) or resolved automatically — no separate pitch column." (Author the actual UI copy against this fact set in both locales; the exact wording above is the design intent, not final strings.)
+**Corrected dropzone footer text** (see `csvExpectedColumns` and `csvSizeAndRowLimit` in §6.5's copy table for the exact strings): required `name`, `quantity`; optional `set` (disambiguates same-named cards across editions); pitch is read from the card name (e.g. `"Bare Fangs (red)"`) or resolved automatically — no separate pitch column.
 
 **Size limit**: the handoff's "2 MB" is correct — verified independently on both sides: the client (`add-cards.csv.tsx`, `MAX_BYTES = 2 * 1024 * 1024`) and the server (`csv.controller.ts`, multer `limits: { fileSize: 2 * 1024 * 1024 }`, surfaced as `LIMIT_FILE_SIZE → 400 FILE_TOO_LARGE`) enforce the identical number. No change needed there.
 
-**Row limit** (not in the handoff, exists server-side): `MAX_CSV_ROWS = 5_000` in `csv-parser.service.ts`, throwing `BadRequestException('CSV_TOO_MANY_ROWS')` above that. This is a distinct limit from file size (a small file can still exceed 5,000 rows). Recommend surfacing it in the dropzone's fine print alongside the size limit ("até 2 MB, até 5.000 linhas") since it's a real constraint a user can hit; not a hard requirement of LIB-08's literal text (which only asks for "the expected columns and the size limit"), so this is a recommendation, not a blocker.
+**Row limit — now required copy, not a nice-to-have.** `MAX_CSV_ROWS = 5_000` in `csv-parser.service.ts` throws `BadRequestException('CSV_TOO_MANY_ROWS')` above that — a distinct limit from file size (a small file can still exceed 5,000 rows). LIB-08's literal text only names "the expected columns and the size limit," but an undocumented limit that silently rejects an otherwise-valid file is a worse experience than a stated one, so this design surfaces it in the same footer line as the size limit (`csvSizeAndRowLimit`: "até 2 MB · até 5.000 linhas" / "up to 2 MB · up to 5,000 rows") rather than leaving it for the user to discover via an error.
 
 ### 6.4 Manual and Fabrary tabs
 
@@ -314,13 +321,13 @@ Every row below needs both a `pt-BR` and an `en-US` entry — the table gives th
 
 ---
 
-## 7. Cross-workstream token requests to `01-foundation.md`
+## 7. Cross-workstream token requests to `01-foundation.md` — accepted
 
-Logged here so the dependency is explicit rather than assumed granted:
+Logged here as a sequencing dependency, not an open question — the owner has directed the foundation workstream to add these:
 
-| Request | Reason | Fallback if not granted before this phase lands |
+| Request | Reason | Status |
 |---|---|---|
-| `--ra-pitch-red-ink`, `--ra-pitch-blue-ink` (dark + light) | Raw `--ra-pitch-red`/`-blue` fail AA-body as pill text on `--ra-bg-surface` (§3.3) | Pill text uses `--ra-fg-primary`; pitch color stays on background/border only |
+| `--ra-pitch-{red,yellow,blue,colorless}-ink` (dark + light, all four for uniform consumption) | Raw `--ra-pitch-red`/`-blue` fail AA-body as text on `--ra-bg-surface` (§3.3); yellow/colorless get companions too so pill text consumes one consistent token family rather than a mixed rule | **Accepted by the owner.** 01-foundation is adding these with contrast assertions, verified against `contrast.spec.ts`'s formula the same way every other satellite token in that document was. This workstream's PR sequences after or alongside that addition (§3.3's `var()` fallback note covers an out-of-order merge). |
 
 ---
 
@@ -415,14 +422,15 @@ Computed by `deriveSourceKind` (§4.1), never sent to or received from the API.
 |---|---|---|
 | Sidebar facet sections (Class/Talent/Set) | Keep existing `ToggleSection` accordion component unchanged | Handoff's "Classe 4 · Talento 1 · Set 28" reads as the accordion's own collapsed-summary counts, not a request for a different, flatter component |
 | Card grid template | Keep `auto-fill` + `--cell-min` driven by the size slider, not the handoff's literal `repeat(6,1fr)` | A fixed template makes LIB-02 (size slider resizes the grid) impossible; auto-fill already reproduces the handoff's stated column counts at each breakpoint by calculation |
-| Pitch pill text color | Fallback to `--ra-fg-primary` unless/until `01-foundation.md` grants `-ink` companions | Raw pitch tokens fail AA-body as text on `--ra-bg-surface`; this workstream doesn't own `tokens.css` |
+| Pitch pill text color | `--ra-pitch-{color}-ink` companions (all four), requested and accepted from `01-foundation.md`; raw tokens stay on fill/border only | Preserves the color-coding LIB-04 exists for, instead of a neutral fallback that would satisfy AA but discard the point of the requirement |
 | Card-size persistence | URL param (existing, kept) + new `localStorage` fallback default (`ra-library-card-size`) | Preserves shareable-link behavior; adds a personal-preference default matching the existing `SidebarCollapseToggle` / theme / locale precedent |
 | Filter-drawer breakpoint | Move from `max-width: 1279px` to `max-width: 1023px` | Task brief's explicit scope: sidebar stays inline through 1024–1279px, drawer is 768–1023px only |
 | Fabrary badge derivation | Frontend-only (`sourceUrl !== null`), no backend `kind` migration | Backend already stamps `sourceUrl` on Fabrary imports specifically so origin is recoverable without a schema change (per the entity's own doc comment) |
-| Manual source in the Fontes list | Include via a `list()` query relaxation; keep non-toggleable, non-renameable, non-deletable in the UI | Matches the entity's explicit, documented "never toggleable" decision; only the *read* path needed to change, not the guarded mutation paths |
+| Manual source in the Fontes list | Include via a `list()` query relaxation, with `cardCount` computed per-request; keep non-toggleable, non-renameable, non-deletable in the UI | A list that structurally can't contain Manual doesn't satisfy LIB-05; the toggle/rename/delete guard stays because it matches the entity's explicit, documented "never toggleable" decision — only the *read* path needed to change |
 | Add-cards structure | Keep four separate route files; restyle the parent layout into the shared tab shell | Deep links (`/add-cards/csv` etc.) and existing route-targeted tests stay intact; the foundation's nav-active prefix match already treats any `/add-cards/*` depth identically |
 | `/add-cards` bare index | Redirect to `/add-cards/manual` | Avoids a fifth near-duplicate "what renders at the bare path" implementation |
-| CSV dropzone copy | Correct the handoff's `name, set, quantity, pitch` to required `name`+`quantity`, optional `set`, no `pitch` column | Verified directly against `csv-parser.service.ts`'s alias sets and suffix-pattern pitch resolution — the handoff's claim doesn't match the parser |
+| CSV dropzone copy | Correct the handoff's `name, set, quantity, pitch` to required `name`+`quantity`, optional `set`, no `pitch` column; add the undocumented 5,000-row cap alongside the size limit | Verified directly against `csv-parser.service.ts`'s alias sets and suffix-pattern pitch resolution; an undocumented limit that rejects a file is worse than a stated one |
+| Library card stepper | Stays mounted, unchanged behavior, restyle only | Handoff omission is not an instruction to remove shipped functionality (§3.4) |
 
 ---
 
@@ -466,8 +474,8 @@ Named so the next session doesn't discover them at PR time. Confidence varies �
 
 ## 14. Open items requiring confirmation before or during implementation
 
-1. **Pitch-ink token request** (§3.3, §7) — needs 01-foundation's owner to accept or decline `--ra-pitch-red-ink`/`-blue-ink` before this phase's PR; the fallback (§3.3 option 2) is safe to ship without waiting, but is a visibly different result (badge-colored container vs. badge-colored digits).
-2. **Manual source in Sources list — partial-compliance call** (§4.2) — LIB-05 says "every source... a toggle"; this design deliberately renders Manual without one, preserving an existing, documented product decision. Confirm this reading is correct before implementation, since it's the one place this doc knowingly doesn't satisfy a requirement's literal text for a row that will now be visible for the first time.
-3. **`SourceRow`/`SourceList`/`ICsvSource` renaming** — now that these types/components cover three source kinds, not just CSV, the "Csv"-prefixed names are stale. Purely cosmetic, agent's discretion; not required for any LIB acceptance criterion.
-4. **Row-limit surfacing in the CSV dropzone** (§6.3) — recommended, not required by LIB-08's literal text (columns + size limit only). Confirm whether to include "5,000 rows" in the footer copy.
-5. **`types` filter dead plumbing** (§2) — recommend leaving unwired since no UI ever exposed it; flag for a future cleanup session rather than deciding its fate here.
+**Resolved by coordinator ruling (2026-08-16), removed from this list**: the pitch-ink token request (now §3.3/§7, accepted — no fallback needed) and the CSV row-limit surfacing (now required copy, §6.3) are no longer open.
+
+1. **Manual source in Sources list — partial-compliance call** (§4.2) — LIB-05 says "every source... a toggle"; this design deliberately renders Manual without one, preserving an existing, documented product decision. The coordinator's ruling confirmed Manual *must appear* in the list (closing the inclusion question) but did not address the toggle-less treatment specifically — confirm this reading is correct before implementation, since it's the one place this doc knowingly doesn't satisfy a requirement's literal text for a row that will now be visible for the first time.
+2. **`SourceRow`/`SourceList`/`ICsvSource` renaming** — now that these types/components cover three source kinds, not just CSV, the "Csv"-prefixed names are stale. Purely cosmetic, agent's discretion; not required for any LIB acceptance criterion.
+3. **`types` filter dead plumbing** (§2) — recommend leaving unwired since no UI ever exposed it; flag for a future cleanup session rather than deciding its fate here.

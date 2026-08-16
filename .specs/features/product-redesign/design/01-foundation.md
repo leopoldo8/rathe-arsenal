@@ -118,7 +118,55 @@ Contrast of the new dark values (all computed against both `--bg` `#0b0c0f` and 
 | `hero` | `#5a8f6b` | `--ra-pitch-hero` **(new)** | added |
 | `equipment` | `#9c7b4a` | `--ra-pitch-equipment` **(new)** | added |
 
-All existing `--ra-pitch-*` consumption is decorative (`background-color` on dots/borders — grep confirms no consumer uses a pitch token as text color), so none of these need a body-AA claim; large-text/decorative status applies uniformly.
+All existing `--ra-pitch-*` consumption is decorative (`background-color` on dots/borders — grep confirms no consumer uses a pitch token as text color), so none of these need a body-AA claim; large-text/decorative status applies uniformly for the base swatches above. **The base pitch tokens are for fills, borders, and dot/swatch treatments only — never for text.** §1.6a below adds the text-safe companion.
+
+### 1.6a Pitch `-ink` tokens — text-safe companions (added after initial review)
+
+The base pitch hexes in §1.6 were derived purely as decorative fills, matching every consumption site that existed when this design was written. The Library redesign introduces a new consumption site the handoff never anticipated — coloured pitch **text** (pitch pills, stat labels) directly on `--ra-bg-surface` — and two of the seven base hexes fail AA body size there:
+
+| Base token | Value | on `--ra-bg-canvas` | on `--ra-bg-surface` | AA body (≥4.5) |
+|---|---|---|---|---|
+| `--ra-pitch-red` | `#c0473e` | 3.92 | 3.63 | **fails both** |
+| `--ra-pitch-yellow` | `#d6a83e` | 8.88 | 8.21 | pass |
+| `--ra-pitch-blue` | `#4a7fc0` | 4.74 | 4.38 | **fails on surface** |
+| `--ra-pitch-colorless` | `#8a8d94` | 5.88 | 5.44 | pass |
+| `--ra-pitch-hero` | `#5a8f6b` | 5.19 | 4.80 | pass |
+| `--ra-pitch-weapon` | (= colorless) | 5.88 | 5.44 | pass |
+| `--ra-pitch-equipment` | `#9c7b4a` | 4.98 | 4.60 | pass |
+
+The handoff gives one hex per pitch and never distinguishes fill-use from text-use, so this gap is invisible from the handoff alone — it only surfaces once a real screen puts one of these colors on text, which is exactly what happened.
+
+Following the naming pattern the repo already uses for this exact situation (`--ra-info-ink`, `--ra-path-c-ink`, `--ra-card-frame-{color}-ink` — a `-ink` suffix marking "the text-safe variant of this color family"), add one `--ra-pitch-{color}-ink` per pitch, both themes. Where the base already clears AA body on both backgrounds, the `-ink` token is simply an alias of the base (no reason to invent a second hex when the first one already works) — only red and blue in dark, and only yellow in light, need a genuinely new value:
+
+**Dark theme:**
+
+| Token | Value | on `--ra-bg-canvas` | on `--ra-bg-surface` | AA body |
+|---|---|---|---|---|
+| `--ra-pitch-red-ink` | `#d97068` **(new value)** | 6.02 | 5.57 | pass |
+| `--ra-pitch-yellow-ink` | `var(--ra-pitch-yellow)` (alias — base already passes) | 8.88 | 8.21 | pass |
+| `--ra-pitch-blue-ink` | `#6fa0d8` **(new value)** | 7.17 | 6.63 | pass |
+| `--ra-pitch-colorless-ink` | `var(--ra-pitch-colorless)` (alias) | 5.88 | 5.44 | pass |
+| `--ra-pitch-weapon-ink` | `var(--ra-pitch-colorless-ink)` (alias, matching weapon's base aliasing) | 5.88 | 5.44 | pass |
+| `--ra-pitch-hero-ink` | `var(--ra-pitch-hero)` (alias) | 5.19 | 4.80 | pass |
+| `--ra-pitch-equipment-ink` | `var(--ra-pitch-equipment)` (alias) | 4.98 | 4.60 | pass |
+
+**Light theme** (backgrounds `--ra-bg-canvas #f5f1e8`, `--ra-bg-surface #ffffff`):
+
+| Token | Value | on canvas | on surface | AA body |
+|---|---|---|---|---|
+| `--ra-pitch-red-ink` | `var(--ra-pitch-red)` (alias — base already passes: `#8b3518`) | 7.11 | 8.01 | pass |
+| `--ra-pitch-yellow-ink` | `var(--ra-accent-body)` **(new — reuses the existing brass-body token, not a fresh hex)** | 5.34 | 6.02 | pass |
+| `--ra-pitch-blue-ink` | `var(--ra-pitch-blue)` (alias — base already passes: `#2b4d7a`) | 7.62 | 8.59 | pass |
+| `--ra-pitch-colorless-ink` | `var(--ra-pitch-colorless)` (alias) | 5.14 | 5.79 | pass |
+| `--ra-pitch-weapon-ink` | `var(--ra-pitch-colorless-ink)` (alias) | 5.14 | 5.79 | pass |
+| `--ra-pitch-hero-ink` | `var(--ra-pitch-hero)` (alias) | 5.45 | 6.14 | pass |
+| `--ra-pitch-equipment-ink` | `var(--ra-pitch-equipment)` (alias) | 5.59 | 6.30 | pass |
+
+The asymmetry mirrors §1.4's `--ra-accent`/`--ra-accent-body` split exactly: **dark needs real ink derivations for red and blue; light needs one only for yellow** (light's base yellow, `#8f6a22`, is the same value as `--ra-accent` and fails AA body on canvas at 4.38 for the same reason `--ra-accent` does — reusing `--ra-accent-body` for `--ra-pitch-yellow-ink` isn't a coincidence, it's the same underlying brass hue hitting the same threshold). No pitch color needed a new derivation in both themes at once.
+
+**Which token to use where — this is the part the handoff can't tell you:**
+- **Fill, border, dot, swatch, background tint** → the base token (`--ra-pitch-red`, etc.). Nothing about this role changes.
+- **Text — pitch pill labels, stat counts, any place the pitch color itself is the glyph color, not a background** → the `-ink` companion (`--ra-pitch-red-ink`, etc.).
 
 **Open question this phase does not resolve — flagged for whichever phase wires them up:** the app's current data model represents pitch as `1 | 2 | 3 | null` (red/yellow/blue/colorless). `CardArt.tsx`'s `resolvePitchKey()` maps *every* non-1/2/3 pitch — including hero, weapon, and equipment cards — to `'colorless'`; card `type` only selects the glyph, never the frame color (`apps/web/src/components/card-art/CardArt.tsx:114-120`). The handoff defines three additional swatches (hero/weapon/equipment) but no screen description in the handoff visibly distinguishes them from `colorless` in any concrete UI (Library's pitch stats are R/Y/B/— only four buckets; the deck-detail pitch-distribution bar is red/yellow/blue only). This phase adds the tokens because FND-01's acceptance criterion literally requires "the seven pitch colors" to exist and be mapped — it does **not** decide whether or how `CardArt` or the decklist group headers (`DECK-05`'s "Hero·Weapon·Equipment" group) should consume `--ra-pitch-hero`/`-weapon`/`-equipment` instead of falling through to colorless. That's a data-model + component decision for the Deck detail (DECK) or Library (LIB) workstream, not this one.
 
@@ -139,9 +187,17 @@ All existing `--ra-pitch-*` consumption is decorative (`background-color` on dot
 | `--ra-ready-low-border` | `rgba(208,100,90,.25)` | **handoff literal**: `borda rgba(208,100,90,.25)` (same section). Alpha corrected from old `.40`. |
 | `--ra-ready-low-dark` | `#984942` | same ~0.73 scale-down the old value applied to the old base — derived, sanity-check visually |
 
-`--ra-info-*`, `--ra-path-c-*`, `--ra-ember*` have no handoff counterpart and are **left untouched** (out of the redesign's vocabulary; `--ra-ember` is still reserved for the deckbox SVG per `.impeccable.md`, owned by the deckbox workstream).
+`--ra-info-*` and `--ra-path-c-*` have no handoff counterpart and are **left untouched** (out of the redesign's vocabulary, unrelated features). `--ra-ember*` is addressed separately in §1.8 below, since it needed its own decision rather than a blanket "left untouched."
 
 **Recommendation, not a mandate for this phase:** converting these satellites to `color-mix(in srgb, var(--ra-X) <alpha>%, transparent)` would make them self-updating and prevent this exact drift from recurring. The codebase already uses `color-mix()` at consumption sites (`TopBar.module.css`, `ReviewsRow.module.css`, `CascadeWarningPanel.module.css`), so browser-support precedent exists. Doing this inside `tokens.css` itself is a larger, separate cleanup and is deliberately not bundled into this phase's diff.
+
+### 1.8 `--ra-ember` — decision: keep the token, retire the reservation
+
+The components workstream is right that the redesign's deckbox has no oxblood in it — the handoff's deckbox is hero-art, brass, and (for idea-status) purple, and nothing in the 11-screen handoff uses an oxblood/ember hue anywhere. `.impeccable.md`'s reservation of `--ra-ember` as "the deckbox SVG accent" no longer describes anything real.
+
+But that reservation undercounts the token's actual footprint. Grepping consumers directly (not trusting the doc comment) turns up **`--ra-ember` in five usage sites across four files that have nothing to do with the deckbox**: `components/path-c-result.module.css` (border-top, background, plus `--ra-ember-hover`), `components/library/LibraryStatsBar.module.css` (a text `color`), `components/reviews/ReviewsBulkBar.module.css` (a `color-mix()` background/border tint), and `routes/_auth/decks.$deckId.module.css` (a border-top strip). None of these four files are touched by this phase or named in the handoff at all — `DeckboxDecoration.module.css`, the actual shell deckbox component, doesn't reference `--ra-ember` even once today (its SVG likely hardcodes the oxblood hex directly, outside the token system).
+
+**Decision: keep the CSS custom property defined in `tokens.css`, unchanged; retire only its documented brand-palette reservation.** Deleting the token now would break four files this phase has no scope or context to fix (they belong to the path-c, Library, Swaps, and Deck-detail workstreams respectively), and the components workstream's framing ("both of that token's existing consumers") undercounts the real number — a full retirement needs those four files migrated first, which is a separate, scoped cleanup, not a side effect of this phase's token-value pass. What this phase *does* do: mark it in `tokens.css` as a legacy token retained only for its existing non-deckbox consumers, and correct `.impeccable.md` to stop calling it a reserved brand color (§6.2).
 
 ---
 
@@ -190,10 +246,12 @@ D4: light is ported, not retired, and `contrast.spec.ts` must stay green. Light 
 
 `--ra-font-sans` / `--ra-font-body` (back-compat aliases, both point at `--ra-font-ui`): unaffected, keep as-is.
 
-**`--ra-font-serif` (IBM Plex Serif, 14 CSS files) and `--ra-font-mono` (JetBrains Mono, 29 CSS files) have no counterpart in the handoff's three-family list** (Hanken Grotesque, Newsreader, UnifrakturCook — the handoff's own Assets table names exactly these three as the Google Fonts to load, nothing else). Two options, and this phase does not force a choice without visual verification:
+**`--ra-font-serif` (IBM Plex Serif, 14 CSS files) and `--ra-font-mono` (JetBrains Mono, 29 CSS files) have no counterpart in the handoff's three-family list** (Hanken Grotesque, Newsreader, UnifrakturCook — the handoff's own Assets table names exactly these three as the Google Fonts to load, nothing else).
 
-- **`--ra-font-serif`**: sample consumers (`LibraryEmptyState`, `ImportFabraryCard`, `StartScratchCard`, `AuthLayout`, `SubstitutionRow`) suggest italic/flourish treatments — plausibly the same role as the Sign-in page's "citação em itálico" the handoff describes. Recommendation: alias `--ra-font-serif: var(--ra-font-display)` (Newsreader also renders italic well), consolidating to 3 loaded families. **Not verified against each of the 14 sites' actual visual context — flag for a quick look before landing.**
-- **`--ra-font-mono` (29 consumers)**: the old design principle reserved mono for "percentages, counts, money" — but the handoff's own type scale table has no monospace entry anywhere, and its readiness numbers are explicitly Newsreader, not mono. Recommendation: drop JetBrains Mono from the Google Fonts request entirely (smaller payload, one fewer render-blocking family) and repoint `--ra-font-mono: var(--ra-font-ui)`, applying `font-variant-numeric: tabular-nums` at the `.ra-mono`/`code` utility level for the alignment cases that still need it. **This is an inference from the handoff's silence, not an explicit instruction — flag for owner confirmation before dropping the font family**, since 29 files currently depend on it for numeric alignment and this phase cannot visually verify each site.
+**Decided (orchestrator ruling, 2026-08-16, see §9): keep both `--ra-font-serif` and `--ra-font-mono` unchanged, still loading IBM Plex Serif and JetBrains Mono.** This phase's original draft proposed aliasing `--ra-font-serif` to `--ra-font-display` and dropping JetBrains Mono in favor of tabular-nums on Hanken Grotesque — those options are recorded below for context, but neither ships. The handoff's Assets table constrains what the three *new* families are used for; it says nothing about retiring families the handoff never mentions, and 29 (mono) + 14 (serif) files' actual visual context was never individually reviewed as part of this design, so consolidating on an inference from silence was the wrong default. Revisit only if a later phase finds a specific surface where the extra family reads as visibly wrong.
+
+- **`--ra-font-serif`**: sample consumers (`LibraryEmptyState`, `ImportFabraryCard`, `StartScratchCard`, `AuthLayout`, `SubstitutionRow`) suggest italic/flourish treatments — plausibly the same role as the Sign-in page's "citação em itálico" the handoff describes. The considered-and-rejected option was aliasing `--ra-font-serif: var(--ra-font-display)` (Newsreader also renders italic well) to consolidate to 3 loaded families — not taken, per the ruling above.
+- **`--ra-font-mono` (29 consumers)**: the old design principle reserved mono for "percentages, counts, money" — the handoff's type scale table has no monospace entry, and its readiness numbers are explicitly Newsreader, not mono. The considered-and-rejected option was dropping JetBrains Mono from the font request and repointing `--ra-font-mono: var(--ra-font-ui)` with `font-variant-numeric: tabular-nums` — not taken, per the ruling above. JetBrains Mono stays in the Google Fonts request unchanged.
 
 ### 3.2 Type scale
 
@@ -267,7 +325,7 @@ FND-07 has two independent requirements that pull in different directions, and n
 
 **Recommendation for this phase, flagged as a tradeoff rather than asserted as sufficient:** keep the existing Google Fonts CDN approach (consistent with current convention, zero new build tooling), but convert the `<link rel="stylesheet">` to the async preload pattern to satisfy the *first-paint* half of FND-07. Layout-shift avoidance under this approach relies on the fallback stack already declared in each `--ra-font-*` token (`system-ui, -apple-system, sans-serif` / `ui-serif, Georgia, serif`) being reasonably close in shape to Hanken Grotesque / Newsreader — **this is not verified** (no browser measurement was taken as part of this design), and the acceptance criterion's "no layout shift" clause should be checked with an actual CLS measurement (e.g. Chrome DevTools Performance panel or a Lighthouse run against the shell) before this phase is marked verified, not assumed from the token change alone. If that measurement shows visible shift, self-hosting with metric-matched fallbacks is the fallback plan, at the cost of adding font files + `@font-face` infrastructure to the repo.
 
-Font request also drops `Cinzel`, `Cinzel Decorative`, `IBM Plex Serif`, and (pending the §3.1 flag) `JetBrains Mono` from the CDN URL, replacing them with `Hanken Grotesque` and `Newsreader` at the weights the handoff's typography table specifies. `UnifrakturCook` stays, unchanged.
+Font request drops `Cinzel` and `Cinzel Decorative` from the CDN URL (both fully superseded — see `--ra-font-display`/`--ra-font-ornament` in §3.1), adds `Hanken Grotesque` and `Newsreader` at the weights the handoff's typography table specifies, and keeps `IBM Plex Serif` and `JetBrains Mono` per the §3.1 ruling. `UnifrakturCook` stays, unchanged.
 
 ---
 
@@ -404,19 +462,70 @@ This phase adds and changes enough tokens that a line-by-line diff isn't suffici
 
 Required content changes beyond the recompute:
 - Replace the dark/light background swatches (`--bg`, `--surface`, `--surface-2`) and every fg/accent/status row per §1–§2 above.
-- Add rows for every new token introduced here: `--ra-fg-tertiary`, `--ra-accent-hi`, `--ra-status-building`, `--ra-status-idea`, and the pitch additions.
+- Add rows for every new token introduced here: `--ra-fg-tertiary`, `--ra-accent-hi`, `--ra-status-building`, `--ra-status-idea`, and the pitch additions (base and `-ink`, §1.6a).
 - Remove or rewrite the note documenting `--ra-ready-low` as a known AA-body borderline/failure (§1.5) — it no longer applies.
 - `contrast.spec.ts` itself needs the matching edits: update the hardcoded hex constants (`DARK_CANVAS`, `DARK_FG_SECONDARY`, etc. — the file's own header comment says these "must mirror `apps/web/src/styles/tokens.css`," and today nothing enforces that beyond a human keeping them in sync by hand — flag this as a latent risk, not something to fix in this phase), add `it()` blocks for the new tokens listed above, and delete the `describe.skip` block for the resolved `ready-low` failure.
+
+**The `-ink` tokens from §1.6a need their own assertions, not just a row in this doc — a token that exists specifically to fix a contrast failure is the one case where "the table says it passes" isn't enough; the test has to say so.** Add, as new `describe` blocks (or extend the existing dark/light body-size blocks):
+
+```ts
+// New constants (dark)
+const DARK_PITCH_RED = '#c0473e';
+const DARK_PITCH_RED_INK = '#d97068';
+const DARK_PITCH_BLUE = '#4a7fc0';
+const DARK_PITCH_BLUE_INK = '#6fa0d8';
+
+// New constants (light)
+const LIGHT_PITCH_YELLOW = '#8f6a22';
+const LIGHT_PITCH_YELLOW_INK = LIGHT_ACCENT_BODY; // '#7d5e1d' — same token, see §1.6a
+
+describe('dark theme — pitch -ink tokens (AA body >= 4.5:1)', () => {
+  it('--ra-pitch-red-ink on --ra-bg-canvas', () => {
+    expect(contrast(DARK_PITCH_RED_INK, DARK_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+  it('--ra-pitch-red-ink on --ra-bg-surface', () => {
+    expect(contrast(DARK_PITCH_RED_INK, DARK_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+  it('--ra-pitch-blue-ink on --ra-bg-canvas', () => {
+    expect(contrast(DARK_PITCH_BLUE_INK, DARK_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+  it('--ra-pitch-blue-ink on --ra-bg-surface', () => {
+    expect(contrast(DARK_PITCH_BLUE_INK, DARK_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});
+
+describe('dark theme — pitch base tokens are documented fill/border only, not text', () => {
+  // Negative assertions, kept skipped: these exist to make the fill/text distinction
+  // executable, not just written prose. They document that the BASE token is not
+  // meant to pass body-AA — if a future change makes it pass, that's fine (not a
+  // failure), but if these ever start failing in the other direction it means the
+  // base value moved further from AA, which is worth a human look.
+  it.skip('--ra-pitch-red base is below AA body on surface (fill/border only, use -ink for text)', () => {
+    expect(contrast(DARK_PITCH_RED, DARK_SURFACE)).toBeLessThan(AA_BODY);
+  });
+});
+
+describe('light theme — pitch -ink tokens (AA body >= 4.5:1)', () => {
+  it('--ra-pitch-yellow-ink on --ra-bg-canvas', () => {
+    expect(contrast(LIGHT_PITCH_YELLOW_INK, LIGHT_CANVAS)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+  it('--ra-pitch-yellow-ink on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_PITCH_YELLOW_INK, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});
+```
+
+The remaining `-ink` tokens (yellow/colorless/hero/equipment in dark; red/blue/colorless/hero/equipment in light) are aliases of bases that already pass — covering the base token's existing assertion also covers its `-ink` alias by construction, so no separate `it()` is needed for those; only the four values that are *genuinely new hexes* (red-ink and blue-ink in dark, yellow-ink in light) need dedicated tests. This keeps the suite proportional to what could actually regress.
 
 ### 6.2 `.impeccable.md`
 
 Several sections state things this phase makes false, and `CLAUDE.md` points every future UI session at this file as the design source of truth — leaving it stale would misdirect the next session more than not writing it at all:
 
 - **Brand Personality → "Arcane"** currently says *"Decorative accents (◆, roman numerals, hand-set type) belong."* This directly contradicts the spec's Problem Statement, which names the ◆ and roman numerals as defects being removed. Rewrite this line — the arcane/tactical/artisanal framing itself doesn't need to change, only this one sentence's example.
-- **Aesthetic Direction → Palette**: full rewrite to the new hex values (§1), replacing "Brass accent `#d69e2e`" and the oxblood/parchment/pitch-frame paragraph.
+- **Aesthetic Direction → Palette**: full rewrite to the new hex values (§1), replacing "Brass accent `#d69e2e`" and the oxblood/parchment/pitch-frame paragraph. Drop `--ra-ember`'s billing as a reserved brand color entirely (§1.8) — it stops being introduced as "oxblood, reserved for the deckbox SVG" and, if mentioned at all, is noted as a legacy token kept only for four non-deckbox consumers pending their own migration, not as part of the redesign's palette.
 - **Aesthetic Direction → Typography**: full rewrite — Cinzel → Newsreader, IBM Plex Sans → Hanken Grotesque, and (pending the §3.1 flags) note whether Cinzel Decorative/JetBrains Mono are dropped or retained.
 - **Aesthetic Direction → Theme**: currently reads *"Light tokens exist but are not yet tone-corrected (Plan C). Do not optimize for light-theme appearance in Plan A deliverables."* This is **already stale independent of this phase** — `contrast-matrix.md`'s own status line says light was "resolved 2026-04-27, Plan C Unit 1." Since this phase is the one touching the file, fold in the correction: light is tone-corrected, tested, and — per D4 — actively maintained, not a deferred concern.
-- **Design Principles**: item 1 references `.ra-readiness-display` (still accurate, now Newsreader instead of Cinzel Decorative — update the font name in the description). No item currently states the R6 radius cap; if it's added elsewhere, it must be superseded per §4.1's reversal, not merely amended.
+- **Design Principles**: item 1 needs more than a font-name update — it needs to document a split that didn't exist before. `.ra-readiness-display` hardcodes `color: var(--ra-accent)` (`global.css`), which is exactly why the new readiness medallion (CMP workstream) does **not** reuse it: the handoff's medallion number is a fixed cream (`#f0e4cc`/`#f0e4cc`-family) regardless of which color the surrounding ring is currently drawn in (`--ready`/`--acc`/`--building`, per CMP-02) — a number that changed color with the ring's status would be illegible against some ring colors and defeats the medallion's own "one glance, one number" purpose. So going forward there are **two distinct readiness-number treatments, not one**: the legacy `.ra-readiness-display` utility (kept, now Newsreader instead of Cinzel Decorative per §3.1, still brass-colored, still used wherever it's already consumed) for surfaces this redesign hasn't reached yet, and the new medallion's own fixed-cream number style, owned by the CMP workstream and not exposed as a shared global utility class. `.impeccable.md` should name both rather than implying `.ra-readiness-display` is still the one signature readiness treatment app-wide. No item currently states the R6 radius cap; if it's added elsewhere, it must be superseded per §4.1's reversal, not merely amended.
 
 ---
 
@@ -432,7 +541,9 @@ Several sections state things this phase makes false, and `CLAUDE.md` points eve
 | Spacing scale for non-4px-multiple steps | New `--ra-space-{N}px` family, alongside the existing index-based one, aliasing where they overlap | The handoff's steps aren't expressible in the existing `N×4px` index scheme without colliding with existing token meanings |
 | Radius scale | Value swap in place, 4px cap superseded | Handoff is a full inversion of the R6 rule, not a refinement |
 | `--ra-font-ornament` | Alias to `--ra-font-display` (Newsreader) rather than kept as a separate family | Handoff has no decorative-weight tier; readiness numbers are explicitly Newsreader |
-| `--ra-font-mono` / `--ra-font-serif` retention | Flagged, not decided | Handoff's asset list names exactly 3 families; dropping a 4th changes visible output on 29 (mono) / 14 (serif) files this phase can't visually verify |
+| `--ra-font-mono` / `--ra-font-serif` retention | **Decided: keep both, unchanged** (orchestrator ruling, 2026-08-16) | Handoff's asset list constrains the 3 new families' use, not whether other families may exist; dropping a 4th sight-unseen on 29 (mono) / 14 (serif) files was the wrong default |
+| Pitch `-ink` companions | Added per §1.6a, aliasing to base wherever the base already passes AA body | Library's pitch pills put pitch color directly on text; the base swatches were only ever verified as fills/borders |
+| `--ra-ember` | Keep the token defined, retire only its brand-palette reservation | 5 usage sites across 4 non-deckbox files still consume it; deleting it now would break scope this phase doesn't own |
 | Font loading | Keep Google Fonts CDN, switch to async-preload pattern | No self-hosting infra exists today; satisfies "no first-paint block" but leaves "no layout shift" unverified — self-hosting + metric-matched fallback is the fallback plan if CLS measurement fails |
 | Nav active-item logic | Explicit route map in a shared helper, not prefix matching | Current prefix match on `/library` only works for `/library-csv-sources` by accident (hyphen, not slash); `BottomTabBar` duplicates the same broken logic independently |
 | Nav active-item alpha | Canonical `.14` bg / no border, from FND-06's literal text | Handoff uses three different alpha pairs across nav/filter-pills/edit-segments for similar "active" states; nav's is the only one this phase's scope covers |
@@ -475,8 +586,10 @@ Not covered here, explicitly out of this workstream's scope: CMP (medallion), BO
 
 
 1. **CLS measurement for FND-07** — the async-CDN font-loading recommendation is unverified for actual layout shift; measure before marking FND-07 verified (§3.4).
-2. **`--ra-font-mono` retention** — 29 files' visual context not individually reviewed; confirm before dropping JetBrains Mono from the font request (§3.1).
-3. **`--ra-font-serif` retention** — 14 files' visual context not individually reviewed; confirm before aliasing to `--ra-font-display` (§3.1).
+2. ~~`--ra-font-mono` retention~~ — **resolved by the ruling above: keep, unchanged.**
+3. ~~`--ra-font-serif` retention~~ — **resolved by the ruling above: keep, unchanged.**
 4. **`--ra-ready-mid-accent` and `--ra-ready-low-dark` derived values** (`#d6954c`, `#984942`) — computed by applying the old value's delta/scale to the new base color, not sourced from an explicit handoff literal; sanity-check visually (§1.7).
 5. **`.ra-h2` / `--ra-text-h2` fate** — no handoff counterpart found; whether it's retired or repurposed is left to the phase that implements Home's group headers (§3.2, §3.3).
 6. **`--ra-pitch-hero/-weapon/-equipment` consumption** — tokens exist per FND-01's literal requirement, but no handoff screen visibly distinguishes them from `colorless`; wiring them into `CardArt` or decklist group headers is a data-model decision for a later phase (§1.6).
+7. **`--ra-ember` migration** — the token is kept defined (§1.8) but its 4 non-deckbox consumers (`path-c-result`, `LibraryStatsBar`, `ReviewsBulkBar`, `decks.$deckId`) were never asked whether they still want an oxblood treatment now that it's no longer a reserved brand color; a full retirement needs those files migrated by whichever workstream owns each, not assumed here.
+8. **`--ra-pitch-{color}-ink` consumption** — the tokens and their contrast proof exist (§1.6a), but no component in this phase's scope consumes them; the Library workstream that surfaced the gap is responsible for actually using `-ink` for pitch pill text rather than the base token.

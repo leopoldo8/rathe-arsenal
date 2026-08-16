@@ -76,6 +76,7 @@ The handoff's Sign in section (§1) specifies the left-panel brand mark as: *"De
 - `AuthLayout`'s left panel renders whatever component fills a **stable seam**: a new prop `IAuthLayoutProps.brandMark?: React.ReactNode`, defaulting to the current `DeckboxDecoration` if unset. This lets AUTH ship before BOX ships, and before BOX's `Deckbox` grows a brand-mode variant, without a compile break — the six anon routes don't pass `brandMark` explicitly (AuthLayout supplies the default), so the day `Deckbox` gains whatever brand-mode API BOX settles on, a single one-line change in `AuthLayout.tsx` swaps the default and every anon screen picks it up at once, matching D1's "no half-redesigned gap" mechanism from `01-foundation.md`.
 - Until then, `DeckboxDecoration` stays as the mark, restyled to the new palette (it already consumes `currentColor` + `#faf3e0` card-stock hardcodes that should move to `--ra-fg-primary`-family tokens, but that is a value-only edit, not a geometry change) — the screen is not blocked on BOX or on the variant gap, it just doesn't yet show the "correct" identity element. This is the conservative, reversible option per the repo's deviation-handling convention; log it if it's the path taken.
 - **Not resolved here, flagged for BOX's next revision**: a cardless/brand-mode variant of `Deckbox` (independent of `status="idea"`'s dimming), `scale(.9)`, and the "R 52px UnifrakturCook `#eecf7f`" front-face treatment at 170×170 are asset-level and component-API details that belong to BOX's design, not to this document, which only owns the 170×170 slot and the `brandMark` seam.
+- **Owner ruling, recorded here so the two designs meet at a defined shape rather than by luck**: the core-components workstream is being asked separately to close its own open item #5 and design the cardless brand-mode variant properly, so that by the time this workstream is implemented there is a real component behind the `brandMark` seam, not a placeholder. This document's expectation of that component, stated precisely so BOX's revision has a fixed target rather than a vague "figure out a brand mode": **`Deckbox` rendered in a cardless brand mode, at 170×170, with the R monogram (UnifrakturCook, `#eecf7f`, 52px) on the front face** — i.e. the exact configuration the handoff's Sign-in section describes, not a smaller/larger size and not the `status="idea"` dimming treatment repurposed as a stand-in. `AuthLayout` passes `brandMark={<Deckbox ... />}` once that shape exists; until then the `DeckboxDecoration` fallback (above) holds the slot.
 
 ---
 
@@ -124,7 +125,36 @@ The handoff instead wants `public/favicon.svg` (`apps/web/public/favicon.svg`) �
 
 These edits land in `sign-in.module.css` and `auth-form.module.css` (shared by sign-up/forgot/reset/check-email/verify-email) — small, mechanical, no structural change, and they are the reason those five other screens need **zero JSX changes**: their `.form`/`.label`/`.input`/`.submitBtn` classes already come from these two CSS Modules.
 
-**Verify-email's `◆` glyph** (`verify-email.tsx:69`, `<div className={styles.statusIcon} aria-hidden="true">◆</div>` in the "verifying" pending state): this is exactly the motif the spec's Problem Statement names as decoration with no function ("diamantes ◆... Removida"), and it is inside this workstream's scope (verify-email is one of the six anon screens). The handoff never drew this screen, so there is no literal replacement to copy. **Design decision (flagged, agent's discretion)**: replace the static `◆` with a small animated ring using `--ra-accent`, respecting `prefers-reduced-motion` (a static ring segment, no spin, when reduced motion is set) — consistent with the medallion/spinner language already established for readiness elsewhere in the redesign, and small enough not to need its own sub-design. If reduced-motion handling is judged out of this workstream's proportionate scope, a static filled circle (`--ra-accent`, no diamond) is the minimum-viable fix that still satisfies the Problem Statement's ban.
+**Verify-email's `◆` glyph — removed, replaced with a quiet spinner ring. Decided, not discretionary.** `verify-email.tsx:69` (`<div className={styles.statusIcon} aria-hidden="true">◆</div>`, "verifying" pending state) is exactly the motif the spec's Problem Statement names as decoration with no function ("diamantes ◆... Removida"), and it is inside this workstream's scope (verify-email is one of the six anon screens). It has to go — leaving the one surviving diamond on a screen the handoff never drew would be an odd exception to a rule the rest of the redesign applies everywhere else. The handoff gives no literal replacement for this screen, so this is specified in full here rather than left open:
+
+```css
+/* auth-form.module.css */
+.statusIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--ra-space-4);
+  border-radius: 50%;
+  border: 3px solid var(--ra-border-strong);
+  border-top-color: var(--ra-accent);
+  animation: statusSpin 900ms linear infinite;
+}
+
+@keyframes statusSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusIcon {
+    animation: none; /* freeze on one frame — still visually "a ring", no rotation */
+  }
+}
+```
+```tsx
+// verify-email.tsx:69
+<div className={styles.statusIcon} aria-hidden="true" />
+```
+
+This is deliberately plain: a single-speed linear rotation, no easing curve, no pulse or scale, `--ra-accent` on one quarter-arc against a `--ra-border-strong` track — a waiting state, not a moment that wants personality, matching the coordinator's framing directly. `font-size: 3rem`/`color: var(--ra-accent)`/`line-height: 1` (the old glyph-sizing rules) are removed along with the `◆` text node itself; `.statusMeta`'s "Confirmando selo…" caption below it is unchanged. `prefers-reduced-motion: reduce` freezes the ring on one static frame rather than removing it, satisfying Cross-Cutting Requirement 3 the same way the rest of the redesign's animations do.
 
 ### 4.4 Requirement AUTH-01 — literal check
 
@@ -132,15 +162,34 @@ AUTH-01: *"WHEN Sign in renders THEN it SHALL use the 50/50 split with the brand
 
 **Form width.** `.formInner { max-width: 420px }` today vs the handoff's `400px`. Per spec.md's precedence rule, the handoff wins on pixel values — change to `max-width: 400px`.
 
-**Art panel width — this needs an actual decision, not a shrug.** `.art` is currently `flex: 0 0 44%; max-width: 560px`. At the design's target viewport (1440px, per the handoff's own "Responsive" section: "protótipo é desktop 1440px"), 44% of 1440px is 633.6px, but the 560px cap binds first, so the art panel actually renders at **560px = 38.9% of 1440px** — nowhere near 50/50, and the cap is the reason, not the flex-basis. Honoring AUTH-01 literally requires changing both numbers together, because raising only the flex-basis to 50% while leaving `max-width: 560px` would still cap out at 560px and produce the same 38.9% result:
+**Art panel width — this needs an actual decision, not a shrug.** `.art` is currently `flex: 0 0 44%; max-width: 560px`. At the design's target viewport (1440px, per the handoff's own "Responsive" section: "protótipo é desktop 1440px"), 44% of 1440px is 633.6px, but the 560px cap binds first, so the art panel actually renders at **560px = 38.9% of 1440px** — nowhere near 50/50, and the cap is the reason, not the flex-basis. Honoring AUTH-01 literally requires changing both numbers together, because raising only the flex-basis to 50% while leaving `max-width: 560px` would still cap out at 560px and produce the same 38.9% result.
+
+**What a naive symmetric 50/50 would break.** `.form`'s own content isn't elastic below a point: `.formInner` caps at `max-width: 400px`, and `.form`'s existing horizontal padding is `var(--ra-space-6)` (24px) on each side — so the form panel needs at least `400 + 24 + 24 = 448px` to render its content at full design width without the padding itself starting to eat into the 400px. A pure `flex: 0 0 50%` on both sides, uncapped on the form side, would let the form panel shrink below 448px at any viewport narrower than `896px` (`2 × 448`), squeezing the sign-in form tighter than its own design intent while the art panel — pure decoration — still claims the other, now-larger half. That's the wrong side to protect: a wide brand panel next to a cramped form is worse than a form winning the space it needs.
+
+**The fix gives `.form` a floor and lets `.art` absorb the shrink first:**
 
 ```css
 .art {
-  flex: 0 0 50%;
+  flex: 1 1 50%;
   max-width: 720px; /* 50% of the handoff's 1440px design width, was 560px */
 }
+
+.form {
+  flex: 1 1 50%;
+  min-width: 448px; /* .formInner's 400px + .form's own 24px×2 padding — never let the form panel starve */
+}
 ```
-This makes the split exactly 50/50 at 1440px (the width the handoff was designed and validated at) while still capping the art panel on wider viewports, so it doesn't grow unbounded on an ultrawide monitor — the cap's original purpose (keep the deckbox mark from stretching) is preserved, just recalibrated to the width where AUTH-01's literal ratio actually holds. Below 1440px the two flex items still split 50/50 by `flex-basis` until `.form`'s own content (400px + padding) forces a floor; that floor is unchanged by this edit. Flag for a visual check once real content is in place — this is a real layout change, not a values-only tweak like the rest of §4.1's table, so it's called out on its own rather than folded into that table.
+
+This produces three distinct zones, in order from wide to narrow:
+
+| Viewport | Behavior |
+|---|---|
+| **≥ 1440px** | Art panel hits its `720px` cap and stops growing; form panel absorbs all further width beyond 50/50. Both panels have full breathing room. |
+| **896px – 1440px** | True 50/50: neither the art cap (720px) nor the form floor (448px) has been reached yet, so both panels grow and shrink together in lockstep. This is the zone AUTH-01's "50/50 split" literally describes, and it now holds exactly, not approximately. |
+| **720px – 896px** | Form panel's `min-width: 448px` engages before a literal half would still satisfy it; the art panel absorbs the rest of the shrink, ranging from `448px` down to `272px` (at exactly `720px` viewport) as the viewport narrows through this band. `272px` still comfortably fits the 170×170 brand mark plus its `var(--ra-space-12) var(--ra-space-8)` (48px/32px) padding — `272 − 2×32 = 208px` of content width, 38px wider than the mark itself — so the art panel stays legible, just visibly narrower than half, through this band. |
+| **< 720px** | Unchanged from today: `AuthLayout`'s existing `NARROW_QUERY = '(max-width: 719px)'` `matchMedia` check (`AuthLayout.tsx:18,46-57`) unmounts the `.art` panel **entirely** — it's a JS-driven conditional render, not a CSS shrink, so there is no intermediate "half-visible" state below this breakpoint. `.form` becomes the sole column, full width minus its own padding. This document does not touch that boundary or that mechanism; the 50/50 fix above only changes what happens in the ≥720px range this JS check already gates. |
+
+Flag for a visual check once real content is in place — this is a real layout change, not a values-only tweak like the rest of §4.1's table, so it's called out on its own rather than folded into that table.
 
 ---
 
@@ -261,6 +310,8 @@ This matters for a pinned test: `-settings.spec.tsx:157-162` asserts an `<h2>` w
 | Zona de risco `bg rgba(208,100,90,.06)` border `rgba(208,100,90,.28)` | `.accountSection`: `border-color: var(--ra-ready-low-border)` (`.25` per Foundation §1.7 handoff-literal), `background: var(--ra-ready-low-bg)` (`.08` per Foundation §1.7 handoff-literal) | Foundation's `01-foundation.md` §1.7 already set `--ra-ready-low-bg` to `rgba(208,100,90,.08)` and `--ra-ready-low-border` to `rgba(208,100,90,.25)`, sourced from the **deck-detail** status strip's literal. This settings panel's own literal is `.06`/`.28` — close but not identical (deck-detail is the higher-traffic surface the token was named for). Two consumers, two slightly different alphas from the same base color: use the existing `--ra-ready-low-bg`/`-border` tokens as-is (`.08`/`.25`) rather than adding a second near-duplicate satellite for a 0.02-alpha difference that isn't visually distinguishable at this component's scale — flag the discrepancy, don't fork the token. |
 | "Excluir minha conta" | `settings.deleteMyAccount` = "Excluir minha conta" | Exact match already — no change |
 
+**General rule for this workstream (not just this one row): when the handoff names a token by its role in the dark mock, and Foundation's own mapping table shows that token failing AA-body at the size this workstream uses it, Foundation's mapping wins and the substitution gets a note — it does not get "corrected" back to match the handoff's literal token name.** The eyebrow row above is the concrete instance (`--acc`/`--ra-accent` named by the handoff, `--ra-accent-body` used instead because the handoff's color choice was validated against its own dark-mock rendering, not against this component's actual size in light theme). This will recur elsewhere in this document and in any future edit to these screens — any reader tempted to swap an alias back to the literal-named token because "the handoff says `--acc`" should read this paragraph first, not just the one row it originated from.
+
 ### 7.3 `ThemeToggle` / `LanguageToggle` — explicitly out of scope for redesign, confirmed working as-is
 
 Both components are self-contained, independently tested, and neither has any CSS dependency on `settings.module.css`'s panel styling (they render their own `.root`/`.item` classes from their own CSS Modules). **AUTH-05's/EDIT-05's persistence guarantees are unaffected by anything in this document**:
@@ -364,7 +415,7 @@ None. This workstream adds no persisted entity, no endpoint, and no DTO. Theme a
 | `.2` "completed" node bg alpha, `.5` connector alpha | New locally-scoped literals in `StepIndicator.module.css`, not new global tokens | Single-consumer values below Foundation's bar for a named `--ra-*` addition |
 | Settings section-title font-size | `--ra-text-h3` (18px), not `--ra-text-h2` (24px, HOME-02-pending) | Handoff gives Settings its own explicit 18px; resolving it here avoids depending on an unrelated workstream's open decision |
 | Settings danger-zone alpha (`.06`/`.28` vs Foundation's `.08`/`.25`) | Reuse Foundation's existing `--ra-ready-low-bg`/`-border` as-is | 0.02-alpha delta between two consumers of the same literal isn't visually distinguishable; forking the token for it isn't warranted |
-| Verify-email `◆` glyph | Replace with a reduced-motion-aware ring/circle, not a redraw of the diamond | In scope per Problem Statement's decoration ban; handoff never drew this screen, so no literal replacement exists to copy |
+| Verify-email `◆` glyph | Replace with a quiet, reduced-motion-aware spinner ring (§4.3), not a redraw of the diamond | Owner ruling: falls squarely inside the decoration the redesign exists to remove; handoff never drew this screen, so no literal replacement exists to copy, and the ring is specified here in full rather than left as discretion |
 
 ---
 
@@ -392,6 +443,6 @@ Not covered here, explicitly out of scope: the isometric deckbox's own geometry/
 
 `apps/web/tests/visual/all-surfaces.spec.ts` currently captures dark-desktop-1440×900 baselines for `sign-in`, `sign-up`, `forgot-password`, `reset-password`, `check-your-email`, `onboarding`, and `settings` (lines 43-56, 69 of that file) — seven of this workstream's eight in-scope screens. Per Cross-Cutting Requirement 4, all seven must be regenerated in the same change that lands this workstream's CSS/component edits.
 
-**Gap, not introduced by this workstream**: `verify-email` has **no** baseline entry in `all-surfaces.spec.ts` today (confirmed — no `/verify-email` row exists in the route list), even though it shares `AuthLayout` with the other six. This is a pre-existing coverage gap, not something this design is obligated to close, but it means the `◆`-glyph change (§4.3) on that screen ships with no automated visual check either before or after. Flagged for the owner to decide whether to add one; not assumed into this workstream's scope by default.
+**`verify-email` gets a new baseline, added in this workstream — scope decision, not a gap left open.** It had **no** baseline entry in `all-surfaces.spec.ts` at the time this document was researched (no `/verify-email` row existed in the route list), despite sharing `AuthLayout` with the other six and despite this workstream changing it directly (the `◆`→ring replacement, §4.3). Owner ruling: since this is the phase that touches the screen, it is the cheapest point at which to close the gap — waiting would leave it open indefinitely on the theory that "some later phase" touches it, when no later phase in this spec does. **Add one new entry to the `all-surfaces.spec.ts` route list**, matching the existing pattern (`{ name: 'verify-email', url: '/verify-email' }`, alongside the other five anon-screen entries at lines 43-49), and generate its baseline together with the seven regenerated ones — eight baselines total land in the same change.
 
 No light-theme visual regression baselines exist for any screen in the app today (only dark-desktop is captured) — D4's light-theme guarantee is enforced by `contrast.spec.ts`, not screenshots, and that pattern is unchanged by this document.

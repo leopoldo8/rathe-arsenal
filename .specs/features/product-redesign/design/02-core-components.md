@@ -19,7 +19,7 @@ Both target surfaces already have a shipped, pre-redesign implementation. Supers
 | `DeckBoxVessel` / `DeckBoxCard` / `UntrackPin` / `HeroImage` (deckbox internals) | `apps/web/src/components/home/DeckCard.tsx:262-700` | **Box geometry replaced.** The SVG hinge-lid box (`DeckBoxVessel`) and its rectangular perspective illusion are replaced by `Deckbox`'s CSS 3D transform stack. `UntrackPin` is HOME-level chrome, not box geometry — it survives, wrapped around the new `Deckbox` by whichever component supersedes `DeckCard` itself (out of this workstream's scope; flagged for HOME). |
 | `DeckCard` (outer article: status row, format pill, legality icon, tag chips) | `apps/web/src/components/home/DeckCard.tsx:99-259` | **Not superseded here.** This chrome is HOME-04/HOME-06 territory. `Deckbox` only owns the box + cards + front face + embedded medallion; HOME composes `Deckbox` plus its own status/tag/legality/untrack chrome around it, the same way `DeckCard` today composes `DeckBoxVessel` plus that chrome. |
 | `ReadinessHero`'s `.ra-readiness-display` block | `apps/web/src/components/deck-detail/ReadinessHero.tsx:86-106` | **Superseded per DECK-01**, which puts a 90px `ReadinessMedallion` in the hero banner instead. Removing `ReadinessHero`'s own readiness markup is DECK workstream work — flagged, not done here. |
-| `DeckboxDecoration` | `apps/web/src/components/shell/DeckboxDecoration.tsx` | **Not superseded here**, but worth flagging: AUTH-01 says Sign-in uses "the branded deckbox on the left" and the handoff is explicit that it's "a mesma [deckbox] do Home... sem cartas" — i.e. `Deckbox` itself, in a cardless/brand mode, not this flat oxblood SVG. That's AUTH's decision to make; see §5.6. |
+| `DeckboxDecoration` | `apps/web/src/components/shell/DeckboxDecoration.tsx` | **Superseded, design specified here.** AUTH-01 says Sign-in uses "the branded deckbox on the left," and the handoff is explicit it's "a mesma [deckbox] do Home... sem cartas" — i.e. `Deckbox` itself, in a cardless brand mode, not this flat oxblood SVG. `Deckbox`'s `variant: 'brand'` (§2.11) is that mode; AUTH-01's own consumption of it (wiring `AuthLayout`'s `brandMark` prop seam) is still AUTH's to implement, but the component shape it binds to is no longer undesigned. |
 
 ---
 
@@ -52,7 +52,7 @@ graph TD
     style MED90 fill:#2a2333,color:#eee
 ```
 
-`ReadinessMedallion` has no dependency on `Deckbox` — it's a leaf component consumed independently by both call sites. `Deckbox` depends on `ReadinessMedallion` for its front face's 38px badge. Both depend on the new `useImageFallback` hook (§4).
+`ReadinessMedallion` has no dependency on `Deckbox` — it's a leaf component consumed independently by both call sites. `Deckbox` depends on `ReadinessMedallion` for its front face's 38px badge, but only in `variant: 'deck'` — the diagram above shows that path. AUTH's Sign-in screen is a third consumer of `Deckbox` alone (`variant: 'brand'`, §2.11): no medallion, no cards, no `useImageFallback` call, omitted from the diagram to keep it focused on the data-bearing path.
 
 ---
 
@@ -171,6 +171,8 @@ Hero art comes through `useImageFallback` (§4). When `heroArt` is `null` or eve
 }
 ```
 
+**Pitch color as text — checked, does not apply here.** Foundation is adding AA-safe `-ink` companion tokens per pitch color, for cases where a pitch hue is used as *text* rather than a fill or border (raw pitch values fail AA at body size as text). `--ra-pitch-hero` above is consumed exclusively as a `background` gradient fill on a decorative circular element — never as a `color` on any text node — so no companion `-ink` token applies to this component. Confirmed explicitly rather than left silent, since the alternative (a reader having to re-derive this) is the exact gap the foundation workstream flagged.
+
 CMP-05 ("expose the readiness percentage to assistive technology as text, not only as color") is satisfied independent of size or fallback state, via the `role="meter"` pattern (reused, not reinvented, from `HeroLifeToken`):
 
 ```tsx
@@ -194,7 +196,7 @@ CMP-05 ("expose the readiness percentage to assistive technology as text, not on
 
 - **Purpose**: The three-scene isometric card box — the redesign's identity element (BOX-01..07).
 - **Location**: `apps/web/src/components/deckbox/Deckbox.tsx`, `apps/web/src/components/deckbox/DeckboxScene.tsx` (internal, not exported from the module's public surface), `apps/web/src/components/deckbox/Deckbox.module.css`
-- **Dependencies**: `ReadinessMedallion` (§1), `useImageFallback` (§4), TanStack `Link`, `react-i18next`.
+- **Dependencies**: `ReadinessMedallion` (§1, `variant: 'deck'` only), `useImageFallback` (§4), TanStack `Link` (`variant: 'deck'` only — see §2.11 for why brand mode has no `Link`), `react-i18next` (`variant: 'deck'` only, for `aria-label`).
 - **Reuses**: nothing structural from `DeckBoxVessel` (different geometry technique — CSS 3D transforms vs. hand-drawn SVG perspective) but the same `prefers-reduced-motion` override *strategy* as `DeckCard.module.css`.
 
 ### 2.1 Props
@@ -205,7 +207,8 @@ export interface IDeckboxCardSlot {
   readonly imageUrl: { readonly small: string; readonly smallSources: readonly string[] } | null;
 }
 
-export interface IDeckboxProps {
+interface IDeckboxDeckProps {
+  readonly variant: 'deck';
   readonly deckId: number;
   readonly deckName: string;
   readonly format: string;
@@ -219,9 +222,21 @@ export interface IDeckboxProps {
   readonly readinessPct: number | null;
   readonly className?: string;
 }
+
+/** AUTH-01's static Sign-in brand mark (§2.11) — the handoff's "same deckbox
+ * as Home, without cards." Carries none of the deck-specific fields, on
+ * purpose: there is no deck, no readiness, no hero, no status to render. */
+interface IDeckboxBrandProps {
+  readonly variant: 'brand';
+  readonly className?: string;
+}
+
+export type IDeckboxProps = IDeckboxDeckProps | IDeckboxBrandProps;
 ```
 
-Deliberately **not** in this interface: `tags`, `legality`, untrack affordances, status *label* text. Those are HOME-level chrome composed around `Deckbox`, exactly as `DeckCard` today composes them around `DeckBoxVessel` (§0). `Deckbox` owns geometry, hover choreography, status-driven filters, and the embedded 38px medallion — nothing else.
+**Why a discriminated union, not seven optional fields.** `deckId`, `deckName`, `format`, `status`, `heroArt`, `cards`, `readinessPct` are all deck concepts a brand mark has none of. Modeling them as `field?: T` on one flat interface makes two illegal states directly representable: `variant="brand"` with a stray `deckId` passed alongside it (meaningless, silently ignored — no compiler signal), and `variant="deck"` missing a field it actually needs (a runtime `undefined` where a `string`/`number` was expected, since nothing marks those fields as conditionally required). The union makes both impossible to construct: TypeScript's narrowing on `variant` means `Deckbox`'s implementation itself cannot read `props.deckName` in a branch where `props.variant === 'brand'` — the field doesn't exist on that member of the union. This matches the repo's `T`/`I`-prefixed strict-typing convention (`noUncheckedIndexedAccess` is already enabled per the recent `AppErrorBoundary` fix on this branch's own commit log) rather than fighting it with a pile of optional fields and runtime guards.
+
+Deliberately **not** in `IDeckboxDeckProps`: `tags`, `legality`, untrack affordances, status *label* text. Those are HOME-level chrome composed around `Deckbox`, exactly as `DeckCard` today composes them around `DeckBoxVessel` (§0). `Deckbox` owns geometry, hover choreography, status-driven filters, and the embedded 38px medallion — nothing else.
 
 ### 2.2 Structure — the mechanism that prevents flattening
 
@@ -255,30 +270,42 @@ function DeckboxScene({ zIndex, pointerEventsNone, className, children }: IDeckb
 `Deckbox.tsx` then reads as three calls, in this exact order, matching the handoff's DOM order (back, cards, front):
 
 ```tsx
-<div className={styles.deckbox} data-status={status} data-testid="deckbox">
+// One boolean gates the cards scene, and it is the ONLY place that decides
+// whether the cards scene renders — both an idea-status deck and the brand
+// variant reach "no cards" through this same expression, not two separate
+// conditionals (see §2.11).
+const showCards = props.variant === 'deck' && props.status !== 'idea';
+
+<div className={styles.deckbox} data-variant={props.variant} data-testid="deckbox">
   <DeckboxScene zIndex={1} className={styles.backScene}>
     <DeckboxFace variant="back" />
   </DeckboxScene>
 
-  {status !== 'idea' && (
+  {showCards && (
     <DeckboxScene zIndex={2} className={styles.cardsScene}>
-      <DeckboxCards cards={cards} />
+      <DeckboxCards cards={props.cards} />
     </DeckboxScene>
   )}
 
   <DeckboxScene zIndex={3} pointerEventsNone className={styles.frontScene}>
-    <DeckboxFront
-      deckName={deckName}
-      format={format}
-      status={status}
-      heroArt={heroArt}
-      readinessPct={readinessPct}
-    />
+    {props.variant === 'deck' ? (
+      <DeckboxFrontDeck
+        deckName={props.deckName}
+        format={props.format}
+        status={props.status}
+        heroArt={props.heroArt}
+        readinessPct={props.readinessPct}
+      />
+    ) : (
+      <DeckboxFrontBrand />
+    )}
   </DeckboxScene>
 </div>
 ```
 
 BOX-01's test asserts **nesting**, not sibling count: each card slot element is a descendant of the `cardsScene`'s `.box` wrapper (not a sibling of the three scenes), and the three scenes' `data-scene-z` values are `1`, `2`, `3` in that DOM order. A flattened tree that renders three sibling scenes but nests cards directly under the root (bypassing `cardsScene`) would fail the descendant assertion even though a naive "three `.ib2-scene` elements exist" count would pass — this is the concrete difference between an assertion that catches accidental flattening and one that doesn't.
+
+`data-status` (used by §2.6's filter selectors) only exists when `props.variant === 'deck'` — the root's own `data-variant` attribute is what both distinguishes the two render paths in tests and lets `DeckboxFrontDeck`/`DeckboxFrontBrand` stay two genuinely separate leaf components rather than one component with internal `if (variant === 'brand')` branches scattered through its JSX.
 
 ### 2.3 Geometry — reproduced verbatim from the handoff, with token substitutions
 
@@ -310,13 +337,15 @@ Declared once, scoped to the module, prefixed `--ib2-` to mirror the handoff's o
 }
 ```
 
-### 2.5 `--ra-ember` — the reservation is stale
+**Pitch color as text — checked, does not apply here.** None of these `--ib2-*` values are pitch colors, and `Deckbox` consumes no `--ra-pitch-*` token anywhere (the deckbox's cards render raw card-image thumbnails, not pitch-colored frames — §3). Foundation's new AA-safe `-ink` companion tokens (added because raw pitch hues fail AA as text) have no bearing on this component; confirmed explicitly rather than left for a reader to re-check.
 
-`--ra-ember` (`#b44a2e` dark / `#8b3518` light) is documented in `.impeccable.md` and flagged in foundation §1.7 as "still reserved for the deckbox SVG... owned by the deckbox workstream" — i.e. this one. That reservation describes the *old* deckbox: `DeckboxDecoration.tsx`'s oxblood palette (`#7a2222`→`#3a0f0f`) and `DeckCard.tsx`'s matching oxblood box gradients. The new isometric deckbox's palette (§2.4) is purple-and-gold with zero oxblood or ember-family hue anywhere in the handoff's geometry section. Both of `--ra-ember`'s remaining consumers are superseded by this redesign: `DeckboxDecoration.tsx` by AUTH-01's "same deckbox as Home," `DeckCard.tsx`'s box gradients by `Deckbox` itself.
+### 2.5 `--ra-ember` — this design's dependency (decision now owned by foundation)
 
-**Ruling**: `--ra-ember` is not consumed by anything in this workstream's scope, and its "reserved for the deckbox" comment in `.impeccable.md` becomes inaccurate the moment this design ships, independent of whether `--ra-ember` is retired, repurposed, or left alone. This design does not retire the token (that's a token-file change outside this workstream's file scope, same boundary foundation drew for itself) — it only records that the reservation is now stale, for whoever next edits `.impeccable.md`'s palette section.
+`--ra-ember` (`#b44a2e` dark / `#8b3518` light) is documented in `.impeccable.md` and was flagged in foundation §1.7 as "still reserved for the deckbox SVG... owned by the deckbox workstream" — i.e. this one. That reservation describes the *old* deckbox: `DeckboxDecoration.tsx`'s oxblood palette (`#7a2222`→`#3a0f0f`) and `DeckCard.tsx`'s matching oxblood box gradients, both superseded by this redesign (`DeckboxDecoration.tsx` by `Deckbox`'s brand mode, §2.11; `DeckCard.tsx`'s box gradients by `Deckbox` itself). The new isometric deckbox's palette (§2.4) is purple-and-gold — zero oxblood or ember-family hue anywhere in the handoff's geometry section.
 
-### 2.6 Status variants (BOX-03, BOX-04)
+**What this design does and doesn't claim**: `Deckbox` (both variants) consumes `--ra-ember` nowhere — its materials are the local `--ib2-*` properties in §2.4, full stop, regardless of what `--ra-ember` ends up meaning. The foundation workstream has since taken ownership of `--ra-ember`'s actual disposition (retire / repurpose / leave alone) as their own explicit call on their own file (`tokens.css`). This document does not assume or depend on any particular outcome of that call — it only establishes the fact that motivated raising it in the first place: this workstream's rendered deckbox doesn't need the reservation, so foundation is free to decide `--ra-ember`'s fate without checking back against anything drawn here.
+
+### 2.6 Status variants (BOX-03, BOX-04) — `variant: 'deck'` only
 
 | Status | Cards scene | Front face filter |
 |---|---|---|
@@ -324,7 +353,7 @@ Declared once, scoped to the module, prefixed `--ib2-` to mirror the handoff's o
 | `retired` | Rendered normally | `grayscale(1) brightness(.8)` |
 | `building`, `ready`, `active` | Rendered normally | none |
 
-Filters apply to `DeckboxFront`'s root, via a `data-status`-keyed CSS Module selector (`.front[data-status='retired'] { filter: grayscale(1) brightness(.8); }`), not inline style.
+Filters apply to `DeckboxFrontDeck`'s root, via a `data-status`-keyed CSS Module selector (`.front[data-status='retired'] { filter: grayscale(1) brightness(.8); }`), not inline style. None of this table applies to `variant: 'brand'` — its front face is a flat gold monogram on a static gradient, not hero art, so there is no "dim it for retired/idea" concept to apply; see §2.11.
 
 ### 2.7 Hover choreography (BOX-02) — reproduced verbatim
 
@@ -390,6 +419,20 @@ Focus indicator (BOX-07) is placed on the root `Link` element itself — the *un
 ### 2.10 Hero art in the front face vs. the embedded medallion
 
 The front face's own background (the large image behind the deck name / format / medallion) and the 38px medallion's own hero-art disc are the **same** `heroArt` payload, rendered through two independent `useImageFallback` calls (one full-face `background-image`, one masked-circle `<img>`/gradient inside the medallion) — not one image reused via CSS trickery, since the medallion needs its own darkening/vignette layer independent of whatever overlay the front face applies. This is a minor duplication of network request (browser cache makes it free after the first load) traded for keeping the two rendering paths independent and simple.
+
+### 2.11 Brand mode (`variant: 'brand'`) — AUTH-01's static mark
+
+Per the handoff's Sign in section: a 170×170 container at `scale(.9)`, no cards, front face carrying only the R monogram at 52px UnifrakturCook in `#eecf7f` — no hero art, no deck name, no format, no medallion. This is `Deckbox` reused, not a second component, and the props union (§2.1) is what makes "reused, not duplicated" concrete: `IDeckboxBrandProps` shares `DeckboxScene`, the back/left/right face geometry, the material tokens (§2.4), and the cards-omission mechanism (§2.2) with the deck variant. Only the front face's *content* and the root's *interactivity* differ.
+
+**Geometry ownership.** The 170×170 / `scale(.9)` sizing is applied by `Deckbox` itself via a `.deckbox--brand` modifier class, not left for `AuthLayout` to reconstruct. `AuthLayout`'s `brandMark` slot can render `<Deckbox variant="brand" />` with no wrapper CSS of its own — the handoff ties this exact size to this exact context (there is only one brand-mode call site), so parameterizing it as a numeric prop would add an API surface nothing else uses.
+
+**Front face content**: `DeckboxFrontBrand` (§2.2) renders only the monogram, at 52px instead of the deck variant's 16px, in the same `--ib2-gold` (`#eecf7f`) token already declared for the deck variant's front-face border glow (§2.4) — one more reuse of the same local material tokens, not a new color.
+
+**Not interactive — explicit ruling, not silence.** A brand mark is not a link to a deck: there is no `deckId` to navigate to. `variant: 'brand'` renders a plain `<div>` root, not a `Link` — no `href`, no `tabIndex`, no `onKeyDown` handler, no `:focus-visible` rule, default cursor (not `pointer`). The hover choreography (§2.7) is likewise **not wired** in brand mode: no `:hover` rule targets `.deckbox--brand`, so pointing at the Sign-in mark produces no card flight (there are no cards to fly) and no box-straighten tilt. This is a deliberate absence, stated here so a future session doesn't read the missing focus ring as an oversight and "fix" it by making a decorative element keyboard-focusable for no reachable action — that would be worse than the silence it's replacing (a stop the keyboard-only user gains nothing from landing on).
+
+**Assistive technology**: `aria-hidden="true"` on the brand-mode root. The Sign-in layout's logo lockup, per the handoff, is `favicon 30×30 + wordmark UnifrakturCook 22px` sitting beside the deckbox mark — that wordmark is the element that already carries "Rathe Arsenal" as accessible text. The brand-mode deckbox's R monogram is a visual echo of the same mark, not a second source of the product name; exposing it to assistive tech as well would announce the product name twice for one visual concept. This is the same "say it once" reasoning DECK-09 already applies elsewhere in this spec (the Fabrary link must not be duplicated) — applied here to a name rather than a link.
+
+**Cards-scene omission — one path, not two.** §2.2's `showCards` expression (`props.variant === 'deck' && props.status !== 'idea'`) is false for `variant: 'brand'` for the same structural reason it's false for an idea-status deck: the boolean is `false`, and the *same* `{showCards && (...)}` block is what doesn't render. There is no separate `variant === 'brand' ? null : ...` check anywhere — introducing one would be exactly the "second way to skip it" this design avoids, since two independent conditionals arriving at the same visual outcome is precisely the kind of duplication that drifts apart under a later edit.
 
 ---
 
@@ -464,7 +507,8 @@ export interface IDeckboxCardSlot {
   readonly imageUrl: { readonly small: string; readonly smallSources: readonly string[] } | null;
 }
 
-export interface IDeckboxProps {
+interface IDeckboxDeckProps {
+  readonly variant: 'deck';
   readonly deckId: number;
   readonly deckName: string;
   readonly format: string;
@@ -474,6 +518,13 @@ export interface IDeckboxProps {
   readonly readinessPct: number | null;
   readonly className?: string;
 }
+
+interface IDeckboxBrandProps {
+  readonly variant: 'brand';
+  readonly className?: string;
+}
+
+export type IDeckboxProps = IDeckboxDeckProps | IDeckboxBrandProps;
 
 // Shared hook
 export interface IUseImageFallbackResult {
@@ -511,6 +562,7 @@ jsdom is the binding constraint on every test decision below: no CSS Module rule
 - **BOX-06 (activation)**: mock TanStack `Link` (per L-008 — assert the mocked `Link` component was invoked with the right `to`/`params`, not just that a DOM node with an `href` exists, since a raw `<a>` and a mocked `<Link>` render identically in a shallow DOM check). Because the handler (§2.9) treats Enter and Space identically and explicitly, both are tested the same, deterministic way rather than leaning on native anchor behavior jsdom doesn't execute: spy on the rendered anchor's `click()` method, `fireEvent.keyDown(link, { key: 'Enter' })` and assert `click` was called once, then repeat with `{ key: ' ' }` and additionally assert `preventDefault` was called on that event (Space's default is page-scroll; Enter's `preventDefault` call is harmless but not load-bearing, so only Space's is asserted).
 - **BOX-07 (focus indicator)**: not a computed-style assertion (jsdom + CSS Modules don't resolve `outline` color at runtime meaningfully) — instead, a `design-guards.spec.ts` entry pins the `outline: 2px solid var(--ra-accent); outline-offset: 3px;` declaration inside a `:focus-visible` selector scoped to the root link class, matching the Button/CardArt convention (§0), so a future edit can't silently drop or weaken it.
 - **Data-mapping / null handling**: `readinessPct={null}` renders `Deckbox` without a `ReadinessMedallion` child (`queryByTestId('readiness-medallion')` absent); a `cards` array with fewer than 3 non-null entries pads correctly (existing `DeckBoxCard`/silhouette-fallback precedent, ported to the new geometry).
+- **Brand mode (§2.11)**: render `<Deckbox variant="brand" />`. Assert: no `Link` invocation (the mocked `Link` from the BOX-06 setup is never called); no element in the render has `tabIndex="0"`; `queryByTestId('deckbox-card')` is absent (same `showCards` path as an idea-status deck — assert this by checking the cards-scene container itself is absent, not by checking card count); the root carries `aria-hidden="true"`; no `ReadinessMedallion` renders (`queryByTestId('readiness-medallion')` absent — brand mode never constructs the deck-only props a medallion would need); the front-face content renders the monogram markup (`getByTestId('deckbox-monogram')`) and nothing that only the deck variant renders (`queryByText` for a deck name is meaningless here since no `deckName` prop exists — assert absence of the deck-front-face container itself, e.g. `queryByTestId('deckbox-front-deck')` is null while `getByTestId('deckbox-front-brand')` is present).
 
 ### 6.3 `useImageFallback.spec.ts`
 
@@ -531,6 +583,8 @@ Kept deliberately minimal — the string surface these two components need is sm
 | `home.deckboxOpenAriaLabel` | `home.ts` | `"Open {{deckName}}"` | The deckbox's own accessible name — home-specific because this is where `Deckbox` is embedded; the deck-detail hero has no equivalent link (it's not itself a navigation target). |
 
 No key interpolates an untranslated enum/band value into a translated sentence (the anti-pattern flagged in §1.5 against `home.readinessMeterAriaLabel`'s existing shape).
+
+Brand mode (§2.11) adds no catalog keys at all — it is `aria-hidden`, so it has no accessible name to translate, and it renders no visible text (the R monogram is decorative, not a text node conveying meaning beyond what the adjacent wordmark already says).
 
 ---
 
@@ -560,6 +614,11 @@ No key interpolates an untranslated enum/band value into a translated sentence (
 | Shared image-fallback logic | New `useImageFallback` hook, not a `CardArt` refactor | Extracts the duplicated cycling logic once for the two new components; leaves `CardArt`/`DeckBoxCard`/`HeroImage`'s existing copies alone since consolidating those isn't in this workstream's scope (§3, §4). |
 | BOX-05 test approach | `design-guards.spec.ts` source-text assertion, not a `matchMedia`-mock DOM assertion | A CSS-only reduced-motion mechanism has no DOM-observable signature in jsdom; asserting "no animation" via a `matchMedia` mock would pass regardless of whether the CSS rule exists, which is worse than not testing it (§6.2). |
 | Focus-visible convention | `2px solid var(--ra-accent)`, `3px` offset (Button/CardArt convention) | Matches the actual shipped codebase pattern over `.impeccable.md` principle 5's stale "2px offset" text; flagged for that doc's rewrite (owned by foundation §6.2), not fixed here. |
+| `Deckbox` brand-mode API shape | Discriminated union (`variant: 'deck' \| 'brand'`) over seven optional deck fields | Makes both illegal states (deck fields on a brand instance; a missing required deck field) unrepresentable at the type level, rather than relying on runtime guards (§2.1). |
+| Brand-mode interactivity | None — no `Link`, no `tabIndex`, no hover choreography, no focus ring | A decorative mark with no navigation target that were focusable would be a keyboard stop with no reachable action; explicit absence, not an oversight (§2.11). |
+| Brand-mode a11y | `aria-hidden="true"` | The adjacent Sign-in wordmark already carries "Rathe Arsenal" as accessible text; exposing the monogram too would announce the product name twice (§2.11). |
+| Brand-mode cards omission | Same `showCards` boolean/JSX block as idea-status decks, not a second conditional | One omission mechanism serving two callers is less likely to drift than two mechanisms reaching the same visual outcome independently (§2.2, §2.11). |
+| Brand-mode geometry (170×170, `scale(.9)`) | Owned by `Deckbox` itself via a `.deckbox--brand` modifier class, not left for `AuthLayout` to reconstruct | The handoff ties this size to exactly one call site; a numeric size prop would add API surface nothing else uses (§2.11). |
 
 ---
 
@@ -568,8 +627,8 @@ No key interpolates an untranslated enum/band value into a translated sentence (
 1. **Conic-gradient/mask via CSS custom property — unverified in-browser.** The ring's sweep and mask calc both substitute a `var()` into a gradient stop / mask `calc()` operand. This follows standard CSS custom-property substitution rules and mirrors an existing in-repo precedent for a *simpler* property (`width: var(--pct)`), but has not been rendered and visually checked in this session. Recommend a self-run dev-browser screenshot pass (0/50/85/100%, both sizes) before CMP-01/CMP-02 are marked verified (§1.3).
 2. **90px ring width (`4px`) is a derivation, not a handoff literal for the exact `inset` values.** The handoff gives `inset:3px` explicitly only for the 38px sample markup and says "espessura do anel 4px" in prose for the 90px variant, without a full markup sample at that size. This design derives the 90px `inset`/mask values from that one prose number; sanity-check visually (§1.3).
 3. **Card→slot index mapping** (§2.7) and **`useImageFallback`'s array-identity reset key** (§4) are both agent's-discretion calls with no handoff mandate — confirm or override during Tasks/Execute if a different behavior is preferred.
-4. **`--ra-ember` disposition** (§2.5) — this design rules the reservation stale but does not retire the token (out of file scope). Whoever next touches `tokens.css`'s ember entries should decide retire vs. repurpose vs. leave-alone with this finding in hand.
-5. **Sign-in's "same deckbox" reuse (AUTH-01)** is named but not designed here — out of this workstream's story scope. Flagged so AUTH's design doesn't have to rediscover that `Deckbox` (cardless, static front face) is the intended reuse target rather than `DeckboxDecoration.tsx` (§0).
+4. **`--ra-ember` disposition** — no longer this workstream's open item. The foundation workstream has taken explicit ownership of retire-vs-repurpose-vs-leave-alone for `--ra-ember` in `tokens.css`. This design records only that `Deckbox` (either variant) doesn't consume it, so foundation's decision has no dependency on anything in this document either way (§2.5).
+5. **CLOSED — Sign-in's "same deckbox" reuse (AUTH-01)**. `Deckbox`'s `variant: 'brand'` (§2.11) is now the designed shape: 170×170/`scale(.9)` geometry owned by the component itself, no cards, monogram-only front face, non-interactive, `aria-hidden`. AUTH-01's remaining work is wiring `AuthLayout`'s `brandMark` prop seam to `<Deckbox variant="brand" />` — an implementation task, not an open design question.
 6. **DECK workstream cleanup**: `ReadinessHero.tsx`'s `.ra-readiness-display` block becomes dead weight once DECK-01 lands a 90px `ReadinessMedallion` in its place — that removal is DECK's to do, not this workstream's (§0, §9).
 7. **HOME workstream integration**: `DeckCard.tsx`'s surrounding chrome (status row, tag chips, legality icon, `UntrackPin`) needs to be re-composed around the new `Deckbox` — this design defines `Deckbox`'s prop boundary precisely so that composition is straightforward, but doesn't do it (§0, §2.1).
 8. **BOX-02's "without covering the deck name or the medallion" clause is not covered by any test in §6.2.** The keyframe/z-index-swap pinning in `design-guards.spec.ts` checks the *numbers* the handoff specifies, not where the cards end up relative to the front face's other content — that's a rendered-layout fact, unobservable in jsdom and not a single literal value to pin. This is a genuine gap, not an oversight to paper over: add a self-run visual check (dev-browser screenshot at hover-end, both medallion size contexts where a deckbox is embedded) as an explicit Execute-phase step before BOX-02 is marked verified, alongside item 1's ring-rendering check.
@@ -595,4 +654,4 @@ No key interpolates an untranslated enum/band value into a translated sentence (
 | Edge case: no hero art | §1.5, §8 |
 | Edge case: readiness exactly 85/100 | §1.2 |
 
-Not covered here, explicitly out of this workstream's scope: HOME's composition of `Deckbox` plus status/tag/legality/untrack chrome; DECK's removal of `ReadinessHero`'s old readiness block and adoption of the 90px medallion; AUTH's reuse of `Deckbox` as a static brand mark.
+Not covered here, explicitly out of this workstream's scope: HOME's composition of `Deckbox` plus status/tag/legality/untrack chrome; DECK's removal of `ReadinessHero`'s old readiness block and adoption of the 90px medallion; AUTH's wiring of `AuthLayout`'s `brandMark` seam to `Deckbox`'s now-designed `variant: 'brand'` (§2.11) — the component shape is specified here, the call-site wiring is AUTH's.
