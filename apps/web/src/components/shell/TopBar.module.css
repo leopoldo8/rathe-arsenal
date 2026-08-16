@@ -122,10 +122,13 @@
   background-color: var(--ra-bg-raised);
 }
 
+/* Canonical nav active-item treatment (FND-06 §5.4): bg rgba(208,168,76,.14)
+   + --acc text, no border — the handoff's nav rule names no border, unlike
+   filter pills or edit segments which use their own alpha pairs. */
 .navLink[data-active='true'] {
   color: var(--ra-accent-body);
   background-color: var(--ra-accent-soft-bg);
-  border-color: var(--ra-accent-soft-bd);
+  border-color: transparent;
 }
 
 .navLink:focus-visible {

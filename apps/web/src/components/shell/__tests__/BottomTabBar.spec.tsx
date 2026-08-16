@@ -8,10 +8,14 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // --- Mocks ---
+
+// Mutable so individual tests can drive different routes through
+// resolveActiveNavKey — reset in a beforeEach below.
+let mockPathname = '/home';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -32,13 +36,17 @@ vi.mock('@tanstack/react-router', () => ({
   }: {
     select?: (s: { location: { pathname: string } }) => unknown;
   } = {}) => {
-    const state = { location: { pathname: '/home' } };
+    const state = { location: { pathname: mockPathname } };
     if (typeof select === 'function') return select(state);
     return state;
   },
 }));
 
 import { BottomTabBar } from '../BottomTabBar';
+
+beforeEach(() => {
+  mockPathname = '/home';
+});
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -86,5 +94,36 @@ describe('BottomTabBar — A11y', () => {
     expect(
       screen.getByRole('navigation', { name: 'Navegação principal' }),
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FND-06: nav active-item rule, via the shared resolveActiveNavKey helper.
+// Same regression coverage as TopBar — BottomTabBar duplicated the same
+// broken logic independently before this phase.
+// ---------------------------------------------------------------------------
+
+describe('BottomTabBar — FND-06 active-item rule', () => {
+  it('activates Home when on a deck detail route', () => {
+    mockPathname = '/decks/abc-123';
+    render(<BottomTabBar />);
+    const homeTab = screen.getByRole('link', { name: /Início/i });
+    expect(homeTab).toHaveAttribute('data-active', 'true');
+    expect(homeTab).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('activates Library when on /library-csv-sources', () => {
+    mockPathname = '/library-csv-sources';
+    render(<BottomTabBar />);
+    const libraryTab = screen.getByRole('link', { name: /Biblioteca/i });
+    expect(libraryTab).toHaveAttribute('data-active', 'true');
+    expect(libraryTab).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('activates Library when on /add-cards', () => {
+    mockPathname = '/add-cards';
+    render(<BottomTabBar />);
+    const libraryTab = screen.getByRole('link', { name: /Biblioteca/i });
+    expect(libraryTab).toHaveAttribute('data-active', 'true');
   });
 });

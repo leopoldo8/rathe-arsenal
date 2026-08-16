@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,6 +20,10 @@ const SRC_ROOT = path.resolve(
 );
 
 // --- Mocks ---
+
+// Mutable so individual tests can drive different routes through
+// resolveActiveNavKey — reset in a beforeEach below.
+let mockPathname = '/home';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -40,7 +44,7 @@ vi.mock('@tanstack/react-router', () => ({
   }: {
     select?: (s: { location: { pathname: string } }) => unknown;
   } = {}) => {
-    const state = { location: { pathname: '/home' } };
+    const state = { location: { pathname: mockPathname } };
     if (typeof select === 'function') return select(state);
     return state;
   },
@@ -106,6 +110,10 @@ vi.mock('@radix-ui/react-toggle-group', () => ({
 }));
 
 import { TopBar } from '../TopBar';
+
+beforeEach(() => {
+  mockPathname = '/home';
+});
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -203,5 +211,48 @@ describe('TopBar — .brandRathe solid brass wordmark (T10 / UXUI-05)', () => {
     // gradient-clip pattern requires transparent text color; should be gone
     const CLIP_BLOCK = /\.brandRathe\s*\{[^}]*color\s*:\s*transparent/s;
     expect(CLIP_BLOCK.test(css)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FND-06: nav active-item rule, via the shared resolveActiveNavKey helper.
+// Regression coverage for the bug the helper fixes — Home never activated
+// on deck routes, Library never activated on Sources/Add cards.
+// ---------------------------------------------------------------------------
+
+describe('TopBar — FND-06 active-item rule', () => {
+  it('activates Home when on a deck detail route', () => {
+    mockPathname = '/decks/abc-123';
+    render(<TopBar />);
+    const homeLink = screen.getByRole('link', { name: 'Início' });
+    expect(homeLink).toHaveAttribute('data-active', 'true');
+  });
+
+  it('activates Home when on /decks/new', () => {
+    mockPathname = '/decks/new';
+    render(<TopBar />);
+    const homeLink = screen.getByRole('link', { name: 'Início' });
+    expect(homeLink).toHaveAttribute('data-active', 'true');
+  });
+
+  it('activates Library when on /library-csv-sources', () => {
+    mockPathname = '/library-csv-sources';
+    render(<TopBar />);
+    const libraryLink = screen.getByRole('link', { name: 'Biblioteca' });
+    expect(libraryLink).toHaveAttribute('data-active', 'true');
+  });
+
+  it('activates Library when on /add-cards', () => {
+    mockPathname = '/add-cards';
+    render(<TopBar />);
+    const libraryLink = screen.getByRole('link', { name: 'Biblioteca' });
+    expect(libraryLink).toHaveAttribute('data-active', 'true');
+  });
+
+  it('does not activate Home when on /decks/abc-123 (Library stays inactive)', () => {
+    mockPathname = '/decks/abc-123';
+    render(<TopBar />);
+    const libraryLink = screen.getByRole('link', { name: 'Biblioteca' });
+    expect(libraryLink).not.toHaveAttribute('data-active');
   });
 });

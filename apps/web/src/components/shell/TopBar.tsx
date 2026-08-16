@@ -6,11 +6,13 @@ import { UserMenu } from './UserMenu';
 import { VariantQueuePill } from '../variant-queue/VariantQueuePill';
 import LogoMark from '../../assets/logo-mark.svg?react';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
+import { resolveActiveNavKey, type TNavKey } from './nav-active';
 import styles from './TopBar.module.css';
 
 interface INavItem {
   readonly to: string;
   readonly label: string;
+  readonly key: TNavKey;
 }
 
 /**
@@ -26,14 +28,15 @@ interface INavItem {
 export function TopBar(): React.ReactElement {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
+  const activeNavKey = resolveActiveNavKey(pathname);
 
   // /home is handled separately below with a typed Link+search.
   // /library and /swaps are kept as plain string `to` so TypeScript
   // does not enforce their route-specific search params here — their
   // validateSearch functions accept empty objects and apply defaults.
   const otherNavItems: readonly INavItem[] = [
-    { to: '/library', label: t('shell.navLibrary') },
-    { to: '/swaps', label: t('shell.navSwaps') },
+    { to: '/library', label: t('shell.navLibrary'), key: 'library' },
+    { to: '/swaps', label: t('shell.navSwaps'), key: 'swaps' },
   ];
 
   return (
@@ -55,7 +58,7 @@ export function TopBar(): React.ReactElement {
           to="/home"
           search={DEFAULT_HOME_SEARCH}
           className={styles.navLink}
-          data-active={pathname === '/home' || pathname.startsWith('/home/') ? 'true' : undefined}
+          data-active={activeNavKey === 'home' ? 'true' : undefined}
         >
           {t('shell.navHome')}
         </Link>
@@ -65,7 +68,7 @@ export function TopBar(): React.ReactElement {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             to={item.to as any}
             className={styles.navLink}
-            data-active={pathname === item.to || pathname.startsWith(item.to + '/') ? 'true' : undefined}
+            data-active={activeNavKey === item.key ? 'true' : undefined}
           >
             {item.label}
           </Link>
