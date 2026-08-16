@@ -28,8 +28,8 @@ graph TD
     Lib --> Stats["LibraryStatsBar\n(pitch pills → --ra-pitch-*)"]
     Lib --> Grid["LibraryGrid\n(unchanged grouping logic, restyled cells)"]
 
-    Src["/library-csv-sources route"] --> SrcList["CsvSourceList → SourceList\n(now includes manual + fabrary-derived rows)"]
-    SrcList --> SrcRow["CsvSourceRow → SourceRow\n(type badge, dim-on-toggle, label flip)"]
+    Src["/library-csv-sources route"] --> SrcList["CsvSourceList\n(now includes manual + fabrary-derived rows)"]
+    SrcList --> SrcRow["CsvSourceRow\n(type badge, dim-on-toggle, label flip)"]
     SrcRow -- PATCH active --> API["PATCH /collection/sources/:id\n(unchanged)"]
     API -- invalidates --> LibQuery["['library'] query\n(unchanged — already recomputes)"]
 
@@ -53,7 +53,7 @@ LIB-01's literal text only names the sidebar. Reading `library.tsx`, `LibraryFil
 | Class facet, with per-value counts | Yes — collapsible `ToggleSection`, default collapsed, auto-opens on selection | Yes ("Classe 4") | Keep the accordion component as-is; the handoff's "Classe 4 · Talento 1 · Set 28" is read as the *collapsed-state summary counts* the current `ToggleSection` already renders (`summary` computed as `${options.length}` or `N of M`), not a literal single compact line replacing three sections. |
 | Talent facet, with per-value counts | Yes — same `ToggleSection` | Yes ("Talento 1") | Same as Class. |
 | Set facet, with per-value counts + release name | Yes — same `ToggleSection`, `formatLabel` renders code + name | Yes ("Set 28") | Same as Class. |
-| `types` filter (search param + `applyFilters` logic) | Plumbed through `TLibrarySearch.types` and `ILibraryFiltersValue.types`, but **zero UI control renders it anywhere** in `LibraryFilterRail` or `LibraryFilterDrawer` | Not shown | Not a filter a user can lose — there was never an affordance to set it. Recommend leaving unwired rather than inventing UI for it in this workstream; note it for a future session as dead plumbing if nobody claims it. |
+| `types` filter (search param + `applyFilters` logic) | Plumbed through `TLibrarySearch.types` and `ILibraryFiltersValue.types`, but **zero UI control renders it anywhere** in `LibraryFilterRail` or `LibraryFilterDrawer` | Not shown | Not a filter a user can lose through this redesign — there was never a UI affordance to set it. Not removed either (§14, item 3): it's a live, reachable-by-URL branch of `applyFilters` and a typed field of the `TLibrarySearch` contract several routes' `DEFAULT_LIBRARY_SEARCH` depend on — load-bearing by the letter, just UI-orphaned. Left as-is. |
 | Card-size slider | Yes — `CARD_SIZE_STEPS` range input, URL-synced via `cardSize` search param | Yes | Restyle + fix two real bugs (§3.1): hardcoded English labels, `aria-hidden` legend. |
 | Group-by segments (Type/Pitch/Set/List) | Yes — `GROUP_OPTIONS`, `role="radiogroup"` | Yes | Restyle only. |
 | "Gerenciar fontes ›" link in the Library sidebar | **No** — today this link exists only on `/add-cards` (index and CSV subview), never on `/library` itself | Yes, in the sidebar | This is the one place the handoff *adds* something the current app lacks. Land it as a new sidebar footer link to `/library-csv-sources`, additive, not a replacement for anything. |
@@ -150,7 +150,7 @@ function deriveSourceKind(source: ICsvSource): TSourceDisplayKind {
 
 **Badge color mapping** (reusing existing foundation tokens, no new ones needed): CSV → `--ra-ready-high` (green), Fabrary → `--ra-accent` (gold — matches the handoff's own "Fabrary ouro" literally), Manual → `--ra-status-idea` (violet, the closest existing token to "azul-lilás").
 
-### 4.2 Backend change actually required — include Manual in the list, keep it non-toggleable
+### 4.2 Backend change actually required — include Manual in the list; toggle decided by what the backend actually supports
 
 To show "4 fontes · 3 ativas" the way the handoff's example implies (a manual source counted alongside CSV/Fabrary ones), `SourcesService.list()` needs to drop the `kind: 'csv'` filter and return all sources for the user:
 
@@ -163,7 +163,11 @@ async list(userId: string): Promise<CsvSourceEntity[]> {
 }
 ```
 
-This is a **query relaxation on an existing endpoint**, not a new API surface. Do **not** also relax `assertOwnsCsvSource` to allow the manual source through PATCH/DELETE — that guard encodes a deliberate product decision documented directly on the entity, not an oversight, and this workstream has no requirement that overrides it. The frontend's `SourceRow` renders the manual row without a `Switch` (a static "Sempre ativa" / "Always active" label in place of the toggle) and without the "···" overflow menu, while still showing its type badge, label ("Manual entries" / "Entradas manuais"), and card count like any other row. This satisfies LIB-05's "each source SHALL show its type badge, name, card count, import date, active label and a toggle" for CSV/Fabrary rows and deliberately special-cases the one row where "and a toggle" cannot apply without reopening a decision this workstream doesn't own. Flagged in §14 (open item 1) as needing confirmation, since it's a literal partial-compliance call.
+This is a **query relaxation on an existing endpoint**, not a new API surface.
+
+**Whether Manual gets a toggle is settled by what the backend structurally supports, not by the handoff's mock only showing CSV rows.** Verified, not assumed: `assertOwnsCsvSource` (`sources.service.ts`) 404s any PATCH/DELETE targeting a `kind='manual'` row — `if (!source || source.userId !== userId || source.kind !== 'csv') throw new NotFoundException(...)` treats "manual" identically to "doesn't exist." `SourcesService.patch` has no code path that reaches a manual row at all; nothing downstream of that guard would need to change to *allow* a manual toggle — the guard itself is the block. The entity's own doc comment states this is deliberate: the manual source is "never deletable or toggleable." So this is a **structural** constraint, not a stylistic one: a source with `kind='manual'` genuinely cannot be deactivated through the same path a CSV or Fabrary source uses today, and this workstream has no requirement that reopens that guard.
+
+Given that, the toggle is **not** replaced with a disabled `Switch` — a disabled control that invites a click and explains nothing is worse than no control at all. It is **omitted entirely** and replaced with a short plain-language line in its place, read once and understood: `csvSources.manualAlwaysIncluded` — "Sempre incluída — cartas adicionadas manualmente não podem ser desativadas." / "Always included — manually added cards can't be deactivated." (updates the copy table in §6.5). The Manual row still shows its type badge, label ("Manual entries" / "Entradas manuais"), and card count like any other row, and still omits the "···" overflow menu (rename/delete are guarded by the same structural block). This satisfies LIB-05's "each source SHALL show its type badge, name, card count, import date, active label and a toggle" for CSV/Fabrary rows; for the one row where a toggle cannot exist, the explanatory line stands in for it rather than a non-functional imitation of one.
 
 One consequence of including manual rows: `createdAt` exists on the manual source (set at `ensureManualSource` time), so "import date" renders fine; there is no `originalFilename` (already nullable, existing UI already guards for it).
 
@@ -305,7 +309,7 @@ Every row below needs both a `pt-BR` and an `en-US` entry — the table gives th
 | `sourceBadgeCsv` | `csvSources` | CSV | CSV |
 | `sourceBadgeFabrary` | `csvSources` | Fabrary | Fabrary |
 | `sourceBadgeManual` | `csvSources` | Manual | Manual |
-| `manualAlwaysActive` | `csvSources` | Sempre ativa | Always active |
+| `manualAlwaysIncluded` | `csvSources` | Sempre incluída — cartas adicionadas manualmente não podem ser desativadas. | Always included — manually added cards can't be deactivated. |
 | `sourcesCountLine` | `csvSources` | {{count}} fontes · {{activeCount}} ativas | {{count}} sources · {{activeCount}} active |
 | `sumExplainerTrigger` (value change, key exists) | `csvSources` | ⓘ Duplicatas entre fontes são somadas, não sobrescritas. | ⓘ Duplicates across sources are summed, not overwritten. |
 | `csvExpectedColumns` | `csvSources` | Obrigatório: `name`, `quantity`. Opcional: `set`. O pitch é lido do nome da carta ou resolvido automaticamente — não há coluna de pitch. | Required: `name`, `quantity`. Optional: `set`. Pitch is read from the card name or resolved automatically — there is no pitch column. |
@@ -344,16 +348,16 @@ Logged here as a sequencing dependency, not an open question — the owner has d
 
 - **Purpose**: sticky stats strip (unique/copies/pitch pills/estimated value).
 - **Location**: `apps/web/src/components/library/LibraryStatsBar.tsx`.
-- **Changes**: pitch pill tokens `--ra-card-frame-*` → `--ra-pitch-*` (+ `-ink` companion or fallback per §3.3).
+- **Changes**: pitch pill tokens `--ra-card-frame-*` → `--ra-pitch-*` (fill/border) and `--ra-pitch-*-ink` (text), per §3.3.
 - **Reuses**: existing `ILibraryStats` shape — no DTO change.
 
-### `SourceRow` (renamed from `CsvSourceRow`, generalized)
+### `CsvSourceRow` (generalized in place, name unchanged)
 
-- **Purpose**: single source row — toggle (except manual), type badge, label (editable except manual), meta, overflow menu (except manual).
-- **Location**: `apps/web/src/components/csv-sources/CsvSourceRow.tsx` (rename optional — flagged as agent's discretion in §9, not required).
+- **Purpose**: single source row — toggle (CSV/Fabrary only; Manual gets a plain-language line instead, §4.2), type badge, label (editable except Manual), meta, overflow menu (CSV/Fabrary only).
+- **Location**: `apps/web/src/components/csv-sources/CsvSourceRow.tsx`. Kept as-is — a rename to reflect that it now covers three source kinds, not just CSV, is real but is churn this already-large phase doesn't need; noted as a follow-up for a future session (§14) rather than folded in here.
 - **Interfaces**: `deriveSourceKind(source: ICsvSource): TSourceDisplayKind` — new pure helper, colocated or in a small `-source-kind.ts` sibling.
-- **Dependencies**: `usePatchCsvSourceMutation` (unchanged), new i18n keys for active/inactive label and badge text.
-- **Reuses**: existing `Switch.Root` toggle wiring, existing `DeleteSourceModal`, existing inline-rename flow — all unchanged for CSV/Fabrary rows, all suppressed for Manual.
+- **Dependencies**: `usePatchCsvSourceMutation` (unchanged), new i18n keys for active/inactive label, badge text, and the Manual explanatory line.
+- **Reuses**: existing `Switch.Root` toggle wiring, existing `DeleteSourceModal`, existing inline-rename flow — all unchanged for CSV/Fabrary rows, all omitted (not disabled) for Manual.
 
 ### `SourcesService.list` (backend, relaxed)
 
@@ -472,10 +476,16 @@ Named so the next session doesn't discover them at PR time. Confidence varies �
 
 ---
 
-## 14. Open items requiring confirmation before or during implementation
+## 14. Open items — all resolved; nothing outstanding for implementation
 
-**Resolved by coordinator ruling (2026-08-16), removed from this list**: the pitch-ink token request (now §3.3/§7, accepted — no fallback needed) and the CSV row-limit surfacing (now required copy, §6.3) are no longer open.
+All three items previously open here were closed by coordinator ruling (2026-08-16). None carry into implementation as an unresolved question:
 
-1. **Manual source in Sources list — partial-compliance call** (§4.2) — LIB-05 says "every source... a toggle"; this design deliberately renders Manual without one, preserving an existing, documented product decision. The coordinator's ruling confirmed Manual *must appear* in the list (closing the inclusion question) but did not address the toggle-less treatment specifically — confirm this reading is correct before implementation, since it's the one place this doc knowingly doesn't satisfy a requirement's literal text for a row that will now be visible for the first time.
-2. **`SourceRow`/`SourceList`/`ICsvSource` renaming** — now that these types/components cover three source kinds, not just CSV, the "Csv"-prefixed names are stale. Purely cosmetic, agent's discretion; not required for any LIB acceptance criterion.
-3. **`types` filter dead plumbing** (§2) — recommend leaving unwired since no UI ever exposed it; flag for a future cleanup session rather than deciding its fate here.
+1. **Manual source toggle — resolved, not a preference call.** Verified structurally, not read off the handoff's mock: `assertOwnsCsvSource` 404s any PATCH/DELETE against a `kind='manual'` row, and the entity's own doc comment states this is deliberate ("never toggleable"). Manual cannot be deactivated through the same path a CSV/Fabrary source uses — so it gets no `Switch`, disabled or otherwise, and no overflow menu. In their place: a short plain-language line (`csvSources.manualAlwaysIncluded`, §4.2, §6.5) explaining why, read once and understood rather than a control that invites a click and does nothing.
+
+2. **`CsvSourceRow`/`CsvSourceList`/`ICsvSource` renaming — skipped.** Churn this already-large phase doesn't need, and the rename buys a reader of this feature nothing. The names now cover three source kinds under a "Csv"-prefixed identifier, which is a genuine (if minor) mismatch — logged here as a **follow-up for a future session**, not folded into this design.
+
+3. **`types` filter plumbing — kept, not removed.** Re-checked against the coordinator's own two conditions before writing this as a removal, and both land on "load-bearing":
+   - **Not genuinely unreachable.** `validateLibrarySearch` parses a `types` array straight off the raw URL search params, and `applyFilters` (`-library.helpers.ts`) executes a real filter branch against it (`c.types.some((t) => targetTypes.has(t.toLowerCase()))`) whenever it's non-empty. A hand-crafted `/library?types=Action` URL filters the grid today — there is no UI that generates such a URL, but "no UI exposes it" is exactly the "merely unused by the current UI" case the coordinator's condition distinguishes from "genuinely unreachable," and this fails that stricter bar.
+   - **It is part of the URL search-param contract.** `TLibrarySearch.types` is a typed field of the same search-param shape `library.tsx`'s `handleFiltersChange` round-trips through `navigate({ to: '/library', search: nextSearch })` on every filter change — so a `types` value present in the URL on page load stays synchronized across subsequent filter interactions, not just on first render. `DEFAULT_LIBRARY_SEARCH` (exported and consumed by `add-cards.index.tsx`, `add-cards.fabrary.tsx`, `library-csv-sources.tsx`) includes `types: []` as part of the same shape.
+
+   Per the coordinator's own stated rule ("if either check says it is load-bearing, leave it and say what it feeds"), this design **leaves `types` in place**, unremoved, correcting the recommendation from an earlier draft of this doc. What it feeds: the `TLibrarySearch`/`ILibraryFiltersValue` URL contract and `applyFilters`' filter logic, reachable today only via a manually-typed URL, not via any control this workstream builds or restyles.
