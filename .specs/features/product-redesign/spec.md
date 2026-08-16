@@ -28,6 +28,9 @@ Recorded here because they change scope and are not derivable from the handoff.
 | D4 | The **light theme is ported**, not retired. | Every new token needs a light counterpart; the existing contrast test must stay green. |
 | D5 | `ready` and `active` deck statuses **share the "Ativos" group** on Home. | No migration, no change to the five-value CHECK constraint, no change to the edit screen's status segments. |
 | D6 | The **AD-005 `× N` copy grouping survives**, adapted into the handoff's row design. | One decision still applies to all copies of an identical suggestion. Requires design not present in the handoff. |
+| D7 | **Only approved substitutions count toward readiness.** Today `computeEffectiveReadiness` counts every substitution it finds, excluding only rejected ones, so a pending suggestion already inflates the percentage. | The percentage starts meaning "what you can actually play". Approving moves the number, which is what the redesigned screen promises. Every deck with pending suggestions drops on the day this ships; acceptable at closed-beta scale. Engine change plus the existing tests that assert the current behavior. |
+| D8 | **Legacy substitute decisions are discarded** in the migration rather than reconstructed. | The current table records only the substitute card — never the original or the slot — so approved rows cannot be mapped into the new model at all and rejected rows could only be guessed at. Aplicadas starts empty and each previously-rejected suggestion is proposed once more. |
+| D9 | **The shipped filter rail, bulk actions and "all" tab survive** the Swaps redesign, adapted into the handoff's layout. | The handoff draws none of them, but they are shipped behavior and the spec forbids regressions. Requires design the handoff does not supply. |
 
 ## Out of Scope
 
@@ -163,6 +166,9 @@ Recorded here because they change scope and are not derivable from the handoff.
 10. WHEN an applied suggestion is displayed THEN it SHALL offer an optional post-play outcome control recording `worked` or `did_not_work`.
 11. WHEN identical suggestions exist for multiple copies of the same card in the same deck THEN they SHALL render as a single row carrying a `× N` indicator, and one decision SHALL apply to every copy in the group (D6, preserving AD-005).
 12. WHEN a swap row renders THEN it SHALL show the outgoing card thumbnail struck through at `opacity .5`, the incoming card thumbnail with a gold border, the slot, and the confidence value colored by band (≥90 `--ready`, 70–89 `--acc`, below `--warn`).
+13. WHEN readiness is computed THEN only substitutions the user has approved SHALL count toward the effective percentage; a pending suggestion SHALL NOT inflate it (D7).
+14. WHEN the Swaps screen renders THEN the shipped filter rail (tier, deck, hero, confidence range), the multi-select bulk actions and the "all" tab SHALL remain available, adapted into the handoff's layout (D9).
+15. WHEN the migration runs THEN existing `substitute_decision` rows SHALL be discarded rather than mapped into the new model, since the original card and slot were never recorded (D8).
 
 **Independent Test**: Drive one suggestion through pending → approved → reverted → pending → rejected → restored, asserting deck readiness and tab counts at each step, and assert a rejected pair is absent from the next engine run's output.
 
