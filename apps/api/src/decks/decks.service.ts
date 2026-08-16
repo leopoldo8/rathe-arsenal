@@ -1,16 +1,18 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Not, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
-import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
+import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
+import { SwapsReconciliationService } from '../swaps/swaps-reconciliation.service';
+import { buildCurrentDeckSlots } from '../swaps/build-current-deck-slots';
 import {
   IRepresentativeCard,
   ITrackedDeckListItem,
@@ -56,6 +58,8 @@ export class DecksService {
     private readonly decisionsService: DecisionsService,
     private readonly collectionReadService: CollectionReadService,
     private readonly catalogService: CatalogService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
+    private readonly swapsReconciliationService: SwapsReconciliationService,
   ) {}
 
   // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
@@ -151,11 +155,13 @@ export class DecksService {
     for (const deck of decks) {
       if (!snapshotByDeckId.has(deck.id)) {
         try {
-          const exclusions = await this.decisionsService.loadExclusions(deck.id);
+          const { excludedIdentifiers, approvedIdentifiers } =
+            await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
           const snap = await this.substitutionService.computeAndStoreReadiness(
             deck.id,
             userId,
-            exclusions,
+            excludedIdentifiers,
+            approvedIdentifiers,
           );
           snapshotByDeckId.set(deck.id, snap);
         } catch (error) {
@@ -470,11 +476,13 @@ export class DecksService {
     // are honoured — symmetric fix to the listForUser bug fix above.
     if (!latestSnapshot) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(deckId);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
         latestSnapshot = await this.substitutionService.computeAndStoreReadiness(
           deckId,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (error) {
         this.logger.warn({
@@ -904,10 +912,10 @@ export class DecksService {
 
         const inventory = await this.collectionReadService.loadOwned(userId);
 
-        // Load persisted rejections — these are substitutes the user has
-        // explicitly rejected for this deck. They must be excluded so that
-        // the engine doesn't try to reuse them.
-        const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+        // Load persisted exclusions/approvals — swap_suggestion rows the
+        // user has explicitly rejected or approved for this deck.
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
 
         const deckInput = {
           cards: freshCards.map((row) => ({
@@ -917,35 +925,27 @@ export class DecksService {
           })),
         };
 
-        // 5-arg call: pass `undefined` for tolerance so the engine default applies;
-        // pass persistedRejections as the 5th arg (excludedIdentifiers).
         const transactionReadiness = computeEffectiveReadiness(
           deckInput,
           inventory,
           catalog,
           undefined,
-          persistedRejections,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
 
-        // Orphan cleanup: remove substitute decisions for substitutes that are
-        // no longer part of the new engine result. Uses TypeORM In()/Not() — never
-        // raw string-concatenated SQL.
-        const newSubstituteIds = new Set(
-          transactionReadiness.breakdown.substituted.map(
-            (s) => s.match.substitute.cardIdentifier,
-          ),
+        // Reconcile swap_suggestion against the fresh breakdown, inside this
+        // same transaction — this is where currentDeckSlots is naturally
+        // already available (freshCards). Replaces the old hard-delete
+        // orphan cleanup: a suggestion whose position left the deck is
+        // retired, never deleted (SWAP-02).
+        await this.swapsReconciliationService.reconcile(
+          userId,
+          deckId,
+          transactionReadiness.breakdown,
+          buildCurrentDeckSlots(freshCards),
+          manager,
         );
-
-        if (newSubstituteIds.size > 0) {
-          // Keep only decisions whose cardIdentifier is still in the new substitute set.
-          await manager.delete(SubstituteDecisionEntity, {
-            trackedDeckId: deckId,
-            cardIdentifier: Not(In([...newSubstituteIds])),
-          });
-        } else {
-          // New substitute set is empty — all decisions for this deck are orphaned.
-          await manager.delete(SubstituteDecisionEntity, { trackedDeckId: deckId });
-        }
 
         // Fetch tags for the response (within the transaction so we read a
         // consistent snapshot, even though tags are not modified by this endpoint).
@@ -975,7 +975,8 @@ export class DecksService {
     let readinessResult = readinessInsideTransaction;
     try {
       const inventory = await this.collectionReadService.loadOwned(userId);
-      const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+      const { excludedIdentifiers, approvedIdentifiers } =
+        await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
       const freshCards = await this.deckCardRepo.find({
         where: { trackedDeckId: deckId },
       });
@@ -988,12 +989,19 @@ export class DecksService {
         })),
       };
 
+      // Not reconciled again here — the in-transaction pass above already
+      // reconciled against this same freshCards/inventory input; this
+      // recompute exists only so the snapshot (and the 200 response) reflect
+      // the committed state, matching the existing pre-D7 pattern of
+      // recomputing once more post-commit for staleness, not because the
+      // answer differs.
       readinessResult = computeEffectiveReadiness(
         deckInput,
         inventory,
         catalog,
         undefined,
-        persistedRejections,
+        excludedIdentifiers,
+        approvedIdentifiers,
       );
 
       // Insert snapshot — best-effort.

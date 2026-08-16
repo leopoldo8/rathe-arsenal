@@ -8,8 +8,8 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
-import { DecisionsModule } from '../decks/decisions/decisions.module';
 import { FabraryModule } from '../fabrary/fabrary.module';
+import { SwapsCoreModule } from '../swaps/swaps-core.module';
 import { CollectionController } from './collection.controller';
 import { CollectionService } from './collection.service';
 import { CollectionReadService } from './collection-read.service';
@@ -35,8 +35,8 @@ import { LibraryService } from './library/library.service';
     ]),
     AuthModule,
     SubstitutionModule,
-    DecisionsModule,
     FabraryModule,
+    SwapsCoreModule,
   ],
   controllers: [CollectionController, CsvController, LibraryController, SourcesController],
   providers: [

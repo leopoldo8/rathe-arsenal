@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
+import { ICatalogCard } from '@rathe-arsenal/engine';
 import { ReviewAggregateEntity } from '../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
-import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
+import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
 import { CatalogService } from '../catalog/catalog.service';
 
 // ---------------------------------------------------------------------------
@@ -177,8 +178,8 @@ export class ReviewAggregateService {
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
-    @InjectRepository(SubstituteDecisionEntity)
-    private readonly decisionRepo: Repository<SubstituteDecisionEntity>,
+    @InjectRepository(SwapSuggestionEntity)
+    private readonly swapSuggestionRepo: Repository<SwapSuggestionEntity>,
     private readonly catalogService: CatalogService,
   ) {}
 
@@ -270,26 +271,38 @@ export class ReviewAggregateService {
   }
 
   /**
-   * Returns cross-deck substitution rows for the user, optionally filtered
-   * by decision state.
+   * TEMPORARY compatibility shim (design/07-swaps.md "Landing sequence").
+   * Rebuilds `ISubstitutionRow[]` -- today's exact response shape -- from
+   * `swap_suggestion` rows instead of the old snapshot-breakdown-plus-
+   * decision-join. `swap_suggestion` already carries a superset of what
+   * this shape needs (slot, confidence, tier, rationale); card metadata
+   * (name/pitch/type/imageUrl) for both the original and the substitute is
+   * resolved fresh from the catalog, since neither is stored on the row.
    *
-   * For each tracked deck, fetches the latest snapshot and extracts entries
-   * from `breakdown.substituted[]` (cards covered only via substitute).
-   * Joins with `substitute_decision` to derive the state:
-   *   - Row present with decision='approved' → 'approved'
-   *   - Row present with decision='rejected' → 'rejected'
-   *   - No row → 'pending' (virtual state)
+   * `status = 'retired'` rows are excluded -- a retired row has no
+   * old-model analogue, so this isn't a behavior change for the old
+   * screen. Every other status maps directly: `pending` -> 'pending',
+   * `approved` -> 'approved', `rejected` -> 'rejected'.
    *
-   * Ownership: scoped to `userId`; decks and decisions for other users
-   * are never returned.
+   * A `swap_suggestion` row is per-group (one row per distinct
+   * (cardIdentifier, slot, substituteIdentifier) quadruple, carrying a
+   * `quantity`), but the old wire contract is per-copy (one
+   * `ISubstitutionRow` per missing copy, with the frontend's
+   * `groupReviewRows` deriving the "x N" count by counting duplicate
+   * rows client-side). This method expands each persisted row back into
+   * `quantity` duplicate `ISubstitutionRow` entries so that client-side
+   * counting still produces the correct number.
    *
-   * U5 (GET /api/reviews): powers the cross-deck Reviews surface.
+   * Ownership: scoped to `userId`; rows for other users are never returned.
+   *
+   * This entire method is deleted in the same commit that lands Half B's
+   * `GET /api/swaps` (§6), which returns one row per group directly and
+   * needs no client-side re-grouping.
    */
   async listSubstitutionRows(
     userId: string,
     stateFilter: TReviewState | 'all' = 'pending',
   ): Promise<ISubstitutionRow[]> {
-    // 1. Fetch all tracked decks for this user (with hero for enrichment).
     const decks = await this.trackedDeckRepo.find({
       where: { userId },
       select: ['id', 'name', 'hero'],
@@ -304,96 +317,77 @@ export class ReviewAggregateService {
       decks.map((d) => [d.id, { name: d.name, hero: d.hero }]),
     );
 
-    // 2. Fetch the latest snapshot per deck (subquery pattern from DecksService).
-    const latestSnapshots = await this.snapshotRepo
-      .createQueryBuilder('snap')
-      .where('snap.trackedDeckId IN (:...deckIds)', { deckIds })
-      .andWhere(
-        'snap.id = (' +
-          'SELECT s2.id FROM deck_readiness_snapshot s2 ' +
-          'WHERE s2."trackedDeckId" = snap."trackedDeckId" ' +
-          'ORDER BY s2."computedAt" DESC LIMIT 1' +
-          ')',
-      )
-      .getMany();
-
-    if (latestSnapshots.length === 0) {
-      return [];
-    }
-
-    // 3. Collect substituted entries with their owning trackedDeckId.
-    const substitutedRows: Array<{
-      trackedDeckId: number;
-      entry: ISubstitutedEntry;
-    }> = [];
-    for (const snapshot of latestSnapshots) {
-      const breakdown = snapshot.breakdown as unknown as IBreakdown;
-      const substituted = breakdown.substituted ?? [];
-      for (const entry of substituted) {
-        substitutedRows.push({ trackedDeckId: snapshot.trackedDeckId, entry });
-      }
-    }
-
-    if (substitutedRows.length === 0) {
-      return [];
-    }
-
-    // 4. Batch-load all existing decisions for these decks to avoid N+1 queries.
-    const existingDecisions = await this.decisionRepo.find({
-      where: { userId, trackedDeckId: In(deckIds) },
-      select: ['trackedDeckId', 'cardIdentifier', 'decision'],
+    const suggestionRows = await this.swapSuggestionRepo.find({
+      where: { userId, trackedDeckId: In(deckIds), status: Not('retired') },
     });
 
-    // Build lookup: `${trackedDeckId}:${cardIdentifier}` → decision state
-    const decisionMap = new Map<string, 'approved' | 'rejected'>();
-    for (const d of existingDecisions) {
-      decisionMap.set(`${d.trackedDeckId}:${d.cardIdentifier}`, d.decision);
-    }
-
-    // 5. Compose enriched rows.
     const rows: ISubstitutionRow[] = [];
-    for (const { trackedDeckId, entry } of substitutedRows) {
-      const original = entry.original;
-      const match = entry.match;
-      const substitute = match.substitute;
-
-      // Decisions are keyed by the SUBSTITUTE id — the same identifier written
-      // by ReviewsRow (after Fix 1) and read by deck-detail's BreakdownSections.
-      // Using original.cardIdentifier here was the root cause: it produced
-      // orphaned rows that deck-detail (keying by substitute) could never find.
-      const existingDecision = decisionMap.get(
-        `${trackedDeckId}:${substitute.cardIdentifier}`,
-      );
-      const decision: TReviewState = existingDecision ?? 'pending';
+    for (const suggestion of suggestionRows) {
+      const decision = suggestion.status as TReviewState;
 
       if (stateFilter !== 'all' && decision !== stateFilter) {
         continue;
       }
 
-      const deckMeta = deckById.get(trackedDeckId);
+      const deckMeta = deckById.get(suggestion.trackedDeckId);
+      const original = this.lookupCardMeta(suggestion.cardIdentifier);
+      const substitute = this.lookupCardMeta(suggestion.substituteIdentifier);
 
-      rows.push({
-        trackedDeckId,
+      const row: ISubstitutionRow = {
+        trackedDeckId: suggestion.trackedDeckId,
         deckName: deckMeta?.name ?? '',
         hero: deckMeta?.hero ?? '',
-        cardIdentifier: original.cardIdentifier,
-        originalName: original.name ?? this.lookupName(original.cardIdentifier),
-        substituteIdentifier: substitute.cardIdentifier,
+        cardIdentifier: suggestion.cardIdentifier,
+        originalName: original.name,
+        substituteIdentifier: suggestion.substituteIdentifier,
         substituteName: substitute.name,
-        tier: this.normalizeTier(match.tier),
-        confidence: this.normalizeConfidence(match.score),
-        rationale: match.rationale,
+        tier: this.normalizeTier(suggestion.tier),
+        // swap_suggestion.confidence is already normalized 0-100 at write
+        // time (SwapsReconciliationService / groupFreshSwapEntries), so no
+        // rescaling is needed here (unlike the old snapshot-score path).
+        confidence: suggestion.confidence,
+        rationale: suggestion.rationale,
         decision,
         originalImageUrl: this.compactImageUrl(original.imageUrl),
         substituteImageUrl: this.compactImageUrl(substitute.imageUrl),
-        originalPitch: this.normalizePitch(original.pitch ?? null),
-        substitutePitch: this.normalizePitch(substitute.pitch ?? null),
-        originalType: original.type ?? 'unknown',
-        substituteType: this.lookupType(substitute.cardIdentifier),
-      });
+        originalPitch: this.normalizePitch(original.pitch),
+        substitutePitch: this.normalizePitch(substitute.pitch),
+        originalType: original.type,
+        substituteType: substitute.type,
+      };
+
+      for (let i = 0; i < suggestion.quantity; i++) {
+        rows.push(row);
+      }
     }
 
     return rows;
+  }
+
+  /**
+   * Resolves a card's display metadata from the in-process catalog.
+   * Falls back defensively (name = identifier, pitch = null, type =
+   * 'unknown', imageUrl = null) when the card is not found -- same
+   * fallback contract as the engine's `deriveEntryMeta` and this class's
+   * pre-existing `lookupName`/`lookupType` helpers.
+   */
+  private lookupCardMeta(cardIdentifier: string): {
+    name: string;
+    pitch: number | null;
+    type: string;
+    imageUrl: ICatalogCard['imageUrl'];
+  } {
+    try {
+      const card = this.catalogService.getCard(cardIdentifier);
+      return {
+        name: card.name || cardIdentifier,
+        pitch: card.pitch,
+        type: card.types?.[0] ?? 'unknown',
+        imageUrl: card.imageUrl ?? null,
+      };
+    } catch {
+      return { name: cardIdentifier, pitch: null, type: 'unknown', imageUrl: null };
+    }
   }
 
   /**
@@ -406,18 +400,6 @@ export class ReviewAggregateService {
       return tier;
     }
     return 3;
-  }
-
-  /**
-   * Translates the engine match score into a 0–100 confidence integer.
-   * The engine emits scores in 0–1 (continuous); the frontend renders
-   * `${row.confidence}%`. Snapshots written before this contract may already
-   * carry 0–100 values, so values >1 are passed through with rounding.
-   */
-  private normalizeConfidence(score: number): number {
-    if (!Number.isFinite(score)) return 0;
-    const scaled = score <= 1 ? score * 100 : score;
-    return Math.max(0, Math.min(100, Math.round(scaled)));
   }
 
   /**
@@ -441,31 +423,4 @@ export class ReviewAggregateService {
     return { small: image.small, large: image.large };
   }
 
-  /**
-   * Looks up the substitute card's primary type from the in-process catalog.
-   * Falls back to 'unknown' when the catalog has no matching card (e.g.,
-   * a legacy snapshot referencing a card that has since been retired).
-   */
-  private lookupType(cardIdentifier: string): string {
-    try {
-      const card = this.catalogService.getCard(cardIdentifier);
-      return card.types?.[0] ?? 'unknown';
-    } catch {
-      return 'unknown';
-    }
-  }
-
-  /**
-   * Looks up the human-readable card name from the catalog. Falls back to
-   * the identifier when the card is not in the catalog. Used to enrich
-   * legacy snapshots that predate B1 (entries persisted without `name`).
-   */
-  private lookupName(cardIdentifier: string): string {
-    try {
-      const card = this.catalogService.getCard(cardIdentifier);
-      return card.name || cardIdentifier;
-    } catch {
-      return cardIdentifier;
-    }
-  }
 }

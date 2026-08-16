@@ -9,6 +9,7 @@ import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
+import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 
 // Mock the engine module to avoid loading the full catalog in unit tests
 jest.mock('@rathe-arsenal/engine', () => ({
@@ -78,6 +79,7 @@ describe('SubstitutionService', () => {
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
+  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -85,6 +87,7 @@ describe('SubstitutionService', () => {
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
     collectionReadService = createMock<CollectionReadService>();
+    swapsReconciliationService = createMock<SwapsReconciliationService>();
 
     // Default: empty collection (no owned cards).
     collectionReadService.loadOwned.mockResolvedValue(new Map());
@@ -97,6 +100,7 @@ describe('SubstitutionService', () => {
         { provide: getRepositoryToken(DeckReadinessSnapshotEntity), useValue: snapshotRepo },
         { provide: AuthzService, useValue: authzService },
         { provide: CollectionReadService, useValue: collectionReadService },
+        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
       ],
     }).compile();
 
@@ -241,6 +245,7 @@ describe('SubstitutionService', () => {
       expect.any(Map),
       expect.anything(),
       undefined,
+      expect.any(Set),
       expect.any(Set),
     );
 

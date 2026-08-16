@@ -26,13 +26,14 @@ import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { SubstituteDecisionEntity } from '../../database/entities/substitute-decision.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
+import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { DecksService } from '../decks.service';
 import { UpdateDeckCompositionDto } from '../dto/update-deck-composition.dto';
 import { DeckCardInputDto } from '../dto/deck-card-input.dto';
@@ -159,6 +160,8 @@ describe('DecksService.updateComposition', () => {
   let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
+  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
+  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -171,10 +174,15 @@ describe('DecksService.updateComposition', () => {
     decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
+    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
+    swapsReconciliationService = createMock<SwapsReconciliationService>();
 
     // Default service stubs
     collectionReadService.loadOwned.mockResolvedValue(new Map());
-    decisionsService.loadExclusions.mockResolvedValue(new Set());
+    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+      excludedIdentifiers: new Set(),
+      approvedIdentifiers: new Set(),
+    });
     decisionsService.countRejected.mockResolvedValue(0);
     decisionsService.list.mockResolvedValue([]);
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
@@ -206,6 +214,8 @@ describe('DecksService.updateComposition', () => {
         { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
+        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
+        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
       ],
     }).compile();
 
@@ -401,6 +411,7 @@ describe('DecksService.updateComposition', () => {
                   score: 0.9,
                   rationale: 'Same class',
                 },
+                approved: false,
               },
             ],
             missing: [],
@@ -414,25 +425,31 @@ describe('DecksService.updateComposition', () => {
       // Act
       await service.updateComposition(DECK_ID, USER_ID, dto);
 
-      // Assert: the manager.delete for SubstituteDecisionEntity uses
-      // Not(In([substituteId])) — it should NOT delete the surviving decision.
-      // We verify that delete was called with a Not(In(...)) condition that
-      // contains the substituteId, meaning decisions WITHOUT that id are purged.
-      const deleteCalls = (manager.delete as jest.Mock).mock.calls;
-      const decisionDeleteCall = deleteCalls.find(
-        (call) => call[0] === SubstituteDecisionEntity,
+      // Assert: orphan cleanup is now reconciliation (SWAP-02: retire, never
+      // delete), not a hard delete against SubstituteDecisionEntity. The
+      // in-transaction pass reconciles the fresh breakdown (which still
+      // contains the surviving substitute) against swap_suggestion, inside
+      // the same transaction manager.
+      expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
+        USER_ID,
+        DECK_ID,
+        expect.objectContaining({
+          substituted: expect.arrayContaining([
+            expect.objectContaining({
+              match: expect.objectContaining({
+                substitute: expect.objectContaining({ cardIdentifier: substituteId }),
+              }),
+            }),
+          ]),
+        }),
+        expect.any(Set),
+        manager,
       );
-      expect(decisionDeleteCall).toBeDefined();
-      // The condition should include a Not(In(...)) wrapper, not a plain delete
-      const condition = decisionDeleteCall![1];
-      expect(condition).toHaveProperty('trackedDeckId', DECK_ID);
-      // condition.cardIdentifier should NOT be a plain string (it's a FindOperator)
-      expect(typeof condition.cardIdentifier).not.toBe('string');
     });
   });
 
-  describe('edge case — orphan cleanup deletes decision when card removed', () => {
-    it('deletes ALL decisions when new substitute set is empty', async () => {
+  describe('edge case — orphan cleanup reconciles (retires) when card removed', () => {
+    it('reconciles with an empty fresh breakdown when the new substitute set is empty', async () => {
       // Arrange
       const manager = setupTransaction({ freshCards: [] });
 
@@ -451,14 +468,17 @@ describe('DecksService.updateComposition', () => {
       // Act
       await service.updateComposition(DECK_ID, USER_ID, dto);
 
-      // Assert: manager.delete for SubstituteDecisionEntity should be called
-      // with just { trackedDeckId: deckId } (delete all decisions for this deck).
-      const deleteCalls = (manager.delete as jest.Mock).mock.calls;
-      const decisionDeleteCall = deleteCalls.find(
-        (call) => call[0] === SubstituteDecisionEntity,
+      // Assert: reconciliation runs with an empty substituted[] and the
+      // transaction manager — any previously-persisted row for this deck
+      // with no matching fresh group and a position no longer in the deck
+      // is retired by reconcileSwapSuggestions, never hard-deleted.
+      expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
+        USER_ID,
+        DECK_ID,
+        expect.objectContaining({ substituted: [] }),
+        expect.any(Set),
+        manager,
       );
-      expect(decisionDeleteCall).toBeDefined();
-      expect(decisionDeleteCall![1]).toEqual({ trackedDeckId: DECK_ID });
     });
   });
 
@@ -561,6 +581,7 @@ describe('DecksService.updateComposition', () => {
       const firstCallArgs = allCalls[0]!;
       expect(firstCallArgs[3]).toBeUndefined(); // tolerance = undefined
       expect(firstCallArgs[4]).toBeInstanceOf(Set); // excludedIdentifiers
+      expect(firstCallArgs[5]).toBeInstanceOf(Set); // approvedIdentifiers (D7/SWAP-13)
     });
   });
 });

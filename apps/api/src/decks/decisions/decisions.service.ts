@@ -5,9 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
-import { SubstituteDecisionEntity } from '../../database/entities/substitute-decision.entity';
+import { SwapSuggestionEntity } from '../../database/entities/swap-suggestion.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { SubstitutionService } from '../../substitution/substitution.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 
 /**
  * Shape returned to callers (controllers, getDetail, etc.).
@@ -88,24 +89,44 @@ type IValidatedResetOp = {
 type IValidatedOp = IValidatedUpsertOp | IValidatedResetOp;
 
 /**
- * Service owning all reads and writes to `substitute_decision`.
+ * TEMPORARY compatibility shim (design/07-swaps.md "Landing sequence" —
+ * "Half A keeps the three old endpoints alive as a thin, explicitly
+ * temporary compatibility shim"). Re-implements the pre-redesign
+ * `/decks/:trackedDeckId/decisions` surface (and, via `bulkUpsert`,
+ * `POST /api/reviews/bulk`) against `swap_suggestion` instead of the
+ * dropped `substitute_decision` table, so the currently-shipped Deck
+ * detail and Swaps screens keep working during the gap before Half B
+ * replaces them with the new five-endpoint model.
  *
- * Ownership enforcement: every public method calls `assertOwnsDeck` at the
- * top to guarantee that a user can only touch decisions for their own decks.
- * The unique index (userId, trackedDeckId, cardIdentifier) is the DB backstop.
+ * Deliberately reproduces today's over-broad, substitute-only-keyed
+ * behavior: a decision made through this surface applies to EVERY
+ * `swap_suggestion` row in the deck whose `substituteIdentifier` matches
+ * the bare `cardIdentifier` the old DTO carries — regardless of which
+ * original card or slot each row belongs to — because the old contract
+ * has no `slot` and no original card to disambiguate with. This is
+ * byte-for-byte what this surface already does today (§1's
+ * cross-original suppression behavior), and explicitly wrong as a
+ * permanent behavior. Retired rows are never touched by this shim's
+ * broad updates — reviving them via a blunt match would violate the
+ * "retired rows only resurrect explicitly, never silently" rule the
+ * five-endpoint model observes elsewhere.
+ *
+ * This entire file is deleted in the same commit that lands Half B's new
+ * endpoints and screen.
  */
 @Injectable()
 export class DecisionsService {
   private readonly logger = new Logger(DecisionsService.name);
 
   constructor(
-    @InjectRepository(SubstituteDecisionEntity)
-    private readonly decisionRepo: Repository<SubstituteDecisionEntity>,
+    @InjectRepository(SwapSuggestionEntity)
+    private readonly swapRepo: Repository<SwapSuggestionEntity>,
     @InjectRepository(TrackedDeckEntity)
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly substitutionService: SubstitutionService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
   ) {}
 
   /**
@@ -127,51 +148,65 @@ export class DecisionsService {
   /**
    * Returns all non-pending decisions for the deck that belong to the user.
    * Used by `getDetail` and the GET /decisions endpoint.
+   *
+   * Old wire contract: one row per substitute identifier. The new
+   * per-quadruple model can have several `swap_suggestion` rows sharing a
+   * substitute (different original card or slot) with different statuses
+   * — deduped by `dedupeBySubstitute`, rejected winning any conflict.
    */
   async list(userId: string, trackedDeckId: number): Promise<IDecision[]> {
     await this.assertOwnsDeck(userId, trackedDeckId);
 
-    const rows = await this.decisionRepo.find({
-      where: { userId, trackedDeckId },
-      select: ['cardIdentifier', 'decision'],
+    const rows = await this.swapRepo.find({
+      where: { userId, trackedDeckId, status: In(['approved', 'rejected']) },
+      select: ['substituteIdentifier', 'status'],
     });
 
-    return rows.map((r) => ({
-      cardIdentifier: r.cardIdentifier,
-      decision: r.decision,
+    return this.dedupeBySubstitute(rows);
+  }
+
+  /**
+   * Collapses per-quadruple rows into one decision per substitute
+   * identifier, matching the old table's (userId, trackedDeckId,
+   * cardIdentifier=substitute) uniqueness. When the same substitute backs
+   * rows with conflicting statuses, `rejected` wins — the conservative
+   * choice: a suppressed substitute should read as suppressed even if one
+   * of its rows happens to also be approved elsewhere in the deck.
+   */
+  private dedupeBySubstitute(
+    rows: readonly { substituteIdentifier: string; status: string }[],
+  ): IDecision[] {
+    const bySubstitute = new Map<string, 'approved' | 'rejected'>();
+    for (const row of rows) {
+      // The caller's query already filters to status IN ('approved',
+      // 'rejected'); this narrows defensively rather than trusting the
+      // query shape at the type level.
+      if (row.status !== 'approved' && row.status !== 'rejected') continue;
+      if (bySubstitute.get(row.substituteIdentifier) === 'rejected') continue;
+      bySubstitute.set(row.substituteIdentifier, row.status);
+    }
+    return Array.from(bySubstitute.entries()).map(([cardIdentifier, decision]) => ({
+      cardIdentifier,
+      decision,
     }));
   }
 
   /**
-   * Returns the set of card identifiers with `decision='rejected'` for the
-   * given deck. Does NOT enforce ownership — callers are internal services
-   * (ReSolveService, DecksService) that have already validated access through
-   * other means. The set is used as an exclusion set for readiness computation.
-   *
-   * Note: `pending` and `approved` decisions do not appear in this set.
-   */
-  async loadExclusions(trackedDeckId: number): Promise<Set<string>> {
-    const rows = await this.decisionRepo.find({
-      where: { trackedDeckId, decision: 'rejected' },
-      select: ['cardIdentifier'],
-    });
-    return new Set(rows.map((r) => r.cardIdentifier));
-  }
-
-  /**
-   * Returns the count of `decision='rejected'` rows for a deck.
-   * Fast aggregate used by `getDetail` (`rejectedCount`) and
-   * `reSolveDryRun` (`persistedCount`).
+   * Returns the count of distinct substitutes with a rejected decision for
+   * a deck (not scoped to `userId` — matches the pre-existing, unscoped
+   * query shape this method has always had).
    */
   async countRejected(trackedDeckId: number): Promise<number> {
-    return this.decisionRepo.count({
-      where: { trackedDeckId, decision: 'rejected' },
+    const rows = await this.swapRepo.find({
+      where: { trackedDeckId, status: In(['approved', 'rejected']) },
+      select: ['substituteIdentifier', 'status'],
     });
+    return this.dedupeBySubstitute(rows).filter((d) => d.decision === 'rejected').length;
   }
 
   /**
-   * Upsert a decision row. If a row for (userId, trackedDeckId, cardIdentifier)
-   * already exists, its `decision` is updated. Otherwise a new row is inserted.
+   * Upsert a decision (approve or reject) for `cardIdentifier` — the
+   * shim's broad, substitute-only match (see class header).
    *
    * @param manager - Optional `EntityManager` for participating in an outer
    *   transaction (e.g. `bulkUpsert`). When omitted, uses the injected
@@ -180,33 +215,43 @@ export class DecisionsService {
   async upsert(input: IUpsertDecisionInput, manager?: EntityManager): Promise<IDecision> {
     const { userId, trackedDeckId, cardIdentifier, decision } = input;
     await this.assertOwnsDeck(userId, trackedDeckId);
-
-    const repo = manager
-      ? manager.getRepository(SubstituteDecisionEntity)
-      : this.decisionRepo;
-
-    const existing = await repo.findOne({
-      where: { userId, trackedDeckId, cardIdentifier },
+    await this.applyBroadDecision(trackedDeckId, cardIdentifier, decision, manager);
+    this.logger.log('Decision applied (shim, broad substitute match)', {
+      userId,
+      trackedDeckId,
+      cardIdentifier,
+      decision,
     });
-
-    if (existing) {
-      await repo.update(existing.id, {
-        decision,
-        updatedAt: new Date(),
-      });
-      this.logger.log('Decision updated', { userId, trackedDeckId, cardIdentifier, decision });
-      return { cardIdentifier, decision };
-    }
-
-    const entity = repo.create({ userId, trackedDeckId, cardIdentifier, decision });
-    await repo.save(entity);
-    this.logger.log('Decision created', { userId, trackedDeckId, cardIdentifier, decision });
     return { cardIdentifier, decision };
   }
 
+  private async applyBroadDecision(
+    trackedDeckId: number,
+    substituteIdentifier: string,
+    decision: 'approved' | 'rejected',
+    manager?: EntityManager,
+  ): Promise<void> {
+    const repo = manager ? manager.getRepository(SwapSuggestionEntity) : this.swapRepo;
+    const now = new Date();
+    await repo.update(
+      {
+        trackedDeckId,
+        substituteIdentifier,
+        // Every currently-live row except retired ones -- retired rows are
+        // invisible bookkeeping and must only resurrect explicitly.
+        status: In(['pending', 'approved', 'rejected']),
+      },
+      decision === 'approved'
+        ? { status: 'approved', appliedAt: now }
+        : { status: 'rejected', rejectedAt: now },
+    );
+  }
+
   /**
-   * Deletes the decision row for a single card, resetting it to the implicit
-   * `pending` state. No-ops when the row doesn't exist (idempotent).
+   * Resets every matching row's decision back to pending (never deletes —
+   * SWAP-02's "retire, never delete" spirit extended to the shim: instead
+   * of the old table's hard delete, this flips status back to pending).
+   * No-ops when no matching row exists (idempotent).
    *
    * @param manager - Optional `EntityManager` for participating in an outer
    *   transaction (e.g. `bulkUpsert`). When omitted, uses the injected
@@ -220,39 +265,40 @@ export class DecisionsService {
   ): Promise<void> {
     await this.assertOwnsDeck(userId, trackedDeckId);
 
-    const repo = manager
-      ? manager.getRepository(SubstituteDecisionEntity)
-      : this.decisionRepo;
-
-    await repo.delete({ userId, trackedDeckId, cardIdentifier });
-    this.logger.log('Decision reset', { userId, trackedDeckId, cardIdentifier });
+    const repo = manager ? manager.getRepository(SwapSuggestionEntity) : this.swapRepo;
+    await repo.update(
+      { trackedDeckId, substituteIdentifier: cardIdentifier, status: In(['approved', 'rejected']) },
+      { status: 'pending', appliedAt: null, rejectedAt: null, rejectionReason: null, rejectionNote: null },
+    );
+    this.logger.log('Decision reset (shim)', { userId, trackedDeckId, cardIdentifier });
   }
 
   /**
-   * Bulk-deletes all `decision='rejected'` rows for a deck, preserving
-   * `decision='approved'` rows. Returns the number of deleted rows.
+   * Bulk-resets all rejected rows for a deck back to pending (preserves
+   * approved rows). Returns the number of rows reset.
    *
-   * Powers the "Clear rejections" banner action (Unit 16).
+   * Powers the "Clear rejections" banner action.
    */
   async clearRejections(userId: string, trackedDeckId: number): Promise<number> {
     await this.assertOwnsDeck(userId, trackedDeckId);
 
-    const result = await this.decisionRepo.delete({
-      userId,
-      trackedDeckId,
-      decision: 'rejected',
-    });
+    const result = await this.swapRepo.update(
+      { trackedDeckId, status: 'rejected' },
+      { status: 'pending', rejectedAt: null, rejectionReason: null, rejectionNote: null },
+    );
 
     const affected = result.affected ?? 0;
-    this.logger.log('Rejections cleared', { userId, trackedDeckId, affected });
+    this.logger.log('Rejections cleared (shim)', { userId, trackedDeckId, affected });
     return affected;
   }
 
   /**
    * Bulk-writes up to 200 review operations (upserts + resets) in a single
    * transaction. Pre-validates ownership and then runs all validated ops
-   * atomically (all-or-nothing). After commit, recomputes readiness once per
-   * affected deck.
+   * atomically (all-or-nothing) — the shim preserves this atomicity
+   * guarantee specifically (design §7), even though the *new* five-endpoint
+   * bulk model downgrades to per-endpoint calls once Half B ships. After
+   * commit, recomputes readiness once per affected deck.
    *
    * ## Phase semantics
    *
@@ -275,7 +321,6 @@ export class DecisionsService {
     // Phase 1: Pre-validation (no writes)
     // -----------------------------------------------------------------
 
-    // 1a. Batch ownership check: single query for all distinct deck IDs.
     const distinctDeckIds = [...new Set(operations.map((op) => op.trackedDeckId))];
 
     const ownedRows = await this.trackedDeckRepo.find({
@@ -289,7 +334,6 @@ export class DecisionsService {
 
     for (const op of operations) {
       if (!ownedDeckIds.has(op.trackedDeckId)) {
-        // Opaque error — do NOT distinguish forbidden vs. not-found.
         failures.push({
           trackedDeckId: String(op.trackedDeckId),
           cardIdentifier: op.cardIdentifier,
@@ -298,7 +342,6 @@ export class DecisionsService {
         continue;
       }
 
-      // 1b. Shape validation: exactly one of decision or reset must be present.
       const hasDecision = op.decision !== undefined;
       const hasReset = op.reset === true;
 
@@ -327,8 +370,6 @@ export class DecisionsService {
           cardIdentifier: op.cardIdentifier,
         });
       } else {
-        // hasDecision is true here; TypeScript can't narrow op.decision
-        // to non-undefined without the explicit check above, so we assert.
         const decisionValue = op.decision!.toLowerCase() as 'approved' | 'rejected';
         validatedOps.push({
           kind: 'upsert',
@@ -340,7 +381,6 @@ export class DecisionsService {
     }
 
     if (validatedOps.length === 0) {
-      // All ops were pre-classified as failures; nothing to commit.
       return { succeeded: 0, failed: failures };
     }
 
@@ -352,45 +392,34 @@ export class DecisionsService {
 
     try {
       await this.dataSource.transaction(async (manager: EntityManager) => {
-        const repo = manager.getRepository(SubstituteDecisionEntity);
-
         for (let i = 0; i < validatedOps.length; i++) {
           const op = validatedOps[i]!;
 
           try {
             if (op.kind === 'reset') {
-              await repo.delete({
-                userId,
-                trackedDeckId: op.trackedDeckId,
-                cardIdentifier: op.cardIdentifier,
-              });
-            } else {
-              // Upsert: find existing row and update, or insert new.
-              const existing = await repo.findOne({
-                where: {
-                  userId,
+              await manager.getRepository(SwapSuggestionEntity).update(
+                {
                   trackedDeckId: op.trackedDeckId,
-                  cardIdentifier: op.cardIdentifier,
+                  substituteIdentifier: op.cardIdentifier,
+                  status: In(['approved', 'rejected']),
                 },
-              });
-
-              if (existing) {
-                await repo.update(existing.id, {
-                  decision: op.decision,
-                  updatedAt: new Date(),
-                });
-              } else {
-                const entity = repo.create({
-                  userId,
-                  trackedDeckId: op.trackedDeckId,
-                  cardIdentifier: op.cardIdentifier,
-                  decision: op.decision,
-                });
-                await repo.save(entity);
-              }
+                {
+                  status: 'pending',
+                  appliedAt: null,
+                  rejectedAt: null,
+                  rejectionReason: null,
+                  rejectionNote: null,
+                },
+              );
+            } else {
+              await this.applyBroadDecision(
+                op.trackedDeckId,
+                op.cardIdentifier,
+                op.decision,
+                manager,
+              );
             }
           } catch (innerError) {
-            // Record cursor position and rethrow to abort the tx.
             const errorClass =
               (innerError as Error).constructor?.name ?? 'UnknownError';
             this.logger.warn({
@@ -408,7 +437,6 @@ export class DecisionsService {
       });
     } catch (outerError) {
       if (txAbortError === undefined) {
-        // Exception not raised from an inner op — record it anyway.
         const errorClass =
           (outerError as Error).constructor?.name ?? 'UnknownError';
         this.logger.warn({
@@ -421,7 +449,6 @@ export class DecisionsService {
         txAbortError = { code: errorClass };
       }
 
-      // On tx abort: all validated ops are re-classified as failures.
       const txFailures: IBulkReviewFailure[] = validatedOps.map((op) => ({
         trackedDeckId: String(op.trackedDeckId),
         cardIdentifier: op.cardIdentifier,
@@ -443,11 +470,13 @@ export class DecisionsService {
 
     for (const deckId of affectedDeckIds) {
       try {
-        const exclusions = await this.loadExclusions(deckId);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
         await this.substitutionService.computeAndStoreReadiness(
           deckId,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (recomputeError) {
         this.logger.warn({

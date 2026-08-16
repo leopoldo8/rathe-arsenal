@@ -7,6 +7,7 @@ import { CollectionCardEntity } from '../database/entities/collection-card.entit
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthModule } from '../auth/auth.module';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SwapsCoreModule } from '../swaps/swaps-core.module';
 import { SubstitutionService } from './substitution.service';
 
 @Module({
@@ -19,6 +20,10 @@ import { SubstitutionService } from './substitution.service';
       DeckReadinessSnapshotEntity,
     ]),
     AuthModule,
+    // Leaf module (no app-level deps) providing SwapsReconciliationService --
+    // computeAndStoreReadiness is the choke point that reconciles
+    // swap_suggestion after every recompute (design §11).
+    SwapsCoreModule,
   ],
   providers: [CollectionReadService, SubstitutionService],
   exports: [SubstitutionService],

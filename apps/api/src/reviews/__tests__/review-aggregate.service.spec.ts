@@ -6,7 +6,7 @@ import { ReviewAggregateService } from '../review-aggregate.service';
 import { ReviewAggregateEntity } from '../../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
-import { SubstituteDecisionEntity } from '../../database/entities/substitute-decision.entity';
+import { SwapSuggestionEntity } from '../../database/entities/swap-suggestion.entity';
 import { CatalogService } from '../../catalog/catalog.service';
 
 // ---------------------------------------------------------------------------
@@ -126,14 +126,14 @@ describe('ReviewAggregateService', () => {
   let aggregateRepo: jest.Mocked<Repository<ReviewAggregateEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
-  let decisionRepo: jest.Mocked<Repository<SubstituteDecisionEntity>>;
+  let swapSuggestionRepo: jest.Mocked<Repository<SwapSuggestionEntity>>;
   let catalogService: jest.Mocked<CatalogService>;
 
   beforeEach(async () => {
     aggregateRepo = createMock<Repository<ReviewAggregateEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
-    decisionRepo = createMock<Repository<SubstituteDecisionEntity>>();
+    swapSuggestionRepo = createMock<Repository<SwapSuggestionEntity>>();
     catalogService = createMock<CatalogService>();
     // Default: every catalog lookup returns an Action card. Individual tests
     // override via `catalogService.getCard.mockImplementation(...)`.
@@ -166,8 +166,8 @@ describe('ReviewAggregateService', () => {
           useValue: trackedDeckRepo,
         },
         {
-          provide: getRepositoryToken(SubstituteDecisionEntity),
-          useValue: decisionRepo,
+          provide: getRepositoryToken(SwapSuggestionEntity),
+          useValue: swapSuggestionRepo,
         },
         { provide: CatalogService, useValue: catalogService },
       ],
@@ -408,208 +408,128 @@ describe('ReviewAggregateService', () => {
   // listSubstitutionRows
   // -------------------------------------------------------------------------
 
-  describe('listSubstitutionRows', () => {
-    const ORIGINAL_IMAGE = {
-      small: 'https://cdn.example/orig-small.webp',
-      large: 'https://cdn.example/orig-large.webp',
-      sources: [
-        {
-          small: 'https://cdn.example/orig-small.webp',
-          large: 'https://cdn.example/orig-large.webp',
-        },
-      ],
-    };
-    const SUBSTITUTE_IMAGE = {
-      small: 'https://cdn.example/sub-small.webp',
-      large: 'https://cdn.example/sub-large.webp',
-      sources: [
-        {
-          small: 'https://cdn.example/sub-small.webp',
-          large: 'https://cdn.example/sub-large.webp',
-        },
-      ],
-    };
-
-    function makeEnrichedSubstitutionSnapshot(
-      trackedDeckId: number = DECK_ID,
-    ): DeckReadinessSnapshotEntity {
+  describe('listSubstitutionRows (shim over swap_suggestion)', () => {
+    function makeSuggestion(
+      overrides: Partial<SwapSuggestionEntity> = {},
+    ): SwapSuggestionEntity {
       return {
-        id: 90,
-        trackedDeckId,
-        rawPercent: 80,
-        effectivePercent: 100,
-        breakdown: {
-          exact: [],
-          substituted: [
-            {
-              original: {
-                cardIdentifier: 'FaB-orig (1)',
-                quantity: 1,
-                slot: 'main',
-                pitch: 2,
-                cost: 1,
-                type: 'Action',
-                imageUrl: ORIGINAL_IMAGE,
-              },
-              match: {
-                substitute: {
-                  cardIdentifier: 'FaB-sub (1)',
-                  name: 'Substitute Card',
-                  classes: ['Generic'],
-                  pitch: 1,
-                  power: null,
-                  defense: null,
-                  keywords: [],
-                  imageUrl: SUBSTITUTE_IMAGE,
-                },
-                tier: 2,
-                score: 0.83,
-                rationale: 'similar effect, lower power',
-              },
-            },
-          ],
-          missing: [],
-          notOwned: [],
-        } as unknown as Record<string, unknown>,
-        substitutions: {} as Record<string, unknown>,
-        computedAt: new Date(),
-        trackedDeck: {} as DeckReadinessSnapshotEntity['trackedDeck'],
+        id: 'swap-uuid-1',
+        userId: USER_A,
+        trackedDeckId: DECK_ID,
+        cardIdentifier: 'FaB-orig (1)',
+        slot: 'main',
+        substituteIdentifier: 'FaB-sub (1)',
+        quantity: 1,
+        tier: 2,
+        confidence: 83,
+        rationale: 'similar effect, lower power',
+        status: 'pending',
+        appliedAt: null,
+        rejectedAt: null,
+        rejectionReason: null,
+        rejectionNote: null,
+        outcome: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        user: {} as SwapSuggestionEntity['user'],
+        trackedDeck: {} as SwapSuggestionEntity['trackedDeck'],
+        ...overrides,
       };
     }
 
-    function stubLatestSnapshotsQuery(
-      snapshots: readonly DeckReadinessSnapshotEntity[],
-    ): void {
-      snapshotRepo.createQueryBuilder = jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(snapshots),
-      });
-    }
-
-    it('returns rows enriched with hero, tier, confidence, decision, image URLs, and pitch/type pairs', async () => {
-      // Arrange
+    it('returns a row enriched from the catalog with hero, tier, confidence, decision, and pitch/type pairs', async () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Aggressive Briar', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
-      decisionRepo.find.mockResolvedValue([]);
-      catalogService.getCard.mockReturnValue({
-        cardIdentifier: 'FaB-sub (1)',
-        name: 'Substitute Card',
-        classes: ['Generic'],
-        types: ['Defense Reaction'],
-        pitch: 1,
-        cost: null,
-        power: null,
-        defense: null,
-        keywords: [],
-        imageUrl: null,
-      } as unknown as ReturnType<CatalogService['getCard']>);
+      swapSuggestionRepo.find.mockResolvedValue([makeSuggestion()]);
+      catalogService.getCard.mockImplementation((identifier: string) => {
+        if (identifier === 'FaB-orig (1)') {
+          return {
+            cardIdentifier: identifier,
+            name: 'Original Card',
+            classes: [],
+            types: ['Action'],
+            pitch: 2,
+            cost: 1,
+            power: null,
+            defense: null,
+            keywords: [],
+            imageUrl: null,
+          } as unknown as ReturnType<CatalogService['getCard']>;
+        }
+        return {
+          cardIdentifier: identifier,
+          name: 'Substitute Card',
+          classes: ['Generic'],
+          types: ['Defense Reaction'],
+          pitch: 1,
+          cost: null,
+          power: null,
+          defense: null,
+          keywords: [],
+          imageUrl: null,
+        } as unknown as ReturnType<CatalogService['getCard']>;
+      });
 
-      // Act — request 'all' so the pending row is not filtered out.
       const rows = await service.listSubstitutionRows(USER_A, 'all');
 
-      // Assert
       expect(rows).toHaveLength(1);
       const row = rows[0]!;
       expect(row.trackedDeckId).toBe(DECK_ID);
       expect(row.deckName).toBe('Aggressive Briar');
       expect(row.hero).toBe('Briar');
       expect(row.cardIdentifier).toBe('FaB-orig (1)');
+      expect(row.originalName).toBe('Original Card');
       expect(row.substituteIdentifier).toBe('FaB-sub (1)');
       expect(row.substituteName).toBe('Substitute Card');
       expect(row.tier).toBe(2);
-      // 0.83 → 83
       expect(row.confidence).toBe(83);
       expect(row.rationale).toBe('similar effect, lower power');
       expect(row.decision).toBe('pending');
-      expect(row.originalImageUrl).toEqual({
-        small: ORIGINAL_IMAGE.small,
-        large: ORIGINAL_IMAGE.large,
-      });
-      // The wire format must NOT carry `sources`.
-      expect(row.originalImageUrl).not.toHaveProperty('sources');
-      expect(row.substituteImageUrl).toEqual({
-        small: SUBSTITUTE_IMAGE.small,
-        large: SUBSTITUTE_IMAGE.large,
-      });
       expect(row.originalPitch).toBe(2);
       expect(row.substitutePitch).toBe(1);
       expect(row.originalType).toBe('Action');
       expect(row.substituteType).toBe('Defense Reaction');
     });
 
-    it('uses decisionMap to surface approved/rejected decision states', async () => {
-      // Arrange — decision must be keyed by the SUBSTITUTE id (fix: was ORIGINAL).
+    it('maps each swap_suggestion status directly to the wire decision state', async () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
-      decisionRepo.find.mockResolvedValue([
-        {
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-sub (1)', // keyed by substitute, not original
-          decision: 'approved',
-        } as SubstituteDecisionEntity,
-      ]);
+      swapSuggestionRepo.find.mockResolvedValue([makeSuggestion({ status: 'approved' })]);
 
-      // Act
       const rows = await service.listSubstitutionRows(USER_A, 'all');
 
-      // Assert
       expect(rows).toHaveLength(1);
       expect(rows[0]!.decision).toBe('approved');
     });
 
-    it('respects the state filter and drops rows with mismatched decisions', async () => {
-      // Arrange — decision must be keyed by the SUBSTITUTE id (fix: was ORIGINAL).
+    it('respects the state filter and drops rows with a mismatched status', async () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
-      decisionRepo.find.mockResolvedValue([
-        {
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-sub (1)', // keyed by substitute, not original
-          decision: 'approved',
-        } as SubstituteDecisionEntity,
-      ]);
+      swapSuggestionRepo.find.mockResolvedValue([makeSuggestion({ status: 'approved' })]);
 
-      // Act — default filter is 'pending'; the only row is approved.
+      // Default filter is 'pending'; the only row is approved.
       const rows = await service.listSubstitutionRows(USER_A);
 
-      // Assert
       expect(rows).toEqual([]);
     });
 
-    it('clamps tier to {1,2,3} and falls back to type=unknown when catalog lookup throws', async () => {
-      // Arrange — engine snapshot with an out-of-range tier and a substitute
-      // missing from the catalog (legacy data).
-      const snapshot = makeEnrichedSubstitutionSnapshot();
-      const breakdown = snapshot.breakdown as unknown as {
-        substituted: Array<{
-          original: Record<string, unknown>;
-          match: { tier: number; substitute: { cardIdentifier: string } };
-        }>;
-      };
-      breakdown.substituted[0]!.match.tier = 7;
+    it('falls back to type=unknown and name=identifier when catalog lookup throws', async () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([snapshot]);
-      decisionRepo.find.mockResolvedValue([]);
+      swapSuggestionRepo.find.mockResolvedValue([makeSuggestion()]);
       catalogService.getCard.mockImplementation(() => {
         throw new Error('card not in catalog');
       });
 
-      // Act
       const rows = await service.listSubstitutionRows(USER_A, 'all');
 
-      // Assert
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.tier).toBe(3);
       expect(rows[0]!.substituteType).toBe('unknown');
+      expect(rows[0]!.substituteName).toBe('FaB-sub (1)');
     });
 
     it('returns an empty array when the user has no tracked decks', async () => {
@@ -618,79 +538,43 @@ describe('ReviewAggregateService', () => {
       const rows = await service.listSubstitutionRows(USER_A, 'all');
 
       expect(rows).toEqual([]);
+      expect(swapSuggestionRepo.find).not.toHaveBeenCalled();
     });
 
-    // -----------------------------------------------------------------------
-    // Regression: substitute-keyed decision lookup
-    // -----------------------------------------------------------------------
-
-    it('regression — decision keyed by SUBSTITUTE id is found; decision keyed by ORIGINAL id is NOT', async () => {
-      // This test documents and guards the fix:
-      //   Before fix: decisionMap key was `${trackedDeckId}:${original.cardIdentifier}`
-      //   After fix:  decisionMap key is  `${trackedDeckId}:${substitute.cardIdentifier}`
-      //
-      // A row stored under the original id (the old bug) must be treated as
-      // pending (not found), while a row stored under the substitute id (the fix)
-      // must be surfaced as approved.
-
+    it('excludes retired rows under every state filter, including "all"', async () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
+      // The repository query itself filters status != 'retired'; simulate
+      // that by never returning a retired row from the mock.
+      swapSuggestionRepo.find.mockResolvedValue([]);
 
-      // Part 1 — row stored under original id (old-bug scenario): must appear as pending.
-      decisionRepo.find.mockResolvedValue([
-        {
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-orig (1)', // original id — the wrong key
-          decision: 'approved',
-        } as SubstituteDecisionEntity,
-      ]);
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
 
-      const rowsWithWrongKey = await service.listSubstitutionRows(USER_A, 'all');
-      expect(rowsWithWrongKey).toHaveLength(1);
-      // A decision stored under the original id must NOT be picked up.
-      expect(rowsWithWrongKey[0]!.decision).toBe('pending');
-
-      // Part 2 — row stored under substitute id (correct, post-fix scenario): must appear as approved.
-      decisionRepo.find.mockResolvedValue([
-        {
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-sub (1)', // substitute id — the correct key
-          decision: 'approved',
-        } as SubstituteDecisionEntity,
-      ]);
-
-      const rowsWithCorrectKey = await service.listSubstitutionRows(USER_A, 'all');
-      expect(rowsWithCorrectKey).toHaveLength(1);
-      expect(rowsWithCorrectKey[0]!.decision).toBe('approved');
+      expect(rows).toEqual([]);
+      expect(swapSuggestionRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: USER_A }),
+        }),
+      );
     });
 
-    it('rejected substitute is absent from rows returned under state=pending after its cardIdentifier is stored', async () => {
-      // Simulates the loadExclusions engine-effect path at the service layer:
-      // When a substitute is rejected (keyed by substitute id), listSubstitutionRows
-      // must not surface that row under the pending filter — confirming the row is
-      // correctly recorded and the state filter works end-to-end.
+    it('expands a quantity > 1 group back into that many duplicate rows for client-side "x N" counting', async () => {
+      // The currently-shipped Swaps screen groups rows client-side by
+      // counting duplicates sharing the same (trackedDeckId, cardIdentifier,
+      // substituteIdentifier) key (groupReviewRows). A persisted
+      // swap_suggestion row is per-group with a quantity column, so the
+      // shim must expand it back into `quantity` duplicate wire rows or the
+      // old screen's "x N" badge silently shows x1 for every group.
       trackedDeckRepo.find.mockResolvedValue([
         { id: DECK_ID, name: 'Deck', hero: 'Briar' } as TrackedDeckEntity,
       ]);
-      stubLatestSnapshotsQuery([makeEnrichedSubstitutionSnapshot()]);
-      decisionRepo.find.mockResolvedValue([
-        {
-          trackedDeckId: DECK_ID,
-          cardIdentifier: 'FaB-sub (1)', // substitute id — the correct key
-          decision: 'rejected',
-        } as SubstituteDecisionEntity,
-      ]);
+      swapSuggestionRepo.find.mockResolvedValue([makeSuggestion({ quantity: 3 })]);
 
-      // With stateFilter='pending' the rejected row must be filtered out.
-      const pendingRows = await service.listSubstitutionRows(USER_A, 'pending');
-      expect(pendingRows).toHaveLength(0);
+      const rows = await service.listSubstitutionRows(USER_A, 'all');
 
-      // With stateFilter='rejected' it must be visible.
-      const rejectedRows = await service.listSubstitutionRows(USER_A, 'rejected');
-      expect(rejectedRows).toHaveLength(1);
-      expect(rejectedRows[0]!.decision).toBe('rejected');
+      expect(rows).toHaveLength(3);
+      expect(rows.every((r) => r.substituteIdentifier === 'FaB-sub (1)')).toBe(true);
     });
   });
 });

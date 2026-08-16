@@ -14,8 +14,8 @@ import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { AuthzService } from '../auth/authz.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SubstitutionService } from '../substitution/substitution.service';
-import { DecisionsService } from '../decks/decisions/decisions.service';
 import { SourcesService } from './sources/sources.service';
+import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
 import {
   IBreakdown,
   ISubstitutionEntry,
@@ -47,7 +47,7 @@ export class CollectionService {
     private readonly authzService: AuthzService,
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
-    private readonly decisionsService: DecisionsService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly sourcesService: SourcesService,
   ) {}
 
@@ -105,8 +105,9 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
-    // Load rejected decisions so the recompute respects them.
-    const excludedIdentifiers = await this.decisionsService.loadExclusions(deckId);
+    // Load rejected/approved decisions so the recompute respects them.
+    const { excludedIdentifiers, approvedIdentifiers } =
+      await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
 
     // Recompute readiness
     const newSnapshotEntity =
@@ -114,6 +115,7 @@ export class CollectionService {
         deckId,
         userId,
         excludedIdentifiers,
+        approvedIdentifiers,
       );
 
     // Derive path + fidelityPercent for the response. deckCards is already
@@ -224,14 +226,16 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of affectedDeckIds) {
       try {
-        // Load rejected decisions for this deck so recompute respects them.
-        const deckExclusions = await this.decisionsService.loadExclusions(trackedDeckId);
+        // Load rejected/approved decisions for this deck so recompute respects them.
+        const { excludedIdentifiers: deckExclusions, approvedIdentifiers: deckApprovals } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
 
         const snapshot =
           await this.substitutionService.computeAndStoreReadiness(
             trackedDeckId,
             userId,
             deckExclusions,
+            deckApprovals,
           );
         recomputedDecks.push({
           trackedDeckId,
@@ -360,11 +364,13 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of affectedDeckIds) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(trackedDeckId);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
         const snapshot = await this.substitutionService.computeAndStoreReadiness(
           trackedDeckId,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
         recomputedDecks.push({
           trackedDeckId,

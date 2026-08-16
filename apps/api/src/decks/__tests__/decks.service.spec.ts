@@ -3,6 +3,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
+import { TExclusionKey } from '@rathe-arsenal/engine';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { CollectionReadService } from '../../collection/collection-read.service';
@@ -12,6 +13,8 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
+import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -68,6 +71,8 @@ describe('DecksService', () => {
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
   let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
+  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
+  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -80,6 +85,8 @@ describe('DecksService', () => {
     shoppingLineService = createMock<ShoppingLineService>();
     decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
+    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
+    swapsReconciliationService = createMock<SwapsReconciliationService>();
 
     // Default: shopping line returns null (Path A / no missing cards).
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
@@ -93,7 +100,10 @@ describe('DecksService', () => {
     // Default: no decisions — rejectedCount=0, empty list.
     decisionsService.countRejected.mockResolvedValue(0);
     decisionsService.list.mockResolvedValue([]);
-    decisionsService.loadExclusions.mockResolvedValue(new Set());
+    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+      excludedIdentifiers: new Set(),
+      approvedIdentifiers: new Set(),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -117,6 +127,8 @@ describe('DecksService', () => {
         { provide: ShoppingLineService, useValue: shoppingLineService },
         { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
+        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
+        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
       ],
     }).compile();
 
@@ -717,10 +729,11 @@ const trackedDeck = result.trackedDecks[0]!;
         computedAt: recomputedSnapshot.computedAt.toISOString(),
       });
       // U9 bug fix: exclusions must be loaded and passed to computeAndStoreReadiness.
-      expect(decisionsService.loadExclusions).toHaveBeenCalledWith(deck.id);
+      expect(swapSuggestionQueryService.loadReadinessInputs).toHaveBeenCalledWith(deck.id);
       expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
         deck.id,
         USER_ID,
+        expect.any(Set),
         expect.any(Set),
       );
       expect(result.collectionCardCount).toBe(3);
@@ -744,7 +757,10 @@ const trackedDeck = result.trackedDecks[0]!;
       snapshotRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Simulate a rejected decision exists.
-      decisionsService.loadExclusions.mockResolvedValue(new Set(['rejected-card-x']));
+      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+        excludedIdentifiers: new Set(['rejected-card-x'] as TExclusionKey[]),
+        approvedIdentifiers: new Set(),
+      });
       substitutionService.computeAndStoreReadiness.mockResolvedValue(recomputedSnapshot);
 
       // Act
@@ -857,8 +873,11 @@ const trackedDeck = result.trackedDecks[0]!;
       snapshotRepo.findOne.mockResolvedValue(null); // Force auto-recompute.
 
       // Simulate a rejected decision.
-      const exclusions = new Set(['rejected-proxy-x']);
-      decisionsService.loadExclusions.mockResolvedValue(exclusions);
+      const exclusions = new Set(['rejected-proxy-x'] as TExclusionKey[]);
+      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+        excludedIdentifiers: exclusions,
+        approvedIdentifiers: new Set(),
+      });
       decisionsService.countRejected.mockResolvedValue(1);
       decisionsService.list.mockResolvedValue([{ cardIdentifier: 'rejected-proxy-x', decision: 'rejected' }]);
 
@@ -870,7 +889,7 @@ const trackedDeck = result.trackedDecks[0]!;
       await service.getDetail(USER_ID, 1);
 
       // Assert: exclusions were loaded and forwarded to computeAndStoreReadiness.
-      expect(decisionsService.loadExclusions).toHaveBeenCalledWith(1);
+      expect(swapSuggestionQueryService.loadReadinessInputs).toHaveBeenCalledWith(1);
       const exclusionsArg = (
         substitutionService.computeAndStoreReadiness as jest.Mock
       ).mock.calls[0][2] as Set<string>;

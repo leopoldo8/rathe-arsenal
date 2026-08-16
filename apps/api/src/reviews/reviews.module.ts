@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReviewAggregateEntity } from '../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
-import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
+import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
 import { DecisionsModule } from '../decks/decisions/decisions.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { ReviewAggregateService } from './review-aggregate.service';
@@ -27,7 +27,7 @@ import { ReviewsController } from './reviews.controller';
       ReviewAggregateEntity,
       DeckReadinessSnapshotEntity,
       TrackedDeckEntity,
-      SubstituteDecisionEntity,
+      SwapSuggestionEntity,
     ]),
     // DecisionsModule provides DecisionsService for the bulk endpoint.
     DecisionsModule,

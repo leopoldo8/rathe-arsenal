@@ -10,7 +10,7 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
-import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { CsvParserService, computeContentHash } from './csv-parser.service';
 import { DuplicateDetectionService, computeDelta } from './duplicate-detection.service';
@@ -48,7 +48,7 @@ export class CsvUploadService {
     private readonly dataSource: DataSource,
     private readonly csvParserService: CsvParserService,
     private readonly duplicateDetectionService: DuplicateDetectionService,
-    private readonly decisionsService: DecisionsService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly substitutionService: SubstitutionService,
   ) {}
 
@@ -467,11 +467,13 @@ export class CsvUploadService {
 
     for (const deck of decks) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(deck.id);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
         await this.substitutionService.computeAndStoreReadiness(
           deck.id,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (error) {
         this.logger.warn({

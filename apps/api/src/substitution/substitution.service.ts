@@ -8,6 +8,7 @@ import {
   computePath,
   IEffectiveReadinessResult,
   IReadinessBreakdown,
+  TExclusionKey,
   TPath,
 } from '@rathe-arsenal/engine';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
@@ -15,6 +16,8 @@ import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../auth/authz.service';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SwapsReconciliationService } from '../swaps/swaps-reconciliation.service';
+import { buildCurrentDeckSlots } from '../swaps/build-current-deck-slots';
 
 /**
  * Derived read-time fields that are NOT persisted on the snapshot row
@@ -38,17 +41,28 @@ export class SubstitutionService {
     private readonly snapshots: Repository<DeckReadinessSnapshotEntity>,
     private readonly authzService: AuthzService,
     private readonly collectionReadService: CollectionReadService,
+    private readonly swapsReconciliationService: SwapsReconciliationService,
   ) {}
 
+  /**
+   * The single choke point every recompute path routes through (design
+   * §11 "Integration points"): computes fresh readiness, persists the
+   * snapshot, then reconciles `swap_suggestion` against the fresh
+   * `breakdown.substituted[]` so every caller of this method gets
+   * reconciliation "for free" instead of each call site wiring it in
+   * separately.
+   */
   async computeAndStoreReadiness(
     trackedDeckId: number,
     userId: string,
-    excludedIdentifiers: ReadonlySet<string> = new Set(),
+    excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+    approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
   ): Promise<DeckReadinessSnapshotEntity> {
-    const result = await this.runReadiness(
+    const { result, deckCardRows } = await this.runReadiness(
       trackedDeckId,
       userId,
       excludedIdentifiers,
+      approvedIdentifiers,
     );
 
     const snapshot = this.snapshots.create({
@@ -61,11 +75,19 @@ export class SubstitutionService {
 
     const saved = await this.snapshots.save(snapshot);
 
+    await this.swapsReconciliationService.reconcile(
+      userId,
+      trackedDeckId,
+      result.breakdown,
+      buildCurrentDeckSlots(deckCardRows),
+    );
+
     this.logger.log('Readiness snapshot computed', {
       trackedDeckId,
       rawPercent: result.rawPercent,
       effectivePercent: result.effectivePercent,
       exclusionCount: excludedIdentifiers.size,
+      approvalCount: approvedIdentifiers.size,
     });
 
     return saved;
@@ -73,24 +95,34 @@ export class SubstitutionService {
 
   /**
    * Dry-run flavor of {@link computeAndStoreReadiness} used by the
-   * interactive swap editor (U7). Computes a fresh
-   * `IEffectiveReadinessResult` with the given exclusion set without
-   * persisting any snapshot. Callers that want to persist the result
+   * interactive swap editor. Computes a fresh `IEffectiveReadinessResult`
+   * with the given exclusion/approval sets without persisting any
+   * snapshot and without reconciling `swap_suggestion` -- reconciliation
+   * is a persistence side-effect, and this method's whole point is to not
+   * persist. Callers that want to persist the result (and reconcile)
    * should use {@link computeAndStoreReadiness} instead.
    */
   async computeReadinessWithExclusions(
     trackedDeckId: number,
     userId: string,
-    excludedIdentifiers: ReadonlySet<string>,
+    excludedIdentifiers: ReadonlySet<TExclusionKey>,
+    approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
   ): Promise<IEffectiveReadinessResult> {
-    return this.runReadiness(trackedDeckId, userId, excludedIdentifiers);
+    const { result } = await this.runReadiness(
+      trackedDeckId,
+      userId,
+      excludedIdentifiers,
+      approvedIdentifiers,
+    );
+    return result;
   }
 
   private async runReadiness(
     trackedDeckId: number,
     userId: string,
-    excludedIdentifiers: ReadonlySet<string>,
-  ): Promise<IEffectiveReadinessResult> {
+    excludedIdentifiers: ReadonlySet<TExclusionKey>,
+    approvedIdentifiers: ReadonlySet<TExclusionKey>,
+  ): Promise<{ result: IEffectiveReadinessResult; deckCardRows: DeckCardEntity[] }> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
     const deck = await this.trackedDecks.findOne({
@@ -118,13 +150,16 @@ export class SubstitutionService {
       })),
     };
 
-    return computeEffectiveReadiness(
+    const result = computeEffectiveReadiness(
       deckInput,
       inventory,
       catalog,
       undefined,
       excludedIdentifiers,
+      approvedIdentifiers,
     );
+
+    return { result, deckCardRows };
   }
 
   /**
