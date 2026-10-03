@@ -124,4 +124,34 @@ describe('ReadinessMedallion', () => {
     expect(meter).toHaveClass('extra');
     expect(meter).toHaveClass(styles.medallion as string);
   });
+
+  describe('showArt=false', () => {
+    function renderPlain(): HTMLElement {
+      render(<ReadinessMedallion pct={64} size="lg" heroName="Rhinar" heroArt={ART} showArt={false} />);
+      return screen.getByRole('meter');
+    }
+
+    it('draws a solid surface instead of the hero art', () => {
+      renderPlain();
+      expect(screen.queryByTestId('readiness-medallion-art')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('readiness-medallion-art-fallback')).not.toBeInTheDocument();
+      const solid = screen.getByTestId('readiness-medallion-solid');
+      expect(solid).toHaveClass(styles.art as string);
+      expect(solid).toHaveClass(styles.artSolid as string);
+    });
+
+    it('drops the art shade but keeps the ring, number and hero name', () => {
+      const meter = renderPlain();
+      expect(meter.querySelector(`.${styles.shade}`)).not.toBeInTheDocument();
+      expect(meter.querySelector(`.${styles.ring}`)).toBeInTheDocument();
+      expect(meter).toHaveTextContent('64%');
+      expect(meter).toHaveTextContent('Rhinar');
+    });
+
+    it('defaults to drawing the art', () => {
+      renderMedallion(64, 'lg');
+      expect(screen.getByTestId('readiness-medallion-art')).toBeInTheDocument();
+      expect(screen.queryByTestId('readiness-medallion-solid')).not.toBeInTheDocument();
+    });
+  });
 });
