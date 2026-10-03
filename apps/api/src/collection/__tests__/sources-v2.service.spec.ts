@@ -154,7 +154,7 @@ describe('SourcesService — U9 extensions', () => {
   // ---------------------------------------------------------------------------
 
   describe('list', () => {
-    it('returns only kind=csv sources for the user', async () => {
+    it('queries every source kind for the user, newest first', async () => {
       // Arrange
       const csvSources = [buildCsvSource(), buildCsvSource({ id: 'csv-2', label: 'Second' })];
       csvSourceRepo.find.mockResolvedValue(csvSources);
@@ -164,10 +164,29 @@ describe('SourcesService — U9 extensions', () => {
 
       // Assert
       expect(csvSourceRepo.find).toHaveBeenCalledWith({
-        where: { userId: USER_ID, kind: 'csv' },
+        where: { userId: USER_ID },
         order: { createdAt: 'DESC' },
       });
       expect(result).toHaveLength(2);
+      expect(collectionCardRepo.count).not.toHaveBeenCalled();
+    });
+
+    it('fills the manual source cardCount from its collection rows without persisting it', async () => {
+      // Arrange
+      const manual = buildCsvSource({ id: 'manual-1', kind: 'manual', cardCount: null });
+      const csv = buildCsvSource({ cardCount: 12 });
+      csvSourceRepo.find.mockResolvedValue([csv, manual]);
+      collectionCardRepo.count.mockResolvedValue(7);
+
+      // Act
+      const result = await service.list(USER_ID);
+
+      // Assert
+      expect(collectionCardRepo.count).toHaveBeenCalledWith({ where: { sourceId: 'manual-1' } });
+      expect(result.find((s) => s.id === 'manual-1')?.cardCount).toBe(7);
+      expect(result.find((s) => s.id === csv.id)?.cardCount).toBe(12);
+      expect(csvSourceRepo.save).not.toHaveBeenCalled();
+      expect(csvSourceRepo.update).not.toHaveBeenCalled();
     });
 
     it('returns empty array when user has no csv sources', async () => {

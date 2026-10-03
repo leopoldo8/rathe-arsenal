@@ -445,6 +445,37 @@ describe('Plan B full flow (E2E, U11)', () => {
       // source, so they are no longer available. effectivePercent should drop.
       expect(effectiveAfterToggle).toBeLessThan(effectiveAfterApprove);
 
+      // -----------------------------------------------------------------------
+      // Step 11: GET /api/collection/sources lists the CSV source (now
+      // inactive) and, once a card is added by hand, the manual source with
+      // a computed cardCount.
+      // -----------------------------------------------------------------------
+      type TSourceRow = { id: string; kind: string; active: boolean; cardCount: number | null };
+
+      const sourcesBeforeManual = await request(server)
+        .get('/api/collection/sources')
+        .set('Authorization', `Bearer ${bearerJwt}`)
+        .expect(200);
+      const rowsBeforeManual = sourcesBeforeManual.body as TSourceRow[];
+      expect(rowsBeforeManual.map((r) => r.kind)).toEqual(['csv']);
+      expect(rowsBeforeManual[0]?.active).toBe(false);
+
+      await request(server)
+        .post('/api/collection/cards')
+        .set('Authorization', `Bearer ${bearerJwt}`)
+        .send({ cardIdentifier: 'coax-a-commotion-red', quantity: 2 })
+        .expect(201);
+
+      const sourcesAfterManual = await request(server)
+        .get('/api/collection/sources')
+        .set('Authorization', `Bearer ${bearerJwt}`)
+        .expect(200);
+      const rowsAfterManual = sourcesAfterManual.body as TSourceRow[];
+      expect(rowsAfterManual.map((r) => r.kind).sort()).toEqual(['csv', 'manual']);
+      const manualRow = rowsAfterManual.find((r) => r.kind === 'manual');
+      expect(manualRow?.cardCount).toBe(1);
+      expect(manualRow?.active).toBe(true);
+
       // Sanity: verify the mock was called with the correct Fabrary ULID.
       expect(mockFabraryService.fetchDeck).toHaveBeenCalledWith(
         '01HPABCDEFGHJKMN0000000QR1',

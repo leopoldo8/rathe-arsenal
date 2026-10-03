@@ -71,14 +71,24 @@ export class SourcesService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns all `kind='csv'` sources for the given user, ordered by
-   * `createdAt DESC`.
+   * Returns every source for the user (csv, Fabrary-derived and manual),
+   * newest first. The manual source never stores a running total, so its
+   * `cardCount` is counted per request and never saved.
    */
   async list(userId: string): Promise<CsvSourceEntity[]> {
-    return this.csvSourceRepo.find({
-      where: { userId, kind: 'csv' },
+    const sources = await this.csvSourceRepo.find({
+      where: { userId },
       order: { createdAt: 'DESC' },
     });
+
+    const manual = sources.find((source) => source.kind === 'manual');
+    if (manual) {
+      manual.cardCount = await this.collectionCardRepo.count({
+        where: { sourceId: manual.id },
+      });
+    }
+
+    return sources;
   }
 
   // ---------------------------------------------------------------------------
