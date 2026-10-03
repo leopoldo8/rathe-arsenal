@@ -230,6 +230,10 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **Fix**: the column default is now `clock_timestamp()` (the insert's own time), in the entity and in migration `1778533588000-SnapshotComputedAtClockTimestamp` with a `down()`. The migration int-spec proves the mechanism: two inserts 50ms apart in one transaction share a timestamp under `now()` and are ordered under `clock_timestamp()`.
 - **Also from CI**: the web bulk-cap test (51 `userEvent` clicks) exceeded the 5s default timeout on the runner; the first 50 selections now use `fireEvent` and the test has a 15s budget.
 
+### DEV-30 — Readiness medallion never repeats the hero art (owner, 2026-10-03)
+- **Owner feedback**: the progress ring with the hero background is redundant wherever the hero art is already on screen. Deck detail dropped it in #112 (DEV-29); the Home deckbox front face is the hero art itself, so its medallion now draws on the solid surface too (`showArt={false}`).
+- **Effect on CMP-04**: the medallion keeps its hero-art + fallback capability (still tested), but no screen uses it any more. Remove the option if nothing needs it later.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.

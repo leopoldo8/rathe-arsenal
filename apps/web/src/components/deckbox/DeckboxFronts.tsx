@@ -48,7 +48,8 @@ export function DeckboxFrontDeck({
           pct={readinessPct}
           size="sm"
           heroName=""
-          heroArt={heroArt}
+          heroArt={null}
+          showArt={false}
         />
       )}
       <div className={styles.frontText}>

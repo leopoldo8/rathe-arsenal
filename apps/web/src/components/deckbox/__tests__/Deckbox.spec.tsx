@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TDeckStatus } from '../../../api/decks';
 import { Deckbox, type IDeckboxCardSlot } from '../Deckbox';
 import styles from '../Deckbox.module.css';
+import medallionStyles from '../../readiness-medallion/ReadinessMedallion.module.css';
 
 const linkSpy = vi.fn();
 
@@ -227,6 +228,17 @@ describe('Deckbox (variant deck)', () => {
     const click = vi.spyOn(link, 'click').mockImplementation(() => undefined);
     fireEvent.keyDown(link, { key: 'a' });
     expect(click).not.toHaveBeenCalled();
+  });
+});
+
+describe('Deckbox medallion surface', () => {
+  it('draws the readiness ring on a solid surface, never repeating the hero art the front face already shows', () => {
+    renderDeck({ readinessPct: 72 });
+
+    const medallion = screen.getByTestId('readiness-medallion');
+
+    expect(medallion.querySelector('img')).toBeNull();
+    expect(medallion.querySelector(`.${medallionStyles.artSolid}`)).not.toBeNull();
   });
 });
 
