@@ -7,17 +7,18 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-1);
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  letter-spacing: 0.04em;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0;
   border-radius: var(--ra-radius-full);
   padding: 2px var(--ra-space-3);
   border-width: 1px;
   border-style: solid;
   /* Ensure ≥ 44×44 touch target via min-block-size */
   min-block-size: 28px;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.3;
+  max-inline-size: 100%;
 }
 
 /* ---- Legal variant: inert span, no hover/focus styles ---- */
@@ -78,9 +79,9 @@ button.badge {
   appearance: none;
   -webkit-appearance: none;
   text-align: left;
-  font-family: inherit;
-  font-size: inherit;
-  letter-spacing: inherit;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  letter-spacing: 0;
 }
 
 /* ---- Badge icon ---- */
@@ -91,8 +92,6 @@ button.badge {
 
 /* ---- Badge text ---- */
 .badgeText {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 18ch;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }

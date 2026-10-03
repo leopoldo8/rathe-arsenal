@@ -15,9 +15,16 @@
   transition: all var(--ra-duration) var(--ra-ease);
 }
 
-.btn:not(:disabled):hover {
-  background: var(--ra-accent);
-  color: var(--ra-accent-deep);
+.btn:not(:disabled):hover,
+.btn:not(:disabled):focus-visible {
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  border-color: var(--ra-accent);
+}
+
+.btn:not(:disabled):active {
+  background: var(--ra-bg-muted);
+  color: var(--ra-fg-primary);
   border-color: var(--ra-accent);
 }
 

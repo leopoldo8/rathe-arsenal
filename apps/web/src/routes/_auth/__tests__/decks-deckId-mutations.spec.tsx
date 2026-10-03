@@ -505,10 +505,18 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(screen.getByTestId('deck-hero-eyebrow')).toHaveTextContent('Classic Constructed · liga local');
   });
 
-  it('draws the hero art behind the banner', () => {
+  it('draws the hero art from the large rendition, never the thumbnail', () => {
     renderPage();
 
-    expect(screen.getByTestId('deck-hero-banner-art')).toHaveAttribute('src', 'hero-small.jpg');
+    expect(screen.getByTestId('deck-hero-banner-art')).toHaveAttribute('src', 'hero-large.jpg');
+  });
+
+  it('keeps the readiness medallion free of the banner art', () => {
+    renderPage();
+
+    const medallion = within(screen.getByTestId('deck-hero-banner')).getByTestId('readiness-medallion');
+    expect(within(medallion).queryByTestId('readiness-medallion-art')).not.toBeInTheDocument();
+    expect(within(medallion).getByTestId('readiness-medallion-solid')).toBeInTheDocument();
   });
 
   it('shows the 90px medallion with the gated percent, inside the banner', () => {

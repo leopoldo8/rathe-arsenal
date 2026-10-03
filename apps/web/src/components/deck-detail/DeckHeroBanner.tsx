@@ -35,7 +35,7 @@ export function DeckHeroBanner({
 }: IDeckHeroBannerProps): React.ReactElement {
   const { t } = useTranslation();
   const hero = useDeckHero(heroIdentifier, heroFallbackName);
-  const art = useImageFallback(hero.art?.smallSources ?? []);
+  const art = useImageFallback(hero.bannerSources);
   const eyebrow = [format, leagueTag]
     .filter((part): part is string => part !== null && part !== '')
     .join(t('deckDetail.eyebrowSeparator'));
@@ -96,7 +96,7 @@ export function DeckHeroBanner({
             {hero.name}
           </p>
         </div>
-        <ReadinessMedallion pct={pct} size="lg" heroName={hero.name} heroArt={hero.art} />
+        <ReadinessMedallion pct={pct} size="lg" heroName={hero.name} heroArt={hero.art} showArt={false} />
       </div>
     </section>
   );

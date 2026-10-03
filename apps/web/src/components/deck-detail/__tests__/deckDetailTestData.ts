@@ -65,3 +65,13 @@ export function deckSwap(
 ): IDeckSwap {
   return { cardIdentifier, slot, substituteIdentifier, status };
 }
+
+export function storedSwap(
+  id: string,
+  cardIdentifier: string,
+  substituteIdentifier: string,
+  quantity: number,
+  status: TSwapStatus = 'pending',
+): IDeckSwap & { readonly id: string; readonly quantity: number } {
+  return { id, quantity, ...deckSwap(cardIdentifier, substituteIdentifier, status) };
+}

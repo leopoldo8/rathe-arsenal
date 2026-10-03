@@ -27,7 +27,7 @@
   margin-inline: calc(-1 * var(--ra-space-6));
   padding: var(--ra-space-5) var(--ra-space-6);
   overflow: hidden;
-  background: var(--ra-bg-sunken);
+  background: #0a0b0e;
   color: var(--ra-fg-primary);
 }
 
@@ -40,11 +40,16 @@
 
 .art {
   position: absolute;
-  inset: 0;
-  inline-size: 100%;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 62%;
   block-size: 100%;
   object-fit: cover;
-  object-position: center 20%;
+  object-position: center 28%;
+  transform: scale(1.12);
+  transform-origin: 60% 28%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 45%);
+  mask-image: linear-gradient(to right, transparent, #000 45%);
 }
 
 .artFallback {

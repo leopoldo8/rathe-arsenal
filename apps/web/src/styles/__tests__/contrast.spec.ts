@@ -403,3 +403,21 @@ describe('light theme — pitch -ink tokens (AA body >= 4.5:1)', () => {
     expect(contrast(LIGHT_PITCH_YELLOW_INK, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
   });
 });
+
+describe('deck detail polish B — button states stay AA', () => {
+  it('dark: --ra-accent-ink-on on --ra-accent-hover (Buy hover)', () => {
+    expect(contrast('#1a1408', DARK_ACCENT_HI)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('light: --ra-accent-ink-on on --ra-accent-hover (Buy hover)', () => {
+    expect(contrast('#ffffff', '#6f521a')).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('light: --ra-fg-primary on --ra-bg-raised (Mark owned hover)', () => {
+    expect(contrast(LIGHT_FG_PRIMARY, LIGHT_RAISED)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('dark: --ra-fg-primary on --ra-bg-raised (Mark owned hover)', () => {
+    expect(contrast(DARK_FG_PRIMARY, DARK_RAISED)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});

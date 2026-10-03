@@ -1912,3 +1912,70 @@ describe('FND-02/03 — every token font family is actually requested from Googl
     expect(indexHtml).not.toContain('Grotesque');
   });
 });
+
+describe('Deck detail polish B — legality badge, buttons, banner art', () => {
+  const LEGALITY = readCss('components/deck-detail/LegalityBadge.module.css');
+  const MARK_OWNED = readCss('components/deck-detail/MarkOwnedButton.module.css');
+  const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
+  const BANNER = readCss('components/deck-detail/DeckHeroBanner.module.css');
+  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
+
+  it('the legality badge uses the UI face, not mono', () => {
+    const body = ruleBody(LEGALITY, '.badge');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(body).not.toContain('--ra-font-mono');
+    expect(ruleBody(LEGALITY, 'button.badge')).toContain('font-family: var(--ra-font-ui)');
+  });
+
+  it('the legality badge wraps instead of truncating', () => {
+    expect(ruleBody(LEGALITY, '.badge')).not.toContain('white-space: nowrap');
+    const text = ruleBody(LEGALITY, '.badgeText');
+    expect(text).not.toContain('text-overflow');
+    expect(text).not.toContain('max-width');
+    expect(text).not.toContain('overflow: hidden');
+  });
+
+  it.each([
+    ['hover and focus', '.btn:not(:disabled):hover, .btn:not(:disabled):focus-visible'],
+    ['active', '.btn:not(:disabled):active'],
+  ])('Mark owned %s never fills with the accent or uses the deep-gold ink', (_label, selector) => {
+    const rule = squash(MARK_OWNED).match(new RegExp(`${escapeRegExp(selector)} \\{([^}]*)\\}`));
+    expect(rule, selector).not.toBeNull();
+    expect(rule![1]).not.toContain('background: var(--ra-accent)');
+    expect(rule![1]).not.toContain('--ra-accent-deep');
+    expect(rule![1]).toContain('color: var(--ra-fg-primary)');
+  });
+
+  it('Mark owned hover and focus share one readable rule', () => {
+    const flat = squash(MARK_OWNED);
+    expect(flat).toContain('.btn:not(:disabled):hover, .btn:not(:disabled):focus-visible {');
+    expect(flat).toContain('background: var(--ra-bg-raised)');
+  });
+
+  it('Buy keeps its dark ink on hover and active', () => {
+    const flat = squash(MISSING);
+    const rule = flat.match(/\.buy:hover, \.buy:active \{([^}]*)\}/);
+    expect(rule?.[1]).toContain('background: var(--ra-accent-hover)');
+    expect(rule?.[1]).toContain('color: var(--ra-accent-ink-on)');
+  });
+
+  it('the exact-price button is the brass action, not the info blue', () => {
+    const body = ruleBody(FETCH_CONTROLS, '.ctaBtn');
+    expect(body).toContain('background: var(--ra-accent)');
+    expect(body).toContain('color: var(--ra-accent-ink-on)');
+    expect(body).not.toContain('--ra-info');
+  });
+
+  it('the banner keeps its dark backdrop in both themes, since the art no longer covers the left side', () => {
+    expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
+  });
+
+  it('the banner art sits on the right and fades left, instead of stretching a thumbnail edge to edge', () => {
+    const body = ruleBody(BANNER, '.art');
+    expect(body).toContain('inline-size: 62%');
+    expect(body).toContain('inset-inline-end: 0');
+    expect(body).toContain('object-position: center 28%');
+    expect(body).toContain('transform: scale(1.12)');
+    expect(body).toContain('mask-image: linear-gradient(to right, transparent, #000 45%)');
+  });
+});

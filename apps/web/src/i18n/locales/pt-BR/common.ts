@@ -23,4 +23,11 @@ export const common = {
   loadingCount: 'Carregando contagem',
   readinessMedallionLabel: 'Prontidão do herói',
   readinessValueText: '{{pct}}%',
+  relativeNoData: 'sem dados recentes',
+  relativeJustNow: 'agora mesmo',
+  relativeMinutes: 'há {{count}} min',
+  relativeHours: 'há {{count}} h',
+  relativeDays_one: 'há {{count}} dia',
+  relativeDays_other: 'há {{count}} dias',
+  relativeOverWeek: 'há mais de uma semana',
 } as const;

@@ -93,7 +93,7 @@ export const decks = {
   incomplete: 'Incompleto',
   incompleteWithCount: 'Incompleto · {{count}}/{{total}} cartas',
   illegal: 'Ilegal',
-  illegalWithReason: 'Ilegal · {{reason}}…',
+  illegalWithReason: 'Ilegal · {{reason}}',
   // LegalityReasonsPopover / CardRowLegalityWarning
   deckIncompleteHeading: 'Baralho incompleto',
   deckIllegalHeading: 'Baralho ilegal neste formato',
