@@ -98,7 +98,7 @@ test.describe('Deck edit flow — E2E (U16)', () => {
     await page.goto(`${BASE_URL}${firstDeckUrl}`, { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForTimeout(SETTLE_MS);
 
-    await expect(page.getByTestId('deck-detail-layout')).toBeVisible();
+    await expect(page.getByTestId('deck-detail-view')).toBeVisible();
     await expect(page.getByTestId('deck-detail-edit-btn')).toBeVisible();
   });
 
@@ -164,7 +164,7 @@ test.describe('Deck edit flow — E2E (U16)', () => {
     await expect(firstChip).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('legality badge renders in sidebar with valid data-legality attribute', async ({ page }) => {
+  test('legality badge renders in the readiness card with valid data-legality attribute', async ({ page }) => {
     if (!jwt) { test.skip(true, 'no JWT'); return; }
     if (!firstDeckUrl) { test.skip(true, 'no tracked deck on /home'); return; }
 
@@ -173,7 +173,7 @@ test.describe('Deck edit flow — E2E (U16)', () => {
     await page.goto(`${BASE_URL}${firstDeckUrl}`, { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForTimeout(SETTLE_MS);
 
-    await expect(page.getByTestId('sidebar-legality-slot')).toBeVisible();
+    await expect(page.getByTestId('analysis-readiness')).toBeVisible();
     const badge = page.getByTestId('legality-badge');
     await expect(badge).toBeVisible();
     const legalityValue = await badge.getAttribute('data-legality');

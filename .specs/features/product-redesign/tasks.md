@@ -59,7 +59,7 @@ Two ordering constraints are load-bearing and must not be relaxed:
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Implementing — 38px ring verified visually on Home (dark + light, 100% and 38%); 90px ring checked in phase 5 |
+| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Implementing — 38px ring verified visually on Home (dark + light, 100% and 38%); 90px ring asserted in CSS and the DOM in phase 5, not yet seen in a browser (orchestrator or phase 10) |
 | BOX-01 three-scene stack cannot be flattened | §2 | structural test over the `DeckboxScene` primitive | Verified |
 | BOX-02 hover choreography, 52% overshoot, 80% depth swap | §2 | `design-guards.spec.ts` pinning the keyframe literals | Verified — keyframe literals pinned; headless hover capture on Home (2026-10-03) shows the cards clear of the deck name and medallion |
 | BOX-03..04 per-status variants | §2 | component spec, one case per status | Verified |

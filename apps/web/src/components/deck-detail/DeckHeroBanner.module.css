@@ -3,6 +3,21 @@
 .banner {
   --hero-eyebrow-ink: #c6a678;
   --hero-overlay-end: rgba(11, 12, 15, 0.96);
+  /* The art and overlay stay dark in both themes, so everything on top reads the dark values. */
+  --ra-fg-primary: #e8e6e1;
+  --ra-fg-secondary: #c8cad2;
+  --ra-border: rgba(255, 255, 255, 0.07);
+  --ra-border-strong: rgba(255, 255, 255, 0.12);
+  --ra-bg-raised: #1e2128;
+  --ra-bg-muted: #1a1c22;
+  --ra-accent: #d0a84c;
+  --ra-accent-body: #d0a84c;
+  --ra-accent-hover: #f0c060;
+  --ra-accent-soft-bg: rgba(208, 168, 76, 0.14);
+  --ra-ready-high: #63b678;
+  --ra-ready-low: #d0645a;
+  --ra-ready-low-bg: rgba(208, 100, 90, 0.08);
+  --ra-status-building: #4a7fc0;
   position: relative;
   display: flex;
   flex-direction: column;

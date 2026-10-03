@@ -1016,6 +1016,24 @@ describe('DECK-01 — hero banner literals', () => {
     expect(body).toContain('font-size: 2.125rem');
   });
 
+  it('redeclares the dark token values the banner children read, so light theme stays legible', () => {
+    const body = ruleBody(css, '.banner');
+    const darkValues = [
+      '--ra-fg-primary: #e8e6e1',
+      '--ra-fg-secondary: #c8cad2',
+      '--ra-border: rgba(255, 255, 255, 0.07)',
+      '--ra-border-strong: rgba(255, 255, 255, 0.12)',
+      '--ra-bg-raised: #1e2128',
+      '--ra-bg-muted: #1a1c22',
+      '--ra-accent: #d0a84c',
+      '--ra-accent-hover: #f0c060',
+      '--ra-ready-high: #63b678',
+      '--ra-ready-low: #d0645a',
+      '--ra-status-building: #4a7fc0',
+    ];
+    for (const declaration of darkValues) expect(body).toContain(declaration);
+  });
+
   it('borders the Edit action in the accent', () => {
     expect(ruleBody(css, '.editBtn')).toContain('border: 1px solid var(--ra-accent)');
   });
