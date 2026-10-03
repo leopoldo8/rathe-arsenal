@@ -190,6 +190,15 @@ Git worktree isolation is deliberately not used: nine worktrees each editing the
 - **Flaky API int suite under load**: `test:int` in parallel failed once in roughly three runs on unrelated suites (`tags`, `decks.patch`: ECONNRESET, a 407 from supertest). Five of five runs pass with `--runInBand`. Not diagnosed, config left alone.
 - **Not looked at in a browser**: Library, Sources and Add cards are asserted in CSS and DOM only; the orchestrator regenerates baselines.
 
+### DEV-17 — Cross-cutting polish sweep, scheduled for phase 10 (orchestrator)
+Found while reviewing phase 4-6 baselines; fixing them screen by screen would collide with phases 7-9, which rewrite several of the same files. One sweep after phase 9:
+- **◆ diamonds still rendered** in ~16 components (`LibraryFilterRail`, `LibraryStatsBar`, `LibraryEmptyState`, `LibraryCardStepper`, `ImportFabraryCard`, `NotFoundState`, the Sources eyebrow, …). The spec's Problem Statement bans the motif app-wide.
+- **Fantasy-serif uppercase buttons and eyebrows** that predate the redesign ("ADD CARDS", "CHOOSE A FILE", "VIEW LIBRARY", composition-edit "CANCEL/SAVE", the Sources italic serif lede). The Problem Statement bans the fantasy serif on labels, buttons and eyebrows; FND-02 puts all UI text in Hanken Grotesque.
+- **i18n leak**: `lib/format-relative-time.ts` hardcodes "Sem dados de preço" (renders in pt-BR inside the en-US UI on Library).
+- **Plural bug**: `csvSources.sourcesCountLine` renders "1 sources"; needs `_one`/`_other`.
+- **Stray "•"** before the info icon in the Sources duplicates notice.
+- `DeckDetailSkeleton` still has the old sidebar shape; composition-edit mode keeps the old typography (DEV-15).
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
