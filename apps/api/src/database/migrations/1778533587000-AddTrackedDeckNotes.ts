@@ -6,10 +6,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  */
 export class AddTrackedDeckNotes1778533587000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "tracked_deck" ADD COLUMN "notes" text`);
+    await queryRunner.query(`ALTER TABLE "tracked_deck" ADD COLUMN IF NOT EXISTS "notes" text`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "tracked_deck" DROP COLUMN "notes"`);
+    await queryRunner.query(`ALTER TABLE "tracked_deck" DROP COLUMN IF EXISTS "notes"`);
   }
 }

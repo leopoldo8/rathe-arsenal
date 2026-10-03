@@ -52,20 +52,31 @@ import {
  * empty until each deck happens to recompute on its own. See
  * design/07-swaps.md "Landing sequence" for the full rationale.
  */
+// `synchronize` can create swap_suggestion ahead of this migration, without
+// the CHECK constraints, FKs and named indexes below. An empty copy is
+// rebuilt; one holding rows is never dropped silently.
+async function dropEmptySynchronizedSwapSuggestion(queryRunner: QueryRunner): Promise<void> {
+  if (!(await queryRunner.hasTable('swap_suggestion'))) return;
+  const [{ count }] = (await queryRunner.query(
+    `SELECT count(*)::int AS count FROM "swap_suggestion"`,
+  )) as [{ count: number }];
+  if (count > 0) {
+    throw new Error(
+      `swap_suggestion already holds ${count} row(s); refusing to recreate it. Inspect it before migrating.`,
+    );
+  }
+  await queryRunner.query(`DROP TABLE "swap_suggestion" CASCADE`);
+}
+
 export class ReplaceSubstituteDecisionWithSwapSuggestion1778533586000
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Drop substitute_decision entirely -- D8: discard, don't migrate.
-    await queryRunner.dropIndex(
-      'substitute_decision',
-      'IDX_substitute_decision_deck_decision',
-    );
-    await queryRunner.dropIndex(
-      'substitute_decision',
-      'IDX_substitute_decision_user_deck_card_unique',
-    );
-    await queryRunner.dropTable('substitute_decision');
+    // Dropping the table drops its indexes whatever they are named: a service
+    // running TypeORM `synchronize` on staging renamed them to hashed names.
+    await queryRunner.query(`DROP TABLE IF EXISTS "substitute_decision" CASCADE`);
+    await dropEmptySynchronizedSwapSuggestion(queryRunner);
 
     // 2. Create swap_suggestion.
     await queryRunner.createTable(
