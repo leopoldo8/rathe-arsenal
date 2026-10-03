@@ -88,7 +88,7 @@ export function DeckDetailView({
         deckName={deck.name}
         status={deck.status}
         format={deck.format}
-        leagueTag={tags[0]?.name ?? null}
+        leagueTag={deck.tags?.[0] ?? null}
         heroIdentifier={deck.heroIdentifier}
         heroFallbackName={deck.hero}
         pct={snapshot.effectivePercent}

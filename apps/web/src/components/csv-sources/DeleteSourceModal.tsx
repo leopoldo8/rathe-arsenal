@@ -104,7 +104,7 @@ export function DeleteSourceModal({
     }
   }
 
-  const label = source.label ?? source.originalFilename ?? 'This CSV';
+  const label = source.label ?? source.originalFilename ?? t('csvSources.deleteFallbackLabel');
   const affectedCount = preview?.affectedDecks.length ?? 0;
 
   return (

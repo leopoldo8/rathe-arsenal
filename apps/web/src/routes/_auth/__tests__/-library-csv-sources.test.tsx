@@ -109,6 +109,34 @@ describe('LibraryCsvSourcesPage', () => {
     expect(screen.getByText('389 cards combined')).toBeInTheDocument();
   });
 
+  it('uses the singular form for exactly one source and the plural for two, in both locales', async () => {
+    sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [FOUR_SOURCES[0]!] });
+    const { unmount } = renderPage();
+    expect(screen.getByText('1 fonte · 1 ativas')).toBeInTheDocument();
+    unmount();
+    await setTestLocale('en-US');
+    const single = renderPage();
+    expect(screen.getByText('1 source · 1 active')).toBeInTheDocument();
+    single.unmount();
+    sourcesQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: [FOUR_SOURCES[0]!, FOUR_SOURCES[1]!],
+    });
+    renderPage();
+    expect(screen.getByText('2 sources · 2 active')).toBeInTheDocument();
+  });
+
+  it('renders the pt-BR plural for two sources', () => {
+    sourcesQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: [FOUR_SOURCES[0]!, FOUR_SOURCES[1]!],
+    });
+    renderPage();
+    expect(screen.getByText('2 fontes · 2 ativas')).toBeInTheDocument();
+  });
+
   it('renders every source row, including the Manual one with no toggle', () => {
     renderPage();
     expect(screen.getAllByRole('listitem')).toHaveLength(4);

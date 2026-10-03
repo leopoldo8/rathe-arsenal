@@ -150,6 +150,7 @@ export const decks = {
   tagAttachError: "Couldn't attach the tag — try again.",
   // TagChipRow
   deckTagsAria: 'Deck tags',
+  heroYoungTag: 'young',
   removeTagAria: 'Remove tag {{name}}',
   addTagAria: 'Add a tag to this deck',
   addTagLabel: 'add tag',

@@ -115,6 +115,9 @@ export const library = {
   // Library route — no results
   noMatchTitle: 'No cards match this combination.',
   clearFiltersButton: 'Clear filters',
+  priceFreshnessNone: 'No price data',
+  priceFreshnessDays_one: 'Updated {{count}} day ago',
+  priceFreshnessDays_other: 'Updated {{count}} days ago',
   estimatedPricesTooltip:
     "Estimated prices from partner stores. May be stale when the scraper hasn't run for a few days.",
 } as const;

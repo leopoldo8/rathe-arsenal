@@ -31,7 +31,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
   const { uniqueCount, totalCopies, pitchBreakdown, estimatedValueCents, priceDataLastUpdatedAt } =
     stats;
 
-  const { label: freshnessLabel, stale: isStale } = formatDaysAgo(priceDataLastUpdatedAt);
+  const { label: freshnessLabel, stale: isStale } = formatDaysAgo(priceDataLastUpdatedAt, t);
   const isNullData = priceDataLastUpdatedAt === null;
 
   return (
@@ -93,7 +93,6 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
             title={t('library.estimatedPricesTooltip')}
           >
-            {isStale && <span aria-hidden="true">◆ </span>}
             {freshnessLabel}
           </span>
         </div>

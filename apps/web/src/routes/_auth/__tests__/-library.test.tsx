@@ -329,7 +329,7 @@ describe('LibraryPage — freshness labels', () => {
     expect(screen.getByText(/atualizado há 1 dia/i)).toBeInTheDocument();
   });
 
-  it('shows ◆ glyph for data older than 3 days', () => {
+  it('marks data older than 3 days as stale', () => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     mockUseLibraryQuery.mockReturnValue({
       isLoading: false,
@@ -347,12 +347,7 @@ describe('LibraryPage — freshness labels', () => {
       },
     });
     renderLibraryPage();
-    // Multiple ◆ glyphs exist in the page chrome (rail section markers,
-    // freshness chip). Scope the assertion to the freshness label so we
-    // only catch the freshness-driven glyph.
-    expect(screen.getByText(/atualizado há 7 dias/i)).toBeInTheDocument();
-    const glyphs = screen.getAllByText('◆');
-    expect(glyphs.length).toBeGreaterThan(0);
+    expect(screen.getByText(/atualizado há 7 dias/i).className).toMatch(/freshnessStale/);
   });
 });
 

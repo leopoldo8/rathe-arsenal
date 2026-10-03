@@ -304,7 +304,7 @@ export function HeroDropdown({
               >
                 <span className={styles.optionName}>{hero.name}</span>
                 {hero.young ? (
-                  <span className={styles.optionMeta}>young</span>
+                  <span className={styles.optionMeta}>{t('decks.heroYoungTag')}</span>
                 ) : null}
               </li>
             );

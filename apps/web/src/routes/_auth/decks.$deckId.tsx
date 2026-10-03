@@ -33,7 +33,8 @@ import { useCascadeCheck } from '../../hooks/useCascadeCheck';
 import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChangesConfirm';
-import type { ITagResponse } from '../../api/tags';
+import { useTagsQuery, type ITagResponse } from '../../api/tags';
+import { resolveDeckTags } from '../../components/deck-edit/deckEditModel';
 import type { TVariantFetchMutationStatus } from '../../components/ShoppingLine';
 import styles from './decks.$deckId.module.css';
 import { validateDeckDetailSearch } from './-deck-detail-search';
@@ -75,6 +76,7 @@ function DeckDetailPage(): React.ReactElement {
   );
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
+  const tagsQuery = useTagsQuery();
   const markOwnedMutation = useMarkOwnedMutation(deckId);
   const swapsQuery = useSwapsQuery();
   const swapMutation = useSwapMutation();
@@ -209,16 +211,8 @@ function DeckDetailPage(): React.ReactElement {
   // Allow editing even if latestSnapshot is null (R22: scratch deck with 0 cards)
   const snapshot = deck.latestSnapshot;
 
-  // Build the tags structure expected by DeckDetailHeader.
-  // deck.tags is readonly string[] (display names only from v2 U7).
-  // TagChipRow expects ITagResponse[] (with id + name).
-  // Because the API only returns tag names (not IDs) on the detail response,
-  // we synthesise lightweight objects using the index as a stable key.
-  const tagsForHeader: ITagResponse[] = (deck.tags ?? []).map((name, idx) => ({
-    id: idx,
-    name,
-    createdAt: '',
-  }));
+  // The detail response carries tag names only; resolve real ids from the user's tag list.
+  const tagsForHeader: ITagResponse[] = resolveDeckTags(deck.tags ?? [], tagsQuery.data?.tags ?? []);
 
   if (snapshot == null && mode === 'view') {
     return <DeckDetailEmptyState kind="computing" />;

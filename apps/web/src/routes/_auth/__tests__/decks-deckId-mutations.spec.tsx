@@ -59,6 +59,15 @@ vi.mock('@tanstack/react-router', () => ({
   useBlocker: vi.fn(),
 }));
 
+const mockPatchMutate = vi.fn();
+const mockTagList = vi.hoisted(() => ({
+  tags: [] as { id: number; name: string; createdAt: string }[],
+}));
+vi.mock('../../../api/tags', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/tags')>();
+  return { ...actual, useTagsQuery: () => ({ data: { tags: mockTagList.tags } }) };
+});
+
 const mockShowToast = vi.fn();
 vi.mock('../../../components/ui/Toast/useToast', () => ({
   useToast: () => ({ show: mockShowToast }),
@@ -157,7 +166,7 @@ vi.mock('../../../api/decks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/decks')>();
   return {
     ...actual,
-    usePatchDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
+    usePatchDeckMutation: () => ({ mutate: mockPatchMutate, isPending: false }),
     useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
     usePutDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
   };
@@ -407,6 +416,7 @@ beforeEach(() => {
   mockQueryState = 'loading';
   mockDeckData = undefined;
   mockEdit = undefined;
+  mockTagList.tags = [];
   mockSwapRows = [];
   mockSwapsLoaded = true;
 });
@@ -559,6 +569,19 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     await userEvent.click(screen.getByTestId('deck-detail-overflow-btn'));
 
     expect(screen.getByTestId('deck-detail-untrack-btn')).toBeInTheDocument();
+  });
+
+  it('removes a tag by its real id, not by its position in the row', async () => {
+    mockTagList.tags = [
+      { id: 7, name: 'aggro', createdAt: '' },
+      { id: 42, name: 'liga local', createdAt: '' },
+    ];
+    populate(buildDeck({ tags: ['liga local'] }));
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: /liga local/i }));
+
+    expect(mockPatchMutate).toHaveBeenCalledWith({ removeTagIds: [42] });
   });
 
   it('shows the eyebrow with the format alone when the deck has no tag', () => {

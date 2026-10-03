@@ -56,7 +56,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
   const isManual = kind === 'manual';
   const displayLabel = isManual
     ? t('csvSources.manualSourceLabel')
-    : (source.label ?? source.originalFilename ?? 'Untitled CSV');
+    : (source.label ?? source.originalFilename ?? t('csvSources.untitledSourceLabel'));
   const cardCount = source.cardCount ?? 0;
   const relativeDate = formatRelativeTime(source.createdAt);
 
