@@ -91,6 +91,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
           </span>
           <span
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
+            data-testid="price-freshness"
             title={t('library.estimatedPricesTooltip')}
           >
             {freshnessLabel}

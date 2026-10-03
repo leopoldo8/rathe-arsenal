@@ -236,7 +236,7 @@ export function SwapRow({
           ) : isApplied ? (
             <>
               {row.appliedAt && (
-                <span className={styles.elapsed}>{t('swaps.appliedSince', { date: row.appliedAt })}</span>
+                <span className={styles.elapsed} data-testid="relative-time">{t('swaps.appliedSince', { date: row.appliedAt })}</span>
               )}
               <button
                 type="button"
@@ -251,7 +251,7 @@ export function SwapRow({
           ) : (
             <>
               <div className={styles.rejectedMeta}>
-                <span className={styles.elapsed}>
+                <span className={styles.elapsed} data-testid="relative-time">
                   {reasonLabel && (
                     <span className={styles.quote}>{t('swaps.rejectionQuote', { reason: reasonLabel })} </span>
                   )}

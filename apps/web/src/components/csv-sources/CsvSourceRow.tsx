@@ -157,7 +157,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
           <span className={styles.cardCount}>
             {cardCount.toLocaleString()} {cardCount !== 1 ? t('csvSources.cardPlural') : t('csvSources.cardSingular')}
           </span>
-          <span className={styles.date} title={new Date(source.createdAt).toLocaleString()}>
+          <span className={styles.date} data-testid="relative-time" title={new Date(source.createdAt).toLocaleString()}>
             {relativeDate}
           </span>
         </div>
