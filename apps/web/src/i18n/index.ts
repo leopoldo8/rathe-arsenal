@@ -14,6 +14,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { ptBR } from './locales/pt-BR';
 import { enUS } from './locales/en-US';
+import { formatElapsed } from './format-elapsed';
 
 /** localStorage key for the persisted language preference. */
 export const LANG_STORAGE_KEY = 'rathe.lang';
@@ -94,6 +95,12 @@ void i18n
       escapeValue: false,
     },
   });
+
+// Reads the active language at call time, so the elapsed-time strings follow
+// the language switch like every other catalog string.
+i18n.services.formatter?.add('relativeTime', (value: unknown, lng: string | undefined) =>
+  formatElapsed(value as Date | string, lng ?? i18n.language),
+);
 
 // Belt-and-suspenders: set the initial lang attr in case the languageChanged
 // event already fired before the listener was registered (timing edge).

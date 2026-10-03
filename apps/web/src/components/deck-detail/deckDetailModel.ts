@@ -2,10 +2,11 @@ import type { ISwapsSearch } from '../../routes/_auth/-swaps.helpers';
 import type {
   IBreakdown,
   IBreakdownEntry,
-  IDecisionEntry,
   ISubstitutedEntry,
   TPath,
 } from '../../api/deck-detail';
+import { findSwap } from '../../api/swaps';
+import type { ISwapMatchKey, TSwapStatus } from '../../api/swaps';
 
 export type TSwapDecision = 'pending' | 'approved' | 'rejected';
 
@@ -27,25 +28,34 @@ interface ISummaryInput {
   readonly pct: number;
   readonly path: TPath;
   readonly breakdown: IBreakdown;
-  readonly decisions: readonly IDecisionEntry[];
+  readonly swaps: readonly IDeckSwap[];
+}
+
+export interface IDeckSwap extends ISwapMatchKey {
+  readonly status: TSwapStatus;
 }
 
 export function entryKey(entry: IBreakdownEntry): string {
   return `${entry.cardIdentifier}::${entry.slot}`;
 }
 
-export function resolveSwapDecision(
-  decisions: readonly IDecisionEntry[],
-  substituteIdentifier: string,
-): TSwapDecision {
-  return decisions.find((d) => d.cardIdentifier === substituteIdentifier)?.decision ?? 'pending';
+export function swapKeyOf(entry: ISubstitutedEntry): ISwapMatchKey {
+  return {
+    cardIdentifier: entry.original.cardIdentifier,
+    slot: entry.original.slot,
+    substituteIdentifier: entry.match.substitute.cardIdentifier,
+  };
 }
 
 export function swapDecision(
   entry: ISubstitutedEntry,
-  decisions: readonly IDecisionEntry[],
+  swaps: readonly IDeckSwap[],
 ): TSwapDecision {
-  return resolveSwapDecision(decisions, entry.match.substitute.cardIdentifier);
+  const status = findSwap(swaps, swapKeyOf(entry))?.status;
+  if (status === 'approved' || status === 'rejected') return status;
+  // Until the swaps list has loaded, the engine's own flag keeps an applied swap from reading as pending.
+  if (status === undefined && entry.approved === true) return 'approved';
+  return 'pending';
 }
 
 function sumQuantity(entries: readonly { readonly quantity: number }[]): number {
@@ -54,20 +64,20 @@ function sumQuantity(entries: readonly { readonly quantity: number }[]): number 
 
 function originalKeysWithDecision(
   breakdown: IBreakdown,
-  decisions: readonly IDecisionEntry[],
+  swaps: readonly IDeckSwap[],
   wanted: TSwapDecision,
 ): ReadonlySet<string> {
   return new Set(
     breakdown.substituted
-      .filter((entry) => swapDecision(entry, decisions) === wanted)
+      .filter((entry) => swapDecision(entry, swaps) === wanted)
       .map((entry) => entryKey(entry.original)),
   );
 }
 
-export function summariseDeck({ pct, path, breakdown, decisions }: ISummaryInput): IDeckSummary {
+export function summariseDeck({ pct, path, breakdown, swaps }: ISummaryInput): IDeckSummary {
   const notOwned = breakdown.notOwned ?? breakdown.missing;
-  const approvedKeys = originalKeysWithDecision(breakdown, decisions, 'approved');
-  const pendingKeys = originalKeysWithDecision(breakdown, decisions, 'pending');
+  const approvedKeys = originalKeysWithDecision(breakdown, swaps, 'approved');
+  const pendingKeys = originalKeysWithDecision(breakdown, swaps, 'pending');
   const openMissing = notOwned.filter((entry) => !approvedKeys.has(entryKey(entry)));
   const unsolved = openMissing.filter((entry) => !pendingKeys.has(entryKey(entry)));
   const pendingSwaps = pendingKeys.size;

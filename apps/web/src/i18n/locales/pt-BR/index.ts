@@ -9,7 +9,7 @@ import { csvSources } from './csvSources';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
 import { deckEdit } from './deckEdit';
-import { reviews } from './reviews';
+import { swaps } from './swaps';
 import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
@@ -27,7 +27,7 @@ export const ptBR = {
   decks,
   deckDetail,
   deckEdit,
-  reviews,
+  swaps,
   variantQueue,
   settings,
   ui,

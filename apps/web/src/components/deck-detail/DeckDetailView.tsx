@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../api/deck-detail';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
+import type { ISwapRow } from '../../api/swaps';
 import type { ITagResponse } from '../../api/tags';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { DeckActionPanels } from './DeckActionPanels';
@@ -24,10 +25,11 @@ interface IDeckDetailViewProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly pendingSubstituteId: string | null;
-  readonly onApproveSubstitute: (id: string) => void;
-  readonly onRejectSubstitute: (id: string) => void;
-  readonly onResetSubstitute: (id: string) => void;
+  readonly deckSwaps: readonly ISwapRow[];
+  readonly pendingSwapId: string | null;
+  readonly onApproveSwap: (swapId: string) => void;
+  readonly onRejectSwap: (swapId: string) => void;
+  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
   readonly onClearRejections: () => void;
   readonly isClearingRejections: boolean;
   readonly onFetchVariants: () => void;
@@ -47,10 +49,11 @@ export function DeckDetailView({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  pendingSubstituteId,
-  onApproveSubstitute,
-  onRejectSubstitute,
-  onResetSubstitute,
+  deckSwaps,
+  pendingSwapId,
+  onApproveSwap,
+  onRejectSwap,
+  onUndoSwap,
   onClearRejections,
   isClearingRejections,
   onFetchVariants,
@@ -65,9 +68,13 @@ export function DeckDetailView({
         pct: snapshot.effectivePercent,
         path: snapshot.path,
         breakdown: snapshot.breakdown,
-        decisions: deck.decisions,
+        swaps: deckSwaps,
       }),
-    [snapshot, deck.decisions],
+    [snapshot, deckSwaps],
+  );
+  const rejectedCount = useMemo(
+    () => deckSwaps.filter((swap) => swap.status === 'rejected').length,
+    [deckSwaps],
   );
   const items = useMemo(
     () => buildDeckList(snapshot.breakdown, summary.openMissing),
@@ -91,9 +98,9 @@ export function DeckDetailView({
         <TagChipRow deckId={deck.id} tags={tags} />
       </div>
       <DeckStatusStrip summary={summary} fabraryUlid={deck.fabraryUlid} />
-      {deck.rejectedCount > 0 && (
+      {rejectedCount > 0 && (
         <ModifiedViewBanner
-          rejectedCount={deck.rejectedCount}
+          rejectedCount={rejectedCount}
           onClearRejections={onClearRejections}
           isClearing={isClearingRejections}
         />
@@ -108,16 +115,16 @@ export function DeckDetailView({
       {summary.kind !== 'complete' && (
         <DeckActionPanels
           breakdown={snapshot.breakdown}
-          decisions={deck.decisions}
+          deckSwaps={deckSwaps}
           openMissing={summary.openMissing}
           shoppingData={shoppingData}
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
-          pendingSubstituteId={pendingSubstituteId}
-          onApproveSubstitute={onApproveSubstitute}
-          onRejectSubstitute={onRejectSubstitute}
-          onResetSubstitute={onResetSubstitute}
+          pendingSwapId={pendingSwapId}
+          onApproveSwap={onApproveSwap}
+          onRejectSwap={onRejectSwap}
+          onUndoSwap={onUndoSwap}
           onFetchVariants={onFetchVariants}
           fetchMutationStatus={fetchMutationStatus}
           isCooldownActive={isCooldownActive}

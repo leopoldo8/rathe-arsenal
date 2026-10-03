@@ -38,11 +38,6 @@ vi.mock('../../card-art/CardLightbox', () => ({
   ),
 }));
 vi.mock('../../card-art/use-lightbox-sources', () => ({ lightboxSourcesFor: () => [] }));
-vi.mock('../SubstitutionRow', () => ({
-  SubstitutionRow: ({ original }: { original: { name: string } }) => (
-    <li data-testid="substitution-row">{original.name}</li>
-  ),
-}));
 vi.mock('../MarkOwnedButton', () => ({
   MarkOwnedButton: () => <button data-testid="mark-owned-btn">Own it</button>,
 }));

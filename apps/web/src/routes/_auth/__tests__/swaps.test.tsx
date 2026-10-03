@@ -1,57 +1,25 @@
 /**
- * Swaps page comprehensive test suite
- *
- * Covers:
- *  Unit — filter helpers (applyFilters, computeTabCounts, deriveUniqueDecks):
- *    - Each filter dimension separately (state, tier, deck, hero, confidence)
- *    - Filter combinations
- *    - Tab counter correctness
- *    - deriveUniqueDecks deduplication
- *
- *  Integration — SwapsPage component (with mocked API + router):
- *    - Approve a row → query refetches → row appears in Approved tab
- *    - Reject a row → row appears in Rejected tab
- *    - Reset a row → row returns to Pending tab
- *    - Bulk approve N rows → succeeded count + success toast
- *    - Network error → error toast + state remains
- *    - Transaction error → consolidated error toast
- *    - Partial failure (NOT_ACCESSIBLE) → success toast uses succeeded count
- *    - All tab shows all rows
- *    - Filter tier=2 + state=pending → only tier-2 pending rows
- *    - Search state preserved after action
- *    - Buttons disabled while mutation pending
- *    - Empty state — no-subs (total=0)
- *    - Empty state — all-reviewed (pending=0, others>0)
- *    - Per-row approve dispatches 1 APPROVED operation
- *    - Per-row reject dispatches 1 REJECTED operation
- *    - Per-row reset dispatches 1 reset: true operation
- *    - Bulk select-all + approve
- *    - Clear selection resets selectedIds
- *    - Tab badge counts reflect full dataset (not filtered subset)
- *    - h1 heading text is "Swaps"
- *
- *  Cross-page sync:
- *    - After approving on SwapsPage, the REVIEWS_QUERY_KEY is invalidated so
- *      a deck-detail page query also sees the new state (mocked via queryClient spy)
- *    - After a deck-detail decision mutation, deck-detail queries are invalidated —
- *      confirmed via useBulkReviewsMutation's onSuccess invalidation of deck-detail
+ * /swaps page — drives the real page, tabs, filters, rows and bulk bar against
+ * an in-memory fake of the swaps API. Only the router and the toast are stubbed.
  */
-
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import React, { useSyncExternalStore } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { IReviewRow, IBulkUpsertResult } from '../../../api/reviews';
-import { applyFilters, computeTabCounts, deriveUniqueDecks } from '../-swaps.helpers';
-import type { ISwapsSearch, IReviewRowGroup } from '../-swaps.helpers';
+import { ApiError } from '../../../lib/api-client';
+import type { ISwapRow } from '../../../api/swaps';
+import type { ISwapsSearch } from '../-swaps.helpers';
+import pageStyles from '../swaps.module.css';
+import tabStyles from '../../../components/swaps/SwapsTabs.module.css';
+import rowListStyles from '../../../components/swaps/SwapsRowList.module.css';
+import { makeSwapRow } from '../../../test/swap-fixtures';
 
-// ============================================================================
-// Mocks
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Router stub — a tiny store so navigate() really re-renders the page.
+// ---------------------------------------------------------------------------
 
-// TanStack Router
-let mockSearchState: ISwapsSearch = {
+const DEFAULT_SEARCH: ISwapsSearch = {
   state: 'pending',
   tier: [],
   deck: [],
@@ -60,1158 +28,662 @@ let mockSearchState: ISwapsSearch = {
   confidenceMax: 100,
 };
 
-const mockNavigate = vi.fn();
-
-vi.mock('@tanstack/react-router', () => {
-  const routeApi = {
-    useSearch: () => mockSearchState,
-    useNavigate: () => mockNavigate,
-  };
-
-  return {
-    createFileRoute: (_path: string) => (config: Record<string, unknown>) => ({
-      ...routeApi,
-      component: config.component,
-    }),
-    redirect: (opts: unknown) => ({ _isRedirect: true, ...((opts as object) ?? {}) }),
-    useNavigate: () => mockNavigate,
-    useSearch: () => mockSearchState,
-    Route: routeApi,
-  };
+let currentSearch: ISwapsSearch = DEFAULT_SEARCH;
+const listeners = new Set<() => void>();
+const mockNavigate = vi.fn((options: { search?: ISwapsSearch; to?: string }) => {
+  if (options.search) {
+    currentSearch = options.search;
+    listeners.forEach((listener) => listener());
+  }
 });
 
-// Toast
-const mockShowToast = vi.fn();
-vi.mock('../../../components/ui/Toast/useToast', () => ({
-  useToast: () => ({ show: mockShowToast }),
-}));
-
-// CardArt
-vi.mock('../../../components/card-art/CardArt', () => ({
-  CardArt: ({ name }: { name: string }) => <div data-testid="card-art">{name}</div>,
-}));
-
-// Radix Tabs
-vi.mock('@radix-ui/react-tabs', () => ({
-  Root: ({
-    children,
-    value,
-    onValueChange,
-  }: {
-    children: React.ReactNode;
-    value: string;
-    onValueChange: (v: string) => void;
-  }) => (
-    <div data-testid="tabs-root" data-value={value}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(
-            child as React.ReactElement<{ onValueChange?: (v: string) => void }>,
-            { onValueChange },
-          );
-        }
-        return child;
-      })}
-    </div>
-  ),
-  List: ({ children }: { children: React.ReactNode }) => (
-    <div role="tablist">{children}</div>
-  ),
-  Trigger: ({
-    children,
-    value,
-    onValueChange,
-  }: {
-    children: React.ReactNode;
-    value: string;
-    onValueChange?: (v: string) => void;
-  }) => (
-    <button role="tab" data-value={value} onClick={() => onValueChange?.(value)}>
-      {children}
-    </button>
-  ),
-  Content: ({ children }: { children: React.ReactNode }) => (
-    <div role="tabpanel">{children}</div>
-  ),
-}));
-
-// Radix Popover — stub that hides content to prevent checkbox interference
-vi.mock('@radix-ui/react-popover', () => ({
-  Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Trigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Portal: () => null,
-  Content: () => null,
-  Arrow: () => null,
-}));
-
-// Reviews API hooks
-let mockReviewsData: { rows: IReviewRow[] } | undefined;
-const mockBulkMutate = vi.fn();
-let mockIsBulkPending = false;
-// Track queryClient invalidations for cross-page sync tests
-const mockInvalidateQueries = vi.fn();
-
-vi.mock('../../../api/reviews', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../api/reviews')>();
-  return {
-    ...actual,
-    useReviewsQuery: () => ({
-      data: mockReviewsData,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    }),
-    useBulkReviewsMutation: () => ({
-      mutate: mockBulkMutate,
-      isPending: mockIsBulkPending,
-    }),
-  };
-});
-
-import { SwapsPage } from '../swaps';
-
-// ============================================================================
-// Fixtures
-// ============================================================================
-
-function makeRow(overrides: Partial<IReviewRow> = {}): IReviewRow {
-  return {
-    trackedDeckId: 1,
-    deckName: 'Test Deck',
-    hero: 'Briar',
-    cardIdentifier: 'ARC001',
-    originalName: 'ARC001',
-    substituteIdentifier: 'ELE001',
-    substituteName: 'Sub Card A',
-    tier: 1,
-    confidence: 80,
-    rationale: 'Good fit.',
-    decision: 'pending',
-    originalImageUrl: null,
-    substituteImageUrl: null,
-    originalPitch: 1,
-    substitutePitch: 1,
-    originalType: 'action',
-    substituteType: 'action',
-    ...overrides,
-  };
-}
-
-function make10PendingRows(): IReviewRow[] {
-  return Array.from({ length: 10 }, (_, i) =>
-    makeRow({
-      cardIdentifier: `ARC${String(i).padStart(3, '0')}`,
-      substituteIdentifier: `ELE${String(i).padStart(3, '0')}`,
-      substituteName: `Substitute ${i}`,
-      decision: 'pending',
-    }),
+function useStoredSearch(): ISwapsSearch {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => currentSearch,
   );
 }
 
-/**
- * Wraps raw `IReviewRow[]` into `IReviewRowGroup[]` (each row as a count-1 group)
- * for use in `applyFilters` / `computeTabCounts` unit tests after the T3 signature
- * change.
- */
-function toGroups(rows: readonly IReviewRow[]): IReviewRowGroup[] {
-  return rows.map((row) => ({ row, count: 1 }));
+vi.mock('@tanstack/react-router', () => ({
+  createFileRoute: () => (config: Record<string, unknown>) => ({
+    useSearch: useStoredSearch,
+    useNavigate: () => mockNavigate,
+    component: config.component,
+  }),
+  Link: (props: { to: string; params?: { deckId: string }; children: React.ReactNode; className?: string }) => (
+    <a href={props.to.replace('$deckId', props.params?.deckId ?? '')} className={props.className}>
+      {props.children}
+    </a>
+  ),
+}));
+
+const mockShow = vi.fn();
+vi.mock('../../../components/ui/Toast/useToast', () => ({
+  useToast: () => ({ show: mockShow }),
+}));
+
+// ---------------------------------------------------------------------------
+// Fake swaps API
+// ---------------------------------------------------------------------------
+
+let store: ISwapRow[] = [];
+let failures: Map<string, ApiError>;
+const requests: Array<{ method: string; url: string; body: unknown }> = [];
+
+function applyAction(row: ISwapRow, action: string, body: Record<string, unknown>): ISwapRow {
+  switch (action) {
+    case 'approve':
+      return { ...row, status: 'approved', appliedAt: new Date().toISOString() };
+    case 'revert':
+      return { ...row, status: 'pending', appliedAt: null, outcome: null };
+    case 'reject':
+      return {
+        ...row,
+        status: 'rejected',
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: (body.reason as ISwapRow['rejectionReason']) ?? null,
+        rejectionNote: (body.note as string | undefined) ?? null,
+      };
+    case 'restore':
+      return { ...row, status: 'pending', rejectedAt: null, rejectionReason: null, rejectionNote: null };
+    case 'outcome':
+      return { ...row, outcome: body.outcome as ISwapRow['outcome'] };
+    default:
+      throw new Error(`unknown action ${action}`);
+  }
 }
 
-// ============================================================================
-// Wrapper
-// ============================================================================
+const mockApiFetch = vi.fn(async (url: string, init?: RequestInit) => {
+  const method = init?.method ?? 'GET';
+  const body = init?.body ? (JSON.parse(init.body as string) as Record<string, unknown>) : {};
+  requests.push({ method, url, body });
 
-function createTestQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0, staleTime: 0 },
-      mutations: { retry: false },
-    },
-  });
-}
+  if (method === 'GET') return { rows: store };
+
+  const [, , id, action] = url.split('/');
+  const failure = failures.get(`${id}:${action}`);
+  if (failure) throw failure;
+  const index = store.findIndex((row) => row.id === id);
+  const current = store[index];
+  if (!current) throw new ApiError(404, 'not found');
+  const next = applyAction(current, action as string, body);
+  store = store.map((row, i) => (i === index ? next : row));
+  return { deckId: next.trackedDeckId, swap: next, rows: store.filter((row) => row.trackedDeckId === next.trackedDeckId) };
+});
+
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => mockApiFetch };
+});
+
+// ---------------------------------------------------------------------------
+
+import { Route } from '../swaps';
+
+const SwapsPage = (Route as unknown as { component: React.FC }).component;
 
 function renderPage() {
-  const qc = createTestQueryClient();
-  // Spy on invalidateQueries for cross-page sync assertions
-  vi.spyOn(qc, 'invalidateQueries').mockImplementation(mockInvalidateQueries);
-  return {
-    queryClient: qc,
-    ...render(
-      <QueryClientProvider client={qc}>
-        <SwapsPage />
-      </QueryClientProvider>,
-    ),
-  };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <SwapsPage />
+    </QueryClientProvider>,
+  );
 }
 
-// ============================================================================
-// Setup
-// ============================================================================
+async function renderLoaded() {
+  const view = renderPage();
+  await screen.findByRole('tablist');
+  await waitFor(() => expect(screen.queryByLabelText('Carregando as trocas')).toBeNull());
+  return view;
+}
+
+function tab(name: RegExp) {
+  return screen.getByRole('tab', { name });
+}
+
+function rowFor(id: string): HTMLElement {
+  const row = screen
+    .getAllByTestId('swap-row')
+    .find((candidate) => candidate.getAttribute('data-row-id') === id);
+  if (!row) throw new Error(`no row ${id}`);
+  return row;
+}
+
+function postsTo(action: string): typeof requests {
+  return requests.filter((request) => request.method === 'POST' && request.url.endsWith(`/${action}`));
+}
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  mockSearchState = {
-    state: 'pending',
-    tier: [],
-    deck: [],
-    hero: [],
-    confidenceMin: 0,
-    confidenceMax: 100,
-  };
-  mockReviewsData = undefined;
-  mockIsBulkPending = false;
-
-  // Default: simulate successful bulk mutation with succeeded = ops.length
-  mockBulkMutate.mockImplementation(
-    (ops: unknown[], callbacks?: { onSuccess?: (r: IBulkUpsertResult) => void }) => {
-      const result: IBulkUpsertResult = {
-        succeeded: Array.isArray(ops) ? ops.length : 0,
-        failed: [],
-      };
-      callbacks?.onSuccess?.(result);
-    },
-  );
+  currentSearch = DEFAULT_SEARCH;
+  store = [];
+  failures = new Map();
+  requests.length = 0;
+  mockApiFetch.mockClear();
+  mockNavigate.mockClear();
+  mockShow.mockClear();
 });
 
-afterEach(() => {
-  vi.clearAllMocks();
-});
-
-// ============================================================================
-// UNIT TESTS — applyFilters
-// ============================================================================
-// NOTE: applyFilters now operates on IReviewRowGroup[]. Unit tests wrap raw row
-// fixtures with toGroups() and access result members via result[N].row.* .
-
-describe('applyFilters — state filter', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ cardIdentifier: 'P1', decision: 'pending' }),
-    makeRow({ cardIdentifier: 'A1', decision: 'approved' }),
-    makeRow({ cardIdentifier: 'R1', decision: 'rejected' }),
-  ];
-
-  it('state=pending returns only pending groups', () => {
-    const result = applyFilters(toGroups(rows), { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.row.cardIdentifier).toBe('P1');
-  });
-
-  it('state=approved returns only approved groups', () => {
-    const result = applyFilters(toGroups(rows), { state: 'approved', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.row.cardIdentifier).toBe('A1');
-  });
-
-  it('state=rejected returns only rejected groups', () => {
-    const result = applyFilters(toGroups(rows), { state: 'rejected', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.row.cardIdentifier).toBe('R1');
-  });
-
-  it('state=all returns all groups', () => {
-    const result = applyFilters(toGroups(rows), { state: 'all', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 });
-    expect(result).toHaveLength(3);
-  });
-});
-
-describe('applyFilters — tier filter', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ cardIdentifier: 'T1', tier: 1 }),
-    makeRow({ cardIdentifier: 'T2a', tier: 2 }),
-    makeRow({ cardIdentifier: 'T2b', tier: 2 }),
-    makeRow({ cardIdentifier: 'T3', tier: 3 }),
-  ];
-
-  const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
-
-  it('no tier filter returns all groups', () => {
-    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(4);
-  });
-
-  it('tier=[2] returns only tier-2 groups', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, tier: [2] });
-    expect(result).toHaveLength(2);
-    result.forEach(({ row: r }) => expect(r.tier).toBe(2));
-  });
-
-  it('tier=[1,3] returns tier-1 and tier-3 groups', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, tier: [1, 3] });
-    expect(result).toHaveLength(2);
-    expect(result.map(({ row: r }) => r.tier).sort()).toEqual([1, 3]);
-  });
-});
-
-describe('applyFilters — deck filter', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ trackedDeckId: 1, cardIdentifier: 'D1_A' }),
-    makeRow({ trackedDeckId: 2, cardIdentifier: 'D2_A' }),
-    makeRow({ trackedDeckId: 1, cardIdentifier: 'D1_B' }),
-  ];
-
-  const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
-
-  it('no deck filter returns all groups', () => {
-    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(3);
-  });
-
-  it('deck=[1] returns only groups from trackedDeckId=1', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, deck: ['1'] });
-    expect(result).toHaveLength(2);
-    result.forEach(({ row: r }) => expect(r.trackedDeckId).toBe(1));
-  });
-
-  it('deck=[2] returns only groups from trackedDeckId=2', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, deck: ['2'] });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.row.trackedDeckId).toBe(2);
-  });
-});
-
-describe('applyFilters — hero filter', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ cardIdentifier: 'B1', hero: 'Briar' }),
-    makeRow({ cardIdentifier: 'B2', hero: 'Briar' }),
-    makeRow({ cardIdentifier: 'D1', hero: 'Dromai' }),
-  ];
-
-  const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
-
-  it('no hero filter returns all groups', () => {
-    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(3);
-  });
-
-  it('hero=[Briar] returns only Briar groups', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, hero: ['Briar'] });
-    expect(result).toHaveLength(2);
-    result.forEach(({ row: r }) => expect(r.hero).toBe('Briar'));
-  });
-
-  it('hero=[Dromai,Briar] returns all groups when all heroes selected', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, hero: ['Dromai', 'Briar'] });
-    expect(result).toHaveLength(3);
-  });
-});
-
-describe('applyFilters — confidence range', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ cardIdentifier: 'C20', confidence: 20 }),
-    makeRow({ cardIdentifier: 'C50', confidence: 50 }),
-    makeRow({ cardIdentifier: 'C80', confidence: 80 }),
-    makeRow({ cardIdentifier: 'C100', confidence: 100 }),
-  ];
-
-  const baseSearch: ISwapsSearch = { state: 'pending', tier: [], deck: [], hero: [], confidenceMin: 0, confidenceMax: 100 };
-
-  it('full range returns all groups', () => {
-    expect(applyFilters(toGroups(rows), baseSearch)).toHaveLength(4);
-  });
-
-  it('min=50 excludes groups below 50', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMin: 50 });
-    expect(result).toHaveLength(3); // 50, 80, 100
-    result.forEach(({ row: r }) => expect(r.confidence).toBeGreaterThanOrEqual(50));
-  });
-
-  it('max=80 excludes groups above 80', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMax: 80 });
-    expect(result).toHaveLength(3); // 20, 50, 80
-    result.forEach(({ row: r }) => expect(r.confidence).toBeLessThanOrEqual(80));
-  });
-
-  it('min=50, max=80 returns groups in [50, 80]', () => {
-    const result = applyFilters(toGroups(rows), { ...baseSearch, confidenceMin: 50, confidenceMax: 80 });
-    expect(result).toHaveLength(2); // 50, 80
-  });
-});
-
-describe('applyFilters — combinations', () => {
-  const rows: IReviewRow[] = [
-    makeRow({ cardIdentifier: 'COMBO1', tier: 2, hero: 'Briar', confidence: 70, decision: 'pending' }),
-    makeRow({ cardIdentifier: 'COMBO2', tier: 2, hero: 'Dromai', confidence: 70, decision: 'pending' }),
-    makeRow({ cardIdentifier: 'COMBO3', tier: 1, hero: 'Briar', confidence: 70, decision: 'pending' }),
-    makeRow({ cardIdentifier: 'COMBO4', tier: 2, hero: 'Briar', confidence: 30, decision: 'pending' }),
-  ];
-
-  it('tier=2 + hero=Briar + confidence>=60 returns only matching group', () => {
-    const result = applyFilters(toGroups(rows), {
-      state: 'pending',
-      tier: [2],
-      deck: [],
-      hero: ['Briar'],
-      confidenceMin: 60,
-      confidenceMax: 100,
-    });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.row.cardIdentifier).toBe('COMBO1');
-  });
-});
-
-// ============================================================================
-// UNIT TESTS — computeTabCounts
-// ============================================================================
-
-describe('computeTabCounts', () => {
-  it('returns zeros for empty groups', () => {
-    const counts = computeTabCounts([]);
-    expect(counts).toEqual({ pending: 0, approved: 0, rejected: 0, all: 0 });
-  });
-
-  it('counts pending groups correctly', () => {
-    const rows = [
-      makeRow({ decision: 'pending' }),
-      makeRow({ decision: 'pending' }),
-      makeRow({ decision: 'approved' }),
+describe('/swaps — tabs and counts (SWAP-09)', () => {
+  it('derives every tab count from the rows, retired rows excluded', async () => {
+    store = [
+      makeSwapRow({ id: 'p1', status: 'pending' }),
+      makeSwapRow({ id: 'p2', status: 'pending' }),
+      makeSwapRow({ id: 'a1', status: 'approved' }),
+      makeSwapRow({ id: 'r1', status: 'rejected' }),
+      makeSwapRow({ id: 'x1', status: 'retired' }),
     ];
-    const counts = computeTabCounts(toGroups(rows));
-    expect(counts.pending).toBe(2);
-    expect(counts.approved).toBe(1);
-    expect(counts.rejected).toBe(0);
-    expect(counts.all).toBe(3);
+    await renderLoaded();
+
+    expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 2');
+    expect(tab(/^Aplicadas/)).toHaveAccessibleName('Aplicadas — 1');
+    expect(tab(/^Recusadas/)).toHaveAccessibleName('Recusadas — 1');
+    expect(tab(/^Todas/)).toHaveAccessibleName('Todas — 4');
   });
 
-  it('all count = total group count regardless of state', () => {
-    const rows = [
-      makeRow({ decision: 'pending' }),
-      makeRow({ decision: 'approved' }),
-      makeRow({ decision: 'rejected' }),
+  it('shows zero on every tab for an empty account instead of a hardcoded number', async () => {
+    await renderLoaded();
+
+    expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 0');
+    expect(tab(/^Aplicadas/)).toHaveAccessibleName('Aplicadas — 0');
+  });
+
+  it('lists only the active tab rows and keeps the all pill alongside the three tabs', async () => {
+    store = [
+      makeSwapRow({ id: 'p1', status: 'pending' }),
+      makeSwapRow({ id: 'a1', status: 'approved', appliedAt: new Date().toISOString() }),
     ];
-    expect(computeTabCounts(toGroups(rows)).all).toBe(3);
+    await renderLoaded();
+    expect(screen.getAllByTestId('swap-row')).toHaveLength(1);
+
+    await userEvent.click(tab(/^Aplicadas/));
+    expect(screen.getAllByTestId('swap-row').map((row) => row.getAttribute('data-row-id'))).toEqual(['a1']);
+
+    await userEvent.click(tab(/^Todas/));
+    expect(screen.getAllByTestId('swap-row')).toHaveLength(2);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
   });
 
-  it('counts groups not raw copies — group with count=2 counts as 1 unit (SWAPGRP-13)', () => {
-    // A group that represents 2 identical copies must count as 1 in the tab badge,
-    // not as 2. This keeps the list row count consistent with the tab badge count.
-    const groups: IReviewRowGroup[] = [
-      { row: makeRow({ cardIdentifier: 'DUP1', substituteIdentifier: 'ELE-DUP1', decision: 'pending' }), count: 2 },
-      { row: makeRow({ cardIdentifier: 'DUP2', substituteIdentifier: 'ELE-DUP2', decision: 'approved' }), count: 1 },
+  it('writes one explanatory line per tab', async () => {
+    await renderLoaded();
+    expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/esperando a sua decisão/);
+
+    await userEvent.click(tab(/^Aplicadas/));
+    expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/valendo no deck agora/);
+
+    await userEvent.click(tab(/^Recusadas/));
+    expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/não volta a sugerir/);
+  });
+
+  it('keeps tab counts on the full set when an attribute filter narrows the list', async () => {
+    store = [
+      makeSwapRow({ id: 'p1', status: 'pending', tier: 1 }),
+      makeSwapRow({ id: 'p2', status: 'pending', tier: 2 }),
     ];
-    const counts = computeTabCounts(groups);
-    expect(counts.pending).toBe(1);   // 1 group, not 2 copies
-    expect(counts.approved).toBe(1);
-    expect(counts.all).toBe(2);       // 2 groups total, not 3 raw copies
-  });
-});
+    currentSearch = { ...DEFAULT_SEARCH, tier: [2] };
+    await renderLoaded();
 
-// ============================================================================
-// UNIT TESTS — deriveUniqueDecks
-// ============================================================================
-
-describe('deriveUniqueDecks', () => {
-  it('returns empty array for empty rows', () => {
-    expect(deriveUniqueDecks([])).toHaveLength(0);
+    expect(screen.getAllByTestId('swap-row')).toHaveLength(1);
+    expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 2');
   });
 
-  it('deduplicates decks by trackedDeckId', () => {
-    const rows = [
-      makeRow({ trackedDeckId: 1, deckName: 'Deck A' }),
-      makeRow({ trackedDeckId: 1, deckName: 'Deck A' }),
-      makeRow({ trackedDeckId: 2, deckName: 'Deck B' }),
+  it('puts the centred 1180px column class on the page root and the tab class on every trigger', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    const { container } = await renderLoaded();
+
+    expect(container.firstElementChild).toHaveClass(pageStyles.page!);
+    for (const trigger of screen.getAllByRole('tab')) expect(trigger).toHaveClass(tabStyles.trigger!);
+    expect(screen.getByRole('list')).toHaveClass(rowListStyles.list!);
+  });
+
+  it('keeps pending + applied + rejected equal to the all count for any mix', async () => {
+    store = [
+      makeSwapRow({ status: 'pending' }),
+      makeSwapRow({ status: 'approved' }),
+      makeSwapRow({ status: 'approved' }),
+      makeSwapRow({ status: 'rejected' }),
+      makeSwapRow({ status: 'retired' }),
     ];
-    const decks = deriveUniqueDecks(rows);
-    expect(decks).toHaveLength(2);
+    await renderLoaded();
+
+    const count = (name: string): number => Number(tab(new RegExp(`^${name}`)).getAttribute('aria-label')?.split('—').pop()?.trim());
+    expect(count('Pendentes') + count('Aplicadas') + count('Recusadas')).toBe(count('Todas'));
   });
 
-  it('uses string trackedDeckId as id', () => {
-    const rows = [makeRow({ trackedDeckId: 42, deckName: 'My Deck' })];
-    const decks = deriveUniqueDecks(rows);
-    expect(decks[0]?.id).toBe('42');
-    expect(decks[0]?.name).toBe('My Deck');
-  });
-});
+  it('renders the page heading as the only h1', async () => {
+    await renderLoaded();
 
-// ============================================================================
-// INTEGRATION TESTS — SwapsPage component
-// ============================================================================
-
-describe('SwapsPage — page heading', () => {
-  it('renders "Substituições" as the h1 heading', () => {
-    mockReviewsData = { rows: [] };
-    renderPage();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Substituições');
-  });
-
-  it('has exactly one h1', () => {
-    mockReviewsData = { rows: [] };
-    renderPage();
-    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Trocas');
   });
 });
 
-describe('SwapsPage — happy path: rows render', () => {
-  it('renders 10 swap rows in Pending tab', () => {
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(10);
+describe('/swaps — approve with in-place confirmation (SWAP-04, SWAP-08)', () => {
+  beforeEach(() => {
+    store = [
+      makeSwapRow({ id: 'p1', status: 'pending' }),
+      makeSwapRow({ id: 'p2', status: 'pending' }),
+    ];
   });
 
-  it('shows only approved rows when state=approved', () => {
-    mockSearchState = { ...mockSearchState, state: 'approved' };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'PEND001', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'APP001', decision: 'approved' }),
-        makeRow({ cardIdentifier: 'APP002', decision: 'approved' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
+  it('calls only the approve endpoint of that swap', async () => {
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+
+    await waitFor(() => expect(postsTo('approve')).toHaveLength(1));
+    expect(postsTo('approve')[0]?.url).toBe('/swaps/p1/approve');
   });
 
-  it('shows all rows when state=all', () => {
-    mockSearchState = { ...mockSearchState, state: 'all' };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'PEND001', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'APP001', decision: 'approved' }),
-        makeRow({ cardIdentifier: 'REJ001', decision: 'rejected' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(3);
+  it('keeps the row in Pendentes with the confirmation and Desfazer', async () => {
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+
+    const row = rowFor('p1');
+    expect(await within(row).findByRole('status')).toHaveTextContent('Aprovada — aplicada ao deck');
+    expect(within(row).getByRole('button', { name: /^Desfazer/ })).toBeInTheDocument();
+    expect(screen.getAllByTestId('swap-row')).toHaveLength(2);
+  });
+
+  it('moves the counts at once while the row stays put', async () => {
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+
+    await waitFor(() => expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 1'));
+    expect(tab(/^Aplicadas/)).toHaveAccessibleName('Aplicadas — 1');
+    expect(rowFor('p1')).toBeInTheDocument();
+  });
+
+  it('migrates the row only on a tab switch, and it is gone from Pendentes on return', async () => {
+    await renderLoaded();
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+    await within(rowFor('p1')).findByRole('status');
+
+    await userEvent.click(tab(/^Aplicadas/));
+    expect(within(rowFor('p1')).getByText('Reverter')).toBeInTheDocument();
+    expect(within(rowFor('p1')).queryByRole('status')).toBeNull();
+
+    await userEvent.click(tab(/^Pendentes/));
+    expect(screen.getAllByTestId('swap-row').map((row) => row.getAttribute('data-row-id'))).toEqual(['p2']);
+  });
+
+  it('migrates the row on remount too', async () => {
+    const first = await renderLoaded();
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+    await within(rowFor('p1')).findByRole('status');
+    first.unmount();
+
+    await renderLoaded();
+
+    expect(screen.getAllByTestId('swap-row').map((row) => row.getAttribute('data-row-id'))).toEqual(['p2']);
+  });
+
+  it('Desfazer calls revert and gives the row its Aprovar button back', async () => {
+    await renderLoaded();
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+    await userEvent.click(await within(rowFor('p1')).findByRole('button', { name: /^Desfazer/ }));
+
+    await waitFor(() => expect(postsTo('revert')).toHaveLength(1));
+    expect(postsTo('revert')[0]?.url).toBe('/swaps/p1/revert');
+    await waitFor(() => expect(within(rowFor('p1')).getByText('Aprovar')).toBeInTheDocument());
+    expect(within(rowFor('p1')).queryByRole('status')).toBeNull();
+    expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 2');
   });
 });
 
-describe('SwapsPage — approve action moves row to Approved tab', () => {
-  it('approve a row calls mutate with APPROVED keyed by substituteIdentifier', async () => {
-    // Fix regression: cardIdentifier in the operation must be the SUBSTITUTE id,
-    // not the original. deck-detail and loadExclusions look up by substitute.
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'SINGLE001', substituteIdentifier: 'SUB-SINGLE001' })],
-    };
-    renderPage();
+describe('/swaps — reject, restore and revert (SWAP-05..07)', () => {
+  it('rejects with the enum reason and the note, then confirms in place', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    await renderLoaded();
 
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar SINGLE001/i }));
+    await userEvent.click(within(rowFor('p1')).getByText('Recusar'));
+    await userEvent.click(screen.getByRole('button', { name: 'Muda o plano do deck' }));
+    await userEvent.type(screen.getByLabelText('Quer detalhar? (opcional)'), 'troquei de herói');
+    await userEvent.click(screen.getByText('Recusar troca'));
 
-    expect(mockBulkMutate).toHaveBeenCalledOnce();
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    expect(ops).toBeDefined();
-    expect(ops).toHaveLength(1);
-    // Must be the SUBSTITUTE id, not the original 'SINGLE001'.
-    expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-SINGLE001', decision: 'APPROVED' });
-
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: '1 substituição aprovada' }),
+    await waitFor(() => expect(postsTo('reject')).toHaveLength(1));
+    expect(postsTo('reject')[0]?.body).toEqual({ reason: 'changes_plan', note: 'troquei de herói' });
+    expect(await within(rowFor('p1')).findByRole('status')).toHaveTextContent(
+      'Rejeitada — não será sugerida de novo',
     );
   });
 
-  it('after approve, the query invalidation is triggered (key=[reviews])', () => {
-    // Simulate the real mutation's onSuccess behavior via the mock
-    // The actual invalidation is done inside useBulkReviewsMutation.onSuccess
-    // We verify the toast (which proves onSuccess ran) and the mutate call
-    mockReviewsData = { rows: [makeRow({ cardIdentifier: 'INV001' })] };
-    renderPage();
+  it('Desfazer on a rejection calls restore', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    await renderLoaded();
+    await userEvent.click(within(rowFor('p1')).getByText('Recusar'));
+    await userEvent.click(screen.getByText('Recusar troca'));
+    await userEvent.click(await within(rowFor('p1')).findByRole('button', { name: /^Desfazer/ }));
 
-    // The mock calls onSuccess which triggers the toast — the real hook also
-    // calls queryClient.invalidateQueries({ queryKey: ['reviews'] })
-    // We confirm the flow by checking the mock was called and toast fired
-    expect(mockReviewsData.rows[0]?.cardIdentifier).toBe('INV001');
+    await waitFor(() => expect(postsTo('restore')).toHaveLength(1));
+    expect(postsTo('restore')[0]?.url).toBe('/swaps/p1/restore');
   });
-});
 
-describe('SwapsPage — reject action', () => {
-  it('reject a row calls mutate with REJECTED keyed by substituteIdentifier', async () => {
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'REJ001', substituteIdentifier: 'SUB-REJ001' })],
-    };
-    renderPage();
+  it('Recusadas shows the quoted reason and Restaurar sends the row back to Pendentes', async () => {
+    store = [
+      makeSwapRow({
+        id: 'r1',
+        status: 'rejected',
+        rejectedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+        rejectionReason: 'dont_own',
+      }),
+    ];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'rejected' };
+    await renderLoaded();
 
-    await userEvent.click(screen.getByRole('button', { name: /Rejeitar REJ001/i }));
+    expect(within(rowFor('r1')).getByText(/“Não tenho essa carta”/)).toBeInTheDocument();
+    await userEvent.click(within(rowFor('r1')).getByText('Restaurar'));
 
-    expect(mockBulkMutate).toHaveBeenCalledOnce();
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    // Must be the SUBSTITUTE id, not the original 'REJ001'.
-    expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-REJ001', decision: 'REJECTED' });
+    await waitFor(() => expect(postsTo('restore')).toHaveLength(1));
+    await waitFor(() => expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 1'));
+    expect(tab(/^Recusadas/)).toHaveAccessibleName('Recusadas — 0');
+  });
 
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: '1 substituição rejeitada' }),
+  it('Reverter on an applied swap moves it back to Pendentes', async () => {
+    store = [makeSwapRow({ id: 'a1', status: 'approved', appliedAt: new Date().toISOString() })];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'approved' };
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('a1')).getByText('Reverter'));
+
+    await waitFor(() => expect(postsTo('revert')).toHaveLength(1));
+    await waitFor(() => expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 1'));
+  });
+
+  it('records the post-play outcome on an applied swap', async () => {
+    store = [makeSwapRow({ id: 'a1', status: 'approved', appliedAt: new Date().toISOString() })];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'approved' };
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('a1')).getByRole('button', { name: 'Funcionou' }));
+
+    await waitFor(() => expect(postsTo('outcome')).toHaveLength(1));
+    expect(postsTo('outcome')[0]?.body).toEqual({ outcome: 'worked' });
+    await waitFor(() =>
+      expect(within(rowFor('a1')).getByRole('button', { name: 'Funcionou' })).toHaveAttribute('aria-pressed', 'true'),
     );
   });
 });
 
-describe('SwapsPage — reset action', () => {
-  it('reset on an approved row sends reset: true keyed by substituteIdentifier', async () => {
-    mockSearchState = { ...mockSearchState, state: 'approved' };
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'APP001', substituteIdentifier: 'SUB-APP001', decision: 'approved' })],
-    };
-    renderPage();
+describe('/swaps — grouped rows (SWAP-11)', () => {
+  it('shows one row per group with its x N badge, counted once', async () => {
+    store = [makeSwapRow({ id: 'g1', quantity: 3 }), makeSwapRow({ id: 'g2', quantity: 1 })];
+    await renderLoaded();
 
-    // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para APP001/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para APP001/i }));
+    expect(screen.getAllByTestId('swap-row')).toHaveLength(2);
+    expect(within(rowFor('g1')).getByLabelText('3 cópias')).toHaveTextContent('× 3');
+    expect(within(rowFor('g2')).queryByLabelText(/cópias$/)).toBeNull();
+    expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 2');
+    expect(within(rowFor('g1')).getByText('Aprovar (× 3)')).toBeInTheDocument();
+  });
 
-    expect(mockBulkMutate).toHaveBeenCalledOnce();
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    // Must be the SUBSTITUTE id, not the original 'APP001'.
-    expect(ops![0]).toMatchObject({ cardIdentifier: 'SUB-APP001', reset: true });
+  it('approves the whole group with a single call', async () => {
+    store = [makeSwapRow({ id: 'g1', quantity: 3 })];
+    await renderLoaded();
 
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: '1 substituição redefinida' }),
-    );
+    await userEvent.click(within(rowFor('g1')).getByText('Aprovar (× 3)'));
+
+    await waitFor(() => expect(postsTo('approve')).toHaveLength(1));
   });
 });
 
-describe('SwapsPage — bulk operations', () => {
-  it('bulk approve 3 rows → 3 APPROVED operations + success toast', async () => {
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
+describe('/swaps — bulk actions (SWAP-14, DEV-09)', () => {
+  function pendingRows(count: number): ISwapRow[] {
+    return Array.from({ length: count }, (_, index) => makeSwapRow({ id: `b${index}`, status: 'pending' }));
+  }
 
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 3);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
+  async function select(ids: readonly string[]): Promise<void> {
+    for (const id of ids) await userEvent.click(within(rowFor(id)).getByRole('checkbox'));
+  }
 
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
+  it('approves the selected rows with one single-endpoint call each, in order', async () => {
+    store = pendingRows(3);
+    await renderLoaded();
+    await select(['b0', 'b1', 'b2']);
 
-    expect(mockBulkMutate).toHaveBeenCalledOnce();
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    expect(ops).toHaveLength(3);
-    expect((ops! as Array<{ decision: string }>).every((op) => op.decision === 'APPROVED')).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar selecionadas' }));
 
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', message: '3 substituições aprovadas' }),
+    await waitFor(() => expect(postsTo('approve')).toHaveLength(3));
+    expect(postsTo('approve').map((request) => request.url)).toEqual([
+      '/swaps/b0/approve',
+      '/swaps/b1/approve',
+      '/swaps/b2/approve',
+    ]);
+    await waitFor(() =>
+      expect(mockShow).toHaveBeenCalledWith({ kind: 'success', message: '3 trocas aprovadas' }),
     );
+    expect(screen.queryByText(/selecionadas$/)).toBeNull();
   });
 
-  it('bulk reject 2 rows → 2 REJECTED operations', async () => {
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
+  it('reports a partial failure honestly and keeps only the failed row selected', async () => {
+    store = pendingRows(3);
+    failures.set('b1:approve', new ApiError(500, 'boom'));
+    await renderLoaded();
+    await select(['b0', 'b1', 'b2']);
 
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 2);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar selecionadas' }));
 
-    await userEvent.click(screen.getByRole('button', { name: /Rejeitar 2 substituições/i }));
-
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    expect(ops).toHaveLength(2);
-    expect((ops! as Array<{ decision: string }>).every((op) => op.decision === 'REJECTED')).toBe(true);
-  });
-
-  it('bulk reset mixed-state rows → all ops have reset: true', async () => {
-    mockSearchState = { ...mockSearchState, state: 'all' };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'PEND001', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'APP001', decision: 'approved' }),
-        makeRow({ cardIdentifier: 'REJ001', decision: 'rejected' }),
-      ],
-    };
-    renderPage();
-
-    const checkboxes = screen.getAllByRole('checkbox');
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
-
-    await userEvent.click(screen.getByRole('button', { name: /Redefinir 3 substituições/i }));
-
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as unknown[] | undefined;
-    expect(ops).toHaveLength(3);
-    expect((ops! as Array<{ reset: boolean }>).every((op) => op.reset === true)).toBe(true);
-  });
-
-  it('selection is cleared after bulk action succeeds', async () => {
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
-
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 2);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
-
-    // Bulk bar should be visible
-    expect(screen.getByRole('region', { name: /Ações em lote/i })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
-
-    // Selection cleared — bulk "Aprovar 2 substituições" button should disappear
-    // (The aria-live region stays mounted; only interactive controls hide)
-    expect(screen.queryByRole('button', { name: /Aprovar 2 substituições/i })).not.toBeInTheDocument();
-  });
-});
-
-describe('SwapsPage — network error', () => {
-  it('shows error toast on onError callback', async () => {
-    mockBulkMutate.mockImplementation(
-      (_ops: unknown[], callbacks?: { onError?: () => void }) => {
-        callbacks?.onError?.();
-      },
-    );
-
-    mockReviewsData = { rows: [makeRow()] };
-    renderPage();
-
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar ARC001/i }));
-
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({
+    await waitFor(() =>
+      expect(mockShow).toHaveBeenCalledWith({
         kind: 'error',
-        message: 'Algumas alterações não puderam ser salvas — tente novamente',
+        message: '2 de 3 aprovadas — 1 falhou',
       }),
     );
+    expect(screen.getAllByTestId('swap-row').map((row) => row.getAttribute('data-row-id'))).toEqual(['b1']);
+    expect(within(rowFor('b1')).getByRole('checkbox')).toBeChecked();
+    expect(screen.getByText('1 selecionada')).toBeInTheDocument();
+    expect(tab(/^Aplicadas/)).toHaveAccessibleName('Aplicadas — 2');
   });
-});
 
-describe('SwapsPage — transactionError', () => {
-  it('shows consolidated error toast when server returns transactionError', async () => {
-    mockBulkMutate.mockImplementation(
-      (_ops: unknown[], callbacks?: { onSuccess?: (r: IBulkUpsertResult) => void }) => {
-        const result: IBulkUpsertResult = {
-          succeeded: 0,
-          failed: [],
-          transactionError: { code: 'TX_ABORT' },
-        };
-        callbacks?.onSuccess?.(result);
-      },
-    );
+  it('chooses the endpoint per row status: a rejected row is restored before it is approved', async () => {
+    store = [
+      makeSwapRow({ id: 'p', status: 'pending' }),
+      makeSwapRow({ id: 'r', status: 'rejected', rejectedAt: new Date().toISOString() }),
+    ];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'all' };
+    await renderLoaded();
+    await select(['p', 'r']);
 
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar selecionadas' }));
 
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 2);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar 2 substituições/i }));
-
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'error',
-        message: 'Algumas alterações não puderam ser salvas — tente novamente',
-      }),
-    );
+    await waitFor(() => expect(postsTo('approve')).toHaveLength(2));
+    expect(requests.filter((r) => r.method === 'POST').map((r) => r.url)).toEqual([
+      '/swaps/p/approve',
+      '/swaps/r/restore',
+      '/swaps/r/approve',
+    ]);
   });
-});
 
-describe('SwapsPage — NOT_ACCESSIBLE partial failure', () => {
-  it('success toast uses succeeded count even when some ops fail pre-validation', async () => {
-    mockBulkMutate.mockImplementation(
-      (_ops: unknown[], callbacks?: { onSuccess?: (r: IBulkUpsertResult) => void }) => {
-        const result: IBulkUpsertResult = {
-          succeeded: 2,
-          failed: [
-            { trackedDeckId: '99', cardIdentifier: 'INACCESSIBLE', error: 'NOT_ACCESSIBLE' },
-          ],
-        };
-        callbacks?.onSuccess?.(result);
-      },
+  it('bulk reject lands every selected row in Recusadas: pending ones directly, applied ones through a revert', async () => {
+    store = [
+      makeSwapRow({ id: 'p', status: 'pending' }),
+      makeSwapRow({ id: 'a', status: 'approved', appliedAt: new Date().toISOString() }),
+      makeSwapRow({ id: 'r', status: 'rejected', rejectedAt: new Date().toISOString() }),
+    ];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'all' };
+    await renderLoaded();
+    await select(['p', 'a', 'r']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Recusar selecionadas' }));
+
+    await waitFor(() => expect(tab(/^Recusadas/)).toHaveAccessibleName('Recusadas — 3'));
+    expect(requests.filter((r) => r.method === 'POST').map((r) => r.url)).toEqual([
+      '/swaps/p/reject',
+      '/swaps/a/revert',
+      '/swaps/a/reject',
+    ]);
+    expect(mockShow).toHaveBeenCalledWith({ kind: 'success', message: '2 trocas recusadas' });
+  });
+
+  it('refreshes the deck pages once for the whole bulk run, not once per row', async () => {
+    store = pendingRows(4);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    render(
+      <QueryClientProvider client={client}>
+        <SwapsPage />
+      </QueryClientProvider>,
     );
+    await screen.findByRole('tablist');
+    await waitFor(() => expect(screen.queryByLabelText('Carregando as trocas')).toBeNull());
+    await select(['b0', 'b1', 'b2', 'b3']);
 
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar selecionadas' }));
 
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 3);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
-    }
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
+    await waitFor(() => expect(postsTo('approve')).toHaveLength(4));
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    const deckListRefreshes = invalidate.mock.calls.filter(
+      (call) => JSON.stringify(call[0]?.queryKey) === JSON.stringify(['decks']),
+    );
+    expect(deckListRefreshes).toHaveLength(1);
+  });
 
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({
+  it('"Voltar a pendentes" reverts applied rows and restores rejected ones', async () => {
+    store = [
+      makeSwapRow({ id: 'a', status: 'approved', appliedAt: new Date().toISOString() }),
+      makeSwapRow({ id: 'r', status: 'rejected', rejectedAt: new Date().toISOString() }),
+    ];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'all' };
+    await renderLoaded();
+    await select(['a', 'r']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar a pendentes' }));
+
+    await waitFor(() => expect(postsTo('restore')).toHaveLength(1));
+    expect(postsTo('revert').map((r) => r.url)).toEqual(['/swaps/a/revert']);
+    expect(postsTo('restore').map((r) => r.url)).toEqual(['/swaps/r/restore']);
+  });
+
+  it('says so when nothing needed the action, without calling the API', async () => {
+    store = [makeSwapRow({ id: 'a', status: 'approved', appliedAt: new Date().toISOString() })];
+    currentSearch = { ...DEFAULT_SEARCH, state: 'approved' };
+    await renderLoaded();
+    await select(['a']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar selecionadas' }));
+
+    await waitFor(() =>
+      expect(mockShow).toHaveBeenCalledWith({
         kind: 'success',
-        message: '2 substituições aprovadas',
+        message: 'Nenhuma das trocas selecionadas precisa dessa ação.',
       }),
     );
-  });
-});
-
-describe('SwapsPage — tab badge counts', () => {
-  it('Pending badge shows 3, Approved badge shows 1 from initial data', () => {
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'P1', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'P2', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'P3', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'A1', decision: 'approved' }),
-      ],
-    };
-    renderPage();
-
-    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
-    expect(pendingTab).toHaveTextContent('3');
-
-    const approvedTab = screen.getByRole('tab', { name: /Aprovado/i });
-    expect(approvedTab).toHaveTextContent('1');
+    expect(requests.filter((r) => r.method === 'POST')).toHaveLength(0);
   });
 
-  it('tab badges reflect full dataset, not the attribute-filtered subset', () => {
-    // Filter by tier=2 is active, but badge counts should still reflect all rows
-    mockSearchState = { ...mockSearchState, tier: [2] };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'T1_P1', tier: 1, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T2_P1', tier: 2, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T2_P2', tier: 2, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T1_A1', tier: 1, decision: 'approved' }),
-      ],
-    };
-    renderPage();
+  it('caps the selection at 50 rows and shows the message', async () => {
+    store = pendingRows(52);
+    await renderLoaded();
 
-    // Even though tier=2 filter is active, pending tab badge = 3 (all pending rows)
-    const pendingTab = screen.getByRole('tab', { name: /Pendente/i });
-    expect(pendingTab).toHaveTextContent('3');
-  });
-});
-
-describe('SwapsPage — filter dimensions (component level)', () => {
-  it('filter tier=2 → only tier-2 rows render', () => {
-    mockSearchState = { ...mockSearchState, tier: [2] };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'T1_001', tier: 1, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T2_001', tier: 2, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T2_002', tier: 2, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'T3_001', tier: 3, decision: 'pending' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-  });
-
-  it('filter deck=1 → only rows from trackedDeckId=1 render', () => {
-    mockSearchState = { ...mockSearchState, deck: ['1'] };
-    mockReviewsData = {
-      rows: [
-        makeRow({ trackedDeckId: 1, cardIdentifier: 'DECK1_A', decision: 'pending' }),
-        makeRow({ trackedDeckId: 2, cardIdentifier: 'DECK2_A', decision: 'pending' }),
-        makeRow({ trackedDeckId: 1, cardIdentifier: 'DECK1_B', decision: 'pending' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-  });
-
-  it('filter hero=Dromai → only Dromai rows render', () => {
-    mockSearchState = { ...mockSearchState, hero: ['Dromai'] };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'B1', hero: 'Briar', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'D1', hero: 'Dromai', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'D2', hero: 'Dromai', decision: 'pending' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-  });
-
-  it('confidence filter confidenceMin=70 → only rows with confidence>=70 render', () => {
-    mockSearchState = { ...mockSearchState, confidenceMin: 70 };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'C50', confidence: 50, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'C80', confidence: 80, decision: 'pending' }),
-        makeRow({ cardIdentifier: 'C90', confidence: 90, decision: 'pending' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-  });
-});
-
-describe('SwapsPage — empty states', () => {
-  it('shows no-subs variant when total row count is 0', () => {
-    mockReviewsData = { rows: [] };
-    renderPage();
-    expect(screen.getByText(/Todos jogáveis como estão/i)).toBeInTheDocument();
-  });
-
-  it('shows all-reviewed variant in Pending tab when pending=0 but others>0', () => {
-    mockSearchState = { ...mockSearchState, state: 'pending' };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'APP001', decision: 'approved' }),
-        makeRow({ cardIdentifier: 'REJ001', decision: 'rejected' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getByText(/Tudo em dia/i)).toBeInTheDocument();
-  });
-
-  it('Approved tab shows populated rows when approved rows exist', () => {
-    mockSearchState = { ...mockSearchState, state: 'approved' };
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'APP001', decision: 'approved' }),
-        makeRow({ cardIdentifier: 'APP002', decision: 'approved' }),
-      ],
-    };
-    renderPage();
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-  });
-});
-
-describe('SwapsPage — buttons disabled while mutation pending', () => {
-  it('per-row action buttons disabled when isBulkPending=true', () => {
-    mockIsBulkPending = true;
-    mockReviewsData = { rows: [makeRow({ cardIdentifier: 'ROW001' })] };
-    renderPage();
-
-    expect(screen.getByRole('button', { name: /Aprovar ROW001/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Rejeitar ROW001/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Redefinir decisão/i })).toBeDisabled();
-  });
-});
-
-describe('SwapsPage — accessibility', () => {
-  it('has exactly one <h1> with text Substituições', () => {
-    mockReviewsData = { rows: [] };
-    renderPage();
-    const headings = screen.getAllByRole('heading', { level: 1 });
-    expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent('Substituições');
-  });
-
-  it('bulk bar has aria-live="polite" when rows are selected', async () => {
-    mockReviewsData = { rows: [makeRow()] };
-    renderPage();
-    await userEvent.click(screen.getByRole('checkbox'));
-    const bulkBar = screen.getByRole('region', { name: /Ações em lote/i });
-    expect(bulkBar).toHaveAttribute('aria-live', 'polite');
-  });
-});
-
-// ============================================================================
-// CROSS-PAGE SYNC TESTS
-// ============================================================================
-
-// ---------------------------------------------------------------------------
-// Fix regression test: swaps page must send substituteIdentifier, not original.
-// This test FAILS on old code (row.cardIdentifier sent) and PASSES after Fix 1.
-// ---------------------------------------------------------------------------
-
-describe('Fix regression — approve/reject sends substituteIdentifier, not original', () => {
-  it('Approve click sends {cardIdentifier: substituteIdentifier}, not {cardIdentifier: originalIdentifier}', async () => {
-    // Row has ORIG-1 as original, SUB-1 as substitute.
-    // The mutation payload must contain SUB-1 so the backend stores the decision
-    // under the same key that deck-detail and loadExclusions look up.
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'ORIG-1', substituteIdentifier: 'SUB-1' })],
-    };
-    renderPage();
-
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar ORIG-1/i }));
-
-    expect(mockBulkMutate).toHaveBeenCalledOnce();
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision?: string }>;
-    expect(ops).toHaveLength(1);
-
-    // Core assertion: must be SUB-1 (substitute), never ORIG-1 (original).
-    expect(ops[0]?.cardIdentifier).toBe('SUB-1');
-    expect(ops[0]?.cardIdentifier).not.toBe('ORIG-1');
-    expect(ops[0]?.decision).toBe('APPROVED');
-  });
-
-  it('Reject click sends {cardIdentifier: substituteIdentifier}, not {cardIdentifier: originalIdentifier}', async () => {
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'ORIG-1', substituteIdentifier: 'SUB-1' })],
-    };
-    renderPage();
-
-    await userEvent.click(screen.getByRole('button', { name: /Rejeitar ORIG-1/i }));
-
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision?: string }>;
-    expect(ops[0]?.cardIdentifier).toBe('SUB-1');
-    expect(ops[0]?.cardIdentifier).not.toBe('ORIG-1');
-    expect(ops[0]?.decision).toBe('REJECTED');
-  });
-
-  it('Reset click sends {cardIdentifier: substituteIdentifier}, not {cardIdentifier: originalIdentifier}', async () => {
-    mockSearchState = { ...mockSearchState, state: 'approved' };
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'ORIG-1', substituteIdentifier: 'SUB-1', decision: 'approved' })],
-    };
-    renderPage();
-
-    // Decided rows render collapsed by default — expand to access actions.
-    await userEvent.click(screen.getByRole('button', { name: /Alterar decisão para ORIG-1/i }));
-    await userEvent.click(screen.getByRole('button', { name: /Redefinir decisão para ORIG-1/i }));
-
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; reset?: boolean }>;
-    expect(ops[0]?.cardIdentifier).toBe('SUB-1');
-    expect(ops[0]?.cardIdentifier).not.toBe('ORIG-1');
-    expect(ops[0]?.reset).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Cross-page sync: approve on /swaps invalidates all required query keys.
-// These tests verify that onSuccess triggers invalidation of reviews, decks,
-// and deck-detail queries, so deck-detail reflects the new decision on re-render.
-// ---------------------------------------------------------------------------
-
-describe('Cross-page sync — query invalidation on approve/reject', () => {
-  it('onSuccess triggers queryClient.invalidateQueries for reviews, decks, and deck-detail', async () => {
-    // This test uses the SpyOn the real QueryClient's invalidateQueries to verify
-    // that the mock's onSuccess callback fires (which in production triggers invalidation).
-    mockReviewsData = {
-      rows: [makeRow({ cardIdentifier: 'SYNC001', substituteIdentifier: 'SUB-SYNC001' })],
-    };
-
-    let capturedInvalidateCalls: unknown[] = [];
-    mockBulkMutate.mockImplementation(
-      (ops: unknown[], callbacks?: { onSuccess?: (r: IBulkUpsertResult) => void }) => {
-        // Simulate what useBulkReviewsMutation.onSuccess does in production:
-        // it calls invalidateQueries for ['reviews'], ['decks'], and deck-detail predicate.
-        capturedInvalidateCalls = [
-          { queryKey: ['reviews'] },
-          { queryKey: ['decks'] },
-          { predicate: (q: { queryKey: unknown[] }) => q.queryKey[0] === 'deck-detail' },
-        ];
-        const result: IBulkUpsertResult = {
-          succeeded: Array.isArray(ops) ? ops.length : 0,
-          failed: [],
-        };
-        callbacks?.onSuccess?.(result);
-      },
-    );
-
-    const { queryClient } = renderPage();
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar SYNC001/i }));
-
-    // onSuccess was reached (toast confirms the flow ran end-to-end)
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success' }),
-    );
-
-    // The three invalidation calls issued inside onSuccess must cover
-    // reviews, decks, and deck-detail. The real hook calls queryClient.invalidateQueries;
-    // here we verify the captured intent matches the required query keys.
-    expect(capturedInvalidateCalls).toHaveLength(3);
-    expect(capturedInvalidateCalls[0]).toEqual({ queryKey: ['reviews'] });
-    expect(capturedInvalidateCalls[1]).toEqual({ queryKey: ['decks'] });
-
-    // The deck-detail invalidation uses a predicate — verify it matches correctly.
-    const deckDetailEntry = capturedInvalidateCalls[2] as { predicate: (q: { queryKey: unknown[] }) => boolean };
-    expect(deckDetailEntry.predicate({ queryKey: ['deck-detail', '42'] })).toBe(true);
-    expect(deckDetailEntry.predicate({ queryKey: ['reviews'] })).toBe(false);
-    expect(deckDetailEntry.predicate({ queryKey: ['decks'] })).toBe(false);
-
-    // Suppress unused variable warning for the spy — it exists for future assertions.
-    void invalidateSpy;
-  });
-
-  it('after approve, the deck-detail decision array with substitute key is correctly resolved by BreakdownSections', () => {
-    // This test renders BreakdownSections with a decisions array keyed by the
-    // substitute id (the correct post-fix state) and verifies the approved badge renders.
-    // It documents the expected contract: deck-detail returns decisions keyed by
-    // substituteIdentifier, which BreakdownSections looks up by entry.match.substitute.cardIdentifier.
-    //
-    // We exercise this with a pure-rendering assertion (no async needed) because
-    // the deck-detail component receives decisions from the server response, not from
-    // a shared cache with the swaps page.
-
-    // The canonical proof: if the backend stores by substitute (Fix 2) and returns
-    // the decision in the deck-detail response, BreakdownSections must find it.
-    // This contract is verified by the BackendDecisionKeyRegression tests above (API layer).
-    // At the component level, we assert that the mock data shape is correct.
-    const substitutionDecisions = [
-      { cardIdentifier: 'SUB-SYNC001', decision: 'approved' as const },
-    ];
-
-    // Verify the decision lookup logic: find by cardIdentifier matches substitute key.
-    const found = substitutionDecisions.find((d) => d.cardIdentifier === 'SUB-SYNC001');
-    expect(found).toBeDefined();
-    expect(found?.decision).toBe('approved');
-
-    // Also verify that looking up by ORIG id (the old bug) finds nothing.
-    const notFound = substitutionDecisions.find((d) => d.cardIdentifier === 'ORIG-1');
-    expect(notFound).toBeUndefined();
-  });
-});
-
-describe('Cross-page sync — bulk operation sends substitute-keyed operations', () => {
-  it('bulk approve 3 rows sends each operation keyed by its substituteIdentifier', async () => {
-    // All 10 pending rows have substituteIdentifier ELE000..ELE009 from make10PendingRows.
-    // After the fix, all 3 selected operations must use ELE00x, not ARC00x.
-    mockReviewsData = { rows: make10PendingRows() };
-    renderPage();
-
-    const checkboxes = screen.getAllByRole('checkbox').slice(0, 3);
-    for (const cb of checkboxes) {
-      await userEvent.click(cb);
+    for (let index = 0; index < 51; index += 1) {
+      await userEvent.click(within(rowFor(`b${index}`)).getByRole('checkbox'));
     }
 
-    await userEvent.click(screen.getByRole('button', { name: /Aprovar 3 substituições/i }));
+    expect(screen.getByText('50 selecionadas')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Limite de 50 trocas por ação em lote');
+    expect(within(rowFor('b50')).getByRole('checkbox')).not.toBeChecked();
+  });
 
-    const ops = mockBulkMutate.mock.calls[0]?.[0] as Array<{ cardIdentifier: string; decision: string }>;
-    expect(ops).toHaveLength(3);
+  it('clears the selection when the tab changes', async () => {
+    store = pendingRows(2);
+    await renderLoaded();
+    await select(['b0']);
+    expect(screen.getByText('1 selecionada')).toBeInTheDocument();
 
-    // Every operation must use the ELE substitute id, not the ARC original id.
-    ops.forEach((op) => {
-      expect(op.cardIdentifier).toMatch(/^ELE/);
-      expect(op.cardIdentifier).not.toMatch(/^ARC/);
-      expect(op.decision).toBe('APPROVED');
-    });
+    await userEvent.click(tab(/^Aplicadas/));
+
+    expect(screen.queryByText('1 selecionada')).toBeNull();
   });
 });
 
-// ============================================================================
-// SWAPGRP-14: list aria-count reflects grouped rows, not raw copies
-// ============================================================================
+describe('/swaps — failures and empty states', () => {
+  it('explains a 409 and refreshes the list', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    failures.set('p1:approve', new ApiError(409, JSON.stringify({ code: 'INVALID_TRANSITION' })));
+    await renderLoaded();
 
-describe('SwapsPage — SWAPGRP-14: list aria-count reflects group count, not raw copy count', () => {
-  it('aria-label on the row list says "1 itens" when 2 identical pending copies form 1 group', () => {
-    // Two rows that are identical (same trackedDeckId + cardIdentifier + substituteIdentifier)
-    // are collapsed by groupReviewRows into a single group with count=2.
-    // ReviewsRowList renders with aria-label={t('reviews.reviewsListAria', { count: groups.length })}.
-    // groups.length is 1 (one group), NOT 2 (two raw copies).
-    // pt-BR key: 'Avaliações de substituições — {{count}} itens'
-    // This test fails if ReviewsRowList mistakenly uses raw row count instead of groups.length.
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'DUP-ARC001', substituteIdentifier: 'DUP-ELE001', decision: 'pending' }),
-      ],
-    };
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+
+    await waitFor(() =>
+      expect(mockShow).toHaveBeenCalledWith({
+        kind: 'error',
+        message: 'Essa troca já mudou de estado. A lista foi atualizada.',
+      }),
+    );
+    expect(within(rowFor('p1')).queryByRole('status')).toBeNull();
+    await waitFor(() => expect(requests.filter((r) => r.method === 'GET').length).toBeGreaterThan(1));
+  });
+
+  it('shows a generic toast for a server error and leaves the row alone', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    failures.set('p1:approve', new ApiError(500, 'boom'));
+    await renderLoaded();
+
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+
+    await waitFor(() =>
+      expect(mockShow).toHaveBeenCalledWith({
+        kind: 'error',
+        message: 'Não foi possível salvar a alteração. Tente de novo.',
+      }),
+    );
+    expect(within(rowFor('p1')).getByText('Aprovar')).toBeEnabled();
+  });
+
+  it('tells a new account that no swap was suggested, with a way home', async () => {
+    await renderLoaded();
+
+    expect(screen.getByRole('heading', { name: 'Nenhuma troca sugerida' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar ao início' }));
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/' });
+  });
+
+  it('says everything is decided when Pendentes is empty but other tabs have rows', async () => {
+    store = [makeSwapRow({ id: 'a1', status: 'approved', appliedAt: new Date().toISOString() })];
+    await renderLoaded();
+
+    expect(screen.getByRole('heading', { name: 'Tudo decidido' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver aplicadas' }));
+    expect(currentSearch.state).toBe('approved');
+  });
+
+  it('says no swap matches when a filter hides every row of a non-empty tab', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending', tier: 1 })];
+    currentSearch = { ...DEFAULT_SEARCH, tier: [2] };
+    await renderLoaded();
+
+    expect(screen.getByRole('heading', { name: 'Sem correspondências' })).toBeInTheDocument();
+  });
+
+  it('retries a failed load', async () => {
+    mockApiFetch.mockRejectedValueOnce(new ApiError(500, 'boom'));
     renderPage();
 
-    // Only 1 group row rendered — 2 identical copies collapse into 1.
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(1);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Algo deu errado ao carregar as trocas.');
+    await userEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    // The list aria-label must reflect 1 group, not 2 raw copies.
-    // getByRole throws if the name does not match, so this assertion is mutation-killing:
-    // a bug using raw count (2) instead of groups.length (1) would make the query fail.
-    const list = screen.getByRole('list', { name: /Avaliações de substituições — 1 itens/i });
-    expect(list).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
   });
 });
 
-// ============================================================================
-// SWAPGRP-15: selection uniquely identifies each group
-// ============================================================================
+describe('/swaps — talks to the swaps API only', () => {
+  it('never touches the retired reviews or decisions routes', async () => {
+    store = [makeSwapRow({ id: 'p1', status: 'pending' })];
+    await renderLoaded();
+    await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
+    await within(rowFor('p1')).findByRole('status');
 
-describe('SwapsPage — SWAPGRP-15: selection uniquely identifies groups (same original, different substitute)', () => {
-  it('toggling group A checkbox does not check group B (distinct substituteIdentifiers → distinct ids)', async () => {
-    // Two rows share the same original card (cardIdentifier) but have different
-    // substitutes (substituteIdentifier). groupReviewRows produces two separate groups
-    // because grouping key includes the substitute: `${trackedDeckId}:${cardIdentifier}:${substituteIdentifier}`.
-    // Clicking group A's checkbox must not affect group B — makeReviewRowId produces
-    // distinct composite ids: (1:ORIG-SHARED:SUB-A) ≠ (1:ORIG-SHARED:SUB-B).
-    mockReviewsData = {
-      rows: [
-        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-A', decision: 'pending' }),
-        makeRow({ cardIdentifier: 'ORIG-SHARED', substituteIdentifier: 'SUB-B', decision: 'pending' }),
-      ],
-    };
-    renderPage();
-
-    // Both groups render as separate rows.
-    expect(screen.getAllByTestId('reviews-row')).toHaveLength(2);
-
-    // Before any selection there are exactly 2 row checkboxes (bulk bar is hidden).
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(2);
-
-    // Click group A's checkbox (first row).
-    await userEvent.click(checkboxes[0]!);
-
-    // Group A is now selected.
-    expect(checkboxes[0]).toBeChecked();
-    // Group B must remain unselected — selection ids are distinct.
-    expect(checkboxes[1]).not.toBeChecked();
+    expect(requests.length).toBeGreaterThan(0);
+    for (const request of requests) {
+      expect(request.url.startsWith('/swaps')).toBe(true);
+      expect(request.url).not.toMatch(/reviews|decisions/);
+    }
+    expect(requests[0]).toMatchObject({ method: 'GET', url: '/swaps?state=all' });
   });
 });

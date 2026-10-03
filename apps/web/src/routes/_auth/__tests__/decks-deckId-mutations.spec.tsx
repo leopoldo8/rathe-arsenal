@@ -17,6 +17,8 @@ import type {
   IDeckDetailResponse,
   IDeckDetailSnapshot,
 } from '../../../api/deck-detail';
+import type { ISwapRow } from '../../../api/swaps';
+import { makeSwapRow } from '../../../test/swap-fixtures';
 import swapStyles from '../../../components/deck-detail/SwapsPanel.module.css';
 import stripStyles from '../../../components/deck-detail/DeckStatusStrip.module.css';
 import listStyles from '../../../components/deck-detail/DeckList.module.css';
@@ -36,7 +38,7 @@ let mockEdit: '1' | undefined;
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (config: Record<string, unknown>) => ({
-    useParams: () => ({ deckId: 'deck-123' }),
+    useParams: () => ({ deckId: '1' }),
     useSearch: () => ({ edit: mockEdit }),
     component: config.component,
   }),
@@ -175,10 +177,12 @@ type TQueryState =
 let mockQueryState: TQueryState = 'loading';
 let mockDeckData: IDeckDetailResponse | null | undefined;
 
-const mockDecideMutate = vi.fn();
+const mockSwapMutate = vi.fn();
+const mockRefetchSwaps = vi.fn();
+let mockSwapsLoaded = true;
 const mockMarkOwnedMutate = vi.fn();
 const mockClearRejectionsMutate = vi.fn();
-const mockResetMutate = vi.fn();
+let mockSwapRows: ISwapRow[] = [];
 const mockVariantMutate = vi.fn();
 const mockRefetch = vi.fn();
 
@@ -202,25 +206,25 @@ vi.mock('../../../api/deck-detail', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../api/decisions', () => ({
-  useDecideSubstitutionMutation: () => ({
-    mutate: mockDecideMutate,
-    isPending: false,
-    isError: false,
-    variables: null,
-  }),
-  useResetDecisionsMutation: () => ({
-    mutate: mockResetMutate,
-    isPending: false,
-    isError: false,
-    variables: null,
-  }),
-  useClearDeckRejectionsMutation: () => ({
-    mutate: mockClearRejectionsMutate,
-    isPending: false,
-    isError: false,
-  }),
-}));
+vi.mock('../../../api/swaps', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/swaps')>();
+  return {
+    ...actual,
+    useSwapsQuery: () => ({
+      data: mockSwapsLoaded ? { rows: mockSwapRows } : undefined,
+      refetch: mockRefetchSwaps,
+    }),
+    useSwapMutation: () => ({
+      mutate: mockSwapMutate,
+      isPending: false,
+      variables: null,
+    }),
+    useRestoreRejectedSwaps: () => ({
+      mutate: mockClearRejectionsMutate,
+      isPending: false,
+    }),
+  };
+});
 
 vi.mock('../../../api/variant-fetch', () => ({
   useVariantFetchMutation: () => ({
@@ -297,6 +301,23 @@ function swapEntry(original: Partial<IBreakdownEntry>, substituteId: string, sco
       rationale: '',
     },
   };
+}
+
+function swapRowFor(
+  originalId: string,
+  substituteId: string,
+  status: ISwapRow['status'],
+  overrides: Partial<ISwapRow> = {},
+): ISwapRow {
+  return makeSwapRow({
+    id: `swap-${originalId}-${substituteId}`,
+    trackedDeckId: 1,
+    cardIdentifier: originalId,
+    slot: 'mainboard',
+    substituteIdentifier: substituteId,
+    status,
+    ...overrides,
+  });
 }
 
 // Pairwise-distinct values so a swapped prop fails an assertion.
@@ -390,6 +411,8 @@ beforeEach(() => {
   mockQueryState = 'loading';
   mockDeckData = undefined;
   mockEdit = undefined;
+  mockSwapRows = [];
+  mockSwapsLoaded = true;
 });
 
 describe('DeckDetailPage — loading state', () => {
@@ -506,7 +529,7 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/decks/$deckId/edit',
-      params: { deckId: 'deck-123' },
+      params: { deckId: '1' },
     });
   });
 
@@ -519,7 +542,7 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/decks/$deckId',
-      params: { deckId: 'deck-123' },
+      params: { deckId: '1' },
       search: { edit: '1' },
     });
   });
@@ -592,12 +615,9 @@ describe('DeckDetailPage — status strip (DECK-02, DECK-03)', () => {
 
   it('reads as complete once the approved swaps cover every gap and pct reaches 100', () => {
     const deck = solvableDeck();
+    mockSwapRows = [swapRowFor('gap-a', 'sub-a', 'approved'), swapRowFor('gap-b', 'sub-b', 'approved')];
     populate({
       ...deck,
-      decisions: [
-        { cardIdentifier: 'sub-a', decision: 'approved' },
-        { cardIdentifier: 'sub-b', decision: 'approved' },
-      ],
       latestSnapshot: { ...deck.latestSnapshot!, effectivePercent: 100 },
     });
     renderPage();
@@ -763,12 +783,9 @@ describe('DeckDetailPage — missing and swaps panels (DECK-05)', () => {
   });
 
   it('says nothing is left to buy when swaps cover every gap', () => {
+    mockSwapRows = [swapRowFor('gap-a', 'sub-a', 'approved'), swapRowFor('gap-b', 'sub-b', 'approved')];
     populate({
       ...solvableDeck(),
-      decisions: [
-        { cardIdentifier: 'sub-a', decision: 'approved' },
-        { cardIdentifier: 'sub-b', decision: 'approved' },
-      ],
       latestSnapshot: { ...solvableDeck().latestSnapshot!, effectivePercent: 90 },
     });
     renderPage();
@@ -821,32 +838,54 @@ describe('DeckDetailPage — swap confidence bands come from score', () => {
   });
 });
 
-describe('DeckDetailPage — swap actions keep calling the decision mutations', () => {
-  beforeEach(() => populate(solvableDeck()));
+describe('DeckDetailPage — swap actions go through the swaps API', () => {
+  beforeEach(() => {
+    populate(solvableDeck());
+    mockSwapRows = [swapRowFor('gap-a', 'sub-a', 'pending'), swapRowFor('gap-b', 'sub-b', 'pending')];
+  });
 
-  it('approves with the substitute identifier', async () => {
+  it('approves by the id of the swap that matches card, slot and substitute', async () => {
     renderPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Aprovar troca de Gap A por Sub sub-a' }));
 
-    expect(mockDecideMutate).toHaveBeenCalledWith({ cardIdentifier: 'sub-a', decision: 'approved' });
+    expect(mockSwapMutate).toHaveBeenCalledWith(
+      { swapId: 'swap-gap-a-sub-a', action: { kind: 'approve' } },
+      expect.any(Object),
+    );
   });
 
-  it('rejects with the substitute identifier', async () => {
+  it('rejects by swap id, never by substitute identifier', async () => {
     renderPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Recusar troca de Gap B por Sub sub-b' }));
 
-    expect(mockDecideMutate).toHaveBeenCalledWith({ cardIdentifier: 'sub-b', decision: 'rejected' });
+    expect(mockSwapMutate).toHaveBeenCalledWith(
+      { swapId: 'swap-gap-b-sub-b', action: { kind: 'reject' } },
+      expect.any(Object),
+    );
   });
 
-  it('offers Undo on an approved swap and resets it by substitute identifier', async () => {
+  it('keeps the same substitute in another slot out of the match', async () => {
+    mockSwapRows = [
+      swapRowFor('gap-a', 'sub-a', 'pending', { id: 'other-slot', slot: 'equipment' }),
+      swapRowFor('gap-a', 'sub-a', 'pending', { id: 'right-slot', slot: 'mainboard' }),
+      swapRowFor('gap-b', 'sub-b', 'pending'),
+    ];
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar troca de Gap A por Sub sub-a' }));
+
+    expect(mockSwapMutate).toHaveBeenCalledWith(
+      { swapId: 'right-slot', action: { kind: 'approve' } },
+      expect.any(Object),
+    );
+  });
+
+  it('offers Undo on an approved swap and reverts it by swap id', async () => {
     const deck = solvableDeck();
-    populate({
-      ...deck,
-      decisions: [{ cardIdentifier: 'sub-a', decision: 'approved' }],
-      latestSnapshot: { ...deck.latestSnapshot!, effectivePercent: 90, path: 'C' },
-    });
+    mockSwapRows = [swapRowFor('gap-a', 'sub-a', 'approved'), swapRowFor('gap-b', 'sub-b', 'pending')];
+    populate({ ...deck, latestSnapshot: { ...deck.latestSnapshot!, effectivePercent: 90, path: 'C' } });
     renderPage();
 
     expect(
@@ -854,7 +893,31 @@ describe('DeckDetailPage — swap actions keep calling the decision mutations', 
     ).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Desfazer troca de Gap A por Sub sub-a' }));
 
-    expect(mockResetMutate).toHaveBeenCalledWith('sub-a');
+    expect(mockSwapMutate).toHaveBeenCalledWith(
+      { swapId: 'swap-gap-a-sub-a', action: { kind: 'revert' } },
+      expect.any(Object),
+    );
+  });
+
+  it('disables the buttons until the swaps list has the matching swap', () => {
+    mockSwapRows = [];
+    renderPage();
+
+    expect(screen.getByRole('button', { name: 'Aprovar troca de Gap A por Sub sub-a' })).toBeDisabled();
+  });
+
+  it('toasts when a swap action fails', async () => {
+    mockSwapMutate.mockImplementation((_vars: unknown, options?: { onError?: (e: Error) => void }) => {
+      options?.onError?.(new Error('boom'));
+    });
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aprovar troca de Gap A por Sub sub-a' }));
+
+    expect(mockShowToast).toHaveBeenCalledWith({
+      kind: 'error',
+      message: 'Não foi possível salvar a troca. Tente de novo.',
+    });
   });
 });
 
@@ -937,9 +1000,78 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
   });
 });
 
+describe('DeckDetailPage — swaps list not loaded yet', () => {
+  it('keeps an applied swap counted as applied, from the engine flag, while the list loads', () => {
+    const deck = solvableDeck();
+    const swaps = deck.latestSnapshot!.breakdown.substituted.map((entry, index) =>
+      index === 0 ? { ...entry, approved: true } : entry,
+    );
+    mockSwapsLoaded = false;
+    populate({
+      ...deck,
+      latestSnapshot: {
+        ...deck.latestSnapshot!,
+        breakdown: { ...deck.latestSnapshot!.breakdown, substituted: swaps },
+      },
+    });
+    renderPage();
+
+    expect(screen.getByRole('button', { name: 'Desfazer troca de Gap A por Sub sub-a' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Aprovar troca de Gap B por Sub sub-b' })).toBeDisabled();
+  });
+
+  it('refetches the swaps list when a snapshot arrives', () => {
+    populate(solvableDeck());
+    renderPage();
+
+    expect(mockRefetchSwaps).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refetch while the deck has no snapshot yet', () => {
+    populate(buildDeck({ latestSnapshot: null }));
+    renderPage();
+
+    expect(mockRefetchSwaps).not.toHaveBeenCalled();
+  });
+});
+
+describe('DeckDetailPage — rejected swaps banner', () => {
+  it('counts the rejected swaps from the swaps list, not from the deck response', () => {
+    populate(buildDeck({ rejectedCount: 0 }));
+    mockSwapRows = [swapRowFor('a', 's1', 'rejected'), swapRowFor('b', 's2', 'rejected')];
+    renderPage();
+
+    expect(screen.getByRole('status')).toHaveTextContent('2');
+  });
+
+  it('shows no banner when no swap of this deck is rejected, whatever the deck response says', () => {
+    populate(buildDeck({ rejectedCount: 5 }));
+    mockSwapRows = [swapRowFor('a', 's1', 'pending'), swapRowFor('b', 's2', 'rejected', { trackedDeckId: 99 })];
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /Limpar rejeições/ })).toBeNull();
+  });
+
+  it('restores only the rejected swaps of this deck when clearing', async () => {
+    populate(buildDeck());
+    const mine = swapRowFor('a', 's1', 'rejected');
+    mockSwapRows = [
+      mine,
+      swapRowFor('b', 's2', 'approved'),
+      swapRowFor('c', 's3', 'rejected', { trackedDeckId: 99 }),
+    ];
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+
+    expect(mockClearRejectionsMutate).toHaveBeenCalledWith([mine], expect.any(Object));
+  });
+});
+
 describe('DeckDetailPage — mutation Toast routing', () => {
   it('routes clearRejections error through Toast when mutation fails', async () => {
-    populate(buildDeck({ rejectedCount: 1 }));
+    populate(buildDeck());
+    mockSwapRows = [swapRowFor('gap-1', 'sub-1', 'rejected')];
     mockClearRejectionsMutate.mockImplementation(
       (_vars: unknown, options?: { onError?: (err: Error) => void }) => {
         options?.onError?.(new Error('Server error'));
@@ -958,7 +1090,8 @@ describe('DeckDetailPage — mutation Toast routing', () => {
   });
 
   it('clearRejections Toast payload includes a retry callback', async () => {
-    populate(buildDeck({ rejectedCount: 1 }));
+    populate(buildDeck());
+    mockSwapRows = [swapRowFor('gap-1', 'sub-1', 'rejected')];
     mockClearRejectionsMutate.mockImplementation(
       (_vars: unknown, options?: { onError?: (err: Error) => void }) => {
         options?.onError?.(new Error('Server error'));

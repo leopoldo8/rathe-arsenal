@@ -1,24 +1,27 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import type { IDecisionEntry, ISubstitutedEntry } from '../../api/deck-detail';
+import type { ISubstitutedEntry } from '../../api/deck-detail';
+import { findSwap } from '../../api/swaps';
+import type { ISwapRow } from '../../api/swaps';
 import { CardArt } from '../card-art/CardArt';
 import {
   entryKey,
   resolveScoreBand,
   SWAPS_LINK_SEARCH,
   swapDecision,
+  swapKeyOf,
   type TSwapDecision,
 } from './deckDetailModel';
 import styles from './SwapsPanel.module.css';
 
 interface ISwapsPanelProps {
   readonly swaps: readonly ISubstitutedEntry[];
-  readonly decisions: readonly IDecisionEntry[];
-  readonly pendingSubstituteId: string | null;
-  readonly onApprove: (substituteIdentifier: string) => void;
-  readonly onReject: (substituteIdentifier: string) => void;
-  readonly onReset: (substituteIdentifier: string) => void;
+  readonly deckSwaps: readonly ISwapRow[];
+  readonly pendingSwapId: string | null;
+  readonly onApprove: (swapId: string) => void;
+  readonly onReject: (swapId: string) => void;
+  readonly onUndo: (swapId: string, decision: 'approved' | 'rejected') => void;
 }
 
 const BAND_CLASS = {
@@ -29,17 +32,18 @@ const BAND_CLASS = {
 
 interface ISwapCardProps {
   readonly swap: ISubstitutedEntry;
+  readonly swapId: string | null;
   readonly decision: TSwapDecision;
   readonly isBusy: boolean;
-  readonly onApprove: (substituteIdentifier: string) => void;
-  readonly onReject: (substituteIdentifier: string) => void;
-  readonly onReset: (substituteIdentifier: string) => void;
+  readonly onApprove: (swapId: string) => void;
+  readonly onReject: (swapId: string) => void;
+  readonly onUndo: (swapId: string, decision: 'approved' | 'rejected') => void;
 }
 
-function SwapCard({ swap, decision, isBusy, onApprove, onReject, onReset }: ISwapCardProps): React.ReactElement {
+function SwapCard({ swap, swapId, decision, isBusy, onApprove, onReject, onUndo }: ISwapCardProps): React.ReactElement {
   const { t } = useTranslation();
   const { original, match } = swap;
-  const substituteId = match.substitute.cardIdentifier;
+  const isDisabled = isBusy || swapId === null;
   const scorePercent = Math.round(match.score * 100);
   const names = { original: original.name, substitute: match.substitute.name };
 
@@ -88,8 +92,8 @@ function SwapCard({ swap, decision, isBusy, onApprove, onReject, onReset }: ISwa
               type="button"
               className={`${styles.iconBtn} ${styles.approve}`}
               aria-label={t('deckDetail.swapApproveAria', names)}
-              disabled={isBusy}
-              onClick={() => onApprove(substituteId)}
+              disabled={isDisabled}
+              onClick={() => swapId !== null && onApprove(swapId)}
             >
               <span aria-hidden="true">&#10003;</span>
             </button>
@@ -97,8 +101,8 @@ function SwapCard({ swap, decision, isBusy, onApprove, onReject, onReset }: ISwa
               type="button"
               className={`${styles.iconBtn} ${styles.reject}`}
               aria-label={t('deckDetail.swapRejectAria', names)}
-              disabled={isBusy}
-              onClick={() => onReject(substituteId)}
+              disabled={isDisabled}
+              onClick={() => swapId !== null && onReject(swapId)}
             >
               <span aria-hidden="true">&#10005;</span>
             </button>
@@ -112,8 +116,8 @@ function SwapCard({ swap, decision, isBusy, onApprove, onReject, onReset }: ISwa
               type="button"
               className={styles.undo}
               aria-label={t('deckDetail.swapUndoAria', names)}
-              disabled={isBusy}
-              onClick={() => onReset(substituteId)}
+              disabled={isDisabled}
+              onClick={() => swapId !== null && onUndo(swapId, decision)}
             >
               {t('deckDetail.swapUndo')}
             </button>
@@ -126,11 +130,11 @@ function SwapCard({ swap, decision, isBusy, onApprove, onReject, onReset }: ISwa
 
 export function SwapsPanel({
   swaps,
-  decisions,
-  pendingSubstituteId,
+  deckSwaps,
+  pendingSwapId,
   onApprove,
   onReject,
-  onReset,
+  onUndo,
 }: ISwapsPanelProps): React.ReactElement {
   const { t } = useTranslation();
   return (
@@ -147,17 +151,21 @@ export function SwapsPanel({
         <p className={styles.empty}>{t('deckDetail.swapsEmpty')}</p>
       ) : (
         <ul className={styles.list}>
-          {swaps.map((swap) => (
-            <SwapCard
-              key={entryKey(swap.original)}
-              swap={swap}
-              decision={swapDecision(swap, decisions)}
-              isBusy={pendingSubstituteId === swap.match.substitute.cardIdentifier}
-              onApprove={onApprove}
-              onReject={onReject}
-              onReset={onReset}
-            />
-          ))}
+          {swaps.map((swap) => {
+            const swapId = findSwap(deckSwaps, swapKeyOf(swap))?.id ?? null;
+            return (
+              <SwapCard
+                key={entryKey(swap.original)}
+                swap={swap}
+                swapId={swapId}
+                decision={swapDecision(swap, deckSwaps)}
+                isBusy={swapId !== null && pendingSwapId === swapId}
+                onApprove={onApprove}
+                onReject={onReject}
+                onUndo={onUndo}
+              />
+            );
+          })}
         </ul>
       )}
     </section>

@@ -1,37 +1,37 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  useReviewsQuery,
-  useBulkReviewsMutation,
-  resolveActionLabel,
-} from '../../api/reviews';
-import type { TReviewRowId, IBulkOperation, IReviewRow } from '../../api/reviews';
-import type { IReviewRowGroup } from './-swaps.helpers';
+import { ApiError } from '../../lib/api-client';
+import { useSwapBatch, useSwapMutation, useSwapsQuery } from '../../api/swaps';
+import type { ISwapRow, TSwapAction, TSwapOutcome } from '../../api/swaps';
 import { useToast } from '../../components/ui/Toast/useToast';
-import { ReviewsTabs } from '../../components/reviews/ReviewsTabs';
-import type { TTabValue } from '../../components/reviews/ReviewsTabs';
-import { ReviewsFilters } from '../../components/reviews/ReviewsFilters';
-import type { IReviewsFilters } from '../../components/reviews/ReviewsFilters.helpers';
-import { ReviewsRowList } from '../../components/reviews/ReviewsRowList';
-import { ReviewsBulkBar } from '../../components/reviews/ReviewsBulkBar';
-import { applyFilters, computeTabCounts, deriveUniqueDecks, groupReviewRows } from './-swaps.helpers';
+import { SwapsTabs } from '../../components/swaps/SwapsTabs';
+import type { TTabValue } from '../../components/swaps/SwapsTabs';
+import { SwapsFilters } from '../../components/swaps/SwapsFilters';
+import type { ISwapsFilters } from '../../components/swaps/SwapsFilters.helpers';
+import { SwapsRowList } from '../../components/swaps/SwapsRowList';
+import { SwapsBulkBar } from '../../components/swaps/SwapsBulkBar';
+import type { TResolvedSwap } from '../../components/swaps/SwapRow';
+import type { IRejectSubmission } from '../../components/swaps/SwapRejectPanel';
+import { BULK_MAX_ROWS, runBulk } from '../../components/swaps/swap-bulk';
+import type { TBulkAction } from '../../components/swaps/swap-bulk';
+import { applyFilters, computeTabCounts, deriveUniqueDecks, isVisibleSwap } from './-swaps.helpers';
 import type { ISwapsSearch } from './-swaps.helpers';
 import styles from './swaps.module.css';
 
-// ---------------------------------------------------------------------------
-// Module-level constants
-// ---------------------------------------------------------------------------
+const EMPTY_ROWS: readonly ISwapRow[] = [];
 
-/** Stable empty array used as fallback for allRows to avoid a new reference each render. */
-const EMPTY_ROWS: readonly IReviewRow[] = [];
+const BULK_DONE_KEYS = {
+  approve: 'swaps.bulkDoneApproved',
+  reject: 'swaps.bulkDoneRejected',
+  reset: 'swaps.bulkDoneReset',
+} as const;
 
-/** Stable empty array used as fallback for allGroups to avoid a new reference each render. */
-const EMPTY_GROUPS: readonly IReviewRowGroup[] = [];
-
-// ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
+const BULK_LABEL_KEYS = {
+  approve: 'swaps.bulkLabelApproved',
+  reject: 'swaps.bulkLabelRejected',
+  reset: 'swaps.bulkLabelReset',
+} as const;
 
 export const Route = createFileRoute('/_auth/swaps')({
   component: SwapsPage,
@@ -59,20 +59,12 @@ export const Route = createFileRoute('/_auth/swaps')({
 
     const rawConfMin = Number(search.confidenceMin);
     const rawConfMax = Number(search.confidenceMax);
-    const confidenceMin = isFinite(rawConfMin)
-      ? Math.max(0, Math.min(100, rawConfMin))
-      : 0;
-    const confidenceMax = isFinite(rawConfMax)
-      ? Math.max(0, Math.min(100, rawConfMax))
-      : 100;
+    const confidenceMin = isFinite(rawConfMin) ? Math.max(0, Math.min(100, rawConfMin)) : 0;
+    const confidenceMax = isFinite(rawConfMax) ? Math.max(0, Math.min(100, rawConfMax)) : 100;
 
     return { state, tier, deck, hero, confidenceMin, confidenceMax };
   },
 });
-
-// ---------------------------------------------------------------------------
-// Page component
-// ---------------------------------------------------------------------------
 
 export function SwapsPage(): React.ReactElement {
   const { t } = useTranslation();
@@ -80,62 +72,53 @@ export function SwapsPage(): React.ReactElement {
   const navigate = Route.useNavigate();
   const { show } = useToast();
 
-  const reviewsQuery = useReviewsQuery();
-  const bulkMutation = useBulkReviewsMutation();
+  const swapsQuery = useSwapsQuery();
+  const swapMutation = useSwapMutation();
+  const swapBatch = useSwapBatch();
 
-  const [selectedIds, setSelectedIds] = useState<ReadonlySet<TReviewRowId>>(
-    new Set<TReviewRowId>(),
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set<string>());
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set<string>());
+  const [resolvedById, setResolvedById] = useState<ReadonlyMap<string, TResolvedSwap>>(
+    new Map<string, TResolvedSwap>(),
+  );
+  const [bulkProgress, setBulkProgress] = useState<{
+    readonly settled: number;
+    readonly total: number;
+  } | null>(null);
+
+  const swapsData = swapsQuery.data;
+  const allRows = useMemo<readonly ISwapRow[]>(
+    () => (swapsData?.rows ?? EMPTY_ROWS).filter(isVisibleSwap),
+    [swapsData],
   );
 
-  // --- Derived data ---
-
-  const reviewsData = reviewsQuery.data;
-  // Memoized so downstream useMemo hooks receive a stable reference and only
-  // recompute when the server response actually changes.
-  const allRows = useMemo<readonly IReviewRow[]>(
-    () => reviewsData?.rows ?? EMPTY_ROWS,
-    [reviewsData],
-  );
-
-  // Group identical rows (same deck + original + substitute) into single groups.
-  // Computed once from allRows; all downstream (filter, counts, list, bulk bar)
-  // operate on groups so numbers and keys are consistent (SWAPGRP-01, 06, 13, 14).
-  const allGroups = useMemo(
-    () => (allRows.length > 0 ? groupReviewRows(allRows) : EMPTY_GROUPS),
-    [allRows],
-  );
-
-  // Derive available decks + heroes from the full row set (raw rows, not groups —
-  // each copy may add context but the filter options are the same either way).
-  const availableDecks = useMemo(
-    () => deriveUniqueDecks(allRows),
-    [allRows],
-  );
-
+  const availableDecks = useMemo(() => deriveUniqueDecks(allRows), [allRows]);
   const availableHeroes = useMemo(
     () => Array.from(new Set(allRows.map((r) => r.hero))).sort(),
     [allRows],
   );
+  const tabCounts = useMemo(() => computeTabCounts(allRows), [allRows]);
 
-  // Apply tab filter (state) then attribute filters over groups.
-  const filteredGroups = useMemo(
-    () => applyFilters(allGroups, search),
-    [allGroups, search],
+  // A row acted on stays in the tab it was acted from until the tab changes or
+  // the page remounts, so the confirmation has somewhere to render.
+  const visibleRows = useMemo(
+    () =>
+      applyFilters(allRows, { ...search, state: 'all' }).filter(
+        (row) => search.state === 'all' || row.status === search.state || resolvedById.has(row.id),
+      ),
+    [allRows, search, resolvedById],
   );
 
-  // Tab counts based on state only (no attribute filters — counts should reflect
-  // total groups in each state, not the attribute-filtered subset). One unit per
-  // group keeps tab badge consistent with the list (SWAPGRP-13).
-  const tabCounts = useMemo(
-    () => computeTabCounts(allGroups),
-    [allGroups],
-  );
-
-  // --- URL state writers ---
+  const hasActiveFilters =
+    search.tier.length > 0 ||
+    search.deck.length > 0 ||
+    search.hero.length > 0 ||
+    search.confidenceMin !== 0 ||
+    search.confidenceMax !== 100;
 
   function setActiveTab(tab: TTabValue): void {
-    // Clear selection when switching tabs.
-    setSelectedIds(new Set<TReviewRowId>());
+    setSelectedIds(new Set<string>());
+    setResolvedById(new Map<string, TResolvedSwap>());
     void navigate({
       search: {
         state: tab,
@@ -148,7 +131,7 @@ export function SwapsPage(): React.ReactElement {
     });
   }
 
-  function setFilters(filters: IReviewsFilters): void {
+  function setFilters(filters: ISwapsFilters): void {
     void navigate({
       search: {
         state: search.state,
@@ -161,85 +144,121 @@ export function SwapsPage(): React.ReactElement {
     });
   }
 
-  // --- Selection handlers ---
-
-  const handleToggleSelect = useCallback((id: TReviewRowId): void => {
+  const handleToggleSelect = useCallback((id: string): void => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next as ReadonlySet<TReviewRowId>;
+      if (next.has(id)) next.delete(id);
+      else if (next.size < BULK_MAX_ROWS) next.add(id);
+      return next;
     });
   }, []);
 
-  const handleClearSelection = useCallback((): void => {
-    setSelectedIds(new Set<TReviewRowId>());
-  }, []);
-
-  // --- Bulk action handler (per-row single actions flow through here too) ---
-
-  const handleAction = useCallback(
-    (operations: IBulkOperation[]): void => {
-      const actionLabel = resolveActionLabel(operations);
-      bulkMutation.mutate(operations, {
-        onSuccess: (result) => {
-          // Clear selection after any bulk action.
-          setSelectedIds(new Set<TReviewRowId>());
-
-          // Show toast based on server result.
-          if (result.transactionError) {
-            show({
-              kind: 'error',
-              message: t('reviews.errorToast'),
-            });
-          } else {
-            // Map English action label to i18n key base.
-            const toastKeyMap: Record<string, string> = {
-              Approved: 'toastApproved',
-              Rejected: 'toastRejected',
-              Reset: 'toastReset',
-              Updated: 'toastUpdated',
-            };
-            const toastBase = toastKeyMap[actionLabel] ?? 'toastUpdated';
-            show({
-              kind: 'success',
-              message: t(`reviews.${toastBase}`, { count: result.succeeded }),
-            });
-          }
-        },
-        onError: () => {
-          // Network / 4xx / 5xx — consolidated single error toast.
-          show({
-            kind: 'error',
-            message: t('reviews.errorToast'),
-          });
-        },
-      });
+  const reportFailure = useCallback(
+    (error: unknown): void => {
+      const status = error instanceof ApiError ? error.status : null;
+      const key =
+        status === 409 ? 'swaps.conflictToast' : status === 404 ? 'swaps.notFoundToast' : 'swaps.errorToast';
+      show({ kind: 'error', message: t(key) });
     },
-    [bulkMutation, show, t],
+    [show, t],
   );
 
-  // --- Navigate to approved tab (empty state CTA) ---
+  const act = useCallback(
+    async (row: ISwapRow, action: TSwapAction): Promise<boolean> => {
+      setBusyIds((prev) => new Set(prev).add(row.id));
+      try {
+        const result = await swapMutation.mutateAsync({ swapId: row.id, action });
+        if (result.swap.status === 'retired') {
+          show({ kind: 'info', message: t('swaps.retiredToast') });
+        }
+        return true;
+      } catch (error) {
+        reportFailure(error);
+        return false;
+      } finally {
+        setBusyIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [swapMutation, reportFailure, show, t],
+  );
 
-  const handleNavigateApproved = useCallback((): void => {
-    void navigate({
-      search: {
-        state: 'approved' as TTabValue,
-        tier: search.tier,
-        deck: search.deck,
-        hero: search.hero,
-        confidenceMin: search.confidenceMin,
-        confidenceMax: search.confidenceMax,
-      },
+  const markResolved = useCallback((id: string, resolved: TResolvedSwap): void => {
+    setResolvedById((prev) => new Map(prev).set(id, resolved));
+  }, []);
+
+  const clearResolved = useCallback((id: string): void => {
+    setResolvedById((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
     });
-  }, [navigate, search]);
+  }, []);
 
-  // --- Current filters object for the filter bar ---
+  const rowHandlers = {
+    onToggleSelect: handleToggleSelect,
+    onApprove: async (row: ISwapRow): Promise<boolean> => {
+      const ok = await act(row, { kind: 'approve' });
+      if (ok) markResolved(row.id, 'approved');
+      return ok;
+    },
+    onReject: async (row: ISwapRow, submission: IRejectSubmission): Promise<boolean> => {
+      const ok = await act(row, { kind: 'reject', ...submission });
+      if (ok) markResolved(row.id, 'rejected');
+      return ok;
+    },
+    onRevert: (row: ISwapRow): Promise<boolean> => act(row, { kind: 'revert' }),
+    onRestore: (row: ISwapRow): Promise<boolean> => act(row, { kind: 'restore' }),
+    onUndo: async (row: ISwapRow, resolved: TResolvedSwap): Promise<boolean> => {
+      const ok = await act(row, { kind: resolved === 'approved' ? 'revert' : 'restore' });
+      if (ok) clearResolved(row.id);
+      return ok;
+    },
+    onOutcome: (row: ISwapRow, outcome: TSwapOutcome): Promise<boolean> =>
+      act(row, { kind: 'outcome', outcome }),
+  };
 
-  const currentFilters: IReviewsFilters = {
+  const isBulkRunning = bulkProgress !== null;
+
+  async function handleBulkAction(action: TBulkAction): Promise<void> {
+    if (isBulkRunning) return;
+    const targets = allRows.filter((row) => selectedIds.has(row.id));
+    setBulkProgress({ settled: 0, total: targets.length });
+
+    const result = await runBulk(
+      targets,
+      action,
+      (swapId, step) => swapBatch.perform({ swapId, action: step }),
+      (settled, total) => setBulkProgress({ settled, total }),
+    );
+    swapBatch.finish();
+
+    setBulkProgress(null);
+    setSelectedIds(new Set(result.failedIds));
+
+    if (result.failedIds.length > 0) {
+      show({
+        kind: 'error',
+        message: t('swaps.bulkPartial', {
+          done: result.succeeded,
+          total: result.total - result.skipped,
+          label: t(BULK_LABEL_KEYS[action]),
+          failed: t('swaps.bulkFailed', { count: result.failedIds.length }),
+        }),
+      });
+      return;
+    }
+    if (result.succeeded === 0) {
+      show({ kind: 'success', message: t('swaps.bulkNothingToDo') });
+      return;
+    }
+    show({ kind: 'success', message: t(BULK_DONE_KEYS[action], { count: result.succeeded }) });
+  }
+
+  const currentFilters: ISwapsFilters = {
     tier: search.tier,
     deck: search.deck,
     hero: search.hero,
@@ -249,48 +268,41 @@ export function SwapsPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      {/* Page heading */}
       <div className={styles.header}>
-        <h1 className={styles.heading}>{t('reviews.heading')}</h1>
-        <p className={styles.subtitle}>{t('reviews.subtitle')}</p>
+        <h1 className={styles.heading}>{t('swaps.heading')}</h1>
+        <p className={styles.subtitle}>{t('swaps.subtitle')}</p>
       </div>
 
-      {/* Filters bar */}
-      <ReviewsFilters
-        filters={currentFilters}
-        availableDecks={availableDecks}
-        availableHeroes={availableHeroes}
-        onChange={setFilters}
-      />
-
-      {/* Tabs + row list */}
-      <ReviewsTabs
-        value={search.state}
-        counts={tabCounts}
-        onChange={setActiveTab}
-      >
-        <ReviewsRowList
-          groups={filteredGroups}
-          isLoading={reviewsQuery.isLoading}
-          isError={reviewsQuery.isError}
-          onRetry={() => reviewsQuery.refetch()}
-          selectedIds={selectedIds}
-          isBulkPending={bulkMutation.isPending}
-          activeState={search.state}
-          totalRowCount={allGroups.length}
-          onToggleSelect={handleToggleSelect}
-          onAction={handleAction}
-          onNavigateApproved={handleNavigateApproved}
+      <SwapsTabs value={search.state} counts={tabCounts} onChange={setActiveTab}>
+        <SwapsFilters
+          filters={currentFilters}
+          availableDecks={availableDecks}
+          availableHeroes={availableHeroes}
+          onChange={setFilters}
         />
-      </ReviewsTabs>
+        <SwapsRowList
+          rows={visibleRows}
+          isLoading={swapsQuery.isLoading}
+          isError={swapsQuery.isError}
+          onRetry={() => void swapsQuery.refetch()}
+          selectedIds={selectedIds}
+          busyIds={busyIds}
+          resolvedById={resolvedById}
+          activeState={search.state}
+          totalRowCount={allRows.length}
+          hasActiveFilters={hasActiveFilters}
+          onNavigateHome={() => void navigate({ to: '/' })}
+          onNavigateApproved={() => setActiveTab('approved')}
+          {...rowHandlers}
+        />
+      </SwapsTabs>
 
-      {/* Sticky bulk bar */}
-      <ReviewsBulkBar
-        selectedIds={selectedIds}
-        groups={allGroups}
-        isBulkPending={bulkMutation.isPending}
-        onBulkAction={handleAction}
-        onClearSelection={handleClearSelection}
+      <SwapsBulkBar
+        selectedCount={selectedIds.size}
+        isBulkRunning={isBulkRunning}
+        progress={bulkProgress}
+        onBulkAction={(action) => void handleBulkAction(action)}
+        onClearSelection={() => setSelectedIds(new Set<string>())}
       />
     </div>
   );

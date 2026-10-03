@@ -8,10 +8,8 @@ interface IModifiedViewBannerProps {
    */
   readonly rejectedCount: number;
   /**
-   * Invoked when the user clicks "Clear rejections".
-   * Calls useClearDeckRejectionsMutation — bulk deletes only rejected rows,
-   * preserving approvals. Banner disappears once the refetch confirms
-   * rejectedCount drops to 0.
+   * Invoked when the user clicks "Clear rejections". The parent restores every
+   * rejected swap of the deck, one call each, leaving approvals alone.
    */
   readonly onClearRejections: () => void;
   /**
@@ -24,8 +22,7 @@ interface IModifiedViewBannerProps {
  * ModifiedViewBanner — deck-level warning when any substitution is rejected.
  *
  * Renders at the top of Column B when rejectedCount > 0.
- * "Clear rejections" calls useClearDeckRejectionsMutation which bulk-deletes
- * only rejected decisions — approvals are preserved (R26).
+ * "Clear rejections" sends every rejected swap back to pending (R26).
  *
  * Uses role="status" so screen readers announce changes when
  * the banner appears or disappears.

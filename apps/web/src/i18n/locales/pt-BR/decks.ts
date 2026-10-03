@@ -1,18 +1,7 @@
 export const decks = {
   // BreakdownSections / DeckCanvas — breakdown columns
-  exactMatches: 'Correspondências exatas',
-  exactMatchesCount_one: '{{count}} carta',
-  exactMatchesCount_other: '{{count}} cartas',
   noExactMatches: 'Sem correspondências exatas',
   swaps: 'Substituições',
-  activeSwapsCount_one: '{{count}} ativa',
-  activeSwapsCount_other: '{{count}} ativas',
-  noSwapsNeeded: 'Sem substituições necessárias',
-  swapProposalsAria: 'Propostas de substituição',
-  notOwned: 'Não possui',
-  allPlayable: 'Tudo jogável — sem substituições necessárias.',
-  collectionCoversAll: 'Sua coleção cobre todos os slots deste baralho.',
-  cardsNotInCollectionAria: 'Cartas não na coleção',
   // DeckCanvas extra
   addCardsToDeck: 'Adicionar cartas ao baralho',
   loadingComposition: 'Carregando composição…',
@@ -148,30 +137,8 @@ export const decks = {
   changeStatusAria: 'Alterar status do baralho — atualmente {{label}}',
   statusUpdateError: 'Não foi possível atualizar o status — tente novamente.',
   // SubstitutionRow
-  tierI: 'Nível I — Próximo',
-  tierII: 'Nível II — Similar',
-  tierIII: 'Nível III — Distante',
   tierLabel: 'Nível {{tier}}',
-  decisionApproved: 'Aprovado',
-  decisionRejected: 'Rejeitado',
-  changeDecisionBtn: 'Alterar ▾',
-  doneDecisionBtn: 'Concluído ▲',
-  approveBtn: 'Aprovar',
   rejectBtn: 'Rejeitar',
-  resetBtn: 'Redefinir',
-  approveSubstitutionAria: 'Aprovar substituição: {{original}} por {{substitute}}',
-  rejectSubstitutionAria: 'Rejeitar substituição: {{original}} por {{substitute}}',
-  resetDecisionAria: 'Redefinir decisão: {{original}} por {{substitute}}',
-  changeDecisionAria: 'Alterar decisão para {{name}}',
-  collapseSwapAria: 'Recolher substituição de {{name}}',
-  swapCopiesBadge: '× {{count}}',
-  swapCopiesBadgeAria: '{{count}} cópias',
-  approveAllBtn: 'Aprovar todas',
-  rejectAllBtn: 'Rejeitar todas',
-  resetAllBtn: 'Redefinir todas',
-  approveAllSubstitutionAria: 'Aprovar todas as {{count}} cópias: {{original}} por {{substitute}}',
-  rejectAllSubstitutionAria: 'Rejeitar todas as {{count}} cópias: {{original}} por {{substitute}}',
-  resetAllSubstitutionAria: 'Redefinir todas as {{count}} cópias: {{original}} por {{substitute}}',
   // TagAutocompleteCombobox
   tagSearchAria: 'Pesquisar ou criar uma tag',
   tagSuggestionsAria: 'Sugestões de tag',
@@ -285,15 +252,11 @@ export const decks = {
   failedToLoadDeck: 'Falha ao carregar baralho: {{error}}',
   failedToMarkCard: 'Falha ao marcar carta: {{error}}',
   failedToClearRejections: 'Falha ao limpar rejeições: {{error}}',
-  // decisions.ts — substitution mutation error toasts
-  failedDecideSubstitution: 'Falha ao {{decision}} substituição',
-  failedResetDecision: 'Falha ao redefinir decisão de substituição',
+  failedSwapAction: 'Não foi possível salvar a troca. Tente de novo.',
   // DeckDetailSidebar
   legalityAria: 'Legalidade: {{category}}',
   heroFallback: 'Herói',
   // SubstitutionRow
-  substitutionRowAria: 'Substituição: {{original}} por {{substitute}}, Nível {{tier}}, {{score}}% de confiança, decisão: {{decision}}',
-  decisionAria: 'Decisão: {{decision}}',
   // FormatDropdown
   formatAria: 'Formato: {{format}}',
   // TestDeckResult — PathBadge aria

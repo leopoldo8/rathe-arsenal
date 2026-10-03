@@ -6,7 +6,8 @@ import { CardArt } from '../card-art/CardArt';
 import { CongratsAllPlayable } from './CongratsAllPlayable';
 import { useDecksQuery, ITrackedDeckListItem } from '../../api/decks';
 import { useDeckDetailQuery, ISubstitutedEntry } from '../../api/deck-detail';
-import { useDecideSubstitutionMutation } from '../../api/decisions';
+import { findSwap, selectDeckSwaps, useSwapMutation, useSwapsQuery } from '../../api/swaps';
+import type { ISwapRow } from '../../api/swaps';
 import styles from './Step3FirstReview.module.css';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,16 @@ export function Step3FirstReview({
   // parent wizard somehow renders Step3 without completing Step1 first.
   const safeDeckIdStr = deckIdStr || '0';
   const deckDetailQuery = useDeckDetailQuery(safeDeckIdStr);
-  const decideMutation = useDecideSubstitutionMutation(safeDeckIdStr);
+  const swapsQuery = useSwapsQuery();
+  const swapMutation = useSwapMutation();
+  const deckSwaps = selectDeckSwaps(swapsQuery.data?.rows, Number(safeDeckIdStr));
+  const refetchSwaps = swapsQuery.refetch;
+  const snapshotComputedAt = deckDetailQuery.data?.latestSnapshot?.computedAt ?? null;
+  // The suggestions are written while the snapshot is computed, so the swaps
+  // list loaded earlier may not have them yet.
+  useEffect(() => {
+    if (snapshotComputedAt !== null) void refetchSwaps();
+  }, [snapshotComputedAt, refetchSwaps]);
 
   const isLoading = decksQuery.isLoading || deckDetailQuery.isLoading;
   const snapshot = deckDetailQuery.data?.latestSnapshot;
@@ -181,9 +191,19 @@ export function Step3FirstReview({
           <SubstitutionPreviewRow
             key={sub.original.cardIdentifier}
             sub={sub}
-            deckId={safeDeckIdStr}
-            onDecide={(cardIdentifier, decision) => {
-              decideMutation.mutate({ cardIdentifier, decision });
+            swap={
+              findSwap(deckSwaps, {
+                cardIdentifier: sub.original.cardIdentifier,
+                slot: sub.original.slot,
+                substituteIdentifier: sub.match.substitute.cardIdentifier,
+              }) ?? null
+            }
+            onAct={(swapId, steps) => {
+              void (async () => {
+                for (const kind of steps) {
+                  await swapMutation.mutateAsync({ swapId, action: { kind } });
+                }
+              })().catch(() => undefined);
             }}
           />
         ))}
@@ -210,37 +230,40 @@ export function Step3FirstReview({
 // SubstitutionPreviewRow (internal)
 // ---------------------------------------------------------------------------
 
+type TPreviewAction = 'approve' | 'reject' | 'revert' | 'restore';
+
 interface ISubstitutionPreviewRowProps {
   readonly sub: ISubstitutedEntry;
-  readonly deckId: string;
-  readonly onDecide: (cardIdentifier: string, decision: 'approved' | 'rejected') => void;
+  readonly swap: ISwapRow | null;
+  readonly onAct: (swapId: string, steps: readonly TPreviewAction[]) => void;
 }
 
 function SubstitutionPreviewRow({
   sub,
-  deckId: _deckId,
-  onDecide,
+  swap,
+  onAct,
 }: ISubstitutionPreviewRowProps): React.ReactElement {
   const { t } = useTranslation();
   const { original, match } = sub;
   const [localDecision, setLocalDecision] = useState<'approved' | 'rejected' | null>(null);
 
+  // Pressing the active button again takes the decision back, and switching
+  // sides undoes the first decision before making the second, so the server
+  // never holds a state the screen no longer shows.
   function handleApprove(): void {
-    if (localDecision === 'approved') {
-      setLocalDecision(null);
-    } else {
-      setLocalDecision('approved');
-      onDecide(original.cardIdentifier, 'approved');
-    }
+    if (swap === null) return;
+    const steps: TPreviewAction[] =
+      localDecision === 'approved' ? ['revert'] : localDecision === 'rejected' ? ['restore', 'approve'] : ['approve'];
+    setLocalDecision(localDecision === 'approved' ? null : 'approved');
+    onAct(swap.id, steps);
   }
 
   function handleReject(): void {
-    if (localDecision === 'rejected') {
-      setLocalDecision(null);
-    } else {
-      setLocalDecision('rejected');
-      onDecide(original.cardIdentifier, 'rejected');
-    }
+    if (swap === null) return;
+    const steps: TPreviewAction[] =
+      localDecision === 'rejected' ? ['restore'] : localDecision === 'approved' ? ['revert', 'reject'] : ['reject'];
+    setLocalDecision(localDecision === 'rejected' ? null : 'rejected');
+    onAct(swap.id, steps);
   }
 
   const approveLabel = t('onboarding.approveSubAriaLabel', { substitute: match.substitute.name, original: original.slot });

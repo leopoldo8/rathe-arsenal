@@ -70,6 +70,8 @@ export interface ISubstitutionMatch {
 export interface ISubstitutedEntry {
   readonly original: IBreakdownEntry;
   readonly match: ISubstitutionMatch;
+  /** The engine's own flag for an approved swap; the stored snapshot carries it. */
+  readonly approved?: boolean;
 }
 
 export interface IBreakdown {

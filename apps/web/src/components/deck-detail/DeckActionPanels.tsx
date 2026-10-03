@@ -1,5 +1,6 @@
 import React from 'react';
-import type { IBreakdown, IDecisionEntry, IBreakdownEntry } from '../../api/deck-detail';
+import type { IBreakdown, IBreakdownEntry } from '../../api/deck-detail';
+import type { ISwapRow } from '../../api/swaps';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { MissingPanel } from './MissingPanel';
@@ -8,16 +9,16 @@ import styles from './DeckActionPanels.module.css';
 
 interface IDeckActionPanelsProps {
   readonly breakdown: IBreakdown;
-  readonly decisions: readonly IDecisionEntry[];
+  readonly deckSwaps: readonly ISwapRow[];
   readonly openMissing: readonly IBreakdownEntry[];
   readonly shoppingData: IShoppingLineResponse | null;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly pendingSubstituteId: string | null;
-  readonly onApproveSubstitute: (id: string) => void;
-  readonly onRejectSubstitute: (id: string) => void;
-  readonly onResetSubstitute: (id: string) => void;
+  readonly pendingSwapId: string | null;
+  readonly onApproveSwap: (swapId: string) => void;
+  readonly onRejectSwap: (swapId: string) => void;
+  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
   readonly onFetchVariants: () => void;
   readonly fetchMutationStatus: TVariantFetchMutationStatus;
   readonly isCooldownActive: boolean;
@@ -27,16 +28,16 @@ interface IDeckActionPanelsProps {
 
 export function DeckActionPanels({
   breakdown,
-  decisions,
+  deckSwaps,
   openMissing,
   shoppingData,
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  pendingSubstituteId,
-  onApproveSubstitute,
-  onRejectSubstitute,
-  onResetSubstitute,
+  pendingSwapId,
+  onApproveSwap,
+  onRejectSwap,
+  onUndoSwap,
   onFetchVariants,
   fetchMutationStatus,
   isCooldownActive,
@@ -59,11 +60,11 @@ export function DeckActionPanels({
       />
       <SwapsPanel
         swaps={breakdown.substituted}
-        decisions={decisions}
-        pendingSubstituteId={pendingSubstituteId}
-        onApprove={onApproveSubstitute}
-        onReject={onRejectSubstitute}
-        onReset={onResetSubstitute}
+        deckSwaps={deckSwaps}
+        pendingSwapId={pendingSwapId}
+        onApprove={onApproveSwap}
+        onReject={onRejectSwap}
+        onUndo={onUndoSwap}
       />
     </div>
   );

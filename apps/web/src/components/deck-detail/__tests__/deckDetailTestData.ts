@@ -1,9 +1,10 @@
 import type {
   IBreakdown,
   IBreakdownEntry,
-  IDecisionEntry,
   ISubstitutedEntry,
 } from '../../../api/deck-detail';
+import type { TSwapStatus } from '../../../api/swaps';
+import type { IDeckSwap } from '../deckDetailModel';
 
 export function entry(overrides: Partial<IBreakdownEntry> = {}): IBreakdownEntry {
   return {
@@ -56,9 +57,11 @@ export function breakdown(overrides: Partial<IBreakdown> = {}): IBreakdown {
   };
 }
 
-export function decision(
+export function deckSwap(
   cardIdentifier: string,
-  value: IDecisionEntry['decision'],
-): IDecisionEntry {
-  return { cardIdentifier, decision: value };
+  substituteIdentifier: string,
+  status: TSwapStatus,
+  slot = 'mainboard',
+): IDeckSwap {
+  return { cardIdentifier, slot, substituteIdentifier, status };
 }

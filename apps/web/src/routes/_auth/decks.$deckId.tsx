@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -9,10 +9,12 @@ import {
   deckDetailQueryKey,
 } from '../../api/deck-detail';
 import {
-  useDecideSubstitutionMutation,
-  useResetDecisionsMutation,
-  useClearDeckRejectionsMutation,
-} from '../../api/decisions';
+  selectDeckSwaps,
+  useRestoreRejectedSwaps,
+  useSwapMutation,
+  useSwapsQuery,
+} from '../../api/swaps';
+import type { ISwapRow, TSwapAction } from '../../api/swaps';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { requestOpenVariantQueueDrawer } from '../../components/variant-queue/variantQueueDrawerBus';
 import { useVariantJobsQuery } from '../../api/variant-jobs';
@@ -74,9 +76,20 @@ function DeckDetailPage(): React.ReactElement {
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const decideMutation = useDecideSubstitutionMutation(deckId, { showToast });
-  const resetDecisionMutation = useResetDecisionsMutation(deckId, { showToast });
-  const clearRejectionsMutation = useClearDeckRejectionsMutation(deckId);
+  const swapsQuery = useSwapsQuery();
+  const swapMutation = useSwapMutation();
+  const restoreRejectedMutation = useRestoreRejectedSwaps();
+  const swapRows = swapsQuery.data?.rows;
+  const refetchSwaps = swapsQuery.refetch;
+  const snapshotComputedAt = detailQuery.data?.latestSnapshot?.computedAt ?? null;
+  // A new snapshot can carry new suggestions, so the swaps list is refreshed with it.
+  useEffect(() => {
+    if (snapshotComputedAt !== null) void refetchSwaps();
+  }, [snapshotComputedAt, refetchSwaps]);
+  const deckSwaps = React.useMemo(
+    () => selectDeckSwaps(swapRows, Number(deckId)),
+    [swapRows, deckId],
+  );
   const variantFetchMutation = useVariantFetchMutation(deckId);
 
   // Derive this deck's variant-fetch progress from the global jobs queue.
@@ -131,6 +144,32 @@ function DeckDetailPage(): React.ReactElement {
       message: t('decks.retryShoppingLineToast'),
     });
   }, [queryClient, deckId, showToast, t]);
+
+  function handleClearRejections(): void {
+    restoreRejectedMutation.mutate(
+      deckSwaps.filter((swap) => swap.status === 'rejected'),
+      {
+        onError: (err) => {
+          showToast({
+            kind: 'error',
+            message: t('decks.failedToClearRejections', { error: (err as Error).message }),
+            retry: handleClearRejections,
+          });
+        },
+      },
+    );
+  }
+
+  function runSwapAction(swapId: string, action: TSwapAction): void {
+    swapMutation.mutate(
+      { swapId, action },
+      {
+        onError: () => {
+          showToast({ kind: 'error', message: t('decks.failedSwapAction') });
+        },
+      },
+    );
+  }
 
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
@@ -209,34 +248,15 @@ function DeckDetailPage(): React.ReactElement {
       }}
       isMarkingOwned={markOwnedMutation.isPending}
       pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
-      onApproveSubstitute={(substituteIdentifier) => {
-        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'approved' });
-      }}
-      onRejectSubstitute={(substituteIdentifier) => {
-        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'rejected' });
-      }}
-      onResetSubstitute={(substituteIdentifier) => {
-        resetDecisionMutation.mutate(substituteIdentifier);
-      }}
-      pendingSubstituteId={
-        decideMutation.isPending
-          ? (decideMutation.variables?.cardIdentifier ?? null)
-          : resetDecisionMutation.isPending
-            ? (resetDecisionMutation.variables ?? null)
-            : null
+      deckSwaps={deckSwaps}
+      pendingSwapId={swapMutation.isPending ? (swapMutation.variables?.swapId ?? null) : null}
+      onApproveSwap={(swapId) => runSwapAction(swapId, { kind: 'approve' })}
+      onRejectSwap={(swapId) => runSwapAction(swapId, { kind: 'reject' })}
+      onUndoSwap={(swapId, decision) =>
+        runSwapAction(swapId, { kind: decision === 'approved' ? 'revert' : 'restore' })
       }
-      onClearRejections={() => {
-        clearRejectionsMutation.mutate(undefined, {
-          onError: (err) => {
-            showToast({
-              kind: 'error',
-              message: t('decks.failedToClearRejections', { error: (err as Error).message }),
-              retry: () => clearRejectionsMutation.mutate(undefined),
-            });
-          },
-        });
-      }}
-      isClearingRejections={clearRejectionsMutation.isPending}
+      onClearRejections={handleClearRejections}
+      isClearingRejections={restoreRejectedMutation.isPending}
       onFetchVariants={handleFetchVariants}
       fetchMutationStatus={variantFetchMutation.status}
       isCooldownActive={isCooldownActive}
@@ -270,10 +290,11 @@ interface IDeckDetailPageWithDataProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly onApproveSubstitute: (id: string) => void;
-  readonly onRejectSubstitute: (id: string) => void;
-  readonly onResetSubstitute: (id: string) => void;
-  readonly pendingSubstituteId: string | null;
+  readonly deckSwaps: readonly ISwapRow[];
+  readonly pendingSwapId: string | null;
+  readonly onApproveSwap: (swapId: string) => void;
+  readonly onRejectSwap: (swapId: string) => void;
+  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
   readonly onClearRejections: () => void;
   readonly isClearingRejections: boolean;
   readonly onFetchVariants: () => void;
@@ -301,10 +322,11 @@ function DeckDetailPageWithData({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  onApproveSubstitute,
-  onRejectSubstitute,
-  onResetSubstitute,
-  pendingSubstituteId,
+  deckSwaps,
+  pendingSwapId,
+  onApproveSwap,
+  onRejectSwap,
+  onUndoSwap,
   onClearRejections,
   isClearingRejections,
   onFetchVariants,
@@ -555,10 +577,11 @@ function DeckDetailPageWithData({
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
-          pendingSubstituteId={pendingSubstituteId}
-          onApproveSubstitute={onApproveSubstitute}
-          onRejectSubstitute={onRejectSubstitute}
-          onResetSubstitute={onResetSubstitute}
+          deckSwaps={deckSwaps}
+          pendingSwapId={pendingSwapId}
+          onApproveSwap={onApproveSwap}
+          onRejectSwap={onRejectSwap}
+          onUndoSwap={onUndoSwap}
           onClearRejections={onClearRejections}
           isClearingRejections={isClearingRejections}
           onFetchVariants={onFetchVariants}

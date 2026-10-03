@@ -1,19 +1,13 @@
-/* ============================================================
-   Reviews route — CSS Module
-   ============================================================ */
-
 .page {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  /* AppShell's <main> already supplies the standard page padding
-     (var(--ra-space-6) on all sides + bottom-tab-bar clearance on
-     mobile). The page module only adds extra bottom space for the
-     sticky bulk-action bar at the foot of this surface. */
+  inline-size: 100%;
+  max-inline-size: 1180px;
+  margin-inline: auto;
+  /* Room for the sticky bulk bar at the foot of the page. */
   padding-block-end: 80px;
 }
-
-/* ---------- Header ---------- */
 
 .header {
   padding: var(--ra-space-6) 0 var(--ra-space-4);

@@ -60,14 +60,15 @@ vi.mock('../../../api/deck-detail', () => ({
   deckDetailQueryKey: (id: string) => ['deck-detail', id],
 }));
 
-// API: decisions
-const mockDecideMutate = vi.fn();
-vi.mock('../../../api/decisions', () => ({
-  useDecideSubstitutionMutation: () => ({
-    mutate: mockDecideMutate,
-    isPending: false,
-  }),
-}));
+// API: swaps
+vi.mock('../../../api/swaps', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/swaps')>();
+  return {
+    ...actual,
+    useSwapsQuery: () => ({ data: { rows: [] }, refetch: vi.fn() }),
+    useSwapMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Lazy imports (after mocks are set)

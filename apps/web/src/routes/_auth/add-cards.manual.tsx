@@ -174,8 +174,7 @@ function ResultRow({
               onError={() => setThumbFailed(true)}
             />
           ) : (
-            // Fallback to <CardArt> SVG placeholder. Same fallback chain
-            // used in BreakdownSections / ReviewsRow.
+            // Fallback to <CardArt> SVG placeholder.
             <CardArt
               name={card.name}
               pitch={

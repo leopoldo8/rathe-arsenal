@@ -2,7 +2,7 @@
  * Pure helper that turns a card `imageUrl` (with optional `sources`) into
  * the ordered list of large-image URLs the CardLightbox needs.
  *
- * Centralised so every call-site (library, deck-detail, reviews) wires
+ * Centralised so every call-site (library, deck-detail, swaps) wires
  * fallbacks the same way — without it, sets that only publish foiled
  * artwork (Armory Decks, judge promos) would surface "Card art
  * unavailable" in the lightbox even though `CardArt` already had a
