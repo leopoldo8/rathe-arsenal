@@ -32,11 +32,6 @@ function mockMatchMedia(matches: boolean) {
   });
 }
 
-// Mock SVGR deckbox — AuthLayout left panel uses it
-vi.mock('../../shell/DeckboxDecoration', () => ({
-  DeckboxDecoration: () => <div data-testid="deckbox-decoration" />,
-}));
-
 // Router mock — Link renders as a plain <a> with href, matching the pattern
 // used across other component tests (e.g. Footer.spec.tsx).
 //
@@ -68,7 +63,7 @@ describe('AuthLayout — happy path >=720px', () => {
       </AuthLayout>,
     );
     // The decoration panel should exist in DOM
-    const decoration = screen.getByTestId('deckbox-decoration').closest('[aria-hidden]');
+    const decoration = screen.getByTestId('deckbox').closest('[aria-hidden]');
     expect(decoration).toHaveAttribute('aria-hidden', 'true');
   });
 
@@ -91,6 +86,42 @@ describe('AuthLayout — happy path >=720px', () => {
   });
 });
 
+describe('AuthLayout — brand mark seam (AUTH-01)', () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it('renders the cardless brand Deckbox in the left panel by default', () => {
+    render(<AuthLayout title="Sign in"><form /></AuthLayout>);
+    const deckbox = screen.getByTestId('deckbox');
+    expect(deckbox).toHaveAttribute('data-variant', 'brand');
+    expect(screen.queryByTestId('deckbox-front-brand')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('deckbox-card')).toHaveLength(0);
+  });
+
+  it('renders a supplied brandMark instead of the default Deckbox', () => {
+    render(
+      <AuthLayout title="Sign in" brandMark={<div data-testid="custom-mark" />}>
+        <form />
+      </AuthLayout>,
+    );
+    expect(screen.getByTestId('custom-mark')).toBeInTheDocument();
+    expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
+  });
+
+  it('renders the favicon seal and wordmark row in the left panel, hidden from assistive tech', () => {
+    render(<AuthLayout title="Sign in"><form /></AuthLayout>);
+    const brand = screen.getByTestId('auth-brand-mark');
+    expect(brand).toHaveAttribute('aria-hidden', 'true');
+    expect(brand.querySelector('img')).toHaveAttribute('src', '/favicon.svg');
+    expect(brand).toHaveTextContent('Rathe Arsenal');
+  });
+
+  it('drops the brand row together with the panel below 720px', () => {
+    mockMatchMedia(true);
+    render(<AuthLayout title="Sign in"><form /></AuthLayout>);
+    expect(screen.queryByTestId('auth-brand-mark')).not.toBeInTheDocument();
+  });
+});
+
 describe('AuthLayout — responsive: decoration hidden <720px', () => {
   beforeEach(() => mockMatchMedia(true)); // true = IS below 720px
 
@@ -102,7 +133,7 @@ describe('AuthLayout — responsive: decoration hidden <720px', () => {
     );
     // When matchMedia matches (narrow), decoration should not be rendered
     // We check by seeing if deckbox-decoration is absent or its container is hidden
-    const deckbox = screen.queryByTestId('deckbox-decoration');
+    const deckbox = screen.queryByTestId('deckbox');
     expect(deckbox).not.toBeInTheDocument();
   });
 });
@@ -116,7 +147,7 @@ describe('AuthLayout — A11y', () => {
         <form />
       </AuthLayout>,
     );
-    const decorationWrapper = screen.getByTestId('deckbox-decoration').closest('[aria-hidden="true"]');
+    const decorationWrapper = screen.getByTestId('deckbox').closest('[aria-hidden="true"]');
     expect(decorationWrapper).toBeTruthy();
   });
 

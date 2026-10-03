@@ -1439,3 +1439,176 @@ describe('Phase 7 — Edit deck (EDIT-02..04, handoff §6)', () => {
     expect(css).not.toContain('text-transform: uppercase');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8 — Sign in and onboarding (AUTH-01..05, handoff §1-§2)
+// ---------------------------------------------------------------------------
+
+const AUTH_LAYOUT_CSS = readCss('components/auth-layout/AuthLayout.module.css');
+const AUTH_LAYOUT_CSS_WITH_MEDIA = readCssWithMedia('components/auth-layout/AuthLayout.module.css');
+const AUTH_LAYOUT_TSX = fs.readFileSync(path.join(SRC_ROOT, 'components/auth-layout/AuthLayout.tsx'), 'utf-8');
+const AUTH_BRAND_CSS = readCss('components/auth-layout/AuthBrandMark.module.css');
+const AUTH_FORM_CSS = readCss('routes/auth-form.module.css');
+const AUTH_FORM_CSS_WITH_MEDIA = readCssWithMedia('routes/auth-form.module.css');
+const SIGN_IN_CSS = readCss('routes/sign-in.module.css');
+const STEP_INDICATOR_CSS = readCss('components/onboarding/StepIndicator.module.css');
+const WIZARD_CSS = readCss('components/onboarding/OnboardingWizard.module.css');
+
+describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
+  it('paints the art panel with the 160deg gradient, 56px 60px padding and a hairline divider', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, '.art');
+    expect(body).toContain('--al-art-gradient: linear-gradient(160deg, #160f0d, #0c0a0b)');
+    expect(body).toContain('background: var(--al-art-gradient)');
+    expect(body).toContain('padding: 56px 60px');
+    expect(body).toContain('border-inline-end: 1px solid var(--ra-border-subtle)');
+  });
+
+  it('gives the art panel half the row, capped at 720px', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, '.art');
+    expect(body).toContain('flex: 1 1 50%');
+    expect(body).toContain('max-inline-size: 720px');
+  });
+
+  it('gives the form panel half the row with a 448px floor so the art panel shrinks first', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, '.form');
+    expect(body).toContain('flex: 1 1 50%');
+    expect(body).toContain('min-inline-size: 448px');
+  });
+
+  it('drops the 448px floor in the narrow zone where the art panel is unmounted', () => {
+    const narrow = atRuleBody(AUTH_LAYOUT_CSS_WITH_MEDIA, '@media (max-width: 719px)');
+    expect(narrow).toContain('.form { min-inline-size: 0; }');
+    expect(AUTH_LAYOUT_TSX).toContain("'(max-width: 719px)'");
+  });
+
+  it('keeps the dark gradient out of the light theme', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, ":global([data-theme='light']) .art");
+    expect(body).toContain('--al-art-gradient: var(--ra-bg-surface)');
+  });
+
+  it('caps the form at 400px', () => {
+    expect(ruleBody(AUTH_LAYOUT_CSS, '.formInner')).toContain('max-width: 400px');
+  });
+
+  it('sizes the brand slot at 170 by 170', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, '.artMark');
+    expect(body).toContain('inline-size: 170px');
+    expect(body).toContain('block-size: 170px');
+  });
+
+  it('sets the tagline as Newsreader 500 38px at 1.08 and the copy at 15.5px/1.65 capped at 440px', () => {
+    const tagline = ruleBody(AUTH_LAYOUT_CSS, '.artTaglineText');
+    expect(tagline).toContain('font-family: var(--ra-font-display)');
+    expect(tagline).toContain('font-size: 38px');
+    expect(tagline).toContain('font-weight: var(--ra-weight-medium)');
+    expect(tagline).toContain('line-height: 1.08');
+    const copy = ruleBody(AUTH_LAYOUT_CSS, '.artCopy');
+    expect(copy).toContain('font-size: 15.5px');
+    expect(copy).toContain('line-height: 1.65');
+    expect(copy).toContain('max-inline-size: 440px');
+    expect(copy).toContain('color: var(--ra-fg-tertiary)');
+  });
+
+  it('sets the quote at 13px in #6c6e76', () => {
+    const body = ruleBody(AUTH_LAYOUT_CSS, '.artQuote');
+    expect(body).toContain('font-size: 13px');
+    expect(body).toContain('color: #6c6e76');
+  });
+
+  it('sets the brand row as a 30px seal with 7px radius and a 22px UnifrakturCook wordmark', () => {
+    const seal = ruleBody(AUTH_BRAND_CSS, '.seal');
+    expect(seal).toContain('inline-size: 30px');
+    expect(seal).toContain('block-size: 30px');
+    expect(seal).toContain('border-radius: 7px');
+    const word = ruleBody(AUTH_BRAND_CSS, '.wordmark');
+    expect(word).toContain('font-family: var(--ra-font-gothic)');
+    expect(word).toContain('font-size: 22px');
+  });
+
+  it('renders the Deckbox brand variant through the brandMark seam and no longer references DeckboxDecoration', () => {
+    expect(AUTH_LAYOUT_TSX).toContain('brandMark ?? <Deckbox variant="brand" />');
+    expect(AUTH_LAYOUT_TSX).not.toContain('DeckboxDecoration');
+    expect(fs.existsSync(path.join(SRC_ROOT, 'components/shell/DeckboxDecoration.tsx'))).toBe(false);
+  });
+
+  it('uses no label in the display serif or uppercase on the art panel', () => {
+    expect(ruleBody(AUTH_LAYOUT_CSS, '.artCite')).not.toContain('uppercase');
+  });
+});
+
+describe('Phase 8 — anonymous form controls (handoff §1 form)', () => {
+  it.each([
+    ['sign-in.module.css', SIGN_IN_CSS],
+    ['auth-form.module.css', AUTH_FORM_CSS],
+  ] as const)('%s sets label 13px/600, 10px input, 15px/700 CTA', (_name, css) => {
+    const label = ruleBody(css, '.label');
+    expect(label).toContain('font-size: var(--ra-text-small)');
+    expect(label).toContain('font-weight: var(--ra-weight-semibold)');
+    const input = ruleBody(css, '.input');
+    expect(input).toContain('padding: 13px 15px');
+    expect(input).toContain('border: 1px solid var(--ra-border-strong)');
+    expect(input).toContain('border-radius: 10px');
+    expect(input).toContain('background-color: rgba(255, 255, 255, 0.03)');
+    expect(input).toContain('font-size: 14px');
+    const cta = ruleBody(css, '.submitBtn');
+    expect(cta).toContain('padding: 14px var(--ra-space-5)');
+    expect(cta).toContain('border-radius: var(--ra-radius-md)');
+    expect(cta).toContain('font-size: 15px');
+    expect(cta).toContain('font-weight: var(--ra-weight-bold)');
+  });
+
+  it('draws the verify-email pending state as a quiet spinner ring that freezes under reduced motion', () => {
+    const ring = ruleBody(AUTH_FORM_CSS, '.statusIcon');
+    expect(ring).toContain('width: 48px');
+    expect(ring).toContain('border: 3px solid var(--ra-border-strong)');
+    expect(ring).toContain('border-top-color: var(--ra-accent)');
+    expect(ring).toContain('animation: statusSpin 900ms linear infinite');
+    const reduced = atRuleBody(AUTH_FORM_CSS_WITH_MEDIA, '@media (prefers-reduced-motion: reduce)');
+    expect(reduced).toContain('.statusIcon { animation: none; }');
+  });
+});
+
+describe('Phase 8 — onboarding stepper and panel (AUTH-02, handoff §2)', () => {
+  it('draws 34px circular nodes', () => {
+    const body = ruleBody(STEP_INDICATOR_CSS, '.node');
+    expect(body).toContain('inline-size: 34px');
+    expect(body).toContain('block-size: 34px');
+    expect(body).toContain('border-radius: 50%');
+  });
+
+  it('fills the current node with the accent, tints the completed one at .2 and outlines the upcoming one', () => {
+    expect(ruleBody(STEP_INDICATOR_CSS, '.node--current')).toContain('background-color: var(--ra-accent)');
+    expect(ruleBody(STEP_INDICATOR_CSS, '.node--complete')).toContain('background-color: rgba(208, 168, 76, 0.2)');
+    const upcoming = ruleBody(STEP_INDICATOR_CSS, '.node--upcoming');
+    expect(upcoming).toContain('background-color: transparent');
+    expect(upcoming).toContain('border-color: var(--ra-border-strong)');
+  });
+
+  it('joins nodes with a 64 by 1px connector, gold at .5 once passed', () => {
+    const body = ruleBody(STEP_INDICATOR_CSS, '.connector');
+    expect(body).toContain('inline-size: 64px');
+    expect(body).toContain('block-size: 1px');
+    expect(ruleBody(STEP_INDICATOR_CSS, '.connector--passed')).toContain('background-color: rgba(208, 168, 76, 0.5)');
+  });
+
+  it('sets the label at 12px/600 and carries no diamond rules', () => {
+    const body = ruleBody(STEP_INDICATOR_CSS, '.stepLabel');
+    expect(body).toContain('font-size: var(--ra-text-xs)');
+    expect(body).toContain('font-weight: var(--ra-weight-semibold)');
+    expect(STEP_INDICATOR_CSS).not.toMatch(/diamond|rotate\(45deg\)|text-transform: uppercase/);
+  });
+
+  it('wraps the step content in a 16px surface panel with 26px padding', () => {
+    const body = ruleBody(WIZARD_CSS, '.body');
+    expect(body).toContain('padding: var(--ra-space-26px)');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+    expect(body).toContain('background-color: var(--ra-bg-surface)');
+  });
+
+  it('caps the wizard column at 640px, centred, with 64px 32px 80px padding', () => {
+    const body = ruleBody(WIZARD_CSS, '.wizard');
+    expect(body).toContain('max-width: 640px');
+    expect(body).toContain('margin-inline: auto');
+    expect(body).toContain('padding: 64px 32px 80px');
+  });
+});

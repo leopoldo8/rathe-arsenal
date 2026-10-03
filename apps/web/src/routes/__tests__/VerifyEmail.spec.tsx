@@ -31,3 +31,11 @@ describe('verify-email error state — danger treatment (UXUI-10)', () => {
     expect(src).not.toMatch(/role="alert"[^{]*className=\{styles\.infoBox\}/);
   });
 });
+
+describe('verify-email pending state — diamond replaced (AUTH §4.3)', () => {
+  it('renders the status icon as an empty ring, not a glyph', () => {
+    const src = fs.readFileSync(path.join(ROUTES_DIR, 'verify-email.tsx'), 'utf-8');
+    expect(src).not.toContain('◆');
+    expect(src).toMatch(/<div className=\{styles\.statusIcon\} aria-hidden="true" \/>/);
+  });
+});

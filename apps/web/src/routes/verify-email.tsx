@@ -66,7 +66,7 @@ function VerifyEmailPage(): React.ReactElement {
   return (
     <AuthLayout title={t('auth.verifyingTitle')} tagline={t('auth.verifyingTagline')}>
       <div className={styles.statusPending}>
-        <div className={styles.statusIcon} aria-hidden="true">◆</div>
+        <div className={styles.statusIcon} aria-hidden="true" />
         <p className={styles.statusMeta}>{t('auth.verifyingMsg')}</p>
       </div>
     </AuthLayout>

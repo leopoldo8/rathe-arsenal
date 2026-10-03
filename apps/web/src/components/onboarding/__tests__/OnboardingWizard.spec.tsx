@@ -22,7 +22,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // ---------------------------------------------------------------------------
@@ -359,7 +359,7 @@ describe('OnboardingWizard — happy path: step 1 → step 2', () => {
       expect(screen.getByRole('navigation', { name: /passo 2 de 3/i })).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument();
+    expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument();
   });
 
   it('step 2 shows the imported deck name as preview card label', async () => {
@@ -404,7 +404,7 @@ describe('OnboardingWizard — happy path (skip): step 2 skip', () => {
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument();
+      expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole('button', { name: /pular por agora/i }));
@@ -437,7 +437,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.type(input, 'https://fabrary.net/decks/VALID01');
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
@@ -453,7 +453,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.type(input, 'https://fabrary.net/decks/VALID01');
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
@@ -470,7 +470,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.type(input, 'https://fabrary.net/decks/VALID01');
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
@@ -568,7 +568,7 @@ describe('OnboardingWizard — edge case: 100% readiness', () => {
     await user.type(input, 'https://fabrary.net/decks/VALID01');
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
@@ -585,7 +585,7 @@ describe('OnboardingWizard — edge case: 100% readiness', () => {
     await user.type(input, 'https://fabrary.net/decks/VALID01');
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
@@ -620,7 +620,7 @@ describe('OnboardingWizard — edge case: 10s computation timeout', () => {
     // Resolve import immediately
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
-    await waitFor(() => expect(screen.getByText(/sua biblioteca/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/agora, sua coleção/i)).toBeInTheDocument());
 
     // Advance to step 3
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -707,5 +707,50 @@ describe('OnboardingWizard — edge case: unreachable URL (timeout)', () => {
     await waitFor(() => {
       expect(screen.getByText(/demorou muito para responder/i)).toBeInTheDocument();
     });
+  });
+});
+
+describe('OnboardingWizard — stepper navigation (AUTH-03)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseDecksQuery.mockReturnValue(makeDecksQueryEmpty());
+    mockUseDeckDetailQuery.mockReturnValue(makeDetailQueryLoading());
+    mockImportMutateAsync.mockResolvedValue(makeImportResponse());
+    mockNavigate.mockReturnValue(Promise.resolve());
+  });
+
+  async function advanceToStep2(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+    await user.type(
+      screen.getByRole('textbox', { name: /url de deck do fabrary/i }),
+      'https://fabrary.net/decks/VALID01',
+    );
+    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await waitFor(() => expect(screen.getByRole('navigation', { name: /passo 2 de 3/i })).toBeInTheDocument());
+  }
+
+  it('on step 1 no stepper node is a button', () => {
+    renderWizard();
+    const nav = screen.getByRole('navigation', { name: /passo 1 de 3/i });
+    expect(within(nav).queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('on step 2 the completed node 1 is a button and the upcoming node 3 is not', async () => {
+    const user = userEvent.setup();
+    renderWizard();
+    await advanceToStep2(user);
+    const nav = screen.getByRole('navigation', { name: /passo 2 de 3/i });
+    expect(within(nav).getAllByRole('button')).toHaveLength(1);
+    expect(within(nav).getByRole('button', { name: /passo 1 de 3: colar deck, concluído/i })).toBeInTheDocument();
+    expect(within(nav).getByRole('listitem', { name: /passo 3 de 3.*próximo/i }).querySelector('[aria-disabled="true"]')).not.toBeNull();
+  });
+
+  it('activating the completed node returns to that step without navigating away', async () => {
+    const user = userEvent.setup();
+    renderWizard();
+    await advanceToStep2(user);
+    await user.click(screen.getByRole('button', { name: /passo 1 de 3: colar deck, concluído/i }));
+    expect(screen.getByRole('navigation', { name: /passo 1 de 3/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /url de deck do fabrary/i })).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

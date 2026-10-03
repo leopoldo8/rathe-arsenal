@@ -144,12 +144,12 @@ The settings eyebrow stays on `--ra-accent-body`. The handoff names a token by i
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| AUTH-01 50/50 split, four responsive zones | §  | route spec | Pending |
-| AUTH-02 stepper states; no roman numerals or diamonds | § | new `StepIndicator.spec.tsx` asserting both halves | Pending |
-| AUTH-03..04 stepper navigation | § | route spec | Pending |
-| AUTH-05 disclaimer survives | § | the existing pinned-`Link` test must still pass untouched | Pending |
-| The five inherited anonymous screens | § | existing specs plus regenerated baselines | Pending |
-| verify-email: diamond replaced, baseline added | § | new baseline | Pending |
+| AUTH-01 50/50 split, four responsive zones | §4.4 | route spec | Verified |
+| AUTH-02 stepper states; no roman numerals or diamonds | §5 | new `StepIndicator.spec.tsx` asserting both halves | Verified |
+| AUTH-03..04 stepper navigation | §5 | route spec | Verified |
+| AUTH-05 disclaimer survives | §5 | the existing pinned-`Link` test must still pass untouched | Verified |
+| The five inherited anonymous screens | § | existing specs plus regenerated baselines | Implementing — baselines for the five screens await the orchestrator |
+| verify-email: diamond replaced, baseline added | § | new baseline | Implementing — ring and test done, baseline entry added to `all-surfaces.spec.ts`; image awaits the orchestrator |
 
 ---
 

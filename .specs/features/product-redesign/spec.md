@@ -274,7 +274,7 @@ These apply to every screen above and are not optional polish.
 | DECK-01..09 | P1: Deck detail | 5 | DECK-01, 03..09 Verified; DECK-02 Implementing ("Comprar tudo" has no bulk action, DEV-14) |
 | LIB-01..08 | P2: Library/Sources/Add | 6 | Verified |
 | EDIT-01..05 | P2: New/Edit/Settings | 7 | Verified |
-| AUTH-01..05 | P2: Sign in/Onboarding | 8 | Pending |
+| AUTH-01..05 | P2: Sign in/Onboarding | 8 | Verified (route and component specs); visual baselines for sign-in, the five inherited screens, verify-email and onboarding pending |
 | SWAP-04..12, SWAP-14 | P1: Swaps, Half B | 9 | Pending |
 | I18N-01 | Cross-cutting 1 | all | Pending |
 | A11Y-01, A11Y-02 | Cross-cutting 2, 3 | all | Pending |

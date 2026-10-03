@@ -47,6 +47,7 @@ const ANON_SURFACES = [
   // sufficient for visual regression at launch; token-specific states are post-v1.
   { name: 'reset-password', url: '/reset-password' },
   { name: 'check-your-email', url: '/check-your-email' },
+  { name: 'verify-email', url: '/verify-email' },
 ] as const;
 
 // Authenticated surfaces: 11 original + 4 v2 additions = 15 surfaces (U16)

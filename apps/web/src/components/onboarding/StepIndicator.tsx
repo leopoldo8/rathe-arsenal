@@ -13,20 +13,9 @@ export interface IStepIndicatorProps {
   readonly totalSteps: 3;
   /** Active step number (1-indexed). */
   readonly currentStep: 1 | 2 | 3;
+  /** Called for completed nodes only; omit for a read-only indicator. */
+  readonly onStepClick?: ((step: 1 | 2 | 3) => void) | undefined;
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Roman numeral labels per step. Locked per Polish Notes. */
-const ROMAN_NUMERALS: Record<number, string> = {
-  1: 'I',
-  2: 'II',
-  3: 'III',
-};
-
-// STEP_LABELS are resolved inside the component via t() so they are locale-aware.
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,13 +34,13 @@ function resolveState(stepNumber: number, currentStep: number): TStepState {
 /**
  * StepIndicator — horizontal progress indicator for the onboarding wizard.
  *
- * Renders roman numerals (I / II / III) with diamond separators.
- * Active/completed/upcoming states drive visual styling via CSS Modules.
+ * Three circular nodes joined by hairline connectors. Only completed nodes
+ * are interactive: later steps need data the wizard has not collected yet.
  *
  * A11y: the root nav element carries an aria-label and each step has a
  * descriptive aria-label that announces "Step N of 3: Label (state)".
  */
-export function StepIndicator({ currentStep }: IStepIndicatorProps): React.ReactElement {
+export function StepIndicator({ currentStep, onStepClick }: IStepIndicatorProps): React.ReactElement {
   const { t } = useTranslation();
   const steps = [1, 2, 3] as const;
 
@@ -77,34 +66,41 @@ export function StepIndicator({ currentStep }: IStepIndicatorProps): React.React
           const state = resolveState(stepNumber, currentStep);
           const label = stepLabels[stepNumber] ?? '';
           const stateLabel = stepStates[state] ?? state;
-          const roman = ROMAN_NUMERALS[stepNumber] ?? '';
           const isLast = index === steps.length - 1;
+          const itemLabel = t('onboarding.stepItemAriaLabel', { number: stepNumber, total: 3, label, state: stateLabel });
+          const nodeClass = [styles.node, styles[`node--${state}`]].join(' ');
 
           return (
             <React.Fragment key={stepNumber}>
               <li
-                className={[
-                  styles.step,
-                  styles[`step--${state}`],
-                ].join(' ')}
-                aria-label={t('onboarding.stepItemAriaLabel', { number: stepNumber, total: 3, label, state: stateLabel })}
+                className={[styles.step, styles[`step--${state}`]].join(' ')}
+                aria-label={itemLabel}
                 aria-current={state === 'current' ? 'step' : undefined}
               >
-                <span className={styles.stepNumeral} aria-hidden="true">
-                  {roman}
-                </span>
+                {state === 'complete' && onStepClick != null ? (
+                  <button
+                    type="button"
+                    className={`${nodeClass} ${styles.nodeButton}`}
+                    aria-label={itemLabel}
+                    onClick={() => onStepClick(stepNumber)}
+                  />
+                ) : (
+                  <span
+                    className={nodeClass}
+                    aria-hidden="true"
+                    aria-disabled={state === 'upcoming' ? 'true' : undefined}
+                  />
+                )}
                 <span className={styles.stepLabel}>{label}</span>
               </li>
               {!isLast && (
-                <li
-                  className={[
-                    styles.separator,
-                    stepNumber < currentStep ? styles['separator--passed'] : '',
-                  ].filter(Boolean).join(' ')}
-                  aria-hidden="true"
-                  role="presentation"
-                >
-                  <span className={styles.diamond} />
+                <li className={styles.connectorItem} aria-hidden="true" role="presentation">
+                  <span
+                    className={[
+                      styles.connector,
+                      stepNumber < currentStep ? styles['connector--passed'] : '',
+                    ].filter(Boolean).join(' ')}
+                  />
                 </li>
               )}
             </React.Fragment>

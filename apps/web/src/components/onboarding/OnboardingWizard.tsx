@@ -72,11 +72,15 @@ export function OnboardingWizard(): React.ReactElement {
     setState((prev) => ({ ...prev, step: 2 }));
   }
 
+  function handleStepClick(step: TWizardStep): void {
+    setState((prev) => (step < prev.step ? { ...prev, step } : prev));
+  }
+
   const importedDeckIds = state.importedDecks.map((d) => d.trackedDeckId);
 
   return (
     <section className={styles.wizard} aria-label={t('onboarding.wizardAriaLabel')}>
-      <StepIndicator totalSteps={3} currentStep={state.step} />
+      <StepIndicator totalSteps={3} currentStep={state.step} onStepClick={handleStepClick} />
 
       <div className={styles.body}>
         {state.step === 1 && (
