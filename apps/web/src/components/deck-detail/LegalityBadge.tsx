@@ -136,13 +136,10 @@ function buildIncompleteLabel(reasons: readonly string[], t: TTranslate): string
 }
 
 /**
- * Derives the subtitle text for an illegal deck from the first reason.
+ * Derives the chip text for an illegal deck from the first reason, in full.
  */
 function buildIllegalLabel(reasons: readonly string[], t: TTranslate): string {
   if (reasons.length === 0) return t('decks.illegal');
 
-  // Take first reason, truncate to ~37 chars for the chip
-  const first = reasons[0] ?? '';
-  const reason = first.length <= 37 ? first : first.slice(0, 37);
-  return t('decks.illegalWithReason', { reason });
+  return t('decks.illegalWithReason', { reason: reasons[0] ?? '' });
 }

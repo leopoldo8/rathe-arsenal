@@ -26,6 +26,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LegalityBadge } from '../LegalityBadge';
 import type { IDeckLegality } from '../../../api/decks';
+import styles from '../LegalityBadge.module.css';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -261,5 +262,29 @@ describe('LegalityBadge — keyboard interaction', () => {
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toBeInTheDocument();
     });
+  });
+});
+
+describe('LegalityBadge — full text, pill style', () => {
+  it('renders the whole legal text with no truncation affordance', () => {
+    renderBadge({ category: 'legal', reasons: [] }, 'Silver Age');
+
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Válido Silver Age');
+  });
+
+  it('puts the legal text in the badgeText element that no longer ellipsizes', () => {
+    renderBadge({ category: 'legal', reasons: [] }, 'Silver Age');
+
+    const text = screen.getByText('Válido Silver Age');
+    expect(text).toHaveClass(styles.badgeText!);
+    expect(screen.getByTestId('legality-badge')).toHaveClass(styles.badge!);
+  });
+
+  it('shows the whole first reason of an illegal deck, not a 37-char cut', () => {
+    const reason = 'Deck has 42 mainboard cards but Classic Constructed requires at least 60.';
+    renderBadge({ category: 'illegal', reasons: [reason] });
+
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent(`Ilegal · ${reason}`);
+    expect(screen.getByTestId('legality-badge').textContent).not.toContain('…');
   });
 });
