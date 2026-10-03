@@ -147,7 +147,7 @@ describe('ShoppingLine: kind=populated, availableCardCount=0', () => {
 
   it('renders the freshness subtitle', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
-    expect(screen.getByText(/último check 2h ago/i)).toBeInTheDocument();
+    expect(screen.getByText(/último check há 2 h/i)).toBeInTheDocument();
   });
 
   it('renders the substitution editor CTA', () => {
@@ -193,7 +193,7 @@ describe('ShoppingLine: kind=populated, partial availability', () => {
 
   it('renders the freshness timestamp', () => {
     render(<ShoppingLine data={POPULATED_PARTIAL} />);
-    expect(screen.getByText(/atualizado 2h ago/i)).toBeInTheDocument();
+    expect(screen.getByText(/atualizado há 2 h/i)).toBeInTheDocument();
   });
 });
 

@@ -686,7 +686,7 @@ describe('per-card failure indicator', () => {
 
     const badges = screen.getAllByTestId('line-item-fetch-failed');
     expect(badges).toHaveLength(1);
-    expect(badges[0]).toHaveTextContent(/failed/i);
+    expect(badges[0]).toHaveTextContent(/falhou/i);
     expect(badges[0]).toHaveAttribute(
       'aria-label',
       `Falha ao buscar variantes para ${BASE_LINE.cardName}`,

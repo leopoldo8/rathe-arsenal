@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   IShoppingLinePopulated,
@@ -6,9 +5,9 @@ import {
   IShoppingLineLine,
   TCardFetchStatus,
 } from '../api/shopping-line';
-import { VARIANT_FETCH_POLL_TIMEOUT_MS } from '../api/deck-detail';
 import { formatBrl } from '../utils/format-brl';
 import { formatRelativeTime, isStale, isVeryStale } from '../utils/format-relative-time';
+import { useVariantFetchPolling } from './useVariantFetchPolling';
 import { StoreProductLink } from './StoreProductLink';
 import { VariantBreakdownTable } from './ShoppingLineVariantBreakdown';
 import { formatVariantPrice } from './ShoppingLineVariantBreakdown.helpers';
@@ -195,7 +194,7 @@ function PopulatedShoppingLine({
   } = data;
 
   const totalMissing = availableCardCount + unavailableCardCount;
-  const relativeTime = formatRelativeTime(lastFetchedAt);
+  const relativeTime = formatRelativeTime(lastFetchedAt, t);
   const stale = isStale(lastFetchedAt);
   const veryStale = isVeryStale(lastFetchedAt);
 
@@ -205,37 +204,7 @@ function PopulatedShoppingLine({
   const availableLines = lines.filter((l) => l.quantityAvailable > 0);
   const unavailableLines = lines.filter((l) => l.quantityAvailable === 0);
 
-  // Track whether the 5-minute polling timeout has fired.
-  const [pollingTimedOut, setPollingTimedOut] = useState(false);
-
-  // Determine if we are in an active polling state.
-  // Stop polling when: progress is absent (pod restart), inProgress is false,
-  // or the local 5-minute safety timeout has fired.
-  const isFetching = Boolean(
-    variantFetchProgress?.inProgress && !pollingTimedOut,
-  );
-
-  // Notify parent when polling starts or stops.
-  useEffect(() => {
-    if (!onPollingChange) return;
-    if (isFetching) {
-      onPollingChange(Date.now());
-    } else {
-      onPollingChange(undefined);
-    }
-  }, [isFetching, onPollingChange]);
-
-  // 5-minute hard safety timeout: stop polling even if backend never signals done.
-  useEffect(() => {
-    if (!isFetching) {
-      setPollingTimedOut(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setPollingTimedOut(true);
-    }, VARIANT_FETCH_POLL_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [isFetching]);
+  const isFetching = useVariantFetchPolling(variantFetchProgress, onPollingChange);
 
   const isPending = fetchMutationStatus === 'pending';
   const isMutationError = fetchMutationStatus === 'error';
@@ -527,7 +496,7 @@ function LineItem({
               data-testid="line-item-fetch-failed"
               className={styles.lineItemFailedBadge}
             >
-              failed
+              {t('deckDetail.storeFetchFailed')}
             </span>
           )}
         </span>

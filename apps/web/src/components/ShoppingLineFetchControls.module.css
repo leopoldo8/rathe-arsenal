@@ -9,19 +9,35 @@
 }
 
 .ctaBtn {
-  padding: 0.375rem var(--ra-space-3);
-  background: var(--ra-info);
-  color: var(--ra-fg-inverse);
-  border: none;
-  border-radius: var(--ra-radius-md);
+  min-block-size: 32px;
+  padding: 0 var(--ra-space-3);
+  background: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
   cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: var(--ra-weight-medium);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-bold);
+}
+
+.ctaBtn:not(:disabled):hover,
+.ctaBtn:not(:disabled):active {
+  background: var(--ra-accent-hover);
+  border-color: var(--ra-accent-hover);
+  color: var(--ra-accent-ink-on);
+}
+
+.ctaBtn:focus-visible,
+.failureRetryBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
 }
 
 .ctaBtn[data-pending="true"] {
   background: var(--ra-bg-raised);
-  color: var(--ra-fg-muted);
+  color: var(--ra-fg-secondary);
+  border-color: var(--ra-border-strong);
   cursor: not-allowed;
 }
 

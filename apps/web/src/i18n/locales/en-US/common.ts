@@ -23,4 +23,11 @@ export const common = {
   loadingCount: 'Loading count',
   readinessMedallionLabel: 'Hero readiness',
   readinessValueText: '{{pct}}%',
+  relativeNoData: 'no recent data',
+  relativeJustNow: 'just now',
+  relativeMinutes: '{{count}} min ago',
+  relativeHours: '{{count}}h ago',
+  relativeDays_one: '{{count}} day ago',
+  relativeDays_other: '{{count}} days ago',
+  relativeOverWeek: 'over a week ago',
 } as const;
