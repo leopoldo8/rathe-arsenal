@@ -276,6 +276,8 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **Observed, not fixed**: the Kayo deck shows an "Illegal · Hero "Kayo, ..." badge on deck detail, and the composition URL renders as `?edit=%221%22` when entered via the button. Both predate this phase.
 - **Dev server**: the API watcher had compiled but not restarted the API process, so the old API kept serving. I killed that API child and started `node dist/main` by hand (log in the worker scratchpad); the `nest start --watch` parent is still running but does not respawn.
 
+- **Orchestrator follow-up on the two observations above**: the "Illegal · Hero Kayo" badge is correct — the catalog lists Kayo, Armed and Dangerous as Living Legend (not Classic Constructed legal). The `?edit=%221%22` URL is fixed: the flag is now the number 1 (`?edit=1`), and quoted links still open edit mode.
+
 ### DEV-25 — Final fix round after the mutation review
 - **Per-key approval and API guards**: engine test with two distinct substitutions (only one approved), exact-share check in the swaps e2e (computed from the fixture), malformed-id 400 on all five mutation routes, and the 500/501 note boundary. Each mutant (`size > 0`, dropped `ParseUUIDPipe`, a raised `MaxLength`) now turns a test red.
 - **"Limpar rejeições" request budget**: `useRestoreRejectedSwaps` now runs through `runBulk` (action `reset`) with the same 50-row cap, one request at a time. It resolves with `{ restored, failed, attempted, remaining }` instead of throwing on partial failure. The deck page shows a retry toast with the done/failed counts (reusing `swaps.bulkPartial`), or a success toast naming how many rejections remain (`decks.clearRejectionsCapped_one/_other`). Nothing is shown when everything was restored.

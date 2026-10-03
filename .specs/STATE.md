@@ -60,12 +60,12 @@
 
 ## Handoff
 
-- **Feature**: product-redesign — `.specs/features/product-redesign/` — **in progress, phases 1-8 of 10 complete (autonomous run resumed 2026-10-03, owner away).** Branch `feat/product-redesign`, pushed to origin. Autonomous-run mandate and every deviation (DEV-01..19) live in `implementation-notes.md`; requirement status lives in `tasks.md`.
-- **Done**: phase 1 (foundation: tokens, fonts, nav rule, contrast matrix, baselines) and phase 2 / Half A (D7 approval-gated readiness, `swap_suggestion` table + migration + backfill, reconciliation on every recompute, and `GET /api/swaps` plus the five lifecycle endpoints in `apps/api/src/swaps/`).
-- **Still open from phases 1-2**: FND-05 manual read and FND-07 layout-shift measurement (both deferred to phase 10); DEV-09 bulk-action throttle call for Half B.
-- **Next step**: phase 9 Swaps screen (Half B, removes the reviews shim), 10 verification: DEV-17 polish sweep, Playwright e2e suite (DEV-13), Opus verifier over the branch, PR.
-- **Gate for every phase**: `pnpm typecheck`, `pnpm lint`, engine + api + web unit, **api `test:int`**, api `test:e2e`. All green with zero skips as of 2026-10-03.
-- **Local DB**: Postgres runs in the `rathe-arsenal-pg` container (DEV-04); `docker start rathe-arsenal-pg` after a reboot (OrbStack must be running). The old "no local PostgreSQL" limitation no longer applies.
+- **Feature**: product-redesign — `.specs/features/product-redesign/` — **all 10 phases complete; PR open against `main`, not merged (owner's call).** Branch `feat/product-redesign`. Mandate, every deviation (DEV-01..25) and the provisional calls live in `implementation-notes.md`; every `tasks.md` row reads Verified.
+- **Provisional, owner to confirm**: DEV-20 bulk actions (sequential calls, 50-row cap), DEV-12 `cardCounts` on `GET /api/decks`, DEV-14 DECK-02 "Comprar tudo" → link to the shopping list, DEV-19 onboarding keeps the top nav, DEV-22 Sources chevron removal, DEV-14 decklist "by type" cannot split attack vs non-attack actions (catalog `types[0]`).
+- **Open follow-ups**: recompute paths other than swap mutations do not take the deck lock (DEV-10); `review_aggregate` table is now unused (drop needs a migration); owner visual sign-off against the prototype (unreachable from the run, DEV-01).
+- **Deploy step**: run `pnpm --filter @rathe-arsenal/api backfill:swap-suggestions` once right after the first deploy (`scripts/deploy-railway.md`).
+- **Gate**: `pnpm typecheck`, `pnpm lint`, engine/api/web unit, api `test:int` and `test:e2e` (`--runInBand` under load), and both Playwright projects (`cd apps/web && npx playwright test`, needs `pnpm dev` running; `pnpm seed:fixture` resets the fixture).
+- **Local DB**: Docker container `rathe-arsenal-pg` (DEV-04); `docker start rathe-arsenal-pg` after a reboot.
 - **Blockers**: none.
 
 ### Prior completed features (reference)

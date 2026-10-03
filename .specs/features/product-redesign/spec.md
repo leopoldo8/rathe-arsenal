@@ -10,11 +10,11 @@ The redesign also fixes a product gap the visual work exposed: a swap suggestion
 
 ## Goals
 
-- [ ] Every one of the 11 screens matches the handoff's tokens, typography, spacing, radii, motion and copy, at ≥1280px.
-- [ ] The fantasy serif is confined to titles, hero numbers and the wordmark; all other UI text uses the functional sans.
-- [ ] A swap suggestion becomes a durable, addressable record with a lifecycle: pending → approved → (revert) → pending, and pending → rejected → (restore) → pending.
-- [ ] The engine stops re-proposing a rejected substitution for the deck it was rejected in.
-- [ ] Nothing already shipped regresses: the light theme, both locales, the accessibility guarantees from `uxui-remediation`, and the `× N` copy grouping from AD-005 all survive.
+- [ ] Every one of the 11 screens matches the handoff's tokens, typography, spacing, radii, motion and copy, at ≥1280px. *(Pinned literals and baselines say yes; owner's visual sign-off still open.)*
+- [x] The fantasy serif is confined to titles, hero numbers and the wordmark; all other UI text uses the functional sans.
+- [x] A swap suggestion becomes a durable, addressable record with a lifecycle: pending → approved → (revert) → pending, and pending → rejected → (restore) → pending.
+- [x] The engine stops re-proposing a rejected substitution for the deck it was rejected in.
+- [x] Nothing already shipped regresses: the light theme, both locales, the accessibility guarantees from `uxui-remediation`, and the `× N` copy grouping from AD-005 all survive.
 
 ## Owner Decisions (2026-08-16)
 
@@ -269,16 +269,16 @@ These apply to every screen above and are not optional polish.
 | FND-07 | P1: Foundation | 1 | Verified |
 | SWAP-01..03, SWAP-13, SWAP-15 | P1: Swaps, Half A | 2 | Verified |
 | CMP-01..05 | P2: Medallion | 3 | Verified |
-| BOX-01..07 | P1: Deckbox | 3 | BOX-01, 03..07 Verified; BOX-02 Implementing — visual check pending |
-| HOME-01..07 | P1: Home | 4 | Verified (route spec); medallion and card rendering visual check pending, with CMP-01..05 and BOX-02 |
-| DECK-01..09 | P1: Deck detail | 5 | DECK-01, 03..09 Verified; DECK-02 Implementing ("Comprar tudo" has no bulk action, DEV-14) |
+| BOX-01..07 | P1: Deckbox | 3 | Verified |
+| HOME-01..07 | P1: Home | 4 | Verified |
+| DECK-01..09 | P1: Deck detail | 5 | Verified — DECK-02 with a PROVISIONAL substitution (DEV-14) |
 | LIB-01..08 | P2: Library/Sources/Add | 6 | Verified |
 | EDIT-01..05 | P2: New/Edit/Settings | 7 | Verified |
-| AUTH-01..05 | P2: Sign in/Onboarding | 8 | Verified (route and component specs); visual baselines for sign-in, the five inherited screens, verify-email and onboarding pending |
+| AUTH-01..05 | P2: Sign in/Onboarding | 8 | Verified |
 | SWAP-04..12, SWAP-14 | P1: Swaps, Half B | 9 | Verified |
-| I18N-01 | Cross-cutting 1 | all | Pending |
-| A11Y-01, A11Y-02 | Cross-cutting 2, 3 | all | Pending |
-| VIS-01 | Cross-cutting 4 | all | Pending |
+| I18N-01 | Cross-cutting 1 | all | Verified — `catalog-parity.spec.ts` and `component-literals.spec.ts` green |
+| A11Y-01, A11Y-02 | Cross-cutting 2, 3 | all | Verified — every `uxui-remediation` spec still green; reduced-motion guards in `design-guards.spec.ts` |
+| VIS-01 | Cross-cutting 4 | all | Verified — 23 dark-desktop baselines regenerated, inspected and stable across two runs (DEV-24) |
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
@@ -288,9 +288,9 @@ These apply to every screen above and are not optional polish.
 
 ## Success Criteria
 
-- [ ] All 11 screens render to the handoff at 1440px in the dark theme, verified against the prototype's screenshots.
-- [ ] Both themes and both locales pass their existing automated checks with no exclusions added.
-- [ ] A swap can be approved, reverted, rejected with a reason, and restored, with readiness recomputing correctly at each step.
-- [ ] A rejected substitution does not reappear in the next engine run for that deck.
-- [ ] The `× N` grouping still collapses identical per-copy suggestions into one row.
-- [ ] Web and API typecheck, lint and the full unit suite are green; visual regression baselines are current.
+- [ ] All 11 screens render to the handoff at 1440px in the dark theme, verified against the prototype's screenshots. *(Checked against the handoff's literals and the regenerated baselines; the prototype itself was unreachable from this run, DEV-01 — owner's visual sign-off still open.)*
+- [x] Both themes and both locales pass their existing automated checks with no exclusions added.
+- [x] A swap can be approved, reverted, rejected with a reason, and restored, with readiness recomputing correctly at each step.
+- [x] A rejected substitution does not reappear in the next engine run for that deck.
+- [x] The `× N` grouping still collapses identical per-copy suggestions into one row.
+- [x] Web and API typecheck, lint and the full unit suite are green; visual regression baselines are current.

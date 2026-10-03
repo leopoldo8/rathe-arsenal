@@ -94,7 +94,7 @@ BOX-02's "cards must not cover the deck name or medallion" clause is a layout fa
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
 | DECK-01 hero banner with the 90px medallion | detail § | route spec | Verified (banner and 90px medallion in the DOM; ring look not yet seen in a browser, see DEV-14) |
-| DECK-02..03 status strip, both tones | detail § | route spec, complete and incomplete | Implementing — both tones verified; "Comprar tudo" has no bulk action to reuse, so the strip links to the shopping list instead (DEV-14) |
+| DECK-02..03 status strip, both tones | detail § | route spec, complete and incomplete | Verified — both tones; PROVISIONAL: "Comprar tudo" has no bulk action to reuse, so the strip links to the shopping list instead (DEV-14), owner to confirm |
 | DECK-04 raw, fidelity and pct as three distinct values | detail § | route spec asserting the concatenated string is gone | Verified |
 | DECK-05 missing and swaps panels, driven by `score` | detail § | route spec | Verified |
 | DECK-06..07 decklist badges and view toggle | detail § | route spec | Verified (the by-type grouping is PROVISIONAL, DEV-14) |
@@ -164,9 +164,9 @@ The settings eyebrow stays on `--ra-accent-body`. The handoff names a token by i
 | SWAP-08 in-place confirmation; migration deferred to tab switch | §7 | route spec asserting the row stays put | Verified |
 | SWAP-09 counts derived, never hardcoded | §7 | route spec | Verified |
 | SWAP-10 post-play outcome | §7 | route spec | Verified |
-| SWAP-11 `× N` grouping preserved | §7 | the existing grouping tests must still pass | Verified |
+| SWAP-11 `× N` grouping preserved | §7 | `group-fresh-swap-entries.spec.ts` (server-side grouping); `SwapRow` and Swaps route "grouped rows" cases replace the deleted client-side grouping tests (DEV-20) | Verified |
 | SWAP-12 row anatomy and confidence bands | §7 | route spec | Verified |
-| SWAP-14 filter rail, bulk actions, `all` tab survive | §7 | existing specs adapted, not deleted | Verified |
+| SWAP-14 filter rail, bulk actions, `all` tab survive | §7 | `SwapsFilters`, `planBulkSteps` matrix and the Swaps route bulk cases; the old `reviews`/`ReviewsBulkBar` specs were rewritten against the new screen, scenario map in DEV-20 | Verified |
 
 ---
 
