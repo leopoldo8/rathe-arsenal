@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SwapRow } from '../SwapRow';
 import type { TResolvedSwap } from '../SwapRow';
@@ -140,6 +140,78 @@ describe('SwapRow — anatomy (SWAP-12)', () => {
     renderRow(makeSwapRow({ ownedCount: 0 }));
 
     expect(screen.getByText('Você não tem essa carta')).toBeInTheDocument();
+  });
+});
+
+describe('SwapRow — thumbnails (SWAP-12)', () => {
+  const originalImage = {
+    small: 'https://img.test/out-small.webp',
+    large: 'https://img.test/out-large.webp',
+    sources: [{ small: 'https://img.test/out-small.webp', large: 'https://img.test/out-large.webp' }],
+  };
+  const substituteImage = {
+    small: 'https://img.test/in-small.webp',
+    large: 'https://img.test/in-large.webp',
+    sources: [
+      { small: 'https://img.test/in-small.webp', large: 'https://img.test/in-large.webp' },
+      { small: 'https://img.test/in-rf.webp', large: 'https://img.test/in-rf-large.webp' },
+    ],
+  };
+
+  function renderWithImages() {
+    return render(
+      <SwapRow
+        row={makeSwapRow({ originalImageUrl: originalImage, substituteImageUrl: substituteImage })}
+        resolved={null}
+        isSelected={false}
+        isBusy={false}
+        {...handlers()}
+      />,
+    );
+  }
+
+  it('draws a card image on both sides, each from its own card', () => {
+    renderWithImages();
+
+    const sources = screen.getAllByTestId('card-art-image').map((img) => img.getAttribute('src'));
+    expect(sources).toEqual([originalImage.small, substituteImage.small]);
+  });
+
+  it('puts the outgoing image inside the dimmed, 34 by 48 box and the incoming one inside the gold-bordered box', () => {
+    const { container } = renderWithImages();
+
+    const out = container.querySelector(`.${styles.thumbOut}`);
+    const incoming = container.querySelector(`.${styles.thumbIn}`);
+    expect(out?.querySelector('[data-testid="card-art-image"]')).toHaveAttribute('src', originalImage.small);
+    expect(incoming?.querySelector('[data-testid="card-art-image"]')).toHaveAttribute('src', substituteImage.small);
+    const sized = (el: Element | null) => (el?.querySelector('button, div') as HTMLElement).style;
+    expect(sized(out).width).toBe('34px');
+    expect(sized(incoming).width).toBe('34px');
+  });
+
+  it('keeps the strike-through on the outgoing name, outside the dimmed thumbnail box', () => {
+    const { container } = renderWithImages();
+
+    expect(container.querySelector(`.${styles.nameOut}`)).toHaveClass(styles.nameOut!);
+    expect(container.querySelector(`.${styles.thumbOut}`)?.contains(container.querySelector(`.${styles.nameOut}`))).toBe(false);
+  });
+
+  it('falls back to the next image source when the first fails to load', () => {
+    renderWithImages();
+    const incomingImage = screen.getAllByTestId('card-art-image')[1] as HTMLElement;
+
+    incomingImage.dispatchEvent(new Event('error'));
+
+    return waitFor(() =>
+      expect(screen.getAllByTestId('card-art-image')[1]).toHaveAttribute('src', 'https://img.test/in-rf.webp'),
+    );
+  });
+
+  it('still draws the frame when a card has no image at all', () => {
+    renderRow(makeSwapRow({ originalImageUrl: null, substituteImageUrl: null }));
+
+    expect(screen.queryAllByTestId('card-art-image')).toHaveLength(0);
+    expect(screen.getAllByTestId('card-frame')).toHaveLength(2);
   });
 });
 

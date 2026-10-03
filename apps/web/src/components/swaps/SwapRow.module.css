@@ -2,7 +2,6 @@
   border: 1px solid var(--ra-border);
   border-radius: 14px;
   background: var(--ra-bg-surface);
-  overflow: hidden;
 }
 
 .rowSelected {
@@ -76,14 +75,21 @@
 }
 
 .thumbOut {
-  display: inline-flex;
+  display: block;
+  position: relative;
   flex: none;
+  inline-size: 34px;
+  block-size: 48px;
   opacity: 0.5;
 }
 
 .thumbIn {
-  display: inline-flex;
+  box-sizing: content-box;
+  display: block;
+  position: relative;
   flex: none;
+  inline-size: 34px;
+  block-size: 48px;
   border: 1px solid var(--ra-accent-soft-bd);
   border-radius: var(--ra-radius-sm);
 }

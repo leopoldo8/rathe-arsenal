@@ -1,6 +1,42 @@
 /* ============================================================
-   ReviewsFilters — CSS Module
+   SwapsFilters — CSS Module
    ============================================================ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  padding-block: var(--ra-space-3);
+}
+
+.toggle {
+  align-self: flex-start;
+  min-block-size: 44px;
+  padding: 0 var(--ra-space-4);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+}
+
+.toggle:hover {
+  border-color: var(--ra-fg-secondary);
+  color: var(--ra-fg-primary);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.toggleActive {
+  border-color: var(--ra-accent);
+  background-color: var(--ra-accent-soft-bg);
+  color: var(--ra-accent);
+}
 
 .bar {
   display: flex;

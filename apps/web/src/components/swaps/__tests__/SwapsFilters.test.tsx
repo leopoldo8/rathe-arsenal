@@ -23,6 +23,7 @@ import userEvent from '@testing-library/user-event';
 import { SwapsFilters } from '../SwapsFilters';
 import type { ISwapsFilters } from '../SwapsFilters.helpers';
 import { DEFAULT_FILTERS } from '../SwapsFilters.helpers';
+import styles from '../SwapsFilters.module.css';
 
 // ---- Helpers ----
 
@@ -190,5 +191,30 @@ describe('SwapsFilters — collapsible rail (SWAP-14)', () => {
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: /^Tier/ })).toBeNull();
+  });
+});
+
+describe('SwapsFilters — trigger styling', () => {
+  it('carries the toggle class, and the active class only while a filter is on', () => {
+    const { unmount } = render(
+      <SwapsFilters filters={DEFAULT_FILTERS} availableDecks={[]} availableHeroes={[]} onChange={vi.fn()} />,
+    );
+    const idle = screen.getByRole('button', { name: 'Filtros' });
+    expect(idle).toHaveClass(styles.toggle!);
+    expect(idle).not.toHaveClass(styles.toggleActive!);
+    unmount();
+
+    render(
+      <SwapsFilters filters={{ ...DEFAULT_FILTERS, tier: [1] }} availableDecks={[]} availableHeroes={[]} onChange={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: 'Filtros (1)' })).toHaveClass(styles.toggle!, styles.toggleActive!);
+  });
+
+  it('wraps the trigger and the rail in the wrapper class', () => {
+    const { container } = render(
+      <SwapsFilters filters={DEFAULT_FILTERS} availableDecks={[]} availableHeroes={[]} onChange={vi.fn()} />,
+    );
+
+    expect(container.firstElementChild).toHaveClass(styles.wrapper!);
   });
 });

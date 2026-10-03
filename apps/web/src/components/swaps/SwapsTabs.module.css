@@ -45,7 +45,8 @@
 }
 
 .badge {
-  font-family: var(--ra-font-mono);
+  font-family: var(--ra-font-ui);
+  font-variant-numeric: tabular-nums;
   font-size: var(--ra-text-caption);
   line-height: 1;
 }

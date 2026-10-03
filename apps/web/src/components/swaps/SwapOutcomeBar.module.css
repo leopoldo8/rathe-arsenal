@@ -5,6 +5,7 @@
   gap: var(--ra-space-2);
   padding: var(--ra-space-3) 20px;
   border-top: 1px solid var(--ra-border-subtle);
+  border-radius: 0 0 14px 14px;
 }
 
 .prompt {

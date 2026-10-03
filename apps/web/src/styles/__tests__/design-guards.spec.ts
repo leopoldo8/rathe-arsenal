@@ -1719,6 +1719,33 @@ describe('SWAP-06 and SWAP-10 — feedback panels', () => {
   });
 });
 
+describe('SWAP-14 — filter trigger and tab counts', () => {
+  const filtersCss = readCss('components/swaps/SwapsFilters.module.css');
+
+  it('styles the Filtros trigger as a surface pill, gold when active', () => {
+    const body = ruleBody(filtersCss, '.toggle');
+    expect(body).toContain('background: var(--ra-bg-surface)');
+    expect(body).toContain('border: 1px solid var(--ra-border)');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(ruleBody(filtersCss, '.toggleActive')).toContain('color: var(--ra-accent)');
+  });
+
+  it('sets the tab counts in the UI font with tabular numerals, not mono', () => {
+    const body = ruleBody(SWAP_TABS_CSS, '.badge');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(body).toContain('font-variant-numeric: tabular-nums');
+    expect(body).not.toContain('mono');
+  });
+
+  it('sizes both thumbnail boxes 34 by 48 so the card has room to draw', () => {
+    for (const selector of ['.thumbOut', '.thumbIn']) {
+      const body = ruleBody(SWAP_ROW_CSS, selector);
+      expect(body).toContain('inline-size: 34px');
+      expect(body).toContain('block-size: 48px');
+    }
+  });
+});
+
 describe('SWAP-14 — tabs', () => {
   it('washes the active tab in gold with the accent text', () => {
     const body = ruleBody(SWAP_TABS_CSS, ".trigger[data-state='active']");

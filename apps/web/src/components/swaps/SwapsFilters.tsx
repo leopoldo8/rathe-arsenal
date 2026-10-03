@@ -59,7 +59,7 @@ export function SwapsFilters({
     <div className={styles.wrapper}>
       <button
         type="button"
-        className={`${styles.toggle} ${activeCount > 0 ? styles['chip--active'] : ''}`}
+        className={`${styles.toggle} ${activeCount > 0 ? styles.toggleActive : ''}`}
         aria-expanded={isOpen}
         aria-controls={panelId}
         onClick={() => setIsOpen((open) => !open)}
