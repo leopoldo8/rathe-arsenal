@@ -60,10 +60,10 @@
 
 ## Handoff
 
-- **Feature**: product-redesign — `.specs/features/product-redesign/` — **in progress, phases 1-4 of 10 complete (autonomous run resumed 2026-10-03, owner away).** Branch `feat/product-redesign`, pushed to origin. Autonomous-run mandate and every deviation (DEV-01..13) live in `implementation-notes.md`; requirement status lives in `tasks.md`.
+- **Feature**: product-redesign — `.specs/features/product-redesign/` — **in progress, phases 1-5 of 10 complete (autonomous run resumed 2026-10-03, owner away).** Branch `feat/product-redesign`, pushed to origin. Autonomous-run mandate and every deviation (DEV-01..15) live in `implementation-notes.md`; requirement status lives in `tasks.md`.
 - **Done**: phase 1 (foundation: tokens, fonts, nav rule, contrast matrix, baselines) and phase 2 / Half A (D7 approval-gated readiness, `swap_suggestion` table + migration + backfill, reconciliation on every recompute, and `GET /api/swaps` plus the five lifecycle endpoints in `apps/api/src/swaps/`).
 - **Still open from phases 1-2**: FND-05 manual read and FND-07 layout-shift measurement (both deferred to phase 10); DEV-09 bulk-action throttle call for Half B.
-- **Next step**: phase 5, deck detail (`design/03-deck-surfaces.md` §5). Then 6 collection, 7 new/edit/settings, 8 sign-in/onboarding, 9 Swaps screen (Half B, removes the reviews shim), 10 verification + PR.
+- **Next step**: phase 6, collection surfaces (`design/04-collection-surfaces.md`). Then 7 new/edit/settings, 8 sign-in/onboarding, 9 Swaps screen (Half B, removes the reviews shim), 10 verification + PR.
 - **Gate for every phase**: `pnpm typecheck`, `pnpm lint`, engine + api + web unit, **api `test:int`**, api `test:e2e`. All green with zero skips as of 2026-10-03.
 - **Local DB**: Postgres runs in the `rathe-arsenal-pg` container (DEV-04); `docker start rathe-arsenal-pg` after a reboot (OrbStack must be running). The old "no local PostgreSQL" limitation no longer applies.
 - **Blockers**: none.

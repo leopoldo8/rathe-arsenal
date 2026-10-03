@@ -268,7 +268,7 @@ These apply to every screen above and are not optional polish.
 | FND-06 | P1: Foundation | 1 | Verified |
 | FND-07 | P1: Foundation | 1 | Implementing (layout shift unmeasured) |
 | SWAP-01..03, SWAP-13, SWAP-15 | P1: Swaps, Half A | 2 | Verified |
-| CMP-01..05 | P2: Medallion | 3 | Implementing — 38px ring verified visually; 90px ring asserted in CSS and DOM, visual check pending |
+| CMP-01..05 | P2: Medallion | 3 | Verified |
 | BOX-01..07 | P1: Deckbox | 3 | BOX-01, 03..07 Verified; BOX-02 Implementing — visual check pending |
 | HOME-01..07 | P1: Home | 4 | Verified (route spec); medallion and card rendering visual check pending, with CMP-01..05 and BOX-02 |
 | DECK-01..09 | P1: Deck detail | 5 | DECK-01, 03..09 Verified; DECK-02 Implementing ("Comprar tudo" has no bulk action, DEV-14) |
