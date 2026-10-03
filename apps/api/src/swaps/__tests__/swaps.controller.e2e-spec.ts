@@ -34,6 +34,16 @@ const DECK_DTO: IDeckImportDto = {
   inventory: [],
 };
 
+const DECK_CARD_TOTAL =
+  1 +
+  [...DECK_DTO.mainboard, ...DECK_DTO.weapons].reduce((sum, card) => sum + card.quantity, 0);
+
+// Mirrors the engine's one-decimal rounding: only the approved row's quantity is added.
+function percentAfterApproving(baselinePercent: number, approvedQuantity: number): number {
+  const countedCards = (baselinePercent / 100) * DECK_CARD_TOTAL + approvedQuantity;
+  return Math.round((countedCards / DECK_CARD_TOTAL) * 1000) / 10;
+}
+
 interface ISwapRowBody {
   readonly id: string;
   readonly cardIdentifier: string;
@@ -187,7 +197,7 @@ describe('Swaps lifecycle (E2E)', () => {
     expect(approved.swap).toEqual(expect.objectContaining({ id: first.id, status: 'approved' }));
     expect(approved.swap.appliedAt).not.toBeNull();
     const afterApprove = await effectivePercent();
-    expect(afterApprove).toBeGreaterThan(baseline);
+    expect(afterApprove).toBe(percentAfterApproving(baseline, first.quantity));
 
     const repeated = (await post(`/api/swaps/${first.id}/approve`).expect(200)).body as IMutationBody;
     expect(repeated.swap.appliedAt).toBe(approved.swap.appliedAt);
@@ -239,10 +249,31 @@ describe('Swaps lifecycle (E2E)', () => {
     const [row] = await pendingRows();
     const anyId = row?.id ?? RANDOM_UUID;
 
-    await post('/api/swaps/not-a-uuid/approve').expect(400);
     await post(`/api/swaps/${anyId}/reject`).send({ reason: 'because' }).expect(400);
     await post(`/api/swaps/${anyId}/outcome`).send({ outcome: 'meh' }).expect(400);
     await get('/api/swaps?state=retired').expect(400);
+  });
+
+  it.each([
+    ['approve', {}],
+    ['reject', {}],
+    ['revert', {}],
+    ['restore', {}],
+    ['outcome', { outcome: 'worked' }],
+  ])('answers 400 for a malformed id on %s even with a valid body', async (action, body) => {
+    await post(`/api/swaps/not-a-uuid/${action}`).send(body).expect(400);
+  });
+
+  it('accepts a 500-character rejection note and rejects 501', async () => {
+    const [row] = await pendingRows();
+    if (!row) throw new Error('fixture did not produce a pending suggestion');
+
+    await post(`/api/swaps/${row.id}/reject`).send({ note: 'n'.repeat(501) }).expect(400);
+    const accepted = (await post(`/api/swaps/${row.id}/reject`).send({ note: 'n'.repeat(500) }).expect(200))
+      .body as IMutationBody;
+    expect(accepted.swap.rejectionNote).toHaveLength(500);
+
+    await post(`/api/swaps/${row.id}/restore`).expect(200);
   });
 
   it("answers another user's swap id exactly like an id that does not exist", async () => {
