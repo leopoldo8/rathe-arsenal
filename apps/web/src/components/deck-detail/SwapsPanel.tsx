@@ -1,16 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ISubstitutedEntry } from '../../api/deck-detail';
-import { findSwap } from '../../api/swaps';
 import type { ISwapRow } from '../../api/swaps';
 import { CardArt } from '../card-art/CardArt';
 import {
-  entryKey,
+  groupSwaps,
   resolveScoreBand,
   SWAPS_LINK_SEARCH,
-  swapDecision,
-  swapKeyOf,
+  type ISwapGroup,
   type TSwapDecision,
 } from './deckDetailModel';
 import styles from './SwapsPanel.module.css';
@@ -32,6 +30,7 @@ const BAND_CLASS = {
 
 interface ISwapCardProps {
   readonly swap: ISubstitutedEntry;
+  readonly quantity: number;
   readonly swapId: string | null;
   readonly decision: TSwapDecision;
   readonly isBusy: boolean;
@@ -40,7 +39,7 @@ interface ISwapCardProps {
   readonly onUndo: (swapId: string, decision: 'approved' | 'rejected') => void;
 }
 
-function SwapCard({ swap, swapId, decision, isBusy, onApprove, onReject, onUndo }: ISwapCardProps): React.ReactElement {
+function SwapCard({ swap, quantity, swapId, decision, isBusy, onApprove, onReject, onUndo }: ISwapCardProps): React.ReactElement {
   const { t } = useTranslation();
   const { original, match } = swap;
   const isDisabled = isBusy || swapId === null;
@@ -84,7 +83,7 @@ function SwapCard({ swap, swapId, decision, isBusy, onApprove, onReject, onUndo 
           data-testid="swap-confidence"
           data-band={resolveScoreBand(scorePercent)}
         >
-          {t('deckDetail.swapHave', { count: original.quantity, score: scorePercent })}
+          {t('deckDetail.swapHave', { count: quantity, score: scorePercent })}
         </span>
         {decision === 'pending' ? (
           <span className={styles.buttons}>
@@ -137,6 +136,7 @@ export function SwapsPanel({
   onUndo,
 }: ISwapsPanelProps): React.ReactElement {
   const { t } = useTranslation();
+  const groups = useMemo(() => groupSwaps(swaps, deckSwaps), [swaps, deckSwaps]);
   return (
     <section className={styles.panel} aria-labelledby="deck-swaps-title" data-testid="deck-swaps-panel">
       <div className={styles.header}>
@@ -147,18 +147,19 @@ export function SwapsPanel({
           {t('deckDetail.swapsViewAll')}
         </Link>
       </div>
-      {swaps.length === 0 ? (
+      {groups.length === 0 ? (
         <p className={styles.empty}>{t('deckDetail.swapsEmpty')}</p>
       ) : (
         <ul className={styles.list}>
-          {swaps.map((swap) => {
-            const swapId = findSwap(deckSwaps, swapKeyOf(swap))?.id ?? null;
+          {groups.map((group: ISwapGroup) => {
+            const { swapId } = group;
             return (
               <SwapCard
-                key={entryKey(swap.original)}
-                swap={swap}
+                key={group.key}
+                swap={group.swap}
+                quantity={group.quantity}
                 swapId={swapId}
-                decision={swapDecision(swap, deckSwaps)}
+                decision={group.decision}
                 isBusy={swapId !== null && pendingSwapId === swapId}
                 onApprove={onApprove}
                 onReject={onReject}
