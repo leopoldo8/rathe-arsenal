@@ -198,6 +198,9 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **Plural bug**: `csvSources.sourcesCountLine` renders "1 sources"; needs `_one`/`_other`.
 - **Stray "•"** before the info icon in the Sources duplicates notice.
 - `DeckDetailSkeleton` still has the old sidebar shape; composition-edit mode keeps the old typography (DEV-15).
+- **Bug found in phase 7 (pre-existing)**: the deck page's tag chip row uses array positions as tag ids, so removing a tag there can send the wrong id. Fix and test.
+- `/decks/:deckId/edit` (new in phase 7) has no visual-regression entry yet; add it.
+- Settings title sits tight under the top nav (no top padding on the 720px column); check against the handoff.
 
 ### DEV-18 — Phase 7 New deck, Edit deck, Settings: orchestrator rulings and worker calls
 - **Rulings applied**: `notes` is an additive nullable `text` column on `tracked_deck` (migration `1778533587000-AddTrackedDeckNotes` with `down()`, DB-backed up/down test in its own schema), capped at 2000 characters by class-validator, `null` clears it, returned on the deck detail response. `format` moved to PATCH (metadata only, never touches cards). `FormatDropdown` is gone from composition edit (sidebar shows the draft format as read-only text; the mobile canvas shows only the hero dropdown) while `compositionDraft.format` stays populated for the cascade check. The hero "Editar" button now opens the Edit deck screen (retargets DEV-14's provisional `?edit=1`); composition edit is reached from a new "Editar cartas" button in the decklist header, beside the view toggle. The status control shows all five statuses (active, ready, building, idea, retired), each round-tripped through a test and the API e2e.
