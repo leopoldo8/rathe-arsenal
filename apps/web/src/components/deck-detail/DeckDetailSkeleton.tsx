@@ -4,15 +4,10 @@ import { Skeleton } from '../ui/Skeleton/Skeleton';
 import styles from './DeckDetailSkeleton.module.css';
 
 /**
- * DeckDetailSkeleton — placeholder for the deck detail two-column layout
- * while the query is in-flight.
- *
- * Mirrors DeckDetailLayout breakpoints (UXUI-07):
- *   Sidebar — readiness/meta placeholders (280px fixed at ≥1280px)
- *   Canvas  — breakdown list + shopping panel placeholders (1fr)
- *
- * At < 1280px collapses to single-column stack. Reuses <Skeleton> which
- * handles shimmer and prefers-reduced-motion at the CSS layer.
+ * DeckDetailSkeleton - placeholder for the single-column deck detail view
+ * while the query is in-flight: hero banner, analysis cards, then the
+ * decklist and shopping panel, inside the same centred 1180px column.
+ * Reuses <Skeleton>, which handles shimmer and prefers-reduced-motion.
  */
 export function DeckDetailSkeleton(): React.ReactElement {
   const { t } = useTranslation();
@@ -24,29 +19,22 @@ export function DeckDetailSkeleton(): React.ReactElement {
       aria-busy="true"
       aria-label={t('decks.loadingDeckDetails')}
     >
-      {/* Sidebar — readiness hero placeholder */}
-      <div className={styles.sidebar} data-testid="deck-detail-skeleton-sidebar">
-        <Skeleton height="180px" aria-label={t('decks.loadingReadinessScore')} />
-        <Skeleton height="1rem" aria-label={t('decks.loading')} />
-        <Skeleton height="1rem" width="60%" aria-label={t('decks.loading')} />
+      <div className={styles.banner} data-testid="deck-detail-skeleton-banner">
+        <Skeleton height="210px" aria-label={t('decks.loading')} />
       </div>
 
-      {/* Canvas — breakdown + shopping panel placeholders */}
-      <div className={styles.canvas} data-testid="deck-detail-skeleton-canvas">
+      <div className={styles.analysis} data-testid="deck-detail-skeleton-analysis">
+        <Skeleton height="180px" aria-label={t('decks.loadingReadinessScore')} />
+        <Skeleton height="180px" aria-label={t('decks.loading')} />
+        <Skeleton height="180px" aria-label={t('decks.loading')} />
+      </div>
+
+      <div className={styles.list} data-testid="deck-detail-skeleton-list">
         <div className={styles.sectionTitle}>
           <Skeleton height="1.25rem" width="40%" aria-label={t('decks.loading')} />
         </div>
         <div className={styles.card}>
           <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
-        </div>
-        <div className={styles.card}>
-          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
-        </div>
-        <div className={styles.card}>
-          <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />
-        </div>
-        <div className={styles.sectionTitle}>
-          <Skeleton height="1.25rem" width="40%" aria-label={t('decks.loading')} />
         </div>
         <div className={styles.card}>
           <Skeleton height="72px" aria-label={t('decks.loadingCardRow')} />

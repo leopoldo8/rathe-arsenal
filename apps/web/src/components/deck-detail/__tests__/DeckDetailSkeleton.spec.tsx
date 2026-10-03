@@ -51,14 +51,21 @@ describe('DeckDetailSkeleton — a11y', () => {
   });
 });
 
-describe('DeckDetailSkeleton — two-column structure (UXUI-07)', () => {
-  it('renders a sidebar section', () => {
+describe('DeckDetailSkeleton — single-column structure (UXUI-07)', () => {
+  it('renders the banner, analysis and list sections in that order', () => {
     render(<DeckDetailSkeleton />);
-    expect(screen.getByTestId('deck-detail-skeleton-sidebar')).toBeInTheDocument();
+    const sections = ['banner', 'analysis', 'list'].map((name) =>
+      screen.getByTestId(`deck-detail-skeleton-${name}`),
+    );
+    sections.slice(1).forEach((section, index) => {
+      const previous = sections[index]!;
+      expect(previous.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 
-  it('renders a canvas section', () => {
+  it('has no sidebar or canvas column', () => {
     render(<DeckDetailSkeleton />);
-    expect(screen.getByTestId('deck-detail-skeleton-canvas')).toBeInTheDocument();
+    expect(screen.queryByTestId('deck-detail-skeleton-sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('deck-detail-skeleton-canvas')).not.toBeInTheDocument();
   });
 });
