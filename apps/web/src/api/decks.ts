@@ -349,7 +349,7 @@ export function usePutDeckMutation(deckId: number) {
  * Creates a scratch deck via POST /api/decks.
  * Returns the new deck so the caller can navigate to the edit view:
  *   navigate({ to: '/decks/$deckId', params: { deckId: String(deck.id) },
- *              search: { edit: '1' } })
+ *              search: { edit: 1 } })
  *
  * Invalidations on success:
  * - DECKS_QUERY_KEY — home list gains the new deck.

@@ -34,7 +34,7 @@ import missingStyles from '../../../components/deck-detail/MissingPanel.module.c
 
 const mockNavigate = vi.fn();
 const mockLink = vi.fn();
-let mockEdit: '1' | undefined;
+let mockEdit: 1 | undefined;
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (config: Record<string, unknown>) => ({
@@ -458,7 +458,7 @@ describe('DeckDetailPage — view mode layout', () => {
   });
 
   it('keeps the shell in composition-edit mode, without the readiness medallion', () => {
-    mockEdit = '1';
+    mockEdit = 1;
     populate(buildDeck());
     renderPage();
 
@@ -549,7 +549,7 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/decks/$deckId',
       params: { deckId: '1' },
-      search: { edit: '1' },
+      search: { edit: 1 },
     });
   });
 

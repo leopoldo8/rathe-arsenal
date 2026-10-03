@@ -55,14 +55,14 @@ function DeckDetailPage(): React.ReactElement {
   const { t } = useTranslation();
 
   // Derive current mode from ?edit=1 search param
-  const mode = edit === '1' ? 'edit' : 'view';
+  const mode = edit === 1 ? 'edit' : 'view';
 
   function handleOpenMetadataEdit(): void {
     void navigate({ to: '/decks/$deckId/edit', params: { deckId } });
   }
 
   function handleEnterEdit(): void {
-    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: '1' } });
+    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: 1 } });
   }
 
   function handleExitEdit(): void {

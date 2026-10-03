@@ -420,7 +420,7 @@ describe('DecksNewPage — /decks/new', () => {
       expect.objectContaining({
         to: '/decks/$deckId',
         params: { deckId: '99' },
-        search: { edit: '1' },
+        search: { edit: 1 },
       }),
     );
   });

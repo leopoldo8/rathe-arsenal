@@ -67,7 +67,7 @@ export function StartScratchCard(): React.ReactElement {
           void navigate({
             to: '/decks/$deckId',
             params: { deckId: String(result.id) },
-            search: { edit: '1' },
+            search: { edit: 1 },
           });
         },
         onError: (err) => {

@@ -24,7 +24,7 @@ import { useBlocker } from '@tanstack/react-router';
 interface INavigationAwayGuardOptions {
   /** True when the composition draft has unsaved changes. */
   readonly isDirty: boolean;
-  /** True when the page is in edit mode (edit === '1'). */
+  /** True when the page is in edit mode (edit === 1). */
   readonly isEditMode: boolean;
   /**
    * Called when blocked navigation is detected.
