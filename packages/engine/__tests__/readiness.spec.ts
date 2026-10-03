@@ -1075,6 +1075,38 @@ describe('computeEffectiveReadiness', () => {
       expect(approved.breakdown.notOwned).toEqual(pending.breakdown.notOwned);
     });
 
+    it('approving one of two distinct substitutions counts only that one', () => {
+      const origOne = makeCard({ cardIdentifier: 'orig-one' });
+      const origTwo = makeCard({ cardIdentifier: 'orig-two' });
+      const shared = makeCard({ cardIdentifier: 'shared-substitute' });
+      const twoCatalog = makeCatalog([origOne, origTwo, shared]);
+      const deck = {
+        cards: [
+          { cardIdentifier: 'orig-one', quantity: 1, slot: 'mainboard' },
+          { cardIdentifier: 'orig-two', quantity: 1, slot: 'mainboard' },
+        ],
+      };
+      const inventory = new Map([['shared-substitute', 2]]);
+      const approvedIdentifiers = new Set([
+        buildExclusionKey('orig-one', 'mainboard', 'shared-substitute'),
+      ]);
+
+      const result = computeEffectiveReadiness(
+        deck,
+        inventory,
+        twoCatalog,
+        DEFAULT_PITCH_TOLERANCE,
+        new Set(),
+        approvedIdentifiers,
+      );
+
+      const byOriginal = new Map(
+        result.breakdown.substituted.map((entry) => [entry.original.cardIdentifier, entry.approved]),
+      );
+      expect(byOriginal).toEqual(new Map([['orig-one', true], ['orig-two', false]]));
+      expect(result.effectivePercent).toBe(50);
+    });
+
     it('inventory is consumed identically whether or not the substitution is approved', () => {
       // Approval must not change *which* substitute is chosen -- only
       // whether it counts. Both runs should leave the same remaining
