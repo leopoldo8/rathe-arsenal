@@ -3,6 +3,7 @@
 .banner {
   --hero-eyebrow-ink: #c6a678;
   --hero-overlay-end: rgba(11, 12, 15, 0.96);
+  --hero-text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75);
   /* The art and overlay stay dark in both themes, so everything on top reads the dark values. */
   --ra-fg-primary: #e8e6e1;
   --ra-fg-secondary: #c8cad2;
@@ -38,21 +39,37 @@
   }
 }
 
-.art {
+.artFrame {
   position: absolute;
   inset-block: 0;
-  inset-inline-end: 0;
-  inline-size: 62%;
-  block-size: 100%;
-  object-fit: cover;
-  object-position: center 28%;
-  transform: scale(1.12);
-  transform-origin: 60% 28%;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 45%);
-  mask-image: linear-gradient(to right, transparent, #000 45%);
+  inset-inline-start: 0;
+  inline-size: min(520px, 100%);
+  overflow: hidden;
+  container-type: size;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 50%, transparent),
+    linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 50%, transparent),
+    linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent);
+  mask-composite: intersect;
+}
+
+/* Sized off the frame so only the card's illustration window (x 13-87%, y 14-46%) can show. */
+.art {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: max(136cqw, 224cqh);
+  max-inline-size: none;
+  block-size: auto;
+  transform: translate(-50%, -30%);
 }
 
 .artFallback {
+  position: absolute;
+  inset: 0;
   background: radial-gradient(
     circle at 50% 30%,
     color-mix(in oklch, var(--ra-pitch-hero) 55%, white),
@@ -81,6 +98,7 @@
 
 .breadcrumb {
   display: inline-flex;
+  text-shadow: var(--hero-text-shadow);
   align-items: center;
   color: var(--ra-fg-secondary);
   font-family: var(--ra-font-ui);
@@ -137,6 +155,7 @@
 
 .identity {
   min-inline-size: 0;
+  text-shadow: var(--hero-text-shadow);
 }
 
 .eyebrow {

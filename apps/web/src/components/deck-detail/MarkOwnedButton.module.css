@@ -1,31 +1,33 @@
-/* ============================================================
-   MarkOwnedButton — "Mark owned" action in not-owned list (R62)
-   ============================================================ */
-
 .btn {
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
   cursor: pointer;
   background: transparent;
-  color: var(--ra-fg-secondary);
-  border: 1px solid var(--ra-border-strong);
-  border-radius: 2px;
-  padding: var(--ra-space-2) var(--ra-space-3);
-  white-space: nowrap;
+  color: var(--ra-fg-muted);
+  border: 1px solid transparent;
+  border-radius: var(--ra-radius-sm);
   transition: all var(--ra-duration) var(--ra-ease);
+}
+
+.icon {
+  display: block;
 }
 
 .btn:not(:disabled):hover,
 .btn:not(:disabled):focus-visible {
   background: var(--ra-bg-raised);
   color: var(--ra-fg-primary);
-  border-color: var(--ra-accent);
+  border-color: var(--ra-border-strong);
 }
 
 .btn:not(:disabled):active {
   background: var(--ra-bg-muted);
   color: var(--ra-fg-primary);
-  border-color: var(--ra-accent);
+  border-color: var(--ra-border-strong);
 }
 
 .btn:not(:disabled):focus-visible {

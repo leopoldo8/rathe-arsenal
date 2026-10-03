@@ -274,7 +274,7 @@ describe('Home route', () => {
     expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
   });
 
-  it('renders the aggregate callout below the groups when the API sends one', () => {
+  it('renders the aggregate line inside the armory header, not after the groups', () => {
     mockUseDecksQuery.mockReturnValue({
       isLoading: false,
       isError: false,
@@ -295,10 +295,12 @@ describe('Home route', () => {
     });
     renderHome();
 
-    const callout = screen.getByLabelText(/resumo de compra/i);
-    const lastGroup = group('Aposentados');
+    const callout = screen.getByTestId('aggregate-callout');
+    expect(screen.getByRole('heading', { level: 1 }).closest('header')).toContainElement(callout);
+    expect(screen.getAllByTestId('aggregate-callout')).toHaveLength(1);
+    const firstGroup = group('Ativos');
     expect(
-      lastGroup.compareDocumentPosition(callout) & Node.DOCUMENT_POSITION_FOLLOWING,
+      firstGroup.compareDocumentPosition(callout) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
 });

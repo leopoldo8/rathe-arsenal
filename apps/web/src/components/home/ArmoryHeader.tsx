@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import type { ITrackedDeckListItem } from '../../api/decks';
+import type { ITrackedDeckListItem, ITrackedDeckListResponse } from '../../api/decks';
+import { AggregateCallout } from './AggregateCallout';
 import { computeAverageReadiness, countCompleteDecks, isRetired } from './homeGroups';
 import styles from './ArmoryHeader.module.css';
 
 interface IArmoryHeaderProps {
   readonly decks: readonly ITrackedDeckListItem[];
   readonly totalCardsMissing: number | null;
+  readonly aggregateShoppingLine?: ITrackedDeckListResponse['aggregateShoppingLine'];
 }
 
 /**
@@ -17,6 +19,7 @@ interface IArmoryHeaderProps {
 export function ArmoryHeader({
   decks,
   totalCardsMissing,
+  aggregateShoppingLine = null,
 }: IArmoryHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const inRotation = decks.filter((deck) => !isRetired(deck));
@@ -33,6 +36,7 @@ export function ArmoryHeader({
             total: inRotation.length,
           })}
         </p>
+        <AggregateCallout aggregateShoppingLine={aggregateShoppingLine} />
       </div>
 
       <div className={styles.kpiStrip} role="group" aria-label={t('home.collectionStatsLabel')}>

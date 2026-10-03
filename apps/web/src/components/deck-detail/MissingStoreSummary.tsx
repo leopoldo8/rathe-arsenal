@@ -44,60 +44,63 @@ export function MissingStoreSummary({
   const showRetryFailed = Boolean(
     variantFetchProgress && !variantFetchProgress.inProgress && variantFetchProgress.failed > 0,
   );
+  const freshnessText =
+    availableCardCount > 0 ? t('decks.shoppingUpdated', { when }) : t('decks.shoppingLastChecked', { when });
 
   return (
     <div className={styles.summary} data-testid="missing-store-summary">
-      <div className={styles.meta}>
-        <span className={styles.store}>{t('deckDetail.storePricesAt', { storeName })}</span>
-        <span
-          className={styles.freshness}
-          data-freshness={veryStale ? 'very-stale' : isStale(lastFetchedAt) ? 'stale' : 'ok'}
-          title={lastFetchedAt}
-        >
-          {t('decks.shoppingUpdated', { when })}
-        </span>
-      </div>
-
-      <div aria-live="polite">
-        {availableCardCount > 0 ? (
-          <p className={styles.headline}>
-            {t('decks.shoppingHeadlineWith')}
-            {isEstimated && (
-              <span
-                aria-label={t('decks.estimatedPriceAria')}
-                title={t('decks.estimatedPriceTooltip')}
-                className={styles.tilde}
-              >
-                ~
-              </span>
-            )}
-            {formatBrl(totalCostCents)}{' '}
-            {isEstimated && (
-              <span className={styles.estimated} data-testid="estimated-badge">
-                {t('decks.estimated')}
-              </span>
-            )}{' '}
-            {t('decks.shoppingHeadlineAt', { storeName })} {availableCardCount}{' '}
-            {t('decks.shoppingHeadlineMissingCards', { count: totalMissing, total: totalMissing })}.
-          </p>
-        ) : (
-          <>
-            <p className={styles.headlineEmpty}>{t('decks.shoppingHeadlineEmpty', { storeName })}</p>
-            <p className={styles.noStock}>
-              {t('decks.shoppingLastChecked', { when })} &mdash;{' '}
+      <div className={styles.line}>
+        <p className={styles.headline} aria-live="polite">
+          {availableCardCount > 0 ? (
+            <>
+              <span className={styles.total} data-testid="missing-store-total">
+                {isEstimated && (
+                  <span aria-label={t('decks.estimatedPriceAria')} title={t('decks.estimatedPriceTooltip')}>
+                    ~
+                  </span>
+                )}
+                {formatBrl(totalCostCents)}
+              </span>{' '}
+              {t('deckDetail.storeCoverage', { storeName, available: availableCardCount, count: totalMissing })}
+            </>
+          ) : (
+            <>
+              {t('decks.shoppingHeadlineEmpty', { storeName })}{' '}
               <a href="#breakdown" className={styles.noStockLink}>
                 {t('decks.trySubstitutionEditor')}
               </a>
-            </p>
-          </>
-        )}
-      </div>
-
-      {veryStale && (
-        <p className={styles.stale} data-testid="missing-store-stale">
-          {t('decks.pricesMayHaveChanged')}
+            </>
+          )}
+          <span className={styles.sep} aria-hidden="true">
+            ·
+          </span>
+          <span
+            className={styles.freshness}
+            data-freshness={veryStale ? 'very-stale' : isStale(lastFetchedAt) ? 'stale' : 'ok'}
+            data-testid={veryStale ? 'missing-store-stale' : undefined}
+            title={lastFetchedAt}
+          >
+            <span className={styles.phrase}>{freshnessText}</span>
+            {veryStale && (
+              <>
+                {' '}
+                <span className={styles.phrase}>{t('decks.pricesMayHaveChanged')}</span>
+              </>
+            )}
+          </span>
         </p>
-      )}
+        {showCta &&
+          (isCooldownActive ? (
+            <span className={styles.cooldown}>{t('decks.pricesUpToDate')}</span>
+          ) : (
+            <VariantFetchCta
+              onGetExactPrices={onFetchVariants}
+              isPending={isPending}
+              isError={fetchMutationStatus === 'error'}
+              appearance="quiet"
+            />
+          ))}
+      </div>
 
       {isFetching && variantFetchProgress !== undefined && (
         <VariantFetchProgress progress={variantFetchProgress} />
@@ -109,16 +112,6 @@ export function MissingStoreSummary({
           isPending={isPending}
         />
       )}
-      {showCta &&
-        (isCooldownActive ? (
-          <p className={styles.cooldown}>{t('decks.pricesUpToDate')}</p>
-        ) : (
-          <VariantFetchCta
-            onGetExactPrices={onFetchVariants}
-            isPending={isPending}
-            isError={fetchMutationStatus === 'error'}
-          />
-        ))}
     </div>
   );
 }

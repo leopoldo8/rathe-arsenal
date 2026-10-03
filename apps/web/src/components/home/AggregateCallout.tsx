@@ -4,28 +4,13 @@ import { ITrackedDeckListResponse } from '../../api/decks';
 import { formatBrl } from '../../utils/format-brl';
 import styles from './AggregateCallout.module.css';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface IAggregateCalloutProps {
   readonly aggregateShoppingLine: ITrackedDeckListResponse['aggregateShoppingLine'];
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 /**
- * AggregateCallout — brass-stroke band below the readiness shelves.
- *
- * Renders: "R$ 312 completaria 4 de 6 decks na Cupula DT"
- *
- * Render guards (D6):
- *  - Hidden when `aggregateShoppingLine` is null.
- *  - Hidden when `kind === 'unscraped'` (store not yet scraped).
- *  - Hidden when `totalCostCents === 0` (nothing to buy).
- *  - Hidden when `completableDecks === 0` (no deck can be completed).
+ * Second status line of the armory header: "R$ 312 completaria 4 de 6 decks na Cupula DT".
+ * Hidden when there is no priced store, nothing to buy, or no deck it would complete.
  */
 export function AggregateCallout({
   aggregateShoppingLine,
@@ -39,14 +24,15 @@ export function AggregateCallout({
   if (agg.completableDecks === 0) return null;
 
   return (
-    <aside className={styles.callout} aria-label={t('home.aggregateShoppingLineLabel')}>
-      <span className={styles.cost}>{formatBrl(agg.totalCostCents)}</span>{' '}
-      <span className={styles.body}>
+    <p className={styles.line} data-testid="aggregate-callout">
+      <span className={styles.dot} aria-hidden="true" />
+      <span>
+        <span className={styles.cost}>{formatBrl(agg.totalCostCents)}</span>{' '}
         {t('home.aggregateCompletionVerb')}{' '}
         <strong className={styles.strong}>{agg.completableDecks}</strong>{' '}
         {t('home.aggregateDeckConnector', { total: agg.totalDecks })}{' '}
         <span className={styles.storeName}>{agg.storeName}</span>
       </span>
-    </aside>
+    </p>
   );
 }

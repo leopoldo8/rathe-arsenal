@@ -1952,11 +1952,19 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(flat).toContain('background: var(--ra-bg-raised)');
   });
 
-  it('Buy keeps its dark ink on hover and active', () => {
-    const flat = squash(MISSING);
-    const rule = flat.match(/\.buy:hover, \.buy:active \{([^}]*)\}/);
-    expect(rule?.[1]).toContain('background: var(--ra-accent-hover)');
-    expect(rule?.[1]).toContain('color: var(--ra-accent-ink-on)');
+  it('Buy is a quiet brass link, not a filled slab, and only tints on hover and active', () => {
+    expect(ruleBody(MISSING, '.buy')).toContain('color: var(--ra-accent-body)');
+    expect(ruleBody(MISSING, '.buy')).not.toContain('background:');
+    expect(ruleBody(MISSING, '.buy')).not.toContain('border:');
+    const rule = ruleBody(MISSING, '.buy:hover, .buy:active');
+    expect(rule).toContain('background: var(--ra-accent-soft-bg)');
+    expect(rule).not.toContain('background: var(--ra-accent)');
+  });
+
+  it('Buy and Mark owned keep a 44px touch target', () => {
+    expect(ruleBody(MISSING, '.buy')).toContain('min-block-size: 44px');
+    expect(ruleBody(MARK_OWNED, '.btn')).toContain('min-inline-size: 44px');
+    expect(ruleBody(MARK_OWNED, '.btn')).toContain('min-block-size: 44px');
   });
 
   it('the exact-price button is the brass action, not the info blue', () => {
@@ -1970,12 +1978,83 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
   });
 
-  it('the banner art sits on the right and fades left, instead of stretching a thumbnail edge to edge', () => {
+  it('the banner art sits on the left, capped so the 546px source is not stretched', () => {
+    const frame = ruleBody(BANNER, '.artFrame');
+    expect(frame).toContain('inset-inline-start: 0');
+    expect(frame).not.toContain('inset-inline-end');
+    expect(frame).toContain('inline-size: min(520px, 100%)');
+    expect(frame).toContain('container-type: size');
+  });
+
+  it('the banner art fades out on all four edges, so no card frame shows', () => {
+    const frame = ruleBody(BANNER, '.artFrame');
+    const horizontal = 'linear-gradient(to right, transparent, #000 12%, #000 50%, transparent)';
+    const vertical = 'linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent)';
+    expect(frame).toContain(`-webkit-mask-image: ${horizontal}, ${vertical}`);
+    expect(frame).toContain(`mask-image: ${horizontal}, ${vertical}`);
+    expect(frame).toContain('mask-composite: intersect');
+    expect(frame).toContain('-webkit-mask-composite: source-in');
+  });
+
+  it('the banner art is cropped to the card illustration window', () => {
     const body = ruleBody(BANNER, '.art');
-    expect(body).toContain('inline-size: 62%');
-    expect(body).toContain('inset-inline-end: 0');
-    expect(body).toContain('object-position: center 28%');
-    expect(body).toContain('transform: scale(1.12)');
-    expect(body).toContain('mask-image: linear-gradient(to right, transparent, #000 45%)');
+    expect(body).toContain('inline-size: max(136cqw, 224cqh)');
+    expect(body).toContain('transform: translate(-50%, -30%)');
+    expect(body).toContain('max-inline-size: none');
+  });
+
+  it('the banner text carries a shadow over the art', () => {
+    expect(ruleBody(BANNER, '.banner')).toContain('--hero-text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75)');
+    expect(ruleBody(BANNER, '.identity')).toContain('text-shadow: var(--hero-text-shadow)');
+    expect(ruleBody(BANNER, '.breadcrumb')).toContain('text-shadow: var(--hero-text-shadow)');
+  });
+});
+
+describe('Owner design feedback round 2 — calm missing panel, aggregate in the header', () => {
+  const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
+  const SUMMARY = readCss('components/deck-detail/MissingStoreSummary.module.css');
+  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
+  const AGGREGATE = readCss('components/home/AggregateCallout.module.css');
+
+  it('the store context is a plain line, not a nested bordered box', () => {
+    const body = ruleBody(SUMMARY, '.summary');
+    expect(body).not.toContain('border');
+    expect(body).not.toContain('background');
+    expect(body).not.toContain('padding');
+  });
+
+  it('the very-stale warning uses the warn tone, not the miss red', () => {
+    const body = ruleBody(SUMMARY, ".freshness[data-freshness='very-stale']");
+    expect(body).toContain('color: var(--ra-ready-mid)');
+    expect(SUMMARY).not.toContain('--ra-ready-low');
+  });
+
+  it('the exact-price action is a quiet text button in the brass body ink', () => {
+    const body = ruleBody(FETCH_CONTROLS, '.ctaQuiet');
+    expect(body).toContain('background: transparent');
+    expect(body).toContain('border: none');
+    expect(body).toContain('color: var(--ra-accent-body)');
+    expect(body).toContain('min-block-size: 44px');
+  });
+
+  it('rows share one column grid so quantity, Buy and Mark owned line up', () => {
+    expect(ruleBody(MISSING, '.list')).toContain('grid-template-columns: 4px minmax(0, 1fr) auto auto auto');
+    expect(ruleBody(MISSING, '.row')).toContain('grid-template-columns: subgrid');
+    expect(ruleBody(MISSING, '.qty')).toContain('grid-column: 3');
+    expect(ruleBody(MISSING, '.action')).toContain('grid-column: 4');
+    expect(ruleBody(MISSING, '.owned')).toContain('grid-column: 5');
+  });
+
+  it('unavailable text is muted but stays AA (tertiary ink, not muted)', () => {
+    expect(ruleBody(MISSING, '.unavailable')).toContain('color: var(--ra-fg-tertiary)');
+    expect(ruleBody(MISSING, '.unavailable')).not.toContain('border');
+  });
+
+  it('the aggregate line matches the status line: 7px dot, secondary body text, brass amount', () => {
+    expect(ruleBody(AGGREGATE, '.line')).toContain('color: var(--ra-fg-secondary)');
+    expect(ruleBody(AGGREGATE, '.line')).not.toContain('border');
+    expect(ruleBody(AGGREGATE, '.line')).not.toContain('background');
+    expect(ruleBody(AGGREGATE, '.dot')).toContain('inline-size: 7px');
+    expect(ruleBody(AGGREGATE, '.cost')).toContain('color: var(--ra-accent-body)');
   });
 });

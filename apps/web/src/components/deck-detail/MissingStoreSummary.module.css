@@ -1,82 +1,55 @@
 .summary {
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-2);
-  padding: var(--ra-space-3);
-  background: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
+  gap: var(--ra-space-1);
+  font-family: var(--ra-font-ui);
 }
 
-.meta {
+.line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--ra-space-2);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
+  column-gap: var(--ra-space-3);
 }
 
-.store {
+.headline {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  margin: 0;
   color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  line-height: var(--ra-leading-normal);
+}
+
+.total {
+  color: var(--ra-fg-primary);
   font-weight: var(--ra-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.sep {
+  margin-inline: var(--ra-space-2);
+  color: var(--ra-fg-muted);
 }
 
 .freshness {
   color: var(--ra-fg-secondary);
 }
 
-.freshness[data-freshness='stale'] {
-  color: var(--ra-ready-mid);
+.phrase {
+  white-space: nowrap;
 }
 
 .freshness[data-freshness='very-stale'] {
-  color: var(--ra-ready-low);
-}
-
-.headline,
-.headlineEmpty,
-.noStock,
-.stale,
-.cooldown {
-  margin: 0;
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
-}
-
-.headline {
-  color: var(--ra-fg-primary);
-  font-weight: var(--ra-weight-semibold);
-}
-
-.headlineEmpty,
-.noStock,
-.cooldown {
-  color: var(--ra-fg-secondary);
+  color: var(--ra-ready-mid);
 }
 
 .noStockLink {
   color: var(--ra-accent-body);
 }
 
-.stale {
-  color: var(--ra-ready-low);
-}
-
-.tilde {
+.cooldown {
   color: var(--ra-fg-secondary);
-  font-weight: var(--ra-weight-normal);
-}
-
-.estimated {
-  display: inline-block;
-  padding: 0 0.4em;
-  border: 1px solid var(--ra-border-strong);
-  border-radius: var(--ra-radius-xs);
-  color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-medium);
-  line-height: 1.5;
-  vertical-align: middle;
+  font-size: var(--ra-text-small);
 }

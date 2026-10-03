@@ -98,4 +98,33 @@ describe('ArmoryHeader', () => {
     render(<ArmoryHeader decks={decks} totalCardsMissing={11} />);
     expect(screen.getByRole('heading', { name: 'Seu arsenal', level: 1 })).toBeInTheDocument();
   });
+
+  it('places the aggregate line right under the status line, inside the title block', () => {
+    render(
+      <ArmoryHeader
+        decks={decks}
+        totalCardsMissing={11}
+        aggregateShoppingLine={{
+          storeName: 'Cúpula DT',
+          storeSlug: 'cupula-dt',
+          totalCostCents: 116394,
+          completableDecks: 2,
+          totalDecks: 5,
+          kind: 'populated',
+          uniqueCardsMissing: 11,
+        }}
+      />,
+    );
+    const status = screen.getByText('1 de 2 decks prontos para jogar');
+    const line = screen.getByTestId('aggregate-callout');
+    expect(status.nextElementSibling).toBe(line);
+    expect(status.parentElement).toHaveClass(styles.titleBlock as string);
+    expect(line).toHaveTextContent('R$ 1.163,94 completaria 2 de 5 decks na Cúpula DT');
+  });
+
+  it('leaves no empty slot when there is nothing to buy', () => {
+    render(<ArmoryHeader decks={decks} totalCardsMissing={11} aggregateShoppingLine={null} />);
+    const status = screen.getByText('1 de 2 decks prontos para jogar');
+    expect(status.nextElementSibling).toBeNull();
+  });
 });

@@ -21,8 +21,7 @@ export const home = {
   manualAddLinkText: 'Go to Library',
   manualAddSuffix: 'to search and add individual cards.',
 
-  // AggregateCallout
-  aggregateShoppingLineLabel: 'Aggregate shopping line',
+  // AggregateCallout (armory header line)
   aggregateCompletionVerb: 'would complete',
   aggregateDeckConnector: 'of {{total}} decks at',
 
