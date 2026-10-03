@@ -87,6 +87,16 @@ Decisions taken without the owner, or departures from the agreed plan. Empty mea
 - **Why**: the first version row-locked the swap. Reconciliation updates sibling rows of the same deck, so two concurrent approvals on one deck each held one row and waited on the other's. Reproduced as Postgres `deadlock detected` in 3 of 3 runs of a parallel-approve e2e; 3 of 3 pass with the deck lock. `NO KEY UPDATE` still lets other transactions insert snapshots or deck cards that reference the deck.
 - **Follow-up, not fixed here**: other recompute paths (`updateComposition`, collection changes, the reviews shim) do not take this lock, so they can still interleave with a swap mutation on the same deck.
 
+### DEV-11 — Phase 3 component calls the design left open
+- **Card to slot**: `cards[0]`, `[1]`, `[2]` map to the left, centre and right card; DOM order stays left, right, centre so the centre card paints on top. Missing or failed images render a purple silhouette in the same slot, so all three slots always fly.
+- **Image fallback reset**: `useImageFallback` resets when the joined URL list changes, not when the array identity changes. It is derived during render from a stored key instead of a `useEffect`, so a changed list never renders one frame with the old exhausted state.
+- **Box transition is 0.5s**: design §6.2 says `.8s`, but the handoff gives `.5s` for the box and `.8s` only for the flights. The handoff wins; the guard pins `.5s`.
+- **Hover scope is the link**: hover rules hang off `.link:hover`, not `.deckbox:hover`, so the non-interactive brand variant cannot pick them up. Keyboard focus does not trigger the flight (the handoff only specifies hover).
+- **BOX-05 is a CSS-source guard**: jsdom evaluates no media query, so the check reads the reduced-motion block and asserts `animation: none` on the cards scene and all three cards, with the box lifting only 4px. Mutation-checked: changing it to `animation: fly1` fails the guard.
+- **Filters reach the medallion**: retired and idea filters sit on the front face root as the handoff says, so they also grey or dim the embedded medallion.
+- **Hero art in the sm medallion** reuses the same `heroArt` through its own `useImageFallback`; the sublabel is not rendered at sm, so it receives an empty `heroName`.
+- **Not rewired**: `HeroLifeToken`, `DeckBoxVessel`, `DeckboxDecoration` and `ReadinessHero` markup are untouched; phases 4, 5 and 8 consume the new components and remove them.
+
 ### Phase 2 close-out (2026-10-03, resumed session)
 - The run stopped on 2026-08-16 with the five endpoints unwritten. Resumed and finished on 2026-10-03.
 - `GET /api/swaps` and the five mutations live in `apps/api/src/swaps/`. The old `/api/reviews` and `/decks/:id/decisions` shim stays until Half B, as the landing sequence requires.

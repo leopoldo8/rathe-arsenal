@@ -59,13 +59,13 @@ Two ordering constraints are load-bearing and must not be relaxed:
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Pending |
-| BOX-01 three-scene stack cannot be flattened | §2 | structural test over the `DeckboxScene` primitive | Pending |
-| BOX-02 hover choreography, 52% overshoot, 80% depth swap | §2 | `design-guards.spec.ts` pinning the keyframe literals | Pending |
-| BOX-03..04 per-status variants | §2 | component spec, one case per status | Pending |
-| BOX-05 reduced-motion degradation | §2 | component spec asserting the flight is absent, not merely that a class changed | Pending |
-| BOX-06..07 activation and focus indicator | §2 | keyboard-driven component spec | Pending |
-| Brand-mode deckbox for Sign in | §2, brand variant | type-level union plus a non-interactivity assertion | Pending |
+| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Implementing — conic-gradient ring rendering needs a visual check (phase 4 baselines); DOM, band, a11y and CSS-literal checks pass |
+| BOX-01 three-scene stack cannot be flattened | §2 | structural test over the `DeckboxScene` primitive | Verified |
+| BOX-02 hover choreography, 52% overshoot, 80% depth swap | §2 | `design-guards.spec.ts` pinning the keyframe literals | Implementing — visual check pending (phase 4 baselines): cards must not cover the deck name or medallion; keyframe literals are pinned |
+| BOX-03..04 per-status variants | §2 | component spec, one case per status | Verified |
+| BOX-05 reduced-motion degradation | §2 | component spec asserting the flight is absent, not merely that a class changed | Verified (CSS-source guard: jsdom evaluates no media query, see DEV-11) |
+| BOX-06..07 activation and focus indicator | §2 | keyboard-driven component spec | Verified |
+| Brand-mode deckbox for Sign in | §2, brand variant | type-level union plus a non-interactivity assertion | Verified (component only; Sign in wiring is phase 8) |
 
 BOX-02's "cards must not cover the deck name or medallion" clause is a layout fact no jsdom assertion can reach. It is verified visually in phase 10, not here.
 
