@@ -1970,12 +1970,34 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
   });
 
-  it('the banner art sits on the right and fades left, instead of stretching a thumbnail edge to edge', () => {
+  it('the banner art sits on the left, capped so the 546px source is not stretched', () => {
+    const frame = ruleBody(BANNER, '.artFrame');
+    expect(frame).toContain('inset-inline-start: 0');
+    expect(frame).not.toContain('inset-inline-end');
+    expect(frame).toContain('inline-size: min(520px, 100%)');
+    expect(frame).toContain('container-type: size');
+  });
+
+  it('the banner art fades out on all four edges, so no card frame shows', () => {
+    const frame = ruleBody(BANNER, '.artFrame');
+    const horizontal = 'linear-gradient(to right, transparent, #000 12%, #000 50%, transparent)';
+    const vertical = 'linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent)';
+    expect(frame).toContain(`-webkit-mask-image: ${horizontal}, ${vertical}`);
+    expect(frame).toContain(`mask-image: ${horizontal}, ${vertical}`);
+    expect(frame).toContain('mask-composite: intersect');
+    expect(frame).toContain('-webkit-mask-composite: source-in');
+  });
+
+  it('the banner art is cropped to the card illustration window', () => {
     const body = ruleBody(BANNER, '.art');
-    expect(body).toContain('inline-size: 62%');
-    expect(body).toContain('inset-inline-end: 0');
-    expect(body).toContain('object-position: center 28%');
-    expect(body).toContain('transform: scale(1.12)');
-    expect(body).toContain('mask-image: linear-gradient(to right, transparent, #000 45%)');
+    expect(body).toContain('inline-size: max(136cqw, 180cqh)');
+    expect(body).toContain('transform: translate(-50%, -30%)');
+    expect(body).toContain('max-inline-size: none');
+  });
+
+  it('the banner text carries a shadow over the art', () => {
+    expect(ruleBody(BANNER, '.banner')).toContain('--hero-text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75)');
+    expect(ruleBody(BANNER, '.identity')).toContain('text-shadow: var(--hero-text-shadow)');
+    expect(ruleBody(BANNER, '.breadcrumb')).toContain('text-shadow: var(--hero-text-shadow)');
   });
 });

@@ -46,18 +46,19 @@ export function DeckHeroBanner({
       aria-label={t('deckDetail.bannerAria')}
       data-testid="deck-hero-banner"
     >
-      {art.src ? (
-        <img
-          className={styles.art}
-          src={art.src}
-          alt=""
-          aria-hidden="true"
-          onError={art.onError}
-          data-testid="deck-hero-banner-art"
-        />
-      ) : (
-        <div className={`${styles.art} ${styles.artFallback}`} aria-hidden="true" />
-      )}
+      <div className={styles.artFrame} aria-hidden="true" data-testid="deck-hero-banner-art-frame">
+        {art.src ? (
+          <img
+            className={styles.art}
+            src={art.src}
+            alt=""
+            onError={art.onError}
+            data-testid="deck-hero-banner-art"
+          />
+        ) : (
+          <div className={styles.artFallback} />
+        )}
+      </div>
       <div className={styles.overlay} aria-hidden="true" />
 
       <div className={styles.top}>
