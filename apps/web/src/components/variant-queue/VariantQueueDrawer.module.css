@@ -65,8 +65,6 @@
   font-family: var(--ra-font-display);
   font-size: var(--ra-text-h3);
   font-weight: var(--ra-weight-semibold);
-  letter-spacing: var(--ra-track-h2);
-  text-transform: uppercase;
   color: var(--ra-fg-primary);
 }
 

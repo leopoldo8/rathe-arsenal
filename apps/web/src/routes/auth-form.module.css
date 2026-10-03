@@ -10,7 +10,7 @@
   display: block;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
-  font-weight: var(--ra-weight-medium);
+  font-weight: var(--ra-weight-semibold);
   color: var(--ra-fg-secondary);
   margin-bottom: calc(-1 * var(--ra-space-2));
 }
@@ -18,17 +18,21 @@
 .input {
   width: 100%;
   box-sizing: border-box;
-  padding: var(--ra-space-2) var(--ra-space-3);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  background-color: var(--ra-bg-sunken);
+  padding: 13px 15px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.03);
   color: var(--ra-fg-primary);
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
+  font-size: 14px;
   min-block-size: 44px;
   transition:
     border-color var(--ra-duration) var(--ra-ease),
     box-shadow var(--ra-duration) var(--ra-ease);
+}
+
+:global([data-theme='light']) .input {
+  background-color: var(--ra-bg-sunken);
 }
 
 .input:focus {
@@ -60,14 +64,14 @@
   margin-top: var(--ra-space-2);
   width: 100%;
   min-block-size: 44px;
-  padding: var(--ra-space-2) var(--ra-space-5);
+  padding: 14px var(--ra-space-5);
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-md);
   background-color: var(--ra-accent);
   color: var(--ra-accent-ink-on);
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
-  font-weight: var(--ra-weight-semibold);
+  font-size: 15px;
+  font-weight: var(--ra-weight-bold);
   cursor: pointer;
   transition:
     background-color var(--ra-duration) var(--ra-ease),
@@ -180,10 +184,25 @@
 }
 
 .statusIcon {
-  font-size: 3rem;
-  color: var(--ra-accent);
-  line-height: 1;
-  margin-bottom: var(--ra-space-4);
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--ra-space-4);
+  border-radius: 50%;
+  border: 3px solid var(--ra-border-strong);
+  border-top-color: var(--ra-accent);
+  animation: statusSpin 900ms linear infinite;
+}
+
+@keyframes statusSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusIcon {
+    animation: none;
+  }
 }
 
 .statusMeta {

@@ -6,7 +6,7 @@
  *  - Happy path: add a card via autocomplete → row appears in canvas.
  *  - Happy path: qty stepper increments + decrements; reaches 0 → row auto-removes.
  *  - Happy path (R22): scratch deck with 0 cards → canvas shows empty state.
- *  - Edge case: changing format mid-edit recomputes cascade without resetting other draft state.
+ *  - Format is read-only here; it is edited on the Edit deck screen.
  *  - Edge case (R21): N=0 cascade → no warning banner rendered.
  *  - Edge case (R21): "Remove illegal cards" bulk action removes flagged rows.
  *  - Edge case (mobile <1280px Edit): hero + format dropdowns at top of canvas.
@@ -19,7 +19,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DeckCanvas } from '../DeckCanvas';
-import type { IBreakdown, IDecisionEntry } from '../../../api/deck-detail';
+import type { IBreakdown } from '../../../api/deck-detail';
 import type { ICompositionDraft } from '../../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../../hooks/useCascadeCheck';
 
@@ -38,11 +38,6 @@ vi.mock('../../card-art/CardLightbox', () => ({
   ),
 }));
 vi.mock('../../card-art/use-lightbox-sources', () => ({ lightboxSourcesFor: () => [] }));
-vi.mock('../SubstitutionRow', () => ({
-  SubstitutionRow: ({ original }: { original: { name: string } }) => (
-    <li data-testid="substitution-row">{original.name}</li>
-  ),
-}));
 vi.mock('../MarkOwnedButton', () => ({
   MarkOwnedButton: () => <button data-testid="mark-owned-btn">Own it</button>,
 }));
@@ -183,7 +178,6 @@ const EMPTY_BREAKDOWN: IBreakdown = {
   missing: [],
   notOwned: [],
 };
-const NO_DECISIONS: readonly IDecisionEntry[] = [];
 
 function makeDraft(cards: ICompositionDraft['cards'] = []): ICompositionDraft {
   return {
@@ -216,14 +210,11 @@ function renderEditCanvas(
     onRemoveCard?: ReturnType<typeof vi.fn>;
     onRemoveIllegalCards?: ReturnType<typeof vi.fn>;
     onSetHero?: ReturnType<typeof vi.fn>;
-    onSetFormat?: ReturnType<typeof vi.fn>;
   } = {},
 ) {
   const defaults = {
     mode: 'edit' as const,
     breakdown: EMPTY_BREAKDOWN,
-    decisions: NO_DECISIONS,
-    rejectedCount: 0,
     onMarkOwned: vi.fn(),
     isMarkingOwned: false,
     pendingCard: null,
@@ -236,7 +227,6 @@ function renderEditCanvas(
     onRemoveCard: overrides.onRemoveCard ?? vi.fn(),
     onRemoveIllegalCards: overrides.onRemoveIllegalCards ?? vi.fn(),
     onSetHero: overrides.onSetHero ?? vi.fn(),
-    onSetFormat: overrides.onSetFormat ?? vi.fn(),
   };
   return render(<DeckCanvas {...defaults} />);
 }
@@ -442,10 +432,14 @@ describe('DeckCanvas Edit mode — slot grouping', () => {
 // ---------------------------------------------------------------------------
 
 describe('DeckCanvas Edit mode — mobile layout', () => {
-  it('renders hero and format dropdowns in the canvas', () => {
+  it('renders the hero dropdown in the canvas', () => {
     renderEditCanvas();
     expect(screen.getByTestId('edit-mobile-dropdowns')).toBeInTheDocument();
     expect(screen.getByTestId('hero-dropdown-mock')).toBeInTheDocument();
-    expect(screen.getByTestId('format-dropdown-mock')).toBeInTheDocument();
+  });
+
+  it('does not offer a format control while editing the composition', () => {
+    renderEditCanvas();
+    expect(screen.queryByTestId('format-dropdown-mock')).not.toBeInTheDocument();
   });
 });

@@ -62,20 +62,25 @@ body {
 h1,
 .ra-h1 {
   font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-bold);
+  font-weight: 500;
   font-size: var(--ra-text-h1);
-  line-height: 1.15;
-  letter-spacing: var(--ra-track-h1);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
 }
 
+/* h2's font-size reuses --ra-text-h3 (18px) rather than the old
+   --ra-text-h2 (24px) token — the handoff has no counterpart for a
+   distinct "h2" tier; section/group headers it does specify (e.g. Home's
+   group headers) are Hanken Grotesk 15px/700, not the display serif.
+   Whether --ra-text-h2/.ra-h2 gets retired or repurposed is left to the
+   phase that implements those headers — see design/01-foundation.md §3.2. */
 h2,
 .ra-h2 {
   font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-semibold);
-  font-size: var(--ra-text-h2);
+  font-weight: 500;
+  font-size: var(--ra-text-h3);
   line-height: 1.25;
-  letter-spacing: var(--ra-track-h2);
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 h3,
@@ -121,9 +126,15 @@ code,
   font-size: 0.95em;
 }
 
-/* Signature readiness treatment — Cinzel Decorative, tabular numerals.
-   Reserved for effectivePercent values only (R7). Never use for counts or
-   non-percentage stats — use .ra-hero-primary-stat for those. */
+/* Signature readiness treatment — Newsreader (via --ra-font-ornament,
+   which now aliases --ra-font-display — the redesign has no separate
+   decorative-weight tier), tabular numerals. Reserved for effectivePercent
+   values only (R7). Never use for counts or non-percentage stats — use
+   .ra-hero-primary-stat for those.
+   The redesign's readiness medallion (CMP workstream) does NOT reuse this
+   class — its number is a fixed color regardless of the surrounding ring's
+   status color, unlike this utility's fixed --ra-accent. Two distinct
+   readiness-number treatments now coexist; see .impeccable.md. */
 .ra-readiness-display {
   font-family: var(--ra-font-ornament);
   font-weight: var(--ra-weight-black);
@@ -135,14 +146,4 @@ code,
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   letter-spacing: 0;
-}
-
-/* Diamond bullet — v2 motif */
-.ra-diamond {
-  display: inline-block;
-  width: 0.5em;
-  height: 0.5em;
-  background: var(--ra-accent);
-  transform: rotate(45deg);
-  vertical-align: middle;
 }

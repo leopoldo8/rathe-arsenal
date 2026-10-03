@@ -3,10 +3,8 @@
    ============================================================ */
 
 .btn {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   cursor: pointer;
   background: transparent;
   color: var(--ra-fg-secondary);

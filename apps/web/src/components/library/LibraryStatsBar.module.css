@@ -34,7 +34,7 @@
 }
 
 .statValue {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-primary);
@@ -75,27 +75,27 @@
 }
 
 .pillRed {
-  color: var(--ra-card-frame-red-ink);
-  background-color: var(--ra-card-frame-red-bg);
-  border-color: var(--ra-card-frame-red);
+  color: var(--ra-pitch-red-ink);
+  background-color: color-mix(in srgb, var(--ra-pitch-red) 12%, transparent);
+  border-color: var(--ra-pitch-red);
 }
 
 .pillYellow {
-  color: var(--ra-card-frame-yellow-ink);
-  background-color: var(--ra-card-frame-yellow-bg);
-  border-color: var(--ra-card-frame-yellow);
+  color: var(--ra-pitch-yellow-ink);
+  background-color: color-mix(in srgb, var(--ra-pitch-yellow) 12%, transparent);
+  border-color: var(--ra-pitch-yellow);
 }
 
 .pillBlue {
-  color: var(--ra-card-frame-blue-ink);
-  background-color: var(--ra-card-frame-blue-bg);
-  border-color: var(--ra-card-frame-blue);
+  color: var(--ra-pitch-blue-ink);
+  background-color: color-mix(in srgb, var(--ra-pitch-blue) 12%, transparent);
+  border-color: var(--ra-pitch-blue);
 }
 
 .pillColorless {
-  color: var(--ra-card-frame-colorless-ink);
-  background-color: var(--ra-card-frame-colorless-bg);
-  border-color: var(--ra-card-frame-colorless);
+  color: var(--ra-pitch-colorless-ink);
+  background-color: color-mix(in srgb, var(--ra-pitch-colorless) 12%, transparent);
+  border-color: var(--ra-pitch-colorless);
 }
 
 /* ---- Row 2: value + Manage CSVs ---- */
@@ -115,7 +115,7 @@
 }
 
 .valueAmount {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-primary);

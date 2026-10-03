@@ -43,7 +43,7 @@
 }
 
 .blockTitle {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
   letter-spacing: var(--ra-track-caps);
@@ -83,7 +83,7 @@
 }
 
 .heroName {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   font-weight: var(--ra-weight-semibold);
   color: var(--ra-fg-primary);
@@ -130,10 +130,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-1);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
   color: var(--ra-accent-body);
   text-decoration: none;
   transition: color var(--ra-duration) var(--ra-ease);

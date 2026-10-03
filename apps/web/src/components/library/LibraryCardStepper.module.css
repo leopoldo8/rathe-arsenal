@@ -77,7 +77,7 @@
 .pickerHeading {
   margin: 0;
   padding: var(--ra-space-1) var(--ra-space-2);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);

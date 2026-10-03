@@ -42,21 +42,34 @@
 - **Date**: 2026-06-29
 - **Status**: active
 
+### AD-006
+- **Decision**: Swap suggestions become persisted rows with their own stable id, minted by the engine and reused across recomputations, replacing today's model where a suggestion is a transient engine output (`substituted: [{ original, match }]`) and only the user's binary decision persists, keyed by `(userId, trackedDeckId, cardIdentifier)`. The full lifecycle ships with the redesign: approve, revert, reject with an optional reason, restore, and an optional post-play outcome.
+- **Reason**: The redesigned Swaps screen offers Reverter and Restaurar actions and shows a rejection reason in quotes; none of those are addressable without a durable identity for a suggestion. Owner chose the persisted-row option over keying endpoints by `(deckId, cardIdentifier)`.
+- **Trade-off**: Requires reconciliation whenever the engine recomputes — matching a fresh proposal to an existing row, and retiring rows the engine no longer proposes without deleting decided history. This is the highest-risk part of the redesign and the most likely source of silent bugs.
+- **Scope**: `packages/engine` (suggestion identity + rejected-pair suppression input), `apps/api` (new table, migration, five endpoints), `apps/web` (Swaps screen).
+- **Date**: 2026-08-16
+- **Status**: active
+
+### AD-007
+- **Decision**: AD-005's `× N` copy grouping survives the redesign. Identical suggestions for multiple copies of the same card in the same deck stay collapsed into one row, one decision applies to all copies, and the grouping is adapted into the handoff's row design (which does not specify it).
+- **Reason**: The handoff was written without knowledge of AD-005; taking it literally would reintroduce the duplicate rows that AD-005 removed. Per-copy partial decisions remain deferred.
+- **Trade-off**: Requires design work the handoff does not supply, and the persisted-row model (AD-006) has to decide whether rows are per-copy or per-group.
+- **Scope**: `apps/web` Swaps screen + whatever AD-006 persists.
+- **Date**: 2026-08-16
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: pre-launch-hardening — `.specs/features/pre-launch-hardening/` — **✅ COMPLETE & VERIFIED (independent Verifier PASS, iteration 2).** Branch `feat/pre-launch-hardening` (off `main`, planning commit `48768a9`). Two closed-invite (Cúpula DT ~47) launch changes: (1) LSS fan-content disclaimer surface, (2) env-gated Sentry error monitoring.
-- **Tasks (13, all committed)**: Phase 1 T1 `3c0580f` (`about` i18n catalog, verbatim en-US disclaimer). Phase 2 T2 `81ae4f1` (Footer in AppShell), T3 `3faacec` (public `/about`), T4 `8a0e21c` (anon AuthLayout line), T5 `db23df8` (README block) — Footer + /about got `impeccable:polish`. Phase 3 T6 `c84331f` (`initWebSentry` gated), T7 `5910092` (AppErrorBoundary + RootErrorFallback + main.tsx wiring — app's first error boundary), T8 `0b8357c` (`@sentry/vite-plugin` sourcemap upload, token-gated). Phase 4 T9 `46f82e3` (`SENTRY_DSN` EnvDto), T10 `52024b8` (`initApiSentry` in bootstrap), T11 `80cfb2c` (HttpExceptionFilter captures 5xx/non-HTTP only), T12 `67a5ad2` (api tsconfig sourcemaps + `--enable-source-maps` start + deploy-railway.md). Phase 5 T13 `3b676df` (`.env.example` Sentry vars).
-- **Deps added**: `@sentry/react ^10.62.0`, `@sentry/node ^10.62.0`, `@sentry/vite-plugin ^5.3.0` (dev), `@types/node` (dev, for `process.env` in vite.config). All Sentry behavior is a NO-OP without DSN/token env vars (dev/CI unaffected).
-- **Verification**: Verifier iteration 1 (Opus) → FAIL on 3 test-strength gaps (all impl correct): DISC-01 no AppShell-mounts-Footer test, DISC-04 `<Link>`-vs-bare-`<a>` mutant survived (href-only assertion), OBS-02 capture-half of AND-conjunction unasserted. Fix worker (Sonnet, test-only) → F1 `eba3940` (AppShell.spec), F2 `4797afb` (router-Link `data-tsr-link` marker on Footer + about + AuthLayout), F3 `30db0f6` (+ `5ddc47a` typecheck fixup) (Sentry.ErrorBoundary wiring assertion). Verifier iteration 2 (Opus) → **PASS**: 3/3 previously-open mutants now killed, 21/21 ACs spec-anchored, 14/14 requirement IDs ✅ Verified. Report: `.specs/features/pre-launch-hardening/validation.md`.
-- **Gate**: web typecheck + lint + **1525 passed / 1 pre-existing skip / 0 failed** (120 files); api typecheck + lint + **857 unit passed / 0 failed**; engine build green. api `test:e2e` NOT run locally (no local Postgres — CI-deferred; the filter change is additive and does not alter the response envelope). Fix pass touched only `*.spec.tsx` (zero source files).
-- **Lessons**: candidates L-007, L-008, L-009 recorded in `.specs/lessons.json` / `LESSONS.md` (integration-not-just-unit mount test; SPA-Link vs bare-anchor discrimination marker; assert both halves of an AND-conjunction AC). Process note confirmed: quick (vitest) gate does NOT typecheck — phase workers must end on a BUILD gate (two `noUncheckedIndexedAccess` errors surfaced only at build).
-- **Next step**: Owner decision on finish — open PR `feat/pre-launch-hardening` → `main` (matches the #104/#108 precedent; CI runs the full suite incl. api e2e with a Postgres service) OR direct merge. `origin` = github.com/leopoldo8/rathe-arsenal. Post-launch follow-ups still open (not this feature): the deployment-IaC gap (scraper/purge cron workers + Railway `startCommand` not in repo — T12 documented the api start command in deploy-railway.md but did not add a `railway.json startCommand`).
-- **Model policy**: phase workers in Sonnet, Verifier in Opus (owner-set).
+- **Feature**: product-redesign — `.specs/features/product-redesign/` — **all 10 phases complete; PR open against `main`, not merged (owner's call).** Branch `feat/product-redesign`. Mandate, every deviation (DEV-01..25) and the provisional calls live in `implementation-notes.md`; every `tasks.md` row reads Verified.
+- **Provisional, owner to confirm**: DEV-20 bulk actions (sequential calls, 50-row cap), DEV-12 `cardCounts` on `GET /api/decks`, DEV-14 DECK-02 "Comprar tudo" → link to the shopping list, DEV-19 onboarding keeps the top nav, DEV-22 Sources chevron removal, DEV-14 decklist "by type" cannot split attack vs non-attack actions (catalog `types[0]`).
+- **Open follow-ups**: recompute paths other than swap mutations do not take the deck lock (DEV-10); `review_aggregate` table is now unused (drop needs a migration); owner visual sign-off against the prototype (unreachable from the run, DEV-01).
+- **Deploy step**: run `pnpm --filter @rathe-arsenal/api backfill:swap-suggestions` once right after the first deploy (`scripts/deploy-railway.md`).
+- **Gate**: `pnpm typecheck`, `pnpm lint`, engine/api/web unit, api `test:int` and `test:e2e` (`--runInBand` under load), and both Playwright projects (`cd apps/web && npx playwright test`, needs `pnpm dev` running; `pnpm seed:fixture` resets the fixture).
+- **Local DB**: Docker container `rathe-arsenal-pg` (DEV-04); `docker start rathe-arsenal-pg` after a reboot.
 - **Blockers**: none.
-- **Uncommitted files (non-feature, pre-existing)**: `.agents/`, `.specs/features/uxui-remediation/validation.md`, `apps/web/test-results/` — untracked, not part of this feature.
 
 ### Prior completed features (reference)
 - **uxui-remediation** — `.specs/features/uxui-remediation/` — ✅ COMPLETE & VERIFIED, merged to `main` (PR #108). a11y/impeccable-bans/ReadinessHero remediation; 24 tasks, Verifier PASS.
 - **swap-copies-grouping** — `.specs/features/swap-copies-grouping/` — ✅ PASS, on `main` (AD-005, frontend-only `× N` grouping).
 - **i18n** — `.specs/features/i18n/` — ✅ COMPLETE & VERIFIED (PASS), on `main` (PR #104). pt-BR/en-US via i18next (AD-001..004).
-- **Known env limitation**: no local PostgreSQL — DB-backed api e2e (`theme-persistence`, `plan-b-full-flow`) run in CI only (Postgres service), not locally.
+- **pre-launch-hardening** — `.specs/features/pre-launch-hardening/` — ✅ COMPLETE & VERIFIED, merged to `main` (PR #109).

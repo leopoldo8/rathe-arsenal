@@ -53,6 +53,13 @@ export const library = {
   // LibraryFilterRail — card size
   cardSizeLabel: 'Card size',
   cardSizeAriaLabel: 'Card size in pixels',
+  cardSizeSmall: 'Small',
+  cardSizeMedium: 'Medium',
+  cardSizeLarge: 'Large',
+  cardSizeXLarge: 'X-Large',
+  cardSizeMax: 'Max',
+  cardSizeCustom: 'Custom',
+  manageSourcesLink: 'Manage sources ›',
 
   // LibraryFilterRail — group by
   groupByLabel: 'Group by',
@@ -108,6 +115,9 @@ export const library = {
   // Library route — no results
   noMatchTitle: 'No cards match this combination.',
   clearFiltersButton: 'Clear filters',
+  priceFreshnessNone: 'No price data',
+  priceFreshnessDays_one: 'Updated {{count}} day ago',
+  priceFreshnessDays_other: 'Updated {{count}} days ago',
   estimatedPricesTooltip:
     "Estimated prices from partner stores. May be stale when the scraper hasn't run for a few days.",
 } as const;

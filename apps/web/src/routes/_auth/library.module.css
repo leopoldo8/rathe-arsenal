@@ -1,6 +1,6 @@
 /* ============================================================
    Library route — page layout.
-   Two-column shell ≥ 1280px (rail + grid). Single column below,
+   Two-column shell ≥ 1024px (rail + grid). Single column below,
    with filters reachable via the header drawer button.
    ============================================================ */
 
@@ -8,6 +8,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
+  inline-size: 100%;
+  max-inline-size: 1320px;
+  margin-inline: auto;
   /* AppShell's <main> already supplies the standard page padding
      (var(--ra-space-6) horizontal + vertical, plus bottom-tab-bar
      clearance on mobile). No extra padding here so all routes share
@@ -34,7 +37,7 @@
 
 .eyebrow {
   margin: 0;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -72,7 +75,7 @@
   gap: var(--ra-space-3);
 }
 
-/* Filters drawer trigger — visible below 1280px (rail is hidden then). */
+/* Filters drawer trigger — visible below 1024px (rail is hidden then). */
 .filtersButton {
   display: none;
   align-items: center;
@@ -83,11 +86,9 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition: border-color var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
 }
@@ -128,11 +129,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   text-decoration: none;
   transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
 }
@@ -150,7 +149,7 @@
 /* ---- Two-column layout ---- */
 .layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 250px 1fr;
   gap: var(--ra-space-8);
   /* `align-items: stretch` (the default) is intentional here: the
      `.railSlot` cell needs to be as tall as the gridArea cell, so the
@@ -189,8 +188,7 @@
 
 .noResultsTitle {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
@@ -201,10 +199,8 @@
   border: 0;
   padding: var(--ra-space-1) var(--ra-space-2);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -259,7 +255,7 @@
 
 .skeletonLayout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 250px 1fr;
   gap: var(--ra-space-8);
   align-items: start;
 }
@@ -295,8 +291,8 @@
   gap: var(--ra-space-2);
 }
 
-/* ---- Below 1280px: collapse to single column, expose drawer ---- */
-@media (max-width: 1279px) {
+/* ---- Below 1024px: collapse to single column, expose drawer ---- */
+@media (max-width: 1023px) {
   .layout {
     grid-template-columns: 1fr;
   }

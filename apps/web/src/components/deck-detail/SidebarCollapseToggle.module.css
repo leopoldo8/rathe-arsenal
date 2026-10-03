@@ -10,11 +10,9 @@
   border: 0;
   padding: var(--ra-space-2) 0;
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
   cursor: pointer;
   transition: color var(--ra-duration) var(--ra-ease);
   /* Touch target: ensure minimum 44x44px touch area per a11y guidelines */

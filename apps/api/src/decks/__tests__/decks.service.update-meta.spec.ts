@@ -31,7 +31,8 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
+import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { DecksService } from '../decks.service';
@@ -53,14 +54,11 @@ function buildDetailResponse(
     format: 'Classic Constructed',
     status: 'building',
     tags: [],
+    notes: null,
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
     latestSnapshot: null,
-    rejectedCount: 0,
-    approvedCount: 0,
-    pendingCount: 0,
-    decisions: [],
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [] },
     ...overrides,
@@ -110,7 +108,8 @@ describe('DecksService.updateMeta', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
+  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
+  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
 
@@ -122,7 +121,8 @@ describe('DecksService.updateMeta', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    decisionsService = createMock<DecisionsService>();
+    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
+    swapsReconciliationService = createMock<SwapsReconciliationService>();
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
 
@@ -130,9 +130,10 @@ describe('DecksService.updateMeta', () => {
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
     shoppingLineService.computeAggregate.mockResolvedValue(null);
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
-    decisionsService.loadExclusions.mockResolvedValue(new Set());
+    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+      excludedIdentifiers: new Set(),
+      approvedIdentifiers: new Set(),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -153,7 +154,8 @@ describe('DecksService.updateMeta', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: DecisionsService, useValue: decisionsService },
+        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
+        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
       ],
@@ -234,6 +236,59 @@ describe('DecksService.updateMeta', () => {
       expect(result.name).toBe(newName);
       expect(qb.update).toHaveBeenCalledWith(TrackedDeckEntity);
       expect(qb.set).toHaveBeenCalledWith({ name: newName });
+    });
+  });
+
+  describe('happy path — format update', () => {
+    it('updates only the format column and never touches deck_card rows', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        getDetailResult: buildDetailResponse({ format: 'Blitz' }),
+      });
+
+      const result = await service.updateMeta(DECK_ID, USER_ID, { format: 'Blitz' });
+
+      expect(result.format).toBe('Blitz');
+      expect(qb.update).toHaveBeenCalledTimes(1);
+      expect(qb.update).toHaveBeenCalledWith(TrackedDeckEntity);
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Blitz' });
+      expect(qb.delete).not.toHaveBeenCalled();
+      expect(qb.insert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('happy path — notes update', () => {
+    it('writes the notes text', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        getDetailResult: buildDetailResponse({ notes: 'Liga local, sexta' }),
+      });
+
+      const result = await service.updateMeta(DECK_ID, USER_ID, { notes: 'Liga local, sexta' });
+
+      expect(result.notes).toBe('Liga local, sexta');
+      expect(qb.set).toHaveBeenCalledWith({ notes: 'Liga local, sexta' });
+    });
+
+    it('writes null when the notes are cleared', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({ manager: qb, getDetailResult: buildDetailResponse({ notes: null }) });
+
+      await service.updateMeta(DECK_ID, USER_ID, { notes: null });
+
+      expect(qb.set).toHaveBeenCalledWith({ notes: null });
+    });
+
+    it('does not write notes when the field is omitted', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({ manager: qb });
+
+      await service.updateMeta(DECK_ID, USER_ID, { name: 'Renamed' });
+
+      expect(qb.set).not.toHaveBeenCalledWith(expect.objectContaining({ notes: expect.anything() }));
+      expect(qb.set).not.toHaveBeenCalledWith({ notes: null });
     });
   });
 

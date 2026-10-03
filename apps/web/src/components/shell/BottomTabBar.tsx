@@ -2,12 +2,14 @@ import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
+import { resolveActiveNavKey, type TNavKey } from './nav-active';
 import styles from './BottomTabBar.module.css';
 
 interface ITabItem {
   readonly to: string;
   readonly label: string;
   readonly icon: React.ReactNode;
+  readonly key: TNavKey;
 }
 
 function HomeIcon(): React.ReactElement {
@@ -49,16 +51,17 @@ function ReviewsIcon(): React.ReactElement {
 export function BottomTabBar(): React.ReactElement {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
+  const activeNavKey = resolveActiveNavKey(pathname);
 
   // /home is handled separately with a typed Link+search prop.
   // /library and /swaps use string-typed `to` so TypeScript does not enforce
   // their route-specific search params here — their validateSearch accepts empty.
   const otherTabItems: readonly ITabItem[] = [
-    { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon /> },
-    { to: '/swaps', label: t('shell.navSwaps'), icon: <ReviewsIcon /> },
+    { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon />, key: 'library' },
+    { to: '/swaps', label: t('shell.navSwaps'), icon: <ReviewsIcon />, key: 'swaps' },
   ];
 
-  const homeActive = pathname === '/home' || pathname.startsWith('/home/');
+  const homeActive = activeNavKey === 'home';
 
   return (
     <nav className={styles.nav} aria-label={t('shell.mobileNavAriaLabel')}>
@@ -75,7 +78,7 @@ export function BottomTabBar(): React.ReactElement {
       </Link>
 
       {otherTabItems.map((item) => {
-        const isActive = pathname === item.to || pathname.startsWith(item.to + '/');
+        const isActive = activeNavKey === item.key;
         return (
           <Link
             key={item.to}

@@ -22,12 +22,12 @@ import { ImportFromFabraryDto } from './dtos/import-from-fabrary.dto';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 
 /**
- * Handles CRUD operations on `csv_source` rows (kind='csv' only).
- * The manual source is not exposed here; it is managed internally by
- * `SourcesService.ensureManualSource`.
+ * Lists every `csv_source` row (manual included); PATCH and DELETE only accept kind='csv' rows.
+ * The manual source is created internally by `SourcesService.ensureManualSource`
+ * and is read-only here.
  *
  * Routes:
- *   GET    /api/collection/sources         — list all csv sources for the user
+ *   GET    /api/collection/sources         — list all sources for the user
  *   PATCH  /api/collection/sources/:id     — rename or toggle active
  *   DELETE /api/collection/sources/:id     — preview (with ?preview=true) or delete
  *

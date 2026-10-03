@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
@@ -62,17 +62,6 @@ export function AddCardsManualPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <header className={styles.subviewHeader}>
-        <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> {t('decks.addCardsTitle')}
-        </Link>
-        <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">I</span> {t('decks.manualEyebrow')}
-        </p>
-        <h1 className={styles.title}>{t('decks.searchCatalogTitle')}</h1>
-        <p className={styles.subtitle}>{t('decks.searchCatalogSubtitle')}</p>
-      </header>
-
       <div className={styles.searchBox}>
         <label className={styles.label} htmlFor={inputId}>
           {t('decks.cardNameLabel')}
@@ -148,8 +137,8 @@ function ResultRow({
   const primaryType = card.types[0] ?? '—';
   const className = card.classes.join(', ') || 'Generic';
 
-  // Pitch ◆ pip — tonalized by pitch value. Heroes/weapons/equipment
-  // are pitch-less and render no diamond (absence is the signal).
+  // Pitch dot, tonalized by pitch value. Heroes/weapons/equipment
+  // are pitch-less and render no dot (absence is the signal).
   const pitchToneClass = resolvePitchToneClass(card.pitch);
 
   function bump(delta: number): void {
@@ -185,8 +174,7 @@ function ResultRow({
               onError={() => setThumbFailed(true)}
             />
           ) : (
-            // Fallback to <CardArt> SVG placeholder. Same fallback chain
-            // used in BreakdownSections / ReviewsRow.
+            // Fallback to <CardArt> SVG placeholder.
             <CardArt
               name={card.name}
               pitch={
@@ -208,9 +196,7 @@ function ResultRow({
               <span
                 className={`${styles.pitchPip} ${styles[pitchToneClass]}`}
                 aria-label={t('decks.pitchAria', { pitch: t(pitchLabelKeyFor(card.pitch)) })}
-              >
-                &#9670;
-              </span>
+              />
             )}
             {card.name}
           </p>
@@ -276,9 +262,8 @@ function ResultRow({
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the CSS-module class name for the pitch ◆ pip, or null when
- * the card is pitch-less (no diamond rendered). The diamond uses the
- * brand's existing decorative-diamond vocabulary — see `.impeccable.md`.
+ * Returns the CSS-module class name for the pitch dot, or null when
+ * the card is pitch-less (no dot rendered).
  */
 function resolvePitchToneClass(
   pitch: number | null,

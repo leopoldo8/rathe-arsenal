@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { STORAGE_STATE_PATH } from './tests/support/fixture';
 
 /**
  * Playwright configuration for the web app.
@@ -12,9 +13,9 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * Prerequisites for both suites:
  *   - Dev server running: pnpm dev (api :3000, web :5173)
- *   - Test user created. See docs/dev-fixtures.md for seed instructions.
- *   - Set FIXTURE_EMAIL + FIXTURE_PASS env vars (or defaults from dev-fixtures.md).
- *   - A deck must be tracked by the fixture user (for deck-detail and swaps tests).
+ *   - Nothing else: globalSetup seeds the fixture user (scripts/seed-fixture.ts,
+ *     docs/dev-fixtures.md), signs in once and writes the shared storageState.
+ *   - FIXTURE_EMAIL + FIXTURE_PASS override the defaults.
  *
  * See docs/design/v1/visual-regression.md for the baseline-update procedure.
  */
@@ -23,6 +24,8 @@ export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.ts',
   fullyParallel: false,
+  workers: 1,
+  globalSetup: './tests/support/global-setup.ts',
   retries: 0,
   reporter: 'list',
   use: {
@@ -37,6 +40,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 900 },
         colorScheme: 'dark',
+        storageState: STORAGE_STATE_PATH,
       },
       snapshotPathTemplate: '{testDir}/visual/__snapshots__/{testName}-{projectName}.png',
     },
@@ -46,6 +50,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 900 },
+        storageState: STORAGE_STATE_PATH,
       },
     },
   ],

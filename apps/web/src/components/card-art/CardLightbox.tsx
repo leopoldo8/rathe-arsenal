@@ -161,7 +161,6 @@ export function CardLightbox({
             role="alert"
             data-testid="card-lightbox-error"
           >
-            <span className={styles.errorGlyph} aria-hidden="true">&#9670;</span>
             <span className={styles.errorTitle}>{t('ui.cardArtUnavailable')}</span>
             <span className={styles.errorBody}>{name}</span>
           </div>

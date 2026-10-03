@@ -1,8 +1,9 @@
 ---
 title: "feat: v1 Launch Readiness (Plan C)"
 type: feat
-status: active
+status: completed
 date: 2026-04-27
+completed: 2026-04-27
 origin: docs/brainstorms/2026-04-19-v1-visual-identity-and-ux-requirements.md
 ---
 

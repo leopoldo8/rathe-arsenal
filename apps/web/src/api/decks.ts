@@ -35,6 +35,8 @@ export interface IDeckLegality {
 export interface IPatchDeckBody {
   readonly status?: TDeckStatus;
   readonly name?: string;
+  readonly format?: string;
+  readonly notes?: string | null;
   readonly addTagIds?: readonly number[];
   readonly removeTagIds?: readonly number[];
 }
@@ -160,6 +162,12 @@ export interface ITrackedDeckListItem {
    * animation. Sorted by quantity desc, name asc.
    */
   readonly representativeCards: readonly IRepresentativeCard[];
+  /** Copy counts from the latest snapshot; null when the deck has no snapshot. */
+  readonly cardCounts: {
+    readonly owned: number;
+    readonly missing: number;
+    readonly total: number;
+  } | null;
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
 }
@@ -341,7 +349,7 @@ export function usePutDeckMutation(deckId: number) {
  * Creates a scratch deck via POST /api/decks.
  * Returns the new deck so the caller can navigate to the edit view:
  *   navigate({ to: '/decks/$deckId', params: { deckId: String(deck.id) },
- *              search: { edit: '1' } })
+ *              search: { edit: 1 } })
  *
  * Invalidations on success:
  * - DECKS_QUERY_KEY — home list gains the new deck.

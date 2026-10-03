@@ -20,6 +20,7 @@ import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TagsModule } from './tags/tags.module';
+import { SwapsModule } from './swaps/swaps.module';
 
 @Module({
   imports: [
@@ -46,10 +47,11 @@ import { TagsModule } from './tags/tags.module';
     StoresModule,
     // U12: user settings (GET/PATCH /api/users/me/settings)
     UsersModule,
-    // U5 (Plan B): review_aggregate entity + service (no HTTP endpoints yet).
+    // 410 Gone stubs for the retired /api/reviews routes.
     ReviewsModule,
     // U3 (Deck Management v2): GET/POST/DELETE /api/tags for user-defined deck tags.
     TagsModule,
+    SwapsModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({

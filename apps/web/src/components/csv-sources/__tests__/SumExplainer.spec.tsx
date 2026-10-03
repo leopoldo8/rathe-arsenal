@@ -22,7 +22,7 @@ function renderExplainer() {
 
 /** Open the collapsible so diagram content is visible. */
 function openExplainer(): void {
-  const trigger = screen.getByRole('button', { name: /duplicate\b|duplicados/i });
+  const trigger = screen.getByRole('button', { name: /duplicat/i });
   fireEvent.click(trigger);
 }
 
@@ -34,7 +34,7 @@ describe('SumExplainer i18n (T14 / UXUI-08)', () => {
   describe('pt-BR locale (default test locale)', () => {
     it('renders the trigger in Portuguese', () => {
       renderExplainer();
-      expect(screen.getByRole('button', { name: /duplicados/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^ⓘ Duplicatas entre fontes são somadas, não sobrescritas\.$/ })).toBeInTheDocument();
     });
 
     it('diagram labels render in Portuguese — no English "Source A/B" or "Total" leak', async () => {

@@ -21,4 +21,6 @@ export const common = {
   loadingToggle: 'Carregando alternador',
   loadingLabel: 'Carregando rótulo',
   loadingCount: 'Carregando contagem',
+  readinessMedallionLabel: 'Prontidão do herói',
+  readinessValueText: '{{pct}}%',
 } as const;

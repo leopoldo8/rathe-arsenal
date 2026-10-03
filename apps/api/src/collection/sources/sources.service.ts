@@ -5,7 +5,7 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ export class SourcesService {
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     private readonly dataSource: DataSource,
-    private readonly decisionsService: DecisionsService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly substitutionService: SubstitutionService,
   ) {}
 
@@ -71,14 +71,24 @@ export class SourcesService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns all `kind='csv'` sources for the given user, ordered by
-   * `createdAt DESC`.
+   * Returns every source for the user (csv, Fabrary-derived and manual),
+   * newest first. The manual source never stores a running total, so its
+   * `cardCount` is counted per request and never saved.
    */
   async list(userId: string): Promise<CsvSourceEntity[]> {
-    return this.csvSourceRepo.find({
-      where: { userId, kind: 'csv' },
+    const sources = await this.csvSourceRepo.find({
+      where: { userId },
       order: { createdAt: 'DESC' },
     });
+
+    const manual = sources.find((source) => source.kind === 'manual');
+    if (manual) {
+      manual.cardCount = await this.collectionCardRepo.count({
+        where: { sourceId: manual.id },
+      });
+    }
+
+    return sources;
   }
 
   // ---------------------------------------------------------------------------
@@ -334,11 +344,13 @@ export class SourcesService {
 
     for (const deck of decks) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(deck.id);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
         await this.substitutionService.computeAndStoreReadiness(
           deck.id,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (error) {
         this.logger.warn({
@@ -375,11 +387,13 @@ export class SourcesService {
 
     for (const deck of decks) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(deck.id);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
         await this.substitutionService.computeAndStoreReadiness(
           deck.id,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (error) {
         this.logger.warn({

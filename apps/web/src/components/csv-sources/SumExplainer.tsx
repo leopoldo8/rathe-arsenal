@@ -26,9 +26,6 @@ export function SumExplainer(): React.ReactElement {
             className={styles.trigger}
             aria-expanded={open}
           >
-            <span className={styles.triggerIcon} aria-hidden="true">
-              {open ? '▾' : '▸'}
-            </span>
             {t('csvSources.sumExplainerTrigger')}
           </button>
         </Collapsible.Trigger>

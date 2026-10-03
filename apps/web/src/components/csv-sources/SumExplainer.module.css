@@ -27,12 +27,6 @@
   color: var(--ra-fg-primary);
 }
 
-.triggerIcon {
-  font-size: 0.75em;
-  color: var(--ra-accent);
-  flex-shrink: 0;
-}
-
 .content {
   padding: 0 var(--ra-space-4) var(--ra-space-4);
 }

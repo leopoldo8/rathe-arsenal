@@ -29,10 +29,8 @@
 }
 
 .banner__action {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   padding: var(--ra-space-2) var(--ra-space-3);
   border-radius: 2px;
   border: 1px solid var(--ra-accent-soft-bd);

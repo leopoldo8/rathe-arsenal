@@ -9,13 +9,10 @@
 }
 
 .label {
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-semibold);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
-  color: var(--ra-fg-muted);
-  cursor: default;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-secondary);
 }
 
 /* Radix Select trigger */

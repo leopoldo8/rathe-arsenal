@@ -1,12 +1,13 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from '@tanstack/react-router';
 import type { ILibraryCard } from '../../api/library';
 import {
   CARD_SIZE_STEPS,
   CARD_SIZE_MIN,
   CARD_SIZE_MAX,
   CARD_SIZE_DEFAULT,
-  CARD_SIZE_LABELS,
+  CARD_SIZE_LABEL_KEYS,
   snapCardSize,
 } from './LibraryFilterRail.constants';
 import styles from './LibraryFilterRail.module.css';
@@ -36,7 +37,7 @@ export {
   CARD_SIZE_MIN,
   CARD_SIZE_MAX,
   CARD_SIZE_DEFAULT,
-  CARD_SIZE_LABELS,
+  CARD_SIZE_LABEL_KEYS,
 };
 
 interface ILibraryFilterRailProps {
@@ -60,13 +61,12 @@ interface ILibraryFilterRailProps {
 const PITCH_OPTIONS: ReadonlyArray<{
   readonly value: TPitch;
   readonly labelKey: string;
-  readonly glyph: string;
   readonly tone: 'red' | 'yellow' | 'blue' | 'colorless';
 }> = [
-  { value: 'red', labelKey: 'library.pitchRedLabel', glyph: 'I', tone: 'red' },
-  { value: 'yellow', labelKey: 'library.pitchYellowLabel', glyph: 'II', tone: 'yellow' },
-  { value: 'blue', labelKey: 'library.pitchBlueLabel', glyph: 'III', tone: 'blue' },
-  { value: 'colorless', labelKey: 'library.pitchColorlessLabel', glyph: '◇', tone: 'colorless' },
+  { value: 'red', labelKey: 'library.pitchRedLabel', tone: 'red' },
+  { value: 'yellow', labelKey: 'library.pitchYellowLabel', tone: 'yellow' },
+  { value: 'blue', labelKey: 'library.pitchBlueLabel', tone: 'blue' },
+  { value: 'colorless', labelKey: 'library.pitchColorlessLabel', tone: 'colorless' },
 ];
 
 const GROUP_OPTIONS: ReadonlyArray<{ readonly value: TGroupBy; readonly labelKey: string }> = [
@@ -116,6 +116,8 @@ export function LibraryFilterRail({
   const { t } = useTranslation();
   const searchId = useId();
   const sizeSliderId = useId();
+  const sizeLabelKey = CARD_SIZE_LABEL_KEYS[value.cardSize];
+  const sizeLabel = sizeLabelKey ? t(sizeLabelKey) : t('library.cardSizeCustom');
 
   const classCounts = useMemo(
     () => countsByDimension(cards, (c) => c.classes),
@@ -208,7 +210,7 @@ export function LibraryFilterRail({
         {/* Pitch */}
         <section className={styles.section} aria-labelledby="ra-rail-pitch">
           <h3 className={styles.label} id="ra-rail-pitch">
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupPitchLabel')}
+            {t('library.groupPitchLabel')}
           </h3>
           <div className={styles.pitchRow} role="group" aria-labelledby="ra-rail-pitch">
             {PITCH_OPTIONS.map((opt) => {
@@ -225,9 +227,7 @@ export function LibraryFilterRail({
                   onClick={() => togglePitch(opt.value)}
                   aria-label={t('library.pitchFilterAria', { pitch: pitchDisplayLabel, action })}
                 >
-                  <span className={styles.pitchPip} aria-hidden="true">
-                    {opt.glyph}
-                  </span>
+                  <span className={styles.pitchPip} aria-hidden="true" />
                   <span className={styles.pitchLabel}>{pitchDisplayLabel}</span>
                 </button>
               );
@@ -280,7 +280,7 @@ export function LibraryFilterRail({
         {/* Card size slider */}
         <section className={styles.section} aria-labelledby={`${sizeSliderId}-label`}>
           <h3 className={styles.label} id={`${sizeSliderId}-label`}>
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.cardSizeLabel')}
+            {t('library.cardSizeLabel')}
           </h3>
           <div className={styles.sliderRow}>
             <input
@@ -297,6 +297,7 @@ export function LibraryFilterRail({
               aria-valuemin={CARD_SIZE_MIN}
               aria-valuemax={CARD_SIZE_MAX}
               aria-valuenow={value.cardSize}
+              aria-valuetext={`${sizeLabel} · ${value.cardSize}px`}
             />
             <datalist id={`${sizeSliderId}-ticks`}>
               {CARD_SIZE_STEPS.map((step) => (
@@ -305,9 +306,7 @@ export function LibraryFilterRail({
             </datalist>
           </div>
           <p className={styles.sliderValue} aria-hidden="true">
-            <span className={styles.sliderLabel}>
-              {CARD_SIZE_LABELS[value.cardSize] ?? 'Custom'}
-            </span>
+            <span className={styles.sliderLabel}>{sizeLabel}</span>
             <span className={styles.sliderUnit}>{value.cardSize}px</span>
           </p>
         </section>
@@ -315,7 +314,7 @@ export function LibraryFilterRail({
         {/* Group by */}
         <section className={styles.section} aria-labelledby="ra-rail-group">
           <h3 className={styles.label} id="ra-rail-group">
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupByLabel')}
+            {t('library.groupByLabel')}
           </h3>
           <div
             className={styles.segmentControl}
@@ -336,6 +335,10 @@ export function LibraryFilterRail({
             ))}
           </div>
         </section>
+
+        <Link to="/library-csv-sources" className={styles.sourcesLink}>
+          {t('library.manageSourcesLink')}
+        </Link>
 
         {/* Footer — clear all */}
         {activeFilterCount > 0 && (
@@ -425,7 +428,7 @@ function ToggleSection({
           onClick={() => setOpen((v) => !v)}
         >
           <span className={styles.label}>
-            <span className={styles.diamond} aria-hidden="true">◆</span> {label}
+            {label}
           </span>
           <span className={styles.accordionSummary}>
             <span
@@ -470,9 +473,7 @@ function ToggleSection({
                     className={`${styles.toggleRow} ${checked ? styles['toggleRow--on'] : ''}`}
                     onClick={() => onToggle(opt)}
                   >
-                    <span className={styles.toggleMarker} aria-hidden="true">
-                      {checked ? '◆' : '◇'}
-                    </span>
+                    <span className={styles.toggleMarker} aria-hidden="true" />
                     <span className={styles.toggleLabel}>
                       {formatLabel ? formatLabel(opt) : opt}
                     </span>

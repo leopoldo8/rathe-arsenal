@@ -1,0 +1,83 @@
+/* Status strip (DECK-02/03): 12px radius, tone follows the deck's state. */
+
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3) var(--ra-space-4);
+  margin-block-start: var(--ra-space-4);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.toneIncomplete {
+  background: var(--ra-ready-low-bg);
+  border-color: var(--ra-ready-low-border);
+}
+
+.toneSolvable {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent-soft-bd);
+}
+
+.toneComplete {
+  background: var(--ra-ready-high-bg);
+  border-color: var(--ra-ready-high-border);
+}
+
+.message {
+  margin: 0;
+  flex: 1 1 280px;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 36px;
+  padding-inline: var(--ra-space-3);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: none;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
+}
+
+.action:hover {
+  background: var(--ra-bg-raised);
+  border-color: var(--ra-accent);
+}
+
+.action:focus-visible,
+.fabrary:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.fabrary {
+  color: var(--ra-accent);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  text-decoration: none;
+}
+
+.fabrary:hover {
+  color: var(--ra-accent-hover);
+  text-decoration: underline;
+}

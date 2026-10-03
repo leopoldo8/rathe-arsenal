@@ -17,13 +17,34 @@ export const CARD_SIZE_STEPS: readonly number[] = Object.freeze([
 export const CARD_SIZE_MIN = CARD_SIZE_STEPS[0]!;
 export const CARD_SIZE_MAX = CARD_SIZE_STEPS[CARD_SIZE_STEPS.length - 1]!;
 export const CARD_SIZE_DEFAULT = 120;
-export const CARD_SIZE_LABELS: Readonly<Record<number, string>> = Object.freeze({
-  80: 'Small',
-  120: 'Medium',
-  160: 'Large',
-  200: 'X-Large',
-  240: 'Max',
+export const CARD_SIZE_LABEL_KEYS: Readonly<Record<number, string>> = Object.freeze({
+  80: 'library.cardSizeSmall',
+  120: 'library.cardSizeMedium',
+  160: 'library.cardSizeLarge',
+  200: 'library.cardSizeXLarge',
+  240: 'library.cardSizeMax',
 });
+
+export const CARD_SIZE_STORAGE_KEY = 'ra-library-card-size';
+
+export function readStoredCardSize(): number | null {
+  try {
+    const raw = window.localStorage.getItem(CARD_SIZE_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? snapCardSize(parsed) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredCardSize(size: number): void {
+  try {
+    window.localStorage.setItem(CARD_SIZE_STORAGE_KEY, String(size));
+  } catch {
+    // Storage can be blocked (private mode); the URL param still carries the size.
+  }
+}
 
 export function snapCardSize(value: number): number {
   if (!Number.isFinite(value)) return CARD_SIZE_DEFAULT;

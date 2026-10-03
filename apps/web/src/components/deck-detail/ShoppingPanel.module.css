@@ -48,10 +48,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--ra-accent-body);
   background: var(--ra-bg-raised);
   border: 1px solid var(--ra-accent-soft-bd);

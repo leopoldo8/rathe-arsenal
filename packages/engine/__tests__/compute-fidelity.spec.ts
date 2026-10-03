@@ -50,6 +50,9 @@ function makeSubstituted(
   return Object.freeze({
     original: makeEntry(originalId, quantity),
     match: makeMatch(substituteId, tier),
+    // fidelityPercent is deliberately not gated by approval (§0) -- the
+    // value is irrelevant to what this file tests, so it's fixed to true.
+    approved: true,
   });
 }
 

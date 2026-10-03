@@ -33,7 +33,7 @@ export const onboarding = {
 
   // Step 2 — Confirm Library
   step2Eyebrow: 'Passo 2 de 3',
-  step2Heading: 'Sua biblioteca',
+  step2Heading: 'Agora, sua coleção',
   step2BodySingle:
     'Encontramos seu deck. Confirme se está correto antes de calcularmos as substituições.',
   step2BodyMultiple:

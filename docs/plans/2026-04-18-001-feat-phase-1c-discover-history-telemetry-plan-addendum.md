@@ -1,7 +1,7 @@
 ---
 title: "Phase 1c plan addendum — Algolia source pivot + spike findings"
 type: plan-addendum
-status: active
+status: deferred
 date: 2026-04-19
 parent-plan: docs/plans/2026-04-18-001-feat-phase-1c-discover-history-telemetry-plan.md
 spike-report: docs/brainstorms/gates/phase-1c-unit-1-spike.md

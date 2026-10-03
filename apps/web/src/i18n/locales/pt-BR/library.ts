@@ -53,6 +53,13 @@ export const library = {
   // LibraryFilterRail — card size
   cardSizeLabel: 'Tamanho dos cards',
   cardSizeAriaLabel: 'Tamanho dos cards em pixels',
+  cardSizeSmall: 'Pequeno',
+  cardSizeMedium: 'Médio',
+  cardSizeLarge: 'Grande',
+  cardSizeXLarge: 'Extra grande',
+  cardSizeMax: 'Máximo',
+  cardSizeCustom: 'Personalizado',
+  manageSourcesLink: 'Gerenciar fontes ›',
 
   // LibraryFilterRail — group by
   groupByLabel: 'Agrupar por',
@@ -108,6 +115,9 @@ export const library = {
   // Library route — no results
   noMatchTitle: 'Nenhum card corresponde a esta combinação.',
   clearFiltersButton: 'Limpar filtros',
+  priceFreshnessNone: 'Sem dados de preço',
+  priceFreshnessDays_one: 'Atualizado há {{count}} dia',
+  priceFreshnessDays_other: 'Atualizado há {{count}} dias',
   estimatedPricesTooltip:
     'Preços estimados a partir de lojas parceiras. Pode ficar defasado quando o scraper não roda por alguns dias.',
 } as const;

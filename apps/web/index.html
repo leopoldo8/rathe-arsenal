@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#0c0d10" />
+    <meta name="theme-color" content="#0b0c0f" />
 
     <!--
       Synchronous theme initialisation — runs before React hydrates to
@@ -40,11 +40,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 
-    <!-- Google Fonts — Cinzel, Cinzel Decorative, UnifrakturCook, IBM Plex Sans, JetBrains Mono -->
+    <!--
+      Google Fonts — Hanken Grotesk (UI), Newsreader (display + ornament,
+      superseding Cinzel/Cinzel Decorative), UnifrakturCook (wordmark),
+      IBM Plex Serif + JetBrains Mono (retained per FND-01 §3.1/§9 ruling —
+      29 and 14 files respectively consume them and the handoff doesn't
+      mandate dropping families it never mentions).
+
+      Loaded via the async preload pattern (FND-07: no first-paint block).
+      A render-blocking <link rel="stylesheet"> would delay first paint
+      until the CSS file fetches; preloading it as a style and swapping
+      `rel` to `stylesheet` on load lets the browser paint fallback-font
+      text immediately, then swap to the web font when it arrives. The
+      <noscript> fallback keeps the blocking behavior for JS-disabled
+      clients, who would otherwise never load the fonts at all.
+    -->
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=UnifrakturCook:wght@700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600;700;900&family=UnifrakturCook:wght@700&family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600;700;900&family=UnifrakturCook:wght@700&family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

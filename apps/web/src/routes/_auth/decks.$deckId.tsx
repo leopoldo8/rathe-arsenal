@@ -1,19 +1,20 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  IBreakdown,
   IDeckDetailResponse,
   useDeckDetailQuery,
   useMarkOwnedMutation,
   deckDetailQueryKey,
 } from '../../api/deck-detail';
 import {
-  useDecideSubstitutionMutation,
-  useResetDecisionsMutation,
-  useClearDeckRejectionsMutation,
-} from '../../api/decisions';
+  selectDeckSwaps,
+  useRestoreRejectedSwaps,
+  useSwapMutation,
+  useSwapsQuery,
+} from '../../api/swaps';
+import type { ISwapRow, TSwapAction } from '../../api/swaps';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { requestOpenVariantQueueDrawer } from '../../components/variant-queue/variantQueueDrawerBus';
 import { useVariantJobsQuery } from '../../api/variant-jobs';
@@ -24,49 +25,26 @@ import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmp
 import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout';
 import { DeckDetailHeader } from '../../components/deck-detail/DeckDetailHeader';
 import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSidebar';
-import { ReadinessHero } from '../../components/deck-detail/ReadinessHero';
+import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
+import { buildDraftInitialPayload } from './-deck-detail-draft';
 import { useCascadeCheck } from '../../hooks/useCascadeCheck';
 import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChangesConfirm';
-import type { ITagResponse } from '../../api/tags';
+import { useTagsQuery, type ITagResponse } from '../../api/tags';
+import { resolveDeckTags } from '../../components/deck-edit/deckEditModel';
+import type { TVariantFetchMutationStatus } from '../../components/ShoppingLine';
 import styles from './decks.$deckId.module.css';
+import { validateDeckDetailSearch } from './-deck-detail-search';
 
-// ---------------------------------------------------------------------------
-// Search param validation (U12: adds `edit` param)
-// ---------------------------------------------------------------------------
-
-function validateDeckDetailSearch(raw: Record<string, unknown>): { edit: '1' | undefined } {
-  return {
-    edit: raw.edit === '1' ? '1' : undefined,
-  };
-}
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
   validateSearch: validateDeckDetailSearch,
 });
-
-function countNotOwnedCards(breakdown: IBreakdown): number {
-  const notOwned = breakdown.notOwned ?? breakdown.missing;
-  return notOwned.reduce((sum, entry) => sum + entry.quantity, 0);
-}
-
-/**
- * Sum the total quantity of cards covered (exact matches + substituted matches).
- * Used to display the "X/Y cartas" count in the sidebar readiness block.
- */
-function countProvisionedCards(breakdown: IBreakdown): number {
-  const exactTotal = breakdown.exact.reduce((sum, entry) => sum + entry.quantity, 0);
-  const substitutedTotal = breakdown.substituted.reduce(
-    (sum, entry) => sum + entry.original.quantity,
-    0,
-  );
-  return exactTotal + substitutedTotal;
-}
 
 function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
@@ -77,10 +55,14 @@ function DeckDetailPage(): React.ReactElement {
   const { t } = useTranslation();
 
   // Derive current mode from ?edit=1 search param
-  const mode = edit === '1' ? 'edit' : 'view';
+  const mode = edit === 1 ? 'edit' : 'view';
+
+  function handleOpenMetadataEdit(): void {
+    void navigate({ to: '/decks/$deckId/edit', params: { deckId } });
+  }
 
   function handleEnterEdit(): void {
-    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: '1' } });
+    void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: 1 } });
   }
 
   function handleExitEdit(): void {
@@ -95,10 +77,22 @@ function DeckDetailPage(): React.ReactElement {
   );
 
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
+  const tagsQuery = useTagsQuery();
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const decideMutation = useDecideSubstitutionMutation(deckId, { showToast });
-  const resetDecisionMutation = useResetDecisionsMutation(deckId, { showToast });
-  const clearRejectionsMutation = useClearDeckRejectionsMutation(deckId);
+  const swapsQuery = useSwapsQuery();
+  const swapMutation = useSwapMutation();
+  const restoreRejectedMutation = useRestoreRejectedSwaps();
+  const swapRows = swapsQuery.data?.rows;
+  const refetchSwaps = swapsQuery.refetch;
+  const snapshotComputedAt = detailQuery.data?.latestSnapshot?.computedAt ?? null;
+  // A new snapshot can carry new suggestions, so the swaps list is refreshed with it.
+  useEffect(() => {
+    if (snapshotComputedAt !== null) void refetchSwaps();
+  }, [snapshotComputedAt, refetchSwaps]);
+  const deckSwaps = React.useMemo(
+    () => selectDeckSwaps(swapRows, Number(deckId)),
+    [swapRows, deckId],
+  );
   const variantFetchMutation = useVariantFetchMutation(deckId);
 
   // Derive this deck's variant-fetch progress from the global jobs queue.
@@ -154,6 +148,54 @@ function DeckDetailPage(): React.ReactElement {
     });
   }, [queryClient, deckId, showToast, t]);
 
+  function handleClearRejections(): void {
+    restoreRejectedMutation.mutate(
+      deckSwaps.filter((swap) => swap.status === 'rejected'),
+      {
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            showToast({
+              kind: 'error',
+              message: t('swaps.bulkPartial', {
+                done: result.restored,
+                total: result.attempted,
+                label: t('swaps.bulkLabelReset'),
+                failed: t('swaps.bulkFailed', { count: result.failed }),
+              }),
+              retry: handleClearRejections,
+            });
+          } else if (result.remaining > 0) {
+            showToast({
+              kind: 'success',
+              message: t('decks.clearRejectionsCapped', {
+                count: result.remaining,
+                restored: result.restored,
+              }),
+            });
+          }
+        },
+        onError: (err) => {
+          showToast({
+            kind: 'error',
+            message: t('decks.failedToClearRejections', { error: (err as Error).message }),
+            retry: handleClearRejections,
+          });
+        },
+      },
+    );
+  }
+
+  function runSwapAction(swapId: string, action: TSwapAction): void {
+    swapMutation.mutate(
+      { swapId, action },
+      {
+        onError: () => {
+          showToast({ kind: 'error', message: t('decks.failedSwapAction') });
+        },
+      },
+    );
+  }
+
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
     variantFetchMutation.data?.status === 'already_fresh';
@@ -192,16 +234,8 @@ function DeckDetailPage(): React.ReactElement {
   // Allow editing even if latestSnapshot is null (R22: scratch deck with 0 cards)
   const snapshot = deck.latestSnapshot;
 
-  // Build the tags structure expected by DeckDetailHeader.
-  // deck.tags is readonly string[] (display names only from v2 U7).
-  // TagChipRow expects ITagResponse[] (with id + name).
-  // Because the API only returns tag names (not IDs) on the detail response,
-  // we synthesise lightweight objects using the index as a stable key.
-  const tagsForHeader: ITagResponse[] = (deck.tags ?? []).map((name, idx) => ({
-    id: idx,
-    name,
-    createdAt: '',
-  }));
+  // The detail response carries tag names only; resolve real ids from the user's tag list.
+  const tagsForHeader: ITagResponse[] = resolveDeckTags(deck.tags ?? [], tagsQuery.data?.tags ?? []);
 
   if (snapshot == null && mode === 'view') {
     return <DeckDetailEmptyState kind="computing" />;
@@ -216,6 +250,7 @@ function DeckDetailPage(): React.ReactElement {
       snapshot={snapshot}
       variantJobsProgress={variantJobsProgress}
       onEnterEdit={handleEnterEdit}
+      onOpenMetadataEdit={handleOpenMetadataEdit}
       onExitEdit={handleExitEdit}
       onMarkOwned={(cardIdentifier) => {
         markOwnedMutation.mutate(cardIdentifier, {
@@ -230,34 +265,15 @@ function DeckDetailPage(): React.ReactElement {
       }}
       isMarkingOwned={markOwnedMutation.isPending}
       pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
-      onApproveSubstitute={(substituteIdentifier) => {
-        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'approved' });
-      }}
-      onRejectSubstitute={(substituteIdentifier) => {
-        decideMutation.mutate({ cardIdentifier: substituteIdentifier, decision: 'rejected' });
-      }}
-      onResetSubstitute={(substituteIdentifier) => {
-        resetDecisionMutation.mutate(substituteIdentifier);
-      }}
-      pendingSubstituteId={
-        decideMutation.isPending
-          ? (decideMutation.variables?.cardIdentifier ?? null)
-          : resetDecisionMutation.isPending
-            ? (resetDecisionMutation.variables ?? null)
-            : null
+      deckSwaps={deckSwaps}
+      pendingSwapId={swapMutation.isPending ? (swapMutation.variables?.swapId ?? null) : null}
+      onApproveSwap={(swapId) => runSwapAction(swapId, { kind: 'approve' })}
+      onRejectSwap={(swapId) => runSwapAction(swapId, { kind: 'reject' })}
+      onUndoSwap={(swapId, decision) =>
+        runSwapAction(swapId, { kind: decision === 'approved' ? 'revert' : 'restore' })
       }
-      onClearRejections={() => {
-        clearRejectionsMutation.mutate(undefined, {
-          onError: (err) => {
-            showToast({
-              kind: 'error',
-              message: t('decks.failedToClearRejections', { error: (err as Error).message }),
-              retry: () => clearRejectionsMutation.mutate(undefined),
-            });
-          },
-        });
-      }}
-      isClearingRejections={clearRejectionsMutation.isPending}
+      onClearRejections={handleClearRejections}
+      isClearingRejections={restoreRejectedMutation.isPending}
       onFetchVariants={handleFetchVariants}
       fetchMutationStatus={variantFetchMutation.status}
       isCooldownActive={isCooldownActive}
@@ -286,14 +302,16 @@ interface IDeckDetailPageWithDataProps {
    */
   readonly variantJobsProgress: IVariantFetchProgress | undefined;
   readonly onEnterEdit: () => void;
+  readonly onOpenMetadataEdit: () => void;
   readonly onExitEdit: () => void;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly onApproveSubstitute: (id: string) => void;
-  readonly onRejectSubstitute: (id: string) => void;
-  readonly onResetSubstitute: (id: string) => void;
-  readonly pendingSubstituteId: string | null;
+  readonly deckSwaps: readonly ISwapRow[];
+  readonly pendingSwapId: string | null;
+  readonly onApproveSwap: (swapId: string) => void;
+  readonly onRejectSwap: (swapId: string) => void;
+  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
   readonly onClearRejections: () => void;
   readonly isClearingRejections: boolean;
   readonly onFetchVariants: () => void;
@@ -316,14 +334,16 @@ function DeckDetailPageWithData({
   snapshot,
   variantJobsProgress,
   onEnterEdit,
+  onOpenMetadataEdit,
   onExitEdit,
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  onApproveSubstitute,
-  onRejectSubstitute,
-  onResetSubstitute,
-  pendingSubstituteId,
+  deckSwaps,
+  pendingSwapId,
+  onApproveSwap,
+  onRejectSwap,
+  onUndoSwap,
   onClearRejections,
   isClearingRejections,
   onFetchVariants,
@@ -332,49 +352,15 @@ function DeckDetailPageWithData({
   onPollingChange,
   onShoppingRetry,
 }: IDeckDetailPageWithDataProps): React.ReactElement {
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Ref to the Edit button for DraftRestoreModal focus return.
   const editBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Build initial payload for the composition draft from the current deck state.
-  const draftInitialPayload = React.useMemo(() => {
-    if (!snapshot) {
-      return {
-        cards: [],
-        heroIdentifier: deck.heroIdentifier ?? null,
-        format: deck.format,
-      };
-    }
-    const allCards = [
-      ...snapshot.breakdown.exact,
-      ...(snapshot.breakdown.notOwned ?? snapshot.breakdown.missing),
-    ].map((entry) => ({
-      cardIdentifier: entry.cardIdentifier,
-      name: entry.name,
-      quantity: entry.quantity,
-      slot: entry.slot,
-      pitch: entry.pitch,
-      cost: entry.cost ?? null,
-      type: entry.type,
-      imageUrl: entry.imageUrl
-        ? {
-            small: entry.imageUrl.small,
-            large: entry.imageUrl.large,
-            sources: entry.imageUrl.sources,
-          }
-        : null,
-      legalFormats: [],
-      legalHeroes: [],
-      bannedFormats: [],
-    }));
-    return {
-      cards: allCards,
-      heroIdentifier: deck.heroIdentifier ?? null,
-      format: deck.format,
-    };
-  }, [snapshot, deck.heroIdentifier, deck.format]);
+  const draftInitialPayload = React.useMemo(
+    () => buildDraftInitialPayload({ heroIdentifier: deck.heroIdentifier, format: deck.format }, snapshot),
+    [snapshot, deck.heroIdentifier, deck.format],
+  );
 
   const compositionDraft = useCompositionDraft(deckId, draftInitialPayload);
 
@@ -541,8 +527,6 @@ function DeckDetailPageWithData({
     onExitEdit();
   }
 
-  const isPathC = snapshot?.path === 'C';
-
   // Build the shopping data to pass to the sidebar.
   // When the jobs queue provides progress for this deck, inject it as the
   // authoritative `variantFetchProgress`, overriding whatever the deck-detail
@@ -562,95 +546,76 @@ function DeckDetailPageWithData({
     };
   }, [rawShoppingData, variantJobsProgress]);
 
+  const typedFetchStatus = fetchMutationStatus as TVariantFetchMutationStatus;
+
   return (
     <>
-      <DeckDetailLayout
-        header={
-          <DeckDetailHeader
-            deckId={deck.id}
-            deckName={deck.name}
-            status={deck.status}
-            tags={tagsForHeader}
-            mode={mode}
-            onEnterEdit={onEnterEdit}
-            isDirty={compositionDraft.isDirty}
-            changeCount={compositionDraft.changeCount}
-            cascadeCheckCount={cascadeCheck.count}
-            saveDraftPayload={saveDraftPayload}
-            onSaveSuccess={handleSaveSuccess}
-            onConfirmDiscard={handleConfirmDiscard}
-            editButtonRef={editBtnRef}
-          />
-        }
-        sidebar={
-          <DeckDetailSidebar
-            heroIdentifier={sidebarHeroIdentifier}
-            heroName={null}
-            heroLegacy={sidebarHeroName}
-            format={sidebarFormat}
-            legality={deck.legality}
-            fabraryUlid={deck.fabraryUlid ?? null}
-            shoppingData={shoppingData}
-            onFetchVariants={onFetchVariants}
-            fetchMutationStatus={fetchMutationStatus as import('../../components/ShoppingLine').TVariantFetchMutationStatus}
-            isCooldownActive={isCooldownActive}
-            onPollingChange={onPollingChange}
-            onShoppingRetry={onShoppingRetry}
-            mode={mode}
-            compositionDraft={compositionDraft.draft}
-            cascadeCheck={cascadeCheck}
-            onRemoveIllegalCards={compositionDraft.removeIllegalCards}
-            onSetHero={compositionDraft.setHero}
-            onSetFormat={compositionDraft.setFormat}
-          />
-        }
-        canvas={
-          <>
-            {/* ReadinessHero — full-width banner at top of canvas (UXUI-14 D1).
-                Receives the same readiness data the sidebar previously used.
-                This is the sole .ra-readiness-display instance on the page (R7). */}
-            <ReadinessHero
-              effectivePercent={snapshot?.effectivePercent ?? 0}
-              rawPercent={snapshot?.rawPercent ?? 0}
-              fidelityPercent={snapshot?.fidelityPercent ?? 0}
-              fabraryUlid={deck.fabraryUlid ?? null}
+      {mode === 'view' && snapshot != null ? (
+        <DeckDetailView
+          deck={deck}
+          snapshot={snapshot}
+          tags={tagsForHeader}
+          shoppingData={shoppingData}
+          onEdit={onOpenMetadataEdit}
+          onEditCards={onEnterEdit}
+          onMarkOwned={onMarkOwned}
+          isMarkingOwned={isMarkingOwned}
+          pendingCard={pendingCard}
+          deckSwaps={deckSwaps}
+          pendingSwapId={pendingSwapId}
+          onApproveSwap={onApproveSwap}
+          onRejectSwap={onRejectSwap}
+          onUndoSwap={onUndoSwap}
+          onClearRejections={onClearRejections}
+          isClearingRejections={isClearingRejections}
+          onFetchVariants={onFetchVariants}
+          fetchMutationStatus={typedFetchStatus}
+          isCooldownActive={isCooldownActive}
+          onPollingChange={onPollingChange}
+          onShoppingRetry={onShoppingRetry}
+        />
+      ) : (
+        <DeckDetailLayout
+          header={
+            <DeckDetailHeader
+              deckId={deck.id}
               deckName={deck.name}
-              hero={sidebarHeroName}
-              format={sidebarFormat}
-              totalCards={deck.totalCards}
-              provisionedCards={snapshot ? countProvisionedCards(snapshot.breakdown) : 0}
-            />
-            {/* Path C banner — only in view mode */}
-            {mode === 'view' && isPathC && snapshot && (
-              <div role="status" className={styles.pathCBanner}>
-                <div className={styles.pathCBanner__eyebrow}>
-                  {t('decks.approximation')}
-                </div>
-                <strong className={styles.pathCBanner__strong}>
-                  {t('decks.pathCBannerHeadline')}
-                </strong>{' '}
-                {t('decks.pathCBannerMissing', {
-                  count: countNotOwnedCards(snapshot.breakdown),
-                  fidelity: (
-                    Math.round(snapshot.fidelityPercent * 10) / 10
-                  ).toFixed(1),
-                })}
-              </div>
-            )}
-            <DeckCanvas
+              status={deck.status}
+              tags={tagsForHeader}
               mode={mode}
-              breakdown={snapshot?.breakdown ?? { exact: [], substituted: [], missing: [], notOwned: [] }}
-              decisions={deck.decisions}
-              rejectedCount={deck.rejectedCount}
-              onMarkOwned={onMarkOwned}
-              isMarkingOwned={isMarkingOwned}
-              pendingCard={pendingCard}
-              onApproveSubstitute={onApproveSubstitute}
-              onRejectSubstitute={onRejectSubstitute}
-              onResetSubstitute={onResetSubstitute}
-              pendingSubstituteId={pendingSubstituteId}
-              onClearRejections={onClearRejections}
-              isClearingRejections={isClearingRejections}
+              onEnterEdit={onEnterEdit}
+              isDirty={compositionDraft.isDirty}
+              changeCount={compositionDraft.changeCount}
+              cascadeCheckCount={cascadeCheck.count}
+              saveDraftPayload={saveDraftPayload}
+              onSaveSuccess={handleSaveSuccess}
+              onConfirmDiscard={handleConfirmDiscard}
+              editButtonRef={editBtnRef}
+            />
+          }
+          sidebar={
+            <DeckDetailSidebar
+              heroIdentifier={sidebarHeroIdentifier}
+              heroName={null}
+              heroLegacy={sidebarHeroName}
+              format={sidebarFormat}
+              legality={deck.legality}
+              fabraryUlid={deck.fabraryUlid ?? null}
+              shoppingData={shoppingData}
+              onFetchVariants={onFetchVariants}
+              fetchMutationStatus={typedFetchStatus}
+              isCooldownActive={isCooldownActive}
+              onPollingChange={onPollingChange}
+              onShoppingRetry={onShoppingRetry}
+              mode={mode}
+              compositionDraft={compositionDraft.draft}
+              cascadeCheck={cascadeCheck}
+              onRemoveIllegalCards={compositionDraft.removeIllegalCards}
+              onSetHero={compositionDraft.setHero}
+            />
+          }
+          canvas={
+            <DeckCanvas
               compositionDraft={compositionDraft.draft}
               cascadeCheck={cascadeCheck}
               onAddCard={compositionDraft.addCard}
@@ -658,11 +623,10 @@ function DeckDetailPageWithData({
               onRemoveCard={compositionDraft.removeCard}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}
-              onSetFormat={compositionDraft.setFormat}
             />
-          </>
-        }
-      />
+          }
+        />
+      )}
 
       {/* DraftRestoreModal — shown on Edit entry when a stored draft exists */}
       <DraftRestoreModal

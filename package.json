@@ -20,7 +20,8 @@
     "gold:generate": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/generate-candidates.ts",
     "gold:export": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/export-csv.ts",
     "gold:score": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/score.ts",
-    "screenshot": "tsx scripts/screenshot-all-surfaces.ts"
+    "screenshot": "tsx scripts/screenshot-all-surfaces.ts",
+    "seed:fixture": "tsx scripts/seed-fixture.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",

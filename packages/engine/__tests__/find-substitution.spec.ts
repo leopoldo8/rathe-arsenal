@@ -1,4 +1,5 @@
 import { findSubstitution } from '../src/substitution/find-substitution';
+import { buildExclusionKey } from '../src/substitution/exclusion-key';
 import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Talent, Type } from '../src';
 import { buildIndices } from '../src/catalog/indices';
 
@@ -72,7 +73,7 @@ describe('findSubstitution (tiered search)', () => {
       ['tier2', 1],
     ]);
 
-    const result = findSubstitution(missing, inventory, catalog);
+    const result = findSubstitution(missing, inventory, catalog, 'mainboard');
 
     expect(result).not.toBeNull();
     expect(result!.tier).toBe(1);
@@ -96,7 +97,7 @@ describe('findSubstitution (tiered search)', () => {
     const catalog = makeCatalog([missing, tier2Only]);
     const inventory = new Map([['tier2-only', 1]]);
 
-    const result = findSubstitution(missing, inventory, catalog);
+    const result = findSubstitution(missing, inventory, catalog, 'mainboard');
 
     expect(result).not.toBeNull();
     expect(result!.tier).toBe(2);
@@ -113,7 +114,7 @@ describe('findSubstitution (tiered search)', () => {
     const catalog = makeCatalog([missing, badCandidate]);
     const inventory = new Map([['b', 1]]);
 
-    expect(findSubstitution(missing, inventory, catalog)).toBeNull();
+    expect(findSubstitution(missing, inventory, catalog, 'mainboard')).toBeNull();
   });
 
   it('honors excludedIdentifiers at both tiers', () => {
@@ -143,7 +144,7 @@ describe('findSubstitution (tiered search)', () => {
     ]);
 
     // Without exclusion -> tier 1 match
-    const unrestricted = findSubstitution(missing, inventory, catalog);
+    const unrestricted = findSubstitution(missing, inventory, catalog, 'mainboard');
     expect(unrestricted).not.toBeNull();
     expect(unrestricted!.tier).toBe(1);
 
@@ -152,7 +153,8 @@ describe('findSubstitution (tiered search)', () => {
       missing,
       inventory,
       catalog,
-      new Set(['tier1-best']),
+      'mainboard',
+      new Set([buildExclusionKey('missing', 'mainboard', 'tier1-best')]),
     );
     expect(restricted).not.toBeNull();
     expect(restricted!.tier).toBe(2);
@@ -177,7 +179,13 @@ describe('findSubstitution (tiered search)', () => {
     const inventory = new Map([['only', 1]]);
 
     expect(
-      findSubstitution(missing, inventory, catalog, new Set(['only'])),
+      findSubstitution(
+        missing,
+        inventory,
+        catalog,
+        'mainboard',
+        new Set([buildExclusionKey('missing', 'mainboard', 'only')]),
+      ),
     ).toBeNull();
   });
 
@@ -198,7 +206,7 @@ describe('findSubstitution (tiered search)', () => {
     const catalog = makeCatalog([missing, tier2Only]);
     const inventory = new Map([['tier2', 1]]);
 
-    const result = findSubstitution(missing, inventory, catalog);
+    const result = findSubstitution(missing, inventory, catalog, 'mainboard');
 
     expect(result).not.toBeNull();
     expect(result!.tier).toBe(2);

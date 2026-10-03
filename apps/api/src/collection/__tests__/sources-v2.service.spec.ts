@@ -14,7 +14,7 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { SourcesService } from '../sources/sources.service';
 
@@ -82,6 +82,7 @@ function buildDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeckEntit
     heroIdentifier: 'rhinar-reckless-rampage',
     format: 'cc',
     status: 'building',
+    notes: null,
     trackedAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     user: {} as TrackedDeckEntity['user'],
@@ -117,7 +118,7 @@ describe('SourcesService — U9 extensions', () => {
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let dataSource: jest.Mocked<DataSource>;
-  let decisionsService: jest.Mocked<DecisionsService>;
+  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
 
   beforeEach(async () => {
@@ -126,7 +127,7 @@ describe('SourcesService — U9 extensions', () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     dataSource = createMock<DataSource>();
-    decisionsService = createMock<DecisionsService>();
+    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     substitutionService = createMock<SubstitutionService>();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -137,7 +138,7 @@ describe('SourcesService — U9 extensions', () => {
         { provide: getRepositoryToken(TrackedDeckEntity), useValue: trackedDeckRepo },
         { provide: getRepositoryToken(DeckReadinessSnapshotEntity), useValue: snapshotRepo },
         { provide: DataSource, useValue: dataSource },
-        { provide: DecisionsService, useValue: decisionsService },
+        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SubstitutionService, useValue: substitutionService },
       ],
     }).compile();
@@ -154,7 +155,7 @@ describe('SourcesService — U9 extensions', () => {
   // ---------------------------------------------------------------------------
 
   describe('list', () => {
-    it('returns only kind=csv sources for the user', async () => {
+    it('queries every source kind for the user, newest first', async () => {
       // Arrange
       const csvSources = [buildCsvSource(), buildCsvSource({ id: 'csv-2', label: 'Second' })];
       csvSourceRepo.find.mockResolvedValue(csvSources);
@@ -164,10 +165,29 @@ describe('SourcesService — U9 extensions', () => {
 
       // Assert
       expect(csvSourceRepo.find).toHaveBeenCalledWith({
-        where: { userId: USER_ID, kind: 'csv' },
+        where: { userId: USER_ID },
         order: { createdAt: 'DESC' },
       });
       expect(result).toHaveLength(2);
+      expect(collectionCardRepo.count).not.toHaveBeenCalled();
+    });
+
+    it('fills the manual source cardCount from its collection rows without persisting it', async () => {
+      // Arrange
+      const manual = buildCsvSource({ id: 'manual-1', kind: 'manual', cardCount: null });
+      const csv = buildCsvSource({ cardCount: 12 });
+      csvSourceRepo.find.mockResolvedValue([csv, manual]);
+      collectionCardRepo.count.mockResolvedValue(7);
+
+      // Act
+      const result = await service.list(USER_ID);
+
+      // Assert
+      expect(collectionCardRepo.count).toHaveBeenCalledWith({ where: { sourceId: 'manual-1' } });
+      expect(result.find((s) => s.id === 'manual-1')?.cardCount).toBe(7);
+      expect(result.find((s) => s.id === csv.id)?.cardCount).toBe(12);
+      expect(csvSourceRepo.save).not.toHaveBeenCalled();
+      expect(csvSourceRepo.update).not.toHaveBeenCalled();
     });
 
     it('returns empty array when user has no csv sources', async () => {
@@ -196,7 +216,10 @@ describe('SourcesService — U9 extensions', () => {
         .mockResolvedValueOnce(updated); // refetch after update
       csvSourceRepo.update.mockResolvedValue({ affected: 1 } as never);
       trackedDeckRepo.find.mockResolvedValue([buildDeck()]);
-      decisionsService.loadExclusions.mockResolvedValue(new Set());
+      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+        excludedIdentifiers: new Set(),
+        approvedIdentifiers: new Set(),
+      });
       substitutionService.computeAndStoreReadiness.mockResolvedValue(undefined as never);
 
       // Act
@@ -223,7 +246,10 @@ describe('SourcesService — U9 extensions', () => {
 
       const decks = [buildDeck({ id: 1 }), buildDeck({ id: 2 })];
       trackedDeckRepo.find.mockResolvedValue(decks);
-      decisionsService.loadExclusions.mockResolvedValue(new Set());
+      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+        excludedIdentifiers: new Set(),
+        approvedIdentifiers: new Set(),
+      });
       substitutionService.computeAndStoreReadiness.mockResolvedValue(undefined as never);
 
       // Act
@@ -362,7 +388,10 @@ describe('SourcesService — U9 extensions', () => {
         await cb(mockManager);
       });
       trackedDeckRepo.find.mockResolvedValue([buildDeck()]);
-      decisionsService.loadExclusions.mockResolvedValue(new Set());
+      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
+        excludedIdentifiers: new Set(),
+        approvedIdentifiers: new Set(),
+      });
       substitutionService.computeAndStoreReadiness.mockResolvedValue(undefined as never);
 
       // Act

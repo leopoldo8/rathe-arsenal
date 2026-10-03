@@ -31,6 +31,16 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  inline-size: 100%;
+  max-inline-size: 1180px;
+  margin-inline: auto;
+}
+
+.noMatches {
+  margin: 0 0 var(--ra-space-8);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
 }
 
 /* ---------- Loading skeleton ---------- */

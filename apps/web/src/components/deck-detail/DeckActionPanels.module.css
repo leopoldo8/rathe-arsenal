@@ -1,0 +1,14 @@
+/* Missing + swaps panels (DECK-05): two equal columns, only while the deck is incomplete. */
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-block-start: var(--ra-space-4);
+}
+
+@media (max-width: 899px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

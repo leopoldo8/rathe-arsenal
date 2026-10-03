@@ -22,9 +22,6 @@ export function RootErrorFallback(): React.ReactElement {
 
   return (
     <section className={styles.container} role="alert">
-      <div className={styles.ornament} aria-hidden="true">
-        ◆◆
-      </div>
       <h1 className={styles.heading}>{t('shell.errorFallbackHeading')}</h1>
       <p className={styles.body}>{t('shell.errorFallbackBody')}</p>
     </section>

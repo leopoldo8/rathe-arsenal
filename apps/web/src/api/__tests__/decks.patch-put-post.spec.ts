@@ -376,7 +376,7 @@ describe('useCreateScratchDeckMutation', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Caller pattern:
-    // navigate({ to: '/decks/$deckId', params: { deckId: String(data.id) }, search: { edit: '1' } })
+    // navigate({ to: '/decks/$deckId', params: { deckId: String(data.id) }, search: { edit: 1 } })
     const deckId = result.current.data?.id;
     expect(deckId).toBe(7);
     expect(String(deckId)).toBe('7');

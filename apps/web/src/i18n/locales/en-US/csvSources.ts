@@ -17,7 +17,21 @@ export const csvSources = {
   onTriggerAriaLabel: 'Upload a CSV to import your collection',
 
   // SumExplainer
-  sumExplainerTrigger: 'How duplicate cards are handled',
+  sumExplainerTrigger: 'ⓘ Duplicates across sources are summed, not overwritten.',
+  manualSourceLabel: 'Manual entries',
+  activeLabel: 'Active',
+  inactiveLabel: 'Inactive',
+  sourceBadgeCsv: 'CSV',
+  sourceBadgeFabrary: 'Fabrary',
+  sourceBadgeManual: 'Manual',
+  manualAlwaysIncluded: 'Always included — manually added cards can\'t be deactivated.',
+  untitledSourceLabel: 'Untitled CSV',
+  deleteFallbackLabel: 'This CSV',
+  sourcesCountLine_one: '{{count}} source · {{activeCount}} active',
+  sourcesCountLine_other: '{{count}} sources · {{activeCount}} active',
+  sourcesTotalCopiesLine: '{{count}} cards combined',
+  csvExpectedColumns: 'Required: name, quantity. Optional: set. Pitch is read from the card name or resolved automatically — there is no pitch column.',
+  csvSizeAndRowLimit: '.csv up to 2 MB · up to 5,000 rows',
   sumExplainerBodyPre: 'Cards that appear in multiple CSV sources are',
   sumExplainerBodyHighlight: 'summed',
   sumExplainerBodyPost: ', not overwritten. Your total owned copies reflect the combined quantities across all active sources.',
@@ -108,7 +122,7 @@ export const csvSources = {
   skipReasonEmptyName: 'Empty card name',
 
   // Library CSV sources route
-  csvSourcesBackLink: 'Add cards',
+  csvSourcesBackLink: 'Library',
   csvSourcesEyebrow: 'Imports management',
   csvSourcesTitle: 'Library sources',
   csvSourcesSubtitle: "Each source is a snapshot of cards you've imported — toggle one off to remove its contribution from your library without losing the file. Manual entries and Fabrary imports show up here too.",
@@ -117,17 +131,11 @@ export const csvSources = {
   csvSourcesRetryButton: 'Retry',
 
   // Add cards CSV route
-  addCsvBackLink: '← Add cards',
-  addCsvEyebrow: 'CSV import',
-  addCsvTitle: 'Import a CSV',
-  addCsvSubtitle: 'Drop a Fabrary or compatible CSV — name + quantity columns are required; set and pitch are optional.',
   addCsvDropZoneAriaLabel: 'CSV drop zone',
   addCsvUploadingLabel: 'Uploading {{filename}}…',
   addCsvDropTitle: 'Drop a CSV here, or click to choose a file.',
   addCsvDragOverTitle: 'Release to upload.',
-  addCsvDropHint: 'Up to 2 MB. Each upload becomes a new toggleable source.',
   addCsvChooseFile: 'Choose a file',
   addCsvErrorTitle: 'Upload failed',
   addCsvTryAnotherFile: 'Try another file',
-  addCsvManageLink: '→ Manage library sources',
 } as const;

@@ -35,7 +35,6 @@ export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): Reac
   if (kind === 'computing') {
     return (
       <section className={styles.container} aria-labelledby="deck-empty-heading">
-        <div className={styles.diamond} aria-hidden="true">◆</div>
 
         <h1 id="deck-empty-heading" className={styles.heading}>
           {t('decks.computingReadiness')}
@@ -58,7 +57,6 @@ export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): Reac
 
   return (
     <section className={styles.container} aria-labelledby="deck-empty-heading">
-      <div className={styles.diamond} aria-hidden="true">◆</div>
 
       <h1 id="deck-empty-heading" className={styles.heading}>
         {t('decks.deckNotInArsenal')}

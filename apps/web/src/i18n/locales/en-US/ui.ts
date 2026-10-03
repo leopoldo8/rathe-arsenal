@@ -1,4 +1,5 @@
 export const ui = {
+  missingCopiesBadge: 'missing ×{{count}}',
   openFullscreen: 'Open {{name}} fullscreen',
   closeFullscreenPreview: 'Close fullscreen preview',
   loadingCardArt: 'Loading {{name}}',

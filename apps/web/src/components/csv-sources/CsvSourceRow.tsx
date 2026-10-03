@@ -7,6 +7,8 @@ import { usePatchCsvSourceMutation } from '../../api/csv-sources';
 import { useToast } from '../ui/Toast/useToast';
 import { DeleteSourceModal } from './DeleteSourceModal';
 import { formatRelativeTime } from '../../utils/format-relative-time';
+import { deriveSourceKind } from './source-kind';
+import type { TSourceDisplayKind } from './source-kind';
 import styles from './CsvSourceRow.module.css';
 
 // ---------------------------------------------------------------------------
@@ -17,12 +19,18 @@ interface ICsvSourceRowProps {
   readonly source: ICsvSource;
 }
 
+const BADGE_LABEL_KEYS: Readonly<Record<TSourceDisplayKind, string>> = {
+  csv: 'csvSources.sourceBadgeCsv',
+  fabrary: 'csvSources.sourceBadgeFabrary',
+  manual: 'csvSources.sourceBadgeManual',
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 /**
- * CsvSourceRow — renders a single CSV source as a list row.
+ * CsvSourceRow — renders a single source (CSV, Fabrary or manual) as a list row.
  *
  * Features:
  * - Inline label edit (click label → input; Enter/Blur → save)
@@ -44,7 +52,11 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  const displayLabel = source.label ?? source.originalFilename ?? 'Untitled CSV';
+  const kind = deriveSourceKind(source);
+  const isManual = kind === 'manual';
+  const displayLabel = isManual
+    ? t('csvSources.manualSourceLabel')
+    : (source.label ?? source.originalFilename ?? t('csvSources.untitledSourceLabel'));
   const cardCount = source.cardCount ?? 0;
   const relativeDate = formatRelativeTime(source.createdAt);
 
@@ -96,17 +108,14 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
 
   return (
     <>
-      <div className={styles.row} role="listitem">
-        {/* Active toggle */}
-        <Switch.Root
-          id={switchId}
-          checked={source.active}
-          onCheckedChange={handleToggle}
-          className={styles.switch}
-          aria-label={t('csvSources.toggleAriaLabel', { label: displayLabel })}
-        >
-          <Switch.Thumb className={styles.switchThumb} />
-        </Switch.Root>
+      <div
+        className={`${styles.row} ${source.active ? '' : styles['row--inactive']}`}
+        role="listitem"
+        data-kind={kind}
+      >
+        <span className={`${styles.badge} ${styles[`badge--${kind}`]}`}>
+          {t(BADGE_LABEL_KEYS[kind])}
+        </span>
 
         {/* Label */}
         <div className={styles.labelCell}>
@@ -124,6 +133,8 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
               aria-describedby={`${labelInputId}-hint`}
               autoComplete="off"
             />
+          ) : isManual ? (
+            <span className={styles.labelText}>{displayLabel}</span>
           ) : (
             <button
               type="button"
@@ -146,44 +157,62 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
           <span className={styles.cardCount}>
             {cardCount.toLocaleString()} {cardCount !== 1 ? t('csvSources.cardPlural') : t('csvSources.cardSingular')}
           </span>
-          <span className={styles.date} title={new Date(source.createdAt).toLocaleString()}>
+          <span className={styles.date} data-testid="relative-time" title={new Date(source.createdAt).toLocaleString()}>
             {relativeDate}
           </span>
         </div>
 
-        {/* Overflow menu */}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              className={styles.menuTrigger}
-              aria-label={t('csvSources.optionsAriaLabel', { label: displayLabel })}
+        {isManual ? (
+          <p className={styles.manualNote}>{t('csvSources.manualAlwaysIncluded')}</p>
+        ) : (
+          <>
+            <span className={styles.activeLabel}>
+              {source.active ? t('csvSources.activeLabel') : t('csvSources.inactiveLabel')}
+            </span>
+            <Switch.Root
+              id={switchId}
+              checked={source.active}
+              onCheckedChange={handleToggle}
+              className={styles.switch}
+              aria-label={t('csvSources.toggleAriaLabel', { label: displayLabel })}
             >
-              •••
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              className={styles.menuContent}
-              align="end"
-              sideOffset={4}
-            >
-              <DropdownMenu.Item
-                className={styles.menuItem}
-                onSelect={startEdit}
-              >
-                {t('csvSources.renameMenuItem')}
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator className={styles.menuSeparator} />
-              <DropdownMenu.Item
-                className={`${styles.menuItem} ${styles.menuItemDestructive}`}
-                onSelect={() => setDeleteModalOpen(true)}
-              >
-                {t('csvSources.deleteMenuItem')}
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
+              <Switch.Thumb className={styles.switchThumb} />
+            </Switch.Root>
+
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  className={styles.menuTrigger}
+                  aria-label={t('csvSources.optionsAriaLabel', { label: displayLabel })}
+                >
+                  •••
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className={styles.menuContent}
+                  align="end"
+                  sideOffset={4}
+                >
+                  <DropdownMenu.Item
+                    className={styles.menuItem}
+                    onSelect={startEdit}
+                  >
+                    {t('csvSources.renameMenuItem')}
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator className={styles.menuSeparator} />
+                  <DropdownMenu.Item
+                    className={`${styles.menuItem} ${styles.menuItemDestructive}`}
+                    onSelect={() => setDeleteModalOpen(true)}
+                  >
+                    {t('csvSources.deleteMenuItem')}
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </>
+        )}
       </div>
 
       {deleteModalOpen && (

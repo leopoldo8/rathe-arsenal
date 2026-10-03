@@ -1,0 +1,106 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-6);
+  margin-bottom: var(--ra-space-8);
+}
+
+.titleBlock {
+  flex: 1 1 260px;
+  min-inline-size: 0;
+}
+
+.title {
+  margin: 0 0 var(--ra-space-2);
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: 2.125rem;
+  line-height: var(--ra-leading-tight);
+  color: var(--ra-fg-primary);
+}
+
+.status {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-secondary);
+}
+
+.statusDot {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background-color: var(--ra-status-ready);
+}
+
+.kpiStrip {
+  display: flex;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+}
+
+.kpiCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-1);
+  padding: var(--ra-space-3) var(--ra-space-5);
+}
+
+.kpiCell + .kpiCell {
+  border-inline-start: 1px solid var(--ra-border-strong);
+}
+
+.kpiValue {
+  font-family: var(--ra-font-display);
+  font-weight: var(--ra-weight-bold);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--ra-fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpiAverage {
+  color: var(--ra-accent);
+}
+
+.kpiMissing {
+  color: var(--ra-ready-low);
+}
+
+.kpiLabel {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ra-track-caps);
+  color: var(--ra-fg-muted);
+  white-space: nowrap;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding: 13px 20px;
+  box-sizing: border-box;
+  background-color: var(--ra-accent);
+  color: var(--ra-fg-inverse);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-weight: 700;
+  font-size: var(--ra-text-body);
+  text-decoration: none;
+}
+
+.cta:hover {
+  background-color: var(--ra-accent-hover);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

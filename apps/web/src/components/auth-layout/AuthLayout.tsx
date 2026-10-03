@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { DeckboxDecoration } from '../shell/DeckboxDecoration';
+import { Deckbox } from '../deckbox/Deckbox';
+import { AuthBrandMark } from './AuthBrandMark';
 import styles from './AuthLayout.module.css';
 
 interface IAuthLayoutProps {
@@ -13,6 +14,8 @@ interface IAuthLayoutProps {
   readonly children: React.ReactNode;
   /** Optional footer content (links) */
   readonly footer?: React.ReactNode;
+  /** Mark shown in the left panel; defaults to the cardless brand Deckbox. */
+  readonly brandMark?: React.ReactNode;
 }
 
 const NARROW_QUERY = '(max-width: 719px)';
@@ -21,8 +24,8 @@ const NARROW_QUERY = '(max-width: 719px)';
  * AuthLayout — split-panel layout for auth routes.
  *
  * Structure:
- *  - Left panel (>=720px): deckbox SVG decoration + brand copy. aria-hidden — decorative.
- *  - Right panel: form area max-width 420px; contains <h1>, optional error alert, children.
+ *  - Left panel (>=720px): brand row, brand Deckbox + copy. aria-hidden — decorative.
+ *  - Right panel: form area max-width 400px; contains <h1>, optional error alert, children.
  *  - Below 720px: left panel hidden; form stacks full-width.
  *
  * Error states follow the design spec:
@@ -41,6 +44,7 @@ export function AuthLayout({
   error,
   children,
   footer,
+  brandMark,
 }: IAuthLayoutProps): React.ReactElement {
   const { t } = useTranslation();
   const [isNarrow, setIsNarrow] = useState<boolean>(() => {
@@ -62,9 +66,10 @@ export function AuthLayout({
         {/* Left decoration panel — hidden <720px */}
         {!isNarrow && (
           <div className={styles.art} aria-hidden="true">
+            <AuthBrandMark />
             <div className={styles.artContent}>
               <div className={styles.artMark}>
-                <DeckboxDecoration />
+                {brandMark ?? <Deckbox variant="brand" />}
               </div>
               <div className={styles.artTagline}>
                 <p className={styles.artTaglineText}>

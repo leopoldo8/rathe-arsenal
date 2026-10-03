@@ -26,6 +26,7 @@ export type {
   IPitchTolerance,
   ITierConfig,
   TSubstitutionTier,
+  TExclusionKey,
 } from './substitution';
 export {
   TIER_1_FLOOR_SCORE,
@@ -44,6 +45,7 @@ export {
   scoreCandidate,
   findTierMatch,
   findSubstitution,
+  buildExclusionKey,
 } from './substitution';
 
 // Readiness

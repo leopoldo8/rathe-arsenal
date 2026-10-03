@@ -13,7 +13,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   letter-spacing: var(--ra-track-caps);
   text-transform: uppercase;
@@ -70,11 +70,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),
@@ -106,11 +104,9 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),
@@ -138,11 +134,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-bg-base);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),
@@ -178,80 +172,6 @@
   font-size: var(--ra-text-caption);
   color: var(--ra-ready-low);
   white-space: nowrap;
-}
-
-/* ⋯ overflow menu container */
-.overflow {
-  position: relative;
-}
-
-.overflowTrigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-block-size: 36px;
-  min-inline-size: 36px;
-  background: transparent;
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-sm);
-  color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-body);
-  cursor: pointer;
-  transition:
-    border-color var(--ra-duration) var(--ra-ease),
-    color var(--ra-duration) var(--ra-ease);
-}
-
-.overflowTrigger:hover {
-  border-color: var(--ra-border-strong);
-  color: var(--ra-fg-primary);
-}
-
-.overflowTrigger:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 2px;
-}
-
-/* Overflow dropdown */
-.overflowMenu {
-  position: absolute;
-  top: calc(100% + var(--ra-space-1));
-  right: 0;
-  z-index: 50;
-  min-width: 140px;
-  background: var(--ra-bg-raised);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-sm);
-  box-shadow: var(--ra-shadow-md);
-  padding: var(--ra-space-1) 0;
-}
-
-.overflowItem {
-  display: block;
-  width: 100%;
-  padding: var(--ra-space-2) var(--ra-space-4);
-  background: transparent;
-  border: 0;
-  color: var(--ra-ready-low);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--ra-duration) var(--ra-ease);
-}
-
-.overflowItem:hover:not(:disabled) {
-  background: var(--ra-ready-low-bg);
-}
-
-.overflowItem:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: -2px;
-}
-
-.overflowItem:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ---- Mobile adjustments ---- */

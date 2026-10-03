@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { SubstitutionService } from '../substitution.service';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -9,6 +9,7 @@ import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
+import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 
 // Mock the engine module to avoid loading the full catalog in unit tests
 jest.mock('@rathe-arsenal/engine', () => ({
@@ -78,6 +79,7 @@ describe('SubstitutionService', () => {
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
+  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -85,6 +87,7 @@ describe('SubstitutionService', () => {
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
     collectionReadService = createMock<CollectionReadService>();
+    swapsReconciliationService = createMock<SwapsReconciliationService>();
 
     // Default: empty collection (no owned cards).
     collectionReadService.loadOwned.mockResolvedValue(new Map());
@@ -97,6 +100,7 @@ describe('SubstitutionService', () => {
         { provide: getRepositoryToken(DeckReadinessSnapshotEntity), useValue: snapshotRepo },
         { provide: AuthzService, useValue: authzService },
         { provide: CollectionReadService, useValue: collectionReadService },
+        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
       ],
     }).compile();
 
@@ -207,6 +211,39 @@ describe('SubstitutionService', () => {
     expect(result.id).toBe(10);
   });
 
+  it('saves the snapshot and reconciles through the caller-supplied transaction manager', async () => {
+    const trackedDeckId = 42;
+    const userId = 'user-456';
+    trackedDeckRepo.findOne.mockResolvedValue({ id: trackedDeckId, userId } as TrackedDeckEntity);
+    deckCardRepo.find.mockResolvedValue([]);
+    const savedSnapshot = { id: 11, trackedDeckId } as DeckReadinessSnapshotEntity;
+    const txSnapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    txSnapshotRepo.create.mockReturnValue(savedSnapshot);
+    txSnapshotRepo.save.mockResolvedValue(savedSnapshot);
+    const manager = createMock<EntityManager>();
+    manager.getRepository.mockReturnValue(txSnapshotRepo as never);
+
+    const result = await service.computeAndStoreReadiness(
+      trackedDeckId,
+      userId,
+      new Set(),
+      new Set(),
+      manager,
+    );
+
+    expect(manager.getRepository).toHaveBeenCalledWith(DeckReadinessSnapshotEntity);
+    expect(txSnapshotRepo.save).toHaveBeenCalledWith(savedSnapshot);
+    expect(snapshotRepo.save).not.toHaveBeenCalled();
+    expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
+      userId,
+      trackedDeckId,
+      expect.anything(),
+      expect.any(Set),
+      manager,
+    );
+    expect(result.id).toBe(11);
+  });
+
   it('builds inventory map from collection cards', async () => {
     // Arrange
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- mocked module needs runtime access to the jest.fn instance
@@ -241,6 +278,7 @@ describe('SubstitutionService', () => {
       expect.any(Map),
       expect.anything(),
       undefined,
+      expect.any(Set),
       expect.any(Set),
     );
 

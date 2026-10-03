@@ -1,14 +1,14 @@
 /* /library-csv-sources — Library sources management.
-   Aesthetic mirror of /add-cards: brass eyebrow, ◆ chrome,
-   serif italic subtitle, no card-with-icon templates. */
+   Aesthetic mirror of /add-cards: brass eyebrow, plain UI-font subtitle,
+   no card-with-icon templates. */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
-  padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
-  max-width: 960px;
-  margin: 0 auto;
+  inline-size: 100%;
+  max-inline-size: 1000px;
+  margin-inline: auto;
 }
 
 .backLink {
@@ -17,10 +17,8 @@
   align-items: center;
   gap: var(--ra-space-2);
   padding: var(--ra-space-2) var(--ra-space-1);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   color: var(--ra-fg-muted);
   text-decoration: none;
   transition: color var(--ra-duration) var(--ra-ease);
@@ -53,7 +51,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -72,8 +70,7 @@
 
 .subtitle {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
@@ -96,11 +93,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   text-decoration: none;
   transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
 }
@@ -140,10 +135,8 @@
   background: transparent;
   border: 0;
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -187,4 +180,13 @@
     flex: 1;
     justify-content: center;
   }
+}
+
+.countLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2) var(--ra-space-5);
+  margin: 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
 }

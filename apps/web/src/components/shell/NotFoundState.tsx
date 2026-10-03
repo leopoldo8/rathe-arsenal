@@ -13,10 +13,6 @@ import styles from './NotFoundState.module.css';
  * CTA: "Voltar ao início" / "Back to home" — routes to /_auth/home when authenticated,
  *       /sign-in when not.
  *
- * Ornament style mirrors EducationalEmptyState: Cinzel display numerals
- * repurposed as a visual anchor (the double-diamond "◆◆" glyph from the
- * brand voice system).
- *
  * Wired as the notFoundComponent in __root.tsx so it mounts inside the
  * appropriate shell (AppShell for authenticated routes, plain for anon).
  */
@@ -29,9 +25,6 @@ export function NotFoundState(): React.ReactElement {
 
   return (
     <section className={styles.container}>
-      <div className={styles.ornament} aria-hidden="true">
-        ◆◆
-      </div>
       <h1 className={styles.heading}>{t('shell.notFoundHeading')}</h1>
       <p className={styles.body}>{t('shell.notFoundBody')}</p>
       <a href={homeHref} className={styles.ctaLink}>

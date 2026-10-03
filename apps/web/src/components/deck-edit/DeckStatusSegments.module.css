@@ -1,0 +1,47 @@
+/* Status control: one segment per lifecycle status (EDIT-03, handoff 6) */
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  min-block-size: 40px;
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: var(--ra-bg-sunken);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--ra-duration) var(--ra-ease),
+              background-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+}
+
+.segment:hover:not(:disabled) {
+  border-color: var(--ra-border-strong);
+  color: var(--ra-fg-primary);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.segment:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.segmentActive {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent-soft-bd);
+  color: var(--ra-fg-primary);
+}

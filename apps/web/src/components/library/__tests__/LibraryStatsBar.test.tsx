@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import styles from '../LibraryStatsBar.module.css';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 import { LibraryStatsBar } from '../LibraryStatsBar';
 import type { ILibraryStats } from '../../../api/library';
 
@@ -102,8 +104,7 @@ describe('LibraryStatsBar — freshness label: recent data (1 day ago)', () => {
     const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
     render(<LibraryStatsBar stats={makeStats({ priceDataLastUpdatedAt: oneDayAgo })} />);
     const label = screen.getByText('Atualizado há 1 dia');
-    // Should NOT contain the ember glyph
-    expect(label.textContent).not.toContain('◆');
+    expect(label).toHaveClass(styles.freshnessMuted!);
   });
 });
 
@@ -114,15 +115,12 @@ describe('LibraryStatsBar — freshness label: stale data (7 days ago)', () => {
     expect(screen.getByText('Atualizado há 7 dias')).toBeInTheDocument();
   });
 
-  it('shows ◆ glyph when data is stale (> 3 days)', () => {
+  it('uses the stale class and no glyph when data is stale (> 3 days)', () => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { container } = render(
-      <LibraryStatsBar stats={makeStats({ priceDataLastUpdatedAt: sevenDaysAgo })} />,
-    );
-    // The freshness caption text content should include the ◆ glyph
-    // The ◆ span is aria-hidden; check the whole label's innerHTML/textContent
-    const freshnessEl = container.querySelector('[class*="freshnessStale"]');
-    expect(freshnessEl?.textContent).toMatch(/◆/);
+    render(<LibraryStatsBar stats={makeStats({ priceDataLastUpdatedAt: sevenDaysAgo })} />);
+    const label = screen.getByText('Atualizado há 7 dias');
+    expect(label).toHaveClass(styles.freshnessStale!);
+    expect(label.textContent).toBe('Atualizado há 7 dias');
   });
 });
 
@@ -153,5 +151,41 @@ describe('LibraryStatsBar — accessibility', () => {
     expect(
       screen.getByRole('generic', { name: /distribuição de pitch/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('LibraryStatsBar — pitch pills use the pitch classes (LIB-04)', () => {
+  it.each([
+    ['R 30', 'pillRed'],
+    ['Y 20', 'pillYellow'],
+    ['B 50', 'pillBlue'],
+    ['— 20', 'pillColorless'],
+  ] as const)('%s pill carries the %s class', (text, cls) => {
+    render(<LibraryStatsBar stats={makeStats()} />);
+    expect(screen.getByText(text)).toHaveClass(styles[cls]!);
+    expect(screen.getByText(text)).toHaveClass(styles.pill!);
+  });
+});
+
+describe('LibraryStatsBar — freshness label in en-US', () => {
+  it('renders the English strings for null, 1 day and 7 days', async () => {
+    await setTestLocale('en-US');
+    const day = 24 * 60 * 60 * 1000;
+    const { rerender } = render(
+      <LibraryStatsBar stats={makeStats({ priceDataLastUpdatedAt: null })} />,
+    );
+    expect(screen.getByText('No price data')).toBeInTheDocument();
+    rerender(
+      <LibraryStatsBar
+        stats={makeStats({ priceDataLastUpdatedAt: new Date(Date.now() - day).toISOString() })}
+      />,
+    );
+    expect(screen.getByText('Updated 1 day ago')).toBeInTheDocument();
+    rerender(
+      <LibraryStatsBar
+        stats={makeStats({ priceDataLastUpdatedAt: new Date(Date.now() - 7 * day).toISOString() })}
+      />,
+    );
+    expect(screen.getByText('Updated 7 days ago')).toBeInTheDocument();
   });
 });

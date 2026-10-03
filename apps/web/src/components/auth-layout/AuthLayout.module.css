@@ -13,15 +13,16 @@
   flex: 1;
 }
 
-/* Left decoration panel — 40-50% width on wide screens */
+/* Left decoration panel: 50/50 with the form, art absorbs the shrink first */
 .art {
-  flex: 0 0 44%;
-  max-width: 560px;
+  --al-art-gradient: linear-gradient(160deg, #160f0d, #0c0a0b);
+  flex: 1 1 50%;
+  max-inline-size: 720px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: var(--ra-space-12) var(--ra-space-8);
-  background-color: var(--ra-bg-surface);
+  padding: 56px 60px;
+  background: var(--al-art-gradient);
   border-inline-end: 1px solid var(--ra-border-subtle);
   overflow: hidden;
 }
@@ -32,9 +33,15 @@
   gap: var(--ra-space-8);
 }
 
+:global([data-theme='light']) .art {
+  --al-art-gradient: var(--ra-bg-surface);
+}
+
 .artMark {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  inline-size: 170px;
+  block-size: 170px;
 }
 
 .artTagline {
@@ -45,27 +52,27 @@
 
 .artTaglineText {
   font-family: var(--ra-font-display);
-  font-size: var(--ra-text-h1);
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: var(--ra-track-h1);
-  color: var(--ra-accent);
+  font-size: 38px;
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: -0.01em;
+  color: var(--ra-fg-primary);
   margin: 0;
-  line-height: var(--ra-leading-tight);
+  line-height: 1.08;
 }
 
 .artCopy {
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
+  font-size: 15.5px;
+  color: var(--ra-fg-tertiary);
+  line-height: 1.65;
+  max-inline-size: 440px;
   margin: 0;
 }
 
 .artQuote {
-  font-family: var(--ra-font-serif);
-  font-style: italic;
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-muted);
+  font-family: var(--ra-font-ui);
+  font-size: 13px;
+  color: #6c6e76;
   /* Leading curly quote instead of a 2px left stripe (BAN 1). The
      italic serif + em-dashed citation below already set the "pull-
      quote" register; the glyph is a softer flourish that matches the
@@ -92,16 +99,15 @@
   display: block;
   margin-top: var(--ra-space-2);
   font-style: normal;
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
   color: var(--ra-fg-subtle);
 }
 
 /* Right form panel */
 .form {
-  flex: 1;
+  flex: 1 1 50%;
+  min-inline-size: 448px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,14 +118,14 @@
 
 .formInner {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
 }
 
 .heading {
   font-family: var(--ra-font-display);
   font-size: var(--ra-text-h1);
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: var(--ra-track-h1);
+  font-weight: var(--ra-weight-medium);
+  letter-spacing: -0.01em;
   color: var(--ra-fg-primary);
   margin: 0 0 var(--ra-space-6) 0;
   line-height: var(--ra-leading-tight);
@@ -157,6 +163,12 @@
 }
 
 /* Ensure form usable at 320px — no horizontal scroll */
+@media (max-width: 719px) {
+  .form {
+    min-inline-size: 0;
+  }
+}
+
 @media (max-width: 360px) {
   .form {
     padding-inline: var(--ra-space-4);

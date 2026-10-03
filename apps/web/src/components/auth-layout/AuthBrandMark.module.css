@@ -1,0 +1,18 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seal {
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 7px;
+}
+
+.wordmark {
+  font-family: var(--ra-font-gothic);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ra-accent);
+}

@@ -1,28 +1,33 @@
+import type { TFunction } from 'i18next';
+
 /**
- * Formats an ISO 8601 timestamp (or null) as a Portuguese freshness label
+ * Formats an ISO 8601 timestamp (or null) as a localized freshness label
  * for the Library stats bar estimated-value caption.
  *
  * Rules (R32):
- *  - N <= 3 days: "Atualizado há N dia(s)" — shown in muted color
- *  - N > 3 days:  "Atualizado há N dia(s)" — shown in ember color with ◆ prefix
- *  - null:         "Sem dados de preço" — shown in muted color
+ *  - N <= 3 days: "N day(s) ago" - shown in muted color
+ *  - N > 3 days:  "N day(s) ago" - shown in ember color
+ *  - null:        "No price data" - shown in muted color
  *
  * @returns An object with `label` text and `stale` boolean (true when N > 3).
  */
-export function formatDaysAgo(iso: string | null): { label: string; stale: boolean } {
+export function formatDaysAgo(
+  iso: string | null,
+  t: TFunction,
+): { label: string; stale: boolean } {
+  const noData = { label: t('library.priceFreshnessNone'), stale: false };
   if (iso === null) {
-    return { label: 'Sem dados de preço', stale: false };
+    return noData;
   }
 
   const parsed = new Date(iso);
   if (isNaN(parsed.getTime())) {
-    return { label: 'Sem dados de preço', stale: false };
+    return noData;
   }
 
   const diffMs = Date.now() - parsed.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   const days = Math.max(0, diffDays);
-  const label = days === 1 ? 'Atualizado há 1 dia' : `Atualizado há ${days} dias`;
-  return { label, stale: days > 3 };
+  return { label: t('library.priceFreshnessDays', { count: days }), stale: days > 3 };
 }

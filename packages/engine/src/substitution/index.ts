@@ -7,6 +7,9 @@ export type {
   TSubstitutionTier,
 } from './types';
 
+export type { TExclusionKey } from './exclusion-key';
+export { buildExclusionKey } from './exclusion-key';
+
 export {
   TIER_1_FLOOR_SCORE,
   TIER_2_FLOOR_SCORE,

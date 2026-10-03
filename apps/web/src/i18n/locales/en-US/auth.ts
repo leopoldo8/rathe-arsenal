@@ -20,7 +20,7 @@ export const auth = {
   // --- sign-in ---
   signInTitle: 'Sign in',
   signInSubtitle: 'Welcome back, Hero.',
-  signInTagline: 'Welcome back to the armory.',
+  signInTagline: 'Back to the armory',
   forgotPasswordLink: 'Forgot password?',
   noAccountText: 'No account?',
   createOneLink: 'Create one',

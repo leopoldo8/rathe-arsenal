@@ -10,7 +10,7 @@
  * Infrastructure:
  * - Requires a real PostgreSQL DB (DATABASE_URL env var).
  * - Uses NODE_ENV=development so auth returns _devVerificationLink.
- * - ThrottlerGuard is overridden to avoid rate-limit flakes.
+ * - ThrottlerGuard.canActivate is stubbed to avoid rate-limit flakes.
  * - Unique email suffix prevents data collisions between runs.
  *
  * Env vars are set at module-load time (before any imports that trigger
@@ -94,12 +94,12 @@ describe('Tags CRUD (integration, U3)', () => {
   let otherJwt: string;
 
   beforeAll(async () => {
+    // APP_GUARD instantiates ThrottlerGuard via useClass, which
+    // overrideProvider(ThrottlerGuard) never reaches.
+    jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideProvider(ThrottlerGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
@@ -128,7 +128,7 @@ describe('Tags CRUD (integration, U3)', () => {
       ]);
     }
     await app?.close();
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   // -------------------------------------------------------------------------
@@ -141,8 +141,7 @@ describe('Tags CRUD (integration, U3)', () => {
       .set('Authorization', `Bearer ${jwt}`)
       .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body).toHaveLength(0);
+    expect(res.body).toEqual({ tags: [] });
   });
 
   it('POST /api/tags { name: "liga local" } → 201 with { id, name, createdAt }', async () => {
@@ -171,7 +170,7 @@ describe('Tags CRUD (integration, U3)', () => {
       .set('Authorization', `Bearer ${jwt}`)
       .expect(200);
 
-    const names = (res.body as Array<{ name: string }>).map((t) => t.name);
+    const names = (res.body.tags as Array<{ name: string }>).map((t) => t.name);
     expect(names).toContain('liga local');
     expect(names).not.toContain('other user tag');
   });
@@ -208,7 +207,7 @@ describe('Tags CRUD (integration, U3)', () => {
       .set('Authorization', `Bearer ${jwt}`)
       .expect(200);
 
-    const ids = (listRes.body as Array<{ id: number }>).map((t) => t.id);
+    const ids = (listRes.body.tags as Array<{ id: number }>).map((t) => t.id);
     expect(ids).not.toContain(tagId);
   });
 
@@ -260,7 +259,7 @@ describe('Tags CRUD (integration, U3)', () => {
       .set('Authorization', `Bearer ${jwt}`)
       .expect(200);
 
-    const currentCount: number = (listRes.body as unknown[]).length;
+    const currentCount: number = (listRes.body.tags as unknown[]).length;
 
     // Fill up to 200 tags with unique names
     const tagsToCreate = 200 - currentCount;

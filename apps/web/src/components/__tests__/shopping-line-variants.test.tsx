@@ -400,13 +400,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       updatedAt: TWO_HOURS_AGO,
       status: 'building',
       tags: [],
+      notes: null,
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
       shoppingLine: makePopulated(shoppingLineOverrides),
     };
   }
@@ -461,13 +458,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       updatedAt: TWO_HOURS_AGO,
       status: 'building',
       tags: [],
+      notes: null,
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
     };
 
     const result = computeVariantFetchInterval(dataWithoutShoppingLine, NOW_MS);
@@ -550,13 +544,10 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       updatedAt: TWO_HOURS_AGO,
       status: 'building',
       tags: [],
+      notes: null,
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
       shoppingLine: { kind: 'unscraped' },
     };
 

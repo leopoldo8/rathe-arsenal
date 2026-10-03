@@ -17,7 +17,21 @@ export const csvSources = {
   onTriggerAriaLabel: 'Fazer upload de um CSV para importar sua coleção',
 
   // SumExplainer
-  sumExplainerTrigger: 'Como cards duplicados são tratados',
+  sumExplainerTrigger: 'ⓘ Duplicatas entre fontes são somadas, não sobrescritas.',
+  manualSourceLabel: 'Entradas manuais',
+  activeLabel: 'Ativa',
+  inactiveLabel: 'Inativa',
+  sourceBadgeCsv: 'CSV',
+  sourceBadgeFabrary: 'Fabrary',
+  sourceBadgeManual: 'Manual',
+  manualAlwaysIncluded: 'Sempre incluída — cartas adicionadas manualmente não podem ser desativadas.',
+  untitledSourceLabel: 'CSV sem título',
+  deleteFallbackLabel: 'Este CSV',
+  sourcesCountLine_one: '{{count}} fonte · {{activeCount}} ativas',
+  sourcesCountLine_other: '{{count}} fontes · {{activeCount}} ativas',
+  sourcesTotalCopiesLine: '{{count}} cartas somadas',
+  csvExpectedColumns: 'Obrigatório: name, quantity. Opcional: set. O pitch é lido do nome da carta ou resolvido automaticamente — não há coluna de pitch.',
+  csvSizeAndRowLimit: '.csv até 2 MB · até 5.000 linhas',
   sumExplainerBodyPre: 'Cards que aparecem em múltiplas fontes CSV são',
   sumExplainerBodyHighlight: 'somados',
   sumExplainerBodyPost: ', não substituídos. Suas cópias totais refletem as quantidades combinadas de todas as fontes ativas.',
@@ -108,7 +122,7 @@ export const csvSources = {
   skipReasonEmptyName: 'Nome do card vazio',
 
   // Library CSV sources route
-  csvSourcesBackLink: 'Adicionar cards',
+  csvSourcesBackLink: 'Biblioteca',
   csvSourcesEyebrow: 'Gerenciamento de importações',
   csvSourcesTitle: 'Fontes da biblioteca',
   csvSourcesSubtitle: 'Cada fonte é um snapshot dos cards que você importou — desative para remover sua contribuição da biblioteca sem perder o arquivo. Entradas manuais e importações do Fabrary também aparecem aqui.',
@@ -117,17 +131,11 @@ export const csvSources = {
   csvSourcesRetryButton: 'Tentar novamente',
 
   // Add cards CSV route
-  addCsvBackLink: '← Adicionar cards',
-  addCsvEyebrow: 'Importação CSV',
-  addCsvTitle: 'Importar um CSV',
-  addCsvSubtitle: 'Solte um CSV do Fabrary ou compatível — colunas de nome + quantidade são obrigatórias; set e pitch são opcionais.',
   addCsvDropZoneAriaLabel: 'Zona de drop de CSV',
   addCsvUploadingLabel: 'Enviando {{filename}}…',
   addCsvDropTitle: 'Solte um CSV aqui, ou clique para escolher um arquivo.',
   addCsvDragOverTitle: 'Solte para fazer o upload.',
-  addCsvDropHint: 'Até 2 MB. Cada upload se torna uma nova fonte alternável.',
   addCsvChooseFile: 'Escolher arquivo',
   addCsvErrorTitle: 'Upload falhou',
   addCsvTryAnotherFile: 'Tentar outro arquivo',
-  addCsvManageLink: '→ Gerenciar fontes da biblioteca',
 } as const;

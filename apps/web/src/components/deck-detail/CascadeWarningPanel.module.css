@@ -14,7 +14,7 @@
 }
 
 .sidebarTitle {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
   letter-spacing: var(--ra-track-caps);
@@ -55,7 +55,7 @@
 }
 
 .bannerTitle {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   font-weight: var(--ra-weight-semibold);
   color: var(--ra-ready-low);
@@ -176,11 +176,9 @@
   border: 1px solid var(--ra-ready-low);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-ready-low);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),

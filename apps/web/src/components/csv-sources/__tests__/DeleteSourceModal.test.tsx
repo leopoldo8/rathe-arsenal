@@ -55,6 +55,7 @@ function buildSource(overrides: Partial<ICsvSource> = {}): ICsvSource {
     kind: 'csv',
     label: 'My Collection',
     originalFilename: 'collection.csv',
+    sourceUrl: null,
     contentHash: 'abc',
     cardCount: 10,
     active: true,

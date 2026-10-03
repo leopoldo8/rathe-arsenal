@@ -8,8 +8,8 @@ import { DiscardChangesConfirm } from './DiscardChangesConfirm';
 import { SaveCascadeConfirmModal } from './SaveCascadeConfirmModal';
 import type { TDeckStatus } from '../../api/decks';
 import type { ITagResponse } from '../../api/tags';
-import { useUntrackDeckMutation, usePutDeckMutation, type IPutDeckBody } from '../../api/decks';
-import { useToast } from '../ui/Toast/useToast';
+import { usePutDeckMutation, type IPutDeckBody } from '../../api/decks';
+import { DeckOverflowMenu } from './DeckOverflowMenu';
 import styles from './DeckDetailHeader.module.css';
 
 interface IDeckDetailHeaderProps {
@@ -106,16 +106,11 @@ export function DeckDetailHeader({
 }: IDeckDetailHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { show: showToast } = useToast();
-  const untrackMutation = useUntrackDeckMutation();
   const putMutation = usePutDeckMutation(deckId);
 
   // Always create a fallback ref; use the provided one if available.
   const _fallbackEditBtnRef = React.useRef<HTMLButtonElement | null>(null);
   const editBtnRef = editButtonRef ?? _fallbackEditBtnRef;
-
-  const [overflowOpen, setOverflowOpen] = React.useState(false);
-  const overflowRef = React.useRef<HTMLDivElement>(null);
 
   // Modal visibility state
   const [discardOpen, setDiscardOpen] = React.useState(false);
@@ -124,33 +119,6 @@ export function DeckDetailHeader({
 
   // In-flight guard — disables Cancel + Save while PUT is pending (R19).
   const isSaving = putMutation.isPending;
-
-  // Close overflow on click-outside
-  React.useEffect(() => {
-    if (!overflowOpen) return;
-    function handleOutside(e: MouseEvent): void {
-      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
-        setOverflowOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [overflowOpen]);
-
-  function handleUntrack(): void {
-    setOverflowOpen(false);
-    untrackMutation.mutate(deckId, {
-      onSuccess: () => {
-        void navigate({ to: '/home', search: { tag: [] } });
-      },
-      onError: (err) => {
-        showToast({
-          kind: 'error',
-          message: t('decks.untrackFailedToast', { message: (err as Error).message }),
-        });
-      },
-    });
-  }
 
   // ---- Save flow ----
 
@@ -276,40 +244,7 @@ export function DeckDetailHeader({
                 </button>
               )}
 
-              {/* ⋯ overflow menu */}
-              <div className={styles.overflow} ref={overflowRef}>
-                <button
-                  type="button"
-                  className={styles.overflowTrigger}
-                  aria-label={t('decks.moreDeckActionsAria')}
-                  aria-expanded={overflowOpen}
-                  aria-haspopup="menu"
-                  onClick={() => setOverflowOpen((prev) => !prev)}
-                  data-testid="deck-detail-overflow-btn"
-                >
-                  <span aria-hidden="true">&#8943;</span>
-                </button>
-                {overflowOpen && (
-                  <div
-                    className={styles.overflowMenu}
-                    role="menu"
-                    aria-label={t('decks.deckActionsMenuAria')}
-                    data-testid="deck-detail-overflow-menu"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className={styles.overflowItem}
-                      onClick={handleUntrack}
-                      disabled={untrackMutation.isPending}
-                      aria-label={t('decks.untrackThisDeckAria')}
-                      data-testid="deck-detail-untrack-btn"
-                    >
-                      {untrackMutation.isPending ? t('decks.removing') : t('decks.untrack')}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <DeckOverflowMenu deckId={deckId} />
             </div>
           </div>
 

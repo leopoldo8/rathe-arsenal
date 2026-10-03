@@ -80,6 +80,18 @@ Visit `https://<your-railway-domain>/` in a browser -> landing page renders ->
 click "Sign up" -> fill email + password -> "Check your email" page -> open email ->
 click verification link -> signed in -> redirected to `/`.
 
+## One-off: swap_suggestion backfill (product redesign)
+
+Required once, right after the first deploy that contains migration `1778533586000-ReplaceSubstituteDecisionWithSwapSuggestion`.
+That migration runs on boot and creates `swap_suggestion` empty; until the backfill runs, the Swaps screen shows nothing and every deck keeps its pre-redesign readiness number.
+
+```bash
+railway run --service <api-service> pnpm --filter @rathe-arsenal/api backfill:swap-suggestions
+```
+
+It recomputes readiness for every tracked deck and logs `backfill-swap-suggestions.completed` with `totalDecks`, `succeeded` and `failed`.
+Re-running it is safe: reconciliation reuses existing rows instead of duplicating them.
+
 ## Manual user deletion (Phase 0 escape hatch — still supported)
 
 1. Run `pnpm tsx scripts/delete-user.ts <userId>` against the production DB

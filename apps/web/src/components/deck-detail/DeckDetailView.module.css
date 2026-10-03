@@ -1,0 +1,13 @@
+/* Deck detail, view mode: one centred 1180px column; the hero banner bleeds past it. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: 1180px;
+  margin-inline: auto;
+}
+
+.tags {
+  margin-block-start: var(--ra-space-3);
+}

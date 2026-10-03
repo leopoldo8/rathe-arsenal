@@ -8,7 +8,9 @@ import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
 import { decks } from './decks';
-import { reviews } from './reviews';
+import { deckDetail } from './deckDetail';
+import { deckEdit } from './deckEdit';
+import { swaps } from './swaps';
 import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
@@ -28,7 +30,9 @@ export const enUS: TTranslationResources = {
   library,
   csvSources,
   decks,
-  reviews,
+  deckDetail,
+  deckEdit,
+  swaps,
   variantQueue,
   settings,
   ui,

@@ -1,16 +1,17 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Not, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
-import { SubstituteDecisionEntity } from '../database/entities/substitute-decision.entity';
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
-import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
+import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
+import { SwapsReconciliationService } from '../swaps/swaps-reconciliation.service';
+import { buildCurrentDeckSlots } from '../swaps/build-current-deck-slots';
 import {
   IRepresentativeCard,
   ITrackedDeckListItem,
@@ -53,9 +54,10 @@ export class DecksService {
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
-    private readonly decisionsService: DecisionsService,
     private readonly collectionReadService: CollectionReadService,
     private readonly catalogService: CatalogService,
+    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
+    private readonly swapsReconciliationService: SwapsReconciliationService,
   ) {}
 
   // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
@@ -68,15 +70,20 @@ export class DecksService {
   // the input as `unknown` and reshape both branches defensively.
   private enrichBreakdown(breakdown: unknown): IBreakdown {
     const enrichEntry = (entry: IBreakdownEntry): IBreakdownEntry => {
-      if (entry.name && entry.name.length > 0) return entry;
-      let name = entry.cardIdentifier;
+      let name = entry.name && entry.name.length > 0 ? entry.name : entry.cardIdentifier;
+      let legalFormats: string[] = [];
+      let legalHeroes: string[] = [];
+      let bannedFormats: string[] = [];
       try {
         const card = this.catalogService.getCard(entry.cardIdentifier);
-        if (card?.name) name = card.name;
+        if (card?.name && !(entry.name && entry.name.length > 0)) name = card.name;
+        legalFormats = [...(card?.legalFormats ?? [])];
+        legalHeroes = [...(card?.legalHeroes ?? [])];
+        bannedFormats = [...(card?.bannedFormats ?? [])];
       } catch {
-        // Card retired from catalog — keep identifier fallback.
+        // Card retired from catalog — keep the identifier name and empty legality.
       }
-      return { ...entry, name };
+      return { ...entry, name, legalFormats, legalHeroes, bannedFormats };
     };
 
     const raw = breakdown as {
@@ -151,11 +158,13 @@ export class DecksService {
     for (const deck of decks) {
       if (!snapshotByDeckId.has(deck.id)) {
         try {
-          const exclusions = await this.decisionsService.loadExclusions(deck.id);
+          const { excludedIdentifiers, approvedIdentifiers } =
+            await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
           const snap = await this.substitutionService.computeAndStoreReadiness(
             deck.id,
             userId,
-            exclusions,
+            excludedIdentifiers,
+            approvedIdentifiers,
           );
           snapshotByDeckId.set(deck.id, snap);
         } catch (error) {
@@ -255,6 +264,7 @@ export class DecksService {
           : null,
         heroImageUrl,
         representativeCards: previewMeta.representativeCards,
+        cardCounts: snap ? this.deriveCardCounts(snap.breakdown) : null,
       };
     });
 
@@ -285,13 +295,26 @@ export class DecksService {
     const raw = breakdown as {
       notOwned?: readonly { quantity?: number }[];
     };
-    const entries = raw?.notOwned ?? [];
+    return this.sumQuantities(raw?.notOwned);
+  }
+
+  private sumQuantities(entries: readonly { quantity?: number }[] | undefined): number {
     let total = 0;
-    for (const entry of entries) {
-      const q = typeof entry?.quantity === 'number' ? entry.quantity : 0;
-      total += q;
+    for (const entry of entries ?? []) {
+      total += typeof entry?.quantity === 'number' ? entry.quantity : 0;
     }
     return total;
+  }
+
+  private deriveCardCounts(breakdown: unknown): {
+    owned: number;
+    missing: number;
+    total: number;
+  } {
+    const raw = breakdown as { exact?: readonly { quantity?: number }[] };
+    const owned = this.sumQuantities(raw?.exact);
+    const missing = this.sumNotOwnedQuantities(breakdown);
+    return { owned, missing, total: owned + missing };
   }
 
   // Extracts the hero thumbnail + up to 3 representative mainboard cards
@@ -470,11 +493,13 @@ export class DecksService {
     // are honoured — symmetric fix to the listForUser bug fix above.
     if (!latestSnapshot) {
       try {
-        const exclusions = await this.decisionsService.loadExclusions(deckId);
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
         latestSnapshot = await this.substitutionService.computeAndStoreReadiness(
           deckId,
           userId,
-          exclusions,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
       } catch (error) {
         this.logger.warn({
@@ -485,32 +510,19 @@ export class DecksService {
       }
     }
 
-    // Fetch decision counts, full list, and tags in parallel with other reads.
     // Tags are fetched with a raw query to avoid adding new @InjectRepository
     // tokens to the constructor (which would require updating all existing
     // test modules). The `?? []` fallback handles the case where dataSource.query
     // returns undefined in unit test mocks.
-    const [rejectedCount, decisions, tagRowsRaw] = await Promise.all([
-      this.decisionsService.countRejected(deckId),
-      this.decisionsService.list(userId, deckId),
-      this.dataSource.query<Array<{ name: string }>>(
-        `SELECT tag.name
-           FROM deck_tag tag
-           INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
-           WHERE tdt."trackedDeckId" = $1
-           ORDER BY tdt."attachedAt" ASC`,
-        [deckId],
-      ),
-    ]);
+    const tagRowsRaw = await this.dataSource.query<Array<{ name: string }>>(
+      `SELECT tag.name
+         FROM deck_tag tag
+         INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
+         WHERE tdt."trackedDeckId" = $1
+         ORDER BY tdt."attachedAt" ASC`,
+      [deckId],
+    );
     const tagRows: Array<{ name: string }> = tagRowsRaw ?? [];
-
-    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
-
-    // Pending = not-owned cards without an explicit decision.
-    // Derived at response time from the snapshot breakdown.
-    const notOwnedCount =
-      (latestSnapshot?.breakdown as unknown as { notOwned?: unknown[] })?.notOwned?.length ?? 0;
-    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
 
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
       ? (() => {
@@ -592,14 +604,11 @@ export class DecksService {
       format: deck.format,
       status: deck.status,
       tags: tagRows.map((r) => r.name),
+      notes: deck.notes,
       trackedAt: deck.trackedAt.toISOString(),
       updatedAt: deck.updatedAt.toISOString(),
       totalCards,
       latestSnapshot: snapshotDto,
-      rejectedCount,
-      approvedCount,
-      pendingCount,
-      decisions,
       shoppingLine,
       legality,
     };
@@ -662,14 +671,11 @@ export class DecksService {
       format: saved.format,
       status: saved.status,
       tags: [],
+      notes: null,
       trackedAt: saved.trackedAt.toISOString(),
       updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
       latestSnapshot: null,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
       shoppingLine: null,
       legality,
     };
@@ -680,7 +686,7 @@ export class DecksService {
    *
    * Each field in `dto` is handled independently:
    * - `status`: simple UPDATE on tracked_deck.
-   * - `name`: simple UPDATE on tracked_deck.
+   * - `name`, `format`, `notes`: simple UPDATEs on tracked_deck.
    * - `addTagIds`: for each id, asserts ownership (inside the tx), then
    *   INSERTs into tracked_deck_tag with INSERT OR IGNORE semantics so
    *   duplicate addTagIds entries are idempotent.
@@ -716,6 +722,26 @@ export class DecksService {
           .createQueryBuilder()
           .update(TrackedDeckEntity)
           .set({ name: dto.name })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- format (metadata only; readiness does not depend on it) ---
+      if (dto.format !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ format: dto.format })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- notes (null clears) ---
+      if (dto.notes !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ notes: dto.notes })
           .where('id = :id AND "userId" = :userId', { id: deckId, userId })
           .execute();
       }
@@ -904,10 +930,10 @@ export class DecksService {
 
         const inventory = await this.collectionReadService.loadOwned(userId);
 
-        // Load persisted rejections — these are substitutes the user has
-        // explicitly rejected for this deck. They must be excluded so that
-        // the engine doesn't try to reuse them.
-        const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+        // Load persisted exclusions/approvals — swap_suggestion rows the
+        // user has explicitly rejected or approved for this deck.
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
 
         const deckInput = {
           cards: freshCards.map((row) => ({
@@ -917,35 +943,27 @@ export class DecksService {
           })),
         };
 
-        // 5-arg call: pass `undefined` for tolerance so the engine default applies;
-        // pass persistedRejections as the 5th arg (excludedIdentifiers).
         const transactionReadiness = computeEffectiveReadiness(
           deckInput,
           inventory,
           catalog,
           undefined,
-          persistedRejections,
+          excludedIdentifiers,
+          approvedIdentifiers,
         );
 
-        // Orphan cleanup: remove substitute decisions for substitutes that are
-        // no longer part of the new engine result. Uses TypeORM In()/Not() — never
-        // raw string-concatenated SQL.
-        const newSubstituteIds = new Set(
-          transactionReadiness.breakdown.substituted.map(
-            (s) => s.match.substitute.cardIdentifier,
-          ),
+        // Reconcile swap_suggestion against the fresh breakdown, inside this
+        // same transaction — this is where currentDeckSlots is naturally
+        // already available (freshCards). Replaces the old hard-delete
+        // orphan cleanup: a suggestion whose position left the deck is
+        // retired, never deleted (SWAP-02).
+        await this.swapsReconciliationService.reconcile(
+          userId,
+          deckId,
+          transactionReadiness.breakdown,
+          buildCurrentDeckSlots(freshCards),
+          manager,
         );
-
-        if (newSubstituteIds.size > 0) {
-          // Keep only decisions whose cardIdentifier is still in the new substitute set.
-          await manager.delete(SubstituteDecisionEntity, {
-            trackedDeckId: deckId,
-            cardIdentifier: Not(In([...newSubstituteIds])),
-          });
-        } else {
-          // New substitute set is empty — all decisions for this deck are orphaned.
-          await manager.delete(SubstituteDecisionEntity, { trackedDeckId: deckId });
-        }
 
         // Fetch tags for the response (within the transaction so we read a
         // consistent snapshot, even though tags are not modified by this endpoint).
@@ -975,7 +993,8 @@ export class DecksService {
     let readinessResult = readinessInsideTransaction;
     try {
       const inventory = await this.collectionReadService.loadOwned(userId);
-      const persistedRejections = await this.decisionsService.loadExclusions(deckId);
+      const { excludedIdentifiers, approvedIdentifiers } =
+        await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
       const freshCards = await this.deckCardRepo.find({
         where: { trackedDeckId: deckId },
       });
@@ -988,12 +1007,19 @@ export class DecksService {
         })),
       };
 
+      // Not reconciled again here — the in-transaction pass above already
+      // reconciled against this same freshCards/inventory input; this
+      // recompute exists only so the snapshot (and the 200 response) reflect
+      // the committed state, matching the existing pre-D7 pattern of
+      // recomputing once more post-commit for staleness, not because the
+      // answer differs.
       readinessResult = computeEffectiveReadiness(
         deckInput,
         inventory,
         catalog,
         undefined,
-        persistedRejections,
+        excludedIdentifiers,
+        approvedIdentifiers,
       );
 
       // Insert snapshot — best-effort.
@@ -1055,17 +1081,7 @@ export class DecksService {
     // -------------------------------------------------------------------------
     // Readiness comes from the in-memory readinessResult — NOT from a snapshot
     // table re-read — to avoid the staleness window described in Key Technical
-    // Decisions.
     const totalCards = freshCardsForLegality.reduce((sum, c) => sum + c.quantity, 0);
-
-    const [rejectedCount, decisions] = await Promise.all([
-      this.decisionsService.countRejected(deckId),
-      this.decisionsService.list(userId, deckId),
-    ]);
-
-    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
-    const notOwnedCount = readinessResult.breakdown.notOwned.length;
-    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
 
     return {
       id: updatedDeck.id,
@@ -1076,14 +1092,11 @@ export class DecksService {
       format: updatedDeck.format,
       status: updatedDeck.status,
       tags: tagRows.map((r) => r.name),
+      notes: updatedDeck.notes,
       trackedAt: updatedDeck.trackedAt.toISOString(),
       updatedAt: updatedDeck.updatedAt.toISOString(),
       totalCards,
       latestSnapshot: null,
-      rejectedCount,
-      approvedCount,
-      pendingCount,
-      decisions,
       shoppingLine: null,
       legality,
     };

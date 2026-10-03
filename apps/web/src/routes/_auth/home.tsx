@@ -1,10 +1,11 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useDecksQuery, useUntrackDeckMutation } from '../../api/decks';
-import { PopulatedHomeHero } from '../../components/home/PopulatedHomeHero';
-import { StatusShelves } from '../../components/home/StatusShelves';
-import { TagFilterChips } from '../../components/home/TagFilterChips';
+import { ArmoryHeader } from '../../components/home/ArmoryHeader';
+import { FilterBar } from '../../components/home/FilterBar';
+import { StatusGroups } from '../../components/home/StatusGroups';
+import { applySearchFilter, applyTagFilter } from '../../components/home/homeGroups';
 import { AggregateCallout } from '../../components/home/AggregateCallout';
 import { EducationalEmptyState } from '../../components/home/EducationalEmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
@@ -18,26 +19,27 @@ export const Route = createFileRoute('/_auth/home')({
 });
 
 /**
- * Home page — status-shelves state machine.
+ * Home page — the armory.
  *
  * Modes:
  *  - Loading: skeleton matching the populated-mode layout (no flash of empty).
  *  - Error: inline error with a retry button wired to TanStack Query refetch.
  *  - Empty: `trackedDecks.length === 0` — EducationalEmptyState.
- *  - Populated: PopulatedHomeHero + TagFilterChips + StatusShelves + AggregateCallout.
+ *  - Populated: ArmoryHeader + FilterBar + StatusGroups + AggregateCallout.
  *
  * Mode transitions happen naturally via TanStack Query invalidation of the
  * ['decks'] key from mutations (untrack, import, add-card).
  *
  * The `tag` URL search param drives OR-logic tag filtering: only decks with
- * at least one of the active tags are shown in the StatusShelves.
+ * at least one of the active tags are shown; the search box ANDs on top.
  */
-function HomePage(): React.ReactElement {
+export function HomePage(): React.ReactElement {
   const { t } = useTranslation();
   const decksQuery = useDecksQuery();
   const untrackMutation = useUntrackDeckMutation();
   const { tag: activeFilterTags } = Route.useSearch();
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
 
   // All hooks must be called unconditionally before any early returns.
   // Compute derived data from query results; guard with empty fallbacks.
@@ -66,6 +68,11 @@ function HomePage(): React.ReactElement {
   const validActiveFilterTags = useMemo(
     () => activeFilterTags.filter((tag) => availableTags.includes(tag)),
     [activeFilterTags, availableTags],
+  );
+
+  const visibleDecks = useMemo(
+    () => applySearchFilter(applyTagFilter(trackedDecks, validActiveFilterTags), query),
+    [trackedDecks, validActiveFilterTags, query],
   );
 
   // Tag filter change handler — updates the URL search param.
@@ -118,21 +125,24 @@ function HomePage(): React.ReactElement {
 
   return (
     <section className={styles.populated}>
-      <PopulatedHomeHero
-        decks={trackedDecks}
-        totalCardsMissing={totalCardsMissing}
-      />
-      <TagFilterChips
+      <ArmoryHeader decks={trackedDecks} totalCardsMissing={totalCardsMissing} />
+      <FilterBar
+        query={query}
+        onQueryChange={setQuery}
         availableTags={availableTags}
         activeFilterTags={validActiveFilterTags}
-        onFilterChange={handleFilterChange}
+        onTagsChange={handleFilterChange}
       />
-      <StatusShelves
-        decks={trackedDecks}
-        onUntrack={(deckId) => untrackMutation.mutate(deckId)}
-        untrackingDeckId={untrackingDeckId}
-        activeFilterTags={validActiveFilterTags}
-      />
+      {visibleDecks.length === 0 ? (
+        <p className={styles.noMatches}>{t('home.noMatches')}</p>
+      ) : (
+        <StatusGroups
+          decks={visibleDecks}
+          onUntrack={(deckId) => untrackMutation.mutate(deckId)}
+          untrackingDeckId={untrackingDeckId}
+          isAllRetired={trackedDecks.every((deck) => deck.status === 'retired')}
+        />
+      )}
       <AggregateCallout aggregateShoppingLine={data?.aggregateShoppingLine ?? null} />
     </section>
   );

@@ -1,17 +1,16 @@
-/* ============================================================
-   /decks/new — two-path landing page (U15)
-   ============================================================ */
+/* /decks/new: two-path landing (EDIT-01, handoff 4) */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
   padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
-  max-width: 960px;
-  margin: 0 auto;
+  max-inline-size: 940px;
+  inline-size: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
-/* ---- Header ---- */
 .subviewHeader {
   display: flex;
   flex-direction: column;
@@ -25,10 +24,9 @@
   gap: var(--ra-space-2);
   margin-bottom: var(--ra-space-3);
   padding: var(--ra-space-1) 0;
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
   color: var(--ra-fg-muted);
   text-decoration: none;
   transition: color var(--ra-duration) var(--ra-ease);
@@ -46,7 +44,7 @@
 .title {
   margin: 0;
   font-family: var(--ra-font-display);
-  font-size: var(--ra-text-h1);
+  font-size: 32px;
   font-weight: var(--ra-weight-bold);
   letter-spacing: var(--ra-track-h1);
   color: var(--ra-fg-primary);
@@ -55,30 +53,23 @@
 
 .subtitle {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
 }
 
-/* ---- Two-card layout ---- */
-
-/* Mobile: stacked */
 .cards {
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-5);
+  gap: 18px;
 }
 
-/* Desktop (≥768px): side-by-side */
 @media (min-width: 768px) {
   .cards {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-
-  .cards > * {
-    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
   }
 }

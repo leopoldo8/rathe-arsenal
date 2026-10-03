@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase 1c -- Discover, R9 Three-Mode Home, R27 History Chart, Click Telemetry"
 type: feat
-status: active
+status: deferred
 date: 2026-04-18
 deepened: 2026-04-18
 reviewed: 2026-04-19

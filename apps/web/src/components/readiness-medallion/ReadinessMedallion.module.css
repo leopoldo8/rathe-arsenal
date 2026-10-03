@@ -1,0 +1,110 @@
+.medallion {
+  --medallion-ring-w: 3px;
+  --medallion-ring-color: var(--ra-status-building);
+  position: relative;
+  inline-size: 38px;
+  block-size: 38px;
+  flex: none;
+}
+
+.medallion[data-size='lg'] {
+  --medallion-ring-w: 4px;
+  inline-size: 90px;
+  block-size: 90px;
+}
+
+.medallion[data-band='ready'] {
+  --medallion-ring-color: var(--ra-ready-high);
+}
+
+.medallion[data-band='accent'] {
+  --medallion-ring-color: var(--ra-accent);
+}
+
+.medallion[data-band='building'] {
+  --medallion-ring-color: var(--ra-status-building);
+}
+
+.art,
+.shade {
+  position: absolute;
+  inset: var(--medallion-ring-w);
+  border-radius: 50%;
+}
+
+.art {
+  inline-size: calc(100% - 2 * var(--medallion-ring-w));
+  block-size: calc(100% - 2 * var(--medallion-ring-w));
+  object-fit: cover;
+}
+
+.artFallback {
+  background: radial-gradient(
+    circle at 50% 30%,
+    color-mix(in oklch, var(--ra-pitch-hero) 55%, white),
+    var(--ra-pitch-hero) 78%
+  );
+}
+
+.shade {
+  background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.82) 78%);
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--medallion-ring-color) 0% var(--ra-medallion-pct, 0%),
+    var(--ra-border-strong) var(--ra-medallion-pct, 0%) 100%
+  );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--medallion-ring-w)),
+    #000 calc(100% - var(--medallion-ring-w))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--medallion-ring-w)),
+    #000 calc(100% - var(--medallion-ring-w))
+  );
+}
+
+.label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ra-font-ui);
+  color: #f0e4cc;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
+}
+
+.number {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.medallion[data-size='lg'] .number {
+  font-size: 30px;
+}
+
+.percent {
+  font-size: 14px;
+}
+
+.heroName {
+  margin-block-start: 2px;
+  max-inline-size: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c6a678;
+}

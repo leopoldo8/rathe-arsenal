@@ -4,6 +4,20 @@ Reusable test data for local development, audit screenshots, and QA
 walkthroughs. Keep updated as decks become unavailable or new shapes
 are needed.
 
+## Browser-test fixture (one command)
+
+```bash
+pnpm seed:fixture
+```
+
+Idempotent. Needs the dev server (`pnpm dev`). Signs in as `fixture@test.local` / `test-password-1234` (override with `FIXTURE_EMAIL`, `FIXTURE_PASS`; creates and verifies the user if missing) and guarantees:
+
+- a Fabrary-imported deck (imports the two decks below if none exists) and a `liga local` tag on at least one deck;
+- the scratch deck `Rhinar Swap Test`, rewritten to a fixed composition so it yields exactly three pending swaps (Brothers in Arms to Erase Face, Bear Hug to Assault and Battery, Argh... Smash! to Bloodrush Bellow), with the owned cards those swaps need;
+- every swap reverted or restored to pending, and any deck that is neither Fabrary-imported nor the swap deck deleted.
+
+Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`), which signs in once (sign-in is throttled to 5/minute) and writes the shared storageState under `apps/web/tests/.auth/` (gitignored). Swap-mutating specs call `resetFixture()` (no sign-in) before each test. Run both suites with `cd apps/web && npx playwright test`.
+
 ## Test Decks (Fabrary URLs)
 
 | Purpose | URL | Expected state |
@@ -66,8 +80,8 @@ curl -s -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
   -H "Content-Type: application/json" \
   -d '{'"status"': '"active"'}'
 
-# Add a tag to a deck
-curl -s -X POST http://localhost:5173/api/decks/{DECK_ID}/tags \
+# Add a tag to a deck (create the tag with POST /api/tags, then attach its id)
+curl -s -X PATCH http://localhost:5173/api/decks/{DECK_ID} \
   -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
-  -d '{'"name"': '"liga local"'}'
+  -d '{"addTagIds": [TAG_ID]}'

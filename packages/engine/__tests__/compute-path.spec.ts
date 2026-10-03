@@ -82,6 +82,9 @@ describe('computePath', () => {
             score: 1,
             rationale: 'test',
           }),
+          // Path classifies purely from missing/substituted counts (§0) --
+          // an unapproved (pending) substitution still yields Path B.
+          approved: false,
         }),
       ]),
     });
@@ -118,6 +121,7 @@ describe('computePath', () => {
             score: 0.75,
             rationale: 'test',
           }),
+          approved: false,
         }),
       ]),
       missing: Object.freeze([

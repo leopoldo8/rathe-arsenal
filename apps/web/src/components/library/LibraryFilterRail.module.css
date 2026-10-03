@@ -8,7 +8,7 @@
   /* Sit just below the 56px AppShell TopBar (also sticky at top:0). The
      extra 16px of breathing room matches the page's vertical rhythm. */
   top: 72px;
-  width: 280px;
+  width: 250px;
   flex-shrink: 0;
   /* Cap height to the viewport minus the topbar so the rail's own scroll
      area never extends past the visible region. */
@@ -55,18 +55,12 @@
   align-items: baseline;
   gap: var(--ra-space-2);
   margin: 0;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
   color: var(--ra-fg-secondary);
-}
-
-.diamond {
-  color: var(--ra-accent);
-  font-size: 0.65em;
-  transform: translateY(-0.05em);
 }
 
 .emptyHint {
@@ -171,32 +165,57 @@
   width: 18px;
   height: 18px;
   border-radius: var(--ra-radius-full);
-  font-family: var(--ra-font-display);
-  font-size: 0.65rem;
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: 0;
   /* The pip carries the pitch color even when the pill is inactive —
      unlike the rest of the row, it's a literal-ish reference to the FaB
      pitch frame token. */
-  color: var(--ra-bg-canvas);
+}
+
+.pitchPill--red {
+  border-color: var(--ra-pitch-red);
+}
+
+.pitchPill--red.pitchPill--on {
+  color: var(--ra-pitch-red-ink);
 }
 
 .pitchPill--red .pitchPip {
-  background: var(--ra-card-frame-red);
+  background: var(--ra-pitch-red);
+}
+
+.pitchPill--yellow {
+  border-color: var(--ra-pitch-yellow);
+}
+
+.pitchPill--yellow.pitchPill--on {
+  color: var(--ra-pitch-yellow-ink);
 }
 
 .pitchPill--yellow .pitchPip {
-  background: var(--ra-card-frame-yellow);
+  background: var(--ra-pitch-yellow);
+}
+
+.pitchPill--blue {
+  border-color: var(--ra-pitch-blue);
+}
+
+.pitchPill--blue.pitchPill--on {
+  color: var(--ra-pitch-blue-ink);
 }
 
 .pitchPill--blue .pitchPip {
-  background: var(--ra-card-frame-blue);
-  color: #fff;
+  background: var(--ra-pitch-blue);
+}
+
+.pitchPill--colorless {
+  border-color: var(--ra-pitch-colorless);
+}
+
+.pitchPill--colorless.pitchPill--on {
+  color: var(--ra-pitch-colorless-ink);
 }
 
 .pitchPill--colorless .pitchPip {
   background: transparent;
-  color: var(--ra-fg-muted);
   border: 1px solid var(--ra-border);
 }
 
@@ -328,14 +347,20 @@
 }
 
 .toggleMarker {
-  font-size: 0.7em;
-  color: var(--ra-fg-muted);
-  transition: color var(--ra-duration) var(--ra-ease);
-  text-align: center;
+  inline-size: 12px;
+  block-size: 12px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ra-fg-muted);
+  border-radius: var(--ra-radius-full);
+  justify-self: center;
+  transition:
+    background-color var(--ra-duration) var(--ra-ease),
+    border-color var(--ra-duration) var(--ra-ease);
 }
 
 .toggleRow--on .toggleMarker {
-  color: var(--ra-accent);
+  border-color: var(--ra-accent);
+  background: var(--ra-accent);
 }
 
 .toggleLabel {
@@ -446,7 +471,7 @@
 }
 
 .sliderLabel {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -508,6 +533,26 @@
 }
 
 /* ---- Clear-all footer ---- */
+.sourcesLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  text-decoration: none;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.sourcesLink:hover {
+  color: var(--ra-accent-body);
+}
+
+.sourcesLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
 .clearAll {
   align-self: flex-start;
   display: inline-flex;
@@ -519,10 +564,8 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     border-color var(--ra-duration) var(--ra-ease),

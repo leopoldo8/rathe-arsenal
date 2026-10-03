@@ -10,7 +10,23 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
+import { setTestLocale } from '../../../test/i18n-test-utils';
+
+const linkSpy = vi.fn();
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: (props: { to: string; className?: string; children: React.ReactNode }) => {
+    linkSpy(props);
+    return (
+      <a href={props.to} className={props.className}>
+        {props.children}
+      </a>
+    );
+  },
+}));
+
 import { LibraryFilterRail } from '../LibraryFilterRail';
+import styles from '../LibraryFilterRail.module.css';
 import type { ILibraryFiltersValue } from '../LibraryFilterRail';
 import type { ILibraryCard } from '../../../api/library';
 
@@ -246,5 +262,62 @@ describe('LibraryFilterRail — clear all', () => {
         sets: [],
       }),
     );
+  });
+});
+
+describe('LibraryFilterRail — card-size legend (LIB-02)', () => {
+  const SIZE_LABELS: ReadonlyArray<readonly [number, string, string]> = [
+    [80, 'Pequeno', 'Small'],
+    [120, 'Médio', 'Medium'],
+    [160, 'Grande', 'Large'],
+    [200, 'Extra grande', 'X-Large'],
+    [240, 'Máximo', 'Max'],
+  ];
+
+  it.each(SIZE_LABELS)('exposes the %ipx step as aria-valuetext and legend in pt-BR', (size, pt) => {
+    renderRail({ value: { ...EMPTY_FILTERS, cardSize: size } });
+    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
+    expect(slider).toHaveAttribute('aria-valuetext', `${pt} · ${size}px`);
+    expect(screen.getByText(pt)).toBeInTheDocument();
+    expect(screen.getByText(`${size}px`)).toBeInTheDocument();
+  });
+
+  it.each(SIZE_LABELS)('localizes the %ipx step under en-US', async (size, _pt, en) => {
+    await setTestLocale('en-US');
+    renderRail({ value: { ...EMPTY_FILTERS, cardSize: size } });
+    const slider = screen.getByRole('slider');
+    expect(slider).toHaveAttribute('aria-valuetext', `${en} · ${size}px`);
+  });
+});
+
+describe('LibraryFilterRail — sources link (LIB-01)', () => {
+  it('renders the Manage sources link through the router Link to /library-csv-sources', () => {
+    linkSpy.mockClear();
+    renderRail();
+    const link = screen.getByRole('link', { name: /gerenciar fontes/i });
+    expect(link).toHaveAttribute('href', '/library-csv-sources');
+    expect(linkSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/library-csv-sources' }),
+    );
+  });
+
+  it('localizes the link under en-US', async () => {
+    await setTestLocale('en-US');
+    renderRail();
+    expect(screen.getByRole('link', { name: 'Manage sources ›' })).toBeInTheDocument();
+  });
+
+  it('keeps the link class the stylesheet keys on', () => {
+    renderRail();
+    expect(screen.getByRole('link', { name: /gerenciar fontes/i })).toHaveClass(styles.sourcesLink!);
+  });
+});
+
+describe('LibraryFilterRail — pitch chips carry pitch-coloured classes (LIB-04)', () => {
+  it.each(['red', 'yellow', 'blue', 'colorless'] as const)('%s chip has its tone class', (tone) => {
+    renderRail();
+    const label = { red: /Vermelho/, yellow: /Amarelo/, blue: /Azul/, colorless: /Incolor/ }[tone];
+    const chip = screen.getByRole('checkbox', { name: label });
+    expect(chip).toHaveClass(styles[`pitchPill--${tone}`]!);
   });
 });

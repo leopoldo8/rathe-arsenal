@@ -6,7 +6,11 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
+import { TSupportedFormat } from '@rathe-arsenal/engine';
+
+export const DECK_NOTES_MAX_LENGTH = 2000;
 
 /**
  * Input DTO for `PATCH /decks/:deckId` — partially updates deck metadata.
@@ -20,6 +24,8 @@ import {
  * - `name` is capped at 120 characters — chosen to fit typical deck names
  *   plus annotation room. `TrackedDeckEntity.name` has no DB-level length
  *   constraint, so this DTO is the sole enforcement layer.
+ * - `format` is metadata only: changing it never touches the card list.
+ * - `notes` is free text capped at 2000 characters; `null` clears it.
  * - `addTagIds` / `removeTagIds` are bounded at 50 per request to prevent
  *   accidental bulk operations from a buggy client.
  */
@@ -32,6 +38,16 @@ export class UpdateDeckMetaDto {
   @IsString()
   @MaxLength(120)
   name?: string;
+
+  @IsOptional()
+  @IsIn(['Classic Constructed', 'Blitz', 'Living Legend', 'Silver Age'])
+  format?: TSupportedFormat;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(DECK_NOTES_MAX_LENGTH)
+  notes?: string | null;
 
   @IsOptional()
   @IsArray()

@@ -1,5 +1,5 @@
 /* ============================================================
-   Deck Detail Page — error + Path C states
+   Deck Detail Page — error states
    ============================================================ */
 
 /* ---- Error states ---- */
@@ -15,10 +15,8 @@
 
 /* Retry button */
 .retryBtn {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--ra-accent-body);
   background: transparent;
   border: 1px solid var(--ra-accent-soft-bd);
@@ -32,38 +30,4 @@
 .retryBtn:hover {
   background: var(--ra-accent-soft-bg);
   border-color: var(--ra-accent);
-}
-
-/* Path C banner — ember frame ornament per U4 spec.
-   Replaces the earlier ready-low wash (BAN 1 treatment).
-   Semantically this is NOT a tab — it is a section separator block
-   signaling a category change from A/B results. */
-.pathCBanner {
-  /* Perimeter border using path-c-border token */
-  border: 1px solid var(--ra-path-c-border);
-  /* Top border provides ember accent per design (side-stripe banned per UXUI-04) */
-  border-top: 3px solid var(--ra-ember);
-  border-radius: var(--ra-radius-md);
-  padding: var(--ra-space-5);
-  margin-bottom: var(--ra-space-4);
-  background: var(--ra-path-c-bg);
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-}
-
-/* APPROXIMATION eyebrow */
-.pathCBanner__eyebrow {
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-medium);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ra-path-c-ink);
-  margin-bottom: var(--ra-space-2);
-}
-
-.pathCBanner__strong {
-  color: var(--ra-path-c-ink);
-  font-family: var(--ra-font-display);
-  font-weight: var(--ra-weight-semibold);
 }

@@ -1,26 +1,24 @@
 /* ============================================================
    Rathe Arsenal Design System — v1 tokens
-   Aligned to identity-proposal-v2: dual-theme (dark default, light),
-   Cinzel display / IBM Plex UI / JetBrains Mono,
-   brass accent + ember ornamental, parchment/charcoal surfaces.
+   Aligned to the product-redesign handoff (FND-01..FND-07): dual-theme
+   (dark default, light), Newsreader display / Hanken Grotesk UI /
+   UnifrakturCook wordmark, brass accent, charcoal/parchment surfaces.
 
    Theme resolution order:
-     :root / [data-theme="dark"]  — dark theme (default, ships in Plan A)
-     [data-theme="light"]         — light theme (declared here, tone-corrected in Plan C)
+     :root / [data-theme="dark"]  — dark theme (default)
+     [data-theme="light"]         — light theme (ported per D4, tone-corrected)
 
-   Contrast notes (U3):
-     --ra-fg-secondary dark: adjusted to #b0a898 (8.24:1 on --ra-bg-canvas) for AA body text.
-     --ra-accent dark: #c5923a at 6.98:1 on canvas — large-text / decorative ONLY.
-       Reserved for ornamental use to maintain visual distinction; --ra-accent-body is the
-       body-size companion. (Note: the plan doc estimated 3.8:1, which was incorrect.)
-     --ra-accent-body dark: #d4a84a at 8.79:1 on canvas — use for body-size brass text.
+   Contrast notes:
+     Every fg/bg pair below is verified against the WCAG 2.1 relative-
+     luminance formula in apps/web/src/styles/__tests__/contrast.spec.ts.
+     See docs/design/v1/contrast-matrix.md for the full verified table.
    ============================================================ */
 
 :root {
   /* ---------- Type families ---------- */
-  --ra-font-ui:       "IBM Plex Sans", system-ui, -apple-system, sans-serif;
-  --ra-font-display:  "Cinzel", ui-serif, Georgia, serif;
-  --ra-font-ornament: "Cinzel Decorative", "Cinzel", serif;
+  --ra-font-ui:       "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  --ra-font-display:  "Newsreader", ui-serif, Georgia, serif;
+  --ra-font-ornament: var(--ra-font-display); /* no separate decorative-weight tier in the redesign */
   --ra-font-gothic:   "UnifrakturCook", "Cinzel", serif;
   --ra-font-serif:    "IBM Plex Serif", ui-serif, Georgia, serif;
   --ra-font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -30,24 +28,30 @@
   --ra-font-body:     var(--ra-font-ui);
 
   /* ---------- Type scale ---------- */
-  --ra-text-hero:    3.25rem;   /* 52 — Cinzel Decorative 900 */
-  --ra-text-h1:      2.25rem;   /* 36 — Cinzel 700 */
-  --ra-text-h2:      1.5rem;    /* 24 — Cinzel 600 upper */
-  --ra-text-h3:      1.125rem;  /* 18 — IBM Plex Sans 600 */
-  --ra-text-body:    1rem;      /* 16 — IBM Plex Sans 400 */
-  --ra-text-small:   0.875rem;  /* 14 */
-  --ra-text-caption: 0.6875rem; /* 11 — Plex 500 upper */
-  --ra-text-mono:    0.6875rem; /* 11 — JetBrains Mono */
+  --ra-text-hero:      3.25rem;    /* 52 — Newsreader */
+  --ra-text-h1:        2.25rem;    /* 36 — Newsreader 500 */
+  --ra-text-h2:        1.5rem;     /* 24 — no handoff counterpart; see FND-01 open item 5 */
+  --ra-text-h3:        1.125rem;   /* 18 — card titles */
+  --ra-text-subtitle:  0.9375rem;  /* 15 — page subtitle */
+  --ra-text-body:      0.875rem;   /* 14 — standard body/nav/inputs, app-wide density change */
+  --ra-text-card-body: 0.84375rem; /* 13.5 — card body */
+  --ra-text-small:     0.8125rem;  /* 13 — secondary body, small buttons */
+  --ra-text-xs:        0.75rem;    /* 12 — metadata, captions */
+  --ra-text-caption:   0.6875rem;  /* 11 — eyebrows, uppercase */
+  --ra-text-mono:      0.6875rem;  /* 11 — JetBrains Mono */
+  --ra-text-2xs:       0.65625rem; /* 10.5 — badges/tiny counters, uppercase */
 
-  /* Legacy scale aliases */
-  --ra-text-xs:   0.75rem;
-  --ra-text-sm:   0.875rem;
-  --ra-text-base: 1rem;
-  --ra-text-lg:   1.125rem;
+  /* Legacy scale aliases — aliased to the primary token they duplicated in
+     value before this pass, so they track the primary token's value going
+     forward instead of drifting when it changes. Zero CSS consumers today
+     for sm/base/lg/2xl/3xl/4xl; kept for back-compat only. */
+  --ra-text-sm:   var(--ra-text-small);
+  --ra-text-base: var(--ra-text-body);
+  --ra-text-lg:   var(--ra-text-h3);
   --ra-text-xl:   1.25rem;
-  --ra-text-2xl:  1.5rem;
-  --ra-text-3xl:  2.25rem;
-  --ra-text-4xl:  3.25rem;
+  --ra-text-2xl:  var(--ra-text-h2);
+  --ra-text-3xl:  var(--ra-text-h1);
+  --ra-text-4xl:  var(--ra-text-hero);
   --ra-text-5xl:  4rem;
 
   --ra-weight-normal:   400;
@@ -60,14 +64,15 @@
   --ra-leading-snug:   1.25;
   --ra-leading-normal: 1.55;
 
-  /* Tracking presets (letter-spacing) */
+  /* Tracking presets (letter-spacing) — still consumed by component CSS
+     modules; global.css's own h1/h2 rules no longer use these two. */
   --ra-track-display: 0.02em;
   --ra-track-h1:      0.04em;
   --ra-track-h2:      0.05em;
   --ra-track-caps:    0.22em;
   --ra-track-spaced:  0.15em;
 
-  /* ---------- Spacing (4px grid) ---------- */
+  /* ---------- Spacing (4px grid, index-based) ---------- */
   --ra-space-1:  0.25rem;
   --ra-space-2:  0.5rem;
   --ra-space-3:  0.75rem;
@@ -78,73 +83,98 @@
   --ra-space-10: 2.5rem;
   --ra-space-12: 3rem;
 
-  /* ---------- Radii — tight/architectural (2–4px) ---------- */
-  --ra-radius-sm:   2px;
-  --ra-radius-md:   4px;
-  --ra-radius-lg:   4px;
-  --ra-radius-xl:   4px; /* capped at 4px per R6; pills reserved for badges */
+  /* ---------- Spacing — handoff pixel steps (not all multiples of 4px,
+     so they cannot fold into the index family above without colliding
+     with an existing index token's meaning). Aliased to the matching
+     index token wherever the pixel value coincides. ---------- */
+  --ra-space-4px:  var(--ra-space-1);
+  --ra-space-6px:  0.375rem;
+  --ra-space-8px:  var(--ra-space-2);
+  --ra-space-10px: 0.625rem;
+  --ra-space-12px: var(--ra-space-3);
+  --ra-space-14px: 0.875rem;
+  --ra-space-16px: var(--ra-space-4);
+  --ra-space-18px: 1.125rem;
+  --ra-space-20px: var(--ra-space-5);
+  --ra-space-22px: 1.375rem;
+  --ra-space-24px: var(--ra-space-6);
+  --ra-space-26px: 1.625rem;
+  --ra-space-28px: 1.75rem;
+  --ra-space-32px: var(--ra-space-8);
+  --ra-space-34px: 2.125rem;
+  --ra-space-44px: 2.75rem;
+  --ra-space-60px: 3.75rem;
+
+  /* ---------- Radii — supersedes the old 4px cap (R6) per the redesign ---------- */
+  --ra-radius-xs:   6px;  /* badges, small chips, internal faces */
+  --ra-radius-sm:   9px;  /* small buttons, icon-buttons */
+  --ra-radius-md:   11px; /* inputs, buttons, state chips */
+  --ra-radius-lg:   14px; /* content cards */
+  --ra-radius-xl:   16px; /* large panels */
   --ra-radius-full: 9999px;
 
   /* ---------- Motion ---------- */
   --ra-ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
   --ra-duration:    120ms;
   --ra-duration-lg: 240ms;
+
+  /* Deckbox floor — a `background` value for a pseudo-element (radial
+     gradient), not a box-shadow. Named as a shadow token because that's
+     its design role; the handoff gives one literal with no light variant.
+     Owned/consumed by the BOX workstream, not this one. */
+  --ra-shadow-deckbox-floor: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.6), transparent 70%);
 }
 
 /* ============================================================
-   DARK theme (default) — charcoal canvas, brass accent, ember spark
+   DARK theme (default) — charcoal canvas, brass accent
    ============================================================ */
 :root,
 :root[data-theme="dark"] {
-  --ra-bg-canvas:      #0c0d10;
-  --ra-bg-surface:     #15171c;
+  --ra-bg-canvas:      #0b0c0f;
+  --ra-bg-surface:     #14161c;
+  --ra-bg-surface-2:   #0e1016;
   --ra-bg-raised:      #1e2128;
   --ra-bg-sunken:      #0a0b0e;
   --ra-bg-muted:       #1a1c22;
 
-  --ra-border-subtle:  #2a2e37;
-  --ra-border:         #2a2e37;
-  --ra-border-strong:  #3d424d;
+  --ra-border-subtle:  rgba(255, 255, 255, 0.07);
+  --ra-border:         var(--ra-border-subtle);
+  --ra-border-strong:  rgba(255, 255, 255, 0.12);
 
-  --ra-fg-primary:     #ece6d7;
+  --ra-fg-primary:     #e8e6e1;
+  --ra-fg-secondary:   #c8cad2;
+  --ra-fg-tertiary:    #8b8d96;
+  --ra-fg-muted:       #7a7c84;
+  --ra-fg-subtle:      #5c5e66;
+  --ra-fg-inverse:     #0b0c0f;
 
-  /* --ra-fg-secondary: tone-adjusted in U3 from #9a9385 (3.8:1) to
-     #b0a898 (~5.0:1 on --ra-bg-canvas). Safe for AA body-size text on
-     canvas, surface, and raised backgrounds. */
-  --ra-fg-secondary:   #b0a898;
-
-  --ra-fg-muted:       #6b6658;
-  --ra-fg-subtle:      #555040;
-  --ra-fg-inverse:     #0c0d10;
-
-  /* --ra-accent: #c5923a — 6.98:1 on canvas (passes AA body AND AA large).
-     LARGE-TEXT AND DECORATIVE USE ONLY by architectural choice, not contrast
-     necessity. Reserved for headings >=18pt, ornamental elements,
-     .ra-readiness-display, .ra-diamond to maintain the visual hierarchy.
-     For body-size brass text use --ra-accent-body instead.
+  /* --ra-accent: #d0a84c — 8.74:1 on canvas, clears AA body on its own.
+     --ra-accent-body is now a same-value alias (see below) — the old
+     dark accent needed a separate body-safe companion; this one doesn't.
      See: docs/design/v1/contrast-matrix.md */
-  --ra-accent:         #c5923a;
-  --ra-accent-hover:   #d9a34a;
+  --ra-accent:         #d0a84c;
+  --ra-accent-hi:      #f0c060;
+  --ra-accent-hover:   var(--ra-accent-hi);
   --ra-accent-dim:     #7a5a24;
-  --ra-accent-deep:    #5a4218;
-  --ra-accent-soft-bg: rgba(197, 146, 58, 0.10);
-  --ra-accent-soft-bd: rgba(197, 146, 58, 0.35);
+  --ra-accent-deep:    #b8863a;
+  --ra-accent-soft-bg: rgba(208, 168, 76, 0.14);
+  --ra-accent-soft-bd: rgba(208, 168, 76, 0.35);
   --ra-accent-ink-on:  #1a1408;
 
-  /* --ra-accent-body: companion token for body-size brass text.
-     #d4a84a at 8.79:1 on --ra-bg-canvas — comfortably passes WCAG AA at body size.
-     Use this instead of --ra-accent whenever text is smaller than 18pt/24px or
-     not bold at 14pt/18.67px. --ra-accent is preserved for large-text/decorative
-     use to maintain visual hierarchy (both tokens pass AA at all sizes, but the
-     distinction is architectural — decorative vs content).
-     See: docs/design/v1/contrast-matrix.md */
-  --ra-accent-body:    #d4a84a;
+  /* --ra-accent-body: alias of --ra-accent in dark — the new accent value
+     clears AA body on its own, so the split that used to exist purely for
+     contrast no longer serves a purpose here (light theme still splits
+     them; see the light block below). */
+  --ra-accent-body:    var(--ra-accent);
 
   /* Back-compat aliases for JSX inline styles */
   --ra-bg-primary:     var(--ra-bg-canvas);
   --ra-accent-soft:    var(--ra-accent-soft-bg);
 
-  /* Ornamental ember (deep forge red) — ornamental accents only */
+  /* Legacy token — kept defined for its 5 usage sites across 4 non-deckbox
+     consumer files (path-c-result, LibraryStatsBar, ReviewsBulkBar,
+     decks.$deckId). No longer a reserved brand color; the redesign's
+     deckbox has no oxblood in it. See design/01-foundation.md §1.8. */
   --ra-ember:          #b44a2e;
   --ra-ember-hover:    #c85a3a;
 
@@ -156,19 +186,19 @@
   --ra-action-soft-bd: var(--ra-accent-soft-bd);
 
   /* Readiness palette */
-  --ra-ready-high:        #6ea968;
-  --ra-ready-high-bg:     rgba(110, 169, 104, 0.10);
-  --ra-ready-high-border: rgba(110, 169, 104, 0.40);
+  --ra-ready-high:        #63b678;
+  --ra-ready-high-bg:     rgba(99, 182, 120, 0.10);
+  --ra-ready-high-border: rgba(99, 182, 120, 0.40);
 
-  --ra-ready-mid:         #c5923a;
-  --ra-ready-mid-bg:      rgba(197, 146, 58, 0.10);
-  --ra-ready-mid-border:  rgba(197, 146, 58, 0.40);
-  --ra-ready-mid-accent:  #d9a34a;
+  --ra-ready-mid:         #c8843c;
+  --ra-ready-mid-bg:      rgba(200, 132, 60, 0.10);
+  --ra-ready-mid-border:  rgba(200, 132, 60, 0.40);
+  --ra-ready-mid-accent:  #d6954c;
 
-  --ra-ready-low:         #c0574a;
-  --ra-ready-low-bg:      rgba(192, 87, 74, 0.10);
-  --ra-ready-low-border:  rgba(192, 87, 74, 0.40);
-  --ra-ready-low-dark:    #8c3a30;
+  --ra-ready-low:         #d0645a;
+  --ra-ready-low-bg:      rgba(208, 100, 90, 0.08);
+  --ra-ready-low-border:  rgba(208, 100, 90, 0.25);
+  --ra-ready-low-dark:    #984942;
 
   --ra-info:              #6a90b8;
   --ra-info-dark:         #4f78a2;
@@ -182,24 +212,39 @@
   --ra-path-c-ink:        #e1a977;
 
   /* ------------------------------------------------------------------ */
-  /* Status semantic tokens — deck lifecycle status colours (U8)        */
+  /* Status semantic tokens — deck lifecycle status colours             */
   /* Maps the 5 TDeckStatus values to semantic fg/accent tokens.        */
-  /* --ra-status-idea: muted fg (neutral, not yet started)              */
-  /* --ra-status-building: dim brass (in-progress, warm but subtle)     */
-  /* --ra-status-ready: full brass accent (playable, prominent)         */
-  /* --ra-status-active: ready-high green (actively played, positive)   */
+  /* --ra-status-idea/-building: independent hues (violet/blue) — no    */
+  /*   longer aliases of neutral/brass tokens (D-none, FND-01 §1.5).    */
+  /* --ra-status-ready/-active: share the "Ativos" green group (D5).    */
   /* --ra-status-retired: subtle fg (de-emphasised, lowest priority)    */
   /* ------------------------------------------------------------------ */
-  --ra-status-idea:     var(--ra-fg-muted);
-  --ra-status-building: var(--ra-accent-dim);
-  --ra-status-ready:    var(--ra-accent);
+  --ra-status-idea:     #8f7cf0;
+  --ra-status-building: #4a7fc0;
+  --ra-status-ready:    var(--ra-ready-high);
   --ra-status-active:   var(--ra-ready-high);
   --ra-status-retired:  var(--ra-fg-subtle);
 
-  /* FAB pitch layer */
-  --ra-pitch-red:    #b44a2e;
-  --ra-pitch-yellow: #c5923a;
-  --ra-pitch-blue:   #4a6a94;
+  /* FAB pitch layer — base swatches: fills, borders, dots only, never text */
+  --ra-pitch-red:        #c0473e;
+  --ra-pitch-yellow:     #d6a83e;
+  --ra-pitch-blue:       #4a7fc0;
+  --ra-pitch-colorless:  #8a8d94;
+  --ra-pitch-weapon:     var(--ra-pitch-colorless);
+  --ra-pitch-hero:       #5a8f6b;
+  --ra-pitch-equipment:  #9c7b4a;
+
+  /* Pitch "-ink" companions — text-safe variants for pitch pill labels
+     and stat counts (§1.6a). Use the base token for fills/borders/dots;
+     use the -ink token whenever the pitch color itself is the glyph
+     color. Aliased to the base wherever the base already clears AA body. */
+  --ra-pitch-red-ink:        #d97068;
+  --ra-pitch-yellow-ink:     var(--ra-pitch-yellow);
+  --ra-pitch-blue-ink:       #6fa0d8;
+  --ra-pitch-colorless-ink:  var(--ra-pitch-colorless);
+  --ra-pitch-weapon-ink:     var(--ra-pitch-colorless-ink);
+  --ra-pitch-hero-ink:       var(--ra-pitch-hero);
+  --ra-pitch-equipment-ink:  var(--ra-pitch-equipment);
 
   /* CardArt frame colors — pitch-driven frame stroke + bg tint (R48) */
   --ra-card-frame-red:       #c0574a;
@@ -225,53 +270,57 @@
 
   /* Brand accents (back-compat) */
   --ra-brand-steel:  #3d424d;
-  --ra-brand-forge:  #c5923a;
+  --ra-brand-forge:  #d0a84c;
   --ra-brand-ember:  #b44a2e;
-  --ra-brand-parch:  #15171c;
+  --ra-brand-parch:  #14161c;
 
   /* Page background alias */
   --ra-bg-page: var(--ra-bg-canvas);
 
   /* Shadows — soft glows and deep drops on dark canvas */
-  --ra-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --ra-shadow:    0 1px 3px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --ra-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.3);
-  --ra-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 8px rgba(0, 0, 0, 0.3);
-  --ra-shadow-glow: 0 0 0 1px rgba(197, 146, 58, 0.20), 0 0 24px rgba(197, 146, 58, 0.12);
-  --ra-inset:     inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --ra-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.5);
+  --ra-shadow:      0 10px 20px rgba(0, 0, 0, 0.45);
+  --ra-shadow-md:   0 16px 40px -12px rgba(0, 0, 0, 0.8);
+  --ra-shadow-lg:   0 40px 90px -30px rgba(0, 0, 0, 0.8);
+  --ra-shadow-glow: 0 0 0 1px rgba(208, 168, 76, 0.20), 0 0 24px rgba(208, 168, 76, 0.12);
+  --ra-inset:       inset 0 1px 0 rgba(255, 255, 255, 0.03);
 
   color-scheme: dark;
 }
 
 /* ============================================================
    LIGHT theme — warm parchment, deep brass, ink text
-   Tone-corrected in Plan C (Unit 1). All body-size fg/bg pairs clear WCAG AA.
+   Ported per D4; tone-corrected, all body-size pairs verified AA.
    See docs/design/v1/contrast-matrix.md for the verified pair table.
    ============================================================ */
 :root[data-theme="light"] {
   --ra-bg-canvas:      #f5f1e8;
   --ra-bg-surface:     #ffffff;
+  --ra-bg-surface-2:   var(--ra-bg-canvas);
   --ra-bg-raised:      #ece7d8;
   --ra-bg-sunken:      #ebe6d4;
   --ra-bg-muted:       #e4dec9;
 
   --ra-border-subtle:  #e5dfc9;
-  --ra-border:         #dcd4be;
+  --ra-border:         var(--ra-border-subtle);
   --ra-border-strong:  #b8af93;
 
   --ra-fg-primary:     #1a1814;
   --ra-fg-secondary:   #4f4a3f;
+  --ra-fg-tertiary:    #635d4e;
   --ra-fg-muted:       #726b58;
   --ra-fg-subtle:      #9a937f;
   --ra-fg-inverse:     #ffffff;
 
   /* --ra-accent: #8f6a22 — large-text and decorative use only on light theme.
      4.38:1 on canvas falls below the AA body threshold (4.5:1).
-     --ra-accent-body: #7d5e1d — body-size companion. Cleared AA body on all
-     light backgrounds: 5.34:1 on canvas (#f5f1e8), 6.02:1 on surface (#ffffff),
-     4.87:1 on raised (#ece7d8). See docs/design/v1/contrast-matrix.md. */
+     --ra-accent-body: #7d5e1d — body-size companion. This split stays in
+     light (unlike dark, where the new accent value clears AA body on its
+     own) because light's independently-derived accent still fails AA
+     body. See docs/design/v1/contrast-matrix.md. */
   --ra-accent:         #8f6a22;
   --ra-accent-body:    #7d5e1d;
+  --ra-accent-hi:      #7d5c1c;
   --ra-accent-hover:   #6f521a;
   --ra-accent-dim:     #c6ad72;
   --ra-accent-deep:    #3d2c0e;
@@ -296,7 +345,7 @@
   --ra-ready-high-bg:     #eef6e8;
   --ra-ready-high-border: #b8d4a8;
 
-  --ra-ready-mid:         #8f6a22;
+  --ra-ready-mid:         #7a5019;
   --ra-ready-mid-bg:      #faf3df;
   --ra-ready-mid-border:  #d8bf7a;
   --ra-ready-mid-accent:  #6f521a;
@@ -317,9 +366,34 @@
   --ra-path-c-border:     #e0b078;
   --ra-path-c-ink:        #5c2e0a;
 
-  --ra-pitch-red:    #8b3518;
-  --ra-pitch-yellow: #8f6a22;
-  --ra-pitch-blue:   #2b4d7a;
+  /* Status semantic tokens — light. --ra-status-idea/-building are
+     independent literals (not aliases), so unlike --ra-status-ready/
+     -active/-retired (which stay aliases and retheme automatically),
+     they need an explicit light-theme value here. */
+  --ra-status-idea:     #5c46a8;
+  --ra-status-building: #3462a0;
+  --ra-status-ready:    var(--ra-ready-high);
+  --ra-status-active:   var(--ra-ready-high);
+  --ra-status-retired:  var(--ra-fg-subtle);
+
+  --ra-pitch-red:        #8b3518;
+  --ra-pitch-yellow:     #8f6a22;
+  --ra-pitch-blue:       #2b4d7a;
+  --ra-pitch-colorless:  #6b6558;
+  --ra-pitch-weapon:     var(--ra-pitch-colorless);
+  --ra-pitch-hero:       #3f6b4c;
+  --ra-pitch-equipment:  #7a5a30;
+
+  /* Pitch "-ink" companions — light. Only yellow needs a genuinely new
+     value (reuses --ra-accent-body, same brass hue hitting the same AA
+     threshold as --ra-accent); the rest alias bases that already pass. */
+  --ra-pitch-red-ink:        var(--ra-pitch-red);
+  --ra-pitch-yellow-ink:     var(--ra-accent-body);
+  --ra-pitch-blue-ink:       var(--ra-pitch-blue);
+  --ra-pitch-colorless-ink:  var(--ra-pitch-colorless);
+  --ra-pitch-weapon-ink:     var(--ra-pitch-colorless-ink);
+  --ra-pitch-hero-ink:       var(--ra-pitch-hero);
+  --ra-pitch-equipment-ink:  var(--ra-pitch-equipment);
 
   /* CardArt frame colors — light theme variants (R48) */
   --ra-card-frame-red:       #a03430;
@@ -350,12 +424,15 @@
 
   --ra-bg-page: var(--ra-bg-canvas);
 
-  --ra-shadow-sm: 0 1px 2px rgba(60, 50, 30, 0.06);
-  --ra-shadow:    0 1px 3px rgba(60, 50, 30, 0.08), 0 1px 2px rgba(60, 50, 30, 0.04);
-  --ra-shadow-md: 0 4px 10px rgba(60, 50, 30, 0.09), 0 2px 4px rgba(60, 50, 30, 0.04);
-  --ra-shadow-lg: 0 14px 30px rgba(60, 50, 30, 0.14), 0 4px 8px rgba(60, 50, 30, 0.06);
+  /* Shadows — unchanged: the handoff's §4.3 shadow table gives dark-only
+     literals with no light equivalent, so light's already-tone-corrected
+     values are left as they were. */
+  --ra-shadow-sm:   0 1px 2px rgba(60, 50, 30, 0.06);
+  --ra-shadow:      0 1px 3px rgba(60, 50, 30, 0.08), 0 1px 2px rgba(60, 50, 30, 0.04);
+  --ra-shadow-md:   0 4px 10px rgba(60, 50, 30, 0.09), 0 2px 4px rgba(60, 50, 30, 0.04);
+  --ra-shadow-lg:   0 14px 30px rgba(60, 50, 30, 0.14), 0 4px 8px rgba(60, 50, 30, 0.06);
   --ra-shadow-glow: 0 0 0 1px rgba(143, 106, 34, 0.22), 0 2px 12px rgba(143, 106, 34, 0.10);
-  --ra-inset:     inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --ra-inset:       inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
   color-scheme: light;
 }

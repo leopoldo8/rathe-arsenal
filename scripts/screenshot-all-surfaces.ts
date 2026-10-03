@@ -106,8 +106,8 @@ const AUTH_SURFACES: TSurface[] = [
   { name: 'library', url: '/library' },
   // Library csv sources
   { name: 'library-csv-sources', url: '/library-csv-sources' },
-  // Reviews
-  { name: 'reviews', url: '/reviews' },
+  // Swaps
+  { name: 'swaps', url: '/swaps' },
   // Settings
   { name: 'settings', url: '/settings' },
   // Add cards — chooser
@@ -201,7 +201,7 @@ async function resolveDeckDetailUrl(page: Page): Promise<string | null> {
   await sleep(SETTLE_MS);
   // Look for the first link that starts with /decks/
   const href = await page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]:not([href^="/decks/new"])');
     return link ? link.getAttribute('href') : null;
   });
   return href;

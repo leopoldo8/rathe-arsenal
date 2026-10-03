@@ -22,9 +22,6 @@ export function AboutPage(): React.ReactElement {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <div className={styles.ornament} aria-hidden="true">
-          ◆◆
-        </div>
         <h1 className={styles.heading}>{t('about.pageHeading')}</h1>
 
         <p className={styles.body}>{t('about.fanProjectBody')}</p>

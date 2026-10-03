@@ -6,7 +6,7 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { DecisionsService } from '../../decks/decisions/decisions.service';
+import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { SourcesService } from '../sources/sources.service';
 
@@ -64,8 +64,8 @@ describe('SourcesService', () => {
           useValue: createMock<DataSource>(),
         },
         {
-          provide: DecisionsService,
-          useValue: createMock<DecisionsService>(),
+          provide: SwapSuggestionQueryService,
+          useValue: createMock<SwapSuggestionQueryService>(),
         },
         {
           provide: SubstitutionService,
