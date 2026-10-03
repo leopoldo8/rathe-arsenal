@@ -225,6 +225,11 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **Why**: the six DB-backed e2e suites each boot the full `AppModule` against one shared Postgres. In Jest's default parallel mode one test failed in 1 of 14 local runs and could not be reproduced for diagnosis; every in-band run in this session (more than ten) passed. A flaky required check is worse than a slower one.
 - **Reversible**: drop the flag once the shared-DB race is found.
 
+### DEV-27 — Snapshot ordering bug found by CI (orchestrator, PR #110)
+- **Bug**: `deck_readiness_snapshot.computedAt` defaulted to `now()`, which in Postgres is the transaction START time. Two concurrent swap mutations on one deck are serialized by the deck lock (DEV-10), but the second transaction began before it acquired the lock, so its snapshot could be stamped earlier than the first one's. "Latest snapshot" (`ORDER BY computedAt DESC`) then returned the stale row: after two concurrent reverts the deck read 16.7% instead of 0%. Local runs were fast enough to hide it; CI's slower runner exposed it in `swaps.controller.e2e-spec.ts`.
+- **Fix**: the column default is now `clock_timestamp()` (the insert's own time), in the entity and in migration `1778533588000-SnapshotComputedAtClockTimestamp` with a `down()`. The migration int-spec proves the mechanism: two inserts 50ms apart in one transaction share a timestamp under `now()` and are ordered under `clock_timestamp()`.
+- **Also from CI**: the web bulk-cap test (51 `userEvent` clicks) exceeded the 5s default timeout on the runner; the first 50 selections now use `fireEvent` and the test has a 15s budget.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
