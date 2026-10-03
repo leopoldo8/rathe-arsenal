@@ -34,16 +34,8 @@ import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChang
 import type { ITagResponse } from '../../api/tags';
 import type { TVariantFetchMutationStatus } from '../../components/ShoppingLine';
 import styles from './decks.$deckId.module.css';
+import { validateDeckDetailSearch } from './-deck-detail-search';
 
-// ---------------------------------------------------------------------------
-// Search param validation (U12: adds `edit` param)
-// ---------------------------------------------------------------------------
-
-function validateDeckDetailSearch(raw: Record<string, unknown>): { edit: '1' | undefined } {
-  return {
-    edit: raw.edit === '1' ? '1' : undefined,
-  };
-}
 
 export const Route = createFileRoute('/_auth/decks/$deckId')({
   component: DeckDetailPage,
