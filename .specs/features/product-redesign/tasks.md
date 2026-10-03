@@ -159,14 +159,14 @@ The settings eyebrow stays on `--ra-accent-body`. The handoff names a token by i
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| SWAP-04..05 approve and revert | §7 | route spec driving the full cycle | Pending |
-| SWAP-06..07 reject with reason; restore | §7 | route spec | Pending |
-| SWAP-08 in-place confirmation; migration deferred to tab switch | §7 | route spec asserting the row stays put | Pending |
-| SWAP-09 counts derived, never hardcoded | §7 | route spec | Pending |
-| SWAP-10 post-play outcome | §7 | route spec | Pending |
-| SWAP-11 `× N` grouping preserved | §7 | the existing grouping tests must still pass | Pending |
-| SWAP-12 row anatomy and confidence bands | §7 | route spec | Pending |
-| SWAP-14 filter rail, bulk actions, `all` tab survive | §7 | existing specs adapted, not deleted | Pending |
+| SWAP-04..05 approve and revert | §7 | route spec driving the full cycle | Verified |
+| SWAP-06..07 reject with reason; restore | §7 | route spec | Verified |
+| SWAP-08 in-place confirmation; migration deferred to tab switch | §7 | route spec asserting the row stays put | Verified |
+| SWAP-09 counts derived, never hardcoded | §7 | route spec | Verified |
+| SWAP-10 post-play outcome | §7 | route spec | Verified |
+| SWAP-11 `× N` grouping preserved | §7 | the existing grouping tests must still pass | Verified |
+| SWAP-12 row anatomy and confidence bands | §7 | route spec | Verified |
+| SWAP-14 filter rail, bulk actions, `all` tab survive | §7 | existing specs adapted, not deleted | Verified |
 
 ---
 
