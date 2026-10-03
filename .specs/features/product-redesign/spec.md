@@ -260,21 +260,22 @@ These apply to every screen above and are not optional polish.
 
 | ID | Story | Phase | Status |
 |----|-------|-------|--------|
-| FND-01 | P1: Foundation | 1 | Pending |
-| FND-02 | P1: Foundation | 1 | Pending |
-| FND-03 | P1: Foundation | 1 | Pending |
-| FND-04 | P1: Foundation | 1 | Pending |
-| FND-05 | P1: Foundation + Cross-cutting 5 | 1 | Pending |
-| FND-06 | P1: Foundation | 1 | Pending |
-| FND-07 | P1: Foundation | 1 | Pending |
-| CMP-01..05 | P2: Medallion | 2 | Pending |
+| FND-01 | P1: Foundation | 1 | Verified |
+| FND-02 | P1: Foundation | 1 | Verified |
+| FND-03 | P1: Foundation | 1 | Verified |
+| FND-04 | P1: Foundation | 1 | Verified |
+| FND-05 | P1: Foundation + Cross-cutting 5 | 1 | Implementing (manual read in phase 10) |
+| FND-06 | P1: Foundation | 1 | Verified |
+| FND-07 | P1: Foundation | 1 | Implementing (layout shift unmeasured) |
+| SWAP-01..03, SWAP-13, SWAP-15 | P1: Swaps, Half A | 2 | Verified |
+| CMP-01..05 | P2: Medallion | 3 | Pending |
 | BOX-01..07 | P1: Deckbox | 3 | Pending |
 | HOME-01..07 | P1: Home | 4 | Pending |
 | DECK-01..09 | P1: Deck detail | 5 | Pending |
 | LIB-01..08 | P2: Library/Sources/Add | 6 | Pending |
-| SWAP-01..12 | P1: Swaps | 7 | Pending |
-| EDIT-01..05 | P2: New/Edit/Settings | 8 | Pending |
-| AUTH-01..05 | P2: Sign in/Onboarding | 9 | Pending |
+| EDIT-01..05 | P2: New/Edit/Settings | 7 | Pending |
+| AUTH-01..05 | P2: Sign in/Onboarding | 8 | Pending |
+| SWAP-04..12, SWAP-14 | P1: Swaps, Half B | 9 | Pending |
 | I18N-01 | Cross-cutting 1 | all | Pending |
 | A11Y-01, A11Y-02 | Cross-cutting 2, 3 | all | Pending |
 | VIS-01 | Cross-cutting 4 | all | Pending |

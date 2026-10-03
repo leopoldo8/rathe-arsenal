@@ -82,11 +82,17 @@ Decisions taken without the owner, or departures from the agreed plan. Empty mea
 - **Why**: §7 turns a bulk action into N sequential single-endpoint calls. A 30/min override like `tags`/`users` would make a bulk approve of 40 rows fail partway. Even 120/min caps one bulk action at roughly that many rows per minute.
 - **Needs a call in Half B**: either cap bulk selection, pace the client dispatch, or add a bulk endpoint. Not decided here.
 
+### DEV-10 — Swap mutations lock the deck, not the row
+- **What**: each mutation takes `FOR NO KEY UPDATE` on its `tracked_deck` row, then re-reads the swap row and decides the transition from that fresh copy.
+- **Why**: the first version row-locked the swap. Reconciliation updates sibling rows of the same deck, so two concurrent approvals on one deck each held one row and waited on the other's. Reproduced as Postgres `deadlock detected` in 3 of 3 runs of a parallel-approve e2e; 3 of 3 pass with the deck lock. `NO KEY UPDATE` still lets other transactions insert snapshots or deck cards that reference the deck.
+- **Follow-up, not fixed here**: other recompute paths (`updateComposition`, collection changes, the reviews shim) do not take this lock, so they can still interleave with a swap mutation on the same deck.
+
 ### Phase 2 close-out (2026-10-03, resumed session)
 - The run stopped on 2026-08-16 with the five endpoints unwritten. Resumed and finished on 2026-10-03.
 - `GET /api/swaps` and the five mutations live in `apps/api/src/swaps/`. The old `/api/reviews` and `/decks/:id/decisions` shim stays until Half B, as the landing sequence requires.
 - The status write, readiness recompute and reconciliation share one transaction. `SwapSuggestionQueryService.loadReadinessInputs` and `SubstitutionService.computeAndStoreReadiness` gained an optional `EntityManager` for this. Verified by mutation: dropping the manager from the readiness read makes the e2e fail (`effectivePercent` does not rise after approve).
 - Malformed ids return 400 (`ParseUUIDPipe`) instead of a Postgres 500.
+- The backfill now has a runnable command (`pnpm --filter @rathe-arsenal/api backfill:swap-suggestions`), documented in `scripts/deploy-railway.md` and named in the migration header. Smoke-run against the local DB: 2 decks, 0 failures.
 - **Pre-existing failures fixed on the way** (all three were test drift, not product bugs): `state-transition-matrix.spec.ts` lint error from `48cf5a6`; `tags.controller.int-spec.ts` expected a bare array after #83 changed `GET /api/tags` to `{ tags }`, and its throttle override never reached the `APP_GUARD` instance; `decks.controller.put.int-spec.ts` still expected a 400 for a missing `heroIdentifier` after #84 made it optional, and hung on the auto-mocked service.
 - **Phase 1 gap closed**: FND-04's guard did not exist; added to `design-guards.spec.ts`.
 - **Test-strength note for every later phase**: the API now has a `test:int` suite (70 tests) besides `test` and `test:e2e`. It must be part of the gate.
