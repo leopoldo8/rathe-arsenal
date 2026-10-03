@@ -2014,6 +2014,7 @@ describe('Owner design feedback round 2 — calm missing panel, aggregate in the
   const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
   const SUMMARY = readCss('components/deck-detail/MissingStoreSummary.module.css');
   const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
+  const AGGREGATE = readCss('components/home/AggregateCallout.module.css');
 
   it('the store context is a plain line, not a nested bordered box', () => {
     const body = ruleBody(SUMMARY, '.summary');
@@ -2047,5 +2048,13 @@ describe('Owner design feedback round 2 — calm missing panel, aggregate in the
   it('unavailable text is muted but stays AA (tertiary ink, not muted)', () => {
     expect(ruleBody(MISSING, '.unavailable')).toContain('color: var(--ra-fg-tertiary)');
     expect(ruleBody(MISSING, '.unavailable')).not.toContain('border');
+  });
+
+  it('the aggregate line matches the status line: 7px dot, secondary body text, brass amount', () => {
+    expect(ruleBody(AGGREGATE, '.line')).toContain('color: var(--ra-fg-secondary)');
+    expect(ruleBody(AGGREGATE, '.line')).not.toContain('border');
+    expect(ruleBody(AGGREGATE, '.line')).not.toContain('background');
+    expect(ruleBody(AGGREGATE, '.dot')).toContain('inline-size: 7px');
+    expect(ruleBody(AGGREGATE, '.cost')).toContain('color: var(--ra-accent-body)');
   });
 });

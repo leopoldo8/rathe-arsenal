@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { AggregateCallout } from '../AggregateCallout';
+import styles from '../AggregateCallout.module.css';
 import { ITrackedDeckListResponse } from '../../../api/decks';
 
 // ---------------------------------------------------------------------------
@@ -65,11 +66,20 @@ describe('AggregateCallout', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('has aria-label "Aggregate shopping line"', () => {
+  it('renders as a plain status line, not a landmark', () => {
     render(<AggregateCallout aggregateShoppingLine={POPULATED_AGG} />);
-    expect(
-      screen.getByRole('complementary', { name: /resumo de compra/i }),
-    ).toBeInTheDocument();
+    const line = screen.getByTestId('aggregate-callout');
+    expect(line.tagName).toBe('P');
+    expect(line).toHaveClass(styles.line!);
+    expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
+  it('reads as one sentence in pt-BR', () => {
+    render(<AggregateCallout aggregateShoppingLine={POPULATED_AGG} />);
+    expect(screen.getByTestId('aggregate-callout')).toHaveTextContent(
+      'R$ 312,00 completaria 4 de 6 decks na Cupula DT',
+    );
+    expect(screen.getByText('R$ 312,00')).toHaveClass(styles.cost!);
   });
 
   it('shows the formatted BRL cost', () => {

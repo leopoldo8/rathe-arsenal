@@ -6,7 +6,6 @@ import { ArmoryHeader } from '../../components/home/ArmoryHeader';
 import { FilterBar } from '../../components/home/FilterBar';
 import { StatusGroups } from '../../components/home/StatusGroups';
 import { applySearchFilter, applyTagFilter } from '../../components/home/homeGroups';
-import { AggregateCallout } from '../../components/home/AggregateCallout';
 import { EducationalEmptyState } from '../../components/home/EducationalEmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Button } from '../../components/ui/Button/Button';
@@ -25,7 +24,7 @@ export const Route = createFileRoute('/_auth/home')({
  *  - Loading: skeleton matching the populated-mode layout (no flash of empty).
  *  - Error: inline error with a retry button wired to TanStack Query refetch.
  *  - Empty: `trackedDecks.length === 0` — EducationalEmptyState.
- *  - Populated: ArmoryHeader + FilterBar + StatusGroups + AggregateCallout.
+ *  - Populated: ArmoryHeader (with the aggregate line) + FilterBar + StatusGroups.
  *
  * Mode transitions happen naturally via TanStack Query invalidation of the
  * ['decks'] key from mutations (untrack, import, add-card).
@@ -125,7 +124,11 @@ export function HomePage(): React.ReactElement {
 
   return (
     <section className={styles.populated}>
-      <ArmoryHeader decks={trackedDecks} totalCardsMissing={totalCardsMissing} />
+      <ArmoryHeader
+        decks={trackedDecks}
+        totalCardsMissing={totalCardsMissing}
+        aggregateShoppingLine={data?.aggregateShoppingLine ?? null}
+      />
       <FilterBar
         query={query}
         onQueryChange={setQuery}
@@ -143,7 +146,6 @@ export function HomePage(): React.ReactElement {
           isAllRetired={trackedDecks.every((deck) => deck.status === 'retired')}
         />
       )}
-      <AggregateCallout aggregateShoppingLine={data?.aggregateShoppingLine ?? null} />
     </section>
   );
 }
