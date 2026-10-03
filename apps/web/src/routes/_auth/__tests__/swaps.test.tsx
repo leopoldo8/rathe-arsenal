@@ -4,7 +4,7 @@
  */
 import React, { useSyncExternalStore } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '../../../lib/api-client';
@@ -581,14 +581,15 @@ describe('/swaps — bulk actions (SWAP-14, DEV-09)', () => {
     store = pendingRows(52);
     await renderLoaded();
 
-    for (let index = 0; index < 51; index += 1) {
-      await userEvent.click(within(rowFor(`b${index}`)).getByRole('checkbox'));
+    for (let index = 0; index < 50; index += 1) {
+      fireEvent.click(within(rowFor(`b${index}`)).getByRole('checkbox'));
     }
+    await userEvent.click(within(rowFor('b50')).getByRole('checkbox'));
 
     expect(screen.getByText('50 selecionadas')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Limite de 50 trocas por ação em lote');
     expect(within(rowFor('b50')).getByRole('checkbox')).not.toBeChecked();
-  });
+  }, 15_000);
 
   it('clears the selection when the tab changes', async () => {
     store = pendingRows(2);
