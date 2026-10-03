@@ -477,11 +477,11 @@ describe('FND-01 — seven pitch colors + -ink companions defined in both themes
   });
 });
 
-describe('FND-02/03 — font family tokens (Hanken Grotesque UI, Newsreader display)', () => {
+describe('FND-02/03 — font family tokens (Hanken Grotesk UI, Newsreader display)', () => {
   const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
 
-  it('--ra-font-ui uses Hanken Grotesque', () => {
-    expect(content).toMatch(/--ra-font-ui:\s*"Hanken Grotesque"/);
+  it('--ra-font-ui uses Hanken Grotesk', () => {
+    expect(content).toMatch(/--ra-font-ui:\s*"Hanken Grotesk"/);
   });
 
   it('--ra-font-display uses Newsreader', () => {
@@ -1836,5 +1836,27 @@ describe('Phase 10 — app-wide polish sweep', () => {
 
   it('gives the Settings column top padding below the nav', () => {
     expect(ruleBody(SETTINGS_CSS, '.page')).toContain('padding-block: var(--ra-space-6) var(--ra-space-12)');
+  });
+});
+
+describe('FND-02/03 — every token font family is actually requested from Google Fonts', () => {
+  const indexHtml = fs.readFileSync(path.join(SRC_ROOT, '..', 'index.html'), 'utf-8');
+  const tokens = fs.readFileSync(TOKENS_CSS, 'utf-8');
+  const requested = new Set(
+    [...indexHtml.matchAll(/family=([^:&"]+)/g)].map((m) => decodeURIComponent((m[1] ?? '').replace(/\+/g, ' '))),
+  );
+
+  it.each(['--ra-font-ui', '--ra-font-display', '--ra-font-gothic'])(
+    '%s leads with a family the stylesheet URL loads',
+    (token) => {
+      const family = tokens.match(new RegExp(`${token}:\\s*"([^"]+)"`))?.[1];
+      expect(family).toBeDefined();
+      expect(requested).toContain(family);
+    },
+  );
+
+  it('loads Hanken Grotesk, the real Google Fonts family name, at every UI weight the handoff uses', () => {
+    expect(indexHtml).toContain('family=Hanken+Grotesk:wght@400;500;600;700;800');
+    expect(indexHtml).not.toContain('Grotesque');
   });
 });

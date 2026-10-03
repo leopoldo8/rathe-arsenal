@@ -1,7 +1,7 @@
 /* ============================================================
    Rathe Arsenal Design System — v1 tokens
    Aligned to the product-redesign handoff (FND-01..FND-07): dual-theme
-   (dark default, light), Newsreader display / Hanken Grotesque UI /
+   (dark default, light), Newsreader display / Hanken Grotesk UI /
    UnifrakturCook wordmark, brass accent, charcoal/parchment surfaces.
 
    Theme resolution order:
@@ -16,7 +16,7 @@
 
 :root {
   /* ---------- Type families ---------- */
-  --ra-font-ui:       "Hanken Grotesque", system-ui, -apple-system, sans-serif;
+  --ra-font-ui:       "Hanken Grotesk", system-ui, -apple-system, sans-serif;
   --ra-font-display:  "Newsreader", ui-serif, Georgia, serif;
   --ra-font-ornament: var(--ra-font-display); /* no separate decorative-weight tier in the redesign */
   --ra-font-gothic:   "UnifrakturCook", "Cinzel", serif;

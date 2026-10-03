@@ -71,7 +71,7 @@ h1,
 /* h2's font-size reuses --ra-text-h3 (18px) rather than the old
    --ra-text-h2 (24px) token — the handoff has no counterpart for a
    distinct "h2" tier; section/group headers it does specify (e.g. Home's
-   group headers) are Hanken Grotesque 15px/700, not the display serif.
+   group headers) are Hanken Grotesk 15px/700, not the display serif.
    Whether --ra-text-h2/.ra-h2 gets retired or repurposed is left to the
    phase that implements those headers — see design/01-foundation.md §3.2. */
 h2,
