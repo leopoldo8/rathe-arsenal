@@ -30,6 +30,7 @@ function makeDeck(userId = USER_ID, id = DECK_ID): TrackedDeckEntity {
     heroIdentifier: 'bravo-showstopper',
     format: 'Classic Constructed',
     status: 'building',
+    notes: null,
     trackedAt: new Date(),
     updatedAt: new Date(),
     user: {} as TrackedDeckEntity['user'],

@@ -82,6 +82,7 @@ function buildDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeckEntit
     heroIdentifier: 'rhinar-reckless-rampage',
     format: 'cc',
     status: 'building',
+    notes: null,
     trackedAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     user: {} as TrackedDeckEntity['user'],

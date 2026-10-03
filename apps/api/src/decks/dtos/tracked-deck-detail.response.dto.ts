@@ -132,6 +132,8 @@ export interface ITrackedDeckDetailResponse {
    * Ordered by attachment time ascending (earliest first).
    */
   readonly tags: readonly string[];
+  /** Free-text notes (EDIT-02). Null when the user never wrote any. */
+  readonly notes: string | null;
   readonly trackedAt: string;
   /**
    * ISO timestamp of the last ORM-driven update to this deck row (U4 / D12).

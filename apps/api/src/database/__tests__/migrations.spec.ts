@@ -84,6 +84,16 @@ describe('TrackedDeckEntity (v2 columns)', () => {
     expect((col?.options as { default?: unknown }).default).toBe('building');
   });
 
+  it('notes column is a nullable text column', () => {
+    const storage = getMetadataArgsStorage();
+    const col = storage.columns.find(
+      (c) => c.target === TrackedDeckEntity && c.propertyName === 'notes',
+    );
+    expect(col).toBeDefined();
+    expect((col?.options as { type?: string }).type).toBe('text');
+    expect((col?.options as { nullable?: boolean }).nullable).toBe(true);
+  });
+
   it('updatedAt is an UpdateDateColumn', () => {
     const storage = getMetadataArgsStorage();
     const col = storage.columns.find(

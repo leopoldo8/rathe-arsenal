@@ -77,6 +77,10 @@ export class TrackedDeckEntity {
   @Column({ type: 'varchar', length: 16, default: 'building' })
   status!: 'idea' | 'building' | 'ready' | 'active' | 'retired';
 
+  /** Free-text deck notes (EDIT-02). NULL and empty both mean "no notes". */
+  @Column({ type: 'text', nullable: true })
+  notes!: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   trackedAt!: Date;
 

@@ -40,6 +40,7 @@ function buildDetailResponse(
     format: 'Classic Constructed',
     status: 'building',
     tags: [],
+    notes: null,
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
@@ -310,6 +311,84 @@ describe('DecksController PATCH /decks/:deckId (int-spec)', () => {
         .patch(`/decks/${DECK_ID}`)
         .send({ name: maxLengthName })
         .expect(HttpStatus.OK);
+    });
+  });
+
+  describe('DTO validation — notes', () => {
+    it('accepts notes at the 2000 character cap and forwards them to the service', async () => {
+      const notes = 'n'.repeat(2000);
+      decksService.updateMeta.mockResolvedValue(buildDetailResponse({ notes }));
+
+      await request(app.getHttpServer())
+        .patch(`/decks/${DECK_ID}`)
+        .send({ notes })
+        .expect(HttpStatus.OK);
+
+      expect(decksService.updateMeta).toHaveBeenCalledWith(
+        DECK_ID,
+        USER_ID,
+        expect.objectContaining({ notes }),
+      );
+    });
+
+    it('returns 400 when notes exceed 2000 characters', async () => {
+      await request(app.getHttpServer())
+        .patch(`/decks/${DECK_ID}`)
+        .send({ notes: 'n'.repeat(2001) })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      expect(decksService.updateMeta).not.toHaveBeenCalled();
+    });
+
+    it('accepts null to clear the notes', async () => {
+      decksService.updateMeta.mockResolvedValue(buildDetailResponse({ notes: null }));
+
+      await request(app.getHttpServer())
+        .patch(`/decks/${DECK_ID}`)
+        .send({ notes: null })
+        .expect(HttpStatus.OK);
+
+      expect(decksService.updateMeta).toHaveBeenCalledWith(
+        DECK_ID,
+        USER_ID,
+        expect.objectContaining({ notes: null }),
+      );
+    });
+
+    it('returns 400 when notes is not a string', async () => {
+      await request(app.getHttpServer())
+        .patch(`/decks/${DECK_ID}`)
+        .send({ notes: 42 })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
+  });
+
+  describe('DTO validation — format', () => {
+    it.each(['Classic Constructed', 'Blitz', 'Living Legend', 'Silver Age'])(
+      'accepts %s',
+      async (format) => {
+        decksService.updateMeta.mockResolvedValue(buildDetailResponse({ format }));
+
+        await request(app.getHttpServer())
+          .patch(`/decks/${DECK_ID}`)
+          .send({ format })
+          .expect(HttpStatus.OK);
+
+        expect(decksService.updateMeta).toHaveBeenCalledWith(
+          DECK_ID,
+          USER_ID,
+          expect.objectContaining({ format }),
+        );
+      },
+    );
+
+    it('returns 400 for an unsupported format', async () => {
+      await request(app.getHttpServer())
+        .patch(`/decks/${DECK_ID}`)
+        .send({ format: 'Commoner' })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      expect(decksService.updateMeta).not.toHaveBeenCalled();
     });
   });
 

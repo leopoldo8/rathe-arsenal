@@ -29,6 +29,7 @@ function buildSavedDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeck
     heroIdentifier: 'dorinthea-ironsong',
     format: 'Classic Constructed',
     status: 'idea',
+    notes: null,
     trackedAt: new Date('2026-05-17T10:00:00Z'),
     updatedAt: new Date('2026-05-17T10:00:00Z'),
     user: {} as TrackedDeckEntity['user'],

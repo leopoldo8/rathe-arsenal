@@ -55,6 +55,7 @@ function buildDetailResponse(
     format: 'Classic Constructed',
     status: 'building',
     tags: [],
+    notes: null,
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
@@ -245,6 +246,59 @@ describe('DecksService.updateMeta', () => {
       expect(result.name).toBe(newName);
       expect(qb.update).toHaveBeenCalledWith(TrackedDeckEntity);
       expect(qb.set).toHaveBeenCalledWith({ name: newName });
+    });
+  });
+
+  describe('happy path — format update', () => {
+    it('updates only the format column and never touches deck_card rows', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        getDetailResult: buildDetailResponse({ format: 'Blitz' }),
+      });
+
+      const result = await service.updateMeta(DECK_ID, USER_ID, { format: 'Blitz' });
+
+      expect(result.format).toBe('Blitz');
+      expect(qb.update).toHaveBeenCalledTimes(1);
+      expect(qb.update).toHaveBeenCalledWith(TrackedDeckEntity);
+      expect(qb.set).toHaveBeenCalledWith({ format: 'Blitz' });
+      expect(qb.delete).not.toHaveBeenCalled();
+      expect(qb.insert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('happy path — notes update', () => {
+    it('writes the notes text', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({
+        manager: qb,
+        getDetailResult: buildDetailResponse({ notes: 'Liga local, sexta' }),
+      });
+
+      const result = await service.updateMeta(DECK_ID, USER_ID, { notes: 'Liga local, sexta' });
+
+      expect(result.notes).toBe('Liga local, sexta');
+      expect(qb.set).toHaveBeenCalledWith({ notes: 'Liga local, sexta' });
+    });
+
+    it('writes null when the notes are cleared', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({ manager: qb, getDetailResult: buildDetailResponse({ notes: null }) });
+
+      await service.updateMeta(DECK_ID, USER_ID, { notes: null });
+
+      expect(qb.set).toHaveBeenCalledWith({ notes: null });
+    });
+
+    it('does not write notes when the field is omitted', async () => {
+      const qb = buildQueryBuilderMock();
+      setupTransaction({ manager: qb });
+
+      await service.updateMeta(DECK_ID, USER_ID, { name: 'Renamed' });
+
+      expect(qb.set).not.toHaveBeenCalledWith(expect.objectContaining({ notes: expect.anything() }));
+      expect(qb.set).not.toHaveBeenCalledWith({ notes: null });
     });
   });
 

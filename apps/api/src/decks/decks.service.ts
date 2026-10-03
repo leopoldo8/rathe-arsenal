@@ -614,6 +614,7 @@ export class DecksService {
       format: deck.format,
       status: deck.status,
       tags: tagRows.map((r) => r.name),
+      notes: deck.notes,
       trackedAt: deck.trackedAt.toISOString(),
       updatedAt: deck.updatedAt.toISOString(),
       totalCards,
@@ -684,6 +685,7 @@ export class DecksService {
       format: saved.format,
       status: saved.status,
       tags: [],
+      notes: null,
       trackedAt: saved.trackedAt.toISOString(),
       updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
@@ -702,7 +704,7 @@ export class DecksService {
    *
    * Each field in `dto` is handled independently:
    * - `status`: simple UPDATE on tracked_deck.
-   * - `name`: simple UPDATE on tracked_deck.
+   * - `name`, `format`, `notes`: simple UPDATEs on tracked_deck.
    * - `addTagIds`: for each id, asserts ownership (inside the tx), then
    *   INSERTs into tracked_deck_tag with INSERT OR IGNORE semantics so
    *   duplicate addTagIds entries are idempotent.
@@ -738,6 +740,26 @@ export class DecksService {
           .createQueryBuilder()
           .update(TrackedDeckEntity)
           .set({ name: dto.name })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- format (metadata only; readiness does not depend on it) ---
+      if (dto.format !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ format: dto.format })
+          .where('id = :id AND "userId" = :userId', { id: deckId, userId })
+          .execute();
+      }
+
+      // --- notes (null clears) ---
+      if (dto.notes !== undefined) {
+        await manager
+          .createQueryBuilder()
+          .update(TrackedDeckEntity)
+          .set({ notes: dto.notes })
           .where('id = :id AND "userId" = :userId', { id: deckId, userId })
           .execute();
       }
@@ -1098,6 +1120,7 @@ export class DecksService {
       format: updatedDeck.format,
       status: updatedDeck.status,
       tags: tagRows.map((r) => r.name),
+      notes: updatedDeck.notes,
       trackedAt: updatedDeck.trackedAt.toISOString(),
       updatedAt: updatedDeck.updatedAt.toISOString(),
       totalCards,

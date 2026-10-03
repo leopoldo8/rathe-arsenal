@@ -34,6 +34,7 @@ function buildDetailResponse(
     format: 'Classic Constructed',
     status: 'idea',
     tags: [],
+    notes: null,
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,

@@ -247,6 +247,7 @@ function stubOwnership(
     heroIdentifier: 'briar-warden-of-thorns',
     format: 'Classic Constructed',
     status: 'building',
+    notes: null,
     trackedAt: new Date(),
     updatedAt: new Date(),
     user: {} as TrackedDeckEntity['user'],

@@ -36,6 +36,7 @@ function buildTrackedDeck(
     heroIdentifier: 'mock-hero-not-in-catalog',
     format: 'Classic Constructed',
     status: 'building',
+    notes: null,
     trackedAt: new Date('2025-01-15T10:00:00Z'),
     updatedAt: new Date('2025-01-15T10:00:00Z'),
     user: {} as TrackedDeckEntity['user'],
