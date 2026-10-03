@@ -6,20 +6,17 @@
  * orchestrator; no test skips when data is missing, a missing fixture fails.
  */
 import { test, expect } from '@playwright/test';
-import { BASE_URL, openSwaps, seedSession, signIn, swapRows, tab, tabCount, SETTLE_MS } from './swaps-helpers';
+import { BASE_URL, openSwaps, pinPortuguese, swapRows, tab, tabCount, SETTLE_MS } from './swaps-helpers';
+import { arrangeApprovedSwaps, resetFixture } from '../support/fixture';
 
 test.describe('Swaps screen — E2E', () => {
-  let jwt = '';
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    jwt = await signIn(page);
-    await page.close();
+  test.beforeEach(async ({ page }) => {
+    await resetFixture();
+    await pinPortuguese(page);
   });
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await seedSession(page, jwt);
+  test.afterAll(async () => {
+    await resetFixture();
   });
 
   test('renders the heading, the three tabs plus the all pill, with counts from the rows', async ({ page }) => {
@@ -53,6 +50,7 @@ test.describe('Swaps screen — E2E', () => {
   });
 
   test('Reverter sends an applied swap back to Pendentes', async ({ page }) => {
+    await arrangeApprovedSwaps(1);
     await openSwaps(page, 'approved');
     const pendingBefore = await tabCount(page, 'Pendentes');
     const row = swapRows(page).first();
@@ -81,6 +79,7 @@ test.describe('Swaps screen — E2E', () => {
   });
 
   test('records the post-play outcome on an applied swap', async ({ page }) => {
+    await arrangeApprovedSwaps(1);
     await openSwaps(page, 'approved');
     const row = swapRows(page).first();
 
@@ -119,7 +118,7 @@ test.describe('Swaps screen — E2E', () => {
   test('highlights Trocas in the navigation', async ({ page }) => {
     await openSwaps(page);
 
-    await expect(page.getByRole('navigation', { name: 'Primary' }).getByText('Trocas')).toHaveAttribute(
+    await expect(page.getByRole('navigation', { name: 'Principal' }).getByText('Trocas')).toHaveAttribute(
       'data-active',
       'true',
     );

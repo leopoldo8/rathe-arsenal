@@ -41,3 +41,6 @@ apps/web/tests/visual/__captures__/
 
 # Playwright run artifacts — regenerated on every run, never a baseline.
 apps/web/test-results/
+
+# Playwright shared auth state (JWT)
+apps/web/tests/.auth/

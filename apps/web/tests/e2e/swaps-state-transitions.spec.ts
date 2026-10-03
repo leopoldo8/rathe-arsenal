@@ -6,20 +6,17 @@
  * fixture fails the test.
  */
 import { test, expect } from '@playwright/test';
-import { BASE_URL, openSwaps, seedSession, signIn, swapRows, tab, tabCount } from './swaps-helpers';
+import { BASE_URL, openSwaps, pinPortuguese, swapRows, tab, tabCount } from './swaps-helpers';
+import { arrangeApprovedSwaps, resetFixture } from '../support/fixture';
 
 test.describe('Swaps state transitions — E2E', () => {
-  let jwt = '';
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    jwt = await signIn(page);
-    await page.close();
+  test.beforeEach(async ({ page }) => {
+    await resetFixture();
+    await pinPortuguese(page);
   });
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await seedSession(page, jwt);
+  test.afterAll(async () => {
+    await resetFixture();
   });
 
   test('approve, revert, reject, restore walks the whole lifecycle on one swap', async ({ page }) => {
@@ -37,6 +34,7 @@ test.describe('Swaps state transitions — E2E', () => {
     await tab(page, 'Pendentes').click();
     await same.getByRole('button', { name: /^Recusar/ }).click();
     await page.getByRole('button', { name: 'Recusar troca' }).click();
+    await expect(same.getByRole('status')).toBeVisible();
     await tab(page, 'Recusadas').click();
     await same.getByRole('button', { name: /^Restaurar/ }).click();
     await expect(same).toHaveCount(0);
@@ -79,6 +77,7 @@ test.describe('Swaps state transitions — E2E', () => {
   });
 
   test('bulk "Voltar a pendentes" reverts the applied rows it selected', async ({ page }) => {
+    await arrangeApprovedSwaps(2);
     await openSwaps(page, 'approved');
     const pendingBefore = await tabCount(page, 'Pendentes');
 
