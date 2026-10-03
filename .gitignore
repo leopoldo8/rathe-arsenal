@@ -44,3 +44,4 @@ apps/web/test-results/
 
 # Playwright shared auth state (JWT)
 apps/web/tests/.auth/
+apps/web/.tanstack/
