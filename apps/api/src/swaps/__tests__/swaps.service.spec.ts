@@ -54,6 +54,7 @@ describe('SwapsService', () => {
     txSwapRepo = createMock<Repository<SwapSuggestionEntity>>();
     manager = createMock<EntityManager>();
     manager.getRepository.mockReturnValue(txSwapRepo as never);
+    manager.findOne.mockResolvedValue({ id: DECK_ID } as TrackedDeckEntity);
     const dataSource = createMock<DataSource>();
     dataSource.transaction.mockImplementation((async (work: (m: EntityManager) => Promise<unknown>) =>
       work(manager)) as never);
@@ -94,16 +95,40 @@ describe('SwapsService', () => {
   });
 
   describe('mutate', () => {
-    it('looks the row up scoped by both id and user, under a row lock', async () => {
-      txSwapRepo.findOne.mockResolvedValue(makeEntity({ status: 'approved' }));
+    it('locks the deck before reading the row state, so mutations on one deck run one at a time', async () => {
+      const order: string[] = [];
+      txSwapRepo.findOne.mockImplementation((async () => {
+        order.push('read-row');
+        return makeEntity({ status: 'approved' });
+      }) as never);
+      manager.findOne.mockImplementation((async () => {
+        order.push('lock-deck');
+        return { id: DECK_ID } as TrackedDeckEntity;
+      }) as never);
       txSwapRepo.find.mockResolvedValue([makeEntity({ status: 'approved' })]);
 
       await service.mutate(USER_ID, SWAP_ID, { kind: 'approve' });
 
-      expect(txSwapRepo.findOne).toHaveBeenCalledWith({
+      expect(txSwapRepo.findOne).toHaveBeenNthCalledWith(1, {
         where: { id: SWAP_ID, userId: USER_ID },
-        lock: { mode: 'pessimistic_write' },
+        select: ['id', 'trackedDeckId'],
       });
+      expect(manager.findOne).toHaveBeenCalledWith(TrackedDeckEntity, {
+        where: { id: DECK_ID, userId: USER_ID },
+        lock: { mode: 'for_no_key_update' },
+      });
+      expect(txSwapRepo.findOne).toHaveBeenNthCalledWith(2, { where: { id: SWAP_ID, userId: USER_ID } });
+      expect(order).toEqual(['read-row', 'lock-deck', 'read-row']);
+    });
+
+    it('decides the transition from the row as re-read under the deck lock', async () => {
+      txSwapRepo.findOne
+        .mockResolvedValueOnce(makeEntity({ status: 'pending' }))
+        .mockResolvedValueOnce(makeEntity({ status: 'rejected' }));
+
+      const error = await service.mutate(USER_ID, SWAP_ID, { kind: 'approve' }).catch((e: unknown) => e);
+
+      expect((error as HttpException).getStatus()).toBe(HttpStatus.CONFLICT);
     });
 
     it('throws a plain 404 when the row does not exist or belongs to someone else', async () => {

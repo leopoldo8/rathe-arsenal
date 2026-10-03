@@ -160,6 +160,21 @@ describe('Swaps lifecycle (E2E)', () => {
     }
   });
 
+  it('serializes concurrent approvals on the same deck instead of deadlocking', async () => {
+    const rows = await pendingRows();
+    const baseline = await effectivePercent();
+
+    const responses = await Promise.all(rows.map((row) => post(`/api/swaps/${row.id}/approve`)));
+
+    expect(responses.map((res) => res.status)).toEqual(rows.map(() => 200));
+    const approved = (await get('/api/swaps?state=approved').expect(200)).body.rows as ISwapRowBody[];
+    expect(approved.map((r) => r.id).sort()).toEqual(rows.map((r) => r.id).sort());
+    expect(await effectivePercent()).toBeGreaterThan(baseline);
+
+    await Promise.all(rows.map((row) => post(`/api/swaps/${row.id}/revert`).expect(200)));
+    expect(await effectivePercent()).toBe(baseline);
+  });
+
   it('drives approve, revert, reject, restore and outcome through the real database', async () => {
     const initial = await pendingRows();
     const first = initial.find((r) => r.cardIdentifier === EMISSARY);

@@ -94,10 +94,19 @@ export class SwapsService {
     { userId, swapId, action }: { userId: string; swapId: string; action: TSwapAction },
   ): Promise<ITransactionOutcome> {
     const repo = manager.getRepository(SwapSuggestionEntity);
-    const row = await repo.findOne({
+    const located = await repo.findOne({
       where: { id: swapId, userId },
-      lock: { mode: 'pessimistic_write' },
+      select: ['id', 'trackedDeckId'],
     });
+    if (!located) throw new NotFoundException('Swap not found');
+
+    // Reconciliation updates sibling rows, so per-row locks deadlock two
+    // mutations on one deck; the deck lock serializes them instead.
+    await manager.findOne(TrackedDeckEntity, {
+      where: { id: located.trackedDeckId, userId },
+      lock: { mode: 'for_no_key_update' },
+    });
+    const row = await repo.findOne({ where: { id: swapId, userId } });
     if (!row) throw new NotFoundException('Swap not found');
 
     const transition = resolveSwapTransition(row, action, new Date());
