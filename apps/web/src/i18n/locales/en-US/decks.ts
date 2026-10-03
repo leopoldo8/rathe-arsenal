@@ -56,8 +56,6 @@ export const decks = {
   // DeckDetailSidebar
   willRecomputeOnSave: 'Will recompute on Save',
   readiness: 'Readiness',
-  effectiveReady: 'Effective Ready',
-  provisionedCount: '{{provisioned}}/{{total}} cards',
   rawValue: 'Raw {{value}}%',
   shopping: 'Shopping',
   viewOnFabrary: 'View on Fabrary',
@@ -124,7 +122,6 @@ export const decks = {
   clearRejections: 'Clear rejections ↺',
   // ReadinessHero
   viewOnFabraryLink: 'View on Fabrary ↗',
-  rawFidelity: 'Raw {{raw}}% · Fidelity {{fidelity}}%',
   // SaveCascadeConfirmModal
   illegalCardsInDeck_one: '{{count}} illegal card in this deck',
   illegalCardsInDeck_other: '{{count}} illegal cards in this deck',
@@ -287,12 +284,6 @@ export const decks = {
   // path-c-result.tsx
   closestPlayableVersionAria: 'Closest playable version',
   approximation: 'APPROXIMATION',
-  // decks.$deckId.tsx — Path C banner (closest-playable-version)
-  pathCBannerHeadline: 'Closest playable version.',
-  pathCBannerMissing_one:
-    'This deck is missing {{count}} card. You’re currently at {{fidelity}}% fidelity.',
-  pathCBannerMissing_other:
-    'This deck is missing {{count}} cards. You’re currently at {{fidelity}}% fidelity.',
   pathCFidelitySubline: 'of this deck can be assembled or substituted from your collection.',
   tierSwappedClose_one: '{{count}} card swapped with a close match',
   tierSwappedClose_other: '{{count}} cards swapped with a close match',

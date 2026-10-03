@@ -93,14 +93,14 @@ BOX-02's "cards must not cover the deck name or medallion" clause is a layout fa
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| DECK-01 hero banner with the 90px medallion | detail § | route spec | Pending |
-| DECK-02..03 status strip, both tones | detail § | route spec, complete and incomplete | Pending |
-| DECK-04 raw, fidelity and pct as three distinct values | detail § | route spec asserting the concatenated string is gone | Pending |
-| DECK-05 missing and swaps panels, driven by `score` | detail § | route spec | Pending |
-| DECK-06..07 decklist badges and view toggle | detail § | route spec | Pending |
-| DECK-08 decklist uses `CardArt` | detail § | route spec | Pending |
-| DECK-09 no duplicated Fabrary link | detail § | route spec | Pending |
-| Possible-versus-applied copy when Path is complete but pct < 100 | detail § | route spec for that exact combination | Pending |
+| DECK-01 hero banner with the 90px medallion | detail § | route spec | Verified (banner and 90px medallion in the DOM; ring look not yet seen in a browser, see DEV-14) |
+| DECK-02..03 status strip, both tones | detail § | route spec, complete and incomplete | Implementing — both tones verified; "Comprar tudo" has no bulk action to reuse, so the strip links to the shopping list instead (DEV-14) |
+| DECK-04 raw, fidelity and pct as three distinct values | detail § | route spec asserting the concatenated string is gone | Verified |
+| DECK-05 missing and swaps panels, driven by `score` | detail § | route spec | Verified |
+| DECK-06..07 decklist badges and view toggle | detail § | route spec | Verified (the by-type grouping is PROVISIONAL, DEV-14) |
+| DECK-08 decklist uses `CardArt` | detail § | route spec | Verified |
+| DECK-09 no duplicated Fabrary link | detail § | route spec | Verified |
+| Possible-versus-applied copy when Path is complete but pct < 100 | detail § | route spec for that exact combination | Verified |
 
 ---
 

@@ -1,0 +1,179 @@
+/* Analysis row (DECK-04): three equal cards, 14px gap. */
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-block-start: var(--ra-space-4);
+}
+
+@media (max-width: 899px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  min-inline-size: 0;
+  padding: var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+}
+
+.empty,
+.caption {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+/* ---------- Readiness meters ---------- */
+.meterRow {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.meterLabel {
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+.meterValue {
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  block-size: 5px;
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-border-strong);
+  overflow: hidden;
+}
+
+.fill {
+  inline-size: var(--ra-fill, 0%);
+  block-size: 100%;
+  border-radius: var(--ra-radius-full);
+}
+
+.fillRaw {
+  background: var(--ra-accent);
+}
+
+.fillFidelity {
+  background: var(--ra-ready-high);
+}
+
+.legality {
+  margin-block-start: auto;
+}
+
+/* ---------- Pitch distribution ---------- */
+.stack {
+  display: flex;
+  block-size: 9px;
+  border-radius: var(--ra-radius-full);
+  overflow: hidden;
+  background: var(--ra-border-strong);
+}
+
+.segment {
+  flex: var(--ra-grow, 0) 1 0;
+}
+
+.pitchRed {
+  background: var(--ra-pitch-red);
+}
+
+.pitchYellow {
+  background: var(--ra-pitch-yellow);
+}
+
+.pitchBlue {
+  background: var(--ra-pitch-blue);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2) var(--ra-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+.dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+}
+
+/* ---------- Cost curve ---------- */
+.curve {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--ra-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.curveColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-1);
+}
+
+.curveValue,
+.curveLabel {
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.curveTrack {
+  display: flex;
+  align-items: flex-end;
+  inline-size: 100%;
+  block-size: 56px;
+}
+
+.curveFill {
+  inline-size: 100%;
+  block-size: var(--ra-fill, 0%);
+  min-block-size: 2px;
+  border-radius: var(--ra-radius-xs) var(--ra-radius-xs) 0 0;
+  background: linear-gradient(180deg, var(--ra-accent-hi), var(--ra-accent-dim));
+}

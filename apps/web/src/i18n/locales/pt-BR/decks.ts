@@ -56,8 +56,6 @@ export const decks = {
   // DeckDetailSidebar
   willRecomputeOnSave: 'Será recalculado ao Salvar',
   readiness: 'Prontidão',
-  effectiveReady: 'Efetivamente Pronto',
-  provisionedCount: '{{provisioned}}/{{total}} cartas',
   rawValue: 'Bruto {{value}}%',
   shopping: 'Compras',
   viewOnFabrary: 'Ver no Fabrary',
@@ -124,7 +122,6 @@ export const decks = {
   clearRejections: 'Limpar rejeições ↺',
   // ReadinessHero
   viewOnFabraryLink: 'Ver no Fabrary ↗',
-  rawFidelity: 'Bruto {{raw}}% · Fidelidade {{fidelity}}%',
   // SaveCascadeConfirmModal
   illegalCardsInDeck_one: '{{count}} carta ilegal neste baralho',
   illegalCardsInDeck_other: '{{count}} cartas ilegais neste baralho',
@@ -287,12 +284,6 @@ export const decks = {
   // path-c-result.tsx
   closestPlayableVersionAria: 'Versão mais próxima jogável',
   approximation: 'APROXIMAÇÃO',
-  // decks.$deckId.tsx — Path C banner (closest-playable-version)
-  pathCBannerHeadline: 'Versão mais próxima jogável.',
-  pathCBannerMissing_one:
-    'Falta {{count}} carta neste baralho. Você está em {{fidelity}}% de fidelidade.',
-  pathCBannerMissing_other:
-    'Faltam {{count}} cartas neste baralho. Você está em {{fidelity}}% de fidelidade.',
   pathCFidelitySubline: 'deste baralho pode ser montado ou substituído da sua coleção.',
   tierSwappedClose_one: '{{count}} carta substituída com correspondência próxima',
   tierSwappedClose_other: '{{count}} cartas substituídas com correspondência próxima',

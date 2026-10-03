@@ -1,0 +1,167 @@
+/* Decklist (DECK-06..08): six-column grid, 16/10 thumbnails cropped from CardArt. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+  margin-block-start: var(--ra-space-6);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ra-space-3);
+}
+
+.title {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-subtitle);
+  font-weight: var(--ra-weight-bold);
+  text-transform: none;
+}
+
+.toggle {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+}
+
+.toggleBtn {
+  min-block-size: 32px;
+  padding-inline: var(--ra-space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.toggleBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.toggleBtnActive {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent-soft-bd);
+  color: var(--ra-accent);
+}
+
+.empty {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.groupTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ra-space-2);
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-bold);
+  text-transform: none;
+}
+
+.groupCount {
+  color: var(--ra-fg-secondary);
+  font-weight: var(--ra-weight-medium);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 719px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-inline-size: 0;
+}
+
+.thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  background: var(--ra-bg-surface);
+}
+
+/* CardArt sizes itself from a pixel preset; here it must fill the cell width and be cropped. */
+.thumb > div,
+.thumb > button {
+  inline-size: 100%;
+}
+
+.thumb svg {
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.cellMissing .thumb {
+  border-color: rgba(208, 100, 90, 0.55);
+}
+
+.qtyBadge {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-start: 4px;
+  z-index: 3;
+  padding: 1px 6px;
+  border-radius: var(--ra-radius-xs);
+  background: var(--ra-bg-sunken);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-2xs);
+  font-weight: var(--ra-weight-bold);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: 0.71875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

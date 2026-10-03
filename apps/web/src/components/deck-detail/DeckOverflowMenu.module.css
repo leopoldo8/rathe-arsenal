@@ -1,0 +1,73 @@
+/* ⋯ overflow menu container */
+.overflow {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 36px;
+  min-inline-size: 36px;
+  background: transparent;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-body);
+  cursor: pointer;
+  transition:
+    border-color var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
+}
+
+.trigger:hover {
+  border-color: var(--ra-border-strong);
+  color: var(--ra-fg-primary);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* Overflow dropdown */
+.menu {
+  position: absolute;
+  top: calc(100% + var(--ra-space-1));
+  right: 0;
+  z-index: 50;
+  min-width: 140px;
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  box-shadow: var(--ra-shadow-md);
+  padding: var(--ra-space-1) 0;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: var(--ra-space-2) var(--ra-space-4);
+  background: transparent;
+  border: 0;
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ra-duration) var(--ra-ease);
+}
+
+.item:hover:not(:disabled) {
+  background: var(--ra-ready-low-bg);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
+}
+
+.item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

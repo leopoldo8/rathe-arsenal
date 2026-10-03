@@ -7,6 +7,7 @@ import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
 import { decks } from './decks';
+import { deckDetail } from './deckDetail';
 import { reviews } from './reviews';
 import { variantQueue } from './variantQueue';
 import { settings } from './settings';
@@ -23,6 +24,7 @@ export const ptBR = {
   library,
   csvSources,
   decks,
+  deckDetail,
   reviews,
   variantQueue,
   settings,

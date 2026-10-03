@@ -416,29 +416,6 @@ describe('UXUI-06 AC3 — SumExplainer card-name uses var(--ra-text-caption) tok
   });
 });
 
-describe('UXUI-14 AC3 — ReadinessHero sub-labels use --ra-fg-secondary not --ra-fg-muted (T11)', () => {
-  const HERO_CSS = path.join(
-    SRC_ROOT,
-    'components/deck-detail/ReadinessHero.module.css',
-  );
-
-  it('.readiness__label uses color: var(--ra-fg-secondary)', () => {
-    const content = fs.readFileSync(HERO_CSS, 'utf-8');
-    expect(content).toMatch(/\.readiness__label\s*\{[^}]*color\s*:\s*var\(--ra-fg-secondary\)/s);
-  });
-
-  it('.readiness__label does NOT use var(--ra-fg-muted)', () => {
-    const content = fs.readFileSync(HERO_CSS, 'utf-8');
-    // Must not find --ra-fg-muted inside the .readiness__label block.
-    expect(content).not.toMatch(/\.readiness__label\s*\{[^}]*var\(--ra-fg-muted\)/s);
-  });
-
-  it('.readiness__raw uses color: var(--ra-fg-secondary)', () => {
-    const content = fs.readFileSync(HERO_CSS, 'utf-8');
-    expect(content).toMatch(/\.readiness__raw\s*\{[^}]*color\s*:\s*var\(--ra-fg-secondary\)/s);
-  });
-});
-
 // ---------------------------------------------------------------------------
 // Product-redesign foundation (FND-01..FND-07) — pins the literals each
 // acceptance criterion fixes, so a future token-file edit that drifts from
@@ -968,5 +945,188 @@ describe('HOME layout — centred 1180px column (handoff §3)', () => {
     expect(homeRouteCss.match(/\.populated\s*\{/g)).toHaveLength(1);
     expect(body).toContain('max-inline-size: 1180px');
     expect(body).toContain('margin-inline: auto');
+  });
+});
+
+const DECK_DIR = 'components/deck-detail';
+const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+function withoutMediaBlocks(css: string): string {
+  let result = css;
+  for (let start = result.indexOf('@media'); start !== -1; start = result.indexOf('@media')) {
+    let depth = 0;
+    let end = result.indexOf('{', start);
+    for (; end < result.length; end++) {
+      if (result[end] === '{') depth++;
+      if (result[end] === '}') depth--;
+      if (depth === 0) break;
+    }
+    result = result.slice(0, start) + result.slice(end + 1);
+  }
+  return result;
+}
+
+const readDeckCss = (file: string): string =>
+  stripComments(fs.readFileSync(path.join(SRC_ROOT, DECK_DIR, file), 'utf-8'));
+const readDeckBaseCss = (file: string): string => withoutMediaBlocks(readDeckCss(file));
+
+describe('DECK layout — centred 1180px column with a bleeding banner (handoff §5)', () => {
+  const viewCss = readDeckCss('DeckDetailView.module.css');
+  const bannerCss = readDeckCss('DeckHeroBanner.module.css');
+  const bannerBase = readDeckBaseCss('DeckHeroBanner.module.css');
+
+  it('caps the stack at 1180px and centres it', () => {
+    const body = ruleBody(viewCss, '.stack');
+    expect(body).toContain('max-inline-size: 1180px');
+    expect(body).toContain('margin-inline: auto');
+  });
+
+  it('is 210px tall and bleeds 32px past the column once the viewport can hold it', () => {
+    expect(ruleBody(bannerBase, '.banner')).toContain('min-block-size: 210px');
+    const wide = atRuleBody(bannerCss, '@media (min-width: 1244px)');
+    expect(ruleBody(wide, '.banner')).toContain('margin-inline: -32px');
+  });
+
+  it('bleeds only the shell padding below that viewport, so nothing scrolls sideways', () => {
+    expect(ruleBody(bannerBase, '.banner')).toContain('margin-inline: calc(-1 * var(--ra-space-6))');
+  });
+});
+
+describe('DECK-01 — hero banner literals', () => {
+  const css = readDeckBaseCss('DeckHeroBanner.module.css');
+
+  it('lays the handoff gradient over the art', () => {
+    expect(ruleBody(css, '.overlay')).toContain(
+      'background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), var(--hero-overlay-end))',
+    );
+    expect(ruleBody(css, '.banner')).toContain('--hero-overlay-end: rgba(11, 12, 15, 0.96)');
+  });
+
+  it('sets the eyebrow at 12px uppercase in #c6a678', () => {
+    expect(ruleBody(css, '.banner')).toContain('--hero-eyebrow-ink: #c6a678');
+    const body = ruleBody(css, '.eyebrow');
+    expect(body).toContain('color: var(--hero-eyebrow-ink)');
+    expect(body).toContain('font-size: var(--ra-text-xs)');
+    expect(body).toContain('text-transform: uppercase');
+  });
+
+  it('sets the title in Newsreader at 34px', () => {
+    const body = ruleBody(css, '.title > button, .title > input');
+    expect(body).toContain('font-family: var(--ra-font-display)');
+    expect(body).toContain('font-size: 2.125rem');
+  });
+
+  it('borders the Edit action in the accent', () => {
+    expect(ruleBody(css, '.editBtn')).toContain('border: 1px solid var(--ra-accent)');
+  });
+});
+
+describe('DECK-02/03 — status strip', () => {
+  const css = readDeckCss('DeckStatusStrip.module.css');
+
+  it('rounds the strip to 12px', () => {
+    expect(ruleBody(css, '.strip')).toContain('border-radius: 12px');
+  });
+
+  it('tints incomplete with the miss wash, solvable with the accent and complete with ready', () => {
+    const incomplete = ruleBody(css, '.toneIncomplete');
+    expect(incomplete).toContain('background: var(--ra-ready-low-bg)');
+    expect(incomplete).toContain('border-color: var(--ra-ready-low-border)');
+    expect(ruleBody(css, '.toneSolvable')).toContain('background: var(--ra-accent-soft-bg)');
+    expect(ruleBody(css, '.toneComplete')).toContain('background: var(--ra-ready-high-bg)');
+  });
+
+  it('keeps the miss wash tokens on the values the handoff gives', () => {
+    const tokens = fs.readFileSync(path.join(SRC_ROOT, 'styles/tokens.css'), 'utf-8');
+    expect(tokens).toContain('--ra-ready-low-bg:      rgba(208, 100, 90, 0.08)');
+    expect(tokens).toContain('--ra-ready-low-border:  rgba(208, 100, 90, 0.25)');
+  });
+});
+
+describe('DECK-04 — analysis row', () => {
+  const css = readDeckBaseCss('DeckAnalysisRow.module.css');
+
+  it('lays three equal cards 14px apart', () => {
+    const body = ruleBody(css, '.row');
+    expect(body).toContain('grid-template-columns: 1fr 1fr 1fr');
+    expect(body).toContain('gap: 14px');
+  });
+
+  it('draws the readiness bars 5px tall, raw in the accent and fidelity in ready', () => {
+    expect(ruleBody(css, '.track')).toContain('block-size: 5px');
+    expect(ruleBody(css, '.fillRaw')).toContain('background: var(--ra-accent)');
+    expect(ruleBody(css, '.fillFidelity')).toContain('background: var(--ra-ready-high)');
+  });
+
+  it('draws the pitch stack 9px tall and splits it by count', () => {
+    expect(ruleBody(css, '.stack')).toContain('block-size: 9px');
+    expect(ruleBody(css, '.segment')).toContain('flex: var(--ra-grow, 0) 1 0');
+  });
+
+  it('draws the cost curve as five columns with a gold gradient fill', () => {
+    expect(ruleBody(css, '.curve')).toContain('grid-template-columns: repeat(5, 1fr)');
+    expect(ruleBody(css, '.curveFill')).toContain('var(--ra-accent-hi)');
+  });
+});
+
+describe('DECK-05 — missing and swaps panels', () => {
+  it('lays the panels in two equal columns 14px apart', () => {
+    const body = ruleBody(readDeckBaseCss('DeckActionPanels.module.css'), '.row');
+    expect(body).toContain('grid-template-columns: 1fr 1fr');
+    expect(body).toContain('gap: 14px');
+  });
+
+  it('draws the pitch bar as its own 4x30 element', () => {
+    const body = ruleBody(readDeckCss('MissingPanel.module.css'), '.pitchBar');
+    expect(body).toContain('inline-size: 4px');
+    expect(body).toContain('block-size: 30px');
+  });
+
+  it('strikes the original in #c9938f-family miss tone and bands confidence', () => {
+    const css = readDeckCss('SwapsPanel.module.css');
+    expect(ruleBody(css, '.originalName')).toContain('text-decoration: line-through');
+    expect(ruleBody(css, '.bandHigh')).toContain('color: var(--ra-status-ready)');
+    expect(ruleBody(css, '.bandMid')).toContain('color: var(--ra-accent)');
+    expect(ruleBody(css, '.bandLow')).toContain('color: var(--ra-ready-mid-accent)');
+  });
+});
+
+describe('DECK-06/08 — decklist grid and thumbnails', () => {
+  const css = readDeckBaseCss('DeckList.module.css');
+
+  it('lays six columns 10px apart', () => {
+    const body = ruleBody(css, '.grid');
+    expect(body).toContain('grid-template-columns: repeat(6, 1fr)');
+    expect(body).toContain('gap: 10px');
+  });
+
+  it('crops each thumbnail to 16/10', () => {
+    expect(ruleBody(css, '.thumb')).toContain('aspect-ratio: 16 / 10');
+  });
+
+  it('borders a card with missing copies in the miss tone', () => {
+    expect(ruleBody(css, '.cellMissing .thumb')).toContain('border-color: rgba(208, 100, 90, 0.55)');
+  });
+
+  it('truncates the name to one line at 11.5px', () => {
+    const body = ruleBody(css, '.name');
+    expect(body).toContain('font-size: 0.71875rem');
+    expect(body).toContain('white-space: nowrap');
+    expect(body).toContain('text-overflow: ellipsis');
+  });
+
+  it('pins the quantity badge top-left and the missing badge bottom-right', () => {
+    const qty = ruleBody(css, '.qtyBadge');
+    expect(qty).toContain('inset-block-start: 4px');
+    expect(qty).toContain('inset-inline-start: 4px');
+    const missing = ruleBody(
+      stripComments(
+        fs.readFileSync(path.join(SRC_ROOT, 'components/card-art/CardArt.module.css'), 'utf-8'),
+      ),
+      '.missingCountBadge',
+    );
+    expect(missing).toContain('inset-block-end: 4px');
+    expect(missing).toContain('inset-inline-end: 4px');
+    expect(missing).toContain('color: var(--ra-ready-low)');
   });
 });
