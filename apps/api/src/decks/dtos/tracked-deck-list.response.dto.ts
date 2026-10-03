@@ -66,6 +66,16 @@ export interface ITrackedDeckListItem {
    * animation. Empty array when no snapshot has been computed yet.
    */
   readonly representativeCards: readonly IRepresentativeCard[];
+  /**
+   * Physical copy counts from the latest snapshot: `owned` is the exact
+   * matches, `missing` the not-owned copies, `total` their sum. Null when the
+   * deck has no snapshot. Powers the home tile's "63/67" meta line.
+   */
+  readonly cardCounts: {
+    readonly owned: number;
+    readonly missing: number;
+    readonly total: number;
+  } | null;
 }
 
 /**

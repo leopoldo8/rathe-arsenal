@@ -236,9 +236,56 @@ describe('DecksService', () => {
         // default oxblood card-back silhouettes inside the deckbox.
         heroImageUrl: null,
         representativeCards: [],
+        cardCounts: { owned: 0, missing: 0, total: 0 },
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.
       expect(result.aggregateShoppingLine).toBeNull();
+    });
+
+    describe('cardCounts per deck', () => {
+      function setup(breakdown: unknown | null): void {
+        const deck = buildTrackedDeck();
+        trackedDeckRepo.find.mockResolvedValue([deck]);
+        collectionReadService.countUniqueOwned.mockResolvedValue(0);
+        const qb = createMock<SelectQueryBuilder<DeckReadinessSnapshotEntity>>();
+        qb.where.mockReturnThis();
+        qb.andWhere.mockReturnThis();
+        qb.getMany.mockResolvedValue(
+          breakdown === null
+            ? []
+            : [buildSnapshot({ breakdown: breakdown as Record<string, unknown> })],
+        );
+        snapshotRepo.createQueryBuilder.mockReturnValue(qb);
+      }
+
+      it('owned is the exact quantity, missing the notOwned quantity, total their sum', async () => {
+        setup({
+          exact: [
+            { cardIdentifier: 'a', quantity: 3, slot: 'mainboard' },
+            { cardIdentifier: 'b', quantity: 60, slot: 'mainboard' },
+          ],
+          substituted: [],
+          missing: [],
+          notOwned: [{ cardIdentifier: 'c', quantity: 4, slot: 'mainboard' }],
+        });
+
+        const result = await service.listForUser(USER_ID);
+
+        expect(result.trackedDecks[0]!.cardCounts).toEqual({
+          owned: 63,
+          missing: 4,
+          total: 67,
+        });
+      });
+
+      it('is null when the deck has no snapshot', async () => {
+        setup(null);
+        substitutionService.computeAndStoreReadiness.mockRejectedValue(new Error('no list'));
+
+        const result = await service.listForUser(USER_ID);
+
+        expect(result.trackedDecks[0]!.cardCounts).toBeNull();
+      });
     });
 
     describe('totalCardsMissing aggregate', () => {

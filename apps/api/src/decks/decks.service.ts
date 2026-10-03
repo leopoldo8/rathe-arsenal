@@ -261,6 +261,7 @@ export class DecksService {
           : null,
         heroImageUrl,
         representativeCards: previewMeta.representativeCards,
+        cardCounts: snap ? this.deriveCardCounts(snap.breakdown) : null,
       };
     });
 
@@ -291,13 +292,26 @@ export class DecksService {
     const raw = breakdown as {
       notOwned?: readonly { quantity?: number }[];
     };
-    const entries = raw?.notOwned ?? [];
+    return this.sumQuantities(raw?.notOwned);
+  }
+
+  private sumQuantities(entries: readonly { quantity?: number }[] | undefined): number {
     let total = 0;
-    for (const entry of entries) {
-      const q = typeof entry?.quantity === 'number' ? entry.quantity : 0;
-      total += q;
+    for (const entry of entries ?? []) {
+      total += typeof entry?.quantity === 'number' ? entry.quantity : 0;
     }
     return total;
+  }
+
+  private deriveCardCounts(breakdown: unknown): {
+    owned: number;
+    missing: number;
+    total: number;
+  } {
+    const raw = breakdown as { exact?: readonly { quantity?: number }[] };
+    const owned = this.sumQuantities(raw?.exact);
+    const missing = this.sumNotOwnedQuantities(breakdown);
+    return { owned, missing, total: owned + missing };
   }
 
   // Extracts the hero thumbnail + up to 3 representative mainboard cards
