@@ -19,7 +19,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DeckCanvas } from '../DeckCanvas';
-import type { IBreakdown, IDecisionEntry } from '../../../api/deck-detail';
+import type { IBreakdown } from '../../../api/deck-detail';
 import type { ICompositionDraft } from '../../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../../hooks/useCascadeCheck';
 
@@ -178,7 +178,6 @@ const EMPTY_BREAKDOWN: IBreakdown = {
   missing: [],
   notOwned: [],
 };
-const NO_DECISIONS: readonly IDecisionEntry[] = [];
 
 function makeDraft(cards: ICompositionDraft['cards'] = []): ICompositionDraft {
   return {
@@ -216,8 +215,6 @@ function renderEditCanvas(
   const defaults = {
     mode: 'edit' as const,
     breakdown: EMPTY_BREAKDOWN,
-    decisions: NO_DECISIONS,
-    rejectedCount: 0,
     onMarkOwned: vi.fn(),
     isMarkingOwned: false,
     pendingCard: null,

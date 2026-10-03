@@ -47,7 +47,7 @@ import { SwapsModule } from './swaps/swaps.module';
     StoresModule,
     // U12: user settings (GET/PATCH /api/users/me/settings)
     UsersModule,
-    // U5 (Plan B): review_aggregate entity + service (no HTTP endpoints yet).
+    // 410 Gone stubs for the retired /api/reviews routes.
     ReviewsModule,
     // U3 (Deck Management v2): GET/POST/DELETE /api/tags for user-defined deck tags.
     TagsModule,

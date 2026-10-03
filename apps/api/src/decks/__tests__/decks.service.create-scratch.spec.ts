@@ -9,7 +9,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { CatalogService } from '../../catalog/catalog.service';
@@ -74,7 +73,6 @@ describe('DecksService.createScratch', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
   let catalogService: jest.Mocked<CatalogService>;
@@ -88,7 +86,6 @@ describe('DecksService.createScratch', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    decisionsService = createMock<DecisionsService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
     catalogService = createMock<CatalogService>();
@@ -97,8 +94,6 @@ describe('DecksService.createScratch', () => {
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
     shoppingLineService.computeAggregate.mockResolvedValue(null);
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
     swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
@@ -123,7 +118,6 @@ describe('DecksService.createScratch', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: DecisionsService, useValue: decisionsService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: CatalogService, useValue: catalogService },
@@ -169,10 +163,6 @@ describe('DecksService.createScratch', () => {
       // Assert
       expect(result.fabraryUlid).toBeNull();
       expect(result.totalCards).toBe(0);
-      expect(result.decisions).toEqual([]);
-      expect(result.rejectedCount).toBe(0);
-      expect(result.approvedCount).toBe(0);
-      expect(result.pendingCount).toBe(0);
       expect(result.latestSnapshot).toBeNull();
     });
 

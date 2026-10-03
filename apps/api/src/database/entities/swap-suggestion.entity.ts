@@ -27,9 +27,8 @@ import { TrackedDeckEntity } from './tracked-deck.entity';
  * never deletes it (SWAP-01, SWAP-02).
  *
  * Card metadata (name/pitch/type/imageUrl) is deliberately NOT stored here
- * -- it is resolved at read time from the in-process catalog, same pattern
- * as `ReviewAggregateService.lookupName`/`lookupType`, so the row stays
- * immune to catalog data changing under it.
+ * -- it is resolved at read time from the in-process catalog, so the row
+ * stays immune to catalog data changing under it.
  */
 @Entity({ name: 'swap_suggestion' })
 @Index(['trackedDeckId', 'cardIdentifier', 'slot', 'substituteIdentifier'], { unique: true })
@@ -61,7 +60,7 @@ export class SwapSuggestionEntity {
   @Column({ type: 'smallint' })
   tier!: 1 | 2;
 
-  /** 0-100, normalized (mirrors `ReviewAggregateService.normalizeConfidence`). */
+  /** 0-100, normalized from the engine's 0-1 match score. */
   @Column({ type: 'float' })
   confidence!: number;
 

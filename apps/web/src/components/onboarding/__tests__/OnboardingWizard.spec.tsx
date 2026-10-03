@@ -143,10 +143,6 @@ function makeDetailQueryWithSubs() {
       format: 'CC',
       trackedAt: '2026-01-01T00:00:00.000Z',
       totalCards: 60,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 1,
-      decisions: [],
       latestSnapshot: {
         id: 1,
         rawPercent: 72,
@@ -202,10 +198,6 @@ function makeDetailQueryWith100Readiness() {
       format: 'CC',
       trackedAt: '2026-01-01T00:00:00.000Z',
       totalCards: 60,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
       latestSnapshot: {
         id: 1,
         rawPercent: 100,

@@ -53,9 +53,6 @@ export function groupFreshSwapEntries(
 
 /**
  * Translates the engine's 0-1 match score into a 0-100 confidence integer.
- * Mirrors `ReviewAggregateService.normalizeConfidence` exactly -- both
- * read the same engine match shape and must agree on what a given score
- * displays as.
  */
 function normalizeConfidence(score: number): number {
   if (!Number.isFinite(score)) return 0;

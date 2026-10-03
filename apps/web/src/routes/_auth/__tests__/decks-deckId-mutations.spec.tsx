@@ -359,10 +359,6 @@ function buildDeck(overrides: Partial<IDeckDetailResponse> = {}): IDeckDetailRes
     legality: { category: 'legal', reasons: [] },
     totalCards: 60,
     latestSnapshot: buildSnapshot(),
-    rejectedCount: 0,
-    approvedCount: 0,
-    pendingCount: 0,
-    decisions: [],
     ...overrides,
   };
 }
@@ -1036,16 +1032,16 @@ describe('DeckDetailPage — swaps list not loaded yet', () => {
 });
 
 describe('DeckDetailPage — rejected swaps banner', () => {
-  it('counts the rejected swaps from the swaps list, not from the deck response', () => {
-    populate(buildDeck({ rejectedCount: 0 }));
+  it('counts the rejected swaps from the swaps list', () => {
+    populate(buildDeck());
     mockSwapRows = [swapRowFor('a', 's1', 'rejected'), swapRowFor('b', 's2', 'rejected')];
     renderPage();
 
     expect(screen.getByRole('status')).toHaveTextContent('2');
   });
 
-  it('shows no banner when no swap of this deck is rejected, whatever the deck response says', () => {
-    populate(buildDeck({ rejectedCount: 5 }));
+  it('shows no banner when no swap of this deck is rejected', () => {
+    populate(buildDeck());
     mockSwapRows = [swapRowFor('a', 's1', 'pending'), swapRowFor('b', 's2', 'rejected', { trackedDeckId: 99 })];
     renderPage();
 

@@ -98,16 +98,6 @@ export interface ITrackedDeckDetailSnapshot {
   readonly computedAt: string;
 }
 
-/**
- * Per-card decision included in the deck detail response.
- * Only non-pending decisions are included — absence of a row implies pending.
- * Required by Unit 17's optimistic-update snapshot path.
- */
-export interface IDecisionEntry {
-  readonly cardIdentifier: string;
-  readonly decision: 'approved' | 'rejected';
-}
-
 export interface ITrackedDeckDetailResponse {
   readonly id: number;
   /** Null for scratch decks created without a Fabrary URL (D8). */
@@ -142,26 +132,6 @@ export interface ITrackedDeckDetailResponse {
   readonly updatedAt: string;
   readonly totalCards: number;
   readonly latestSnapshot: ITrackedDeckDetailSnapshot | null;
-  /**
-   * Count of `decision='rejected'` rows for this deck (U9).
-   * The web UI renders the modified-view banner when this is > 0.
-   * Renamed from `rejectionCount` in U9 to align with the 3-state model.
-   */
-  readonly rejectedCount: number;
-  /**
-   * Count of `decision='approved'` rows for this deck (U9).
-   */
-  readonly approvedCount: number;
-  /**
-   * Count of non-owned cards without an explicit decision (U9).
-   * Derived as: notOwned.length - rejectedCount - approvedCount.
-   */
-  readonly pendingCount: number;
-  /**
-   * All non-pending decisions for this deck. Required by Unit 17's
-   * optimistic-update snapshot path for per-row decision splicing.
-   */
-  readonly decisions: readonly IDecisionEntry[];
   /**
    * Shopping line derived at read time from the latest snapshot's breakdown.
    * null = Path A (no missing cards). The discriminated union covers:

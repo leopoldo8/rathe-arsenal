@@ -21,9 +21,9 @@ import { SubstitutionService } from '../substitution/substitution.service';
  * Required deploy step, run immediately after the
  * ReplaceSubstituteDecisionWithSwapSuggestion migration -- not optional
  * cleanup (design/07-swaps.md "Landing sequence"). The migration creates
- * `swap_suggestion` empty; without this script the old Swaps screen (still
- * served by the compatibility shim) shows nothing for any deck the user
- * hasn't touched since deploy, and every deck's readiness drops raggedly
+ * `swap_suggestion` empty; without this script the Swaps screen shows
+ * nothing for any deck the user hasn't touched since deploy, and every
+ * deck's readiness drops raggedly
  * as decks happen to recompute instead of uniformly at deploy time, which
  * makes D7's accepted trade-off untrue in practice.
  *

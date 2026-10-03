@@ -35,7 +35,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
@@ -150,7 +149,6 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let dataSource: jest.Mocked<DataSource>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
 
@@ -160,7 +158,6 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     dataSource = createMock<DataSource>();
     collectionReadService = createMock<CollectionReadService>();
-    decisionsService = createMock<DecisionsService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
@@ -170,8 +167,6 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
     });
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
     mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
 
     const module: TestingModule = await Test.createTestingModule({
@@ -184,7 +179,6 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
         { provide: AuthzService, useValue: createMock<AuthzService>() },
         { provide: SubstitutionService, useValue: createMock<SubstitutionService>() },
         { provide: ShoppingLineService, useValue: createMock<ShoppingLineService>() },
-        { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: createMock<CatalogService>() },
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },

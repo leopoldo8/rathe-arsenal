@@ -79,10 +79,6 @@ function makeDeck(overrides: Partial<IDeckDetailResponse> = {}): IDeckDetailResp
     legality: { category: 'legal', reasons: [] },
     totalCards: 0,
     latestSnapshot: null,
-    rejectedCount: 0,
-    approvedCount: 0,
-    pendingCount: 0,
-    decisions: [],
     ...overrides,
   };
 }

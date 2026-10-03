@@ -8,6 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { SWAPS_MIGRATION_PAYLOAD } from '../../swaps/legacy-routes-gone';
 
 /**
  * Deprecation stub for the old re-solve endpoints. All three endpoints now
@@ -21,10 +22,7 @@ import type { Response } from 'express';
  */
 @Controller('decks/:deckId')
 export class ReSolveController {
-  private readonly deprecationPayload = {
-    code: 'DEPRECATED' as const,
-    migration: 'use /api/decks/:trackedDeckId/decisions',
-  };
+  private readonly deprecationPayload = SWAPS_MIGRATION_PAYLOAD;
 
   @Post('reject-substitute')
   @HttpCode(HttpStatus.GONE)

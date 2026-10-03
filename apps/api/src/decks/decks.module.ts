@@ -19,7 +19,7 @@ import { VariantFetchController } from './variant-fetch.controller';
 import { VariantJobsController } from './variant-jobs.controller';
 import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
-import { DecisionsModule } from './decisions/decisions.module';
+import { DecisionsController } from './decisions/decisions.controller';
 import { HeroIdentifierExistsInCatalog } from './validators/hero-identifier-exists.validator';
 import { SwapsCoreModule } from '../swaps/swaps-core.module';
 
@@ -37,7 +37,6 @@ import { SwapsCoreModule } from '../swaps/swaps-core.module';
     CollectionModule,
     AuthModule,
     StoresModule,
-    DecisionsModule,
     SwapsCoreModule,
   ],
   controllers: [
@@ -45,6 +44,7 @@ import { SwapsCoreModule } from '../swaps/swaps-core.module';
     DecksController,
     TestDeckController,
     ReSolveController,
+    DecisionsController,
     VariantFetchController,
     VariantJobsController,
   ],

@@ -7,7 +7,6 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { AuthzService } from '../auth/authz.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
-import { DecisionsService } from './decisions/decisions.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
@@ -55,7 +54,6 @@ export class DecksService {
     private readonly authzService: AuthzService,
     private readonly substitutionService: SubstitutionService,
     private readonly shoppingLineService: ShoppingLineService,
-    private readonly decisionsService: DecisionsService,
     private readonly collectionReadService: CollectionReadService,
     private readonly catalogService: CatalogService,
     private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
@@ -507,32 +505,19 @@ export class DecksService {
       }
     }
 
-    // Fetch decision counts, full list, and tags in parallel with other reads.
     // Tags are fetched with a raw query to avoid adding new @InjectRepository
     // tokens to the constructor (which would require updating all existing
     // test modules). The `?? []` fallback handles the case where dataSource.query
     // returns undefined in unit test mocks.
-    const [rejectedCount, decisions, tagRowsRaw] = await Promise.all([
-      this.decisionsService.countRejected(deckId),
-      this.decisionsService.list(userId, deckId),
-      this.dataSource.query<Array<{ name: string }>>(
-        `SELECT tag.name
-           FROM deck_tag tag
-           INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
-           WHERE tdt."trackedDeckId" = $1
-           ORDER BY tdt."attachedAt" ASC`,
-        [deckId],
-      ),
-    ]);
+    const tagRowsRaw = await this.dataSource.query<Array<{ name: string }>>(
+      `SELECT tag.name
+         FROM deck_tag tag
+         INNER JOIN tracked_deck_tag tdt ON tdt."tagId" = tag.id
+         WHERE tdt."trackedDeckId" = $1
+         ORDER BY tdt."attachedAt" ASC`,
+      [deckId],
+    );
     const tagRows: Array<{ name: string }> = tagRowsRaw ?? [];
-
-    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
-
-    // Pending = not-owned cards without an explicit decision.
-    // Derived at response time from the snapshot breakdown.
-    const notOwnedCount =
-      (latestSnapshot?.breakdown as unknown as { notOwned?: unknown[] })?.notOwned?.length ?? 0;
-    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
 
     const snapshotDto: ITrackedDeckDetailSnapshot | null = latestSnapshot
       ? (() => {
@@ -619,10 +604,6 @@ export class DecksService {
       updatedAt: deck.updatedAt.toISOString(),
       totalCards,
       latestSnapshot: snapshotDto,
-      rejectedCount,
-      approvedCount,
-      pendingCount,
-      decisions,
       shoppingLine,
       legality,
     };
@@ -690,10 +671,6 @@ export class DecksService {
       updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
       latestSnapshot: null,
-      rejectedCount: 0,
-      approvedCount: 0,
-      pendingCount: 0,
-      decisions: [],
       shoppingLine: null,
       legality,
     };
@@ -1099,17 +1076,7 @@ export class DecksService {
     // -------------------------------------------------------------------------
     // Readiness comes from the in-memory readinessResult — NOT from a snapshot
     // table re-read — to avoid the staleness window described in Key Technical
-    // Decisions.
     const totalCards = freshCardsForLegality.reduce((sum, c) => sum + c.quantity, 0);
-
-    const [rejectedCount, decisions] = await Promise.all([
-      this.decisionsService.countRejected(deckId),
-      this.decisionsService.list(userId, deckId),
-    ]);
-
-    const approvedCount = decisions.filter((d) => d.decision === 'approved').length;
-    const notOwnedCount = readinessResult.breakdown.notOwned.length;
-    const pendingCount = Math.max(0, notOwnedCount - rejectedCount - approvedCount);
 
     return {
       id: updatedDeck.id,
@@ -1125,10 +1092,6 @@ export class DecksService {
       updatedAt: updatedDeck.updatedAt.toISOString(),
       totalCards,
       latestSnapshot: null,
-      rejectedCount,
-      approvedCount,
-      pendingCount,
-      decisions,
       shoppingLine: null,
       legality,
     };

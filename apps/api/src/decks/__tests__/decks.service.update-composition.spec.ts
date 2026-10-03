@@ -29,7 +29,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
@@ -158,7 +157,6 @@ describe('DecksService.updateComposition', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
@@ -172,7 +170,6 @@ describe('DecksService.updateComposition', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
@@ -184,8 +181,6 @@ describe('DecksService.updateComposition', () => {
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
     });
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
     snapshotRepo.save.mockResolvedValue({} as DeckReadinessSnapshotEntity);
 
@@ -212,7 +207,6 @@ describe('DecksService.updateComposition', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },

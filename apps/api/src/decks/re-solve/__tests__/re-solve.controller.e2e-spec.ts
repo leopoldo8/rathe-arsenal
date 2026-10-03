@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import request from 'supertest';
 import { ReSolveController } from '../re-solve.controller';
+import { SWAPS_MIGRATION_PAYLOAD } from '../../../swaps/legacy-routes-gone';
 
 /**
  * Tests for the deprecated re-solve endpoints.
@@ -29,7 +30,7 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
 
   const EXPECTED_PAYLOAD = {
     code: 'DEPRECATED',
-    migration: 'use /api/decks/:trackedDeckId/decisions',
+    migration: SWAPS_MIGRATION_PAYLOAD.migration,
   };
 
   describe('POST /decks/:deckId/reject-substitute', () => {
@@ -41,7 +42,8 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
         .expect((res) => {
           expect(res.body).toMatchObject(EXPECTED_PAYLOAD);
           expect(res.body.code).toBe('DEPRECATED');
-          expect(res.body.migration).toContain('/decisions');
+          expect(res.body.migration).toContain('/api/swaps/:id/approve');
+          expect(res.body.migration).not.toContain('/decisions');
         });
     });
   });

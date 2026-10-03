@@ -10,8 +10,7 @@ export interface IReadinessInputs {
 }
 
 /**
- * Supersedes `DecisionsService.loadExclusions` (design/07-swaps.md §4):
- * one `swap_suggestion` query per deck, returning both the rejected
+ * Design/07-swaps.md §4: one `swap_suggestion` query per deck, returning both the rejected
  * (exclusion) and approved sets in one round trip, instead of two
  * separate queries against two separate concepts.
  */

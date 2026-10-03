@@ -11,7 +11,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
@@ -70,7 +69,6 @@ describe('DecksService', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
   let catalogService: jest.Mocked<CatalogService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
@@ -84,7 +82,6 @@ describe('DecksService', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    decisionsService = createMock<DecisionsService>();
     catalogService = createMock<CatalogService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
@@ -98,9 +95,6 @@ describe('DecksService', () => {
     // Default: no collection cards owned. Individual tests override as needed.
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
 
-    // Default: no decisions — rejectedCount=0, empty list.
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
     swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
@@ -126,7 +120,6 @@ describe('DecksService', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: DecisionsService, useValue: decisionsService },
         { provide: CatalogService, useValue: catalogService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
@@ -926,8 +919,6 @@ const trackedDeck = result.trackedDecks[0]!;
         excludedIdentifiers: exclusions,
         approvedIdentifiers: new Set(),
       });
-      decisionsService.countRejected.mockResolvedValue(1);
-      decisionsService.list.mockResolvedValue([{ cardIdentifier: 'rejected-proxy-x', decision: 'rejected' }]);
 
       const recomputedSnapshot = buildSnapshot({ id: 50, effectivePercent: 70 });
       substitutionService.computeAndStoreReadiness.mockResolvedValue(recomputedSnapshot);
@@ -954,8 +945,6 @@ const trackedDeck = result.trackedDecks[0]!;
       trackedDeckRepo.findOne.mockResolvedValue(deck);
       deckCardRepo.find.mockResolvedValue(buildDeckCards());
       snapshotRepo.findOne.mockResolvedValue(snapshot);
-      decisionsService.countRejected.mockResolvedValue(0);
-      decisionsService.list.mockResolvedValue([]);
       shoppingLineService.computeForBreakdown.mockResolvedValue(populatedLine);
       substitutionService.deriveSnapshotFields.mockReturnValue({
         path: 'C',
@@ -972,18 +961,11 @@ const trackedDeck = result.trackedDecks[0]!;
       expect(sl.variantFetchProgress).toBeUndefined();
     });
 
-    it('should include rejectedCount, approvedCount, pendingCount, and decisions in response', async () => {
+    it('does not expose the retired per-deck decision fields', async () => {
       // Arrange
-      const deck = buildTrackedDeck();
-      const snapshot = buildSnapshotWithMissing();
-
-      trackedDeckRepo.findOne.mockResolvedValue(deck);
+      trackedDeckRepo.findOne.mockResolvedValue(buildTrackedDeck());
       deckCardRepo.find.mockResolvedValue(buildDeckCards());
-      snapshotRepo.findOne.mockResolvedValue(snapshot);
-      decisionsService.countRejected.mockResolvedValue(1);
-      decisionsService.list.mockResolvedValue([
-        { cardIdentifier: 'card-a', decision: 'rejected' },
-      ]);
+      snapshotRepo.findOne.mockResolvedValue(buildSnapshotWithMissing());
       substitutionService.deriveSnapshotFields.mockReturnValue({
         path: 'C',
         fidelityPercent: 80,
@@ -992,13 +974,11 @@ const trackedDeck = result.trackedDecks[0]!;
       // Act
       const result = await service.getDetail(USER_ID, 1);
 
-      // Assert: new U9 fields present in response.
-      expect(result.rejectedCount).toBe(1);
-      expect(result.approvedCount).toBe(0);
-      expect(typeof result.pendingCount).toBe('number');
-      expect(result.decisions).toEqual([
-        { cardIdentifier: 'card-a', decision: 'rejected' },
-      ]);
+      // Assert
+      expect(result).not.toHaveProperty('rejectedCount');
+      expect(result).not.toHaveProperty('approvedCount');
+      expect(result).not.toHaveProperty('pendingCount');
+      expect(result).not.toHaveProperty('decisions');
     });
   });
 

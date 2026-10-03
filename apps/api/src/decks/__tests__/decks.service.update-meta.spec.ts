@@ -31,7 +31,6 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
-import { DecisionsService } from '../decisions/decisions.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { CatalogService } from '../../catalog/catalog.service';
@@ -60,10 +59,6 @@ function buildDetailResponse(
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
     latestSnapshot: null,
-    rejectedCount: 0,
-    approvedCount: 0,
-    pendingCount: 0,
-    decisions: [],
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [] },
     ...overrides,
@@ -113,7 +108,6 @@ describe('DecksService.updateMeta', () => {
   let authzService: jest.Mocked<AuthzService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
-  let decisionsService: jest.Mocked<DecisionsService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
   let catalogService: jest.Mocked<CatalogService>;
@@ -127,7 +121,6 @@ describe('DecksService.updateMeta', () => {
     authzService = createMock<AuthzService>();
     substitutionService = createMock<SubstitutionService>();
     shoppingLineService = createMock<ShoppingLineService>();
-    decisionsService = createMock<DecisionsService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
     catalogService = createMock<CatalogService>();
@@ -137,8 +130,6 @@ describe('DecksService.updateMeta', () => {
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
     shoppingLineService.computeAggregate.mockResolvedValue(null);
     collectionReadService.countUniqueOwned.mockResolvedValue(0);
-    decisionsService.countRejected.mockResolvedValue(0);
-    decisionsService.list.mockResolvedValue([]);
     swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
@@ -163,7 +154,6 @@ describe('DecksService.updateMeta', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: DecisionsService, useValue: decisionsService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: CatalogService, useValue: catalogService },
