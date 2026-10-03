@@ -21,14 +21,14 @@ Two ordering constraints are load-bearing and must not be relaxed:
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| FND-01 colour token mapping, both themes | §1, §2, §7 | `contrast.spec.ts`, `design-guards.spec.ts` | Pending |
-| FND-01a pitch `-ink` companion tokens | §1.6a | new contrast assertions on the four derived values | Pending |
-| FND-02 Hanken Grotesque for all UI text | §3.1 | `design-guards.spec.ts` | Pending |
-| FND-03 Newsreader for titles and readiness numbers | §3.1, §3.2 | `design-guards.spec.ts` | Pending |
-| FND-04 UnifrakturCook for wordmark and monogram | §3.1 | already correct; guard pins it | Pending |
-| FND-05 `.impeccable.md` + contrast matrix updated | §6 | manual read; both must stop describing the old brand | Pending |
-| FND-06 nav active-item rule | §5.3 | unit tests over `resolveActiveNavKey`, both nav bars | Pending |
-| FND-07 font loading, no first-paint block | §3.4 | see the caveat below | Pending |
+| FND-01 colour token mapping, both themes | §1, §2, §7 | `contrast.spec.ts`, `design-guards.spec.ts` | Verified |
+| FND-01a pitch `-ink` companion tokens | §1.6a | new contrast assertions on the four derived values | Verified |
+| FND-02 Hanken Grotesque for all UI text | §3.1 | `design-guards.spec.ts` | Verified |
+| FND-03 Newsreader for titles and readiness numbers | §3.1, §3.2 | `design-guards.spec.ts` | Verified |
+| FND-04 UnifrakturCook for wordmark and monogram | §3.1 | `design-guards.spec.ts` FND-04 block (token + TopBar wordmark) | Verified |
+| FND-05 `.impeccable.md` + contrast matrix updated | §6 | manual read; both must stop describing the old brand | Implementing — rewritten in `2eeb4bc`/`72557b2`; manual read deferred to phase 10 |
+| FND-06 nav active-item rule | §5.3 | unit tests over `resolveActiveNavKey`, both nav bars | Verified |
+| FND-07 font loading, no first-paint block | §3.4 | see the caveat below | Implementing — no first-paint block shipped (`22cbc87`); layout shift unmeasured |
 
 **Inherited defect this phase must clear**: the `describe.skip` block at `contrast.spec.ts:193`. The run's baseline has exactly one skipped test; phase 1 ends at zero.
 
@@ -42,12 +42,12 @@ Two ordering constraints are load-bearing and must not be relaxed:
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| SWAP-01 suggestions persist with a stable id | §1, §5 | reconciliation unit tests | Pending |
-| SWAP-02 reconciliation reuses and retires, never duplicates or deletes | §1 | `reconcileSwapSuggestions` unit tests | Pending |
-| SWAP-03 rejected pairs suppressed from future runs | §3 | engine unit tests over the slot-aware exclusion key | Pending |
-| SWAP-13 only approved substitutions count toward readiness | §0 | engine unit tests; every existing readiness fixture reviewed | Pending |
-| SWAP-15 legacy decisions discarded | §5 | migration test | Pending |
-| Endpoints: approve, reject, revert, restore, outcome | §6 | api unit + e2e | Pending |
+| SWAP-01 suggestions persist with a stable id | §1, §5 | reconciliation unit tests; e2e asserts the sibling row keeps its id through a cascade | Verified |
+| SWAP-02 reconciliation reuses and retires, never duplicates or deletes | §1 | `reconcileSwapSuggestions` unit tests | Verified |
+| SWAP-03 rejected pairs suppressed from future runs | §3 | engine unit tests; e2e asserts a rejected pair stops being proposed | Verified |
+| SWAP-13 only approved substitutions count toward readiness | §0 | engine unit tests; e2e asserts approve raises and revert restores `effectivePercent` | Verified |
+| SWAP-15 legacy decisions discarded | §5 | `replace-substitute-decision-with-swap-suggestion.int-spec.ts` | Verified |
+| Endpoints: approve, reject, revert, restore, outcome | §6 | `resolve-swap-transition.spec.ts` (every §6 cell), `swaps.service.spec.ts`, `swaps.controller.spec.ts`, `swaps.controller.e2e-spec.ts` | Verified |
 
 **Two things this phase must not get wrong.** The existing Swaps screen keeps calling the existing endpoints until phase 9 replaces it, so the compatibility shim is not optional — a phase that leaves the app broken cannot be committed green. And the migration alone leaves `swap_suggestion` empty, so the backfill script ships with it; without it the old screen shows nothing and readiness drops raggedly as decks happen to recompute, instead of uniformly at deploy.
 
@@ -174,7 +174,7 @@ The settings eyebrow stays on `--ra-accent-body`. The handoff names a token by i
 
 | Step | Done when |
 |---|---|
-| Full suite green | typecheck, lint, web + api + engine unit, api e2e — zero failures, zero skips |
+| Full suite green | typecheck, lint, web + api + engine unit, api int, api e2e — zero failures, zero skips |
 | Traceability closed | every row above reads Verified, and `spec.md`'s table matches |
 | Cross-cutting 1 (i18n) | both catalogs complete; the completeness test passes |
 | Cross-cutting 2/3 (a11y, motion) | no `uxui-remediation` guarantee regressed |

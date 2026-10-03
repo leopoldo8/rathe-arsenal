@@ -58,6 +58,39 @@ Decisions taken without the owner, or departures from the agreed plan. Empty mea
 - **Reversible**: yes, completely — `docker rm -f rathe-arsenal-pg`. Nothing in the repo depends on it existing.
 - **Note for the owner**: this also means the `## Known env limitation` line in `.specs/STATE.md` is now out of date. Left alone for the moment rather than edited mid-run.
 
+### DEV-05 — Mutation responses also carry the acted-on row
+- **What**: `ISwapMutationResult` is `{ deckId, swap, rows }`, not the design's `{ deckId, rows }`. `swap` is the row the request acted on, with its real post-recompute status, which can be `retired`.
+- **Why**: §2's restore-phantom rule says restore must report the row's actual resulting status, but §6 says `rows` excludes retired rows, so a restored row that the recompute retires again would simply vanish from the response with no explanation. Half B's in-place confirmation needs to know that happened.
+- **Reversible**: yes, additive field.
+
+### DEV-06 — Revert clears `outcome`
+- **What**: `revert` resets `appliedAt` and `outcome` to null; a later `approve` starts with no outcome.
+- **Why**: the design is silent. A post-play outcome describes one application of the swap; carrying it across a revert and re-approval would show feedback the user gave about a swap they then undid. The outcome write is logged (`swaps.transition`), so nothing is lost for telemetry.
+- **Reversible**: yes, one line in `resolve-swap-transition.ts`.
+
+### DEV-07 — Small state-machine details the §6 table leaves open
+- A blank or whitespace-only rejection note is stored as null, so Recusadas never renders an empty quote.
+- Re-rejecting with a different reason or note updates the row but skips the readiness recompute, since the exclusion set did not change.
+- The same-reason no-op compares reason and note after normalizing omitted values to null, so a reason-less repeat of a reason-less rejection is a no-op while an edited note is not swallowed.
+
+### DEV-08 — `GET /api/swaps` and mutation rows keep `imageUrl.sources`
+- **What**: `ISwapRow.originalImageUrl` / `substituteImageUrl` are the catalog's full image object, including the `sources` mirror list. The old `/api/reviews` shape strips it.
+- **Why**: §11 has `SwapRow` render through `CardArt` with its fallback chain, which walks `sources`.
+
+### DEV-09 — No tighter per-route throttle on the swap endpoints (open for Half B)
+- **What**: the five mutations inherit only the global 120 requests/min/IP limit.
+- **Why**: §7 turns a bulk action into N sequential single-endpoint calls. A 30/min override like `tags`/`users` would make a bulk approve of 40 rows fail partway. Even 120/min caps one bulk action at roughly that many rows per minute.
+- **Needs a call in Half B**: either cap bulk selection, pace the client dispatch, or add a bulk endpoint. Not decided here.
+
+### Phase 2 close-out (2026-10-03, resumed session)
+- The run stopped on 2026-08-16 with the five endpoints unwritten. Resumed and finished on 2026-10-03.
+- `GET /api/swaps` and the five mutations live in `apps/api/src/swaps/`. The old `/api/reviews` and `/decks/:id/decisions` shim stays until Half B, as the landing sequence requires.
+- The status write, readiness recompute and reconciliation share one transaction. `SwapSuggestionQueryService.loadReadinessInputs` and `SubstitutionService.computeAndStoreReadiness` gained an optional `EntityManager` for this. Verified by mutation: dropping the manager from the readiness read makes the e2e fail (`effectivePercent` does not rise after approve).
+- Malformed ids return 400 (`ParseUUIDPipe`) instead of a Postgres 500.
+- **Pre-existing failures fixed on the way** (all three were test drift, not product bugs): `state-transition-matrix.spec.ts` lint error from `48cf5a6`; `tags.controller.int-spec.ts` expected a bare array after #83 changed `GET /api/tags` to `{ tags }`, and its throttle override never reached the `APP_GUARD` instance; `decks.controller.put.int-spec.ts` still expected a 400 for a missing `heroIdentifier` after #84 made it optional, and hung on the auto-mocked service.
+- **Phase 1 gap closed**: FND-04's guard did not exist; added to `design-guards.spec.ts`.
+- **Test-strength note for every later phase**: the API now has a `test:int` suite (70 tests) besides `test` and `test:e2e`. It must be part of the gate.
+
 ## Baseline before any change
 
 Captured 2026-08-16 on `feat/product-redesign` at commit `8c22ed2`, after `pnpm install`:
