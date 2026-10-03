@@ -95,6 +95,8 @@ Decisions taken without the owner, or departures from the agreed plan. Empty mea
 - **BOX-05 is a CSS-source guard**: jsdom evaluates no media query, so the check reads the reduced-motion block and asserts `animation: none` on the cards scene and all three cards, with the box lifting only 4px. Mutation-checked: changing it to `animation: fly1` fails the guard.
 - **Filters reach the medallion**: retired and idea filters sit on the front face root as the handoff says, so they also grey or dim the embedded medallion.
 - **Hero art in the sm medallion** reuses the same `heroArt` through its own `useImageFallback`; the sublabel is not rendered at sm, so it receives an empty `heroName`.
+- **Departures from design §2.8 and §2.2**: the reduced-motion block does not repeat `z-index: 2` or the per-card rest transforms, because cancelling the animations already leaves the base rules (z-index 2, rest transforms) in force. The `pointerEventsNone` prop became a `.frontScene` class, so the scene primitive has no pointer-events API.
+- **Fix round**: a mutation run showed the CSS guards did not prove the rendered elements carry the classes those rules key on. Specs now assert the scene, box, slot, front, link, brand and medallion classes, and the guard helper throws when a pinned selector is defined twice.
 - **Not rewired**: `HeroLifeToken`, `DeckBoxVessel`, `DeckboxDecoration` and `ReadinessHero` markup are untouched; phases 4, 5 and 8 consume the new components and remove them.
 
 ### Phase 2 close-out (2026-10-03, resumed session)

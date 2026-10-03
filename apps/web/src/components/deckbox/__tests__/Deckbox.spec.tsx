@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { TDeckStatus } from '../../../api/decks';
 import { Deckbox, type IDeckboxCardSlot } from '../Deckbox';
+import styles from '../Deckbox.module.css';
 
 const linkSpy = vi.fn();
 
@@ -90,12 +91,52 @@ describe('Deckbox (variant deck)', () => {
     expect(within(frontScene as HTMLElement).getByTestId('deckbox-front-deck')).toBeInTheDocument();
   });
 
-  it('BOX-01: each scene wraps its content in a shared box element', () => {
+  it('BOX-01: each scene carries its z-index class and wraps content in the shared box class', () => {
     renderDeck();
-    for (const scene of scenes()) {
+    const [back, cards, front] = scenes() as [HTMLElement, HTMLElement, HTMLElement];
+    expect(back).toHaveClass(styles.scene as string, styles['scene--z1'] as string);
+    expect(cards).toHaveClass(styles.scene as string, styles['scene--z2'] as string);
+    expect(front).toHaveClass(styles.scene as string, styles['scene--z3'] as string);
+    for (const scene of [back, cards, front]) {
       expect(scene.children).toHaveLength(1);
-      expect(scene.children[0]?.className).toBe(scenes()[0]?.children[0]?.className);
+      expect(scene.children[0]).toHaveClass(styles.box as string);
     }
+  });
+
+  it('BOX-02: scenes carry the classes the hover rules key on', () => {
+    renderDeck();
+    const [back, cards, front] = scenes() as [HTMLElement, HTMLElement, HTMLElement];
+    expect(back).toHaveClass(styles.backScene as string);
+    expect(cards).toHaveClass(styles.cardsScene as string);
+    expect(front).toHaveClass(styles.frontScene as string);
+  });
+
+  it('BOX-02: cards paint in c1, c3, c2 order and each carries its slot class', () => {
+    renderDeck();
+    const cards = screen.getAllByTestId('deckbox-card');
+    const slotOf = (el: HTMLElement): string =>
+      (['c1', 'c2', 'c3'] as const).find((c) => el.classList.contains(styles[c] as string)) ?? 'none';
+    expect(cards.map(slotOf)).toEqual(['c1', 'c3', 'c2']);
+    for (const card of cards) expect(card).toHaveClass(styles.card as string);
+  });
+
+  it('BOX-02: slot index 0, 1, 2 map to c1, c2, c3', () => {
+    renderDeck({ cards: [slot('left'), slot('mid'), slot('right')] });
+    const bySrc = (id: string): HTMLElement =>
+      screen.getAllByTestId('deckbox-card').find((c) => c.querySelector(`img[src="${id}.jpg"]`)) as HTMLElement;
+    expect(bySrc('left')).toHaveClass(styles.c1 as string);
+    expect(bySrc('mid')).toHaveClass(styles.c2 as string);
+    expect(bySrc('right')).toHaveClass(styles.c3 as string);
+  });
+
+  it('BOX-04: the front face carries the front class the status filters key on', () => {
+    renderDeck({ status: 'retired' });
+    expect(screen.getByTestId('deckbox-front-deck')).toHaveClass(styles.front as string);
+  });
+
+  it('BOX-07: the root link carries the deckbox and link classes', () => {
+    renderDeck();
+    expect(screen.getByTestId('deckbox')).toHaveClass(styles.deckbox as string, styles.link as string);
   });
 
   it('shows the deck name and format on the front face', () => {
@@ -193,6 +234,14 @@ describe('Deckbox (variant brand)', () => {
   function renderBrand(): void {
     render(<Deckbox variant="brand" />);
   }
+
+  it('carries the brand modifier and never the interactive link class', () => {
+    renderBrand();
+    const root = screen.getByTestId('deckbox');
+    expect(root).toHaveClass(styles.deckbox as string, styles['deckbox--brand'] as string);
+    expect(root).not.toHaveClass(styles.link as string);
+    expect(screen.getByTestId('deckbox-front-brand')).toHaveClass(styles.front as string);
+  });
 
   it('is hidden from assistive technology', () => {
     renderBrand();

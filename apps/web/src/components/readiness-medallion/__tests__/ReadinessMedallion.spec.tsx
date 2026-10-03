@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { ReadinessMedallion, type TMedallionSize } from '../ReadinessMedallion';
+import styles from '../ReadinessMedallion.module.css';
 
 const ART = { small: 'a.jpg', smallSources: ['a.jpg', 'b.jpg'] };
 
@@ -94,5 +95,33 @@ describe('ReadinessMedallion', () => {
     fireEvent.error(screen.getByTestId('readiness-medallion-art'));
     expect(screen.getByTestId('readiness-medallion-art-fallback')).toBeInTheDocument();
     expect(screen.getByRole('meter')).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('carries the CSS classes the stylesheet keys on', () => {
+    const meter = renderMedallion(50, 'lg');
+    expect(meter).toHaveClass(styles.medallion as string);
+    expect(meter.querySelector(`.${styles.ring}`)).toBeInTheDocument();
+    expect(meter.querySelector(`.${styles.shade}`)).toBeInTheDocument();
+    expect(screen.getByTestId('readiness-medallion-art')).toHaveClass(styles.art as string);
+  });
+
+  it('the ring element is the one that receives the sweep variable', () => {
+    const meter = renderMedallion(40, 'sm');
+    const ring = meter.querySelector<HTMLElement>(`.${styles.ring}`);
+    expect(ring?.style.getPropertyValue('--ra-medallion-pct')).toBe('40%');
+  });
+
+  it('the fallback element carries the art and fallback classes', () => {
+    renderMedallion(50, 'sm', null);
+    const fallback = screen.getByTestId('readiness-medallion-art-fallback');
+    expect(fallback).toHaveClass(styles.art as string);
+    expect(fallback).toHaveClass(styles.artFallback as string);
+  });
+
+  it('merges a caller className onto the root', () => {
+    render(<ReadinessMedallion pct={5} size="sm" heroName="R" heroArt={null} className="extra" />);
+    const meter = screen.getByRole('meter');
+    expect(meter).toHaveClass('extra');
+    expect(meter).toHaveClass(styles.medallion as string);
   });
 });

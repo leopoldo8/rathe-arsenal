@@ -587,17 +587,29 @@ function squash(css: string): string {
   return css.replace(/\s+/g, ' ');
 }
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Throws on duplicates: a later rule with the same selector would override a
+// pinned literal without this helper noticing.
 function ruleBody(css: string, selector: string): string {
   const flat = squash(css);
-  const start = flat.indexOf(`${selector} {`);
-  if (start === -1) return '';
-  return flat.slice(start + selector.length + 2, flat.indexOf('}', start));
+  const re = new RegExp(`(?:^ ?|[{}] )${escapeRegExp(selector)} \\{([^}]*)\\}`, 'g');
+  const matches = [...flat.matchAll(re)];
+  if (matches.length > 1) {
+    throw new Error(`selector "${selector}" is defined ${matches.length} times`);
+  }
+  return matches[0]?.[1] ?? '';
 }
 
 function atRuleBody(css: string, header: string): string {
   const flat = squash(css);
   const start = flat.indexOf(`${header} {`);
   if (start === -1) return '';
+  if (flat.indexOf(`${header} {`, start + 1) !== -1) {
+    throw new Error(`at-rule "${header}" is defined more than once`);
+  }
   const open = flat.indexOf('{', start);
   let depth = 0;
   for (let i = open; i < flat.length; i++) {
@@ -615,6 +627,12 @@ const MEDALLION_CSS = fs.readFileSync(
 const DECKBOX_CSS = fs.readFileSync(
   path.join(SRC_ROOT, 'components/deckbox/Deckbox.module.css'),
   'utf-8',
+);
+const REDUCED_MOTION_HEADER = '@media (prefers-reduced-motion: reduce)';
+const DECKBOX_REDUCED = atRuleBody(DECKBOX_CSS, REDUCED_MOTION_HEADER);
+const DECKBOX_BASE = squash(DECKBOX_CSS).replace(
+  `${REDUCED_MOTION_HEADER} {${DECKBOX_REDUCED}}`,
+  '',
 );
 
 describe('CMP-01..03 — ReadinessMedallion ring geometry', () => {
@@ -635,6 +653,13 @@ describe('CMP-01..03 — ReadinessMedallion ring geometry', () => {
     expect(ruleBody(css, '.medallion')).toContain('inline-size: 38px');
     expect(ruleBody(css, ".medallion[data-size='lg']")).toContain('--medallion-ring-w: 4px');
     expect(ruleBody(css, ".medallion[data-size='lg']")).toContain('inline-size: 90px');
+  });
+
+  it('pins the dial height, art inset and number colour', () => {
+    expect(ruleBody(css, '.medallion')).toContain('block-size: 38px');
+    expect(ruleBody(css, ".medallion[data-size='lg']")).toContain('block-size: 90px');
+    expect(ruleBody(css, '.art, .shade')).toContain('inset: var(--medallion-ring-w)');
+    expect(ruleBody(css, '.label')).toContain('color: #f0e4cc');
   });
 
   it('maps each band to its token', () => {
@@ -658,7 +683,7 @@ describe('CMP-01..03 — ReadinessMedallion ring geometry', () => {
 });
 
 describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
-  const css = DECKBOX_CSS;
+  const css = DECKBOX_BASE;
 
   it('pins perspective, box size and rest transform', () => {
     expect(ruleBody(css, '.scene')).toContain('perspective: 1300px');
@@ -667,6 +692,13 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     expect(box).toContain('height: 150px');
     expect(box).toContain('transform: translate(-50%, -50%) rotateX(-18deg) rotateY(-28deg)');
     expect(box).toContain('transition: transform 0.5s cubic-bezier(0.3, 1, 0.4, 1)');
+  });
+
+  it('pins the root height, box anchor, card transition and front-scene pointer-events', () => {
+    expect(ruleBody(css, '.deckbox')).toContain('block-size: 238px');
+    expect(ruleBody(css, '.box')).toContain('top: 56%');
+    expect(ruleBody(css, '.card')).toContain('transition: transform 0.55s cubic-bezier(0.3, 1.06, 0.4, 1)');
+    expect(ruleBody(css, '.frontScene')).toContain('pointer-events: none');
   });
 
   it('stacks the scenes at z-index 1, 2 and 3', () => {
@@ -739,17 +771,17 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
 
 describe('BOX-04 — Deckbox status filters', () => {
   it('greys retired decks and dims idea decks with the handoff values', () => {
-    expect(ruleBody(DECKBOX_CSS, ".front[data-status='retired']")).toContain(
+    expect(ruleBody(DECKBOX_BASE, ".front[data-status='retired']")).toContain(
       'filter: grayscale(1) brightness(0.8)',
     );
-    expect(ruleBody(DECKBOX_CSS, ".front[data-status='idea']")).toContain(
+    expect(ruleBody(DECKBOX_BASE, ".front[data-status='idea']")).toContain(
       'filter: brightness(0.62) saturate(0.7)',
     );
   });
 });
 
 describe('BOX-05 — Deckbox reduced motion removes the card flight', () => {
-  const reduced = atRuleBody(DECKBOX_CSS, '@media (prefers-reduced-motion: reduce)');
+  const reduced = DECKBOX_REDUCED;
 
   it('has a reduced-motion block', () => {
     expect(reduced).not.toBe('');
@@ -773,7 +805,7 @@ describe('BOX-05 — Deckbox reduced motion removes the card flight', () => {
 
 describe('BOX-07 — Deckbox focus indicator', () => {
   it('draws a 2px accent outline offset 3px on the root link', () => {
-    const body = ruleBody(DECKBOX_CSS, '.link:focus-visible');
+    const body = ruleBody(DECKBOX_BASE, '.link:focus-visible');
     expect(body).toContain('outline: 2px solid var(--ra-accent)');
     expect(body).toContain('outline-offset: 3px');
   });
@@ -781,7 +813,7 @@ describe('BOX-07 — Deckbox focus indicator', () => {
 
 describe('Brand-mode deckbox — geometry and inertness', () => {
   it('is 170x170 at scale(.9) and ignores the pointer', () => {
-    const body = ruleBody(DECKBOX_CSS, '.deckbox--brand');
+    const body = ruleBody(DECKBOX_BASE, '.deckbox--brand');
     expect(body).toContain('inline-size: 170px');
     expect(body).toContain('block-size: 170px');
     expect(body).toContain('transform: scale(0.9)');
@@ -789,11 +821,11 @@ describe('Brand-mode deckbox — geometry and inertness', () => {
   });
 
   it('sets the monogram at 52px', () => {
-    expect(ruleBody(DECKBOX_CSS, '.monogramBrand')).toContain('font-size: 52px');
+    expect(ruleBody(DECKBOX_BASE, '.monogramBrand')).toContain('font-size: 52px');
   });
 
   it('scopes hover choreography to the link, never the brand mark', () => {
-    expect(DECKBOX_CSS).not.toMatch(/\.deckbox--brand:hover/);
-    expect(DECKBOX_CSS).not.toMatch(/\.deckbox:hover/);
+    expect(DECKBOX_BASE).not.toMatch(/\.deckbox--brand:hover/);
+    expect(DECKBOX_BASE).not.toMatch(/\.deckbox:hover/);
   });
 });
