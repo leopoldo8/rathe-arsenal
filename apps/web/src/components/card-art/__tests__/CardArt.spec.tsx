@@ -453,3 +453,46 @@ describe('CardArt — button mode ARIA (UXUI-13 AC4)', () => {
     expect(screen.getByRole('img', { name: BASE_PROPS.name })).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Missing-count corner badge (DECK-06)
+// ---------------------------------------------------------------------------
+describe('CardArt — missingCount corner badge', () => {
+  it('renders "falta ×N" with the count when missingCount is 2', () => {
+    render(<CardArt {...BASE_PROPS} missingCount={2} />);
+
+    const badge = screen.getByTestId('card-art-missing-count');
+    expect(badge).toHaveTextContent('falta ×2');
+  });
+
+  it('renders the badge at the boundary count of 1', () => {
+    render(<CardArt {...BASE_PROPS} missingCount={1} />);
+
+    expect(screen.getByTestId('card-art-missing-count')).toHaveTextContent('falta ×1');
+  });
+
+  it('renders no badge when missingCount is 0', () => {
+    render(<CardArt {...BASE_PROPS} missingCount={0} />);
+
+    expect(screen.queryByTestId('card-art-missing-count')).toBeNull();
+  });
+
+  it('renders no badge when missingCount is omitted', () => {
+    render(<CardArt {...BASE_PROPS} />);
+
+    expect(screen.queryByTestId('card-art-missing-count')).toBeNull();
+  });
+
+  it('applies the badge class so the bottom-right rule styles it', async () => {
+    const styles = (await import('../CardArt.module.css')).default;
+    render(<CardArt {...BASE_PROPS} missingCount={3} />);
+
+    expect(screen.getByTestId('card-art-missing-count')).toHaveClass(styles.missingCountBadge!);
+  });
+
+  it('keeps the badge when the card is also clickable', () => {
+    render(<CardArt {...BASE_PROPS} missingCount={3} onClick={() => undefined} />);
+
+    expect(screen.getByRole('button')).toContainElement(screen.getByTestId('card-art-missing-count'));
+  });
+});

@@ -62,6 +62,11 @@ export interface ICardArtProps {
    * CardArt just emits the click.
    */
   readonly onClick?: (() => void) | undefined;
+  /**
+   * Copies of this card still to acquire. A positive value draws the
+   * "falta ×N" corner badge; 0 or omitted draws nothing.
+   */
+  readonly missingCount?: number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,6 +148,7 @@ export function CardArt({
   imageUrl,
   onClick,
   widthOverride,
+  missingCount,
 }: ICardArtProps): React.ReactElement {
   const { t } = useTranslation();
   const width = widthOverride ?? SIZE_WIDTH_MAP[size];
@@ -419,6 +425,11 @@ export function CardArt({
           </g>
         )}
       </svg>
+      {missingCount !== undefined && missingCount > 0 && (
+        <span className={styles.missingCountBadge} data-testid="card-art-missing-count">
+          {t('ui.missingCopiesBadge', { count: missingCount })}
+        </span>
+      )}
     </>
   );
 

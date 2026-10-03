@@ -76,6 +76,24 @@
   z-index: 2;
 }
 
+/* ---------- Missing-count corner badge ---------- */
+.missingCountBadge {
+  position: absolute;
+  inset-block-end: 4px;
+  inset-inline-end: 4px;
+  z-index: 3;
+  padding: 1px 6px;
+  border: 1px solid var(--ra-ready-low-border);
+  border-radius: var(--ra-radius-xs);
+  background: var(--ra-bg-sunken);
+  color: var(--ra-ready-low);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-2xs);
+  font-weight: var(--ra-weight-bold);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
 /* ---------- Size presets (width on container; SVG carries its own dimensions) ---------- */
 .cardArt--xs {
   width: 40px;
