@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 /**
  * Converts an ISO 8601 timestamp (or null/undefined) to a natural-language
  * relative time string for use in freshness badges.
@@ -10,22 +12,25 @@
  *  >= 7 days -> "over a week ago"
  *  null/undefined -> "no recent data"
  */
-export function formatRelativeTime(iso: string | null | undefined): string {
+export function formatRelativeTime(iso: string | null | undefined, t?: TFunction): string {
+  const noData = t ? t('common.relativeNoData') : 'no recent data';
   if (iso == null) {
-    return 'no recent data';
+    return noData;
   }
 
   const parsed = new Date(iso);
 
   if (isNaN(parsed.getTime())) {
-    return 'no recent data';
+    return noData;
   }
+
+  const justNow = t ? t('common.relativeJustNow') : 'just now';
 
   const diffMs = Date.now() - parsed.getTime();
 
   if (diffMs < 0) {
     // Future timestamp treated as just now
-    return 'just now';
+    return justNow;
   }
 
   const diffSec = Math.floor(diffMs / 1000);
@@ -34,22 +39,22 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) {
-    return 'just now';
+    return justNow;
   }
 
   if (diffMin < 60) {
-    return `${diffMin} min ago`;
+    return t ? t('common.relativeMinutes', { count: diffMin }) : `${diffMin} min ago`;
   }
 
   if (diffHour < 24) {
-    return `${diffHour}h ago`;
+    return t ? t('common.relativeHours', { count: diffHour }) : `${diffHour}h ago`;
   }
 
   if (diffDay < 7) {
-    return `${diffDay} days ago`;
+    return t ? t('common.relativeDays', { count: diffDay }) : `${diffDay} days ago`;
   }
 
-  return 'over a week ago';
+  return t ? t('common.relativeOverWeek') : 'over a week ago';
 }
 
 /**

@@ -85,4 +85,11 @@ export const deckDetail = {
   groupCount: '{{count}}×',
   cardQuantity: '×{{count}}',
   decklistEmpty: 'This deck has no cards yet.',
+
+  // MissingPanel store state
+  storeUnavailable: 'Unavailable at {{storeName}}',
+  storeOutOfStockVerified: 'Out of stock at {{storeName}} (verified)',
+  storePricesAt: 'Prices at {{storeName}}',
+  storeAvailablePartial: '{{available}} of {{needed}} available',
+  storeFetchFailed: 'failed',
 } as const;

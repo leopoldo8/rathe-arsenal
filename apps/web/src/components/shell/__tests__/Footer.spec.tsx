@@ -17,6 +17,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import { Footer } from '../Footer';
+import styles from '../Footer.module.css';
 
 const VERBATIM_EN_DISCLAIMER =
   'Rathe Arsenal is in no way affiliated with Legend Story Studios. Flesh and Blood™, and set names are trademarks of Legend Story Studios®. Characters and names may be protected by copyright.';
@@ -74,5 +75,13 @@ describe('Footer', () => {
     // lack this marker, so this discriminates SPA `<Link>` from a
     // full-reload anchor, which the href assertion alone cannot (AC5).
     expect(aboutLink).toHaveAttribute('data-tsr-link', 'true');
+  });
+
+  it('lays the disclaimer and the About link out inside the centred inner container', async () => {
+    await setTestLocale('en-US');
+    render(<Footer />);
+    const inner = screen.getByText(VERBATIM_EN_DISCLAIMER).parentElement;
+    expect(inner).toHaveClass(styles.inner as string);
+    expect(inner).toContainElement(screen.getByRole('link', { name: 'About' }));
   });
 });

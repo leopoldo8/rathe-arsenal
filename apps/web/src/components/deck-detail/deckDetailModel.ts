@@ -58,6 +58,49 @@ export function swapDecision(
   return 'pending';
 }
 
+export interface ISwapGroup {
+  readonly key: string;
+  /** First engine entry of the group; carries the card art and score. */
+  readonly swap: ISubstitutedEntry;
+  readonly swapId: string | null;
+  readonly decision: TSwapDecision;
+  /** Copies this one swap covers: the stored swap's quantity, else the engine entries summed. */
+  readonly quantity: number;
+}
+
+function swapGroupKey(key: ISwapMatchKey): string {
+  return `${key.cardIdentifier}::${key.slot}::${key.substituteIdentifier}`;
+}
+
+/**
+ * The engine emits one substituted entry per missing copy; the Swaps screen
+ * has one row per original-to-substitute pair. This folds the copies together.
+ */
+export function groupSwaps(
+  substituted: readonly ISubstitutedEntry[],
+  swaps: readonly (IDeckSwap & { readonly id: string; readonly quantity: number })[],
+): readonly ISwapGroup[] {
+  const groups = new Map<string, { swap: ISubstitutedEntry; copies: number }>();
+  for (const swap of substituted) {
+    const key = swapGroupKey(swapKeyOf(swap));
+    const existing = groups.get(key);
+    groups.set(key, {
+      swap: existing?.swap ?? swap,
+      copies: (existing?.copies ?? 0) + swap.original.quantity,
+    });
+  }
+  return [...groups.entries()].map(([key, { swap, copies }]) => {
+    const stored = findSwap(swaps, swapKeyOf(swap));
+    return {
+      key,
+      swap,
+      swapId: stored?.id ?? null,
+      decision: swapDecision(swap, swaps),
+      quantity: stored?.quantity ?? copies,
+    };
+  });
+}
+
 function sumQuantity(entries: readonly { readonly quantity: number }[]): number {
   return entries.reduce((sum, entry) => sum + entry.quantity, 0);
 }

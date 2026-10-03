@@ -691,8 +691,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     expect(ruleBody(css, '.back')).toContain('transform: translateZ(-24px) rotateY(180deg)');
     expect(ruleBody(css, '.left')).toContain('transform: translateX(-60px) rotateY(-90deg)');
     expect(ruleBody(css, '.right')).toContain('transform: translateX(60px) rotateY(90deg)');
-    expect(ruleBody(css, '.card')).toContain('width: 66px');
-    expect(ruleBody(css, '.card')).toContain('height: 148px');
+    expect(ruleBody(css, '.card')).toContain('width: 96px');
+    expect(ruleBody(css, '.card')).toContain('height: 134px');
   });
 
   it('pins the rest positions of the three cards', () => {
@@ -721,8 +721,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     [
       'fly1',
       'translate3d(-9px, -20px, 0) rotate(-2deg)',
-      'translate3d(-98px, -178px, 50px) rotate(-16deg)',
-      'translate3d(-92px, -128px, 66px) rotate(-15deg)',
+      'translate3d(-110px, -178px, 50px) rotate(-16deg)',
+      'translate3d(-104px, -128px, 66px) rotate(-15deg)',
     ],
     [
       'fly2',
@@ -733,8 +733,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     [
       'fly3',
       'translate3d(9px, -20px, 0) rotate(2deg)',
-      'translate3d(98px, -178px, 50px) rotate(16deg)',
-      'translate3d(92px, -128px, 66px) rotate(15deg)',
+      'translate3d(110px, -178px, 50px) rotate(16deg)',
+      'translate3d(104px, -128px, 66px) rotate(15deg)',
     ],
   ])('%s keyframes: 0%% rest, 52%% overshoot, 100%% settle', (name, rest, peak, settle) => {
     const body = atRuleBody(css, `@keyframes ${name}`);
@@ -745,6 +745,58 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
       `52% { transform: ${peak}; animation-timing-function: cubic-bezier(0.4, 0, 0.35, 1); }`,
     );
     expect(body).toContain(`100% { transform: ${settle}; }`);
+  });
+});
+
+describe('Deckbox post-launch polish A', () => {
+  const css = DECKBOX_BASE;
+
+  it('shows the whole card at the real 63:88 ratio, not a cropped slice', () => {
+    expect(Math.abs(96 / 134 - 63 / 88)).toBeLessThan(0.005);
+    expect(ruleBody(css, '.cardImage')).toContain('object-fit: contain');
+  });
+
+  it('keeps the three flying cards clear of each other at hover end', () => {
+    expect(104 - 96 / 2).toBeGreaterThan(96 / 2);
+  });
+
+  it('builds an open mouth: dark interior behind the cards and rim strips on every wall', () => {
+    expect(ruleBody(css, '.mouthFloor')).toContain('rotateX(90deg)');
+    expect(ruleBody(css, '.innerBack')).toContain('translateZ(-18px)');
+    expect(ruleBody(css, '.rimFront')).toContain('translate3d(0, -75px, 21px) rotateX(90deg)');
+    expect(ruleBody(css, '.rimBack')).toContain('translate3d(0, -75px, -21px) rotateX(90deg)');
+    expect(ruleBody(css, '.rimLeft')).toContain('translate3d(-57px, -75px, 0) rotateX(90deg)');
+    expect(ruleBody(css, '.rimRight')).toContain('translate3d(57px, -75px, 0) rotateX(90deg)');
+  });
+
+  it('darkens the lower front face so the deck name clears WCAG AA on pure white art', () => {
+    const body = ruleBody(css, '.frontShade');
+    const alpha = Number(/rgba\(0, 0, 0, ([\d.]+)\) 68%/.exec(body)?.[1]);
+    expect(alpha).toBeGreaterThanOrEqual(0.8);
+    const lum = (v: number): number => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const bg = lum(255 * (1 - alpha));
+    const textLum = 0.2126 * lum(0xf3) + 0.7152 * lum(0xe9) + 0.0722 * lum(0xdc);
+    const formatLum = 0.2126 * lum(0xe6) + 0.7152 * lum(0xcf) + 0.0722 * lum(0x9f);
+    expect((textLum + 0.05) / (bg + 0.05)).toBeGreaterThanOrEqual(4.5);
+    expect((formatLum + 0.05) / (bg + 0.05)).toBeGreaterThanOrEqual(4.5);
+    expect(ruleBody(css, '.deckName')).toContain('text-shadow');
+  });
+});
+
+describe('Footer layout', () => {
+  const footerCss = fs.readFileSync(
+    path.join(SRC_ROOT, 'components/shell/Footer.module.css'),
+    'utf8',
+  );
+  it('spans a centred 1180px container with the links pushed to the right edge', () => {
+    const inner = ruleBody(squash(footerCss), '.inner');
+    expect(inner).toContain('max-inline-size: 1180px');
+    expect(inner).toContain('margin-inline: auto');
+    expect(inner).toContain('justify-content: space-between');
+    expect(inner).toContain('flex-wrap: wrap');
   });
 });
 
@@ -1858,5 +1910,72 @@ describe('FND-02/03 — every token font family is actually requested from Googl
   it('loads Hanken Grotesk, the real Google Fonts family name, at every UI weight the handoff uses', () => {
     expect(indexHtml).toContain('family=Hanken+Grotesk:wght@400;500;600;700;800');
     expect(indexHtml).not.toContain('Grotesque');
+  });
+});
+
+describe('Deck detail polish B — legality badge, buttons, banner art', () => {
+  const LEGALITY = readCss('components/deck-detail/LegalityBadge.module.css');
+  const MARK_OWNED = readCss('components/deck-detail/MarkOwnedButton.module.css');
+  const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
+  const BANNER = readCss('components/deck-detail/DeckHeroBanner.module.css');
+  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
+
+  it('the legality badge uses the UI face, not mono', () => {
+    const body = ruleBody(LEGALITY, '.badge');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(body).not.toContain('--ra-font-mono');
+    expect(ruleBody(LEGALITY, 'button.badge')).toContain('font-family: var(--ra-font-ui)');
+  });
+
+  it('the legality badge wraps instead of truncating', () => {
+    expect(ruleBody(LEGALITY, '.badge')).not.toContain('white-space: nowrap');
+    const text = ruleBody(LEGALITY, '.badgeText');
+    expect(text).not.toContain('text-overflow');
+    expect(text).not.toContain('max-width');
+    expect(text).not.toContain('overflow: hidden');
+  });
+
+  it.each([
+    ['hover and focus', '.btn:not(:disabled):hover, .btn:not(:disabled):focus-visible'],
+    ['active', '.btn:not(:disabled):active'],
+  ])('Mark owned %s never fills with the accent or uses the deep-gold ink', (_label, selector) => {
+    const rule = squash(MARK_OWNED).match(new RegExp(`${escapeRegExp(selector)} \\{([^}]*)\\}`));
+    expect(rule, selector).not.toBeNull();
+    expect(rule![1]).not.toContain('background: var(--ra-accent)');
+    expect(rule![1]).not.toContain('--ra-accent-deep');
+    expect(rule![1]).toContain('color: var(--ra-fg-primary)');
+  });
+
+  it('Mark owned hover and focus share one readable rule', () => {
+    const flat = squash(MARK_OWNED);
+    expect(flat).toContain('.btn:not(:disabled):hover, .btn:not(:disabled):focus-visible {');
+    expect(flat).toContain('background: var(--ra-bg-raised)');
+  });
+
+  it('Buy keeps its dark ink on hover and active', () => {
+    const flat = squash(MISSING);
+    const rule = flat.match(/\.buy:hover, \.buy:active \{([^}]*)\}/);
+    expect(rule?.[1]).toContain('background: var(--ra-accent-hover)');
+    expect(rule?.[1]).toContain('color: var(--ra-accent-ink-on)');
+  });
+
+  it('the exact-price button is the brass action, not the info blue', () => {
+    const body = ruleBody(FETCH_CONTROLS, '.ctaBtn');
+    expect(body).toContain('background: var(--ra-accent)');
+    expect(body).toContain('color: var(--ra-accent-ink-on)');
+    expect(body).not.toContain('--ra-info');
+  });
+
+  it('the banner keeps its dark backdrop in both themes, since the art no longer covers the left side', () => {
+    expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
+  });
+
+  it('the banner art sits on the right and fades left, instead of stretching a thumbnail edge to edge', () => {
+    const body = ruleBody(BANNER, '.art');
+    expect(body).toContain('inline-size: 62%');
+    expect(body).toContain('inset-inline-end: 0');
+    expect(body).toContain('object-position: center 28%');
+    expect(body).toContain('transform: scale(1.12)');
+    expect(body).toContain('mask-image: linear-gradient(to right, transparent, #000 45%)');
   });
 });

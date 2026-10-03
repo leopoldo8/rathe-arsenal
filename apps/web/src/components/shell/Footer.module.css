@@ -1,19 +1,26 @@
 /* Footer — persistent fan-content disclaimer (DISC-01) */
 
 .footer {
+  padding: var(--ra-space-4) var(--ra-space-6);
+  border-top: 1px solid var(--ra-border-subtle);
+}
+
+.inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--ra-space-3);
-  padding: var(--ra-space-4) var(--ra-space-6);
-  border-top: 1px solid var(--ra-border-subtle);
+  justify-content: space-between;
+  gap: var(--ra-space-3) var(--ra-space-6);
+  inline-size: 100%;
+  max-inline-size: 1180px;
+  margin-inline: auto;
 }
 
 .disclaimer {
   margin: 0;
   flex: 1 1 auto;
-  min-inline-size: 240px;
-  max-inline-size: 640px;
+  min-inline-size: min(100%, 240px);
+  max-inline-size: 760px;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);

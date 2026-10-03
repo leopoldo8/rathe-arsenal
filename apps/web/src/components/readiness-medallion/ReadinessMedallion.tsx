@@ -17,6 +17,8 @@ export interface IReadinessMedallionProps {
   readonly size: TMedallionSize;
   readonly heroName: string;
   readonly heroArt: IHeroArt | null;
+  /** False draws a solid surface behind the number instead of the hero art. */
+  readonly showArt?: boolean;
   readonly className?: string | undefined;
 }
 
@@ -25,6 +27,7 @@ export function ReadinessMedallion({
   size,
   heroName,
   heroArt,
+  showArt = true,
   className,
 }: IReadinessMedallionProps): React.ReactElement {
   const { t } = useTranslation();
@@ -52,7 +55,13 @@ export function ReadinessMedallion({
       data-size={size}
       data-testid="readiness-medallion"
     >
-      {art.src ? (
+      {!showArt ? (
+        <div
+          className={`${styles.art} ${styles.artSolid}`}
+          aria-hidden="true"
+          data-testid="readiness-medallion-solid"
+        />
+      ) : art.src ? (
         <img
           className={styles.art}
           src={art.src}
@@ -68,7 +77,7 @@ export function ReadinessMedallion({
           data-testid="readiness-medallion-art-fallback"
         />
       )}
-      <div className={styles.shade} aria-hidden="true" />
+      {showArt && <div className={styles.shade} aria-hidden="true" />}
       <div ref={ringRef} className={styles.ring} aria-hidden="true" />
       <div className={styles.label}>
         <span className={styles.number}>
