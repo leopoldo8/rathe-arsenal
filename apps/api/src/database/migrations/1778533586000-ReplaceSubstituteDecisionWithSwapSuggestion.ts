@@ -43,8 +43,10 @@ import {
  * not run `down()` expecting the old decisions back.
  *
  * The mandatory backfill step for `swap_suggestion` itself --
- * `apps/api/scripts/backfill-swap-suggestions.ts` -- is a required deploy
- * step run immediately after this migration, not part of `up()` (computing
+ * `apps/api/src/swaps/backfill-swap-suggestions.ts`, run with
+ * `pnpm --filter @rathe-arsenal/api backfill:swap-suggestions` (see
+ * scripts/deploy-railway.md) -- is a required deploy step run immediately
+ * after this migration, not part of `up()` (computing
  * readiness requires the full engine + catalog + inventory pipeline, which
  * cannot run inside a `QueryRunner`). Without it, `swap_suggestion` stays
  * empty until each deck happens to recompute on its own. See
