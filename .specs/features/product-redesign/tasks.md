@@ -59,9 +59,9 @@ Two ordering constraints are load-bearing and must not be relaxed:
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Implementing — conic-gradient ring rendering needs a visual check (phase 4 baselines); DOM, band, a11y and CSS-literal checks pass |
+| CMP-01..05 readiness medallion | §1 | component spec; `data-band` assertions; `role="meter"` + `aria-valuetext` | Implementing — 38px ring verified visually on Home (dark + light, 100% and 38%); 90px ring checked in phase 5 |
 | BOX-01 three-scene stack cannot be flattened | §2 | structural test over the `DeckboxScene` primitive | Verified |
-| BOX-02 hover choreography, 52% overshoot, 80% depth swap | §2 | `design-guards.spec.ts` pinning the keyframe literals | Implementing — visual check pending (phase 4 baselines): cards must not cover the deck name or medallion; keyframe literals are pinned |
+| BOX-02 hover choreography, 52% overshoot, 80% depth swap | §2 | `design-guards.spec.ts` pinning the keyframe literals | Verified — keyframe literals pinned; headless hover capture on Home (2026-10-03) shows the cards clear of the deck name and medallion |
 | BOX-03..04 per-status variants | §2 | component spec, one case per status | Verified |
 | BOX-05 reduced-motion degradation | §2 | component spec asserting the flight is absent, not merely that a class changed | Verified (CSS-source guard: jsdom evaluates no media query, see DEV-11) |
 | BOX-06..07 activation and focus indicator | §2 | keyboard-driven component spec | Verified |
