@@ -518,6 +518,17 @@ describe('FND-02/03 — font family tokens (Hanken Grotesque UI, Newsreader disp
   });
 });
 
+describe('FND-04 — UnifrakturCook for the wordmark', () => {
+  it('--ra-font-gothic leads with UnifrakturCook', () => {
+    expect(fs.readFileSync(TOKENS_CSS, 'utf-8')).toMatch(/--ra-font-gothic:\s*"UnifrakturCook"/);
+  });
+
+  it('the TopBar wordmark is set in --ra-font-gothic', () => {
+    const block = fs.readFileSync(TOPBAR_CSS, 'utf-8').match(/\.brandRathe\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(block).toMatch(/font-family:\s*var\(--ra-font-gothic\)/);
+  });
+});
+
 describe('FND-06 — nav active-item alpha and TopBar border treatment', () => {
   it('--ra-accent-soft-bg carries the handoff literal rgba(208,168,76,.14) in dark', () => {
     const content = fs.readFileSync(TOKENS_CSS, 'utf-8');
