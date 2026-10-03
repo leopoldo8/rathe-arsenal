@@ -41,7 +41,7 @@ test.describe('Draft restore flow — E2E (U16)', () => {
       await page.goto(BASE_URL+"/home",{waitUntil:"networkidle",timeout:20000});
       await page.waitForTimeout(2000);
       firstDeckUrl=await page.evaluate(()=>{
-        const l=document.querySelector('a[href^="/decks/"]');
+        const l=document.querySelector('a[href^="/decks/"]:not([href^="/decks/new"])');
         return l?l.getAttribute("href"):null;
       });
     }

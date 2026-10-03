@@ -73,7 +73,7 @@ async function getFirstDeckUrl(page: Page): Promise<string | null> {
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'networkidle', timeout: 15000 });
   await page.waitForTimeout(1000);
   return page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]:not([href^="/decks/new"])');
     return link?.getAttribute('href') ?? null;
   });
 }

@@ -201,7 +201,7 @@ async function resolveDeckDetailUrl(page: Page): Promise<string | null> {
   await sleep(SETTLE_MS);
   // Look for the first link that starts with /decks/
   const href = await page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]:not([href^="/decks/new"])');
     return link ? link.getAttribute('href') : null;
   });
   return href;

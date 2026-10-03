@@ -69,7 +69,7 @@ async function resolveFirstDeckUrl(page: Page, jwt: string): Promise<string | nu
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'networkidle', timeout: 20000 });
   await page.waitForTimeout(SETTLE_MS);
   return page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]');
+    const link = document.querySelector<HTMLAnchorElement>('a[href^="/decks/"]:not([href^="/decks/new"])');
     return link?.getAttribute('href') ?? null;
   });
 }
