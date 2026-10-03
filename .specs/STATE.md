@@ -60,10 +60,10 @@
 
 ## Handoff
 
-- **Feature**: product-redesign — `.specs/features/product-redesign/` — **in progress, phases 1-7 of 10 complete (autonomous run resumed 2026-10-03, owner away).** Branch `feat/product-redesign`, pushed to origin. Autonomous-run mandate and every deviation (DEV-01..18) live in `implementation-notes.md`; requirement status lives in `tasks.md`.
+- **Feature**: product-redesign — `.specs/features/product-redesign/` — **in progress, phases 1-8 of 10 complete (autonomous run resumed 2026-10-03, owner away).** Branch `feat/product-redesign`, pushed to origin. Autonomous-run mandate and every deviation (DEV-01..19) live in `implementation-notes.md`; requirement status lives in `tasks.md`.
 - **Done**: phase 1 (foundation: tokens, fonts, nav rule, contrast matrix, baselines) and phase 2 / Half A (D7 approval-gated readiness, `swap_suggestion` table + migration + backfill, reconciliation on every recompute, and `GET /api/swaps` plus the five lifecycle endpoints in `apps/api/src/swaps/`).
 - **Still open from phases 1-2**: FND-05 manual read and FND-07 layout-shift measurement (both deferred to phase 10); DEV-09 bulk-action throttle call for Half B.
-- **Next step**: phase 8 sign-in/onboarding, 9 Swaps screen (Half B, removes the reviews shim), 10 verification: DEV-17 polish sweep, Playwright e2e suite (DEV-13), Opus verifier over the branch, PR.
+- **Next step**: phase 9 Swaps screen (Half B, removes the reviews shim), 10 verification: DEV-17 polish sweep, Playwright e2e suite (DEV-13), Opus verifier over the branch, PR.
 - **Gate for every phase**: `pnpm typecheck`, `pnpm lint`, engine + api + web unit, **api `test:int`**, api `test:e2e`. All green with zero skips as of 2026-10-03.
 - **Local DB**: Postgres runs in the `rathe-arsenal-pg` container (DEV-04); `docker start rathe-arsenal-pg` after a reboot (OrbStack must be running). The old "no local PostgreSQL" limitation no longer applies.
 - **Blockers**: none.
