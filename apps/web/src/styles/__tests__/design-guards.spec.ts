@@ -1998,7 +1998,7 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
 
   it('the banner art is cropped to the card illustration window', () => {
     const body = ruleBody(BANNER, '.art');
-    expect(body).toContain('inline-size: max(136cqw, 180cqh)');
+    expect(body).toContain('inline-size: max(136cqw, 224cqh)');
     expect(body).toContain('transform: translate(-50%, -30%)');
     expect(body).toContain('max-inline-size: none');
   });
