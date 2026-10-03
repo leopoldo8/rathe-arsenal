@@ -230,6 +230,19 @@ describe('Deckbox (variant deck)', () => {
   });
 });
 
+describe('Deckbox open mouth', () => {
+  it('renders the interior behind the cards and the rims on the front scene', () => {
+    renderDeck();
+    const scenes = document.querySelectorAll('[data-scene-z]');
+    expect(scenes[0]?.querySelector(`.${styles.innerBack}`)).not.toBeNull();
+    expect(scenes[0]?.querySelectorAll(`.${styles.rimBack}`)).toHaveLength(1);
+    const front = scenes[scenes.length - 1];
+    for (const cls of [styles.rimFront, styles.rimLeft, styles.rimRight]) {
+      expect(front?.querySelectorAll(`.${cls}`)).toHaveLength(1);
+    }
+  });
+});
+
 describe('Deckbox (variant brand)', () => {
   function renderBrand(): void {
     render(<Deckbox variant="brand" />);

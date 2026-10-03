@@ -691,8 +691,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     expect(ruleBody(css, '.back')).toContain('transform: translateZ(-24px) rotateY(180deg)');
     expect(ruleBody(css, '.left')).toContain('transform: translateX(-60px) rotateY(-90deg)');
     expect(ruleBody(css, '.right')).toContain('transform: translateX(60px) rotateY(90deg)');
-    expect(ruleBody(css, '.card')).toContain('width: 66px');
-    expect(ruleBody(css, '.card')).toContain('height: 148px');
+    expect(ruleBody(css, '.card')).toContain('width: 96px');
+    expect(ruleBody(css, '.card')).toContain('height: 134px');
   });
 
   it('pins the rest positions of the three cards', () => {
@@ -721,8 +721,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     [
       'fly1',
       'translate3d(-9px, -20px, 0) rotate(-2deg)',
-      'translate3d(-98px, -178px, 50px) rotate(-16deg)',
-      'translate3d(-92px, -128px, 66px) rotate(-15deg)',
+      'translate3d(-110px, -178px, 50px) rotate(-16deg)',
+      'translate3d(-104px, -128px, 66px) rotate(-15deg)',
     ],
     [
       'fly2',
@@ -733,8 +733,8 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
     [
       'fly3',
       'translate3d(9px, -20px, 0) rotate(2deg)',
-      'translate3d(98px, -178px, 50px) rotate(16deg)',
-      'translate3d(92px, -128px, 66px) rotate(15deg)',
+      'translate3d(110px, -178px, 50px) rotate(16deg)',
+      'translate3d(104px, -128px, 66px) rotate(15deg)',
     ],
   ])('%s keyframes: 0%% rest, 52%% overshoot, 100%% settle', (name, rest, peak, settle) => {
     const body = atRuleBody(css, `@keyframes ${name}`);
@@ -745,6 +745,58 @@ describe('BOX-01/02 — Deckbox geometry and hover choreography', () => {
       `52% { transform: ${peak}; animation-timing-function: cubic-bezier(0.4, 0, 0.35, 1); }`,
     );
     expect(body).toContain(`100% { transform: ${settle}; }`);
+  });
+});
+
+describe('Deckbox post-launch polish A', () => {
+  const css = DECKBOX_BASE;
+
+  it('shows the whole card at the real 63:88 ratio, not a cropped slice', () => {
+    expect(Math.abs(96 / 134 - 63 / 88)).toBeLessThan(0.005);
+    expect(ruleBody(css, '.cardImage')).toContain('object-fit: contain');
+  });
+
+  it('keeps the three flying cards clear of each other at hover end', () => {
+    expect(104 - 96 / 2).toBeGreaterThan(96 / 2);
+  });
+
+  it('builds an open mouth: dark interior behind the cards and rim strips on every wall', () => {
+    expect(ruleBody(css, '.mouthFloor')).toContain('rotateX(90deg)');
+    expect(ruleBody(css, '.innerBack')).toContain('translateZ(-18px)');
+    expect(ruleBody(css, '.rimFront')).toContain('translate3d(0, -75px, 21px) rotateX(90deg)');
+    expect(ruleBody(css, '.rimBack')).toContain('translate3d(0, -75px, -21px) rotateX(90deg)');
+    expect(ruleBody(css, '.rimLeft')).toContain('translate3d(-57px, -75px, 0) rotateX(90deg)');
+    expect(ruleBody(css, '.rimRight')).toContain('translate3d(57px, -75px, 0) rotateX(90deg)');
+  });
+
+  it('darkens the lower front face so the deck name clears WCAG AA on pure white art', () => {
+    const body = ruleBody(css, '.frontShade');
+    const alpha = Number(/rgba\(0, 0, 0, ([\d.]+)\) 68%/.exec(body)?.[1]);
+    expect(alpha).toBeGreaterThanOrEqual(0.8);
+    const lum = (v: number): number => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const bg = lum(255 * (1 - alpha));
+    const textLum = 0.2126 * lum(0xf3) + 0.7152 * lum(0xe9) + 0.0722 * lum(0xdc);
+    const formatLum = 0.2126 * lum(0xe6) + 0.7152 * lum(0xcf) + 0.0722 * lum(0x9f);
+    expect((textLum + 0.05) / (bg + 0.05)).toBeGreaterThanOrEqual(4.5);
+    expect((formatLum + 0.05) / (bg + 0.05)).toBeGreaterThanOrEqual(4.5);
+    expect(ruleBody(css, '.deckName')).toContain('text-shadow');
+  });
+});
+
+describe('Footer layout', () => {
+  const footerCss = fs.readFileSync(
+    path.join(SRC_ROOT, 'components/shell/Footer.module.css'),
+    'utf8',
+  );
+  it('spans a centred 1180px container with the links pushed to the right edge', () => {
+    const inner = ruleBody(squash(footerCss), '.inner');
+    expect(inner).toContain('max-inline-size: 1180px');
+    expect(inner).toContain('margin-inline: auto');
+    expect(inner).toContain('justify-content: space-between');
+    expect(inner).toContain('flex-wrap: wrap');
   });
 });
 

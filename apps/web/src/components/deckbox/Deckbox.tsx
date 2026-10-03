@@ -42,6 +42,11 @@ function DeckboxScenes(props: IDeckboxProps): React.ReactElement {
     <>
       <DeckboxScene zIndex={1} className={styles.backScene}>
         <div className={`${styles.face} ${styles.back}`} />
+        <div className={`${styles.face} ${styles.innerBack}`} data-testid="deckbox-interior" />
+        <div className={`${styles.face} ${styles.innerLeft}`} />
+        <div className={`${styles.face} ${styles.innerRight}`} />
+        <div className={`${styles.face} ${styles.mouthFloor}`} />
+        <div className={`${styles.face} ${styles.rim} ${styles.rimBack}`} data-testid="deckbox-rim" />
       </DeckboxScene>
 
       {showCards && (
@@ -53,6 +58,9 @@ function DeckboxScenes(props: IDeckboxProps): React.ReactElement {
       <DeckboxScene zIndex={3} className={styles.frontScene}>
         <div className={`${styles.face} ${styles.left}`} />
         <div className={`${styles.face} ${styles.right}`} />
+        <div className={`${styles.face} ${styles.rim} ${styles.rimLeft}`} data-testid="deckbox-rim" />
+        <div className={`${styles.face} ${styles.rim} ${styles.rimRight}`} data-testid="deckbox-rim" />
+        <div className={`${styles.face} ${styles.rim} ${styles.rimFront}`} data-testid="deckbox-rim" />
         {props.variant === 'deck' ? (
           <DeckboxFrontDeck
             deckName={props.deckName}
