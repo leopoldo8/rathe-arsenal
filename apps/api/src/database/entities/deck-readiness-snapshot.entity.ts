@@ -34,7 +34,7 @@ export class DeckReadinessSnapshotEntity {
   @Column({ type: 'jsonb' })
   substitutions!: Record<string, unknown>;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'clock_timestamp()' })
   computedAt!: Date;
 
   @ManyToOne(() => TrackedDeckEntity, { onDelete: 'CASCADE' })
