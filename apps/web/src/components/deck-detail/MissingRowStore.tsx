@@ -7,19 +7,19 @@ import { formatVariantPrice } from '../ShoppingLineVariantBreakdown.helpers';
 import type { TRowStore } from './missingStoreModel';
 import styles from './MissingPanel.module.css';
 
-interface IMissingRowStoreProps {
+interface IMissingRowStoreMetaProps {
   readonly store: TRowStore;
   readonly storeName: string;
   readonly cardName: string;
   readonly fetchStatus: TCardFetchStatus | undefined;
 }
 
-export function MissingRowStore({
+export function MissingRowStoreMeta({
   store,
   storeName,
   cardName,
   fetchStatus,
-}: IMissingRowStoreProps): React.ReactElement | null {
+}: IMissingRowStoreMetaProps): React.ReactElement | null {
   const { t } = useTranslation();
   if (store.kind === 'none') return null;
 
@@ -33,7 +33,7 @@ export function MissingRowStore({
     );
   }
 
-  const { line, buyUrl } = store;
+  const { line } = store;
   const cheapest = line.hasVariantData === true ? line.variants?.[0] : undefined;
   const price =
     cheapest !== undefined
@@ -45,16 +45,9 @@ export function MissingRowStore({
 
   return (
     <>
-      {fetchStatus === 'failed' && (
-        <span
-          role="status"
-          aria-label={t('decks.failedToFetchVariants', { name: cardName })}
-          data-testid="line-item-fetch-failed"
-          className={styles.failedBadge}
-        >
-          {t('deckDetail.storeFetchFailed')}
-        </span>
-      )}
+      <span className={styles.price} data-testid="missing-row-price">
+        {price}
+      </span>{' '}
       {isPartial && (
         <span className={styles.partial}>
           {t('deckDetail.storeAvailablePartial', {
@@ -62,23 +55,43 @@ export function MissingRowStore({
             needed: line.quantityNeeded,
           })}
         </span>
-      )}
-      <span className={styles.price} data-testid="missing-row-price">
-        {price}
-      </span>
-      {buyUrl !== null && (
-        <a
-          href={buyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          referrerPolicy="no-referrer"
-          className={styles.buy}
-          aria-label={t('deckDetail.buyAria', { name: cardName })}
+      )}{' '}
+      {fetchStatus === 'failed' && (
+        <span
+          role="status"
+          aria-label={t('decks.failedToFetchVariants', { name: cardName })}
+          data-testid="line-item-fetch-failed"
+          className={styles.failedBadge}
         >
-          {t('deckDetail.buy')}
-        </a>
+          {t('deckDetail.storeExactPriceFailed')}
+        </span>
       )}
     </>
+  );
+}
+
+interface IMissingRowBuyProps {
+  readonly store: TRowStore;
+  readonly cardName: string;
+}
+
+export function MissingRowBuy({ store, cardName }: IMissingRowBuyProps): React.ReactElement | null {
+  const { t } = useTranslation();
+  if (store.kind !== 'available' || store.buyUrl === null) return null;
+  return (
+    <a
+      href={store.buyUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      referrerPolicy="no-referrer"
+      className={styles.buy}
+      aria-label={t('deckDetail.buyAria', { name: cardName })}
+    >
+      {t('deckDetail.buy')}
+      <span className={styles.buyArrow} aria-hidden="true">
+        ↗
+      </span>
+    </a>
   );
 }
 

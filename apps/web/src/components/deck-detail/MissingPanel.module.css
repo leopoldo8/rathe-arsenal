@@ -26,25 +26,26 @@
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ra-space-2);
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto auto auto;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .row {
-  display: flex;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ra-space-3);
+  column-gap: var(--ra-space-3);
   padding-block: var(--ra-space-2);
-  border-block-end: 1px solid var(--ra-border);
+  border-block-start: 1px solid var(--ra-border);
 }
 
 .pitchBar {
   flex: none;
+  grid-column: 1;
   inline-size: 4px;
   block-size: 30px;
   border-radius: 2px;
@@ -68,8 +69,9 @@
 
 .body {
   display: flex;
-  flex: 1 1 8rem;
+  grid-column: 2;
   flex-direction: column;
+  gap: 2px;
   min-inline-size: 0;
 }
 
@@ -86,35 +88,71 @@
   font-size: var(--ra-text-xs);
 }
 
+.meta > :not(:last-child)::after {
+  content: '\00a0·';
+  color: var(--ra-fg-muted);
+}
+
+.price {
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.partial {
+  white-space: nowrap;
+}
+
+.unavailable {
+  color: var(--ra-fg-tertiary);
+}
+
+.failedBadge {
+  color: var(--ra-ready-mid);
+}
+
 .qty {
+  grid-column: 3;
   color: var(--ra-ready-low);
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-bold);
+  font-weight: var(--ra-weight-semibold);
   white-space: nowrap;
+}
+
+.action {
+  grid-column: 4;
+  justify-self: end;
+}
+
+.owned {
+  display: flex;
+  grid-column: 5;
 }
 
 .buy {
   display: inline-flex;
   align-items: center;
-  min-block-size: 32px;
-  padding-inline: var(--ra-space-3);
-  border: 1px solid var(--ra-accent);
+  gap: 3px;
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-2);
   border-radius: var(--ra-radius-sm);
-  background: var(--ra-accent);
-  color: var(--ra-accent-ink-on);
+  color: var(--ra-accent-body);
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-bold);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
   text-decoration: none;
-  transition: background var(--ra-duration) var(--ra-ease);
+  white-space: nowrap;
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    color var(--ra-duration) var(--ra-ease);
 }
 
 .buy:hover,
 .buy:active {
-  background: var(--ra-accent-hover);
-  border-color: var(--ra-accent-hover);
-  color: var(--ra-accent-ink-on);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
 }
 
 .buy:focus-visible {
@@ -122,52 +160,26 @@
   outline-offset: 2px;
 }
 
-.price {
-  color: var(--ra-fg-primary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-semibold);
-  white-space: nowrap;
-}
-
-.partial {
-  color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  white-space: nowrap;
-}
-
-.unavailable {
-  padding: 2px var(--ra-space-2);
-  border: 1px solid var(--ra-border-strong);
-  border-radius: var(--ra-radius-full);
-  color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-medium);
-}
-
-.failedBadge {
-  padding: 0 0.4em;
-  border: 1px solid var(--ra-ready-low-border);
-  border-radius: var(--ra-radius-xs);
-  background: var(--ra-ready-low-bg);
-  color: var(--ra-ready-low);
-  font-family: var(--ra-font-ui);
+.buyArrow {
   font-size: var(--ra-text-xs);
 }
 
 .variants {
-  flex: 1 1 100%;
+  grid-column: 2 / -1;
   min-inline-size: 0;
   overflow-x: auto;
 }
 
 .variantsSummary {
-  color: var(--ra-fg-secondary);
+  inline-size: fit-content;
+  color: var(--ra-fg-tertiary);
   cursor: pointer;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-xs);
+}
+
+.variantsSummary:hover {
+  color: var(--ra-fg-secondary);
 }
 
 .storeError {
@@ -201,4 +213,10 @@
 .retry:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 479px) {
+  .row {
+    column-gap: var(--ra-space-2);
+  }
 }

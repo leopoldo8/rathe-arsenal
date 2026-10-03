@@ -5,6 +5,8 @@ import type { IShoppingLineLine, IShoppingLinePopulated } from '../../../api/sho
 import { entry } from './deckDetailTestData';
 import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
+import styles from '../MissingPanel.module.css';
+import fetchStyles from '../../ShoppingLineFetchControls.module.css';
 
 const HOST = 'www.cupuladt.com.br';
 const NOW = Date.now();
@@ -235,5 +237,99 @@ describe('MissingPanel — preserved store behaviors', () => {
     expect(button).toHaveClass(markOwnedStyles.btn!);
     fireEvent.click(button);
     expect(onMarkOwned).toHaveBeenCalledWith('card-b');
+  });
+});
+
+describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
+  it('puts the price in the meta line under the card name', () => {
+    renderPanel(populated());
+
+    const meta = within(rowOf('Card A')).getByTestId('missing-row-meta');
+    const price = within(meta).getByTestId('missing-row-price');
+    expect(meta).toHaveClass(styles.meta!);
+    expect(price).toHaveClass(styles.price!);
+    expect(meta).toHaveTextContent('mainboard');
+  });
+
+  it('renders one quiet Buy link per available row, with an external-link arrow', () => {
+    renderPanel(populated());
+
+    const link = within(rowOf('Card A')).getByRole('link', { name: 'Comprar Card A na loja' });
+    expect(link).toHaveClass(styles.buy!);
+    expect(link.parentElement).toHaveClass(styles.action!);
+    expect(link).toHaveTextContent('Comprar↗');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
+
+  it('an unavailable row shows muted text in the meta and no buy control at all', () => {
+    renderPanel(populated());
+
+    const row = rowOf('Card B');
+    const unavailable = within(row).getByTestId('missing-row-unavailable');
+    expect(unavailable).toHaveClass(styles.unavailable!);
+    expect(within(row).getByTestId('missing-row-meta')).toContainElement(unavailable);
+    expect(row.querySelector(`.${styles.buy}`)).toBeNull();
+    expect(within(row).queryByRole('link')).toBeNull();
+  });
+
+  it('Mark owned is an icon button named for screen readers, with no visible label', () => {
+    renderPanel(populated());
+
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Marcar como possuída' });
+    expect(button).toHaveAttribute('title', 'Marcar como possuída');
+    expect(button).toHaveTextContent('');
+    expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(button.parentElement).toHaveClass(styles.owned!);
+  });
+
+  it('the pending card keeps its name and says it is saving in the tooltip', () => {
+    renderPanel(populated(), { isMarkingOwned: true, pendingCard: 'card-a' });
+
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Marcar como possuída' });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('title', 'Salvando...');
+    expect(button).toBeDisabled();
+  });
+});
+
+describe('MissingPanel — one quiet store line (owner feedback round 2)', () => {
+  it('states total and coverage in one sentence', () => {
+    renderPanel(populated({ isEstimated: true }));
+
+    expect(screen.getByTestId('missing-store-total')).toHaveTextContent('~R$ 23,70');
+    expect(screen.getByTestId('missing-store-summary')).toHaveTextContent(
+      '~R$ 23,70 na Cúpula DT cobre 1 de 2 cartas faltantes',
+    );
+  });
+
+  it('uses the singular when only one card is missing', () => {
+    renderPanel(populated({ availableCardCount: 1, unavailableCardCount: 0 }));
+
+    expect(screen.getByTestId('missing-store-summary')).toHaveTextContent('cobre 1 de 1 carta faltante');
+  });
+
+  it('shows the stale warning once, with the freshness, in one element', () => {
+    renderPanel(populated({ lastFetchedAt: OLD }));
+
+    const warnings = screen.getAllByTestId('missing-store-stale');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toHaveAttribute('data-freshness', 'very-stale');
+    expect(warnings[0]).toHaveTextContent('atualizado há mais de uma semana (os preços podem ter mudado)');
+    expect(screen.getAllByText(/os preços podem ter mudado/)).toHaveLength(1);
+  });
+
+  it('shows no stale warning while prices are fresh', () => {
+    renderPanel(populated());
+
+    expect(screen.queryByTestId('missing-store-stale')).toBeNull();
+    expect(screen.getByTestId('missing-store-summary')).not.toHaveTextContent('os preços podem ter mudado');
+  });
+
+  it('"Obter preços exatos" is the quiet text button, not the brass slab', () => {
+    renderPanel(populated({ isEstimated: true }));
+
+    const button = screen.getByRole('button', { name: 'Obter preços exatos' });
+    expect(button).toHaveClass(fetchStyles.ctaQuiet!);
+    expect(button).not.toHaveClass(fetchStyles.ctaBtn!);
   });
 });

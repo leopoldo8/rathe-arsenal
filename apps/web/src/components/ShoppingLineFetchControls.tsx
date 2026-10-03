@@ -18,23 +18,26 @@ interface IVariantFetchCtaProps {
   readonly onGetExactPrices: () => void;
   readonly isPending: boolean;
   readonly isError: boolean;
+  readonly appearance?: 'solid' | 'quiet';
 }
 
 export function VariantFetchCta({
   onGetExactPrices,
   isPending,
   isError,
+  appearance = 'solid',
 }: IVariantFetchCtaProps) {
   const { t } = useTranslation();
+  const isQuiet = appearance === 'quiet';
   return (
-    <div className={styles.ctaWrapper}>
+    <div className={isQuiet ? styles.ctaWrapperQuiet : styles.ctaWrapper}>
       <button
         type="button"
         onClick={onGetExactPrices}
         disabled={isPending}
         aria-busy={isPending}
         data-pending={String(isPending)}
-        className={styles.ctaBtn}
+        className={isQuiet ? styles.ctaQuiet : styles.ctaBtn}
       >
         {isPending ? t('decks.startingBtn') : t('decks.getExactPrices')}
       </button>

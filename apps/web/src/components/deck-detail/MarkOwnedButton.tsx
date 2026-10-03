@@ -9,10 +9,8 @@ interface IMarkOwnedButtonProps {
 }
 
 /**
- * MarkOwnedButton — "I own this" affordance for the not-owned list.
- *
- * Disables globally while any mark-owned mutation is in flight, and shows
- * a loading label specifically for the card being processed.
+ * Disables globally while any mark-owned mutation is in flight; only the card
+ * being processed reads as saving.
  */
 export function MarkOwnedButton({
   cardIdentifier,
@@ -41,8 +39,20 @@ export function MarkOwnedButton({
       onClick={handleClick}
       disabled={isPending}
       aria-busy={isThisCardPending}
+      aria-label={t('decks.markOwned')}
+      title={isThisCardPending ? t('decks.markOwnedSaving') : t('decks.markOwned')}
     >
-      {isThisCardPending ? t('decks.markOwnedSaving') : t('decks.markOwned')}
+      <svg
+        className={styles.icon}
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M5.3 8.2 7.2 10l3.5-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </button>
   );
 }

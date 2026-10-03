@@ -421,3 +421,29 @@ describe('deck detail polish B — button states stay AA', () => {
     expect(contrast(DARK_FG_PRIMARY, DARK_RAISED)).toBeGreaterThanOrEqual(AA_BODY);
   });
 });
+
+describe('owner design feedback round 2 — quiet missing panel inks stay AA at 12-13px', () => {
+  it('dark: --ra-ready-mid (stale warning) on --ra-bg-surface', () => {
+    expect(contrast(DARK_READY_MID, DARK_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('light: --ra-ready-mid (stale warning) on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_READY_MID, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('dark: --ra-accent-body (Buy link, exact prices) on --ra-bg-surface', () => {
+    expect(contrast(DARK_ACCENT_BODY, DARK_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('light: --ra-accent-body (Buy link, exact prices) on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_ACCENT_BODY, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('dark: --ra-fg-tertiary (unavailable, variants) on --ra-bg-surface', () => {
+    expect(contrast(DARK_FG_TERTIARY, DARK_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+
+  it('light: --ra-fg-tertiary (unavailable, variants) on --ra-bg-surface', () => {
+    expect(contrast(LIGHT_FG_TERTIARY, LIGHT_SURFACE)).toBeGreaterThanOrEqual(AA_BODY);
+  });
+});

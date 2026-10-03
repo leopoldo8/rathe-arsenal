@@ -89,7 +89,9 @@ export const deckDetail = {
   // MissingPanel store state
   storeUnavailable: 'Indisponível na {{storeName}}',
   storeOutOfStockVerified: 'Sem estoque na {{storeName}} (verificado)',
-  storePricesAt: 'Preços na {{storeName}}',
+  storeCoverage_one: 'na {{storeName}} cobre {{available}} de {{count}} carta faltante',
+  storeCoverage_other: 'na {{storeName}} cobre {{available}} de {{count}} cartas faltantes',
   storeAvailablePartial: '{{available}} de {{needed}} disponíveis',
   storeFetchFailed: 'falhou',
+  storeExactPriceFailed: 'falha ao obter o preço exato',
 } as const;
