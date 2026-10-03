@@ -220,6 +220,11 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **FND-07 layout shift, measured** (headless Chromium, cold context, dev server, after the font fix): CLS `/sign-in` 0.0001, `/home` 0.025, `/decks/2` 0.016, `/library` 0.047, all under the 0.1 "good" threshold. No self-hosting / `size-adjust` needed.
 - **FND-05 manual read**: `.impeccable.md` and `docs/design/v1/contrast-matrix.md` describe the redesigned system (tokens, Newsreader/Hanken/UnifrakturCook roles, the ◆/numeral ban); one stale sentence about `.ra-readiness-display` surviving "on surfaces the redesign hasn't reached yet" was corrected (it now survives only on `CongratsAllPlayable`). "Brass" in the matrix names the accent hue, not the old brand.
 
+### DEV-26 — API e2e runs in band (orchestrator, before the PR)
+- **What**: `apps/api` `test:e2e` now passes `--runInBand`, which also changes how CI runs it.
+- **Why**: the six DB-backed e2e suites each boot the full `AppModule` against one shared Postgres. In Jest's default parallel mode one test failed in 1 of 14 local runs and could not be reproduced for diagnosis; every in-band run in this session (more than ten) passed. A flaky required check is worse than a slower one.
+- **Reversible**: drop the flag once the shared-DB race is found.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
