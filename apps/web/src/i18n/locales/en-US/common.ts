@@ -21,4 +21,6 @@ export const common = {
   loadingToggle: 'Loading toggle',
   loadingLabel: 'Loading label',
   loadingCount: 'Loading count',
+  readinessMedallionLabel: 'Hero readiness',
+  readinessValueText: '{{pct}}%',
 } as const;

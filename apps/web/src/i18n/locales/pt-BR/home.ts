@@ -87,4 +87,5 @@ export const home = {
   loadingDeckName: 'Carregando nome do deck',
   loadingDeckMeta: 'Carregando meta do deck',
   loadingReadiness: 'Carregando prontidão',
+  deckboxOpenAriaLabel: 'Abrir {{deckName}}',
 } as const;
