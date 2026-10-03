@@ -137,8 +137,8 @@ function ResultRow({
   const primaryType = card.types[0] ?? '—';
   const className = card.classes.join(', ') || 'Generic';
 
-  // Pitch ◆ pip — tonalized by pitch value. Heroes/weapons/equipment
-  // are pitch-less and render no diamond (absence is the signal).
+  // Pitch dot, tonalized by pitch value. Heroes/weapons/equipment
+  // are pitch-less and render no dot (absence is the signal).
   const pitchToneClass = resolvePitchToneClass(card.pitch);
 
   function bump(delta: number): void {
@@ -196,9 +196,7 @@ function ResultRow({
               <span
                 className={`${styles.pitchPip} ${styles[pitchToneClass]}`}
                 aria-label={t('decks.pitchAria', { pitch: t(pitchLabelKeyFor(card.pitch)) })}
-              >
-                &#9670;
-              </span>
+              />
             )}
             {card.name}
           </p>
@@ -264,9 +262,8 @@ function ResultRow({
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the CSS-module class name for the pitch ◆ pip, or null when
- * the card is pitch-less (no diamond rendered). The diamond uses the
- * brand's existing decorative-diamond vocabulary — see `.impeccable.md`.
+ * Returns the CSS-module class name for the pitch dot, or null when
+ * the card is pitch-less (no dot rendered).
  */
 function resolvePitchToneClass(
   pitch: number | null,

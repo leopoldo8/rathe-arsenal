@@ -16,9 +16,6 @@ export function LibraryEmptyState(): React.ReactElement {
   const { t } = useTranslation();
   return (
     <section className={styles.container} aria-labelledby="library-empty-heading">
-      <div className={styles.diamond} aria-hidden="true">
-        ◆
-      </div>
 
       <h2 id="library-empty-heading" className={styles.heading}>
         {t('library.emptyHeading')}

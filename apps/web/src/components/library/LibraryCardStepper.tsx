@@ -144,7 +144,7 @@ export function LibraryCardStepper({
           aria-label={t('library.removeFromSourceQuestion', { name: card.name })}
         >
           <p className={styles.pickerHeading}>
-            <span aria-hidden="true">◆</span> {t('library.removeOneFrom')}
+            {t('library.removeOneFrom')}
           </p>
           <ul className={styles.pickerList}>
             {removableContributions.map((contribution) => (

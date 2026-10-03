@@ -121,7 +121,6 @@ function AddCardsFabraryPage(): React.ReactElement {
 
       {status.state === 'submitting' && (
         <p className={styles.progress} role="status" aria-live="polite">
-          <span className={styles.progressDiamond} aria-hidden="true">◆</span>
           {t('decks.fetchingDeckProgress')}
         </p>
       )}

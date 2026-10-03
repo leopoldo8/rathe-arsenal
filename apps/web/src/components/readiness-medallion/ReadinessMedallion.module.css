@@ -78,7 +78,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   color: #f0e4cc;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
 }

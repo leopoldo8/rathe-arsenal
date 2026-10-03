@@ -363,23 +363,27 @@ describe('UXUI-07 AC1 — home skeleton card aspect-ratio (T18)', () => {
   });
 });
 
-describe('UXUI-07 AC2 — DeckDetailSkeleton grid matches loaded layout (T18)', () => {
+describe('UXUI-07 AC2 — DeckDetailSkeleton mirrors the single-column deck detail', () => {
   const SKELETON_CSS = path.join(
     SRC_ROOT,
     'components/deck-detail/DeckDetailSkeleton.module.css',
   );
 
-  it('layout uses 280px 1fr columns inside a min-width: 1280px media query', () => {
-    const content = fs.readFileSync(SKELETON_CSS, 'utf-8');
-    // Both the breakpoint and the column values must be present in the file.
-    expect(content).toMatch(/min-width\s*:\s*1280px/);
-    expect(content).toMatch(/grid-template-columns\s*:\s*280px\s+1fr/);
+  it('.layout is a centred 1180px column', () => {
+    const body = ruleBody(readCss('components/deck-detail/DeckDetailSkeleton.module.css'), '.layout');
+    expect(body).toMatch(/max-inline-size\s*:\s*1180px/);
+    expect(body).toMatch(/margin-inline\s*:\s*auto/);
   });
 
-  it('old 3-col 1fr 2fr 1fr pattern is absent', () => {
+  it('has no sidebar grid and no 280px column', () => {
     const content = fs.readFileSync(SKELETON_CSS, 'utf-8');
-    // The old 3-column grid that was removed with T12 dead-code cleanup.
+    expect(content).not.toMatch(/280px/);
     expect(content).not.toMatch(/1fr\s+2fr\s+1fr/);
+  });
+
+  it('.banner is 16px-rounded like the loaded hero', () => {
+    const body = ruleBody(readCss('components/deck-detail/DeckDetailSkeleton.module.css'), '.banner');
+    expect(body).toMatch(/border-radius\s*:\s*var\(--ra-radius-xl\)/);
   });
 });
 
@@ -1775,5 +1779,62 @@ describe('SWAP — no banned motifs in the screen', () => {
       .map((file) => path.basename(file))
       .sort();
     expect(offenders).toEqual(['SwapRow.module.css', 'SwapsEmptyState.module.css', 'swaps.module.css']);
+  });
+});
+
+describe('Phase 10 — app-wide polish sweep', () => {
+  const sourceDirs = ['components', 'routes'].map((dir) => path.join(SRC_ROOT, dir));
+  const isTest = (file: string): boolean =>
+    file.includes(`${path.sep}__tests__${path.sep}`) || /\.(spec|test)\.tsx?$/.test(file);
+  const renderedSources = sourceDirs
+    .flatMap((dir) => walkSync(dir))
+    .filter((file) => /\.(tsx|ts|css)$/.test(file) && !isTest(file));
+
+  it('finds component and route sources to scan', () => {
+    expect(renderedSources.length).toBeGreaterThan(100);
+  });
+
+  it('renders no diamond glyph in any component or route source', () => {
+    const offenders = renderedSources
+      .filter((file) => /[◆◇]|&#9670;|&#9671;|&diams;/.test(fs.readFileSync(file, 'utf-8')))
+      .map((file) => path.relative(SRC_ROOT, file));
+    expect(offenders).toEqual([]);
+  });
+
+  it('puts no uppercase or italic serif on any label, button or lede', () => {
+    const offenders = renderedSources
+      .filter((file) => file.endsWith('.css'))
+      .flatMap((file) =>
+        [...fs.readFileSync(file, 'utf-8').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+          .filter(([, , body]) => /font-family:\s*var\(--ra-font-(display|serif|gothic)\)/.test(body ?? ''))
+          .filter(([, , body]) => /text-transform:\s*uppercase|font-style:\s*italic/.test(body ?? ''))
+          .map(([, selector]) => `${path.basename(file)} ${selector?.trim()}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+
+  it.each([
+    ['routes/_auth/library.module.css', '.addCardsLink'],
+    ['routes/_auth/library.module.css', '.eyebrow'],
+    ['routes/_auth/library-csv-sources.module.css', '.subtitle'],
+    ['routes/_auth/library-csv-sources.module.css', '.viewLibraryLink'],
+    ['routes/_auth/add-cards.csv.module.css', '.dropButton'],
+    ['routes/_auth/add-cards.fabrary.module.css', '.submitBtn'],
+    ['components/deck-detail/DeckDetailHeader.module.css', '.cancelBtn'],
+    ['components/deck-detail/DeckDetailHeader.module.css', '.saveBtn'],
+    ['components/deck-detail/DeckDetailSidebar.module.css', '.blockTitle'],
+    ['components/library/LibraryFilterRail.module.css', '.label'],
+  ])('%s %s uses the UI face', (file, selector) => {
+    expect(ruleBody(readCss(file), selector)).toContain('font-family: var(--ra-font-ui)');
+  });
+
+  it('leaves the filled pitch pips free of glyph text styling', () => {
+    expect(ruleBody(readCss('components/library/LibraryFilterRail.module.css'), '.pitchPip')).not.toContain(
+      'font-family',
+    );
+  });
+
+  it('gives the Settings column top padding below the nav', () => {
+    expect(ruleBody(SETTINGS_CSS, '.page')).toContain('padding-block: var(--ra-space-6) var(--ra-space-12)');
   });
 });

@@ -15,7 +15,7 @@
 }
 
 .label {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -52,8 +52,7 @@
 
 .helpText {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   color: var(--ra-fg-muted);
 }
@@ -68,11 +67,9 @@
   color: var(--ra-accent-ink-on);
   border: 0;
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   min-block-size: 40px;
   transition: background var(--ra-duration) var(--ra-ease);
@@ -102,14 +99,9 @@
   background: var(--ra-bg-surface);
   border: 1px solid var(--ra-border-subtle);
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
-}
-
-.progressDiamond {
-  color: var(--ra-accent);
 }
 
 /* ---- Success ---- */
@@ -166,11 +158,9 @@
   align-items: center;
   padding: var(--ra-space-2) var(--ra-space-4);
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   min-block-size: 36px;
   transition:

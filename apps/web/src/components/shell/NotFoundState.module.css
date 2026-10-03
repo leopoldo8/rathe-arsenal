@@ -14,14 +14,6 @@
   text-align: center;
 }
 
-/* ---------- Ornament ---------- */
-.ornament {
-  font-family: var(--ra-font-ornament);
-  font-size: var(--ra-text-h2);
-  color: var(--ra-accent-dim);
-  line-height: 1;
-  letter-spacing: 0.25em;
-}
 
 /* ---------- Heading ---------- */
 .heading {

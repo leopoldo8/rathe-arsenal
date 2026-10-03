@@ -140,7 +140,7 @@
 }
 
 .caption {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-md);
   color: var(--ra-accent);
   letter-spacing: 0.1em;
@@ -149,7 +149,7 @@
 }
 
 /* Graceful error fallback when the S3 image 404s or fails CORS. Fills
-   the card container with a muted surface + brass diamond + card name
+   the card container with a muted surface + card name
    instead of looping the skeleton. */
 .errorState {
   position: absolute;
@@ -166,14 +166,8 @@
   z-index: 1;
 }
 
-.errorGlyph {
-  font-size: 2.5rem;
-  color: var(--ra-accent);
-  line-height: 1;
-}
-
 .errorTitle {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   letter-spacing: var(--ra-track-caps);
   text-transform: uppercase;
@@ -181,8 +175,7 @@
 }
 
 .errorBody {
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   max-width: 32ch;

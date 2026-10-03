@@ -61,13 +61,12 @@ interface ILibraryFilterRailProps {
 const PITCH_OPTIONS: ReadonlyArray<{
   readonly value: TPitch;
   readonly labelKey: string;
-  readonly glyph: string;
   readonly tone: 'red' | 'yellow' | 'blue' | 'colorless';
 }> = [
-  { value: 'red', labelKey: 'library.pitchRedLabel', glyph: 'I', tone: 'red' },
-  { value: 'yellow', labelKey: 'library.pitchYellowLabel', glyph: 'II', tone: 'yellow' },
-  { value: 'blue', labelKey: 'library.pitchBlueLabel', glyph: 'III', tone: 'blue' },
-  { value: 'colorless', labelKey: 'library.pitchColorlessLabel', glyph: '◇', tone: 'colorless' },
+  { value: 'red', labelKey: 'library.pitchRedLabel', tone: 'red' },
+  { value: 'yellow', labelKey: 'library.pitchYellowLabel', tone: 'yellow' },
+  { value: 'blue', labelKey: 'library.pitchBlueLabel', tone: 'blue' },
+  { value: 'colorless', labelKey: 'library.pitchColorlessLabel', tone: 'colorless' },
 ];
 
 const GROUP_OPTIONS: ReadonlyArray<{ readonly value: TGroupBy; readonly labelKey: string }> = [
@@ -211,7 +210,7 @@ export function LibraryFilterRail({
         {/* Pitch */}
         <section className={styles.section} aria-labelledby="ra-rail-pitch">
           <h3 className={styles.label} id="ra-rail-pitch">
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupPitchLabel')}
+            {t('library.groupPitchLabel')}
           </h3>
           <div className={styles.pitchRow} role="group" aria-labelledby="ra-rail-pitch">
             {PITCH_OPTIONS.map((opt) => {
@@ -228,9 +227,7 @@ export function LibraryFilterRail({
                   onClick={() => togglePitch(opt.value)}
                   aria-label={t('library.pitchFilterAria', { pitch: pitchDisplayLabel, action })}
                 >
-                  <span className={styles.pitchPip} aria-hidden="true">
-                    {opt.glyph}
-                  </span>
+                  <span className={styles.pitchPip} aria-hidden="true" />
                   <span className={styles.pitchLabel}>{pitchDisplayLabel}</span>
                 </button>
               );
@@ -283,7 +280,7 @@ export function LibraryFilterRail({
         {/* Card size slider */}
         <section className={styles.section} aria-labelledby={`${sizeSliderId}-label`}>
           <h3 className={styles.label} id={`${sizeSliderId}-label`}>
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.cardSizeLabel')}
+            {t('library.cardSizeLabel')}
           </h3>
           <div className={styles.sliderRow}>
             <input
@@ -317,7 +314,7 @@ export function LibraryFilterRail({
         {/* Group by */}
         <section className={styles.section} aria-labelledby="ra-rail-group">
           <h3 className={styles.label} id="ra-rail-group">
-            <span className={styles.diamond} aria-hidden="true">◆</span> {t('library.groupByLabel')}
+            {t('library.groupByLabel')}
           </h3>
           <div
             className={styles.segmentControl}
@@ -431,7 +428,7 @@ function ToggleSection({
           onClick={() => setOpen((v) => !v)}
         >
           <span className={styles.label}>
-            <span className={styles.diamond} aria-hidden="true">◆</span> {label}
+            {label}
           </span>
           <span className={styles.accordionSummary}>
             <span
@@ -476,9 +473,7 @@ function ToggleSection({
                     className={`${styles.toggleRow} ${checked ? styles['toggleRow--on'] : ''}`}
                     onClick={() => onToggle(opt)}
                   >
-                    <span className={styles.toggleMarker} aria-hidden="true">
-                      {checked ? '◆' : '◇'}
-                    </span>
+                    <span className={styles.toggleMarker} aria-hidden="true" />
                     <span className={styles.toggleLabel}>
                       {formatLabel ? formatLabel(opt) : opt}
                     </span>

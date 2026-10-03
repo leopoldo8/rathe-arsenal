@@ -70,8 +70,7 @@
 }
 
 .artQuote {
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: 13px;
   color: #6c6e76;
   /* Leading curly quote instead of a 2px left stripe (BAN 1). The

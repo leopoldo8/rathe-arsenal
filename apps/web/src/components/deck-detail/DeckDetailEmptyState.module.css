@@ -14,13 +14,6 @@
   margin: 0 auto;
 }
 
-.diamond {
-  font-size: 2.25rem;
-  color: var(--ra-accent);
-  line-height: 1;
-  text-shadow: 0 0 24px var(--ra-accent-soft-bg);
-}
-
 .heading {
   margin: 0;
   font-family: var(--ra-font-display);
@@ -32,8 +25,7 @@
 
 .body {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
@@ -56,11 +48,9 @@
   background-color: var(--ra-accent);
   color: var(--ra-accent-ink-on);
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   text-decoration: none;
   transition: background-color var(--ra-duration) var(--ra-ease);
   min-block-size: 44px;

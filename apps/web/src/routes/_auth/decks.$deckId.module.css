@@ -15,10 +15,8 @@
 
 /* Retry button */
 .retryBtn {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--ra-accent-body);
   background: transparent;
   border: 1px solid var(--ra-accent-soft-bd);

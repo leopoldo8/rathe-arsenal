@@ -77,11 +77,9 @@
   background: var(--ra-accent);
   color: var(--ra-accent-ink-on);
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition: background var(--ra-duration) var(--ra-ease);
   min-block-size: 36px;
@@ -144,11 +142,9 @@
   color: var(--ra-accent-ink-on);
   border: 0;
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   min-block-size: 36px;
 }
@@ -170,11 +166,9 @@
   color: var(--ra-fg-secondary);
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   min-block-size: 36px;
   transition: border-color var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);

@@ -16,12 +16,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.diamond {
-  color: var(--ra-accent);
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
 .body {
   margin: 0;
   flex: 1;

@@ -33,7 +33,7 @@
 }
 
 .name {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-primary);

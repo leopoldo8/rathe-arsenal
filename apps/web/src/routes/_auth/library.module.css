@@ -37,7 +37,7 @@
 
 .eyebrow {
   margin: 0;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -86,11 +86,9 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition: border-color var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
 }
@@ -131,11 +129,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   text-decoration: none;
   transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
 }
@@ -192,8 +188,7 @@
 
 .noResultsTitle {
   margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-secondary);
   line-height: var(--ra-leading-normal);
@@ -204,10 +199,8 @@
   border: 0;
   padding: var(--ra-space-1) var(--ra-space-2);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;

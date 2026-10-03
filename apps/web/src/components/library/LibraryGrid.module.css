@@ -17,7 +17,7 @@
 /* Group heading — eyebrow style */
 .groupHeading {
   margin: 0;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
   text-transform: uppercase;

@@ -14,7 +14,7 @@
 }
 
 .label {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
@@ -62,19 +62,13 @@
   font-size: var(--ra-text-small);
 }
 
-.toastDiamond {
-  color: var(--ra-accent);
-}
-
 .toastLink {
   margin-left: auto;
   background: transparent;
   border: 0;
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -93,8 +87,7 @@
 .emptyHint {
   margin: 0;
   padding: var(--ra-space-6) 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-muted);
   text-align: center;
@@ -167,15 +160,14 @@
   user-select: none;
 }
 
-/* ---- Pitch ◆ pip — tonalized by pitch value ---- */
+/* ---- Pitch dot, tonalized by pitch value ---- */
 .pitchPip {
   display: inline-block;
+  inline-size: 0.6em;
+  block-size: 0.6em;
   margin-right: 0.45em;
-  font-size: 0.78em;
-  /* Slight vertical alignment so the diamond sits on the optical
-     baseline of the card name. */
-  transform: translateY(-0.06em);
-  line-height: 1;
+  border-radius: var(--ra-radius-full);
+  background: currentColor;
 }
 
 .pitchPipRed {
@@ -291,11 +283,9 @@
   color: var(--ra-accent-ink-on);
   border: 0;
   border-radius: var(--ra-radius-sm);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition: background var(--ra-duration) var(--ra-ease);
 }

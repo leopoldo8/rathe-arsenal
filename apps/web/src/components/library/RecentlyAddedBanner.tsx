@@ -33,7 +33,6 @@ export function RecentlyAddedBanner(): React.ReactElement | null {
 
   return (
     <aside className={styles.banner} role="status" aria-live="polite">
-      <span className={styles.diamond} aria-hidden="true">◆</span>
       <p className={styles.body}>
         <span className={styles.count}>{payload.cardCount}</span>{' '}
         {payload.cardCount === 1 ? t('library.bannerCardSingular') : t('library.bannerCardPlural')} {verb} {t('library.bannerAs')}{' '}

@@ -38,7 +38,7 @@ export function LibraryCsvSourcesPage(): React.ReactElement {
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>
-            <span aria-hidden="true">◆</span> {t('csvSources.csvSourcesEyebrow')}
+            {t('csvSources.csvSourcesEyebrow')}
           </p>
           <h1 className={styles.title}>{t('csvSources.csvSourcesTitle')}</h1>
           <p className={styles.subtitle}>

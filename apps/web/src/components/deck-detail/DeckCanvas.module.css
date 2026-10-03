@@ -93,11 +93,9 @@
 }
 
 .editSlotGroupName {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
   color: var(--ra-fg-muted);
 }
 

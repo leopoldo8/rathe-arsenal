@@ -13,7 +13,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   letter-spacing: var(--ra-track-caps);
   text-transform: uppercase;
@@ -70,11 +70,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-accent-body);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),
@@ -106,11 +104,9 @@
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),
@@ -138,11 +134,9 @@
   border: 1px solid var(--ra-accent);
   border-radius: var(--ra-radius-sm);
   color: var(--ra-bg-base);
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
   cursor: pointer;
   transition:
     background var(--ra-duration) var(--ra-ease),

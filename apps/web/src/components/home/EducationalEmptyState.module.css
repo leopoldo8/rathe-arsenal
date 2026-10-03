@@ -63,7 +63,7 @@
 
 .stepTitle {
   margin: 0;
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-body);
   color: var(--ra-fg-primary);

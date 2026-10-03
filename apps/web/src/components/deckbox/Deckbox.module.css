@@ -310,7 +310,7 @@
 }
 
 .deckName {
-  font-family: var(--ra-font-display);
+  font-family: var(--ra-font-ui);
   font-size: 12px;
   line-height: 1.15;
   color: #f3e9dc;
