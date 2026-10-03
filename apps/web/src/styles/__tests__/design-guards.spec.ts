@@ -959,3 +959,14 @@ describe('HOME-06 — deck meta line', () => {
     expect(ruleBody(TILE_CSS, '.metaDraft')).toContain('color: var(--ra-fg-muted)');
   });
 });
+
+describe('HOME layout — centred 1180px column (handoff §3)', () => {
+  const homeRouteCss = fs.readFileSync(path.join(SRC_ROOT, 'routes/_auth/home.module.css'), 'utf-8');
+
+  it('caps the populated column at 1180px and centres it', () => {
+    const body = homeRouteCss.match(/\.populated\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(homeRouteCss.match(/\.populated\s*\{/g)).toHaveLength(1);
+    expect(body).toContain('max-inline-size: 1180px');
+    expect(body).toContain('margin-inline: auto');
+  });
+});
