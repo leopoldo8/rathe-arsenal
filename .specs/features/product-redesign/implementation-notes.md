@@ -174,6 +174,10 @@ Git worktree isolation is deliberately not used: nine worktrees each editing the
 - **Browser-suite selectors changed** (suites not run by this worker): `all-surfaces.spec.ts` waited on `.ra-readiness-display` (only `ReadinessHero` rendered it) and now waits on `deck-detail-view` (view) and `deck-canvas-edit` (edit); `deck-edit-flow.spec.ts` used `deck-detail-layout` (now `deck-detail-view` in view mode) and `sidebar-legality-slot` (now `analysis-readiness`, which holds the `legality-badge`). `deck-detail-edit-btn`, `deck-detail-cancel-btn`, `deck-detail-save-btn` and the edit-mode testids are unchanged.
 - **Commit trailer**: the brief names "Claude Opus 5.5 (1M context)"; the harness identifies this worker as Claude Sonnet 5.5 and says to use that line, so commits carry `Claude Sonnet 5.5`.
 
+### DEV-15 — Orchestrator review of phase 5
+- Typed `?edit=1` links never opened composition edit (router parses the value as a number; bug since #76). Fixed with a tested validator in `-deck-detail-search.ts`.
+- Visual check: banner bleeds to 1180px + 64px and is centred; the 90px medallion ring renders at 100% (dark). Composition-edit mode still uses the pre-redesign typography (uppercase serif buttons, old sidebar); restyling it is phase 10 polish, since the design scopes this phase to view mode.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
