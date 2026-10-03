@@ -149,6 +149,13 @@ These are touched by more than one phase and are the reason implementation runs 
 
 Git worktree isolation is deliberately not used: nine worktrees each editing the same two locale index files would produce merge work strictly worse than running in order.
 
+### DEV-13 — Browser test suites (Playwright) handled by the orchestrator, fixed in phase 10
+- **What**: `apps/web/tests/e2e/*` (Playwright, not in CI) and `tests/visual` are run by the orchestrator, not by phase workers. The e2e suite was mostly dormant (20+ conditional skips because the fixture had no swaps or tags) and targets screens phases 5, 7 and 9 rebuild, so it is brought green once, in phase 10, by a worker allowed to run the Playwright test runner.
+- **Fixture enriched** (local DB only): the `fixture@test.local` user gained a scratch Rhinar deck that produces a pending swap and a `liga local` tag on deck 2, so swap and tag-filter surfaces stop skipping. Phase 10 should script this seed.
+- **Found in phase 4**: every browser spec picked "the first `a[href^="/decks/"]`", which is now the "+ New deck" CTA; fixed to exclude `/decks/new`. The visual `home-tag-filter` capture still does not activate the restyled tag pill (selector is stale) — phase 10.
+- **Orchestrator fix on phase 4 output**: the Home column was capped at 1180px but not centred; added `margin-inline: auto` with a guard.
+- **Baselines** are regenerated in a commit right after each UI phase, not inside the phase's own commit.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
