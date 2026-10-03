@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { SubstitutionService } from '../substitution.service';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -209,6 +209,39 @@ describe('SubstitutionService', () => {
       }),
     );
     expect(result.id).toBe(10);
+  });
+
+  it('saves the snapshot and reconciles through the caller-supplied transaction manager', async () => {
+    const trackedDeckId = 42;
+    const userId = 'user-456';
+    trackedDeckRepo.findOne.mockResolvedValue({ id: trackedDeckId, userId } as TrackedDeckEntity);
+    deckCardRepo.find.mockResolvedValue([]);
+    const savedSnapshot = { id: 11, trackedDeckId } as DeckReadinessSnapshotEntity;
+    const txSnapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    txSnapshotRepo.create.mockReturnValue(savedSnapshot);
+    txSnapshotRepo.save.mockResolvedValue(savedSnapshot);
+    const manager = createMock<EntityManager>();
+    manager.getRepository.mockReturnValue(txSnapshotRepo as never);
+
+    const result = await service.computeAndStoreReadiness(
+      trackedDeckId,
+      userId,
+      new Set(),
+      new Set(),
+      manager,
+    );
+
+    expect(manager.getRepository).toHaveBeenCalledWith(DeckReadinessSnapshotEntity);
+    expect(txSnapshotRepo.save).toHaveBeenCalledWith(savedSnapshot);
+    expect(snapshotRepo.save).not.toHaveBeenCalled();
+    expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
+      userId,
+      trackedDeckId,
+      expect.anything(),
+      expect.any(Set),
+      manager,
+    );
+    expect(result.id).toBe(11);
   });
 
   it('builds inventory map from collection cards', async () => {

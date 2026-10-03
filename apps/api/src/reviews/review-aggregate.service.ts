@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
-import { ICatalogCard } from '@rathe-arsenal/engine';
 import { ReviewAggregateEntity } from '../database/entities/review-aggregate.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
 import { CatalogService } from '../catalog/catalog.service';
+import { lookupCardMeta } from '../swaps/lookup-card-meta';
 
 // ---------------------------------------------------------------------------
 // Internal types mirroring the engine's IReadinessBreakdown shape.
@@ -330,8 +330,8 @@ export class ReviewAggregateService {
       }
 
       const deckMeta = deckById.get(suggestion.trackedDeckId);
-      const original = this.lookupCardMeta(suggestion.cardIdentifier);
-      const substitute = this.lookupCardMeta(suggestion.substituteIdentifier);
+      const original = lookupCardMeta(this.catalogService, suggestion.cardIdentifier);
+      const substitute = lookupCardMeta(this.catalogService, suggestion.substituteIdentifier);
 
       const row: ISubstitutionRow = {
         trackedDeckId: suggestion.trackedDeckId,
@@ -362,32 +362,6 @@ export class ReviewAggregateService {
     }
 
     return rows;
-  }
-
-  /**
-   * Resolves a card's display metadata from the in-process catalog.
-   * Falls back defensively (name = identifier, pitch = null, type =
-   * 'unknown', imageUrl = null) when the card is not found -- same
-   * fallback contract as the engine's `deriveEntryMeta` and this class's
-   * pre-existing `lookupName`/`lookupType` helpers.
-   */
-  private lookupCardMeta(cardIdentifier: string): {
-    name: string;
-    pitch: number | null;
-    type: string;
-    imageUrl: ICatalogCard['imageUrl'];
-  } {
-    try {
-      const card = this.catalogService.getCard(cardIdentifier);
-      return {
-        name: card.name || cardIdentifier,
-        pitch: card.pitch,
-        type: card.types?.[0] ?? 'unknown',
-        imageUrl: card.imageUrl ?? null,
-      };
-    } catch {
-      return { name: cardIdentifier, pitch: null, type: 'unknown', imageUrl: null };
-    }
   }
 
   /**

@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import {
   catalog,
   computeEffectiveReadiness,
@@ -57,7 +57,9 @@ export class SubstitutionService {
     userId: string,
     excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
     approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+    manager?: EntityManager,
   ): Promise<DeckReadinessSnapshotEntity> {
+    const snapshots = manager ? manager.getRepository(DeckReadinessSnapshotEntity) : this.snapshots;
     const { result, deckCardRows } = await this.runReadiness(
       trackedDeckId,
       userId,
@@ -65,7 +67,7 @@ export class SubstitutionService {
       approvedIdentifiers,
     );
 
-    const snapshot = this.snapshots.create({
+    const snapshot = snapshots.create({
       trackedDeckId,
       rawPercent: result.rawPercent,
       effectivePercent: result.effectivePercent,
@@ -73,13 +75,14 @@ export class SubstitutionService {
       substitutions: result.substitutions as unknown as Record<string, unknown>,
     });
 
-    const saved = await this.snapshots.save(snapshot);
+    const saved = await snapshots.save(snapshot);
 
     await this.swapsReconciliationService.reconcile(
       userId,
       trackedDeckId,
       result.breakdown,
       buildCurrentDeckSlots(deckCardRows),
+      manager,
     );
 
     this.logger.log('Readiness snapshot computed', {

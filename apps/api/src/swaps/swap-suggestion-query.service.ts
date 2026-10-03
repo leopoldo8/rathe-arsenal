@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { buildExclusionKey, TExclusionKey } from '@rathe-arsenal/engine';
 import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
 
@@ -22,8 +22,12 @@ export class SwapSuggestionQueryService {
     private readonly repo: Repository<SwapSuggestionEntity>,
   ) {}
 
-  async loadReadinessInputs(trackedDeckId: number): Promise<IReadinessInputs> {
-    const rows = await this.repo.find({
+  async loadReadinessInputs(
+    trackedDeckId: number,
+    manager?: EntityManager,
+  ): Promise<IReadinessInputs> {
+    const repo = manager ? manager.getRepository(SwapSuggestionEntity) : this.repo;
+    const rows = await repo.find({
       where: { trackedDeckId, status: In(['rejected', 'approved']) },
       select: ['cardIdentifier', 'slot', 'substituteIdentifier', 'status'],
     });
