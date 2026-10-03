@@ -48,6 +48,14 @@ export interface IBreakdownEntry {
         readonly sources: readonly { readonly small: string; readonly large: string }[];
       }
     | null;
+  /**
+   * Catalog legality, attached at read time so the composition editor can
+   * flag existing cards when the hero or format changes. Empty arrays mean
+   * no restriction (or a card retired from the catalog).
+   */
+  readonly legalFormats?: readonly string[];
+  readonly legalHeroes?: readonly string[];
+  readonly bannedFormats?: readonly string[];
 }
 
 export interface ISubstitutionEntry {

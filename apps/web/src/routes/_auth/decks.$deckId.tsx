@@ -29,6 +29,7 @@ import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
+import { buildDraftInitialPayload } from './-deck-detail-draft';
 import { useCascadeCheck } from '../../hooks/useCascadeCheck';
 import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
@@ -334,43 +335,10 @@ function DeckDetailPageWithData({
   // Ref to the Edit button for DraftRestoreModal focus return.
   const editBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Build initial payload for the composition draft from the current deck state.
-  const draftInitialPayload = React.useMemo(() => {
-    if (!snapshot) {
-      return {
-        cards: [],
-        heroIdentifier: deck.heroIdentifier ?? null,
-        format: deck.format,
-      };
-    }
-    const allCards = [
-      ...snapshot.breakdown.exact,
-      ...(snapshot.breakdown.notOwned ?? snapshot.breakdown.missing),
-    ].map((entry) => ({
-      cardIdentifier: entry.cardIdentifier,
-      name: entry.name,
-      quantity: entry.quantity,
-      slot: entry.slot,
-      pitch: entry.pitch,
-      cost: entry.cost ?? null,
-      type: entry.type,
-      imageUrl: entry.imageUrl
-        ? {
-            small: entry.imageUrl.small,
-            large: entry.imageUrl.large,
-            sources: entry.imageUrl.sources,
-          }
-        : null,
-      legalFormats: [],
-      legalHeroes: [],
-      bannedFormats: [],
-    }));
-    return {
-      cards: allCards,
-      heroIdentifier: deck.heroIdentifier ?? null,
-      format: deck.format,
-    };
-  }, [snapshot, deck.heroIdentifier, deck.format]);
+  const draftInitialPayload = React.useMemo(
+    () => buildDraftInitialPayload({ heroIdentifier: deck.heroIdentifier, format: deck.format }, snapshot),
+    [snapshot, deck.heroIdentifier, deck.format],
+  );
 
   const compositionDraft = useCompositionDraft(deckId, draftInitialPayload);
 

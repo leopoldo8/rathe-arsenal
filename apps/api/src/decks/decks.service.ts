@@ -70,15 +70,20 @@ export class DecksService {
   // the input as `unknown` and reshape both branches defensively.
   private enrichBreakdown(breakdown: unknown): IBreakdown {
     const enrichEntry = (entry: IBreakdownEntry): IBreakdownEntry => {
-      if (entry.name && entry.name.length > 0) return entry;
-      let name = entry.cardIdentifier;
+      let name = entry.name && entry.name.length > 0 ? entry.name : entry.cardIdentifier;
+      let legalFormats: string[] = [];
+      let legalHeroes: string[] = [];
+      let bannedFormats: string[] = [];
       try {
         const card = this.catalogService.getCard(entry.cardIdentifier);
-        if (card?.name) name = card.name;
+        if (card?.name && !(entry.name && entry.name.length > 0)) name = card.name;
+        legalFormats = [...(card?.legalFormats ?? [])];
+        legalHeroes = [...(card?.legalHeroes ?? [])];
+        bannedFormats = [...(card?.bannedFormats ?? [])];
       } catch {
-        // Card retired from catalog — keep identifier fallback.
+        // Card retired from catalog — keep the identifier name and empty legality.
       }
-      return { ...entry, name };
+      return { ...entry, name, legalFormats, legalHeroes, bannedFormats };
     };
 
     const raw = breakdown as {

@@ -961,6 +961,66 @@ const trackedDeck = result.trackedDecks[0]!;
       expect(sl.variantFetchProgress).toBeUndefined();
     });
 
+    it('attaches catalog legality metadata to every breakdown entry so the editor can flag illegal cards', async () => {
+      // Arrange
+      trackedDeckRepo.findOne.mockResolvedValue(buildTrackedDeck());
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue({
+        ...buildSnapshotWithMissing(),
+        breakdown: {
+          exact: [{ cardIdentifier: 'card-a', name: 'Card A', quantity: 1, slot: 'main' }],
+          substituted: [],
+          missing: [{ cardIdentifier: 'card-b', name: 'Card B', quantity: 1, slot: 'main' }],
+          notOwned: [{ cardIdentifier: 'card-b', name: 'Card B', quantity: 1, slot: 'main' }],
+        },
+      });
+      substitutionService.deriveSnapshotFields.mockReturnValue({ path: 'C', fidelityPercent: 80 });
+      catalogService.getCard.mockImplementation(
+        (id: string) =>
+          ({
+            cardIdentifier: id,
+            name: id,
+            legalFormats: ['Classic Constructed'],
+            legalHeroes: ['Kayo'],
+            bannedFormats: id === 'card-b' ? ['Blitz'] : undefined,
+          }) as unknown as ReturnType<typeof catalogService.getCard>,
+      );
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert
+      const breakdown = result.latestSnapshot!.breakdown;
+      expect(breakdown.exact[0]).toMatchObject({
+        legalFormats: ['Classic Constructed'],
+        legalHeroes: ['Kayo'],
+        bannedFormats: [],
+      });
+      expect(breakdown.missing[0]).toMatchObject({ bannedFormats: ['Blitz'] });
+      expect(breakdown.notOwned[0]).toMatchObject({ legalHeroes: ['Kayo'] });
+    });
+
+    it('leaves the legality metadata empty for a card retired from the catalog', async () => {
+      // Arrange
+      trackedDeckRepo.findOne.mockResolvedValue(buildTrackedDeck());
+      deckCardRepo.find.mockResolvedValue(buildDeckCards());
+      snapshotRepo.findOne.mockResolvedValue(buildSnapshotWithMissing());
+      substitutionService.deriveSnapshotFields.mockReturnValue({ path: 'C', fidelityPercent: 80 });
+      catalogService.getCard.mockImplementation(() => {
+        throw new Error('Card not found');
+      });
+
+      // Act
+      const result = await service.getDetail(USER_ID, 1);
+
+      // Assert
+      expect(result.latestSnapshot!.breakdown.missing[0]).toMatchObject({
+        legalFormats: [],
+        legalHeroes: [],
+        bannedFormats: [],
+      });
+    });
+
     it('does not expose the retired per-deck decision fields', async () => {
       // Arrange
       trackedDeckRepo.findOne.mockResolvedValue(buildTrackedDeck());

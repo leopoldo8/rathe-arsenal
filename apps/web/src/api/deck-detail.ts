@@ -40,6 +40,9 @@ export interface IBreakdownEntry {
         readonly sources: readonly { readonly small: string; readonly large: string }[];
       }
     | null;
+  readonly legalFormats?: readonly string[];
+  readonly legalHeroes?: readonly string[];
+  readonly bannedFormats?: readonly string[];
 }
 
 export interface ISubstituteCard {
