@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useCsvSourcesQuery } from '../../api/csv-sources';
+import { useLibraryQuery } from '../../api/library';
 import { CsvSourceList } from '../../components/csv-sources/CsvSourceList';
 import { CsvSourcesEmptyState } from '../../components/csv-sources/CsvSourcesEmptyState';
 import { UploadCsvButton } from '../../components/csv-sources/UploadCsvButton';
@@ -15,19 +16,22 @@ export const Route = createFileRoute('/_auth/library-csv-sources')({
   component: LibraryCsvSourcesPage,
 });
 
-function LibraryCsvSourcesPage(): React.ReactElement {
+export function LibraryCsvSourcesPage(): React.ReactElement {
   const { t } = useTranslation();
   const sourcesQuery = useCsvSourcesQuery();
+  const libraryQuery = useLibraryQuery();
 
   if (sourcesQuery.isLoading) {
     return <CsvSourcesSkeleton />;
   }
 
   const sources = sourcesQuery.data ?? [];
+  const activeCount = sources.filter((source) => source.active).length;
+  const totalCopies = libraryQuery.data?.stats.totalCopies;
 
   return (
     <div className={styles.page}>
-      <Link to="/add-cards" className={styles.backLink}>
+      <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
         <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
       </Link>
 
@@ -59,6 +63,17 @@ function LibraryCsvSourcesPage(): React.ReactElement {
         <div className={styles.explainerRow}>
           <SumExplainer />
         </div>
+
+        {sources.length > 0 && (
+          <p className={styles.countLine}>
+            <span>
+              {t('csvSources.sourcesCountLine', { count: sources.length, activeCount })}
+            </span>
+            {totalCopies !== undefined && (
+              <span>{t('csvSources.sourcesTotalCopiesLine', { count: totalCopies })}</span>
+            )}
+          </p>
+        )}
 
         {sources.length === 0 ? (
           <CsvSourcesEmptyState

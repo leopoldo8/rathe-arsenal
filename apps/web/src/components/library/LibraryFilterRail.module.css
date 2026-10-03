@@ -8,7 +8,7 @@
   /* Sit just below the 56px AppShell TopBar (also sticky at top:0). The
      extra 16px of breathing room matches the page's vertical rhythm. */
   top: 72px;
-  width: 280px;
+  width: 250px;
   flex-shrink: 0;
   /* Cap height to the viewport minus the topbar so the rail's own scroll
      area never extends past the visible region. */
@@ -181,17 +181,49 @@
   color: var(--ra-bg-canvas);
 }
 
+.pitchPill--red {
+  border-color: var(--ra-pitch-red);
+}
+
+.pitchPill--red.pitchPill--on {
+  color: var(--ra-pitch-red-ink);
+}
+
 .pitchPill--red .pitchPip {
-  background: var(--ra-card-frame-red);
+  background: var(--ra-pitch-red);
+}
+
+.pitchPill--yellow {
+  border-color: var(--ra-pitch-yellow);
+}
+
+.pitchPill--yellow.pitchPill--on {
+  color: var(--ra-pitch-yellow-ink);
 }
 
 .pitchPill--yellow .pitchPip {
-  background: var(--ra-card-frame-yellow);
+  background: var(--ra-pitch-yellow);
+}
+
+.pitchPill--blue {
+  border-color: var(--ra-pitch-blue);
+}
+
+.pitchPill--blue.pitchPill--on {
+  color: var(--ra-pitch-blue-ink);
 }
 
 .pitchPill--blue .pitchPip {
-  background: var(--ra-card-frame-blue);
+  background: var(--ra-pitch-blue);
   color: #fff;
+}
+
+.pitchPill--colorless {
+  border-color: var(--ra-pitch-colorless);
+}
+
+.pitchPill--colorless.pitchPill--on {
+  color: var(--ra-pitch-colorless-ink);
 }
 
 .pitchPill--colorless .pitchPip {
@@ -508,6 +540,26 @@
 }
 
 /* ---- Clear-all footer ---- */
+.sourcesLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  text-decoration: none;
+  transition: color var(--ra-duration) var(--ra-ease);
+}
+
+.sourcesLink:hover {
+  color: var(--ra-accent-body);
+}
+
+.sourcesLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
 .clearAll {
   align-self: flex-start;
   display: inline-flex;

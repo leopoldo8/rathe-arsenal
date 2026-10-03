@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import styles from '../LibraryStatsBar.module.css';
 import { LibraryStatsBar } from '../LibraryStatsBar';
 import type { ILibraryStats } from '../../../api/library';
 
@@ -153,5 +154,18 @@ describe('LibraryStatsBar — accessibility', () => {
     expect(
       screen.getByRole('generic', { name: /distribuição de pitch/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('LibraryStatsBar — pitch pills use the pitch classes (LIB-04)', () => {
+  it.each([
+    ['R 30', 'pillRed'],
+    ['Y 20', 'pillYellow'],
+    ['B 50', 'pillBlue'],
+    ['— 20', 'pillColorless'],
+  ] as const)('%s pill carries the %s class', (text, cls) => {
+    render(<LibraryStatsBar stats={makeStats()} />);
+    expect(screen.getByText(text)).toHaveClass(styles[cls]!);
+    expect(screen.getByText(text)).toHaveClass(styles.pill!);
   });
 });

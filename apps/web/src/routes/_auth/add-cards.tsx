@@ -1,20 +1,71 @@
 import React from 'react';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router';
+import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
+import styles from './add-cards.module.css';
 
-/**
- * Layout route for /add-cards — pure pass-through.
- *
- * The actual gallery lives in `add-cards.index.tsx`, and the three add
- * methods (`manual`, `csv`, `fabrary`) live in their own sibling files
- * registered as children. Without this layout the parent would render
- * its own component AND the child via Outlet, stacking them — by making
- * the parent render only `<Outlet />` we let each subview own the full
- * page.
- */
 export const Route = createFileRoute('/_auth/add-cards')({
   component: AddCardsLayout,
 });
 
-function AddCardsLayout(): React.ReactElement {
-  return <Outlet />;
+type TTabPath = '/add-cards/manual' | '/add-cards/csv' | '/add-cards/fabrary';
+
+interface ITab {
+  readonly to: TTabPath;
+  readonly labelKey: string;
+  readonly sentenceKey: string;
+}
+
+const ADD_CARDS_TABS: readonly ITab[] = [
+  { to: '/add-cards/manual', labelKey: 'decks.addCardsTabManual', sentenceKey: 'decks.addCardsManualSentence' },
+  { to: '/add-cards/csv', labelKey: 'decks.addCardsTabCsv', sentenceKey: 'decks.addCardsCsvSentence' },
+  { to: '/add-cards/fabrary', labelKey: 'decks.addCardsTabFabrary', sentenceKey: 'decks.addCardsFabrarySentence' },
+];
+
+export function AddCardsLayout(): React.ReactElement {
+  const { t } = useTranslation();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const activeTab = ADD_CARDS_TABS.find((tab) => pathname.startsWith(tab.to));
+
+  return (
+    <div className={styles.page}>
+      <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
+        <span aria-hidden="true">←</span> {t('shell.navLibrary')}
+      </Link>
+
+      <header className={styles.pageHeader}>
+        <h1 className={styles.title}>{t('decks.addCardsTitle')}</h1>
+        <p className={styles.subtitle}>{t('decks.addCardsSubtitle')}</p>
+      </header>
+
+      <nav className={styles.tabs} aria-label={t('decks.addCardsMethodsAria')}>
+        {ADD_CARDS_TABS.map((tab) => {
+          const active = tab === activeTab;
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className={styles.tab}
+              data-active={active ? 'true' : 'false'}
+              aria-current={active ? 'page' : undefined}
+            >
+              {t(tab.labelKey)}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {activeTab && <p className={styles.sentence}>{t(activeTab.sentenceKey)}</p>}
+
+      <section className={styles.panel}>
+        <Outlet />
+      </section>
+
+      <footer className={styles.pageFooter}>
+        <Link to="/library-csv-sources" className={styles.manageLink}>
+          {t('decks.manageLibrarySources')}
+        </Link>
+      </footer>
+    </div>
+  );
 }

@@ -3,79 +3,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-6);
-  padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.subviewHeader {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ra-space-2);
-}
-
-.back {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  margin-bottom: var(--ra-space-3);
-  padding: var(--ra-space-1) 0;
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
-  color: var(--ra-fg-muted);
-  text-decoration: none;
-  transition: color var(--ra-duration) var(--ra-ease);
-}
-
-.back:hover {
-  color: var(--ra-accent-body);
-}
-
-.back:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 2px;
-}
-
-.eyebrow {
-  margin: 0;
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--ra-space-2);
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
-  color: var(--ra-accent-body);
-}
-
-.numeral {
-  font-family: var(--ra-font-ornament);
-  font-weight: var(--ra-weight-black);
-  font-size: 0.95rem;
-  letter-spacing: 0;
-}
-
-.title {
-  margin: 0;
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-h1);
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: var(--ra-track-h1);
-  color: var(--ra-fg-primary);
-  line-height: var(--ra-leading-tight);
-}
-
-.subtitle {
-  margin: 0;
-  font-family: var(--ra-font-serif);
-  font-style: italic;
-  font-size: var(--ra-text-body);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
+  gap: var(--ra-space-5);
 }
 
 /* ---- Drop zone ---- */
@@ -85,10 +13,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--ra-space-2);
-  padding: var(--ra-space-10) var(--ra-space-5);
-  background: var(--ra-bg-surface);
-  border: 1.5px dashed var(--ra-border-strong);
-  border-radius: var(--ra-radius-md);
+  padding: 38px var(--ra-space-5);
+  background: rgba(208, 168, 76, 0.04);
+  border: 1.5px dashed var(--ra-accent);
+  border-radius: var(--ra-radius-lg);
   text-align: center;
   transition:
     border-color var(--ra-duration-lg) var(--ra-ease),
@@ -100,8 +28,8 @@
   background: var(--ra-accent-soft-bg);
 }
 
-.dropDiamond {
-  font-size: 1.5rem;
+.dropIcon {
+  font-size: 28px;
   color: var(--ra-accent);
   line-height: 1;
 }
@@ -293,16 +221,10 @@
   text-align: center;
 }
 
-.manageLink {
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
+.footerLine {
+  margin: 0;
+  font-size: var(--ra-text-small);
   color: var(--ra-fg-muted);
-  text-decoration: none;
-  transition: color var(--ra-duration) var(--ra-ease);
+  line-height: var(--ra-leading-normal);
 }
 
-.manageLink:hover {
-  color: var(--ra-accent-body);
-}

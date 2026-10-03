@@ -1,11 +1,12 @@
 .row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  display: flex;
   gap: var(--ra-space-3);
   align-items: center;
   padding: var(--ra-space-3) var(--ra-space-4);
   border-bottom: 1px solid var(--ra-border-subtle);
-  transition: background var(--ra-duration) var(--ra-ease);
+  transition:
+    background var(--ra-duration) var(--ra-ease),
+    opacity var(--ra-duration) var(--ra-ease);
 }
 
 .row:last-child {
@@ -16,15 +17,69 @@
   background: var(--ra-bg-muted);
 }
 
+.row--inactive {
+  opacity: 0.55;
+}
+
+/* Source-kind badge: raw tokens only on fill and border, text stays readable. */
+.badge {
+  flex-shrink: 0;
+  padding: 2px var(--ra-space-2);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-xs);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ra-fg-secondary);
+}
+
+.badge--csv {
+  background: var(--ra-ready-high-bg);
+  border-color: var(--ra-ready-high-border);
+  color: var(--ra-ready-high);
+}
+
+.badge--fabrary {
+  background: var(--ra-accent-soft-bg);
+  border-color: var(--ra-accent-soft-bd);
+  color: var(--ra-accent-body);
+}
+
+.badge--manual {
+  background: color-mix(in srgb, var(--ra-status-idea) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ra-status-idea) 40%, transparent);
+  color: var(--ra-status-idea);
+}
+
+.activeLabel {
+  flex-shrink: 0;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+}
+
+.manualNote {
+  margin: 0;
+  max-inline-size: 28ch;
+  font-size: var(--ra-text-caption);
+  color: var(--ra-fg-muted);
+  line-height: var(--ra-leading-snug);
+}
+
+.labelText {
+  font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
+  color: var(--ra-fg-primary);
+}
+
 /* Active switch */
 .switch {
   flex-shrink: 0;
-  width: 36px;
-  height: 20px;
+  width: 42px;
+  height: 24px;
   background: var(--ra-border-strong);
   border-radius: var(--ra-radius-full);
   border: none;
-  padding: 2px;
+  padding: 3px;
   cursor: pointer;
   transition: background var(--ra-duration) var(--ra-ease);
 }
@@ -44,19 +99,20 @@
 
 .switchThumb {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: var(--ra-fg-primary);
   border-radius: 50%;
   transition: transform var(--ra-duration) var(--ra-ease);
 }
 
 .switch[data-state="checked"] .switchThumb {
-  transform: translateX(16px);
+  transform: translateX(18px);
 }
 
 /* Label cell */
 .labelCell {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;

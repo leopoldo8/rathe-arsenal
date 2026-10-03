@@ -9,6 +9,7 @@ import type {
   TGroupBy,
 } from '../../components/library/LibraryFilterRail';
 import { CARD_SIZE_DEFAULT } from '../../components/library/LibraryFilterRail';
+import { writeStoredCardSize } from '../../components/library/LibraryFilterRail.constants';
 import { LibraryFilterDrawer } from '../../components/library/LibraryFilterDrawer';
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
@@ -76,10 +77,11 @@ export function LibraryPageInner({
         group: next.group,
         cardSize: next.cardSize,
       };
+      if (next.cardSize !== filters.cardSize) writeStoredCardSize(next.cardSize);
       setFilterState(nextSearch);
       void navigate({ to: '/library', search: nextSearch, replace: true });
     },
-    [navigate],
+    [navigate, filters.cardSize],
   );
 
   const data = libraryQuery.data;

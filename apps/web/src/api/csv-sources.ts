@@ -10,9 +10,10 @@ import type { ICsvDelta, ISkippedCsvRow } from './csv-upload.types';
 export interface ICsvSource {
   readonly id: string;
   readonly userId: string;
-  readonly kind: 'csv';
+  readonly kind: 'csv' | 'manual';
   readonly label: string | null;
   readonly originalFilename: string | null;
+  readonly sourceUrl: string | null;
   readonly contentHash: string | null;
   readonly cardCount: number | null;
   readonly active: boolean;

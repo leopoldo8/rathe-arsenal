@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -377,5 +377,176 @@ describe('LibraryPage — accessibility', () => {
   it('rail filter sections are landmarked (pt-BR)', () => {
     renderLibraryPage();
     expect(screen.getByLabelText(/filtros da biblioteca/i)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 6 — LIB-01..04 and the stepper surviving the redesign
+// ---------------------------------------------------------------------------
+
+describe('LibraryPage — sidebar keeps every filter (LIB-01)', () => {
+  beforeEach(() => {
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse([
+        makeCard({ cardIdentifier: 'A', name: 'Alpha', classes: ['Brute'], talents: ['Lightning'], sets: ['WTR'] }),
+      ]),
+    });
+  });
+
+  it('exposes search, four pitch chips, three facets, size slider and four group modes', () => {
+    renderLibraryPage();
+    expect(screen.getByRole('searchbox', { name: /buscar cards na biblioteca/i })).toBeInTheDocument();
+    for (const name of [/Vermelho pitch/, /Amarelo pitch/, /Azul pitch/, /Incolor pitch/]) {
+      expect(screen.getByRole('checkbox', { name })).toBeInTheDocument();
+    }
+    for (const name of [/Classe/, /Talento/, /^Set/]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('slider', { name: /tamanho dos cards em pixels/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('radio')).toHaveLength(4);
+  });
+
+  it('links to the sources page from the sidebar', () => {
+    renderLibraryPage();
+    expect(screen.getByRole('link', { name: /gerenciar fontes/i })).toHaveAttribute(
+      'href',
+      '/library-csv-sources',
+    );
+  });
+
+  it('filtering by pitch narrows the grid and offers the clear action', async () => {
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse([
+        makeCard({ cardIdentifier: 'R1', name: 'Red One', pitch: 1 }),
+        makeCard({ cardIdentifier: 'B1', name: 'Blue One', pitch: 3 }),
+      ]),
+    });
+    renderLibraryPage();
+    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/ }));
+    expect(screen.getAllByRole('listitem', { name: /Red One/ })).toHaveLength(1);
+    expect(screen.queryByRole('listitem', { name: /Blue One/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /limpar todos os filtros/i })).toBeInTheDocument();
+  });
+});
+
+describe('LibraryPage — group-by regroups without refetching (LIB-03)', () => {
+  const CARDS = [
+    makeCard({ cardIdentifier: 'R1', name: 'Red One', pitch: 1, types: ['Attack Action'], sets: ['WTR'] }),
+    makeCard({ cardIdentifier: 'B1', name: 'Blue One', pitch: 3, types: ['Equipment'], sets: ['CRU'] }),
+  ];
+
+  beforeEach(() => {
+    mockUseLibraryQuery.mockReset();
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse(CARDS),
+    });
+  });
+
+  function groupHeadings(): string[] {
+    return screen.queryAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
+  }
+
+  it.each([
+    ['Tipo', ['Attack Action', 'Equipment']],
+    ['Pitch', ['Vermelho', 'Azul']],
+    ['Set', ['CRU', 'WTR']],
+    ['Lista', []],
+  ] as const)('%s mode renders the matching group headings', async (label, expected) => {
+    renderLibraryPage();
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(`^${label}$`) }));
+    const headings = groupHeadings();
+    for (const text of expected) {
+      expect(headings.some((h) => h.includes(text))).toBe(true);
+    }
+    if (expected.length === 0) expect(headings).toEqual([]);
+  });
+
+  it('keeps the same cards on screen when the mode changes (no refetch needed)', async () => {
+    const refetch = vi.fn();
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse(CARDS),
+      refetch,
+    });
+    renderLibraryPage();
+    await userEvent.click(screen.getByRole('radio', { name: /^Lista$/ }));
+    expect(screen.getAllByRole('listitem', { name: /na coleção/ })).toHaveLength(2);
+    expect(refetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('LibraryPage — card size (LIB-02)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    mockNavigate.mockClear();
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse([makeCard()]),
+    });
+  });
+
+  it('writes the chosen size to the URL and to localStorage', () => {
+    renderLibraryPage();
+    fireEvent.change(screen.getByRole('slider'), { target: { value: '200' } });
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({ search: expect.objectContaining({ cardSize: 200 }) }),
+    );
+    expect(window.localStorage.getItem('ra-library-card-size')).toBe('200');
+  });
+
+  it('drives the grid column width from the chosen size', () => {
+    renderLibraryPage();
+    const cellMin = (): string =>
+      document.querySelector<HTMLElement>('ul[aria-label]:not([role])')!.style.getPropertyValue('--cell-min');
+    expect(cellMin()).toBe('calc(120px + 1rem)');
+    fireEvent.change(screen.getByRole('slider'), { target: { value: '200' } });
+    expect(cellMin()).toBe('calc(200px + 1rem)');
+  });
+});
+
+describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () => {
+  const MULTI = makeCard({
+    cardIdentifier: 'M1',
+    name: 'Multi Card',
+    ownedQuantity: 3,
+    contributions: [
+      { sourceId: 's1', sourceLabel: 'Planilha', kind: 'csv', quantity: 2 },
+      { sourceId: 's2', sourceLabel: 'Manual entries', kind: 'manual', quantity: 1 },
+    ],
+  });
+
+  beforeEach(() => {
+    mockDecrementMutate.mockReset();
+    mockMutate.mockReset();
+    mockUseLibraryQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: makeLibraryResponse([MULTI]),
+    });
+  });
+
+  it('adds one copy from the cell', async () => {
+    renderLibraryPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar um Multi Card' }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ cardIdentifier: 'M1', quantity: 1 }),
+    );
+  });
+
+  it('opens the source picker on remove when copies come from more than one source', async () => {
+    renderLibraryPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Remover um Multi Card' }));
+    expect(screen.getByRole('menu', { name: /Remover 1× de qual fonte/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Planilha/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Manual entries/ })).toBeInTheDocument();
+    expect(mockDecrementMutate).not.toHaveBeenCalled();
   });
 });

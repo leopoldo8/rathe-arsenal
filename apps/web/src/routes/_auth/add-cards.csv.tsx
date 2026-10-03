@@ -1,6 +1,6 @@
 import React, { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useUploadCsvMutation } from '../../api/csv-sources';
 import { ApiError } from '../../lib/api-client';
 import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner.helpers';
@@ -22,7 +22,7 @@ type TStatus =
   | { state: 'uploading'; filename: string }
   | { state: 'error'; message: string };
 
-function AddCardsCsvPage(): React.ReactElement {
+export function AddCardsCsvPage(): React.ReactElement {
   const { t } = useTranslation();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -109,19 +109,6 @@ function AddCardsCsvPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <header className={styles.subviewHeader}>
-        <Link to="/add-cards" className={styles.back}>
-          {t('csvSources.addCsvBackLink')}
-        </Link>
-        <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">II</span> {t('csvSources.addCsvEyebrow')}
-        </p>
-        <h1 className={styles.title}>{t('csvSources.addCsvTitle')}</h1>
-        <p className={styles.subtitle}>
-          {t('csvSources.addCsvSubtitle')}
-        </p>
-      </header>
-
       <div
         ref={dropRef}
         className={`${styles.dropZone} ${isDragging ? styles['dropZone--active'] : ''}`}
@@ -131,8 +118,8 @@ function AddCardsCsvPage(): React.ReactElement {
         role="region"
         aria-label={t('csvSources.addCsvDropZoneAriaLabel')}
       >
-        <span className={styles.dropDiamond} aria-hidden="true">
-          ◆
+        <span className={styles.dropIcon} aria-hidden="true">
+          ⇪
         </span>
         {status.state === 'uploading' ? (
           <p className={styles.dropTitle} aria-live="polite">
@@ -145,9 +132,7 @@ function AddCardsCsvPage(): React.ReactElement {
                 ? t('csvSources.addCsvDragOverTitle')
                 : t('csvSources.addCsvDropTitle')}
             </p>
-            <p className={styles.dropHint}>
-              {t('csvSources.addCsvDropHint')}
-            </p>
+            <p className={styles.dropHint}>{t('csvSources.csvSizeAndRowLimit')}</p>
             <input
               ref={fileInputRef}
               id={inputId}
@@ -174,9 +159,7 @@ function AddCardsCsvPage(): React.ReactElement {
       )}
 
       <footer className={styles.subviewFooter}>
-        <Link to="/library-csv-sources" className={styles.manageLink}>
-          {t('csvSources.addCsvManageLink')}
-        </Link>
+        <p className={styles.footerLine}>{t('csvSources.csvExpectedColumns')}</p>
       </footer>
     </div>
   );

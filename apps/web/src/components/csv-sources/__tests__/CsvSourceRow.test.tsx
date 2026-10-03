@@ -54,6 +54,8 @@ vi.mock('../../../utils/format-relative-time', () => ({
 // ---------------------------------------------------------------------------
 
 import { CsvSourceRow } from '../CsvSourceRow';
+import styles from '../CsvSourceRow.module.css';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 import type { ICsvSource } from '../../../api/csv-sources';
 
 // ---------------------------------------------------------------------------
@@ -67,6 +69,7 @@ function buildSource(overrides: Partial<ICsvSource> = {}): ICsvSource {
     kind: 'csv',
     label: 'My Collection',
     originalFilename: 'collection.csv',
+    sourceUrl: null,
     contentHash: 'abc',
     cardCount: 42,
     active: true,
@@ -203,6 +206,81 @@ describe('CsvSourceRow', () => {
 
       expect(screen.getByText(/42 cards/)).toBeInTheDocument();
       expect(screen.getByText('2 days ago')).toBeInTheDocument();
+    });
+  });
+
+  describe('type badge (LIB-05)', () => {
+    it.each([
+      ['csv', { kind: 'csv', sourceUrl: null }, 'CSV', 'badge--csv'],
+      ['fabrary', { kind: 'csv', sourceUrl: 'https://fabrary.net/decks/ABC' }, 'Fabrary', 'badge--fabrary'],
+      ['manual', { kind: 'manual', label: 'Manual entries' }, 'Manual', 'badge--manual'],
+    ] as const)('renders the %s badge with its colour class', (_kind, overrides, text, cls) => {
+      renderRow(buildSource(overrides as Partial<ICsvSource>));
+      const badge = screen.getByText(text, { selector: 'span' });
+      expect(badge).toHaveClass(styles.badge!);
+      expect(badge).toHaveClass(styles[cls]!);
+    });
+  });
+
+  describe('active state (LIB-06)', () => {
+    it('shows the Ativa label and no dim class when active', () => {
+      renderRow(buildSource({ active: true }));
+      expect(screen.getByText('Ativa')).toBeInTheDocument();
+      expect(screen.queryByText('Inativa')).not.toBeInTheDocument();
+      expect(screen.getByRole('listitem')).not.toHaveClass(styles['row--inactive']!);
+    });
+
+    it('flips the label to Inativa and dims the row when inactive', () => {
+      renderRow(buildSource({ active: false }));
+      expect(screen.getByText('Inativa')).toBeInTheDocument();
+      expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveClass(styles['row--inactive']!);
+    });
+
+    it('localizes the active labels under en-US', async () => {
+      await setTestLocale('en-US');
+      const { unmount } = renderRow(buildSource({ active: true }));
+      expect(screen.getByText('Active')).toBeInTheDocument();
+      unmount();
+      renderRow(buildSource({ active: false }));
+      expect(screen.getByText('Inactive')).toBeInTheDocument();
+    });
+  });
+
+  describe('manual source row', () => {
+    const manual = { kind: 'manual', label: 'Manual entries', originalFilename: null, cardCount: 7 } as const;
+
+    it('shows the localized name and the card count', () => {
+      renderRow(buildSource(manual));
+      expect(screen.getByText('Entradas manuais')).toBeInTheDocument();
+      expect(screen.getByText(/7 cards/)).toBeInTheDocument();
+    });
+
+    it('renders no toggle, because the backend cannot deactivate it', () => {
+      renderRow(buildSource(manual));
+      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    });
+
+    it('renders no overflow menu and no rename button', () => {
+      renderRow(buildSource(manual));
+      expect(screen.queryByRole('button', { name: /opções para/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /renomear/i })).not.toBeInTheDocument();
+    });
+
+    it('explains why instead of showing an active label', () => {
+      renderRow(buildSource(manual));
+      expect(
+        screen.getByText('Sempre incluída — cartas adicionadas manualmente não podem ser desativadas.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
+    });
+
+    it('localizes the explanation under en-US', async () => {
+      await setTestLocale('en-US');
+      renderRow(buildSource(manual));
+      expect(
+        screen.getByText("Always included — manually added cards can't be deactivated."),
+      ).toBeInTheDocument();
     });
   });
 });

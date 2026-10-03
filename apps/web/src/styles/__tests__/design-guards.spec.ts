@@ -269,9 +269,8 @@ describe('stale-hex ban (T13)', () => {
 // ---------------------------------------------------------------------------
 // T15 — reduced-motion guard (UXUI-09)
 //
-// CsvSourceRow.module.css (dropIn animation) and add-cards.module.css
-// (.method:hover) must each contain a `@media (prefers-reduced-motion: reduce)`
-// block that collapses the transform. This guard locks the override as a
+// CsvSourceRow.module.css (dropIn animation) must contain a
+// `@media (prefers-reduced-motion: reduce)` block that collapses the transform. This guard locks the override as a
 // regression sentinel — any removal re-triggers the CSS review.
 // ---------------------------------------------------------------------------
 
@@ -280,7 +279,6 @@ describe('reduced-motion overrides present (T15)', () => {
 
   const REQUIRED_CSS_FILES = [
     path.join(SRC_ROOT, 'components/csv-sources/CsvSourceRow.module.css'),
-    path.join(SRC_ROOT, 'routes/_auth/add-cards.module.css'),
   ];
 
   it('each motion-animating CSS module contains a prefers-reduced-motion block', () => {
@@ -1146,5 +1144,128 @@ describe('DECK-06/08 — decklist grid and thumbnails', () => {
     expect(missing).toContain('inset-block-end: 4px');
     expect(missing).toContain('inset-inline-end: 4px');
     expect(missing).toContain('color: var(--ra-ready-low)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 6 — Collection surfaces (LIB-01..08). Literals from handoff §7-§9.
+// ---------------------------------------------------------------------------
+
+const readCss = (rel: string): string =>
+  withoutMediaBlocks(stripComments(fs.readFileSync(path.join(SRC_ROOT, rel), 'utf-8')));
+const readCssWithMedia = (rel: string): string =>
+  stripComments(fs.readFileSync(path.join(SRC_ROOT, rel), 'utf-8'));
+const LIBRARY_ROUTE_CSS = readCss('routes/_auth/library.module.css');
+const SOURCES_ROUTE_CSS = readCss('routes/_auth/library-csv-sources.module.css');
+const ADD_CARDS_SHELL_CSS = readCss('routes/_auth/add-cards.module.css');
+const ADD_CARDS_CSV_CSS = readCss('routes/_auth/add-cards.csv.module.css');
+const SOURCE_ROW_CSS = readCss('components/csv-sources/CsvSourceRow.module.css');
+const STATS_BAR_CSS = readCss('components/library/LibraryStatsBar.module.css');
+const FILTER_RAIL_CSS = readCss('components/library/LibraryFilterRail.module.css');
+
+describe('Phase 6 — every column is capped and centred', () => {
+  it.each([
+    ['Library', LIBRARY_ROUTE_CSS, '1320px'],
+    ['Sources', SOURCES_ROUTE_CSS, '1000px'],
+    ['Add cards', ADD_CARDS_SHELL_CSS, '900px'],
+  ] as const)('%s page column is %s wide with margin-inline: auto', (_name, css, width) => {
+    const body = ruleBody(css, '.page');
+    expect(body).toContain(`max-inline-size: ${width}`);
+    expect(body).toContain('inline-size: 100%');
+    expect(body).toContain('margin-inline: auto');
+  });
+});
+
+describe('Phase 6 — Library layout (handoff §7)', () => {
+  it('uses a 250px sidebar column in the layout and in the skeleton', () => {
+    expect(ruleBody(LIBRARY_ROUTE_CSS, '.layout')).toContain('grid-template-columns: 250px 1fr');
+    expect(ruleBody(LIBRARY_ROUTE_CSS, '.skeletonLayout')).toContain('grid-template-columns: 250px 1fr');
+    expect(ruleBody(FILTER_RAIL_CSS, '.rail')).toContain('width: 250px');
+  });
+
+  it('switches to the drawer below 1024px, not below 1280px', () => {
+    const withMedia = readCssWithMedia('routes/_auth/library.module.css');
+    expect(atRuleBody(withMedia, '@media (max-width: 1023px)')).toContain('.railSlot { display: none; }');
+    expect(withMedia).not.toContain('max-width: 1279px');
+  });
+
+  it('keeps the grid auto-fill driven by --cell-min, with a 12px gap', () => {
+    const grid = readCss('components/library/LibraryGrid.module.css');
+    const body = ruleBody(grid, '.grid');
+    expect(body).toMatch(/repeat\(\s*auto-fill,\s*min\(100%, var\(--cell-min, 96px\)\)\s*\)/);
+    expect(body).toContain('gap: var(--ra-space-3)');
+  });
+});
+
+describe('Phase 6 — pitch colours (LIB-04, FND-01a)', () => {
+  it.each(['red', 'yellow', 'blue', 'colorless'] as const)(
+    'stats pill %s uses the -ink token for text and the raw token for the border',
+    (pitch) => {
+      const name = `pill${pitch.charAt(0).toUpperCase()}${pitch.slice(1)}`;
+      const body = ruleBody(STATS_BAR_CSS, `.${name}`);
+      expect(body).toContain(`color: var(--ra-pitch-${pitch}-ink)`);
+      expect(body).toContain(`border-color: var(--ra-pitch-${pitch})`);
+    },
+  );
+
+  it('no longer reads the older card-frame token family in the stats bar', () => {
+    expect(STATS_BAR_CSS).not.toContain('--ra-card-frame');
+  });
+
+  it.each(['red', 'yellow', 'blue', 'colorless'] as const)(
+    'sidebar chip %s has a pitch-coloured border and a pitch-coloured dot',
+    (pitch) => {
+      expect(ruleBody(FILTER_RAIL_CSS, `.pitchPill--${pitch}`)).toContain(`border-color: var(--ra-pitch-${pitch})`);
+      expect(ruleBody(FILTER_RAIL_CSS, `.pitchPill--${pitch}.pitchPill--on`)).toContain(
+        `color: var(--ra-pitch-${pitch}-ink)`,
+      );
+    },
+  );
+});
+
+describe('Phase 6 — source rows (LIB-05, LIB-06; handoff §8)', () => {
+  it('dims an inactive row to opacity .55', () => {
+    expect(ruleBody(SOURCE_ROW_CSS, '.row--inactive')).toContain('opacity: 0.55');
+  });
+
+  it('draws the toggle 42x24 with an 18px knob that travels 18px', () => {
+    const track = ruleBody(SOURCE_ROW_CSS, '.switch');
+    expect(track).toContain('width: 42px');
+    expect(track).toContain('height: 24px');
+    const knob = ruleBody(SOURCE_ROW_CSS, '.switchThumb');
+    expect(knob).toContain('width: 18px');
+    expect(knob).toContain('height: 18px');
+    expect(ruleBody(SOURCE_ROW_CSS, '.switch[data-state="checked"] .switchThumb')).toContain(
+      'translateX(18px)',
+    );
+    expect(ruleBody(SOURCE_ROW_CSS, '.switch[data-state="checked"]')).toContain('background: var(--ra-accent)');
+  });
+
+  it('colours the badges green (csv), gold (fabrary) and violet (manual) from existing tokens', () => {
+    expect(ruleBody(SOURCE_ROW_CSS, '.badge--csv')).toContain('color: var(--ra-ready-high)');
+    expect(ruleBody(SOURCE_ROW_CSS, '.badge--fabrary')).toContain('color: var(--ra-accent-body)');
+    expect(ruleBody(SOURCE_ROW_CSS, '.badge--manual')).toContain('var(--ra-status-idea)');
+  });
+});
+
+describe('Phase 6 — Add cards (handoff §9)', () => {
+  it('fills the active tab with the accent and dark ink', () => {
+    const body = ruleBody(ADD_CARDS_SHELL_CSS, ".tab[data-active='true']");
+    expect(body).toContain('background: var(--ra-accent)');
+    expect(body).toContain('color: var(--ra-accent-ink-on)');
+  });
+
+  it('rounds the panel at 16px on the surface token', () => {
+    const body = ruleBody(ADD_CARDS_SHELL_CSS, '.panel');
+    expect(body).toContain('background: var(--ra-bg-surface)');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+  });
+
+  it('draws the dropzone dashed gold, 38px padding, 4% gold wash, 28px icon', () => {
+    const zone = ruleBody(ADD_CARDS_CSV_CSS, '.dropZone');
+    expect(zone).toContain('padding: 38px');
+    expect(zone).toContain('background: rgba(208, 168, 76, 0.04)');
+    expect(zone).toContain('border: 1.5px dashed var(--ra-accent)');
+    expect(ruleBody(ADD_CARDS_CSV_CSS, '.dropIcon')).toContain('font-size: 28px');
   });
 });

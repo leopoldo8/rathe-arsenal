@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useSearchCardsQuery } from '../../api/catalog';
 import type { ISearchCardResult } from '../../api/catalog';
@@ -62,17 +62,6 @@ export function AddCardsManualPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <header className={styles.subviewHeader}>
-        <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> {t('decks.addCardsTitle')}
-        </Link>
-        <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">I</span> {t('decks.manualEyebrow')}
-        </p>
-        <h1 className={styles.title}>{t('decks.searchCatalogTitle')}</h1>
-        <p className={styles.subtitle}>{t('decks.searchCatalogSubtitle')}</p>
-      </header>
-
       <div className={styles.searchBox}>
         <label className={styles.label} htmlFor={inputId}>
           {t('decks.cardNameLabel')}

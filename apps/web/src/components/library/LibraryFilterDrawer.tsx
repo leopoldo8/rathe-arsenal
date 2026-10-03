@@ -20,7 +20,7 @@ interface ILibraryFilterDrawerProps {
 
 /**
  * Right-side drawer that hosts `LibraryFilterRail` on viewports below the
- * 1280px breakpoint. Keyboard handling: Escape closes; focus moves to the
+ * 1024px breakpoint. Keyboard handling: Escape closes; focus moves to the
  * close button on open and is restored to the trigger on close (the
  * trigger is owned by the parent route via `onClose`). Body scroll is
  * locked while open so the user's tap on the backdrop doesn't scroll the

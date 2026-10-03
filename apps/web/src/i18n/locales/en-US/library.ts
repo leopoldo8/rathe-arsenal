@@ -53,6 +53,13 @@ export const library = {
   // LibraryFilterRail — card size
   cardSizeLabel: 'Card size',
   cardSizeAriaLabel: 'Card size in pixels',
+  cardSizeSmall: 'Small',
+  cardSizeMedium: 'Medium',
+  cardSizeLarge: 'Large',
+  cardSizeXLarge: 'X-Large',
+  cardSizeMax: 'Max',
+  cardSizeCustom: 'Custom',
+  manageSourcesLink: 'Manage sources ›',
 
   // LibraryFilterRail — group by
   groupByLabel: 'Group by',

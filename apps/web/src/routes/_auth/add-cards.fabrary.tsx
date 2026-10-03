@@ -77,18 +77,6 @@ function AddCardsFabraryPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <header className={styles.subviewHeader}>
-        <Link to="/add-cards" className={styles.back}>
-          <span aria-hidden="true">←</span> {t('decks.addCardsTitle')}
-        </Link>
-        <p className={styles.eyebrow}>
-          <span className={styles.numeral} aria-hidden="true">III</span>{' '}
-          {t('decks.addCardsFabraryEyebrow')}
-        </p>
-        <h1 className={styles.title}>{t('decks.importFromFabraryTitle')}</h1>
-        <p className={styles.subtitle}>{t('decks.importFabraryLibrarySubtitle')}</p>
-      </header>
-
       <div className={styles.form}>
         <label className={styles.label} htmlFor={inputId}>
           {t('decks.fabraryDeckUrlLabel')}
@@ -114,6 +102,12 @@ function AddCardsFabraryPage(): React.ReactElement {
         />
         <p id={helpId} className={styles.helpText}>
           {t('decks.fabraryUrlHelp')}
+        </p>
+        <p className={styles.helpText}>
+          {t('decks.fabraryTrackHint')}{' '}
+          <Link to="/decks/new" className={styles.trackLink}>
+            {t('decks.fabraryTrackHintLink')}
+          </Link>
         </p>
         <button
           type="button"

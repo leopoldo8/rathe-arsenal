@@ -16,7 +16,10 @@
 import type { ILibraryFiltersValue } from '../../components/library/LibraryFilterRail';
 import type { ILibraryCard } from '../../api/library';
 import { CARD_SIZE_DEFAULT } from '../../components/library/LibraryFilterRail';
-import { snapCardSize } from '../../components/library/LibraryFilterRail.constants';
+import {
+  readStoredCardSize,
+  snapCardSize,
+} from '../../components/library/LibraryFilterRail.constants';
 
 // ---------------------------------------------------------------------------
 // Search param types
@@ -90,7 +93,9 @@ export function validateLibrarySearch(raw: Record<string, unknown>): TLibrarySea
     : 'type';
 
   const cardSize =
-    raw.cardSize === undefined ? CARD_SIZE_DEFAULT : clampCardSize(raw.cardSize);
+    raw.cardSize === undefined
+      ? (readStoredCardSize() ?? CARD_SIZE_DEFAULT)
+      : clampCardSize(raw.cardSize);
 
   return { pitches, types, classes, talents, sets, group, cardSize };
 }
