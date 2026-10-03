@@ -829,3 +829,133 @@ describe('Brand-mode deckbox — geometry and inertness', () => {
     expect(DECKBOX_BASE).not.toMatch(/\.deckbox:hover/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 4 — Home (HOME-01..07). Literals the handoff fixes for the armory.
+// ---------------------------------------------------------------------------
+
+const HOME_DIR = path.join(SRC_ROOT, 'components/home');
+function readHomeCss(file: string): string {
+  return fs
+    .readFileSync(path.join(HOME_DIR, file), 'utf-8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+const GROUPS_FULL_CSS = readHomeCss('StatusGroups.module.css');
+const GROUPS_CSS = squash(GROUPS_FULL_CSS).replace(/@media [^{]*\{[^{}]*\{[^}]*\}\s*\}/g, '');
+const ARMORY_CSS = readHomeCss('ArmoryHeader.module.css');
+const FILTER_BAR_CSS = readHomeCss('FilterBar.module.css');
+const TAG_CHIPS_CSS = readHomeCss('TagFilterChips.module.css');
+const TILE_CSS = readHomeCss('DeckTile.module.css');
+
+describe('HOME-02 — group grid and header', () => {
+  const css = GROUPS_CSS;
+
+  it('lays each group out on four columns with a 20px gap', () => {
+    const body = ruleBody(css, '.deckGrid');
+    expect(body).toContain('grid-template-columns: repeat(4, 1fr)');
+    expect(body).toContain('gap: 20px');
+  });
+
+  it('steps down to 3, 2 and 1 columns at the handoff breakpoints', () => {
+    expect(ruleBody(atRuleBody(GROUPS_FULL_CSS, '@media (max-width: 1279px)'), '.deckGrid')).toContain(
+      'repeat(3, 1fr)',
+    );
+    expect(ruleBody(atRuleBody(GROUPS_FULL_CSS, '@media (max-width: 1023px)'), '.deckGrid')).toContain(
+      'repeat(2, 1fr)',
+    );
+    expect(ruleBody(atRuleBody(GROUPS_FULL_CSS, '@media (max-width: 479px)'), '.deckGrid')).toContain(
+      '1fr',
+    );
+  });
+
+  it('sets the group name in the UI family at 15px bold, not the global h2 display style', () => {
+    const body = ruleBody(css, '.groupHeading');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(body).toContain('font-size: var(--ra-text-subtitle)');
+    expect(body).toContain('font-weight: 700');
+    expect(body).toContain('text-transform: none');
+  });
+
+  it('draws a 9px dot and a bottom border on the header', () => {
+    expect(ruleBody(css, '.groupDot')).toContain('inline-size: 9px');
+    expect(ruleBody(css, '.groupHead')).toContain('border-bottom: 1px solid var(--ra-border-subtle)');
+  });
+
+  it('colours the dots with the status tokens, retired in the retired grey', () => {
+    expect(ruleBody(css, '.groupDot[data-group="active"]')).toContain('var(--ra-status-ready)');
+    expect(ruleBody(css, '.groupDot[data-group="building"]')).toContain('var(--ra-status-building)');
+    expect(ruleBody(css, '.groupDot[data-group="idea"]')).toContain('var(--ra-status-idea)');
+    expect(ruleBody(css, '.groupDot[data-group="retired"]')).toContain('var(--ra-status-retired)');
+  });
+});
+
+describe('HOME-01 — KPI strip', () => {
+  it('borders the strip with --line-strong at the 11px medium radius', () => {
+    const body = ruleBody(ARMORY_CSS, '.kpiStrip');
+    expect(body).toContain('border: 1px solid var(--ra-border-strong)');
+    expect(body).toContain('border-radius: var(--ra-radius-md)');
+  });
+
+  it('divides cells with a vertical rule', () => {
+    expect(ruleBody(ARMORY_CSS, '.kpiCell + .kpiCell')).toContain(
+      'border-inline-start: 1px solid var(--ra-border-strong)',
+    );
+  });
+
+  it('sets values at 20px bold and labels at 10.5px uppercase', () => {
+    const value = ruleBody(ARMORY_CSS, '.kpiValue');
+    expect(value).toContain('font-size: 1.25rem');
+    expect(value).toContain('font-weight: var(--ra-weight-bold)');
+    const label = ruleBody(ARMORY_CSS, '.kpiLabel');
+    expect(label).toContain('font-size: var(--ra-text-2xs)');
+    expect(label).toContain('text-transform: uppercase');
+  });
+
+  it('tints average with the accent and missing with the miss tone', () => {
+    expect(ruleBody(ARMORY_CSS, '.kpiAverage')).toContain('color: var(--ra-accent)');
+    expect(ruleBody(ARMORY_CSS, '.kpiMissing')).toContain('color: var(--ra-ready-low)');
+  });
+
+  it('sets the title at 34px and the CTA on the accent at 13px 20px', () => {
+    expect(ruleBody(ARMORY_CSS, '.title')).toContain('font-size: 2.125rem');
+    const cta = ruleBody(ARMORY_CSS, '.cta');
+    expect(cta).toContain('background-color: var(--ra-accent)');
+    expect(cta).toContain('padding: 13px 20px');
+    expect(cta).toContain('font-weight: 700');
+  });
+});
+
+describe('HOME-05 — filter bar', () => {
+  it('scopes the active pill colours to the bar at the .12 and .3 alphas', () => {
+    const body = ruleBody(FILTER_BAR_CSS, '.bar');
+    expect(body).toContain('--home-filter-pill-active-bg: rgba(208, 168, 76, 0.12)');
+    expect(body).toContain('--home-filter-pill-active-border: rgba(208, 168, 76, 0.3)');
+  });
+
+  it('caps the search at 300px and offsets the icon 13px from the left', () => {
+    expect(ruleBody(FILTER_BAR_CSS, '.searchWrap')).toContain('max-inline-size: 300px');
+    expect(ruleBody(FILTER_BAR_CSS, '.searchIcon')).toContain('inset-inline-start: 13px');
+  });
+
+  it('paints the active pill from those variables in accent text', () => {
+    const body = ruleBody(TAG_CHIPS_CSS, '.chipActive');
+    expect(body).toContain('border-color: var(--home-filter-pill-active-border)');
+    expect(body).toContain('background-color: var(--home-filter-pill-active-bg)');
+    expect(body).toContain('color: var(--ra-accent)');
+  });
+});
+
+describe('HOME-06 — deck meta line', () => {
+  it('sets the meta at 11.5px centred', () => {
+    const body = ruleBody(TILE_CSS, '.meta');
+    expect(body).toContain('font-size: 0.71875rem');
+    expect(body).toContain('justify-content: center');
+  });
+
+  it('tints complete, incomplete and draft with ready, warn and muted', () => {
+    expect(ruleBody(TILE_CSS, '.metaComplete')).toContain('color: var(--ra-status-ready)');
+    expect(ruleBody(TILE_CSS, '.metaIncomplete')).toContain('color: var(--ra-ready-mid-accent)');
+    expect(ruleBody(TILE_CSS, '.metaDraft')).toContain('color: var(--ra-fg-muted)');
+  });
+});

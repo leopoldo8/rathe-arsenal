@@ -270,7 +270,7 @@ These apply to every screen above and are not optional polish.
 | SWAP-01..03, SWAP-13, SWAP-15 | P1: Swaps, Half A | 2 | Verified |
 | CMP-01..05 | P2: Medallion | 3 | Implementing — ring rendering visual check pending |
 | BOX-01..07 | P1: Deckbox | 3 | BOX-01, 03..07 Verified; BOX-02 Implementing — visual check pending |
-| HOME-01..07 | P1: Home | 4 | Pending |
+| HOME-01..07 | P1: Home | 4 | Verified (route spec); medallion and card rendering visual check pending, with CMP-01..05 and BOX-02 |
 | DECK-01..09 | P1: Deck detail | 5 | Pending |
 | LIB-01..08 | P2: Library/Sources/Add | 6 | Pending |
 | EDIT-01..05 | P2: New/Edit/Settings | 7 | Pending |

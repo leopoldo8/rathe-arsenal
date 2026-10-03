@@ -27,38 +27,21 @@ export const home = {
   aggregateDeckConnector: 'of {{total}} decks at',
 
   // DeckCard
-  untrackConfirmMsg:
-    'Untrack "{{deckName}}"? This will remove the deck and all its readiness data.',
-  legalityLegalLabel: 'Legal',
   legalityNotLegalLabel: 'Not legal',
-  legalityLegalTitle: 'Legal',
-  legalityIncompleteTitle: 'Incomplete',
   legalityIllegalTitle: 'Illegal',
-  tagsRowLabel: 'Tags',
-  moreTagsAriaLabel: '{{count}} more tags',
-  noReadinessData: 'No readiness data yet',
   untrackAriaLabel: 'Untrack {{deckName}}',
   untrackTitle: 'Untrack',
-  readinessMeterAriaLabel: 'Readiness {{display}}%, {{tier}}',
   untrackToastMsg: '"{{deckName}}" removed from tracking.',
   undoUntrack: 'Undo',
 
   // PopulatedHomeHero
-  armoryEyebrow: 'Your armory',
-  yourDecksHeading: 'Your Decks',
-  summaryReady: '{{count}} ready to play',
-  summaryAlmost: '{{count}} almost there',
-  summaryNeeds: '{{count}} to build',
   collectionStatsLabel: 'Collection statistics',
   decksStatLabel: 'Decks',
   avgReadyStatLabel: 'Avg ready',
   cardsMissingStatLabel: 'Cards missing',
-  addNewDeckCta: 'Add new deck',
+  addNewDeckCta: '+ New deck',
 
   // ReadinessShelves
-  readyShelfLabel: 'Ready to play',
-  almostShelfLabel: 'Almost there',
-  needsShelfLabel: 'Needs collection',
   deckCountSingular: '1 deck',
   deckCountPlural: '{{count}} decks',
 
@@ -88,4 +71,22 @@ export const home = {
   loadingDeckMeta: 'Loading deck meta',
   loadingReadiness: 'Loading readiness',
   deckboxOpenAriaLabel: 'Open {{deckName}}',
+
+  // ArmoryHeader, FilterBar, StatusGroups, DeckTile
+  armoryHeading: 'Your armory',
+  readyDecksStatus: '{{ready}} of {{total}} decks ready to play',
+  searchPlaceholder: 'Search decks or heroes',
+  searchAriaLabel: 'Search decks',
+  noMatches: 'No decks match your search or filters.',
+  metaComplete: 'Complete · {{owned}}/{{total}}',
+  metaIncomplete: '{{missing}} missing · {{owned}}/{{total}}',
+  metaDraft: 'Draft · no list',
+  groupActiveName: 'Active',
+  groupActiveHint: 'Ready to take to a game',
+  groupBuildingName: 'Building',
+  groupBuildingHint: 'Being assembled, still adjusting',
+  groupIdeaName: 'Ideas',
+  groupIdeaHint: 'Drafts without a fixed list',
+  groupRetiredName: 'Retired',
+  groupRetiredHint: 'Kept for reference',
 } as const;

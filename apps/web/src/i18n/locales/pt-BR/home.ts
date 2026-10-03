@@ -27,38 +27,21 @@ export const home = {
   aggregateDeckConnector: 'de {{total}} decks na',
 
   // DeckCard
-  untrackConfirmMsg:
-    'Remover "{{deckName}}" do rastreamento? Isso irá remover o deck e todos os seus dados de prontidão.',
-  legalityLegalLabel: 'Legal',
   legalityNotLegalLabel: 'Não legal',
-  legalityLegalTitle: 'Legal',
-  legalityIncompleteTitle: 'Incompleto',
   legalityIllegalTitle: 'Ilegal',
-  tagsRowLabel: 'Tags',
-  moreTagsAriaLabel: '{{count}} tags a mais',
-  noReadinessData: 'Sem dados de prontidão',
   untrackAriaLabel: 'Remover rastreamento de {{deckName}}',
   untrackTitle: 'Remover rastreamento',
-  readinessMeterAriaLabel: 'Prontidão {{display}}%, {{tier}}',
   untrackToastMsg: '"{{deckName}}" removido do rastreamento.',
   undoUntrack: 'Desfazer',
 
   // PopulatedHomeHero
-  armoryEyebrow: 'Seu arsenal',
-  yourDecksHeading: 'Seus Decks',
-  summaryReady: '{{count}} prontos para jogar',
-  summaryAlmost: '{{count}} quase lá',
-  summaryNeeds: '{{count}} para montar',
   collectionStatsLabel: 'Estatísticas da coleção',
   decksStatLabel: 'Decks',
-  avgReadyStatLabel: 'Média pronto',
-  cardsMissingStatLabel: 'Cards faltando',
-  addNewDeckCta: 'Adicionar novo deck',
+  avgReadyStatLabel: 'Média',
+  cardsMissingStatLabel: 'Faltando',
+  addNewDeckCta: '+ Novo deck',
 
   // ReadinessShelves
-  readyShelfLabel: 'Pronto para jogar',
-  almostShelfLabel: 'Quase lá',
-  needsShelfLabel: 'Precisa de coleção',
   deckCountSingular: '1 deck',
   deckCountPlural: '{{count}} decks',
 
@@ -88,4 +71,22 @@ export const home = {
   loadingDeckMeta: 'Carregando meta do deck',
   loadingReadiness: 'Carregando prontidão',
   deckboxOpenAriaLabel: 'Abrir {{deckName}}',
+
+  // ArmoryHeader, FilterBar, StatusGroups, DeckTile
+  armoryHeading: 'Seu arsenal',
+  readyDecksStatus: '{{ready}} de {{total}} decks prontos para jogar',
+  searchPlaceholder: 'Buscar decks ou heróis',
+  searchAriaLabel: 'Buscar decks',
+  noMatches: 'Nenhum deck corresponde à busca ou aos filtros.',
+  metaComplete: 'Completo · {{owned}}/{{total}}',
+  metaIncomplete: '{{missing}} faltando · {{owned}}/{{total}}',
+  metaDraft: 'Rascunho · sem lista',
+  groupActiveName: 'Ativos',
+  groupActiveHint: 'Prontos para levar ao jogo',
+  groupBuildingName: 'Construindo',
+  groupBuildingHint: 'Em montagem, ainda ajustando',
+  groupIdeaName: 'Ideias',
+  groupIdeaHint: 'Rascunhos sem lista fixa',
+  groupRetiredName: 'Aposentados',
+  groupRetiredHint: 'Guardados para consulta',
 } as const;

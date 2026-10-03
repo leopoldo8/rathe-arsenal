@@ -1,0 +1,91 @@
+.tile {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  min-width: 0;
+}
+
+.meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ra-space-2);
+  font-family: var(--ra-font-ui);
+  font-size: 0.71875rem;
+  text-align: center;
+}
+
+.metaComplete {
+  color: var(--ra-status-ready);
+}
+
+.metaIncomplete {
+  color: var(--ra-ready-mid-accent);
+}
+
+.metaDraft {
+  color: var(--ra-fg-muted);
+}
+
+.legalityIllegal {
+  color: var(--ra-ready-low);
+  font-weight: var(--ra-weight-bold);
+}
+
+.untrackPin {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ra-fg-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease, color 160ms ease;
+}
+
+.tile:hover .untrackPin,
+.tile:focus-within .untrackPin {
+  opacity: 1;
+}
+
+.untrackPin:hover:not(:disabled) {
+  color: var(--ra-ready-low);
+}
+
+.untrackPin:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -4px;
+  border-radius: var(--ra-radius-sm);
+}
+
+.tile .untrackPin:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.untrackPinIcon {
+  inline-size: 22px;
+  block-size: 22px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+@media (hover: none) {
+  .untrackPin {
+    opacity: 1;
+  }
+}

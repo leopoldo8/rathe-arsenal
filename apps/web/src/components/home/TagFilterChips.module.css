@@ -1,6 +1,6 @@
 /* ============================================================
    TagFilterChips — CSS Module
-   OR-logic tag filter row above the StatusShelves on the home page.
+   OR-logic tag filter pills inside the home FilterBar.
    ============================================================ */
 
 .container {
@@ -9,7 +9,6 @@
   flex-wrap: wrap;
   gap: var(--ra-space-2);
   padding: var(--ra-space-2) 0;
-  margin-bottom: var(--ra-space-4);
 }
 
 .label {
@@ -35,7 +34,7 @@
   color: var(--ra-fg-secondary);
   background-color: transparent;
   border: 1px solid var(--ra-border-subtle);
-  border-radius: 16px;
+  border-radius: var(--ra-radius-full);
   cursor: pointer;
   transition:
     color var(--ra-duration) var(--ra-ease),
@@ -61,14 +60,14 @@
 
 /* Selected / active state */
 .chipActive {
-  color: var(--ra-accent-body);
-  border-color: var(--ra-accent);
-  background-color: var(--ra-accent-soft-bg, rgba(184, 134, 11, 0.08));
+  color: var(--ra-accent);
+  border-color: var(--home-filter-pill-active-border);
+  background-color: var(--home-filter-pill-active-bg);
   font-weight: var(--ra-weight-semibold);
 }
 
 .chipActive:hover {
-  background-color: var(--ra-accent-soft-bg, rgba(184, 134, 11, 0.12));
+  background-color: var(--home-filter-pill-active-bg);
 }
 
 /* ---------- Clear link ---------- */

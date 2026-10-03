@@ -160,6 +160,12 @@ export interface ITrackedDeckListItem {
    * animation. Sorted by quantity desc, name asc.
    */
   readonly representativeCards: readonly IRepresentativeCard[];
+  /** Copy counts from the latest snapshot; null when the deck has no snapshot. */
+  readonly cardCounts: {
+    readonly owned: number;
+    readonly missing: number;
+    readonly total: number;
+  } | null;
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
 }

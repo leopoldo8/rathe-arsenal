@@ -77,13 +77,13 @@ BOX-02's "cards must not cover the deck name or medallion" clause is a layout fa
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| HOME-01 KPI strip from real data | Home §  | route spec | Pending |
-| HOME-02..03 four groups; `ready` and `active` share Ativos | `GROUP_OF` mapping | spec seeding all five statuses | Pending |
-| HOME-04 empty groups omitted | Home § | route spec | Pending |
-| HOME-05 filtering updates grid and counts | Home § | route spec | Pending |
-| HOME-06 meta line per completion state | Home § | route spec, all three states | Pending |
-| HOME-07 no-decks empty state | Home § | route spec | Pending |
-| Exception-based legality in the meta line | Home § | route spec, legal and illegal | Pending |
+| HOME-01 KPI strip from real data | Home §  | route spec | Verified |
+| HOME-02..03 four groups; `ready` and `active` share Ativos | `GROUP_OF` mapping | spec seeding all five statuses | Verified |
+| HOME-04 empty groups omitted | Home § | route spec | Verified |
+| HOME-05 filtering updates grid and counts | Home § | route spec | Verified |
+| HOME-06 meta line per completion state | Home § | route spec, all three states | Verified |
+| HOME-07 no-decks empty state | Home § | route spec | Verified |
+| Exception-based legality in the meta line | Home § | route spec, legal and illegal | Verified |
 
 ---
 
