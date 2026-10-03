@@ -110,15 +110,15 @@ BOX-02's "cards must not cover the deck name or medallion" clause is a layout fa
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| LIB-01 no filter lost | §3, parity table | route spec per control | Pending |
-| LIB-02 card-size slider drives the grid | §3 | route spec | Pending |
-| LIB-03 group-by regroups | §3 | route spec, all four modes | Pending |
-| LIB-04 pitch counts in pitch colours | §3.3 | route spec using the `-ink` tokens | Pending |
-| LIB-05 source rows incl. Manual | §4.2 | api + route spec | Pending |
-| LIB-06 toggle dims, flips label, recomputes totals | §4 | route spec | Pending |
-| LIB-07 three tabs replace the paragraphs | §6 | route spec asserting the roman numerals are gone | Pending |
-| LIB-08 dropzone states real columns and limits | §6.3 | route spec pinning the copy | Pending |
-| Quantity stepper and multi-source popover survive | §3.4 | route spec | Pending |
+| LIB-01 no filter lost | §3, parity table | route spec per control | Verified |
+| LIB-02 card-size slider drives the grid | §3 | route spec | Verified |
+| LIB-03 group-by regroups | §3 | route spec, all four modes | Verified |
+| LIB-04 pitch counts in pitch colours | §3.3 | route spec using the `-ink` tokens | Verified |
+| LIB-05 source rows incl. Manual | §4.2 | api + route spec | Verified |
+| LIB-06 toggle dims, flips label, recomputes totals | §4 | route spec | Verified |
+| LIB-07 three tabs replace the paragraphs | §6 | route spec asserting the roman numerals are gone | Verified |
+| LIB-08 dropzone states real columns and limits | §6.3 | route spec pinning the copy | Verified |
+| Quantity stepper and multi-source popover survive | §3.4 | route spec | Verified |
 
 ---
 

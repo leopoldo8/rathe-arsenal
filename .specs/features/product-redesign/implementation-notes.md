@@ -178,6 +178,18 @@ Git worktree isolation is deliberately not used: nine worktrees each editing the
 - Typed `?edit=1` links never opened composition edit (router parses the value as a number; bug since #76). Fixed with a tested validator in `-deck-detail-search.ts`.
 - Visual check: banner bleeds to 1180px + 64px and is centred; the 90px medallion ring renders at 100% (dark). Composition-edit mode still uses the pre-redesign typography (uppercase serif buttons, old sidebar); restyling it is phase 10 polish, since the design scopes this phase to view mode.
 
+### DEV-16 — Phase 6 Collection surfaces: worker calls
+- **Card-size persistence caveat**: the stored size (`ra-library-card-size`) is the fallback for a `/library` URL with no `cardSize`. The few links that pass `DEFAULT_LIBRARY_SEARCH` (Home empty state, Add cards back link, Sources) put `cardSize=120` in the URL, which wins over the stored value; the nav bars use a bare `/library` and keep the preference.
+- **Manual source**: the row shows the localized name "Entradas manuais" / "Manual entries" instead of the stored label, has no toggle and no overflow menu, and states why. Its `cardCount` is the number of collection rows (one per card identifier), computed per request and never saved, matching how CSV sources count rows.
+- **Sources back link** now points to the Library (handoff breadcrumb), not Add cards.
+- **Add cards**: bare `/add-cards` redirects (replace) to `/add-cards/manual`; the shell keeps an `h1` (handoff says H2, same call as Home). The active tab text uses `--ra-accent-ink-on` (`#1a1408`), not the handoff's `#1a1305`, to stay on tokens.
+- **Fabrary tab**: the old subtitle ("we import the cards, not the deck") is replaced by the handoff's note with a link to New deck; the CTA reads "Importar cartas".
+- **Dead copy removed** from both catalogs: the three method cards (15 keys), the per-tab eyebrows, titles and subtitles, and the old CSV drop hint. `csvSourcesBackLink` now reads "Biblioteca" / "Library".
+- **Sidebar pitch chips** keep a pitch-coloured border at rest; a selected chip also takes the `-ink` text colour.
+- **Reduced-motion guard** no longer lists `add-cards.module.css`: the gallery hover transform it guarded is gone and the tab shell animates colour only.
+- **Flaky API int suite under load**: `test:int` in parallel failed once in roughly three runs on unrelated suites (`tags`, `decks.patch`: ECONNRESET, a 407 from supertest). Five of five runs pass with `--runInBand`. Not diagnosed, config left alone.
+- **Not looked at in a browser**: Library, Sources and Add cards are asserted in CSS and DOM only; the orchestrator regenerates baselines.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.
