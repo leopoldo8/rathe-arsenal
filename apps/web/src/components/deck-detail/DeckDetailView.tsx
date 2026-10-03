@@ -20,6 +20,7 @@ interface IDeckDetailViewProps {
   readonly tags: readonly ITagResponse[];
   readonly shoppingData: IShoppingLineResponse | null;
   readonly onEdit: () => void;
+  readonly onEditCards: () => void;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
@@ -42,6 +43,7 @@ export function DeckDetailView({
   tags,
   shoppingData,
   onEdit,
+  onEditCards,
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
@@ -123,7 +125,7 @@ export function DeckDetailView({
           onShoppingRetry={onShoppingRetry}
         />
       )}
-      <DeckList items={items} />
+      <DeckList items={items} onEditCards={onEditCards} />
     </div>
   );
 }

@@ -334,6 +334,7 @@ function buildDeck(overrides: Partial<IDeckDetailResponse> = {}): IDeckDetailRes
     updatedAt: '2026-04-27T00:00:00Z',
     status: 'active',
     tags: ['liga local'],
+    notes: null,
     legality: { category: 'legal', reasons: [] },
     totalCards: 60,
     latestSnapshot: buildSnapshot(),
@@ -497,16 +498,40 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(within(bar).getByTestId('deck-detail-edit-btn')).toBeInTheDocument();
   });
 
-  it('opens composition editing from Edit', async () => {
+  it('opens the Edit deck screen from the hero Edit button, not composition editing', async () => {
     renderPage();
 
     await userEvent.click(screen.getByTestId('deck-detail-edit-btn'));
 
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/decks/$deckId/edit',
+      params: { deckId: 'deck-123' },
+    });
+  });
+
+  it('opens composition editing from Edit cards in the decklist header', async () => {
+    renderPage();
+
+    const header = screen.getByTestId('deck-list');
+    await userEvent.click(within(header).getByTestId('deck-list-edit-cards-btn'));
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/decks/$deckId',
       params: { deckId: 'deck-123' },
       search: { edit: '1' },
     });
+  });
+
+  it('keeps Edit cards beside the view toggle, not in the hero banner', () => {
+    renderPage();
+
+    const button = screen.getByTestId('deck-list-edit-cards-btn');
+    expect(button).toHaveTextContent('Editar cartas');
+    expect(button).toHaveClass(listStyles.editCardsBtn as string);
+    expect(within(screen.getByTestId('deck-hero-banner')).queryByTestId('deck-list-edit-cards-btn')).toBeNull();
+    expect(button.parentElement).toContainElement(screen.getByTestId('deck-list-view-type'));
   });
 
   it('keeps Untrack reachable through the overflow menu', async () => {

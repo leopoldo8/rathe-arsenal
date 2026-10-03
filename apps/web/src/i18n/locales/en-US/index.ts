@@ -9,6 +9,7 @@ import { library } from './library';
 import { csvSources } from './csvSources';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
+import { deckEdit } from './deckEdit';
 import { reviews } from './reviews';
 import { variantQueue } from './variantQueue';
 import { settings } from './settings';
@@ -30,6 +31,7 @@ export const enUS: TTranslationResources = {
   csvSources,
   decks,
   deckDetail,
+  deckEdit,
   reviews,
   variantQueue,
   settings,

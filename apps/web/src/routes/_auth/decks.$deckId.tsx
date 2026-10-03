@@ -53,6 +53,10 @@ function DeckDetailPage(): React.ReactElement {
   // Derive current mode from ?edit=1 search param
   const mode = edit === '1' ? 'edit' : 'view';
 
+  function handleOpenMetadataEdit(): void {
+    void navigate({ to: '/decks/$deckId/edit', params: { deckId } });
+  }
+
   function handleEnterEdit(): void {
     void navigate({ to: '/decks/$deckId', params: { deckId }, search: { edit: '1' } });
   }
@@ -190,6 +194,7 @@ function DeckDetailPage(): React.ReactElement {
       snapshot={snapshot}
       variantJobsProgress={variantJobsProgress}
       onEnterEdit={handleEnterEdit}
+      onOpenMetadataEdit={handleOpenMetadataEdit}
       onExitEdit={handleExitEdit}
       onMarkOwned={(cardIdentifier) => {
         markOwnedMutation.mutate(cardIdentifier, {
@@ -260,6 +265,7 @@ interface IDeckDetailPageWithDataProps {
    */
   readonly variantJobsProgress: IVariantFetchProgress | undefined;
   readonly onEnterEdit: () => void;
+  readonly onOpenMetadataEdit: () => void;
   readonly onExitEdit: () => void;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
@@ -290,6 +296,7 @@ function DeckDetailPageWithData({
   snapshot,
   variantJobsProgress,
   onEnterEdit,
+  onOpenMetadataEdit,
   onExitEdit,
   onMarkOwned,
   isMarkingOwned,
@@ -543,7 +550,8 @@ function DeckDetailPageWithData({
           snapshot={snapshot}
           tags={tagsForHeader}
           shoppingData={shoppingData}
-          onEdit={onEnterEdit}
+          onEdit={onOpenMetadataEdit}
+          onEditCards={onEnterEdit}
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
@@ -597,7 +605,6 @@ function DeckDetailPageWithData({
               cascadeCheck={cascadeCheck}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}
-              onSetFormat={compositionDraft.setFormat}
             />
           }
           canvas={
@@ -609,7 +616,6 @@ function DeckDetailPageWithData({
               onRemoveCard={compositionDraft.removeCard}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}
-              onSetFormat={compositionDraft.setFormat}
             />
           }
         />

@@ -128,11 +128,11 @@ BOX-02's "cards must not cover the deck name or medallion" clause is a layout fa
 
 | Requirement | Design § | Verified by | Status |
 |---|---|---|---|
-| EDIT-01 two-card New deck | new § | route spec | Pending |
-| EDIT-02 edit fields incl. notes | edit § | route spec; api test for the new column | Pending |
-| EDIT-03 status control still expresses all five values | edit § | route spec, each value round-tripped | Pending |
-| EDIT-04 danger zone separated, delete confirmed | edit § | route spec | Pending |
-| EDIT-05 four settings panels | settings § | route spec; toggles untouched | Pending |
+| EDIT-01 two-card New deck | new § | route spec | Verified |
+| EDIT-02 edit fields incl. notes | edit § | route spec; api test for the new column | Verified |
+| EDIT-03 status control still expresses all five values | edit § | route spec, each value round-tripped | Verified |
+| EDIT-04 danger zone separated, delete confirmed | edit § | route spec | Verified |
+| EDIT-05 four settings panels | settings § | route spec; toggles untouched | Verified |
 
 The settings eyebrow stays on `--ra-accent-body`. The handoff names a token by its role in a dark mock; that token fails AA at 11px in light theme. Do not "correct" it back.
 

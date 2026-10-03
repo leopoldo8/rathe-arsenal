@@ -1269,3 +1269,173 @@ describe('Phase 6 — Add cards (handoff §9)', () => {
     expect(ruleBody(ADD_CARDS_CSV_CSS, '.dropIcon')).toContain('font-size: 28px');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 7 — New deck, Edit deck, Settings
+// ---------------------------------------------------------------------------
+
+const NEW_DECK_PAGE_CSS = readCss('routes/_auth/decks.new.module.css');
+const NEW_DECK_PAGE_CSS_WITH_MEDIA = readCssWithMedia('routes/_auth/decks.new.module.css');
+const IMPORT_CARD_CSS = readCss('components/decks-new/ImportFabraryCard.module.css');
+const SCRATCH_CARD_CSS = readCss('components/decks-new/StartScratchCard.module.css');
+
+describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
+  it('caps the page column at 940px and centres it', () => {
+    const body = ruleBody(NEW_DECK_PAGE_CSS, '.page');
+    expect(body).toContain('max-inline-size: 940px');
+    expect(body).toContain('inline-size: 100%');
+    expect(body).toContain('margin-inline: auto');
+  });
+
+  it('lays two 1fr columns 18px apart from 768px and stacks them below', () => {
+    const wide = ruleBody(atRuleBody(NEW_DECK_PAGE_CSS_WITH_MEDIA, '@media (min-width: 768px)'), '.cards');
+    expect(wide).toContain('grid-template-columns: 1fr 1fr');
+    expect(wide).toContain('gap: 18px');
+    const narrow = ruleBody(NEW_DECK_PAGE_CSS, '.cards');
+    expect(narrow).toContain('flex-direction: column');
+    expect(narrow).toContain('gap: 18px');
+  });
+
+  it('sets the page title at 32px', () => {
+    expect(ruleBody(NEW_DECK_PAGE_CSS, '.title')).toContain('font-size: 32px');
+  });
+
+  it.each([
+    ['Fabrary', IMPORT_CARD_CSS],
+    ['scratch', SCRATCH_CARD_CSS],
+  ] as const)('%s card is a 16px surface panel with 26px padding', (_name, css) => {
+    const body = ruleBody(css, '.card');
+    expect(body).toContain('padding: 26px');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+    expect(body).toContain('background: var(--ra-bg-surface)');
+  });
+
+  it.each([
+    ['Fabrary', IMPORT_CARD_CSS],
+    ['scratch', SCRATCH_CARD_CSS],
+  ] as const)('%s icon square is 36px', (_name, css) => {
+    const body = ruleBody(css, '.iconSquare');
+    expect(body).toContain('inline-size: 36px');
+    expect(body).toContain('block-size: 36px');
+  });
+
+  it('tints the Fabrary square gold and the scratch square violet at 12%', () => {
+    expect(ruleBody(IMPORT_CARD_CSS, '.iconGold')).toContain('background: rgba(208, 168, 76, 0.12)');
+    expect(ruleBody(SCRATCH_CARD_CSS, '.iconViolet')).toContain('background: rgba(143, 124, 240, 0.12)');
+  });
+
+  it('keeps the primary CTA gold and makes the scratch CTA an outline button', () => {
+    expect(ruleBody(IMPORT_CARD_CSS, '.submitBtn')).toContain('background: var(--ra-accent)');
+    const scratch = ruleBody(SCRATCH_CARD_CSS, '.submitBtn');
+    expect(scratch).toContain('background: transparent');
+    expect(scratch).toContain('border: 1px solid var(--ra-border-strong)');
+  });
+
+  it.each([
+    ['page', NEW_DECK_PAGE_CSS],
+    ['Fabrary card', IMPORT_CARD_CSS],
+    ['scratch card', SCRATCH_CARD_CSS],
+  ] as const)('%s uses no uppercase or fantasy-serif label styling', (_name, css) => {
+    expect(css).not.toContain('text-transform: uppercase');
+    expect(css).not.toContain('--ra-font-serif');
+  });
+});
+
+const SETTINGS_CSS = readCss('routes/_auth/settings.module.css');
+
+describe('Phase 7 — Settings (EDIT-05, handoff §11)', () => {
+  it('caps the page column at 720px and centres it', () => {
+    const body = ruleBody(SETTINGS_CSS, '.page');
+    expect(body).toContain('max-inline-size: 720px');
+    expect(body).toContain('inline-size: 100%');
+    expect(body).toContain('margin-inline: auto');
+  });
+
+  it('draws each panel as a 16px surface with 24px padding', () => {
+    const body = ruleBody(SETTINGS_CSS, '.section');
+    expect(body).toContain('padding: var(--ra-space-6)');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+    expect(body).toContain('background: var(--ra-bg-surface)');
+  });
+
+  it('sets the eyebrow in the UI face, bold uppercase, on the body-contrast accent', () => {
+    const body = ruleBody(SETTINGS_CSS, '.eyebrow');
+    expect(body).toContain('font-family: var(--ra-font-ui)');
+    expect(body).toContain('font-weight: var(--ra-weight-bold)');
+    expect(body).toContain('text-transform: uppercase');
+    expect(body).toContain('color: var(--ra-accent-body)');
+  });
+
+  it('sets the panel title at the 18px h3 size, weight 600', () => {
+    const body = ruleBody(SETTINGS_CSS, '.sectionHeading');
+    expect(body).toContain('font-size: var(--ra-text-h3)');
+    expect(body).toContain('font-weight: var(--ra-weight-semibold)');
+  });
+
+  it('tints the danger-zone panel with the ready-low wash and border', () => {
+    const body = ruleBody(SETTINGS_CSS, '.accountSection');
+    expect(body).toContain('border-color: var(--ra-ready-low-border)');
+    expect(body).toContain('background: var(--ra-ready-low-bg)');
+  });
+});
+
+const EDIT_PAGE_CSS = readCss('routes/_auth/decks.$deckId_.edit.module.css');
+const EDIT_FORM_CSS = readCss('components/deck-edit/DeckEditForm.module.css');
+const EDIT_SEGMENTS_CSS = readCss('components/deck-edit/DeckStatusSegments.module.css');
+const EDIT_DANGER_CSS = readCss('components/deck-edit/DeckDangerZone.module.css');
+const DECK_LIST_CSS = readCss('components/deck-detail/DeckList.module.css');
+
+describe('Phase 7 — Edit deck (EDIT-02..04, handoff §6)', () => {
+  it('caps the page column at 820px and centres it', () => {
+    const body = ruleBody(EDIT_PAGE_CSS, '.page');
+    expect(body).toContain('max-inline-size: 820px');
+    expect(body).toContain('inline-size: 100%');
+    expect(body).toContain('margin-inline: auto');
+  });
+
+  it('draws the form as a 16px surface panel', () => {
+    const body = ruleBody(EDIT_FORM_CSS, '.panel');
+    expect(body).toContain('background: var(--ra-bg-surface)');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+  });
+
+  it('makes the notes field an 88px textarea', () => {
+    expect(ruleBody(EDIT_FORM_CSS, '.textarea')).toContain('min-block-size: 88px');
+  });
+
+  it('fills Save with the gold accent and outlines Cancel', () => {
+    expect(ruleBody(EDIT_FORM_CSS, '.saveBtn')).toContain('background: var(--ra-accent)');
+    const cancel = ruleBody(EDIT_FORM_CSS, '.cancelBtn');
+    expect(cancel).toContain('background: transparent');
+    expect(cancel).toContain('border: 1px solid var(--ra-border-strong)');
+  });
+
+  it('washes the active status segment in the soft gold background and border', () => {
+    const body = ruleBody(EDIT_SEGMENTS_CSS, '.segmentActive');
+    expect(body).toContain('background: var(--ra-accent-soft-bg)');
+    expect(body).toContain('border-color: var(--ra-accent-soft-bd)');
+  });
+
+  it('tints the danger zone red and rounds it like the form panel', () => {
+    const body = ruleBody(EDIT_DANGER_CSS, '.zone');
+    expect(body).toContain('background: var(--ra-ready-low-bg)');
+    expect(body).toContain('border: 1px solid var(--ra-ready-low-border)');
+    expect(body).toContain('border-radius: var(--ra-radius-xl)');
+  });
+
+  it('styles Edit cards as an outline button next to the view toggle', () => {
+    const body = ruleBody(DECK_LIST_CSS, '.editCardsBtn');
+    expect(body).toContain('background: transparent');
+    expect(body).toContain('border: 1px solid var(--ra-border-strong)');
+  });
+
+  it.each([
+    ['page', EDIT_PAGE_CSS],
+    ['form', EDIT_FORM_CSS],
+    ['segments', EDIT_SEGMENTS_CSS],
+    ['danger zone', EDIT_DANGER_CSS],
+  ] as const)('%s uses no fantasy serif and no uppercase labels', (_name, css) => {
+    expect(css).not.toContain('--ra-font-serif');
+    expect(css).not.toContain('text-transform: uppercase');
+  });
+});

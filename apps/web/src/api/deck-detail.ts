@@ -142,6 +142,8 @@ export interface IDeckDetailResponse {
    * Empty array when no tags. Added in v2 (U7).
    */
   readonly tags: readonly string[];
+  /** Free-text notes written on the Edit deck screen. Null when never written. */
+  readonly notes: string | null;
   /**
    * Legality assessment against the deck's configured format. Added in v2 (U7).
    */

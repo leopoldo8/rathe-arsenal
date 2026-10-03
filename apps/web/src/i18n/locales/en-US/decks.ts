@@ -44,7 +44,7 @@ export const decks = {
   saveDeckAria: 'Save deck composition',
   saveFailed: 'Save failed — try again',
   edit: 'Edit',
-  editDeckAria: 'Edit deck composition',
+  editDeckAria: 'Edit deck details',
   moreDeckActionsAria: 'More deck actions',
   deckActionsMenuAria: 'Deck actions',
   untrackThisDeckAria: 'Untrack this deck',
@@ -223,7 +223,7 @@ export const decks = {
   creating: 'Creating…',
   startBuilding: 'Start building',
   // decks.new route
-  addNewDeck: 'Add new deck',
+  addNewDeck: 'New deck',
   addNewDeckSubtitle: 'Import an existing Fabrary deck or start one from scratch.',
   // add-cards.index route
   addCardsTitle: 'Add cards',

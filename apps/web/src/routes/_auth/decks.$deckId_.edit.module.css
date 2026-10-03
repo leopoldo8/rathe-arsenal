@@ -1,17 +1,17 @@
-/* /decks/new: two-path landing (EDIT-01, handoff 4) */
+/* /decks/:deckId/edit: metadata screen (EDIT-02..04, handoff 6) */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
   padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
-  max-inline-size: 940px;
+  max-inline-size: 820px;
   inline-size: 100%;
   margin-inline: auto;
   box-sizing: border-box;
 }
 
-.subviewHeader {
+.header {
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-2);
@@ -19,10 +19,6 @@
 
 .back {
   align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  margin-bottom: var(--ra-space-3);
   padding: var(--ra-space-1) 0;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
@@ -51,25 +47,29 @@
   line-height: var(--ra-leading-tight);
 }
 
-.subtitle {
-  margin: 0;
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
-}
-
-.cards {
+.loadError {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ra-space-3);
+  align-items: flex-start;
+  font-family: var(--ra-font-ui);
+  color: var(--ra-fg-secondary);
 }
 
-@media (min-width: 768px) {
-  .cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    align-items: start;
-  }
+.retryBtn {
+  min-block-size: 40px;
+  padding: var(--ra-space-2) var(--ra-space-5);
+  background: transparent;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.retryBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
 }

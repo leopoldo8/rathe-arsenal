@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
-import { FormatDropdown } from './FormatDropdown';
 import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
 import { LegalityBadge } from './LegalityBadge';
 import { CardArt } from '../card-art/CardArt';
@@ -100,10 +99,6 @@ interface IDeckDetailSidebarProps {
    * Called when the hero changes from the HeroDropdown (desktop Edit).
    */
   readonly onSetHero?: (heroIdentifier: string | null) => void;
-  /**
-   * Called when the format changes from the FormatDropdown (desktop Edit).
-   */
-  readonly onSetFormat?: (format: string) => void;
 }
 
 /**
@@ -141,7 +136,6 @@ export function DeckDetailSidebar({
   cascadeCheck,
   onRemoveIllegalCards,
   onSetHero,
-  onSetFormat,
 }: IDeckDetailSidebarProps): React.ReactElement {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(readSidebarExpanded);
@@ -200,18 +194,18 @@ export function DeckDetailSidebar({
       >
         {/* ---- Block 1: Hero ---- */}
         <section className={styles.block} aria-labelledby="sidebar-hero-title">
-          {/* In Edit mode (desktop ≥1280px), show HeroDropdown + FormatDropdown.
-              On mobile (<1280px) these render at the canvas top per R43. */}
-          {mode === 'edit' && onSetHero !== undefined && onSetFormat !== undefined && compositionDraft !== undefined ? (
+          {/* In Edit mode (desktop ≥1280px), show HeroDropdown and the format as
+              read-only text; format is changed on the Edit deck screen.
+              On mobile (<1280px) the hero dropdown renders at the canvas top per R43. */}
+          {mode === 'edit' && onSetHero !== undefined && compositionDraft !== undefined ? (
             <div className={styles.editHeroBlock} data-testid="sidebar-edit-hero-block">
               <HeroDropdown
                 value={compositionDraft.heroIdentifier}
                 onChange={onSetHero}
               />
-              <FormatDropdown
-                value={compositionDraft.format}
-                onChange={onSetFormat}
-              />
+              <span className={styles.formatPill} data-testid="sidebar-edit-format-pill">
+                {compositionDraft.format}
+              </span>
               {/* Legality badge stays visible in Edit so the user can see the
                   status of the saved composition without leaving the canvas.
                   Reflects the last save — the in-progress cascade check sits

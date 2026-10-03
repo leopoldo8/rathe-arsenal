@@ -13,6 +13,7 @@ import styles from './DeckList.module.css';
 
 interface IDeckListProps {
   readonly items: readonly IDeckListItem[];
+  readonly onEditCards?: (() => void) | undefined;
 }
 
 interface ILightboxState {
@@ -88,7 +89,7 @@ function DeckListCell({
   );
 }
 
-export function DeckList({ items }: IDeckListProps): React.ReactElement {
+export function DeckList({ items, onEditCards }: IDeckListProps): React.ReactElement {
   const { t } = useTranslation();
   const [view, setView] = useState<TDeckListView>('type');
   const [lightbox, setLightbox] = useState<ILightboxState | null>(null);
@@ -100,21 +101,34 @@ export function DeckList({ items }: IDeckListProps): React.ReactElement {
         <h2 id="deck-list-title" className={styles.title}>
           {t('deckDetail.decklistTitle')}
         </h2>
-        <div className={styles.toggle} role="group" aria-label={t('deckDetail.viewToggleAria')}>
-          {VIEWS.map((option) => (
+        <div className={styles.headerActions}>
+          {onEditCards !== undefined && (
             <button
-              key={option.id}
               type="button"
-              className={[styles.toggleBtn, view === option.id ? styles.toggleBtnActive : '']
-                .filter(Boolean)
-                .join(' ')}
-              aria-pressed={view === option.id}
-              data-testid={`deck-list-view-${option.id}`}
-              onClick={() => setView(option.id)}
+              className={styles.editCardsBtn}
+              aria-label={t('deckDetail.editCardsAria')}
+              data-testid="deck-list-edit-cards-btn"
+              onClick={onEditCards}
             >
-              {t(option.labelKey)}
+              {t('deckDetail.editCards')}
             </button>
-          ))}
+          )}
+          <div className={styles.toggle} role="group" aria-label={t('deckDetail.viewToggleAria')}>
+            {VIEWS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={[styles.toggleBtn, view === option.id ? styles.toggleBtnActive : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-pressed={view === option.id}
+                data-testid={`deck-list-view-${option.id}`}
+                onClick={() => setView(option.id)}
+              >
+                {t(option.labelKey)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

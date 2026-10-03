@@ -111,7 +111,7 @@ test.describe('Deck edit flow — E2E (U16)', () => {
     await page.goto(`${BASE_URL}${firstDeckUrl}`, { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForTimeout(SETTLE_MS);
 
-    await page.getByTestId('deck-detail-edit-btn').click();
+    await page.getByTestId('deck-list-edit-cards-btn').click();
     await page.waitForTimeout(SETTLE_MS);
 
     expect(page.url()).toContain('edit=1');

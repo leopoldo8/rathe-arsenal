@@ -24,6 +24,38 @@
   text-transform: none;
 }
 
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ra-space-3);
+}
+
+.editCardsBtn {
+  min-block-size: 36px;
+  padding-inline: var(--ra-space-4);
+  background: transparent;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+  transition: border-color var(--ra-duration) var(--ra-ease),
+              color var(--ra-duration) var(--ra-ease);
+}
+
+.editCardsBtn:hover {
+  border-color: var(--ra-accent);
+  color: var(--ra-accent-body);
+}
+
+.editCardsBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
 .toggle {
   display: inline-flex;
   padding: 2px;

@@ -303,3 +303,30 @@ describe('DeckDetailSidebar — a11y', () => {
     expect(screen.getByRole('link', { name: /Fabrary/ })).toBeInTheDocument();
   });
 });
+
+describe('DeckDetailSidebar — composition edit mode', () => {
+  const draft = {
+    cards: [],
+    heroIdentifier: 'dorinthea-ironsong-wtr',
+    format: 'Blitz',
+  };
+
+  function renderEdit(): void {
+    renderSidebar({
+      mode: 'edit',
+      compositionDraft: draft,
+      onSetHero: vi.fn(),
+    });
+  }
+
+  it('shows the draft format as read-only text', () => {
+    renderEdit();
+    expect(screen.getByTestId('sidebar-edit-format-pill')).toHaveTextContent('Blitz');
+  });
+
+  it('offers no format control, since format is changed on the Edit deck screen', () => {
+    renderEdit();
+    expect(screen.queryByTestId('format-dropdown')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('format-dropdown-trigger')).not.toBeInTheDocument();
+  });
+});

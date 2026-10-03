@@ -47,7 +47,7 @@ function submitUrl(url: string): void {
   fireEvent.change(screen.getByLabelText('URL do baralho do Fabrary'), {
     target: { value: url },
   });
-  fireEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+  fireEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
 }
 
 describe('ImportFabraryCard', () => {

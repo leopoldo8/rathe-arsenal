@@ -273,7 +273,7 @@ These apply to every screen above and are not optional polish.
 | HOME-01..07 | P1: Home | 4 | Verified (route spec); medallion and card rendering visual check pending, with CMP-01..05 and BOX-02 |
 | DECK-01..09 | P1: Deck detail | 5 | DECK-01, 03..09 Verified; DECK-02 Implementing ("Comprar tudo" has no bulk action, DEV-14) |
 | LIB-01..08 | P2: Library/Sources/Add | 6 | Verified |
-| EDIT-01..05 | P2: New/Edit/Settings | 7 | Pending |
+| EDIT-01..05 | P2: New/Edit/Settings | 7 | Verified |
 | AUTH-01..05 | P2: Sign in/Onboarding | 8 | Pending |
 | SWAP-04..12, SWAP-14 | P1: Swaps, Half B | 9 | Pending |
 | I18N-01 | Cross-cutting 1 | all | Pending |

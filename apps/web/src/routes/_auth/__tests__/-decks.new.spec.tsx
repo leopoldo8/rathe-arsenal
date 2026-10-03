@@ -160,6 +160,15 @@ vi.mock('../../../components/deck-detail/FormatDropdown', () => ({
 
 import { DecksNewPage } from '../decks.new';
 
+function cls(name: string | undefined): string {
+  if (!name) throw new Error('css module class is missing');
+  return name;
+}
+
+import pageStyles from '../decks.new.module.css';
+import importCardStyles from '../../../components/decks-new/ImportFabraryCard.module.css';
+import scratchCardStyles from '../../../components/decks-new/StartScratchCard.module.css';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -200,7 +209,7 @@ describe('DecksNewPage — /decks/new', () => {
   it('renders heading "Add new deck"', () => {
     renderPage();
     expect(
-      screen.getByRole('heading', { name: /adicionar novo baralho/i }),
+      screen.getByRole('heading', { name: /^novo deck$/i }),
     ).toBeInTheDocument();
   });
 
@@ -217,6 +226,31 @@ describe('DecksNewPage — /decks/new', () => {
     expect(screen.getByTestId('start-scratch-card')).toBeInTheDocument();
   });
 
+  it('puts both cards inside the two-column grid wrapper', () => {
+    const { container } = renderPage();
+    const grid = container.querySelector(`.${cls(pageStyles.cards)}`);
+    expect(grid).not.toBeNull();
+    expect(grid).toContainElement(screen.getByTestId('import-fabrary-card'));
+    expect(grid).toContainElement(screen.getByTestId('start-scratch-card'));
+    expect(container.firstElementChild).toHaveClass(cls(pageStyles.page));
+  });
+
+  it('draws the Fabrary icon square in gold and the scratch icon square in violet', () => {
+    renderPage();
+    const gold = screen.getByTestId('import-fabrary-card').querySelector('[aria-hidden="true"]');
+    const violet = screen.getByTestId('start-scratch-card').querySelector('[aria-hidden="true"]');
+    expect(gold).toHaveClass(cls(importCardStyles.iconSquare));
+    expect(gold).toHaveClass(cls(importCardStyles.iconGold));
+    expect(violet).toHaveClass(cls(scratchCardStyles.iconSquare));
+    expect(violet).toHaveClass(cls(scratchCardStyles.iconViolet));
+  });
+
+  it('labels the CTAs with the handoff copy', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Acompanhar deck' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Começar a montar' })).toBeInTheDocument();
+  });
+
   it('renders the back-to-home link', () => {
     renderPage();
     const back = screen.getByRole('link', { name: /início/i });
@@ -231,7 +265,7 @@ describe('DecksNewPage — /decks/new', () => {
     renderPage();
     expect(screen.getByLabelText(/URL do baralho do Fabrary/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /rastrear baralho/i }),
+      screen.getByRole('button', { name: /acompanhar deck/i }),
     ).toBeInTheDocument();
   });
 
@@ -241,7 +275,7 @@ describe('DecksNewPage — /decks/new', () => {
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
     expect(importMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         urls: ['https://fabrary.net/decks/01HABCDEFG12345'],
@@ -261,7 +295,7 @@ describe('DecksNewPage — /decks/new', () => {
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.objectContaining({
         to: '/decks/$deckId',
@@ -275,7 +309,7 @@ describe('DecksNewPage — /decks/new', () => {
     renderPage();
     const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
     await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
     expect(importMutate).not.toHaveBeenCalled();
     expect(
       screen.getByText(/Não é uma URL de baralho Fabrary válida/i),
@@ -293,7 +327,7 @@ describe('DecksNewPage — /decks/new', () => {
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
     expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
   });
 
@@ -303,7 +337,7 @@ describe('DecksNewPage — /decks/new', () => {
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /rastrear baralho/i }));
+    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
     const [payload] = importMutate.mock.calls[0] as [
       { seedInventory?: boolean },
     ];

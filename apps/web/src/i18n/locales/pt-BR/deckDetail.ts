@@ -66,6 +66,8 @@ export const deckDetail = {
   // DeckList
   decklistTitle: 'Decklist',
   viewToggleAria: 'Modo de visualização',
+  editCards: 'Editar cartas',
+  editCardsAria: 'Editar as cartas do deck',
   viewByType: 'Por tipo',
   viewByCost: 'Por custo',
   viewList: 'Lista',

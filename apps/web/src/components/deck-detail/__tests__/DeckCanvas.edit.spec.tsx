@@ -6,7 +6,7 @@
  *  - Happy path: add a card via autocomplete → row appears in canvas.
  *  - Happy path: qty stepper increments + decrements; reaches 0 → row auto-removes.
  *  - Happy path (R22): scratch deck with 0 cards → canvas shows empty state.
- *  - Edge case: changing format mid-edit recomputes cascade without resetting other draft state.
+ *  - Format is read-only here; it is edited on the Edit deck screen.
  *  - Edge case (R21): N=0 cascade → no warning banner rendered.
  *  - Edge case (R21): "Remove illegal cards" bulk action removes flagged rows.
  *  - Edge case (mobile <1280px Edit): hero + format dropdowns at top of canvas.
@@ -216,7 +216,6 @@ function renderEditCanvas(
     onRemoveCard?: ReturnType<typeof vi.fn>;
     onRemoveIllegalCards?: ReturnType<typeof vi.fn>;
     onSetHero?: ReturnType<typeof vi.fn>;
-    onSetFormat?: ReturnType<typeof vi.fn>;
   } = {},
 ) {
   const defaults = {
@@ -236,7 +235,6 @@ function renderEditCanvas(
     onRemoveCard: overrides.onRemoveCard ?? vi.fn(),
     onRemoveIllegalCards: overrides.onRemoveIllegalCards ?? vi.fn(),
     onSetHero: overrides.onSetHero ?? vi.fn(),
-    onSetFormat: overrides.onSetFormat ?? vi.fn(),
   };
   return render(<DeckCanvas {...defaults} />);
 }
@@ -442,10 +440,14 @@ describe('DeckCanvas Edit mode — slot grouping', () => {
 // ---------------------------------------------------------------------------
 
 describe('DeckCanvas Edit mode — mobile layout', () => {
-  it('renders hero and format dropdowns in the canvas', () => {
+  it('renders the hero dropdown in the canvas', () => {
     renderEditCanvas();
     expect(screen.getByTestId('edit-mobile-dropdowns')).toBeInTheDocument();
     expect(screen.getByTestId('hero-dropdown-mock')).toBeInTheDocument();
-    expect(screen.getByTestId('format-dropdown-mock')).toBeInTheDocument();
+  });
+
+  it('does not offer a format control while editing the composition', () => {
+    renderEditCanvas();
+    expect(screen.queryByTestId('format-dropdown-mock')).not.toBeInTheDocument();
   });
 });

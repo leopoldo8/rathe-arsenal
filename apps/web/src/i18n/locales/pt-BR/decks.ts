@@ -44,7 +44,7 @@ export const decks = {
   saveDeckAria: 'Salvar composição do baralho',
   saveFailed: 'Falha ao salvar — tente novamente',
   edit: 'Editar',
-  editDeckAria: 'Editar composição do baralho',
+  editDeckAria: 'Editar detalhes do deck',
   moreDeckActionsAria: 'Mais ações do baralho',
   deckActionsMenuAria: 'Ações do baralho',
   untrackThisDeckAria: 'Deixar de acompanhar este baralho',
@@ -207,7 +207,7 @@ export const decks = {
   fabraryTrackHint: 'Importamos só as cartas. Para acompanhar a prontidão do deck, use',
   fabraryTrackHintLink: 'Novo deck',
   trackingDeckBtn: 'Rastreando…',
-  trackDeckBtn: 'Rastrear baralho',
+  trackDeckBtn: 'Acompanhar deck',
   deckTrackedRedirecting: 'Baralho rastreado. Redirecionando…',
   failedToTrackDeck: 'Falha ao rastrear baralho:',
   invalidFabraryUrlLocal: 'Não é uma URL de baralho Fabrary válida — esperado https://fabrary.net/decks/…',
@@ -223,7 +223,7 @@ export const decks = {
   creating: 'Criando…',
   startBuilding: 'Começar a montar',
   // decks.new route
-  addNewDeck: 'Adicionar novo baralho',
+  addNewDeck: 'Novo deck',
   addNewDeckSubtitle: 'Importe um baralho existente do Fabrary ou comece um do zero.',
   // add-cards.index route
   addCardsTitle: 'Adicionar cartas',

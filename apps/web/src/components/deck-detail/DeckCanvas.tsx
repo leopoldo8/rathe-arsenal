@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { EditableCardRow } from './EditableCardRow';
 import { HeroDropdown } from './HeroDropdown';
-import { FormatDropdown } from './FormatDropdown';
 import { CascadeWarningPanelBanner } from './CascadeWarningPanel';
 import { DeckCardSearchAutocomplete } from '../deck-card-search/DeckCardSearchAutocomplete';
 import type { ICompositionDraft, IDraftCard, TDraftSlot } from '../../hooks/useCompositionDraft';
@@ -69,7 +68,6 @@ interface IDeckCanvasProps {
   readonly onRemoveCard?: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
   readonly onSetHero?: (heroIdentifier: string | null) => void;
-  readonly onSetFormat?: (format: string) => void;
 }
 
 export function DeckCanvas(props: IDeckCanvasProps): React.ReactElement {
@@ -82,7 +80,6 @@ export function DeckCanvas(props: IDeckCanvasProps): React.ReactElement {
       onRemoveCard={props.onRemoveCard}
       onRemoveIllegalCards={props.onRemoveIllegalCards}
       onSetHero={props.onSetHero}
-      onSetFormat={props.onSetFormat}
     />
   );
 }
@@ -99,16 +96,15 @@ interface IEditBodyProps {
   readonly onRemoveCard: ((cardIdentifier: string, slot: TDraftSlot) => void) | undefined;
   readonly onRemoveIllegalCards: ((ids: ReadonlySet<string>) => void) | undefined;
   readonly onSetHero: ((heroIdentifier: string | null) => void) | undefined;
-  readonly onSetFormat: ((format: string) => void) | undefined;
 }
 
 /**
  * EditBody — the editable canvas for deck composition editing.
  *
  * Layout:
- *  Mobile (<1280px): hero → format → cascade banner → autocomplete → card list.
+ *  Mobile (<1280px): hero → cascade banner → autocomplete → card list.
  *  Desktop (≥1280px): autocomplete at top + grouped editable rows by slot.
- *    Hero/format dropdowns live in the sidebar (hidden here via CSS).
+ *    Hero dropdown lives in the sidebar (hidden here via CSS).
  *
  * Both modes share the same <SlotGroup>-style grouping helper that ViewBody uses.
  */
@@ -120,7 +116,6 @@ function EditBody({
   onRemoveCard,
   onRemoveIllegalCards,
   onSetHero,
-  onSetFormat,
 }: IEditBodyProps): React.ReactElement {
   const { t } = useTranslation();
   const autocompleteRef = React.useRef<HTMLInputElement>(null);
@@ -164,18 +159,14 @@ function EditBody({
   return (
     <div className={styles.editCanvas} data-testid="deck-canvas-edit">
 
-      {/* ---- Mobile-only: Hero + Format dropdowns ---- */}
+      {/* ---- Mobile-only: Hero dropdown (format is edited on the Edit deck screen) ---- */}
       {/* These show on mobile (<1280px) where the sidebar is hidden. */}
       {/* On desktop (≥1280px) they live in the sidebar instead. */}
-      {onSetHero !== undefined && onSetFormat !== undefined && (
+      {onSetHero !== undefined && (
         <div className={styles.editMobileDropdowns} data-testid="edit-mobile-dropdowns">
           <HeroDropdown
             value={compositionDraft.heroIdentifier}
             onChange={onSetHero}
-          />
-          <FormatDropdown
-            value={compositionDraft.format}
-            onChange={onSetFormat}
           />
         </div>
       )}

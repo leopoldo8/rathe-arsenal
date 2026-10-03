@@ -1,9 +1,10 @@
-/* Settings page — 3-section layout (Profile / Theme / Account)
-   Tokens from src/styles/tokens.css
-   Unit 7 (Onda 3): settings restyle */
+/* Settings page: four panels (Profile / Appearance / Language / Danger zone), handoff 11 */
 
 .page {
-  max-width: 640px;
+  max-inline-size: 720px;
+  inline-size: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 /* ---- Page heading ---- */
@@ -18,9 +19,9 @@
 
 /* ---- Section card ---- */
 .section {
-  padding: var(--ra-space-5) var(--ra-space-6);
+  padding: var(--ra-space-6);
   border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-lg);
+  border-radius: var(--ra-radius-xl);
   background: var(--ra-bg-surface);
   margin-bottom: var(--ra-space-6);
 }
@@ -32,9 +33,9 @@
 /* ---- Eyebrow header above section heading ---- */
 .eyebrow {
   display: block;
-  font-family: var(--ra-font-mono);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-medium);
+  font-weight: var(--ra-weight-bold);
   letter-spacing: var(--ra-track-caps);
   text-transform: uppercase;
   color: var(--ra-accent-body);
@@ -43,10 +44,9 @@
 
 /* ---- Section heading (h2) ---- */
 .sectionHeading {
-  font-family: var(--ra-font-display);
-  font-size: var(--ra-text-h2);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-h3);
   font-weight: var(--ra-weight-semibold);
-  letter-spacing: var(--ra-track-h2);
   color: var(--ra-fg-primary);
   margin: 0 0 var(--ra-space-4);
 }

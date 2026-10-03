@@ -65,6 +65,7 @@ function makeDetailData(
     updatedAt: '2026-01-01T00:00:00Z',
     status: 'building',
     tags: [],
+    notes: null,
     legality: { category: 'legal', reasons: [] },
     totalCards: 60,
     latestSnapshot: null,

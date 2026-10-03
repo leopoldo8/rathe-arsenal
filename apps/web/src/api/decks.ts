@@ -35,6 +35,8 @@ export interface IDeckLegality {
 export interface IPatchDeckBody {
   readonly status?: TDeckStatus;
   readonly name?: string;
+  readonly format?: string;
+  readonly notes?: string | null;
   readonly addTagIds?: readonly number[];
   readonly removeTagIds?: readonly number[];
 }

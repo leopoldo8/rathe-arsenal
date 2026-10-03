@@ -95,6 +95,12 @@ vi.mock('../../../components/shell/LanguageToggle', () => ({
 }));
 
 import { SettingsPage } from '../settings';
+import settingsStyles from '../settings.module.css';
+
+function cls(name: string | undefined): string {
+  if (!name) throw new Error('css module class is missing');
+  return name;
+}
 
 // ----- Helpers -----
 
@@ -178,6 +184,37 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
   it('renders exactly 4 <h2> section headings', () => {
     renderSettings();
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
+  });
+
+  it('wraps the panels in the capped, centred page column', () => {
+    const { container } = renderSettings();
+    expect(container.firstElementChild).toHaveClass(cls(settingsStyles.page));
+  });
+
+  it('draws each of the four panels with the section class and an eyebrow above its heading', () => {
+    renderSettings();
+    const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
+    expect(panels).toHaveLength(4);
+    for (const panel of panels) {
+      expect(panel).toHaveClass(cls(settingsStyles.section));
+      expect(panel?.querySelector(`.${cls(settingsStyles.eyebrow)}`)).not.toBeNull();
+    }
+  });
+
+  it('marks only the danger-zone panel with the account (danger) class', () => {
+    renderSettings();
+    const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
+    const flagged = panels.filter((p) => p?.classList.contains(cls(settingsStyles.accountSection)));
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0]).toHaveTextContent(/perigo/i);
+  });
+
+  it('keeps both toggles inside their own panels', () => {
+    renderSettings();
+    const theme = screen.getByRole('heading', { level: 2, name: /tema/i }).closest('section');
+    const language = screen.getByRole('heading', { level: 2, name: /idioma/i }).closest('section');
+    expect(theme?.querySelector('[data-testid^="theme-toggle"]')).not.toBeNull();
+    expect(language?.querySelector('[data-testid^="language-toggle"]')).not.toBeNull();
   });
 });
 

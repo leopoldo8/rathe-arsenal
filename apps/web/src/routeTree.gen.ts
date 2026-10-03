@@ -32,6 +32,7 @@ import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckI
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
+import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -147,6 +148,11 @@ const AuthAddCardsCsvRoute = AuthAddCardsCsvRouteImport.update({
   path: '/csv',
   getParentRoute: () => AuthAddCardsRoute,
 } as any)
+const AuthDecksDeckIdEditRoute = AuthDecksDeckIdEditRouteImport.update({
+  id: '/decks/$deckId_/edit',
+  path: '/decks/$deckId/edit',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/new': typeof AuthDecksNewRoute
   '/add-cards/': typeof AuthAddCardsIndexRoute
+  '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/new': typeof AuthDecksNewRoute
   '/add-cards': typeof AuthAddCardsIndexRoute
+  '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/_auth/decks/new': typeof AuthDecksNewRoute
   '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
+  '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId'
     | '/decks/new'
     | '/add-cards/'
+    | '/decks/$deckId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId'
     | '/decks/new'
     | '/add-cards'
+    | '/decks/$deckId/edit'
   id:
     | '__root__'
     | '/'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/_auth/decks/$deckId'
     | '/_auth/decks/new'
     | '/_auth/add-cards/'
+    | '/_auth/decks/$deckId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -471,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsCsvRouteImport
       parentRoute: typeof AuthAddCardsRoute
     }
+    '/_auth/decks/$deckId_/edit': {
+      id: '/_auth/decks/$deckId_/edit'
+      path: '/decks/$deckId/edit'
+      fullPath: '/decks/$deckId/edit'
+      preLoaderRoute: typeof AuthDecksDeckIdEditRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
@@ -503,6 +522,7 @@ interface AuthRouteChildren {
   AuthSwapsRoute: typeof AuthSwapsRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
   AuthDecksNewRoute: typeof AuthDecksNewRoute
+  AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -516,6 +536,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSwapsRoute: AuthSwapsRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
   AuthDecksNewRoute: AuthDecksNewRoute,
+  AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
