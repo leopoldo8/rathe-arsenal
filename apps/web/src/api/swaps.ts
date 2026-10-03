@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { ApiError, useApiClient } from '../lib/api-client';
+import { BULK_MAX_ROWS, runBulk } from '../components/swaps/swap-bulk';
 import { deckDetailQueryKey } from './deck-detail';
 
 export type TSwapStatus = 'pending' | 'approved' | 'rejected' | 'retired';
@@ -239,26 +240,29 @@ export function useSwapBatch(): ISwapBatch {
 export interface IRestoreRejectedResult {
   readonly restored: number;
   readonly failed: number;
+  readonly attempted: number;
+  readonly remaining: number;
 }
 
-/** Sends every rejected swap back to pending, one single-swap call at a time. */
+/**
+ * Sends rejected swaps back to pending through the same sequential, capped
+ * run as the Swaps bulk bar; rows beyond the cap are reported as `remaining`.
+ */
 export function useRestoreRejectedSwaps() {
   const batch = useSwapBatch();
   return useMutation<IRestoreRejectedResult, Error, readonly ISwapRow[]>({
     mutationFn: async (rows) => {
-      let restored = 0;
-      let failed = 0;
-      for (const row of rows) {
-        try {
-          await batch.perform({ swapId: row.id, action: { kind: 'restore' } });
-          restored += 1;
-        } catch {
-          failed += 1;
-        }
-      }
+      const run = rows.slice(0, BULK_MAX_ROWS);
+      const result = await runBulk(run, 'reset', (swapId, action) =>
+        batch.perform({ swapId, action }),
+      );
       batch.finish();
-      if (failed > 0) throw new Error(`${failed} of ${rows.length} swaps could not be restored`);
-      return { restored, failed };
+      return {
+        restored: result.succeeded,
+        failed: result.failedIds.length,
+        attempted: result.total - result.skipped,
+        remaining: rows.length - run.length,
+      };
     },
   });
 }

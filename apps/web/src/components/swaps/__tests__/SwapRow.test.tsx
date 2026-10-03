@@ -584,6 +584,42 @@ describe('SwapRow — selection', () => {
     expect(fns.onToggleSelect).toHaveBeenCalledWith(row.id);
   });
 
+  it('makes the card pair focusable and toggles selection with Space on it', async () => {
+    const row = makeSwapRow();
+    const fns = renderRow(row);
+    const pair = screen.getByRole('group', { name: /trocada por/ });
+
+    expect(pair).toHaveAttribute('tabindex', '0');
+    pair.focus();
+    await userEvent.keyboard(' ');
+
+    expect(fns.onToggleSelect).toHaveBeenCalledTimes(1);
+    expect(fns.onToggleSelect).toHaveBeenCalledWith(row.id);
+  });
+
+  it('ignores other keys on the card pair', async () => {
+    const fns = renderRow(makeSwapRow());
+    screen.getByRole('group', { name: /trocada por/ }).focus();
+
+    await userEvent.keyboard('a');
+    await userEvent.keyboard('{Enter}');
+
+    expect(fns.onToggleSelect).not.toHaveBeenCalled();
+  });
+
+  it('keeps Space on a card thumbnail for the thumbnail, not the selection', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    const image = { small: '/s.png', large: '/l.png', sources: [{ small: '/s.png', large: '/l.png' }] };
+    const fns = renderRow(makeSwapRow({ originalImageUrl: image }));
+    const thumbnail = within(screen.getByRole('group', { name: /trocada por/ })).getAllByRole('button')[0]!;
+
+    thumbnail.focus();
+    await userEvent.keyboard(' ');
+
+    expect(fns.onToggleSelect).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
   it('reflects the selected state', () => {
     renderRow(makeSwapRow(), { isSelected: true });
 

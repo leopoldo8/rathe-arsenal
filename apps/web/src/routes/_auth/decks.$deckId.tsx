@@ -152,6 +152,28 @@ function DeckDetailPage(): React.ReactElement {
     restoreRejectedMutation.mutate(
       deckSwaps.filter((swap) => swap.status === 'rejected'),
       {
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            showToast({
+              kind: 'error',
+              message: t('swaps.bulkPartial', {
+                done: result.restored,
+                total: result.attempted,
+                label: t('swaps.bulkLabelReset'),
+                failed: t('swaps.bulkFailed', { count: result.failed }),
+              }),
+              retry: handleClearRejections,
+            });
+          } else if (result.remaining > 0) {
+            showToast({
+              kind: 'success',
+              message: t('decks.clearRejectionsCapped', {
+                count: result.remaining,
+                restored: result.restored,
+              }),
+            });
+          }
+        },
         onError: (err) => {
           showToast({
             kind: 'error',

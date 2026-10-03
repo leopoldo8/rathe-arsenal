@@ -252,6 +252,8 @@ export const decks = {
   retryShoppingLineToast: 'Tentando novamente lista de compras…',
   failedToLoadDeck: 'Falha ao carregar baralho: {{error}}',
   failedToMarkCard: 'Falha ao marcar carta: {{error}}',
+  clearRejectionsCapped_one: '{{restored}} rejeições limpas. Falta {{count}}; use Limpar rejeições de novo para continuar.',
+  clearRejectionsCapped_other: '{{restored}} rejeições limpas. Faltam {{count}}; use Limpar rejeições de novo para continuar.',
   failedToClearRejections: 'Falha ao limpar rejeições: {{error}}',
   failedSwapAction: 'Não foi possível salvar a troca. Tente de novo.',
   // DeckDetailSidebar

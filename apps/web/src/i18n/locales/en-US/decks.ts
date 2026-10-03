@@ -252,6 +252,8 @@ export const decks = {
   retryShoppingLineToast: 'Retrying shopping line…',
   failedToLoadDeck: 'Failed to load deck: {{error}}',
   failedToMarkCard: 'Failed to mark card: {{error}}',
+  clearRejectionsCapped_one: '{{restored}} rejections cleared. {{count}} more remains; use Clear rejections again to continue.',
+  clearRejectionsCapped_other: '{{restored}} rejections cleared. {{count}} more remain; use Clear rejections again to continue.',
   failedToClearRejections: 'Failed to clear rejections: {{error}}',
   failedSwapAction: 'Could not save the swap. Please try again.',
   // DeckDetailSidebar

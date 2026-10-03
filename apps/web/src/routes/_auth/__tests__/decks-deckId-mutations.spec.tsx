@@ -1087,6 +1087,61 @@ describe('DeckDetailPage — rejected swaps banner', () => {
   });
 });
 
+describe('DeckDetailPage — clearing rejections beyond the cap or with failures', () => {
+  it('tells the owner how many rejections remain when the run was capped', async () => {
+    populate(buildDeck());
+    mockSwapRows = [swapRowFor('a', 's1', 'rejected')];
+    mockClearRejectionsMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ restored: 50, failed: 0, attempted: 50, remaining: 3 });
+      },
+    );
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'success',
+        message: '50 rejeições limpas. Faltam 3; use Limpar rejeições de novo para continuar.',
+      }),
+    );
+  });
+
+  it('reports a partial failure with the done and failed counts and a retry', async () => {
+    populate(buildDeck());
+    mockSwapRows = [swapRowFor('a', 's1', 'rejected')];
+    mockClearRejectionsMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ restored: 2, failed: 1, attempted: 3, remaining: 0 });
+      },
+    );
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+
+    const call = mockShowToast.mock.calls[0]?.[0] as { kind: string; message: string; retry?: () => void };
+    expect(call.kind).toBe('error');
+    expect(call.message).toBe('2 de 3 devolvidas a pendentes — 1 falhou');
+    expect(typeof call.retry).toBe('function');
+  });
+
+  it('stays silent when every rejection was restored within the cap', async () => {
+    populate(buildDeck());
+    mockSwapRows = [swapRowFor('a', 's1', 'rejected')];
+    mockClearRejectionsMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ restored: 1, failed: 0, attempted: 1, remaining: 0 });
+      },
+    );
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+
+    expect(mockShowToast).not.toHaveBeenCalled();
+  });
+});
+
 describe('DeckDetailPage — mutation Toast routing', () => {
   it('routes clearRejections error through Toast when mutation fails', async () => {
     populate(buildDeck());

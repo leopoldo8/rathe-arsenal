@@ -91,6 +91,12 @@ export function SwapRow({
     if (await onReject(row, submission)) setIsRejecting(false);
   }
 
+  function handlePairKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== ' ' || event.target !== event.currentTarget) return;
+    event.preventDefault();
+    onToggleSelect(row.id);
+  }
+
   const slotLine = buildSlotLine(row, t);
   const reasonLabel = row.rejectionReason ? t(`swaps.rejectionReason.${row.rejectionReason}`) : null;
 
@@ -125,7 +131,13 @@ export function SwapRow({
           <span className={styles.slot}>{slotLine}</span>
         </div>
 
-        <div className={styles.pair} role="group" aria-label={t('swaps.pairAria', names)}>
+        <div
+          className={styles.pair}
+          role="group"
+          aria-label={t('swaps.pairAria', names)}
+          tabIndex={0}
+          onKeyDown={handlePairKeyDown}
+        >
           <div className={styles.side}>
             <span className={styles.thumbOut}>
               <CardArt

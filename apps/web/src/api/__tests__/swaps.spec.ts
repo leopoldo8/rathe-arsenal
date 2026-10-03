@@ -14,7 +14,8 @@ import {
   useSwapBatch,
   useSwapMutation,
 } from '../swaps';
-import type { ISwapMutationResult, ISwapsResponse } from '../swaps';
+import type { IRestoreRejectedResult, ISwapMutationResult, ISwapsResponse } from '../swaps';
+import { BULK_MAX_ROWS } from '../../components/swaps/swap-bulk';
 import { makeSwapRow } from '../../test/swap-fixtures';
 
 const mockApiFetch = vi.fn();
@@ -307,16 +308,41 @@ describe('useRestoreRejectedSwaps', () => {
     const { result: hook } = renderHook(() => useRestoreRejectedSwaps(), {
       wrapper: wrapperFor(client),
     });
+    let outcome: IRestoreRejectedResult | undefined;
     await act(async () => {
-      await expect(hook.current.mutateAsync(rows)).rejects.toThrow('1 of 3');
+      outcome = await hook.current.mutateAsync(rows);
     });
 
+    expect(outcome).toEqual({ restored: 2, failed: 1, attempted: 3, remaining: 0 });
     const urls = mockApiFetch.mock.calls.map((call) => call[0]);
     expect(urls).toEqual(rows.map((row) => `/swaps/${row.id}/restore`));
     const detailRefreshes = invalidate.mock.calls.filter(
       (call) => JSON.stringify(call[0]?.queryKey) === JSON.stringify(['deck-detail', '1']),
     );
     expect(detailRefreshes).toHaveLength(1);
+  });
+
+  it('sends at most BULK_MAX_ROWS requests and reports how many rows remain', async () => {
+    const client = makeClient();
+    const rows = Array.from({ length: BULK_MAX_ROWS + 1 }, () => makeSwapRow({ status: 'rejected' }));
+    client.setQueryData<ISwapsResponse>(SWAPS_QUERY_KEY, { rows });
+    mockApiFetch.mockResolvedValue({ deckId: 1, swap: rows[0], rows });
+
+    const { result: hook } = renderHook(() => useRestoreRejectedSwaps(), {
+      wrapper: wrapperFor(client),
+    });
+    let outcome: IRestoreRejectedResult | undefined;
+    await act(async () => {
+      outcome = await hook.current.mutateAsync(rows);
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(BULK_MAX_ROWS);
+    expect(outcome).toEqual({
+      restored: BULK_MAX_ROWS,
+      failed: 0,
+      attempted: BULK_MAX_ROWS,
+      remaining: 1,
+    });
   });
 });
 
