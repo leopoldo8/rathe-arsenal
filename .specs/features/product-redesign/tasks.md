@@ -26,9 +26,9 @@ Two ordering constraints are load-bearing and must not be relaxed:
 | FND-02 Hanken Grotesque for all UI text | §3.1 | `design-guards.spec.ts` | Verified |
 | FND-03 Newsreader for titles and readiness numbers | §3.1, §3.2 | `design-guards.spec.ts` | Verified |
 | FND-04 UnifrakturCook for wordmark and monogram | §3.1 | `design-guards.spec.ts` FND-04 block (token + TopBar wordmark) | Verified |
-| FND-05 `.impeccable.md` + contrast matrix updated | §6 | manual read; both must stop describing the old brand | Implementing — rewritten in `2eeb4bc`/`72557b2`; manual read deferred to phase 10 |
+| FND-05 `.impeccable.md` + contrast matrix updated | §6 | manual read; both must stop describing the old brand | Verified — manual read 2026-10-03 (DEV-23) |
 | FND-06 nav active-item rule | §5.3 | unit tests over `resolveActiveNavKey`, both nav bars | Verified |
-| FND-07 font loading, no first-paint block | §3.4 | see the caveat below | Implementing — no first-paint block shipped (`22cbc87`); layout shift unmeasured |
+| FND-07 font loading, no first-paint block | §3.4 | see the caveat below | Verified — async load; CLS measured ≤ 0.047 on four routes (DEV-23) |
 
 **Inherited defect this phase must clear**: the `describe.skip` block at `contrast.spec.ts:193`. The run's baseline has exactly one skipped test; phase 1 ends at zero.
 

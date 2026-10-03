@@ -215,6 +215,11 @@ Found while reviewing phase 4-6 baselines; fixing them screen by screen would co
 - **Browser suites**: `tests/e2e/deck-edit-flow.spec.ts` now clicks `deck-list-edit-cards-btn` to enter composition edit. The new screen has no `tests/visual` entry yet (it needs a fixture deck id); the orchestrator adds the baseline.
 - **Not looked at in a browser**: New deck, Edit deck and Settings are asserted in CSS and DOM only.
 
+### DEV-23 — UI font family name corrected; FND-05 and FND-07 closed (orchestrator, phase 10)
+- **Bug since phase 1**: the handoff (and every design doc after it) names the UI face "Hanken Grotesque". Google Fonts has no such family and drops it from the combined stylesheet without an error, so all UI text rendered in `system-ui`. Token and URL now say "Hanken Grotesk" (the real family), with weight 800 added; `design-guards.spec.ts` now fails if any token's leading family is not requested by `index.html`. The design documents keep the handoff's spelling as historical text; the code is the source of truth.
+- **FND-07 layout shift, measured** (headless Chromium, cold context, dev server, after the font fix): CLS `/sign-in` 0.0001, `/home` 0.025, `/decks/2` 0.016, `/library` 0.047, all under the 0.1 "good" threshold. No self-hosting / `size-adjust` needed.
+- **FND-05 manual read**: `.impeccable.md` and `docs/design/v1/contrast-matrix.md` describe the redesigned system (tokens, Newsreader/Hanken/UnifrakturCook roles, the ◆/numeral ban); one stale sentence about `.ra-readiness-display` surviving "on surfaces the redesign hasn't reached yet" was corrected (it now survives only on `CongratsAllPlayable`). "Brass" in the matrix names the accent hue, not the old brand.
+
 ### DEV-02 — Font-family retention decided by the orchestrator
 - **What**: `--ra-font-mono` and `--ra-font-serif` are kept rather than dropped, resolving open items 2 and 3 in `design/01-foundation.md` §9.
 - **Why**: 29 and 14 files respectively consume them, and no one has looked at what those files render. The handoff constrains what the three new families are used *for*, not what else may exist. Dropping them buys nothing this phase needs.

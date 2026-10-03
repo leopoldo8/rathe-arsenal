@@ -264,9 +264,9 @@ These apply to every screen above and are not optional polish.
 | FND-02 | P1: Foundation | 1 | Verified |
 | FND-03 | P1: Foundation | 1 | Verified |
 | FND-04 | P1: Foundation | 1 | Verified |
-| FND-05 | P1: Foundation + Cross-cutting 5 | 1 | Implementing (manual read in phase 10) |
+| FND-05 | P1: Foundation + Cross-cutting 5 | 1 | Verified |
 | FND-06 | P1: Foundation | 1 | Verified |
-| FND-07 | P1: Foundation | 1 | Implementing (layout shift unmeasured) |
+| FND-07 | P1: Foundation | 1 | Verified |
 | SWAP-01..03, SWAP-13, SWAP-15 | P1: Swaps, Half A | 2 | Verified |
 | CMP-01..05 | P2: Medallion | 3 | Verified |
 | BOX-01..07 | P1: Deckbox | 3 | BOX-01, 03..07 Verified; BOX-02 Implementing — visual check pending |
