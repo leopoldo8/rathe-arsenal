@@ -271,8 +271,9 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
     });
   });
 
-  describe('error path — missing required fields', () => {
-    it('returns 400 when heroIdentifier is missing', async () => {
+  describe('omitted heroIdentifier — resolved by the service from deck.hero (#84)', () => {
+    it('accepts the body and forwards it to updateComposition without a hero', async () => {
+      decksService.updateComposition.mockResolvedValue(buildDetailResponse());
       const { heroIdentifier: _omitted, ...bodyWithoutHero } = validBody() as {
         heroIdentifier: string;
         cards: object[];
@@ -282,7 +283,13 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
       await request(app.getHttpServer())
         .put(`/decks/${DECK_ID}`)
         .send(bodyWithoutHero)
-        .expect(HttpStatus.BAD_REQUEST);
+        .expect(HttpStatus.OK);
+
+      expect(decksService.updateComposition).toHaveBeenCalledWith(
+        DECK_ID,
+        USER_ID,
+        expect.not.objectContaining({ heroIdentifier: expect.anything() }),
+      );
     });
   });
 

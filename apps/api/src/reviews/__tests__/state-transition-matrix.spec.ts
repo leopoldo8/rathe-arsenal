@@ -61,9 +61,9 @@ const SUB_CARD_C = 'FaB-sub-c (1)';
 // write-then-read cycle exactly like the real repository would.
 // ---------------------------------------------------------------------------
 
-interface IFakeRow extends Pick<SwapSuggestionEntity, 'id' | 'userId' | 'trackedDeckId' | 'cardIdentifier' | 'slot' | 'substituteIdentifier' | 'quantity' | 'tier' | 'confidence' | 'rationale' | 'status' | 'appliedAt' | 'rejectedAt' | 'rejectionReason' | 'rejectionNote' | 'outcome'> {}
+type TFakeRow = Pick<SwapSuggestionEntity, 'id' | 'userId' | 'trackedDeckId' | 'cardIdentifier' | 'slot' | 'substituteIdentifier' | 'quantity' | 'tier' | 'confidence' | 'rationale' | 'status' | 'appliedAt' | 'rejectedAt' | 'rejectionReason' | 'rejectionNote' | 'outcome'>;
 
-function makeSuggestion(overrides: Partial<IFakeRow> & { substituteIdentifier: string }): IFakeRow {
+function makeSuggestion(overrides: Partial<TFakeRow> & { substituteIdentifier: string }): TFakeRow {
   return {
     id: `swap-${overrides.substituteIdentifier}`,
     userId: USER_ID,
@@ -101,16 +101,16 @@ function matchesCondition(condition: unknown, actual: unknown): boolean {
   return condition === actual;
 }
 
-function matchesWhere(where: Record<string, unknown>, row: IFakeRow): boolean {
+function matchesWhere(where: Record<string, unknown>, row: TFakeRow): boolean {
   return Object.entries(where).every(([key, condition]) =>
     matchesCondition(condition, (row as unknown as Record<string, unknown>)[key]),
   );
 }
 
 class FakeSwapSuggestionStore {
-  rows: IFakeRow[];
+  rows: TFakeRow[];
 
-  constructor(initial: readonly IFakeRow[] = []) {
+  constructor(initial: readonly TFakeRow[] = []) {
     this.rows = [...initial];
   }
 
@@ -120,7 +120,7 @@ class FakeSwapSuggestionStore {
         if (!opts?.where) return [...this.rows];
         return this.rows.filter((r) => matchesWhere(opts.where!, r));
       }),
-      update: jest.fn(async (where: Record<string, unknown>, patch: Partial<IFakeRow>) => {
+      update: jest.fn(async (where: Record<string, unknown>, patch: Partial<TFakeRow>) => {
         let affected = 0;
         this.rows = this.rows.map((r) => {
           if (matchesWhere(where, r)) {
@@ -131,8 +131,8 @@ class FakeSwapSuggestionStore {
         });
         return { affected, raw: [], generatedMaps: [] };
       }),
-      create: jest.fn((data: Partial<IFakeRow>) => data as IFakeRow),
-      save: jest.fn(async (entity: IFakeRow) => {
+      create: jest.fn((data: Partial<TFakeRow>) => data as TFakeRow),
+      save: jest.fn(async (entity: TFakeRow) => {
         this.rows.push(entity);
         return entity;
       }),
@@ -149,7 +149,7 @@ class FakeSwapSuggestionStore {
 
 function suggestionsFromEntries(
   entries: Array<{ origCard: string; subCard: string; subName: string }>,
-): IFakeRow[] {
+): TFakeRow[] {
   return entries.map((e) =>
     makeSuggestion({
       id: `swap-${e.subCard}`,
@@ -173,7 +173,7 @@ interface ITestContext {
   substitutionService: jest.Mocked<SubstitutionService>;
 }
 
-async function buildContext(initialRows: readonly IFakeRow[] = []): Promise<ITestContext> {
+async function buildContext(initialRows: readonly TFakeRow[] = []): Promise<ITestContext> {
   const aggregateRepo = createMock<Repository<ReviewAggregateEntity>>();
   const snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
   const trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
