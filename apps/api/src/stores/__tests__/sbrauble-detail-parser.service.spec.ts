@@ -252,6 +252,35 @@ describe('SbraubleDetailParserService', () => {
     });
   });
 
+  describe('discounted prices (real store page during a 10% off sale)', () => {
+    it('reads the discounted price the buyer pays, not the struck-through original', () => {
+      const variants = service.parseDetailPage(loadFixtureString('cupula-dt-detail-page-discounted.html'));
+
+      expect(variants).toEqual([
+        { edition: 'ROS', condition: 'NM', finish: 'non-foil', priceCents: 23, quantity: 14 },
+        { edition: 'PR24', condition: 'NM', finish: 'foil', priceCents: 13049, quantity: 3 },
+      ]);
+    });
+  });
+
+  describe('played condition (real store page)', () => {
+    it('reads a non-NM condition that the store wraps in <i>', () => {
+      const variants = service.parseDetailPage(loadFixtureString('cupula-dt-detail-page-played-condition.html'));
+
+      expect(variants).toEqual([
+        { edition: 'ROS', condition: 'SP', finish: 'non-foil', priceCents: 14, quantity: 41 },
+      ]);
+    });
+  });
+
+  describe('item no longer at this link', () => {
+    it('returns no variants when the store says the item was not found by that link', () => {
+      const variants = service.parseDetailPage(loadFixtureString('cupula-dt-detail-page-item-gone.html'));
+
+      expect(variants).toEqual([]);
+    });
+  });
+
   // -------------------------------------------------------------------------
   // Error: a page with no .table-cards-row table at all is a block/challenge
   // page, not an out-of-stock card. It must throw so the worker marks the card
