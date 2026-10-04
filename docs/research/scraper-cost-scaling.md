@@ -180,8 +180,13 @@ That is the `O(stores × pages × frequency)` trap this doc exists to prevent.
 - **URL-sync:** also Firecrawl-capable, but **not** on an automatic cadence — it
   is triggered **on demand by the owner** via an admin control. This is the
   cost-control posture above: no hands-off full crawls.
-  On the Free plan (10 req/min) a full sync of ~106 pages takes ~12 minutes.
-  In Oct 2026 listing pages cost **1 credit** each (`auto` stayed on `basic`),
-  not the 5 assumed in the cost model above.
+  Since Oct 2026 the store refuses to page any single search past ~390 results
+  ("limite de paginação desta busca"), so the scraper walks the catalog one
+  edition at a time (~113 editions, ~150 requests at 120 items per page) and
+  splits an edition by rarity if it ever exceeds 360 items. A product listed in
+  several editions is yielded once.
+  On the Free plan (10 req/min) a full sync takes ~17 minutes and ~150 credits:
+  listing pages cost **1 credit** each (`auto` stayed on `basic`), not the 5
+  assumed in the cost model above.
   A failed sync's reason is shown under the admin control in Settings.
 - **One store** (Cúpula DT), ~106 listing pages, ~3,200 cached product URLs.

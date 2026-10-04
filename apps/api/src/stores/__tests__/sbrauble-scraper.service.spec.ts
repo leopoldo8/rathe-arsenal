@@ -11,24 +11,74 @@ import { FirecrawlClientService } from '../firecrawl-client.service';
 import { EScraperErrorCode, ScraperError } from '../errors/scraper.errors';
 import { IScrapedProduct } from '../types/scraped-product';
 
-// ---------------------------------------------------------------------------
-// Fixture helpers
-// ---------------------------------------------------------------------------
-
 const FIXTURES_DIR = path.join(__dirname, '../__fixtures__');
 
-function loadFixture(filename: string): Uint8Array {
-  const content = fs.readFileSync(path.join(FIXTURES_DIR, filename));
-  return new Uint8Array(content);
+function fixture(filename: string): string {
+  return fs.readFileSync(path.join(FIXTURES_DIR, filename), 'utf-8');
 }
 
-function makeGuardResult(html: Uint8Array) {
-  return { status: 200, headers: {}, body: html };
+const EDITIONS_PAGE = fixture('cupula-dt-editions-page.html');
+const LISTING_PAGE = fixture('cupula-dt-listing-page.html');
+const LISTING_PAGE_2 = fixture('cupula-dt-listing-page-2.html');
+const LISTING_WITH_BAD_URL = fixture('cupula-dt-listing-with-bad-url.html');
+const NO_RESULTS_PAGE = fixture('cupula-dt-empty-page.html');
+const PAGINATION_CAP_PAGE = fixture('cupula-dt-pagination-cap-page.html');
+const CHALLENGE_PAGE = '<html><body><h1>Just a moment...</h1></body></html>';
+
+function editionsPage(editionIds: readonly string[]): string {
+  const links = editionIds
+    .map((id) => `<li><a href="./?view=ecom/itens&tcg=8&txt_edicao=${id}"><span>Set ${id}</span></a></li>`)
+    .join('');
+  return `<html><body><ul class="sets_list">${links}</ul></body></html>`;
 }
 
-// ---------------------------------------------------------------------------
-// Store factory
-// ---------------------------------------------------------------------------
+interface IListingPageOptions {
+  readonly total: number;
+  readonly cardIds: readonly string[];
+  readonly rarities?: readonly string[];
+}
+
+function listingPage({ total, cardIds, rarities = ['1', '2'] }: IListingPageOptions): string {
+  const rarityOptions = rarities.map((r) => `<option value='${r}'>Rarity ${r}</option>`).join('');
+  const cards = cardIds
+    .map(
+      (id) => `<div class="card-item"><div class="card-desc"><div class="title">` +
+        `<a href="/?view=ecom/item&amp;tcg=8&amp;card=${id}">Card ${id}</a></div></div></div>`,
+    )
+    .join('');
+  return `<html><body>
+    <form><select name='txt_raridade'><option value=''></option>${rarityOptions}</select>
+    <select name='txt_limit'><option value='120'>120</option></select></form>
+    <div class="cards"><table class='ecomresp-tab'><tr>
+      <td align='left' class='textoMaior'> 1-${cardIds.length} de <b>${total.toLocaleString('en-US')}</b></td>
+    </tr></table>${cards}</div>
+  </body></html>`;
+}
+
+function cardIdRange(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => `${prefix}-${i + 1}`);
+}
+
+interface IRequestedPage {
+  readonly view: string | null;
+  readonly edition: string | null;
+  readonly rarity: string | null;
+  readonly page: string | null;
+  readonly limit: string | null;
+  readonly inStock: string | null;
+}
+
+function toRequestedPage(url: string): IRequestedPage {
+  const params = new URL(url).searchParams;
+  return {
+    view: params.get('view'),
+    edition: params.get('txt_edicao'),
+    rarity: params.get('txt_raridade'),
+    page: params.get('page'),
+    limit: params.get('txt_limit'),
+    inStock: params.get('txt_estoque'),
+  };
+}
 
 function makeStore(overrides: Partial<StoreEntity> = {}): StoreEntity {
   const store = new StoreEntity();
@@ -37,17 +87,13 @@ function makeStore(overrides: Partial<StoreEntity> = {}): StoreEntity {
   store.name = 'Cúpula DT';
   store.baseUrl = 'https://www.cupuladt.com.br';
   store.listingPath = '/?view=ecom/itens&tcg=8';
-  store.rateLimitMs = 1500;
+  store.rateLimitMs = 0;
   store.active = true;
   store.lastScrapedAt = null;
   store.lastFetchedAt = null;
   store.createdAt = new Date('2026-01-01T00:00:00Z');
   return Object.assign(store, overrides);
 }
-
-// ---------------------------------------------------------------------------
-// Async generator collector
-// ---------------------------------------------------------------------------
 
 async function collect(gen: AsyncGenerator<IScrapedProduct>): Promise<IScrapedProduct[]> {
   const results: IScrapedProduct[] = [];
@@ -57,21 +103,40 @@ async function collect(gen: AsyncGenerator<IScrapedProduct>): Promise<IScrapedPr
   return results;
 }
 
-// ---------------------------------------------------------------------------
-// Test setup
-// ---------------------------------------------------------------------------
+async function collectError(gen: AsyncGenerator<IScrapedProduct>): Promise<ScraperError> {
+  try {
+    await collect(gen);
+  } catch (err) {
+    return err as ScraperError;
+  }
+  throw new Error('Expected the scrape to throw');
+}
 
 describe('SbraubleScraperService', () => {
   let service: SbraubleScraperService;
   let fetchGuard: jest.Mocked<FetchGuardService>;
   let storeRepository: jest.Mocked<Repository<StoreEntity>>;
 
+  function servePages(render: (page: IRequestedPage) => string): IRequestedPage[] {
+    const requested: IRequestedPage[] = [];
+    fetchGuard.guardedFetch.mockImplementation(async (url: string) => {
+      const page = toRequestedPage(url);
+      requested.push(page);
+      return { status: 200, headers: {}, body: new Uint8Array(Buffer.from(render(page))) };
+    });
+    return requested;
+  }
+
+  function serveEditions(editions: string, listingByEdition: Record<string, string>): IRequestedPage[] {
+    return servePages((page) =>
+      page.view === 'ecom/edicoesTCG' ? editions : (listingByEdition[page.edition ?? ''] ?? NO_RESULTS_PAGE),
+    );
+  }
+
   beforeEach(async () => {
     fetchGuard = createMock<FetchGuardService>();
     storeRepository = createMock<Repository<StoreEntity>>();
     storeRepository.update.mockResolvedValue({ affected: 1, generatedMaps: [], raw: [] });
-    // Disabled Firecrawl → these tests exercise the direct fetchGuard path.
-    // (createMock auto-mocks isEnabled() to a truthy proxy, so force it false.)
     const firecrawl = createMock<FirecrawlClientService>();
     firecrawl.isEnabled.mockReturnValue(false);
 
@@ -91,72 +156,90 @@ describe('SbraubleScraperService', () => {
     jest.clearAllMocks();
   });
 
-  // -------------------------------------------------------------------------
-  // Happy path: single listing page
-  // -------------------------------------------------------------------------
+  describe('edition discovery', () => {
+    it('reads the editions page first and searches each of the store game\'s editions once', async () => {
+      const requested = serveEditions(EDITIONS_PAGE, {});
 
-  describe('single listing page', () => {
-    it('should yield all valid products from the fixture page', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
+      await collect(service.scrapeStore(makeStore()));
 
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+      expect(requested.at(0)?.view).toBe('ecom/edicoesTCG');
+      expect(requested.slice(1).map((p) => p.edition)).toEqual(['2', '10']);
+    });
 
-      // Act
+    it('searches each edition in stock only, 120 per page', async () => {
+      const requested = serveEditions(EDITIONS_PAGE, {});
+
+      await collect(service.scrapeStore(makeStore()));
+
+      const editionSearch = requested.find((p) => p.edition === '10');
+      expect(editionSearch).toEqual(
+        expect.objectContaining({ view: 'ecom/itens', limit: '120', inStock: '1', page: '1', rarity: null }),
+      );
+    });
+
+    it('throws EDITIONS_NOT_FOUND when the editions page lists no sets, instead of syncing nothing', async () => {
+      servePages(() => editionsPage([]));
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.EDITIONS_NOT_FOUND);
+    });
+  });
+
+  describe('products', () => {
+    it('yields the products of every edition', async () => {
+      serveEditions(EDITIONS_PAGE, { '2': LISTING_PAGE, '10': LISTING_PAGE_2 });
+
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — fixture has 6 cards; all are yielded regardless of listing price/stock text
+      expect(products).toHaveLength(8);
+    });
+
+    it('yields a product listed in several editions only once', async () => {
+      serveEditions(EDITIONS_PAGE, { '2': LISTING_PAGE, '10': LISTING_PAGE });
+
+      const products = await collect(service.scrapeStore(makeStore()));
+
       expect(products).toHaveLength(6);
+      expect(new Set(products.map((p) => p.productUrl)).size).toBe(6);
     });
 
-    it('should parse product names correctly', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('parses names and absolute https product URLs on the store host', async () => {
+      serveEditions(EDITIONS_PAGE, { '2': LISTING_PAGE });
 
-      // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert
-      expect(products.at(0)?.rawName).toBe('A Drop in the Ocean (Blue)');
-      expect(products.at(1)?.rawName).toBe('Aether Crackers (Cold Foil)');
-      expect(products.at(2)?.rawName).toBe('5 Copper');
-    });
-
-    it('should construct absolute product URLs from relative listing hrefs', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — URLs are absolute https:// with the store hostname
+      expect(products.map((p) => p.rawName).slice(0, 3)).toEqual([
+        'A Drop in the Ocean (Blue)',
+        'Aether Crackers (Cold Foil)',
+        '5 Copper',
+      ]);
       expect(products.at(0)?.productUrl).toMatch(/^https:\/\/www\.cupuladt\.com\.br\//);
       expect(products.at(0)?.productUrl).toContain('cardID=WTR001');
     });
 
-    it('should construct guardedFetch allowHosts from store baseUrl hostname (strict equality)', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('yields the sentinel price and stock for every product, "Sob consulta" included', async () => {
+      serveEditions(EDITIONS_PAGE, { '2': LISTING_PAGE });
 
-      // Act
+      const products = await collect(service.scrapeStore(makeStore()));
+
+      expect(products.every((p) => p.priceCents === null && p.quantity === 0)).toBe(true);
+      expect(products.find((p) => p.rawName === 'Amplify the Arknight')).toBeDefined();
+    });
+
+    it('drops a product whose URL points off the store host and keeps the rest', async () => {
+      serveEditions(EDITIONS_PAGE, { '2': LISTING_WITH_BAD_URL });
+
+      const products = await collect(service.scrapeStore(makeStore()));
+
+      expect(products.map((p) => p.rawName)).toEqual(['A Drop in the Ocean (Blue)']);
+    });
+
+    it('restricts every fetch to the store hostname', async () => {
+      serveEditions(EDITIONS_PAGE, {});
+
       await collect(service.scrapeStore(makeStore()));
 
-      // Assert — allowHosts must be ['www.cupuladt.com.br'] (exact hostname)
       expect(fetchGuard.guardedFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({ allowHosts: ['www.cupuladt.com.br'] }),
@@ -164,341 +247,217 @@ describe('SbraubleScraperService', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Listing yields sentinel price/stock (obfuscated CSS sprite — not parsed)
-  // -------------------------------------------------------------------------
+  describe('pagination', () => {
+    it('fetches exactly the pages the reported total needs', async () => {
+      const requested = servePages((page) => {
+        if (page.view === 'ecom/edicoesTCG') return editionsPage(['10']);
+        const pageNumber = Number(page.page);
+        const count = pageNumber < 3 ? 120 : 10;
+        return listingPage({ total: 250, cardIds: cardIdRange(`p${pageNumber}`, count) });
+      });
 
-  describe('listing price/stock sentinel values', () => {
-    it('should yield priceCents=null for every product regardless of listing content', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — listing no longer parses the obfuscated price; detail queue provides real values
-      expect(products.every((p) => p.priceCents === null)).toBe(true);
+      expect(requested.slice(1).map((p) => p.page)).toEqual(['1', '2', '3']);
+      expect(products).toHaveLength(250);
     });
 
-    it('should yield quantity=0 for every product regardless of listing content', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('treats an edition with no items in stock as empty and moves on', async () => {
+      const requested = serveEditions(editionsPage(['49', '10']), { '10': LISTING_PAGE });
 
-      // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert
-      expect(products.every((p) => p.quantity === 0)).toBe(true);
+      expect(products).toHaveLength(6);
+      expect(requested.filter((p) => p.edition === '49')).toHaveLength(1);
     });
 
-    it('should yield priceCents=null and quantity=0 for a "Sob consulta" card too', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('throws PAGINATION_CAPPED when the store refuses to page further', async () => {
+      servePages((page) => (page.view === 'ecom/edicoesTCG' ? editionsPage(['10']) : PAGINATION_CAP_PAGE));
 
-      // Act
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.PAGINATION_CAPPED);
+      expect(error.message).toContain('txt_edicao=10');
+    });
+
+    it('throws LISTING_UNRECOGNIZED for a page that is not a store listing (e.g. a bot challenge)', async () => {
+      servePages((page) => (page.view === 'ecom/edicoesTCG' ? editionsPage(['10']) : CHALLENGE_PAGE));
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.LISTING_UNRECOGNIZED);
+      expect(error.message).toContain('Just a moment...');
+    });
+
+    it('throws LISTING_INCOMPLETE when the pages hold fewer items than the store reported', async () => {
+      servePages((page) =>
+        page.view === 'ecom/edicoesTCG'
+          ? editionsPage(['10'])
+          : listingPage({ total: 100, cardIds: cardIdRange('a', 60) }),
+      );
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.LISTING_INCOMPLETE);
+    });
+
+    it('tolerates a couple of items selling out while an edition is being paged', async () => {
+      servePages((page) =>
+        page.view === 'ecom/edicoesTCG'
+          ? editionsPage(['10'])
+          : listingPage({ total: 100, cardIds: cardIdRange('a', 98) }),
+      );
+
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — "Amplify the Arknight" had "Sob consulta" on the listing; same sentinel as others
-      const sobConsulta = products.find((p) => p.rawName === 'Amplify the Arknight');
-      expect(sobConsulta).toBeDefined();
-      expect(sobConsulta!.priceCents).toBeNull();
-      expect(sobConsulta!.quantity).toBe(0);
+      expect(products).toHaveLength(98);
+    });
+
+    it('throws PAGINATION_RUNAWAY once the request budget is spent', async () => {
+      const manyEditions = Array.from({ length: 700 }, (_, i) => String(i + 1));
+      servePages((page) => (page.view === 'ecom/edicoesTCG' ? editionsPage(manyEditions) : NO_RESULTS_PAGE));
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.PAGINATION_RUNAWAY);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Edge case: product URL outside allow-list
-  // -------------------------------------------------------------------------
+  describe('editions too large for one search', () => {
+    function largeEdition(perRarity: Record<string, { total: number; cards: number }>): (page: IRequestedPage) => string {
+      return (page) => {
+        if (page.view === 'ecom/edicoesTCG') return editionsPage(['10']);
+        if (page.rarity === null) return listingPage({ total: 500, cardIds: cardIdRange('all', 120) });
+        const segment = perRarity[page.rarity] ?? { total: 0, cards: 0 };
+        return listingPage({ total: segment.total, cardIds: cardIdRange(`r${page.rarity}-p${page.page}`, segment.cards) });
+      };
+    }
 
-  describe('product URL outside allow-list', () => {
-    it('should drop the row with a warn log and still yield valid products', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-with-bad-url.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('splits the edition by rarity instead of paging past the store limit', async () => {
+      const requested = servePages(
+        largeEdition({ '1': { total: 200, cards: 100 }, '2': { total: 300, cards: 120 } }),
+      );
 
-      // Act
       const products = await collect(service.scrapeStore(makeStore()));
 
-      // Assert — only the valid product is yielded; the "evil.example.com" row is dropped
-      expect(products).toHaveLength(1);
-      expect(products.at(0)?.rawName).toBe('A Drop in the Ocean (Blue)');
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Edge case: empty first page
-  // -------------------------------------------------------------------------
-
-  describe('empty first page', () => {
-    it('should terminate generator immediately and yield zero products', async () => {
-      // Arrange
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch.mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert
-      expect(products).toHaveLength(0);
-      expect(fetchGuard.guardedFetch).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Happy path: multi-page pagination
-  // -------------------------------------------------------------------------
-
-  describe('multi-page pagination', () => {
-    it('should yield products from both pages and stop at empty page', async () => {
-      // Arrange
-      const page1Html = loadFixture('cupula-dt-listing-page.html');
-      const page2Html = loadFixture('cupula-dt-listing-page-2.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(page1Html))
-        .mockResolvedValueOnce(makeGuardResult(page2Html))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-
-      // Act
-      const products = await collect(service.scrapeStore(makeStore()));
-
-      // Assert — 6 from page 1 + 2 from page 2
-      expect(products).toHaveLength(8);
-      expect(fetchGuard.guardedFetch).toHaveBeenCalledTimes(3);
+      const unfilteredPages = requested.filter((p) => p.view === 'ecom/itens' && p.rarity === null);
+      expect(unfilteredPages.map((p) => p.page)).toEqual(['1']);
+      const raritySearches = requested.filter((p) => p.rarity !== null);
+      expect(raritySearches.map((p) => `${p.rarity}:${p.page}`)).toEqual(['1:1', '1:2', '2:1', '2:2', '2:3']);
+      expect(products).toHaveLength(560);
     });
 
-    it('should request pages with incrementing page parameter', async () => {
-      // Arrange
-      const page1Html = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(page1Html))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
+    it('throws PAGINATION_CAPPED when one rarity is still too large for a single search', async () => {
+      servePages(largeEdition({ '1': { total: 100, cards: 100 }, '2': { total: 400, cards: 120 } }));
 
-      // Act
-      await collect(service.scrapeStore(makeStore()));
+      const error = await collectError(service.scrapeStore(makeStore()));
 
-      // Assert
-      const calls = fetchGuard.guardedFetch.mock.calls;
-      expect(calls.at(0)?.[0]).toContain('page=1');
-      expect(calls.at(1)?.[0]).toContain('page=2');
+      expect(error.code).toBe(EScraperErrorCode.PAGINATION_CAPPED);
+    });
+
+    it('throws LISTING_INCOMPLETE when the rarity segments add up to less than the edition total', async () => {
+      servePages(largeEdition({ '1': { total: 100, cards: 100 }, '2': { total: 100, cards: 100 } }));
+
+      const error = await collectError(service.scrapeStore(makeStore()));
+
+      expect(error.code).toBe(EScraperErrorCode.LISTING_INCOMPLETE);
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Edge case: pagination runaway guard
-  // -------------------------------------------------------------------------
-
-  describe('pagination runaway', () => {
-    it('should throw ScraperError(PAGINATION_RUNAWAY) after 200 pages', async () => {
-      // Arrange — every page returns the same non-empty fixture
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      fetchGuard.guardedFetch.mockResolvedValue(makeGuardResult(pageHtml));
-
-      // Act
-      const gen = service.scrapeStore(makeStore({ rateLimitMs: 0 }));
-      let productCount = 0;
-      let thrownError: ScraperError | null = null;
-      try {
-        for await (const _ of gen) {
-          productCount += 1;
-        }
-      } catch (err) {
-        thrownError = err as ScraperError;
-      }
-
-      // Assert
-      expect(thrownError).not.toBeNull();
-      expect(thrownError!.code).toBe(EScraperErrorCode.PAGINATION_RUNAWAY);
-      // 200 pages × 6 products = 1200 products yielded before the throw
-      expect(productCount).toBe(1200);
-    }, 30_000);
-  });
-
-  // -------------------------------------------------------------------------
-  // Error path: invalid listingPath
-  // -------------------------------------------------------------------------
 
   describe('invalid listingPath', () => {
-    it('should throw ScraperError(INVALID_STORE_LISTING_PATH) before any fetch', async () => {
-      // Arrange
-      const store = makeStore({ listingPath: '/../../etc/passwd' });
+    it.each(['/../../etc/passwd', '/?view=user/profile'])(
+      'throws INVALID_STORE_LISTING_PATH for %s before any fetch',
+      async (listingPath) => {
+        const error = await collectError(service.scrapeStore(makeStore({ listingPath })));
 
-      // Act
-      const gen = service.scrapeStore(store);
-      let thrownError: ScraperError | null = null;
-      try {
-        await gen.next();
-      } catch (err) {
-        thrownError = err as ScraperError;
-      }
+        expect(error.code).toBe(EScraperErrorCode.INVALID_STORE_LISTING_PATH);
+        expect(fetchGuard.guardedFetch).not.toHaveBeenCalled();
+      },
+    );
 
-      // Assert
-      expect(thrownError).not.toBeNull();
-      expect(thrownError!.code).toBe(EScraperErrorCode.INVALID_STORE_LISTING_PATH);
-      expect(fetchGuard.guardedFetch).not.toHaveBeenCalled();
-    });
+    it('throws INVALID_STORE_LISTING_PATH when the path has no tcg to pick editions from', async () => {
+      const error = await collectError(service.scrapeStore(makeStore({ listingPath: '/?view=ecom/itens' })));
 
-    it('should throw INVALID_STORE_LISTING_PATH for a non-ecom view', async () => {
-      // Arrange
-      const store = makeStore({ listingPath: '/?view=user/profile' });
-
-      // Act
-      const gen = service.scrapeStore(store);
-      let thrownError: ScraperError | null = null;
-      try {
-        await gen.next();
-      } catch (err) {
-        thrownError = err as ScraperError;
-      }
-
-      // Assert
-      expect(thrownError!.code).toBe(EScraperErrorCode.INVALID_STORE_LISTING_PATH);
+      expect(error.code).toBe(EScraperErrorCode.INVALID_STORE_LISTING_PATH);
       expect(fetchGuard.guardedFetch).not.toHaveBeenCalled();
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Error path: fetch failure re-thrown as ScraperError
-  // -------------------------------------------------------------------------
 
   describe('fetch failure', () => {
-    it('should re-throw FetchGuardService errors as ScraperError(PARSE_FAILED)', async () => {
-      // Arrange
+    it('re-throws fetch errors as ScraperError(PARSE_FAILED) with the cause', async () => {
       fetchGuard.guardedFetch.mockRejectedValueOnce(new Error('Host denied'));
 
-      // Act
-      const gen = service.scrapeStore(makeStore());
-      let thrownError: ScraperError | null = null;
-      try {
-        await gen.next();
-      } catch (err) {
-        thrownError = err as ScraperError;
-      }
+      const error = await collectError(service.scrapeStore(makeStore()));
 
-      // Assert
-      expect(thrownError).not.toBeNull();
-      expect(thrownError!.code).toBe(EScraperErrorCode.PARSE_FAILED);
-      expect(thrownError!.message).toContain('Host denied');
+      expect(error.code).toBe(EScraperErrorCode.PARSE_FAILED);
+      expect(error.message).toContain('Host denied');
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Integration: rate limit enforcement
-  // -------------------------------------------------------------------------
-
   describe('rate limit enforcement', () => {
-    it('should persist lastFetchedAt after each fetch', async () => {
-      // Arrange
-      const pageHtml = loadFixture('cupula-dt-listing-page.html');
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch
-        .mockResolvedValueOnce(makeGuardResult(pageHtml))
-        .mockResolvedValueOnce(makeGuardResult(emptyHtml));
-      const store = makeStore({ lastFetchedAt: null });
+    it('persists lastFetchedAt after every fetch', async () => {
+      const requested = serveEditions(EDITIONS_PAGE, {});
+      const store = makeStore();
 
-      // Act
       await collect(service.scrapeStore(store));
 
-      // Assert — repository.update called once per page fetch (2 pages)
-      expect(storeRepository.update).toHaveBeenCalledTimes(2);
+      expect(storeRepository.update).toHaveBeenCalledTimes(requested.length);
       expect(storeRepository.update).toHaveBeenCalledWith(
         { id: store.id },
         expect.objectContaining({ lastFetchedAt: expect.any(Date) }),
       );
     });
 
-    it('should skip the sleep when lastFetchedAt is null (first ever fetch)', async () => {
-      // Arrange
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch.mockResolvedValueOnce(makeGuardResult(emptyHtml));
-      const store = makeStore({ lastFetchedAt: null, rateLimitMs: 60_000 });
-
+    it('does not sleep before the first ever fetch', async () => {
+      serveEditions(editionsPage([]), {});
       const startMs = Date.now();
 
-      // Act
-      await collect(service.scrapeStore(store));
+      await collectError(service.scrapeStore(makeStore({ lastFetchedAt: null, rateLimitMs: 60_000 })));
 
-      // Assert — no sleep on first fetch; should complete well under 1 second
-      const elapsed = Date.now() - startMs;
-      expect(elapsed).toBeLessThan(1000);
+      expect(Date.now() - startMs).toBeLessThan(1000);
     });
 
-    it('should skip the sleep when elapsed time already exceeds rateLimitMs', async () => {
-      // Arrange — lastFetchedAt is far in the past
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch.mockResolvedValueOnce(makeGuardResult(emptyHtml));
-      const pastDate = new Date(Date.now() - 10_000); // 10 seconds ago
-      const store = makeStore({ lastFetchedAt: pastDate, rateLimitMs: 1500 });
-
+    it('does not sleep when the last fetch is older than rateLimitMs', async () => {
+      serveEditions(editionsPage([]), {});
       const startMs = Date.now();
 
-      // Act
-      await collect(service.scrapeStore(store));
+      await collectError(
+        service.scrapeStore(makeStore({ lastFetchedAt: new Date(Date.now() - 10_000), rateLimitMs: 1500 })),
+      );
 
-      // Assert — elapsed already exceeds rateLimitMs, no sleep needed
-      const elapsed = Date.now() - startMs;
-      expect(elapsed).toBeLessThan(1000);
+      expect(Date.now() - startMs).toBeLessThan(1000);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // No direct fetch() calls verification (structural)
-  // -------------------------------------------------------------------------
+  it('never calls global fetch directly', async () => {
+    serveEditions(EDITIONS_PAGE, {});
+    const globalFetchSpy = jest.spyOn(global, 'fetch');
 
-  describe('no direct fetch() calls', () => {
-    it('should call only fetchGuard.guardedFetch, not global fetch', async () => {
-      // Arrange
-      const emptyHtml = loadFixture('cupula-dt-empty-page.html');
-      fetchGuard.guardedFetch.mockResolvedValueOnce(makeGuardResult(emptyHtml));
-      const globalFetchSpy = jest.spyOn(global, 'fetch');
+    await collect(service.scrapeStore(makeStore()));
 
-      // Act
-      await collect(service.scrapeStore(makeStore()));
-
-      // Assert — global fetch never called directly
-      expect(globalFetchSpy).not.toHaveBeenCalled();
-      globalFetchSpy.mockRestore();
-    });
+    expect(globalFetchSpy).not.toHaveBeenCalled();
+    globalFetchSpy.mockRestore();
   });
 
-  describe('Firecrawl-enabled listing fetch', () => {
-    it('fetches listing pages via Firecrawl (not the direct client) when enabled', async () => {
-      const enabledFirecrawl = createMock<FirecrawlClientService>();
-      enabledFirecrawl.isEnabled.mockReturnValue(true);
-      // Empty listing page → parse yields nothing → loop ends after page 1.
-      enabledFirecrawl.scrapeHtml.mockResolvedValue('<html><body></body></html>');
-      const directFetch = createMock<FetchGuardService>();
+  it('fetches every page through Firecrawl, not the direct client, when Firecrawl is enabled', async () => {
+    const enabledFirecrawl = createMock<FirecrawlClientService>();
+    enabledFirecrawl.isEnabled.mockReturnValue(true);
+    enabledFirecrawl.scrapeHtml.mockImplementation(async (url: string) =>
+      toRequestedPage(url).view === 'ecom/edicoesTCG' ? editionsPage(['10']) : NO_RESULTS_PAGE,
+    );
+    const directFetch = createMock<FetchGuardService>();
+    const mod: TestingModule = await Test.createTestingModule({
+      providers: [
+        SbraubleScraperService,
+        { provide: FetchGuardService, useValue: directFetch },
+        { provide: FirecrawlClientService, useValue: enabledFirecrawl },
+        { provide: getRepositoryToken(StoreEntity), useValue: storeRepository },
+      ],
+    }).compile();
 
-      const mod: TestingModule = await Test.createTestingModule({
-        providers: [
-          SbraubleScraperService,
-          { provide: FetchGuardService, useValue: directFetch },
-          { provide: FirecrawlClientService, useValue: enabledFirecrawl },
-          { provide: getRepositoryToken(StoreEntity), useValue: storeRepository },
-        ],
-      }).compile();
-      const svc = mod.get<SbraubleScraperService>(SbraubleScraperService);
+    await collect(mod.get(SbraubleScraperService).scrapeStore(makeStore()));
 
-      await collect(svc.scrapeStore(makeStore()));
-
-      expect(enabledFirecrawl.scrapeHtml).toHaveBeenCalledTimes(1);
-      expect(directFetch.guardedFetch).not.toHaveBeenCalled();
-    });
+    expect(enabledFirecrawl.scrapeHtml).toHaveBeenCalledTimes(2);
+    expect(directFetch.guardedFetch).not.toHaveBeenCalled();
   });
 });
