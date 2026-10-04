@@ -50,19 +50,19 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C9:" scripts/synergy-spike/__
 
 ### S4 - candidates and the top 10 · 5 files · 25 KB · ~20k
 
-**C10** - `pnpm synergy:run heuristic` writes `out/runs/heuristic/<ULID>.json` per deck with `status` `ok` and a `top10` of exactly 10 distinct identifiers, each in that deck's pool and absent from the deck, in rank order (plan AC 10)
+**C10** - `pnpm synergy:run heuristic` writes `out/runs/heuristic/<ULID>.json` per deck with `status` `ok` and a `top10` of exactly 10 distinct identifiers, each in that deck's pool and absent from the deck, in rank order (plan AC 10) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C10:" scripts/synergy-spike/__tests__/run.test.ts`
 
-**C11** - `finalizeTop10` drops an identifier outside the pool and one in the deck; with 9 valid remaining the run is `failed`, no `top10` is written and the exit code is 1; with 10 valid remaining it is `ok` (plan AC 11)
+**C11** - `finalizeTop10` drops an identifier outside the pool and one in the deck; with 9 valid remaining the run is `failed`, no `top10` is written and the exit code is 1; with 10 valid remaining it is `ok` (plan AC 11) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C11:" scripts/synergy-spike/__tests__/run.test.ts`
 
-**C12** - Running `heuristic` twice over the same decks produces byte-identical run files (plan AC 12)
+**C12** - Running `heuristic` twice over the same decks produces byte-identical run files (plan AC 12) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C12:" scripts/synergy-spike/__tests__/run.test.ts`
 
-**C13** - At HEAD no verdict exists in any committed `out/judging-sheet.csv` (the verdict column is empty on every row), so the heuristic formula was fixed before verdicts; the owner rule that it never changes after verdicts is recorded in the file header of `candidates/heuristic.ts` (plan AC 13)
+**C13** - At HEAD no verdict exists in any committed `out/judging-sheet.csv` (the verdict column is empty on every row), so the heuristic formula was fixed before verdicts; the owner rule that it never changes after verdicts is recorded in the file header of `candidates/heuristic.ts` (plan AC 13) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C13:" scripts/synergy-spike/__tests__/run.test.ts`
 
-**C14** - `cooccurrence` with 0 public decklists found (minimum 20) writes `out/runs/cooccurrence/<ULID>.json` with `status` `untestable` and `found` 0 and exits 0 (plan AC 14)
+**C14** - `cooccurrence` with 0 public decklists found (minimum 20) writes `out/runs/cooccurrence/<ULID>.json` with `status` `untestable` and `found` 0 and exits 0 (plan AC 14) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C14:" scripts/synergy-spike/__tests__/run.test.ts`
 
 
