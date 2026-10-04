@@ -581,8 +581,11 @@ describe('/swaps — bulk actions (SWAP-14, DEV-09)', () => {
     store = pendingRows(52);
     await renderLoaded();
 
+    const checkboxes = new Map(
+      screen.getAllByTestId('swap-row').map((row) => [row.getAttribute('data-row-id'), row.querySelector('input[type="checkbox"]')!]),
+    );
     for (let index = 0; index < 50; index += 1) {
-      fireEvent.click(within(rowFor(`b${index}`)).getByRole('checkbox'));
+      fireEvent.click(checkboxes.get(`b${index}`)!);
     }
     await userEvent.click(within(rowFor('b50')).getByRole('checkbox'));
 

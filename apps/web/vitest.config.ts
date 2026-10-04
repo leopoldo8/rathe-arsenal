@@ -36,6 +36,10 @@ const test: VitestUserConfig['test'] = {
   setupFiles: ['./src/test/setup.ts'],
   include: ['src/**/*.{test,spec}.{ts,tsx}'],
   css: false,
+  // One worker per core oversubscribes the CPU with jsdom renders and pushes
+  // the heaviest render tests past their timeouts; half the cores runs faster.
+  maxWorkers: '50%',
+  minWorkers: 1,
   coverage: {
     exclude: ['src/routeTree.gen.ts', 'src/main.tsx', 'src/test/**'],
   },
