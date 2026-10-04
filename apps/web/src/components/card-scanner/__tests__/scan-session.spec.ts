@@ -43,9 +43,17 @@ describe('scan session', () => {
       expect(run([['full', A], ['full', A], ['full', A]]).rows).toEqual([]);
     });
 
-    it('ignores agreeing reads more than six recognitions apart', () => {
-      const reads: TRead[] = [['full', A], ...Array.from({ length: 6 }, (): TRead => ['full-binary-sparse', null]), ['left-binary', A]];
-      expect(run(reads).rows).toEqual([]);
+    function readsApart(distance: number): TRead[] {
+      const gap = Array.from({ length: distance - 1 }, (): TRead => ['full-binary-sparse', null]);
+      return [['full', A], ...gap, ['left-binary', A]];
+    }
+
+    it('accepts agreeing reads five recognitions apart, the edge of the window', () => {
+      expect(quantities(run(readsApart(5)))).toEqual({ 'card-AAA001': 1 });
+    });
+
+    it('ignores agreeing reads six recognitions apart', () => {
+      expect(run(readsApart(6)).rows).toEqual([]);
     });
   });
 
@@ -81,6 +89,12 @@ describe('scan session', () => {
       expect(quantities(run(reads))).toEqual({ 'card-AAA001': 1 });
     });
 
+    it('still holds after only two recognitions without the code', () => {
+      const session = run([...ACCEPT_A, ['full', null], ['left-binary', null], ...ACCEPT_A]);
+
+      expect(quantities(session)).toEqual({ 'card-AAA001': 1 });
+    });
+
     it('re-arms after three recognitions without the code', () => {
       const session = run([...ACCEPT_A, ...THREE_MISSES, ...ACCEPT_A]);
 
@@ -109,6 +123,12 @@ describe('scan session', () => {
       }
 
       expect(run(reads, undone).rows).toEqual([]);
+    });
+
+    it('still suppresses after only two recognitions without it', () => {
+      const undone = undoScan(run(ACCEPT_A), 'card-AAA001', 'AAA001');
+
+      expect(run([['full', null], ['left-binary', null], ...ACCEPT_A], undone).rows).toEqual([]);
     });
 
     it('accepts the code again after three recognitions without it', () => {

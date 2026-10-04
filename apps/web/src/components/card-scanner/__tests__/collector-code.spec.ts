@@ -19,7 +19,7 @@ const RESPONSE: ICollectorCodesResponse = {
       cardIdentifier: 'letters-card',
       name: 'Letters',
       pitch: null,
-      printings: ['OUT227', 'IRA001', 'SEA156', 'ZEN001', 'BRI001', 'GEM119'].map((code) => ({ code })),
+      printings: ['OUT227', 'IRA001', 'SEA156', 'ZEN001', 'BRI001', 'GEM119', 'BOS001', 'GIZ001'].map((code) => ({ code })),
     },
   ],
 };
@@ -53,6 +53,7 @@ describe('resolveCollectorCode', () => {
   });
 
   it.each([
+    ['MSTI00', 'MST100'],
     ['MST1O0', 'MST100'],
     ['MST1Q0', 'MST100'],
     ['MST1D0', 'MST100'],
@@ -70,6 +71,8 @@ describe('resolveCollectorCode', () => {
     ['2EN001', 'ZEN001'],
     ['8RI001', 'BRI001'],
     ['6EM119', 'GEM119'],
+    ['B05001', 'BOS001'],
+    ['G12001', 'GIZ001'],
   ])('normalizes every confusion in the table: %s -> %s', (text, expected) => {
     expect(resolvedCode(`EN | ${text} Artist`)).toBe(expected);
   });

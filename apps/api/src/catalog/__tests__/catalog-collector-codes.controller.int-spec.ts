@@ -1,4 +1,6 @@
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
 import { createMock } from '@golevelup/ts-jest';
 import { CatalogController } from '../catalog.controller';
 import { CatalogService } from '../catalog.service';
@@ -45,6 +47,7 @@ function actualPairs(response: ICollectorCodesResponse): readonly string[] {
 
 describe('CatalogController - GET /catalog/collector-codes (card scanner)', () => {
   let controller: CatalogController;
+  let app: INestApplication;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -56,16 +59,24 @@ describe('CatalogController - GET /catalog/collector-codes (card scanner)', () =
     }).compile();
 
     controller = module.get<CatalogController>(CatalogController);
+    app = module.createNestApplication();
+    await app.listen(0, '127.0.0.1');
   });
 
-  it('returns every non-hero non-token printing pair', () => {
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it('returns every non-hero non-token printing pair', async () => {
     // Arrange
     const expected = expectedPairs();
 
     // Act
-    const pairs = actualPairs(controller.getCollectorCodes());
+    const response = await request(app.getHttpServer()).get('/catalog/collector-codes');
+    const pairs = actualPairs(response.body as ICollectorCodesResponse);
 
     // Assert
+    expect(response.status).toBe(200);
     expect(pairs.length).toBe(new Set(pairs).size);
     expect(new Set(pairs)).toEqual(expected);
     expect(pairs.length).toBeGreaterThanOrEqual(8380);
@@ -97,7 +108,9 @@ describe('CatalogController - GET /catalog/collector-codes (card scanner)', () =
       'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/',
     );
     expect(blessing).toMatchObject({ name: 'Blessing of Qi', pitch: 3 });
-    expect(blessing?.printings).toContainEqual({ code: 'MST172' });
+    const mst172 = blessing?.printings.find((printing) => printing.code === 'MST172');
+    expect(mst172).toBeDefined();
+    expect(Object.keys(mst172!)).toEqual(['code']);
     expect(withDistinctArt?.image).not.toBe(withDistinctArt?.code);
   });
 });

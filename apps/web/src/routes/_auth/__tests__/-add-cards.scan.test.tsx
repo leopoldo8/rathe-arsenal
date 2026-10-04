@@ -468,12 +468,13 @@ describe('/add-cards/scan', () => {
   it('renders in both locales', async () => {
     await setTestLocale('pt-BR');
     const { unmount } = renderScanner(buildHarness().deps);
-    expect(await screen.findByText('Alinhe a borda de baixo da carta com a guia.')).toBeInTheDocument();
+    const ptHint = (await screen.findByText('Alinhe a borda de baixo da carta com a guia.')).textContent;
     unmount();
 
     await setTestLocale('en-US');
     renderScanner(buildHarness().deps);
-    expect(await screen.findByText('Line up the bottom edge of the card with the guide.')).toBeInTheDocument();
+    const enHint = (await screen.findByText('Line up the bottom edge of the card with the guide.')).textContent;
+    expect(ptHint).not.toBe(enHint);
   });
 
   it('commits the whole tray in one request', async () => {

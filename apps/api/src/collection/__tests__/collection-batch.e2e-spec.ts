@@ -193,11 +193,18 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
         .cards.slice(0, 201)
         .map((card) => card.cardIdentifier);
 
+    it('rejects items that are not a list', async () => {
+      await batch(owner, { cardIdentifier: CARD_D, quantity: 1 }).expect(400);
+    });
+
     it.each([
       ['0 items', (): unknown[] => []],
       ['201 items', (): unknown[] => twoHundredCards().map((cardIdentifier) => ({ cardIdentifier, quantity: 1 }))],
       ['quantity 0', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 0 }]],
       ['quantity 21', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 21 }]],
+      ['a fractional quantity', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 1.5 }]],
+      ['a numeric card identifier', (): unknown[] => [{ cardIdentifier: 42, quantity: 1 }]],
+      ['an unknown field', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 1, foil: true }]],
     ])('rejects %s', async (_label, items) => {
       await batch(owner, items()).expect(400);
 
@@ -221,35 +228,54 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
 
   it('refreshes readiness of a deck that needs the card', async () => {
     const server = app.getHttpServer();
-    const created = await request(server)
-      .post('/api/decks')
-      .set('Authorization', `Bearer ${owner.jwt}`)
-      .send({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' })
-      .expect(201);
-    const deckId = created.body.id as number;
-    await request(server)
-      .put(`/api/decks/${deckId}`)
-      .set('Authorization', `Bearer ${owner.jwt}`)
-      .send({
-        heroIdentifier: 'katsu-the-wanderer',
-        format: 'Classic Constructed',
-        cards: [{ cardIdentifier: CARD_A, quantity: 2, slot: 'mainboard' }],
-      })
-      .expect(200);
-    const latestRawPercent = async (): Promise<number> => {
+    const deckWith = async (cardIdentifiers: readonly string[]): Promise<number> => {
+      const created = await request(server)
+        .post('/api/decks')
+        .set('Authorization', `Bearer ${owner.jwt}`)
+        .send({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' })
+        .expect(201);
+      const deckId = created.body.id as number;
+      await request(server)
+        .put(`/api/decks/${deckId}`)
+        .set('Authorization', `Bearer ${owner.jwt}`)
+        .send({
+          heroIdentifier: 'katsu-the-wanderer',
+          format: 'Classic Constructed',
+          cards: cardIdentifiers.map((cardIdentifier) => ({ cardIdentifier, quantity: 2, slot: 'mainboard' })),
+        })
+        .expect(200);
+      return deckId;
+    };
+    const snapshotCount = async (deckId: number): Promise<number> => {
+      const [row] = await dataSource.query(
+        `SELECT COUNT(*)::int AS snapshots FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1`,
+        [deckId],
+      );
+      return row.snapshots as number;
+    };
+    const latestRawPercent = async (deckId: number): Promise<number> => {
       const [row] = await dataSource.query(
         `SELECT "rawPercent" FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1 ORDER BY "computedAt" DESC, id DESC LIMIT 1`,
         [deckId],
       );
       return Number(row?.rawPercent ?? 0);
     };
-    const before = await latestRawPercent();
+    const withAAndB = await deckWith([CARD_A, CARD_B]);
+    const withB = await deckWith([CARD_B]);
+    const withNeither = await deckWith([CARD_C]);
+    const before = await Promise.all([withAAndB, withB, withNeither].map(snapshotCount));
 
-    const response = await batch(owner, [{ cardIdentifier: CARD_A, quantity: 2 }]).expect(201);
+    const response = await batch(owner, [
+      { cardIdentifier: CARD_A, quantity: 2 },
+      { cardIdentifier: CARD_B, quantity: 2 },
+    ]).expect(201);
 
-    expect(response.body.recomputedDeckCount).toBe(1);
-    expect(before).toBeLessThan(100);
-    expect(await latestRawPercent()).toBe(100);
+    const after = await Promise.all([withAAndB, withB, withNeither].map(snapshotCount));
+    expect(response.body.recomputedDeckCount).toBe(2);
+    expect(after.map((count, index) => count - before[index]!)).toEqual([1, 1, 0]);
+    expect(await latestRawPercent(withAAndB)).toBe(100);
+    expect(await latestRawPercent(withB)).toBe(100);
+    expect(await latestRawPercent(withNeither)).toBeLessThan(100);
   });
 
   it("writes only the caller's rows", async () => {
