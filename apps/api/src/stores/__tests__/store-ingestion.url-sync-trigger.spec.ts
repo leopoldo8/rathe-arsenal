@@ -10,7 +10,7 @@ import {
 } from '../../database/entities';
 import { CardNameMatcherService } from '../card-name-matcher.service';
 import { SbraubleScraperService } from '../sbrauble-scraper.service';
-import { StoreIngestionService } from '../store-ingestion.service';
+import { StoreIngestionService, URL_SYNC_STALE_AFTER_MS } from '../store-ingestion.service';
 
 describe('StoreIngestionService — URL-sync trigger', () => {
   let service: StoreIngestionService;
@@ -56,6 +56,14 @@ describe('StoreIngestionService — URL-sync trigger', () => {
       storeRepo.query.mockResolvedValue([[], 0]);
       expect(await service.claimPendingUrlSync()).toBeNull();
     });
+
+    it('can take over a running lock left behind by a worker that died mid-sync', async () => {
+      storeRepo.query.mockResolvedValue([[], 0]);
+      await service.claimPendingUrlSync();
+      const [sql, params] = storeRepo.query.mock.calls[0];
+      expect(sql).toContain('"urlSyncRunningAt" < now()');
+      expect(params).toEqual([String(URL_SYNC_STALE_AFTER_MS)]);
+    });
   });
 
   describe('markUrlSyncFailed', () => {
@@ -84,6 +92,20 @@ describe('StoreIngestionService — URL-sync trigger', () => {
       expect(idle.state).toBe('idle');
       expect(idle.lastProductCount).toBe(42);
       expect(idle.lastError).toBeNull();
+    });
+
+    it('reports a lock older than the stale threshold as an interrupted sync, not running', async () => {
+      const lockedAt = new Date(Date.now() - URL_SYNC_STALE_AFTER_MS - 60_000);
+      storeRepo.findOne.mockResolvedValue({
+        urlSyncRunningAt: lockedAt, urlSyncRequestedAt: null, lastUrlSyncAt: null, lastUrlSyncProductCount: null,
+        lastUrlSyncError: null, lastUrlSyncErrorAt: null,
+      });
+      const status = await service.getUrlSyncStatus('cupula-dt');
+      expect(status.state).toBe('idle');
+      expect(status.lastError).toEqual({
+        message: expect.stringContaining('interrupted'),
+        at: lockedAt.toISOString(),
+      });
     });
 
     it('reports the last failure message and time', async () => {

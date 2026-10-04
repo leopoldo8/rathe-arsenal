@@ -51,6 +51,11 @@ export interface IUrlSyncSummary {
 
 export type TUrlSyncState = 'idle' | 'queued' | 'running';
 
+/** A running lock older than this was left by a worker killed mid-sync (e.g. a redeploy). */
+export const URL_SYNC_STALE_AFTER_MS = 45 * 60 * 1000;
+
+const INTERRUPTED_SYNC_MESSAGE = 'The sync was interrupted before it finished (the worker restarted).';
+
 export interface IUrlSyncFailure {
   readonly message: string;
   readonly at: string;
@@ -290,9 +295,11 @@ export class StoreIngestionService {
     const result = await this.storeRepo.query(
       `UPDATE store SET "urlSyncRequestedAt" = NULL, "urlSyncRunningAt" = now()
        WHERE id = (
-         SELECT id FROM store WHERE "urlSyncRequestedAt" IS NOT NULL AND "urlSyncRunningAt" IS NULL
+         SELECT id FROM store WHERE "urlSyncRequestedAt" IS NOT NULL
+           AND ("urlSyncRunningAt" IS NULL OR "urlSyncRunningAt" < now() - ($1 || ' milliseconds')::interval)
          ORDER BY "urlSyncRequestedAt" FOR UPDATE SKIP LOCKED LIMIT 1
        ) RETURNING slug`,
+      [String(URL_SYNC_STALE_AFTER_MS)],
     );
     // TypeORM returns `[rows, rowCount]` for UPDATE; unwrap before indexing.
     const rows: Array<{ slug: string }> = Array.isArray(result?.[0]) ? result[0] : result;
@@ -328,19 +335,18 @@ export class StoreIngestionService {
     if (!store) {
       throw new NotFoundException(`Store not found: ${storeSlug}`);
     }
-    const state: TUrlSyncState = store.urlSyncRunningAt
-      ? 'running'
-      : store.urlSyncRequestedAt
-        ? 'queued'
-        : 'idle';
+    const staleLockAt = isStaleLock(store.urlSyncRunningAt) ? store.urlSyncRunningAt : null;
+    const state: TUrlSyncState =
+      store.urlSyncRunningAt && !staleLockAt
+        ? 'running'
+        : store.urlSyncRequestedAt
+          ? 'queued'
+          : 'idle';
     return {
       state,
       lastUrlSyncAt: store.lastUrlSyncAt?.toISOString() ?? null,
       lastProductCount: store.lastUrlSyncProductCount ?? null,
-      lastError:
-        store.lastUrlSyncError && store.lastUrlSyncErrorAt
-          ? { message: store.lastUrlSyncError, at: store.lastUrlSyncErrorAt.toISOString() }
-          : null,
+      lastError: describeLastFailure(store, staleLockAt),
     };
   }
 
@@ -733,4 +739,16 @@ function shouldPreferNew(
   if (incoming.priceCents === null) return false;
   // Both are non-null at this point (narrowed above).
   return (incoming.priceCents as number) < (existing.priceCents as number);
+}
+
+function describeLastFailure(store: StoreEntity, staleLockAt: Date | null): IUrlSyncFailure | null {
+  if (staleLockAt) return { message: INTERRUPTED_SYNC_MESSAGE, at: staleLockAt.toISOString() };
+  if (store.lastUrlSyncError && store.lastUrlSyncErrorAt) {
+    return { message: store.lastUrlSyncError, at: store.lastUrlSyncErrorAt.toISOString() };
+  }
+  return null;
+}
+
+function isStaleLock(runningAt: Date | null): runningAt is Date {
+  return runningAt !== null && Date.now() - runningAt.getTime() > URL_SYNC_STALE_AFTER_MS;
 }
