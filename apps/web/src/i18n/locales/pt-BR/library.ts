@@ -14,9 +14,6 @@ export const library = {
   bluePitchTitle: 'Cards de pitch azul',
   colorlessPitchTitle: 'Cards incolores (equipamentos, armas, heróis)',
 
-  // LibrarySearchAddBar
-  searchAndAddLabel: 'Buscar e adicionar cards à biblioteca',
-  addCardError: 'Falha ao adicionar o card. Tente novamente.',
 
   // LibraryFilterDrawer + LibraryFilterRail (shared)
   libraryFiltersLabel: 'Filtros da biblioteca',

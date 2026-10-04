@@ -200,15 +200,3 @@ describe('delete-account-modal.module.css — .passwordInput focus ring (T3)', (
     expect(hasBareOutlineNone(css, 'passwordInput')).toBe(false);
   });
 });
-
-// ---------------------------------------------------------------------------
-// substitution-row.module.css — .rejectBtn
-// ---------------------------------------------------------------------------
-
-describe('substitution-row.module.css — .rejectBtn focus ring (T3)', () => {
-  const css = readCss('components/substitution-row.module.css');
-
-  it('has :focus-visible rule with var(--ra-accent) outline on rejectBtn', () => {
-    expect(hasFocusVisibleAccent(css, 'rejectBtn')).toBe(true);
-  });
-});

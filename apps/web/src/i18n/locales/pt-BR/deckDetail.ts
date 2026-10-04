@@ -44,7 +44,6 @@ export const deckDetail = {
   costFourPlus: '4+',
 
   // DeckActionPanels
-  panelsAria: 'Compras e trocas',
   missingTitle: 'O que falta comprar',
   missingEmpty: 'Nada a comprar: as lacunas restantes são cobertas por trocas.',
   missingCopies: 'falta ×{{count}}',
@@ -54,9 +53,7 @@ export const deckDetail = {
   swapsEmpty: 'Nenhuma troca sugerida.',
   swapsViewAll: 'Ver todas',
   swapHave: 'Cobre ×{{count}} · {{score}}% confiança',
-  swapApprove: 'Aprovar',
   swapApproveAria: 'Aprovar troca de {{original}} por {{substitute}}',
-  swapReject: 'Recusar',
   swapRejectAria: 'Recusar troca de {{original}} por {{substitute}}',
   swapApplied: 'Aplicada',
   swapRejected: 'Recusada',

@@ -1,7 +1,4 @@
 export const decks = {
-  // BreakdownSections / DeckCanvas — breakdown columns
-  noExactMatches: 'No exact matches',
-  swaps: 'Swaps',
   // DeckCanvas extra
   addCardsToDeck: 'Add cards to deck',
   loadingComposition: 'Loading composition…',
@@ -43,9 +40,6 @@ export const decks = {
   // DeckDetailLayout
   deckDetailsSidebarAria: 'Deck details',
   // DeckDetailSidebar
-  willRecomputeOnSave: 'Will recompute on Save',
-  readiness: 'Readiness',
-  rawValue: 'Raw {{value}}%',
   shopping: 'Shopping',
   viewOnFabrary: 'View on Fabrary',
   viewOnFabraryAria: 'View deck on Fabrary (opens in new tab)',
@@ -136,9 +130,6 @@ export const decks = {
   // StatusDropdown
   changeStatusAria: 'Change deck status — currently {{label}}',
   statusUpdateError: 'Could not update status — please try again.',
-  // SubstitutionRow
-  tierLabel: 'Tier {{tier}}',
-  rejectBtn: 'Reject',
   // TagAutocompleteCombobox
   tagSearchAria: 'Search or create a tag',
   tagSuggestionsAria: 'Tag suggestions',
@@ -226,28 +217,6 @@ export const decks = {
   noCardsMatchQuery: 'No cards match "{{query}}".',
   addCardBtn: 'Add',
   ownedCountLabel: 'Owned: {{count}}',
-  // breakdown-list.tsx
-  breakdownExactHeading: 'Exact ({{count}})',
-  breakdownNoSwaps: 'No swaps',
-  breakdownSwapsHeading: 'Swaps ({{count}})',
-  breakdownNotOwnedHeading: 'Not owned ({{count}})',
-  breakdownAllAccountedFor: 'All cards accounted for!',
-  // mark-owned-button.tsx
-  iOwnThis: 'I own this',
-  // path-c-result.tsx
-  closestPlayableVersionAria: 'Closest playable version',
-  approximation: 'APPROXIMATION',
-  pathCFidelitySubline: 'of this deck can be assembled or substituted from your collection.',
-  tierSwappedClose_one: '{{count}} card swapped with a close match',
-  tierSwappedClose_other: '{{count}} cards swapped with a close match',
-  tierSwappedLoose: '{{count}} with a looser match',
-  stillMissing_one: '{{count}} card still missing.',
-  stillMissing_other: '{{count}} cards still missing.',
-  trackProximalVersion: 'Track proximal version',
-  showMeMissing: "Show me what's missing",
-  stillMissingSection: 'Still missing ({{count}})',
-  pathCAllAccountedFor: 'All cards accounted for!',
-  pitchColorless: 'Colorless',
   // decks.$deckId.tsx — runtime error / mutation toasts
   retryShoppingLineToast: 'Retrying shopping line…',
   failedToLoadDeck: 'Failed to load deck: {{error}}',
@@ -259,13 +228,8 @@ export const decks = {
   // DeckDetailSidebar
   legalityAria: 'Legality: {{category}}',
   heroFallback: 'Hero',
-  // SubstitutionRow
   // FormatDropdown
   formatAria: 'Format: {{format}}',
-  // TestDeckResult — PathBadge aria
-  pathTabAria: 'Path {{path}}',
-  // readiness-header.tsx
-  effectiveReadinessSubline: 'effective ({{raw}}% raw)',
   // ShoppingLine.tsx
   shoppingPathAEmpty: 'You have everything you need for this deck.',
   shoppingUnavailable: 'Shopping line temporarily unavailable.',
@@ -274,7 +238,6 @@ export const decks = {
   pricesMayHaveChanged: '(prices may have changed)',
   estimatedPriceAria: 'estimated price',
   shoppingLineAria: 'Shopping line',
-  stillMissingAria: 'Still missing',
   estimatedPriceTooltip: "Price is estimated from listing data. Click 'Get exact prices' for accurate variant pricing.",
   estimated: 'estimated',
   shoppingHeadlineWith: 'With ',
@@ -314,19 +277,4 @@ export const decks = {
   nonFoil: 'Non-foil',
   // StoreProductLink.tsx
   openCardOnStore: 'Open {{cardName}} on {{storeName}} in a new tab',
-  // substitution-row.tsx
-  rejectThisSubstitutionAria: 'Reject this substitution',
-  pitchCurveBroken: 'Pitch curve broken: no valid alternative for this slot.',
-  // TestDeckResult.tsx
-  testDeckResultAria: 'Test deck result',
-  effectiveReadinessExact: 'Effective readiness ({{raw}}% exact)',
-  alreadyTrackedHeading: 'This deck is already tracked.',
-  goToDeck: 'Go to deck →',
-  trackingBtn: 'Tracking...',
-  trackThisDeck: 'Track this deck',
-  trackAndAddCards: 'Track + add cards to collection',
-  // tracked-deck-card.tsx
-  untrackConfirm: 'Untrack "{{name}}"? This will remove the deck and all its readiness data.',
-  readinessPercent: '{{percent}}% ready',
-  noReadinessData: 'No readiness data yet',
 } as const;
