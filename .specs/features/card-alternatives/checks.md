@@ -129,14 +129,14 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/substitution/__tests__/su
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "passes active replacements to both engine passes"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a later recompute gives a protected replacement no stand-in"`
 
-**C35** - With `m` = 3 copies not covered exactly and an owned tier 1 candidate for each: protected count 0 gives 3 substituted; 1 gives 2 substituted and 1 missing; 3 gives 0 substituted and 3 missing; 5 gives 0 substituted and 3 missing; a count for the same card in another slot changes nothing (AC 34)
+**C35** - With `m` = 3 copies not covered exactly and an owned tier 1 candidate for each: protected count 0 gives 3 substituted; 1 gives 2 substituted and 1 missing; 3 gives 0 substituted and 3 missing; 5 gives 0 substituted and 3 missing; a count for the same card in another slot changes nothing (AC 34) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/readiness.spec.ts -t "protected copies get no stand-in"`
 
-**C36** - Calling `computeEffectiveReadiness` without the protected input and with an empty one gives deep-equal results for every deck in the readiness suite, and the existing readiness and gold-set suites pass with their files unchanged (AC 35)
+**C36** - Calling `computeEffectiveReadiness` without the protected input and with an empty one gives deep-equal results for every deck in the readiness suite, and the existing readiness and gold-set suites pass with their files unchanged (AC 35) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/readiness.spec.ts -t "an empty protected input changes nothing"`
 Proof: `git diff --exit-code origin/main -- packages/engine/__tests__/gold-set-regression.spec.ts && pnpm --filter @rathe-arsenal/engine exec jest __tests__/gold-set-regression.spec.ts`
 
-**C37** - `TIER_1_CONFIG` is `{ tier: 1, requireKeywordOverlap: true, keywordPenaltyWeight: 0.35, maxPowerDelta: 1, maxDefenseDelta: 1, floorScore: 0.9 }` and `TIER_2_CONFIG` is `{ tier: 2, requireKeywordOverlap: false, keywordPenaltyWeight: 0.15, maxPowerDelta: 2, maxDefenseDelta: 2, floorScore: 0.7 }` (AC 36)
+**C37** - `TIER_1_CONFIG` is `{ tier: 1, requireKeywordOverlap: true, keywordPenaltyWeight: 0.35, maxPowerDelta: 1, maxDefenseDelta: 1, floorScore: 0.9 }` and `TIER_2_CONFIG` is `{ tier: 2, requireKeywordOverlap: false, keywordPenaltyWeight: 0.15, maxPowerDelta: 2, maxDefenseDelta: 2, floorScore: 0.7 }` (AC 36) · done
 Proof: `git diff --exit-code origin/main -- packages/engine/src/substitution/constants.ts`
 
 **C38** - `computeDeckLegality` returns the same verdicts as before: its spec file is unchanged and passes (AC 37)

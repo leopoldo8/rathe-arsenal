@@ -63,6 +63,7 @@ export {
   computeEffectiveReadiness,
   computePath,
   computeFidelity,
+  buildProtectedKey,
 } from './readiness';
 
 // Legality
