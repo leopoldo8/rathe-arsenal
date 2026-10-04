@@ -45,3 +45,7 @@ apps/web/test-results/
 # Playwright shared auth state (JWT)
 apps/web/tests/.auth/
 apps/web/.tanstack/
+
+# Card scanner: OCR assets copied from node_modules, and the OCR benchmark image cache
+apps/web/public/ocr/
+apps/web/.cache/

@@ -17,22 +17,22 @@ Proof commands, by suite (each proof below names its file and test):
 
 ### S1 - Collector code resolution · 7 files · 40 KB · ~10k
 
-**C1** - The OCR text `EN | MSTI72 Faizal Fikri` resolves to code `MST172` and card `blessing-of-qi-blue` (AC 1)
+**C1** - The OCR text `EN | MSTI72 Faizal Fikri` resolves to code `MST172` and card `blessing-of-qi-blue` (AC 1) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "resolves MSTI72 to MST172"`
 
-**C2** - The OCR text `WTR218-C Fedor Barkhatov` resolves to code `WTR218` and card `nimblism-red` (AC 2)
+**C2** - The OCR text `WTR218-C Fedor Barkhatov` resolves to code `WTR218` and card `nimblism-red` (AC 2) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "resolves the legacy WTR218-C layout"`
 
-**C3** - OCR text containing `1HP108` resolves to code `1HP108` and card `crane-dance-yellow`, keeping the leading digit of the set code (AC 3)
+**C3** - OCR text containing `1HP108` resolves to code `1HP108` and card `crane-dance-yellow`, keeping the leading digit of the set code (AC 3) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "keeps a digit-led set code"`
 
-**C4** - Each of the 17 confusions in the normalization table yields the indexed code: in the 3 digit positions `O` `Q` `D` -> 0, `I` `L` `T` `|` -> 1, `S` -> 5, `Z` -> 2, `B` -> 8, `G` -> 6; in the letter positions `0` -> O, `1` -> I, `5` -> S, `2` -> Z, `8` -> B, `6` -> G (AC 1 input space)
+**C4** - Each of the 17 confusions in the normalization table yields the indexed code: in the 3 digit positions `O` `Q` `D` -> 0, `I` `L` `T` `|` -> 1, `S` -> 5, `Z` -> 2, `B` -> 8, `G` -> 6; in the letter positions `0` -> O, `1` -> I, `5` -> S, `2` -> Z, `8` -> B, `6` -> G (AC 1 input space) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "normalizes every confusion in the table"`
 
-**C5** - The texts `Legend Story Studios`, `ABC999` (well formed, not in the index) and the empty string each resolve to no match (AC 4)
+**C5** - The texts `Legend Story Studios`, `ABC999` (well formed, not in the index) and the empty string each resolve to no match (AC 4) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "returns no match when no token is an indexed code"`
 
-**C6** - Code `MST095` resolves to both `a-drop-in-the-ocean-blue` and `inner-chi-blue` (AC 5)
+**C6** - Code `MST095` resolves to both `a-drop-in-the-ocean-blue` and `inner-chi-blue` (AC 5) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "returns both cards of a double-faced code"`
 
 **C7** - `GET /catalog/collector-codes` returns, grouped by card, exactly the set of (printing identifier, card) pairs over every card that is neither Hero nor Token (8,380 pairs today), the expected set computed in the test from `@flesh-and-blood/cards`; `WTR001` (hero `rhinar-reckless-rampage`) and `UPR042` (token `aether-ashwing`) are absent; `MST095` appears under both of its cards (AC 6) · done
@@ -45,7 +45,7 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts
 **C9** - Without a valid token, `GET /api/catalog/collector-codes` and `POST /api/collection/cards/batch` both return `401` (AC 7, Surface)
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "rejects both scanner routes without a token"`
 
-**C10** - Over the 38 reference strips (codes listed in the test, images downloaded from LSS's public CDN into a gitignored cache), the full pipeline with the 2-variant vote accepts the right code for at least 32 and a wrong code for 0 (AC 51)
+**C10** - Over the 38 reference strips (codes listed in the test, images downloaded from LSS's public CDN into a gitignored cache), the full pipeline with the 2-variant vote accepts the right code for at least 32 and a wrong code for 0 (AC 51) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/recognition-benchmark.spec.ts -t "accepts at least 32 right codes and no wrong code"`
 
 ### S2 - Live scanning with per-card feedback · 14 files · 150 KB · ~38k
@@ -59,16 +59,16 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 **C13** - While the OCR engine load is pending, the loading state is shown and `recognize` has been called 0 times (AC 10)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows loading and does not recognize while the engine downloads"`
 
-**C14** - With a recognizer whose first call never resolves, 5 frame ticks produce exactly 1 `recognize` call (AC 11)
+**C14** - With a recognizer whose first call never resolves, 5 frame ticks produce exactly 1 `recognize` call (AC 11) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-loop.spec.ts -t "starts one recognition at a time"`
 
-**C15** - Vote: the same code from 2 different variants adds the card with quantity 1; the same code twice from the same variant adds nothing; 2 agreeing reads more than 6 recognitions apart add nothing (AC 12)
+**C15** - Vote: the same code from 2 different variants adds the card with quantity 1; the same code twice from the same variant adds nothing; 2 agreeing reads more than 6 recognitions apart add nothing (AC 12) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "accepts a code when two different variants agree within six recognitions"`
 
-**C16** - A second accepted presentation of a card already in the tray adds 1 to its row instead of creating a row (AC 12)
+**C16** - A second accepted presentation of a card already in the tray adds 1 to its row instead of creating a row (AC 12) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "adds one to an existing row"`
 
-**C17** - After an accept, the quantity stays 1 while the code keeps being read, including when one variant misses it or misreads it on every third recognition; after 3 consecutive recognitions without the code, a new agreement makes it 2 (AC 13)
+**C17** - After an accept, the quantity stays 1 while the code keeps being read, including when one variant misses it or misreads it on every third recognition; after 3 consecutive recognitions without the code, a new agreement makes it 2 (AC 13) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "does not count a card held in view twice"`
 
 **C18** - An accepted scan shows a notice with the printing art, the card name, its pitch, that card's tray quantity (`× 2` after the second copy) and a "Wrong" button (AC 14)
@@ -87,7 +87,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "undoes exactly one scan"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "Wrong drops the bar count by one"`
 
-**C23** - After "Wrong", agreeing reads of the same code add nothing, including with one variant missing it every third recognition; after 3 consecutive recognitions without it, an agreement adds it again (AC 19)
+**C23** - After "Wrong", agreeing reads of the same code add nothing, including with one variant missing it every third recognition; after 3 consecutive recognitions without it, an agreement adds it again (AC 19) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "suppresses the rejected code until the card leaves"`
 
 **C24** - After "Wrong", the notice reads "Removed" with a "Search by name" button, visible at 4999 ms and gone at 5000 ms (AC 20)
@@ -115,7 +115,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "review row bounds its stepper"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "clamps quantity between 1 and 20"`
 
-**C31** - Scans A then B list B, A; scanning A again lists A, B (AC 26)
+**C31** - Scans A then B list B, A; scanning A again lists A, B (AC 26) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "orders by most recent scan"`
 
 **C32** - A double-faced row shows both faces as choices and, after one is picked, shows only that card (AC 27)
