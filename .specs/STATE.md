@@ -66,6 +66,14 @@
 - **Date**: 2026-10-04
 - **Status**: active
 
+### AD-009
+- **Decision**: Picking an alternative for a missing card is a deck change: the pick moves the original's missing copies to the chosen card in `deck_card`, and a separate `card_replacement` row (status `active` | `kept` | `reverted` | `removed`, never deleted) remembers the original. While a replacement is active, readiness gives its copies no engine stand-in on every recompute path.
+- **Reason**: Owner chose it in the card-alternatives discovery (`.design/card-alternatives.md`, Key decisions 1, 2 and 4) knowing the deck stops matching its imported decklist at pick time; the record lives outside `deck_card` because every composition save deletes and reinserts those rows.
+- **Trade-off**: Turning picks back into pinned stand-ins later needs a pinned-substitute engine input and user-created rows in swap reconciliation.
+- **Scope**: `packages/engine` (optional protected-copies input to `computeEffectiveReadiness`), `apps/api` (new table, replacement routes, `SubstitutionService.runReadiness`, `DecksService.updateComposition`), `apps/web` (deck detail).
+- **Date**: 2026-10-04
+- **Status**: active
+
 ## Handoff
 
 - **Feature**: card-scanner — `.specs/features/card-scanner/` — **built and VERIFIED (PASS, round 3, independent Verifier, profile standard)**. Branch `feat/card-scanner`, not pushed, no PR yet (owner's call). Phone-camera scanning at `/add-cards/scan`: on-device OCR of the collector code with a 3-variant vote, per-card notice with Wrong + name search, review list, one atomic batch commit (AD-008).
