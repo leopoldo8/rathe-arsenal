@@ -16,6 +16,7 @@ import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { LegalityReasonsPopover } from './LegalityReasonsPopover';
+import { localizeLegalityReasons } from '../../i18n/format-reasons';
 import type { IDeckLegality } from '../../api/decks';
 import styles from './LegalityBadge.module.css';
 
@@ -80,14 +81,13 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
   const isIncomplete = legality.category === 'incomplete';
 
   // Derive the chip label text
-  const labelText = isIncomplete
-    ? buildIncompleteLabel(legality.reasons, t)
-    : buildIllegalLabel(legality.reasons, t);
+  const reasons = localizeLegalityReasons(legality, t);
+  const labelText = isIncomplete ? buildIncompleteLabel(legality, t) : buildIllegalLabel(reasons, t);
 
   return (
     <LegalityReasonsPopover
       triggerRef={triggerRef}
-      reasons={legality.reasons}
+      reasons={reasons}
       category={legality.category}
       trigger={
         <button
@@ -114,25 +114,12 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Derives the subtitle text for an incomplete deck from the first reason
- * or a structured "X/Y cards" pattern within the reasons array.
- */
-function buildIncompleteLabel(reasons: readonly string[], t: TTranslate): string {
-  if (reasons.length === 0) return t('decks.incomplete');
-
-  // Try to parse "X/Y cards" pattern from any reason
-  for (const reason of reasons) {
-    const match = reason.match(/(\d+)\/(\d+)/);
-    if (match) {
-      return t('decks.incompleteWithCount', {
-        count: Number(match[1]),
-        total: Number(match[2]),
-      });
-    }
-  }
-
-  return t('decks.incomplete');
+function buildIncompleteLabel(legality: IDeckLegality, t: TTranslate): string {
+  const sizeDetail = legality.details?.find(
+    (detail) => detail.code === 'mainboard_too_small' || detail.code === 'mainboard_not_exact',
+  );
+  if (!sizeDetail) return t('decks.incomplete');
+  return t('decks.incompleteWithCount', { count: sizeDetail.params.total, total: sizeDetail.params.required });
 }
 
 /**
