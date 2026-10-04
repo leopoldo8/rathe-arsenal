@@ -286,6 +286,7 @@ describe('SbraubleScraperService', () => {
       const error = await collectError(service.scrapeStore(makeStore()));
 
       expect(error.code).toBe(EScraperErrorCode.LISTING_UNRECOGNIZED);
+      expect(error.message).toContain('Just a moment...');
     });
 
     it('throws LISTING_INCOMPLETE when the pages hold fewer items than the store reported', async () => {

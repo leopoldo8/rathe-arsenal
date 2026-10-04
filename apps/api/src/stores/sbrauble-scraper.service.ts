@@ -32,6 +32,7 @@ const LISTING_COUNT_DRIFT_TOLERANCE = 2;
 const PAGINATION_CAP_NOTICE = /limite de pagina/i;
 const NO_RESULTS_NOTICE = /nenhum item encontrado/i;
 const NUMERIC_ID = /^\d+$/;
+const PAGE_EVIDENCE_TEXT_CHARS = 200;
 
 /**
  * Maximum response body size per page fetch (5 MB).
@@ -184,12 +185,29 @@ export class SbraubleScraperService {
   }
 
   private async *scrapeEdition(context: IScrapeContext, edition: string): AsyncGenerator<IScrapedProduct> {
+    const requestsBefore = context.requestCount;
     const firstPage = await this.fetchListingPage(context, { edition }, 1);
-    if (firstPage.total <= MAX_RESULTS_PER_SEARCH) {
+    const splitByRarity = firstPage.total > MAX_RESULTS_PER_SEARCH;
+    if (splitByRarity) {
+      yield* this.scrapeEditionByRarity(context, edition, firstPage);
+    } else {
       yield* this.scrapeSearch(context, { edition }, firstPage);
-      return;
     }
+    this.logger.log({
+      msg: 'Edition scraped',
+      storeSlug: context.store.slug,
+      edition,
+      total: firstPage.total,
+      requests: context.requestCount - requestsBefore,
+      splitByRarity,
+    });
+  }
 
+  private async *scrapeEditionByRarity(
+    context: IScrapeContext,
+    edition: string,
+    firstPage: IListingPage,
+  ): AsyncGenerator<IScrapedProduct> {
     let raritiesTotal = 0;
     for (const rarity of firstPage.rarities) {
       const search: ISearch = { edition, rarity };
@@ -236,10 +254,14 @@ export class SbraubleScraperService {
 
   private async fetchListingPage(context: IScrapeContext, search: ISearch, page: number): Promise<IListingPage> {
     const url = this.buildSearchUrl(context.store, search, page);
-    const $ = cheerio.load(await this.fetchHtml(context, url));
+    const html = await this.fetchHtml(context, url);
+    const $ = cheerio.load(html);
 
     if ($('select[name="txt_limit"]').length === 0) {
-      throw new ScraperError(EScraperErrorCode.LISTING_UNRECOGNIZED, `${url} did not return a listing page`);
+      throw new ScraperError(
+        EScraperErrorCode.LISTING_UNRECOGNIZED,
+        `${url} did not return a listing page (${describePage($, html)})`,
+      );
     }
     const notice = $('.alertaErro').text().trim();
     if (PAGINATION_CAP_NOTICE.test(notice)) {
@@ -255,7 +277,10 @@ export class SbraubleScraperService {
 
     const reportedTotal = $('.cards td.textoMaior b').first().text().replace(/[.,]/g, '').trim();
     if (!NUMERIC_ID.test(reportedTotal)) {
-      throw new ScraperError(EScraperErrorCode.LISTING_UNRECOGNIZED, `${url} did not report a result count`);
+      throw new ScraperError(
+        EScraperErrorCode.LISTING_UNRECOGNIZED,
+        `${url} did not report a result count (${describePage($, html)})`,
+      );
     }
     return {
       url,
@@ -435,6 +460,12 @@ export class SbraubleScraperService {
 // ---------------------------------------------------------------------------
 // Module-private utility
 // ---------------------------------------------------------------------------
+
+function describePage($: cheerio.CheerioAPI, html: string): string {
+  const title = $('title').first().text().trim();
+  const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, PAGE_EVIDENCE_TEXT_CHARS);
+  return `${html.length} bytes, title "${title}", text "${text}"`;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
