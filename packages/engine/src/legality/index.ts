@@ -15,3 +15,10 @@ export type {
 
 export { FORMAT_RULES } from './rules';
 export { computeDeckLegality } from './compute';
+export type { ICardLegalityViolation } from './card-legality';
+export {
+  findCardScopeViolation,
+  findCardRarityViolation,
+  findCardLegalityViolation,
+  getCopyLimit,
+} from './card-legality';

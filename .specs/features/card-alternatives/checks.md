@@ -139,7 +139,7 @@ Proof: `git diff --exit-code origin/main -- packages/engine/__tests__/gold-set-r
 **C37** - `TIER_1_CONFIG` is `{ tier: 1, requireKeywordOverlap: true, keywordPenaltyWeight: 0.35, maxPowerDelta: 1, maxDefenseDelta: 1, floorScore: 0.9 }` and `TIER_2_CONFIG` is `{ tier: 2, requireKeywordOverlap: false, keywordPenaltyWeight: 0.15, maxPowerDelta: 2, maxDefenseDelta: 2, floorScore: 0.7 }` (AC 36) · done
 Proof: `git diff --exit-code origin/main -- packages/engine/src/substitution/constants.ts`
 
-**C38** - `computeDeckLegality` returns the same verdicts as before: its spec file is unchanged and passes (AC 37)
+**C38** - `computeDeckLegality` returns the same verdicts as before: its spec file is unchanged and passes (AC 37) · done
 Proof: `git diff --exit-code origin/main -- packages/engine/__tests__/legality/compute.spec.ts && pnpm --filter @rathe-arsenal/engine exec jest __tests__/legality/compute.spec.ts`
 
 **C39** - Before the pick the deck holds `swap_suggestion` rows for (`emissary-of-tides-red`, `mainboard`) in `pending`, `approved` and `rejected`; after the pick the first two are `retired` and the `rejected` row is unchanged, and `GET /api/swaps?state=all` lists none of the retired ones (AC 38)

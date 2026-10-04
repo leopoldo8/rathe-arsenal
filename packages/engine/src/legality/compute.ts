@@ -19,6 +19,7 @@ import type { ICatalog } from '../catalog/types';
 import { Keyword } from '../catalog/types';
 import type { TSupportedFormat, ILegalityDeck, IDeckLegalityResult, TLegalityReasonDetail } from './types';
 import { FORMAT_RULES } from './rules';
+import { findCardRarityViolation, findCardScopeViolation, getCopyLimit } from './card-legality';
 
 /**
  * Compute the legality verdict for a deck in a given format.
@@ -124,8 +125,8 @@ export function computeDeckLegality(
     const card = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
     if (!card) continue; // Unknown cards are caught in step 5.
 
+    const maxAllowed = getCopyLimit(card, format);
     const isLegendary = (card.keywords as readonly string[]).includes(Keyword.Legendary);
-    const maxAllowed = isLegendary ? 1 : rules.maxCopies;
 
     if (deckCard.quantity > maxAllowed) {
       const label = isLegendary ? 'Legendary' : '';
@@ -143,10 +144,6 @@ export function computeDeckLegality(
   // Step 5: Per-card legality
   // ─────────────────────────────────────────────────────────────────────────
 
-  // The `hero` field on a Hero-type card is the Hero enum value (e.g. "Dorinthea"),
-  // which is what legalHeroes, legalOverrides.heroes, and specializations contain.
-  const heroHeroEnum: string | undefined = heroCard.hero as string | undefined;
-
   for (const deckCard of mainboardCards) {
     const card = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
 
@@ -157,68 +154,20 @@ export function computeDeckLegality(
       );
     }
 
-    // Check if the format is explicitly banned for this card.
-    if (card.bannedFormats && (card.bannedFormats as readonly string[]).includes(format)) {
-      return illegal(`"${card.name}" is banned in ${format}.`, {
-        code: 'card_banned',
-        params: { card: card.name, format },
-      });
-    }
-
-    // Check that the card is legal in the format at all.
-    const cardLegalInFormat = (card.legalFormats as readonly string[]).includes(format);
-    if (!cardLegalInFormat) {
-      return illegal(`"${card.name}" is not legal in ${format}.`, {
-        code: 'card_not_in_format',
-        params: { card: card.name, format },
-      });
-    }
-
-    // Check hero scope.
-    // A card with an empty legalHeroes array is usable by all heroes.
-    // When legalHeroes is non-empty, the deck's hero must appear in it
-    // OR the card must have a matching legalOverride OR a matching specialization.
-    if (card.legalHeroes.length > 0 && heroHeroEnum !== undefined) {
-      const heroAllowed = (card.legalHeroes as readonly string[]).includes(heroHeroEnum);
-
-      // legalOverrides — per-format additional hero scope.
-      const overrideAllowed =
-        card.legalOverrides != null &&
-        card.legalOverrides.some(
-          (o) => o.format === format && (o.heroes as readonly string[]).includes(heroHeroEnum),
-        );
-
-      // specializations — the card has Keyword.Specialization; only the named hero(es) can run it.
-      const specializationAllowed =
-        card.specializations != null &&
-        (card.specializations as readonly string[]).includes(heroHeroEnum);
-
-      if (!heroAllowed && !overrideAllowed && !specializationAllowed) {
-        return illegal(`"${card.name}" is not legal with hero "${heroCard.name}".`, {
-          code: 'card_not_for_hero',
-          params: { card: card.name, hero: heroCard.name },
-        });
-      }
-    }
+    const violation = findCardScopeViolation(card, heroCard, format);
+    if (violation) return illegal(violation.reason, violation.detail);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Step 6: Silver Age rarity whitelist
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (rules.allowedRarities !== null) {
-    for (const deckCard of mainboardCards) {
-      const card = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
-      if (!card) continue; // Already caught above.
+  for (const deckCard of mainboardCards) {
+    const card = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
+    if (!card) continue; // Already caught above.
 
-      if (!rules.allowedRarities.has(card.rarity as string)) {
-        const allowed = [...rules.allowedRarities].filter((r) => r !== 'Token').join(', ');
-        return illegal(
-          `"${card.name}" (${card.rarity}) is not allowed in ${format}, which only permits ${allowed}.`,
-          { code: 'rarity_not_allowed', params: { card: card.name, rarity: card.rarity as string, format, allowed } },
-        );
-      }
-    }
+    const violation = findCardRarityViolation(card, format);
+    if (violation) return illegal(violation.reason, violation.detail);
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -76,4 +76,12 @@ export type {
   ILegalityDeckCard,
   TLegalityReasonDetail,
 } from './legality';
-export { FORMAT_RULES, computeDeckLegality } from './legality';
+export type { ICardLegalityViolation } from './legality';
+export {
+  FORMAT_RULES,
+  computeDeckLegality,
+  findCardScopeViolation,
+  findCardRarityViolation,
+  findCardLegalityViolation,
+  getCopyLimit,
+} from './legality';
