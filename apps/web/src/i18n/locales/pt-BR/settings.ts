@@ -1,25 +1,18 @@
 export const settings = {
-  languageEyebrow: 'Idioma',
-  languageHeading: 'Idioma da interface',
-  languageLabel: 'Idioma',
+  languageHeading: 'Idioma',
   languageToggleAria: 'Selecionar idioma',
   // Page heading
   accountSettings: 'Configurações da conta',
   // Profile section
-  profileEyebrow: 'Perfil',
-  yourProfile: 'Seu perfil',
+  yourProfile: 'Perfil',
   emailAddress: 'E-mail',
   // Appearance section
-  appearanceEyebrow: 'Aparência',
-  theme: 'Tema',
-  colorTheme: 'Tema de cores',
+  theme: 'Aparência',
   // Account section
-  accountEyebrow: 'Conta',
   dangerZone: 'Excluir conta',
   deleteAccountWarning: 'Ao excluir a conta, ela fica marcada para remoção definitiva em 30 dias. Você sai na hora, e sua coleção, seus decks e o histórico de prontidão são apagados.',
   deleteMyAccount: 'Excluir minha conta',
   // Admin sync section
-  adminEyebrow: 'Admin',
   storeCatalogSync: 'Sincronização do catálogo da loja',
   syncCatalogDesc: 'Varre a loja de novo para achar páginas de cartas novas, por exemplo depois do lançamento de um set. Roda em segundo plano pelo Firecrawl.',
   syncInProgress: 'Sincronização em andamento…',

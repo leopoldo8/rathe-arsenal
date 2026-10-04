@@ -297,7 +297,7 @@ export function LibraryFilterRail({
               aria-valuemin={CARD_SIZE_MIN}
               aria-valuemax={CARD_SIZE_MAX}
               aria-valuenow={value.cardSize}
-              aria-valuetext={`${sizeLabel} · ${value.cardSize}px`}
+              aria-valuetext={sizeLabel}
             />
             <datalist id={`${sizeSliderId}-ticks`}>
               {CARD_SIZE_STEPS.map((step) => (
@@ -307,7 +307,6 @@ export function LibraryFilterRail({
           </div>
           <p className={styles.sliderValue} aria-hidden="true">
             <span className={styles.sliderLabel}>{sizeLabel}</span>
-            <span className={styles.sliderUnit}>{value.cardSize}px</span>
           </p>
         </section>
 

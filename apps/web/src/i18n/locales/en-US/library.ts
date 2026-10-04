@@ -104,8 +104,6 @@ export const library = {
   // Library route — header
   collectionEyebrow: 'Your collection',
   libraryTitle: 'Library',
-  uniqueEyebrow: 'unique',
-  copiesEyebrow: 'copies',
 
   // Library route — actions
   openFiltersAriaLabel: 'Open filters',

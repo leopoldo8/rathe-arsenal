@@ -21,7 +21,6 @@
   opacity: 0.55;
 }
 
-/* Source-kind badge: raw tokens only on fill and border, text stays readable. */
 .badge {
   flex-shrink: 0;
   padding: 2px var(--ra-space-2);
@@ -32,24 +31,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ra-fg-secondary);
-}
-
-.badge--csv {
-  background: var(--ra-ready-high-bg);
-  border-color: var(--ra-ready-high-border);
-  color: var(--ra-ready-high);
-}
-
-.badge--fabrary {
-  background: var(--ra-accent-soft-bg);
-  border-color: var(--ra-accent-soft-bd);
-  color: var(--ra-accent-body);
-}
-
-.badge--manual {
-  background: color-mix(in srgb, var(--ra-status-idea) 14%, transparent);
-  border-color: color-mix(in srgb, var(--ra-status-idea) 40%, transparent);
-  color: var(--ra-status-idea);
 }
 
 .activeLabel {

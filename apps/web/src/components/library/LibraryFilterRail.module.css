@@ -478,13 +478,6 @@
   color: var(--ra-accent-body);
 }
 
-.sliderUnit {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-mono);
-  color: var(--ra-fg-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---- Segmented control (Group by) ---- */
 .segmentControl {
   display: grid;

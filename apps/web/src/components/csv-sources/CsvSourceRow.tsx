@@ -19,10 +19,9 @@ interface ICsvSourceRowProps {
   readonly source: ICsvSource;
 }
 
-const BADGE_LABEL_KEYS: Readonly<Record<TSourceDisplayKind, string>> = {
+const BADGE_LABEL_KEYS: Readonly<Record<Exclude<TSourceDisplayKind, 'manual'>, string>> = {
   csv: 'csvSources.sourceBadgeCsv',
   fabrary: 'csvSources.sourceBadgeFabrary',
-  manual: 'csvSources.sourceBadgeManual',
 };
 
 // ---------------------------------------------------------------------------
@@ -113,9 +112,11 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
         role="listitem"
         data-kind={kind}
       >
-        <span className={`${styles.badge} ${styles[`badge--${kind}`]}`}>
-          {t(BADGE_LABEL_KEYS[kind])}
-        </span>
+        {!isManual && (
+          <span className={`${styles.badge} ${styles[`badge--${kind}`]}`}>
+            {t(BADGE_LABEL_KEYS[kind])}
+          </span>
+        )}
 
         {/* Label */}
         <div className={styles.labelCell}>

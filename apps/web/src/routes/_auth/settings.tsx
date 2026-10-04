@@ -31,7 +31,6 @@ function StoreSyncAdminSection() {
 
   return (
     <section className={styles.section} aria-labelledby="section-store-sync">
-      <span className={styles.eyebrow}>{t('settings.adminEyebrow')}</span>
       <h2 id="section-store-sync" className={styles.sectionHeading}>
         {t('settings.storeCatalogSync')}
       </h2>
@@ -81,7 +80,6 @@ export function SettingsPage() {
 
       {/* ---- Section 1: Profile ---- */}
       <section className={styles.section} aria-labelledby="section-profile">
-        <span className={styles.eyebrow}>{t('settings.profileEyebrow')}</span>
         <h2 id="section-profile" className={styles.sectionHeading}>
           {t('settings.yourProfile')}
         </h2>
@@ -93,24 +91,20 @@ export function SettingsPage() {
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">
-        <span className={styles.eyebrow}>{t('settings.appearanceEyebrow')}</span>
         <h2 id="section-theme" className={styles.sectionHeading}>
           {t('settings.theme')}
         </h2>
         <div className={styles.themeRow}>
-          <span className={styles.themeLabel}>{t('settings.colorTheme')}</span>
           <ThemeToggle />
         </div>
       </section>
 
       {/* ---- Section: Language ---- */}
       <section className={styles.section} aria-labelledby="section-language">
-        <span className={styles.eyebrow}>{t('settings.languageEyebrow')}</span>
         <h2 id="section-language" className={styles.sectionHeading}>
           {t('settings.languageHeading')}
         </h2>
         <div className={styles.themeRow}>
-          <span className={styles.themeLabel}>{t('settings.languageLabel')}</span>
           <LanguageToggle />
         </div>
       </section>
@@ -123,7 +117,6 @@ export function SettingsPage() {
         className={`${styles.section} ${styles.accountSection}`}
         aria-labelledby="section-account"
       >
-        <span className={styles.eyebrow}>{t('settings.accountEyebrow')}</span>
         <h2
           id="section-account"
           className={`${styles.sectionHeading} ${styles.accountSectionHeading}`}

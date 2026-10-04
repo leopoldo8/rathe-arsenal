@@ -19,26 +19,6 @@
   gap: var(--ra-space-3);
 }
 
-.iconSquare {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 36px;
-  block-size: 36px;
-  border-radius: var(--ra-radius-md);
-}
-
-.iconGold {
-  background: rgba(208, 168, 76, 0.12);
-  color: var(--ra-accent);
-}
-
-.iconViolet {
-  background: rgba(143, 124, 240, 0.12);
-  color: var(--ra-status-idea);
-}
-
 .headText {
   display: flex;
   flex-direction: column;

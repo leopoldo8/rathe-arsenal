@@ -277,16 +277,16 @@ describe('LibraryFilterRail — card-size legend (LIB-02)', () => {
   it.each(SIZE_LABELS)('exposes the %ipx step as aria-valuetext and legend in pt-BR', (size, pt) => {
     renderRail({ value: { ...EMPTY_FILTERS, cardSize: size } });
     const slider = screen.getByRole('slider', { name: /tamanho das cartas/i });
-    expect(slider).toHaveAttribute('aria-valuetext', `${pt} · ${size}px`);
+    expect(slider).toHaveAttribute('aria-valuetext', pt);
     expect(screen.getByText(pt)).toBeInTheDocument();
-    expect(screen.getByText(`${size}px`)).toBeInTheDocument();
+    expect(screen.queryByText(`${size}px`)).toBeNull();
   });
 
   it.each(SIZE_LABELS)('localizes the %ipx step under en-US', async (size, _pt, en) => {
     await setTestLocale('en-US');
     renderRail({ value: { ...EMPTY_FILTERS, cardSize: size } });
     const slider = screen.getByRole('slider');
-    expect(slider).toHaveAttribute('aria-valuetext', `${en} · ${size}px`);
+    expect(slider).toHaveAttribute('aria-valuetext', en);
   });
 });
 

@@ -144,11 +144,11 @@ describe('LibraryCsvSourcesPage', () => {
     expect(screen.getAllByRole('switch')).toHaveLength(3);
   });
 
-  it('shows one type badge per row kind', () => {
+  it('shows a type badge on CSV and Fabrary rows, none on the manual row', () => {
     renderPage();
     expect(screen.getAllByText('CSV', { selector: 'span' })).toHaveLength(2);
     expect(screen.getAllByText('Fabrary', { selector: 'span' })).toHaveLength(1);
-    expect(screen.getAllByText('Manual', { selector: 'span' })).toHaveLength(1);
+    expect(screen.queryByText('Manual', { selector: 'span' })).not.toBeInTheDocument();
   });
 
   it('labels each non-manual row Ativa or Inativa', () => {
@@ -160,7 +160,7 @@ describe('LibraryCsvSourcesPage', () => {
   it('collapses the explainer to the one-line note by default', () => {
     renderPage();
     expect(
-      screen.getByRole('button', { name: 'ⓘ Se a mesma carta aparece em duas fontes, as quantidades somam.' }),
+      screen.getByRole('button', { name: 'Se a mesma carta aparece em duas fontes, as quantidades somam.' }),
     ).toHaveAttribute('aria-expanded', 'false');
   });
 

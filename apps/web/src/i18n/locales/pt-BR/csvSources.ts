@@ -17,13 +17,12 @@ export const csvSources = {
   onTriggerAriaLabel: 'Enviar um CSV com a sua coleção',
 
   // SumExplainer
-  sumExplainerTrigger: 'ⓘ Se a mesma carta aparece em duas fontes, as quantidades somam.',
+  sumExplainerTrigger: 'Se a mesma carta aparece em duas fontes, as quantidades somam.',
   manualSourceLabel: 'Entradas manuais',
   activeLabel: 'Ativa',
   inactiveLabel: 'Inativa',
   sourceBadgeCsv: 'CSV',
   sourceBadgeFabrary: 'Fabrary',
-  sourceBadgeManual: 'Manual',
   manualAlwaysIncluded: 'Sempre incluída: cartas adicionadas à mão não podem ser desativadas.',
   untitledSourceLabel: 'CSV sem título',
   deleteFallbackLabel: 'Este CSV',
@@ -124,10 +123,8 @@ export const csvSources = {
 
   // Library CSV sources route
   csvSourcesBackLink: 'Biblioteca',
-  csvSourcesEyebrow: 'Coleção',
   csvSourcesTitle: 'Fontes da biblioteca',
   csvSourcesSubtitle: 'Cada fonte é uma importação da sua coleção. Desative uma fonte para tirar as cartas dela da biblioteca sem perder o arquivo. Cartas adicionadas à mão e importadas do Fabrary também aparecem aqui.',
-  csvSourcesViewLibraryLink: 'Ver biblioteca',
   csvSourcesErrorBanner: 'Não foi possível carregar as fontes.',
   csvSourcesRetryButton: 'Tentar novamente',
 

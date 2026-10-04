@@ -1,25 +1,18 @@
 export const settings = {
-  languageEyebrow: 'Language',
-  languageHeading: 'Interface language',
-  languageLabel: 'Language',
+  languageHeading: 'Language',
   languageToggleAria: 'Select language',
   // Page heading
   accountSettings: 'Account settings',
   // Profile section
-  profileEyebrow: 'Profile',
-  yourProfile: 'Your profile',
+  yourProfile: 'Profile',
   emailAddress: 'Email address',
   // Appearance section
-  appearanceEyebrow: 'Appearance',
-  theme: 'Theme',
-  colorTheme: 'Color theme',
+  theme: 'Appearance',
   // Account section
-  accountEyebrow: 'Account',
   dangerZone: 'Delete account',
   deleteAccountWarning: 'Deleting your account marks it for permanent removal after 30 days. You are signed out immediately, and your collection, decks and readiness history are erased.',
   deleteMyAccount: 'Delete my account',
   // Admin sync section
-  adminEyebrow: 'Admin',
   storeCatalogSync: 'Store catalog sync',
   syncCatalogDesc: "Re-scans the store to discover new cards' product pages (e.g. after a new set release). Runs in the background via Firecrawl — trigger it once when a set drops.",
   syncInProgress: 'Sync in progress…',

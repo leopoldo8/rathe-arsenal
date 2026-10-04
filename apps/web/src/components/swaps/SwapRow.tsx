@@ -17,12 +17,6 @@ export type TResolvedSwap = 'approved' | 'rejected';
 
 const THUMB_WIDTH_PX = 34;
 
-const BAND_CLASS = {
-  high: styles.bandHigh,
-  mid: styles.bandMid,
-  low: styles.bandLow,
-} as const;
-
 interface ISwapRowProps {
   readonly row: ISwapRow;
   readonly resolved: TResolvedSwap | null;
@@ -81,8 +75,6 @@ export function SwapRow({
     substitute: row.substituteName,
     count: row.quantity,
   };
-  const scope = (single: string, group: string): string =>
-    row.quantity > 1 ? t(group, { count: row.quantity }) : t(single);
 
   function openLightbox(image: ISwapImageUrl | null, name: string): (() => void) | undefined {
     if (!image) return undefined;
@@ -175,33 +167,19 @@ export function SwapRow({
             </span>
             <span className={styles.nameIn}>
               {row.substituteName}
-              {row.quantity > 1 && (
-                <span
-                  className={styles.copiesBadge}
-                  aria-label={t('swaps.copiesBadgeAria', { count: row.quantity })}
-                >
-                  {t('swaps.copiesBadge', { count: row.quantity })}
-                </span>
-              )}
               <span className={styles.owned}>
                 {row.ownedCount > 0
-                  ? t('swaps.ownedCount', { count: row.ownedCount })
-                  : t('swaps.ownedNone')}
+                  ? t('swaps.coverage', { count: row.quantity, owned: row.ownedCount })
+                  : t('swaps.coverageNone', { count: row.quantity })}
               </span>
             </span>
           </div>
         </div>
 
         <div className={styles.confidenceCol}>
-          <span className={styles.confidenceLabel}>{t('swaps.confidenceLabel')}</span>
-          <span
-            className={`${styles.confidence} ${BAND_CLASS[band]}`}
-            data-band={band}
-            aria-label={t('swaps.confidenceAria', { pct: `${row.confidence}%` })}
-          >
-            {row.confidence}%
+          <span className={styles.confidence} data-band={band}>
+            {t('swaps.confidenceText', { pct: `${row.confidence}%` })}
           </span>
-          <span className={styles.tier}>{t('swaps.tierCheckboxLabel', { tier: row.tier })}</span>
         </div>
 
         <div className={styles.actions}>
@@ -234,7 +212,7 @@ export function SwapRow({
                 aria-label={t('swaps.approveAria', names)}
                 onClick={() => void onApprove(row)}
               >
-                {scope('swaps.approve', 'swaps.approveGroup')}
+                {t('swaps.approve')}
               </button>
               <button
                 type="button"
@@ -244,7 +222,7 @@ export function SwapRow({
                 aria-label={t('swaps.rejectAria', names)}
                 onClick={() => setIsRejecting(true)}
               >
-                {scope('swaps.reject', 'swaps.rejectGroup')}
+                {t('swaps.reject')}
               </button>
             </>
           ) : isApplied ? (
@@ -259,7 +237,7 @@ export function SwapRow({
                 aria-label={t('swaps.revertAria', names)}
                 onClick={() => void onRevert(row)}
               >
-                {scope('swaps.revert', 'swaps.revertGroup')}
+                {t('swaps.revert')}
               </button>
             </>
           ) : (
@@ -280,7 +258,7 @@ export function SwapRow({
                 aria-label={t('swaps.restoreAria', names)}
                 onClick={() => void onRestore(row)}
               >
-                {scope('swaps.restore', 'swaps.restoreGroup')}
+                {t('swaps.restore')}
               </button>
             </>
           )}

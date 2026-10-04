@@ -37,22 +37,12 @@ export function LibraryCsvSourcesPage(): React.ReactElement {
 
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
-          <p className={styles.eyebrow}>
-            {t('csvSources.csvSourcesEyebrow')}
-          </p>
           <h1 className={styles.title}>{t('csvSources.csvSourcesTitle')}</h1>
           <p className={styles.subtitle}>
             {t('csvSources.csvSourcesSubtitle')}
           </p>
         </div>
         <div className={styles.headerActions}>
-          <Link
-            to="/library"
-            search={DEFAULT_LIBRARY_SEARCH}
-            className={styles.viewLibraryLink}
-          >
-            {t('csvSources.csvSourcesViewLibraryLink')}
-          </Link>
           <UploadCsvButton />
         </div>
       </header>

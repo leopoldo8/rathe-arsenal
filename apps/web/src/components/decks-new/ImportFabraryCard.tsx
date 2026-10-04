@@ -141,12 +141,6 @@ export function ImportFabraryCard(): React.ReactElement {
   return (
     <div className={styles.card} data-testid="import-fabrary-card">
       <div className={styles.head}>
-        <span className={`${styles.iconSquare} ${styles.iconGold}`} aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
-            <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" />
-          </svg>
-        </span>
         <div className={styles.headText}>
           <h2 className={styles.cardTitle}>{t('decks.importFromFabrary')}</h2>
           <p className={styles.cardSubtitle}>

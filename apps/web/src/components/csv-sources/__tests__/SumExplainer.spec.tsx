@@ -34,7 +34,7 @@ describe('SumExplainer i18n (T14 / UXUI-08)', () => {
   describe('pt-BR locale (default test locale)', () => {
     it('renders the trigger in Portuguese', () => {
       renderExplainer();
-      expect(screen.getByRole('button', { name: /^ⓘ Se a mesma carta aparece em duas fontes, as quantidades somam\.$/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Se a mesma carta aparece em duas fontes, as quantidades somam\.$/ })).toBeInTheDocument();
     });
 
     it('diagram labels render in Portuguese — no English "Source A/B" or "Total" leak', async () => {

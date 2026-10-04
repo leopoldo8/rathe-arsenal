@@ -412,22 +412,22 @@ describe('/swaps — reject, restore and revert (SWAP-05..07)', () => {
 });
 
 describe('/swaps — grouped rows (SWAP-11)', () => {
-  it('shows one row per group with its x N badge, counted once', async () => {
+  it('shows one row per group with its coverage line, counted once', async () => {
     store = [makeSwapRow({ id: 'g1', quantity: 3 }), makeSwapRow({ id: 'g2', quantity: 1 })];
     await renderLoaded();
 
     expect(screen.getAllByTestId('swap-row')).toHaveLength(2);
-    expect(within(rowFor('g1')).getByLabelText('3 cópias')).toHaveTextContent('× 3');
-    expect(within(rowFor('g2')).queryByLabelText(/cópias$/)).toBeNull();
+    expect(within(rowFor('g1')).getByText(/^Cobre 3 cópias/)).toBeInTheDocument();
+    expect(within(rowFor('g2')).getByText(/^Cobre 1 cópia/)).toBeInTheDocument();
     expect(tab(/^Pendentes/)).toHaveAccessibleName('Pendentes — 2');
-    expect(within(rowFor('g1')).getByText('Aprovar (× 3)')).toBeInTheDocument();
+    expect(within(rowFor('g1')).getByRole('button', { name: /^Aprovar a troca .* nas 3 cópias$/ })).toBeInTheDocument();
   });
 
   it('approves the whole group with a single call', async () => {
     store = [makeSwapRow({ id: 'g1', quantity: 3 })];
     await renderLoaded();
 
-    await userEvent.click(within(rowFor('g1')).getByText('Aprovar (× 3)'));
+    await userEvent.click(within(rowFor('g1')).getByRole('button', { name: /^Aprovar a troca .* nas 3 cópias$/ }));
 
     await waitFor(() => expect(postsTo('approve')).toHaveLength(1));
   });
