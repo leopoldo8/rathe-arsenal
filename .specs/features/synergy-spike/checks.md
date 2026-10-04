@@ -26,13 +26,13 @@ Proof: `pnpm --filter @rathe-arsenal/api test`
 
 ### S2 - the owner's three decks · 3 files · 12 KB · ~12k
 
-**C4** - `loadDecks` over 3 URLs writes 3 files `out/decks/<ULID>.json`, each holding `hero`, `format` and `mainboard` as `{card, quantity}` entries with quantity above 0, and ULIDs are upper-cased from the URL (plan AC 4)
+**C4** - `loadDecks` over 3 URLs writes 3 files `out/decks/<ULID>.json`, each holding `hero`, `format` and `mainboard` as `{card, quantity}` entries with quantity above 0, and ULIDs are upper-cased from the URL (plan AC 4) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C4:" scripts/synergy-spike/__tests__/decks.test.ts`
 
-**C5** - `pnpm synergy:decks` with 2 URLs exits 1 with a message containing `three are required` and writes 0 files; with 1 URL the same (plan AC 5)
+**C5** - `pnpm synergy:decks` with 2 URLs exits 1 with a message containing `three are required` and writes 0 files; with 1 URL the same (plan AC 5) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C5:" scripts/synergy-spike/__tests__/decks.test.ts`
 
-**C6** - A deck whose fetch rejects, and a deck holding the identifier `not-a-real-card-xyz`, each print the deck URL and (for the second) the identifier, write 0 files for that deck and make the exit code 1 (plan AC 6)
+**C6** - A deck whose fetch rejects, and a deck holding the identifier `not-a-real-card-xyz`, each print the deck URL and (for the second) the identifier, write 0 files for that deck and make the exit code 1 (plan AC 6) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C6:" scripts/synergy-spike/__tests__/decks.test.ts`
 
 
