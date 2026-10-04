@@ -1,0 +1,102 @@
+[
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "call-in-the-big-guns-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "call-in-the-big-guns-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "fire-in-the-hole-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "line-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "fletch-a-red-tail-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "boltn-shot-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "hook-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  }
+]

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { parse } from 'csv-parse/sync';
 import { test } from 'node:test';
 import { catalog } from '../../../packages/engine/src';
 import { finalizeTop10 } from '../lib/finalize';
@@ -79,8 +80,8 @@ test('C12: heuristic run twice writes byte-identical files', () => {
 test('C13: no committed judging sheet holds a verdict, so the heuristic formula was fixed first', () => {
   const sheet = join(SPIKE_DIR, 'out', 'judging-sheet.csv');
   if (existsSync(sheet)) {
-    const lines = readFileSync(sheet, 'utf8').trim().split('\n').slice(1);
-    assert.ok(lines.every((line) => /,""?$|,$/.test(line)), 'every verdict cell is empty');
+    const rows = parse(readFileSync(sheet, 'utf8'), { columns: true }) as { verdict: string }[];
+    assert.ok(rows.every((row) => row.verdict === ''), 'every verdict cell is empty');
   }
   const header = readFileSync(join(SPIKE_DIR, 'candidates', 'heuristic.ts'), 'utf8').slice(0, 600);
   assert.match(header, /must not change afterwards/);

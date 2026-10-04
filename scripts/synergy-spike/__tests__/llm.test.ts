@@ -70,11 +70,11 @@ test('C15: with the key unset the client is never built and the CLI exits 1 with
   const walk = (dir: string): string[] =>
     readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
-      return statSync(path).isDirectory() ? (name === 'out' ? [] : walk(path)) : [path];
+      return statSync(path).isDirectory() ? (name === 'out' || name === '__tests__' ? [] : walk(path)) : [path];
     });
   const files = [...walk(SPIKE_DIR), join(SPIKE_DIR, '..', '..', '.env.example')];
   for (const file of files) {
-    const lines = readFileSync(file, 'utf8').split('\n').filter((l) => !l.includes('keyShape') && !l.includes('const keyShape'));
+    const lines = readFileSync(file, 'utf8').split('\n');
     assert.ok(!lines.some((l) => keyShape.test(l) && !l.trim().startsWith('#')), `${file} holds no key value`);
   }
 });
