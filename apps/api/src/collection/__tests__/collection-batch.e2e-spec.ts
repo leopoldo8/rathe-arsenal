@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { CatalogService } from '../../catalog/catalog.service';
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
+import { createValidationPipe } from '../../common/validation/create-validation-pipe';
 
 const PASSWORD = 'collection-batch-e2e-password-123';
 const CARD_A = 'nimblism-red';
@@ -77,14 +78,7 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
+    app.useGlobalPipes(createValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(0, '127.0.0.1');
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
@@ -193,8 +187,16 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
         .cards.slice(0, 201)
         .map((card) => card.cardIdentifier);
 
+    it('rejects a numeric card identifier as an unknown card', async () => {
+      const response = await batch(owner, [{ cardIdentifier: 42, quantity: 1 }]).expect(400);
+
+      expect(response.body.code).toBe('INVALID_CARD_IDENTIFIER');
+    });
+
     it('rejects items that are not a list', async () => {
-      await batch(owner, { cardIdentifier: CARD_D, quantity: 1 }).expect(400);
+      const response = await batch(owner, { cardIdentifier: CARD_D, quantity: 1 }).expect(400);
+
+      expect(Array.isArray(response.body.error)).toBe(true);
     });
 
     it.each([
@@ -203,10 +205,13 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
       ['quantity 0', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 0 }]],
       ['quantity 21', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 21 }]],
       ['a fractional quantity', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 1.5 }]],
-      ['a numeric card identifier', (): unknown[] => [{ cardIdentifier: 42, quantity: 1 }]],
+      ['a missing card identifier', (): unknown[] => [{ quantity: 1 }]],
       ['an unknown field', (): unknown[] => [{ cardIdentifier: CARD_D, quantity: 1, foil: true }]],
     ])('rejects %s', async (_label, items) => {
-      await batch(owner, items()).expect(400);
+      const response = await batch(owner, items()).expect(400);
+
+      expect(response.body.code).toBeUndefined();
+      expect(Array.isArray(response.body.error)).toBe(true);
 
       const [row] = await dataSource.query(
         `SELECT COUNT(*)::int AS rows FROM collection_card WHERE "userId" = $1`,
