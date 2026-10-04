@@ -10,7 +10,7 @@ import {
 } from '../../database/entities';
 import { CardNameMatcherService } from '../card-name-matcher.service';
 import { SbraubleScraperService } from '../sbrauble-scraper.service';
-import { StoreIngestionService } from '../store-ingestion.service';
+import { StoreIngestionService, URL_SYNC_STALE_AFTER_MS } from '../store-ingestion.service';
 
 describe('StoreIngestionService — URL-sync trigger', () => {
   let service: StoreIngestionService;
@@ -56,6 +56,24 @@ describe('StoreIngestionService — URL-sync trigger', () => {
       storeRepo.query.mockResolvedValue([[], 0]);
       expect(await service.claimPendingUrlSync()).toBeNull();
     });
+
+    it('can take over a running lock left behind by a worker that died mid-sync', async () => {
+      storeRepo.query.mockResolvedValue([[], 0]);
+      await service.claimPendingUrlSync();
+      const [sql, params] = storeRepo.query.mock.calls[0];
+      expect(sql).toContain('"urlSyncRunningAt" < now()');
+      expect(params).toEqual([String(URL_SYNC_STALE_AFTER_MS)]);
+    });
+  });
+
+  describe('markUrlSyncFailed', () => {
+    it('records the failure message and when it happened', async () => {
+      await service.markUrlSyncFailed('cupula-dt', 'Firecrawl returned HTTP 429');
+      const [where, fields] = storeRepo.update.mock.calls[0];
+      expect(where).toEqual({ slug: 'cupula-dt' });
+      expect(fields.lastUrlSyncError).toBe('Firecrawl returned HTTP 429');
+      expect(fields.lastUrlSyncErrorAt).toBeInstanceOf(Date);
+    });
   });
 
   describe('getUrlSyncStatus', () => {
@@ -73,6 +91,31 @@ describe('StoreIngestionService — URL-sync trigger', () => {
       const idle = await service.getUrlSyncStatus('cupula-dt');
       expect(idle.state).toBe('idle');
       expect(idle.lastProductCount).toBe(42);
+      expect(idle.lastError).toBeNull();
+    });
+
+    it('reports a lock older than the stale threshold as an interrupted sync, not running', async () => {
+      const lockedAt = new Date(Date.now() - URL_SYNC_STALE_AFTER_MS - 60_000);
+      storeRepo.findOne.mockResolvedValue({
+        urlSyncRunningAt: lockedAt, urlSyncRequestedAt: null, lastUrlSyncAt: null, lastUrlSyncProductCount: null,
+        lastUrlSyncError: null, lastUrlSyncErrorAt: null,
+      });
+      const status = await service.getUrlSyncStatus('cupula-dt');
+      expect(status.state).toBe('idle');
+      expect(status.lastError).toEqual({
+        message: expect.stringContaining('interrupted'),
+        at: lockedAt.toISOString(),
+      });
+    });
+
+    it('reports the last failure message and time', async () => {
+      const failedAt = new Date('2026-10-04T16:00:13Z');
+      storeRepo.findOne.mockResolvedValue({
+        urlSyncRunningAt: null, urlSyncRequestedAt: null, lastUrlSyncAt: null, lastUrlSyncProductCount: null,
+        lastUrlSyncError: 'Firecrawl returned HTTP 429', lastUrlSyncErrorAt: failedAt,
+      });
+      const status = await service.getUrlSyncStatus('cupula-dt');
+      expect(status.lastError).toEqual({ message: 'Firecrawl returned HTTP 429', at: failedAt.toISOString() });
     });
   });
 });

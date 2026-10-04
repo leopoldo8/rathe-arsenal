@@ -28,7 +28,7 @@ export async function drainOnce(deps: IDrainDeps): Promise<void> {
 export interface IUrlSyncDeps {
   readonly ingestion: Pick<
     StoreIngestionService,
-    'claimPendingUrlSync' | 'runUrlSync' | 'markUrlSyncIdle'
+    'claimPendingUrlSync' | 'runUrlSync' | 'markUrlSyncIdle' | 'markUrlSyncFailed'
   >;
   readonly logger: Pick<Logger, 'log' | 'error'>;
 }
@@ -48,7 +48,9 @@ export async function runPendingUrlSync(deps: IUrlSyncDeps): Promise<void> {
     const summary = await deps.ingestion.runUrlSync(slug);
     deps.logger.log({ event: 'url-sync.completed', storeSlug: slug, ...summary });
   } catch (err) {
-    deps.logger.error({ event: 'url-sync.error', storeSlug: slug, error: (err as Error).message });
+    const message = (err as Error).message;
+    deps.logger.error({ event: 'url-sync.error', storeSlug: slug, error: message });
+    await deps.ingestion.markUrlSyncFailed(slug, message);
   } finally {
     await deps.ingestion.markUrlSyncIdle(slug);
   }

@@ -155,6 +155,12 @@ export class EnvDto {
   @IsString()
   FIRECRAWL_API_KEY?: string;
 
+  /** The Firecrawl plan's /scrape limit: Free 10, Hobby 100, Standard 500. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  FIRECRAWL_REQUESTS_PER_MINUTE?: number;
+
   /**
    * Sentry DSN for api error reporting. Optional — when absent, initApiSentry
    * skips init entirely so local dev and CI never attempt to report errors.

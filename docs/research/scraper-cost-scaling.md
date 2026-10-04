@@ -24,14 +24,18 @@
 
 ## Firecrawl pricing (reference, ~mid-2026)
 
-| Plan | Price/mo | Credits/mo | Notes |
-|---|---|---|---|
-| Free | $0 | 1,000 | validation only |
-| Hobby | $16 | 5,000 | |
-| Standard | $83 | 100,000 | |
-| Growth | $333 | 500,000 | |
+| Plan | Price/mo | Credits/mo | `/scrape` req/min | Notes |
+|---|---|---|---|---|
+| Free | $0 | 1,000 | 10 | validation only |
+| Hobby | $16 | 5,000 | 100 | |
+| Standard | $83 | 100,000 | 500 | |
+| Growth | $333 | 500,000 | 5,000 | |
 
 - Credits **do not roll over**.
+- Rate limits are per API key and answer `429` when exceeded
+  (https://docs.firecrawl.dev/rate-limits). `FirecrawlClientService` spaces
+  requests to fit `FIRECRAWL_REQUESTS_PER_MINUTE` (default 10, the Free plan)
+  and retries a `429`; set the env var to the plan's limit after upgrading.
 - `/scrape` credit cost by proxy mode:
   - `basic` = **1 credit** (datacenter proxies; fails on Cloudflare).
   - `enhanced` = **5 credits** (residential proxies; clears the challenge).
@@ -176,4 +180,8 @@ That is the `O(stores × pages × frequency)` trap this doc exists to prevent.
 - **URL-sync:** also Firecrawl-capable, but **not** on an automatic cadence — it
   is triggered **on demand by the owner** via an admin control. This is the
   cost-control posture above: no hands-off full crawls.
+  On the Free plan (10 req/min) a full sync of ~106 pages takes ~12 minutes.
+  In Oct 2026 listing pages cost **1 credit** each (`auto` stayed on `basic`),
+  not the 5 assumed in the cost model above.
+  A failed sync's reason is shown under the admin control in Settings.
 - **One store** (Cúpula DT), ~106 listing pages, ~3,200 cached product URLs.

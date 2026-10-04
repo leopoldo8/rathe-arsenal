@@ -17,10 +17,11 @@ export const settings = {
   syncCatalogDesc: 'Varre a loja de novo para achar páginas de cartas novas, por exemplo depois do lançamento de um set. Roda em segundo plano pelo Firecrawl.',
   syncInProgress: 'Sincronização em andamento…',
   syncStoreCatalog: 'Sincronizar catálogo da loja',
-  syncingCatalog: 'Sincronizando catálogo… isso leva alguns minutos.',
+  syncingCatalog: 'Sincronizando catálogo… isso leva uns 15 minutos.',
   syncQueued: 'Na fila. Começa em instantes.',
   lastSync: 'Última sincronização: {{count}} produtos · {{when}}',
   neverSynced: 'Nunca sincronizado.',
+  lastSyncFailed: 'A última sincronização falhou em {{when}}: {{reason}}',
   couldNotQueueSync: 'Não foi possível iniciar a sincronização. Tente de novo.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Excluir sua conta',

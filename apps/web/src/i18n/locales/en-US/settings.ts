@@ -17,10 +17,11 @@ export const settings = {
   syncCatalogDesc: "Re-scans the store to discover new cards' product pages (e.g. after a new set release). Runs in the background via Firecrawl — trigger it once when a set drops.",
   syncInProgress: 'Sync in progress…',
   syncStoreCatalog: 'Sync store catalog',
-  syncingCatalog: 'Syncing catalog… this takes a few minutes.',
+  syncingCatalog: 'Syncing catalog… this takes about 15 minutes.',
   syncQueued: 'Queued — the worker will start shortly.',
   lastSync: 'Last sync: {{count}} products · {{when}}',
   neverSynced: 'Never synced.',
+  lastSyncFailed: 'The last sync failed at {{when}}: {{reason}}',
   couldNotQueueSync: 'Could not queue the sync. Try again.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Delete your account',
