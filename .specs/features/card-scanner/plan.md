@@ -36,7 +36,9 @@ Reuses the in-memory catalog behind `CatalogService` (the once-per-session patte
 | domain | existing term: `manual source` ("Manual entries") now also receives scanned cards - nothing branches on how a manual row was created, so no caller changes |
 | stored data | nothing to migrate - writes ordinary `collection_card` rows; the atomic increment relies on the unique index `(userId, cardIdentifier, sourceId)` that already exists, so no constraint runs against existing rows |
 | error catalog | `INVALID_CARD_IDENTIFIER` is thrown today with no `apiErrors` entry; it gains one in pt-BR and en-US (AD-003) |
-| web bundle | new dependency `tesseract.js`; its wasm core (about 3 MB) and English language data download only on `/add-cards/scan` |
+| web bundle | new dependency `tesseract.js`; on the first visit to `/add-cards/scan` a device downloads one core build (about 4 MB) and the English data (about 3 MB), which the browser caches; the deploy ships all 15 core files from `tesseract.js-core` (about 53 MB in `apps/web/dist/ocr/`) because the library picks the build per device at runtime |
+| add-cards page | a fourth tab; under 640 px the tabs become a 2x2 grid; the en-US subtitle says "Four ways in" |
+| shared component | `DiscardChangesConfirm` takes optional copy; without it, the deck copy is unchanged |
 | prior decision | the ideation and brainstorm rejection of scanning is reversed for the reasons in Problem; neither was an `AD-NNN`, so nothing in `STATE.md` is superseded |
 
 ## Relations

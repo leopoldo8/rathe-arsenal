@@ -428,7 +428,19 @@ describe('/add-cards/scan', () => {
   });
 
   it('engine failure offers retry and keeps the tray', async () => {
-    const harness = await renderReady();
+    const harness = buildHarness();
+    const workingLoader = harness.deps.loadEngine;
+    const loadEngine = vi
+      .fn<IScannerDeps['loadEngine']>()
+      .mockRejectedValueOnce(new Error('download failed'))
+      .mockImplementation(workingLoader);
+    renderScanner({ ...harness.deps, loadEngine });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(screen.queryByText('The scanner could not load.')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Getting the scanner ready…')).not.toBeInTheDocument());
+    expect(loadEngine).toHaveBeenCalledTimes(2);
+
     await harness.scan('WTR218');
     harness.recognize.mockRejectedValueOnce(new Error('worker crashed'));
 
@@ -438,7 +450,7 @@ describe('/add-cards/scan', () => {
     expect(barCount()).toBe('1 card');
     fireEvent.click(retry);
 
-    await waitFor(() => expect(harness.loadEngine).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(loadEngine).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(screen.queryByText('The scanner could not load.')).not.toBeInTheDocument());
     expect(barCount()).toBe('1 card');
   });

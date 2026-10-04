@@ -137,7 +137,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 **C37** - Both `navigator.mediaDevices` undefined and `getUserMedia` rejecting with `NotFoundError` show the no-camera state with a link to `/add-cards/manual` (AC 32) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows no camera"`
 
-**C38** - An OCR engine load failure shows an error with a retry button; retry calls the loader again; rows already in the tray remain (AC 33)
+**C38** - An OCR engine load failure shows an error with a retry button; retry calls the loader again; rows already in the tray remain (AC 33) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "engine failure offers retry and keeps the tray"`
 
 **C39** - With one row in the tray, clicking the Library link opens the discard confirmation and "keep" stays on `/add-cards/scan` with the row intact; a `beforeunload` event is cancelled (AC 34) · done
