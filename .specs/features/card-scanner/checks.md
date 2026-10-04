@@ -42,7 +42,7 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts
 **C8** - The response carries `imageSmallBase` `https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/`; each card carries `cardIdentifier`, `name`, `pitch` and `printings`; a printing whose art code differs from its code carries `image`, one whose art code equals it omits `image` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' catalog-collector-codes -t "carries the printing image of the scanned code"`
 
-**C9** - Without a valid token, `GET /api/catalog/collector-codes` and `POST /api/collection/cards/batch` both return `401` (AC 7, Surface)
+**C9** - Without a valid token, `GET /api/catalog/collector-codes` and `POST /api/collection/cards/batch` both return `401` (AC 7, Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "rejects both scanner routes without a token"`
 
 **C10** - Over the 38 reference strips (codes listed in the test, images downloaded from LSS's public CDN into a gitignored cache), the full pipeline with the 2-variant vote accepts the right code for at least 32 and a wrong code for 0 (AC 51) · done
@@ -159,35 +159,35 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 **C43** - Confirming a tray with rows (A, 2) and (B, 1) sends exactly one `POST /api/collection/cards/batch` with `items` `[{A, 2}, {B, 1}]` in any order (AC 38)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "commits the whole tray in one request"`
 
-**C44** - The batch returns `201`, an existing manual row at 1 becomes 3 after `+2`, and a card with no row gets a new manual row at 1 (AC 39)
+**C44** - The batch returns `201`, an existing manual row at 1 becomes 3 after `+2`, and a card with no row gets a new manual row at 1 (AC 39) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "adds quantities to the manual source"`
 
 **C45** - After a `201`, the tray is empty and the screen shows "3 cards added" (en-US) with a link to `/library` (AC 40)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "summarizes a successful commit"`
 
-**C46** - Cap edges: 19 + 1 -> 20 `capped: false`; 19 + 2 -> 20 `capped: true`; 20 + 1 -> 20 `capped: true`; none + 20 -> 20 `capped: false` (AC 41, door 3)
+**C46** - Cap edges: 19 + 1 -> 20 `capped: false`; 19 + 2 -> 20 `capped: true`; 20 + 1 -> 20 `capped: true`; none + 20 -> 20 `capped: false` (AC 41, door 3) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "caps the stored quantity at 20"`
 
 **C47** - A response item with `capped: true` makes the summary name that card as limited to 20 (AC 42)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "names capped cards"`
 
-**C48** - One batch listing card A with 2 and again with 3 stores 5 (AC 43)
+**C48** - One batch listing card A with 2 and again with 3 stores 5 (AC 43) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "sums duplicate identifiers"`
 
-**C49** - 30 concurrent batches, each adding 1 of the same card for a user who has no manual source yet, all return `201` and store 20 (the cap), and 15 concurrent batches for a second card store 15 (AC 44, door 3)
+**C49** - 30 concurrent batches, each adding 1 of the same card for a user who has no manual source yet, all return `201` and store 20 (the cap), and 15 concurrent batches for a second card store 15 (AC 44, door 3) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "loses no increment under concurrency"`
 
-**C50** - A batch with one valid and one unknown `cardIdentifier` returns `400` with `code` `INVALID_CARD_IDENTIFIER`, and both cards' stored quantities are unchanged (AC 45)
+**C50** - A batch with one valid and one unknown `cardIdentifier` returns `400` with `code` `INVALID_CARD_IDENTIFIER`, and both cards' stored quantities are unchanged (AC 45) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "rejects an unknown card and writes nothing"`
 
-**C51** - Bounds: 0 items, 201 items, quantity 0 and quantity 21 each return `400` and change no row; 200 distinct items at quantity 20 return `201` (AC 46)
+**C51** - Bounds: 0 items, 201 items, quantity 0 and quantity 21 each return `400` and change no row; 200 distinct items at quantity 20 return `201` (AC 46) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "enforces item and quantity bounds"`
 
-**C52** - With deck D1 containing A and B, D2 containing B and D3 containing neither, a batch of A and B recomputes D1 once, D2 once and D3 never (AC 47)
+**C52** - With deck D1 containing A and B, D2 containing B and D3 containing neither, a batch of A and B recomputes D1 once, D2 once and D3 never (AC 47) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest collection.service.batch -t "recomputes each affected deck once"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "refreshes readiness of a deck that needs the card"`
 
-**C53** - When the recompute of D1 throws, the batch still returns the committed quantities and D2 is still recomputed (AC 48)
+**C53** - When the recompute of D1 throws, the batch still returns the committed quantities and D2 is still recomputed (AC 48) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest collection.service.batch -t "survives a failed recompute"`
 
 **C54** - A failed commit keeps every row, shows the localized error and a retry button; retry sends the same items again (AC 49)
@@ -196,13 +196,13 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 **C55** - A `400` with `code` `INVALID_CARD_IDENTIFIER` shows the `apiErrors.INVALID_CARD_IDENTIFIER` text, which exists in pt-BR and en-US (Impact, AD-003)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "localizes INVALID_CARD_IDENTIFIER"`
 
-**C56** - A successful batch of A x2 and B x1 with one capped item and one affected deck logs one line with `userId`, `itemCount` 2, `totalQuantity` 3, `cappedCount` 1 and `affectedDeckCount` 1 (AC 50)
+**C56** - A successful batch of A x2 and B x1 with one capped item and one affected deck logs one line with `userId`, `itemCount` 2, `totalQuantity` 3, `cappedCount` 1 and `affectedDeckCount` 1 (AC 50) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest collection.service.batch -t "logs the commit summary"`
 
-**C57** - A batch by user U1 leaves user U2's row for the same card unchanged (authorization)
+**C57** - A batch by user U1 leaves user U2's row for the same card unchanged (authorization) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "writes only the caller's rows"`
 
-**C58** - With the real throttler, the 121st request inside one minute returns `429` for `GET /api/catalog/collector-codes` and for `POST /api/collection/cards/batch` (Surface)
+**C58** - With the real throttler, the 121st request inside one minute returns `429` for `GET /api/catalog/collector-codes` and for `POST /api/collection/cards/batch` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand card-scanner-throttle -t "throttles both scanner routes"`
 
 **C59** - The production build ships the OCR assets: after `pnpm --filter @rathe-arsenal/web build`, `apps/web/dist/ocr/` holds `worker.min.js`, `eng.traineddata.gz` and every `tesseract-core*` file of the installed `tesseract.js-core`, because the library picks a core build per device at runtime (door 4)

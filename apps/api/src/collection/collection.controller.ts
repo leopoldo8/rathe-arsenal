@@ -11,6 +11,10 @@ import {
   IDecrementCardResponse,
 } from './dtos/decrement-card.dto';
 import { MarkOwnedRequestDto } from './dtos/mark-owned.request.dto';
+import {
+  AddCardsBatchRequestDto,
+  IAddCardsBatchResponse,
+} from './dtos/add-cards-batch.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
 
 @Controller('collection')
@@ -39,6 +43,14 @@ export class CollectionController {
       dto.cardIdentifier,
       dto.quantity ?? 1,
     );
+  }
+
+  @Post('cards/batch')
+  async addCardsBatch(
+    @Body() dto: AddCardsBatchRequestDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<IAddCardsBatchResponse> {
+    return this.collectionService.addCardsBatch(user.userId, dto.items);
   }
 
   /**
