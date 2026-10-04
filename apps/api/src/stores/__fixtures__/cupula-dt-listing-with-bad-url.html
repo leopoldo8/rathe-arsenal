@@ -5,7 +5,27 @@
   <title>Flesh and Blood - Cupula DT</title>
 </head>
 <body>
+  <form method="get" action="./">
+    <input type="hidden" name="view" value="ecom/itens">
+    <input type="hidden" name="tcg" value="8">
+    <div class="form-group"><label class="control-label">Raridade:</label>
+      <select name='txt_raridade' size='1' class='fFiltro form-control input-sm'>
+        <option value=''></option><option  value='1'>Token</option><option  value='2'>Common</option><option  value='3'>Rare</option>
+      </select></div>
+    <div class="form-group"><label class="control-label">Exibir:</label>
+      <select name='txt_limit' size='1' class='fFiltro form-control input-sm'>
+        <option value='30'>30</option><option value='60' >60</option><option value='90' >90</option><option value='120' >120</option>
+      </select></div>
+    <label class="control-check"><input type="checkbox" name="txt_estoque" checked value="1"> Com estoque</label>
+    <button class="btn btn-orange" type="submit" name="btFiltrar" value="Filtrar">Filtrar</button>
+  </form>
   <div class="cards">
+    <table cellpadding='1' cellspacing='1' border='0' width='98%' class='ecomresp-tab'>
+      <tr>
+        <td align='left' class='textoMaior'> 1-2 de <b>2</b></td>
+        <td align='right' vAlign='middle' class='textoMaior'>P&#225;ginas:</td>
+      </tr>
+    </table>
 
     <div class="card-item">
       <div class="card-img"><a href="/?view=ecom/item&amp;tcg=8&amp;edicao=100&amp;cardID=WTR001&amp;card=1"><img /></a></div>

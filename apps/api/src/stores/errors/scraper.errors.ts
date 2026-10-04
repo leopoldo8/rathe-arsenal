@@ -52,6 +52,18 @@ export enum EScraperErrorCode {
    * as a per-card failure so the job reports an honest error.
    */
   FIRECRAWL_REQUEST_FAILED = 'FIRECRAWL_REQUEST_FAILED',
+
+  /** The store's editions page listed no editions for the store's game. */
+  EDITIONS_NOT_FOUND = 'EDITIONS_NOT_FOUND',
+
+  /** The store refused to page further ("limite de paginação desta busca"). */
+  PAGINATION_CAPPED = 'PAGINATION_CAPPED',
+
+  /** A response lacked the listing filter form, so it is not a listing page. */
+  LISTING_UNRECOGNIZED = 'LISTING_UNRECOGNIZED',
+
+  /** A search returned fewer items than the total the store reported for it. */
+  LISTING_INCOMPLETE = 'LISTING_INCOMPLETE',
 }
 
 export class ScraperError extends Error {
