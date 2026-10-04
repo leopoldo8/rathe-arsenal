@@ -192,7 +192,7 @@ describe('Toast — burst consolidation', () => {
       vi.advanceTimersByTime(600);
     });
 
-    const retryAllBtn = screen.getByRole('button', { name: /tentar novamente tudo/i });
+    const retryAllBtn = screen.getByRole('button', { name: /tentar tudo de novo/i });
     fireEvent.click(retryAllBtn);
 
     expect(retry1).toHaveBeenCalledOnce();

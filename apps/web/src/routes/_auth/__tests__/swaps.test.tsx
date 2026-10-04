@@ -217,7 +217,7 @@ describe('/swaps — tabs and counts (SWAP-09)', () => {
     expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/valendo no deck agora/);
 
     await userEvent.click(tab(/^Recusadas/));
-    expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/não volta a sugerir/);
+    expect(screen.getByTestId('swaps-tab-hint')).toHaveTextContent(/não voltam a ser sugeridas/);
   });
 
   it('keeps tab counts on the full set when an attribute filter narrows the list', async () => {
@@ -285,7 +285,7 @@ describe('/swaps — approve with in-place confirmation (SWAP-04, SWAP-08)', () 
     await userEvent.click(within(rowFor('p1')).getByText('Aprovar'));
 
     const row = rowFor('p1');
-    expect(await within(row).findByRole('status')).toHaveTextContent('Aprovada — aplicada ao deck');
+    expect(await within(row).findByRole('status')).toHaveTextContent('Aprovada: já vale no deck');
     expect(within(row).getByRole('button', { name: /^Desfazer/ })).toBeInTheDocument();
     expect(screen.getAllByTestId('swap-row')).toHaveLength(2);
   });
@@ -350,7 +350,7 @@ describe('/swaps — reject, restore and revert (SWAP-05..07)', () => {
     await waitFor(() => expect(postsTo('reject')).toHaveLength(1));
     expect(postsTo('reject')[0]?.body).toEqual({ reason: 'changes_plan', note: 'troquei de herói' });
     expect(await within(rowFor('p1')).findByRole('status')).toHaveTextContent(
-      'Rejeitada — não será sugerida de novo',
+      'Recusada: não volta a ser sugerida',
     );
   });
 
@@ -659,7 +659,7 @@ describe('/swaps — failures and empty states', () => {
     currentSearch = { ...DEFAULT_SEARCH, tier: [2] };
     await renderLoaded();
 
-    expect(screen.getByRole('heading', { name: 'Sem correspondências' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nenhum resultado' })).toBeInTheDocument();
   });
 
   it('retries a failed load', async () => {

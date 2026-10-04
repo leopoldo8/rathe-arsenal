@@ -178,7 +178,7 @@ describe('Step3FirstReview — approve/reject toggle-off (UXUI-13 AC2)', () => {
       />,
     );
     const rejectBtn = screen.getByRole('button', {
-      name: /rejeitar.*briar|reject.*briar/i,
+      name: /recusar.*briar|reject.*briar/i,
     });
     // First click — rejected
     fireEvent.click(rejectBtn);
@@ -202,7 +202,7 @@ describe('Step3FirstReview — decisions reach the swaps API by swap id', () => 
   }
 
   const approveName = /aprovar.*briar|approve.*briar/i;
-  const rejectName = /rejeitar.*briar|reject.*briar/i;
+  const rejectName = /recusar.*briar|reject.*briar/i;
 
   it('approves the swap that matches card, slot and substitute', async () => {
     renderStep();

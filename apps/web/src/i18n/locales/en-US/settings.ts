@@ -15,8 +15,8 @@ export const settings = {
   colorTheme: 'Color theme',
   // Account section
   accountEyebrow: 'Account',
-  dangerZone: 'Danger zone',
-  deleteAccountWarning: 'Deleting your account marks it for permanent removal after 30 days. You will be signed out immediately and your collection, tracked decks, and readiness history will be erased.',
+  dangerZone: 'Delete account',
+  deleteAccountWarning: 'Deleting your account marks it for permanent removal after 30 days. You are signed out immediately, and your collection, decks and readiness history are erased.',
   deleteMyAccount: 'Delete my account',
   // Admin sync section
   adminEyebrow: 'Admin',
@@ -31,7 +31,7 @@ export const settings = {
   couldNotQueueSync: 'Could not queue the sync. Try again.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Delete your account',
-  deleteAccountModalDesc: 'Your account and all linked data (collection, tracked decks, readiness history) will be permanently deleted after 30 days. You will be signed out immediately.',
+  deleteAccountModalDesc: 'Your account and everything linked to it (collection, decks, readiness history) will be permanently deleted after 30 days. You are signed out immediately.',
   reenterPasswordLabel: 'Re-enter your password',
   deleteAccountAcknowledge: 'I understand my account and all data will be permanently deleted',
   incorrectPassword: 'Incorrect password',

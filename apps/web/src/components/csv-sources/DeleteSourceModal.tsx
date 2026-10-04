@@ -29,7 +29,7 @@ interface IDeleteSourceModalProps {
  * DeleteSourceModal — two-step destructive confirmation flow.
  *
  * Step 1: Shows impact preview (cardsRemoved + affected decks).
- * Step 2: User must type "DELETE" (case-sensitive) to enable Confirm.
+ * Step 2: User must type the localized confirm word (case-sensitive) to enable Confirm.
  * During deletion: spinner + progress message.
  * On success: close + success toast.
  * On recomputeWarning: success + secondary warning toast.
@@ -53,7 +53,8 @@ export function DeleteSourceModal({
   const confirmInputId = useId();
   const confirmInputRef = useRef<HTMLInputElement | null>(null);
 
-  const isConfirmed = confirmText === 'DELETE';
+  const confirmWord = t('csvSources.confirmWord');
+  const isConfirmed = confirmText === confirmWord;
   const isDeleting = deleteMutation.isPending;
 
   // Load preview when modal opens
@@ -176,7 +177,7 @@ export function DeleteSourceModal({
           ) : (
             <div className={styles.confirmGate}>
               <label htmlFor={confirmInputId} className={styles.confirmLabel}>
-                {t('csvSources.confirmInputLabelPre')} <strong>DELETE</strong> {t('csvSources.confirmInputLabelPost')}
+                {t('csvSources.confirmInputLabelPre')} <strong>{confirmWord}</strong> {t('csvSources.confirmInputLabelPost')}
               </label>
               <input
                 ref={confirmInputRef}
@@ -187,13 +188,13 @@ export function DeleteSourceModal({
                 className={styles.confirmInput}
                 aria-required="true"
                 aria-describedby={`${confirmInputId}-hint`}
-                placeholder="DELETE"
+                placeholder={confirmWord}
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
               />
               <span id={`${confirmInputId}-hint`} className="sr-only">
-                {t('csvSources.confirmInputSrOnlyHint')}
+                {t('csvSources.confirmInputSrOnlyHint', { word: confirmWord })}
               </span>
             </div>
           )}

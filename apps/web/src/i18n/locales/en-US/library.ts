@@ -89,9 +89,12 @@ export const library = {
   bannerCardSingular: 'card',
   bannerCardPlural: 'cards',
   bannerAs: 'as',
-  bannerVerbFabrary: 'imported from Fabrary',
-  bannerVerbCsv: 'imported from CSV',
-  bannerVerbAdded: 'added',
+  bannerVerbFabrary_one: 'imported from Fabrary',
+  bannerVerbFabrary_other: 'imported from Fabrary',
+  bannerVerbCsv_one: 'imported from CSV',
+  bannerVerbCsv_other: 'imported from CSV',
+  bannerVerbAdded_one: 'added',
+  bannerVerbAdded_other: 'added',
   bannerDismissAriaLabel: 'Dismiss notification',
 
   // Library route — error state
@@ -115,6 +118,5 @@ export const library = {
   priceFreshnessNone: 'No price data',
   priceFreshnessDays_one: 'Updated {{count}} day ago',
   priceFreshnessDays_other: 'Updated {{count}} days ago',
-  estimatedPricesTooltip:
-    "Estimated prices from partner stores. May be stale when the scraper hasn't run for a few days.",
+  estimatedPricesTooltip: 'Estimated prices from partner stores. They may be stale if the price refresh hasn\'t run for a few days.',
 } as const;

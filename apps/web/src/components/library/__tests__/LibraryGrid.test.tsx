@@ -116,10 +116,10 @@ describe('LibraryGrid — grouping by pitch', () => {
     expect(screen.getByRole('heading', { name: 'Azul' })).toBeInTheDocument();
   });
 
-  it('groups null-pitch cards as Incolor (pt-BR)', () => {
+  it('groups null-pitch cards as Sem cor (pt-BR)', () => {
     const cards = [makeCard({ name: 'Equipment', pitch: null })];
     render(<LibraryGrid cards={cards} group="pitch" />);
-    expect(screen.getByRole('heading', { name: 'Incolor' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sem cor' })).toBeInTheDocument();
   });
 });
 

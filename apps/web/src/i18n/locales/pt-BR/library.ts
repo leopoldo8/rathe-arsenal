@@ -1,18 +1,18 @@
 export const library = {
   // LibraryEmptyState
   emptyHeading: 'Sua biblioteca está vazia',
-  emptyBody: 'Três maneiras de expandir seu arsenal — escolha a que melhor se encaixa no momento.',
-  emptyAddCards: 'Adicionar cards',
+  emptyBody: 'Adicione as cartas que você tem: uma a uma, por CSV ou a partir de um deck do Fabrary.',
+  emptyAddCards: 'Adicionar cartas',
 
   // LibraryStatsBar
   collectionStatisticsLabel: 'Estatísticas da coleção',
   uniqueStatLabel: 'únicas',
   copiesStatLabel: 'cópias',
   pitchBreakdownLabel: 'Distribuição de pitch',
-  redPitchTitle: 'Cards de pitch vermelho',
-  yellowPitchTitle: 'Cards de pitch amarelo',
-  bluePitchTitle: 'Cards de pitch azul',
-  colorlessPitchTitle: 'Cards incolores (equipamentos, armas, heróis)',
+  redPitchTitle: 'Cartas de pitch vermelho',
+  yellowPitchTitle: 'Cartas de pitch amarelo',
+  bluePitchTitle: 'Cartas de pitch azul',
+  colorlessPitchTitle: 'Cartas sem pitch (equipamentos, armas, heróis)',
 
 
   // LibraryFilterDrawer + LibraryFilterRail (shared)
@@ -23,17 +23,17 @@ export const library = {
   // LibraryFilterRail — search
   searchLabel: 'Buscar',
   searchPlaceholder: 'Buscar na coleção',
-  searchAriaLabel: 'Buscar cards na biblioteca por nome',
-  matchingLabel: 'Correspondendo:',
+  searchAriaLabel: 'Buscar cartas na biblioteca pelo nome',
+  matchingLabel: 'Resultados:',
 
   // LibraryFilterRail — pitch pills
   pitchRedLabel: 'Vermelho',
   pitchYellowLabel: 'Amarelo',
   pitchBlueLabel: 'Azul',
-  pitchColorlessLabel: 'Incolor',
+  pitchColorlessLabel: 'Sem cor',
   pitchAddToFilter: 'adicionar ao filtro',
   pitchRemoveFromFilter: 'remover do filtro',
-  pitchFilterAria: '{{pitch}} pitch — {{action}}',
+  pitchFilterAria: 'Pitch {{pitch}}: {{action}}',
   pitchNoneLabel: 'Sem',
   // LibraryGrid — generic fallback group headings (real type/set names stay as data)
   typeOtherGroupLabel: 'Outros',
@@ -43,20 +43,20 @@ export const library = {
   classSectionLabel: 'Classe',
   noClassesHint: 'Nenhuma classe na sua coleção ainda.',
   talentSectionLabel: 'Talento',
-  noTalentsHint: 'Nenhum dos seus cards tem um talento ainda.',
+  noTalentsHint: 'Nenhuma das suas cartas tem talento.',
   setSectionLabel: 'Set',
   noSetsHint: 'Nenhum set na sua coleção ainda.',
 
   // LibraryFilterRail — card size
-  cardSizeLabel: 'Tamanho dos cards',
-  cardSizeAriaLabel: 'Tamanho dos cards em pixels',
+  cardSizeLabel: 'Tamanho das cartas',
+  cardSizeAriaLabel: 'Tamanho das cartas',
   cardSizeSmall: 'Pequeno',
   cardSizeMedium: 'Médio',
   cardSizeLarge: 'Grande',
   cardSizeXLarge: 'Extra grande',
   cardSizeMax: 'Máximo',
   cardSizeCustom: 'Personalizado',
-  manageSourcesLink: 'Gerenciar fontes ›',
+  manageSourcesLink: 'Gerenciar fontes',
 
   // LibraryFilterRail — group by
   groupByLabel: 'Agrupar por',
@@ -69,33 +69,36 @@ export const library = {
   clearAllFilters: 'Limpar todos os filtros',
 
   // LibraryCardStepper
-  removeOneCard: 'Remover um {{name}}',
-  addOneCard: 'Adicionar um {{name}}',
-  removeFromSourceQuestion: 'Remover 1× de qual fonte? ({{name}})',
-  removeOneFrom: 'Remover 1× de',
+  removeOneCard: 'Remover uma cópia de {{name}}',
+  addOneCard: 'Adicionar uma cópia de {{name}}',
+  removeFromSourceQuestion: 'De qual fonte remover 1 cópia de {{name}}?',
+  removeOneFrom: 'Remover 1 de',
 
   // LibraryGrid — card cell
   cardCellAriaLabel: '{{name}}, na coleção: {{qty}}',
   ownedAriaLabel: 'Na coleção: {{qty}}',
-  libraryCardsAriaLabel: 'Cards da biblioteca',
+  libraryCardsAriaLabel: 'Cartas da biblioteca',
 
   // LibraryGrid — pitch group headings (translated when group=pitch)
   pitchRedGroupLabel: 'Vermelho',
   pitchYellowGroupLabel: 'Amarelo',
   pitchBlueGroupLabel: 'Azul',
-  pitchColorlessGroupLabel: 'Incolor',
+  pitchColorlessGroupLabel: 'Sem cor',
 
   // RecentlyAddedBanner
-  bannerCardSingular: 'card',
-  bannerCardPlural: 'cards',
+  bannerCardSingular: 'carta',
+  bannerCardPlural: 'cartas',
   bannerAs: 'como',
-  bannerVerbFabrary: 'importado do Fabrary',
-  bannerVerbCsv: 'importado via CSV',
-  bannerVerbAdded: 'adicionado',
+  bannerVerbFabrary_one: 'importada do Fabrary',
+  bannerVerbFabrary_other: 'importadas do Fabrary',
+  bannerVerbCsv_one: 'importada por CSV',
+  bannerVerbCsv_other: 'importadas por CSV',
+  bannerVerbAdded_one: 'adicionada',
+  bannerVerbAdded_other: 'adicionadas',
   bannerDismissAriaLabel: 'Fechar notificação',
 
   // Library route — error state
-  errorHeading: 'Algo deu errado ao carregar sua biblioteca',
+  errorHeading: 'Não foi possível carregar sua biblioteca',
   retryButton: 'Tentar novamente',
 
   // Library route — header
@@ -107,14 +110,13 @@ export const library = {
   // Library route — actions
   openFiltersAriaLabel: 'Abrir filtros',
   filtersButton: 'Filtros',
-  addCardsLink: 'Adicionar cards',
+  addCardsLink: 'Adicionar cartas',
 
   // Library route — no results
-  noMatchTitle: 'Nenhum card corresponde a esta combinação.',
+  noMatchTitle: 'Nenhuma carta com esses filtros.',
   clearFiltersButton: 'Limpar filtros',
   priceFreshnessNone: 'Sem dados de preço',
   priceFreshnessDays_one: 'Atualizado há {{count}} dia',
   priceFreshnessDays_other: 'Atualizado há {{count}} dias',
-  estimatedPricesTooltip:
-    'Preços estimados a partir de lojas parceiras. Pode ficar defasado quando o scraper não roda por alguns dias.',
+  estimatedPricesTooltip: 'Preços estimados a partir das lojas parceiras. Podem estar defasados se a atualização não rodar por alguns dias.',
 } as const;

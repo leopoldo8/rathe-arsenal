@@ -281,13 +281,7 @@ function PopulatedShoppingLine({
         {/* No-stock CTA */}
         {availableCardCount === 0 && (
           <p className={styles.noStockCta}>
-            {t('decks.shoppingLastChecked', { when: relativeTime })} &mdash;{' '}
-            <a
-              href="#breakdown"
-              className={styles.noStockCtaLink}
-            >
-              {t('decks.trySubstitutionEditor')}
-            </a>
+            {t('decks.shoppingLastChecked', { when: relativeTime })}
           </p>
         )}
 

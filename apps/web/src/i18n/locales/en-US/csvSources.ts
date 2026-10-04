@@ -40,7 +40,7 @@ export const csvSources = {
   sumExplainerSourceA: 'Source A',
   sumExplainerSourceB: 'Source B',
   sumExplainerTotal: 'Total',
-  sumExplainerExampleCard: 'Lightning Press',
+  sumExplainerExampleCard: 'Enlightened Strike',
 
   // CsvSourceList
   csvSourcesListAriaLabel: 'CSV sources',
@@ -80,7 +80,8 @@ export const csvSources = {
   csvUnexpectedResult: 'Unexpected upload result: {{kind}}',
   csvUploadFailed: 'Upload failed.',
   uploadFailedWithError: 'Upload failed: {{error}}',
-  confirmInputSrOnlyHint: 'Type the word DELETE in uppercase to enable the confirm button.',
+  confirmWord: 'DELETE',
+  confirmInputSrOnlyHint: 'Type {{word}} in uppercase to enable the confirm button.',
   cancelButton: 'Cancel',
   deleteSourceButton: 'Delete source',
   deletingButton: 'Deleting…',
@@ -123,10 +124,10 @@ export const csvSources = {
 
   // Library CSV sources route
   csvSourcesBackLink: 'Library',
-  csvSourcesEyebrow: 'Imports management',
+  csvSourcesEyebrow: 'Collection',
   csvSourcesTitle: 'Library sources',
-  csvSourcesSubtitle: "Each source is a snapshot of cards you've imported — toggle one off to remove its contribution from your library without losing the file. Manual entries and Fabrary imports show up here too.",
-  csvSourcesViewLibraryLink: '→ View library',
+  csvSourcesSubtitle: 'Each source is one import of your collection. Turn a source off to take its cards out of your library without losing the file. Cards added by hand and Fabrary imports show up here too.',
+  csvSourcesViewLibraryLink: 'View library',
   csvSourcesErrorBanner: 'Failed to load library sources.',
   csvSourcesRetryButton: 'Retry',
 

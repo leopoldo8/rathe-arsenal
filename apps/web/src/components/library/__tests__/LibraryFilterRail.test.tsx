@@ -78,7 +78,7 @@ function renderRail(props: Partial<React.ComponentProps<typeof LibraryFilterRail
 describe('LibraryFilterRail — search input', () => {
   it('exposes a labeled search input (pt-BR label)', () => {
     renderRail();
-    const input = screen.getByLabelText(/buscar cards na biblioteca por nome/i);
+    const input = screen.getByLabelText(/buscar cartas na biblioteca pelo nome/i);
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute('type', 'search');
   });
@@ -86,38 +86,38 @@ describe('LibraryFilterRail — search input', () => {
   it('emits onSearchChange when the user types', async () => {
     const onSearchChange = vi.fn();
     renderRail({ onSearchChange });
-    const input = screen.getByLabelText(/buscar cards/i);
+    const input = screen.getByLabelText(/buscar cartas/i);
     await userEvent.type(input, 'a');
     expect(onSearchChange).toHaveBeenCalledWith('a');
   });
 
   it('renders the matching chip with the matching count when search is at least 2 chars', () => {
     renderRail({ searchQuery: 'sh', matchingCount: 7 });
-    expect(screen.getByText(/correspondendo:/i)).toBeInTheDocument();
+    expect(screen.getByText(/resultados:/i)).toBeInTheDocument();
     // The count is rendered in a span inside the chip — scope by aria-live.
-    const chip = screen.getByText(/correspondendo:/i).closest('p');
-    expect(chip).toHaveTextContent(/Correspondendo:\s*7/i);
+    const chip = screen.getByText(/resultados:/i).closest('p');
+    expect(chip).toHaveTextContent(/Resultados:\s*7/i);
   });
 
   it('hides the matching chip below 2 chars', () => {
     renderRail({ searchQuery: 's' });
-    expect(screen.queryByText(/correspondendo:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/resultados:/i)).not.toBeInTheDocument();
   });
 });
 
 describe('LibraryFilterRail — pitch pills', () => {
   it('renders four pitch pills as toggle buttons (pt-BR labels)', () => {
     renderRail();
-    expect(screen.getByRole('checkbox', { name: /Vermelho pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Amarelo pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Azul pitch/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Incolor pitch/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Pitch Vermelho/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Pitch Amarelo/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Pitch Azul/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Pitch Sem cor/i })).toBeInTheDocument();
   });
 
   it('toggles the pitch in onChange when clicked', async () => {
     const onChange = vi.fn();
     renderRail({ onChange });
-    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/i }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Pitch Vermelho/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ pitches: ['red'] }),
     );
@@ -129,7 +129,7 @@ describe('LibraryFilterRail — pitch pills', () => {
       value: { ...EMPTY_FILTERS, pitches: ['red'] },
       onChange,
     });
-    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/i }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Pitch Vermelho/i }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ pitches: [] }),
     );
@@ -160,7 +160,7 @@ describe('LibraryFilterRail — class/talent/set accordion sections', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: /Talento/i }));
     expect(
-      screen.getByText(/nenhum dos seus cards tem um talento ainda/i),
+      screen.getByText(/nenhuma das suas cartas tem talento/i),
     ).toBeInTheDocument();
   });
 
@@ -186,14 +186,14 @@ describe('LibraryFilterRail — class/talent/set accordion sections', () => {
 describe('LibraryFilterRail — card-size slider', () => {
   it('renders the slider with the current value (pt-BR aria-label)', () => {
     renderRail({ value: { ...EMPTY_FILTERS, cardSize: 160 } });
-    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
+    const slider = screen.getByRole('slider', { name: /tamanho das cartas/i });
     expect(slider).toHaveValue('160');
   });
 
   it('snaps onChange to a configured threshold when dragged', () => {
     const onChange = vi.fn();
     renderRail({ onChange });
-    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
+    const slider = screen.getByRole('slider', { name: /tamanho das cartas/i });
     fireEvent.change(slider, { target: { value: '162' } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ cardSize: 160 }),
@@ -276,7 +276,7 @@ describe('LibraryFilterRail — card-size legend (LIB-02)', () => {
 
   it.each(SIZE_LABELS)('exposes the %ipx step as aria-valuetext and legend in pt-BR', (size, pt) => {
     renderRail({ value: { ...EMPTY_FILTERS, cardSize: size } });
-    const slider = screen.getByRole('slider', { name: /tamanho dos cards em pixels/i });
+    const slider = screen.getByRole('slider', { name: /tamanho das cartas/i });
     expect(slider).toHaveAttribute('aria-valuetext', `${pt} · ${size}px`);
     expect(screen.getByText(pt)).toBeInTheDocument();
     expect(screen.getByText(`${size}px`)).toBeInTheDocument();
@@ -316,7 +316,7 @@ describe('LibraryFilterRail — sources link (LIB-01)', () => {
 describe('LibraryFilterRail — pitch chips carry pitch-coloured classes (LIB-04)', () => {
   it.each(['red', 'yellow', 'blue', 'colorless'] as const)('%s chip has its tone class', (tone) => {
     renderRail();
-    const label = { red: /Vermelho/, yellow: /Amarelo/, blue: /Azul/, colorless: /Incolor/ }[tone];
+    const label = { red: /Vermelho/, yellow: /Amarelo/, blue: /Azul/, colorless: /Sem cor/ }[tone];
     const chip = screen.getByRole('checkbox', { name: label });
     expect(chip).toHaveClass(styles[`pitchPill--${tone}`]!);
   });

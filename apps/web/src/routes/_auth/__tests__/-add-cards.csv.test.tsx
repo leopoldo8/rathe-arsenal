@@ -27,14 +27,14 @@ describe('AddCardsCsvPage dropzone copy (LIB-08)', () => {
     render(<AddCardsCsvPage />);
     expect(
       screen.getByText(
-        'Obrigatório: name, quantity. Opcional: set. O pitch é lido do nome da carta ou resolvido automaticamente — não há coluna de pitch.',
+        'Colunas obrigatórias: name e quantity. Opcional: set. Não precisa de coluna de pitch: ele vem do nome da carta.',
       ),
     ).toBeInTheDocument();
   });
 
   it('states the file-size and row limits inside the dropzone (pt-BR)', () => {
     render(<AddCardsCsvPage />);
-    const zone = screen.getByRole('region', { name: /zona de drop de csv/i });
+    const zone = screen.getByRole('region', { name: /área para soltar o csv/i });
     expect(zone).toHaveTextContent('.csv até 2 MB · até 5.000 linhas');
   });
 

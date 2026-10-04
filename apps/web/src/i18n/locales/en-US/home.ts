@@ -1,21 +1,19 @@
 export const home = {
   // EducationalEmptyState
-  welcomeHeading: 'Welcome, Hero.',
-  emptyLead:
-    'Your armory is empty. Track a deck to see how ready your collection is — we’ll surface owned cards, valid substitutes, and exactly what’s missing.',
+  welcomeHeading: 'Start with a deck',
+  emptyLead: 'Import a deck and see how much of it your collection already covers, which swaps fill the rest, and what is left to buy.',
   collectionHintPrefix: 'You already have',
   collectionHintCard: 'card',
   collectionHintCards: 'cards',
   collectionHintSuffix: 'in your collection.',
   howItWorksLabel: 'How it works',
-  step1Title: 'Paste a deck',
-  step1Body: 'From Fabrary, or pick a meta deck we’ve indexed.',
-  step2Title: 'See your readiness',
-  step2Body:
-    'We’ll cross-reference your collection and show what you own, what substitutes are valid, and exactly what’s missing.',
-  step3Title: 'Approve & buy',
-  step3Body: 'Approve or reject each swap. Shop the missing cards in one click.',
-  trackFirstDeckCta: 'Track your first deck',
+  step1Title: 'Import a deck',
+  step1Body: 'Paste a Fabrary deck link.',
+  step2Title: 'See what\'s missing',
+  step2Body: 'We match the deck against your collection: what you own, what can be swapped, and what\'s missing.',
+  step3Title: 'Decide on swaps',
+  step3Body: 'Approve or reject each suggested swap and see where to buy the rest.',
+  trackFirstDeckCta: 'Import my first deck',
   skipToLibrary: 'Skip to Library',
   manualAddPrefix: 'Want to add cards without a CSV?',
   manualAddLinkText: 'Go to Library',
@@ -26,11 +24,11 @@ export const home = {
   aggregateDeckConnector: 'of {{total}} decks at',
 
   // DeckCard
-  legalityNotLegalLabel: 'Not legal',
-  legalityIllegalTitle: 'Illegal',
-  untrackAriaLabel: 'Untrack {{deckName}}',
-  untrackTitle: 'Untrack',
-  untrackToastMsg: '"{{deckName}}" removed from tracking.',
+  legalityNotLegalLabel: 'Off format',
+  legalityIllegalTitle: 'Off format',
+  untrackAriaLabel: 'Delete {{deckName}}',
+  untrackTitle: 'Delete deck',
+  untrackToastMsg: '"{{deckName}}" deleted.',
   undoUntrack: 'Undo',
 
   // PopulatedHomeHero
@@ -72,7 +70,7 @@ export const home = {
   deckboxOpenAriaLabel: 'Open {{deckName}}',
 
   // ArmoryHeader, FilterBar, StatusGroups, DeckTile
-  armoryHeading: 'Your armory',
+  armoryHeading: 'Your arsenal',
   readyDecksStatus: '{{ready}} of {{total}} decks ready to play',
   searchPlaceholder: 'Search decks or heroes',
   searchAriaLabel: 'Search decks',

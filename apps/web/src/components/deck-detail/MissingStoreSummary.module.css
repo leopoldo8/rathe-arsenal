@@ -45,10 +45,6 @@
   color: var(--ra-ready-mid);
 }
 
-.noStockLink {
-  color: var(--ra-accent-body);
-}
-
 .cooldown {
   color: var(--ra-fg-secondary);
   font-size: var(--ra-text-small);

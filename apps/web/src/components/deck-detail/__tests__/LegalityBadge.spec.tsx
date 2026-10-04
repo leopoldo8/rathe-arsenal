@@ -68,7 +68,7 @@ describe('LegalityBadge — legal variant', () => {
   it('has aria-label "Deck is legal in {format}"', () => {
     renderBadge({ category: 'legal', reasons: [] });
     const badge = screen.getByTestId('legality-badge');
-    expect(badge).toHaveAttribute('aria-label', 'Baralho válido em Classic Constructed');
+    expect(badge).toHaveAttribute('aria-label', 'Deck válido em Classic Constructed');
   });
 
   it('includes "Legal" and the format abbreviation in the text', () => {
@@ -86,7 +86,7 @@ describe('LegalityBadge — legal variant', () => {
     renderBadge({ category: 'legal', reasons: [] }, 'Blitz');
     expect(screen.getByTestId('legality-badge')).toHaveAttribute(
       'aria-label',
-      'Baralho válido em Blitz',
+      'Deck válido em Blitz',
     );
   });
 });
@@ -214,7 +214,7 @@ describe('LegalityBadge — edge cases', () => {
 
     await waitFor(() => {
       const popover = screen.getByTestId('legality-reasons-popover');
-      expect(popover).toHaveTextContent('Baralho incompleto — motivo não disponível.');
+      expect(popover).toHaveTextContent('Deck incompleto.');
     });
   });
 
@@ -224,7 +224,7 @@ describe('LegalityBadge — edge cases', () => {
 
     await waitFor(() => {
       const popover = screen.getByTestId('legality-reasons-popover');
-      expect(popover).toHaveTextContent('Baralho incompleto — motivo não disponível.');
+      expect(popover).toHaveTextContent('Deck incompleto.');
     });
   });
 });

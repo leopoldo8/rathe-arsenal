@@ -84,7 +84,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Baralho incompleto',
+        'Deck incompleto',
       );
     });
   });
@@ -95,7 +95,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Baralho ilegal neste formato',
+        'Deck fora do formato',
       );
     });
   });
@@ -106,7 +106,7 @@ describe('LegalityReasonsPopover — content', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('legality-reasons-popover')).toHaveTextContent(
-        'Baralho incompleto — motivo não disponível.',
+        'Deck incompleto.',
       );
     });
   });

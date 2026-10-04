@@ -84,24 +84,24 @@ describe('TagChipRow — happy path', () => {
   it('renders an "+ add tag" button when no combobox is open', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
     expect(
-      screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }),
+      screen.getByRole('button', { name: 'Adicionar uma tag a este deck' }),
     ).toBeInTheDocument();
   });
 
   it('clicking "+ add tag" mounts the TagAutocompleteCombobox', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este deck' }));
     expect(screen.getByTestId('tag-combobox')).toBeInTheDocument();
   });
 
   it('closing the combobox unmounts it and restores the add button', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar uma tag a este deck' }));
     // Close the combobox via the mock's close button
     fireEvent.click(screen.getByText('close'));
     expect(screen.queryByTestId('tag-combobox')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' }),
+      screen.getByRole('button', { name: 'Adicionar uma tag a este deck' }),
     ).toBeInTheDocument();
   });
 });
@@ -130,7 +130,7 @@ describe('TagChipRow — XSS defense', () => {
 describe('TagChipRow — empty state', () => {
   it('renders only the add button when tags array is empty', () => {
     render(<TagChipRow deckId={1} tags={[]} />);
-    const addBtn = screen.getByRole('button', { name: 'Adicionar uma tag a este baralho' });
+    const addBtn = screen.getByRole('button', { name: 'Adicionar uma tag a este deck' });
     expect(addBtn).toBeInTheDocument();
   });
 });

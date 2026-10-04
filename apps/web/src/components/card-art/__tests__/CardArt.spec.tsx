@@ -458,17 +458,17 @@ describe('CardArt — button mode ARIA (UXUI-13 AC4)', () => {
 // Missing-count corner badge (DECK-06)
 // ---------------------------------------------------------------------------
 describe('CardArt — missingCount corner badge', () => {
-  it('renders "falta ×N" with the count when missingCount is 2', () => {
+  it('renders the "falta/faltam N" badge with the count when missingCount is 2', () => {
     render(<CardArt {...BASE_PROPS} missingCount={2} />);
 
     const badge = screen.getByTestId('card-art-missing-count');
-    expect(badge).toHaveTextContent('falta ×2');
+    expect(badge).toHaveTextContent('faltam 2');
   });
 
   it('renders the badge at the boundary count of 1', () => {
     render(<CardArt {...BASE_PROPS} missingCount={1} />);
 
-    expect(screen.getByTestId('card-art-missing-count')).toHaveTextContent('falta ×1');
+    expect(screen.getByTestId('card-art-missing-count')).toHaveTextContent('falta 1');
   });
 
   it('renders no badge when missingCount is 0', () => {

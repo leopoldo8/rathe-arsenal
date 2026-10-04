@@ -178,7 +178,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('perigo'))).toBe(true);
+    expect(labels.some((t) => t.includes('excluir conta'))).toBe(true);
   });
 
   it('renders exactly 4 <h2> section headings', () => {
@@ -206,7 +206,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
     const flagged = panels.filter((p) => p?.classList.contains(cls(settingsStyles.accountSection)));
     expect(flagged).toHaveLength(1);
-    expect(flagged[0]).toHaveTextContent(/perigo/i);
+    expect(flagged[0]).toHaveTextContent(/excluir conta/i);
   });
 
   it('keeps both toggles inside their own panels', () => {

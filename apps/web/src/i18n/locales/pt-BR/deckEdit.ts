@@ -15,7 +15,7 @@ export const deckEdit = {
   cancel: 'Cancelar',
   saveError: 'Não foi possível salvar. Suas alterações continuam na tela, tente de novo.',
   loadingAria: 'Carregando o deck',
-  dangerTitle: 'Zona de risco',
+  dangerTitle: 'Aposentar ou excluir',
   retireTitle: 'Aposentar deck',
   retireDesc: 'Move o deck para Aposentados. Ele continua na sua conta e você pode reativar depois.',
   retireButton: 'Aposentar deck',

@@ -176,7 +176,7 @@ describe('LibraryPage — error state', () => {
   it('renders error alert (pt-BR)', () => {
     renderLibraryPage();
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/algo deu errado ao carregar sua biblioteca/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível carregar sua biblioteca/i)).toBeInTheDocument();
   });
 
   it('renders retry button (pt-BR)', () => {
@@ -207,7 +207,7 @@ describe('LibraryPage — empty state: 0 cards', () => {
 
   it('renders the single Add cards CTA pointing to /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /adicionar cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cartas/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
@@ -256,7 +256,7 @@ describe('LibraryPage — populated: 20 cards', () => {
 
   it('exposes a header link to /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /adicionar cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cartas/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
@@ -275,9 +275,9 @@ describe('LibraryPage — header navigation', () => {
     });
   });
 
-  it('exposes a single "Adicionar cards" link in the header — sources go through /add-cards (pt-BR)', () => {
+  it('exposes a single "Adicionar cartas" link in the header — sources go through /add-cards (pt-BR)', () => {
     renderLibraryPage();
-    const link = screen.getByRole('link', { name: /adicionar cards/i });
+    const link = screen.getByRole('link', { name: /adicionar cartas/i });
     expect(link).toHaveAttribute('href', '/add-cards');
   });
 
@@ -363,7 +363,7 @@ describe('LibraryPage — accessibility', () => {
   it('rail search input is labelled (pt-BR)', () => {
     renderLibraryPage();
     const input = screen.getByLabelText(
-      /buscar cards na biblioteca por nome/i,
+      /buscar cartas na biblioteca pelo nome/i,
     );
     expect(input.tagName.toLowerCase()).toBe('input');
     expect(input).toHaveAttribute('type', 'search');
@@ -392,14 +392,14 @@ describe('LibraryPage — sidebar keeps every filter (LIB-01)', () => {
 
   it('exposes search, four pitch chips, three facets, size slider and four group modes', () => {
     renderLibraryPage();
-    expect(screen.getByRole('searchbox', { name: /buscar cards na biblioteca/i })).toBeInTheDocument();
-    for (const name of [/Vermelho pitch/, /Amarelo pitch/, /Azul pitch/, /Incolor pitch/]) {
+    expect(screen.getByRole('searchbox', { name: /buscar cartas na biblioteca/i })).toBeInTheDocument();
+    for (const name of [/Pitch Vermelho/, /Pitch Amarelo/, /Pitch Azul/, /Pitch Sem cor/]) {
       expect(screen.getByRole('checkbox', { name })).toBeInTheDocument();
     }
     for (const name of [/Classe/, /Talento/, /^Set/]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
-    expect(screen.getByRole('slider', { name: /tamanho dos cards em pixels/i })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: /tamanho das cartas/i })).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(4);
   });
 
@@ -421,7 +421,7 @@ describe('LibraryPage — sidebar keeps every filter (LIB-01)', () => {
       ]),
     });
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('checkbox', { name: /Vermelho pitch/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Pitch Vermelho/ }));
     expect(screen.getAllByRole('listitem', { name: /Red One/ })).toHaveLength(1);
     expect(screen.queryByRole('listitem', { name: /Blue One/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /limpar todos os filtros/i })).toBeInTheDocument();
@@ -530,7 +530,7 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('adds one copy from the cell', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Adicionar um Multi Card' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar uma cópia de Multi Card' }));
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ cardIdentifier: 'M1', quantity: 1 }),
     );
@@ -538,8 +538,8 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('opens the source picker on remove when copies come from more than one source', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Remover um Multi Card' }));
-    expect(screen.getByRole('menu', { name: /Remover 1× de qual fonte/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card' }));
+    expect(screen.getByRole('menu', { name: /De qual fonte remover 1 cópia de/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Planilha/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Manual entries/ })).toBeInTheDocument();
     expect(mockDecrementMutate).not.toHaveBeenCalled();

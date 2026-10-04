@@ -1,5 +1,6 @@
 export const ui = {
-  missingCopiesBadge: 'missing ×{{count}}',
+  missingCopiesBadge_one: '{{count}} missing',
+  missingCopiesBadge_other: '{{count}} missing',
   openFullscreen: 'Open {{name}} fullscreen',
   closeFullscreenPreview: 'Close fullscreen preview',
   loadingCardArt: 'Loading {{name}}',

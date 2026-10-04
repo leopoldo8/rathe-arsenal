@@ -1,6 +1,6 @@
 export const onboarding = {
   // OnboardingWizard
-  wizardAriaLabel: 'Onboarding wizard',
+  wizardAriaLabel: 'Getting started',
 
   // StepIndicator — nav + items
   stepNavAriaLabel: 'Step {{current}} of {{total}}',
@@ -25,7 +25,7 @@ export const onboarding = {
   step1PrivateDeckError:
     'That deck is set to private on Fabrary. Make it public or use a different URL.',
   step1NotFabError: 'That URL does not appear to be a Flesh and Blood deck.',
-  step1AlreadyTrackedError: 'Deck already tracked: {{reason}}',
+  step1AlreadyTrackedError: 'This deck is already in your arsenal: {{reason}}',
   step1GenericError: 'Failed to import deck. Please try again.',
   skipForNow: 'Skip for now',
   continueButton: 'Continue',
@@ -44,8 +44,7 @@ export const onboarding = {
   // Step 3 — First Review
   step3Eyebrow: 'Step 3 of 3',
   step3AlmostHeading: 'Almost ready…',
-  step3AlmostBody:
-    'Substitution computation is taking longer than expected. You can continue — your decks are already tracked and will be ready shortly.',
+  step3AlmostBody: 'Computing swaps is taking longer than usual. You can continue: your decks are already imported and the swaps will show up shortly.',
   continueWithoutReview: 'Continue without review',
   step3ComputingHeading: 'Computing substitutions…',
   step3ComputingBody:
@@ -55,10 +54,9 @@ export const onboarding = {
   step3LookingGoodHeading: 'Looking good!',
   step3LookingGoodBody:
     'No pending substitutions found. Your collection covers this deck well.',
-  enterArmory: 'Enter the armory',
-  step3ReviewHeading: 'Substitutions are honest',
-  step3ReviewBody:
-    'When a card is missing, we propose a tier-scored swap with a reason. You can reject any of them — readiness updates instantly.',
+  enterArmory: 'Go to my arsenal',
+  step3ReviewHeading: 'Review the swaps',
+  step3ReviewBody: 'When a card is missing, we suggest another one from your collection and explain why. Reject any that don\'t fit: the deck\'s readiness updates right away.',
   substitutionPreviewsLabel: 'Substitution previews',
   approveButton: 'Approve',
   rejectButton: 'Reject',
@@ -67,8 +65,7 @@ export const onboarding = {
 
   // CongratsAllPlayable
   congratsEyebrow: 'Step 3 of 3',
-  congratsHeading: 'You are fully playable!',
-  congratsBody:
-    'Incredible — your collection already covers everything in your deck. No substitutions needed. Head to your armory to see the full breakdown.',
+  congratsHeading: 'Your deck is complete!',
+  congratsBody: 'Your collection already covers every card in the deck, with no swaps. See the summary in your arsenal.',
   goToMyDecks: 'Go to my decks',
 } as const;

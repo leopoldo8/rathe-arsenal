@@ -164,7 +164,7 @@ describe('Scenario 2: expandable variant breakdown for multi-variant cards', () 
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.getByText(/2 variantes adicionais/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 versões a mais/i)).toBeInTheDocument();
   });
 
   it('shows "1 more variant" toggle when card has 2 variants', () => {
@@ -177,7 +177,7 @@ describe('Scenario 2: expandable variant breakdown for multi-variant cards', () 
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.getByText(/1 variante adicional/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 versão a mais/i)).toBeInTheDocument();
   });
 
   it('expands breakdown table when toggle is activated', async () => {
@@ -192,7 +192,7 @@ describe('Scenario 2: expandable variant breakdown for multi-variant cards', () 
     render(<ShoppingLine data={data} />);
 
     // Breakdown table should not be visible initially (details element is closed)
-    const toggle = screen.getByText(/1 variante adicional/i);
+    const toggle = screen.getByText(/1 versão a mais/i);
     await user.click(toggle);
 
     // After expanding, table rows should be visible
@@ -231,7 +231,7 @@ describe('Scenario 3: single-variant card has no expand link', () => {
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.queryByText(/variante adicional/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/versão a mais/i)).not.toBeInTheDocument();
     expect(screen.getByText(/r\$ 0,35 \(nm\)/i)).toBeInTheDocument();
   });
 });
@@ -322,7 +322,7 @@ describe('Scenario 5: verified-unavailable vs never-checked unavailable', () => 
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.getByText(/não em estoque/i)).toBeInTheDocument();
+    expect(screen.getByText('sem estoque')).toBeInTheDocument();
     expect(screen.queryByText(/verified/i)).not.toBeInTheDocument();
   });
 
@@ -345,7 +345,7 @@ describe('Scenario 5: verified-unavailable vs never-checked unavailable', () => 
     render(<ShoppingLine data={data} />);
 
     expect(screen.getByText(/sem estoque \(verificado\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/não em estoque/i)).toBeInTheDocument();
+    expect(screen.getByText('sem estoque')).toBeInTheDocument();
   });
 
   it('verified-unavailable card is rendered with muted styling (inside Unavailable group)', () => {
@@ -440,7 +440,7 @@ describe('Scenario 7: variant breakdown table has correct columns', () => {
     render(<ShoppingLine data={data} />);
 
     // Expand the details
-    const toggle = screen.getByText(/1 variante adicional/i);
+    const toggle = screen.getByText(/1 versão a mais/i);
     await user.click(toggle);
 
     // Edition
@@ -450,7 +450,7 @@ describe('Scenario 7: variant breakdown table has correct columns', () => {
     expect(screen.getAllByText(/^NM$/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^LP$/i).length).toBeGreaterThan(0);
     // Finish display labels
-    expect(screen.getByText(/não-foil/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foil/i)).toBeInTheDocument();
     // Foil finish shown with label (Rainbow Foil). Multiple elements may match /foil/
     // since the primary price annotation also contains "Foil".
     expect(screen.getAllByText(/foil/i).length).toBeGreaterThan(0);
@@ -473,7 +473,7 @@ describe('Scenario 7: variant breakdown table has correct columns', () => {
 
     render(<ShoppingLine data={data} />);
 
-    const toggle = screen.getByText(/1 variante adicional/i);
+    const toggle = screen.getByText(/1 versão a mais/i);
     await user.click(toggle);
 
     expect(screen.getByRole('columnheader', { name: /edição/i })).toBeInTheDocument();
@@ -504,7 +504,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.queryByText(/variante adicional/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/versão a mais/i)).not.toBeInTheDocument();
     expect(screen.getByText('Old Card')).toBeInTheDocument();
   });
 
@@ -529,7 +529,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
 
   it('null (Path A) still renders success empty state with no variant fields', () => {
     render(<ShoppingLine data={null} />);
-    expect(screen.getByText(/você tem tudo o que precisa para este baralho/i)).toBeInTheDocument();
+    expect(screen.getByText(/você já tem tudo o que este deck precisa/i)).toBeInTheDocument();
   });
 
   it('unscraped state still renders nothing', () => {
@@ -539,7 +539,7 @@ describe('Scenario 8: backward compatibility - lines without variants field', ()
 
   it('error state still renders degraded state message', () => {
     render(<ShoppingLine data={{ kind: 'error', reason: 'db_error' }} />);
-    expect(screen.getByText(/lista de compras temporariamente indisponível/i)).toBeInTheDocument();
+    expect(screen.getByText(/a lista de compras está indisponível agora/i)).toBeInTheDocument();
   });
 
   it('populated state without variant fields renders headline and card list normally', () => {

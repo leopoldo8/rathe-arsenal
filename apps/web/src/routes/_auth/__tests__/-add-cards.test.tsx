@@ -109,13 +109,13 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByRole('heading', { name: /^Adicionar cartas$/i })).toBeInTheDocument();
     expect(
-      screen.getByText('Três caminhos — escolha o que serve ao momento.'),
+      screen.getByText('Registre as cartas que você tem na sua coleção.'),
     ).toBeInTheDocument();
   });
 
   it('renders the three tabs through the router Link, in order', () => {
     renderInRouter(<AddCardsLayout />);
-    const nav = screen.getByRole('navigation', { name: /métodos/i });
+    const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
     const tabs = within(nav).getAllByRole('link');
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Manual',
@@ -131,7 +131,7 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
   it.each(TAB_PATHS)('marks only the %s tab active', (path) => {
     mockLocation.pathname = path;
     renderInRouter(<AddCardsLayout />);
-    const nav = screen.getByRole('navigation', { name: /métodos/i });
+    const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
     const tabs = within(nav).getAllByRole('link');
     const active = tabs.filter((tab) => tab.getAttribute('data-active') === 'true');
     expect(active).toHaveLength(1);
@@ -145,14 +145,14 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     mockLocation.pathname = '/add-cards/csv';
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByText('Envie uma planilha exportada de outra ferramenta.')).toBeInTheDocument();
-    expect(screen.queryByText(/Busque no catálogo e ajuste/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Busque a carta e informe/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Importe as cartas de um deck público/)).not.toBeInTheDocument();
   });
 
   it('shows the manual and fabrary sentences on their own tabs', () => {
     mockLocation.pathname = '/add-cards/manual';
     const { unmount } = renderInRouter(<AddCardsLayout />);
-    expect(screen.getByText('Busque no catálogo e ajuste a quantidade que você possui.')).toBeInTheDocument();
+    expect(screen.getByText('Busque a carta e informe quantas você tem.')).toBeInTheDocument();
     unmount();
     mockLocation.pathname = '/add-cards/fabrary';
     renderInRouter(<AddCardsLayout />);
@@ -172,7 +172,7 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     renderInRouter(<AddCardsLayout />);
     expect(screen.queryByText(/^(I|II|III)$/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Ideal para ajustes rápidos/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Cole uma URL de baralho/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cole o link de um deck/)).not.toBeInTheDocument();
   });
 
   it('renders the active tab body (Outlet) inside the surface panel', () => {
@@ -222,18 +222,18 @@ describe('AddCardsFabraryPage', () => {
 
   it('rejects an obviously invalid URL on submit', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     await userEvent.type(input, 'not-a-url');
     await userEvent.click(screen.getByRole('button', { name: /^Importar cartas$/i }));
     expect(fabraryMutate).not.toHaveBeenCalled();
     expect(
-      screen.getByText(/Não é uma URL de baralho Fabrary válida/i),
+      screen.getByText(/Esse não é um link de deck do Fabrary/i),
     ).toBeInTheDocument();
   });
 
   it('calls the import mutation when a valid URL is submitted', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
@@ -256,7 +256,7 @@ describe('AddCardsFabraryPage', () => {
 
   it('Enter on the input triggers submission when the URL is valid', async () => {
     renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
@@ -267,7 +267,7 @@ describe('AddCardsFabraryPage', () => {
   it('points to New deck for readiness tracking, through the router Link', () => {
     linkSpy.mockClear();
     renderInRouter(<AddCardsFabraryPage />);
-    expect(screen.getByText(/Para acompanhar a prontidão do deck, use/)).toBeInTheDocument();
+    expect(screen.getByText(/Para importar o deck em si, use/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Novo deck' })).toHaveAttribute('href', '/decks/new');
     expect(linkSpy).toHaveBeenCalledWith(expect.objectContaining({ to: '/decks/new' }));
   });

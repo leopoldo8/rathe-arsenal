@@ -22,7 +22,7 @@ function renderExplainer() {
 
 /** Open the collapsible so diagram content is visible. */
 function openExplainer(): void {
-  const trigger = screen.getByRole('button', { name: /duplicat/i });
+  const trigger = screen.getByRole('button', { name: /mesma carta|duplicates/i });
   fireEvent.click(trigger);
 }
 
@@ -34,7 +34,7 @@ describe('SumExplainer i18n (T14 / UXUI-08)', () => {
   describe('pt-BR locale (default test locale)', () => {
     it('renders the trigger in Portuguese', () => {
       renderExplainer();
-      expect(screen.getByRole('button', { name: /^ⓘ Duplicatas entre fontes são somadas, não sobrescritas\.$/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^ⓘ Se a mesma carta aparece em duas fontes, as quantidades somam\.$/ })).toBeInTheDocument();
     });
 
     it('diagram labels render in Portuguese — no English "Source A/B" or "Total" leak', async () => {
@@ -51,11 +51,11 @@ describe('SumExplainer i18n (T14 / UXUI-08)', () => {
       expect(screen.queryByText('Source B')).not.toBeInTheDocument();
     });
 
-    it('example card name renders in Portuguese — no English "Lightning Press" leak', () => {
+    it('example card name renders as the real card name (not translated)', () => {
       renderExplainer();
       openExplainer();
 
-      expect(screen.queryByText('Lightning Press')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Enlightened Strike').length).toBeGreaterThan(0);
     });
   });
 
@@ -68,7 +68,7 @@ describe('SumExplainer i18n (T14 / UXUI-08)', () => {
       expect(screen.getByText('Source A')).toBeInTheDocument();
       expect(screen.getByText('Source B')).toBeInTheDocument();
       expect(screen.getAllByText('Total').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Lightning Press').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Enlightened Strike').length).toBeGreaterThan(0);
     });
   });
 });

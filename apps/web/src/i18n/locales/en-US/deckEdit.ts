@@ -15,7 +15,7 @@ export const deckEdit = {
   cancel: 'Cancel',
   saveError: 'Could not save. Your changes are still on screen, try again.',
   loadingAria: 'Loading the deck',
-  dangerTitle: 'Danger zone',
+  dangerTitle: 'Retire or delete',
   retireTitle: 'Retire deck',
   retireDesc: 'Moves the deck to Retired. It stays on your account and you can reactivate it later.',
   retireButton: 'Retire deck',

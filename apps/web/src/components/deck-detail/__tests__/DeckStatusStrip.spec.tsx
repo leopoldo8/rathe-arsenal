@@ -44,7 +44,7 @@ describe('DeckStatusStrip — complete', () => {
     render(<DeckStatusStrip summary={summary({ kind: 'complete', pendingSwaps: 0 })} fabraryUlid="abc" />);
 
     const strip = screen.getByTestId('deck-status-strip');
-    expect(message()).toBe('Coleção completa — nenhuma substituição necessária.');
+    expect(message()).toBe('Sua coleção cobre o deck inteiro.');
     expect(strip).toHaveClass(styles.toneComplete!);
     expect(strip).not.toHaveClass(styles.toneIncomplete!);
     expect(screen.queryByRole('link')).toBeNull();
@@ -58,7 +58,7 @@ describe('DeckStatusStrip — solvable, pending approval', () => {
     );
 
     expect(message()).toBe(
-      'Sua coleção cobre esse deck — 2 trocas aguardando aprovação para chegar a 100%.',
+      'Sua coleção cobre este deck se você aprovar 2 trocas.',
     );
     expect(screen.getByTestId('deck-status-strip')).toHaveClass(styles.toneSolvable!);
   });
@@ -66,7 +66,7 @@ describe('DeckStatusStrip — solvable, pending approval', () => {
   it('uses the singular at exactly one swap', () => {
     render(<DeckStatusStrip summary={summary({ kind: 'solvable', pendingSwaps: 1 })} fabraryUlid={null} />);
 
-    expect(message()).toContain('1 troca aguardando aprovação');
+    expect(message()).toBe('Sua coleção cobre este deck se você aprovar 1 troca.');
   });
 
   it('offers only "Ver trocas": no shopping link and no Fabrary link', () => {
@@ -83,7 +83,7 @@ describe('DeckStatusStrip — incomplete, no swaps applied yet', () => {
     render(<DeckStatusStrip summary={summary({})} fabraryUlid="abc" />);
 
     expect(message()).toBe(
-      'Faltam 4 cartas em 3 slots — 2 trocas deixam mais perto (mas 2 seguem sem solução).',
+      'Faltam 4 cartas — 2 trocas sugeridas cobrem parte e 2 só comprando.',
     );
     expect(screen.getByTestId('deck-status-strip')).toHaveClass(styles.toneIncomplete!);
   });
@@ -97,21 +97,21 @@ describe('DeckStatusStrip — incomplete, no swaps applied yet', () => {
     );
 
     expect(message()).toBe(
-      'Falta 1 carta em 1 slot — 1 troca deixa mais perto (mas 1 segue sem solução).',
+      'Falta 1 carta — 1 troca sugerida cobre parte e 1 só comprando.',
     );
   });
 
   it('says no swap is available when none is pending', () => {
     render(<DeckStatusStrip summary={summary({ pendingSwaps: 0 })} fabraryUlid={null} />);
 
-    expect(message()).toBe('Faltam 4 cartas em 3 slots — nenhuma troca disponível.');
+    expect(message()).toBe('Faltam 4 cartas — nenhuma troca possível com a sua coleção.');
     expect(screen.queryByTestId('strip-view-swaps')).toBeNull();
   });
 
   it('omits the unsolved remainder when nothing is unsolved', () => {
     render(<DeckStatusStrip summary={summary({ unsolvedCards: 0 })} fabraryUlid={null} />);
 
-    expect(message()).toBe('Faltam 4 cartas em 3 slots — 2 trocas deixam mais perto.');
+    expect(message()).toBe('Faltam 4 cartas — 2 trocas sugeridas cobrem parte.');
   });
 
   it('renders the shopping anchor, the swaps link and one Fabrary link', () => {
@@ -147,13 +147,13 @@ describe('DeckStatusStrip — incomplete, swaps already applied', () => {
   it('acknowledges applied swaps and the ones still waiting', () => {
     render(<DeckStatusStrip summary={summary({ approvedSwaps: 2, pendingSwaps: 3 })} fabraryUlid={null} />);
 
-    expect(message()).toBe('Faltam 4 cartas em 3 slots — 2 trocas já aplicadas, 3 aguardando aprovação.');
+    expect(message()).toBe('Faltam 4 cartas — 2 trocas já aplicadas, 3 aguardando aprovação.');
   });
 
   it('omits the waiting clause when nothing is pending, singular at one applied swap', () => {
     render(<DeckStatusStrip summary={summary({ approvedSwaps: 1, pendingSwaps: 0 })} fabraryUlid={null} />);
 
-    expect(message()).toBe('Faltam 4 cartas em 3 slots — 1 troca já aplicada.');
+    expect(message()).toBe('Faltam 4 cartas — 1 troca já aplicada.');
   });
 
   it('still offers "Ver trocas" so an applied swap can be reviewed', () => {

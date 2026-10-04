@@ -18,7 +18,7 @@ import { DeckDetailSkeleton } from '../DeckDetailSkeleton';
 describe('DeckDetailSkeleton — happy path', () => {
   it('renders a wrapper with role="status" and aria-busy="true"', () => {
     render(<DeckDetailSkeleton />);
-    const wrapper = screen.getByRole('status', { name: /carregando detalhes do baralho/i });
+    const wrapper = screen.getByRole('status', { name: /carregando o deck/i });
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveAttribute('aria-busy', 'true');
   });
@@ -46,7 +46,7 @@ describe('DeckDetailSkeleton — a11y', () => {
   it('has an accessible label on the outer wrapper', () => {
     render(<DeckDetailSkeleton />);
     expect(
-      screen.getByRole('status', { name: /carregando detalhes do baralho/i }),
+      screen.getByRole('status', { name: /carregando o deck/i }),
     ).toBeInTheDocument();
   });
 });

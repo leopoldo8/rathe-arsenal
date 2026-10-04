@@ -344,7 +344,7 @@ describe('Scenario 6: partial failure notice', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: /tentar novamente as falhas/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar de novo as que falharam/i })).toBeInTheDocument();
   });
 
   it('calls onFetchVariants when "Retry failed" button is clicked', () => {
@@ -358,7 +358,7 @@ describe('Scenario 6: partial failure notice', () => {
     const onFetchVariants = vi.fn();
 
     render(<ShoppingLine data={data} onFetchVariants={onFetchVariants} />);
-    fireEvent.click(screen.getByRole('button', { name: /tentar novamente as falhas/i }));
+    fireEvent.click(screen.getByRole('button', { name: /tentar de novo as que falharam/i }));
 
     expect(onFetchVariants).toHaveBeenCalledOnce();
   });
@@ -374,7 +374,7 @@ describe('Scenario 6: partial failure notice', () => {
 
     render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
 
-    expect(screen.queryByText(/tentar novamente as falhas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tentar de novo as que falharam/i)).not.toBeInTheDocument();
   });
 });
 
@@ -640,7 +640,7 @@ describe('onPollingChange callback', () => {
 describe('backward compatibility: existing 6 states unaffected', () => {
   it('null (Path A) still renders success empty state', () => {
     render(<ShoppingLine data={null} />);
-    expect(screen.getByText(/você tem tudo o que precisa para este baralho/i)).toBeInTheDocument();
+    expect(screen.getByText(/você já tem tudo o que este deck precisa/i)).toBeInTheDocument();
   });
 
   it('unscraped still renders nothing', () => {
@@ -650,7 +650,7 @@ describe('backward compatibility: existing 6 states unaffected', () => {
 
   it('error still renders degraded state', () => {
     render(<ShoppingLine data={{ kind: 'error', reason: 'db_error' }} />);
-    expect(screen.getByText(/lista de compras temporariamente indisponível/i)).toBeInTheDocument();
+    expect(screen.getByText(/a lista de compras está indisponível agora/i)).toBeInTheDocument();
   });
 
   it('populated without isEstimated renders normally without badge or CTA', () => {
@@ -689,7 +689,7 @@ describe('per-card failure indicator', () => {
     expect(badges[0]).toHaveTextContent(/falhou/i);
     expect(badges[0]).toHaveAttribute(
       'aria-label',
-      `Falha ao buscar variantes para ${BASE_LINE.cardName}`,
+      `Não foi possível buscar as versões de ${BASE_LINE.cardName}`,
     );
   });
 

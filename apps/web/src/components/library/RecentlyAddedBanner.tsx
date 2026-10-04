@@ -24,12 +24,13 @@ export function RecentlyAddedBanner(): React.ReactElement | null {
 
   if (!payload) return null;
 
+  const count = payload.cardCount;
   const verb =
     payload.kind === 'fabrary'
-      ? t('library.bannerVerbFabrary')
+      ? t('library.bannerVerbFabrary', { count })
       : payload.kind === 'csv'
-        ? t('library.bannerVerbCsv')
-        : t('library.bannerVerbAdded');
+        ? t('library.bannerVerbCsv', { count })
+        : t('library.bannerVerbAdded', { count });
 
   return (
     <aside className={styles.banner} role="status" aria-live="polite">

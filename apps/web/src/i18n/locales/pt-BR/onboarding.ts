@@ -1,6 +1,6 @@
 export const onboarding = {
   // OnboardingWizard
-  wizardAriaLabel: 'Assistente de integração',
+  wizardAriaLabel: 'Primeiros passos',
 
   // StepIndicator — nav + items
   stepNavAriaLabel: 'Passo {{current}} de {{total}}',
@@ -8,36 +8,30 @@ export const onboarding = {
   stepStateComplete: 'concluído',
   stepStateCurrent: 'atual',
   stepStateUpcoming: 'próximo',
-  stepLabel1: 'Colar deck',
-  stepLabel2: 'Confirmar biblioteca',
-  stepLabel3: 'Revisar substituições',
+  stepLabel1: 'Importar deck',
+  stepLabel2: 'Conferir',
+  stepLabel3: 'Trocas',
 
   // Step 1 — Paste URL
   step1Eyebrow: 'Passo 1 de 3',
-  step1Heading: 'Primeiro, um deck',
-  step1Body:
-    'Cole qualquer URL de deck do Fabrary. Vamos usá-la para entender o que você quer jogar e o quão pronta está sua coleção.',
-  step1Label: 'URL de deck do Fabrary',
+  step1Heading: 'Comece por um deck',
+  step1Body: 'Cole o link de um deck do Fabrary. Vamos ver quanto dele a sua coleção já cobre.',
+  step1Label: 'Link do deck no Fabrary',
   step1Placeholder: 'https://fabrary.net/decks/…',
-  step1FormatError:
-    'Deve ser uma URL válida de deck do Fabrary (ex: https://fabrary.net/decks/…)',
-  step1TimeoutError:
-    'Essa URL demorou muito para responder — o deck pode ser inacessível ou o servidor está indisponível.',
-  step1PrivateDeckError:
-    'Esse deck está definido como privado no Fabrary. Torne-o público ou use uma URL diferente.',
-  step1NotFabError: 'Essa URL não parece ser um deck de Flesh and Blood.',
-  step1AlreadyTrackedError: 'Deck já rastreado: {{reason}}',
-  step1GenericError: 'Falha ao importar deck. Tente novamente.',
-  skipForNow: 'Pular por agora',
+  step1FormatError: 'Esse não é um link de deck do Fabrary (ex.: https://fabrary.net/decks/…).',
+  step1TimeoutError: 'O Fabrary demorou demais para responder. Tente de novo em instantes.',
+  step1PrivateDeckError: 'Esse deck é privado no Fabrary. Deixe ele público ou use outro link.',
+  step1NotFabError: 'Esse link não parece ser de um deck de Flesh and Blood.',
+  step1AlreadyTrackedError: 'Esse deck já está no seu arsenal: {{reason}}',
+  step1GenericError: 'Não foi possível importar o deck. Tente de novo.',
+  skipForNow: 'Pular',
   continueButton: 'Continuar',
 
   // Step 2 — Confirm Library
   step2Eyebrow: 'Passo 2 de 3',
-  step2Heading: 'Agora, sua coleção',
-  step2BodySingle:
-    'Encontramos seu deck. Confirme se está correto antes de calcularmos as substituições.',
-  step2BodyMultiple:
-    'Encontramos {{count}} decks. Confirme se estão corretos antes de calcularmos as substituições.',
+  step2Heading: 'Confira o deck',
+  step2BodySingle: 'Encontramos seu deck. Confira se está certo antes de calcularmos as trocas.',
+  step2BodyMultiple: 'Encontramos {{count}} decks. Confira se estão certos antes de calcularmos as trocas.',
   importedDecksLabel: 'Decks importados',
   backButton: 'Voltar',
   readinessPercent: '{{percent}}% pronto',
@@ -45,31 +39,26 @@ export const onboarding = {
   // Step 3 — First Review
   step3Eyebrow: 'Passo 3 de 3',
   step3AlmostHeading: 'Quase pronto…',
-  step3AlmostBody:
-    'O cálculo das substituições está demorando mais que o esperado. Você pode continuar — seus decks já estão rastreados e estarão prontos em breve.',
-  continueWithoutReview: 'Continuar sem revisar',
-  step3ComputingHeading: 'Calculando substituições…',
-  step3ComputingBody:
-    'Estamos analisando sua coleção em relação ao deck. Isso leva apenas um momento.',
-  loadingSubstitutionsLabel: 'Carregando substituições',
-  computingSubstitutionsAria: 'Calculando suas primeiras substituições…',
-  step3LookingGoodHeading: 'Parece ótimo!',
-  step3LookingGoodBody:
-    'Nenhuma substituição pendente encontrada. Sua coleção cobre bem este deck.',
+  step3AlmostBody: 'O cálculo das trocas está demorando mais que o normal. Pode seguir: seus decks já foram importados e as trocas aparecem em instantes.',
+  continueWithoutReview: 'Seguir sem revisar',
+  step3ComputingHeading: 'Calculando trocas…',
+  step3ComputingBody: 'Cruzando o deck com a sua coleção. É rápido.',
+  loadingSubstitutionsLabel: 'Carregando trocas',
+  computingSubstitutionsAria: 'Calculando as primeiras trocas…',
+  step3LookingGoodHeading: 'Tudo certo',
+  step3LookingGoodBody: 'Nenhuma troca pendente: sua coleção cobre este deck.',
   enterArmory: 'Entrar no arsenal',
-  step3ReviewHeading: 'As substituições são honestas',
-  step3ReviewBody:
-    'Quando um card está faltando, propomos uma troca pontuada por tier com uma justificativa. Você pode rejeitar qualquer uma delas — a prontidão é atualizada instantaneamente.',
-  substitutionPreviewsLabel: 'Pré-visualização de substituições',
+  step3ReviewHeading: 'Revise as trocas',
+  step3ReviewBody: 'Quando falta uma carta, sugerimos outra da sua coleção e explicamos por quê. Recuse as que não servirem: a prontidão do deck se atualiza na hora.',
+  substitutionPreviewsLabel: 'Trocas sugeridas',
   approveButton: 'Aprovar',
-  rejectButton: 'Rejeitar',
-  approveSubAriaLabel: 'Aprovar substituição: {{substitute}} por {{original}}',
-  rejectSubAriaLabel: 'Rejeitar substituição: {{substitute}} por {{original}}',
+  rejectButton: 'Recusar',
+  approveSubAriaLabel: 'Aprovar troca: {{substitute}} no lugar de {{original}}',
+  rejectSubAriaLabel: 'Recusar troca: {{substitute}} no lugar de {{original}}',
 
   // CongratsAllPlayable
   congratsEyebrow: 'Passo 3 de 3',
-  congratsHeading: 'Você está completamente jogável!',
-  congratsBody:
-    'Incrível — sua coleção já cobre tudo no seu deck. Sem substituições necessárias. Vá ao seu arsenal para ver o resumo completo.',
+  congratsHeading: 'Seu deck está completo!',
+  congratsBody: 'Sua coleção já cobre todas as cartas do deck, sem nenhuma troca. Veja o resumo no seu arsenal.',
   goToMyDecks: 'Ir para meus decks',
 } as const;

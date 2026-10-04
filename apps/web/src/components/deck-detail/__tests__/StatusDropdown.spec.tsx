@@ -79,7 +79,7 @@ describe('StatusDropdown — ARIA', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Alterar status do baralho — atualmente Ideia',
+      'Mudar status do deck, atualmente Ideia',
     );
   });
 
@@ -88,7 +88,7 @@ describe('StatusDropdown — ARIA', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Alterar status do baralho — atualmente Ativo',
+      'Mudar status do deck, atualmente Ativo',
     );
   });
 
@@ -96,7 +96,7 @@ describe('StatusDropdown — ARIA', () => {
     renderDropdown('building');
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-label',
-      'Alterar status do baralho — atualmente Construindo',
+      'Mudar status do deck, atualmente Construindo',
     );
   });
 
@@ -166,7 +166,7 @@ describe('StatusDropdown — happy path (opening dropdown)', () => {
     await waitFor(() => {
       expect(screen.getByRole('combobox')).toHaveAttribute(
         'aria-label',
-        'Alterar status do baralho — atualmente Ativo',
+        'Mudar status do deck, atualmente Ativo',
       );
     });
   });
@@ -212,7 +212,7 @@ describe('StatusDropdown — error path', () => {
     expect(spies.toast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining('Não foi possível atualizar o status'),
+        message: expect.stringContaining('Não foi possível mudar o status'),
         retry: expect.any(Function),
         returnFocusRef: expect.any(Object),
       }),
@@ -225,7 +225,7 @@ describe('StatusDropdown — error path', () => {
 
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Alterar status do baralho — atualmente Ideia',
+      'Mudar status do deck, atualmente Ideia',
     );
 
     // Select Active
@@ -240,7 +240,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => {
       expect(trigger).toHaveAttribute(
         'aria-label',
-        'Alterar status do baralho — atualmente Ativo',
+        'Mudar status do deck, atualmente Ativo',
       );
     });
 
@@ -250,7 +250,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => {
       expect(trigger).toHaveAttribute(
         'aria-label',
-        'Alterar status do baralho — atualmente Ideia',
+        'Mudar status do deck, atualmente Ideia',
       );
     });
   });

@@ -136,11 +136,6 @@
   color: var(--ra-fg-secondary);
 }
 
-.noStockCtaLink {
-  color: var(--ra-info);
-  text-decoration: underline;
-}
-
 /* Cooldown message */
 .cooldownMsg {
   margin: var(--ra-space-2) 0 0;

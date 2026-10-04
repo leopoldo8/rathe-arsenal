@@ -74,19 +74,19 @@ function renderEmpty(collectionCardCount = 0) {
 describe('EducationalEmptyState', () => {
   it('renders the welcome heading', () => {
     renderEmpty();
-    expect(screen.getByRole('heading', { name: /bem-vindo, herói/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /comece por um deck/i })).toBeInTheDocument();
   });
 
   it('renders the 3-step explainer', () => {
     renderEmpty();
-    expect(screen.getByText(/cole um deck/i)).toBeInTheDocument();
-    expect(screen.getByText(/veja sua prontidão/i)).toBeInTheDocument();
-    expect(screen.getByText(/aprovar e comprar/i)).toBeInTheDocument();
+    expect(screen.getByText('Importe um deck')).toBeInTheDocument();
+    expect(screen.getByText(/veja o que falta/i)).toBeInTheDocument();
+    expect(screen.getByText(/decida as trocas/i)).toBeInTheDocument();
   });
 
   it('renders the primary CTA link pointing to /decks/new', () => {
     renderEmpty();
-    const importLink = screen.getByRole('link', { name: /rastrear seu primeiro deck/i });
+    const importLink = screen.getByRole('link', { name: /importar meu primeiro deck/i });
     expect(importLink).toBeInTheDocument();
     expect(importLink).toHaveAttribute('href', '/decks/new');
   });
@@ -112,7 +112,7 @@ describe('EducationalEmptyState', () => {
   it('renders the manual card add section', () => {
     renderEmpty();
     expect(
-      screen.getByText(/quer adicionar cards sem um csv/i),
+      screen.getByText(/quer só registrar suas cartas/i),
     ).toBeInTheDocument();
   });
 

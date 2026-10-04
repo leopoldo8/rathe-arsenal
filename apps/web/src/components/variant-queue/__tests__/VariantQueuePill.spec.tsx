@@ -40,8 +40,8 @@ describe('VariantQueuePill', () => {
     const panel = screen.getByTestId('variant-queue-panel');
     expect(panel).toHaveTextContent('Na fila');
     expect(panel).toHaveTextContent('Waiting Deck');
-    expect(panel).toHaveTextContent('Concluído recentemente');
-    expect(panel).toHaveTextContent(/Não foi possível alcançar a loja/i);
+    expect(panel).toHaveTextContent('Concluídas');
+    expect(panel).toHaveTextContent(/Não conseguimos acessar a loja/i);
   });
 
   it('renders nothing when there are no jobs', () => {

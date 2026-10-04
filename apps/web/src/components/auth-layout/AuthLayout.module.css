@@ -69,41 +69,6 @@
   margin: 0;
 }
 
-.artQuote {
-  font-family: var(--ra-font-ui);
-  font-size: 13px;
-  color: #6c6e76;
-  /* Leading curly quote instead of a 2px left stripe (BAN 1). The
-     italic serif + em-dashed citation below already set the "pull-
-     quote" register; the glyph is a softer flourish that matches the
-     arcane/artisanal tone. */
-  padding-inline-start: var(--ra-space-4);
-  position: relative;
-  margin: 0;
-  line-height: var(--ra-leading-normal);
-}
-
-.artQuote::before {
-  content: '\201C'; /* left double quotation mark */
-  position: absolute;
-  left: 0;
-  top: -0.35em;
-  font-family: var(--ra-font-serif);
-  font-style: normal;
-  font-size: 2em;
-  color: var(--ra-accent-dim);
-  line-height: 1;
-}
-
-.artCite {
-  display: block;
-  margin-top: var(--ra-space-2);
-  font-style: normal;
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  color: var(--ra-fg-subtle);
-}
-
 /* Right form panel */
 .form {
   flex: 1 1 50%;

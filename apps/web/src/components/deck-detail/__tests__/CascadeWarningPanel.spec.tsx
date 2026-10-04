@@ -193,7 +193,7 @@ describe('CascadeWarningPanelSidebar — illegal card list', () => {
         onRemoveIllegal={() => undefined}
       />,
     );
-    expect(screen.getByText('Cartas Ilegais')).toBeInTheDocument();
+    expect(screen.getByText('Cartas ilegais')).toBeInTheDocument();
   });
 
   it('lists each illegal card with its quantity and name', () => {

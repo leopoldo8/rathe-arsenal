@@ -176,13 +176,13 @@ describe('TopBar — A11y', () => {
 describe('TopBar — brand wordmark', () => {
   it('renders the "Rathe" wordmark text', () => {
     render(<TopBar />);
-    const link = screen.getByRole('link', { name: /Rathe Arsenal início/i });
+    const link = screen.getByRole('link', { name: /Rathe Arsenal, início/i });
     expect(link).toHaveTextContent('Rathe');
   });
 
   it('renders the "Arsenal" wordmark text', () => {
     render(<TopBar />);
-    const link = screen.getByRole('link', { name: /Rathe Arsenal início/i });
+    const link = screen.getByRole('link', { name: /Rathe Arsenal, início/i });
     expect(link).toHaveTextContent('Arsenal');
   });
 });

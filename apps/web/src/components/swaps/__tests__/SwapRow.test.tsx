@@ -72,7 +72,7 @@ describe('SwapRow — anatomy (SWAP-12)', () => {
   it('adds the zone when the card sits outside the main deck', () => {
     renderRow(makeSwapRow({ originalType: 'Action', originalPitch: 2, slot: 'equipment' }));
 
-    expect(screen.getByText('Action · Amarela · Equipamento')).toBeInTheDocument();
+    expect(screen.getByText('Action · Amarela · Equipment')).toBeInTheDocument();
   });
 
   it('falls back to the zone alone for a card with no type or pitch, and to the raw slot for an unknown zone', () => {
@@ -85,7 +85,7 @@ describe('SwapRow — anatomy (SWAP-12)', () => {
         {...handlers()}
       />,
     );
-    expect(screen.getByText('Maindeck')).toBeInTheDocument();
+    expect(screen.getByText('Mainboard')).toBeInTheDocument();
     unmount();
 
     renderRow(makeSwapRow({ originalType: 'unknown', originalPitch: null, slot: 'arena-extra' }));
@@ -370,7 +370,7 @@ describe('SwapRow — in-place confirmation (SWAP-08)', () => {
     const row = makeSwapRow({ status: 'approved' });
     const fns = renderRow(row, { resolved: 'approved' });
 
-    expect(screen.getByRole('status')).toHaveTextContent('Aprovada — aplicada ao deck');
+    expect(screen.getByRole('status')).toHaveTextContent('Aprovada: já vale no deck');
     expect(screen.queryByText('Reverter')).toBeNull();
     expect(screen.queryByTestId('swap-outcome-bar')).toBeNull();
 
@@ -383,7 +383,7 @@ describe('SwapRow — in-place confirmation (SWAP-08)', () => {
     const row = makeSwapRow({ status: 'rejected', rejectedAt: new Date().toISOString() });
     const fns = renderRow(row, { resolved: 'rejected' });
 
-    expect(screen.getByRole('status')).toHaveTextContent('Rejeitada — não será sugerida de novo');
+    expect(screen.getByRole('status')).toHaveTextContent('Recusada: não volta a ser sugerida');
     expect(screen.getByTestId('swap-row')).not.toHaveClass(styles.rowRejected!);
 
     await userEvent.click(screen.getByRole('button', { name: /^Desfazer/ }));

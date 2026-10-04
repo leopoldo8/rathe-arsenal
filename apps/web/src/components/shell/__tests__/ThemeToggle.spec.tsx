@@ -144,7 +144,7 @@ describe('ThemeToggle — error path (divergence copy)', () => {
     await waitFor(() => expect(toastShow).toHaveBeenCalled());
     expect(toastShow).toHaveBeenCalledWith({
       kind: 'error',
-      message: 'Salvo localmente — não chegou ao servidor. Tente novamente ao mudar.',
+      message: 'O tema mudou só neste navegador. Não conseguimos salvar na sua conta.',
     });
   });
 

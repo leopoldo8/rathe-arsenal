@@ -65,10 +65,7 @@ export function MissingStoreSummary({
             </>
           ) : (
             <>
-              {t('decks.shoppingHeadlineEmpty', { storeName })}{' '}
-              <a href="#breakdown" className={styles.noStockLink}>
-                {t('decks.trySubstitutionEditor')}
-              </a>
+              {t('decks.shoppingHeadlineEmpty', { storeName })}
             </>
           )}
           <span className={styles.sep} aria-hidden="true">

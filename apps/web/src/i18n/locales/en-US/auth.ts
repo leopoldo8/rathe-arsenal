@@ -1,10 +1,7 @@
 export const auth = {
   // --- AuthLayout decoration panel (default copy) ---
-  decorationDefaultTagline: 'Your arsenal, forged.',
-  decorationCopy:
-    'Track your Flesh and Blood decks. See which cards you own, which have substitutes, and what it would cost to finish the build.',
-  decorationQuote: 'A warrior prepares the blade before the battle, not during it.',
-  decorationQuoteCite: '— Rathe proverb',
+  decorationDefaultTagline: 'Your decks, your collection.',
+  decorationCopy: 'Import your Flesh and Blood decks and see which cards you already own, which swaps cover the gaps, and what it costs to finish.',
 
   // --- Shared ---
   emailLabel: 'Email',
@@ -19,8 +16,8 @@ export const auth = {
 
   // --- sign-in ---
   signInTitle: 'Sign in',
-  signInSubtitle: 'Welcome back, Hero.',
-  signInTagline: 'Back to the armory',
+  signInSubtitle: 'Sign in with your email and password.',
+  signInTagline: 'Back to the arsenal.',
   forgotPasswordLink: 'Forgot password?',
   noAccountText: 'No account?',
   createOneLink: 'Create one',
@@ -29,25 +26,24 @@ export const auth = {
 
   // --- sign-up ---
   signUpTitle: 'Create your account',
-  signUpSubtitle: 'Start tracking in under a minute.',
-  signUpTagline: 'Join the armory.',
+  signUpSubtitle: 'It takes less than a minute.',
+  signUpTagline: 'Start with your first deck.',
   alreadyHaveAccount: 'Already have one?',
   signInLink: 'Sign in',
   creating: 'Creating…',
   createAccountBtn: 'Create account',
-  termsNote:
-    "By creating an account you accept the terms. We'll send a verification link to confirm your email.",
+  termsNote: 'We\'ll send a link to confirm your email.',
 
   // --- forgot-password ---
   forgotTitle: 'Forgot password',
   forgotSubtitle: "We'll email you a reset link.",
-  forgotTagline: "Lost the key? We'll forge another.",
+  forgotTagline: 'It happens to everyone.',
   sending: 'Sending…',
   sendResetLinkBtn: 'Send reset link',
 
   // --- forgot-password sent state ---
   forgotSentTitle: 'Check your email',
-  forgotSentTagline: 'The raven has flown.',
+  forgotSentTagline: 'Just open the link.',
   forgotSentToInbox: 'Sent to your inbox',
   forgotSentCopy:
     "If an account exists for that email, we sent a password reset link. Check your spam folder if you don't see it in 2 minutes.",
@@ -63,23 +59,23 @@ export const auth = {
 
   // --- verify-email ---
   verifyFailedTitle: 'Verification failed',
-  verifyFailedTagline: 'The seal could not be set.',
+  verifyFailedTagline: 'The link didn\'t work.',
   signUpAgainLink: 'Sign up again',
   verifyNoToken: 'No verification token provided.',
   verifyExpiredFallback: 'This link is invalid or has expired.',
   verifySuccessTitle: 'Email verified',
-  verifySuccessSubtitle: 'Welcome to the arsenal.',
-  verifySuccessTagline: 'The seal is set.',
-  continueToOnboarding: 'Continue to onboarding →',
+  verifySuccessSubtitle: 'Your account is ready.',
+  verifySuccessTagline: 'All set.',
+  continueToOnboarding: 'Continue →',
   verifySuccessMsg: 'Your email is confirmed. Redirecting…',
   verifyingTitle: 'Verifying…',
-  verifyingTagline: 'The seal is being set.',
-  verifyingMsg: 'Confirming seal…',
+  verifyingTagline: 'One moment.',
+  verifyingMsg: 'Confirming your email…',
 
   // --- check-your-email ---
   checkEmailTitle: 'Check your email',
   checkEmailSubtitle: "We've sent you a link. Follow it to continue.",
-  checkEmailTagline: 'The raven has flown.',
+  checkEmailTagline: 'One step left.',
   checkEmailToInbox: 'Sent to your inbox',
   checkEmailCopy:
     "We sent a verification link to your email address. Click it to complete sign-up. The link expires in 24 hours. Check your spam folder if you don't see it.",

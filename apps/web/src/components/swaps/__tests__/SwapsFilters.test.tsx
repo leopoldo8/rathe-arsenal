@@ -57,8 +57,8 @@ function renderFilters(
 describe('SwapsFilters — chip visibility', () => {
   it('renders the Tier filter chip', () => {
     renderFilters();
-    // "Tier" is unchanged in PT-BR (game term)
-    expect(screen.getByRole('button', { name: /^Tier$/i })).toBeInTheDocument();
+    // pt-BR label is "Nível"
+    expect(screen.getByRole('button', { name: /^Nível$/i })).toBeInTheDocument();
   });
 
   it('renders the Confidence filter chip', () => {
@@ -80,8 +80,8 @@ describe('SwapsFilters — chip visibility', () => {
 describe('SwapsFilters — active state labels', () => {
   it('Tier chip shows active tiers in label when tier filter is set', () => {
     renderFilters({ tier: [1, 2] });
-    // Chip label should include the active tier values (Tier unchanged in PT-BR)
-    expect(screen.getByRole('button', { name: /Tier \(1, 2\)/i })).toBeInTheDocument();
+    // Chip label should include the active tier values (pt-BR label is Nível)
+    expect(screen.getByRole('button', { name: /Nível \(1, 2\)/i })).toBeInTheDocument();
   });
 
   it('Confidence chip shows range in label when confidence is not default', () => {
@@ -134,7 +134,7 @@ describe('SwapsFilters — clear button', () => {
 describe('SwapsFilters — ARIA (UXUI-13 AC1)', () => {
   it('Tier chip trigger does NOT have aria-pressed (Radix manages aria-expanded)', () => {
     renderFilters();
-    expect(screen.getByRole('button', { name: /^Tier$/i })).not.toHaveAttribute('aria-pressed');
+    expect(screen.getByRole('button', { name: /^Nível$/i })).not.toHaveAttribute('aria-pressed');
   });
 
   it('Deck chip trigger does NOT have aria-pressed', () => {
@@ -165,7 +165,7 @@ describe('SwapsFilters — collapsible rail (SWAP-14)', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Filtros' })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: /^Tier/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Nível/ })).toBeNull();
   });
 
   it('opens on its own when a filter is already active, and counts the active ones', () => {
@@ -179,7 +179,7 @@ describe('SwapsFilters — collapsible rail (SWAP-14)', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Filtros (2)' })).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: /^Tier/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Nível/ })).toBeInTheDocument();
   });
 
   it('opens and closes from the trigger', async () => {
@@ -190,7 +190,7 @@ describe('SwapsFilters — collapsible rail (SWAP-14)', () => {
     await userEvent.click(toggle);
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: /^Tier/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Nível/ })).toBeNull();
   });
 });
 
