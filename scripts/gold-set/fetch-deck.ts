@@ -10,6 +10,9 @@ const REGION = 'us-east-2';
 const APPSYNC_HOST =
   '42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com';
 
+const BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
 const QUERY = `query getDeck($deckId: ID!) {
   getDeck(deckId: $deckId) {
     deckId
@@ -99,7 +102,9 @@ export async function fetchDeck(ulid: string): Promise<IRawDeck> {
 
   const response = await fetch(`https://${APPSYNC_HOST}/graphql`, {
     method: 'POST',
-    headers: opts.headers as Record<string, string>,
+    // Unsigned header added after signing: Fabrary's WAF Bot Control 403s
+    // requests that carry no browser-like User-Agent (see AwsIamTransport).
+    headers: { ...(opts.headers as Record<string, string>), 'User-Agent': BROWSER_USER_AGENT },
     body,
   });
 
