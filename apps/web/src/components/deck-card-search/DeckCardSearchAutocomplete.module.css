@@ -1,6 +1,6 @@
 /* ============================================================
    DeckCardSearchAutocomplete — catalog search combobox, parameterized
-   via onPick(card, slot). Used in deck Edit canvas + LibrarySearchAddBar.
+   via onPick(card, slot). Used in the deck edit canvas.
    ============================================================ */
 
 .root {

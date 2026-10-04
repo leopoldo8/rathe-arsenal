@@ -1,7 +1,4 @@
 export const decks = {
-  // BreakdownSections / DeckCanvas — breakdown columns
-  noExactMatches: 'Sem correspondências exatas',
-  swaps: 'Substituições',
   // DeckCanvas extra
   addCardsToDeck: 'Adicionar cartas ao baralho',
   loadingComposition: 'Carregando composição…',
@@ -43,9 +40,6 @@ export const decks = {
   // DeckDetailLayout
   deckDetailsSidebarAria: 'Detalhes do baralho',
   // DeckDetailSidebar
-  willRecomputeOnSave: 'Será recalculado ao Salvar',
-  readiness: 'Prontidão',
-  rawValue: 'Bruto {{value}}%',
   shopping: 'Compras',
   viewOnFabrary: 'Ver no Fabrary',
   viewOnFabraryAria: 'Ver baralho no Fabrary (abre em nova aba)',
@@ -136,9 +130,6 @@ export const decks = {
   // StatusDropdown
   changeStatusAria: 'Alterar status do baralho — atualmente {{label}}',
   statusUpdateError: 'Não foi possível atualizar o status — tente novamente.',
-  // SubstitutionRow
-  tierLabel: 'Nível {{tier}}',
-  rejectBtn: 'Rejeitar',
   // TagAutocompleteCombobox
   tagSearchAria: 'Pesquisar ou criar uma tag',
   tagSuggestionsAria: 'Sugestões de tag',
@@ -226,28 +217,6 @@ export const decks = {
   noCardsMatchQuery: 'Nenhum resultado para "{{query}}".',
   addCardBtn: 'Adicionar',
   ownedCountLabel: 'Possui: {{count}}',
-  // breakdown-list.tsx
-  breakdownExactHeading: 'Exato ({{count}})',
-  breakdownNoSwaps: 'Sem substituições',
-  breakdownSwapsHeading: 'Substituições ({{count}})',
-  breakdownNotOwnedHeading: 'Não possui ({{count}})',
-  breakdownAllAccountedFor: 'Todas as cartas contabilizadas!',
-  // mark-owned-button.tsx
-  iOwnThis: 'Eu possuo isso',
-  // path-c-result.tsx
-  closestPlayableVersionAria: 'Versão mais próxima jogável',
-  approximation: 'APROXIMAÇÃO',
-  pathCFidelitySubline: 'deste baralho pode ser montado ou substituído da sua coleção.',
-  tierSwappedClose_one: '{{count}} carta substituída com correspondência próxima',
-  tierSwappedClose_other: '{{count}} cartas substituídas com correspondência próxima',
-  tierSwappedLoose: '{{count}} com correspondência mais distante',
-  stillMissing_one: '{{count}} carta ainda faltando.',
-  stillMissing_other: '{{count}} cartas ainda faltando.',
-  trackProximalVersion: 'Acompanhar versão proximal',
-  showMeMissing: 'Mostrar o que está faltando',
-  stillMissingSection: 'Ainda faltando ({{count}})',
-  pathCAllAccountedFor: 'Todas as cartas contabilizadas!',
-  pitchColorless: 'Sem cor',
   // decks.$deckId.tsx — runtime error / mutation toasts
   retryShoppingLineToast: 'Tentando novamente lista de compras…',
   failedToLoadDeck: 'Falha ao carregar baralho: {{error}}',
@@ -259,13 +228,8 @@ export const decks = {
   // DeckDetailSidebar
   legalityAria: 'Legalidade: {{category}}',
   heroFallback: 'Herói',
-  // SubstitutionRow
   // FormatDropdown
   formatAria: 'Formato: {{format}}',
-  // TestDeckResult — PathBadge aria
-  pathTabAria: 'Caminho {{path}}',
-  // readiness-header.tsx
-  effectiveReadinessSubline: 'efetiva ({{raw}}% bruto)',
   // ShoppingLine.tsx
   shoppingPathAEmpty: 'Você tem tudo o que precisa para este baralho.',
   shoppingUnavailable: 'Lista de compras temporariamente indisponível.',
@@ -274,7 +238,6 @@ export const decks = {
   pricesMayHaveChanged: '(os preços podem ter mudado)',
   estimatedPriceAria: 'preço estimado',
   shoppingLineAria: 'Lista de compras',
-  stillMissingAria: 'Ainda faltando',
   estimatedPriceTooltip: 'Preço estimado com base nos dados do anúncio. Clique em "Obter preços exatos" para preços precisos por variante.',
   estimated: 'estimado',
   shoppingHeadlineWith: 'Com ',
@@ -314,19 +277,4 @@ export const decks = {
   nonFoil: 'Não-foil',
   // StoreProductLink.tsx
   openCardOnStore: 'Abrir {{cardName}} na {{storeName}} em uma nova aba',
-  // substitution-row.tsx
-  rejectThisSubstitutionAria: 'Rejeitar esta substituição',
-  pitchCurveBroken: 'Curva de pitch quebrada: sem alternativa válida para este slot.',
-  // TestDeckResult.tsx
-  testDeckResultAria: 'Resultado do teste de baralho',
-  effectiveReadinessExact: 'Prontidão efetiva ({{raw}}% exato)',
-  alreadyTrackedHeading: 'Este baralho já está acompanhado.',
-  goToDeck: 'Ir ao baralho →',
-  trackingBtn: 'Acompanhando...',
-  trackThisDeck: 'Acompanhar este baralho',
-  trackAndAddCards: 'Acompanhar + adicionar cartas à coleção',
-  // tracked-deck-card.tsx
-  untrackConfirm: 'Remover acompanhamento de "{{name}}"? Isso removerá o baralho e todos os dados de prontidão.',
-  readinessPercent: '{{percent}}% pronto',
-  noReadinessData: 'Sem dados de prontidão ainda',
 } as const;

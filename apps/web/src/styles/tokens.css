@@ -172,7 +172,7 @@
   --ra-accent-soft:    var(--ra-accent-soft-bg);
 
   /* Legacy token — kept defined for its 5 usage sites across 4 non-deckbox
-     consumer files (path-c-result, LibraryStatsBar, ReviewsBulkBar,
+     consumer files (LibraryStatsBar, ReviewsBulkBar,
      decks.$deckId). No longer a reserved brand color; the redesign's
      deckbox has no oxblood in it. See design/01-foundation.md §1.8. */
   --ra-ember:          #b44a2e;
