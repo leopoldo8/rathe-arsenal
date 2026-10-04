@@ -51,10 +51,16 @@ export interface IUrlSyncSummary {
 
 export type TUrlSyncState = 'idle' | 'queued' | 'running';
 
+export interface IUrlSyncFailure {
+  readonly message: string;
+  readonly at: string;
+}
+
 export interface IUrlSyncStatus {
   readonly state: TUrlSyncState;
   readonly lastUrlSyncAt: string | null;
   readonly lastProductCount: number | null;
+  readonly lastError: IUrlSyncFailure | null;
 }
 
 /**
@@ -231,7 +237,12 @@ export class StoreIngestionService {
     // Persist the sync timestamp + product count for status display.
     await this.storeRepo.update(
       { id: store.id },
-      { lastUrlSyncAt: now, lastUrlSyncProductCount: productsFetched },
+      {
+        lastUrlSyncAt: now,
+        lastUrlSyncProductCount: productsFetched,
+        lastUrlSyncError: null,
+        lastUrlSyncErrorAt: null,
+      },
     );
 
     this.logger.log('URL sync completed', {
@@ -293,6 +304,13 @@ export class StoreIngestionService {
     await this.storeRepo.update({ slug: storeSlug }, { urlSyncRunningAt: null });
   }
 
+  async markUrlSyncFailed(storeSlug: string, message: string): Promise<void> {
+    await this.storeRepo.update(
+      { slug: storeSlug },
+      { lastUrlSyncError: message, lastUrlSyncErrorAt: new Date() },
+    );
+  }
+
   /** Current URL-sync state + last-run summary, for the owner status display. */
   async getUrlSyncStatus(storeSlug: string): Promise<IUrlSyncStatus> {
     const store = await this.storeRepo.findOne({
@@ -303,6 +321,8 @@ export class StoreIngestionService {
         'lastUrlSyncProductCount',
         'urlSyncRequestedAt',
         'urlSyncRunningAt',
+        'lastUrlSyncError',
+        'lastUrlSyncErrorAt',
       ],
     });
     if (!store) {
@@ -317,6 +337,10 @@ export class StoreIngestionService {
       state,
       lastUrlSyncAt: store.lastUrlSyncAt?.toISOString() ?? null,
       lastProductCount: store.lastUrlSyncProductCount ?? null,
+      lastError:
+        store.lastUrlSyncError && store.lastUrlSyncErrorAt
+          ? { message: store.lastUrlSyncError, at: store.lastUrlSyncErrorAt.toISOString() }
+          : null,
     };
   }
 

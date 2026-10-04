@@ -274,6 +274,22 @@ describe('StoreIngestionService.runUrlSync', () => {
       const fields = storeUpdate![1] as Record<string, unknown>;
       expect(fields.lastUrlSyncAt).toBeInstanceOf(Date);
     });
+
+    it('clears the previous sync failure after a completed sync', async () => {
+      storeRepo.findOne.mockResolvedValue(
+        makeStore({ lastUrlSyncError: 'Firecrawl returned HTTP 429', lastUrlSyncErrorAt: new Date() }),
+      );
+      (scraper.scrapeStore as jest.Mock).mockReturnValue(makeStream([]));
+
+      await service.runUrlSync('cupula-dt');
+
+      const storeUpdate = (storeRepo.update as jest.Mock).mock.calls.find(
+        (call) => (call[0] as { id?: number }).id === 1,
+      );
+      const fields = storeUpdate![1] as Record<string, unknown>;
+      expect(fields.lastUrlSyncError).toBeNull();
+      expect(fields.lastUrlSyncErrorAt).toBeNull();
+    });
   });
 
   // ---------------------------------------------------------------------------

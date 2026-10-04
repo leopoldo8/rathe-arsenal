@@ -6,10 +6,16 @@ const STORE_SLUG = 'cupula-dt';
 
 export type TUrlSyncState = 'idle' | 'queued' | 'running';
 
+export interface IUrlSyncFailure {
+  readonly message: string;
+  readonly at: string;
+}
+
 export interface IUrlSyncStatus {
   readonly state: TUrlSyncState;
   readonly lastUrlSyncAt: string | null;
   readonly lastProductCount: number | null;
+  readonly lastError: IUrlSyncFailure | null;
 }
 
 export const URL_SYNC_STATUS_QUERY_KEY = ['url-sync-status', STORE_SLUG] as const;

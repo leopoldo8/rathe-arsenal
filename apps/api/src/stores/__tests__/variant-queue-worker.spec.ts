@@ -39,19 +39,34 @@ describe('runPendingUrlSync', () => {
       claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
       runUrlSync: jest.fn().mockResolvedValue({ productsFetched: 5, productsMatched: 4, rowsUpserted: 4 }),
       markUrlSyncIdle: jest.fn(),
+      markUrlSyncFailed: jest.fn(),
     };
     await runPendingUrlSync({ ingestion, logger } as never);
     expect(ingestion.runUrlSync).toHaveBeenCalledWith('cupula-dt');
     expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
+    expect(ingestion.markUrlSyncFailed).not.toHaveBeenCalled();
   });
 
-  it('clears the running lock even when the sync throws', async () => {
+  it('records the failure and clears the running lock when the sync throws', async () => {
     const ingestion = {
       claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
       runUrlSync: jest.fn().mockRejectedValue(new Error('blocked')),
       markUrlSyncIdle: jest.fn(),
+      markUrlSyncFailed: jest.fn(),
     };
     await runPendingUrlSync({ ingestion, logger } as never);
+    expect(ingestion.markUrlSyncFailed).toHaveBeenCalledWith('cupula-dt', 'blocked');
+    expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
+  });
+
+  it('still clears the running lock when recording the failure also throws', async () => {
+    const ingestion = {
+      claimPendingUrlSync: jest.fn().mockResolvedValue('cupula-dt'),
+      runUrlSync: jest.fn().mockRejectedValue(new Error('blocked')),
+      markUrlSyncIdle: jest.fn(),
+      markUrlSyncFailed: jest.fn().mockRejectedValue(new Error('db down')),
+    };
+    await expect(runPendingUrlSync({ ingestion, logger } as never)).rejects.toThrow('db down');
     expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
   });
 });

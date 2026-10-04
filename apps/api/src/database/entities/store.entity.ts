@@ -76,6 +76,13 @@ export class StoreEntity {
   @Column({ type: 'int', nullable: true })
   lastUrlSyncProductCount!: number | null;
 
+  /** Why the most recent URL sync failed; cleared by the next completed sync. */
+  @Column({ type: 'text', nullable: true })
+  lastUrlSyncError!: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastUrlSyncErrorAt!: Date | null;
+
   /**
    * Set when the owner requests an on-demand URL sync; cleared atomically when
    * the worker claims it. Non-null = a sync is queued and waiting for the worker.

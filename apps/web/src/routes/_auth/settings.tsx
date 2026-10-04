@@ -29,6 +29,8 @@ function StoreSyncAdminSection() {
     return t('settings.neverSynced');
   })();
 
+  const lastFailure = !busy && status?.lastError ? status.lastError : null;
+
   return (
     <section className={styles.section} aria-labelledby="section-store-sync">
       <h2 id="section-store-sync" className={styles.sectionHeading}>
@@ -47,6 +49,14 @@ function StoreSyncAdminSection() {
         </button>
         <span className={styles.syncStatus} data-testid="store-sync-status">{statusLine}</span>
       </div>
+      {lastFailure && (
+        <p className={styles.syncError} data-testid="store-sync-failure">
+          {t('settings.lastSyncFailed', {
+            when: new Date(lastFailure.at).toLocaleString(),
+            reason: lastFailure.message,
+          })}
+        </p>
+      )}
       {trigger.isError && (
         <p className={styles.syncError}>{t('settings.couldNotQueueSync')}</p>
       )}

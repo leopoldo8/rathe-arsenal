@@ -65,9 +65,12 @@ vi.mock('@radix-ui/react-toggle-group', () => ({
 
 // Store-admin API — stub the hooks so the admin section renders without a
 // QueryClientProvider. `triggerMutate` is captured to assert the click wiring.
-const { triggerMutate } = vi.hoisted(() => ({ triggerMutate: vi.fn() }));
+const { triggerMutate, syncStatus, IDLE_SYNC_STATUS } = vi.hoisted(() => {
+  const idle: Record<string, unknown> = { state: 'idle', lastUrlSyncAt: null, lastProductCount: null, lastError: null };
+  return { triggerMutate: vi.fn(), syncStatus: { current: idle }, IDLE_SYNC_STATUS: idle };
+});
 vi.mock('../../../api/store-admin', () => ({
-  useUrlSyncStatusQuery: () => ({ data: { state: 'idle', lastUrlSyncAt: null, lastProductCount: null } }),
+  useUrlSyncStatusQuery: () => ({ data: syncStatus.current }),
   useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
 }));
 
@@ -307,6 +310,16 @@ describe('SettingsPage — A11y: heading levels', () => {
 });
 
 describe('SettingsPage — admin store-sync section', () => {
+  const admin = makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin' } });
+  const rateLimitFailure = {
+    message: 'Fetch failed for page=11: Firecrawl returned HTTP 429: Rate limit exceeded',
+    at: '2026-10-04T16:00:13.000Z',
+  };
+
+  beforeEach(() => {
+    syncStatus.current = IDLE_SYNC_STATUS;
+  });
+
   afterEach(() => vi.clearAllMocks());
 
   it('is hidden for a regular user', () => {
@@ -320,5 +333,24 @@ describe('SettingsPage — admin store-sync section', () => {
     expect(button).toBeInTheDocument();
     await userEvent.click(button);
     expect(triggerMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows why the last sync failed once it is idle again', () => {
+    syncStatus.current = { ...IDLE_SYNC_STATUS, lastError: rateLimitFailure };
+    renderSettings(admin);
+    expect(screen.getByTestId('store-sync-failure')).toHaveTextContent(
+      'Firecrawl returned HTTP 429: Rate limit exceeded',
+    );
+  });
+
+  it('hides the previous failure while a new sync is running', () => {
+    syncStatus.current = { ...IDLE_SYNC_STATUS, state: 'running', lastError: rateLimitFailure };
+    renderSettings(admin);
+    expect(screen.queryByTestId('store-sync-failure')).not.toBeInTheDocument();
+  });
+
+  it('shows no failure when the last sync succeeded', () => {
+    renderSettings(admin);
+    expect(screen.queryByTestId('store-sync-failure')).not.toBeInTheDocument();
   });
 });
