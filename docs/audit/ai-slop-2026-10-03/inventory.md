@@ -185,3 +185,27 @@ Delete the subtree, its tests and its keys in both locales before any copy pass,
 2. Copy pass, pt-BR and en-US, after Q1–Q3: X2, X3, X4, X5 and every per-screen copy item.
 3. Engine reasons as codes (X1).
 4. UI de-noise per screen: swaps row, library header and stats, sources page, deck detail (analysis row, strip, missing list, tag chip, medallion), new deck cards, settings sections, home illegal marker and ready count.
+
+## Status (2026-10-03)
+
+Owner decisions: Q1 "deck"; Q2 "carta"; Q3 game terms stay in English, because Flesh and Blood has no pt-BR edition (card types, Hero, Weapon, Equipment, Mainboard, pitch, keywords, power, defense); Q4 remove the Bruta/Fidelidade meters.
+
+| Batch | PR | Covers |
+|---|---|---|
+| Dead code | #115 | X6 |
+| Copy pass, pt-BR and en-US | #116 | X2, X3 (except the decimal point, removed with the meters), X4, X5, per-screen copy |
+| Engine reasons as codes | #117 | X1 |
+| Deck detail and home | #118 | Home, deck detail view and edit mode, overflow menu |
+| Swaps, library, sources, new deck, settings | #119 | Those screens |
+
+### Deviations
+
+- Q4 was approved as "remove the meters and keep one short line". The line moved into the status strip ("Com ela, o deck chega a 69%."), and the readiness card was removed instead of kept with only that line: without the meters it was empty for complete decks and repeated the medallion and the strip. The legality badge moved next to the format in the banner.
+- Following Q3, the slot labels in the card search ("Hero", "Weapon", "Equipment") and on swap rows are in English too, not only the decklist groups.
+- Edit mode shows the shopping block only when a store has prices; otherwise it rendered an empty box.
+
+### Not done
+
+- X7 (screen-reader labels on skeleton blocks).
+- Onboarding was not captured on screen, because the fixture user is redirected away from it. Its copy was rewritten but has not been checked visually.
+- Swap rows still show the English card type ("Action · Vermelha"), which follows Q3, and keep the brass arrow chip.
