@@ -17,7 +17,7 @@ const PITCH_LABEL_KEY: Readonly<Record<number, string>> = {
 
 export function CardThumb({ card }: { readonly card: IScannedCard }): React.ReactElement {
   return card.imageSmall ? (
-    <img src={card.imageSmall} alt="" className={styles.thumb} loading="lazy" decoding="async" />
+    <img src={card.imageSmall} alt="" className={styles.thumb} decoding="async" />
   ) : (
     <span className={styles.thumb} aria-hidden="true" />
   );

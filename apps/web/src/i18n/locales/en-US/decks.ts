@@ -191,7 +191,7 @@ export const decks = {
   addCardsCsvSentence: 'Upload a spreadsheet exported from another tool.',
   addCardsFabrarySentence: 'Import the cards from a public Fabrary deck.',
   addCardsScanSentence: "Point your phone's camera at your cards, one at a time.",
-  addCardsSubtitle: 'Three ways in — pick the one that fits the moment.',
+  addCardsSubtitle: 'Four ways in — pick the one that fits the moment.',
   addCardsMethodsAria: 'Methods',
   manageLibrarySources: 'Manage library sources',
   // add-cards.manual route

@@ -103,7 +103,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-sca
 **C27** - Closing the search without a pick resumes `recognize` calls and leaves the tray identical (AC 23) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "closing the search changes nothing"`
 
-**C28** - With a fake camera showing card `HNT135`, the real OCR pipeline shows a notice naming `Knife Through Butter` and the bar reads 1 card (AC 9, AC 12, AC 14 across the browser boundary)
+**C28** - With a fake camera showing card `HNT135`, the real OCR pipeline shows a notice naming `Knife Through Butter` and the bar reads 1 card (AC 9, AC 12, AC 14 across the browser boundary) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-scanner-flow.spec.ts -g "scans a card from the fake camera"`
 
 ### S3 - Review list · 6 files · 70 KB · ~18k
@@ -140,14 +140,14 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__test
 **C38** - An OCR engine load failure shows an error with a retry button; retry calls the loader again; rows already in the tray remain (AC 33)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "engine failure offers retry and keeps the tray"`
 
-**C39** - With one row in the tray, clicking the Library link opens the discard confirmation and "keep" stays on `/add-cards/scan` with the row intact; a `beforeunload` event is cancelled (AC 34)
+**C39** - With one row in the tray, clicking the Library link opens the discard confirmation and "keep" stays on `/add-cards/scan` with the row intact; a `beforeunload` event is cancelled (AC 34) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-scanner-flow.spec.ts -g "asks before leaving with a non-empty tray"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "cancels beforeunload with a non-empty tray"`
 
-**C40** - On `/add-cards/scan`, the worker, core and language-data requests all go to the app's origin under `/ocr/`, and the page makes 0 requests to `cdn.jsdelivr.net` or `unpkg.com` (AC 35, door 1, door 4)
+**C40** - On `/add-cards/scan`, the worker, core and language-data requests all go to the app's origin under `/ocr/`, and the page makes 0 requests to `cdn.jsdelivr.net` or `unpkg.com` (AC 35, door 1, door 4) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-scanner-flow.spec.ts -g "loads OCR assets from its own origin"`
 
-**C41** - Visiting `/home`, `/library` and `/add-cards/manual` makes 0 requests whose path contains `/ocr/` (AC 36, door 1)
+**C41** - Visiting `/home`, `/library` and `/add-cards/manual` makes 0 requests whose path contains `/ocr/` (AC 36, door 1) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-scanner-flow.spec.ts -g "other routes never load OCR assets"`
 
 **C42** - Every scanner key exists in both catalogs, and the screen renders its hint in pt-BR and in en-US with different text (AC 37) · done

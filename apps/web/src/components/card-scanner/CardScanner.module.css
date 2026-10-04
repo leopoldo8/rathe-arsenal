@@ -7,7 +7,7 @@
 .stage {
   position: relative;
   inline-size: 100%;
-  max-inline-size: 28rem;
+  max-inline-size: min(28rem, 52.5vh);
   margin-inline: auto;
   aspect-ratio: 3 / 4;
   overflow: hidden;
@@ -79,7 +79,18 @@
 .noticeRegion {
   position: absolute;
   inset-inline: var(--ra-space-3);
-  inset-block-end: var(--ra-space-3);
+  inset-block-start: 18%;
+}
+
+.notice .cardName {
+  display: block;
+  white-space: normal;
+}
+
+.notice .pitchDot {
+  display: inline-block;
+  margin-inline-end: var(--ra-space-2);
+  vertical-align: middle;
 }
 
 .notice {
@@ -219,8 +230,6 @@
 }
 
 .bar {
-  position: sticky;
-  inset-block-end: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -245,11 +254,13 @@
 .overlay {
   position: fixed;
   inset: 0;
+  z-index: 900;
   background: rgb(0 0 0 / 0.55);
 }
 
 .sheet {
   position: fixed;
+  z-index: 901;
   inset-inline: 0;
   inset-block-end: 0;
   display: flex;
