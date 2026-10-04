@@ -23,6 +23,7 @@
     "synergy:decks": "tsx scripts/synergy-spike/decks.ts",
     "synergy:pool": "tsx scripts/synergy-spike/pool.ts",
     "synergy:run": "tsx scripts/synergy-spike/run.ts",
+    "synergy:sheet": "tsx scripts/synergy-spike/sheet.ts",
     "screenshot": "tsx scripts/screenshot-all-surfaces.ts",
     "seed:fixture": "tsx scripts/seed-fixture.ts"
   },

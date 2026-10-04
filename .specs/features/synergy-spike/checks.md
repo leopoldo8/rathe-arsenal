@@ -89,13 +89,13 @@ Proof: `ANTHROPIC_API_KEY=<key> pnpm synergy:run llm --deck <ULID>` then reading
 
 ### S6 - the blind judging sheet · 2 files · 10 KB · ~12k
 
-**C21** - `pnpm synergy:sheet` writes `out/judging-sheet.csv` with header exactly `deck,hero,card,pitch,rules,verdict`, one row per distinct (deck, card) across all candidates' top 10, verdict empty, and no cell naming a candidate or a rank (plan AC 20)
+**C21** - `pnpm synergy:sheet` writes `out/judging-sheet.csv` with header exactly `deck,hero,card,pitch,rules,verdict`, one row per distinct (deck, card) across all candidates' top 10, verdict empty, and no cell naming a candidate or a rank (plan AC 20) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C21:" scripts/synergy-spike/__tests__/sheet.test.ts`
 
-**C22** - Row order follows a seeded shuffle (two builds from the same runs give the same order), and `out/judging-key.json` maps each (deck, card) to its `{candidate, rank}` list, including a card produced by two candidates (plan AC 21)
+**C22** - Row order follows a seeded shuffle (two builds from the same runs give the same order), and `out/judging-key.json` maps each (deck, card) to its `{candidate, rank}` list, including a card produced by two candidates (plan AC 21) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C22:" scripts/synergy-spike/__tests__/sheet.test.ts`
 
-**C23** - Rebuilding after 2 verdicts were filled and a second candidate was added keeps both verdicts, adds only the new (deck, card) pairs and repeats no row (plan AC 22)
+**C23** - Rebuilding after 2 verdicts were filled and a second candidate was added keeps both verdicts, adds only the new (deck, card) pairs and repeats no row (plan AC 22) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C23:" scripts/synergy-spike/__tests__/sheet.test.ts`
 
 
