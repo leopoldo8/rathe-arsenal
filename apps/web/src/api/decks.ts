@@ -26,6 +26,13 @@ export type TDeckStatus = 'idea' | 'building' | 'ready' | 'active' | 'retired';
 export interface IDeckLegality {
   readonly category: 'legal' | 'incomplete' | 'illegal';
   readonly reasons: readonly string[];
+  /** One code plus params per `reasons` entry, for localized display. */
+  readonly details?: readonly ILegalityReasonDetail[];
+}
+
+export interface ILegalityReasonDetail {
+  readonly code: string;
+  readonly params: Readonly<Record<string, string | number | boolean>>;
 }
 
 // ---------------------------------------------------------------------------

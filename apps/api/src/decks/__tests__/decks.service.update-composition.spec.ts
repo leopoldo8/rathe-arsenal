@@ -186,7 +186,7 @@ describe('DecksService.updateComposition', () => {
 
     // Default engine mock responses
     mockedReadiness.mockReturnValue(buildReadinessResult());
-    mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+    mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -275,14 +275,14 @@ describe('DecksService.updateComposition', () => {
       );
       const dto = buildDto(cards);
       mockedReadiness.mockReturnValue(buildReadinessResult({ rawPercent: 90, effectivePercent: 100 }));
-      mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+      mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
       setupTransaction({ freshCards: [] });
 
       // Act
       const result = await service.updateComposition(DECK_ID, USER_ID, dto);
 
       // Assert
-      expect(result.legality).toEqual({ category: 'legal', reasons: [] });
+      expect(result.legality).toEqual({ category: 'legal', reasons: [], details: [] });
       expect(result.id).toBe(DECK_ID);
       expect(result.shoppingLine).toBeNull();
       // latestSnapshot is null — response does not include snapshot table data
@@ -346,6 +346,7 @@ describe('DecksService.updateComposition', () => {
       mockedLegality.mockReturnValue({
         category: 'incomplete',
         reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'],
+        details: [],
       });
 
       // Act
@@ -510,7 +511,7 @@ describe('DecksService.updateComposition', () => {
       // Arrange
       const expectedReadiness = buildReadinessResult({ rawPercent: 75, effectivePercent: 85 });
       mockedReadiness.mockReturnValue(expectedReadiness);
-      mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+      mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
 
       setupTransaction({ freshCards: [] });
 
@@ -538,7 +539,7 @@ describe('DecksService.updateComposition', () => {
     it('never calls snapshotRepo.findOne between commit and returning the response', async () => {
       // Arrange
       mockedReadiness.mockReturnValue(buildReadinessResult());
-      mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+      mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
       setupTransaction({ freshCards: [] });
 
       const dto = buildDto([buildCard('snatch-red')]);
@@ -560,7 +561,7 @@ describe('DecksService.updateComposition', () => {
     it('computeEffectiveReadiness is called at least once (step 5, inside tx)', async () => {
       // Arrange
       mockedReadiness.mockReturnValue(buildReadinessResult());
-      mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+      mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
       setupTransaction({ freshCards: [buildDeckCardEntity({ cardIdentifier: 'snatch-red' })] });
 
       const dto = buildDto([buildCard('snatch-red')]);

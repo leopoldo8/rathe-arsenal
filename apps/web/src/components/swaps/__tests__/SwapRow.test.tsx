@@ -627,3 +627,32 @@ describe('SwapRow — selection', () => {
     expect(screen.getByTestId('swap-row')).toHaveClass(styles.rowSelected!);
   });
 });
+
+describe('SwapRow — localized rationale', () => {
+  it('phrases the rationale from its details in pt-BR instead of the stored English sentence', () => {
+    renderRow(
+      makeSwapRow({
+        rationale: 'Same pitch (red), same Brute class, same power, same defense, shared no keywords.',
+        rationaleDetail: {
+          tier: 1,
+          pitch: 'red',
+          sharedClasses: ['Brute'],
+          powerDelta: 0,
+          defenseDelta: 0,
+          sharedKeywords: [],
+        },
+      }),
+    );
+
+    expect(
+      screen.getByText('Mesmo pitch (vermelho), mesma classe (Brute), power igual, defense igual, nenhuma keyword em comum.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Same pitch/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the stored sentence when the details are missing', () => {
+    renderRow(makeSwapRow({ rationale: 'Stored sentence.', rationaleDetail: null }));
+
+    expect(screen.getByText('Stored sentence.')).toBeInTheDocument();
+  });
+});

@@ -219,6 +219,7 @@ describe('DecksService', () => {
         legality: {
           category: 'illegal',
           reasons: ['Hero not recognized — please re-select in Edit mode'],
+          details: [{ code: 'hero_unrecognized', params: {} }],
         },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: {

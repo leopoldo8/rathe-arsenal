@@ -1,4 +1,4 @@
-import { composeRationale } from '../src/substitution/rationale';
+import { composeRationale, describeRationale } from '../src/substitution/rationale';
 import { ICatalogCard } from '../src/catalog/types';
 import { Class, Format, Keyword, Rarity, Talent, Type } from '@flesh-and-blood/types';
 
@@ -113,5 +113,49 @@ describe('composeRationale', () => {
     const result = composeRationale(missing, substitute);
 
     expect(result).toContain('Same pitch (colorless)');
+  });
+});
+
+describe('describeRationale', () => {
+  it('returns the structured facts behind the rationale sentence', () => {
+    const missing = makeCard({
+      cardIdentifier: 'missing-yellow',
+      pitch: 2,
+      classes: [Class.Brute, Class.Warrior],
+      keywords: [Keyword.GoAgain, Keyword.Dominate] as readonly Keyword[],
+      power: 4,
+      defense: 3,
+    });
+    const substitute = makeCard({
+      cardIdentifier: 'substitute-yellow',
+      pitch: 2,
+      classes: [Class.Brute],
+      keywords: [Keyword.GoAgain] as readonly Keyword[],
+      power: 5,
+      defense: 2,
+    });
+
+    expect(describeRationale(missing, substitute, 2)).toEqual({
+      tier: 2,
+      pitch: 'yellow',
+      sharedClasses: [Class.Brute],
+      powerDelta: 1,
+      defenseDelta: -1,
+      sharedKeywords: [Keyword.GoAgain],
+    });
+  });
+
+  it('reports a colorless pitch and empty overlaps when nothing is shared', () => {
+    const missing = makeCard({ pitch: null, classes: [Class.Warrior], keywords: [] as readonly Keyword[] });
+    const substitute = makeCard({ pitch: null, classes: [Class.Generic], keywords: [] as readonly Keyword[] });
+
+    expect(describeRationale(missing, substitute)).toMatchObject({
+      tier: 1,
+      pitch: 'colorless',
+      sharedClasses: [],
+      sharedKeywords: [],
+      powerDelta: 0,
+      defenseDelta: 0,
+    });
   });
 });

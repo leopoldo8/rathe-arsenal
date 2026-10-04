@@ -1,7 +1,19 @@
 import { ICatalogCard } from '../catalog/types';
 import { TSubstitutionTier } from './types';
 
-function pitchLabel(pitch: number | null): string {
+export type TRationalePitch = 'red' | 'yellow' | 'blue' | 'colorless';
+
+/** The comparison facts behind a rationale, so clients can phrase it in their own locale. */
+export interface IRationaleDetail {
+  readonly tier: TSubstitutionTier;
+  readonly pitch: TRationalePitch;
+  readonly sharedClasses: readonly string[];
+  readonly powerDelta: number;
+  readonly defenseDelta: number;
+  readonly sharedKeywords: readonly string[];
+}
+
+function pitchLabel(pitch: number | null): TRationalePitch {
   switch (pitch) {
     case 1: return 'red';
     case 2: return 'yellow';
@@ -10,29 +22,26 @@ function pitchLabel(pitch: number | null): string {
   }
 }
 
-function powerNote(missing: ICatalogCard, substitute: ICatalogCard): string {
-  const mp = missing.power ?? 0;
-  const sp = substitute.power ?? 0;
-  const delta = sp - mp;
-
-  if (delta === 0) return 'same power';
-  if (delta > 0) return `+${delta} power`;
-  return `${delta} power`;
+export function describeRationale(
+  missing: ICatalogCard,
+  substitute: ICatalogCard,
+  tier: TSubstitutionTier = 1,
+): IRationaleDetail {
+  const missingClassSet = new Set<string>(missing.classes);
+  const subKeywords = new Set<string>(substitute.keywords);
+  return {
+    tier,
+    pitch: pitchLabel(missing.pitch),
+    sharedClasses: substitute.classes.filter((c) => missingClassSet.has(c)),
+    powerDelta: (substitute.power ?? 0) - (missing.power ?? 0),
+    defenseDelta: (substitute.defense ?? 0) - (missing.defense ?? 0),
+    sharedKeywords: missing.keywords.filter((kw) => subKeywords.has(kw)),
+  };
 }
 
-function defenseNote(missing: ICatalogCard, substitute: ICatalogCard): string {
-  const md = missing.defense ?? 0;
-  const sd = substitute.defense ?? 0;
-  const delta = sd - md;
-
-  if (delta === 0) return 'same defense';
-  if (delta > 0) return `+${delta} defense`;
-  return `${delta} defense`;
-}
-
-function sharedKeywords(missing: ICatalogCard, substitute: ICatalogCard): readonly string[] {
-  const subKeywords = new Set(substitute.keywords);
-  return missing.keywords.filter((kw) => subKeywords.has(kw));
+function deltaNote(delta: number, stat: string): string {
+  if (delta === 0) return `same ${stat}`;
+  return delta > 0 ? `+${delta} ${stat}` : `${delta} ${stat}`;
 }
 
 /**
@@ -47,20 +56,10 @@ export function composeRationale(
   substitute: ICatalogCard,
   tier: TSubstitutionTier = 1,
 ): string {
-  const pitch = pitchLabel(missing.pitch);
-
-  const missingClassSet = new Set(missing.classes);
-  const commonClasses = substitute.classes.filter((c) => missingClassSet.has(c));
-  const classLabel = commonClasses.length > 0
-    ? commonClasses.join(', ')
-    : 'shared';
-
-  const pNote = powerNote(missing, substitute);
-  const dNote = defenseNote(missing, substitute);
-  const shared = sharedKeywords(missing, substitute);
-  const kwList = shared.length > 0 ? shared.join(', ') : 'no';
-
-  const core = `Same pitch (${pitch}), same ${classLabel} class, ${pNote}, ${dNote}, shared ${kwList} keywords.`;
+  const detail = describeRationale(missing, substitute, tier);
+  const classLabel = detail.sharedClasses.length > 0 ? detail.sharedClasses.join(', ') : 'shared';
+  const kwList = detail.sharedKeywords.length > 0 ? detail.sharedKeywords.join(', ') : 'no';
+  const core = `Same pitch (${detail.pitch}), same ${classLabel} class, ${deltaNote(detail.powerDelta, 'power')}, ${deltaNote(detail.defenseDelta, 'defense')}, shared ${kwList} keywords.`;
 
   if (tier === 2) {
     return `Tier 2 substitute -- keyword overlap relaxed: ${core}`;

@@ -40,7 +40,7 @@ function buildDetailResponse(
     totalCards: 0,
     latestSnapshot: null,
     shoppingLine: null,
-    legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'] },
+    legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'], details: [] },
     ...overrides,
   };
 }
@@ -152,6 +152,7 @@ describe('DecksController POST /decks (int-spec)', () => {
         legality: {
           category: 'incomplete',
           reasons: ['Deck has 0 mainboard cards but Living Legend requires at least 60.'],
+          details: [],
         },
       });
       decksService.createScratch.mockResolvedValue(response);
@@ -247,7 +248,7 @@ describe('DecksController POST /decks (int-spec)', () => {
             status: 'idea',
             tags: [],
             updatedAt: '2026-05-17T10:00:00.000Z',
-            legality: { category: 'incomplete', reasons: [] },
+            legality: { category: 'incomplete', reasons: [], details: [] },
             trackedAt: '2026-05-17T10:00:00.000Z',
             latestSnapshot: null,
             heroImageUrl: null,

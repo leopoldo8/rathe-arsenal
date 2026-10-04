@@ -14,6 +14,7 @@ import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
 import { about } from './about';
+import { reasons } from './reasons';
 
 export const ptBR = {
   common,
@@ -32,6 +33,7 @@ export const ptBR = {
   settings,
   ui,
   about,
+  reasons,
 } as const;
 
 /**

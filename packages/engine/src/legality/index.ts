@@ -10,6 +10,7 @@ export type {
   IDeckLegalityResult,
   ILegalityDeck,
   ILegalityDeckCard,
+  TLegalityReasonDetail,
 } from './types';
 
 export { FORMAT_RULES } from './rules';

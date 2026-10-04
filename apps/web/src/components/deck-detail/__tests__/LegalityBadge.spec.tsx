@@ -112,9 +112,9 @@ describe('LegalityBadge — incomplete variant', () => {
     expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto');
   });
 
-  it('parses X/Y pattern from reasons for the badge text', () => {
-    renderBadge({ category: 'incomplete', reasons: ['Deck has 58/60 cards'] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto · 58/60 cartas');
+  it('shows plain "Incompleto" when the reason carries no structured detail', () => {
+    renderBadge({ category: 'incomplete', reasons: ['Deck has 58 mainboard cards'] });
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent(/^Incompleto$/);
   });
 
   it('shows fallback "Incomplete" when reasons is empty', () => {
@@ -286,5 +286,33 @@ describe('LegalityBadge — full text, pill style', () => {
 
     expect(screen.getByTestId('legality-badge')).toHaveTextContent(`Ilegal · ${reason}`);
     expect(screen.getByTestId('legality-badge').textContent).not.toContain('…');
+  });
+});
+
+describe('LegalityBadge — localized reasons', () => {
+  it('shows the mainboard count on an incomplete chip from the reason details', () => {
+    renderBadge({
+      category: 'incomplete',
+      reasons: ['Deck has 42 mainboard cards but Classic Constructed requires at least 60.'],
+      details: [{ code: 'mainboard_too_small', params: { total: 42, required: 60, format: 'Classic Constructed' } }],
+    });
+
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Incompleto · 42/60 cartas');
+  });
+
+  it('lists the reason in pt-BR in the popover instead of the engine sentence', async () => {
+    renderBadge({
+      category: 'illegal',
+      reasons: ['Hero "Kayo, Armed and Dangerous" is not legal in Classic Constructed. Choose a different hero or format.'],
+      details: [{ code: 'hero_not_legal', params: { hero: 'Kayo, Armed and Dangerous', format: 'Classic Constructed' } }],
+    });
+
+    fireEvent.click(screen.getByTestId('legality-badge'));
+
+    const popover = await screen.findByTestId('legality-reasons-popover');
+    expect(popover).toHaveTextContent(
+      'Kayo, Armed and Dangerous não é permitido em Classic Constructed. Troque o herói ou o formato.',
+    );
+    expect(popover).not.toHaveTextContent('Choose a different hero');
   });
 });

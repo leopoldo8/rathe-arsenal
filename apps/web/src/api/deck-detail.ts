@@ -68,6 +68,7 @@ export interface ISubstitutionMatch {
   readonly tier: number;
   readonly score: number;
   readonly rationale: string;
+  readonly rationaleDetail?: import('./swaps').IRationaleDetail | null;
 }
 
 export interface ISubstitutedEntry {

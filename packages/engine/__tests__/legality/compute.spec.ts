@@ -426,3 +426,66 @@ describe('computeDeckLegality — result shape', () => {
     expect(Object.isFrozen(result.reasons)).toBe(true);
   });
 });
+
+describe('computeDeckLegality — structured reason details', () => {
+  it('legal result has no details', () => {
+    const result = computeDeckLegality(makeDeck('dorinthea-ironsong', buildCC60()), catalog, 'Classic Constructed');
+    expect(result.details).toEqual([]);
+  });
+
+  it('mainboard under the minimum carries the counts', () => {
+    const result = computeDeckLegality(makeDeck('dorinthea-ironsong', buildCCMainboard(58)), catalog, 'Classic Constructed');
+    expect(result.details).toEqual([
+      { code: 'mainboard_too_small', params: { total: 58, required: 60, format: 'Classic Constructed' } },
+    ]);
+  });
+
+  it('mainboard off the exact count carries the counts', () => {
+    const deck = makeDeck('kayo-berserker-runt', buildBlitz40().slice(0, 39));
+    const result = computeDeckLegality(deck, catalog, 'Blitz');
+    expect(result.details).toEqual([
+      { code: 'mainboard_not_exact', params: { total: 39, required: 40, format: 'Blitz' } },
+    ]);
+  });
+
+  it('unrecognized hero has a code with no params', () => {
+    const result = computeDeckLegality(makeDeck(null, buildCC60()), catalog, 'Classic Constructed');
+    expect(result.details).toEqual([{ code: 'hero_unrecognized', params: {} }]);
+  });
+
+  it('hero outside the format names the hero', () => {
+    const result = computeDeckLegality(makeDeck('briar-warden-of-thorns', buildCC60()), catalog, 'Classic Constructed');
+    expect(result.details).toEqual([
+      { code: 'hero_not_legal', params: { hero: 'Briar, Warden of Thorns', format: 'Classic Constructed' } },
+    ]);
+  });
+
+  it('too many copies names the card and the limit', () => {
+    const mainboard = [{ cardIdentifier: 'adrenaline-rush-red', quantity: 4 }, ...buildCCMainboard(56)];
+    const result = computeDeckLegality(makeDeck('dorinthea-ironsong', mainboard), catalog, 'Classic Constructed');
+    expect(result.details[0]).toMatchObject({
+      code: 'too_many_copies',
+      params: { card: 'Adrenaline Rush', count: 4, max: 3, format: 'Classic Constructed' },
+    });
+  });
+
+  it('card outside the hero names both', () => {
+    const mainboard = [{ cardIdentifier: 'blood-drop-red', quantity: 1 }, ...buildCCMainboard(59)];
+    const result = computeDeckLegality(makeDeck('dorinthea-ironsong', mainboard), catalog, 'Classic Constructed');
+    expect(result.details).toEqual([
+      { code: 'card_not_for_hero', params: { card: 'Blood Drop', hero: 'Dorinthea Ironsong' } },
+    ]);
+  });
+
+  it('every reason string has exactly one detail', () => {
+    const decks = [
+      makeDeck(null, buildCC60()),
+      makeDeck('dorinthea-ironsong', buildCCMainboard(10)),
+      makeDeck('briar-warden-of-thorns', buildCC60()),
+    ];
+    for (const deck of decks) {
+      const result = computeDeckLegality(deck, catalog, 'Classic Constructed');
+      expect(result.details).toHaveLength(result.reasons.length);
+    }
+  });
+});

@@ -4,6 +4,7 @@ import { Button } from '../ui/Button/Button';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { CardArt } from '../card-art/CardArt';
 import { CongratsAllPlayable } from './CongratsAllPlayable';
+import { formatSwapRationale } from '../../i18n/format-reasons';
 import { useDecksQuery, ITrackedDeckListItem } from '../../api/decks';
 import { useDeckDetailQuery, ISubstitutedEntry } from '../../api/deck-detail';
 import { findSwap, selectDeckSwaps, useSwapMutation, useSwapsQuery } from '../../api/swaps';
@@ -301,7 +302,7 @@ function SubstitutionPreviewRow({
         </div>
       </div>
 
-      <p className={styles.subRationale}>{match.rationale}</p>
+      <p className={styles.subRationale}>{formatSwapRationale(match.rationaleDetail, match.rationale, t)}</p>
 
       <div className={styles.subActions}>
         <Button

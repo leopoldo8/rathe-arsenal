@@ -1,6 +1,7 @@
-import { ICatalogCard } from '@rathe-arsenal/engine';
+import { ICatalogCard, IRationaleDetail } from '@rathe-arsenal/engine';
 import { CatalogService } from '../catalog/catalog.service';
 import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
+import { describeSwapRationale } from './describe-swap-rationale';
 import { lookupCardMeta } from './lookup-card-meta';
 import { TSwapOutcome, TSwapRejectionReason, TSwapStatus } from './resolve-swap-transition';
 
@@ -21,6 +22,7 @@ export interface ISwapRow {
   readonly tier: 1 | 2;
   readonly confidence: number;
   readonly rationale: string;
+  readonly rationaleDetail: IRationaleDetail | null;
   readonly status: TSwapStatus;
   readonly appliedAt: string | null;
   readonly rejectedAt: string | null;
@@ -70,6 +72,12 @@ export function buildSwapRow({ entity, deck, inventory, catalogService }: IBuild
     tier: entity.tier,
     confidence: entity.confidence,
     rationale: entity.rationale,
+    rationaleDetail: describeSwapRationale(
+      catalogService,
+      entity.cardIdentifier,
+      entity.substituteIdentifier,
+      entity.tier,
+    ),
     status: entity.status,
     appliedAt: entity.appliedAt?.toISOString() ?? null,
     rejectedAt: entity.rejectedAt?.toISOString() ?? null,

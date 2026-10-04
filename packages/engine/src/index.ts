@@ -27,6 +27,8 @@ export type {
   ITierConfig,
   TSubstitutionTier,
   TExclusionKey,
+  IRationaleDetail,
+  TRationalePitch,
 } from './substitution';
 export {
   TIER_1_FLOOR_SCORE,
@@ -42,6 +44,7 @@ export {
   computePitchDelta,
   isWithinTolerance,
   composeRationale,
+  describeRationale,
   scoreCandidate,
   findTierMatch,
   findSubstitution,
@@ -70,5 +73,6 @@ export type {
   IDeckLegalityResult,
   ILegalityDeck,
   ILegalityDeckCard,
+  TLegalityReasonDetail,
 } from './legality';
 export { FORMAT_RULES, computeDeckLegality } from './legality';

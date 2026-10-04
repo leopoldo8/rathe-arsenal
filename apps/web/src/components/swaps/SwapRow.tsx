@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { formatSwapRationale } from '../../i18n/format-reasons';
 import type { TFunction } from 'i18next';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
@@ -68,6 +69,7 @@ export function SwapRow({
   onOutcome,
 }: ISwapRowProps): React.ReactElement {
   const { t } = useTranslation();
+  const rationale = formatSwapRationale(row.rationaleDetail, row.rationale, t);
   const [isRejecting, setIsRejecting] = useState(false);
   const [lightbox, setLightbox] = useState<ILightboxState | null>(null);
 
@@ -285,7 +287,7 @@ export function SwapRow({
         </div>
       </div>
 
-      {row.rationale !== '' && <p className={styles.rationale}>{row.rationale}</p>}
+      {rationale !== '' && <p className={styles.rationale}>{rationale}</p>}
 
       {isRejecting && !resolved && (
         <SwapRejectPanel

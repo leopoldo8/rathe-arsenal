@@ -25,6 +25,15 @@ export interface ISwapImageUrl {
   readonly sources: readonly { readonly small: string; readonly large: string }[];
 }
 
+export interface IRationaleDetail {
+  readonly tier: number;
+  readonly pitch: string;
+  readonly sharedClasses: readonly string[];
+  readonly powerDelta: number;
+  readonly defenseDelta: number;
+  readonly sharedKeywords: readonly string[];
+}
+
 export interface ISwapRow {
   readonly id: string;
   readonly trackedDeckId: number;
@@ -40,6 +49,8 @@ export interface ISwapRow {
   readonly tier: 1 | 2;
   readonly confidence: number;
   readonly rationale: string;
+  /** The facts behind `rationale`; null when a card left the catalog. */
+  readonly rationaleDetail?: IRationaleDetail | null;
   readonly status: TSwapStatus;
   readonly appliedAt: string | null;
   readonly rejectedAt: string | null;

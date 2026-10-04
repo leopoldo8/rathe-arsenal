@@ -1,5 +1,5 @@
 import { IShoppingLineResponse } from '../../stores/dtos/shopping-line.response.dto';
-import { TLegalityCategory } from '@rathe-arsenal/engine';
+import { TLegalityCategory, TLegalityReasonDetail } from '@rathe-arsenal/engine';
 
 export { IShoppingLineResponse };
 
@@ -11,6 +11,7 @@ export { IShoppingLineResponse };
 export interface IDeckLegality {
   readonly category: TLegalityCategory;
   readonly reasons: readonly string[];
+  readonly details: readonly TLegalityReasonDetail[];
 }
 
 export interface IBreakdownEntry {
