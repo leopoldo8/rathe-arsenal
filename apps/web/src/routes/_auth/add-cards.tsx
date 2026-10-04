@@ -29,11 +29,10 @@ export function AddCardsLayout(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
-        <span aria-hidden="true">←</span> {t('shell.navLibrary')}
-      </Link>
-
       <header className={styles.pageHeader}>
+        <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
+          <span aria-hidden="true">←</span> {t('shell.navLibrary')}
+        </Link>
         <h1 className={styles.title}>{t('decks.addCardsTitle')}</h1>
         <p className={styles.subtitle}>{t('decks.addCardsSubtitle')}</p>
       </header>

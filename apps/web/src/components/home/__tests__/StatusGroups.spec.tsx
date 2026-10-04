@@ -147,7 +147,7 @@ describe('StatusGroups', () => {
       makeDeck(3, 'idea'),
       makeDeck(4, 'retired'),
     ]);
-    expect(screen.getByText('Prontos para o jogo')).toBeInTheDocument();
+    expect(screen.getByText('Os que você está jogando')).toBeInTheDocument();
     expect(screen.getByText('Ainda em ajuste')).toBeInTheDocument();
     expect(screen.getByText('Sem lista definida')).toBeInTheDocument();
     expect(screen.getByText('Fora de uso')).toBeInTheDocument();

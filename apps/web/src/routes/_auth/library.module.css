@@ -9,7 +9,7 @@
   flex-direction: column;
   gap: var(--ra-space-6);
   inline-size: 100%;
-  max-inline-size: 1320px;
+  max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
   /* AppShell's <main> already supplies the standard page padding
      (var(--ra-space-6) horizontal + vertical, plus bottom-tab-bar
@@ -299,9 +299,6 @@
 }
 
 @media (max-width: 639px) {
-  .page {
-    padding: var(--ra-space-4) var(--ra-space-3) var(--ra-space-8);
-  }
   .pageHeader {
     align-items: flex-start;
   }

@@ -369,9 +369,9 @@ describe('UXUI-07 AC2 — DeckDetailSkeleton mirrors the single-column deck deta
     'components/deck-detail/DeckDetailSkeleton.module.css',
   );
 
-  it('.layout is a centred 1180px column', () => {
+  it('.layout is a centred column at the shared page width', () => {
     const body = ruleBody(readCss('components/deck-detail/DeckDetailSkeleton.module.css'), '.layout');
-    expect(body).toMatch(/max-inline-size\s*:\s*1180px/);
+    expect(body).toMatch(/max-inline-size\s*:\s*var\(--ra-page-max-inline\)/);
     expect(body).toMatch(/margin-inline\s*:\s*auto/);
   });
 
@@ -789,9 +789,9 @@ describe('Footer layout', () => {
     path.join(SRC_ROOT, 'components/shell/Footer.module.css'),
     'utf8',
   );
-  it('spans a centred 1180px container with the links pushed to the right edge', () => {
+  it('spans the shared page width with the links pushed to the right edge', () => {
     const inner = ruleBody(squash(footerCss), '.inner');
-    expect(inner).toContain('max-inline-size: 1180px');
+    expect(inner).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(inner).toContain('margin-inline: auto');
     expect(inner).toContain('justify-content: space-between');
     expect(inner).toContain('flex-wrap: wrap');
@@ -946,8 +946,8 @@ describe('HOME-01 — KPI strip', () => {
     expect(ruleBody(ARMORY_CSS, '.kpiMissing')).toContain('color: var(--ra-ready-low)');
   });
 
-  it('sets the title at 34px and the CTA on the accent at 13px 20px', () => {
-    expect(ruleBody(ARMORY_CSS, '.title')).toContain('font-size: 2.125rem');
+  it('sets the title at the shared page-title size and the CTA on the accent at 13px 20px', () => {
+    expect(ruleBody(withoutMediaBlocks(ARMORY_CSS), '.title')).toContain('font-size: var(--ra-text-h1)');
     const cta = ruleBody(ARMORY_CSS, '.cta');
     expect(cta).toContain('background-color: var(--ra-accent)');
     expect(cta).toContain('padding: 13px 20px');
@@ -992,10 +992,10 @@ describe('HOME-06 — deck meta line', () => {
 describe('HOME layout — centred 1180px column (handoff §3)', () => {
   const homeRouteCss = fs.readFileSync(path.join(SRC_ROOT, 'routes/_auth/home.module.css'), 'utf-8');
 
-  it('caps the populated column at 1180px and centres it', () => {
+  it('caps the populated column at the shared page width and centres it', () => {
     const body = homeRouteCss.match(/\.populated\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(homeRouteCss.match(/\.populated\s*\{/g)).toHaveLength(1);
-    expect(body).toContain('max-inline-size: 1180px');
+    expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(body).toContain('margin-inline: auto');
   });
 });
@@ -1027,9 +1027,9 @@ describe('DECK layout — centred 1180px column with a bleeding banner (handoff 
   const bannerCss = readDeckCss('DeckHeroBanner.module.css');
   const bannerBase = readDeckBaseCss('DeckHeroBanner.module.css');
 
-  it('caps the stack at 1180px and centres it', () => {
+  it('caps the stack at the shared page width and centres it', () => {
     const body = ruleBody(viewCss, '.stack');
-    expect(body).toContain('max-inline-size: 1180px');
+    expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(body).toContain('margin-inline: auto');
   });
 
@@ -1216,16 +1216,33 @@ const SOURCE_ROW_CSS = readCss('components/csv-sources/CsvSourceRow.module.css')
 const STATS_BAR_CSS = readCss('components/library/LibraryStatsBar.module.css');
 const FILTER_RAIL_CSS = readCss('components/library/LibraryFilterRail.module.css');
 
-describe('Phase 6 — every column is capped and centred', () => {
+describe('Page frame — every page starts its title and content at the same place', () => {
+  it('defines one page width and one form width', () => {
+    const tokens = fs.readFileSync(TOKENS_CSS, 'utf-8');
+    expect(tokens).toContain('--ra-page-max-inline: 1180px;');
+    expect(tokens).toContain('--ra-page-form-inline: 760px;');
+  });
+
   it.each([
-    ['Library', LIBRARY_ROUTE_CSS, '1320px'],
-    ['Sources', SOURCES_ROUTE_CSS, '1000px'],
-    ['Add cards', ADD_CARDS_SHELL_CSS, '900px'],
-  ] as const)('%s page column is %s wide with margin-inline: auto', (_name, css, width) => {
+    ['Library', LIBRARY_ROUTE_CSS],
+    ['Sources', SOURCES_ROUTE_CSS],
+    ['Add cards', ADD_CARDS_SHELL_CSS],
+    ['Swaps', SWAPS_ROUTE_CSS],
+    ['Settings', SETTINGS_CSS],
+    ['New deck', NEW_DECK_PAGE_CSS],
+    ['Edit deck', EDIT_PAGE_CSS],
+  ] as const)('%s page column uses the shared page width, centred', (_name, css) => {
     const body = ruleBody(css, '.page');
-    expect(body).toContain(`max-inline-size: ${width}`);
+    expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(body).toContain('inline-size: 100%');
     expect(body).toContain('margin-inline: auto');
+  });
+
+  it.each([
+    ['Settings', SETTINGS_CSS],
+    ['Edit deck', EDIT_PAGE_CSS],
+  ] as const)('%s keeps its form narrow but aligned to the left of the page column', (_name, css) => {
+    expect(ruleBody(css, '.page > *')).toContain('max-inline-size: var(--ra-page-form-inline)');
   });
 });
 
@@ -1331,13 +1348,6 @@ const IMPORT_CARD_CSS = readCss('components/decks-new/ImportFabraryCard.module.c
 const SCRATCH_CARD_CSS = readCss('components/decks-new/StartScratchCard.module.css');
 
 describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
-  it('caps the page column at 940px and centres it', () => {
-    const body = ruleBody(NEW_DECK_PAGE_CSS, '.page');
-    expect(body).toContain('max-inline-size: 940px');
-    expect(body).toContain('inline-size: 100%');
-    expect(body).toContain('margin-inline: auto');
-  });
-
   it('lays two 1fr columns 18px apart from 768px and stacks them below', () => {
     const wide = ruleBody(atRuleBody(NEW_DECK_PAGE_CSS_WITH_MEDIA, '@media (min-width: 768px)'), '.cards');
     expect(wide).toContain('grid-template-columns: 1fr 1fr');
@@ -1347,8 +1357,8 @@ describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
     expect(narrow).toContain('gap: 18px');
   });
 
-  it('sets the page title at 32px', () => {
-    expect(ruleBody(NEW_DECK_PAGE_CSS, '.title')).toContain('font-size: 32px');
+  it('sets the page title at the shared page-title size', () => {
+    expect(ruleBody(NEW_DECK_PAGE_CSS, '.title')).toContain('font-size: var(--ra-text-h1)');
   });
 
   it.each([
@@ -1388,13 +1398,6 @@ describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
 const SETTINGS_CSS = readCss('routes/_auth/settings.module.css');
 
 describe('Phase 7 — Settings (EDIT-05, handoff §11)', () => {
-  it('caps the page column at 720px and centres it', () => {
-    const body = ruleBody(SETTINGS_CSS, '.page');
-    expect(body).toContain('max-inline-size: 720px');
-    expect(body).toContain('inline-size: 100%');
-    expect(body).toContain('margin-inline: auto');
-  });
-
   it('draws each panel as a 16px surface with 24px padding', () => {
     const body = ruleBody(SETTINGS_CSS, '.section');
     expect(body).toContain('padding: var(--ra-space-6)');
@@ -1426,13 +1429,6 @@ const EDIT_DANGER_CSS = readCss('components/deck-edit/DeckDangerZone.module.css'
 const DECK_LIST_CSS = readCss('components/deck-detail/DeckList.module.css');
 
 describe('Phase 7 — Edit deck (EDIT-02..04, handoff §6)', () => {
-  it('caps the page column at 820px and centres it', () => {
-    const body = ruleBody(EDIT_PAGE_CSS, '.page');
-    expect(body).toContain('max-inline-size: 820px');
-    expect(body).toContain('inline-size: 100%');
-    expect(body).toContain('margin-inline: auto');
-  });
-
   it('draws the form as a 16px surface panel', () => {
     const body = ruleBody(EDIT_FORM_CSS, '.panel');
     expect(body).toContain('background: var(--ra-bg-surface)');
@@ -1659,9 +1655,9 @@ const SWAP_OUTCOME_CSS = readCss('components/swaps/SwapOutcomeBar.module.css');
 const SWAP_TABS_CSS = readCss('components/swaps/SwapsTabs.module.css');
 
 describe('SWAP — screen column', () => {
-  it('caps the page at 1180px and centres it', () => {
+  it('caps the page at the shared page width and centres it', () => {
     const body = ruleBody(SWAPS_ROUTE_CSS, '.page');
-    expect(body).toContain('max-inline-size: 1180px');
+    expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(body).toContain('margin-inline: auto');
   });
 });
@@ -1861,8 +1857,8 @@ describe('Phase 10 — app-wide polish sweep', () => {
     );
   });
 
-  it('gives the Settings column top padding below the nav', () => {
-    expect(ruleBody(SETTINGS_CSS, '.page')).toContain('padding-block: var(--ra-space-6) var(--ra-space-12)');
+  it('adds no top padding to the Settings column, so its title lines up with every other page', () => {
+    expect(ruleBody(SETTINGS_CSS, '.page')).toContain('padding-block: 0 var(--ra-space-12)');
   });
 });
 

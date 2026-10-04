@@ -91,9 +91,6 @@ export function computeAverageReadiness(
   return Math.round(sum / scored.length);
 }
 
-export function countPlayableDecks(decks: readonly ITrackedDeckListItem[]): number {
-  return decks.filter(
-    (deck) =>
-      !isRetired(deck) && resolveDeckMeta(deck).state === 'complete' && deck.legality.category !== 'illegal',
-  ).length;
+export function countCompleteDecks(decks: readonly ITrackedDeckListItem[]): number {
+  return decks.filter((deck) => !isRetired(deck) && resolveDeckMeta(deck).state === 'complete').length;
 }

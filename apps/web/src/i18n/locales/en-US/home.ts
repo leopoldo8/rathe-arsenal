@@ -70,7 +70,8 @@ export const home = {
 
   // ArmoryHeader, FilterBar, StatusGroups, DeckTile
   armoryHeading: 'Your arsenal',
-  readyDecksStatus: '{{ready}} of {{total}} decks ready to play',
+  completeDecksStatus_one: '{{complete}} of {{count}} deck complete with your collection',
+  completeDecksStatus_other: '{{complete}} of {{count}} decks complete with your collection',
   searchPlaceholder: 'Search decks or heroes',
   searchAriaLabel: 'Search decks',
   noMatches: 'No decks match your search or filters.',
@@ -78,7 +79,7 @@ export const home = {
   metaIncomplete: '{{missing}} missing · {{owned}}/{{total}}',
   metaDraft: 'Draft · no list',
   groupActiveName: 'Active',
-  groupActiveHint: 'Ready to take to a game',
+  groupActiveHint: "The ones you're playing",
   groupBuildingName: 'Building',
   groupBuildingHint: 'Being assembled, still adjusting',
   groupIdeaName: 'Ideas',

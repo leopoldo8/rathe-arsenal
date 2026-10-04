@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   inline-size: 100%;
-  max-inline-size: 1180px;
+  max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
 }
 

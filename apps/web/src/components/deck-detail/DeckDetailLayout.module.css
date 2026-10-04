@@ -12,6 +12,9 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  inline-size: 100%;
+  max-inline-size: var(--ra-page-max-inline);
+  margin-inline: auto;
   /* Extra bottom padding on mobile so ShoppingPanel's sticky bar doesn't
      obscure the last canvas section. */
   padding-bottom: 80px;

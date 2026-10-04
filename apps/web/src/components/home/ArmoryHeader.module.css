@@ -15,9 +15,16 @@
   margin: 0 0 var(--ra-space-2);
   font-family: var(--ra-font-display);
   font-weight: var(--ra-weight-bold);
-  font-size: 2.125rem;
+  font-size: var(--ra-text-h1);
+  letter-spacing: var(--ra-track-h1);
   line-height: var(--ra-leading-tight);
   color: var(--ra-fg-primary);
+}
+
+@media (max-width: 639px) {
+  .title {
+    font-size: var(--ra-text-h2);
+  }
 }
 
 .status {

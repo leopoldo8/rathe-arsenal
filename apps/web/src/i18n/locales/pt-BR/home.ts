@@ -70,7 +70,8 @@ export const home = {
 
   // ArmoryHeader, FilterBar, StatusGroups, DeckTile
   armoryHeading: 'Seu arsenal',
-  readyDecksStatus: '{{ready}} de {{total}} decks prontos para jogar',
+  completeDecksStatus_one: '{{complete}} de {{count}} deck completo com a sua coleção',
+  completeDecksStatus_other: '{{complete}} de {{count}} decks completos com a sua coleção',
   searchPlaceholder: 'Buscar decks ou heróis',
   searchAriaLabel: 'Buscar decks',
   noMatches: 'Nenhum deck corresponde à busca ou aos filtros.',
@@ -78,7 +79,7 @@ export const home = {
   metaIncomplete: '{{missing}} faltando · {{owned}}/{{total}}',
   metaDraft: 'Rascunho · sem lista',
   groupActiveName: 'Ativos',
-  groupActiveHint: 'Prontos para o jogo',
+  groupActiveHint: 'Os que você está jogando',
   groupBuildingName: 'Construindo',
   groupBuildingHint: 'Ainda em ajuste',
   groupIdeaName: 'Ideias',

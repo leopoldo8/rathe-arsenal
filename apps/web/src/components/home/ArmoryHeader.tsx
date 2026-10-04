@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ITrackedDeckListItem, ITrackedDeckListResponse } from '../../api/decks';
 import { AggregateCallout } from './AggregateCallout';
-import { computeAverageReadiness, countPlayableDecks, isRetired } from './homeGroups';
+import { computeAverageReadiness, countCompleteDecks, isRetired } from './homeGroups';
 import styles from './ArmoryHeader.module.css';
 
 interface IArmoryHeaderProps {
@@ -31,9 +31,9 @@ export function ArmoryHeader({
         <h1 className={styles.title}>{t('home.armoryHeading')}</h1>
         <p className={styles.status}>
           <span className={styles.statusDot} aria-hidden="true" />
-          {t('home.readyDecksStatus', {
-            ready: countPlayableDecks(decks),
-            total: inRotation.length,
+          {t('home.completeDecksStatus', {
+            complete: countCompleteDecks(decks),
+            count: inRotation.length,
           })}
         </p>
         <AggregateCallout aggregateShoppingLine={aggregateShoppingLine} />
