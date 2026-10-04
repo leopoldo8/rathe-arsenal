@@ -278,24 +278,26 @@ export function DeckDetailSidebar({
             />
           )}
 
-        {/* ---- Block 3: Shopping ---- */}
-        <section
-          className={styles.block}
-          aria-labelledby="sidebar-shopping-title"
-          data-testid="sidebar-shopping-block"
-        >
-          <h3 id="sidebar-shopping-title" className={styles.blockTitle}>
-            {t('decks.shopping')}
-          </h3>
-          <ShoppingPanel
-            data={shoppingData}
-            onFetchVariants={onFetchVariants}
-            fetchMutationStatus={fetchMutationStatus}
-            isCooldownActive={isCooldownActive}
-            onPollingChange={onPollingChange}
-            onRetry={onShoppingRetry}
-          />
-        </section>
+        {/* ---- Block 3: Shopping — only when a store has prices to show ---- */}
+        {shoppingData?.kind === 'populated' && (
+          <section
+            className={styles.block}
+            aria-labelledby="sidebar-shopping-title"
+            data-testid="sidebar-shopping-block"
+          >
+            <h3 id="sidebar-shopping-title" className={styles.blockTitle}>
+              {t('decks.shopping')}
+            </h3>
+            <ShoppingPanel
+              data={shoppingData}
+              onFetchVariants={onFetchVariants}
+              fetchMutationStatus={fetchMutationStatus}
+              isCooldownActive={isCooldownActive}
+              onPollingChange={onPollingChange}
+              onRetry={onShoppingRetry}
+            />
+          </section>
+        )}
 
         {/* ---- Block 4: Fabrary link — conditional ---- */}
         {fabraryUrl !== null && (

@@ -158,8 +158,16 @@
   text-shadow: var(--hero-text-shadow);
 }
 
+.eyebrowRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-2);
+  margin-block-end: var(--ra-space-1);
+}
+
 .eyebrow {
-  margin: 0 0 var(--ra-space-1);
+  margin: 0;
   color: var(--hero-eyebrow-ink);
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-xs);

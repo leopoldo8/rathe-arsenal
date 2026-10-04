@@ -1,8 +1,8 @@
-/* Analysis row (DECK-04): three equal cards, 14px gap. */
+/* Analysis row (DECK-04): two equal cards, 14px gap. */
 
 .row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-block-start: var(--ra-space-4);
 }
@@ -34,59 +34,11 @@
   text-transform: uppercase;
 }
 
-.empty,
-.caption {
+.empty {
   margin: 0;
   color: var(--ra-fg-secondary);
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-xs);
-}
-
-/* ---------- Readiness meters ---------- */
-.meterRow {
-  display: grid;
-  grid-template-columns: 5.5rem 1fr auto;
-  align-items: center;
-  gap: var(--ra-space-2);
-}
-
-.meterLabel {
-  color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-}
-
-.meterValue {
-  color: var(--ra-fg-primary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-xs);
-  font-weight: var(--ra-weight-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.track {
-  block-size: 5px;
-  border-radius: var(--ra-radius-full);
-  background: var(--ra-border-strong);
-  overflow: hidden;
-}
-
-.fill {
-  inline-size: var(--ra-fill, 0%);
-  block-size: 100%;
-  border-radius: var(--ra-radius-full);
-}
-
-.fillRaw {
-  background: var(--ra-accent);
-}
-
-.fillFidelity {
-  background: var(--ra-ready-high);
-}
-
-.legality {
-  margin-block-start: auto;
 }
 
 /* ---------- Pitch distribution ---------- */

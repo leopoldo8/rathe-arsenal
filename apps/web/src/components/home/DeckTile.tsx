@@ -43,14 +43,12 @@ function DeckMeta({ meta, isIllegal }: IDeckMetaProps): React.ReactElement {
     <p className={`${styles.meta} ${stateClass}`} data-testid="deck-meta" data-state={meta.state}>
       <span>{text}</span>
       {isIllegal && (
-        <span
-          className={styles.legalityIllegal}
-          data-testid="legality-illegal"
-          aria-label={t('home.legalityNotLegalLabel')}
-          title={t('home.legalityIllegalTitle')}
-        >
-          ✗
-        </span>
+        <>
+          <span aria-hidden="true">·</span>
+          <span className={styles.legalityIllegal} data-testid="legality-illegal">
+            {t('home.legalityNotLegalLabel')}
+          </span>
+        </>
       )}
     </p>
   );

@@ -1,11 +1,11 @@
 export const deckDetail = {
   // DeckHeroBanner
   bannerAria: 'Deck header',
-  eyebrowSeparator: ' · ',
 
   // DeckStatusStrip
   stripAria: 'Deck status',
   stripComplete: 'Collection complete — no substitutions needed.',
+  stripCompleteOffFormat: 'Your collection covers the whole deck, but it breaks the {{format}} rules.',
   stripSolvable_one:
     'Your collection covers this deck — {{count}} swap waiting for approval to reach 100%.',
   stripSolvable_other:
@@ -13,6 +13,8 @@ export const deckDetail = {
   stripMissingCards_one: '{{count}} card missing',
   stripMissingCards_other: '{{count}} cards missing',
   stripNoSwaps: 'no swaps available',
+  stripReachesWithSwaps_one: 'With it, the deck reaches {{pct}}%.',
+  stripReachesWithSwaps_other: 'With them, the deck reaches {{pct}}%.',
   stripPendingCloser_one: '{{count}} swap gets you closer',
   stripPendingCloser_other: '{{count}} swaps get you closer',
   stripUnsolved_one: '(but {{count}} has no solution)',
@@ -26,10 +28,6 @@ export const deckDetail = {
 
   // DeckAnalysisRow
   analysisAria: 'Deck analysis',
-  readinessTitle: 'Readiness',
-  rawLabel: 'Raw',
-  fidelityLabel: 'Fidelity',
-  readinessCaption: 'Fidelity reflects what can be solved, not what has been approved yet.',
   pitchTitle: 'Pitch color',
   pitchRed: 'Red',
   pitchYellow: 'Yellow',

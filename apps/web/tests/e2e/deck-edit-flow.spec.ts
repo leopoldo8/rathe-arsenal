@@ -64,13 +64,16 @@ test.describe('Deck edit flow', () => {
     await expect(pill).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('the legality badge renders in the readiness card with a valid data-legality value', async ({ page }) => {
+  test('the legality badge sits next to the format and only flags a problem', async ({ page }) => {
     await openDeck(page, readyDeckId);
 
-    await expect(page.getByTestId('analysis-readiness')).toBeVisible();
-    const badge = page.getByTestId('legality-badge');
-    await expect(badge).toBeVisible();
-    expect(['legal', 'incomplete', 'illegal']).toContain(await badge.getAttribute('data-legality'));
+    await expect(page.getByTestId('analysis-readiness')).toHaveCount(0);
+    const badges = page.getByTestId('deck-hero-banner').getByTestId('legality-badge');
+    const count = await badges.count();
+    expect(count).toBeLessThanOrEqual(1);
+    if (count === 1) {
+      expect(['incomplete', 'illegal']).toContain(await badges.first().getAttribute('data-legality'));
+    }
   });
 
   test('Save with no changes leaves the editor without a save error or cascade prompt', async ({ page }) => {

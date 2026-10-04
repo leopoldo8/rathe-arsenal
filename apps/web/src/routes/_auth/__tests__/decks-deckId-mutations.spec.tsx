@@ -60,6 +60,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 const mockPatchMutate = vi.fn();
+const mockUntrackMutate = vi.fn();
 const mockTagList = vi.hoisted(() => ({
   tags: [] as { id: number; name: string; createdAt: string }[],
 }));
@@ -167,7 +168,7 @@ vi.mock('../../../api/decks', async (importOriginal) => {
   return {
     ...actual,
     usePatchDeckMutation: () => ({ mutate: mockPatchMutate, isPending: false }),
-    useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
+    useUntrackDeckMutation: () => ({ mutate: mockUntrackMutate, isPending: false }),
     usePutDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
   };
 });
@@ -496,13 +497,13 @@ describe('DeckDetailPage — rendered elements carry the classes the layout rule
 describe('DeckDetailPage — hero banner (DECK-01)', () => {
   beforeEach(() => populate(buildDeck()));
 
-  it('shows the title, the hero name and the format-and-league eyebrow', () => {
+  it('shows the title, the hero name and the format eyebrow, leaving tags to the chip row', () => {
     renderPage();
 
     const banner = screen.getByTestId('deck-hero-banner');
     expect(within(banner).getByRole('heading', { level: 1, name: 'Dorinthea Deck' })).toBeInTheDocument();
     expect(screen.getByTestId('deck-hero-name')).toHaveTextContent('Dorinthea Ironsong');
-    expect(screen.getByTestId('deck-hero-eyebrow')).toHaveTextContent('Classic Constructed · liga local');
+    expect(screen.getByTestId('deck-hero-eyebrow')).toHaveTextContent(/^Classic Constructed$/);
   });
 
   it('draws the hero art from the large rendition, never the thumbnail', () => {
@@ -577,6 +578,21 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     await userEvent.click(screen.getByTestId('deck-detail-overflow-btn'));
 
     expect(screen.getByTestId('deck-detail-untrack-btn')).toBeInTheDocument();
+  });
+
+  it('asks before deleting the deck from the overflow menu', async () => {
+    mockUntrackMutate.mockClear();
+    renderPage();
+
+    await userEvent.click(screen.getByTestId('deck-detail-overflow-btn'));
+    await userEvent.click(screen.getByTestId('deck-detail-untrack-btn'));
+
+    expect(mockUntrackMutate).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Excluir "Dorinthea Deck"?');
+
+    await userEvent.click(screen.getByTestId('deck-delete-confirm'));
+
+    expect(mockUntrackMutate).toHaveBeenCalledWith(expect.any(Number), expect.any(Object));
   });
 
   it('removes a tag by its real id, not by its position in the row', async () => {
@@ -692,38 +708,31 @@ describe('DeckDetailPage — Fabrary link appears once (DECK-09)', () => {
 describe('DeckDetailPage — analysis row (DECK-04)', () => {
   beforeEach(() => populate(buildDeck()));
 
-  it('renders raw, fidelity and pct as three separate values', () => {
+  it('keeps readiness in the medallion only', () => {
     renderPage();
 
-    expect(screen.getByTestId('analysis-raw-value')).toHaveTextContent('61.2%');
-    expect(screen.getByTestId('analysis-fidelity-value')).toHaveTextContent('83.4%');
     expect(screen.getByTestId('readiness-medallion')).toHaveAttribute('aria-valuenow', '72');
+    expect(screen.queryByTestId('analysis-readiness')).toBeNull();
   });
 
-  it('never concatenates raw and fidelity into one string', () => {
+  it('draws no raw or fidelity meters', () => {
     renderPage();
 
-    expect(screen.queryAllByText(/61\.2.*83\.4/)).toHaveLength(0);
-    expect(screen.queryByText(/Bruto/)).toBeNull();
-    expect(screen.queryByText(/Fidelity.*·/)).toBeNull();
-    expect(screen.getByTestId('analysis-raw-value').textContent).not.toContain('83.4');
-    expect(screen.getByTestId('analysis-fidelity-value').textContent).not.toContain('61.2');
+    expect(screen.queryByText(/Bruta|Fidelidade/)).toBeNull();
+    expect(screen.queryByText(/61[.,]2/)).toBeNull();
   });
 
-  it('explains that fidelity is what can be solved, not what is approved', () => {
+  it('shows the legality badge next to the format only when the deck has a problem', () => {
+    populate(buildDeck({ legality: { category: 'illegal', reasons: ['Off format.'] } }));
     renderPage();
 
-    expect(
-      within(screen.getByTestId('analysis-readiness')).getByText(
-        'A fidelidade mostra o que dá para resolver, não o que já foi aprovado.',
-      ),
-    ).toBeInTheDocument();
+    expect(within(screen.getByTestId('deck-hero-banner')).getByTestId('legality-badge')).toHaveTextContent('Ilegal');
   });
 
-  it('shows the legality badge in the readiness card', () => {
+  it('shows no legality badge for a legal deck', () => {
     renderPage();
 
-    expect(within(screen.getByTestId('analysis-readiness')).getByTestId('legality-badge')).toBeInTheDocument();
+    expect(screen.queryByTestId('legality-badge')).toBeNull();
   });
 
   it('renders the pitch distribution and the cost curve cards', () => {

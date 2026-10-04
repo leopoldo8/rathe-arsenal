@@ -82,7 +82,7 @@ export function LegalityBadge({ legality, format }: ILegalityBadgeProps): React.
 
   // Derive the chip label text
   const reasons = localizeLegalityReasons(legality, t);
-  const labelText = isIncomplete ? buildIncompleteLabel(legality, t) : buildIllegalLabel(reasons, t);
+  const labelText = isIncomplete ? buildIncompleteLabel(legality, t) : t('decks.illegal');
 
   return (
     <LegalityReasonsPopover
@@ -122,11 +122,4 @@ function buildIncompleteLabel(legality: IDeckLegality, t: TTranslate): string {
   return t('decks.incompleteWithCount', { count: sizeDetail.params.total, total: sizeDetail.params.required });
 }
 
-/**
- * Derives the chip text for an illegal deck from the first reason, in full.
- */
-function buildIllegalLabel(reasons: readonly string[], t: TTranslate): string {
-  if (reasons.length === 0) return t('decks.illegal');
 
-  return t('decks.illegalWithReason', { reason: reasons[0] ?? '' });
-}

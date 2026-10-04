@@ -1,16 +1,18 @@
 export const deckDetail = {
   // DeckHeroBanner
   bannerAria: 'Cabeçalho do deck',
-  eyebrowSeparator: ' · ',
 
   // DeckStatusStrip
   stripAria: 'Situação do deck',
   stripComplete: 'Sua coleção cobre o deck inteiro.',
+  stripCompleteOffFormat: 'Sua coleção cobre o deck inteiro, mas ele está fora das regras de {{format}}.',
   stripSolvable_one: 'Sua coleção cobre este deck se você aprovar {{count}} troca.',
   stripSolvable_other: 'Sua coleção cobre este deck se você aprovar {{count}} trocas.',
   stripMissingCards_one: 'Falta {{count}} carta',
   stripMissingCards_other: 'Faltam {{count}} cartas',
   stripNoSwaps: 'nenhuma troca possível com a sua coleção',
+  stripReachesWithSwaps_one: 'Com ela, o deck chega a {{pct}}%.',
+  stripReachesWithSwaps_other: 'Com elas, o deck chega a {{pct}}%.',
   stripPendingCloser_one: '{{count}} troca sugerida cobre parte',
   stripPendingCloser_other: '{{count}} trocas sugeridas cobrem parte',
   stripUnsolved_one: 'e {{count}} só comprando',
@@ -24,10 +26,6 @@ export const deckDetail = {
 
   // DeckAnalysisRow
   analysisAria: 'Análise do deck',
-  readinessTitle: 'Prontidão',
-  rawLabel: 'Bruta',
-  fidelityLabel: 'Fidelidade',
-  readinessCaption: 'A fidelidade mostra o que dá para resolver, não o que já foi aprovado.',
   pitchTitle: 'Pitch',
   pitchRed: 'Vermelho',
   pitchYellow: 'Amarelo',

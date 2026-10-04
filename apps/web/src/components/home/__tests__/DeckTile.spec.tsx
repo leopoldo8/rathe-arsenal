@@ -112,7 +112,7 @@ describe('DeckTile', () => {
       renderTile(makeDeck({ legality: { category: 'illegal', reasons: ['x'] } }));
       const marker = screen.getByTestId('legality-illegal');
       expect(marker).toHaveClass(styles.legalityIllegal as string);
-      expect(marker).toHaveAttribute('aria-label', 'Fora do formato');
+      expect(marker).toHaveTextContent('Fora do formato');
     });
 
     it('shows nothing for a legal deck', () => {

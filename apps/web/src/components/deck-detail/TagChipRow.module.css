@@ -28,12 +28,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Visual icon stays 16px; padding extends hit area to ≥44px (UXUI-02). */
+  /* Visual icon stays 16px; padding extends the hit area to 44px and the negative margin keeps it from inflating the chip (UXUI-02). */
   width: 16px;
   height: 16px;
   padding: 14px;
+  margin: -14px -14px -14px -6px;
   box-sizing: content-box;
   background: transparent;
+  background-clip: content-box;
   border: none;
   border-radius: 50%;
   color: var(--ra-fg-muted);

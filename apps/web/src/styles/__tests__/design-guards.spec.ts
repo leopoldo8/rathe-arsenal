@@ -647,13 +647,11 @@ describe('CMP-01..03 — ReadinessMedallion ring geometry', () => {
     expect(ruleBody(css, ".medallion[data-band='building']")).toContain('var(--ra-status-building)');
   });
 
-  it('sizes the number 12px at sm and 30px at lg, with a 14px percent glyph and 7.5px sublabel', () => {
+  it('sizes the number 12px at sm and 30px at lg, with a 14px percent glyph and no hero-name sublabel', () => {
     expect(ruleBody(css, '.number')).toContain('font-size: 12px');
     expect(ruleBody(css, ".medallion[data-size='lg'] .number")).toContain('font-size: 30px');
     expect(ruleBody(css, '.percent')).toContain('font-size: 14px');
-    expect(ruleBody(css, '.heroName')).toContain('font-size: 7.5px');
-    expect(ruleBody(css, '.heroName')).toContain('text-transform: uppercase');
-    expect(ruleBody(css, '.heroName')).toContain('color: #c6a678');
+    expect(css).not.toContain('.heroName');
   });
 
   it('falls back to a hero-pitch gradient', () => {
@@ -1118,16 +1116,15 @@ describe('DECK-02/03 — status strip', () => {
 describe('DECK-04 — analysis row', () => {
   const css = readDeckBaseCss('DeckAnalysisRow.module.css');
 
-  it('lays three equal cards 14px apart', () => {
+  it('lays two equal cards 14px apart', () => {
     const body = ruleBody(css, '.row');
-    expect(body).toContain('grid-template-columns: 1fr 1fr 1fr');
+    expect(body).toContain('grid-template-columns: 1fr 1fr');
     expect(body).toContain('gap: 14px');
   });
 
-  it('draws the readiness bars 5px tall, raw in the accent and fidelity in ready', () => {
-    expect(ruleBody(css, '.track')).toContain('block-size: 5px');
-    expect(ruleBody(css, '.fillRaw')).toContain('background: var(--ra-accent)');
-    expect(ruleBody(css, '.fillFidelity')).toContain('background: var(--ra-ready-high)');
+  it('draws no raw or fidelity meters', () => {
+    expect(css).not.toContain('.fillRaw');
+    expect(css).not.toContain('.fillFidelity');
   });
 
   it('draws the pitch stack 9px tall and splits it by count', () => {

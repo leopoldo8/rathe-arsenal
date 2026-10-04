@@ -34,9 +34,7 @@ export const decks = {
   moreDeckActionsAria: 'Mais ações do deck',
   deckActionsMenuAria: 'Ações do deck',
   untrackThisDeckAria: 'Excluir este deck',
-  removing: 'Excluindo…',
   untrack: 'Excluir deck',
-  untrackFailedToast: 'Não foi possível excluir o deck: {{message}}',
   // DeckDetailLayout
   deckDetailsSidebarAria: 'Detalhes do deck',
   // DeckDetailSidebar
@@ -87,7 +85,6 @@ export const decks = {
   incomplete: 'Incompleto',
   incompleteWithCount: 'Incompleto · {{count}}/{{total}} cartas',
   illegal: 'Ilegal',
-  illegalWithReason: 'Ilegal · {{reason}}',
   // LegalityReasonsPopover / CardRowLegalityWarning
   deckIncompleteHeading: 'Deck incompleto',
   deckIllegalHeading: 'Deck fora do formato',

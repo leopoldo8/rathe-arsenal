@@ -176,10 +176,10 @@ describe('LegalityBadge — illegal variant', () => {
     expect(screen.getByTestId('legality-badge')).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
-  it('includes "Illegal" and first-reason short form in the badge text', () => {
+  it('keeps the chip to one word and leaves the reason for the popover', () => {
     renderBadge({ category: 'illegal', reasons: ['4× card exceeds limit'] });
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('Ilegal');
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent('4× card exceeds limit');
+    expect(screen.getByTestId('legality-badge')).toHaveTextContent(/^⚠?\s*Ilegal$/);
+    expect(screen.getByTestId('legality-badge')).not.toHaveTextContent('4× card exceeds limit');
   });
 
   it('shows "Illegal" fallback when reasons is empty', () => {
@@ -280,12 +280,15 @@ describe('LegalityBadge — full text, pill style', () => {
     expect(screen.getByTestId('legality-badge')).toHaveClass(styles.badge!);
   });
 
-  it('shows the whole first reason of an illegal deck, not a 37-char cut', () => {
+  it('shows the whole reason in the popover, not a cut', async () => {
     const reason = 'Deck has 42 mainboard cards but Classic Constructed requires at least 60.';
     renderBadge({ category: 'illegal', reasons: [reason] });
 
-    expect(screen.getByTestId('legality-badge')).toHaveTextContent(`Ilegal · ${reason}`);
-    expect(screen.getByTestId('legality-badge').textContent).not.toContain('…');
+    fireEvent.click(screen.getByTestId('legality-badge'));
+
+    const popover = await screen.findByTestId('legality-reasons-popover');
+    expect(popover).toHaveTextContent(reason);
+    expect(popover.textContent).not.toContain('…');
   });
 });
 

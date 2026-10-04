@@ -248,7 +248,7 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
     const price = within(meta).getByTestId('missing-row-price');
     expect(meta).toHaveClass(styles.meta!);
     expect(price).toHaveClass(styles.price!);
-    expect(meta).toHaveTextContent('mainboard');
+    expect(meta).not.toHaveTextContent('mainboard');
   });
 
   it('renders one quiet Buy link per available row, with an external-link arrow', () => {

@@ -47,7 +47,6 @@ export function DeckboxFrontDeck({
           className={styles.medallion}
           pct={readinessPct}
           size="sm"
-          heroName=""
           heroArt={null}
           showArt={false}
         />
