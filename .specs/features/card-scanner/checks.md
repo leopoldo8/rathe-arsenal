@@ -35,11 +35,11 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-sca
 **C6** - Code `MST095` resolves to both `a-drop-in-the-ocean-blue` and `inner-chi-blue` (AC 5)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/collector-code.spec.ts -t "returns both cards of a double-faced code"`
 
-**C7** - `GET /catalog/collector-codes` returns, grouped by card, exactly the set of (printing identifier, card) pairs over every card that is neither Hero nor Token (8,380 pairs today), the expected set computed in the test from `@flesh-and-blood/cards`; `WTR001` (hero `rhinar-reckless-rampage`) and `UPR042` (token `aether-ashwing`) are absent; `MST095` appears under both of its cards (AC 6)
+**C7** - `GET /catalog/collector-codes` returns, grouped by card, exactly the set of (printing identifier, card) pairs over every card that is neither Hero nor Token (8,380 pairs today), the expected set computed in the test from `@flesh-and-blood/cards`; `WTR001` (hero `rhinar-reckless-rampage`) and `UPR042` (token `aether-ashwing`) are absent; `MST095` appears under both of its cards (AC 6) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' catalog-collector-codes -t "returns every non-hero non-token printing pair"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' catalog-collector-codes -t "excludes hero and token codes"`
 
-**C8** - The response carries `imageSmallBase` `https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/`; each card carries `cardIdentifier`, `name`, `pitch` and `printings`; a printing whose art code differs from its code carries `image`, one whose art code equals it omits `image` (Surface)
+**C8** - The response carries `imageSmallBase` `https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/`; each card carries `cardIdentifier`, `name`, `pitch` and `printings`; a printing whose art code differs from its code carries `image`, one whose art code equals it omits `image` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' catalog-collector-codes -t "carries the printing image of the scanned code"`
 
 **C9** - Without a valid token, `GET /api/catalog/collector-codes` and `POST /api/collection/cards/batch` both return `401` (AC 7, Surface)

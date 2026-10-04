@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   catalog,
+  IMAGE_CDN_BASE,
   ICatalog,
   ICatalogCard,
   ICatalogIndices,
@@ -12,6 +13,16 @@ import {
   ISearchCardsResponse,
 } from './dtos/search-cards.dto';
 import { IHeroListItem, IHeroListResponse } from './dtos/hero-list-item.dto';
+import {
+  ICollectorCodeCard,
+  ICollectorCodePrinting,
+  ICollectorCodesResponse,
+} from './dtos/collector-codes.dto';
+
+interface IRawPrinting {
+  readonly identifier?: string;
+  readonly image?: string;
+}
 
 const DEFAULT_SEARCH_LIMIT = 10;
 
@@ -25,6 +36,7 @@ const HERO_TYPE: Type = Type.Hero;
 @Injectable()
 export class CatalogService {
   private readonly catalog: ICatalog = catalog;
+  private collectorCodes: ICollectorCodesResponse | null = null;
 
   constructor(
     private readonly collectionReadService: CollectionReadService,
@@ -79,6 +91,35 @@ export class CatalogService {
     }
 
     return { heroes };
+  }
+
+  listCollectorCodes(): ICollectorCodesResponse {
+    this.collectorCodes ??= {
+      imageSmallBase: `${IMAGE_CDN_BASE}small/`,
+      cards: this.catalog.cards
+        .filter((card) => !this.isExcludedType(card.types))
+        .map((card) => this.toCollectorCodeCard(card))
+        .filter((card) => card.printings.length > 0),
+    };
+    return this.collectorCodes;
+  }
+
+  private toCollectorCodeCard(card: ICatalogCard): ICollectorCodeCard {
+    const raw = this.catalog.getRawCard(card.cardIdentifier) as {
+      readonly printings?: readonly IRawPrinting[];
+    };
+    const printingsByCode = new Map<string, ICollectorCodePrinting>();
+    for (const printing of raw.printings ?? []) {
+      const code = printing.identifier;
+      if (!code || printingsByCode.has(code)) continue;
+      printingsByCode.set(code, toCollectorCodePrinting(code, printing.image));
+    }
+    return {
+      cardIdentifier: card.cardIdentifier,
+      name: card.name,
+      pitch: card.pitch,
+      printings: [...printingsByCode.values()],
+    };
   }
 
   /**
@@ -182,4 +223,12 @@ export class CatalogService {
     }
     return false;
   }
+}
+
+function toCollectorCodePrinting(
+  code: string,
+  image: string | undefined,
+): ICollectorCodePrinting {
+  if (image === code) return { code };
+  return { code, image: image ?? null };
 }
