@@ -15,6 +15,8 @@ type TCheerioNode = any;
 
 type TCheerioAPI = ReturnType<typeof cheerio.load>;
 
+const ITEM_NOT_FOUND_NOTICE = /encontrar o item desejado pelo link/i;
+
 /**
  * Parses a Sbrauble card detail page HTML into structured variant records.
  *
@@ -48,12 +50,18 @@ export class SbraubleDetailParserService {
    * table (even when every variant is sold out), so its absence means the
    * response was a block/challenge page or otherwise malformed. Raising here
    * (instead of returning `[]`) prevents a blocked fetch from being recorded as
-   * a successful "no price" result. Returns `[]` only when the table exists but
-   * every row is filtered out (genuinely out of stock / unavailable).
+   * a successful "no price" result. Returns `[]` when the table exists but
+   * every row is filtered out (genuinely out of stock / unavailable), or when
+   * the store says the item no longer exists at this link (HTTP 410 page).
    */
   parseDetailPage(html: string): IScrapedVariant[] {
     const $ = cheerio.load(html);
     const rows = $('.table-cards-row');
+
+    if (rows.length === 0 && ITEM_NOT_FOUND_NOTICE.test($('.alertaErro').text())) {
+      this.logger.warn({ event: 'detail.item_not_found', msg: 'Store no longer has an item at this link' });
+      return [];
+    }
 
     if (rows.length === 0) {
       throw new ScraperError(
@@ -87,15 +95,7 @@ export class SbraubleDetailParserService {
   private parseRow($: TCheerioAPI, el: TCheerioNode): IScrapedVariant | null {
     const edition = $(el).find('span.siglaEdicao').text().trim();
 
-    // Extract condition: the text content of the quality cell, stripping child elements.
-    // The condition cell contains a text node (e.g., "\n            NM\n            ")
-    // followed by a .tooltip child. We extract only the direct text nodes.
-    const conditionCell = $(el).find('.table-cards-body-cell.text-center');
-    const rawCondition = conditionCell
-      .contents()
-      .filter((_i: number, node: TCheerioNode) => node.type === 'text')
-      .text()
-      .trim();
+    const rawCondition = this.extractConditionText($, el);
 
     // Finish: check if extras cell contains "Foil". Anything else (e.g. "-") → non-foil.
     const extrasText = $(el).find('.card-extras').text().trim();
@@ -133,6 +133,21 @@ export class SbraubleDetailParserService {
   }
 
   /**
+   * Extracts the condition from the cell labeled "Qualidade", minus its mobile
+   * label and tooltip. NM is a bare text node, but other conditions come
+   * wrapped (`<i>SP</i>`), so reading only direct text nodes would drop them.
+   */
+  private extractConditionText($: TCheerioAPI, el: TCheerioNode): string {
+    const conditionCell = $(el)
+      .find('.table-cards-body-cell')
+      .filter((_i: number, cell: TCheerioNode) => $(cell).find('.title-mobile').text().trim() === 'Qualidade')
+      .first()
+      .clone();
+    conditionCell.find('.title-mobile, .tooltip').remove();
+    return conditionCell.text().trim();
+  }
+
+  /**
    * Extracts the raw stock text from the stock cell.
    * Finds the cell that contains a .title-mobile div with text "Estoque",
    * then returns the direct text node content (excluding .title-mobile text).
@@ -160,9 +175,15 @@ export class SbraubleDetailParserService {
    * Extracts the raw price text from the .card-preco cell.
    * The cell contains a .title-mobile child and a direct text node with the price.
    * Only the direct text nodes are returned (ignoring .title-mobile text).
+   * During a sale the price instead sits in .preco_com_desconto as a
+   * struck-through original followed by the discounted price, which is the last <font>.
    */
   private extractPriceText($: TCheerioAPI, el: TCheerioNode): string {
     const priceCell = $(el).find('.card-preco');
+    const discountedPrice = priceCell.find('.preco_com_desconto font').last();
+    if (discountedPrice.length > 0) {
+      return discountedPrice.text().trim();
+    }
 
     return priceCell
       .contents()
