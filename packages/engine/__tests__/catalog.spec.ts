@@ -211,3 +211,47 @@ describe('catalog', () => {
     });
   });
 });
+
+describe('catalog rules text', () => {
+  type TRawWithText = { cardIdentifier: string; functionalText?: string };
+
+  it('C1: carries the package rules text, on 4,797 of 4,835 cards', () => {
+    const raw = catalog.getRawCard('dorinthea-ironsong') as TRawWithText;
+    expect(raw.functionalText).toBeDefined();
+    expect(catalog.getCard('dorinthea-ironsong').functionalText).toBe(raw.functionalText);
+
+    const withText = catalog.cards.filter((c) => c.functionalText !== undefined);
+    expect(catalog.cards).toHaveLength(4835);
+    expect(withText).toHaveLength(4797);
+    for (const card of withText) {
+      const rawCard = catalog.getRawCard(card.cardIdentifier) as TRawWithText;
+      expect(card.functionalText).toBe(rawCard.functionalText);
+    }
+  });
+
+  it('C2: leaves the field absent, never an empty string, when the package has none', () => {
+    const without = catalog.cards.filter(
+      (c) => (catalog.getRawCard(c.cardIdentifier) as TRawWithText).functionalText === undefined,
+    );
+    expect(without).toHaveLength(38);
+    for (const card of without) {
+      expect(Object.prototype.hasOwnProperty.call(card, 'functionalText')).toBe(false);
+    }
+    expect(catalog.cards.filter((c) => c.functionalText === '')).toHaveLength(0);
+  });
+
+  it('C3: keeps exactly the pre-change field set plus the optional rules text', () => {
+    const previousFields = new Set([
+      'cardIdentifier', 'name', 'classes', 'talents', 'types', 'pitch', 'power', 'defense',
+      'cost', 'keywords', 'subtypes', 'legalHeroes', 'legalFormats', 'rarity', 'young', 'sets',
+      'imageUrl', 'hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations',
+    ]);
+    const seen = new Set<string>();
+    for (const card of catalog.cards) {
+      for (const key of Object.keys(card)) seen.add(key);
+    }
+    const unexpected = [...seen].filter((k) => !previousFields.has(k) && k !== 'functionalText');
+    expect(unexpected).toEqual([]);
+    expect(seen.has('cardIdentifier') && seen.has('legalFormats') && seen.has('sets')).toBe(true);
+  });
+});

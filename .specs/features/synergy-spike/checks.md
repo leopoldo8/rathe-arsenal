@@ -12,13 +12,13 @@ Every proof below is a named test. Proofs that need the owner's `ANTHROPIC_API_K
 
 ### S1 - rules text on the catalog card · 2 files · 8 KB · ~6k
 
-**C1** - `catalog.getCard('dorinthea-ironsong').functionalText` equals the string the package holds for that card, and exactly 4,797 of the 4,835 catalog cards carry the field (plan AC 1)
+**C1** - `catalog.getCard('dorinthea-ironsong').functionalText` equals the string the package holds for that card, and exactly 4,797 of the 4,835 catalog cards carry the field (plan AC 1) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest -t "C1:"`
 
-**C2** - A card the package holds no `functionalText` for has no `functionalText` key at all, never an empty string; 38 cards (4,835 minus 4,797) are in that state (plan AC 2)
+**C2** - A card the package holds no `functionalText` for has no `functionalText` key at all, never an empty string; 38 cards (4,835 minus 4,797) are in that state (plan AC 2) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest -t "C2:"`
 
-**C3** - Every catalog card keeps exactly the pre-change field set plus the optional `functionalText`, and the engine and API suites stay green (plan AC 3)
+**C3** - Every catalog card keeps exactly the pre-change field set plus the optional `functionalText`, and the engine and API suites stay green (plan AC 3) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest -t "C3:"`
 Proof: `pnpm --filter @rathe-arsenal/engine test`
 Proof: `pnpm --filter @rathe-arsenal/api test`
