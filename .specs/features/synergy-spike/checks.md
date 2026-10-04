@@ -101,25 +101,25 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C23:" scripts/synergy-spike/_
 
 ### S7 - score and stop rule · 2 files · 12 KB · ~15k
 
-**C24** - A top-10 card with verdict blank, `maybe`, or missing row makes `pnpm synergy:score` exit 1, print the count of unjudged or invalid cards, and write no `result.md`; `YES` and `no` in any case are accepted (plan AC 23)
+**C24** - A top-10 card with verdict blank, `maybe`, or missing row makes `pnpm synergy:score` exit 1, print the count of unjudged or invalid cards, and write no `result.md`; `YES` and `no` in any case are accepted (plan AC 23) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C24:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C25** - `result.md` lists per candidate and per deck the count of `yes`, with 5 yes giving PASS and 4 yes giving FAIL (plan AC 24)
+**C25** - `result.md` lists per candidate and per deck the count of `yes`, with 5 yes giving PASS and 4 yes giving FAIL (plan AC 24) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C25:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C26** - A candidate with PASS on 3 decks makes `result.md` hold the line `STOP: <candidate> passed on 3 decks`; PASS on 2 decks does not (plan AC 25)
+**C26** - A candidate with PASS on 3 decks makes `result.md` hold the line `STOP: <candidate> passed on 3 decks`; PASS on 2 decks does not (plan AC 25) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C26:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C27** - With `llm`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26)
+**C27** - With `llm`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C27:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C28** - With `llm` run and none passing, `result.md` holds `CONTINUE: next candidate is heuristic`; with `llm` and `heuristic` run it holds `CONTINUE: next candidate is cooccurrence` (plan AC 27)
+**C28** - With `llm` run and none passing, `result.md` holds `CONTINUE: next candidate is heuristic`; with `llm` and `heuristic` run it holds `CONTINUE: next candidate is cooccurrence` (plan AC 27) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C28:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C29** - A deck whose run is `untestable` or `failed` prints that status in place of a count, and the candidate counts as tried (plan AC 28)
+**C29** - A deck whose run is `untestable` or `failed` prints that status in place of a count, and the candidate counts as tried (plan AC 28) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C29:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C30** - When `llm` ran, `result.md` prints the sum of its input and output tokens over the decks (plan AC 29)
+**C30** - When `llm` ran, `result.md` prints the sum of its input and output tokens over the decks (plan AC 29) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C30:" scripts/synergy-spike/__tests__/score.test.ts`
 
 
