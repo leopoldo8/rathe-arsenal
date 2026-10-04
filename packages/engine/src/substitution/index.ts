@@ -28,6 +28,7 @@ export {
   isWithinTolerance,
 } from './pitch-curve';
 
-export { composeRationale } from './rationale';
+export { composeRationale, describeRationale } from './rationale';
+export type { IRationaleDetail, TRationalePitch } from './rationale';
 export { scoreCandidate, findTierMatch } from './score';
 export { findSubstitution } from './find-substitution';

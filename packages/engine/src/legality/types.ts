@@ -76,4 +76,37 @@ export interface IDeckLegalityResult {
    * Empty when `category === 'legal'`.
    */
   readonly reasons: readonly string[];
+  /** One entry per `reasons` string, as a code plus params so clients can localize it. */
+  readonly details: readonly TLegalityReasonDetail[];
 }
+
+export type TLegalityReasonDetail =
+  | { readonly code: 'hero_unrecognized'; readonly params: Record<string, never> }
+  | { readonly code: 'hero_not_legal'; readonly params: { readonly hero: string; readonly format: string } }
+  | { readonly code: 'young_hero_required'; readonly params: { readonly hero: string; readonly format: string } }
+  | { readonly code: 'adult_hero_required'; readonly params: { readonly hero: string; readonly format: string } }
+  | {
+      readonly code: 'card_pool_too_large';
+      readonly params: { readonly total: number; readonly max: number; readonly format: string };
+    }
+  | {
+      readonly code: 'mainboard_not_exact' | 'mainboard_too_small';
+      readonly params: { readonly total: number; readonly required: number; readonly format: string };
+    }
+  | {
+      readonly code: 'too_many_copies';
+      readonly params: {
+        readonly card: string;
+        readonly count: number;
+        readonly max: number;
+        readonly format: string;
+        readonly legendary: boolean;
+      };
+    }
+  | { readonly code: 'card_unknown'; readonly params: { readonly card: string } }
+  | { readonly code: 'card_banned' | 'card_not_in_format'; readonly params: { readonly card: string; readonly format: string } }
+  | { readonly code: 'card_not_for_hero'; readonly params: { readonly card: string; readonly hero: string } }
+  | {
+      readonly code: 'rarity_not_allowed';
+      readonly params: { readonly card: string; readonly rarity: string; readonly format: string; readonly allowed: string };
+    };

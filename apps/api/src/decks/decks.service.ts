@@ -38,6 +38,12 @@ import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
 import { UpdateDeckCompositionDto } from './dto/update-deck-composition.dto';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
 import { TrackedDeckTagEntity } from '../database/entities/tracked-deck-tag.entity';
+import { describeSwapRationale } from '../swaps/describe-swap-rationale';
+
+interface IStoredSubstitutionMatch {
+  readonly substitute?: { readonly cardIdentifier?: string };
+  readonly tier?: number;
+}
 
 @Injectable()
 export class DecksService {
@@ -94,9 +100,22 @@ export class DecksService {
     };
 
     const enrichedSubstituted = (raw.substituted ?? []).map((sub) => {
-      const wrapped = sub as { original?: IBreakdownEntry } & IBreakdownEntry;
+      const wrapped = sub as { original?: IBreakdownEntry; match?: IStoredSubstitutionMatch } & IBreakdownEntry;
       if (wrapped && typeof wrapped === 'object' && 'original' in wrapped && wrapped.original) {
-        return { ...wrapped, original: enrichEntry(wrapped.original) };
+        const substituteIdentifier = wrapped.match?.substitute?.cardIdentifier;
+        const match =
+          wrapped.match && substituteIdentifier
+            ? {
+                ...wrapped.match,
+                rationaleDetail: describeSwapRationale(
+                  this.catalogService,
+                  wrapped.original.cardIdentifier,
+                  substituteIdentifier,
+                  wrapped.match.tier === 2 ? 2 : 1,
+                ),
+              }
+            : wrapped.match;
+        return { ...wrapped, original: enrichEntry(wrapped.original), match };
       }
       return enrichEntry(wrapped);
     });
@@ -230,6 +249,7 @@ export class DecksService {
       legalityByDeckId.set(deck.id, {
         category: result.category,
         reasons: result.reasons,
+        details: result.details,
       });
     }
 
@@ -253,7 +273,7 @@ export class DecksService {
         status: deck.status,
         tags: tagRowsByDeckId.get(deck.id) ?? [],
         updatedAt: deck.updatedAt.toISOString(),
-        legality: legalityByDeckId.get(deck.id) ?? { category: 'illegal', reasons: [] },
+        legality: legalityByDeckId.get(deck.id) ?? { category: 'illegal', reasons: [], details: [] },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: snap
           ? {
@@ -579,6 +599,7 @@ export class DecksService {
     const legality: IDeckLegality = {
       category: legalityResult.category,
       reasons: legalityResult.reasons,
+      details: legalityResult.details,
     };
 
     // Resolve heroIdentifier when null. Decks imported from Fabrary before
@@ -660,6 +681,7 @@ export class DecksService {
     const legality: IDeckLegality = {
       category: legalityResult.category,
       reasons: legalityResult.reasons,
+      details: legalityResult.details,
     };
 
     return {
@@ -1074,6 +1096,7 @@ export class DecksService {
     const legality: IDeckLegality = {
       category: legalityResult.category,
       reasons: legalityResult.reasons,
+      details: legalityResult.details,
     };
 
     // -------------------------------------------------------------------------

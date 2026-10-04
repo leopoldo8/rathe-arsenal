@@ -16,6 +16,10 @@ interface ICardOverrides {
   readonly pitch?: number | null;
   readonly types?: readonly string[];
   readonly imageUrl?: ICatalogCard['imageUrl'];
+  readonly classes?: readonly string[];
+  readonly keywords?: readonly string[];
+  readonly power?: number | null;
+  readonly defense?: number | null;
 }
 
 function makeCard(overrides: ICardOverrides): ICatalogCard {
@@ -25,6 +29,10 @@ function makeCard(overrides: ICardOverrides): ICatalogCard {
     pitch: 1,
     types: ['Action'],
     imageUrl: null,
+    classes: ['Generic'],
+    keywords: [],
+    power: 3,
+    defense: 2,
     ...overrides,
   } as unknown as ICatalogCard;
 }
@@ -101,7 +109,26 @@ describe('buildSwapRow', () => {
       substitutePitch: 1,
       originalType: 'Action',
       substituteType: 'Action',
+      rationaleDetail: {
+        tier: 1,
+        pitch: 'red',
+        sharedClasses: ['Generic'],
+        powerDelta: 0,
+        defenseDelta: 0,
+        sharedKeywords: [],
+      },
     });
+  });
+
+  it('has no rationale detail when either card is missing from the catalog', () => {
+    const row = buildSwapRow({
+      entity: makeEntity({ substituteIdentifier: 'unknown-card' }),
+      deck: { name: 'Deck', hero: 'hero' },
+      inventory: new Map(),
+      catalogService,
+    });
+
+    expect(row.rationaleDetail).toBeNull();
   });
 
   it('reports zero owned copies instead of omitting a substitute the user no longer has', () => {

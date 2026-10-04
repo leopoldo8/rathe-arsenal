@@ -167,7 +167,7 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
       excludedIdentifiers: new Set(),
       approvedIdentifiers: new Set(),
     });
-    mockedLegality.mockReturnValue({ category: 'legal', reasons: [] });
+    mockedLegality.mockReturnValue({ category: 'legal', reasons: [], details: [] });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

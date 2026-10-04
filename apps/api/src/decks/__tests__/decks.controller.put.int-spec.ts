@@ -46,7 +46,7 @@ function buildDetailResponse(
     totalCards: 60,
     latestSnapshot: null,
     shoppingLine: null,
-    legality: { category: 'legal', reasons: [] },
+    legality: { category: 'legal', reasons: [], details: [] },
     ...overrides,
   };
 }
@@ -137,7 +137,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
   describe('happy path — valid body returns 200 with legality=legal', () => {
     it('routes to service.updateComposition and returns the detail payload', async () => {
       // Arrange
-      const response = buildDetailResponse({ legality: { category: 'legal', reasons: [] } });
+      const response = buildDetailResponse({ legality: { category: 'legal', reasons: [], details: [] } });
       decksService.updateComposition.mockResolvedValue(response);
 
       // Act
@@ -164,7 +164,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
       // Arrange
       const response = buildDetailResponse({
         totalCards: 0,
-        legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards.'] },
+        legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards.'], details: [] },
       });
       decksService.updateComposition.mockResolvedValue(response);
 
@@ -324,7 +324,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
     it('response includes legality.category and legality.reasons', async () => {
       // Arrange
       const response = buildDetailResponse({
-        legality: { category: 'legal', reasons: [] },
+        legality: { category: 'legal', reasons: [], details: [] },
       });
       decksService.updateComposition.mockResolvedValue(response);
 

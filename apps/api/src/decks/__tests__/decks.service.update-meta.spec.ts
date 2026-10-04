@@ -60,7 +60,7 @@ function buildDetailResponse(
     totalCards: 0,
     latestSnapshot: null,
     shoppingLine: null,
-    legality: { category: 'incomplete', reasons: [] },
+    legality: { category: 'incomplete', reasons: [], details: [] },
     ...overrides,
   };
 }

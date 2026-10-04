@@ -17,7 +17,7 @@
 
 import type { ICatalog } from '../catalog/types';
 import { Keyword } from '../catalog/types';
-import type { TSupportedFormat, ILegalityDeck, IDeckLegalityResult } from './types';
+import type { TSupportedFormat, ILegalityDeck, IDeckLegalityResult, TLegalityReasonDetail } from './types';
 import { FORMAT_RULES } from './rules';
 
 /**
@@ -40,8 +40,9 @@ export function computeDeckLegality(
   // Step 1: Hero requirement
   // ─────────────────────────────────────────────────────────────────────────
 
+  const heroUnrecognized: TLegalityReasonDetail = { code: 'hero_unrecognized', params: {} };
   if (deck.heroIdentifier === null) {
-    return illegal('Hero not recognized — please re-select in Edit mode');
+    return illegal('Hero not recognized — please re-select in Edit mode', heroUnrecognized);
   }
 
   // Look up the hero card. If it does not exist in the catalog the deck is
@@ -50,7 +51,7 @@ export function computeDeckLegality(
   try {
     heroCard = catalog.getCard(deck.heroIdentifier);
   } catch {
-    return illegal('Hero not recognized — please re-select in Edit mode');
+    return illegal('Hero not recognized — please re-select in Edit mode', heroUnrecognized);
   }
 
   // Hero must be legal in the target format.
@@ -58,6 +59,7 @@ export function computeDeckLegality(
   if (!heroLegalInFormat) {
     return illegal(
       `Hero "${heroCard.name}" is not legal in ${format}. Choose a different hero or format.`,
+      { code: 'hero_not_legal', params: { hero: heroCard.name, format } },
     );
   }
 
@@ -65,12 +67,14 @@ export function computeDeckLegality(
   if (rules.requiresYoungHero && !heroCard.young) {
     return illegal(
       `${format} requires a young hero, but "${heroCard.name}" is not a young hero.`,
+      { code: 'young_hero_required', params: { hero: heroCard.name, format } },
     );
   }
   if (!rules.requiresYoungHero && heroCard.young) {
     return illegal(
       `${format} requires a non-young hero, but "${heroCard.name}" is a young hero version. ` +
         `Use the adult version for this format.`,
+      { code: 'adult_hero_required', params: { hero: heroCard.name, format } },
     );
   }
 
@@ -86,6 +90,7 @@ export function computeDeckLegality(
   if (allCardsTotal > rules.maxCardPool) {
     return illegal(
       `Deck has ${allCardsTotal} cards but ${format} allows a maximum of ${rules.maxCardPool}.`,
+      { code: 'card_pool_too_large', params: { total: allCardsTotal, max: rules.maxCardPool, format } },
     );
   }
 
@@ -98,6 +103,7 @@ export function computeDeckLegality(
     if (mainboardTotal !== rules.exactMainboard) {
       return incomplete(
         `Deck has ${mainboardTotal} mainboard cards but ${format} requires exactly ${rules.exactMainboard}.`,
+        { code: 'mainboard_not_exact', params: { total: mainboardTotal, required: rules.exactMainboard, format } },
       );
     }
   } else {
@@ -105,6 +111,7 @@ export function computeDeckLegality(
     if (mainboardTotal < rules.minMainboard) {
       return incomplete(
         `Deck has ${mainboardTotal} mainboard cards but ${format} requires at least ${rules.minMainboard}.`,
+        { code: 'mainboard_too_small', params: { total: mainboardTotal, required: rules.minMainboard, format } },
       );
     }
   }
@@ -124,6 +131,10 @@ export function computeDeckLegality(
       const label = isLegendary ? 'Legendary' : '';
       return illegal(
         `${label ? label + ' card' : 'Card'} "${card.name}" has ${deckCard.quantity} copies but ${format} allows at most ${maxAllowed}.`.trimStart(),
+        {
+          code: 'too_many_copies',
+          params: { card: card.name, count: deckCard.quantity, max: maxAllowed, format, legendary: isLegendary },
+        },
       );
     }
   }
@@ -142,18 +153,25 @@ export function computeDeckLegality(
     if (!card) {
       return illegal(
         `Card "${deckCard.cardIdentifier}" is not recognized in the card catalog.`,
+        { code: 'card_unknown', params: { card: deckCard.cardIdentifier } },
       );
     }
 
     // Check if the format is explicitly banned for this card.
     if (card.bannedFormats && (card.bannedFormats as readonly string[]).includes(format)) {
-      return illegal(`"${card.name}" is banned in ${format}.`);
+      return illegal(`"${card.name}" is banned in ${format}.`, {
+        code: 'card_banned',
+        params: { card: card.name, format },
+      });
     }
 
     // Check that the card is legal in the format at all.
     const cardLegalInFormat = (card.legalFormats as readonly string[]).includes(format);
     if (!cardLegalInFormat) {
-      return illegal(`"${card.name}" is not legal in ${format}.`);
+      return illegal(`"${card.name}" is not legal in ${format}.`, {
+        code: 'card_not_in_format',
+        params: { card: card.name, format },
+      });
     }
 
     // Check hero scope.
@@ -176,7 +194,10 @@ export function computeDeckLegality(
         (card.specializations as readonly string[]).includes(heroHeroEnum);
 
       if (!heroAllowed && !overrideAllowed && !specializationAllowed) {
-        return illegal(`"${card.name}" is not legal with hero "${heroCard.name}".`);
+        return illegal(`"${card.name}" is not legal with hero "${heroCard.name}".`, {
+          code: 'card_not_for_hero',
+          params: { card: card.name, hero: heroCard.name },
+        });
       }
     }
   }
@@ -191,8 +212,10 @@ export function computeDeckLegality(
       if (!card) continue; // Already caught above.
 
       if (!rules.allowedRarities.has(card.rarity as string)) {
+        const allowed = [...rules.allowedRarities].filter((r) => r !== 'Token').join(', ');
         return illegal(
-          `"${card.name}" (${card.rarity}) is not allowed in ${format}, which only permits ${[...rules.allowedRarities].filter((r) => r !== 'Token').join(', ')}.`,
+          `"${card.name}" (${card.rarity}) is not allowed in ${format}, which only permits ${allowed}.`,
+          { code: 'rarity_not_allowed', params: { card: card.name, rarity: card.rarity as string, format, allowed } },
         );
       }
     }
@@ -202,15 +225,15 @@ export function computeDeckLegality(
   // Step 7: Legal
   // ─────────────────────────────────────────────────────────────────────────
 
-  return Object.freeze({ category: 'legal', reasons: Object.freeze([]) });
+  return Object.freeze({ category: 'legal', reasons: Object.freeze([]), details: Object.freeze([]) });
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function illegal(reason: string): IDeckLegalityResult {
-  return Object.freeze({ category: 'illegal', reasons: Object.freeze([reason]) });
+function illegal(reason: string, detail: TLegalityReasonDetail): IDeckLegalityResult {
+  return Object.freeze({ category: 'illegal', reasons: Object.freeze([reason]), details: Object.freeze([detail]) });
 }
 
-function incomplete(reason: string): IDeckLegalityResult {
-  return Object.freeze({ category: 'incomplete', reasons: Object.freeze([reason]) });
+function incomplete(reason: string, detail: TLegalityReasonDetail): IDeckLegalityResult {
+  return Object.freeze({ category: 'incomplete', reasons: Object.freeze([reason]), details: Object.freeze([detail]) });
 }
