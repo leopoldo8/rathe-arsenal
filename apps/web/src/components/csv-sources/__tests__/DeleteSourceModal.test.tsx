@@ -119,38 +119,38 @@ describe('DeleteSourceModal — preview loads', () => {
     });
   });
 
-  it('Confirm button is disabled until DELETE is typed', async () => {
+  it('Confirm button is disabled until EXCLUIR is typed', async () => {
     renderModal();
     // Wait for preview to finish loading (no more skeleton)
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*excluir.*para confirmar/i })).toBeInTheDocument();
     });
 
     const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).toBeDisabled();
   });
 
-  it('Confirm button enables after typing DELETE', async () => {
+  it('Confirm button enables after typing EXCLUIR', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*excluir.*para confirmar/i })).toBeInTheDocument();
     });
 
-    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
-    await userEvent.type(input, 'DELETE');
+    const input = screen.getByRole('textbox', { name: /digite.*excluir.*para confirmar/i });
+    await userEvent.type(input, 'EXCLUIR');
 
     const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).not.toBeDisabled();
   });
 
-  it('Confirm button stays disabled for lowercase "delete"', async () => {
+  it('Confirm button stays disabled for lowercase "excluir"', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: /digite.*delete.*para confirmar/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /digite.*excluir.*para confirmar/i })).toBeInTheDocument();
     });
 
-    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
-    await userEvent.type(input, 'delete');
+    const input = screen.getByRole('textbox', { name: /digite.*excluir.*para confirmar/i });
+    await userEvent.type(input, 'excluir');
 
     const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
     expect(confirmBtn).toBeDisabled();
@@ -178,9 +178,9 @@ describe('DeleteSourceModal — successful deletion', () => {
       expect(bodyText).toMatch(/3 carta/);
     });
 
-    // Type DELETE
-    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
-    await userEvent.type(input, 'DELETE');
+    // Type EXCLUIR
+    const input = screen.getByRole('textbox', { name: /digite.*excluir.*para confirmar/i });
+    await userEvent.type(input, 'EXCLUIR');
 
     // Click confirm
     const confirmBtn = screen.getByRole('button', { name: /excluir fonte/i });
@@ -212,8 +212,8 @@ describe('DeleteSourceModal — recomputeWarning variant', () => {
       expect(bodyText).toMatch(/2 carta/);
     });
 
-    const input = screen.getByRole('textbox', { name: /digite.*delete.*para confirmar/i });
-    await userEvent.type(input, 'DELETE');
+    const input = screen.getByRole('textbox', { name: /digite.*excluir.*para confirmar/i });
+    await userEvent.type(input, 'EXCLUIR');
     await userEvent.click(screen.getByRole('button', { name: /excluir fonte/i }));
 
     await waitFor(() => {

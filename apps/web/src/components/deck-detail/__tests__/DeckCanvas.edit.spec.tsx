@@ -264,7 +264,7 @@ describe('DeckCanvas Edit mode — empty deck (R22)', () => {
 
   it('shows helper copy in empty state', () => {
     renderEditCanvas({ draft: makeDraft([]) });
-    expect(screen.getByText(/Nenhuma carta neste baralho ainda/)).toBeInTheDocument();
+    expect(screen.getByText(/Este deck ainda não tem cartas/)).toBeInTheDocument();
   });
 
   it('still shows the autocomplete in empty state', () => {

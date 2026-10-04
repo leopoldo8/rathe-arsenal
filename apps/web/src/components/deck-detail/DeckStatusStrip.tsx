@@ -24,10 +24,7 @@ function useStripMessage(summary: IDeckSummary): string {
     return t('deckDetail.stripSolvable', { count: summary.pendingSwaps });
   }
 
-  const gap = `${t('deckDetail.stripMissingCards', { count: summary.missingCards })} ${t(
-    'deckDetail.stripMissingSlots',
-    { count: summary.missingSlots },
-  )}`;
+  const gap = t('deckDetail.stripMissingCards', { count: summary.missingCards });
   const progress: string[] = [];
   if (summary.approvedSwaps > 0) {
     progress.push(t('deckDetail.stripApplied', { count: summary.approvedSwaps }));

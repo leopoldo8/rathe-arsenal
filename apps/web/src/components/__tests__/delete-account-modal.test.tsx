@@ -99,18 +99,18 @@ describe('DeleteAccountModal', () => {
     expect(submit).toBeDisabled();
 
     // Type password only — still disabled.
-    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
+    await user.type(screen.getByLabelText(/confirme com a sua senha/i), 'hunter2');
     expect(submit).toBeDisabled();
 
     // Check the checkbox — enabled.
     await user.click(
-      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
+      screen.getByLabelText(/entendo que minha conta e meus dados serão excluídos de vez/i),
     );
     expect(submit).toBeEnabled();
 
     // Uncheck — disabled again.
     await user.click(
-      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
+      screen.getByLabelText(/entendo que minha conta e meus dados serão excluídos de vez/i),
     );
     expect(submit).toBeDisabled();
   });
@@ -121,9 +121,9 @@ describe('DeleteAccountModal', () => {
     const onDeleted = vi.fn();
     renderModal({ deleteAccount, onDeleted });
 
-    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
+    await user.type(screen.getByLabelText(/confirme com a sua senha/i), 'hunter2');
     await user.click(
-      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
+      screen.getByLabelText(/entendo que minha conta e meus dados serão excluídos de vez/i),
     );
     await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 
@@ -140,9 +140,9 @@ describe('DeleteAccountModal', () => {
     const onDeleted = vi.fn();
     renderModal({ deleteAccount, onClose, onDeleted });
 
-    await user.type(screen.getByLabelText(/redigite sua senha/i), 'wrongpw');
+    await user.type(screen.getByLabelText(/confirme com a sua senha/i), 'wrongpw');
     await user.click(
-      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
+      screen.getByLabelText(/entendo que minha conta e meus dados serão excluídos de vez/i),
     );
     await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 
@@ -165,9 +165,9 @@ describe('DeleteAccountModal', () => {
       .mockRejectedValue(new AuthFetchError('Too Many Requests', 429, 120));
     renderModal({ deleteAccount });
 
-    await user.type(screen.getByLabelText(/redigite sua senha/i), 'hunter2');
+    await user.type(screen.getByLabelText(/confirme com a sua senha/i), 'hunter2');
     await user.click(
-      screen.getByLabelText(/entendo que minha conta e todos os dados serão permanentemente excluídos/i),
+      screen.getByLabelText(/entendo que minha conta e meus dados serão excluídos de vez/i),
     );
     await user.click(screen.getByRole('button', { name: /excluir minha conta/i }));
 

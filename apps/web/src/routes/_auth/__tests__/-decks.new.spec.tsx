@@ -247,7 +247,7 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('labels the CTAs with the handoff copy', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: 'Acompanhar deck' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Importar deck' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Começar a montar' })).toBeInTheDocument();
   });
 
@@ -263,19 +263,19 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('ImportFabraryCard: renders the Fabrary URL input', () => {
     renderPage();
-    expect(screen.getByLabelText(/URL do baralho do Fabrary/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Link do deck no Fabrary/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /acompanhar deck/i }),
+      screen.getByRole('button', { name: /importar deck/i }),
     ).toBeInTheDocument();
   });
 
   it('ImportFabraryCard: calls import mutation with correct payload on valid URL', async () => {
     renderPage();
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
     expect(importMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         urls: ['https://fabrary.net/decks/01HABCDEFG12345'],
@@ -291,11 +291,11 @@ describe('DecksNewPage — /decks/new', () => {
       },
     );
     renderPage();
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.objectContaining({
         to: '/decks/$deckId',
@@ -307,12 +307,12 @@ describe('DecksNewPage — /decks/new', () => {
 
   it('ImportFabraryCard: rejects an invalid URL without calling the mutation', async () => {
     renderPage();
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
     expect(importMutate).not.toHaveBeenCalled();
     expect(
-      screen.getByText(/Não é uma URL de baralho Fabrary válida/i),
+      screen.getByText(/Esse não é um link de deck do Fabrary/i),
     ).toBeInTheDocument();
   });
 
@@ -323,21 +323,21 @@ describe('DecksNewPage — /decks/new', () => {
       },
     );
     renderPage();
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
     expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
   });
 
   it('ImportFabraryCard: does not opt into inventory seeding', async () => {
     renderPage();
-    const input = screen.getByLabelText(/URL do baralho do Fabrary/i);
+    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
     fireEvent.change(input, {
       target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
     });
-    await userEvent.click(screen.getByRole('button', { name: /acompanhar deck/i }));
+    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
     const [payload] = importMutate.mock.calls[0] as [
       { seedInventory?: boolean },
     ];

@@ -58,7 +58,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
     ? t('csvSources.manualSourceLabel')
     : (source.label ?? source.originalFilename ?? t('csvSources.untitledSourceLabel'));
   const cardCount = source.cardCount ?? 0;
-  const relativeDate = formatRelativeTime(source.createdAt);
+  const relativeDate = formatRelativeTime(source.createdAt, t);
 
   // Toggle active (optimistic)
   function handleToggle(checked: boolean): void {

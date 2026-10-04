@@ -94,7 +94,7 @@ describe('ShoppingLine: null (Path A)', () => {
   it('renders the "you have everything you need" message', () => {
     render(<ShoppingLine data={null} />);
     expect(
-      screen.getByText(/você tem tudo o que precisa para este baralho/i),
+      screen.getByText(/você já tem tudo o que este deck precisa/i),
     ).toBeInTheDocument();
   });
 });
@@ -120,7 +120,7 @@ describe('ShoppingLine: kind=error', () => {
     const data: IShoppingLineResponse = { kind: 'error', reason: 'db_error' };
     render(<ShoppingLine data={data} />);
     expect(
-      screen.getByText(/lista de compras temporariamente indisponível/i),
+      screen.getByText(/a lista de compras está indisponível agora/i),
     ).toBeInTheDocument();
   });
 
@@ -141,20 +141,13 @@ describe('ShoppingLine: kind=populated, availableCardCount=0', () => {
   it('renders the no-stock message', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
     expect(
-      screen.getByText(/nenhuma carta faltante no momento em estoque/i),
+      screen.getByText(/nenhuma das cartas que faltam está em estoque/i),
     ).toBeInTheDocument();
   });
 
   it('renders the freshness subtitle', () => {
     render(<ShoppingLine data={POPULATED_NO_STOCK} />);
-    expect(screen.getByText(/último check há 2 h/i)).toBeInTheDocument();
-  });
-
-  it('renders the substitution editor CTA', () => {
-    render(<ShoppingLine data={POPULATED_NO_STOCK} />);
-    expect(
-      screen.getByText(/experimente o editor de substituição/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/verificado há 2 h/i)).toBeInTheDocument();
   });
 });
 

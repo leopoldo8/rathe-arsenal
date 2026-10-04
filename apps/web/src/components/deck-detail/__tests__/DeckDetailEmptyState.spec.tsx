@@ -38,13 +38,13 @@ describe('DeckDetailEmptyState — kind="not-found"', () => {
   it('renders the not-found heading', () => {
     render(<DeckDetailEmptyState kind="not-found" />);
     expect(
-      screen.getByRole('heading', { name: /este baralho não está/i }),
+      screen.getByRole('heading', { name: /este deck não está/i }),
     ).toBeInTheDocument();
   });
 
   it('renders the stale-link body copy', () => {
     render(<DeckDetailEmptyState kind="not-found" />);
-    expect(screen.getByText(/pode ter sido removido/i)).toBeInTheDocument();
+    expect(screen.getByText(/pode ter sido excluído/i)).toBeInTheDocument();
   });
 
   it('renders the primary CTA linking to /home', () => {
@@ -56,7 +56,7 @@ describe('DeckDetailEmptyState — kind="not-found"', () => {
 
   it('renders the secondary CTA linking to /add-cards/fabrary', () => {
     render(<DeckDetailEmptyState kind="not-found" />);
-    const link = screen.getByRole('link', { name: /acompanhar um baralho/i });
+    const link = screen.getByRole('link', { name: /importar um deck/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/add-cards/fabrary');
   });
@@ -106,7 +106,7 @@ describe('DeckDetailEmptyState — a11y', () => {
   it('not-found variant has a landmark with accessible name', () => {
     render(<DeckDetailEmptyState kind="not-found" />);
     expect(
-      screen.getByRole('region', { name: /este baralho não está/i }),
+      screen.getByRole('region', { name: /este deck não está/i }),
     ).toBeInTheDocument();
   });
 

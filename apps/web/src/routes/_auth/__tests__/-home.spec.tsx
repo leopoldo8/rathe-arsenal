@@ -267,7 +267,7 @@ describe('Home route', () => {
     seed([], null);
     renderHome();
 
-    expect(screen.getByRole('link', { name: /rastrear seu primeiro deck|track your first deck/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /importar meu primeiro deck|import my first deck/i })).toHaveAttribute(
       'href',
       '/decks/new',
     );

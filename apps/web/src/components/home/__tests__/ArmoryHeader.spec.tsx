@@ -65,13 +65,13 @@ describe('ArmoryHeader', () => {
 
   it('shows the missing total from the API and tints it with the miss tone', () => {
     render(<ArmoryHeader decks={decks} totalCardsMissing={11} />);
-    const value = within(cell('Faltando')).getByText('11');
+    const value = within(cell('Cartas faltando')).getByText('11');
     expect(value).toHaveClass(styles.kpiMissing as string);
   });
 
   it('shows a dash when there is no missing total', () => {
     render(<ArmoryHeader decks={decks} totalCardsMissing={null} />);
-    expect(within(cell('Faltando')).getByText('--')).toBeInTheDocument();
+    expect(within(cell('Cartas faltando')).getByText('--')).toBeInTheDocument();
   });
 
   it('shows a dash for the average when no deck has a snapshot', () => {

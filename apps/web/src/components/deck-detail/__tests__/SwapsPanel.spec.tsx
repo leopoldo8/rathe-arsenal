@@ -38,7 +38,7 @@ describe('SwapsPanel grouping', () => {
 
     const cards = screen.getAllByTestId('swap-card');
     expect(cards).toHaveLength(1);
-    expect(within(cards[0]!).getByTestId('swap-confidence')).toHaveTextContent('×2');
+    expect(within(cards[0]!).getByTestId('swap-confidence')).toHaveTextContent('Cobre 2 cópias');
   });
 
   it('sums the engine copies when the swaps list has not loaded yet', () => {
@@ -49,7 +49,7 @@ describe('SwapsPanel grouping', () => {
 
     const cards = screen.getAllByTestId('swap-card');
     expect(cards).toHaveLength(1);
-    expect(within(cards[0]!).getByTestId('swap-confidence')).toHaveTextContent('×2');
+    expect(within(cards[0]!).getByTestId('swap-confidence')).toHaveTextContent('Cobre 2 cópias');
   });
 
   it('keeps different substitutes of the same original as separate rows', () => {
@@ -64,7 +64,7 @@ describe('SwapsPanel grouping', () => {
   it('a single copy reads x1', () => {
     renderPanel([swap({ cardIdentifier: 'argh', quantity: 1 }, 'bloodrush')]);
 
-    expect(screen.getByTestId('swap-confidence')).toHaveTextContent('×1');
+    expect(screen.getByTestId('swap-confidence')).toHaveTextContent('Cobre 1 cópia');
   });
 
   it('wires the grouped row to the stored swap id and decision', () => {

@@ -147,10 +147,10 @@ describe('StatusGroups', () => {
       makeDeck(3, 'idea'),
       makeDeck(4, 'retired'),
     ]);
-    expect(screen.getByText('Prontos para levar ao jogo')).toBeInTheDocument();
-    expect(screen.getByText('Em montagem, ainda ajustando')).toBeInTheDocument();
-    expect(screen.getByText('Rascunhos sem lista fixa')).toBeInTheDocument();
-    expect(screen.getByText('Guardados para consulta')).toBeInTheDocument();
+    expect(screen.getByText('Prontos para o jogo')).toBeInTheDocument();
+    expect(screen.getByText('Ainda em ajuste')).toBeInTheDocument();
+    expect(screen.getByText('Sem lista definida')).toBeInTheDocument();
+    expect(screen.getByText('Fora de uso')).toBeInTheDocument();
   });
 
   it('omits groups that have no decks', () => {

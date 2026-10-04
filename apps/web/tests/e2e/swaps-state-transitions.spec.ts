@@ -26,7 +26,7 @@ test.describe('Swaps state transitions — E2E', () => {
     const same = page.locator(`[data-testid="swap-row"][data-row-id="${rowId}"]`);
 
     await row.getByRole('button', { name: /^Aprovar/ }).click();
-    await expect(row.getByRole('status')).toHaveText('Aprovada — aplicada ao deck');
+    await expect(row.getByRole('status')).toHaveText('Aprovada: já vale no deck');
     await tab(page, 'Aplicadas').click();
     await same.getByRole('button', { name: /^Reverter/ }).click();
     await expect(same).toHaveCount(0);

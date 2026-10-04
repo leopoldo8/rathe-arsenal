@@ -233,7 +233,7 @@ describe('MissingPanel — preserved store behaviors', () => {
     const onMarkOwned = vi.fn();
     renderPanel(populated(), { onMarkOwned });
 
-    const button = within(rowOf('Card B')).getByRole('button', { name: 'Marcar como possuída' });
+    const button = within(rowOf('Card B')).getByRole('button', { name: 'Já tenho' });
     expect(button).toHaveClass(markOwnedStyles.btn!);
     fireEvent.click(button);
     expect(onMarkOwned).toHaveBeenCalledWith('card-b');
@@ -275,8 +275,8 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('Mark owned is an icon button named for screen readers, with no visible label', () => {
     renderPanel(populated());
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Marcar como possuída' });
-    expect(button).toHaveAttribute('title', 'Marcar como possuída');
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
+    expect(button).toHaveAttribute('title', 'Já tenho');
     expect(button).toHaveTextContent('');
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(button.parentElement).toHaveClass(styles.owned!);
@@ -285,9 +285,9 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('the pending card keeps its name and says it is saving in the tooltip', () => {
     renderPanel(populated(), { isMarkingOwned: true, pendingCard: 'card-a' });
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Marcar como possuída' });
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
     expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toHaveAttribute('title', 'Salvando...');
+    expect(button).toHaveAttribute('title', 'Salvando…');
     expect(button).toBeDisabled();
   });
 });
@@ -298,14 +298,14 @@ describe('MissingPanel — one quiet store line (owner feedback round 2)', () =>
 
     expect(screen.getByTestId('missing-store-total')).toHaveTextContent('~R$ 23,70');
     expect(screen.getByTestId('missing-store-summary')).toHaveTextContent(
-      '~R$ 23,70 na Cúpula DT cobre 1 de 2 cartas faltantes',
+      '~R$ 23,70 na Cúpula DT cobre 1 de 2 cartas que faltam',
     );
   });
 
   it('uses the singular when only one card is missing', () => {
     renderPanel(populated({ availableCardCount: 1, unavailableCardCount: 0 }));
 
-    expect(screen.getByTestId('missing-store-summary')).toHaveTextContent('cobre 1 de 1 carta faltante');
+    expect(screen.getByTestId('missing-store-summary')).toHaveTextContent('cobre 1 de 1 carta que falta');
   });
 
   it('shows the stale warning once, with the freshness, in one element', () => {

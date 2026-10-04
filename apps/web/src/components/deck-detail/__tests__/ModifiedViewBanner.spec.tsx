@@ -21,7 +21,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    expect(screen.getByText(/rejeitou 1 substituição/i)).toBeInTheDocument();
+    expect(screen.getByText(/recusou 1 troca neste deck/i)).toBeInTheDocument();
   });
 
   it('renders with the correct plural label for multiple rejections', () => {
@@ -32,7 +32,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    expect(screen.getByText(/rejeitou 3 substituições/i)).toBeInTheDocument();
+    expect(screen.getByText(/recusou 3 trocas neste deck/i)).toBeInTheDocument();
   });
 
   it('calls onClearRejections when the button is clicked', () => {
@@ -44,7 +44,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /limpar rejeições/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sugerir de novo/i }));
     expect(onClearRejections).toHaveBeenCalledTimes(1);
   });
 
@@ -56,7 +56,7 @@ describe('ModifiedViewBanner', () => {
         isClearing={true}
       />,
     );
-    const btn = screen.getByRole('button', { name: /limpando/i });
+    const btn = screen.getByRole('button', { name: /restaurando/i });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('aria-busy', 'true');
   });
@@ -80,6 +80,6 @@ describe('ModifiedViewBanner', () => {
         isClearing={false}
       />,
     );
-    expect(screen.getByText('Visualização modificada.')).toBeInTheDocument();
+    expect(screen.getByText('Trocas recusadas.')).toBeInTheDocument();
   });
 });

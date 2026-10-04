@@ -1565,12 +1565,6 @@ describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
     expect(copy).toContain('color: var(--ra-fg-tertiary)');
   });
 
-  it('sets the quote at 13px in #6c6e76', () => {
-    const body = ruleBody(AUTH_LAYOUT_CSS, '.artQuote');
-    expect(body).toContain('font-size: 13px');
-    expect(body).toContain('color: #6c6e76');
-  });
-
   it('sets the brand row as a 30px seal with 7px radius and a 22px UnifrakturCook wordmark', () => {
     const seal = ruleBody(AUTH_BRAND_CSS, '.seal');
     expect(seal).toContain('inline-size: 30px');
@@ -1587,8 +1581,9 @@ describe('Phase 8 — AuthLayout split (AUTH-01, handoff §1)', () => {
     expect(fs.existsSync(path.join(SRC_ROOT, 'components/shell/DeckboxDecoration.tsx'))).toBe(false);
   });
 
-  it('uses no label in the display serif or uppercase on the art panel', () => {
-    expect(ruleBody(AUTH_LAYOUT_CSS, '.artCite')).not.toContain('uppercase');
+  it('carries no invented quote on the art panel', () => {
+    expect(AUTH_LAYOUT_TSX).not.toContain('blockquote');
+    expect(AUTH_LAYOUT_CSS).not.toContain('.artQuote');
   });
 });
 

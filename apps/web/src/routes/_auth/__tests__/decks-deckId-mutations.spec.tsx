@@ -609,7 +609,7 @@ describe('DeckDetailPage — status strip (DECK-02, DECK-03)', () => {
     expect(strip).toHaveAttribute('data-kind', 'incomplete');
     expect(strip).toHaveClass(stripStyles.toneIncomplete!);
     expect(screen.getByTestId('deck-status-strip-message')).toHaveTextContent(
-      'Faltam 3 cartas em 1 slot — nenhuma troca disponível.',
+      'Faltam 3 cartas — nenhuma troca possível com a sua coleção.',
     );
     expect(screen.getByTestId('strip-view-shopping')).toBeInTheDocument();
   });
@@ -632,7 +632,7 @@ describe('DeckDetailPage — status strip (DECK-02, DECK-03)', () => {
     expect(strip).toHaveAttribute('data-kind', 'solvable');
     expect(strip).toHaveClass(stripStyles.toneSolvable!);
     expect(screen.getByTestId('deck-status-strip-message')).toHaveTextContent(
-      'Sua coleção cobre esse deck — 2 trocas aguardando aprovação para chegar a 100%.',
+      'Sua coleção cobre este deck se você aprovar 2 trocas.',
     );
     expect(screen.getByTestId('deck-hero-banner')).toBeInTheDocument();
     expect(
@@ -766,7 +766,7 @@ describe('DeckDetailPage — missing and swaps panels (DECK-05)', () => {
 
     const row = within(screen.getByTestId('deck-missing-panel')).getByTestId('missing-row');
     expect(row).toHaveTextContent('Gap One');
-    expect(row).toHaveTextContent('falta ×3');
+    expect(row).toHaveTextContent('faltam 3');
   });
 
   it('links Comprar to the store product page when the shopping line has one', () => {
@@ -845,7 +845,7 @@ describe('DeckDetailPage — swap confidence bands come from score', () => {
     renderPage();
 
     const confidence = screen.getByTestId('swap-confidence');
-    expect(confidence).toHaveTextContent(`${label} confiança`);
+    expect(confidence).toHaveTextContent(`${label} de confiança`);
     expect(confidence).toHaveAttribute('data-band', band);
     expect(confidence).toHaveClass(bandClass!);
   });
@@ -854,7 +854,7 @@ describe('DeckDetailPage — swap confidence bands come from score', () => {
     populate(solvableDeck());
     renderPage();
 
-    expect(screen.getAllByTestId('swap-confidence')[0]).toHaveTextContent('Cobre ×2 · 92% confiança');
+    expect(screen.getAllByTestId('swap-confidence')[0]).toHaveTextContent('Cobre 2 cópias · 92% de confiança');
   });
 
   it('shows the empty state when there is no swap to suggest', () => {
@@ -1076,7 +1076,7 @@ describe('DeckDetailPage — rejected swaps banner', () => {
     mockSwapRows = [swapRowFor('a', 's1', 'pending'), swapRowFor('b', 's2', 'rejected', { trackedDeckId: 99 })];
     renderPage();
 
-    expect(screen.queryByRole('button', { name: /Limpar rejeições/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Sugerir de novo/ })).toBeNull();
   });
 
   it('restores only the rejected swaps of this deck when clearing', async () => {
@@ -1089,7 +1089,7 @@ describe('DeckDetailPage — rejected swaps banner', () => {
     ];
     renderPage();
 
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     expect(mockClearRejectionsMutate).toHaveBeenCalledWith([mine], expect.any(Object));
   });
@@ -1106,12 +1106,12 @@ describe('DeckDetailPage — clearing rejections beyond the cap or with failures
     );
 
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',
-        message: '50 rejeições limpas. Faltam 3; use Limpar rejeições de novo para continuar.',
+        message: 'Trocas restauradas: 50. Faltam 3: clique em Sugerir de novo outra vez.',
       }),
     );
   });
@@ -1126,7 +1126,7 @@ describe('DeckDetailPage — clearing rejections beyond the cap or with failures
     );
 
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     const call = mockShowToast.mock.calls[0]?.[0] as { kind: string; message: string; retry?: () => void };
     expect(call.kind).toBe('error');
@@ -1144,7 +1144,7 @@ describe('DeckDetailPage — clearing rejections beyond the cap or with failures
     );
 
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     expect(mockShowToast).not.toHaveBeenCalled();
   });
@@ -1161,12 +1161,12 @@ describe('DeckDetailPage — mutation Toast routing', () => {
     );
 
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining('Falha ao limpar rejeições'),
+        message: expect.stringContaining('Não foi possível restaurar as trocas'),
       }),
     );
   });
@@ -1181,7 +1181,7 @@ describe('DeckDetailPage — mutation Toast routing', () => {
     );
 
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /Limpar rejeições/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Sugerir de novo/ }));
 
     const call = mockShowToast.mock.calls[0]?.[0] as { retry?: () => void } | undefined;
     expect(typeof call?.retry).toBe('function');
@@ -1192,7 +1192,7 @@ describe('DeckDetailPage — mutation Toast routing', () => {
     renderPage();
 
     await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Marcar como possuída' }),
+      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho' }),
     );
 
     expect(mockMarkOwnedMutate).toHaveBeenCalledWith('gap-1', expect.any(Object));
@@ -1208,13 +1208,13 @@ describe('DeckDetailPage — mutation Toast routing', () => {
 
     renderPage();
     await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Marcar como possuída' }),
+      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho' }),
     );
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        message: expect.stringContaining('Falha ao marcar carta: Mark owned failed'),
+        message: expect.stringContaining('Não foi possível marcar a carta: Mark owned failed'),
       }),
     );
   });

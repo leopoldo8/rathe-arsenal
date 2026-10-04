@@ -80,10 +80,6 @@ export function AuthLayout({
                 </p>
               </div>
             </div>
-            <blockquote className={styles.artQuote}>
-              &ldquo;{t('auth.decorationQuote')}&rdquo;
-              <cite className={styles.artCite}>{t('auth.decorationQuoteCite')}</cite>
-            </blockquote>
           </div>
         )}
 

@@ -72,7 +72,7 @@ describe('ShoppingLine — Path A (data=null)', () => {
   it('renders the "you have everything you need" message', () => {
     render(<ShoppingLine data={PATH_A_DATA} />);
     expect(
-      screen.getByText(/você tem tudo o que precisa para este baralho/i),
+      screen.getByText(/você já tem tudo o que este deck precisa/i),
     ).toBeInTheDocument();
   });
 
@@ -142,7 +142,7 @@ describe('ShoppingLine — error state', () => {
   it('renders the temporarily-unavailable message', () => {
     render(<ShoppingLine data={ERROR_DATA} />);
     expect(
-      screen.getByText(/lista de compras temporariamente indisponível/i),
+      screen.getByText(/a lista de compras está indisponível agora/i),
     ).toBeInTheDocument();
   });
 

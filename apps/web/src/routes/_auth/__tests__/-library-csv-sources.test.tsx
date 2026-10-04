@@ -87,19 +87,19 @@ describe('LibraryCsvSourcesPage', () => {
 
   it('states how many sources exist and how many are active', () => {
     renderPage();
-    expect(screen.getByText('4 fontes · 3 ativas')).toBeInTheDocument();
+    expect(screen.getByText('4 fontes, 3 em uso')).toBeInTheDocument();
   });
 
   it('takes the combined card total from the library stats, not from summing rows', () => {
     renderPage();
-    expect(screen.getByText('389 cartas somadas')).toBeInTheDocument();
+    expect(screen.getByText('389 cartas no total')).toBeInTheDocument();
   });
 
   it('omits the combined total while the library stats are not loaded', () => {
     libraryQuery.mockReturnValue({ data: undefined });
     renderPage();
-    expect(screen.getByText('4 fontes · 3 ativas')).toBeInTheDocument();
-    expect(screen.queryByText(/cartas somadas/)).not.toBeInTheDocument();
+    expect(screen.getByText('4 fontes, 3 em uso')).toBeInTheDocument();
+    expect(screen.queryByText(/cartas no total/)).not.toBeInTheDocument();
   });
 
   it('localizes the count line under en-US', async () => {
@@ -112,7 +112,7 @@ describe('LibraryCsvSourcesPage', () => {
   it('uses the singular form for exactly one source and the plural for two, in both locales', async () => {
     sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [FOUR_SOURCES[0]!] });
     const { unmount } = renderPage();
-    expect(screen.getByText('1 fonte · 1 ativas')).toBeInTheDocument();
+    expect(screen.getByText('1 fonte, 1 em uso')).toBeInTheDocument();
     unmount();
     await setTestLocale('en-US');
     const single = renderPage();
@@ -134,7 +134,7 @@ describe('LibraryCsvSourcesPage', () => {
       data: [FOUR_SOURCES[0]!, FOUR_SOURCES[1]!],
     });
     renderPage();
-    expect(screen.getByText('2 fontes · 2 ativas')).toBeInTheDocument();
+    expect(screen.getByText('2 fontes, 2 em uso')).toBeInTheDocument();
   });
 
   it('renders every source row, including the Manual one with no toggle', () => {
@@ -160,7 +160,7 @@ describe('LibraryCsvSourcesPage', () => {
   it('collapses the explainer to the one-line note by default', () => {
     renderPage();
     expect(
-      screen.getByRole('button', { name: 'ⓘ Duplicatas entre fontes são somadas, não sobrescritas.' }),
+      screen.getByRole('button', { name: 'ⓘ Se a mesma carta aparece em duas fontes, as quantidades somam.' }),
     ).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -168,7 +168,7 @@ describe('LibraryCsvSourcesPage', () => {
     sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [] });
     renderPage();
     expect(screen.getByRole('link', { name: /Biblioteca/ })).toHaveAttribute('href', '/library');
-    expect(screen.queryByText(/fontes ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ fontes?, \d+ em uso/)).not.toBeInTheDocument();
   });
 
   it('wraps the page in the centred column class', () => {

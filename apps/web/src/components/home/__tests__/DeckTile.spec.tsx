@@ -112,7 +112,7 @@ describe('DeckTile', () => {
       renderTile(makeDeck({ legality: { category: 'illegal', reasons: ['x'] } }));
       const marker = screen.getByTestId('legality-illegal');
       expect(marker).toHaveClass(styles.legalityIllegal as string);
-      expect(marker).toHaveAttribute('aria-label', 'Não legal');
+      expect(marker).toHaveAttribute('aria-label', 'Fora do formato');
     });
 
     it('shows nothing for a legal deck', () => {
@@ -156,26 +156,26 @@ describe('DeckTile', () => {
   describe('untrack pin', () => {
     it('sits beside the deckbox link, not inside it', () => {
       renderTile(makeDeck());
-      const pin = screen.getByRole('button', { name: /remover rastreamento de rhinar aggro/i });
+      const pin = screen.getByRole('button', { name: /excluir rhinar aggro/i });
       expect(screen.getByTestId('deckbox').contains(pin)).toBe(false);
       expect(pin).toHaveClass(styles.untrackPin as string);
     });
 
     it('is disabled while the untrack mutation runs', () => {
       renderTile(makeDeck(), vi.fn(), true);
-      expect(screen.getByRole('button', { name: /remover rastreamento/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /excluir rhinar aggro/i })).toBeDisabled();
     });
 
     it('hides the tile immediately on click', () => {
       renderTile(makeDeck());
-      fireEvent.click(screen.getByRole('button', { name: /remover rastreamento/i }));
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
       expect(screen.queryByTestId('deckbox')).not.toBeInTheDocument();
     });
 
     it('calls onUntrack only after the undo window', () => {
       const onUntrack = vi.fn();
       renderTile(makeDeck(), onUntrack);
-      fireEvent.click(screen.getByRole('button', { name: /remover rastreamento/i }));
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
       act(() => vi.advanceTimersByTime(4799));
       expect(onUntrack).not.toHaveBeenCalled();
       act(() => vi.advanceTimersByTime(1));
@@ -185,7 +185,7 @@ describe('DeckTile', () => {
     it('undo restores the tile and never calls onUntrack', () => {
       const onUntrack = vi.fn();
       renderTile(makeDeck(), onUntrack);
-      fireEvent.click(screen.getByRole('button', { name: /remover rastreamento/i }));
+      fireEvent.click(screen.getByRole('button', { name: /excluir rhinar aggro/i }));
       fireEvent.click(screen.getByRole('button', { name: /desfazer/i }));
       act(() => vi.advanceTimersByTime(10000));
       expect(onUntrack).not.toHaveBeenCalled();

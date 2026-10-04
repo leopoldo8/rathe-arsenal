@@ -1,43 +1,41 @@
 export const home = {
   // EducationalEmptyState
-  welcomeHeading: 'Bem-vindo, Herói.',
-  emptyLead:
-    'Seu arsenal está vazio. Adicione um deck para ver o quão pronta está sua coleção — vamos destacar os cards que você tem, substitutos válidos e exatamente o que está faltando.',
+  welcomeHeading: 'Comece por um deck',
+  emptyLead: 'Importe um deck e veja quanto dele a sua coleção já cobre, quais trocas resolvem o resto e o que falta comprar.',
   collectionHintPrefix: 'Você já tem',
-  collectionHintCard: 'card',
-  collectionHintCards: 'cards',
+  collectionHintCard: 'carta',
+  collectionHintCards: 'cartas',
   collectionHintSuffix: 'na sua coleção.',
   howItWorksLabel: 'Como funciona',
-  step1Title: 'Cole um deck',
-  step1Body: 'Do Fabrary, ou escolha um deck meta que indexamos.',
-  step2Title: 'Veja sua prontidão',
-  step2Body:
-    'Vamos cruzar sua coleção e mostrar o que você tem, substitutos válidos e exatamente o que está faltando.',
-  step3Title: 'Aprovar e comprar',
-  step3Body: 'Aprove ou rejeite cada troca. Compre os cards faltando com um clique.',
-  trackFirstDeckCta: 'Rastrear seu primeiro deck',
+  step1Title: 'Importe um deck',
+  step1Body: 'Cole o link de um deck do Fabrary.',
+  step2Title: 'Veja o que falta',
+  step2Body: 'Cruzamos o deck com a sua coleção: o que você tem, o que dá para trocar e o que falta.',
+  step3Title: 'Decida as trocas',
+  step3Body: 'Aprove ou recuse cada troca sugerida e veja onde comprar o resto.',
+  trackFirstDeckCta: 'Importar meu primeiro deck',
   skipToLibrary: 'Ir para a Biblioteca',
-  manualAddPrefix: 'Quer adicionar cards sem um CSV?',
+  manualAddPrefix: 'Quer só registrar suas cartas?',
   manualAddLinkText: 'Vá para a Biblioteca',
-  manualAddSuffix: 'para buscar e adicionar cards individuais.',
+  manualAddSuffix: 'e adicione uma por uma.',
 
   // AggregateCallout (armory header line)
   aggregateCompletionVerb: 'completaria',
   aggregateDeckConnector: 'de {{total}} decks na',
 
   // DeckCard
-  legalityNotLegalLabel: 'Não legal',
-  legalityIllegalTitle: 'Ilegal',
-  untrackAriaLabel: 'Remover rastreamento de {{deckName}}',
-  untrackTitle: 'Remover rastreamento',
-  untrackToastMsg: '"{{deckName}}" removido do rastreamento.',
+  legalityNotLegalLabel: 'Fora do formato',
+  legalityIllegalTitle: 'Fora do formato',
+  untrackAriaLabel: 'Excluir {{deckName}}',
+  untrackTitle: 'Excluir deck',
+  untrackToastMsg: '"{{deckName}}" excluído.',
   undoUntrack: 'Desfazer',
 
   // PopulatedHomeHero
   collectionStatsLabel: 'Estatísticas da coleção',
   decksStatLabel: 'Decks',
   avgReadyStatLabel: 'Média',
-  cardsMissingStatLabel: 'Faltando',
+  cardsMissingStatLabel: 'Cartas faltando',
   addNewDeckCta: '+ Novo deck',
 
   // ReadinessShelves
@@ -81,11 +79,11 @@ export const home = {
   metaIncomplete: '{{missing}} faltando · {{owned}}/{{total}}',
   metaDraft: 'Rascunho · sem lista',
   groupActiveName: 'Ativos',
-  groupActiveHint: 'Prontos para levar ao jogo',
+  groupActiveHint: 'Prontos para o jogo',
   groupBuildingName: 'Construindo',
-  groupBuildingHint: 'Em montagem, ainda ajustando',
+  groupBuildingHint: 'Ainda em ajuste',
   groupIdeaName: 'Ideias',
-  groupIdeaHint: 'Rascunhos sem lista fixa',
+  groupIdeaHint: 'Sem lista definida',
   groupRetiredName: 'Aposentados',
-  groupRetiredHint: 'Guardados para consulta',
+  groupRetiredHint: 'Fora de uso',
 } as const;

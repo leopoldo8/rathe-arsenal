@@ -2,7 +2,7 @@ export const common = {
   loading: 'Loading',
   // skeleton loading labels
   loadingImpactPreview: 'Loading impact preview',
-  loadingOnboarding: 'Loading onboarding',
+  loadingOnboarding: 'Loading',
   loadingStepLabel: 'Loading step label',
   loadingStepHeading: 'Loading step heading',
   loadingStepDesc: 'Loading step description',

@@ -37,7 +37,7 @@ test.describe('Swaps screen — E2E', () => {
 
     await firstRow.getByRole('button', { name: /^Aprovar/ }).click();
 
-    await expect(firstRow.getByRole('status')).toHaveText('Aprovada — aplicada ao deck');
+    await expect(firstRow.getByRole('status')).toHaveText('Aprovada: já vale no deck');
     await expect(firstRow.getByRole('button', { name: /^Desfazer/ })).toBeVisible();
     await expect(swapRows(page)).toHaveCount(pendingBefore);
     expect(await tabCount(page, 'Pendentes')).toBe(pendingBefore - 1);
@@ -68,7 +68,7 @@ test.describe('Swaps screen — E2E', () => {
     await row.getByRole('button', { name: /^Recusar/ }).click();
     await page.getByRole('button', { name: 'Prefiro comprar a original' }).click();
     await page.getByRole('button', { name: 'Recusar troca' }).click();
-    await expect(row.getByRole('status')).toHaveText('Rejeitada — não será sugerida de novo');
+    await expect(row.getByRole('status')).toHaveText('Recusada: não volta a ser sugerida');
 
     await tab(page, 'Recusadas').click();
     const rejected = page.locator(`[data-testid="swap-row"][data-row-id="${rowId}"]`);
@@ -91,9 +91,9 @@ test.describe('Swaps screen — E2E', () => {
   test('hides the filter rail behind one Filtros trigger and opens it', async ({ page }) => {
     await openSwaps(page);
 
-    await expect(page.getByRole('button', { name: /^Tier/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Nível/ })).toHaveCount(0);
     await page.getByRole('button', { name: 'Filtros' }).click();
-    await expect(page.getByRole('button', { name: /^Tier/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Nível/ })).toBeVisible();
   });
 
   test('an approval shows up on the deck detail page', async ({ page }) => {

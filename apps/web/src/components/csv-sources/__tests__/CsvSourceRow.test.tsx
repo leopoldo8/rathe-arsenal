@@ -104,7 +104,7 @@ describe('CsvSourceRow', () => {
     it('calls patchMutation.mutate with active=false when toggled off', async () => {
       renderRow(buildSource({ active: true }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
+      const toggleBtn = screen.getByRole('switch', { name: /ativar ou desativar.*my collection/i });
       await userEvent.click(toggleBtn);
 
       expect(mockMutate).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe('CsvSourceRow', () => {
     it('calls patchMutation.mutate with active=true when toggled on', async () => {
       renderRow(buildSource({ active: false }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
+      const toggleBtn = screen.getByRole('switch', { name: /ativar ou desativar.*my collection/i });
       await userEvent.click(toggleBtn);
 
       expect(mockMutate).toHaveBeenCalledWith(
@@ -133,7 +133,7 @@ describe('CsvSourceRow', () => {
 
       renderRow(buildSource({ active: true }));
 
-      const toggleBtn = screen.getByRole('switch', { name: /alternar.*my collection.*ativo/i });
+      const toggleBtn = screen.getByRole('switch', { name: /ativar ou desativar.*my collection/i });
       await userEvent.click(toggleBtn);
 
       expect(mockShow).toHaveBeenCalledWith(
@@ -204,7 +204,7 @@ describe('CsvSourceRow', () => {
     it('renders card count and relative date', () => {
       renderRow(buildSource({ cardCount: 42 }));
 
-      expect(screen.getByText(/42 cards/)).toBeInTheDocument();
+      expect(screen.getByText(/42 cartas/)).toBeInTheDocument();
       expect(screen.getByText('2 days ago')).toBeInTheDocument();
     });
   });
@@ -253,7 +253,7 @@ describe('CsvSourceRow', () => {
     it('shows the localized name and the card count', () => {
       renderRow(buildSource(manual));
       expect(screen.getByText('Entradas manuais')).toBeInTheDocument();
-      expect(screen.getByText(/7 cards/)).toBeInTheDocument();
+      expect(screen.getByText(/7 cartas/)).toBeInTheDocument();
     });
 
     it('renders no toggle, because the backend cannot deactivate it', () => {
@@ -270,7 +270,7 @@ describe('CsvSourceRow', () => {
     it('explains why instead of showing an active label', () => {
       renderRow(buildSource(manual));
       expect(
-        screen.getByText('Sempre incluída — cartas adicionadas manualmente não podem ser desativadas.'),
+        screen.getByText('Sempre incluída: cartas adicionadas à mão não podem ser desativadas.'),
       ).toBeInTheDocument();
       expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
     });

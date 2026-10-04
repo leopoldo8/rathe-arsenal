@@ -61,7 +61,7 @@ describe('/about route (DISC-03)', () => {
   it('renders the fan-project context section', () => {
     render(<AboutPage />);
     expect(
-      screen.getByText(/projeto de fã não-oficial/i),
+      screen.getByText(/projeto de fã não oficial/i),
     ).toBeInTheDocument();
   });
 
@@ -75,7 +75,7 @@ describe('/about route (DISC-03)', () => {
 
   it('renders a back link to /home via router <Link>, not a bare anchor', () => {
     render(<AboutPage />);
-    const backLink = screen.getByRole('link', { name: /voltar para a home/i });
+    const backLink = screen.getByRole('link', { name: /voltar ao início/i });
     expect(backLink).toHaveAttribute('href', '/home');
     expect(backLink).toHaveAttribute('data-tsr-link', 'true');
   });

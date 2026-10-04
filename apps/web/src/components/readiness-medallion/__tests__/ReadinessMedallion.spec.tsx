@@ -39,7 +39,7 @@ describe('ReadinessMedallion', () => {
       expect(meter).toHaveAttribute('aria-valuemin', '0');
       expect(meter).toHaveAttribute('aria-valuemax', '100');
       expect(meter).toHaveAttribute('aria-valuetext', '85%');
-      expect(meter).toHaveAccessibleName('Prontidão do herói');
+      expect(meter).toHaveAccessibleName('Prontidão do deck');
     });
 
     it('records the size', () => {

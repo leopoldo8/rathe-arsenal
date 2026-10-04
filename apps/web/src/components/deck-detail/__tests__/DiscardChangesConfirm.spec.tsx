@@ -50,7 +50,7 @@ describe('DiscardChangesConfirm — rendering', () => {
 
   it('renders body text', () => {
     renderConfirm();
-    expect(screen.getByText('Suas edições não salvas neste baralho serão perdidas.')).toBeInTheDocument();
+    expect(screen.getByText('As edições não salvas neste deck serão perdidas.')).toBeInTheDocument();
   });
 
   it('renders both buttons', () => {

@@ -364,7 +364,7 @@ describe('TagAutocompleteCombobox — error partial failure (create ok, attach f
     fireEvent.change(getInput(), { target: { value: 'novaTag' } });
     const createOption = screen.getByText(/Criar/i).closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(createOption); });
-    expect(screen.getByText(/não foi possível anexar/i)).toBeInTheDocument();
+    expect(screen.getByText(/a tag foi criada, mas não entrou no deck/i)).toBeInTheDocument();
   });
 
   it('after partial failure, new tag appears in the filtered list for retry', () => {
@@ -394,7 +394,7 @@ describe('TagAutocompleteCombobox — error 5xx attach existing', () => {
     fireEvent.change(getInput(), { target: { value: 'lig' } });
     const ligaOption = screen.getByText('liga local').closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(ligaOption); });
-    expect(screen.getByText(/não foi possível anexar a tag/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível adicionar a tag/i)).toBeInTheDocument();
   });
 
   it('dropdown stays open after 5xx attach error', () => {
@@ -421,13 +421,13 @@ describe('TagAutocompleteCombobox — errors clear on input', () => {
     fireEvent.change(getInput(), { target: { value: 'lig' } });
     const ligaOption = screen.getByText('liga local').closest('[role="option"]')!;
     act(() => { fireEvent.pointerDown(ligaOption); });
-    expect(screen.getByText(/não foi possível anexar a tag/i)).toBeInTheDocument();
+    expect(screen.getByText(/não foi possível adicionar a tag/i)).toBeInTheDocument();
     // Type again — error should clear
     act(() => {
       fireEvent.change(getInput(), { target: { value: 'liga loc' } });
     });
     await waitFor(() => {
-      expect(screen.queryByText(/não foi possível anexar a tag/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/não foi possível adicionar a tag/i)).not.toBeInTheDocument();
     });
   });
 });
