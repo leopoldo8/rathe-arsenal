@@ -60,7 +60,8 @@
 
 ## Handoff
 
-- **Feature**: product-redesign — `.specs/features/product-redesign/` — **all 10 phases complete; PR open against `main`, not merged (owner's call).** Branch `feat/product-redesign`. Mandate, every deviation (DEV-01..25) and the provisional calls live in `implementation-notes.md`; every `tasks.md` row reads Verified.
+- **Latest work**: AI-slop audit — `docs/audit/ai-slop-2026-10-03/inventory.md` (findings, owner decisions, what shipped, deviations). Shipped in #115 (dead code), #116 (copy pass), #117 (localized engine reasons), #118 (deck detail and home), #119 (swaps, library, sources, new deck, settings).
+- **Feature**: product-redesign — `.specs/features/product-redesign/` — all 10 phases complete and merged to `main` (#110), followed by post-launch polish #111–#114. Every deviation (DEV-01..31) and the provisional calls live in `implementation-notes.md`.
 - **Provisional, owner to confirm**: DEV-20 bulk actions (sequential calls, 50-row cap), DEV-12 `cardCounts` on `GET /api/decks`, DEV-14 DECK-02 "Comprar tudo" → link to the shopping list, DEV-19 onboarding keeps the top nav, DEV-22 Sources chevron removal, DEV-14 decklist "by type" cannot split attack vs non-attack actions (catalog `types[0]`).
 - **Open follow-ups**: recompute paths other than swap mutations do not take the deck lock (DEV-10); `review_aggregate` table is now unused (drop needs a migration); owner visual sign-off against the prototype (unreachable from the run, DEV-01).
 - **Deploy step**: run `pnpm --filter @rathe-arsenal/api backfill:swap-suggestions` once right after the first deploy (`scripts/deploy-railway.md`).
