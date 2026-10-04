@@ -1978,17 +1978,17 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
   });
 
-  it('the banner art sits on the left, capped so the 546px source is not stretched', () => {
+  it('the banner art sits on the left and spans about 60% of the banner, up to 760px', () => {
     const frame = ruleBody(BANNER, '.artFrame');
     expect(frame).toContain('inset-inline-start: 0');
     expect(frame).not.toContain('inset-inline-end');
-    expect(frame).toContain('inline-size: min(520px, 100%)');
+    expect(frame).toContain('inline-size: min(760px, 62%)');
     expect(frame).toContain('container-type: size');
   });
 
   it('the banner art fades out on all four edges, so no card frame shows', () => {
     const frame = ruleBody(BANNER, '.artFrame');
-    const horizontal = 'linear-gradient(to right, transparent, #000 12%, #000 50%, transparent)';
+    const horizontal = 'linear-gradient(to right, transparent, #000 10%, #000 60%, transparent)';
     const vertical = 'linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent)';
     expect(frame).toContain(`-webkit-mask-image: ${horizontal}, ${vertical}`);
     expect(frame).toContain(`mask-image: ${horizontal}, ${vertical}`);
