@@ -15,7 +15,6 @@ export interface IHeroArt {
 export interface IReadinessMedallionProps {
   readonly pct: number;
   readonly size: TMedallionSize;
-  readonly heroName: string;
   readonly heroArt: IHeroArt | null;
   /** False draws a solid surface behind the number instead of the hero art. */
   readonly showArt?: boolean;
@@ -25,7 +24,6 @@ export interface IReadinessMedallionProps {
 export function ReadinessMedallion({
   pct,
   size,
-  heroName,
   heroArt,
   showArt = true,
   className,
@@ -84,7 +82,6 @@ export function ReadinessMedallion({
           {display}
           {size === 'lg' && <span className={styles.percent}>%</span>}
         </span>
-        {size === 'lg' && <span className={styles.heroName}>{heroName}</span>}
       </div>
     </div>
   );

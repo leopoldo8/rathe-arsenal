@@ -6,6 +6,8 @@ import { useImageFallback } from '../../hooks/useImageFallback';
 import { ReadinessMedallion } from '../readiness-medallion/ReadinessMedallion';
 import { DeckNameInline } from './DeckNameInline';
 import { DeckOverflowMenu } from './DeckOverflowMenu';
+import { LegalityBadge } from './LegalityBadge';
+import type { IDeckLegality } from '../../api/decks';
 import { StatusDropdown } from './StatusDropdown';
 import { useDeckHero } from './useDeckHero';
 import styles from './DeckHeroBanner.module.css';
@@ -15,7 +17,7 @@ interface IDeckHeroBannerProps {
   readonly deckName: string;
   readonly status: TDeckStatus;
   readonly format: string;
-  readonly leagueTag: string | null;
+  readonly legality: IDeckLegality;
   readonly heroIdentifier: string | null;
   readonly heroFallbackName: string;
   readonly pct: number;
@@ -27,7 +29,7 @@ export function DeckHeroBanner({
   deckName,
   status,
   format,
-  leagueTag,
+  legality,
   heroIdentifier,
   heroFallbackName,
   pct,
@@ -36,9 +38,6 @@ export function DeckHeroBanner({
   const { t } = useTranslation();
   const hero = useDeckHero(heroIdentifier, heroFallbackName);
   const art = useImageFallback(hero.bannerSources);
-  const eyebrow = [format, leagueTag]
-    .filter((part): part is string => part !== null && part !== '')
-    .join(t('deckDetail.eyebrowSeparator'));
 
   return (
     <section
@@ -81,15 +80,18 @@ export function DeckHeroBanner({
           >
             {t('decks.edit')}
           </button>
-          <DeckOverflowMenu deckId={deckId} />
+          <DeckOverflowMenu deckId={deckId} deckName={deckName} />
         </div>
       </div>
 
       <div className={styles.bottom}>
         <div className={styles.identity}>
-          <p className={styles.eyebrow} data-testid="deck-hero-eyebrow">
-            {eyebrow}
-          </p>
+          <div className={styles.eyebrowRow}>
+            <p className={styles.eyebrow} data-testid="deck-hero-eyebrow">
+              {format}
+            </p>
+            {legality.category !== 'legal' && <LegalityBadge legality={legality} format={format} />}
+          </div>
           <div className={styles.title}>
             <DeckNameInline deckId={deckId} name={deckName} mode="view" />
           </div>
@@ -97,7 +99,7 @@ export function DeckHeroBanner({
             {hero.name}
           </p>
         </div>
-        <ReadinessMedallion pct={pct} size="lg" heroName={hero.name} heroArt={hero.art} showArt={false} />
+        <ReadinessMedallion pct={pct} size="lg" heroArt={hero.art} showArt={false} />
       </div>
     </section>
   );

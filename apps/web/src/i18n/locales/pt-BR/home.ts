@@ -25,7 +25,6 @@ export const home = {
 
   // DeckCard
   legalityNotLegalLabel: 'Fora do formato',
-  legalityIllegalTitle: 'Fora do formato',
   untrackAriaLabel: 'Excluir {{deckName}}',
   untrackTitle: 'Excluir deck',
   untrackToastMsg: '"{{deckName}}" excluído.',

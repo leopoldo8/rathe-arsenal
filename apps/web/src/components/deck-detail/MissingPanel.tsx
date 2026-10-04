@@ -91,7 +91,9 @@ export function MissingPanel({
                 <div className={styles.body}>
                   <span className={styles.name}>{entry.name}</span>
                   <span className={styles.meta} data-testid="missing-row-meta">
-                    <span>{entry.slot}</span>{' '}
+                    {entry.slot !== 'mainboard' && (
+                      <span>{t(`swaps.slot.${entry.slot}`, { defaultValue: entry.slot })} </span>
+                    )}
                     <MissingRowStoreMeta
                       store={store}
                       storeName={populated?.storeName ?? ''}

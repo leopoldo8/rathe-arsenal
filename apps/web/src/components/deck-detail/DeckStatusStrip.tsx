@@ -9,6 +9,8 @@ export const MISSING_PANEL_ID = 'deck-missing-panel';
 interface IDeckStatusStripProps {
   readonly summary: IDeckSummary;
   readonly fabraryUlid: string | null;
+  readonly offFormat?: string | null;
+  readonly reachPercent?: number | null;
 }
 
 const TONE_CLASS: Readonly<Record<TStripKind, string>> = {
@@ -17,9 +19,11 @@ const TONE_CLASS: Readonly<Record<TStripKind, string>> = {
   incomplete: styles.toneIncomplete ?? '',
 };
 
-function useStripMessage(summary: IDeckSummary): string {
+function useStripMessage(summary: IDeckSummary, offFormat: string | null, reachPercent: number | null): string {
   const { t } = useTranslation();
-  if (summary.kind === 'complete') return t('deckDetail.stripComplete');
+  if (summary.kind === 'complete') {
+    return offFormat ? t('deckDetail.stripCompleteOffFormat', { format: offFormat }) : t('deckDetail.stripComplete');
+  }
   if (summary.kind === 'solvable') {
     return t('deckDetail.stripSolvable', { count: summary.pendingSwaps });
   }
@@ -39,17 +43,27 @@ function useStripMessage(summary: IDeckSummary): string {
     summary.unsolvedCards > 0
       ? ` ${t('deckDetail.stripUnsolved', { count: summary.unsolvedCards })}`
       : '';
-  return `${gap} — ${closer}${unsolved}.`;
+  const reach =
+    reachPercent !== null
+      ? ` ${t('deckDetail.stripReachesWithSwaps', { count: summary.pendingSwaps, pct: reachPercent })}`
+      : '';
+  return `${gap} — ${closer}${unsolved}.${reach}`;
 }
 
-export function DeckStatusStrip({ summary, fabraryUlid }: IDeckStatusStripProps): React.ReactElement {
+export function DeckStatusStrip({
+  summary,
+  fabraryUlid,
+  offFormat = null,
+  reachPercent = null,
+}: IDeckStatusStripProps): React.ReactElement {
   const { t } = useTranslation();
-  const message = useStripMessage(summary);
+  const message = useStripMessage(summary, offFormat, reachPercent);
   const hasSwaps = summary.pendingSwaps + summary.approvedSwaps > 0;
   const showSwapsLink = summary.kind !== 'complete' && hasSwaps;
   const showShoppingLink = summary.kind === 'incomplete' && summary.missingCards > 0;
   const showFabrary = summary.kind === 'incomplete' && fabraryUlid !== null;
-  const stripClass = [styles.strip, TONE_CLASS[summary.kind]].join(' ');
+  const tone = summary.kind === 'complete' && offFormat ? TONE_CLASS.incomplete : TONE_CLASS[summary.kind];
+  const stripClass = [styles.strip, tone].join(' ');
 
   return (
     <section

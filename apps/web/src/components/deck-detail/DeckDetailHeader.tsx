@@ -244,7 +244,7 @@ export function DeckDetailHeader({
                 </button>
               )}
 
-              <DeckOverflowMenu deckId={deckId} />
+              <DeckOverflowMenu deckId={deckId} deckName={deckName} />
             </div>
           </div>
 

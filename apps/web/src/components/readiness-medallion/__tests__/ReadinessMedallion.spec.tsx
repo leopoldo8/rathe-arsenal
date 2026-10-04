@@ -11,7 +11,7 @@ function renderMedallion(
   size: TMedallionSize = 'sm',
   heroArt: typeof ART | null = ART,
 ): HTMLElement {
-  render(<ReadinessMedallion pct={pct} size={size} heroName="Rhinar" heroArt={heroArt} />);
+  render(<ReadinessMedallion pct={pct} size={size} heroArt={heroArt} />);
   return screen.getByRole('meter');
 }
 
@@ -49,13 +49,13 @@ describe('ReadinessMedallion', () => {
 
   it('clamps the sweep above 100 and below 0', () => {
     const { unmount } = render(
-      <ReadinessMedallion pct={140} size="sm" heroName="R" heroArt={null} />,
+      <ReadinessMedallion pct={140} size="sm" heroArt={null} />,
     );
     expect(
       screen.getByRole('meter').querySelector<HTMLElement>('[style]')?.style.getPropertyValue('--ra-medallion-pct'),
     ).toBe('100%');
     unmount();
-    render(<ReadinessMedallion pct={-5} size="sm" heroName="R" heroArt={null} />);
+    render(<ReadinessMedallion pct={-5} size="sm" heroArt={null} />);
     expect(
       screen.getByRole('meter').querySelector<HTMLElement>('[style]')?.style.getPropertyValue('--ra-medallion-pct'),
     ).toBe('0%');
@@ -68,10 +68,10 @@ describe('ReadinessMedallion', () => {
     expect(screen.queryByText('Rhinar')).toBeNull();
   });
 
-  it('lg renders the percent glyph and the hero-name sublabel', () => {
-    renderMedallion(72, 'lg');
+  it('lg renders the percent glyph and nothing else under the number', () => {
+    const meter = renderMedallion(72, 'lg');
     expect(screen.getByText('%')).toBeInTheDocument();
-    expect(screen.getByText('Rhinar')).toBeInTheDocument();
+    expect(meter).toHaveTextContent(/^72%$/);
   });
 
   it('renders the hero art image when sources are available', () => {
@@ -119,7 +119,7 @@ describe('ReadinessMedallion', () => {
   });
 
   it('merges a caller className onto the root', () => {
-    render(<ReadinessMedallion pct={5} size="sm" heroName="R" heroArt={null} className="extra" />);
+    render(<ReadinessMedallion pct={5} size="sm" heroArt={null} className="extra" />);
     const meter = screen.getByRole('meter');
     expect(meter).toHaveClass('extra');
     expect(meter).toHaveClass(styles.medallion as string);
@@ -127,7 +127,7 @@ describe('ReadinessMedallion', () => {
 
   describe('showArt=false', () => {
     function renderPlain(): HTMLElement {
-      render(<ReadinessMedallion pct={64} size="lg" heroName="Rhinar" heroArt={ART} showArt={false} />);
+      render(<ReadinessMedallion pct={64} size="lg" heroArt={ART} showArt={false} />);
       return screen.getByRole('meter');
     }
 
@@ -140,12 +140,11 @@ describe('ReadinessMedallion', () => {
       expect(solid).toHaveClass(styles.artSolid as string);
     });
 
-    it('drops the art shade but keeps the ring, number and hero name', () => {
+    it('drops the art shade but keeps the ring and number', () => {
       const meter = renderPlain();
       expect(meter.querySelector(`.${styles.shade}`)).not.toBeInTheDocument();
       expect(meter.querySelector(`.${styles.ring}`)).toBeInTheDocument();
       expect(meter).toHaveTextContent('64%');
-      expect(meter).toHaveTextContent('Rhinar');
     });
 
     it('defaults to drawing the art', () => {

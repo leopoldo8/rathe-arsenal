@@ -95,14 +95,9 @@
 
 .formatPill {
   display: inline-block;
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  letter-spacing: 0.04em;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-sm);
   color: var(--ra-fg-secondary);
-  background: var(--ra-bg-muted);
-  border: 1px solid var(--ra-border-subtle);
-  border-radius: var(--ra-radius-full);
-  padding: 2px var(--ra-space-2);
 }
 
 /* Legality badge slot */
@@ -112,9 +107,8 @@
 }
 
 .legalitySlot__placeholder {
-  font-family: var(--ra-font-mono);
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
-  letter-spacing: 0.04em;
   color: var(--ra-fg-muted);
 }
 

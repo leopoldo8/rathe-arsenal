@@ -88,7 +88,7 @@ export function DeckDetailView({
         deckName={deck.name}
         status={deck.status}
         format={deck.format}
-        leagueTag={deck.tags?.[0] ?? null}
+        legality={deck.legality}
         heroIdentifier={deck.heroIdentifier}
         heroFallbackName={deck.hero}
         pct={snapshot.effectivePercent}
@@ -97,7 +97,16 @@ export function DeckDetailView({
       <div className={styles.tags}>
         <TagChipRow deckId={deck.id} tags={tags} />
       </div>
-      <DeckStatusStrip summary={summary} fabraryUlid={deck.fabraryUlid} />
+      <DeckStatusStrip
+        summary={summary}
+        fabraryUlid={deck.fabraryUlid}
+        offFormat={deck.legality.category === 'illegal' ? deck.format : null}
+        reachPercent={
+          Math.round(snapshot.fidelityPercent) > Math.round(snapshot.rawPercent)
+            ? Math.round(snapshot.fidelityPercent)
+            : null
+        }
+      />
       {rejectedCount > 0 && (
         <ModifiedViewBanner
           rejectedCount={rejectedCount}
@@ -105,13 +114,7 @@ export function DeckDetailView({
           isClearing={isClearingRejections}
         />
       )}
-      <DeckAnalysisRow
-        rawPercent={snapshot.rawPercent}
-        fidelityPercent={snapshot.fidelityPercent}
-        legality={deck.legality}
-        format={deck.format}
-        items={items}
-      />
+      <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (
         <DeckActionPanels
           breakdown={snapshot.breakdown}

@@ -172,4 +172,29 @@ describe('DeckStatusStrip — en-US', () => {
       'Your collection covers this deck — 2 swaps waiting for approval to reach 100%.',
     );
   });
+
+  it('does not call a full collection good news when the deck breaks its format rules', () => {
+    render(
+      <DeckStatusStrip
+        summary={summary({ kind: 'complete', pendingSwaps: 0 })}
+        fabraryUlid={null}
+        offFormat="Classic Constructed"
+      />,
+    );
+
+    expect(message()).toBe('Sua coleção cobre o deck inteiro, mas ele está fora das regras de Classic Constructed.');
+    expect(screen.getByTestId('deck-status-strip')).not.toHaveClass(styles.toneComplete!);
+  });
+
+  it('ends with how far the pending swaps take the deck, as one rounded number', () => {
+    render(
+      <DeckStatusStrip
+        summary={summary({ kind: 'incomplete', missingCards: 15, pendingSwaps: 1, unsolvedCards: 13 })}
+        fabraryUlid={null}
+        reachPercent={69}
+      />,
+    );
+
+    expect(message()).toMatch(/Com ela, o deck chega a 69%\.$/);
+  });
 });

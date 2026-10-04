@@ -1,7 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IDeckLegality } from '../../api/decks';
-import { LegalityBadge } from './LegalityBadge';
 import { VarFill } from './VarFill';
 import {
   buildCostBars,
@@ -13,10 +11,6 @@ import type { IDeckListItem } from './deckListModel';
 import styles from './DeckAnalysisRow.module.css';
 
 interface IDeckAnalysisRowProps {
-  readonly rawPercent: number;
-  readonly fidelityPercent: number;
-  readonly legality: IDeckLegality;
-  readonly format: string;
   readonly items: readonly IDeckListItem[];
 }
 
@@ -31,32 +25,6 @@ const PITCH_SEGMENT_CLASS = {
   2: styles.pitchYellow ?? '',
   3: styles.pitchBlue ?? '',
 } as const;
-
-function formatPercent(value: number): string {
-  return `${(Math.round(value * 10) / 10).toFixed(1)}%`;
-}
-
-interface IMeterRowProps {
-  readonly label: string;
-  readonly percent: number;
-  readonly fillClass: string;
-  readonly testId: string;
-}
-
-function MeterRow({ label, percent, fillClass, testId }: IMeterRowProps): React.ReactElement {
-  const clamped = Math.max(0, Math.min(100, percent));
-  return (
-    <div className={styles.meterRow}>
-      <span className={styles.meterLabel}>{label}</span>
-      <div className={styles.track} aria-hidden="true">
-        <VarFill className={fillClass} cssVar="--ra-fill" value={`${clamped}%`} />
-      </div>
-      <span className={styles.meterValue} data-testid={testId}>
-        {formatPercent(percent)}
-      </span>
-    </div>
-  );
-}
 
 function PitchCard({ slices }: { readonly slices: readonly IPitchSlice[] }): React.ReactElement {
   const { t } = useTranslation();
@@ -128,35 +96,10 @@ function CostCard({ bars }: { readonly bars: readonly ICostBar[] }): React.React
   );
 }
 
-export function DeckAnalysisRow({
-  rawPercent,
-  fidelityPercent,
-  legality,
-  format,
-  items,
-}: IDeckAnalysisRowProps): React.ReactElement {
+export function DeckAnalysisRow({ items }: IDeckAnalysisRowProps): React.ReactElement {
   const { t } = useTranslation();
   return (
     <section className={styles.row} aria-label={t('deckDetail.analysisAria')} data-testid="deck-analysis-row">
-      <article className={styles.card} data-testid="analysis-readiness">
-        <h2 className={styles.cardTitle}>{t('deckDetail.readinessTitle')}</h2>
-        <MeterRow
-          label={t('deckDetail.rawLabel')}
-          percent={rawPercent}
-          fillClass={`${styles.fill} ${styles.fillRaw}`}
-          testId="analysis-raw-value"
-        />
-        <MeterRow
-          label={t('deckDetail.fidelityLabel')}
-          percent={fidelityPercent}
-          fillClass={`${styles.fill} ${styles.fillFidelity}`}
-          testId="analysis-fidelity-value"
-        />
-        <p className={styles.caption}>{t('deckDetail.readinessCaption')}</p>
-        <div className={styles.legality}>
-          <LegalityBadge legality={legality} format={format} />
-        </div>
-      </article>
       <PitchCard slices={buildPitchSlices(items)} />
       <CostCard bars={buildCostBars(items)} />
     </section>

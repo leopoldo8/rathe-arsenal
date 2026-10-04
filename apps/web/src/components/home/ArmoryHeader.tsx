@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ITrackedDeckListItem, ITrackedDeckListResponse } from '../../api/decks';
 import { AggregateCallout } from './AggregateCallout';
-import { computeAverageReadiness, countCompleteDecks, isRetired } from './homeGroups';
+import { computeAverageReadiness, countPlayableDecks, isRetired } from './homeGroups';
 import styles from './ArmoryHeader.module.css';
 
 interface IArmoryHeaderProps {
@@ -32,7 +32,7 @@ export function ArmoryHeader({
         <p className={styles.status}>
           <span className={styles.statusDot} aria-hidden="true" />
           {t('home.readyDecksStatus', {
-            ready: countCompleteDecks(decks),
+            ready: countPlayableDecks(decks),
             total: inRotation.length,
           })}
         </p>

@@ -32,7 +32,6 @@
 
 .legalityIllegal {
   color: var(--ra-ready-low);
-  font-weight: var(--ra-weight-bold);
 }
 
 .untrackPin {

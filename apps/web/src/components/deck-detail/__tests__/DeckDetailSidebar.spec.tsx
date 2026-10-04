@@ -273,9 +273,16 @@ describe('DeckDetailSidebar — collapse toggle', () => {
 });
 
 describe('DeckDetailSidebar — shopping block', () => {
-  it('renders the shopping panel', () => {
-    renderSidebar();
+  it('renders the shopping panel when a store has prices', () => {
+    renderSidebar({
+      shoppingData: { kind: 'populated' } as React.ComponentProps<typeof DeckDetailSidebar>['shoppingData'],
+    });
     expect(screen.getByTestId('shopping-panel-mock')).toBeInTheDocument();
+  });
+
+  it('leaves out the shopping block when there are no store prices', () => {
+    renderSidebar({ shoppingData: null });
+    expect(screen.queryByTestId('sidebar-shopping-block')).not.toBeInTheDocument();
   });
 });
 

@@ -101,14 +101,3 @@
   font-size: 14px;
 }
 
-.heroName {
-  margin-block-start: 2px;
-  max-inline-size: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 7.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #c6a678;
-}
