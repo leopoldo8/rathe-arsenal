@@ -43,15 +43,15 @@
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
-  inline-size: min(520px, 100%);
+  inline-size: min(760px, 62%);
   overflow: hidden;
   container-type: size;
   -webkit-mask-image:
-    linear-gradient(to right, transparent, #000 12%, #000 50%, transparent),
+    linear-gradient(to right, transparent, #000 10%, #000 60%, transparent),
     linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to right, transparent, #000 12%, #000 50%, transparent),
+    linear-gradient(to right, transparent, #000 10%, #000 60%, transparent),
     linear-gradient(to bottom, transparent, #000 20%, #000 78%, transparent);
   mask-composite: intersect;
 }
