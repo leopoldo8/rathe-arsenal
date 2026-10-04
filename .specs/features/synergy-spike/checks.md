@@ -68,19 +68,19 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C14:" scripts/synergy-spike/_
 
 ### S5 - the language-model candidate · 3 files · 22 KB · ~20k
 
-**C15** - `pnpm synergy:run llm` with `ANTHROPIC_API_KEY` unset exits 1 before any request is made (the fake client is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15)
+**C15** - `pnpm synergy:run llm` with `ANTHROPIC_API_KEY` unset exits 1 before any request is made (the fake client is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C15:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C16** - One deck sends exactly 1 request with model `claude-opus-5-5`, the hero name, the rules text of every mainboard card, every card of the pool with its rules text, and asks for 25 ranked identifiers with one reason each, of which the first 10 valid are kept (plan AC 16)
+**C16** - One deck sends exactly 1 request with model `claude-opus-5-5`, the hero name, the rules text of every mainboard card, every card of the pool with its rules text, and asks for 25 ranked identifiers with one reason each, of which the first 10 valid are kept (plan AC 16) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C16:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C17** - `--dry-run` prints one input token count per deck from the token-counting call, makes 0 generation calls and exits 0 (plan AC 17)
+**C17** - `--dry-run` prints one input token count per deck from the token-counting call, makes 0 generation calls and exits 0 (plan AC 17) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C17:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C18** - A returned message's `usage` input and output token counts are stored in that deck's run file (plan AC 18)
+**C18** - A returned message's `usage` input and output token counts are stored in that deck's run file (plan AC 18) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C18:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C19** - Stop reason `refusal` and stop reason `max_tokens` each record the deck as `failed` with that stop reason, make exactly 1 request (no retry) and exit 1 (plan AC 19)
+**C19** - Stop reason `refusal` and stop reason `max_tokens` each record the deck as `failed` with that stop reason, make exactly 1 request (no retry) and exit 1 (plan AC 19) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C19:" scripts/synergy-spike/__tests__/llm.test.ts`
 
 **C20** - **owner** - with the real key, one deck's run file holds nonzero `inputTokens` and `outputTokens` and a 10-card `top10` taken from a real response

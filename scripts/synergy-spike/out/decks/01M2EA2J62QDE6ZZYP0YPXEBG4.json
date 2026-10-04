@@ -1,0 +1,113 @@
+{
+  "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "url": "https://fabrary.net/decks/01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "name": "Jyrem's Azalea",
+  "hero": "azalea",
+  "format": "Silver Age",
+  "mainboard": [
+    {
+      "card": "blade-beckoner-plating",
+      "quantity": 1
+    },
+    {
+      "card": "boltn-boots",
+      "quantity": 1
+    },
+    {
+      "card": "boltn-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "bulls-eye-bracers",
+      "quantity": 1
+    },
+    {
+      "card": "call-in-the-big-guns-red",
+      "quantity": 2
+    },
+    {
+      "card": "crows-nest",
+      "quantity": 1
+    },
+    {
+      "card": "death-dealer",
+      "quantity": 1
+    },
+    {
+      "card": "drill-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "dry-powder-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "infecting-shot-blue",
+      "quantity": 2
+    },
+    {
+      "card": "infecting-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "infecting-shot-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "lace-with-bloodrot-red",
+      "quantity": 2
+    },
+    {
+      "card": "lace-with-frailty-red",
+      "quantity": 2
+    },
+    {
+      "card": "lace-with-inertia-red",
+      "quantity": 2
+    },
+    {
+      "card": "murkmire-grapnel-red",
+      "quantity": 2
+    },
+    {
+      "card": "ravenous-rabble-red",
+      "quantity": 2
+    },
+    {
+      "card": "read-the-glide-path-red",
+      "quantity": 2
+    },
+    {
+      "card": "release-the-tension-red",
+      "quantity": 2
+    },
+    {
+      "card": "ridge-rider-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "scout-the-periphery-red",
+      "quantity": 2
+    },
+    {
+      "card": "searing-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "spire-sniping-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "swift-shot-red",
+      "quantity": 2
+    },
+    {
+      "card": "take-aim-red",
+      "quantity": 2
+    },
+    {
+      "card": "talismanic-lens",
+      "quantity": 1
+    }
+  ]
+}
