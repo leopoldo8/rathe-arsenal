@@ -22,6 +22,7 @@ import { StoresModule } from '../stores/stores.module';
 import { DecisionsController } from './decisions/decisions.controller';
 import { HeroIdentifierExistsInCatalog } from './validators/hero-identifier-exists.validator';
 import { SwapsCoreModule } from '../swaps/swaps-core.module';
+import { ReplacementsCoreModule } from '../replacements/replacements-core.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { SwapsCoreModule } from '../swaps/swaps-core.module';
     AuthModule,
     StoresModule,
     SwapsCoreModule,
+    ReplacementsCoreModule,
   ],
   controllers: [
     DecksImportController,

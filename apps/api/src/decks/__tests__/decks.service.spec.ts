@@ -14,6 +14,7 @@ import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
+import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
 
 const USER_ID = 'user-uuid-123';
@@ -72,6 +73,7 @@ describe('DecksService', () => {
   let catalogService: jest.Mocked<CatalogService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
+  let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -85,6 +87,9 @@ describe('DecksService', () => {
     catalogService = createMock<CatalogService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
+    replacementsQueryService = createMock<ReplacementsQueryService>();
+    replacementsQueryService.loadActive.mockResolvedValue([]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
 
     // Default: shopping line returns null (Path A / no missing cards).
     shoppingLineService.computeForBreakdown.mockResolvedValue(null);
@@ -123,6 +128,7 @@ describe('DecksService', () => {
         { provide: CatalogService, useValue: catalogService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
+        { provide: ReplacementsQueryService, useValue: replacementsQueryService },
       ],
     }).compile();
 

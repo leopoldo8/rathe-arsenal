@@ -10,6 +10,7 @@ import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readin
 import { AuthzService } from '../../auth/authz.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
+import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 
 // Mock the engine module to avoid loading the full catalog in unit tests
 jest.mock('@rathe-arsenal/engine', () => ({
@@ -80,6 +81,7 @@ describe('SubstitutionService', () => {
   let authzService: jest.Mocked<AuthzService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
+  let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -88,6 +90,9 @@ describe('SubstitutionService', () => {
     authzService = createMock<AuthzService>();
     collectionReadService = createMock<CollectionReadService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
+    replacementsQueryService = createMock<ReplacementsQueryService>();
+    replacementsQueryService.loadActive.mockResolvedValue([]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
 
     // Default: empty collection (no owned cards).
     collectionReadService.loadOwned.mockResolvedValue(new Map());
@@ -101,6 +106,7 @@ describe('SubstitutionService', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
+        { provide: ReplacementsQueryService, useValue: replacementsQueryService },
       ],
     }).compile();
 
@@ -280,12 +286,56 @@ describe('SubstitutionService', () => {
       undefined,
       expect.any(Set),
       expect.any(Set),
+      expect.any(Map),
     );
 
     // Verify the inventory map passed to the engine
     const inventoryArg = computeEffectiveReadiness.mock.calls[0][1] as Map<string, number>;
     expect(inventoryArg.get('card-x')).toBe(4);
     expect(inventoryArg.get('card-y')).toBe(1);
+  });
+
+  it("passes active replacements to the engine through the manager", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- mocked module needs runtime access to the jest.fn instance
+    const { computeEffectiveReadiness } = require('@rathe-arsenal/engine');
+    computeEffectiveReadiness.mockClear();
+    const trackedDeckId = 7;
+    const userId = 'user-replacements';
+    const protectedCopies = new Map([['coax-a-commotion-red::mainboard', 2]]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(protectedCopies);
+
+    // The transaction sees the pick's rewritten deck; the injected repositories would see the old one.
+    const txTrackedDecks = createMock<Repository<TrackedDeckEntity>>();
+    txTrackedDecks.findOne.mockResolvedValue({ id: trackedDeckId, userId } as TrackedDeckEntity);
+    const txDeckCards = createMock<Repository<DeckCardEntity>>();
+    txDeckCards.find.mockResolvedValue([
+      { id: 1, trackedDeckId, cardIdentifier: 'coax-a-commotion-red', quantity: 2, slot: 'mainboard' } as DeckCardEntity,
+    ]);
+    const txSnapshots = createMock<Repository<DeckReadinessSnapshotEntity>>();
+    txSnapshots.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
+    txSnapshots.save.mockResolvedValue({ id: 1 } as DeckReadinessSnapshotEntity);
+    const repositories = new Map<unknown, unknown>([
+      [TrackedDeckEntity, txTrackedDecks],
+      [DeckCardEntity, txDeckCards],
+      [DeckReadinessSnapshotEntity, txSnapshots],
+    ]);
+    const manager = createMock<EntityManager>();
+    manager.getRepository.mockImplementation(((entity: unknown) => repositories.get(entity)) as never);
+
+    await service.computeAndStoreReadiness(trackedDeckId, userId, new Set(), new Set(), manager);
+
+    expect(replacementsQueryService.loadProtectedCopies).toHaveBeenCalledWith(trackedDeckId, manager);
+    expect(computeEffectiveReadiness).toHaveBeenCalledWith(
+      { cards: [{ cardIdentifier: 'coax-a-commotion-red', quantity: 2, slot: 'mainboard' }] },
+      expect.any(Map),
+      expect.anything(),
+      undefined,
+      expect.any(Set),
+      expect.any(Set),
+      protectedCopies,
+    );
+    expect(trackedDeckRepo.findOne).not.toHaveBeenCalled();
+    expect(deckCardRepo.find).not.toHaveBeenCalled();
   });
 
   describe('deriveSnapshotFields', () => {

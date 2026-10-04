@@ -176,7 +176,7 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "closes replacements the save broke as removed"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a composition save that drops the replacement closes it"`
 
-**C50** - A composition save that keeps 3 copies of a replacement card with one record of quantity 2 leaves the record `active`, and the save's readiness result has no `substituted` entry for those 2 copies (AC 49)
+**C50** - A composition save that keeps 3 copies of a replacement card with one record of quantity 2 leaves the record `active`, and the save's readiness result has no `substituted` entry for those 2 copies (AC 49) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "keeps replacements the save still covers"`
 
 **C51** - After a pick, a revert, a keep and a save that removes a replacement, the deck's `card_replacement` row count is 4; deleting the deck leaves 0 rows for it; no source file calls `delete` or `remove` on the replacement repository (AC 50, door 1)
@@ -209,7 +209,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chro
 **C59** - `GET /api/decks/:deckId` lists one entry per active replacement with exactly `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `originalOwned`, and omits `kept`, `reverted` and `removed` ones (AC 56)
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "the deck detail lists active replacements only"`
 
-**C60** - For a replacement of quantity 2: owning 2 copies of the original with none in the deck gives `originalOwned: true`; owning 1 gives false; owning 3 with 2 already in another slot of this deck gives false; copies in an inactive source do not count (AC 57)
+**C60** - For a replacement of quantity 2: owning 2 copies of the original with none in the deck gives `originalOwned: true`; owning 1 gives false; owning 3 with 2 already in another slot of this deck gives false; copies in an inactive source do not count (AC 57) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.replacements.spec.ts -t "originalOwned compares free copies with the quantity"`
 
 **C61** - A replacement cell with `originalOwned: true` shows the prompt with Keep and Go back controls (AC 58)

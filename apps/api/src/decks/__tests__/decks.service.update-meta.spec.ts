@@ -33,6 +33,7 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
+import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { DecksService } from '../decks.service';
@@ -61,6 +62,7 @@ function buildDetailResponse(
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [], details: [] },
+    replacements: [],
     ...overrides,
   };
 }
@@ -110,6 +112,7 @@ describe('DecksService.updateMeta', () => {
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
+  let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
 
@@ -123,6 +126,9 @@ describe('DecksService.updateMeta', () => {
     shoppingLineService = createMock<ShoppingLineService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
+    replacementsQueryService = createMock<ReplacementsQueryService>();
+    replacementsQueryService.loadActive.mockResolvedValue([]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
 
@@ -156,6 +162,7 @@ describe('DecksService.updateMeta', () => {
         { provide: ShoppingLineService, useValue: shoppingLineService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
+        { provide: ReplacementsQueryService, useValue: replacementsQueryService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
       ],

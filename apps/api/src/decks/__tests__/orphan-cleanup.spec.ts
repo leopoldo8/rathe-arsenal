@@ -39,6 +39,7 @@ import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
+import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
 import { UpdateDeckCompositionDto } from '../dto/update-deck-composition.dto';
 
@@ -151,6 +152,7 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
+  let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -160,6 +162,9 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
     collectionReadService = createMock<CollectionReadService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
+    replacementsQueryService = createMock<ReplacementsQueryService>();
+    replacementsQueryService.loadActive.mockResolvedValue([]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
     snapshotRepo.save.mockResolvedValue({} as DeckReadinessSnapshotEntity);
     collectionReadService.loadOwned.mockResolvedValue(new Map());
@@ -183,6 +188,7 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
+        { provide: ReplacementsQueryService, useValue: replacementsQueryService },
       ],
     }).compile();
 

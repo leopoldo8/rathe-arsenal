@@ -107,6 +107,20 @@ export interface ITrackedDeckDetailSnapshot {
   readonly computedAt: string;
 }
 
+/**
+ * An active replacement on the deck: the owner picked `replacementCardIdentifier`
+ * for `quantity` missing copies of `originalCardIdentifier` in `slot`.
+ * `originalOwned` is derived on every read and never stored.
+ */
+export interface IDeckReplacement {
+  readonly id: string;
+  readonly slot: string;
+  readonly originalCardIdentifier: string;
+  readonly replacementCardIdentifier: string;
+  readonly quantity: number;
+  readonly originalOwned: boolean;
+}
+
 export interface ITrackedDeckDetailResponse {
   readonly id: number;
   /** Null for scratch decks created without a Fabrary URL (D8). */
@@ -158,4 +172,6 @@ export interface ITrackedDeckDetailResponse {
    * a null check.
    */
   readonly legality: IDeckLegality;
+  /** Active replacements only; kept, reverted and removed ones are not listed. */
+  readonly replacements: readonly IDeckReplacement[];
 }

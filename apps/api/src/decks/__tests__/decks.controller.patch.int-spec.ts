@@ -47,6 +47,7 @@ function buildDetailResponse(
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: [], details: [] },
+    replacements: [],
     ...overrides,
   };
 }
