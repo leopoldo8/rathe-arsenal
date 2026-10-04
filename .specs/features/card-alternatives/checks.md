@@ -183,7 +183,7 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.ser
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "never deletes a replacement row"`
 Proof: `! grep -rnE "(CardReplacementEntity|replacementRepo|replacements?Repo)[^;]*\.(delete|remove)\(" apps/api/src --include='*.ts' --exclude-dir=__tests__`
 
-**C52** - Against Postgres, the migration creates `card_replacement` and an insert fails for `status: 'open'`, `pickedFrom: 'other'`, `quantity: 0`, an `originalCardIdentifier` of 129 characters and a `slot` of 65 characters; a valid row inserts; dropping the deck cascades it (doors 1-4)
+**C52** - Against Postgres, the migration creates `card_replacement` and an insert fails for `status: 'open'`, `pickedFrom: 'other'`, `quantity: 0`, an `originalCardIdentifier` of 129 characters and a `slot` of 65 characters; a valid row inserts; dropping the deck cascades it (doors 1-4) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' card-replacement.migration -t "enforces the table's constraints"`
 
 **C53** - Tapping a card in the sheet sends `POST /api/decks/:deckId/replacements` with that card's identifier and `pickedFrom` equal to its group (`search` for a search result), closes the sheet, and invalidates the deck detail and swaps queries (AC 51)

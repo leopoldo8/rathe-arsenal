@@ -5,6 +5,7 @@ export { TrackedDeckEntity } from './tracked-deck.entity';
 export { DeckCardEntity } from './deck-card.entity';
 export { DeckReadinessSnapshotEntity } from './deck-readiness-snapshot.entity';
 export { SwapSuggestionEntity } from './swap-suggestion.entity';
+export { CardReplacementEntity } from './card-replacement.entity';
 export { StoreEntity } from './store.entity';
 export { StoreStockEntity } from './store-stock.entity';
 export { StoreScrapeRunEntity, EStoreScrapeRunStatus } from './store-scrape-run.entity';
