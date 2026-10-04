@@ -86,7 +86,7 @@ describe('ArmoryHeader', () => {
 
   it('states how many non-retired decks are ready out of all non-retired decks', () => {
     render(<ArmoryHeader decks={decks} totalCardsMissing={11} />);
-    expect(screen.getByText('1 de 2 decks prontos para jogar')).toBeInTheDocument();
+    expect(screen.getByText('1 de 2 decks completos com a sua coleção')).toBeInTheDocument();
   });
 
   it('links the CTA to the new deck page', () => {
@@ -115,7 +115,7 @@ describe('ArmoryHeader', () => {
         }}
       />,
     );
-    const status = screen.getByText('1 de 2 decks prontos para jogar');
+    const status = screen.getByText('1 de 2 decks completos com a sua coleção');
     const line = screen.getByTestId('aggregate-callout');
     expect(status.nextElementSibling).toBe(line);
     expect(status.parentElement).toHaveClass(styles.titleBlock as string);
@@ -124,7 +124,7 @@ describe('ArmoryHeader', () => {
 
   it('leaves no empty slot when there is nothing to buy', () => {
     render(<ArmoryHeader decks={decks} totalCardsMissing={11} aggregateShoppingLine={null} />);
-    const status = screen.getByText('1 de 2 decks prontos para jogar');
+    const status = screen.getByText('1 de 2 decks completos com a sua coleção');
     expect(status.nextElementSibling).toBeNull();
   });
 });

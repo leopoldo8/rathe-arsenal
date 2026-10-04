@@ -4,7 +4,7 @@ import {
   applySearchFilter,
   applyTagFilter,
   computeAverageReadiness,
-  countPlayableDecks,
+  countCompleteDecks,
   filterByGroup,
   GROUP_OF,
   GROUP_ORDER,
@@ -146,14 +146,14 @@ describe('KPI helpers', () => {
       makeDeck({ id: 2, status: 'retired', ...withPercent(100) }),
       makeDeck({ id: 3, ...withPercent(80) }),
     ];
-    expect(countPlayableDecks(decks)).toBe(1);
+    expect(countCompleteDecks(decks)).toBe(1);
   });
 
-  it('does not count a complete deck that breaks its format rules as playable', () => {
+  it('counts a complete deck even when it breaks its format rules, since the collection still covers it', () => {
     const decks = [
       makeDeck({ id: 1, ...withPercent(100) }),
       makeDeck({ id: 2, ...withPercent(100), legality: { category: 'illegal', reasons: ['x'] } }),
     ];
-    expect(countPlayableDecks(decks)).toBe(1);
+    expect(countCompleteDecks(decks)).toBe(2);
   });
 });
