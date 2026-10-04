@@ -58,6 +58,14 @@
 - **Date**: 2026-08-16
 - **Status**: active
 
+### AD-008
+- **Decision**: Writes that add to a `collection_card` quantity use one atomic statement, `INSERT ... ON CONFLICT ("userId","cardIdentifier","sourceId") DO UPDATE SET quantity = LEAST(collection_card.quantity + EXCLUDED.quantity, 20)`, with duplicate identifiers summed before the statement. Read-then-update is not used for new increment paths.
+- **Reason**: The card scanner commits many cards at once and can race another tab or device; read-then-update loses an increment under concurrency. First introduced by `POST /api/collection/cards/batch` (card-scanner, Landing door 3).
+- **Trade-off**: `CollectionService.addCard` keeps its read-then-update until someone migrates it; two increment styles coexist meanwhile.
+- **Scope**: `apps/api` collection writes.
+- **Date**: 2026-10-04
+- **Status**: active
+
 ## Handoff
 
 - **Latest work**: AI-slop audit — `docs/audit/ai-slop-2026-10-03/inventory.md` (findings, owner decisions, what shipped, deviations). Shipped in #115 (dead code), #116 (copy pass), #117 (localized engine reasons), #118 (deck detail and home), #119 (swaps, library, sources, new deck, settings).
