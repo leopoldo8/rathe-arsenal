@@ -61,7 +61,7 @@ interface IRawCard {
  * (Fabrary, etc.) — see ICatalogCard.imageUrl docstring and
  * docs/research/ip-posture.md for the compliance rationale.
  */
-const IMAGE_CDN_BASE =
+export const IMAGE_CDN_BASE =
   'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/';
 
 /**

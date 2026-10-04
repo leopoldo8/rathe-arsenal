@@ -6,6 +6,7 @@ export const apiErrors = {
   TOKEN_EXPIRED: 'This link is invalid or has expired.',
   EMAIL_DELIVERY_FAILED: 'Could not send the email. Please try again later.',
   USER_NOT_FOUND: 'User not found.',
+  INVALID_CARD_IDENTIFIER: 'One of the cards is not in the catalog.',
   generic: 'Something went wrong. Please try again.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Too many attempts. Please wait a moment and try again.',

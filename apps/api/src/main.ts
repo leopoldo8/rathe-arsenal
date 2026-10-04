@@ -1,12 +1,12 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { createValidationPipe } from './common/validation/create-validation-pipe';
 import { initApiSentry } from './observability/sentry';
 
 async function bootstrap(): Promise<void> {
@@ -33,14 +33,7 @@ async function bootstrap(): Promise<void> {
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   app.setGlobalPrefix('api', { exclude: [] });
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // CORS only needed in dev (production is same-origin: API serves SPA)

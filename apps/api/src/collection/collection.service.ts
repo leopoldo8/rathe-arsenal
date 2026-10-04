@@ -26,9 +26,18 @@ import {
   IAddCardResponse,
 } from './dtos/add-card.dto';
 import { IDecrementCardResponse } from './dtos/decrement-card.dto';
+import {
+  IAddCardsBatchResponse,
+  IAddCardsBatchResult,
+} from './dtos/add-cards-batch.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
 
 const MAX_COLLECTION_QUANTITY = 20;
+
+interface IBatchItem {
+  readonly cardIdentifier: string;
+  readonly quantity: number;
+}
 
 @Injectable()
 export class CollectionService {
@@ -223,37 +232,10 @@ export class CollectionService {
       cardIdentifier,
     );
 
-    const recomputedDecks: IAddCardRecomputedDeck[] = [];
-    for (const trackedDeckId of affectedDeckIds) {
-      try {
-        // Load rejected/approved decisions for this deck so recompute respects them.
-        const { excludedIdentifiers: deckExclusions, approvedIdentifiers: deckApprovals } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
-
-        const snapshot =
-          await this.substitutionService.computeAndStoreReadiness(
-            trackedDeckId,
-            userId,
-            deckExclusions,
-            deckApprovals,
-          );
-        recomputedDecks.push({
-          trackedDeckId,
-          rawPercent: snapshot.rawPercent,
-          effectivePercent: snapshot.effectivePercent,
-        });
-      } catch (error) {
-        // Non-fatal: the collection upsert already succeeded. Log and move on.
-        // The next readiness request for this deck will re-compute.
-        this.logger.warn({
-          msg: 'Failed to recompute readiness after addCard',
-          userId,
-          trackedDeckId,
-          cardIdentifier,
-          error: (error as Error).message,
-        });
-      }
-    }
+    const recomputedDecks = await this.recomputeDecks(userId, affectedDeckIds, {
+      msg: 'Failed to recompute readiness after addCard',
+      cardIdentifier,
+    });
 
     this.logger.log('Card added to collection', {
       userId,
@@ -267,6 +249,121 @@ export class CollectionService {
       newQuantity,
       recomputedDecks,
     };
+  }
+
+  async addCardsBatch(
+    userId: string,
+    items: readonly IBatchItem[],
+  ): Promise<IAddCardsBatchResponse> {
+    const summed = sumByCard(items);
+    this.assertCardsExist([...summed.keys()]);
+
+    // Created before the transaction: its unique-violation recovery re-reads
+    // the row, which an aborted Postgres transaction cannot do.
+    const manualSource = await this.sourcesService.ensureManualSource(userId);
+    const results = await this.dataSource.transaction((manager) =>
+      this.incrementQuantities(manager, userId, manualSource.id, summed),
+    );
+
+    const affectedDeckIds = await this.findAffectedDeckIdsForCards(userId, [...summed.keys()]);
+    const recomputedDecks = await this.recomputeDecks(userId, affectedDeckIds, {
+      msg: 'Failed to recompute readiness after addCardsBatch',
+    });
+
+    this.logger.log('Cards batch-added to collection', {
+      userId,
+      itemCount: summed.size,
+      totalQuantity: [...summed.values()].reduce((sum, quantity) => sum + quantity, 0),
+      cappedCount: results.filter((result) => result.capped).length,
+      affectedDeckCount: affectedDeckIds.length,
+    });
+
+    return { results, recomputedDeckCount: recomputedDecks.length };
+  }
+
+  private assertCardsExist(cardIdentifiers: readonly string[]): void {
+    for (const cardIdentifier of cardIdentifiers) {
+      try {
+        this.catalogService.getCard(cardIdentifier);
+      } catch (error) {
+        if (error instanceof CardNotFoundError) {
+          throw new BadRequestException({
+            code: 'INVALID_CARD_IDENTIFIER',
+            message: `Card "${cardIdentifier}" does not exist in the catalog`,
+          });
+        }
+        throw error;
+      }
+    }
+  }
+
+  private async incrementQuantities(
+    manager: EntityManager,
+    userId: string,
+    sourceId: string,
+    summed: ReadonlyMap<string, number>,
+  ): Promise<IAddCardsBatchResult[]> {
+    const cardIdentifiers = [...summed.keys()];
+    const previousRows: { cardIdentifier: string; quantity: number }[] = await manager.query(
+      `SELECT "cardIdentifier", quantity FROM collection_card
+       WHERE "userId" = $1 AND "sourceId" = $2 AND "cardIdentifier" = ANY($3)
+       FOR UPDATE`,
+      [userId, sourceId, cardIdentifiers],
+    );
+    const previous = new Map(previousRows.map((row) => [row.cardIdentifier, row.quantity]));
+
+    const updatedRows: { cardIdentifier: string; quantity: number }[] = await manager.query(
+      `INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", quantity)
+       SELECT $1, input."cardIdentifier", $2, input.quantity
+       FROM unnest($3::varchar[], $4::int[]) AS input("cardIdentifier", quantity)
+       ON CONFLICT ("userId", "cardIdentifier", "sourceId")
+       DO UPDATE SET quantity = LEAST(collection_card.quantity + EXCLUDED.quantity, $5),
+                     "lastUpdated" = now()
+       RETURNING "cardIdentifier", quantity`,
+      [userId, sourceId, cardIdentifiers, [...summed.values()], MAX_COLLECTION_QUANTITY],
+    );
+    const updated = new Map(updatedRows.map((row) => [row.cardIdentifier, row.quantity]));
+
+    return cardIdentifiers.map((cardIdentifier) => ({
+      cardIdentifier,
+      newQuantity: updated.get(cardIdentifier) ?? 0,
+      capped: (previous.get(cardIdentifier) ?? 0) + summed.get(cardIdentifier)! > MAX_COLLECTION_QUANTITY,
+    }));
+  }
+
+  private async recomputeDecks(
+    userId: string,
+    trackedDeckIds: readonly number[],
+    failureLog: Readonly<Record<string, unknown>>,
+  ): Promise<IAddCardRecomputedDeck[]> {
+    const recomputedDecks: IAddCardRecomputedDeck[] = [];
+    for (const trackedDeckId of trackedDeckIds) {
+      try {
+        const { excludedIdentifiers, approvedIdentifiers } =
+          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
+        const snapshot = await this.substitutionService.computeAndStoreReadiness(
+          trackedDeckId,
+          userId,
+          excludedIdentifiers,
+          approvedIdentifiers,
+        );
+        recomputedDecks.push({
+          trackedDeckId,
+          rawPercent: snapshot.rawPercent,
+          effectivePercent: snapshot.effectivePercent,
+        });
+      } catch (error) {
+        // Non-fatal: the collection write already committed; the next
+        // readiness request for this deck recomputes it.
+        this.logger.warn({
+          ...failureLog,
+          userId,
+          trackedDeckId,
+          error: (error as Error).message,
+        });
+      }
+    }
+    return recomputedDecks;
   }
 
   /**
@@ -427,4 +524,31 @@ export class CollectionService {
 
     return rows.map((row) => Number(row.trackedDeckId));
   }
+
+  private async findAffectedDeckIdsForCards(
+    userId: string,
+    cardIdentifiers: readonly string[],
+  ): Promise<readonly number[]> {
+    const rows = await this.deckCardRepo
+      .createQueryBuilder('dc')
+      .innerJoin(
+        TrackedDeckEntity,
+        'td',
+        'td.id = dc.trackedDeckId AND td.userId = :userId',
+        { userId },
+      )
+      .where('dc.cardIdentifier IN (:...cardIdentifiers)', { cardIdentifiers })
+      .select('DISTINCT dc.trackedDeckId', 'trackedDeckId')
+      .getRawMany<{ trackedDeckId: number }>();
+
+    return rows.map((row) => Number(row.trackedDeckId));
+  }
+}
+
+function sumByCard(items: readonly IBatchItem[]): ReadonlyMap<string, number> {
+  const summed = new Map<string, number>();
+  for (const item of items) {
+    summed.set(item.cardIdentifier, (summed.get(item.cardIdentifier) ?? 0) + item.quantity);
+  }
+  return summed;
 }

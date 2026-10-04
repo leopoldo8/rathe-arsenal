@@ -30,6 +30,14 @@ interface IDiscardChangesConfirmProps {
   readonly onKeepEditing: () => void;
   /** Called when user confirms discarding changes. */
   readonly onDiscard: () => void;
+  readonly copy?: IDiscardConfirmCopy;
+}
+
+export interface IDiscardConfirmCopy {
+  readonly title: string;
+  readonly description: string;
+  readonly keep: string;
+  readonly discard: string;
 }
 
 export function DiscardChangesConfirm({
@@ -37,8 +45,15 @@ export function DiscardChangesConfirm({
   changeCount,
   onKeepEditing,
   onDiscard,
+  copy,
 }: IDiscardChangesConfirmProps): React.ReactElement {
   const { t } = useTranslation();
+  const text: IDiscardConfirmCopy = copy ?? {
+    title: t('decks.discardCount', { count: changeCount }),
+    description: t('decks.discardDesc'),
+    keep: t('decks.keepEditing'),
+    discard: t('decks.discardChanges'),
+  };
   const keepEditingRef = useRef<HTMLButtonElement | null>(null);
   // Track whether a button was explicitly clicked so that onOpenChange
   // doesn't double-fire the handler (Radix fires onOpenChange after the
@@ -81,10 +96,10 @@ export function DiscardChangesConfirm({
           aria-describedby={undefined}
         >
           <AlertDialog.Title className={styles.title}>
-            {t('decks.discardCount', { count: changeCount })}
+            {text.title}
           </AlertDialog.Title>
           <AlertDialog.Description className={styles.description}>
-            {t('decks.discardDesc')}
+            {text.description}
           </AlertDialog.Description>
 
           <div className={styles.footer}>
@@ -94,11 +109,11 @@ export function DiscardChangesConfirm({
                 ref={keepEditingRef}
                 type="button"
                 className={styles.keepBtn}
-                aria-label={t('decks.keepEditing')}
+                aria-label={text.keep}
                 onClick={handleKeepEditing}
                 data-testid="discard-confirm-keep-btn"
               >
-                {t('decks.keepEditing')}
+                {text.keep}
               </button>
             </AlertDialog.Cancel>
 
@@ -107,11 +122,11 @@ export function DiscardChangesConfirm({
               <button
                 type="button"
                 className={styles.discardBtn}
-                aria-label={t('decks.discardChanges')}
+                aria-label={text.discard}
                 onClick={handleDiscard}
                 data-testid="discard-confirm-discard-btn"
               >
-                {t('decks.discardChanges')}
+                {text.discard}
               </button>
             </AlertDialog.Action>
           </div>

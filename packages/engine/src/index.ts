@@ -7,7 +7,7 @@
 export const ENGINE_VERSION = '0.0.0';
 
 // Catalog
-export { catalog } from './catalog/catalog';
+export { catalog, IMAGE_CDN_BASE } from './catalog/catalog';
 export { buildIndices } from './catalog/indices';
 export { CardNotFoundError } from './catalog/errors';
 export type {

@@ -8,6 +8,7 @@ import {
   SearchCardsDto,
 } from './dtos/search-cards.dto';
 import { IHeroListResponse } from './dtos/hero-list-item.dto';
+import { ICollectorCodesResponse } from './dtos/collector-codes.dto';
 
 @Controller('catalog')
 export class CatalogController {
@@ -30,5 +31,10 @@ export class CatalogController {
   @Get('heroes')
   getHeroes(): IHeroListResponse {
     return this.catalogService.listHeroes();
+  }
+
+  @Get('collector-codes')
+  getCollectorCodes(): ICollectorCodesResponse {
+    return this.catalogService.listCollectorCodes();
   }
 }
