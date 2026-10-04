@@ -38,13 +38,13 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C6:" scripts/synergy-spike/__
 
 ### S3 - the candidate pool · 2 files · 10 KB · ~12k
 
-**C7** - `isCardInPool` applies each per-card test of step 5 of `computeDeckLegality`: banned format excluded, card not legal in the format excluded, hero scope (legalHeroes, legalOverrides for the format, specializations) honoured, Silver Age rarity whitelist enforced; and for Dorinthea Ironsong in Classic Constructed exactly 928 non-hero cards pass those tests (plan AC 7)
+**C7** - `isCardInPool` applies each per-card test of step 5 of `computeDeckLegality`: banned format excluded, card not legal in the format excluded, hero scope (legalHeroes, legalOverrides for the format, specializations) honoured, Silver Age rarity whitelist enforced; and for Dorinthea Ironsong in Classic Constructed exactly 928 non-hero cards pass those tests (plan AC 7) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C7:" scripts/synergy-spike/__tests__/pool.test.ts`
 
-**C8** - `buildPool` removes hero cards, tokens and every card already in the deck, and the pool file holds `size` equal to its number of cards (plan AC 8)
+**C8** - `buildPool` removes hero cards, tokens and every card already in the deck, and the pool file holds `size` equal to its number of cards (plan AC 8) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C8:" scripts/synergy-spike/__tests__/pool.test.ts`
 
-**C9** - A pool of 9 cards makes `pnpm synergy:pool` exit 1 naming the deck; a pool of exactly 10 does not (plan AC 9)
+**C9** - A pool of 9 cards makes `pnpm synergy:pool` exit 1 naming the deck; a pool of exactly 10 does not (plan AC 9) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C9:" scripts/synergy-spike/__tests__/pool.test.ts`
 
 
