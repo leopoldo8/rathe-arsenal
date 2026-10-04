@@ -104,7 +104,7 @@ export function threshold(image: IGrayImage, cutoff: number): IGrayImage {
   return { ...image, pixels: image.pixels.map((value) => (value >= cutoff ? 255 : 0)) };
 }
 
-export function encodeBmp(image: IGrayImage): Uint8Array {
+export function encodeBmp(image: IGrayImage): Uint8Array<ArrayBuffer> {
   const rowSize = Math.ceil((image.width * 3) / 4) * 4;
   const dataSize = rowSize * image.height;
   const bytes = new Uint8Array(54 + dataSize);

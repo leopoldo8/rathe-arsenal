@@ -96,3 +96,36 @@ export function useDecrementCardMutation() {
     },
   });
 }
+
+export interface IAddCardsBatchItem {
+  readonly cardIdentifier: string;
+  readonly quantity: number;
+}
+
+export interface IAddCardsBatchResult {
+  readonly cardIdentifier: string;
+  readonly newQuantity: number;
+  readonly capped: boolean;
+}
+
+export interface IAddCardsBatchResponse {
+  readonly results: readonly IAddCardsBatchResult[];
+  readonly recomputedDeckCount: number;
+}
+
+export function useAddCardsBatchMutation() {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: readonly IAddCardsBatchItem[]) =>
+      apiFetch<IAddCardsBatchResponse>('/collection/cards/batch', {
+        method: 'POST',
+        body: JSON.stringify({ items }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['decks'] });
+      queryClient.invalidateQueries({ queryKey: CATALOG_SEARCH_QUERY_KEY });
+    },
+  });
+}

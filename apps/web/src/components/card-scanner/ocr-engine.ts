@@ -8,7 +8,7 @@ export interface IOcrEngine {
 
 export interface IOcrEngineOptions {
   readonly workerOptions: Readonly<Record<string, unknown>>;
-  readonly toInput: (bmp: Uint8Array) => Blob | Uint8Array;
+  readonly toInput: (bmp: Uint8Array<ArrayBuffer>) => Blob | Uint8Array;
 }
 
 const LSTM_ONLY_ENGINE_MODE = 1;

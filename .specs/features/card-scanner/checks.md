@@ -50,13 +50,13 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-sca
 
 ### S2 - Live scanning with per-card feedback · 14 files · 150 KB · ~38k
 
-**C11** - The add-cards page shows a fourth tab labelled "Scan" (en-US) linking to `/add-cards/scan` (AC 8)
+**C11** - The add-cards page shows a fourth tab labelled "Scan" (en-US) linking to `/add-cards/scan` (AC 8) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.test.tsx -t "shows the Scan tab"`
 
-**C12** - With camera permission granted, the screen calls `getUserMedia` with `video.facingMode` `environment`, renders the video preview, the card guide and the align-the-bottom-edge hint (AC 9)
+**C12** - With camera permission granted, the screen calls `getUserMedia` with `video.facingMode` `environment`, renders the video preview, the card guide and the align-the-bottom-edge hint (AC 9) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "opens the rear camera with the guide and hint"`
 
-**C13** - While the OCR engine load is pending, the loading state is shown and `recognize` has been called 0 times (AC 10)
+**C13** - While the OCR engine load is pending, the loading state is shown and `recognize` has been called 0 times (AC 10) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows loading and does not recognize while the engine downloads"`
 
 **C14** - With a recognizer whose first call never resolves, 5 frame ticks produce exactly 1 `recognize` call (AC 11) · done
@@ -71,36 +71,36 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-sca
 **C17** - After an accept, the quantity stays 1 while the code keeps being read, including when one variant misses it or misreads it on every third recognition; after 3 consecutive recognitions without the code, a new agreement makes it 2 (AC 13) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "does not count a card held in view twice"`
 
-**C18** - An accepted scan shows a notice with the printing art, the card name, its pitch, that card's tray quantity (`× 2` after the second copy) and a "Wrong" button (AC 14)
+**C18** - An accepted scan shows a notice with the printing art, the card name, its pitch, that card's tray quantity (`× 2` after the second copy) and a "Wrong" button (AC 14) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows a scan notice for the accepted card"`
 
-**C19** - An accepted double-faced code shows a notice naming both `A Drop in the Ocean` and `Inner Chi` (AC 15)
+**C19** - An accepted double-faced code shows a notice naming both `A Drop in the Ocean` and `Inner Chi` (AC 15) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "names both faces in the notice"`
 
-**C20** - A second accepted card while a notice is visible leaves exactly one notice on screen, showing the second card (AC 16)
+**C20** - A second accepted card while a notice is visible leaves exactly one notice on screen, showing the second card (AC 16) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "replaces the notice on the next scan"`
 
-**C21** - The notice is still visible at 3999 ms and gone at 4000 ms after it appeared (AC 17)
+**C21** - The notice is still visible at 3999 ms and gone at 4000 ms after it appeared (AC 17) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "hides the notice after 4 seconds"`
 
-**C22** - "Wrong" undoes one scan: a row at 2 drops to 1; a row at 1 is removed (AC 18)
+**C22** - "Wrong" undoes one scan: a row at 2 drops to 1; a row at 1 is removed (AC 18) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "undoes exactly one scan"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "Wrong drops the bar count by one"`
 
 **C23** - After "Wrong", agreeing reads of the same code add nothing, including with one variant missing it every third recognition; after 3 consecutive recognitions without it, an agreement adds it again (AC 19) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "suppresses the rejected code until the card leaves"`
 
-**C24** - After "Wrong", the notice reads "Removed" with a "Search by name" button, visible at 4999 ms and gone at 5000 ms (AC 20)
+**C24** - After "Wrong", the notice reads "Removed" with a "Search by name" button, visible at 4999 ms and gone at 5000 ms (AC 20) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "offers search for 5 seconds after Wrong"`
 
-**C25** - "Search by name" opens a search over the camera that queries `GET /api/catalog/search`, and no `recognize` call happens while it is open (AC 21)
+**C25** - "Search by name" opens a search over the camera that queries `GET /api/catalog/search`, and no `recognize` call happens while it is open (AC 21) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "pauses recognition while the search is open"`
 
-**C26** - Picking a card in the search adds it with quantity 1 (or adds 1 to its row), closes the search and resumes `recognize` calls (AC 22)
+**C26** - Picking a card in the search adds it with quantity 1 (or adds 1 to its row), closes the search and resumes `recognize` calls (AC 22) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "adds the picked card and resumes"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "adds a searched card like a scan"`
 
-**C27** - Closing the search without a pick resumes `recognize` calls and leaves the tray identical (AC 23)
+**C27** - Closing the search without a pick resumes `recognize` calls and leaves the tray identical (AC 23) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "closing the search changes nothing"`
 
 **C28** - With a fake camera showing card `HNT135`, the real OCR pipeline shows a notice naming `Knife Through Butter` and the bar reads 1 card (AC 9, AC 12, AC 14 across the browser boundary)
@@ -108,33 +108,33 @@ Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chro
 
 ### S3 - Review list · 6 files · 70 KB · ~18k
 
-**C29** - With rows at 2 and 1, the bar reads 3 cards and its button opens the review list (AC 24)
+**C29** - With rows at 2 and 1, the bar reads 3 cards and its button opens the review list (AC 24) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "bar sums the tray and opens the review"`
 
-**C30** - Each review row shows art, name, pitch and a stepper whose minus is disabled at 1 and plus disabled at 20, plus a remove button that removes the row (AC 25)
+**C30** - Each review row shows art, name, pitch and a stepper whose minus is disabled at 1 and plus disabled at 20, plus a remove button that removes the row (AC 25) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "review row bounds its stepper"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "clamps quantity between 1 and 20"`
 
 **C31** - Scans A then B list B, A; scanning A again lists A, B (AC 26) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "orders by most recent scan"`
 
-**C32** - A double-faced row shows both faces as choices and, after one is picked, shows only that card (AC 27)
+**C32** - A double-faced row shows both faces as choices and, after one is picked, shows only that card (AC 27) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "asks which face of a double-faced card"`
 
-**C33** - The confirm button is disabled while a double-faced row has no pick and enabled after the pick (AC 28)
+**C33** - The confirm button is disabled while a double-faced row has no pick and enabled after the pick (AC 28) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "confirm waits for every face pick"`
 
-**C34** - With 200 rows, a scan of a 201st card adds no row and the tray-full message shows; a scan of a card already in the tray still adds 1 (AC 29)
+**C34** - With 200 rows, a scan of a 201st card adds no row and the tray-full message shows; a scan of a card already in the tray still adds 1 (AC 29) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/card-scanner/__tests__/scan-session.spec.ts -t "stops adding rows at 200"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows the tray-full message"`
 
-**C35** - With an empty tray, the bar shows the empty-tray hint and the confirm button is disabled (AC 30)
+**C35** - With an empty tray, the bar shows the empty-tray hint and the confirm button is disabled (AC 30) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "empty tray disables confirm"`
 
-**C36** - `getUserMedia` rejecting with `NotAllowedError` shows the permission-denied state, a link to `/add-cards/manual`, and no video element (AC 31)
+**C36** - `getUserMedia` rejecting with `NotAllowedError` shows the permission-denied state, a link to `/add-cards/manual`, and no video element (AC 31) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows permission denied"`
 
-**C37** - Both `navigator.mediaDevices` undefined and `getUserMedia` rejecting with `NotFoundError` show the no-camera state with a link to `/add-cards/manual` (AC 32)
+**C37** - Both `navigator.mediaDevices` undefined and `getUserMedia` rejecting with `NotFoundError` show the no-camera state with a link to `/add-cards/manual` (AC 32) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "shows no camera"`
 
 **C38** - An OCR engine load failure shows an error with a retry button; retry calls the loader again; rows already in the tray remain (AC 33)
@@ -150,25 +150,25 @@ Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chro
 **C41** - Visiting `/home`, `/library` and `/add-cards/manual` makes 0 requests whose path contains `/ocr/` (AC 36, door 1)
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-scanner-flow.spec.ts -g "other routes never load OCR assets"`
 
-**C42** - Every scanner key exists in both catalogs, and the screen renders its hint in pt-BR and in en-US with different text (AC 37)
+**C42** - Every scanner key exists in both catalogs, and the screen renders its hint in pt-BR and in en-US with different text (AC 37) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/catalog-parity.spec.ts -t "pt-BR and en-US expose an identical set of translation key paths"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "renders in both locales"`
 
 ### S4 - Commit the tray · 8 files · 95 KB · ~24k
 
-**C43** - Confirming a tray with rows (A, 2) and (B, 1) sends exactly one `POST /api/collection/cards/batch` with `items` `[{A, 2}, {B, 1}]` in any order (AC 38)
+**C43** - Confirming a tray with rows (A, 2) and (B, 1) sends exactly one `POST /api/collection/cards/batch` with `items` `[{A, 2}, {B, 1}]` in any order (AC 38) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "commits the whole tray in one request"`
 
 **C44** - The batch returns `201`, an existing manual row at 1 becomes 3 after `+2`, and a card with no row gets a new manual row at 1 (AC 39) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "adds quantities to the manual source"`
 
-**C45** - After a `201`, the tray is empty and the screen shows "3 cards added" (en-US) with a link to `/library` (AC 40)
+**C45** - After a `201`, the tray is empty and the screen shows "3 cards added" (en-US) with a link to `/library` (AC 40) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "summarizes a successful commit"`
 
 **C46** - Cap edges: 19 + 1 -> 20 `capped: false`; 19 + 2 -> 20 `capped: true`; 20 + 1 -> 20 `capped: true`; none + 20 -> 20 `capped: false` (AC 41, door 3) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand collection-batch -t "caps the stored quantity at 20"`
 
-**C47** - A response item with `capped: true` makes the summary name that card as limited to 20 (AC 42)
+**C47** - A response item with `capped: true` makes the summary name that card as limited to 20 (AC 42) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "names capped cards"`
 
 **C48** - One batch listing card A with 2 and again with 3 stores 5 (AC 43) · done
@@ -190,10 +190,10 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts
 **C53** - When the recompute of D1 throws, the batch still returns the committed quantities and D2 is still recomputed (AC 48) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest collection.service.batch -t "survives a failed recompute"`
 
-**C54** - A failed commit keeps every row, shows the localized error and a retry button; retry sends the same items again (AC 49)
+**C54** - A failed commit keeps every row, shows the localized error and a retry button; retry sends the same items again (AC 49) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "keeps the tray when the commit fails"`
 
-**C55** - A `400` with `code` `INVALID_CARD_IDENTIFIER` shows the `apiErrors.INVALID_CARD_IDENTIFIER` text, which exists in pt-BR and en-US (Impact, AD-003)
+**C55** - A `400` with `code` `INVALID_CARD_IDENTIFIER` shows the `apiErrors.INVALID_CARD_IDENTIFIER` text, which exists in pt-BR and en-US (Impact, AD-003) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-add-cards.scan.test.tsx -t "localizes INVALID_CARD_IDENTIFIER"`
 
 **C56** - A successful batch of A x2 and B x1 with one capped item and one affected deck logs one line with `userId`, `itemCount` 2, `totalQuantity` 3, `cappedCount` 1 and `affectedDeckCount` 1 (AC 50) · done
@@ -205,10 +205,10 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts
 **C58** - With the real throttler, the 121st request inside one minute returns `429` for `GET /api/catalog/collector-codes` and for `POST /api/collection/cards/batch` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand card-scanner-throttle -t "throttles both scanner routes"`
 
-**C59** - The production build ships the OCR assets: after `pnpm --filter @rathe-arsenal/web build`, `apps/web/dist/ocr/` holds `worker.min.js`, `eng.traineddata.gz` and every `tesseract-core*` file of the installed `tesseract.js-core`, because the library picks a core build per device at runtime (door 4)
+**C59** - The production build ships the OCR assets: after `pnpm --filter @rathe-arsenal/web build`, `apps/web/dist/ocr/` holds `worker.min.js`, `eng.traineddata.gz` and every `tesseract-core*` file of the installed `tesseract.js-core`, because the library picks a core build per device at runtime (door 4) · done
 Proof: `pnpm --filter @rathe-arsenal/web build && node apps/web/scripts/verify-ocr-assets.mjs apps/web/dist/ocr`
 
-**C60** - `apps/web/package.json` pins `tesseract.js` at `^7` and `@tesseract.js-data/eng` at `^1` (door 5)
+**C60** - `apps/web/package.json` pins `tesseract.js` at `^7` and `@tesseract.js-data/eng` at `^1` (door 5) · done
 Proof: `node -e "const d=require('./apps/web/package.json').dependencies;process.exit(/^\^7\./.test(d['tesseract.js'])&&/^\^1\./.test(d['@tesseract.js-data/eng'])?0:1)"`
 
 ## Coverage

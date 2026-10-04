@@ -97,7 +97,7 @@ function renderInRouter(node: React.ReactNode): ReturnType<typeof render> {
 // /add-cards (tab shell)
 // ---------------------------------------------------------------------------
 
-const TAB_PATHS = ['/add-cards/manual', '/add-cards/csv', '/add-cards/fabrary'] as const;
+const TAB_PATHS = ['/add-cards/manual', '/add-cards/csv', '/add-cards/fabrary', '/add-cards/scan'] as const;
 
 describe('AddCardsLayout — tab shell (LIB-07)', () => {
   beforeEach(() => {
@@ -113,7 +113,7 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the three tabs through the router Link, in order', () => {
+  it('renders the four tabs through the router Link, in order', () => {
     renderInRouter(<AddCardsLayout />);
     const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
     const tabs = within(nav).getAllByRole('link');
@@ -121,6 +121,7 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
       'Manual',
       'Importar CSV',
       'Deck do Fabrary',
+      'Escanear',
     ]);
     expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([...TAB_PATHS]);
     for (const path of TAB_PATHS) {
@@ -157,6 +158,17 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     mockLocation.pathname = '/add-cards/fabrary';
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByText('Importe as cartas de um deck público do Fabrary.')).toBeInTheDocument();
+  });
+
+  it('shows the Scan tab', async () => {
+    await setTestLocale('en-US');
+    mockLocation.pathname = '/add-cards/scan';
+    renderInRouter(<AddCardsLayout />);
+
+    const scanTab = screen.getByRole('link', { name: 'Scan' });
+    expect(scanTab).toHaveAttribute('href', '/add-cards/scan');
+    expect(scanTab).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText("Point your phone's camera at your cards, one at a time.")).toBeInTheDocument();
   });
 
   it('localizes tabs and sentences under en-US', async () => {
