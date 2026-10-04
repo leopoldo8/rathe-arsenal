@@ -179,3 +179,7 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 ## Handoff
 
 - S1 = 6k (catalog + its spec); S2 = 12k; S3 = 12k; S4 = 20k; S5 = 20k; S6 = 12k; S7 = 15k; cross-cutting = 6k; total 103k, all in `scripts/synergy-spike/` plus one catalog field, under the 150k budget - one builder
+
+- **Boundary:** C1-C19 and C21-C32 closed at `1ecf093`; C20 stays open for the owner's `ANTHROPIC_API_KEY`
+- **Settled mid-build:** nothing the owner clarified; the decks 2 and 3 catalog gap is a blocking owner decision, see implementation-notes.md
+- **Abandoned:** loading decks 2 and 3 by upgrading `@flesh-and-blood/cards` to 5.3.0 (a product-wide change that moves the plan's literals); a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)
