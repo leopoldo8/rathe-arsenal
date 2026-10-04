@@ -125,7 +125,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C30:" scripts/synergy-spike/_
 
 ### Cross-cutting · 5 files · 8 KB · ~6k
 
-**C31** - Root `package.json` holds exactly 5 `synergy:*` scripts (decks, pool, run, sheet, score) and `@anthropic-ai/sdk` in `devDependencies`; only files under `scripts/synergy-spike/` import it; `.env.example` has one commented `ANTHROPIC_API_KEY` line with no value (plan Impact, Landing door 2)
+**C31** - Root `package.json` holds exactly 5 `synergy:*` scripts (decks, pool, run, sheet, score) and `@anthropic-ai/sdk` in `devDependencies`; only files under `scripts/synergy-spike/` import it; `.env.example` has one commented `ANTHROPIC_API_KEY` line with no value (plan Impact, Landing door 2) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C31:" scripts/synergy-spike/__tests__/impact.test.ts`
 
 **C32** - The spike scripts typecheck, the whole repo typechecks and lints, and the engine suite is green
