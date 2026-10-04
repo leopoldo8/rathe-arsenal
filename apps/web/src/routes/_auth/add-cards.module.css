@@ -5,7 +5,7 @@
   flex-direction: column;
   gap: var(--ra-space-5);
   inline-size: 100%;
-  max-inline-size: 900px;
+  max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
 }
 
@@ -14,8 +14,10 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  min-block-size: 44px;
+  padding: var(--ra-space-1) 0;
+  font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
   color: var(--ra-fg-muted);
   text-decoration: none;
   transition: color var(--ra-duration) var(--ra-ease);
@@ -124,4 +126,10 @@
 .manageLink:focus-visible {
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .title {
+    font-size: var(--ra-text-h2);
+  }
 }

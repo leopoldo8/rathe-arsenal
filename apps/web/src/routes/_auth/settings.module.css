@@ -1,11 +1,15 @@
 /* Settings page: four panels (Profile / Appearance / Language / Danger zone), handoff 11 */
 
 .page {
-  max-inline-size: 720px;
+  max-inline-size: var(--ra-page-max-inline);
   inline-size: 100%;
   margin-inline: auto;
-  padding-block: var(--ra-space-6) var(--ra-space-12);
+  padding-block: 0 var(--ra-space-12);
   box-sizing: border-box;
+}
+
+.page > * {
+  max-inline-size: var(--ra-page-form-inline);
 }
 
 /* ---- Page heading ---- */
@@ -187,4 +191,10 @@
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-caption);
   color: var(--ra-ready-low);
+}
+
+@media (max-width: 639px) {
+  .pageHeading {
+    font-size: var(--ra-text-h2);
+  }
 }

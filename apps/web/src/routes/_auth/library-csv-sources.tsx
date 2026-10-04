@@ -31,12 +31,11 @@ export function LibraryCsvSourcesPage(): React.ReactElement {
 
   return (
     <div className={styles.page}>
-      <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
-        <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
-      </Link>
-
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
+          <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
+            <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
+          </Link>
           <h1 className={styles.title}>{t('csvSources.csvSourcesTitle')}</h1>
           <p className={styles.subtitle}>
             {t('csvSources.csvSourcesSubtitle')}

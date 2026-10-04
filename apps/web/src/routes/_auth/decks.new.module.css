@@ -4,8 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--ra-space-6);
-  padding: var(--ra-space-6) var(--ra-space-5) var(--ra-space-12);
-  max-inline-size: 940px;
+  padding: 0 0 var(--ra-space-12);
+  max-inline-size: var(--ra-page-max-inline);
   inline-size: 100%;
   margin-inline: auto;
   box-sizing: border-box;
@@ -22,7 +22,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  margin-bottom: var(--ra-space-3);
   padding: var(--ra-space-1) 0;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
@@ -44,7 +43,7 @@
 .title {
   margin: 0;
   font-family: var(--ra-font-display);
-  font-size: 32px;
+  font-size: var(--ra-text-h1);
   font-weight: var(--ra-weight-bold);
   letter-spacing: var(--ra-track-h1);
   color: var(--ra-fg-primary);
@@ -71,5 +70,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 18px;
     align-items: start;
+  }
+}
+
+@media (max-width: 639px) {
+  .title {
+    font-size: var(--ra-text-h2);
   }
 }

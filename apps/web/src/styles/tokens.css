@@ -29,6 +29,8 @@
 
   /* ---------- Type scale ---------- */
   --ra-text-hero:      3.25rem;    /* 52 — Newsreader */
+  --ra-page-max-inline: 1180px;
+  --ra-page-form-inline: 760px;
   --ra-text-h1:        2.25rem;    /* 36 — Newsreader 500 */
   --ra-text-h2:        1.5rem;     /* 24 — no handoff counterpart; see FND-01 open item 5 */
   --ra-text-h3:        1.125rem;   /* 18 — card titles */

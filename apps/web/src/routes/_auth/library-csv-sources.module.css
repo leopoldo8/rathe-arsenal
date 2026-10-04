@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: var(--ra-space-6);
   inline-size: 100%;
-  max-inline-size: 1000px;
+  max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
 }
 
@@ -16,9 +16,10 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ra-space-2);
-  padding: var(--ra-space-2) var(--ra-space-1);
+  padding: var(--ra-space-1) 0;
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
   color: var(--ra-fg-muted);
   text-decoration: none;
   transition: color var(--ra-duration) var(--ra-ease);
@@ -125,9 +126,6 @@
 }
 
 @media (max-width: 639px) {
-  .page {
-    padding: var(--ra-space-5) var(--ra-space-4) var(--ra-space-10);
-  }
   .title {
     font-size: var(--ra-text-h2);
   }
