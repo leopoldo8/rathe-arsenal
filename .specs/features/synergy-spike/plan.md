@@ -152,6 +152,8 @@ The catalog has 4,835 cards; scoring all of them per deck is neither affordable 
 
 | Assumption | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
+| the three decks | `https://fabrary.net/decks/01M2EA2J62QDE6ZZYP0YPXEBG4`, `https://fabrary.net/decks/01M0KJEX07FX04Z07EQ1TESWYP`, `https://fabrary.net/decks/01M2GEPE0X50C32E02KZNXAETH`, listed in `scripts/synergy-spike/fixtures/decks.yaml` | owner's answer, 2026-10-04 | y |
+| language-model spend | about 1 USD per full pass is acceptable; the key comes only from `ANTHROPIC_API_KEY` in the owner's shell and is never written to a file | owner's answer, 2026-10-04 | y |
 | order of candidates | `llm` first, then `heuristic`, then `cooccurrence` | the language model is the only candidate that can read "serves the strategy" from rules text, and needs no new data; the heuristic needs nothing outside the repository; co-occurrence needs decklists the repository does not hold and overlaps the deferred Discover work, so it goes last | n |
 | judgment unit | `yes` means "I would consider putting this card in this deck", `no` otherwise; no scale | matches the wording of the pass bar, and one binary column keeps the sheet quick to fill | n |
 | what counts as the top 10 | the 10 highest-ranked cards of the pool, one entry per card identifier (pitch variants are separate cards, as in the catalog) | the catalog treats each pitch as its own identifier | n |
@@ -173,12 +175,10 @@ Token and cost arithmetic, from the catalog on 4.0.8 for Dorinthea Ironsong in C
 - Relative: the same run on `claude-sonnet-5-5` ($2 and $10 per million) is half; a second pass for another hero changes only the pool size.
 - Both prices come from the claude-api skill's cached table, not from the live pricing page, and are labelled as such in the open question.
 
-**Open questions:**
+**Open questions:** two left, neither blocks; the two blocking ones were answered by the owner on 2026-10-04 and are recorded as confirmed rows above.
 
 | # | Kind | Question | Until answered |
 | --- | --- | --- | --- |
-| 1 | blocks | Which three decks are used, and are all three shared on Fabrary so the script can load them by URL? (Production data is not reachable from this machine; the loader takes Fabrary URLs.) | criteria 4 to 6 cannot run, so nothing after them can |
-| 2 | blocks | Is Anthropic API spend of about 1 USD per full pass acceptable, with the key exported in your shell as `ANTHROPIC_API_KEY` and never written to a file? | criteria 15 to 19 and the first candidate; the heuristic can run without it |
 | 3 | open | Do you agree with the candidate order `llm`, `heuristic`, `cooccurrence`? | the order in criterion 27 defaults to this one |
 | 4 | open | If the first two fail, can decklists of the same hero be listed on Fabrary without a login (the current loader only fetches one deck by ULID), and is 20 decklists per hero the right minimum? | the co-occurrence run is recorded as `untestable` (criterion 14), which counts it as tried |
 
