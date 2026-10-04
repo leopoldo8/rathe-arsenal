@@ -211,14 +211,17 @@ describe('CsvSourceRow', () => {
 
   describe('type badge (LIB-05)', () => {
     it.each([
-      ['csv', { kind: 'csv', sourceUrl: null }, 'CSV', 'badge--csv'],
-      ['fabrary', { kind: 'csv', sourceUrl: 'https://fabrary.net/decks/ABC' }, 'Fabrary', 'badge--fabrary'],
-      ['manual', { kind: 'manual', label: 'Manual entries' }, 'Manual', 'badge--manual'],
-    ] as const)('renders the %s badge with its colour class', (_kind, overrides, text, cls) => {
+      ['csv', { kind: 'csv', sourceUrl: null }, 'CSV'],
+      ['fabrary', { kind: 'csv', sourceUrl: 'https://fabrary.net/decks/ABC' }, 'Fabrary'],
+    ] as const)('renders the %s badge', (_kind, overrides, text) => {
       renderRow(buildSource(overrides as Partial<ICsvSource>));
-      const badge = screen.getByText(text, { selector: 'span' });
-      expect(badge).toHaveClass(styles.badge!);
-      expect(badge).toHaveClass(styles[cls]!);
+      expect(screen.getByText(text, { selector: 'span' })).toHaveClass(styles.badge!);
+    });
+
+    it('renders no badge for the manual source, whose name already says what it is', () => {
+      renderRow(buildSource({ kind: 'manual', label: 'Manual entries' }));
+      expect(screen.queryByText('Manual', { selector: 'span' })).not.toBeInTheDocument();
+      expect(document.querySelector(`.${styles.badge!}`)).toBeNull();
     });
   });
 

@@ -65,10 +65,10 @@ describe('LibraryStatsBar — happy path: counts and pills', () => {
         stats={makeStats({ pitchBreakdown: { red: 10, yellow: 5, blue: 7, colorless: 3 } })}
       />,
     );
-    expect(screen.getByText('R 10')).toBeInTheDocument();
-    expect(screen.getByText('Y 5')).toBeInTheDocument();
-    expect(screen.getByText('B 7')).toBeInTheDocument();
-    expect(screen.getByText('— 3')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Cartas de pitch vermelho: 10' })).toHaveTextContent('10');
+    expect(screen.getByRole('img', { name: 'Cartas de pitch amarelo: 5' })).toHaveTextContent('5');
+    expect(screen.getByRole('img', { name: 'Cartas de pitch azul: 7' })).toHaveTextContent('7');
+    expect(screen.getByRole('img', { name: /^Cartas sem pitch.*: 3$/ })).toHaveTextContent('3');
   });
 
   it('hides zero-count pitch pills', () => {
@@ -77,8 +77,8 @@ describe('LibraryStatsBar — happy path: counts and pills', () => {
         stats={makeStats({ pitchBreakdown: { red: 0, yellow: 5, blue: 0, colorless: 0 } })}
       />,
     );
-    expect(screen.queryByText(/^R 0$/)).not.toBeInTheDocument();
-    expect(screen.getByText('Y 5')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /vermelho/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Cartas de pitch amarelo: 5' })).toBeInTheDocument();
   });
 
   it('renders estimated value formatted as BRL', () => {
@@ -130,13 +130,13 @@ describe('LibraryStatsBar — freshness label: null data', () => {
     expect(screen.getByText('Sem dados de preço')).toBeInTheDocument();
   });
 
-  it('renders R$ 0,00 as value when null', () => {
+  it('shows no price at all when there is no price data', () => {
     render(
       <LibraryStatsBar
         stats={makeStats({ priceDataLastUpdatedAt: null, estimatedValueCents: 0 })}
       />,
     );
-    expect(screen.getByText('R$ 0,00')).toBeInTheDocument();
+    expect(screen.queryByText(/R\$/)).not.toBeInTheDocument();
   });
 });
 
@@ -154,16 +154,17 @@ describe('LibraryStatsBar — accessibility', () => {
   });
 });
 
-describe('LibraryStatsBar — pitch pills use the pitch classes (LIB-04)', () => {
+describe('LibraryStatsBar — pitch pills use the pitch dots (LIB-04)', () => {
   it.each([
-    ['R 30', 'pillRed'],
-    ['Y 20', 'pillYellow'],
-    ['B 50', 'pillBlue'],
-    ['— 20', 'pillColorless'],
-  ] as const)('%s pill carries the %s class', (text, cls) => {
+    ['Cartas de pitch vermelho: 30', 'dotRed'],
+    ['Cartas de pitch amarelo: 20', 'dotYellow'],
+    ['Cartas de pitch azul: 50', 'dotBlue'],
+    [/^Cartas sem pitch.*: 20$/, 'dotColorless'],
+  ] as const)('%s pill carries a %s dot', (name, cls) => {
     render(<LibraryStatsBar stats={makeStats()} />);
-    expect(screen.getByText(text)).toHaveClass(styles[cls]!);
-    expect(screen.getByText(text)).toHaveClass(styles.pill!);
+    const pill = screen.getByRole('img', { name });
+    expect(pill).toHaveClass(styles.pill!);
+    expect(pill.querySelector(`.${styles[cls]!}`)).not.toBeNull();
   });
 });
 

@@ -14,7 +14,7 @@
 
 .main {
   display: grid;
-  grid-template-columns: auto 150px minmax(0, 1fr) 90px auto;
+  grid-template-columns: auto 150px minmax(0, 1fr) 110px auto;
   align-items: center;
   gap: var(--ra-space-4);
   padding: 16px 20px;
@@ -97,7 +97,7 @@
 .nameOut {
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
-  color: var(--ra-ready-low);
+  color: var(--ra-fg-secondary);
   text-decoration: line-through;
 }
 
@@ -124,17 +124,6 @@
   color: var(--ra-accent);
 }
 
-.copiesBadge {
-  margin-inline-start: var(--ra-space-2);
-  padding: 1px 6px;
-  border: 1px solid var(--ra-accent-soft-bd);
-  border-radius: var(--ra-radius-full);
-  background: var(--ra-accent-soft-bg);
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-accent);
-}
-
 .owned {
   font-size: 11.5px;
   font-weight: var(--ra-weight-normal);
@@ -148,30 +137,10 @@
   gap: 2px;
 }
 
-.confidenceLabel,
-.tier {
-  font-family: var(--ra-font-ui);
-  font-size: 10.5px;
-  color: var(--ra-fg-muted);
-}
-
 .confidence {
-  font-family: var(--ra-font-display);
-  font-size: 20px;
-  font-weight: var(--ra-weight-bold);
-  line-height: 1.1;
-}
-
-.bandHigh {
-  color: var(--ra-ready-high);
-}
-
-.bandMid {
-  color: var(--ra-accent);
-}
-
-.bandLow {
-  color: var(--ra-ready-mid);
+  font-family: var(--ra-font-ui);
+  font-size: 11.5px;
+  color: var(--ra-fg-muted);
 }
 
 .actions {

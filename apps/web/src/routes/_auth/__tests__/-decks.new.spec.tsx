@@ -166,8 +166,6 @@ function cls(name: string | undefined): string {
 }
 
 import pageStyles from '../decks.new.module.css';
-import importCardStyles from '../../../components/decks-new/ImportFabraryCard.module.css';
-import scratchCardStyles from '../../../components/decks-new/StartScratchCard.module.css';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -235,14 +233,10 @@ describe('DecksNewPage — /decks/new', () => {
     expect(container.firstElementChild).toHaveClass(cls(pageStyles.page));
   });
 
-  it('draws the Fabrary icon square in gold and the scratch icon square in violet', () => {
+  it('renders plain card headings with no icon tile', () => {
     renderPage();
-    const gold = screen.getByTestId('import-fabrary-card').querySelector('[aria-hidden="true"]');
-    const violet = screen.getByTestId('start-scratch-card').querySelector('[aria-hidden="true"]');
-    expect(gold).toHaveClass(cls(importCardStyles.iconSquare));
-    expect(gold).toHaveClass(cls(importCardStyles.iconGold));
-    expect(violet).toHaveClass(cls(scratchCardStyles.iconSquare));
-    expect(violet).toHaveClass(cls(scratchCardStyles.iconViolet));
+    expect(screen.getByTestId('import-fabrary-card').querySelector('svg')).toBeNull();
+    expect(screen.getByTestId('start-scratch-card').querySelector('svg')).toBeNull();
   });
 
   it('labels the CTAs with the handoff copy', () => {

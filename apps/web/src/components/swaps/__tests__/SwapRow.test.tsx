@@ -133,13 +133,13 @@ describe('SwapRow — anatomy (SWAP-12)', () => {
   it('shows the live owned count of the substitute', () => {
     renderRow(makeSwapRow({ ownedCount: 2 }));
 
-    expect(screen.getByText('Você tem 2 cópias')).toBeInTheDocument();
+    expect(screen.getByText('Cobre 1 cópia · você tem 2')).toBeInTheDocument();
   });
 
   it('says so when the substitute is no longer owned, instead of dropping the row', () => {
     renderRow(makeSwapRow({ ownedCount: 0 }));
 
-    expect(screen.getByText('Você não tem essa carta')).toBeInTheDocument();
+    expect(screen.getByText('Cobre 1 cópia · você não tem')).toBeInTheDocument();
   });
 });
 
@@ -217,60 +217,57 @@ describe('SwapRow — thumbnails (SWAP-12)', () => {
 
 describe('SwapRow — confidence bands (SWAP-12)', () => {
   it.each([
-    [95, 'high', styles.bandHigh],
-    [90, 'high', styles.bandHigh],
-    [89, 'mid', styles.bandMid],
-    [70, 'mid', styles.bandMid],
-    [69, 'low', styles.bandLow],
-  ])('%i%% is in the %s band and carries its class', (confidence, band, bandClass) => {
+    [95, 'high'],
+    [90, 'high'],
+    [89, 'mid'],
+    [70, 'mid'],
+    [69, 'low'],
+  ])('%i%% is in the %s band', (confidence, band) => {
     renderRow(makeSwapRow({ confidence }));
 
-    const value = screen.getByLabelText(`Confiança de ${confidence}%`);
-    expect(value).toHaveTextContent(`${confidence}%`);
+    const value = screen.getByText(`${confidence}% de confiança`);
     expect(value).toHaveAttribute('data-band', band);
-    expect(value).toHaveClass(bandClass!);
   });
 });
 
 describe('SwapRow — x N grouping (SWAP-11)', () => {
-  it('shows no badge and plain labels for a single copy', () => {
+  it('shows plain labels for a single copy', () => {
     renderRow(makeSwapRow({ quantity: 1 }));
 
-    expect(screen.queryByLabelText(/cópias$/)).toBeNull();
     expect(screen.getByRole('button', { name: /^Aprovar a troca de .* por [^ ]+ \d+$/ })).toHaveTextContent(/^Aprovar$/);
     expect(screen.getByText('Recusar')).toBeInTheDocument();
   });
 
-  it('shows the x N badge when quantity is above one', () => {
-    renderRow(makeSwapRow({ quantity: 3 }));
+  it('says how many copies the substitute covers against how many are owned', () => {
+    renderRow(makeSwapRow({ quantity: 3, ownedCount: 2 }));
 
-    expect(screen.getByLabelText('3 cópias')).toHaveTextContent('× 3');
+    expect(screen.getByText('Cobre 3 cópias · você tem 2')).toBeInTheDocument();
   });
 
-  it('scopes every pending action label to the group so the blast radius is visible', () => {
+  it('keeps the group size in the accessible name of every pending action', () => {
     renderRow(makeSwapRow({ quantity: 3, status: 'pending' }));
 
-    expect(screen.getByText('Aprovar (× 3)')).toBeInTheDocument();
-    expect(screen.getByText('Recusar (× 3)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Recusar a troca .* nas 3 cópias$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Aprovar a troca .* nas 3 cópias$/ })).toBeInTheDocument();
   });
 
-  it('scopes Reverter and Restaurar the same way', () => {
+  it('keeps the group size in the accessible name of Reverter and Restaurar', () => {
     const { unmount } = render(
       <SwapRow row={makeSwapRow({ quantity: 2, status: 'approved' })} resolved={null} isSelected={false} isBusy={false} {...handlers()} />,
     );
-    expect(screen.getByText('Reverter (× 2)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Reverter a troca .* nas 2 cópias$/ })).toBeInTheDocument();
     unmount();
 
     render(
       <SwapRow row={makeSwapRow({ quantity: 2, status: 'rejected' })} resolved={null} isSelected={false} isBusy={false} {...handlers()} />,
     );
-    expect(screen.getByText('Restaurar (× 2)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Restaurar a troca .* nas 2 cópias$/ })).toBeInTheDocument();
   });
 
   it('keeps one decision for the whole group: a single approve call per row', async () => {
     const fns = renderRow(makeSwapRow({ quantity: 3 }));
 
-    await userEvent.click(screen.getByText('Aprovar (× 3)'));
+    await userEvent.click(screen.getByRole('button', { name: /^Aprovar a troca .* nas 3 cópias$/ }));
 
     expect(fns.onApprove).toHaveBeenCalledTimes(1);
   });

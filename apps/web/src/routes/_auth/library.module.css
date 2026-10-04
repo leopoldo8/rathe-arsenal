@@ -47,18 +47,6 @@
   gap: var(--ra-space-2);
 }
 
-.eyebrowNum {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-mono);
-  color: var(--ra-accent-body);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-}
-
-.eyebrowSep {
-  color: var(--ra-fg-muted);
-}
-
 .title {
   margin: 0;
   font-family: var(--ra-font-display);

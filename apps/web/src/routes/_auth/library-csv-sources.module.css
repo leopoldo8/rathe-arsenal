@@ -1,5 +1,5 @@
 /* /library-csv-sources — Library sources management.
-   Aesthetic mirror of /add-cards: brass eyebrow, plain UI-font subtitle,
+   Aesthetic mirror of /add-cards: plain UI-font subtitle,
    no card-with-icon templates. */
 
 .page {
@@ -46,18 +46,6 @@
   min-width: 0;
 }
 
-.eyebrow {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
-  text-transform: uppercase;
-  letter-spacing: var(--ra-track-caps);
-  color: var(--ra-accent-body);
-}
-
 .title {
   margin: 0;
   font-family: var(--ra-font-display);
@@ -81,33 +69,6 @@
   align-items: center;
   gap: var(--ra-space-3);
   flex-wrap: wrap;
-}
-
-.viewLibraryLink {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  min-block-size: 36px;
-  padding: var(--ra-space-2) var(--ra-space-4);
-  background: transparent;
-  border: 1px solid var(--ra-accent);
-  border-radius: var(--ra-radius-sm);
-  color: var(--ra-accent-body);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-semibold);
-  text-decoration: none;
-  transition: background var(--ra-duration) var(--ra-ease), color var(--ra-duration) var(--ra-ease);
-}
-
-.viewLibraryLink:hover {
-  background: var(--ra-accent-soft-bg);
-  color: var(--ra-fg-primary);
-}
-
-.viewLibraryLink:focus-visible {
-  outline: 2px solid var(--ra-accent);
-  outline-offset: 2px;
 }
 
 /* ---- Content ---- */

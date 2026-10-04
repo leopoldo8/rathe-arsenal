@@ -160,11 +160,11 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     expect(labels.some((t) => t.includes('perfil'))).toBe(true);
   });
 
-  it('renders a Theme section with an <h2> heading', () => {
+  it('renders an Appearance section with an <h2> heading', () => {
     renderSettings();
     const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
     const labels = sectionHeadings.map((h) => h.textContent?.toLowerCase() ?? '');
-    expect(labels.some((t) => t.includes('tema'))).toBe(true);
+    expect(labels.some((t) => t.includes('aparência'))).toBe(true);
   });
 
   it('renders a Language section with an <h2> heading (PT-BR default)', () => {
@@ -191,13 +191,13 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     expect(container.firstElementChild).toHaveClass(cls(settingsStyles.page));
   });
 
-  it('draws each of the four panels with the section class and an eyebrow above its heading', () => {
+  it('draws each of the four panels with the section class and no eyebrow above its heading', () => {
     renderSettings();
     const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
     expect(panels).toHaveLength(4);
     for (const panel of panels) {
       expect(panel).toHaveClass(cls(settingsStyles.section));
-      expect(panel?.querySelector(`.${cls(settingsStyles.eyebrow)}`)).not.toBeNull();
+      expect(panel?.querySelector('span[class*="eyebrow"]')).toBeNull();
     }
   });
 
@@ -211,7 +211,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
 
   it('keeps both toggles inside their own panels', () => {
     renderSettings();
-    const theme = screen.getByRole('heading', { level: 2, name: /tema/i }).closest('section');
+    const theme = screen.getByRole('heading', { level: 2, name: /aparência/i }).closest('section');
     const language = screen.getByRole('heading', { level: 2, name: /idioma/i }).closest('section');
     expect(theme?.querySelector('[data-testid^="theme-toggle"]')).not.toBeNull();
     expect(language?.querySelector('[data-testid^="language-toggle"]')).not.toBeNull();

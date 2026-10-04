@@ -13,6 +13,13 @@ interface ILibraryStatsBarProps {
   readonly stats: ILibraryStats;
 }
 
+const PITCH_ENTRIES = [
+  { key: 'red', dotClass: styles.dotRed, titleKey: 'library.redPitchTitle' },
+  { key: 'yellow', dotClass: styles.dotYellow, titleKey: 'library.yellowPitchTitle' },
+  { key: 'blue', dotClass: styles.dotBlue, titleKey: 'library.bluePitchTitle' },
+  { key: 'colorless', dotClass: styles.dotColorless, titleKey: 'library.colorlessPitchTitle' },
+] as const;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -53,28 +60,19 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
         <span className={styles.separator} aria-hidden="true" />
 
         <div className={styles.pitchPills} aria-label={t('library.pitchBreakdownLabel')}>
-          {pitchBreakdown.red > 0 && (
-            <span className={`${styles.pill} ${styles.pillRed}`} title={t('library.redPitchTitle')}>
-              R {pitchBreakdown.red}
-            </span>
-          )}
-          {pitchBreakdown.yellow > 0 && (
-            <span className={`${styles.pill} ${styles.pillYellow}`} title={t('library.yellowPitchTitle')}>
-              Y {pitchBreakdown.yellow}
-            </span>
-          )}
-          {pitchBreakdown.blue > 0 && (
-            <span className={`${styles.pill} ${styles.pillBlue}`} title={t('library.bluePitchTitle')}>
-              B {pitchBreakdown.blue}
-            </span>
-          )}
-          {pitchBreakdown.colorless > 0 && (
-            <span
-              className={`${styles.pill} ${styles.pillColorless}`}
-              title={t('library.colorlessPitchTitle')}
-            >
-              — {pitchBreakdown.colorless}
-            </span>
+          {PITCH_ENTRIES.map(({ key, dotClass, titleKey }) =>
+            pitchBreakdown[key] > 0 ? (
+              <span
+                key={key}
+                className={styles.pill}
+                role="img"
+                title={t(titleKey)}
+                aria-label={`${t(titleKey)}: ${pitchBreakdown[key]}`}
+              >
+                <span className={`${styles.dot} ${dotClass}`} aria-hidden="true" />
+                {pitchBreakdown[key]}
+              </span>
+            ) : null,
           )}
         </div>
       </div>
@@ -86,9 +84,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
           bar is purely informational again. */}
       <div className={styles.row2}>
         <div className={styles.valueBlock}>
-          <span className={styles.valueAmount}>
-            {isNullData ? 'R$ 0,00' : formatBrl(estimatedValueCents)}
-          </span>
+          {!isNullData && <span className={styles.valueAmount}>{formatBrl(estimatedValueCents)}</span>}
           <span
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
             data-testid="price-freshness"

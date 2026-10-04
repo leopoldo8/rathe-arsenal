@@ -17,13 +17,12 @@ export const csvSources = {
   onTriggerAriaLabel: 'Upload a CSV to import your collection',
 
   // SumExplainer
-  sumExplainerTrigger: 'ⓘ Duplicates across sources are summed, not overwritten.',
+  sumExplainerTrigger: 'Duplicates across sources are summed, not overwritten.',
   manualSourceLabel: 'Manual entries',
   activeLabel: 'Active',
   inactiveLabel: 'Inactive',
   sourceBadgeCsv: 'CSV',
   sourceBadgeFabrary: 'Fabrary',
-  sourceBadgeManual: 'Manual',
   manualAlwaysIncluded: 'Always included — manually added cards can\'t be deactivated.',
   untitledSourceLabel: 'Untitled CSV',
   deleteFallbackLabel: 'This CSV',
@@ -124,10 +123,8 @@ export const csvSources = {
 
   // Library CSV sources route
   csvSourcesBackLink: 'Library',
-  csvSourcesEyebrow: 'Collection',
   csvSourcesTitle: 'Library sources',
   csvSourcesSubtitle: 'Each source is one import of your collection. Turn a source off to take its cards out of your library without losing the file. Cards added by hand and Fabrary imports show up here too.',
-  csvSourcesViewLibraryLink: 'View library',
   csvSourcesErrorBanner: 'Failed to load library sources.',
   csvSourcesRetryButton: 'Retry',
 

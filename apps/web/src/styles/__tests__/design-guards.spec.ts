@@ -1252,12 +1252,10 @@ describe('Phase 6 — Library layout (handoff §7)', () => {
 
 describe('Phase 6 — pitch colours (LIB-04, FND-01a)', () => {
   it.each(['red', 'yellow', 'blue', 'colorless'] as const)(
-    'stats pill %s uses the -ink token for text and the raw token for the border',
+    'stats dot %s is filled with the raw pitch token',
     (pitch) => {
-      const name = `pill${pitch.charAt(0).toUpperCase()}${pitch.slice(1)}`;
-      const body = ruleBody(STATS_BAR_CSS, `.${name}`);
-      expect(body).toContain(`color: var(--ra-pitch-${pitch}-ink)`);
-      expect(body).toContain(`border-color: var(--ra-pitch-${pitch})`);
+      const name = `dot${pitch.charAt(0).toUpperCase()}${pitch.slice(1)}`;
+      expect(ruleBody(STATS_BAR_CSS, `.${name}`)).toContain(`background-color: var(--ra-pitch-${pitch})`);
     },
   );
 
@@ -1294,10 +1292,10 @@ describe('Phase 6 — source rows (LIB-05, LIB-06; handoff §8)', () => {
     expect(ruleBody(SOURCE_ROW_CSS, '.switch[data-state="checked"]')).toContain('background: var(--ra-accent)');
   });
 
-  it('colours the badges green (csv), gold (fabrary) and violet (manual) from existing tokens', () => {
-    expect(ruleBody(SOURCE_ROW_CSS, '.badge--csv')).toContain('color: var(--ra-ready-high)');
-    expect(ruleBody(SOURCE_ROW_CSS, '.badge--fabrary')).toContain('color: var(--ra-accent-body)');
-    expect(ruleBody(SOURCE_ROW_CSS, '.badge--manual')).toContain('var(--ra-status-idea)');
+  it('keeps the kind badges neutral instead of borrowing status colours', () => {
+    const body = ruleBody(SOURCE_ROW_CSS, '.badge');
+    expect(body).toContain('color: var(--ra-fg-secondary)');
+    expect(SOURCE_ROW_CSS).not.toContain('.badge--');
   });
 });
 
@@ -1366,15 +1364,8 @@ describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
   it.each([
     ['Fabrary', IMPORT_CARD_CSS],
     ['scratch', SCRATCH_CARD_CSS],
-  ] as const)('%s icon square is 36px', (_name, css) => {
-    const body = ruleBody(css, '.iconSquare');
-    expect(body).toContain('inline-size: 36px');
-    expect(body).toContain('block-size: 36px');
-  });
-
-  it('tints the Fabrary square gold and the scratch square violet at 12%', () => {
-    expect(ruleBody(IMPORT_CARD_CSS, '.iconGold')).toContain('background: rgba(208, 168, 76, 0.12)');
-    expect(ruleBody(SCRATCH_CARD_CSS, '.iconViolet')).toContain('background: rgba(143, 124, 240, 0.12)');
+  ] as const)('%s card has no icon tile in its header', (_name, css) => {
+    expect(css).not.toContain('.iconSquare');
   });
 
   it('keeps the primary CTA gold and makes the scratch CTA an outline button', () => {
@@ -1411,12 +1402,8 @@ describe('Phase 7 — Settings (EDIT-05, handoff §11)', () => {
     expect(body).toContain('background: var(--ra-bg-surface)');
   });
 
-  it('sets the eyebrow in the UI face, bold uppercase, on the body-contrast accent', () => {
-    const body = ruleBody(SETTINGS_CSS, '.eyebrow');
-    expect(body).toContain('font-family: var(--ra-font-ui)');
-    expect(body).toContain('font-weight: var(--ra-weight-bold)');
-    expect(body).toContain('text-transform: uppercase');
-    expect(body).toContain('color: var(--ra-accent-body)');
+  it('labels each panel once, with no eyebrow above its heading', () => {
+    expect(SETTINGS_CSS).not.toContain('.eyebrow');
   });
 
   it('sets the panel title at the 18px h3 size, weight 600', () => {
@@ -1687,9 +1674,9 @@ describe('SWAP-12 — row anatomy', () => {
     expect(ruleBody(SWAP_ROW_CSS, '.main')).toContain('padding: 16px 20px');
   });
 
-  it('gives the deck column 150px and the confidence column 90px', () => {
+  it('gives the deck column 150px and the confidence column 110px', () => {
     expect(ruleBody(SWAP_ROW_CSS, '.main')).toContain(
-      'grid-template-columns: auto 150px minmax(0, 1fr) 90px auto',
+      'grid-template-columns: auto 150px minmax(0, 1fr) 110px auto',
     );
   });
 
@@ -1709,13 +1696,10 @@ describe('SWAP-12 — row anatomy', () => {
     expect(ruleBody(SWAP_ROW_CSS, '.nameOut')).toContain('text-decoration: line-through');
   });
 
-  it('sets the confidence value in Newsreader 700 and bands it green, gold, amber', () => {
+  it('sets the confidence as quiet muted UI text, not a coloured numeral', () => {
     const value = ruleBody(SWAP_ROW_CSS, '.confidence');
-    expect(value).toContain('font-family: var(--ra-font-display)');
-    expect(value).toContain('font-weight: var(--ra-weight-bold)');
-    expect(ruleBody(SWAP_ROW_CSS, '.bandHigh')).toContain('color: var(--ra-ready-high)');
-    expect(ruleBody(SWAP_ROW_CSS, '.bandMid')).toContain('color: var(--ra-accent)');
-    expect(ruleBody(SWAP_ROW_CSS, '.bandLow')).toContain('color: var(--ra-ready-mid)');
+    expect(value).toContain('font-family: var(--ra-font-ui)');
+    expect(value).toContain('color: var(--ra-fg-muted)');
   });
 
   it('keeps every action at the 44px touch target', () => {
@@ -1816,13 +1800,13 @@ describe('SWAP — no banned motifs in the screen', () => {
     },
   );
 
-  it('keeps the display serif to the page title, the confidence value and the empty-state title', () => {
+  it('keeps the display serif to the page title and the empty-state title', () => {
     const offenders = swapSources
       .filter((file) => file.endsWith('.css'))
       .filter((file) => fs.readFileSync(file, 'utf-8').includes('--ra-font-display'))
       .map((file) => path.basename(file))
       .sort();
-    expect(offenders).toEqual(['SwapRow.module.css', 'SwapsEmptyState.module.css', 'swaps.module.css']);
+    expect(offenders).toEqual(['SwapsEmptyState.module.css', 'swaps.module.css']);
   });
 });
 
@@ -1861,7 +1845,6 @@ describe('Phase 10 — app-wide polish sweep', () => {
     ['routes/_auth/library.module.css', '.addCardsLink'],
     ['routes/_auth/library.module.css', '.eyebrow'],
     ['routes/_auth/library-csv-sources.module.css', '.subtitle'],
-    ['routes/_auth/library-csv-sources.module.css', '.viewLibraryLink'],
     ['routes/_auth/add-cards.csv.module.css', '.dropButton'],
     ['routes/_auth/add-cards.fabrary.module.css', '.submitBtn'],
     ['components/deck-detail/DeckDetailHeader.module.css', '.cancelBtn'],

@@ -143,15 +143,6 @@ export function LibraryPageInner({
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
-          <p className={styles.eyebrow}>
-            <span className={styles.eyebrowNum}>{stats?.uniqueCount ?? 0}</span>{' '}
-            {t('library.uniqueEyebrow')}
-            <span className={styles.eyebrowSep} aria-hidden="true">
-              ·
-            </span>
-            <span className={styles.eyebrowNum}>{stats?.totalCopies ?? 0}</span>{' '}
-            {t('library.copiesEyebrow')}
-          </p>
           <h1 className={styles.title}>{t('library.libraryTitle')}</h1>
         </div>
         <div className={styles.headerActions}>

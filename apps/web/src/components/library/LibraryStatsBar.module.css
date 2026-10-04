@@ -65,37 +65,37 @@
 .pill {
   display: inline-flex;
   align-items: center;
+  gap: var(--ra-space-1);
   padding: 0.125rem 0.5rem;
-  border-radius: var(--ra-radius-full);
   font-size: var(--ra-text-caption);
   font-weight: var(--ra-weight-semibold);
-  letter-spacing: 0.03em;
-  border: 1px solid transparent;
+  color: var(--ra-fg-secondary);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.pillRed {
-  color: var(--ra-pitch-red-ink);
-  background-color: color-mix(in srgb, var(--ra-pitch-red) 12%, transparent);
-  border-color: var(--ra-pitch-red);
+.dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--ra-radius-full);
+  flex: none;
 }
 
-.pillYellow {
-  color: var(--ra-pitch-yellow-ink);
-  background-color: color-mix(in srgb, var(--ra-pitch-yellow) 12%, transparent);
-  border-color: var(--ra-pitch-yellow);
+.dotRed {
+  background-color: var(--ra-pitch-red);
 }
 
-.pillBlue {
-  color: var(--ra-pitch-blue-ink);
-  background-color: color-mix(in srgb, var(--ra-pitch-blue) 12%, transparent);
-  border-color: var(--ra-pitch-blue);
+.dotYellow {
+  background-color: var(--ra-pitch-yellow);
 }
 
-.pillColorless {
-  color: var(--ra-pitch-colorless-ink);
-  background-color: color-mix(in srgb, var(--ra-pitch-colorless) 12%, transparent);
-  border-color: var(--ra-pitch-colorless);
+.dotBlue {
+  background-color: var(--ra-pitch-blue);
+}
+
+.dotColorless {
+  background-color: var(--ra-pitch-colorless);
+  border: 1px solid var(--ra-border-strong);
 }
 
 /* ---- Row 2: value + Manage CSVs ---- */

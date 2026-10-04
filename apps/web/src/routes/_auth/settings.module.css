@@ -32,17 +32,6 @@
 }
 
 /* ---- Eyebrow header above section heading ---- */
-.eyebrow {
-  display: block;
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-bold);
-  letter-spacing: var(--ra-track-caps);
-  text-transform: uppercase;
-  color: var(--ra-accent-body);
-  margin-bottom: var(--ra-space-1);
-}
-
 /* ---- Section heading (h2) ---- */
 .sectionHeading {
   font-family: var(--ra-font-ui);
@@ -77,12 +66,6 @@
   display: flex;
   align-items: center;
   gap: var(--ra-space-4);
-}
-
-.themeLabel {
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-body);
-  color: var(--ra-fg-secondary);
 }
 
 /* ---- Account section (danger zone) ---- */
