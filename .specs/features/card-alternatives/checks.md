@@ -25,35 +25,35 @@ For `emissary-of-tides-red` the catalog holds 21 tier 1 candidates, 64 more at t
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "needed is the slot's not-owned copies minus protected copies"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "returns needed 2 for a card missing both copies"`
 
-**C2** - Without `q`, groups come in the order `very_close`, `close`, `other_pitch`, `generic`, an empty group is absent, and no group holds more than 10 cards; for `emissary-of-tides-red` in the Katsu deck `very_close` holds exactly 10 (AC 2)
+**C2** - Without `q`, groups come in the order `very_close`, `close`, `other_pitch`, `generic`, an empty group is absent, and no group holds more than 10 cards; for `emissary-of-tides-red` in the Katsu deck `very_close` holds exactly 10 (AC 2) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "orders the four groups, drops empty ones and caps each at 10"`
 
-**C3** - `very_close` accepts a candidate exactly when `scoreCandidate(missing, candidate, TIER_1_CONFIG)` is not null and at least 0.90; table-driven over 9 cases, each rejecting on one gate: other pitch, no shared class, no shared type, no shared talent when the missing card has one, no shared keyword when the missing card has one, other equipment body slot, power delta 2, defense delta 2, score below 0.90 (AC 3)
+**C3** - `very_close` accepts a candidate exactly when `scoreCandidate(missing, candidate, TIER_1_CONFIG)` is not null and at least 0.90; table-driven over 9 cases, each rejecting on one gate: other pitch, no shared class, no shared type, no shared talent when the missing card has one, no shared keyword when the missing card has one, other equipment body slot, power delta 2, defense delta 2, score below 0.90 (AC 3) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "very_close applies every tier 1 gate"`
 
-**C4** - `close` accepts a candidate exactly when `scoreCandidate(missing, candidate, TIER_2_CONFIG)` is not null and at least 0.70: a zero-keyword-overlap candidate with power delta 2 is accepted, power delta 3 is rejected, a score below 0.70 is rejected (AC 4)
+**C4** - `close` accepts a candidate exactly when `scoreCandidate(missing, candidate, TIER_2_CONFIG)` is not null and at least 0.70: a zero-keyword-overlap candidate with power delta 2 is accepted, power delta 3 is rejected, a score below 0.70 is rejected (AC 4) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "close applies the tier 2 gates and floor"`
 
-**C5** - `other_pitch` accepts a candidate of a different pitch that `close` would accept at the missing card's pitch, and rejects one that `close` would reject at that pitch (no shared class) (AC 5)
+**C5** - `other_pitch` accepts a candidate of a different pitch that `close` would accept at the missing card's pitch, and rejects one that `close` would reject at that pitch (no shared class) (AC 5) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "other_pitch relaxes only the pitch"`
 
-**C6** - `generic` accepts a Generic-class candidate with the missing card's pitch, a shared type, the same body slot for equipment and power and defense within 2, and rejects one case per gate: non-Generic class, other pitch, no shared type, other body slot, power delta 3, defense delta 3 (AC 6)
+**C6** - `generic` accepts a Generic-class candidate with the missing card's pitch, a shared type, the same body slot for equipment and power and defense within 2, and rejects one case per gate: non-Generic class, other pitch, no shared type, other body slot, power delta 3, defense delta 3 (AC 6) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "generic applies its six gates"`
 
-**C7** - A candidate both `very_close` and `generic` would accept appears once, in `very_close`; across a full response for `emissary-of-tides-red` no `cardIdentifier` repeats (AC 7)
+**C7** - A candidate both `very_close` and `generic` would accept appears once, in `very_close`; across a full response for `emissary-of-tides-red` no `cardIdentifier` repeats (AC 7) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "lists a card once, in the strictest group"`
 
-**C8** - No response, grouped or `search`, contains the missing card's own identifier, a Hero card or a Token card; the search `q=Katsu` returns no Hero card (AC 8)
+**C8** - No response, grouped or `search`, contains the missing card's own identifier, a Hero card or a Token card; the search `q=Katsu` returns no Hero card (AC 8) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "never lists itself, a hero or a token"`
 
-**C9** - A candidate is dropped when it is banned in the format, not legal in the format, not legal for the deck's hero, or outside Silver Age rarities in a Silver Age deck; the same four rules drop it when the missing card sits in `equipment`; each of the 4 x 2 cases is a table row with a real catalog card (AC 9)
+**C9** - A candidate is dropped when it is banned in the format, not legal in the format, not legal for the deck's hero, or outside Silver Age rarities in a Silver Age deck; the same four rules drop it when the missing card sits in `equipment`; each of the 4 x 2 cases is a table row with a real catalog card (AC 9) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/legality/card-legality.spec.ts -t "rejects each per-card rule in mainboard and equipment"`
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "drops candidates the per-card legality rejects"`
 
-**C10** - The copy limit counts the candidate's copies in every slot plus `needed`: in Classic Constructed, 1 held + 2 needed is listed and 2 held + 2 needed is not; in Blitz, 0 held + 2 needed is listed and 1 held + 2 needed is not; a Legendary card with 0 held + 1 needed is listed and 1 held + 1 needed is not (AC 10)
+**C10** - The copy limit counts the candidate's copies in every slot plus `needed`: in Classic Constructed, 1 held + 2 needed is listed and 2 held + 2 needed is not; in Blitz, 0 held + 2 needed is listed and 1 held + 2 needed is not; a Legendary card with 0 held + 1 needed is listed and 1 held + 1 needed is not (AC 10) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "enforces the copy limit across slots"`
 
-**C11** - Inside a group, cards sort by score plus 0.05 when `freeCopies >= needed`: an owned card 0.04 below an unowned one sorts first, an owned card 0.06 below sorts second, equal adjusted scores sort by name ascending, and an owned card never moves into a stricter group (AC 11)
+**C11** - Inside a group, cards sort by score plus 0.05 when `freeCopies >= needed`: an owned card 0.04 below an unowned one sorts first, an owned card 0.06 below sorts second, equal adjusted scores sort by name ascending, and an owned card never moves into a stricter group (AC 11) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "orders by score with the owned bonus of 0.05"`
 
 **C12** - `freeCopies` is owned copies across active sources minus copies in this deck in any slot, floored at 0: owned 3 with 1 in `mainboard` gives 2; owned 1 with 2 in the deck gives 0; copies in an inactive source do not count (AC 12)
@@ -65,10 +65,10 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/al
 **C14** - `priceCents` and `productUrl` are both `null` and the card is still listed when the store has no row for it, when its quantity is 0, when its price is null, and when no active `cupula-dt` store exists (AC 14)
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "lists out-of-stock cards with null price"`
 
-**C15** - Each card's `rationale` carries `tier`, `pitch`, `sharedClasses`, `powerDelta`, `defenseDelta`, `sharedKeywords` equal to `describeRationale(missing, card, tier)`, plus `relaxed`: `null` in `very_close` and `close`, `pitch` in `other_pitch`, `class` in `generic` (AC 15)
+**C15** - Each card's `rationale` carries `tier`, `pitch`, `sharedClasses`, `powerDelta`, `defenseDelta`, `sharedKeywords` equal to `describeRationale(missing, card, tier)`, plus `relaxed`: `null` in `very_close` and `close`, `pitch` in `other_pitch`, `class` in `generic` (AC 15) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "rationale carries the swap detail and the relaxed rule"`
 
-**C16** - With `q`, the response is exactly one group `search`, at most 10 cards whose name contains `q` ignoring case, names starting with `q` before names only containing it, filtered by C8, C9 and C10: `q=sink` lists `sink-below-red` before any card that only contains "sink"; a query matching more than 10 legal cards returns 10 (AC 16)
+**C16** - With `q`, the response is exactly one group `search`, at most 10 cards whose name contains `q` ignoring case, names starting with `q` before names only containing it, filtered by C8, C9 and C10: `q=sink` lists `sink-below-red` before any card that only contains "sink"; a query matching more than 10 legal cards returns 10 (AC 16) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "search group matches by name with legality"`
 
 **C17** - `q` bounds: 1 character after trimming returns `400`, 2 returns `200`, 50 returns `200`, 51 returns `400`; `q="  a  "` returns `400` (AC 17)
