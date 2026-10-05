@@ -365,6 +365,31 @@ describe('card replacements (E2E)', () => {
     expect(row!.resolvedAt).not.toBeNull();
   });
 
+  it('a composition save that drops the replacement closes it: the save and scratch-create responses carry replacements', async () => {
+    const owner = await fixture.scenario();
+    const id = await replacementId(owner);
+    const cards = Object.entries(await fixture.deckCards(owner.deckId)).map(([key, quantity]) => ({
+      cardIdentifier: key.split('@')[0]!,
+      slot: key.split('@')[1]!,
+      quantity,
+    }));
+
+    const kept = await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+      .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards })
+      .expect(200);
+    expect(kept.body.replacements).toEqual([expect.objectContaining({ id, originalName: 'Emissary of Tides', quantity: 2 })]);
+
+    const dropped = await fixture.put(`/api/decks/${owner.deckId}`, owner.jwt)
+      .send({ heroIdentifier: KATSU, format: 'Classic Constructed', cards: cards.filter((c) => c.cardIdentifier !== COAX) })
+      .expect(200);
+    expect(dropped.body.replacements).toEqual([]);
+
+    const scratch = await fixture.post('/api/decks', owner.jwt)
+      .send({ heroIdentifier: KATSU, format: 'Classic Constructed' })
+      .expect(201);
+    expect(scratch.body.replacements).toEqual([]);
+  });
+
   it('keep closes the replacement and leaves the deck', async () => {
     const owner = await fixture.scenario();
     const id = await replacementId(owner);

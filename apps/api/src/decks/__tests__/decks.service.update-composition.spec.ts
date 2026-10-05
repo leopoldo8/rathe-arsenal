@@ -661,6 +661,61 @@ describe('DecksService.updateComposition', () => {
       expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(['broken'], manager);
     });
 
+    it('closes replacements the save broke as removed: in the equipment slot', async () => {
+      // The replacement sits in equipment; the save leaves that slot without it, though mainboard holds a copy.
+      const manager = setupTransaction({
+        freshCards: [buildDeckCardEntity({ cardIdentifier: COAX, quantity: 2, slot: 'mainboard' })],
+      });
+      replacementsQueryService.loadActive.mockResolvedValueOnce([replacement('r-equipment', 2, 'equipment')]).mockResolvedValue([]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2, 'mainboard')]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(['r-equipment'], manager);
+    });
+
+    it('keeps replacements the save still covers: the response lists them with the original name', async () => {
+      catalogService.getCard.mockReturnValue({ name: 'Emissary of Tides' } as never);
+      setupTransaction({ freshCards: coaxCopies(2) });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r1', 2)]);
+
+      const result = await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2)]));
+
+      expect(result.replacements).toEqual([
+        {
+          id: 'r1',
+          slot: 'mainboard',
+          originalCardIdentifier: 'emissary-of-tides-red',
+          originalName: 'Emissary of Tides',
+          replacementCardIdentifier: COAX,
+          quantity: 2,
+          originalOwned: false,
+        },
+      ]);
+    });
+
+    it('closes replacements the save broke as removed: the response no longer lists them', async () => {
+      setupTransaction({ freshCards: [] });
+      replacementsQueryService.loadActive.mockResolvedValueOnce([replacement('r1', 2)]).mockResolvedValue([]);
+
+      const result = await service.updateComposition(DECK_ID, USER_ID, buildDto([]));
+
+      expect(result.replacements).toEqual([]);
+    });
+
+    it('keeps replacements the save still covers: in the equipment slot', async () => {
+      const manager = setupTransaction({
+        freshCards: [buildDeckCardEntity({ cardIdentifier: COAX, quantity: 2, slot: 'equipment' })],
+      });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r-equipment', 2, 'equipment')]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2, 'equipment')]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith([], manager);
+      for (const call of mockedReadiness.mock.calls) {
+        expect(call[6]).toEqual(new Map([[`${COAX}::equipment`, 2]]));
+      }
+    });
+
     it('keeps replacements the save still covers', async () => {
       // Three copies of the replacement card against one record of quantity 2: two copies stay
       // protected from stand-ins, the third may still get one.
