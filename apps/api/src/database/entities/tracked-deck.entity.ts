@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -29,6 +30,7 @@ import { UserEntity } from './user.entity';
  * The class-level @Index mirrors the migration's partial unique index exactly so
  * that `typeorm schema:log` reports zero drift.
  */
+@Check('CHK_tracked_deck_status_valid', `"status" IN ('idea', 'building', 'ready', 'active', 'retired')`)
 @Entity({ name: 'tracked_deck' })
 @Index(['userId', 'fabraryUlid'], { unique: true, where: '"fabraryUlid" IS NOT NULL' })
 export class TrackedDeckEntity {

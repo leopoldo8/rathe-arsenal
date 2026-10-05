@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -32,6 +33,9 @@ export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
  * `swap_suggestion.status` is, so a later value is a constraint replacement
  * and not a Postgres enum rebuild.
  */
+@Check('CHK_card_replacement_status_valid', `status IN ('active', 'kept', 'reverted', 'removed')`)
+@Check('CHK_card_replacement_picked_from_valid', `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search')`)
+@Check('CHK_card_replacement_quantity_positive', `quantity > 0`)
 @Entity({ name: 'card_replacement' })
 @Index(['trackedDeckId', 'status'])
 export class CardReplacementEntity {
