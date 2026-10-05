@@ -169,7 +169,7 @@ describe('CsvSourceRow', () => {
     });
 
     it('a selection that lands late does not eat a keystroke', async () => {
-      onTestFinished(() => vi.unstubAllGlobals());
+      onTestFinished(() => { vi.unstubAllGlobals(); });
       const pendingFrames: FrameRequestCallback[] = [];
       vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { pendingFrames.push(cb); return 0; });
       renderRow(buildSource());
