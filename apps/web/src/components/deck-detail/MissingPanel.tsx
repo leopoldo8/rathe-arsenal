@@ -1,12 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IBreakdownEntry } from '../../api/deck-detail';
+import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacements';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { useVariantFetchPolling } from '../useVariantFetchPolling';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { MissingRowBuy, MissingRowStoreMeta, MissingRowVariants } from './MissingRowStore';
 import { MissingStoreSummary } from './MissingStoreSummary';
+import { ReplacementMark } from './ReplacementMark';
 import { entryKey } from './deckDetailModel';
 import { resolveRowStore } from './missingStoreModel';
 import { MISSING_PANEL_ID } from './DeckStatusStrip';
@@ -23,7 +25,13 @@ interface IMissingPanelProps {
   readonly isCooldownActive: boolean;
   readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
+  /** Active replacements of the deck; a row for a replacement's own copies is marked and offers no alternatives. */
+  readonly replacements?: readonly IDeckReplacement[];
+  readonly onOpenAlternatives?: ((target: IAlternativesTarget) => void) | undefined;
 }
+
+/** Slots whose cards never get stand-ins, so they get no alternatives either. */
+const NON_REPLACEABLE_SLOTS: ReadonlySet<string> = new Set(['hero', 'weapon']);
 
 const PITCH_CLASS = {
   1: styles.pitchRed ?? '',
@@ -46,6 +54,8 @@ export function MissingPanel({
   isCooldownActive,
   onPollingChange,
   onShoppingRetry,
+  replacements = [],
+  onOpenAlternatives,
 }: IMissingPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const populated = shoppingData?.kind === 'populated' ? shoppingData : null;
@@ -85,11 +95,21 @@ export function MissingPanel({
         <ul className={styles.list}>
           {entries.map((entry) => {
             const store = resolveRowStore(shoppingData, entry.cardIdentifier);
+            const held = replacements.filter(
+              (replacement) =>
+                replacement.replacementCardIdentifier === entry.cardIdentifier && replacement.slot === entry.slot,
+            );
+            const heldCopies = held.reduce((sum, replacement) => sum + replacement.quantity, 0);
+            const canReplace =
+              onOpenAlternatives !== undefined &&
+              !NON_REPLACEABLE_SLOTS.has(entry.slot) &&
+              entry.quantity > heldCopies;
             return (
               <li key={entryKey(entry)} className={styles.row} data-testid="missing-row">
                 <span className={`${styles.pitchBar} ${pitchClass(entry.pitch)}`} aria-hidden="true" />
                 <div className={styles.body}>
                   <span className={styles.name}>{entry.name}</span>
+                  {held[0] !== undefined && <ReplacementMark replacement={held[0]} />}
                   <span className={styles.meta} data-testid="missing-row-meta">
                     {entry.slot !== 'mainboard' && (
                       <span>{t(`swaps.slot.${entry.slot}`, { defaultValue: entry.slot })} </span>
@@ -105,6 +125,18 @@ export function MissingPanel({
                 <span className={styles.qty}>{t('deckDetail.missingCopies', { count: entry.quantity })}</span>
                 <span className={styles.action}>
                   <MissingRowBuy store={store} cardName={entry.name} />
+                  {canReplace && (
+                    <button
+                      type="button"
+                      className={styles.alternatives}
+                      aria-label={t('alternatives.openAria', { name: entry.name })}
+                      onClick={() =>
+                        onOpenAlternatives({ cardIdentifier: entry.cardIdentifier, name: entry.name, slot: entry.slot })
+                      }
+                    >
+                      {t('alternatives.open')}
+                    </button>
+                  )}
                 </span>
                 <span className={styles.owned}>
                   <MarkOwnedButton

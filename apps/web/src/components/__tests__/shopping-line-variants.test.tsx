@@ -404,6 +404,7 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
+      replacements: [],
       shoppingLine: makePopulated(shoppingLineOverrides),
     };
   }
@@ -462,6 +463,7 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
+      replacements: [],
     };
 
     const result = computeVariantFetchInterval(dataWithoutShoppingLine, NOW_MS);
@@ -548,6 +550,7 @@ describe('computeVariantFetchInterval: polling stop conditions', () => {
       legality: { category: 'legal', reasons: [] },
       totalCards: 40,
       latestSnapshot: null,
+      replacements: [],
       shoppingLine: { kind: 'unscraped' },
     };
 

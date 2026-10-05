@@ -89,31 +89,31 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/al
 **C22** - A `200` body has `needed` and `groups[]`, each group `group` and `cards[]`, each card exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `freeCopies`, `priceCents`, `productUrl`, `rationale` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "answers with the documented shape"`
 
-**C23** - The missing panel shows an "Alternatives" control on a `mainboard` row and an `equipment` row, none on a `hero` or `weapon` row, and none on a row whose copies are all held by an active replacement (AC 22)
+**C23** - The missing panel shows an "Alternatives" control on a `mainboard` row and an `equipment` row, none on a `hero` or `weapon` row, and none on a row whose copies are all held by an active replacement (AC 22) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "shows Alternatives only on replaceable rows"`
 
-**C24** - The deck's swaps panel shows the "Alternatives" control on an approved row and not on a pending or rejected row (AC 23)
+**C24** - The deck's swaps panel shows the "Alternatives" control on an approved row and not on a pending or rejected row (AC 23) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/SwapsPanel.spec.tsx -t "shows Alternatives on approved rows only"`
 
-**C25** - The open sheet names the missing card and its `needed` count, shows each group under its localized label in response order, and each card's art, name, pitch and localized rationale (AC 24)
+**C25** - The open sheet names the missing card and its `needed` count, shows each group under its localized label in response order, and each card's art, name, pitch and localized rationale (AC 24) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "renders the groups and each card"`
 
-**C26** - A card with `freeCopies` 2 and `needed` 2 shows "owned"; a card with `freeCopies` 1 and `needed` 2 shows "1 free" (en-US) (AC 25)
+**C26** - A card with `freeCopies` 2 and `needed` 2 shows "owned"; a card with `freeCopies` 1 and `needed` 2 shows "1 free" (en-US) (AC 25) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "marks owned and free copies"`
 
-**C27** - A not-owned card with `priceCents` 350 shows "R$ 3,50" linking to its `productUrl`; a not-owned card with `priceCents: null` shows "out of stock"; an owned card shows no price (AC 26)
+**C27** - A not-owned card with `priceCents` 350 shows "R$ 3,50" linking to its `productUrl`; a not-owned card with `priceCents: null` shows "out of stock"; an owned card shows no price (AC 26) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "shows price or out of stock for cards not owned"`
 
-**C28** - While the request is pending the sheet shows its loading state and no group (AC 27)
+**C28** - While the request is pending the sheet shows its loading state and no group (AC 27) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "shows loading while fetching"`
 
-**C29** - When the request fails with `500`, the sheet shows the localized error and a retry control that refetches (AC 28)
+**C29** - When the request fails with `500`, the sheet shows the localized error and a retry control that refetches (AC 28) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "shows error with retry"`
 
-**C30** - When the response has `groups: []`, the sheet shows the no-alternatives message and the name search input has focus (AC 29)
+**C30** - When the response has `groups: []`, the sheet shows the no-alternatives message and the name search input has focus (AC 29) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "focuses the search when nothing fits"`
 
-**C31** - Typing "s" sends no search request; typing "si" requests with `q=si` and the sheet shows the `search` group in place of the four groups (AC 30)
+**C31** - Typing "s" sends no search request; typing "si" requests with `q=si` and the sheet shows the `search` group in place of the four groups (AC 30) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "searches by name from 2 characters"`
 
 ### S2 - Pick an alternative as a replacement, and undo it · 20 files · 260 KB · ~65k
@@ -186,19 +186,19 @@ Proof: `! grep -rnE "(CardReplacementEntity|replacementRepo|replacements?Repo)[^
 **C52** - Against Postgres, the migration creates `card_replacement` and an insert fails for `status: 'open'`, `pickedFrom: 'other'`, `quantity: 0`, an `originalCardIdentifier` of 129 characters and a `slot` of 65 characters; a valid row inserts; dropping the deck cascades it (doors 1-4) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' card-replacement.migration -t "enforces the table's constraints"`
 
-**C53** - Tapping a card in the sheet sends `POST /api/decks/:deckId/replacements` with that card's identifier and `pickedFrom` equal to its group (`search` for a search result), closes the sheet, and invalidates the deck detail and swaps queries (AC 51)
+**C53** - Tapping a card in the sheet sends `POST /api/decks/:deckId/replacements` with that card's identifier and `pickedFrom` equal to its group (`search` for a search result), closes the sheet, and invalidates the deck detail and swaps queries (AC 51) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "a tap sends the pick with its group"`
 
-**C54** - A pick answered with `409` shows the localized message of `NOTHING_TO_REPLACE`, `REPLACEMENT_ILLEGAL` and `REPLACEMENT_NOT_ACTIVE` respectively, and invalidates the deck detail query (AC 52)
+**C54** - A pick answered with `409` shows the localized message of `NOTHING_TO_REPLACE`, `REPLACEMENT_ILLEGAL` and `REPLACEMENT_NOT_ACTIVE` respectively, and invalidates the deck detail query (AC 52) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "shows the localized 409 message"`
 
-**C55** - A deck list cell whose card has an active replacement in that slot shows "in place of Emissary of Tides" (en-US) and an Undo control; a cell without one shows neither (AC 53)
+**C55** - A deck list cell whose card has an active replacement in that slot shows "in place of Emissary of Tides" (en-US) and an Undo control; a cell without one shows neither (AC 53) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "marks a replacement with its original and Undo"`
 
-**C56** - A missing panel row for an unowned active replacement shows "in place of Emissary of Tides" (AC 54)
+**C56** - A missing panel row for an unowned active replacement shows "in place of Emissary of Tides" (AC 54) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "marks a missing replacement with its original"`
 
-**C57** - Undo sends `POST /api/replacements/:id/revert` for that replacement's id and invalidates the deck detail and swaps queries (AC 55)
+**C57** - Undo sends `POST /api/replacements/:id/revert` for that replacement's id and invalidates the deck detail and swaps queries (AC 55) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "Undo sends the revert"`
 
 **C58** - In the browser, on the fixture deck: open Alternatives from a missing row, see the groups, tap the first card, see "in place of" on the deck list, tap Undo, see the original back in the missing panel (S1, S2 independent tests)
@@ -212,10 +212,10 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts
 **C60** - For a replacement of quantity 2: owning 2 copies of the original with none in the deck gives `originalOwned: true`; owning 1 gives false; owning 3 with 2 already in another slot of this deck gives false; copies in an inactive source do not count (AC 57) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.replacements.spec.ts -t "originalOwned compares free copies with the quantity"`
 
-**C61** - A replacement cell with `originalOwned: true` shows the prompt with Keep and Go back controls (AC 58)
+**C61** - A replacement cell with `originalOwned: true` shows the prompt with Keep and Go back controls (AC 58) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "prompts keep or go back when the original is owned"`
 
-**C62** - A replacement cell with `originalOwned: false` shows no prompt (AC 59)
+**C62** - A replacement cell with `originalOwned: false` shows no prompt (AC 59) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "shows no prompt while the original is not owned"`
 
 **C63** - Keep on an active replacement returns `200` with `status: kept` and `resolvedAt` set, leaves `deck_card` unchanged, writes a new snapshot, and the deck detail no longer lists it (AC 60) · done
@@ -224,17 +224,17 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts
 **C64** - After keeping an unowned `coax-a-commotion-red` replacement and owning one of its tier 1 candidates, the next recompute lists a `substituted` entry for a `coax-a-commotion-red` copy (AC 61) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a kept replacement can get a stand-in"`
 
-**C65** - Go back sends `POST /api/replacements/:id/revert` and invalidates the deck detail and swaps queries; Keep sends `POST /api/replacements/:id/keep` and invalidates the same (AC 62, AC 60)
+**C65** - Go back sends `POST /api/replacements/:id/revert` and invalidates the deck detail and swaps queries; Keep sends `POST /api/replacements/:id/keep` and invalidates the same (AC 62, AC 60) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "Go back and Keep send their routes"`
 
-**C66** - With an active replacement whose original is owned, the home deck tile and the `/swaps` page render no keep-or-go-back prompt (AC 63)
+**C66** - With an active replacement whose original is owned, the home deck tile and the `/swaps` page render no keep-or-go-back prompt (AC 63) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/home/__tests__/DeckTile.spec.tsx -t "shows no replacement prompt"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-swaps.test.tsx -t "shows no replacement prompt"`
 
 **C67** - A committed keep and a committed revert each log exactly one `replacements.resolved` line with `userId`, `trackedDeckId`, `replacementId` and the new status; a refused one logs none (AC 64) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/replacements.service.spec.ts -t "logs replacements.resolved once per committed resolution"`
 
-**C68** - Every new key (sheet, group labels, marks, prompt, `apiErrors.NOTHING_TO_REPLACE`, `apiErrors.REPLACEMENT_ILLEGAL`, `apiErrors.REPLACEMENT_NOT_ACTIVE`) exists with non-empty copy in pt-BR and in en-US, and the catalogs keep key parity (AC 65)
+**C68** - Every new key (sheet, group labels, marks, prompt, `apiErrors.NOTHING_TO_REPLACE`, `apiErrors.REPLACEMENT_ILLEGAL`, `apiErrors.REPLACEMENT_NOT_ACTIVE`) exists with non-empty copy in pt-BR and in en-US, and the catalogs keep key parity (AC 65) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/catalog-parity.spec.ts`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "has copy for every new key in both locales"`
 

@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ISubstitutedEntry } from '../../api/deck-detail';
 import type { ISwapRow } from '../../api/swaps';
+import type { IAlternativesTarget } from '../../api/replacements';
 import { CardArt } from '../card-art/CardArt';
 import {
   groupSwaps,
@@ -20,6 +21,7 @@ interface ISwapsPanelProps {
   readonly onApprove: (swapId: string) => void;
   readonly onReject: (swapId: string) => void;
   readonly onUndo: (swapId: string, decision: 'approved' | 'rejected') => void;
+  readonly onOpenAlternatives?: ((target: IAlternativesTarget) => void) | undefined;
 }
 
 const BAND_CLASS = {
@@ -37,9 +39,20 @@ interface ISwapCardProps {
   readonly onApprove: (swapId: string) => void;
   readonly onReject: (swapId: string) => void;
   readonly onUndo: (swapId: string, decision: 'approved' | 'rejected') => void;
+  readonly onOpenAlternatives?: ((target: IAlternativesTarget) => void) | undefined;
 }
 
-function SwapCard({ swap, quantity, swapId, decision, isBusy, onApprove, onReject, onUndo }: ISwapCardProps): React.ReactElement {
+function SwapCard({
+  swap,
+  quantity,
+  swapId,
+  decision,
+  isBusy,
+  onApprove,
+  onReject,
+  onUndo,
+  onOpenAlternatives,
+}: ISwapCardProps): React.ReactElement {
   const { t } = useTranslation();
   const { original, match } = swap;
   const isDisabled = isBusy || swapId === null;
@@ -108,6 +121,18 @@ function SwapCard({ swap, quantity, swapId, decision, isBusy, onApprove, onRejec
           </span>
         ) : (
           <span className={styles.buttons}>
+            {decision === 'approved' && onOpenAlternatives !== undefined && (
+              <button
+                type="button"
+                className={styles.undo}
+                aria-label={t('alternatives.openAria', { name: original.name })}
+                onClick={() =>
+                  onOpenAlternatives({ cardIdentifier: original.cardIdentifier, name: original.name, slot: original.slot })
+                }
+              >
+                {t('alternatives.open')}
+              </button>
+            )}
             <span className={styles.decided}>
               {decision === 'approved' ? t('deckDetail.swapApplied') : t('deckDetail.swapRejected')}
             </span>
@@ -134,6 +159,7 @@ export function SwapsPanel({
   onApprove,
   onReject,
   onUndo,
+  onOpenAlternatives,
 }: ISwapsPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const groups = useMemo(() => groupSwaps(swaps, deckSwaps), [swaps, deckSwaps]);
@@ -164,6 +190,7 @@ export function SwapsPanel({
                 onApprove={onApprove}
                 onReject={onReject}
                 onUndo={onUndo}
+                onOpenAlternatives={onOpenAlternatives}
               />
             );
           })}

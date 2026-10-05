@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import type { ISwapRow } from '../../../api/swaps';
 import { breakdown, swap, storedSwap } from './deckDetailTestData';
 
@@ -75,5 +75,47 @@ describe('SwapsPanel grouping', () => {
 
     expect(screen.getByTestId('swap-card')).toHaveAttribute('data-decision', 'approved');
     expect(screen.getByRole('button', { name: /desfazer|undo/i })).toBeEnabled();
+  });
+});
+
+describe('SwapsPanel — alternatives control', () => {
+  it('shows Alternatives on approved rows only', () => {
+    const onOpenAlternatives = vi.fn();
+    render(
+      <SwapsPanel
+        swaps={
+          breakdown({
+            substituted: [
+              swap({ cardIdentifier: 'argh', name: 'Argh', quantity: 1 }, 'approved-sub'),
+              swap({ cardIdentifier: 'bash', name: 'Bash', quantity: 1 }, 'pending-sub'),
+              swap({ cardIdentifier: 'crush', name: 'Crush', quantity: 1 }, 'rejected-sub'),
+            ],
+          }).substituted
+        }
+        deckSwaps={
+          [
+            storedSwap('s1', 'argh', 'approved-sub', 1, 'approved'),
+            storedSwap('s2', 'bash', 'pending-sub', 1, 'pending'),
+            storedSwap('s3', 'crush', 'rejected-sub', 1, 'rejected'),
+          ] as unknown as readonly ISwapRow[]
+        }
+        pendingSwapId={null}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+        onUndo={vi.fn()}
+        onOpenAlternatives={onOpenAlternatives}
+      />,
+    );
+    const controls = screen.getAllByRole('button', { name: /alternativas/i });
+    const cards = screen.getAllByTestId('swap-card');
+    const byDecision = (decision: string) => cards.find((card) => card.getAttribute('data-decision') === decision)!;
+
+    expect(controls).toHaveLength(1);
+    expect(within(byDecision('approved')).getByRole('button', { name: /alternativas/i })).toBe(controls[0]);
+    expect(within(byDecision('pending')).queryByRole('button', { name: /alternativas/i })).toBeNull();
+    expect(within(byDecision('rejected')).queryByRole('button', { name: /alternativas/i })).toBeNull();
+
+    fireEvent.click(controls[0]!);
+    expect(onOpenAlternatives).toHaveBeenCalledWith({ cardIdentifier: 'argh', name: 'Argh', slot: 'mainboard' });
   });
 });

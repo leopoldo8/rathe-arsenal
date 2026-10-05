@@ -7,6 +7,9 @@ export const apiErrors = {
   EMAIL_DELIVERY_FAILED: 'Não foi possível enviar o e-mail. Tente novamente mais tarde.',
   USER_NOT_FOUND: 'Usuário não encontrado.',
   INVALID_CARD_IDENTIFIER: 'Uma das cartas não existe no catálogo.',
+  NOTHING_TO_REPLACE: 'Esta carta não tem mais cópias faltando para substituir.',
+  REPLACEMENT_ILLEGAL: 'Essa carta não pode ocupar esse lugar no deck.',
+  REPLACEMENT_NOT_ACTIVE: 'Esta substituição já foi resolvida.',
   generic: 'Algo deu errado. Tente novamente.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Muitas tentativas. Aguarde um momento e tente novamente.',

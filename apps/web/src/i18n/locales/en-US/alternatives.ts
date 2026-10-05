@@ -1,0 +1,42 @@
+export const alternatives = {
+  // Control on the missing and swaps panels
+  open: 'Alternatives',
+  openAria: 'See alternatives for {{name}}',
+
+  // Sheet
+  title: 'Alternatives for {{name}}',
+  needed_one: 'Takes the place of {{count}} missing copy.',
+  needed_other: 'Takes the place of {{count}} missing copies.',
+  close: 'Close',
+  loading: 'Looking for alternatives…',
+  retry: 'Try again',
+  empty: 'No card in the catalog fits this one. Search by name.',
+  searchLabel: 'Search by name',
+  searchPlaceholder: 'Card name',
+  searchHint: 'Type at least 2 letters to search the whole catalog.',
+  searchEmpty: 'No card with that name can go in this deck.',
+  listAria: 'Alternatives',
+  pickAria: 'Use {{name}} in its place',
+  groupVeryClose: 'Very close',
+  groupClose: 'Close',
+  groupOtherPitch: 'Another pitch',
+  groupGeneric: 'Generic',
+  groupSearch: 'Search results',
+  owned: 'owned',
+  free_one: '{{count}} free',
+  free_other: '{{count}} free',
+  outOfStock: 'out of stock',
+  buyAria: 'Buy {{name}} at the store',
+  relaxedPitch: 'The pitch differs from the original.',
+  relaxedClass: 'A Generic card, outside the original class.',
+
+  // Deck list marks and prompt
+  inPlaceOf: 'in place of {{name}}',
+  undo: 'Undo',
+  undoAria: 'Undo the replacement of {{name}}',
+  originalOwned: 'You now have the original',
+  keep: 'Keep',
+  keepAria: 'Keep the replacement instead of {{name}}',
+  goBack: 'Go back',
+  goBackAria: 'Go back to {{name}}',
+} as const;
