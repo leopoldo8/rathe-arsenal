@@ -9,7 +9,7 @@ import {
 import type { TSupportedFormat } from '../../src/legality/types';
 
 const KATSU_ADULT = catalog.getCard('katsu-the-wanderer');
-const KATSU_YOUNG = catalog.getCard('katsu');
+const SILVER_AGE_HERO = catalog.getCard('dorinthea-quicksilver-prodigy');
 
 interface IRuleCase {
   readonly rule: string;
@@ -20,8 +20,9 @@ interface IRuleCase {
   readonly code: string;
 }
 
-// Real catalog cards, one per rule and slot. The Silver Age rarity rows use cards the
-// catalog already leaves out of Silver Age, so the format rule reports them first.
+// Real catalog cards, one per rule and slot. The Silver Age rarity rows use Blade Dance (Marvel rarity,
+// legal in Silver Age and for these young heroes), the one real card that reaches the rarity rule; no
+// equipment card does, so that row uses it too.
 const RULE_CASES: readonly IRuleCase[] = [
   { rule: 'banned', slot: 'mainboard', cardIdentifier: 'art-of-war-yellow', hero: KATSU_ADULT, format: 'Classic Constructed', code: 'card_banned' },
   { rule: 'banned', slot: 'equipment', cardIdentifier: 'bloodsheath-skeleta', hero: KATSU_ADULT, format: 'Classic Constructed', code: 'card_banned' },
@@ -29,8 +30,8 @@ const RULE_CASES: readonly IRuleCase[] = [
   { rule: 'not legal in the format', slot: 'equipment', cardIdentifier: 'diamond-hands', hero: KATSU_ADULT, format: 'Classic Constructed', code: 'card_not_in_format' },
   { rule: 'not legal for the hero', slot: 'mainboard', cardIdentifier: 'a-good-clean-fight-red', hero: KATSU_ADULT, format: 'Classic Constructed', code: 'card_not_for_hero' },
   { rule: 'not legal for the hero', slot: 'equipment', cardIdentifier: 'achilles-accelerator', hero: KATSU_ADULT, format: 'Classic Constructed', code: 'card_not_for_hero' },
-  { rule: 'outside Silver Age rarities', slot: 'mainboard', cardIdentifier: 'amethyst-amulet-blue', hero: KATSU_YOUNG, format: 'Silver Age', code: 'card_not_in_format' },
-  { rule: 'outside Silver Age rarities', slot: 'equipment', cardIdentifier: 'bloodsheath-skeleta', hero: KATSU_YOUNG, format: 'Silver Age', code: 'card_not_in_format' },
+  { rule: 'outside Silver Age rarities', slot: 'mainboard', cardIdentifier: 'blade-dance', hero: SILVER_AGE_HERO, format: 'Silver Age', code: 'rarity_not_allowed' },
+  { rule: 'outside Silver Age rarities', slot: 'equipment', cardIdentifier: 'blade-dance', hero: SILVER_AGE_HERO, format: 'Silver Age', code: 'rarity_not_allowed' },
 ];
 
 describe('per-card legality', () => {
