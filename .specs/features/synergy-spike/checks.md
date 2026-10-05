@@ -59,7 +59,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C11:" scripts/synergy-spike/_
 **C12** - Running `heuristic` twice over the same decks produces byte-identical run files (plan AC 12) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C12:" scripts/synergy-spike/__tests__/run.test.ts`
 
-**C13** - At HEAD no verdict exists in any committed `out/judging-sheet.csv` (the verdict column is empty on every row), so the heuristic formula was fixed before verdicts; the owner rule that it never changes after verdicts is recorded in the file header of `candidates/heuristic.ts` (plan AC 13) · done
+**C13** - The heuristic formula file `candidates/heuristic.ts` has no commit after the first commit that wrote a non-empty verdict to `out/judging-sheet.csv` (computed from `git log`, no hardcoded sha), has no uncommitted change, and carries the owner rule that it never changes after verdicts in its file header (plan AC 13) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C13:" scripts/synergy-spike/__tests__/run.test.ts`
 
 **C14** - `cooccurrence` with 0 public decklists found (minimum 20) writes `out/runs/cooccurrence/<ULID>.json` with `status` `untestable` and `found` 0 and exits 0 (plan AC 14) · done
@@ -129,6 +129,9 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C31:" scripts/synergy-spike/_
 
 **C33** - `pnpm synergy:judge` serves a local page on `127.0.0.1` that shows each sheet row with its card art, rules text and the deck list, and writes each vote straight to `judging-sheet.csv`: a posted `yes` changes only that row's `verdict`; `maybe`, an unknown card, a missing `verdict` and a non-JSON body each answer `400` and leave the file byte-identical; the page payload carries no candidate name, `rank`, `runs` or `candidate` field (owner request 2026-10-04, keeps AC on the blind sheet) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C33:" scripts/synergy-spike/__tests__/judge.test.ts`
+
+**C34** - The sheet's row order depends only on which (deck, card) pairs are on it, never on which candidate was added when: a sheet built in two steps (candidate A's 10 cards, then candidate B's 10 different cards) has the same 20-row order as one built in a single step, and A's cards are neither the first 10 nor the last 10 rows (blindness through row order; added after the verifier's finding, 2026-10-04) · done
+Proof: `pnpm exec tsx --test --test-name-pattern "^C34:" scripts/synergy-spike/__tests__/sheet.test.ts`
 
 **C32** - The spike scripts typecheck, the whole repo typechecks and lints, and the engine suite is green · done
 Proof: `pnpm exec tsc --noEmit -p scripts/synergy-spike/tsconfig.json`
