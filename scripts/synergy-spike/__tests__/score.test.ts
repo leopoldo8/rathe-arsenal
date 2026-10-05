@@ -105,11 +105,12 @@ test('C26: PASS on 3 decks writes the STOP line for that candidate, PASS on 2 do
   assert.doesNotMatch(two.result as string, /passed on 3 decks/);
 });
 
-test('C27: with all five candidates run and none passing on 3 decks the result says all were tried', () => {
+test('C27: with all six candidates run and none passing on 3 decks the result says all were tried', () => {
   const run = score(scenario([
     ...allDecks('gpt-6.1-sol', 3),
     ...allDecks('gemini-3.8-flash', 2),
     ...allDecks('mimo-v2.6-pro', 1),
+    ...allDecks('opus-5.5', 2),
     ...allDecks('heuristic', 4),
     ...DECKS.map((deck): IScenarioRun => ({ candidate: 'cooccurrence', deck, yes: 0, status: 'untestable', extra: { found: 0, minimum: 20 } })),
   ]));
@@ -127,7 +128,15 @@ test('C28: the CONTINUE line names the next candidate in the agreed order', () =
     ...allDecks('gemini-3.8-flash', 3),
     ...allDecks('mimo-v2.6-pro', 3),
   ]));
-  assert.match(afterThree.result as string, /^CONTINUE: next candidate is heuristic$/m);
+  assert.match(afterThree.result as string, /^CONTINUE: next candidate is opus-5\.5$/m);
+
+  const afterFour = score(scenario([
+    ...allDecks('gpt-6.1-sol', 3),
+    ...allDecks('gemini-3.8-flash', 3),
+    ...allDecks('mimo-v2.6-pro', 3),
+    ...allDecks('opus-5.5', 3),
+  ]));
+  assert.match(afterFour.result as string, /^CONTINUE: next candidate is heuristic$/m);
 });
 
 test('C29: an untestable or failed deck shows its status in place of a count and counts as tried', () => {

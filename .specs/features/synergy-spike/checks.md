@@ -68,13 +68,13 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C14:" scripts/synergy-spike/_
 
 ### S5 - the three language-model candidates · 3 files · 24 KB · ~22k
 
-**C15** - `pnpm synergy:run <gpt-6.1-sol|gemini-3.8-flash|mimo-v2.6-pro|llm-all>` with `OPENROUTER_API_KEY` unset exits 1 before any request is made (the injected fetch is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
+**C15** - `pnpm synergy:run <gpt-6.1-sol|gemini-3.8-flash|mimo-v2.6-pro|opus-5.5|llm-all>` with `OPENROUTER_API_KEY` unset exits 1 before any request is made (the injected fetch is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C15:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C16** - For each of the 3 candidates one deck sends exactly 1 POST to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, the pinned model id (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`), the hero name, the rules text of every mainboard card, every card of the pool with its rules text, a request for 25 ranked identifiers with one reason each, `response_format` `json_schema` with `strict` true, `provider.require_parameters` true, `reasoning.effort` `high` for `gpt-6.1-sol` only, and the first 10 valid identifiers are kept (plan AC 16) · done
+**C16** - For each of the 4 candidates one deck sends exactly 1 POST to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, the pinned model id (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`, `anthropic/claude-opus-5.5`), the hero name, the rules text of every mainboard card, every card of the pool with its rules text, a request for 25 ranked identifiers with one reason each, `response_format` `json_schema` with `strict` true, `provider.require_parameters` true, `reasoning.effort` `high` for `gpt-6.1-sol` and `opus-5.5` only, and the first 10 valid identifiers are kept (plan AC 16) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C16:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C17** - `--dry-run` prints one estimated input token count and one cost ceiling per candidate and deck, says the estimate is local, makes 0 HTTP calls and needs no key, and exits 0 (plan AC 17) · done
+**C17** - `--dry-run` prints one estimated input token count and one cost ceiling per candidate (4) and deck, says the estimate is local, makes 0 HTTP calls and needs no key, and exits 0 (plan AC 17) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C17:" scripts/synergy-spike/__tests__/llm.test.ts`
 
 **C18** - A response's `usage.prompt_tokens`, `usage.completion_tokens`, `usage.completion_tokens_details.reasoning_tokens` and `usage.cost` are stored in that deck's run file as `inputTokens`, `outputTokens`, `reasoningTokens` and `costUsd` (plan AC 18) · done
@@ -109,10 +109,10 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C25:" scripts/synergy-spike/_
 **C26** - A candidate with PASS on 3 decks makes `result.md` hold the line `STOP: <candidate> passed on 3 decks`; PASS on 2 decks does not (plan AC 25) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C26:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C27** - With `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26) · done
+**C27** - With `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `opus-5.5`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C27:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C28** - With `gpt-6.1-sol` run and none passing, `result.md` holds `CONTINUE: next candidate is gemini-3.8-flash`; with the three language-model candidates run it holds `CONTINUE: next candidate is heuristic` (plan AC 27) · done
+**C28** - With `gpt-6.1-sol` run and none passing, `result.md` holds `CONTINUE: next candidate is gemini-3.8-flash`; with the first three run it holds `CONTINUE: next candidate is opus-5.5`, and with all four language-model candidates run it holds `CONTINUE: next candidate is heuristic` (plan AC 27) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C28:" scripts/synergy-spike/__tests__/score.test.ts`
 
 **C29** - A deck whose run is `untestable` or `failed` prints that status in place of a count, and the candidate counts as tried (plan AC 28) · done
@@ -139,11 +139,11 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | --- | --- | --- |
 | step-5 per-card tests in the pool filter (5) | banned format C7 · format-legal C7 · hero scope via legalHeroes C7 · hero scope via legalOverrides C7 · hero scope via specializations C7 · Silver Age rarity C7 | - |
 | pool removals (3) | hero cards C8 · tokens C8 · cards already in the deck C8 | - |
-| candidates (5) | `gpt-6.1-sol` C16 · `gemini-3.8-flash` C16 · `mimo-v2.6-pro` C16 · `heuristic` C10 · `cooccurrence` C14 | - |
+| candidates (6) | `gpt-6.1-sol` C16 · `gemini-3.8-flash` C16 · `mimo-v2.6-pro` C16 · `opus-5.5` C16 · `heuristic` C10 · `cooccurrence` C14 | - |
 | run statuses (3) | ok C10 · failed C11 · untestable C14 | - |
 | candidate output filters in `finalizeTop10` (2) | outside the pool C11 · in the deck C11 | - |
 | failed-run triggers of a language-model deck (6) | finish_reason length C19 · finish_reason content_filter C19 · finish_reason error C19 · message.refusal C19 · HTTP 429 C19 · non-JSON content C19 | - |
-| language-model candidates and their pinned models (3) | `openai/gpt-6.1-sol` with reasoning high C16 · `google/gemini-3.8-flash` C16 · `xiaomi/mimo-v2.6-pro` C16 | - |
+| language-model candidates and their pinned models (4) | `openai/gpt-6.1-sol` with reasoning high C16 · `google/gemini-3.8-flash` C16 · `xiaomi/mimo-v2.6-pro` C16 · `anthropic/claude-opus-5.5` with reasoning high C16 | - |
 | verdict values (5) | `yes` C24 · `no` C24 · blank C24 · `maybe` C24 · missing row C24 | - |
 | decks-list size (3) | 3 URLs C4 · 2 URLs C5 · 1 URL C5 | - |
 | deck load failures (2) | fetch fails C6 · identifier absent from the catalog C6 | - |
@@ -156,7 +156,7 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | plan `Surface` routes (0) | none - the plan's Surface is `None - nothing consumed outside` | - |
 | startup configuration (0) | none - scripts, no assembled application | - |
 
-- Claims naming a literal value (1,017, 5,139, 10, 25, 5, the three model ids): C1, C7, C10, C16, C25 - each proof asserts that value.
+- Claims naming a literal value (1,017, 5,139, 10, 25, 5, the four model ids): C1, C7, C10, C16, C25 - each proof asserts that value.
 - Live behaviour that cannot run without the owner's key: C20 only; every other language-model claim is proven against an injected fetch.
 - No other check claims more than the single case its proof exercises.
 
@@ -184,3 +184,4 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 - **Settled mid-build:** the owner moved the catalog to 5.3.0 (#127), which closed the decks 2 and 3 gap; C1, C2, C7 literals renegotiated, see implementation-notes.md
 - **Abandoned:** a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)
 - **Boundary (OpenRouter change):** C15-C19, C27, C28, C30, C31 re-closed at `373f57e`; C20 now needs `OPENROUTER_API_KEY`
+- **Boundary (Opus 5.5 added):** C15-C19, C27, C28 extended to the fourth candidate; C20 still needs `OPENROUTER_API_KEY`

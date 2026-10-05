@@ -23,13 +23,14 @@ export interface IPoolFile {
   readonly cards: readonly string[];
 }
 
-export type TCandidateName = 'gpt-6.1-sol' | 'gemini-3.8-flash' | 'mimo-v2.6-pro' | 'heuristic' | 'cooccurrence';
+export type TCandidateName = 'gpt-6.1-sol' | 'gemini-3.8-flash' | 'mimo-v2.6-pro' | 'opus-5.5' | 'heuristic' | 'cooccurrence';
 
 /** The agreed order in which candidates are tried. */
 export const CANDIDATE_ORDER: readonly TCandidateName[] = [
   'gpt-6.1-sol',
   'gemini-3.8-flash',
   'mimo-v2.6-pro',
+  'opus-5.5',
   'heuristic',
   'cooccurrence',
 ];

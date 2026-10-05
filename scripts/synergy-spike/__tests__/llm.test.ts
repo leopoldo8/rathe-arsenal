@@ -104,6 +104,7 @@ test('C16: each candidate sends one request with its pinned model and the schema
     'gpt-6.1-sol': 'openai/gpt-6.1-sol',
     'gemini-3.8-flash': 'google/gemini-3.8-flash',
     'mimo-v2.6-pro': 'xiaomi/mimo-v2.6-pro',
+    'opus-5.5': 'anthropic/claude-opus-5.5',
   };
   assert.deepEqual(Object.keys(expectedModels), LLM_CANDIDATES);
 
@@ -123,7 +124,7 @@ test('C16: each candidate sends one request with its pinned model and the schema
     assert.equal(call.body['response_format'].type, 'json_schema');
     assert.equal(call.body['response_format'].json_schema.strict, true);
     assert.equal(call.body['provider'].require_parameters, true);
-    assert.deepEqual(call.body['reasoning'], candidate === 'gpt-6.1-sol' ? { effort: 'high' } : undefined);
+    assert.deepEqual(call.body['reasoning'], candidate === 'gpt-6.1-sol' || candidate === 'opus-5.5' ? { effort: 'high' } : undefined);
 
     const prompt = call.body['messages'].map((m: { content: string }) => m.content).join('\n');
     assert.ok(prompt.includes('Dorinthea Ironsong'));
@@ -149,7 +150,7 @@ test('C17: dry run prints a local estimate and a cost ceiling per candidate and 
 
   assert.match(lines[0] as string, /estimated locally/);
   assert.match(lines[0] as string, /no request was sent/);
-  assert.equal(lines.length, 1 + 3);
+  assert.equal(lines.length, 1 + 4);
   for (const candidate of LLM_CANDIDATES) {
     assert.ok(lines.some((l) => new RegExp(`^${candidate.replace(/\./g, '\\.')} TESTDECK Test: about \\d+ input tokens, at most \\d+\\.\\d\\d USD$`).test(l)), candidate);
   }
