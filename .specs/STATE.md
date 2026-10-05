@@ -76,12 +76,17 @@
 
 ## Handoff
 
-- **Feature**: card-scanner — `.specs/features/card-scanner/` — **built and VERIFIED (PASS, round 3, independent Verifier, profile standard)**. Branch `feat/card-scanner`, not pushed, no PR yet (owner's call). Phone-camera scanning at `/add-cards/scan`: on-device OCR of the collector code with a 3-variant vote, per-card notice with Wrong + name search, review list, one atomic batch commit (AD-008).
+- **Feature**: card-alternatives — `.specs/features/card-alternatives/` — **built and VERIFIED (PASS, round 5 scoped, independent Verifier, profile standard)**. Branch `feat/card-alternatives`, not pushed, no PR yet (owner's call). Grouped alternatives for a missing card (owned and buyable, legal for the deck), picking one as a `card_replacement` that rewrites the deck (AD-009), undo, and the keep-or-go-back prompt when the original returns.
+- **Deviations**: 1-20 in `.specs/features/card-alternatives/implementation-notes.md`; the range also fixes, outside the feature: the Playwright fixture broken by the 5.3.0 catalog (#127), entity-declared indexes and CHECKs that existed only in migrations, CSV duplicate upload answering `exact-match` instead of a 500, deck ids outside 1..2147483647 answering 400 instead of a 500, a rename race in `CsvSourceRow`, and one-listener e2e/int harnesses (the `407` flake).
+- **Open, owner**: the 0.05 owned bonus in the alternatives order is uncalibrated (plan open question 1); case-insensitive tag uniqueness (`IDX_deck_tag_user_name_ci`) and `user.preferences` still differ between migrations and entities.
+- **Next**: `spike/synergy` (synergy spike, verified PASS, AD-010) merges after this branch - `STATE.md` conflict is only AD-009 next to AD-010; then plan `.design/card-recommendations.md` (confirmed 2026-10-05) with tlc-spec-lean.
+
+### Previous handoff
+
+- **Feature**: card-scanner — `.specs/features/card-scanner/` — **built and VERIFIED (PASS, round 3, independent Verifier, profile standard)**. Merged to `main` as #122. Phone-camera scanning at `/add-cards/scan`: on-device OCR of the collector code with a 3-variant vote, per-card notice with Wrong + name search, review list, one atomic batch commit (AD-008).
 - **Deviations**: DEV-01..08 in `.specs/features/card-scanner/implementation-notes.md` (index shape grouped by card, tesseract.js 7, all 15 core files ship ~53 MB, confirm on the bar, re-arm rule, 2x2 tabs on phones, vitest on half the cores, e2e apps on 127.0.0.1).
 - **Open, owner**: real-device recognition rate unmeasured (33/38 right, 0 wrong on clean official images); a commit retried after a lost response adds twice; `add-cards` visual baseline tolerates the fourth tab (1% diff), consider refreshing baselines.
 - **Gate for this feature**: as below, plus `apps/web` OCR benchmark (`recognition-benchmark.spec.ts`, ~60 s, downloads 38 LSS images into gitignored `apps/web/.cache/` on first run) and `tests/e2e/card-scanner-flow.spec.ts` (Chromium fake camera, needs `pnpm dev`).
-
-### Previous handoff
 
 - **Latest work**: AI-slop audit — `docs/audit/ai-slop-2026-10-03/inventory.md` (findings, owner decisions, what shipped, deviations). Shipped in #115 (dead code), #116 (copy pass), #117 (localized engine reasons), #118 (deck detail and home), #119 (swaps, library, sources, new deck, settings).
 - **Feature**: product-redesign — `.specs/features/product-redesign/` — all 10 phases complete and merged to `main` (#110), followed by post-launch polish #111–#114. Every deviation (DEV-01..31) and the provisional calls live in `implementation-notes.md`.
