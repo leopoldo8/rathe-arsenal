@@ -1,0 +1,35 @@
+{
+  "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "candidate": "gemini-3.8-flash",
+  "status": "ok",
+  "top10": [
+    "widowmaker-red",
+    "spire-sniping-red",
+    "sleep-dart-red",
+    "toxicity-red",
+    "over-flex-red",
+    "fletch-a-red-tail-red",
+    "increase-the-tension-red",
+    "head-shot-red",
+    "hamstring-shot-red",
+    "sedation-shot-red"
+  ],
+  "usage": {
+    "inputTokens": 29372,
+    "outputTokens": 4826,
+    "reasoningTokens": 3505,
+    "costUsd": 0.0401265
+  },
+  "reasons": {
+    "widowmaker-red": "Azalea's dominate makes it impossible for an opponent to defend with two cards from hand, permanently guaranteeing the +3 power bonus while also shutting down defense reactions.",
+    "spire-sniping-red": "It acts as an efficient red arrow that manipulates the top two cards of your deck when loaded face-up, perfectly setting up Azalea's ability.",
+    "sleep-dart-red": "Pairing this arrow's game-winning ability disruption with Azalea's dominate makes the on-hit effect virtually guaranteed against defending heroes.",
+    "toxicity-red": "It turns any dominated arrow attack into a lethal threat by forcing an additional five life loss when the attack hits.",
+    "over-flex-red": "Provides a massive +4 power boost to your next arrow attack while reloading your arsenal to maintain consistent turn-to-turn momentum.",
+    "fletch-a-red-tail-red": "Grants +4 power with go again and leverages Crow's Nest aim counters to degrade the defense value of opposing red cards.",
+    "increase-the-tension-red": "Buffs your arrow by +3 power and completely locks defense reactions out of hand, ensuring dominated attacks connect cleanly.",
+    "head-shot-red": "Naturally gains +2 power whenever it is flipped into arsenal via Azalea's hero power or Death Dealer, making it an extremely cost-effective attack.",
+    "hamstring-shot-red": "Taxes the opponent's first attack on their subsequent turn when forced through with dominate, severely restricting their offensive counterplay.",
+    "sedation-shot-red": "Synergizes with Crow's Nest to gain aim counter bonuses and inflicts an Inertia token on hit to ruin the opponent's arsenal setup."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "candidate": "opus-5.5",
+  "status": "ok",
+  "top10": [
+    "point-the-tip-red",
+    "blessing-of-focus-red",
+    "silver-the-tip-red",
+    "fletch-a-red-tail-red",
+    "over-flex-red",
+    "sinker-blue",
+    "line-blue",
+    "hook-blue",
+    "sedation-shot-red",
+    "withering-shot-red"
+  ],
+  "usage": {
+    "inputTokens": 44280,
+    "outputTokens": 2514,
+    "reasoningTokens": 1007,
+    "costUsd": 0.2274
+  },
+  "reasons": {
+    "point-the-tip-red": "Gives a face-up arrow that Azalea put into arsenal +3 power and an aim counter, which turns on Drill, Infecting and Murkmire bonuses and pushes power above base for Bolt'n Shot and Bolt'n Boots.",
+    "blessing-of-focus-red": "Opt 3 at the start of your turn, then puts a revealed arrow face-up into arsenal with an aim counter, which sets up Azalea and every aim-matters arrow.",
+    "silver-the-tip-red": "Digs 4 cards deep and puts an arrow face-up into arsenal from your deck, which triggers Crow's Nest and Dry Powder Shot.",
+    "fletch-a-red-tail-red": "The biggest arrow pump in the pool at +4 with go again, and aimed arrows also get Red cards -1 defense while defending them.",
+    "over-flex-red": "+4 arrow pump with reload keeps the arsenal refilled and the Azalea arrow chain going.",
+    "sinker-blue": "A much-needed blue pitch card that puts a top-deck arrow face-up into arsenal (Crow's Nest and Dry Powder triggers) with overpower.",
+    "line-blue": "Blue pitch that puts a top-deck arrow face-up into arsenal with go again, so the turn keeps chaining.",
+    "hook-blue": "Blue pitch that puts a top-deck arrow face-up into arsenal with +1 power, which also turns on Bolt'n Shot's above-base clause.",
+    "sedation-shot-red": "Gets +1 power with an aim counter and creates an Inertia token on hit, matching the deck's debuff-token plan.",
+    "withering-shot-red": "Gets +1 power with an aim counter and creates a Frailty token on hit, adding to the token pressure."
+  }
+}

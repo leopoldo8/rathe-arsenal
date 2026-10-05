@@ -1,0 +1,35 @@
+{
+  "deck": "01M2GEPE0X50C32E02KZNXAETH",
+  "candidate": "gpt-6.1-sol",
+  "status": "ok",
+  "top10": [
+    "blood-dripping-frenzy-blue",
+    "shadow-puppetry-red",
+    "no-fear-red",
+    "beast-within-yellow",
+    "darkest-hour-red",
+    "visit-the-boneyard-blue",
+    "blasmophets-boon-blue",
+    "deep-rooted-evil-yellow",
+    "ebon-fold",
+    "goremass-summoning-blue"
+  ],
+  "usage": {
+    "inputTokens": 49353,
+    "outputTokens": 5421,
+    "reasoningTokens": 4142,
+    "costUsd": 0.177591
+  },
+  "reasons": {
+    "blood-dripping-frenzy-blue": "The blood-debt-heavy hand can become replacement draws, while banishing six-power cards enables Levia and boosts an entire turn of Brute and Shadow attacks.",
+    "shadow-puppetry-red": "Adds power and guaranteed go again to a key attack, with an optional on-hit banish that further supports Levia and the banish payoffs.",
+    "no-fear-red": "Selectively banishes six-power cards to enable Levia and the deck's conditional attacks, then returns those cards to hand during the end phase.",
+    "beast-within-yellow": "Bloodrush Bellow, Deadwood Rumbler, and Wrecker Romp can trigger its graveyard ability, generating banishes and eventually replacing it with a six-power card.",
+    "darkest-hour-red": "Its alternative payment can place a six-power card atop the deck for an attack-triggered banish while giving that Shadow attack a substantial power boost.",
+    "visit-the-boneyard-blue": "Instantly places a known six-power graveyard card atop the deck so the next top-deck banish can enable Levia and multiple attack payoffs.",
+    "blasmophets-boon-blue": "With a Blasmophet established, its explicitly defined six power supports Bloodrush Bellow, Levia, and the graveyard-banish attacks.",
+    "deep-rooted-evil-yellow": "The deck's six-power banish condition unlocks an additional Brute attack from banishment rather than leaving that banished card inaccessible.",
+    "ebon-fold": "Provides a controlled hand banish that can enable Levia with a six-power card and replace a banished Shadow card with a draw.",
+    "goremass-summoning-blue": "Turns the deck's central six-power banish condition into a Blasmophet without requiring Beckoning Hunger to hit, enabling Consuming Lash's attack mode."
+  }
+}

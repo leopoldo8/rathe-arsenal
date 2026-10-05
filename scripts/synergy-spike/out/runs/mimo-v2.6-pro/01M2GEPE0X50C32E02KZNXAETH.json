@@ -1,0 +1,35 @@
+{
+  "deck": "01M2GEPE0X50C32E02KZNXAETH",
+  "candidate": "mimo-v2.6-pro",
+  "status": "ok",
+  "top10": [
+    "unworldly-bellow-red",
+    "writhing-beast-hulk-red",
+    "endless-maw-red",
+    "shadow-of-blasmophet-red",
+    "goremass-summoning-blue",
+    "shaden-scream-red",
+    "blood-dripping-frenzy-blue",
+    "rumbling-hunger-red",
+    "convulsions-from-the-bellows-of-hell-red",
+    "deep-rooted-evil-yellow"
+  ],
+  "usage": {
+    "inputTokens": 49239,
+    "outputTokens": 4997,
+    "reasoningTokens": 3631,
+    "costUsd": 0.025766355
+  },
+  "reasons": {
+    "unworldly-bellow-red": "Banishing 3 random cards from the graveyard single-handedly turns on the whole deck's '6 or more {p} banished this turn' triggers while buffing the next Brute/Shadow attack +4{p} with go again.",
+    "writhing-beast-hulk-red": "Another banish-3-from-graveyard enabler that converts the 6+{p} hit into dominate, and its blood debt feeds Doomsday's count and Hexagore's damage reduction.",
+    "endless-maw-red": "Banishes 3 random graveyard cards for a repeatable +3{p} payoff and adds a blood debt card to the banished zone.",
+    "shadow-of-blasmophet-red": "The draw/discard fills the graveyard for your banish-3 effects and the 6+{p} discard searches and banishes a blood debt card, permanently growing your banished zone.",
+    "goremass-summoning-blue": "Cheapest way to make the Blasmophet token that Consuming Lash demands, and it triggers off the banishing your deck already does, with go again.",
+    "shaden-scream-red": "Banishing from hand both triggers 'put into your banished zone' conditions and powers a +5{p} Brute/Shadow attack with go again.",
+    "blood-dripping-frenzy-blue": "Converts a hand full of blood debt cards into cards drawn and a massive global power boost scaled to how many 6+{p} cards get banished.",
+    "rumbling-hunger-red": "On hit it creates the Blasmophet token Consuming Lash needs and gains go again whenever you've banished a 6+{p} card, which is this deck's default.",
+    "convulsions-from-the-bellows-of-hell-red": "Graveyard banish enabler that turns the 6+{p} trigger into +3{p} and dominate on your next attack.",
+    "deep-rooted-evil-yellow": "Playable directly from the banished zone once you've banished a 6+{p} card, giving free recursive attacks while stacking blood debt."
+  }
+}

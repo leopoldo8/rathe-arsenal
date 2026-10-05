@@ -1,0 +1,35 @@
+{
+  "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+  "candidate": "mimo-v2.6-pro",
+  "status": "ok",
+  "top10": [
+    "swing-fist-think-later-red",
+    "swing-fist-think-later-yellow",
+    "swing-fist-think-later-blue",
+    "breakneck-battery-red",
+    "breakneck-battery-yellow",
+    "breakneck-battery-blue",
+    "madcap-charger-red",
+    "madcap-charger-yellow",
+    "madcap-charger-blue",
+    "visit-the-boneyard-blue"
+  ],
+  "usage": {
+    "inputTokens": 29385,
+    "outputTokens": 2957,
+    "reasoningTokens": 1954,
+    "costUsd": 0.015355065
+  },
+  "reasons": {
+    "swing-fist-think-later-red": "Cheapest repeatable random-discard attack with built-in go again, so it both triggers Kayo's Might and keeps the chain going.",
+    "swing-fist-think-later-yellow": "Same random-discard-to-attack engine at yellow, giving you a resource that still feeds every 6+ discard payoff.",
+    "swing-fist-think-later-blue": "Blue version pitches for the claw's {r}{r} while still discarding a random card to trigger Might and 6+ payoffs.",
+    "breakneck-battery-red": "Additional-cost random discard turns on Kayo's Might and, when it hits a 6+, the go again makes it free value.",
+    "breakneck-battery-yellow": "Same discard-then-go-again pattern, and yellow gives you the resource needed to pay for Mandible Claw turns.",
+    "breakneck-battery-blue": "Pitchable source of a random discard plus go again whenever the 6+ trigger lands.",
+    "madcap-charger-red": "Another random-discard attack that converts a 6+ discard straight into go again, the core loop of this deck.",
+    "madcap-charger-yellow": "Continues the discard-and-extend plan while also being a pitchable yellow for the claw.",
+    "madcap-charger-blue": "Densest way to keep random discards flowing from the resource base.",
+    "visit-the-boneyard-blue": "Puts a 6+ power card back on top of your deck, which Headstrong Stampede/Buckwild then see and which your random discards can hit again."
+  }
+}

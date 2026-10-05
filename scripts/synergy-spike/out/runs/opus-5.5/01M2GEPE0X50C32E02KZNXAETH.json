@@ -1,0 +1,35 @@
+{
+  "deck": "01M2GEPE0X50C32E02KZNXAETH",
+  "candidate": "opus-5.5",
+  "status": "ok",
+  "top10": [
+    "blasmophet-levia-consumed",
+    "shadow-of-blasmophet-red",
+    "consuming-strength-yellow",
+    "rumbling-hunger-red",
+    "deep-rooted-evil-yellow",
+    "tribute-to-the-legions-of-doom-red",
+    "unworldly-bellow-red",
+    "goremass-summoning-blue",
+    "blasmophets-boon-blue",
+    "wall-breaker-red"
+  ],
+  "usage": {
+    "inputTokens": 77855,
+    "outputTokens": 2503,
+    "reasoningTokens": 951,
+    "costUsd": 0.36148
+  },
+  "reasons": {
+    "blasmophet-levia-consumed": "Levia's demi-hero transform lets the deck replay a blood debt card from banishment each turn and stops blood debt life loss, which rewards everything the deck already does.",
+    "shadow-of-blasmophet-red": "Discarding a 6-power card tutors a blood debt card straight into the banished zone, enabling Levia, Doomsday and Diabolic Offering in one swing.",
+    "consuming-strength-yellow": "Pairs with Beckoning Hunger's Blasmophet tokens and adds an instant banish of a blood debt card that also pumps the next attack.",
+    "rumbling-hunger-red": "Creates Blasmophet tokens and gains go again once the deck has banished a 6-power card, which its many banish effects set up.",
+    "deep-rooted-evil-yellow": "Becomes free card advantage, since it can be replayed from banishment on the turns the deck already banishes a 6-power card.",
+    "tribute-to-the-legions-of-doom-red": "Banishes a random card from hand, usually a 6-power card in this deck, which turns on Levia's ability and earns this card +2 power.",
+    "unworldly-bellow-red": "A go-again pump that also banishes three graveyard cards, fueling Doomsday, Soul Harvest and Levia's 6-power condition.",
+    "goremass-summoning-blue": "A go-again Blasmophet maker that enables Consuming Lash and stacks with the deck's frequent 6-power banishes.",
+    "blasmophets-boon-blue": "A blue pitch card that becomes a 6-power banish target once a Blasmophet is out, feeding Levia and the Feasting and Feeding triggers.",
+    "wall-breaker-red": "Gains overpower off the deck's consistent 6-power banishes and is itself a blood debt red for the banished zone count."
+  }
+}

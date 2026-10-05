@@ -1,0 +1,35 @@
+{
+  "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+  "candidate": "gemini-3.8-flash",
+  "status": "ok",
+  "top10": [
+    "wild-ride-blue",
+    "bare-fangs-blue",
+    "savage-feast-blue",
+    "buckwild-red",
+    "mighty-windup-yellow",
+    "mighty-windup-red",
+    "agile-windup-yellow",
+    "agile-windup-red",
+    "savage-feast-yellow",
+    "buzzard-helm"
+  ],
+  "usage": {
+    "inputTokens": 31372,
+    "outputTokens": 4061,
+    "reasoningTokens": 2728,
+    "costUsd": 0.03875775
+  },
+  "reasons": {
+    "wild-ride-blue": "Provides a vital blue pitch card that draws and discards upon attacking, easily satisfying Kayo's Might generation and granting Mandible Claw go again.",
+    "bare-fangs-blue": "Supplies needed blue pitch while providing another built-in draw-and-discard attack to trigger Kayo's passive Might token creation.",
+    "savage-feast-blue": "Functions as a high-resource pitch card that discards a card as an additional cost to trigger Kayo and replaces itself by drawing a card.",
+    "buckwild-red": "Serves as a high-damage red threat that easily gains go again thanks to the high density of 6-or-more power cards in your pitch zone.",
+    "mighty-windup-yellow": "Gets boosted to 6 power in your hand by Kayo, meaning its instant-speed discard triggers Kayo to generate a second Might token alongside its own.",
+    "mighty-windup-red": "Can be discarded as an instant during your action phase to generate a Might token and immediately trigger Kayo for a second Might token.",
+    "agile-windup-yellow": "Counts as a 6-power card in hand under Kayo, allowing its instant discard to create an Agility token while triggering Kayo for a Might token.",
+    "agile-windup-red": "Offers an on-demand instant discard to grant Agility for subsequent go again while triggering Kayo's once-per-turn Might creation.",
+    "savage-feast-yellow": "Adds another attack that discards a card to reliably trigger Kayo and draws a card when attacking to maintain hand size.",
+    "buzzard-helm": "Offers valuable equipment defense while filtering your hand and enabling defensive-turn discards to set up your graveyard."
+  }
+}
