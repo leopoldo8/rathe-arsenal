@@ -12,7 +12,5 @@ import { setIdentifierToSetMappings } from '@flesh-and-blood/types';
  *   getSetName('XYZ') → null
  */
 export function getSetName(code: string): string | null {
-  const key = code.toLowerCase();
-  const mapping = setIdentifierToSetMappings as Record<string, string | undefined>;
-  return mapping[key] ?? null;
+  return setIdentifierToSetMappings.get(code.toLowerCase()) ?? null;
 }

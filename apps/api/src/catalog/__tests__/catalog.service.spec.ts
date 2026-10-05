@@ -81,6 +81,16 @@ describe('CatalogService', () => {
       expect(response.results.some((r) => r.name === 'Snatch')).toBe(true);
     });
 
+    it('finds a card from Usurp the Shadow Throne, a recently released set', async () => {
+      // Act
+      const response = await service.search(USER_ID, 'usurp the shadow throne', 10);
+
+      // Assert
+      expect(response.results.map((r) => r.cardIdentifier)).toContain(
+        'usurp-the-shadow-throne-blue',
+      );
+    });
+
     it('respects the limit parameter', async () => {
       // Act
       const response = await service.search(USER_ID, 'a', 3);

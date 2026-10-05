@@ -75,8 +75,9 @@ export interface ICatalogCard {
    * `small` / `large` carry the primary candidate URL — equivalent to
    * `sources[0]` — and exist for callers that don't need the fallback
    * machinery (lightbox tile, link previews). `sources` is the ordered
-   * list of candidates: the bare `defaultImage` first, then `-RF`/`-CF`/
-   * `-GF` foiling suffixes derived from `printings[]`. Some sets (Armory
+   * list of candidates: `defaultImage` first, then each foiled printing's
+   * image code, with a `-RF`/`-CF`/`-GF` suffix appended when the code
+   * lacks one. Some sets (Armory
    * Decks, judge promos, FAB special editions) only publish the foiled
    * face on LSS S3, so a single-URL approach surfaces the SVG fallback
    * even when LSS does serve the artwork.
