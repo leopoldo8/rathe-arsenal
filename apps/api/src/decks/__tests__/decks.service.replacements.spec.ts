@@ -61,6 +61,7 @@ describe('DecksService.getDetail replacements', () => {
   let service: DecksService;
   let deckCardRepo: jest.Mocked<Repository<DeckCardEntity>>;
   let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
+  let catalogService: jest.Mocked<CatalogService>;
   let ownedRows: IOwnedRow[];
 
   beforeEach(async () => {
@@ -92,6 +93,12 @@ describe('DecksService.getDetail replacements', () => {
     const dataSource = createMock<DataSource>();
     (dataSource.query as jest.Mock).mockResolvedValue([]);
     replacementsQueryService = createMock<ReplacementsQueryService>();
+    catalogService = createMock<CatalogService>();
+    catalogService.getCard.mockImplementation(((id: string) => {
+      const names: Record<string, string> = { [ORIGINAL]: 'Emissary of Tides', 'a-moments-peace-blue': "A Moment's Peace" };
+      if (!(id in names)) throw new Error('not in catalog');
+      return { name: names[id] };
+    }) as never);
 
     ownedRows = [];
     const csvSourceRepo = createMock<Repository<CsvSourceEntity>>();
@@ -120,7 +127,7 @@ describe('DecksService.getDetail replacements', () => {
         { provide: AuthzService, useValue: createMock<AuthzService>() },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
-        { provide: CatalogService, useValue: createMock<CatalogService>() },
+        { provide: CatalogService, useValue: catalogService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: createMock<SwapsReconciliationService>() },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
@@ -181,11 +188,24 @@ describe('DecksService.getDetail replacements', () => {
         id: 'replacement-1',
         slot: 'mainboard',
         originalCardIdentifier: ORIGINAL,
+        originalName: 'Emissary of Tides',
         replacementCardIdentifier: REPLACEMENT,
         quantity: 2,
         originalOwned: false,
       },
     ]);
+  });
+
+  it('names the original with its catalog name, punctuation included, or its identifier when the card left the catalog', async () => {
+    deckCardRepo.find.mockResolvedValue([deckCard(REPLACEMENT, 2, 'mainboard')]);
+    replacementsQueryService.loadActive.mockResolvedValue([
+      { ...activeReplacement(1), id: 'r-punctuation', originalCardIdentifier: 'a-moments-peace-blue' },
+      { ...activeReplacement(1), id: 'r-retired', originalCardIdentifier: 'retired-card-red' },
+    ]);
+
+    const detail = await service.getDetail(USER_ID, DECK_ID);
+
+    expect(detail.replacements.map((r) => r.originalName)).toEqual(["A Moment's Peace", 'retired-card-red']);
   });
 
   it('lists no replacements and reads no collection when none is active', async () => {

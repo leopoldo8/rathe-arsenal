@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useResolveReplacement, type IDeckReplacement, type TResolveAction } from '../../api/replacements';
 import { localizeApiError } from '../card-scanner/localize-api-error';
-import { humanizeCardIdentifier } from '../../utils/humanize-card-identifier';
 import styles from './ReplacementMark.module.css';
 
 /** The "in place of" text for a replacement; shared by the deck list and the missing panel. */
@@ -10,7 +9,7 @@ export function ReplacementMark({ replacement }: { readonly replacement: IDeckRe
   const { t } = useTranslation();
   return (
     <span className={styles.mark} data-testid="replacement-mark">
-      {t('alternatives.inPlaceOf', { name: humanizeCardIdentifier(replacement.originalCardIdentifier) })}
+      {t('alternatives.inPlaceOf', { name: replacement.originalName })}
     </span>
   );
 }
@@ -29,7 +28,7 @@ export function ReplacementControls({
   const { t } = useTranslation();
   const resolve = useResolveReplacement(deckId);
   const [error, setError] = useState<string | null>(null);
-  const originalName = humanizeCardIdentifier(replacement.originalCardIdentifier);
+  const originalName = replacement.originalName;
 
   function send(action: TResolveAction): void {
     setError(null);

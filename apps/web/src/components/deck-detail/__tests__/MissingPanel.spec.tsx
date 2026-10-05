@@ -341,6 +341,7 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
     id: 'replacement-1',
     slot: 'mainboard',
     originalCardIdentifier: 'emissary-of-tides-red',
+    originalName: 'Emissary of Tides',
     replacementCardIdentifier: 'coax-a-commotion-red',
     quantity: 2,
     originalOwned: false,
@@ -392,6 +393,19 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
 
     expect(within(rowOf('Coax a Commotion')).getByTestId('replacement-mark')).toHaveTextContent(
       'in place of Emissary of Tides',
+    );
+  });
+
+  it('marks a missing replacement with its original: a name with punctuation shows as the catalog spells it', async () => {
+    await setTestLocale('en-US');
+    renderPanel(null, {
+      entries: [entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', quantity: 2 })],
+      replacements: [replacementOf({ originalCardIdentifier: 'a-moments-peace-blue', originalName: "A Moment's Peace" })],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    expect(within(rowOf('Coax a Commotion')).getByTestId('replacement-mark')).toHaveTextContent(
+      "in place of A Moment's Peace",
     );
   });
 });

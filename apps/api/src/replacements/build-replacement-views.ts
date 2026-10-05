@@ -11,6 +11,7 @@ export function buildReplacementViews(
   activeReplacements: readonly CardReplacementEntity[],
   owned: ReadonlyMap<string, number>,
   deckCards: readonly { readonly cardIdentifier: string; readonly quantity: number }[],
+  resolveName: (cardIdentifier: string) => string,
 ): readonly IDeckReplacement[] {
   const copiesInDeck = new Map<string, number>();
   for (const card of deckCards) {
@@ -25,6 +26,7 @@ export function buildReplacementViews(
       id: replacement.id,
       slot: replacement.slot,
       originalCardIdentifier: replacement.originalCardIdentifier,
+      originalName: resolveName(replacement.originalCardIdentifier),
       replacementCardIdentifier: replacement.replacementCardIdentifier,
       quantity: replacement.quantity,
       originalOwned: freeCopies >= replacement.quantity,

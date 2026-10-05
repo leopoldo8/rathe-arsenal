@@ -27,6 +27,7 @@ function replacement(overrides: Partial<IDeckReplacement> = {}): IDeckReplacemen
     id: 'replacement-1',
     slot: 'mainboard',
     originalCardIdentifier: 'emissary-of-tides-red',
+    originalName: 'Emissary of Tides',
     replacementCardIdentifier: 'coax-a-commotion-red',
     quantity: 2,
     originalOwned: false,
@@ -67,6 +68,17 @@ describe('DeckList replacement marks', () => {
     const plain = cellOf('Flex');
     expect(within(plain).queryByTestId('replacement-mark')).toBeNull();
     expect(within(plain).queryByRole('button', { name: /undo/i })).toBeNull();
+  });
+
+  it('marks a replacement with its original and Undo: a name with punctuation shows as the catalog spells it', async () => {
+    await setTestLocale('en-US');
+    renderList([
+      replacement({ originalCardIdentifier: 'a-moments-peace-blue', originalName: "A Moment's Peace" }),
+    ]);
+
+    const marked = cellOf('Coax a Commotion');
+    expect(within(marked).getByTestId('replacement-mark')).toHaveTextContent("in place of A Moment's Peace");
+    expect(within(marked).getByRole('button', { name: "Undo the replacement of A Moment's Peace" })).toBeInTheDocument();
   });
 
   it('Undo sends the revert', async () => {

@@ -85,7 +85,7 @@ Only routes this adds or whose signature changes.
 | `POST /api/decks/:deckId/replacements` | `originalCardIdentifier`, `slot`, `replacementCardIdentifier`, `pickedFrom` | `replacement` of `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `pickedFrom`, `status`, `createdAt`, `resolvedAt` | `201`, `400`, `401`, `404`, `409`, `429` |
 | `POST /api/replacements/:id/revert` | `id` in the path | `replacement` | `200`, `400`, `401`, `404`, `409`, `429` |
 | `POST /api/replacements/:id/keep` | `id` in the path | `replacement` | `200`, `400`, `401`, `404`, `409`, `429` |
-| `GET /api/decks/:deckId` (changed) | unchanged | adds `replacements[]` of `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `originalOwned` | `200`, `401`, `404`, `429` |
+| `GET /api/decks/:deckId` (changed) | unchanged | adds `replacements[]` of `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `originalOwned`, `originalName` (the catalog name of the original; added after verification, because a name derived from the identifier was wrong for 8% of cards) | `200`, `401`, `404`, `429` |
 
 ## Landing
 

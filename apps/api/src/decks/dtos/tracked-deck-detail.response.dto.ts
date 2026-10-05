@@ -116,6 +116,8 @@ export interface IDeckReplacement {
   readonly id: string;
   readonly slot: string;
   readonly originalCardIdentifier: string;
+  /** Catalog name of the original; the identifier when the card left the catalog. */
+  readonly originalName: string;
   readonly replacementCardIdentifier: string;
   readonly quantity: number;
   readonly originalOwned: boolean;

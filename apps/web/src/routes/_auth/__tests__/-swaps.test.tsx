@@ -43,6 +43,7 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
             id: 'replacement-1',
             slot: 'mainboard',
             originalCardIdentifier: 'emissary-of-tides-red',
+            originalName: 'Emissary of Tides',
             replacementCardIdentifier: 'coax-a-commotion-red',
             quantity: 2,
             originalOwned: true,
