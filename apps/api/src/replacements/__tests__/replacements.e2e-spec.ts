@@ -180,6 +180,16 @@ describe('card replacements (E2E)', () => {
     }
   });
 
+  it('refuses an illegal replacement and changes nothing: the card in two slots counts both', async () => {
+    const owner = await fixture.scenario([mainboard(COAX, 1), { cardIdentifier: COAX, quantity: 1, slot: 'equipment' }]);
+    const before = await state(owner);
+
+    const res = await pick(owner, {}, 409);
+
+    expect(res.body.code).toBe('REPLACEMENT_ILLEGAL');
+    expect(await state(owner)).toEqual(before);
+  });
+
   it('refuses a pick when nothing is missing', async () => {
     const owner = await fixture.scenario();
     await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY, quantity: 2 }]);

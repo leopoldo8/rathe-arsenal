@@ -95,6 +95,20 @@ describe('AddCardReplacement1778533590000', () => {
     await queryRunner.query(`DELETE FROM "tracked_deck" WHERE id = 1`);
     expect(await replacementCount()).toBe(0);
 
+    // Every bounded column keeps its width (door 4) and the two enums stay varchar(32) (doors 2 and 3).
+    const widths: Array<{ column_name: string; character_maximum_length: number }> = await queryRunner.query(
+      `SELECT column_name, character_maximum_length FROM information_schema.columns
+       WHERE table_schema = $1 AND table_name = 'card_replacement' AND character_maximum_length IS NOT NULL`,
+      [SCHEMA],
+    );
+    expect(Object.fromEntries(widths.map((row) => [row.column_name, row.character_maximum_length]))).toEqual({
+      slot: 64,
+      originalCardIdentifier: 128,
+      replacementCardIdentifier: 128,
+      pickedFrom: 32,
+      status: 32,
+    });
+
     // The index on (trackedDeckId, status) the deck reads its active replacements with.
     const indexes: Array<{ indexdef: string }> = await queryRunner.query(
       `SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = 'IDX_card_replacement_deck_status'`,

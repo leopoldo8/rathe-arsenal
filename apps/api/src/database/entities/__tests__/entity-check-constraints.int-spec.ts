@@ -90,4 +90,26 @@ describe('CHECK constraints declared on the entities', () => {
       dataSource.query(`INSERT INTO "${table}" (${columns}) VALUES (${params})`, Object.values(row)),
     ).rejects.toMatchObject({ constraint });
   });
+
+  it('card_replacement: the entity names its index as the migration does, with the same columns and widths', async () => {
+    const indexes: Array<{ indexdef: string }> = await dataSource.query(
+      `SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = 'IDX_card_replacement_deck_status'`,
+      [SCHEMA],
+    );
+    expect(indexes).toHaveLength(1);
+    expect(indexes[0]!.indexdef).toMatch(/\("trackedDeckId", status\)/);
+
+    const widths: Array<{ column_name: string; character_maximum_length: number }> = await dataSource.query(
+      `SELECT column_name, character_maximum_length FROM information_schema.columns
+       WHERE table_schema = $1 AND table_name = 'card_replacement' AND character_maximum_length IS NOT NULL`,
+      [SCHEMA],
+    );
+    expect(Object.fromEntries(widths.map((row) => [row.column_name, row.character_maximum_length]))).toEqual({
+      slot: 64,
+      originalCardIdentifier: 128,
+      replacementCardIdentifier: 128,
+      pickedFrom: 32,
+      status: 32,
+    });
+  });
 });

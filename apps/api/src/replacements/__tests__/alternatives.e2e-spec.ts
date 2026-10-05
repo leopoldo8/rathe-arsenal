@@ -1,4 +1,4 @@
-import { ADRENALINE, bootFixture, COAX, EMISSARY, IFixture, KATSU, TALISHAR, withoutTimestamp } from './replacements-e2e.fixture';
+import { ADRENALINE, bootFixture, COAX, EMISSARY, FLEX, mainboard, IFixture, KATSU, TALISHAR, withoutTimestamp } from './replacements-e2e.fixture';
 
 describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
   let fixture: IFixture;
@@ -106,6 +106,21 @@ describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
         expect(res.body.needed).toBe(1);
       }
     }
+  });
+
+  it('reports owned copies and shows search results for a name: copies in two slots count both', async () => {
+    const owner = await fixture.scenario([mainboard(COAX, 1), { cardIdentifier: COAX, quantity: 1, slot: 'equipment' }]);
+    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }, { cardIdentifier: COAX, quantity: 3 }]);
+
+    const res = await alternatives(owner.jwt, owner.deckId, { cardIdentifier: EMISSARY, slot: 'mainboard', q: 'coax' }).expect(200);
+
+    // needed 1: three in the deck after the pick is within the limit, and 3 owned minus 2 in the deck is 1 free.
+    const coax = res.body.groups[0].cards.find((c: { cardIdentifier: string }) => c.cardIdentifier === COAX);
+    expect(coax.freeCopies).toBe(1);
+
+    const both = await alternatives(owner.jwt, owner.deckId, { cardIdentifier: FLEX, slot: 'mainboard', q: 'coax' }).expect(200);
+    // flex misses 2 copies: 2 in the deck plus 2 is over the limit, so coax is not listed.
+    expect(both.body.groups.flatMap((g: { cards: Array<{ cardIdentifier: string }> }) => g.cards).some((c: { cardIdentifier: string }) => c.cardIdentifier === COAX)).toBe(false);
   });
 
   it('answers 409 NOTHING_TO_REPLACE when nothing is missing', async () => {

@@ -226,6 +226,31 @@ describe('AlternativesService', () => {
       expect(floored.groups.flatMap((g) => g.cards).find((c) => c.cardIdentifier === candidate)?.freeCopies).toBe(0);
     });
 
+    it("freeCopies subtracts this deck's copies: a card in two slots counts both", async () => {
+      const candidate = firstCandidate();
+      const h = harness();
+      h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+        breakdown: { notOwned: [notOwned(EMISSARY, 1)] },
+      } as never);
+      h.setOwned([{ cardIdentifier: candidate, quantity: 3, active: true }]);
+      h.setDeckCards([deckRow(EMISSARY, 2), deckRow(candidate, 1, 'mainboard'), deckRow(candidate, 1, 'equipment')]);
+
+      const res = await h.service.list(request);
+
+      expect(res.groups.flatMap((g) => g.cards).find((c) => c.cardIdentifier === candidate)?.freeCopies).toBe(1);
+    });
+
+    it("freeCopies subtracts this deck's copies: the copy limit counts a card in two slots", async () => {
+      const candidate = firstCandidate();
+      const h = harness();
+      // Two missing copies and two held in different slots: 2 + 2 is over the limit of 3.
+      h.setDeckCards([deckRow(EMISSARY, 2), deckRow(candidate, 1, 'mainboard'), deckRow(candidate, 1, 'equipment')]);
+
+      const res = await h.service.list(request);
+
+      expect(res.groups.flatMap((g) => g.cards).some((c) => c.cardIdentifier === candidate)).toBe(false);
+    });
+
     it("freeCopies subtracts this deck's copies: copies in an inactive source do not count", async () => {
       const candidate = firstCandidate();
       const h = harness();

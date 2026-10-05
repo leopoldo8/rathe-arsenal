@@ -133,6 +133,19 @@ describe('ReplacementsService', () => {
     await build({ needed: 1, ownedReplacement: 3 }).service.pick(USER_ID, DECK_ID, body);
     expect(events('replacements.picked')).toEqual([expect.objectContaining({ owned: true, quantity: 1 })]);
 
+    // Two missing copies with one copy of the replacement already in the deck: quantity is 2, and the
+    // copy in the deck is not free, so owning 2 is not enough and owning 3 is.
+    const inDeck = [
+      { id: 1, cardIdentifier: EMISSARY, quantity: 2, slot: 'mainboard' },
+      { id: 2, cardIdentifier: COAX, quantity: 1, slot: 'mainboard' },
+    ];
+    logSpy.mockClear();
+    await build({ needed: 2, ownedReplacement: 2, deckCards: inDeck }).service.pick(USER_ID, DECK_ID, body);
+    expect(events('replacements.picked')).toEqual([expect.objectContaining({ quantity: 2, owned: false })]);
+    logSpy.mockClear();
+    await build({ needed: 2, ownedReplacement: 3, deckCards: inDeck }).service.pick(USER_ID, DECK_ID, body);
+    expect(events('replacements.picked')).toEqual([expect.objectContaining({ quantity: 2, owned: true })]);
+
     logSpy.mockClear();
     const refused = build({ needed: 0 });
     await expect(refused.service.pick(USER_ID, DECK_ID, body)).rejects.toMatchObject({
@@ -193,6 +206,23 @@ describe('ReplacementsService', () => {
       const { service, manager } = build({ needed });
 
       await expect(service.pick(USER_ID, DECK_ID, { ...body, ...overrides })).rejects.toMatchObject({
+        response: { code: 'REPLACEMENT_ILLEGAL' },
+      });
+
+      expect(writes(manager)).toEqual([]);
+    });
+
+    it('refuses a replacement whose copies in two different slots plus the missing ones exceed the limit', async () => {
+      const { service, manager } = build({
+        needed: 2,
+        deckCards: [
+          { id: 1, cardIdentifier: EMISSARY, quantity: 2, slot: 'mainboard' },
+          { id: 2, cardIdentifier: COAX, quantity: 1, slot: 'mainboard' },
+          { id: 3, cardIdentifier: COAX, quantity: 1, slot: 'equipment' },
+        ],
+      });
+
+      await expect(service.pick(USER_ID, DECK_ID, body)).rejects.toMatchObject({
         response: { code: 'REPLACEMENT_ILLEGAL' },
       });
 
