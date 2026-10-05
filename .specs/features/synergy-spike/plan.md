@@ -60,11 +60,11 @@ The first step the design names; every candidate reads this field.
 
 **Acceptance Criteria**
 
-1. WHEN the catalog loads THEN the system SHALL set `functionalText` on each `ICatalogCard` to the exact string the package holds for that card, which is 4,797 of the 4,835 cards in `@flesh-and-blood/cards` 4.0.8.
+1. WHEN the catalog loads THEN the system SHALL set `functionalText` on each `ICatalogCard` to the exact string the package holds for that card, which is 5,139 of the 5,177 cards in `@flesh-and-blood/cards` 5.3.0.
 2. IF the package holds no `functionalText` for a card THEN the system SHALL leave the field absent on that card, and not set an empty string.
 3. The system SHALL keep every existing `ICatalogCard` field unchanged, and the existing engine and API test suites SHALL pass.
 
-**Independent test:** read `catalog.getCard('dorinthea-ironsong').functionalText` and compare it with the same card in the package; count cards with the field and expect 4,797.
+**Independent test:** read `catalog.getCard('dorinthea-ironsong').functionalText` and compare it with the same card in the package; count cards with the field and expect 5,139.
 
 ### S2: the owner's three decks are loaded (P1)
 
@@ -78,7 +78,7 @@ The first step the design names; every candidate reads this field.
 
 ### S3: each deck gets a bounded candidate pool (P1)
 
-The catalog has 4,835 cards; scoring all of them per deck is neither affordable for the language-model candidate nor meaningful.
+The catalog has 5,177 cards; scoring all of them per deck is neither affordable for the language-model candidate nor meaningful.
 
 **Acceptance Criteria**
 
@@ -86,7 +86,7 @@ The catalog has 4,835 cards; scoring all of them per deck is neither affordable 
 8. WHEN the pool is written THEN the system SHALL have removed hero cards, tokens and every card identifier already in the deck, and the file SHALL state the pool size.
 9. IF a deck's pool holds fewer than 10 cards THEN the system SHALL exit 1 naming the deck.
 
-**Independent test:** for Dorinthea Ironsong in Classic Constructed, 928 non-hero cards pass the hero and format tests before tokens and deck cards are removed (measured on 4.0.8); the pool for her deck is that number minus those removals.
+**Independent test:** for Dorinthea Ironsong in Classic Constructed, 1,017 non-hero cards pass the hero and format tests before tokens and deck cards are removed (measured on 5.3.0); the pool for her deck is that number minus those removals.
 
 ### S4: each candidate produces a top 10 per deck (P1)
 
@@ -206,5 +206,5 @@ Worksheet, not the review.
 ## Sources
 
 - `.design/card-alternatives.md` - sections Problem, Success, Synergy spike and Recommendations: the question, the pass bar, the stop rule and the fail fallback; confirmed by Rodrigo, 2026-10-04.
-- `packages/engine/src/catalog/catalog.ts` and `@flesh-and-blood/cards` 4.0.8 - `functionalText` is the package's field for rules text, dropped by `normalizeCard`.
+- `packages/engine/src/catalog/catalog.ts` and `@flesh-and-blood/cards` 5.3.0 - `functionalText` is the package's field for rules text, dropped by `normalizeCard`.
 - `scripts/gold-set/` - the precedent for an offline workflow with a blind sheet, a hidden key and a scoring script.

@@ -12,10 +12,10 @@ Every proof below is a named test. Proofs that need the owner's `ANTHROPIC_API_K
 
 ### S1 - rules text on the catalog card · 2 files · 8 KB · ~6k
 
-**C1** - `catalog.getCard('dorinthea-ironsong').functionalText` equals the string the package holds for that card, and exactly 4,797 of the 4,835 catalog cards carry the field (plan AC 1) · done
+**C1** - `catalog.getCard('dorinthea-ironsong').functionalText` equals the string the package holds for that card, and exactly 5,139 of the 5,177 catalog cards carry the field (plan AC 1) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest -t "C1:"`
 
-**C2** - A card the package holds no `functionalText` for has no `functionalText` key at all, never an empty string; 38 cards (4,835 minus 4,797) are in that state (plan AC 2) · done
+**C2** - A card the package holds no `functionalText` for has no `functionalText` key at all, never an empty string; 38 cards (5,177 minus 5,139) are in that state (plan AC 2) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest -t "C2:"`
 
 **C3** - Every catalog card keeps exactly the pre-change field set plus the optional `functionalText`, and the engine and API suites stay green (plan AC 3) · done
@@ -38,7 +38,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C6:" scripts/synergy-spike/__
 
 ### S3 - the candidate pool · 2 files · 10 KB · ~12k
 
-**C7** - `isCardInPool` applies each per-card test of step 5 of `computeDeckLegality`: banned format excluded, card not legal in the format excluded, hero scope (legalHeroes, legalOverrides for the format, specializations) honoured, Silver Age rarity whitelist enforced; and for Dorinthea Ironsong in Classic Constructed exactly 928 non-hero cards pass those tests (plan AC 7) · done
+**C7** - `isCardInPool` applies each per-card test of step 5 of `computeDeckLegality`: banned format excluded, card not legal in the format excluded, hero scope (legalHeroes, legalOverrides for the format, specializations) honoured, Silver Age rarity whitelist enforced; and for Dorinthea Ironsong in Classic Constructed exactly 1,017 non-hero cards pass those tests (plan AC 7) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C7:" scripts/synergy-spike/__tests__/pool.test.ts`
 
 **C8** - `buildPool` removes hero cards, tokens and every card already in the deck, and the pool file holds `size` equal to its number of cards (plan AC 8) · done
@@ -156,7 +156,7 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | plan `Surface` routes (0) | none - the plan's Surface is `None - nothing consumed outside` | - |
 | startup configuration (0) | none - scripts, no assembled application | - |
 
-- Claims naming a literal value (928, 4,797, 10, 25, 5, `claude-opus-5-5`): C1, C7, C10, C16, C25 - each proof asserts that value.
+- Claims naming a literal value (1,017, 5,139, 10, 25, 5, `claude-opus-5-5`): C1, C7, C10, C16, C25 - each proof asserts that value.
 - Live behaviour that cannot run without the owner's key: C20 only; every other language-model claim is proven against a fake client.
 - No other check claims more than the single case its proof exercises.
 
@@ -181,5 +181,5 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 - S1 = 6k (catalog + its spec); S2 = 12k; S3 = 12k; S4 = 20k; S5 = 20k; S6 = 12k; S7 = 15k; cross-cutting = 6k; total 103k, all in `scripts/synergy-spike/` plus one catalog field, under the 150k budget - one builder
 
 - **Boundary:** C1-C19 and C21-C32 closed at `1ecf093`; C20 stays open for the owner's `ANTHROPIC_API_KEY`
-- **Settled mid-build:** nothing the owner clarified; the decks 2 and 3 catalog gap is a blocking owner decision, see implementation-notes.md
-- **Abandoned:** loading decks 2 and 3 by upgrading `@flesh-and-blood/cards` to 5.3.0 (a product-wide change that moves the plan's literals); a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)
+- **Settled mid-build:** the owner moved the catalog to 5.3.0 (#127), which closed the decks 2 and 3 gap; C1, C2, C7 literals renegotiated, see implementation-notes.md
+- **Abandoned:** a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)

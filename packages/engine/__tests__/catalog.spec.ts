@@ -215,14 +215,14 @@ describe('catalog', () => {
 describe('catalog rules text', () => {
   type TRawWithText = { cardIdentifier: string; functionalText?: string };
 
-  it('C1: carries the package rules text, on 4,797 of 4,835 cards', () => {
+  it('C1: carries the package rules text, on 5,139 of 5,177 cards', () => {
     const raw = catalog.getRawCard('dorinthea-ironsong') as TRawWithText;
     expect(raw.functionalText).toBeDefined();
     expect(catalog.getCard('dorinthea-ironsong').functionalText).toBe(raw.functionalText);
 
     const withText = catalog.cards.filter((c) => c.functionalText !== undefined);
-    expect(catalog.cards).toHaveLength(4835);
-    expect(withText).toHaveLength(4797);
+    expect(catalog.cards).toHaveLength(5177);
+    expect(withText).toHaveLength(5139);
     for (const card of withText) {
       const rawCard = catalog.getRawCard(card.cardIdentifier) as TRawWithText;
       expect(card.functionalText).toBe(rawCard.functionalText);

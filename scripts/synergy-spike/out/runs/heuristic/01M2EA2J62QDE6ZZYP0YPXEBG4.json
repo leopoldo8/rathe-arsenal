@@ -3,15 +3,15 @@
   "candidate": "heuristic",
   "status": "ok",
   "top10": [
+    "fire-in-the-hole-red",
     "point-the-tip-blue",
     "point-the-tip-red",
     "point-the-tip-yellow",
     "call-in-the-big-guns-blue",
     "call-in-the-big-guns-yellow",
-    "fire-in-the-hole-red",
+    "fletch-a-red-tail-red",
     "line-blue",
     "hook-blue",
-    "fletch-a-red-tail-red",
-    "boltn-shot-blue"
+    "read-the-glide-path-blue"
   ]
 }

@@ -26,7 +26,7 @@ function deckOf(hero: string, format: string, cards: string[]): IDeckFile {
   };
 }
 
-test('C7: each per-card test of step 5 and the Silver Age rarity list is applied, and Dorinthea in CC has 928 non-hero cards', () => {
+test('C7: each per-card test of step 5 and the Silver Age rarity list is applied, and Dorinthea in CC has 1,017 non-hero cards', () => {
   const generic = catalog.getCard('snatch-red');
   assert.equal(isCardInPool(generic, dorinthea, CC), true);
 
@@ -49,7 +49,7 @@ test('C7: each per-card test of step 5 and the Silver Age rarity list is applied
   assert.equal(isCardInPool(variant(generic, { rarity: Rarity.Majestic, legalFormats: [Format.SilverAge] }), youngHero, SA), false);
 
   const passing = catalog.cards.filter((c) => !c.types.includes(Type.Hero) && isCardInPool(c, dorinthea, CC));
-  assert.equal(passing.length, 928);
+  assert.equal(passing.length, 1017);
 });
 
 test('C8: the pool drops hero cards, tokens and cards already in the deck, and states its size', () => {

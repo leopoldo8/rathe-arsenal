@@ -1,31 +1,41 @@
 [
   {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "call-in-the-big-guns-blue",
-    "runs": [
-      {
-        "candidate": "heuristic",
-        "rank": 4
-      }
-    ]
-  },
-  {
-    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
     "card": "point-the-tip-blue",
     "runs": [
       {
         "candidate": "heuristic",
-        "rank": 1
+        "rank": 2
       }
     ]
   },
   {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "call-in-the-big-guns-yellow",
+    "card": "hook-blue",
     "runs": [
       {
         "candidate": "heuristic",
-        "rank": 5
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "vigorous-smashup-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 2
       }
     ]
   },
@@ -35,13 +45,73 @@
     "runs": [
       {
         "candidate": "heuristic",
-        "rank": 3
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "feasting-shadowbeast-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
       }
     ]
   },
   {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "fire-in-the-hole-red",
+    "card": "call-in-the-big-guns-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "call-in-the-big-guns-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-blue",
     "runs": [
       {
         "candidate": "heuristic",
@@ -51,17 +121,27 @@
   },
   {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "line-blue",
+    "card": "point-the-tip-red",
     "runs": [
       {
         "candidate": "heuristic",
-        "rank": 7
+        "rank": 3
       }
     ]
   },
   {
-    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "point-the-tip-red",
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "endless-maw-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "feasting-shadowbeast-yellow",
     "runs": [
       {
         "candidate": "heuristic",
@@ -75,13 +155,13 @@
     "runs": [
       {
         "candidate": "heuristic",
-        "rank": 9
+        "rank": 7
       }
     ]
   },
   {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "boltn-shot-blue",
+    "card": "read-the-glide-path-blue",
     "runs": [
       {
         "candidate": "heuristic",
@@ -90,12 +170,132 @@
     ]
   },
   {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "wild-ride-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
     "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
-    "card": "hook-blue",
+    "card": "fire-in-the-hole-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "endless-maw-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "rip-off-the-top-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "line-blue",
     "runs": [
       {
         "candidate": "heuristic",
         "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "barraging-big-horn-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 3
       }
     ]
   }

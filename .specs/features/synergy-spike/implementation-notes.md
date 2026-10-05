@@ -2,6 +2,8 @@
 
 ## Deviations
 
+- **Renegotiated: catalog moved to 5.3.0 by the owner (#127).** Only literals changed, not the claims or the tests' strength: cards 4,835 -> 5,177, cards with rules text 4,797 -> 5,139 (38 without, unchanged), Dorinthea Ironsong Classic Constructed non-hero pool 928 -> 1,017 (checks C1, C2, C7, their tests, and plan AC 1, the S1 and S3 independent tests, Sources). The plan's token and cost arithmetic still quotes the 4.0.8 pool of 928 and is left as a historical estimate; the real count comes from `--dry-run`. With 5.3.0 all three decks load (the entry below is superseded).
+
 - **Decks 2 and 3 cannot be loaded; needs the owner.** The catalog is `@flesh-and-blood/cards` 4.0.8.
   Deck `01M0KJEX07FX04Z07EQ1TESWYP` holds `headstrong-stampede-red`, and deck `01M2GEPE0X50C32E02KZNXAETH` holds nine identifiers (`beckoning-hunger-red`, `blood-harvest`, `cleave-the-heavens-blue`, `cleave-the-heavens-red`, `consuming-lash-yellow`, `fallen-herald-yellow`, `feasting-shadowbeast-red`, `feeding-frenzy-red`, `pull-from-beyond-blue`) that 4.0.8 does not know.
   Plan AC 6 says such a deck writes no file and the command exits 1, so that is what happens.
