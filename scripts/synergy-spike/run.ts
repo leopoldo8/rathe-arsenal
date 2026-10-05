@@ -1,6 +1,6 @@
 import { catalog } from '../../packages/engine/src';
 import { readPool } from './lib/io';
-import { createOpenRouterClient, dryRunLlm, missingKeyMessage, readApiKey, type TFetch } from './lib/llm';
+import { dryRunLlm, missingKeyMessage, resolveLlmClient, type TFetch } from './lib/llm';
 import { MODEL_CONFIGS, configFor } from './lib/models.config';
 import { outDir } from './lib/paths';
 import { runCandidate, selectDecks } from './lib/run-candidate';
@@ -42,16 +42,15 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const apiKey = configs.length > 0 ? readApiKey(process.env) : null;
-  if (configs.length > 0 && apiKey === null) {
+  const llm = configs.length > 0 ? resolveLlmClient(process.env, fetch as unknown as TFetch) : null;
+  if (configs.length > 0 && llm === null) {
     console.error(missingKeyMessage());
     process.exit(1);
   }
-  const llm = apiKey === null ? undefined : createOpenRouterClient(apiKey, fetch as unknown as TFetch);
 
   let exitCode = 0;
   for (const candidate of args.candidates) {
-    const result = await runCandidate({ candidate, out, catalog, onlyDeck: args.deck, llm, force: args.force });
+    const result = await runCandidate({ candidate, out, catalog, onlyDeck: args.deck, llm: llm ?? undefined, force: args.force });
     if (result.runs.length === 0) {
       console.error('no decks found: run `pnpm synergy:decks` and `pnpm synergy:pool` first');
       process.exit(1);

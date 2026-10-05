@@ -210,6 +210,12 @@ export function readApiKey(env: NodeJS.ProcessEnv): string | null {
   return key === undefined || key.trim() === '' ? null : key;
 }
 
+/** The client exists only when the key does, so a missing key can never produce a request. */
+export function resolveLlmClient(env: NodeJS.ProcessEnv, fetchImpl: TFetch): ILlmClient | null {
+  const apiKey = readApiKey(env);
+  return apiKey === null ? null : createOpenRouterClient(apiKey, fetchImpl);
+}
+
 /**
  * OpenRouter has no token-count endpoint (https://openrouter.ai/api/v1/messages/count_tokens answers 404 and the
  * docs index lists none), so the dry run estimates locally at 4 characters per token and calls nothing.

@@ -78,3 +78,16 @@ test('C6: a failed fetch and an identifier absent from the catalog each name the
   assert.ok(result.errors.some((e) => e.includes(URLS[0] as string) && e.includes('not-a-real-card-xyz')));
   assert.deepEqual(listFiles(out), []);
 });
+
+test('C6: the CLI exits 1, prints the deck URL and writes no file when a listed deck cannot be loaded', () => {
+  const out = tempDir();
+  const bad = 'https://fabrary.net/not-a-deck-page';
+  const file = join(tempDir(), 'decks.yaml');
+  writeFileSync(file, `decks:\n  - ${bad}\n  - ${bad}/2\n  - ${bad}/3\n`);
+
+  const result = runCli('decks.ts', [], { SYNERGY_DECKS_FILE: file, SYNERGY_OUT_DIR: out });
+
+  assert.equal(result.status, 1);
+  assert.ok(result.stderr.includes(bad));
+  assert.deepEqual(listFiles(out), []);
+});

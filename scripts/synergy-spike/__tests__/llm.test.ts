@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'f
 import { join } from 'path';
 import { test } from 'node:test';
 import { catalog } from '../../../packages/engine/src';
-import { createOpenRouterClient, dryRunLlm, readApiKey, type TFetch } from '../lib/llm';
+import { createOpenRouterClient, dryRunLlm, readApiKey, resolveLlmClient, type TFetch } from '../lib/llm';
 import { MODEL_CONFIGS } from '../lib/models.config';
 import { buildPool } from '../lib/pool-filter';
 import { runCandidate } from '../lib/run-candidate';
@@ -197,4 +197,21 @@ test('C19: each of six failure triggers records a failed run, one request, no re
     assert.equal(run.top10, undefined, name);
     expectRun(run);
   }
+});
+
+test('C15: with the key unset the injected fetch is called 0 times, and with it set a run calls it once per deck', async () => {
+  const missing = fakeFetch();
+  const client = resolveLlmClient({}, missing.fetchImpl);
+  assert.equal(client, null);
+  await assert.rejects(
+    runCandidate({ candidate: 'gpt-6.1-sol', out: seedOut(), catalog, llm: client ?? undefined }),
+    /needs a language-model client/,
+  );
+  assert.equal(missing.calls.length, 0);
+
+  const present = fakeFetch();
+  const live = resolveLlmClient({ OPENROUTER_API_KEY: KEY }, present.fetchImpl);
+  assert.ok(live);
+  await runCandidate({ candidate: 'gpt-6.1-sol', out: seedOut(), catalog, llm: live });
+  assert.equal(present.calls.length, 1);
 });
