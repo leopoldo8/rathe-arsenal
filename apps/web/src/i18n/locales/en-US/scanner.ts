@@ -1,4 +1,7 @@
 export const scanner = {
+  title: 'Scan cards',
+  close: 'Close the scanner',
+  torch: 'Flashlight',
   hint: 'Line up the bottom edge of the card with the guide.',
   loadingEngine: 'Getting the scanner ready…',
   engineError: 'The scanner could not load.',

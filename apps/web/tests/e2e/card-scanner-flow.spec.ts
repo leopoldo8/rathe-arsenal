@@ -77,11 +77,20 @@ test.describe('Card scanner', () => {
     await scanOneCard();
   });
 
+  test('takes the whole screen without the app navigation', async () => {
+    await page.goto(`${BASE_URL}/add-cards/scan`);
+
+    await expect(page.getByTestId('card-guide')).toBeVisible();
+    await expect(page.getByRole('link', { name: /^(Close the scanner|Fechar o scanner)$/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^(Library|Biblioteca)$/ })).toHaveCount(0);
+    await expect(page.locator('footer')).toHaveCount(0);
+  });
+
   test('asks before leaving with a non-empty tray', async () => {
     test.setTimeout(120_000);
     await scanOneCard();
 
-    await page.getByRole('link', { name: /^(Library|Biblioteca)$/ }).first().click();
+    await page.getByRole('link', { name: /^(Close the scanner|Fechar o scanner)$/ }).click();
 
     const keep = page.getByTestId('discard-confirm-keep-btn');
     await expect(keep).toBeVisible();

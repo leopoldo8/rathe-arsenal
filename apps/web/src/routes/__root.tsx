@@ -21,15 +21,19 @@ const AUTH_SHELL_PREFIXES = [
   '/onboarding',
 ];
 
+// Authenticated routes that take the whole screen; checked before the shell prefixes.
+const FULL_SCREEN_PATHS = ['/add-cards/scan'];
+
 // Auth routes render their own full-page layout (AuthLayout per-route)
 const AUTH_PAGE_PREFIXES = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email', '/check-your-email'];
 
 function RootLayout(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const isAuthShell = AUTH_SHELL_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
-  );
+  const isFullScreen = FULL_SCREEN_PATHS.includes(pathname);
+
+  const isAuthShell =
+    !isFullScreen && AUTH_SHELL_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 
   const isAuthPage = AUTH_PAGE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
