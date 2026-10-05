@@ -20,7 +20,7 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 1. `scripts/synergy-spike/fixtures/decks.yaml` (new, no door - placement per conventions) lists the Fabrary URLs -> `fetchDeck` in `scripts/gold-set/fetch-deck.ts` (exists) - loads each deck by Fabrary ULID, `synergy:decks` writes one deck JSON per deck
 2. deck JSON -> `catalog` in `packages/engine/src/catalog/catalog.ts` (exists, gains `functionalText`, door 1) - resolves every card, hero and format
 3. `synergy:pool` (new, no door - placement per conventions) - keeps the cards legal for the deck's hero in the deck's format, using the same per-card tests as step 5 of `computeDeckLegality` in `packages/engine/src/legality/compute.ts` (exists, not callable per card, see Assumptions), minus hero cards, tokens and cards already in the deck
-4. `synergy:run <candidate>` (new, no door - placement per conventions) - for each deck, the chosen candidate returns a ranked top 10 from the pool; the language-model candidate calls the Anthropic API through `@anthropic-ai/sdk` (door 2)
+4. `synergy:run <candidate>` (new, no door - placement per conventions) - for each deck, the chosen candidate returns a ranked top 10 from the pool; the three language-model candidates (`gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`) call OpenRouter chat completions over `fetch` (door 3)
 5. `synergy:sheet` (new, no door - placement per conventions) - merges every candidate's top 10 per deck into one unlabeled judging sheet (CSV, `csv-stringify` exists in the root devDependencies) and a hidden key file mapping rows to candidates, the same blind/key split as `scripts/gold-set/export-csv.ts` (exists)
 6. the owner fills the `verdict` column with `yes` or `no` - no tool involved
 7. `synergy:score` (new, no door - placement per conventions) - reads the verdicts with `csv-parse` (exists), joins them to the key, writes `result.md` with pass or fail per candidate per deck and the stop-rule line, as `scripts/gold-set/score.ts` (exists) does for the gold set
@@ -32,7 +32,7 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 | domain | new term: `functionalText` on `ICatalogCard` - the card's rules text, copied unchanged from `@flesh-and-blood/cards`, where the field has that name; today `normalizeCard` drops it and the raw card is reachable only through `getRawCard`, typed `unknown` |
 | domain | existing term: `ICatalogCard` gains one optional field - the substitution engine, readiness, legality and the API read cards by named field, and none reads the whole object, so no caller changes (verified by the existing engine and API test suites, which must stay green) |
 | stored data | nothing to migrate - no table, no column, no deck row is read or written; the owner's decks come from Fabrary, not from the database |
-| dependencies | root `package.json` gains one devDependency and five `synergy:*` scripts; `.env.example` gains one commented line naming `ANTHROPIC_API_KEY` with no value |
+| dependencies | root `package.json` gains five `synergy:*` scripts and no dependency (the Anthropic SDK added first was removed when the owner changed candidates); `.env.example` gains one commented line naming `OPENROUTER_API_KEY` with no value |
 | repository | spike outputs are committed under `scripts/synergy-spike/out/`, as `scripts/gold-set/out/` is today, so the verdicts and the result survive the branch |
 
 ## Relations
@@ -48,7 +48,8 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 | One-way door | Literal shape | Alternative rejected |
 | --- | --- | --- |
 | 1. rules text on the catalog card | `readonly functionalText?: string` on `ICatalogCard`, assigned in `normalizeCard` only when the raw card has it, the same way `hero` and `bannedFormats` are assigned today | read it through `getRawCard(id)` cast from `unknown`: untyped, so a renamed field in the package fails at runtime instead of at compile time. Rename to `rulesText`: a second name for a field the package already names, so every reader has to know both |
-| 2. Anthropic SDK dependency | `"@anthropic-ai/sdk"` in the root `package.json` `devDependencies`, imported only by `scripts/synergy-spike/` | raw `fetch` to the Messages endpoint: loses the SDK's typed errors and automatic retries, which the script would have to rewrite |
+| 2. Anthropic SDK dependency (superseded by door 3, 2026-10-04) | `"@anthropic-ai/sdk"` in the root `package.json` `devDependencies`, imported only by `scripts/synergy-spike/` | raw `fetch` to the Messages endpoint: loses the SDK's typed errors and automatic retries, which the script would have to rewrite |
+| 3. OpenRouter chat completions (added 2026-10-04, replaces door 2) | `POST https://openrouter.ai/api/v1/chat/completions` over Node's global `fetch`, key read only from `OPENROUTER_API_KEY` and sent as `Authorization: Bearer`, body with `response_format` `json_schema` (`strict` true), `provider.require_parameters` true and, for GPT-6.1 Sol only, `reasoning.effort` `high`; the three model ids (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`) pinned in one file, `scripts/synergy-spike/lib/models.config.ts` | one SDK per provider: three dependencies and three request shapes for a throwaway script; keeping `@anthropic-ai/sdk`: the owner dropped the Anthropic candidate |
 
 - Nothing else in this change is hard to reverse: the deck file, pool, run files, sheet and result are scripts and data under `scripts/synergy-spike/`, deleted by deleting the folder
 
@@ -92,23 +93,25 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 
 **Acceptance Criteria**
 
-10. WHEN `pnpm synergy:run <candidate>` runs, with candidate one of `llm`, `heuristic`, `cooccurrence`, THEN the system SHALL write `out/runs/<candidate>/<ulid>.json` per deck holding exactly 10 distinct card identifiers in rank order, each present in that deck's pool and absent from the deck.
+10. WHEN `pnpm synergy:run <candidate>` runs, with candidate one of `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `heuristic`, `cooccurrence`, or `llm-all` (the three language-model candidates in turn), THEN the system SHALL write `out/runs/<candidate>/<ulid>.json` per deck holding exactly 10 distinct card identifiers in rank order, each present in that deck's pool and absent from the deck.
 11. IF a candidate returns an identifier outside the pool or in the deck THEN the system SHALL drop it, and IF fewer than 10 remain THEN the system SHALL record that deck's run as failed, write no top 10 for it, and exit 1.
 12. WHEN the `heuristic` candidate runs twice on the same decks THEN the system SHALL write byte-identical run files.
 13. The system SHALL fix the `heuristic` scoring formula in a commit before the owner records any verdict, and SHALL NOT change it after verdicts exist.
 14. WHERE the candidate is `cooccurrence`, WHEN fewer public decklists of the deck's hero than the configured minimum are available THEN the system SHALL write `out/runs/cooccurrence/<ulid>.json` with status `untestable` and the count found, and exit 0.
 
-**Independent test:** run `heuristic` twice and diff; run `llm --dry-run` (criterion 17); run `cooccurrence` against a hero with no decklists.
+**Independent test:** run `heuristic` twice and diff; run `llm-all --dry-run` (criterion 17); run `cooccurrence` against a hero with no decklists.
 
-### S5: the language-model candidate runs safely and shows its cost (P1)
+### S5: the three language-model candidates run safely and show their cost (P1)
+
+Owner's change, 2026-10-04: three models through OpenRouter replace the single Claude Opus candidate; each is its own blind candidate.
 
 **Acceptance Criteria**
 
-15. WHERE the candidate is `llm`, WHEN the environment variable `ANTHROPIC_API_KEY` is unset THEN the system SHALL exit 1 before sending any request, and the script SHALL hold no key in any file.
-16. WHERE the candidate is `llm`, WHEN a deck runs THEN the system SHALL send one request to model `claude-opus-5-5` holding the hero, the deck list with each card's rules text, and the whole pool with each card's rules text, and SHALL request a ranked list of 25 identifiers with one sentence of reason each, of which the top 10 are kept.
-17. WHEN `pnpm synergy:run llm --dry-run` runs THEN the system SHALL print the input token count of each deck's request from the SDK's token-counting call, send no generation request, and exit 0.
-18. WHEN a generation request returns THEN the system SHALL store its `usage` input and output token counts in that deck's run file.
-19. IF the response ends with stop reason `refusal` or `max_tokens` THEN the system SHALL record that deck's run as failed with the stop reason, not retry, and exit 1.
+15. WHERE the candidate is `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro` or `llm-all`, WHEN the environment variable `OPENROUTER_API_KEY` is unset THEN the system SHALL exit 1 before sending any request, and the script SHALL hold no key in any file.
+16. WHERE the candidate is one of the three, WHEN a deck runs THEN the system SHALL send one request to OpenRouter, to that candidate's pinned model, holding the hero, the deck list with each card's rules text, and the whole pool with each card's rules text, with `response_format` `json_schema` strict and `provider.require_parameters` true, and SHALL request a ranked list of 25 identifiers with one sentence of reason each, of which the top 10 are kept.
+17. WHEN `pnpm synergy:run <candidate> --dry-run` runs THEN the system SHALL print an input token estimate and a cost ceiling for each deck and model, computed locally because OpenRouter offers no token-count endpoint, say so, send no request, need no key, and exit 0.
+18. WHEN a response returns THEN the system SHALL store its `usage` prompt, completion and reasoning token counts and its `cost` in that deck's run file.
+19. IF the response ends with finish reason `length`, `content_filter` or `error`, carries a refusal, is an HTTP error, or holds content that is not the JSON ranking THEN the system SHALL record that deck's run as failed, not retry, and exit 1.
 
 **Independent test:** run `--dry-run` with the key unset (exit 1), then set; run for one deck and read the token counts in the file.
 
@@ -120,7 +123,7 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 21. WHEN the sheet is written THEN the system SHALL order the rows by a seeded shuffle, and SHALL write `out/judging-key.json` mapping each (deck, card) to the candidates and ranks that produced it.
 22. WHEN `pnpm synergy:sheet` runs and `out/judging-sheet.csv` already holds verdicts THEN the system SHALL keep every existing verdict and add only rows for (deck, card) pairs not yet present.
 
-**Independent test:** run `llm`, build the sheet, fill two verdicts, run `heuristic`, rebuild, and check the two verdicts survive and no row repeats.
+**Independent test:** run `gpt-6.1-sol`, build the sheet, fill two verdicts, run `heuristic`, rebuild, and check the two verdicts survive and no row repeats.
 
 ### S7: the result states pass or fail and whether to stop (P1)
 
@@ -132,7 +135,7 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 26. WHEN every candidate has been run once on the same three decks and none passed on three THEN the system SHALL write the line `STOP: all candidates tried once, none passed`.
 27. WHEN neither stop line applies THEN the system SHALL write `CONTINUE: next candidate is <candidate>` naming the next one in the agreed order.
 28. WHERE a candidate's run for a deck is `untestable` or `failed` THEN the system SHALL print that status in `result.md` in place of a count, and SHALL count the candidate as tried.
-29. WHERE the `llm` candidate ran THEN the system SHALL print the total input and output tokens it used in `result.md`.
+29. WHERE a language-model candidate ran THEN the system SHALL print the total input tokens, output tokens and cost in USD it used in `result.md`.
 
 **Independent test:** score a sheet filled with all `yes`, then one with a blank, then one with `maybe`.
 
@@ -153,33 +156,35 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 | Assumption | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
 | the three decks | `https://fabrary.net/decks/01M2EA2J62QDE6ZZYP0YPXEBG4`, `https://fabrary.net/decks/01M0KJEX07FX04Z07EQ1TESWYP`, `https://fabrary.net/decks/01M2GEPE0X50C32E02KZNXAETH`, listed in `scripts/synergy-spike/fixtures/decks.yaml` | owner's answer, 2026-10-04 | y |
-| language-model spend | about 1 USD per full pass is acceptable; the key comes only from `ANTHROPIC_API_KEY` in the owner's shell and is never written to a file | owner's answer, 2026-10-04 | y |
-| order of candidates | `llm` first, then `heuristic`, then `cooccurrence` | the language model is the only candidate that can read "serves the strategy" from rules text, and needs no new data; the heuristic needs nothing outside the repository; co-occurrence needs decklists the repository does not hold and overlaps the deferred Discover work, so it goes last | n |
+| language-model spend | about 1 USD per full pass is acceptable; the key comes only from the owner's shell and is never written to a file | owner's answer, 2026-10-04; the key variable is now `OPENROUTER_API_KEY` (see the candidates row); the new ceiling is 1.74 USD for all three models, expected 0.68 USD | y |
+| order of candidates | `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, then `heuristic`, then `cooccurrence` (was `llm`, `heuristic`, `cooccurrence`; the single `llm` became the three) | the language models are the only candidates that can read "serves the strategy" from rules text and need no new data, ordered ceiling model first, then cheapest big-provider, then best value; the rest as before | n |
 | judgment unit | `yes` means "I would consider putting this card in this deck", `no` otherwise; no scale | matches the wording of the pass bar, and one binary column keeps the sheet quick to fill | n |
 | what counts as the top 10 | the 10 highest-ranked cards of the pool, one entry per card identifier (pitch variants are separate cards, as in the catalog) | the catalog treats each pitch as its own identifier | n |
 | which deck cards the language model sees | mainboard entries only, with quantities; the hero's rules text is included | equipment and weapons are in the deck JSON but the suggestions are for the mainboard, since the pool excludes hero cards and the design speaks of cards in a deck | n |
 | pool filter implementation | the script copies the step-5 per-card tests of `computeDeckLegality` into the spike, because the engine exposes only the deck-level function, which returns `incomplete` for a deck smaller than the format minimum before it reaches step 5 | extracting an engine predicate is a product change; if the spike passes, the feature extracts it then | n |
 | format of the three decks | Classic Constructed unless the owner's decks say otherwise (the format comes from the deck itself) | the design's measurement was over Classic Constructed; any of the four formats works since the pool uses the deck's own format | n |
-| language-model run shape | model `claude-opus-5-5`, adaptive thinking, effort `high`, structured JSON output, streaming with the final message, one request per deck; Anthropic's server-side refusal fallback is not enabled | the claude-api skill names `claude-opus-5-5` as the current default; a spike prefers one model with no second route; a refusal on a card-game ranking is recorded under criterion 19 | n |
-| token and cost estimate | about 41,000 input tokens and at most 8,000 output tokens per deck, about 1 USD per full pass of three decks at the Opus 5.5 rates in the claude-api skill's price table (cached 2026-09-25: $4 and $20 per million tokens in and out) | arithmetic below; the real figure comes from criterion 17 before any spend, so the estimate is replaceable | n |
+| language-model run shape | model `claude-opus-5-5`, adaptive thinking, effort `high`, structured JSON output, streaming with the final message, one request per deck; Anthropic's server-side refusal fallback is not enabled | the claude-api skill names `claude-opus-5-5` as the current default; a spike prefers one model with no second route; a refusal on a card-game ranking is recorded under criterion 19 | superseded 2026-10-04 by the language-model candidates row and the arithmetic below |
+| token and cost estimate | about 41,000 input tokens and at most 8,000 output tokens per deck, about 1 USD per full pass of three decks at the Opus 5.5 rates in the claude-api skill's price table (cached 2026-09-25: $4 and $20 per million tokens in and out) | arithmetic below; the real figure comes from criterion 17 before any spend, so the estimate is replaceable | superseded 2026-10-04 by the language-model candidates row and the arithmetic below |
+| language-model candidates | three models through OpenRouter, each a separate blind candidate: `openai/gpt-6.1-sol` with `reasoning.effort` `high` ($2 and $10 per million tokens in and out), `google/gemini-3.8-flash` ($0.75 and $3.75), `xiaomi/mimo-v2.6-pro` ($0.435 and $0.87); one request per deck, `max_tokens` 32000 because reasoning shares that budget | owner's answer, 2026-10-04: a near-frontier ceiling, a cheap big-provider model and the best quality-per-dollar model found; ids, prices and capability flags read from `https://openrouter.ai/api/v1/models` on 2026-10-04 | y |
 | minimum decklists for co-occurrence | 20 public decklists of the same hero, per hero | below that, co-occurrence counts are mostly noise; the number is a guess and the owner may change it | n |
 | outputs | committed under `scripts/synergy-spike/out/` | precedent: `scripts/gold-set/out/` is committed; the owner's verdicts are the only record of the spike's answer | n |
 
-Token and cost arithmetic, from the catalog on 4.0.8 for Dorinthea Ironsong in Classic Constructed:
+Token and cost arithmetic, from the catalog on 5.3.0 for the owner's three decks (the input figures come from `pnpm synergy:run llm-all --dry-run`, which estimates locally at 4 characters per token; the real counts come back in each response's `usage`):
 
-- Pool: 928 cards; name, type line and rules text plus 20 characters of framing add up to 154,160 characters; at about 4 characters per token (an assumption, replaced by the real count in criterion 17) that is about 38,500 tokens.
-- Deck list: about 40 distinct mainboard cards at about 165 characters each is about 6,600 characters, about 1,650 tokens, plus the hero and instructions, about 2,500 tokens in all.
-- Input per deck: about 41,000 tokens; three decks: about 123,000 tokens.
-- Output per deck: 25 identifiers with a sentence each is about 1,500 tokens, plus thinking; the ceiling is set at 8,000.
-- Cost per deck: 41,000 x $4 per million is about $0.16 in, plus up to 8,000 x $20 per million is up to $0.16 out, so about $0.33; three decks: about $1.00.
-- Relative: the same run on `claude-sonnet-5-5` ($2 and $10 per million) is half; a second pass for another hero changes only the pool size.
-- Both prices come from the claude-api skill's cached table, not from the live pricing page, and are labelled as such in the open question.
+- Input per deck: Kayo SAGE 28,826 tokens (pool 673), Jyrem's Azalea 27,429 (pool 628), Big Number Better 48,276 (pool 1,076); three decks: 104,531 tokens per model.
+- Output per deck: 25 identifiers with a sentence each is about 1,500 tokens, plus reasoning; expected 8,000 per deck (24,000 for three), ceiling 32,000 per deck (96,000 for three), the `max_tokens` set on every request.
+- GPT-6.1 Sol ($2 in, $10 out per million): input 104,531 x 2 / 1e6 = $0.209; output $0.240 expected, $0.960 ceiling; full pass $0.45 expected, $1.17 ceiling.
+- Gemini 3.8 Flash ($0.75 in, $3.75 out): input $0.078; output $0.090 expected, $0.360 ceiling; full pass $0.17 expected, $0.44 ceiling.
+- MiMo-V2.6-Pro ($0.435 in, $0.87 out): input $0.045; output $0.021 expected, $0.084 ceiling; full pass $0.07 expected, $0.13 ceiling.
+- All three models, three decks: $0.68 expected, $1.74 ceiling (0.449 + 0.168 + 0.066 and 1.169 + 0.438 + 0.129).
+- GPT-6.1 Sol's price doubles above 272,000 prompt tokens; the largest request here is about 48,000, so the base rate applies.
+- Prices are per token as listed on `https://openrouter.ai/api/v1/models` on 2026-10-04 (`pricing.prompt`, `pricing.completion`); OpenRouter reports the charged amount in `usage.cost`, which `result.md` sums per candidate.
 
 **Open questions:** two left, neither blocks; the two blocking ones were answered by the owner on 2026-10-04 and are recorded as confirmed rows above.
 
 | # | Kind | Question | Until answered |
 | --- | --- | --- | --- |
-| 3 | open | Do you agree with the candidate order `llm`, `heuristic`, `cooccurrence`? | the order in criterion 27 defaults to this one |
+| 3 | open | Do you agree with the candidate order `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `heuristic`, `cooccurrence`? | the order in criterion 27 defaults to this one |
 | 4 | open | If the first two fail, can decklists of the same hero be listed on Fabrary without a login (the current loader only fetches one deck by ULID), and is 20 decklists per hero the right minimum? | the co-occurrence run is recorded as `untestable` (criterion 14), which counts it as tried |
 
 ## Observable
@@ -193,7 +198,7 @@ Worksheet, not the review.
 | command `pnpm synergy:pool` | exit codes, failure halfway | AC 9 |
 | command `pnpm synergy:run <candidate>` | flags and defaults | AC 10, AC 17 |
 | command `pnpm synergy:run <candidate>` | exit codes, failure halfway | AC 11, AC 15, AC 19 |
-| command `pnpm synergy:run llm` | cost visibility before spend | AC 17, AC 18 |
+| command `pnpm synergy:run <llm candidate>` | cost visibility before spend | AC 17, AC 18 |
 | command `pnpm synergy:sheet` | output format and verbosity | AC 20 |
 | command `pnpm synergy:sheet` | rerun after verdicts exist | AC 22 |
 | command `pnpm synergy:score` | exit codes, failure halfway | AC 23 |
