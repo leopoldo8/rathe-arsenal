@@ -79,6 +79,21 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
       expect(scoreCandidate(missing, candidate, TIER_2_CONFIG)).toBeNull();
     });
 
+    it('treats two class-less cards as sharing a class', () => {
+      const missing = makeCard({ cardIdentifier: 'a', classes: [] });
+      const candidate = makeCard({ cardIdentifier: 'b', classes: [] });
+
+      expect(scoreCandidate(missing, candidate, TIER_1_CONFIG)).toBe(1.0);
+    });
+
+    it('does not match a class-less card against a classed one', () => {
+      const missing = makeCard({ cardIdentifier: 'a', classes: [] });
+      const candidate = makeCard({ cardIdentifier: 'b', classes: [Class.Generic] });
+
+      expect(scoreCandidate(missing, candidate, TIER_1_CONFIG)).toBeNull();
+      expect(scoreCandidate(candidate, missing, TIER_1_CONFIG)).toBeNull();
+    });
+
     it('returns null when type intersection is empty', () => {
       const missing = makeCard({
         cardIdentifier: 'a',
@@ -586,6 +601,19 @@ describe('findTierMatch', () => {
     expect(tier2Result).not.toBeNull();
     expect(tier2Result!.tier).toBe(2);
     expect(tier2Result!.score).toBeGreaterThanOrEqual(TIER_2_FLOOR_SCORE);
+  });
+
+  it('finds a class-less substitute for a class-less missing card', () => {
+    const missing = makeCard({ cardIdentifier: 'missing', classes: [] });
+    const candidate = makeCard({ cardIdentifier: 'candidate', classes: [] });
+
+    const catalog = makeCatalog([missing, candidate]);
+    const inventory = new Map([['candidate', 1]]);
+
+    const result = findTierMatch(missing, inventory, catalog, TIER_1_CONFIG, 'mainboard');
+
+    expect(result?.substitute.cardIdentifier).toBe('candidate');
+    expect(result?.tier).toBe(1);
   });
 
   it('requires the candidate to be present in inventory', () => {

@@ -1,4 +1,5 @@
 import { ICatalog, ICatalogCard } from '../catalog/types';
+import { getClassKeys } from '../catalog/indices';
 import { ISubstitutionMatch, ITierConfig } from './types';
 import {
   BASE_SCORE,
@@ -66,7 +67,9 @@ export function scoreCandidate(
 ): number | null {
   // Hard constraints shared by all tiers
   if (candidate.pitch !== missing.pitch) return null;
-  if (!hasClassIntersection(missing.classes, candidate.classes)) return null;
+  if (!hasClassIntersection(getClassKeys(missing.classes), getClassKeys(candidate.classes))) {
+    return null;
+  }
   if (
     missing.talents.length > 0 &&
     !hasTalentIntersection(missing.talents, candidate.talents)
@@ -150,7 +153,7 @@ export function findTierMatch(
   const candidates = new Set<ICatalogCard>();
 
   // Gather candidates via byClassAndPitch using each class of the missing card.
-  for (const cls of missingCard.classes) {
+  for (const cls of getClassKeys(missingCard.classes)) {
     const key = `${cls}:${missingCard.pitch}`;
     const indexed = catalog.indices.byClassAndPitch.get(key);
     if (indexed) {

@@ -1,5 +1,11 @@
 import { ICatalogCard, ICatalogIndices } from './types';
 
+const NO_CLASS_KEY = '';
+
+export function getClassKeys(classes: readonly string[]): readonly string[] {
+  return classes.length > 0 ? classes : [NO_CLASS_KEY];
+}
+
 function pitchKey(cls: string, pitch: number | null): string {
   return `${cls}:${pitch}`;
 }
@@ -30,18 +36,11 @@ export function buildIndices(cards: readonly ICatalogCard[]): ICatalogIndices {
     // Multiple cards can share a name (different pitch variants, different editions).
     appendToMap(byName, card.name.toLowerCase(), card);
 
-    for (const cls of card.classes) {
+    for (const cls of getClassKeys(card.classes)) {
       appendToMap(byClassAndPitch, pitchKey(cls, card.pitch), card);
 
       for (const type of card.types) {
         appendToMap(byTypeAndClass, typeClassKey(type, cls), card);
-      }
-    }
-
-    // Cards with no classes still get indexed by type
-    if (card.classes.length === 0) {
-      for (const type of card.types) {
-        appendToMap(byTypeAndClass, typeClassKey(type, ''), card);
       }
     }
   }

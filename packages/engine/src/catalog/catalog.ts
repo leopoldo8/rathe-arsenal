@@ -75,6 +75,10 @@ const FOIL_SUFFIX: Record<string, string> = {
   Gold: '-GF',
 };
 
+function hasFoilSuffix(code: string): boolean {
+  return Object.values(FOIL_SUFFIX).some((suffix) => code.endsWith(suffix));
+}
+
 function buildImageUrl(
   defaultImage: string | undefined,
   printings: readonly IRawPrinting[] | undefined,
@@ -83,8 +87,8 @@ function buildImageUrl(
   readonly large: string;
   /**
    * Ordered list of candidate URL pairs. The frontend tries each in turn:
-   * first the bare `defaultImage`, then the same code with each foiling
-   * suffix found in the printings array. Some sets (Armory Decks, judges,
+   * first `defaultImage`, then each foiled printing's image code, with its
+   * foiling suffix appended when the code lacks one. Some sets (Armory Decks, judges,
    * promos) only publish the foiled face — without the fallback, a real
    * card image would never resolve.
    */
@@ -98,7 +102,8 @@ function buildImageUrl(
     const code = printing.image;
     if (!code || !printing.foiling) continue;
     const suffix = FOIL_SUFFIX[printing.foiling];
-    if (suffix) codes.add(`${code}${suffix}`);
+    if (hasFoilSuffix(code)) codes.add(code);
+    else if (suffix) codes.add(`${code}${suffix}`);
   }
 
   const sources = [...codes].map((code) =>

@@ -23,7 +23,7 @@ export const reasons = {
     pitchBlue: 'blue',
     pitchColorless: 'colorless',
     classesShared: 'same class ({{classes}})',
-    classesNone: 'different class',
+    classesNone: 'neither card has a class',
     powerSame: 'same power',
     powerDelta: 'power {{delta}}',
     defenseSame: 'same defense',

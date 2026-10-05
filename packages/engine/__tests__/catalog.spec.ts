@@ -178,12 +178,19 @@ describe('catalog', () => {
 
     it('appends -RF/-CF/-GF foiling suffixes for cards with foiled-only printings', () => {
       // Hide Tanner (Armory Deck: Kayo) — bare AKO005 returns 403 on LSS,
-      // only AKO005-RF resolves. The catalog must list both candidates so
-      // CardArt can fall back through them.
+      // only AKO005-RF resolves.
       const card = catalog.getCard('hide-tanner');
       const sourceSmalls = card.imageUrl?.sources.map((s) => s.small) ?? [];
-      expect(sourceSmalls.some((url) => /AKO005\.webp$/.test(url))).toBe(true);
       expect(sourceSmalls.some((url) => /AKO005-RF\.webp$/.test(url))).toBe(true);
+    });
+
+    it('never doubles a foiling suffix the printing image already carries', () => {
+      const doubled = catalog.cards.flatMap((card) =>
+        (card.imageUrl?.sources ?? [])
+          .map((s) => s.small)
+          .filter((url) => /-(RF|CF|GF)-(RF|CF|GF)\.webp$/.test(url)),
+      );
+      expect(doubled).toEqual([]);
     });
 
     it('deduplicates candidates when multiple printings share the same image+foiling pair', () => {
