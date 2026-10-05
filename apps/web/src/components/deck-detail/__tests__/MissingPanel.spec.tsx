@@ -408,4 +408,25 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
       "in place of A Moment's Peace",
     );
   });
+
+  it('marks a missing replacement with its original: only the slot the replacement is in', async () => {
+    await setTestLocale('en-US');
+    renderPanel(null, {
+      entries: [
+        entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', slot: 'mainboard', quantity: 2 }),
+        entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', slot: 'equipment', quantity: 2 }),
+      ],
+      replacements: [replacementOf({ slot: 'equipment' })],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    const rows = screen.getAllByTestId('missing-row');
+    const marked = rows.filter((row) => within(row).queryByTestId('replacement-mark') !== null);
+    expect(rows).toHaveLength(2);
+    expect(marked).toHaveLength(1);
+    // The equipment row is the replacement's own copies, so it offers no alternatives; the mainboard row does.
+    expect(within(marked[0]!).queryByRole('button', { name: /alternatives/i })).toBeNull();
+    const plain = rows.find((row) => row !== marked[0])!;
+    expect(within(plain).getByRole('button', { name: /alternatives/i })).toBeInTheDocument();
+  });
 });

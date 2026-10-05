@@ -81,6 +81,26 @@ describe('DeckList replacement marks', () => {
     expect(within(marked).getByRole('button', { name: "Undo the replacement of A Moment's Peace" })).toBeInTheDocument();
   });
 
+  it('marks a replacement with its original and Undo: only the slot the replacement is in', async () => {
+    await setTestLocale('en-US');
+    client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <DeckList
+          items={[item('coax-a-commotion-red', 'Coax a Commotion', 'mainboard'), item('coax-a-commotion-red', 'Coax a Commotion', 'equipment')]}
+          deckId={DECK_ID}
+          replacements={[replacement({ slot: 'equipment' })]}
+        />
+      </QueryClientProvider>,
+    );
+
+    const cells = screen.getAllByTestId('deck-list-cell');
+    expect(cells).toHaveLength(2);
+    const marked = cells.filter((cell) => within(cell).queryByTestId('replacement-mark') !== null);
+    expect(marked).toHaveLength(1);
+    expect(within(marked[0]!).getByTestId('replacement-mark')).toHaveTextContent('in place of Emissary of Tides');
+  });
+
   it('Undo sends the revert', async () => {
     await setTestLocale('en-US');
     renderList([replacement()]);
