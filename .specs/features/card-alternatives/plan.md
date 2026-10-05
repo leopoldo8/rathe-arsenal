@@ -20,7 +20,7 @@ Alternatives (S1):
 1. missing panel row, or approved swap row, "Alternatives" -> `GET /api/decks/:deckId/alternatives` -> `OwnsTrackedDeckGuard` (exists) -> alternatives controller and service (new, no door - placement per conventions)
 2. the service reads `deck_card`, the collection through `CollectionReadService.loadOwned` (exists) and the deck's active `card_replacement` rows (door 1), runs `computeEffectiveReadiness` (exists) once to take the slot's `notOwned` quantity, and subtracts the copies active replacements hold there: that is `needed`
 3. candidates come from an alternatives search in `packages/engine` substitution (new pure function, no door - placement), which scores with `scoreCandidate` (exists) under four group configs and filters each card through a per-card legality check extracted from `computeDeckLegality` (exists)
-4. prices for the listed cards come from `ShoppingLineService` (exists), the same unit-price resolution its shopping line uses
+4. prices for the listed cards come from `ShoppingLineService` (exists), whose new `priceCards` method runs the same line builder its shopping line uses, and nulls the price of a card with no stock
 5. out: `200` with the groups, and one `alternatives.listed` log line
 
 Replacement (S2):
@@ -57,7 +57,7 @@ Web:
 | `SubstitutionService.runReadiness` | reads `tracked_deck` and `deck_card` through the manager when one is passed; today the swap mutations pass one and only change `swap_suggestion`, so their result does not change |
 | swaps | a pick retires the `pending` and `approved` rows of the original in that slot; after an undo, reconciliation un-retires a matching row as `pending`, so an approved swap comes back unapproved |
 | deck list fidelity | a pick rewrites `deck_card`, so the deck no longer matches its Fabrary decklist from that moment; no re-sync flow exists that would notice |
-| API response | `GET /api/decks/:deckId` gains `replacements`; consumed only by this SPA, deployed with it |
+| API response | `GET /api/decks/:deckId` gains `replacements`, and so do the other responses that share its shape (`PUT /api/decks/:deckId`, scratch create); consumed only by this SPA, deployed with it |
 | error catalog | new codes `NOTHING_TO_REPLACE`, `REPLACEMENT_ILLEGAL`, `REPLACEMENT_NOT_ACTIVE`, each with an `apiErrors` entry in pt-BR and en-US (AD-003) |
 | stored data | one new table, nothing to backfill: no deck has replacements before this ships |
 | prior decisions | conforms to AD-003 (error codes), AD-006 (rows never deleted, retire instead), AD-007 (one decision covers every copy); records the pick-is-a-deck-change door as AD-009 |

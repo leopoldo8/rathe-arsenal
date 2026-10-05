@@ -329,3 +329,7 @@ Cost: about 40 proofs at their own layer across 7 test files. Without these rows
 - New files, estimated: engine alternatives search 10 KB, per-card legality 4 KB, their specs 21 KB; api module (entity, migration, two services, two controllers, DTOs) 36 KB, unit specs 15 KB, e2e and int specs 30 KB, throttle e2e 3 KB; web sheet and its CSS 14 KB, replacement mark and prompt 6 KB, api client 5 KB, specs 20 KB, Playwright flow 6 KB = 170 KB
 - Total about 467 KB / 4 = ~117k tokens. Slice headers (they double-count shared files): S1 58k, S2 enters the write path at 123k, S3 151k counted naively; without the double count the whole feature is ~117k, under the 150k budget - one builder, no ask
 - Mechanism: one builder (under budget), in its own worktree on `feat/card-alternatives`
+
+- Boundary: C1-C70 closed at a853357 (one builder, no handoff).
+- Settled mid-build: nothing was asked of the owner; twelve conservative calls are logged under `## Deviations` in `implementation-notes.md`, one needing the owner (deviation 8: the replacement's original has no name in the approved response shape).
+- Abandoned: nothing.
