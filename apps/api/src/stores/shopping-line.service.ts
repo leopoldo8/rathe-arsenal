@@ -249,7 +249,8 @@ export class ShoppingLineService {
         }
       }
     } catch (error) {
-      this.logger.error({
+      // The alternatives are still useful without prices, so a failing store query degrades to no prices.
+      this.logger.warn({
         msg: 'Alternatives price lookup failed',
         storeSlug,
         error: (error as Error).message,

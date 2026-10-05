@@ -83,6 +83,7 @@ interface IHarness {
   setDeckCards(rows: DeckCardEntity[]): void;
   setOwned(rows: Array<{ cardIdentifier: string; quantity: number; active: boolean }>): void;
   setStore(rows: { store: StoreEntity | null; stock: StoreStockEntity[]; variants: StoreStockVariantEntity[] }): void;
+  failStoreQueries(error: Error): void;
 }
 
 function harness(): IHarness {
@@ -135,6 +136,9 @@ function harness(): IHarness {
     setDeckCards: (rows) => deckCards.find.mockResolvedValue(rows),
     setOwned: (rows) => {
       ownedRows = rows;
+    },
+    failStoreQueries: (error) => {
+      storeRepo.findOne.mockRejectedValue(error);
     },
     setStore: ({ store: found, stock: stockRows, variants }) => {
       storeRepo.findOne.mockResolvedValue(found);
@@ -327,6 +331,21 @@ describe('AlternativesService', () => {
       const listed = noStore.groups.flatMap((g) => g.cards);
       expect(listed.length).toBeGreaterThan(0);
       expect(listed.every((c) => c.priceCents === null && c.productUrl === null)).toBe(true);
+    });
+
+    it('lists out-of-stock cards with null price: a failing store query still lists every card, with a warning', async () => {
+      const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      const h = harness();
+      const expected = (await h.service.list(request)).groups.flatMap((g) => g.cards.map((c) => c.cardIdentifier));
+      h.failStoreQueries(new Error('store down'));
+
+      const res = await h.service.list(request);
+
+      const listed = res.groups.flatMap((g) => g.cards);
+      expect(listed.map((c) => c.cardIdentifier)).toEqual(expected);
+      expect(listed.every((c) => c.priceCents === null && c.productUrl === null)).toBe(true);
+      expect(warn).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Alternatives price lookup failed', error: 'store down' }));
+      warn.mockRestore();
     });
 
     it('lists out-of-stock cards with null price: variant rows that are all out of stock', async () => {
