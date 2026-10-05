@@ -69,7 +69,7 @@ The heavier alternative keeps the original in the deck list and treats the pick 
 | [Replacement](#replacement) | picking an alternative rewrites the deck and records the original | clear |
 | [Original returns](#original-returns) | the prompt to keep or revert when the original enters the collection | open — 2 defaults taken |
 | [Synergy spike](#synergy-spike) | an answer on whether synergy can be judged well enough | passed - AD-010 |
-| [Recommendations](#recommendations) | proactive per-deck suggestions | design - discovery in progress |
+| [Recommendations](#recommendations) | proactive per-deck suggestions | designed - `.design/card-recommendations.md` |
 
 Order: Alternatives → Replacement → Original returns; Synergy spike runs in parallel with all three; Recommendations after the spike.
 

@@ -1,7 +1,7 @@
 # Card recommendations
 
 > Plan from this document. Each slice below carries its own shape - copy it, do not re-derive it.
-> Status: draft - interview with Rodrigo on 2026-10-05; shape awaits his confirmation.
+> Status: confirmed by Rodrigo, 2026-10-05 - plan after card-alternatives is merged to main, since Adopt builds on its `card_replacement` record.
 
 ## Situation
 
