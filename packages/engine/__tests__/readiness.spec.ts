@@ -1311,5 +1311,14 @@ describe('protectedCopies parameter (card-alternatives)', () => {
     expect(result.breakdown.substituted).toHaveLength(1);
     expect(result.breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0)).toBe(3);
   });
+
+  it("protected copies get no stand-in: the caller's map is not changed by a compute that spends it", () => {
+    const protectedCopies = new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 2]]);
+
+    run(protectedCopies);
+    run(protectedCopies);
+
+    expect([...protectedCopies]).toEqual([[buildProtectedKey('warrior-attack-red', 'mainboard'), 2]]);
+  });
 });
 

@@ -152,6 +152,17 @@ describe('CsvSourceRow', () => {
       expect(screen.getByRole('textbox', { name: /editar nome da fonte/i })).toBeInTheDocument();
     });
 
+    it('selects the whole label when editing starts', async () => {
+      renderRow(buildSource());
+
+      await userEvent.click(screen.getByRole('button', { name: /renomear.*my collection/i }));
+
+      const input = screen.getByRole('textbox', { name: /editar nome da fonte/i }) as HTMLInputElement;
+      expect(input.value.length).toBeGreaterThan(0);
+      expect(input.selectionStart).toBe(0);
+      expect(input.selectionEnd).toBe(input.value.length);
+    });
+
     it('calls patch with new label on Enter', async () => {
       renderRow(buildSource());
 

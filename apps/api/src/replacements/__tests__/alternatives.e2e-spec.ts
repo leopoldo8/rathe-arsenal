@@ -94,6 +94,7 @@ describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
 
     await fixture.get('/api/decks/not-a-number/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
     await fixture.get('/api/decks/2147483648/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
+    await fixture.get('/api/decks/0/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
     await fixture.get('/api/decks/-1/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
     await fixture.get('/api/decks/1.5/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
   });

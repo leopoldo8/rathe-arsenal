@@ -172,3 +172,21 @@ describe('DeckList replacement controls: error path', () => {
     expect(within(cellOf('Coax a Commotion')).queryByRole('alert')).toBeNull();
   });
 });
+
+describe('DeckList replacement controls: success path', () => {
+  it.each([
+    ['Undo', { originalOwned: false }, /undo/i, 'revert'],
+    ['Keep', { originalOwned: true }, /^keep/i, 'keep'],
+    ['Go back', { originalOwned: true }, /^go back/i, 'revert'],
+  ])('shows no error toast when %s succeeds', async (_label, overrides, name, route) => {
+    await setTestLocale('en-US');
+    renderList([replacement(overrides)]);
+
+    await userEvent.click(within(cellOf('Coax a Commotion')).getByRole('button', { name }));
+
+    await waitFor(() => expect(mockApiFetch).toHaveBeenCalledWith(`/replacements/replacement-1/${route}`, { method: 'POST' }));
+    await waitFor(() => expect(client.isMutating()).toBe(0));
+    expect(mockShow).not.toHaveBeenCalled();
+  });
+});
+
