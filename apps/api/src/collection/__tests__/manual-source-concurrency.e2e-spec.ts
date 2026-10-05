@@ -30,6 +30,9 @@ describe('manual source under concurrency (E2E)', () => {
     await app.init();
     close = () => app.close();
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
+    // The app only synchronizes the schema when it boots as the dev server does; align this database with
+    // the entities so an index the entity does not declare is absent here, as it is on a synchronized schema.
+    await dataSource.synchronize();
     sources = moduleRef.get(SourcesService, { strict: false });
     const [row] = await dataSource.query(
       `INSERT INTO "user" (email, "passwordHash", "emailVerifiedAt") VALUES ($1, 'x', now()) RETURNING id`,
