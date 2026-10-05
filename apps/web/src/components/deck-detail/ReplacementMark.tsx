@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useResolveReplacement, type IDeckReplacement, type TResolveAction } from '../../api/replacements';
 import { localizeApiError } from '../card-scanner/localize-api-error';
+import { useToast } from '../ui/Toast/useToast';
 import styles from './ReplacementMark.module.css';
 
 /** The "in place of" text for a replacement; shared by the deck list and the missing panel. */
@@ -27,12 +28,14 @@ export function ReplacementControls({
 }): React.ReactElement {
   const { t } = useTranslation();
   const resolve = useResolveReplacement(deckId);
-  const [error, setError] = useState<string | null>(null);
+  const { show: showToast } = useToast();
   const originalName = replacement.originalName;
 
   function send(action: TResolveAction): void {
-    setError(null);
-    resolve.mutate({ id: replacement.id, action }, { onError: (failure) => setError(localizeApiError(failure, t)) });
+    resolve.mutate(
+      { id: replacement.id, action },
+      { onError: (failure) => showToast({ kind: 'error', message: localizeApiError(failure, t) }) },
+    );
   }
 
   return (
@@ -70,11 +73,6 @@ export function ReplacementControls({
         >
           {t('alternatives.undo')}
         </button>
-      )}
-      {error !== null && (
-        <span role="alert" className={styles.error}>
-          {error}
-        </span>
       )}
     </div>
   );

@@ -42,8 +42,3 @@
   cursor: progress;
   opacity: 0.6;
 }
-
-.error {
-  color: var(--ra-fg-primary);
-  font-size: var(--ra-text-caption);
-}

@@ -14,6 +14,10 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
   return { ...actual, useApiClient: () => mockApiFetch };
 });
 
+const mockShow = vi.fn();
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: mockShow }) }));
+
+import { ApiError } from '../../../lib/api-client';
 import { DeckList } from '../DeckList';
 
 const DECK_ID = 7;
@@ -52,6 +56,7 @@ const cellOf = (name: string): HTMLElement =>
   screen.getAllByTestId('deck-list-cell').find((cell) => cell.textContent?.includes(name))!;
 
 beforeEach(() => {
+  mockShow.mockReset();
   mockApiFetch.mockReset();
   mockApiFetch.mockResolvedValue({ replacement: {} });
 });
@@ -148,5 +153,22 @@ describe('DeckList replacement marks', () => {
     const keys = spy.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
     expect(keys.filter((key) => key === JSON.stringify(['deck-detail', String(DECK_ID)]))).toHaveLength(2);
     expect(keys.filter((key) => key === JSON.stringify(['swaps']))).toHaveLength(2);
+  });
+});
+
+describe('DeckList replacement controls: error path', () => {
+  it.each([
+    ['Undo', { originalOwned: false }, /undo/i, 'This replacement was already settled.'],
+    ['Keep', { originalOwned: true }, /^keep/i, 'This replacement was already settled.'],
+    ['Go back', { originalOwned: true }, /^go back/i, 'This replacement was already settled.'],
+  ])('shows the localized error as a toast when %s fails', async (_label, overrides, name, message) => {
+    await setTestLocale('en-US');
+    mockApiFetch.mockRejectedValue(new ApiError(409, JSON.stringify({ code: 'REPLACEMENT_NOT_ACTIVE', message: 'server' })));
+    renderList([replacement(overrides)]);
+
+    await userEvent.click(within(cellOf('Coax a Commotion')).getByRole('button', { name }));
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalledWith({ kind: 'error', message }));
+    expect(within(cellOf('Coax a Commotion')).queryByRole('alert')).toBeNull();
   });
 });

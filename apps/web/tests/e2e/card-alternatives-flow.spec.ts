@@ -34,13 +34,18 @@ test.describe('Card alternatives — E2E', () => {
     const sheet = page.getByTestId('alternatives-sheet');
     await expect(sheet).toBeVisible();
     await expect(sheet.getByTestId(/^alternatives-group-/).first()).toBeVisible();
-    await sheet.getByTestId('alternative-card').first().getByRole('button', { name: /^Usar / }).click();
+    // A card the owner does not have, so the picked card is missing and shows in the missing panel too.
+    const unowned = sheet.getByTestId('alternative-card').filter({ has: page.getByText(/livres?$/) }).first();
+    await expect(unowned).toBeVisible();
+    await unowned.getByRole('button', { name: /^Usar / }).click();
 
     await expect(sheet).toBeHidden();
     const mark = page.getByTestId('deck-list').getByTestId('replacement-mark');
     await expect(mark).toHaveCount(1);
     await expect(mark).toContainText('no lugar de');
     await expect(page.getByTestId('deck-list')).toContainText('Desfazer');
+    await expect(page.getByTestId('deck-missing-panel').getByTestId('replacement-mark')).toHaveCount(1);
+    await expect(page.getByTestId('deck-missing-panel').getByTestId('replacement-mark')).toContainText('no lugar de');
 
     await page.getByTestId('deck-list').getByRole('button', { name: /^Desfazer a troca de / }).click();
 
