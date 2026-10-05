@@ -337,3 +337,6 @@ Cost: about 40 proofs at their own layer across 7 test files. Without these rows
 - Boundary: C1-C70 closed at a853357 (one builder, no handoff).
 - Settled mid-build: nothing was asked of the owner; twelve conservative calls are logged under `## Deviations` in `implementation-notes.md`, one needing the owner (deviation 8: the replacement's original has no name in the approved response shape).
 - Abandoned: nothing.
+- Boundary (after verification): all checks re-closed at the commit that follows this line's commit; Playwright C58 passes twice in a row and the full run is green.
+- Settled mid-build: `originalName` added to `replacements[]` (orchestrator, additive Surface); fixture repaired for the current card data; manual-source index declared on the entity.
+- Abandoned: nothing.

@@ -104,7 +104,9 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
   app.setGlobalPrefix('api');
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
-  await app.init();
+  // Listening once on loopback, as the scanner throttle spec does, keeps supertest from opening and
+  // closing a server per request: over the 600 requests of a throttle run that showed ECONNRESET.
+  await app.listen(0, '127.0.0.1');
   const dataSource = moduleRef.get<DataSource>(getDataSourceToken());
 
   const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
