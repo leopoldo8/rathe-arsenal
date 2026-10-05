@@ -94,6 +94,22 @@ describe('AddCardReplacement1778533590000', () => {
 
     await queryRunner.query(`DELETE FROM "tracked_deck" WHERE id = 1`);
     expect(await replacementCount()).toBe(0);
+
+    // The index on (trackedDeckId, status) the deck reads its active replacements with.
+    const indexes: Array<{ indexdef: string }> = await queryRunner.query(
+      `SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = 'IDX_card_replacement_deck_status'`,
+      [SCHEMA],
+    );
+    expect(indexes).toHaveLength(1);
+    expect(indexes[0]!.indexdef).toMatch(/\("trackedDeckId", status\)/);
+
+    // Deleting the user cascades its replacements too (door 1).
+    await queryRunner.query(`INSERT INTO "tracked_deck" (id) VALUES (9)`);
+    await insertReplacement({ trackedDeckId: 9 });
+    expect(await replacementCount()).toBe(1);
+    await queryRunner.query(`DELETE FROM "user" WHERE id = $1`, [USER_ID]);
+    expect(await replacementCount()).toBe(0);
+    await queryRunner.query(`INSERT INTO "user" (id) VALUES ($1)`, [USER_ID]);
   });
 
   it('cascades when the user is deleted', async () => {

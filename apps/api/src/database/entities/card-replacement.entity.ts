@@ -37,7 +37,7 @@ export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
 @Check('CHK_card_replacement_picked_from_valid', `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search')`)
 @Check('CHK_card_replacement_quantity_positive', `quantity > 0`)
 @Entity({ name: 'card_replacement' })
-@Index(['trackedDeckId', 'status'])
+@Index('IDX_card_replacement_deck_status', ['trackedDeckId', 'status'])
 export class CardReplacementEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
