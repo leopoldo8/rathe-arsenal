@@ -20,9 +20,9 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 1. `scripts/synergy-spike/fixtures/decks.yaml` (new, no door - placement per conventions) lists the Fabrary URLs -> `fetchDeck` in `scripts/gold-set/fetch-deck.ts` (exists) - loads each deck by Fabrary ULID, `synergy:decks` writes one deck JSON per deck
 2. deck JSON -> `catalog` in `packages/engine/src/catalog/catalog.ts` (exists, gains `functionalText`, door 1) - resolves every card, hero and format
 3. `synergy:pool` (new, no door - placement per conventions) - keeps the cards legal for the deck's hero in the deck's format, using the same per-card tests as step 5 of `computeDeckLegality` in `packages/engine/src/legality/compute.ts` (exists, not callable per card, see Assumptions), minus hero cards, tokens and cards already in the deck
-4. `synergy:run <candidate>` (new, no door - placement per conventions) - for each deck, the chosen candidate returns a ranked top 10 from the pool; the three language-model candidates (`gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`) call OpenRouter chat completions over `fetch` (door 3)
+4. `synergy:run <candidate>` (new, no door - placement per conventions) - for each deck, the chosen candidate returns a ranked top 10 from the pool; the four language-model candidates (`gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `opus-5.5`) call OpenRouter chat completions over `fetch` (door 3)
 5. `synergy:sheet` (new, no door - placement per conventions) - merges every candidate's top 10 per deck into one unlabeled judging sheet (CSV, `csv-stringify` exists in the root devDependencies) and a hidden key file mapping rows to candidates, the same blind/key split as `scripts/gold-set/export-csv.ts` (exists)
-6. the owner fills the `verdict` column with `yes` or `no` - no tool involved
+6. the owner fills the `verdict` column with `yes` or `no`, in the CSV or in the local page `pnpm synergy:judge`, which only writes that column
 7. `synergy:score` (new, no door - placement per conventions) - reads the verdicts with `csv-parse` (exists), joins them to the key, writes `result.md` with pass or fail per candidate per deck and the stop-rule line, as `scripts/gold-set/score.ts` (exists) does for the gold set
 
 ## Impact
@@ -32,7 +32,7 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 | domain | new term: `functionalText` on `ICatalogCard` - the card's rules text, copied unchanged from `@flesh-and-blood/cards`, where the field has that name; today `normalizeCard` drops it and the raw card is reachable only through `getRawCard`, typed `unknown` |
 | domain | existing term: `ICatalogCard` gains one optional field - the substitution engine, readiness, legality and the API read cards by named field, and none reads the whole object, so no caller changes (verified by the existing engine and API test suites, which must stay green) |
 | stored data | nothing to migrate - no table, no column, no deck row is read or written; the owner's decks come from Fabrary, not from the database |
-| dependencies | root `package.json` gains five `synergy:*` scripts and no dependency (the Anthropic SDK added first was removed when the owner changed candidates); `.env.example` gains one commented line naming `OPENROUTER_API_KEY` with no value |
+| dependencies | root `package.json` gains six `synergy:*` scripts (the sixth, `synergy:judge`, is the local judging page the owner asked for) and no dependency (the Anthropic SDK added first was removed when the owner changed candidates); `.env.example` gains one commented line naming `OPENROUTER_API_KEY` with no value |
 | repository | spike outputs are committed under `scripts/synergy-spike/out/`, as `scripts/gold-set/out/` is today, so the verdicts and the result survive the branch |
 
 ## Relations
@@ -50,6 +50,7 @@ Reuses the engine catalog and legality rules for the candidate pool, and `script
 | 1. rules text on the catalog card | `readonly functionalText?: string` on `ICatalogCard`, assigned in `normalizeCard` only when the raw card has it, the same way `hero` and `bannedFormats` are assigned today | read it through `getRawCard(id)` cast from `unknown`: untyped, so a renamed field in the package fails at runtime instead of at compile time. Rename to `rulesText`: a second name for a field the package already names, so every reader has to know both |
 | 2. Anthropic SDK dependency (superseded by door 3, 2026-10-04) | `"@anthropic-ai/sdk"` in the root `package.json` `devDependencies`, imported only by `scripts/synergy-spike/` | raw `fetch` to the Messages endpoint: loses the SDK's typed errors and automatic retries, which the script would have to rewrite |
 | 3. OpenRouter chat completions (added 2026-10-04, replaces door 2) | `POST https://openrouter.ai/api/v1/chat/completions` over Node's global `fetch`, key read only from `OPENROUTER_API_KEY` and sent as `Authorization: Bearer`, body with `response_format` `json_schema` (`strict` true), `provider.require_parameters` true and, for GPT-6.1 Sol only, `reasoning.effort` `high`; the three model ids (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`) pinned in one file, `scripts/synergy-spike/lib/models.config.ts` | one SDK per provider: three dependencies and three request shapes for a throwaway script; keeping `@anthropic-ai/sdk`: the owner dropped the Anthropic candidate |
+| 3a. Opus 5.5 added to door 3 (2026-10-04) | the fourth model id `anthropic/claude-opus-5.5` pinned in the same file, `scripts/synergy-spike/lib/models.config.ts`, same request path; `reasoning.effort` `high` is sent for GPT-6.1 Sol and Opus 5.5 | a separate Anthropic client: the owner wants all four through one key and one request shape |
 
 - Nothing else in this change is hard to reverse: the deck file, pool, run files, sheet and result are scripts and data under `scripts/synergy-spike/`, deleted by deleting the folder
 
@@ -93,7 +94,7 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 
 **Acceptance Criteria**
 
-10. WHEN `pnpm synergy:run <candidate>` runs, with candidate one of `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `heuristic`, `cooccurrence`, or `llm-all` (the three language-model candidates in turn), THEN the system SHALL write `out/runs/<candidate>/<ulid>.json` per deck holding exactly 10 distinct card identifiers in rank order, each present in that deck's pool and absent from the deck.
+10. WHEN `pnpm synergy:run <candidate>` runs, with candidate one of `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `opus-5.5`, `heuristic`, `cooccurrence`, or `llm-all` (the four language-model candidates in turn), THEN the system SHALL write `out/runs/<candidate>/<ulid>.json` per deck holding exactly 10 distinct card identifiers in rank order, each present in that deck's pool and absent from the deck.
 11. IF a candidate returns an identifier outside the pool or in the deck THEN the system SHALL drop it, and IF fewer than 10 remain THEN the system SHALL record that deck's run as failed, write no top 10 for it, and exit 1.
 12. WHEN the `heuristic` candidate runs twice on the same decks THEN the system SHALL write byte-identical run files.
 13. The system SHALL fix the `heuristic` scoring formula in a commit before the owner records any verdict, and SHALL NOT change it after verdicts exist.
@@ -101,14 +102,14 @@ The catalog has 5,177 cards; scoring all of them per deck is neither affordable 
 
 **Independent test:** run `heuristic` twice and diff; run `llm-all --dry-run` (criterion 17); run `cooccurrence` against a hero with no decklists.
 
-### S5: the three language-model candidates run safely and show their cost (P1)
+### S5: the four language-model candidates run safely and show their cost (P1)
 
-Owner's change, 2026-10-04: three models through OpenRouter replace the single Claude Opus candidate; each is its own blind candidate.
+Owner's change, 2026-10-04: three models through OpenRouter replace the single Claude Opus candidate, and Claude Opus 5.5 then joins as a fourth through the same path; each is its own blind candidate.
 
 **Acceptance Criteria**
 
-15. WHERE the candidate is `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro` or `llm-all`, WHEN the environment variable `OPENROUTER_API_KEY` is unset THEN the system SHALL exit 1 before sending any request, and the script SHALL hold no key in any file.
-16. WHERE the candidate is one of the three, WHEN a deck runs THEN the system SHALL send one request to OpenRouter, to that candidate's pinned model, holding the hero, the deck list with each card's rules text, and the whole pool with each card's rules text, with `response_format` `json_schema` strict and `provider.require_parameters` true, and SHALL request a ranked list of 25 identifiers with one sentence of reason each, of which the top 10 are kept.
+15. WHERE the candidate is `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `opus-5.5` or `llm-all`, WHEN the environment variable `OPENROUTER_API_KEY` is unset THEN the system SHALL exit 1 before sending any request, and the script SHALL hold no key in any file.
+16. WHERE the candidate is one of the four, WHEN a deck runs THEN the system SHALL send one request to OpenRouter, to that candidate's pinned model, holding the hero, the deck list with each card's rules text, and the whole pool with each card's rules text, with `response_format` `json_schema` strict and `provider.require_parameters` true, and SHALL request a ranked list of 25 identifiers with one sentence of reason each, of which the top 10 are kept.
 17. WHEN `pnpm synergy:run <candidate> --dry-run` runs THEN the system SHALL print an input token estimate and a cost ceiling for each deck and model, computed locally because OpenRouter offers no token-count endpoint, say so, send no request, need no key, and exit 0.
 18. WHEN a response returns THEN the system SHALL store its `usage` prompt, completion and reasoning token counts and its `cost` in that deck's run file.
 19. IF the response ends with finish reason `length`, `content_filter` or `error`, carries a refusal, is an HTTP error, or holds content that is not the JSON ranking THEN the system SHALL record that deck's run as failed, not retry, and exit 1.
@@ -157,7 +158,7 @@ Owner's change, 2026-10-04: three models through OpenRouter replace the single C
 | --- | --- | --- | --- |
 | the three decks | `https://fabrary.net/decks/01M2EA2J62QDE6ZZYP0YPXEBG4`, `https://fabrary.net/decks/01M0KJEX07FX04Z07EQ1TESWYP`, `https://fabrary.net/decks/01M2GEPE0X50C32E02KZNXAETH`, listed in `scripts/synergy-spike/fixtures/decks.yaml` | owner's answer, 2026-10-04 | y |
 | language-model spend | about 1 USD per full pass is acceptable; the key comes only from the owner's shell and is never written to a file | owner's answer, 2026-10-04; the key variable is now `OPENROUTER_API_KEY` (see the candidates row); the new ceiling is 1.74 USD for all three models, expected 0.68 USD | y |
-| order of candidates | `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, then `heuristic`, then `cooccurrence` (was `llm`, `heuristic`, `cooccurrence`; the single `llm` became the three) | the language models are the only candidates that can read "serves the strategy" from rules text and need no new data, ordered ceiling model first, then cheapest big-provider, then best value; the rest as before | n |
+| order of candidates | `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `opus-5.5`, then `heuristic`, then `cooccurrence` (was `llm`, `heuristic`, `cooccurrence`; the single `llm` became the three) | the language models are the only candidates that can read "serves the strategy" from rules text and need no new data, ordered ceiling model first, then cheapest big-provider, then best value; the rest as before | n |
 | judgment unit | `yes` means "I would consider putting this card in this deck", `no` otherwise; no scale | matches the wording of the pass bar, and one binary column keeps the sheet quick to fill | n |
 | what counts as the top 10 | the 10 highest-ranked cards of the pool, one entry per card identifier (pitch variants are separate cards, as in the catalog) | the catalog treats each pitch as its own identifier | n |
 | which deck cards the language model sees | mainboard entries only, with quantities; the hero's rules text is included | equipment and weapons are in the deck JSON but the suggestions are for the mainboard, since the pool excludes hero cards and the design speaks of cards in a deck | n |

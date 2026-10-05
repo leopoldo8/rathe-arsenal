@@ -71,7 +71,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C14:" scripts/synergy-spike/_
 **C15** - `pnpm synergy:run <gpt-6.1-sol|gemini-3.8-flash|mimo-v2.6-pro|opus-5.5|llm-all>` with `OPENROUTER_API_KEY` unset exits 1 before any request is made (the injected fetch is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C15:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C16** - For each of the 4 candidates one deck sends exactly 1 POST to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, the pinned model id (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`, `anthropic/claude-opus-5.5`), the hero name, the rules text of every mainboard card, every card of the pool with its rules text, a request for 25 ranked identifiers with one reason each, `response_format` `json_schema` with `strict` true, `provider.require_parameters` true, `reasoning.effort` `high` for `gpt-6.1-sol` and `opus-5.5` only, and the first 10 valid identifiers are kept (plan AC 16) · done
+**C16** - For each of the 4 candidates one deck sends exactly 1 POST to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, the pinned model id (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`, `anthropic/claude-opus-5.5`), the hero name, the rules text of every mainboard card, every card of the pool with its rules text on that card's own line, a request for 25 ranked identifiers with one reason each, `response_format` `json_schema` with `strict` true, `provider.require_parameters` true, `reasoning.effort` `high` for `gpt-6.1-sol` and `opus-5.5` only, and the first 10 valid identifiers are kept (plan AC 16) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C16:" scripts/synergy-spike/__tests__/llm.test.ts`
 
 **C17** - `--dry-run` prints one estimated input token count and one cost ceiling per candidate (4) and deck, says the estimate is local, makes 0 HTTP calls and needs no key, and exits 0 (plan AC 17) · done
@@ -130,7 +130,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C31:" scripts/synergy-spike/_
 **C33** - `pnpm synergy:judge` serves a local page on `127.0.0.1` that shows each sheet row with its card art, rules text and the deck list, and writes each vote straight to `judging-sheet.csv`: a posted `yes` changes only that row's `verdict`; `maybe`, an unknown card, a missing `verdict` and a non-JSON body each answer `400` and leave the file byte-identical; the page payload carries no candidate name, `rank`, `runs` or `candidate` field (owner request 2026-10-04, keeps AC on the blind sheet) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C33:" scripts/synergy-spike/__tests__/judge.test.ts`
 
-**C34** - The sheet's row order depends only on which (deck, card) pairs are on it, never on which candidate was added when: a sheet built in two steps (candidate A's 10 cards, then candidate B's 10 different cards) has the same 20-row order as one built in a single step, and A's cards are neither the first 10 nor the last 10 rows (blindness through row order; added after the verifier's finding, 2026-10-04) · done
+**C34** - The sheet's row order depends only on which (deck, card) pairs are on it, never on which candidate was added when: a sheet built in two steps (candidate A's 10 cards, then candidate B's 10 different cards) has the same 20-row order as one built in a single step, and A's cards are neither the first 10 nor the last 10 rows (blindness through row order; added after the verifier's finding, 2026-10-04), and the same pair set built with the cards assigned to the candidates the other way round and the runs written in the other order gives the identical order · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C34:" scripts/synergy-spike/__tests__/sheet.test.ts`
 
 **C32** - The spike scripts typecheck, the whole repo typechecks and lints, and the engine suite is green · done
@@ -155,7 +155,7 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | deck load failures (2) | fetch fails C6 · identifier absent from the catalog C6 | - |
 | count at the PASS boundary (2 edges) | 5 yes C25 · 4 yes C25 | - |
 | result lines (3) | STOP passed C26 · STOP all tried C27 · CONTINUE C28 | - |
-| `synergy:*` scripts (5) | decks C31 · pool C31 · run C31 · sheet C31 · score C31 | - |
+| `synergy:*` scripts (6) | decks C31 · pool C31 · run C31 · sheet C31 · score C31 · judge C31 | - |
 | sheet columns (6) | deck C21 · hero C21 · card C21 · pitch C21 · rules C21 · verdict C21 | - |
 | one-way doors in plan `Landing` (3) | door 1 `functionalText` C1, C2, C3 · door 2 Anthropic SDK (superseded) C31 · door 3 OpenRouter over `fetch` C15, C16, C31 | - |
 | spike commands exit codes (3 non-zero paths) | decks C5 · pool C9 · run C15 | - |
