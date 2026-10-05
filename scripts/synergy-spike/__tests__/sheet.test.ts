@@ -103,8 +103,33 @@ test('C23: a rebuild keeps filled verdicts, adds only new pairs and repeats no r
 
   const rebuilt = readRows(out);
   assert.equal(rebuilt.length, 15);
-  assert.equal(rebuilt[0]?.['verdict'], 'yes');
-  assert.equal(rebuilt[1]?.['verdict'], 'no');
-  assert.deepEqual(rebuilt.slice(0, 10).map((r) => r['card']), rows.map((r) => r['card']));
+  const verdictOf = (card: string | undefined): string | undefined => rebuilt.find((r) => r['card'] === card)?.['verdict'];
+  assert.equal(verdictOf(rows[0]?.['card']), 'yes');
+  assert.equal(verdictOf(rows[1]?.['card']), 'no');
+  assert.equal(rebuilt.filter((r) => r['verdict'] !== '').length, 2);
+  assert.deepEqual(
+    new Set(rows.map((r) => r['card'])),
+    new Set(rebuilt.filter((r) => rows.some((old) => old['card'] === r['card'])).map((r) => r['card'])),
+  );
   assert.equal(new Set(rebuilt.map((r) => r['card'])).size, 15);
+});
+
+test('C34: the order of the sheet does not depend on which candidate was added when', () => {
+  const stepwise = seedOut();
+  const first = writeRun(stepwise, 'gpt-6.1-sol', 0);
+  runCli('sheet.ts', [], { SYNERGY_OUT_DIR: stepwise });
+  writeRun(stepwise, 'heuristic', 10);
+  runCli('sheet.ts', [], { SYNERGY_OUT_DIR: stepwise });
+
+  const oneGo = seedOut();
+  writeRun(oneGo, 'gpt-6.1-sol', 0);
+  writeRun(oneGo, 'heuristic', 10);
+  runCli('sheet.ts', [], { SYNERGY_OUT_DIR: oneGo });
+
+  const order = readRows(stepwise).map((r) => r['card']);
+  assert.equal(order.length, 20);
+  assert.deepEqual(order, readRows(oneGo).map((r) => r['card']), 'same pairs, same order, whatever the history');
+  assert.notDeepEqual(new Set(order.slice(0, 10)), new Set(first), 'the first batch is not a contiguous prefix');
+  assert.notDeepEqual(new Set(order.slice(10)), new Set(first), 'nor a contiguous suffix');
+  assert.ok(order.slice(0, 10).some((card) => !first.includes(card as string)), 'rows of the second batch appear among the first ten');
 });

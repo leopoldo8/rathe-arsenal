@@ -78,30 +78,47 @@ function collectKey(out: string): Map<string, IKeyEntry> {
 }
 
 /**
- * Existing rows keep their position and verdict; only (deck, card) pairs not yet
- * on the sheet are added, shuffled with a fixed seed and appended.
+ * One seeded shuffle over the full (deck, card) set, taken from a canonical
+ * ordering first, so a row's position depends only on which pairs are on the
+ * sheet and never on which run was added when. The judge page uses the same
+ * function, so a sheet written in any order is shown in this order.
+ */
+export function orderBySeededShuffle<T extends { readonly deck: string; readonly card: string }>(items: readonly T[]): T[] {
+  const canonical = [...items].sort((a, b) => {
+    const left = pairKey(a.deck, a.card);
+    const right = pairKey(b.deck, b.card);
+    return left < right ? -1 : left > right ? 1 : 0;
+  });
+  return seededShuffle(canonical);
+}
+
+/**
+ * Every (deck, card) on the sheet or in a run is one row, ordered by the single
+ * seeded shuffle; verdicts already filled are kept per pair.
  */
 export function buildSheet(out: string, catalog: ICatalog): { rows: ISheetRow[]; key: IKeyEntry[] } {
   const entries = collectKey(out);
-  const existing = readSheet(out);
-  const present = new Set(existing.map((r) => pairKey(r.deck, r.card)));
+  const existing = new Map(readSheet(out).map((r) => [pairKey(r.deck, r.card), r]));
   const heroByDeck = new Map(readDecks(out).map((d) => [d.deck, catalog.getCard(d.hero).name]));
 
-  const added = seededShuffle(
-    [...entries.values()].filter((e) => !present.has(pairKey(e.deck, e.card))),
-  ).map((e): ISheetRow => {
-    const card = catalog.getCard(e.card);
+  const pairs = new Map<string, { deck: string; card: string }>();
+  for (const e of entries.values()) pairs.set(pairKey(e.deck, e.card), { deck: e.deck, card: e.card });
+  for (const r of existing.values()) pairs.set(pairKey(r.deck, r.card), { deck: r.deck, card: r.card });
+
+  const rows = orderBySeededShuffle([...pairs.values()]).map((pair): ISheetRow => {
+    const kept = existing.get(pairKey(pair.deck, pair.card));
+    if (kept) return kept;
+    const card = catalog.getCard(pair.card);
     return {
-      deck: e.deck,
-      hero: heroByDeck.get(e.deck) ?? '',
-      card: e.card,
+      deck: pair.deck,
+      hero: heroByDeck.get(pair.deck) ?? '',
+      card: pair.card,
       pitch: card.pitch === null ? '' : String(card.pitch),
       rules: card.functionalText ?? '',
       verdict: '',
     };
   });
 
-  const rows = [...existing, ...added];
   const key = rows
     .map((r) => entries.get(pairKey(r.deck, r.card)))
     .filter((e): e is NonNullable<typeof e> => e !== undefined);
