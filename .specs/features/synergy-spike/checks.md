@@ -124,8 +124,11 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C30:" scripts/synergy-spike/_
 
 ### Cross-cutting · 5 files · 8 KB · ~6k
 
-**C31** - Root `package.json` holds exactly 5 `synergy:*` scripts (decks, pool, run, sheet, score) and no `@anthropic-ai/sdk` anywhere in `package.json`; `.env.example` has one commented `OPENROUTER_API_KEY=` line with no value and no `ANTHROPIC_API_KEY` line; the three model ids live only in `scripts/synergy-spike/lib/models.config.ts` (plan Impact, Landing door 3) · done
+**C31** - Root `package.json` holds exactly 6 `synergy:*` scripts (decks, pool, run, sheet, score, judge) and no `@anthropic-ai/sdk` anywhere in `package.json`; `.env.example` has one commented `OPENROUTER_API_KEY=` line with no value and no `ANTHROPIC_API_KEY` line; the three model ids live only in `scripts/synergy-spike/lib/models.config.ts` (plan Impact, Landing door 3) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C31:" scripts/synergy-spike/__tests__/impact.test.ts`
+
+**C33** - `pnpm synergy:judge` serves a local page on `127.0.0.1` that shows each sheet row with its card art, rules text and the deck list, and writes each vote straight to `judging-sheet.csv`: a posted `yes` changes only that row's `verdict`; `maybe`, an unknown card, a missing `verdict` and a non-JSON body each answer `400` and leave the file byte-identical; the page payload carries no candidate name, `rank`, `runs` or `candidate` field (owner request 2026-10-04, keeps AC on the blind sheet) · done
+Proof: `pnpm exec tsx --test --test-name-pattern "^C33:" scripts/synergy-spike/__tests__/judge.test.ts`
 
 **C32** - The spike scripts typecheck, the whole repo typechecks and lints, and the engine suite is green · done
 Proof: `pnpm exec tsc --noEmit -p scripts/synergy-spike/tsconfig.json`

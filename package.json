@@ -25,6 +25,7 @@
     "synergy:run": "tsx scripts/synergy-spike/run.ts",
     "synergy:sheet": "tsx scripts/synergy-spike/sheet.ts",
     "synergy:score": "tsx scripts/synergy-spike/score.ts",
+    "synergy:judge": "tsx scripts/synergy-spike/judge.ts",
     "screenshot": "tsx scripts/screenshot-all-surfaces.ts",
     "seed:fixture": "tsx scripts/seed-fixture.ts"
   },

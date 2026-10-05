@@ -19,7 +19,7 @@ test('C31: five synergy scripts, no Anthropic SDK, the model ids only in one con
   };
   assert.deepEqual(
     Object.keys(pkg.scripts).filter((s) => s.startsWith('synergy:')).sort(),
-    ['synergy:decks', 'synergy:pool', 'synergy:run', 'synergy:score', 'synergy:sheet'],
+    ['synergy:decks', 'synergy:judge', 'synergy:pool', 'synergy:run', 'synergy:score', 'synergy:sheet'],
   );
   assert.equal(pkg.devDependencies['@anthropic-ai/sdk'], undefined);
   assert.equal(pkg.dependencies?.['@anthropic-ai/sdk'], undefined);
