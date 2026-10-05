@@ -55,6 +55,17 @@ const REQUIRED_OWNED: Readonly<Record<string, number>> = {
   'riled-up-blue': 3,
   'smash-instinct-blue': 3,
   'run-roughshod-blue': 3,
+  // Cards the deck needs that have no swap here, owned exactly. Every copy
+  // still missing counts against the engine's pitch-curve tolerance (red 2,
+  // yellow 1, blue 1) until its row is processed, and the first swap is
+  // tried while all the others are missing: left unowned, these cards and the
+  // spare copies of the swapped ones push the deltas past it and no swap is
+  // proposed. Keep the missing copies at red 3, yellow 1, blue 1.
+  'show-of-strength-red': 3,
+  'massacre-red': 3,
+  'bam-bam-yellow': 2,
+  'bear-hug-blue': 1,
+  'argh-smash-yellow': 1,
 };
 
 // Exact-match padding first, then the three cards whose same-profile peers
