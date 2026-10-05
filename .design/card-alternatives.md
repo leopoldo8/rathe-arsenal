@@ -68,8 +68,8 @@ The heavier alternative keeps the original in the deck list and treats the pick 
 | [Alternatives](#alternatives) | grouped alternatives for one missing card, owned and buyable, legal for the deck | open — 4 defaults taken |
 | [Replacement](#replacement) | picking an alternative rewrites the deck and records the original | clear |
 | [Original returns](#original-returns) | the prompt to keep or revert when the original enters the collection | open — 2 defaults taken |
-| [Synergy spike](#synergy-spike) | an answer on whether synergy can be judged well enough | spike |
-| [Recommendations](#recommendations) | proactive per-deck suggestions | spike |
+| [Synergy spike](#synergy-spike) | an answer on whether synergy can be judged well enough | passed - AD-010 |
+| [Recommendations](#recommendations) | proactive per-deck suggestions | design - discovery in progress |
 
 Order: Alternatives → Replacement → Original returns; Synergy spike runs in parallel with all three; Recommendations after the spike.
 
@@ -215,6 +215,9 @@ Candidates, for perspective only - the spike picks:
 - A language model reading the deck list, the hero and each candidate's rules text - wins if it ranks synergy the way the owner does; costs an API key and per-request spend.
 - Co-occurrence in public decklists of the same hero - wins if enough decklists can be collected; that ingestion is part of the deferred Discover work.
 - Keyword and subtype heuristics over rules text - cheap and explainable, likely too shallow for "serves the strategy".
+
+**Result, 2026-10-04: passed.** Gemini 3.8 Flash passed on all three decks (5, 7 and 10 of 10) and Opus 5.5 too (5, 7 and 9); the spike stopped on Gemini 3.8 Flash, recorded as AD-010. Plan, checks, verification and outputs: `.specs/features/synergy-spike/`, `scripts/synergy-spike/out/result.md`.
+The spike measured a deck-level top 10 drawn from the whole legal pool; ranking the alternatives of one missing card is a different question the spike did not measure.
 
 ### Recommendations
 
