@@ -83,7 +83,7 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C18:" scripts/synergy-spike/_
 **C19** - Each of 6 failure triggers records the deck as `failed`, makes exactly 1 request (no retry) and exits 1: `finish_reason` `length`, `finish_reason` `content_filter`, `finish_reason` `error`, a non-empty `message.refusal`, an HTTP 429 answer, and `message.content` that is not the JSON ranking (plan AC 19) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C19:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C20** - **owner** - with the real key, one deck's run file for one candidate holds nonzero `inputTokens` and `outputTokens` and a 10-card `top10` taken from a real response, and the request is accepted with `response_format` and `provider.require_parameters` set
+**C20** - **owner** - with the real key, one deck's run file for one candidate holds nonzero `inputTokens` and `outputTokens` and a 10-card `top10` taken from a real response, and the request is accepted with `response_format` and `provider.require_parameters` set · done (owner's live pass 2026-10-04: all 12 runs `ok`; e.g. `gemini-3.8-flash` on `01M2EA2J62QDE6ZZYP0YPXEBG4`)
 Proof: `OPENROUTER_API_KEY=<key> pnpm synergy:run gemini-3.8-flash --deck <ULID>` then reading `scripts/synergy-spike/out/runs/gemini-3.8-flash/<ULID>.json`
 
 ### S6 - the blind judging sheet · 2 files · 10 KB · ~12k
