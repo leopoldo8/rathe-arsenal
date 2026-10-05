@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthzService } from '../authz.service';
 import { ICurrentUser } from '../dtos/current-user.dto';
 
@@ -20,7 +20,13 @@ export class OwnsTrackedDeckGuard implements CanActivate {
     const user: ICurrentUser = request.user;
     const params = request.params;
 
-    const trackedDeckId = Number(params.trackedDeckId ?? params.deckId);
+    const rawDeckId = String(params.trackedDeckId ?? params.deckId);
+
+    // Guards run before the route's pipes, so a malformed id would otherwise reach the database as NaN.
+    if (!/^\d+$/.test(rawDeckId)) {
+      throw new BadRequestException('Deck id must be an integer');
+    }
+    const trackedDeckId = Number(rawDeckId);
 
     await this.authzService.assertOwnsTrackedDeck(user.userId, trackedDeckId);
 
