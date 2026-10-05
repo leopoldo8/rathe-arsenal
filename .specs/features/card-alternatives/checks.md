@@ -21,7 +21,7 @@ For `emissary-of-tides-red` the catalog holds 21 tier 1 candidates, 64 more at t
 
 ### S1 - Grouped alternatives for one missing card · 18 files · 230 KB · ~58k
 
-**C1** - `needed` equals the slot's `notOwned` quantity from a fresh readiness compute minus the copies active replacements of that card hold in that slot: with nothing owned, `emissary-of-tides-red` in `mainboard` gives `needed: 2`; with 1 copy owned, `needed: 1`; with one active replacement holding 2 copies of `coax-a-commotion-red` in `mainboard` and none owned, `needed` for `coax-a-commotion-red` is 0 (AC 1)
+**C1** - `needed` equals the slot's `notOwned` quantity from a fresh readiness compute minus the copies active replacements of that card hold in that slot: with nothing owned, `emissary-of-tides-red` in `mainboard` gives `needed: 2`; with 1 copy owned, `needed: 1`; with one active replacement holding 2 copies of `coax-a-commotion-red` in `mainboard` and none owned, `needed` for `coax-a-commotion-red` is 0 (AC 1) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "needed is the slot's not-owned copies minus protected copies"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "returns needed 2 for a card missing both copies"`
 
@@ -56,13 +56,13 @@ Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spe
 **C11** - Inside a group, cards sort by score plus 0.05 when `freeCopies >= needed`: an owned card 0.04 below an unowned one sorts first, an owned card 0.06 below sorts second, equal adjusted scores sort by name ascending, and an owned card never moves into a stricter group (AC 11) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "orders by score with the owned bonus of 0.05"`
 
-**C12** - `freeCopies` is owned copies across active sources minus copies in this deck in any slot, floored at 0: owned 3 with 1 in `mainboard` gives 2; owned 1 with 2 in the deck gives 0; copies in an inactive source do not count (AC 12)
+**C12** - `freeCopies` is owned copies across active sources minus copies in this deck in any slot, floored at 0: owned 3 with 1 in `mainboard` gives 2; owned 1 with 2 in the deck gives 0; copies in an inactive source do not count (AC 12) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "freeCopies subtracts this deck's copies"`
 
-**C13** - For a listed card in stock, `priceCents` equals the shopping line's `unitPriceCents` for that card at quantity `needed` and `productUrl` equals its validated URL, both on the listing path and on the fresh-variant path (cheapest variant) (AC 13)
+**C13** - For a listed card in stock, `priceCents` equals the shopping line's `unitPriceCents` for that card at quantity `needed` and `productUrl` equals its validated URL, both on the listing path and on the fresh-variant path (cheapest variant) (AC 13) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "prices match the shopping line on both paths"`
 
-**C14** - `priceCents` and `productUrl` are both `null` and the card is still listed when the store has no row for it, when its quantity is 0, when its price is null, and when no active `cupula-dt` store exists (AC 14)
+**C14** - `priceCents` and `productUrl` are both `null` and the card is still listed when the store has no row for it, when its quantity is 0, when its price is null, and when no active `cupula-dt` store exists (AC 14) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "lists out-of-stock cards with null price"`
 
 **C15** - Each card's `rationale` carries `tier`, `pitch`, `sharedClasses`, `powerDelta`, `defenseDelta`, `sharedKeywords` equal to `describeRationale(missing, card, tier)`, plus `relaxed`: `null` in `very_close` and `close`, `pitch` in `other_pitch`, `class` in `generic` (AC 15) · done
@@ -71,22 +71,22 @@ Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spe
 **C16** - With `q`, the response is exactly one group `search`, at most 10 cards whose name contains `q` ignoring case, names starting with `q` before names only containing it, filtered by C8, C9 and C10: `q=sink` lists `sink-below-red` before any card that only contains "sink"; a query matching more than 10 legal cards returns 10 (AC 16) · done
 Proof: `pnpm --filter @rathe-arsenal/engine exec jest __tests__/alternatives.spec.ts -t "search group matches by name with legality"`
 
-**C17** - `q` bounds: 1 character after trimming returns `400`, 2 returns `200`, 50 returns `200`, 51 returns `400`; `q="  a  "` returns `400` (AC 17)
+**C17** - `q` bounds: 1 character after trimming returns `400`, 2 returns `200`, 50 returns `200`, 51 returns `400`; `q="  a  "` returns `400` (AC 17) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "bounds q between 2 and 50 characters"`
 
-**C18** - For `talishar-the-lost-prince` in `weapon` missing 1 copy, and for the hero in `hero`, the route returns `200` with `groups: []`, with and without `q` (AC 18)
+**C18** - For `talishar-the-lost-prince` in `weapon` missing 1 copy, and for the hero in `hero`, the route returns `200` with `groups: []`, with and without `q` (AC 18) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "returns no groups for hero and weapon slots"`
 
-**C19** - The route returns `409` with code `NOTHING_TO_REPLACE` for a card fully owned in that slot, for a card not in the deck, and for a card whose missing copies are all held by an active replacement (AC 19)
+**C19** - The route returns `409` with code `NOTHING_TO_REPLACE` for a card fully owned in that slot, for a card not in the deck, and for a card whose missing copies are all held by an active replacement (AC 19) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "answers 409 NOTHING_TO_REPLACE when nothing is missing"`
 
-**C20** - For a deck id that does not exist and for another user's deck, `GET .../alternatives`, `POST .../replacements` and `GET /api/decks/:deckId` each return `404` with the same body (AC 20)
+**C20** - For a deck id that does not exist and for another user's deck, `GET .../alternatives`, `POST .../replacements` and `GET /api/decks/:deckId` each return `404` with the same body (AC 20) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "answers another user's deck exactly like a missing deck"`
 
-**C21** - A `200` from the alternatives route logs exactly one `alternatives.listed` line with `userId`, `trackedDeckId`, `cardIdentifier`, `slot`, `needed`, the card count per group and `hasQuery`; a `409` logs none (AC 21)
+**C21** - A `200` from the alternatives route logs exactly one `alternatives.listed` line with `userId`, `trackedDeckId`, `cardIdentifier`, `slot`, `needed`, the card count per group and `hasQuery`; a `409` logs none (AC 21) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/alternatives.service.spec.ts -t "logs alternatives.listed once per answered request"`
 
-**C22** - A `200` body has `needed` and `groups[]`, each group `group` and `cards[]`, each card exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `freeCopies`, `priceCents`, `productUrl`, `rationale` (Surface)
+**C22** - A `200` body has `needed` and `groups[]`, each group `group` and `cards[]`, each card exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `freeCopies`, `priceCents`, `productUrl`, `rationale` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand alternatives.e2e-spec -t "answers with the documented shape"`
 
 **C23** - The missing panel shows an "Alternatives" control on a `mainboard` row and an `equipment` row, none on a `hero` or `weapon` row, and none on a row whose copies are all held by an active replacement (AC 22)
@@ -118,13 +118,13 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-det
 
 ### S2 - Pick an alternative as a replacement, and undo it · 20 files · 260 KB · ~65k
 
-**C32** - A pick of `coax-a-commotion-red` (not owned) for `emissary-of-tides-red` x2 missing in `mainboard` returns `201` with `replacement` of `slot: mainboard`, both identifiers, `quantity: 2`, `pickedFrom: very_close`, `status: active`, `resolvedAt: null`; afterwards `deck_card` has no `emissary-of-tides-red` row and a `coax-a-commotion-red` row with quantity 2. Second fixture: with 1 `emissary` owned and `coax` x1 already in `mainboard`, the pick moves 1 copy, leaving `emissary` x1 and `coax` x2 (AC 31)
+**C32** - A pick of `coax-a-commotion-red` (not owned) for `emissary-of-tides-red` x2 missing in `mainboard` returns `201` with `replacement` of `slot: mainboard`, both identifiers, `quantity: 2`, `pickedFrom: very_close`, `status: active`, `resolvedAt: null`; afterwards `deck_card` has no `emissary-of-tides-red` row and a `coax-a-commotion-red` row with quantity 2. Second fixture: with 1 `emissary` owned and `coax` x1 already in `mainboard`, the pick moves 1 copy, leaving `emissary` x1 and `coax` x2 (AC 31) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a pick moves the missing copies and records the original"`
 
-**C33** - Right after the pick's `201`, the deck's newest `deck_readiness_snapshot` lists `coax-a-commotion-red` x2 in `breakdown.missing` and no `emissary-of-tides-red` copy anywhere in `breakdown` (AC 32)
+**C33** - Right after the pick's `201`, the deck's newest `deck_readiness_snapshot` lists `coax-a-commotion-red` x2 in `breakdown.missing` and no `emissary-of-tides-red` copy anywhere in `breakdown` (AC 32) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "the snapshot after a pick shows the moved copies"`
 
-**C34** - Active replacements reach the engine on every recompute path: `runReadiness` loads them through the passed manager and passes their copy counts to `computeEffectiveReadiness`; `updateComposition` passes them to both of its engine calls; end to end, owning a tier 1 candidate of an unowned active replacement and then marking another card owned leaves the replacement in `breakdown.missing` with no `substituted` entry (AC 33)
+**C34** - Active replacements reach the engine on every recompute path: `runReadiness` loads them through the passed manager and passes their copy counts to `computeEffectiveReadiness`; `updateComposition` passes them to both of its engine calls; end to end, owning a tier 1 candidate of an unowned active replacement and then marking another card owned leaves the replacement in `breakdown.missing` with no `substituted` entry (AC 33) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/substitution/__tests__/substitution.service.spec.ts -t "passes active replacements to the engine through the manager"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "passes active replacements to both engine passes"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a later recompute gives a protected replacement no stand-in"`
@@ -142,44 +142,44 @@ Proof: `git diff --exit-code origin/main -- packages/engine/src/substitution/con
 **C38** - `computeDeckLegality` returns the same verdicts as before: its spec file is unchanged and passes (AC 37) · done
 Proof: `git diff --exit-code origin/main -- packages/engine/__tests__/legality/compute.spec.ts && pnpm --filter @rathe-arsenal/engine exec jest __tests__/legality/compute.spec.ts`
 
-**C39** - Before the pick the deck holds `swap_suggestion` rows for (`emissary-of-tides-red`, `mainboard`) in `pending`, `approved` and `rejected`; after the pick the first two are `retired` and the `rejected` row is unchanged, and `GET /api/swaps?state=all` lists none of the retired ones (AC 38)
+**C39** - Before the pick the deck holds `swap_suggestion` rows for (`emissary-of-tides-red`, `mainboard`) in `pending`, `approved` and `rejected`; after the pick the first two are `retired` and the `rejected` row is unchanged, and `GET /api/swaps?state=all` lists none of the retired ones (AC 38) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a pick retires the original's pending and approved swaps"`
 
-**C40** - A pick returns `409` with code `REPLACEMENT_ILLEGAL` and leaves `deck_card`, `card_replacement` and `swap_suggestion` unchanged for: a card not legal for Katsu, a card that would exceed 3 copies, the slot `weapon`, the slot `hero`, and the original itself as replacement (AC 39)
+**C40** - A pick returns `409` with code `REPLACEMENT_ILLEGAL` and leaves `deck_card`, `card_replacement` and `swap_suggestion` unchanged for: a card not legal for Katsu, a card that would exceed 3 copies, the slot `weapon`, the slot `hero`, and the original itself as replacement (AC 39) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "refuses an illegal replacement and changes nothing"`
 
-**C41** - A pick for a card with nothing missing in that slot returns `409` with code `NOTHING_TO_REPLACE` and changes no row (AC 40)
+**C41** - A pick for a card with nothing missing in that slot returns `409` with code `NOTHING_TO_REPLACE` and changes no row (AC 40) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "refuses a pick when nothing is missing"`
 
-**C42** - Two concurrent picks for `emissary-of-tides-red` in `mainboard` with different replacements: one `201`, one `409 NOTHING_TO_REPLACE`, one active `card_replacement` row, and `deck_card` holds exactly the winning replacement's 2 copies (AC 41)
+**C42** - Two concurrent picks for `emissary-of-tides-red` in `mainboard` with different replacements: one `201`, one `409 NOTHING_TO_REPLACE`, one active `card_replacement` row, and `deck_card` holds exactly the winning replacement's 2 copies (AC 41) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "serializes two concurrent picks for one card"`
 
-**C43** - A pick returns `400` and changes no row for: missing `slot`, missing `replacementCardIdentifier`, `pickedFrom: "other"`, an unknown `replacementCardIdentifier`, an unknown `originalCardIdentifier` (AC 42)
+**C43** - A pick returns `400` and changes no row for: missing `slot`, missing `replacementCardIdentifier`, `pickedFrom: "other"`, an unknown `replacementCardIdentifier`, an unknown `originalCardIdentifier` (AC 42) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "rejects malformed picks with 400"`
 
-**C44** - A committed pick logs exactly one `replacements.picked` line with `userId`, `trackedDeckId`, `originalCardIdentifier`, `replacementCardIdentifier`, `slot`, `quantity`, `pickedFrom` and `owned`; a refused pick logs none (AC 43)
+**C44** - A committed pick logs exactly one `replacements.picked` line with `userId`, `trackedDeckId`, `originalCardIdentifier`, `replacementCardIdentifier`, `slot`, `quantity`, `pickedFrom` and `owned`; a refused pick logs none (AC 43) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/replacements.service.spec.ts -t "logs replacements.picked once per committed pick"`
 
-**C45** - Reverting the C32 replacement returns `200` with `status: reverted` and `resolvedAt` set; `deck_card` again holds `emissary-of-tides-red` x2 and no `coax-a-commotion-red` row; for the second C32 fixture it leaves `emissary` x2 and `coax` x1 (AC 44)
+**C45** - Reverting the C32 replacement returns `200` with `status: reverted` and `resolvedAt` set; `deck_card` again holds `emissary-of-tides-red` x2 and no `coax-a-commotion-red` row; for the second C32 fixture it leaves `emissary` x2 and `coax` x1 (AC 44) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "revert moves the copies back"`
 
-**C46** - Right after the revert's `200`, the newest snapshot lists `emissary-of-tides-red` x2 in `breakdown.missing` or `breakdown.substituted` and no `coax-a-commotion-red` copy (AC 45)
+**C46** - Right after the revert's `200`, the newest snapshot lists `emissary-of-tides-red` x2 in `breakdown.missing` or `breakdown.substituted` and no `coax-a-commotion-red` copy (AC 45) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "the snapshot after a revert shows the original"`
 
-**C47** - Revert and keep each return `409` with code `REPLACEMENT_NOT_ACTIVE` and change no row on a replacement in `kept`, `reverted` and `removed` (6 cases) (AC 46)
+**C47** - Revert and keep each return `409` with code `REPLACEMENT_NOT_ACTIVE` and change no row on a replacement in `kept`, `reverted` and `removed` (6 cases) (AC 46) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "refuses to resolve a closed replacement"`
 
-**C48** - Revert and keep return `404` with the same body for an unknown uuid and for another user's replacement, and `400` for an id that is not a uuid (AC 47)
+**C48** - Revert and keep return `404` with the same body for an unknown uuid and for another user's replacement, and `400` for an id that is not a uuid (AC 47) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "answers another user's replacement like a missing one"`
 
-**C49** - A composition save closes active replacements as `removed` with `resolvedAt` set: when it drops the replacement card from the slot; when it lowers it from 2 to 1 copy with one record of quantity 2; and when two records of quantity 1 each for the same card and slot face 1 remaining copy, both close (AC 48)
+**C49** - A composition save closes active replacements as `removed` with `resolvedAt` set: when it drops the replacement card from the slot; when it lowers it from 2 to 1 copy with one record of quantity 2; and when two records of quantity 1 each for the same card and slot face 1 remaining copy, both close (AC 48) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "closes replacements the save broke as removed"`
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a composition save that drops the replacement closes it"`
 
 **C50** - A composition save that keeps 3 copies of a replacement card with one record of quantity 2 leaves the record `active`, and the save's readiness result has no `substituted` entry for those 2 copies (AC 49) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/decks/__tests__/decks.service.update-composition.spec.ts -t "keeps replacements the save still covers"`
 
-**C51** - After a pick, a revert, a keep and a save that removes a replacement, the deck's `card_replacement` row count is 4; deleting the deck leaves 0 rows for it; no source file calls `delete` or `remove` on the replacement repository (AC 50, door 1)
+**C51** - After a pick, a revert, a keep and a save that removes a replacement, the deck's `card_replacement` row count is 4; deleting the deck leaves 0 rows for it; no source file calls `delete` or `remove` on the replacement repository (AC 50, door 1) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "never deletes a replacement row"`
 Proof: `! grep -rnE "(CardReplacementEntity|replacementRepo|replacements?Repo)[^;]*\.(delete|remove)\(" apps/api/src --include='*.ts' --exclude-dir=__tests__`
 
@@ -206,7 +206,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chro
 
 ### S3 - The original returns · 8 files · 110 KB · ~28k
 
-**C59** - `GET /api/decks/:deckId` lists one entry per active replacement with exactly `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `originalOwned`, and omits `kept`, `reverted` and `removed` ones (AC 56)
+**C59** - `GET /api/decks/:deckId` lists one entry per active replacement with exactly `id`, `slot`, `originalCardIdentifier`, `replacementCardIdentifier`, `quantity`, `originalOwned`, and omits `kept`, `reverted` and `removed` ones (AC 56) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "the deck detail lists active replacements only"`
 
 **C60** - For a replacement of quantity 2: owning 2 copies of the original with none in the deck gives `originalOwned: true`; owning 1 gives false; owning 3 with 2 already in another slot of this deck gives false; copies in an inactive source do not count (AC 57) · done
@@ -218,10 +218,10 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-det
 **C62** - A replacement cell with `originalOwned: false` shows no prompt (AC 59)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "shows no prompt while the original is not owned"`
 
-**C63** - Keep on an active replacement returns `200` with `status: kept` and `resolvedAt` set, leaves `deck_card` unchanged, writes a new snapshot, and the deck detail no longer lists it (AC 60)
+**C63** - Keep on an active replacement returns `200` with `status: kept` and `resolvedAt` set, leaves `deck_card` unchanged, writes a new snapshot, and the deck detail no longer lists it (AC 60) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "keep closes the replacement and leaves the deck"`
 
-**C64** - After keeping an unowned `coax-a-commotion-red` replacement and owning one of its tier 1 candidates, the next recompute lists a `substituted` entry for a `coax-a-commotion-red` copy (AC 61)
+**C64** - After keeping an unowned `coax-a-commotion-red` replacement and owning one of its tier 1 candidates, the next recompute lists a `substituted` entry for a `coax-a-commotion-red` copy (AC 61) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "a kept replacement can get a stand-in"`
 
 **C65** - Go back sends `POST /api/replacements/:id/revert` and invalidates the deck detail and swaps queries; Keep sends `POST /api/replacements/:id/keep` and invalidates the same (AC 62, AC 60)
@@ -231,17 +231,17 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-det
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/home/__tests__/DeckTile.spec.tsx -t "shows no replacement prompt"`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/routes/_auth/__tests__/-swaps.test.tsx -t "shows no replacement prompt"`
 
-**C67** - A committed keep and a committed revert each log exactly one `replacements.resolved` line with `userId`, `trackedDeckId`, `replacementId` and the new status; a refused one logs none (AC 64)
+**C67** - A committed keep and a committed revert each log exactly one `replacements.resolved` line with `userId`, `trackedDeckId`, `replacementId` and the new status; a refused one logs none (AC 64) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/replacements.service.spec.ts -t "logs replacements.resolved once per committed resolution"`
 
 **C68** - Every new key (sheet, group labels, marks, prompt, `apiErrors.NOTHING_TO_REPLACE`, `apiErrors.REPLACEMENT_ILLEGAL`, `apiErrors.REPLACEMENT_NOT_ACTIVE`) exists with non-empty copy in pt-BR and in en-US, and the catalogs keep key parity (AC 65)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/catalog-parity.spec.ts`
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "has copy for every new key in both locales"`
 
-**C69** - With the real throttler, the 121st request inside one minute returns `429` for `GET .../alternatives`, `POST .../replacements`, `POST /api/replacements/:id/revert`, `POST /api/replacements/:id/keep` and `GET /api/decks/:deckId` (Surface)
+**C69** - With the real throttler, the 121st request inside one minute returns `429` for `GET .../alternatives`, `POST .../replacements`, `POST /api/replacements/:id/revert`, `POST /api/replacements/:id/keep` and `GET /api/decks/:deckId` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements-throttle.e2e-spec -t "throttles the replacement routes"`
 
-**C70** - Without a valid token, the same five routes return `401` (Surface)
+**C70** - Without a valid token, the same five routes return `401` (Surface) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.e2e-spec\.ts$' --forceExit --runInBand replacements.e2e-spec -t "rejects every replacement route without a token"`
 
 ## Coverage

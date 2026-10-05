@@ -206,6 +206,59 @@ export class ShoppingLineService {
   }
 
   /**
+   * Unit price and product link for each card at `quantityNeeded`, resolved by
+   * the same line builder the shopping line uses (listing price, or the
+   * cheapest variant when fresh variant data exists). A card the store has no
+   * row for, has none of, or has no price for gets nulls, and so does every
+   * card when no active store exists or the store query fails.
+   */
+  async priceCards(
+    cardIdentifiers: readonly string[],
+    quantityNeeded: number,
+    storeSlug: string = DEFAULT_STORE_SLUG,
+  ): Promise<Map<string, { readonly priceCents: number | null; readonly productUrl: string | null }>> {
+    const prices = new Map<string, { readonly priceCents: number | null; readonly productUrl: string | null }>();
+    for (const identifier of cardIdentifiers) {
+      prices.set(identifier, { priceCents: null, productUrl: null });
+    }
+    if (cardIdentifiers.length === 0) return prices;
+
+    try {
+      const store = await this.storeRepo.findOne({ where: { slug: storeSlug, active: true } });
+      const storeHostname = store ? this.extractHostname(store.baseUrl) : null;
+      if (!store || !storeHostname) return prices;
+
+      const stockRows = await this.storeStockRepo.find({
+        where: { storeId: store.id, cardIdentifier: In([...cardIdentifiers]) },
+      });
+      const variantRows = await this.storeStockVariantRepo.find({
+        where: { storeId: store.id, cardIdentifier: In([...cardIdentifiers]) },
+      });
+
+      for (const identifier of cardIdentifiers) {
+        const line = this.buildLine(
+          identifier,
+          quantityNeeded,
+          stockRows.find((row) => row.cardIdentifier === identifier),
+          variantRows.filter((row) => row.cardIdentifier === identifier),
+          storeHostname,
+        );
+        // Variant rows that are all out of stock still carry a price; out of stock means no price here.
+        if (line.quantityAvailable > 0 && line.unitPriceCents !== null) {
+          prices.set(identifier, { priceCents: line.unitPriceCents, productUrl: line.productUrl || null });
+        }
+      }
+    } catch (error) {
+      this.logger.error({
+        msg: 'Alternatives price lookup failed',
+        storeSlug,
+        error: (error as Error).message,
+      });
+    }
+    return prices;
+  }
+
+  /**
    * Computes an aggregate shopping line across all tracked decks for a user.
    *
    * Uses a single batched query against store_stock rather than N per-deck
