@@ -11,7 +11,7 @@ function contextFor(params: Record<string, string>): ExecutionContext {
 }
 
 describe('OwnsTrackedDeckGuard', () => {
-  it.each(['abc', '1.5', '', 'NaN'])('answers 400 for the deck id %p without touching the database', async (deckId) => {
+  it.each(['abc', '1.5', '', 'NaN', '-1', '0', '2147483648', '99999999999999999999'])('answers 400 for the deck id %p without touching the database', async (deckId) => {
     const authz = createMock<AuthzService>();
 
     await expect(new OwnsTrackedDeckGuard(authz).canActivate(contextFor({ deckId }))).rejects.toBeInstanceOf(
@@ -27,6 +27,8 @@ describe('OwnsTrackedDeckGuard', () => {
 
     await expect(guard.canActivate(contextFor({ deckId: '12' }))).resolves.toBe(true);
     await expect(guard.canActivate(contextFor({ trackedDeckId: '13' }))).resolves.toBe(true);
+    await expect(guard.canActivate(contextFor({ deckId: '1' }))).resolves.toBe(true);
+    await expect(guard.canActivate(contextFor({ deckId: '2147483647' }))).resolves.toBe(true);
 
     expect(authz.assertOwnsTrackedDeck).toHaveBeenNthCalledWith(1, 'user-1', 12);
     expect(authz.assertOwnsTrackedDeck).toHaveBeenNthCalledWith(2, 'user-1', 13);

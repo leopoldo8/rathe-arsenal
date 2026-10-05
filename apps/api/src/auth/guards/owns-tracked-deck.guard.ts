@@ -11,6 +11,10 @@ import { ICurrentUser } from '../dtos/current-user.dto';
  *   @UseGuards(OwnsTrackedDeckGuard)
  *   @Get(':trackedDeckId/readiness')
  */
+/** tracked_deck.id is a serial int4; anything outside this range would reach Postgres as an overflow (500). */
+const MIN_DECK_ID = 1;
+const MAX_DECK_ID = 2_147_483_647;
+
 @Injectable()
 export class OwnsTrackedDeckGuard implements CanActivate {
   constructor(private readonly authzService: AuthzService) {}
@@ -23,10 +27,10 @@ export class OwnsTrackedDeckGuard implements CanActivate {
     const rawDeckId = String(params.trackedDeckId ?? params.deckId);
 
     // Guards run before the route's pipes, so a malformed id would otherwise reach the database as NaN.
-    if (!/^\d+$/.test(rawDeckId)) {
-      throw new BadRequestException('Deck id must be an integer');
-    }
     const trackedDeckId = Number(rawDeckId);
+    if (!/^\d+$/.test(rawDeckId) || trackedDeckId < MIN_DECK_ID || trackedDeckId > MAX_DECK_ID) {
+      throw new BadRequestException('Deck id must be an integer between 1 and 2147483647');
+    }
 
     await this.authzService.assertOwnsTrackedDeck(user.userId, trackedDeckId);
 
