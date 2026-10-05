@@ -240,18 +240,18 @@ describe('catalog rules text', () => {
     expect(catalog.cards.filter((c) => c.functionalText === '')).toHaveLength(0);
   });
 
-  it('C3: keeps exactly the pre-change field set plus the optional rules text', () => {
-    const previousFields = new Set([
+  it('C3: keeps exactly the pre-change field set plus the optional rules text, none added and none removed', () => {
+    const alwaysPresent = [
       'cardIdentifier', 'name', 'classes', 'talents', 'types', 'pitch', 'power', 'defense',
-      'cost', 'keywords', 'subtypes', 'legalHeroes', 'legalFormats', 'rarity', 'young', 'sets',
-      'imageUrl', 'hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations',
-    ]);
-    const seen = new Set<string>();
+      'cost', 'keywords', 'subtypes', 'legalHeroes', 'legalFormats', 'rarity', 'young', 'sets', 'imageUrl',
+    ];
+    const optional = ['hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations', 'functionalText'];
+    const allowed = new Set([...alwaysPresent, ...optional]);
+
     for (const card of catalog.cards) {
-      for (const key of Object.keys(card)) seen.add(key);
+      const keys = Object.keys(card);
+      expect(keys.filter((k) => !allowed.has(k))).toEqual([]);
+      expect(alwaysPresent.filter((k) => !keys.includes(k))).toEqual([]);
     }
-    const unexpected = [...seen].filter((k) => !previousFields.has(k) && k !== 'functionalText');
-    expect(unexpected).toEqual([]);
-    expect(seen.has('cardIdentifier') && seen.has('legalFormats') && seen.has('sets')).toBe(true);
   });
 });
