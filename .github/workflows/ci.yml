@@ -30,6 +30,9 @@ jobs:
       - name: Build engine package (required by API typecheck + tests)
         run: pnpm --filter @rathe-arsenal/engine build
 
+      - name: Unit tests (engine)
+        run: pnpm --filter @rathe-arsenal/engine test
+
       - name: Lint (web) — react/forbid-dom-props blocks inline style={}
         run: pnpm --filter @rathe-arsenal/web lint
 

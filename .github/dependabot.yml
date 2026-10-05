@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-name: "@flesh-and-blood/*"
+    groups:
+      flesh-and-blood:
+        patterns:
+          - "@flesh-and-blood/*"
+    commit-message:
+      prefix: chore
+      include: scope
