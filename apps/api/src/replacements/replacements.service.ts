@@ -239,13 +239,17 @@ export class ReplacementsService {
     deckCards: readonly DeckCardEntity[],
     move: { trackedDeckId: number; slot: string; from: string; to: string; quantity: number },
   ): Promise<void> {
-    const source = deckCards.find((row) => row.cardIdentifier === move.from && row.slot === move.slot);
-    if (source) {
-      const remaining = source.quantity - move.quantity;
-      if (remaining > 0) {
-        await manager.update(DeckCardEntity, { id: source.id }, { quantity: remaining });
+    // A deck may list one card twice in a slot (nothing forbids it), and the missing copies span every
+    // such row, so the copies come off each in turn until `quantity` is taken.
+    let toTake = move.quantity;
+    for (const row of deckCards.filter((r) => r.cardIdentifier === move.from && r.slot === move.slot)) {
+      if (toTake <= 0) break;
+      const taken = Math.min(row.quantity, toTake);
+      toTake -= taken;
+      if (row.quantity - taken > 0) {
+        await manager.update(DeckCardEntity, { id: row.id }, { quantity: row.quantity - taken });
       } else {
-        await manager.delete(DeckCardEntity, { id: source.id });
+        await manager.delete(DeckCardEntity, { id: row.id });
       }
     }
 

@@ -1287,4 +1287,29 @@ describe('protectedCopies parameter (card-alternatives)', () => {
       expect(empty).toEqual(omitted);
     }
   });
+
+  it('protected copies get no stand-in: a count is spent across two deck rows of the same card and slot', () => {
+    // Nothing forbids a deck listing a card twice in one slot, and the replacement count is per card and slot.
+    const twoRows = {
+      cards: [
+        { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+        { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+      ],
+    };
+
+    const result = computeEffectiveReadiness(
+      twoRows,
+      inventory,
+      catalog,
+      DEFAULT_PITCH_TOLERANCE,
+      new Set(),
+      new Set(),
+      new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 3]]),
+    );
+
+    // 3 of the 4 copies are protected, so only one can get a stand-in.
+    expect(result.breakdown.substituted).toHaveLength(1);
+    expect(result.breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0)).toBe(3);
+  });
 });
+

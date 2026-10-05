@@ -302,6 +302,21 @@ describe('ReplacementsService', () => {
       }
     });
 
+    it('pick takes the copies across two rows of the same card and slot', async () => {
+      const rows = [
+        { id: 1, cardIdentifier: EMISSARY, quantity: 1, slot: 'mainboard' },
+        { id: 2, cardIdentifier: EMISSARY, quantity: 2, slot: 'mainboard' },
+      ];
+      const { service, manager } = build({ needed: 2, deckCards: rows });
+
+      await service.pick(USER_ID, DECK_ID, body);
+
+      const deleted = (manager.delete as jest.Mock).mock.calls.filter(([entity]) => entity === DeckCardEntity);
+      const updated = (manager.update as jest.Mock).mock.calls.filter(([entity]) => entity === DeckCardEntity);
+      expect(deleted).toEqual([[DeckCardEntity, { id: 1 }]]);
+      expect(updated).toEqual([[DeckCardEntity, { id: 2 }, { quantity: 1 }]]);
+    });
+
     it('keep leaves every deck_card row alone', async () => {
       const { service, manager } = build({ needed: 0, recordStatus: 'active' });
 
