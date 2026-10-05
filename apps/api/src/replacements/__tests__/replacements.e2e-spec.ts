@@ -202,10 +202,14 @@ describe('card replacements (E2E)', () => {
     const before = await state(owner);
     const { slot: _slot, ...withoutSlot } = pickBody();
     const { replacementCardIdentifier: _replacement, ...withoutReplacement } = pickBody();
+    const { originalCardIdentifier: _original, ...withoutOriginal } = pickBody();
+    const { pickedFrom: _pickedFrom, ...withoutPickedFrom } = pickBody();
 
     for (const body of [
       withoutSlot,
       withoutReplacement,
+      withoutOriginal,
+      withoutPickedFrom,
       pickBody({ pickedFrom: 'other' }),
       pickBody({ replacementCardIdentifier: 'not-a-real-card-red' }),
       pickBody({ originalCardIdentifier: 'not-a-real-card-red' }),
@@ -361,10 +365,22 @@ describe('card replacements (E2E)', () => {
         id: activeId,
         slot: 'mainboard',
         originalCardIdentifier: EMISSARY,
+        originalName: 'Emissary of Tides',
         replacementCardIdentifier: COAX,
         quantity: 2,
         originalOwned: false,
       },
+    ]);
+  });
+
+  it('the deck detail lists active replacements only: names an original with punctuation by its catalog name', async () => {
+    const owner = await fixture.scenario([mainboard('a-moments-peace-blue', 1)]);
+    await replacementId(owner, { originalCardIdentifier: 'a-moments-peace-blue' });
+
+    const detail = await fixture.get(`/api/decks/${owner.deckId}`, owner.jwt).expect(200);
+
+    expect(detail.body.replacements).toEqual([
+      expect.objectContaining({ originalCardIdentifier: 'a-moments-peace-blue', originalName: "A Moment's Peace" }),
     ]);
   });
 

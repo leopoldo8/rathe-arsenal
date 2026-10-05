@@ -74,6 +74,10 @@ describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
     expect(await status('a'.repeat(50))).toBe(200);
     expect(await status('a'.repeat(51))).toBe(400);
     expect(await status('  a  ')).toBe(400);
+
+    // The two required parameters (extended after verification).
+    await alternatives(owner.jwt, owner.deckId, { slot: 'mainboard' }).expect(400);
+    await alternatives(owner.jwt, owner.deckId, { cardIdentifier: EMISSARY }).expect(400);
   });
 
   it('returns no groups for hero and weapon slots', async () => {
