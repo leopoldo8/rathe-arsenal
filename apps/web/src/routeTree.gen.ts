@@ -29,7 +29,7 @@ import { Route as AuthAddCardsRouteImport } from './routes/_auth/add-cards'
 import { Route as AuthAddCardsIndexRouteImport } from './routes/_auth/add-cards.index'
 import { Route as AuthDecksNewRouteImport } from './routes/_auth/decks.new'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
-import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards.scan'
+import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.scan'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
@@ -135,9 +135,9 @@ const AuthDecksDeckIdRoute = AuthDecksDeckIdRouteImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAddCardsScanRoute = AuthAddCardsScanRouteImport.update({
-  id: '/scan',
-  path: '/scan',
-  getParentRoute: () => AuthAddCardsRoute,
+  id: '/add-cards_/scan',
+  path: '/add-cards/scan',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
   id: '/manual',
@@ -233,7 +233,7 @@ export interface FileRoutesById {
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
-  '/_auth/add-cards/scan': typeof AuthAddCardsScanRoute
+  '/_auth/add-cards_/scan': typeof AuthAddCardsScanRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/_auth/decks/new': typeof AuthDecksNewRoute
   '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
@@ -313,7 +313,7 @@ export interface FileRouteTypes {
     | '/_auth/add-cards/csv'
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
-    | '/_auth/add-cards/scan'
+    | '/_auth/add-cards_/scan'
     | '/_auth/decks/$deckId'
     | '/_auth/decks/new'
     | '/_auth/add-cards/'
@@ -474,12 +474,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDecksDeckIdRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/add-cards/scan': {
-      id: '/_auth/add-cards/scan'
-      path: '/scan'
+    '/_auth/add-cards_/scan': {
+      id: '/_auth/add-cards_/scan'
+      path: '/add-cards/scan'
       fullPath: '/add-cards/scan'
       preLoaderRoute: typeof AuthAddCardsScanRouteImport
-      parentRoute: typeof AuthAddCardsRoute
+      parentRoute: typeof AuthRoute
     }
     '/_auth/add-cards/manual': {
       id: '/_auth/add-cards/manual'
@@ -516,7 +516,6 @@ interface AuthAddCardsRouteChildren {
   AuthAddCardsCsvRoute: typeof AuthAddCardsCsvRoute
   AuthAddCardsFabraryRoute: typeof AuthAddCardsFabraryRoute
   AuthAddCardsManualRoute: typeof AuthAddCardsManualRoute
-  AuthAddCardsScanRoute: typeof AuthAddCardsScanRoute
   AuthAddCardsIndexRoute: typeof AuthAddCardsIndexRoute
 }
 
@@ -524,7 +523,6 @@ const AuthAddCardsRouteChildren: AuthAddCardsRouteChildren = {
   AuthAddCardsCsvRoute: AuthAddCardsCsvRoute,
   AuthAddCardsFabraryRoute: AuthAddCardsFabraryRoute,
   AuthAddCardsManualRoute: AuthAddCardsManualRoute,
-  AuthAddCardsScanRoute: AuthAddCardsScanRoute,
   AuthAddCardsIndexRoute: AuthAddCardsIndexRoute,
 }
 
@@ -541,6 +539,7 @@ interface AuthRouteChildren {
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthSwapsRoute: typeof AuthSwapsRoute
+  AuthAddCardsScanRoute: typeof AuthAddCardsScanRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
   AuthDecksNewRoute: typeof AuthDecksNewRoute
   AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
@@ -555,6 +554,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
   AuthSwapsRoute: AuthSwapsRoute,
+  AuthAddCardsScanRoute: AuthAddCardsScanRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
   AuthDecksNewRoute: AuthDecksNewRoute,
   AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,

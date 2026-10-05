@@ -23,7 +23,8 @@ import { UserEntity } from './user.entity';
  * future kinds requires only a constraint replacement, not a drop-recreate of
  * the enum type — same rationale as `substitute_decision.decision`.
  *
- * Partial unique indexes (enforced in migration):
+ * Partial unique indexes (created by migration 1776854851000 and declared
+ * here so `synchronize` builds them too):
  * - `(userId) WHERE kind='manual'` — at most one manual source per user.
  * - `(userId, contentHash) WHERE kind='csv' AND contentHash IS NOT NULL` —
  *   DB-level backstop against exact-match duplicate imports.
@@ -31,6 +32,11 @@ import { UserEntity } from './user.entity';
 @Entity({ name: 'csv_source' })
 @Index(['userId'])
 @Index(['userId', 'kind'])
+@Index('IDX_csv_source_user_manual_uq', ['userId'], { unique: true, where: `kind = 'manual'` })
+@Index('IDX_csv_source_user_content_hash_uq', ['userId', 'contentHash'], {
+  unique: true,
+  where: `kind = 'csv' AND "contentHash" IS NOT NULL`,
+})
 export class CsvSourceEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

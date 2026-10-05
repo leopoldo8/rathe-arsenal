@@ -15,8 +15,8 @@ import {
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (config: Record<string, unknown>) => config,
   useBlocker: () => undefined,
-  Link: (props: { children: React.ReactNode; to: string; className?: string }) => (
-    <a href={props.to} className={props.className}>
+  Link: (props: { children: React.ReactNode; to: string; className?: string; 'aria-label'?: string }) => (
+    <a href={props.to} className={props.className} aria-label={props['aria-label']}>
       {props.children}
     </a>
   ),
@@ -41,7 +41,7 @@ vi.mock('../../../api/collector-codes', () => ({
   useCollectorCodesQuery: () => codesState,
 }));
 
-import { AddCardsScanPage } from '../add-cards.scan';
+import { AddCardsScanPage } from '../add-cards_.scan';
 
 interface IHarness {
   readonly deps: IScannerDeps;
@@ -184,6 +184,48 @@ describe('/add-cards/scan', () => {
     expect(document.querySelector('video')).toBeInTheDocument();
     expect(screen.getByTestId('card-guide')).toBeInTheDocument();
     expect(screen.getByText('Line up the bottom edge of the card with the guide.')).toBeInTheDocument();
+  });
+
+  it('closes back to the add-cards page', async () => {
+    renderScanner(buildHarness().deps);
+
+    expect(await screen.findByRole('link', { name: 'Close the scanner' })).toHaveAttribute('href', '/add-cards/manual');
+  });
+
+  it('hides the flashlight when the camera reports no torch', async () => {
+    const harness = buildHarness();
+    renderScanner(harness.deps);
+
+    await waitFor(() => expect(harness.deps.attachStream).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Flashlight' })).not.toBeInTheDocument();
+  });
+
+  it('toggles the flashlight when the camera has a torch', async () => {
+    const setOn = vi.fn(async () => undefined);
+    renderScanner(buildHarness({ detectTorch: async () => ({ setOn }) }).deps);
+
+    const torch = await screen.findByRole('button', { name: 'Flashlight' });
+    expect(torch).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(torch);
+    expect(setOn).toHaveBeenLastCalledWith(true);
+    expect(torch).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(torch);
+    expect(setOn).toHaveBeenLastCalledWith(false);
+    expect(torch).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('turns the flashlight button back off when the torch refuses', async () => {
+    const setOn = vi.fn(async () => {
+      throw new Error('OverconstrainedError');
+    });
+    renderScanner(buildHarness({ detectTorch: async () => ({ setOn }) }).deps);
+
+    const torch = await screen.findByRole('button', { name: 'Flashlight' });
+    fireEvent.click(torch);
+
+    await waitFor(() => expect(torch).toHaveAttribute('aria-pressed', 'false'));
   });
 
   it('shows loading and does not recognize while the engine downloads', async () => {

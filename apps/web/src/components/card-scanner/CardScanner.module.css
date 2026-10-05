@@ -1,14 +1,85 @@
 .scanner {
+  /* Leaves room for the top row and the bar so the 3:4 stage fits one screen. */
+  --scanner-max-inline: min(100%, 36rem, calc((100dvh - 11rem) * 0.75));
+  position: fixed;
+  inset: 0;
+  z-index: 800;
   display: flex;
   flex-direction: column;
-  gap: var(--ra-space-4);
+  gap: var(--ra-space-3);
+  overflow-y: auto;
+  padding:
+    max(var(--ra-space-3), env(safe-area-inset-top))
+    max(var(--ra-space-3), env(safe-area-inset-right))
+    max(var(--ra-space-3), env(safe-area-inset-bottom))
+    max(var(--ra-space-3), env(safe-area-inset-left));
+  background: var(--ra-bg-canvas);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  margin-inline: auto;
+}
+
+.topBarTitle {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-medium);
+  color: var(--ra-fg-primary);
+}
+
+.iconButton,
+.iconSpacer {
+  flex-shrink: 0;
+  inline-size: 44px;
+  block-size: 44px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-primary);
+  cursor: pointer;
+}
+
+.iconButton[data-active='true'] {
+  border-color: var(--ra-accent);
+  background: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.icon {
+  inline-size: 22px;
+  block-size: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .stage {
   position: relative;
   inline-size: 100%;
-  max-inline-size: min(28rem, 52.5vh);
+  max-inline-size: var(--scanner-max-inline);
   margin-inline: auto;
+  margin-block-end: auto;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: var(--ra-radius-lg);
@@ -211,6 +282,9 @@
 }
 
 .summary {
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  margin-inline: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -230,6 +304,9 @@
 }
 
 .bar {
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  margin-inline: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -395,6 +472,9 @@
 }
 
 .unavailable {
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
