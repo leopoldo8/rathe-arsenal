@@ -4,7 +4,8 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { parse } from 'csv-parse/sync';
 import { test } from 'node:test';
-import { catalog } from '../../../packages/engine/src';
+import { catalog, Class } from '../../../packages/engine/src';
+import { rankHeuristic } from '../candidates/heuristic';
 import { finalizeTop10 } from '../lib/finalize';
 import { buildPool } from '../lib/pool-filter';
 import { exitCodeFor, toRunFile } from '../lib/run-candidate';
@@ -48,6 +49,29 @@ test('C10: heuristic writes an ok run with exactly 10 distinct ranked cards from
   }
 });
 
+test('C10: the ranking is best first, cards that match the hero on class and keywords come before generic cards with neither', () => {
+  const pool = buildPool(DECK, catalog);
+  const cards = pool.cards.map((id) => catalog.getCard(id));
+  const strong = cards.filter((c) => c.classes.includes(Class.Warrior) && c.keywords.length > 0).slice(0, 6);
+  const weak = cards
+    .filter((c) => c.classes.length === 1 && c.classes.includes(Class.Generic) && c.keywords.length === 0 && c.talents.length === 0)
+    .slice(0, 6);
+  assert.equal(strong.length, 6);
+  assert.equal(weak.length, 6);
+  const small = {
+    ...pool,
+    cards: [...weak, ...strong].map((c) => c.cardIdentifier),
+    size: 12,
+  };
+
+  const ranked = rankHeuristic(DECK, small, catalog);
+
+  const strongIds = new Set(strong.map((c) => c.cardIdentifier));
+  assert.ok(strongIds.has(ranked[0] as string), 'rank 1 is a strong card');
+  assert.deepEqual(new Set(ranked.slice(0, 6)), strongIds, 'the six strong cards fill ranks 1 to 6');
+  assert.deepEqual(new Set(ranked.slice(6)), new Set(weak.map((c) => c.cardIdentifier)));
+});
+
 test('C11: ids outside the pool or in the deck are dropped, and under 10 left the run is failed with exit 1', () => {
   const pool = buildPool(DECK, catalog);
   const valid = pool.cards.slice(0, 10);
@@ -77,16 +101,30 @@ test('C12: heuristic run twice writes byte-identical files', () => {
   assert.ok(first.equals(second));
 });
 
-test('C13: no committed judging sheet holds a verdict, so the heuristic formula was fixed first', () => {
-  const sheet = join(SPIKE_DIR, 'out', 'judging-sheet.csv');
-  if (existsSync(sheet)) {
-    const rows = parse(readFileSync(sheet, 'utf8'), { columns: true }) as { verdict: string }[];
-    assert.ok(rows.every((row) => row.verdict === ''), 'every verdict cell is empty');
+function git(...args: string[]): string {
+  return execFileSync('git', args, { encoding: 'utf8', cwd: join(SPIKE_DIR, '..', '..') });
+}
+
+const SHEET = 'scripts/synergy-spike/out/judging-sheet.csv';
+const FORMULA = 'scripts/synergy-spike/candidates/heuristic.ts';
+
+test('C13: the heuristic formula has no commit after the first commit that wrote a verdict to the sheet', () => {
+  const firstVerdictCommit = git('log', '--reverse', '--format=%H', '--', SHEET)
+    .split('\n')
+    .filter((sha) => sha !== '')
+    .find((sha) => {
+      const rows = parse(git('show', `${sha}:${SHEET}`), { columns: true }) as { verdict: string }[];
+      return rows.some((row) => row.verdict.trim() !== '');
+    });
+
+  if (firstVerdictCommit !== undefined) {
+    const after = git('log', '--format=%h %s', `${firstVerdictCommit}..HEAD`, '--', FORMULA).trim();
+    assert.equal(after, '', `the formula changed after verdicts existed: ${after}`);
   }
+
   const header = readFileSync(join(SPIKE_DIR, 'candidates', 'heuristic.ts'), 'utf8').slice(0, 600);
   assert.match(header, /must not change afterwards/);
-  const status = execFileSync('git', ['status', '--porcelain', '--', 'scripts/synergy-spike/candidates/heuristic.ts'], { encoding: 'utf8' });
-  assert.equal(status, '', 'the formula file has no uncommitted change');
+  assert.equal(git('status', '--porcelain', '--', FORMULA), '', 'the formula file has no uncommitted change');
 });
 
 test('C14: cooccurrence with 0 decklists found writes untestable with found 0 and exits 0', () => {
@@ -98,4 +136,20 @@ test('C14: cooccurrence with 0 decklists found writes untestable with found 0 an
   assert.equal(run.status, 'untestable');
   assert.equal(run.found, 0);
   assert.equal(run.minimum, 20);
+});
+
+test('C11: the CLI records a failed run and exits 1 when fewer than 10 valid cards remain', () => {
+  const out = seedOut();
+  const pool = buildPool(DECK, catalog);
+  writeFileSync(
+    join(out, 'pools', 'TESTDECK.json'),
+    JSON.stringify({ ...pool, cards: pool.cards.slice(0, 9), size: 9 }),
+  );
+
+  const result = runCli('run.ts', ['heuristic'], { SYNERGY_OUT_DIR: out });
+
+  assert.equal(result.status, 1);
+  const run = JSON.parse(readFileSync(join(out, 'runs', 'heuristic', 'TESTDECK.json'), 'utf8')) as IRunFile;
+  assert.equal(run.status, 'failed');
+  assert.equal('top10' in run, false);
 });
