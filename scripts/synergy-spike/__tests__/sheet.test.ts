@@ -133,3 +133,19 @@ test('C34: the order of the sheet does not depend on which candidate was added w
   assert.notDeepEqual(new Set(order.slice(10)), new Set(first), 'nor a contiguous suffix');
   assert.ok(order.slice(0, 10).some((card) => !first.includes(card as string)), 'rows of the second batch appear among the first ten');
 });
+
+test('C34: the same pairs give the same order when the cards are assigned to the candidates the other way round', () => {
+  const forward = seedOut();
+  writeRun(forward, 'gpt-6.1-sol', 0);
+  writeRun(forward, 'heuristic', 10);
+  runCli('sheet.ts', [], { SYNERGY_OUT_DIR: forward });
+
+  const swapped = seedOut();
+  writeRun(swapped, 'heuristic', 0);
+  writeRun(swapped, 'gpt-6.1-sol', 10);
+  runCli('sheet.ts', [], { SYNERGY_OUT_DIR: swapped });
+
+  const order = readRows(forward).map((r) => r['card']);
+  assert.equal(order.length, 20);
+  assert.deepEqual(readRows(swapped).map((r) => r['card']), order);
+});

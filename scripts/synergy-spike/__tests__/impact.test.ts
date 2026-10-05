@@ -11,7 +11,7 @@ function gitGrep(command: string, args: string[]): string {
   return spawnSync(command, args, { cwd: ROOT, encoding: 'utf8' }).stdout;
 }
 
-test('C31: five synergy scripts, no Anthropic SDK, the model ids only in one config file, and one commented OpenRouter key line in .env.example', () => {
+test('C31: six synergy scripts, no Anthropic SDK, the model ids only in one config file, and one commented OpenRouter key line in .env.example', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
     scripts: Record<string, string>;
     devDependencies: Record<string, string>;
@@ -30,7 +30,7 @@ test('C31: five synergy scripts, no Anthropic SDK, the model ids only in one con
   assert.equal(sdkMentions, '');
 
   const modelFiles = gitGrep(
-    'git', ['grep', '-l', '-E', "openai/gpt-6\\.1-sol|google/gemini-3\\.8-flash|xiaomi/mimo-v2\\.6-pro", '--', 'scripts/synergy-spike', ':!scripts/synergy-spike/__tests__', ':!scripts/synergy-spike/out'],
+    'git', ['grep', '-l', '-E', "openai/gpt-6\\.1-sol|google/gemini-3\\.8-flash|xiaomi/mimo-v2\\.6-pro|anthropic/claude-opus-5\\.5", '--', 'scripts/synergy-spike', ':!scripts/synergy-spike/__tests__', ':!scripts/synergy-spike/out'],
   ).trim().split('\n');
   assert.deepEqual(modelFiles, ['scripts/synergy-spike/lib/models.config.ts']);
 

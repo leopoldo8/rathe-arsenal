@@ -131,7 +131,14 @@ test('C16: each candidate sends one request with its pinned model and the schema
     for (const id of DECK.mainboard.map((e) => e.card)) {
       assert.ok(prompt.includes(catalog.getCard(id).functionalText as string), `deck rules text of ${id}`);
     }
-    for (const id of POOL.cards) assert.ok(prompt.includes(`${id} |`), `pool card ${id}`);
+    for (const id of POOL.cards) {
+      const card = catalog.getCard(id);
+      const at = prompt.indexOf(`\n${id} |`);
+      assert.ok(at !== -1, `pool card ${id}`);
+      if (card.functionalText === undefined) continue;
+      const textAt = prompt.indexOf(card.functionalText, at);
+      assert.ok(textAt !== -1 && textAt - at < id.length + card.name.length + 250, `rules text of pool card ${id} sits on its line`);
+    }
     assert.match(prompt, /Rank the 25 cards/);
     assert.match(prompt, /one sentence of reason/);
 

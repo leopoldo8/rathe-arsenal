@@ -80,8 +80,7 @@ function collectKey(out: string): Map<string, IKeyEntry> {
 /**
  * One seeded shuffle over the full (deck, card) set, taken from a canonical
  * ordering first, so a row's position depends only on which pairs are on the
- * sheet and never on which run was added when. The judge page uses the same
- * function, so a sheet written in any order is shown in this order.
+ * sheet and never on which run was added when.
  */
 export function orderBySeededShuffle<T extends { readonly deck: string; readonly card: string }>(items: readonly T[]): T[] {
   const canonical = [...items].sort((a, b) => {
