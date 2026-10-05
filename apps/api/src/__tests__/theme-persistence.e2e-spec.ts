@@ -85,7 +85,7 @@ describe('Theme persistence (E2E, U8)', () => {
       }),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
-    await app.init();
+    await app.listen(0, '127.0.0.1');
 
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
   });

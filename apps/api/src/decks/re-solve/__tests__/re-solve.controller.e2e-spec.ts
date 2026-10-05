@@ -21,7 +21,7 @@ describe('ReSolveController — 410 Gone deprecation stubs (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    await app.init();
+    await app.listen(0, '127.0.0.1');
   });
 
   afterEach(async () => {

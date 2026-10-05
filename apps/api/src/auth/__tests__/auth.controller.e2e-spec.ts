@@ -84,7 +84,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       next();
     });
 
-    await app.init();
+    await app.listen(0, '127.0.0.1');
   });
 
   afterEach(async () => {
