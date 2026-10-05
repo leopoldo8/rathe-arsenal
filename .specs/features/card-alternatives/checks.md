@@ -201,7 +201,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-det
 **C57** - Undo sends `POST /api/replacements/:id/revert` for that replacement's id and invalidates the deck detail and swaps queries (AC 55) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckList.replacement.spec.tsx -t "Undo sends the revert"`
 
-**C58** - In the browser, on the fixture deck: open Alternatives from a missing row, see the groups, tap the first card, see "in place of" on the deck list, tap Undo, see the original back in the missing panel (S1, S2 independent tests)
+**C58** - In the browser, on the fixture deck: open Alternatives from a missing row, see the groups, tap the first card, see "in place of" on the deck list, tap Undo, see the original back in the missing panel (S1, S2 independent tests) · done
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium tests/e2e/card-alternatives-flow.spec.ts -g "pick an alternative and undo it"`
 
 ### S3 - The original returns · 8 files · 110 KB · ~28k
