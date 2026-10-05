@@ -183,4 +183,4 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 - **Boundary:** C1-C19 and C21-C32 closed at `1ecf093`; C20 stays open for the owner's `ANTHROPIC_API_KEY`
 - **Settled mid-build:** the owner moved the catalog to 5.3.0 (#127), which closed the decks 2 and 3 gap; C1, C2, C7 literals renegotiated, see implementation-notes.md
 - **Abandoned:** a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)
-- **Boundary (OpenRouter change):** C15-C19, C27, C28, C30, C31 re-closed at the commit that carries this line's parent; C20 now needs `OPENROUTER_API_KEY`
+- **Boundary (OpenRouter change):** C15-C19, C27, C28, C30, C31 re-closed at `373f57e`; C20 now needs `OPENROUTER_API_KEY`
