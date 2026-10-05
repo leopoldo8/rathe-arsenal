@@ -165,6 +165,21 @@ describe('ReplacementsService', () => {
   });
 
   describe('decisions at the service layer', () => {
+    it.each(['very_close', 'close', 'other_pitch', 'generic', 'search'] as const)(
+      'records and returns pickedFrom %s',
+      async (pickedFrom) => {
+        const { service, manager } = build({ needed: 1 });
+
+        const result = await service.pick(USER_ID, DECK_ID, { ...body, pickedFrom });
+
+        expect(result.pickedFrom).toBe(pickedFrom);
+        expect(manager.create).toHaveBeenCalledWith(
+          CardReplacementEntity,
+          expect.objectContaining({ pickedFrom, status: 'active' }),
+        );
+      },
+    );
+
     const writes = (manager: EntityManager) =>
       [manager.update, manager.insert, manager.delete, manager.save].flatMap((fn) => (fn as jest.Mock).mock.calls);
 

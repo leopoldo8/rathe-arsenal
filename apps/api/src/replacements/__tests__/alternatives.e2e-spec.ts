@@ -80,6 +80,22 @@ describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
     await alternatives(owner.jwt, owner.deckId, { cardIdentifier: EMISSARY }).expect(400);
   });
 
+  it('bounds q between 2 and 50 characters: cardIdentifier, slot and deck id at their limits', async () => {
+    const owner = await fixture.scenario();
+    const ask = (query: Record<string, string>) => alternatives(owner.jwt, owner.deckId, query);
+
+    await ask({ cardIdentifier: '', slot: 'mainboard' }).expect(400);
+    await ask({ cardIdentifier: 'c'.repeat(129), slot: 'mainboard' }).expect(400);
+    await ask({ cardIdentifier: EMISSARY, slot: '' }).expect(400);
+    await ask({ cardIdentifier: EMISSARY, slot: 's'.repeat(65) }).expect(400);
+    // At the limits the request is valid and fails later as nothing to replace.
+    await ask({ cardIdentifier: 'c'.repeat(128), slot: 'mainboard' }).expect(409);
+    await ask({ cardIdentifier: EMISSARY, slot: 's'.repeat(64) }).expect(409);
+
+    await fixture.get('/api/decks/not-a-number/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
+    await fixture.get('/api/decks/1.5/alternatives', owner.jwt).query({ cardIdentifier: EMISSARY, slot: 'mainboard' }).expect(400);
+  });
+
   it('returns no groups for hero and weapon slots', async () => {
     const owner = await fixture.scenario();
 

@@ -91,6 +91,19 @@ describe('card replacements (E2E)', () => {
     expect(partialCards[`${COAX}@mainboard`]).toBe(2);
   });
 
+  it.each(['very_close', 'close', 'other_pitch', 'generic', 'search'])(
+    'a pick moves the missing copies and records the original: stores and returns pickedFrom %s',
+    async (pickedFrom) => {
+      const owner = await fixture.scenario();
+
+      const res = await pick(owner, { pickedFrom });
+
+      expect(res.body.replacement.pickedFrom).toBe(pickedFrom);
+      const [row] = await fixture.replacementRows(owner.deckId);
+      expect(row!.pickedFrom).toBe(pickedFrom);
+    },
+  );
+
   it('the snapshot after a pick shows the moved copies', async () => {
     const owner = await fixture.scenario();
     await pick(owner);
@@ -216,6 +229,29 @@ describe('card replacements (E2E)', () => {
     ]) {
       await fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(body).expect(400);
     }
+    expect(await state(owner)).toEqual(before);
+  });
+
+  it('rejects malformed picks with 400: every field at its length bounds and a non-integer deck id', async () => {
+    const owner = await fixture.scenario();
+    const before = await state(owner);
+    const post = (body: Record<string, unknown>) =>
+      fixture.post(`/api/decks/${owner.deckId}/replacements`, owner.jwt).send(body);
+
+    for (const field of ['originalCardIdentifier', 'replacementCardIdentifier']) {
+      await post(pickBody({ [field]: '' })).expect(400);
+      await post(pickBody({ [field]: 'c'.repeat(129) })).expect(400);
+      await post(pickBody({ [field]: 123 })).expect(400);
+    }
+    await post(pickBody({ slot: '' })).expect(400);
+    await post(pickBody({ slot: 's'.repeat(65) })).expect(400);
+    await post(pickBody({ pickedFrom: 5 })).expect(400);
+    // 128 and 64 characters pass validation and fail later as unknown cards, never as a server error.
+    await post(pickBody({ replacementCardIdentifier: 'c'.repeat(128) })).expect(400);
+    await post(pickBody({ slot: 's'.repeat(64) })).expect(409);
+
+    await fixture.post('/api/decks/not-a-number/replacements', owner.jwt).send(pickBody()).expect(400);
+    await fixture.post('/api/decks/1.5/replacements', owner.jwt).send(pickBody()).expect(400);
     expect(await state(owner)).toEqual(before);
   });
 

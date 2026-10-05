@@ -335,6 +335,18 @@ describe('AlternativesService', () => {
       hasQuery: true,
     });
 
+    // Without a name search the same line says so.
+    logSpy.mockClear();
+    const plain = await h.service.list(request);
+    const plainLogs = logSpy.mock.calls.filter(([entry]) => (entry as { event?: string }).event === 'alternatives.listed');
+    expect(plainLogs).toHaveLength(1);
+    expect(plainLogs[0]![0]).toEqual(
+      expect.objectContaining({
+        hasQuery: false,
+        groupCounts: Object.fromEntries(plain.groups.map((group) => [group.group, group.cards.length])),
+      }),
+    );
+
     logSpy.mockClear();
     h.substitution.computeReadinessWithExclusions.mockResolvedValue({ breakdown: { notOwned: [] } } as never);
     await expect(h.service.list(request)).rejects.toBeInstanceOf(HttpException);
