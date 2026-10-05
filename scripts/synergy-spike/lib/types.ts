@@ -23,10 +23,16 @@ export interface IPoolFile {
   readonly cards: readonly string[];
 }
 
-export type TCandidateName = 'llm' | 'heuristic' | 'cooccurrence';
+export type TCandidateName = 'gpt-6.1-sol' | 'gemini-3.8-flash' | 'mimo-v2.6-pro' | 'heuristic' | 'cooccurrence';
 
 /** The agreed order in which candidates are tried. */
-export const CANDIDATE_ORDER: readonly TCandidateName[] = ['llm', 'heuristic', 'cooccurrence'];
+export const CANDIDATE_ORDER: readonly TCandidateName[] = [
+  'gpt-6.1-sol',
+  'gemini-3.8-flash',
+  'mimo-v2.6-pro',
+  'heuristic',
+  'cooccurrence',
+];
 
 export type TRunStatus = 'ok' | 'failed' | 'untestable';
 
@@ -36,7 +42,12 @@ export interface IRunFile {
   readonly status: TRunStatus;
   readonly top10?: readonly string[];
   readonly reasons?: Readonly<Record<string, string>>;
-  readonly usage?: { readonly inputTokens: number; readonly outputTokens: number };
+  readonly usage?: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly reasoningTokens?: number;
+    readonly costUsd?: number;
+  };
   readonly stopReason?: string;
   readonly found?: number;
   readonly minimum?: number;

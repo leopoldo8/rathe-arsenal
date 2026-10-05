@@ -1,14 +1,15 @@
 import type { ICatalog, ICatalogCard } from '../../../packages/engine/src';
+import { OPENROUTER_URL, type IModelConfig } from './models.config';
 import { toRunFile } from './run-file';
 import type { IDeckFile, IPoolFile, IRunFile } from './types';
 
-export const LLM_MODEL = 'claude-opus-5-5';
-/** Adaptive thinking draws on this budget too, so it is set above the 8,000 the output alone needs. */
-export const LLM_MAX_TOKENS = 16000;
+/** Reasoning shares this budget with the answer on most providers, so it is far above the answer's ~2,000 tokens. */
+export const LLM_MAX_TOKENS = 32000;
 export const LLM_ASK_COUNT = 25;
+const CHARS_PER_TOKEN = 4;
 
 export interface ILlmRequest {
-  readonly model: string;
+  readonly config: IModelConfig;
   readonly maxTokens: number;
   readonly system: string;
   readonly prompt: string;
@@ -16,14 +17,25 @@ export interface ILlmRequest {
 
 export interface ILlmResponse {
   readonly text: string;
-  readonly stopReason: string | null;
-  readonly usage: { readonly inputTokens: number; readonly outputTokens: number };
+  readonly finishReason: string | null;
+  readonly refusal: string | null;
+  readonly usage: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly reasoningTokens?: number;
+    readonly costUsd?: number;
+  };
 }
 
 export interface ILlmClient {
-  countTokens(request: ILlmRequest): Promise<number>;
   generate(request: ILlmRequest): Promise<ILlmResponse>;
 }
+
+export type TFetch = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}>;
 
 const SYSTEM_PROMPT = [
   'You help a Flesh and Blood player choose cards for a deck he already built.',
@@ -40,7 +52,7 @@ function cardLine(card: ICatalogCard, quantity?: number): string {
   return `${prefix}${card.cardIdentifier} | ${card.name} | ${typeLine(card)} | ${card.functionalText ?? ''}`;
 }
 
-export function buildRequest(deck: IDeckFile, pool: IPoolFile, catalog: ICatalog): ILlmRequest {
+export function buildRequest(config: IModelConfig, deck: IDeckFile, pool: IPoolFile, catalog: ICatalog): ILlmRequest {
   const hero = catalog.getCard(deck.hero);
   const deckLines = deck.mainboard.map((e) => cardLine(catalog.getCard(e.card), e.quantity));
   const poolLines = pool.cards.map((id) => cardLine(catalog.getCard(id)));
@@ -56,10 +68,9 @@ export function buildRequest(deck: IDeckFile, pool: IPoolFile, catalog: ICatalog
     '',
     `Rank the ${LLM_ASK_COUNT} cards from the candidate pool that best fit this deck, best first, each with one sentence of reason.`,
   ].join('\n');
-  return { model: LLM_MODEL, maxTokens: LLM_MAX_TOKENS, system: SYSTEM_PROMPT, prompt };
+  return { config, maxTokens: LLM_MAX_TOKENS, system: SYSTEM_PROMPT, prompt };
 }
 
-/** JSON schema the SDK adapter sends as the structured output format. */
 export const RANKING_SCHEMA = {
   type: 'object',
   properties: {
@@ -77,6 +88,70 @@ export const RANKING_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/**
+ * Body of POST /api/v1/chat/completions. Shape from
+ * https://openrouter.ai/docs/guides/features/structured-outputs (response_format json_schema),
+ * https://openrouter.ai/docs/guides/best-practices/reasoning-tokens (reasoning.effort) and
+ * https://openrouter.ai/docs/api/api-reference/chat-completion (provider.require_parameters).
+ */
+export function buildBody(request: ILlmRequest): Record<string, unknown> {
+  return {
+    model: request.config.model,
+    max_tokens: request.maxTokens,
+    messages: [
+      { role: 'system', content: request.system },
+      { role: 'user', content: request.prompt },
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'ranking', strict: true, schema: RANKING_SCHEMA },
+    },
+    provider: { require_parameters: true },
+    ...(request.config.reasoningEffort ? { reasoning: { effort: request.config.reasoningEffort } } : {}),
+  };
+}
+
+interface IChatCompletion {
+  choices?: { finish_reason?: string | null; message?: { content?: string | null; refusal?: string | null } }[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    cost?: number;
+    completion_tokens_details?: { reasoning_tokens?: number };
+  };
+  error?: { message?: string };
+}
+
+/** The key is only ever an argument; it is sent in the Authorization header and never stored. */
+export function createOpenRouterClient(apiKey: string, fetchImpl: TFetch): ILlmClient {
+  return {
+    async generate(request) {
+      const response = await fetchImpl(OPENROUTER_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildBody(request)),
+      });
+      const json = (await response.json()) as IChatCompletion;
+      if (!response.ok || json.error) {
+        throw new Error(`OpenRouter answered ${response.status}: ${json.error?.message ?? 'no error message'}`);
+      }
+      const choice = json.choices?.[0];
+      const reasoningTokens = json.usage?.completion_tokens_details?.reasoning_tokens;
+      return {
+        text: choice?.message?.content ?? '',
+        finishReason: choice?.finish_reason ?? null,
+        refusal: choice?.message?.refusal ?? null,
+        usage: {
+          inputTokens: json.usage?.prompt_tokens ?? 0,
+          outputTokens: json.usage?.completion_tokens ?? 0,
+          ...(reasoningTokens === undefined ? {} : { reasoningTokens }),
+          ...(json.usage?.cost === undefined ? {} : { costUsd: json.usage.cost }),
+        },
+      };
+    },
+  };
+}
+
 interface IRankingEntry {
   readonly card: string;
   readonly reason: string;
@@ -91,26 +166,33 @@ function parseRanking(text: string): readonly IRankingEntry[] | null {
   }
 }
 
-/** One request for one deck. A refusal or a truncation is recorded and never retried. */
+const FAILING_FINISH_REASONS = new Set(['length', 'content_filter', 'error']);
+
+/** One request for one deck. A refusal, a truncation or unparseable JSON is recorded and never retried. */
 export async function runLlmDeck(
+  config: IModelConfig,
   deck: IDeckFile,
   pool: IPoolFile,
   catalog: ICatalog,
   client: ILlmClient,
 ): Promise<IRunFile> {
-  const response = await client.generate(buildRequest(deck, pool, catalog));
+  const candidate = config.candidate;
+  const response = await client.generate(buildRequest(config, deck, pool, catalog));
   const usage = response.usage;
 
-  if (response.stopReason === 'refusal' || response.stopReason === 'max_tokens') {
-    return { deck: deck.deck, candidate: 'llm', status: 'failed', stopReason: response.stopReason, usage };
+  if (response.refusal) {
+    return { deck: deck.deck, candidate, status: 'failed', stopReason: 'refusal', usage };
+  }
+  if (response.finishReason !== null && FAILING_FINISH_REASONS.has(response.finishReason)) {
+    return { deck: deck.deck, candidate, status: 'failed', stopReason: response.finishReason, usage };
   }
 
   const ranking = parseRanking(response.text);
   if (ranking === null) {
-    return { deck: deck.deck, candidate: 'llm', status: 'failed', error: 'the response was not the requested JSON ranking', usage };
+    return { deck: deck.deck, candidate, status: 'failed', error: 'the response was not the requested JSON ranking', usage };
   }
 
-  const run = toRunFile(deck, pool, 'llm', ranking.map((r) => r.card), { usage });
+  const run = toRunFile(deck, pool, candidate, ranking.map((r) => r.card), { usage });
   if (run.status !== 'ok' || !run.top10) return run;
   const reasons = Object.fromEntries(
     run.top10.map((id) => [id, ranking.find((r) => r.card === id)?.reason ?? '']),
@@ -119,28 +201,33 @@ export async function runLlmDeck(
 }
 
 export function missingKeyMessage(): string {
-  return 'ANTHROPIC_API_KEY is not set: export it in your own shell, the key is never written to a file';
+  return 'OPENROUTER_API_KEY is not set: export it in your own shell, the key is never written to a file';
 }
 
-/** Builds the client only when the key is present, so no request can leave without one. */
-export function createLlmClientFromEnv(
-  env: NodeJS.ProcessEnv,
-  factory: () => ILlmClient,
-): ILlmClient | null {
-  const key = env['ANTHROPIC_API_KEY'];
-  return key === undefined || key.trim() === '' ? null : factory();
+/** Returns the key only when present, so no request can be built without one. */
+export function readApiKey(env: NodeJS.ProcessEnv): string | null {
+  const key = env['OPENROUTER_API_KEY'];
+  return key === undefined || key.trim() === '' ? null : key;
 }
 
-export async function dryRunLlm(
+/**
+ * OpenRouter has no token-count endpoint (https://openrouter.ai/api/v1/messages/count_tokens answers 404 and the
+ * docs index lists none), so the dry run estimates locally at 4 characters per token and calls nothing.
+ */
+export function dryRunLlm(
+  configs: readonly IModelConfig[],
   decks: readonly IDeckFile[],
   readPool: (deck: string) => IPoolFile,
   catalog: ICatalog,
-  client: ILlmClient,
-): Promise<string[]> {
-  const lines: string[] = [];
-  for (const deck of decks) {
-    const tokens = await client.countTokens(buildRequest(deck, readPool(deck.deck), catalog));
-    lines.push(`${deck.deck} ${deck.name}: ${tokens} input tokens`);
+): string[] {
+  const lines = ['estimated locally at 4 characters per token; no request was sent (OpenRouter has no token-count endpoint)'];
+  for (const config of configs) {
+    for (const deck of decks) {
+      const request = buildRequest(config, deck, readPool(deck.deck), catalog);
+      const tokens = Math.ceil((request.system.length + request.prompt.length) / CHARS_PER_TOKEN);
+      const ceilingUsd = (tokens * config.promptUsdPerMillion + request.maxTokens * config.completionUsdPerMillion) / 1e6;
+      lines.push(`${config.candidate} ${deck.deck} ${deck.name}: about ${tokens} input tokens, at most ${ceilingUsd.toFixed(2)} USD`);
+    }
   }
   return lines;
 }

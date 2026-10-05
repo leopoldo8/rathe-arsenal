@@ -5,7 +5,7 @@ Plan: `.specs/features/synergy-spike/plan.md`
 
 32 checks in 7 slices · 2 one-way doors · 2 open, of which 0 block
 
-Every proof below is a named test. Proofs that need the owner's `ANTHROPIC_API_KEY` or the owner's verdicts are marked **owner** and are left open by the builder; all other proofs run without network and without spend (language-model calls are faked in tests).
+Every proof below is a named test. Proofs that need the owner's `OPENROUTER_API_KEY` or the owner's verdicts are marked **owner** and are left open by the builder; all other proofs run without network and without spend (language-model calls are faked in tests).
 
 ## Checks
 
@@ -66,26 +66,25 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C13:" scripts/synergy-spike/_
 Proof: `pnpm exec tsx --test --test-name-pattern "^C14:" scripts/synergy-spike/__tests__/run.test.ts`
 
 
-### S5 - the language-model candidate · 3 files · 22 KB · ~20k
+### S5 - the three language-model candidates · 3 files · 24 KB · ~22k
 
-**C15** - `pnpm synergy:run llm` with `ANTHROPIC_API_KEY` unset exits 1 before any request is made (the fake client is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
+**C15** - `pnpm synergy:run <gpt-6.1-sol|gemini-3.8-flash|mimo-v2.6-pro|llm-all>` with `OPENROUTER_API_KEY` unset exits 1 before any request is made (the injected fetch is called 0 times), and no file under `scripts/synergy-spike/` or `.env.example` holds a key value (plan AC 15) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C15:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C16** - One deck sends exactly 1 request with model `claude-opus-5-5`, the hero name, the rules text of every mainboard card, every card of the pool with its rules text, and asks for 25 ranked identifiers with one reason each, of which the first 10 valid are kept (plan AC 16) · done
+**C16** - For each of the 3 candidates one deck sends exactly 1 POST to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, the pinned model id (`openai/gpt-6.1-sol`, `google/gemini-3.8-flash`, `xiaomi/mimo-v2.6-pro`), the hero name, the rules text of every mainboard card, every card of the pool with its rules text, a request for 25 ranked identifiers with one reason each, `response_format` `json_schema` with `strict` true, `provider.require_parameters` true, `reasoning.effort` `high` for `gpt-6.1-sol` only, and the first 10 valid identifiers are kept (plan AC 16) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C16:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C17** - `--dry-run` prints one input token count per deck from the token-counting call, makes 0 generation calls and exits 0 (plan AC 17) · done
+**C17** - `--dry-run` prints one estimated input token count and one cost ceiling per candidate and deck, says the estimate is local, makes 0 HTTP calls and needs no key, and exits 0 (plan AC 17) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C17:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C18** - A returned message's `usage` input and output token counts are stored in that deck's run file (plan AC 18) · done
+**C18** - A response's `usage.prompt_tokens`, `usage.completion_tokens`, `usage.completion_tokens_details.reasoning_tokens` and `usage.cost` are stored in that deck's run file as `inputTokens`, `outputTokens`, `reasoningTokens` and `costUsd` (plan AC 18) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C18:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C19** - Stop reason `refusal` and stop reason `max_tokens` each record the deck as `failed` with that stop reason, make exactly 1 request (no retry) and exit 1 (plan AC 19) · done
+**C19** - Each of 6 failure triggers records the deck as `failed`, makes exactly 1 request (no retry) and exits 1: `finish_reason` `length`, `finish_reason` `content_filter`, `finish_reason` `error`, a non-empty `message.refusal`, an HTTP 429 answer, and `message.content` that is not the JSON ranking (plan AC 19) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C19:" scripts/synergy-spike/__tests__/llm.test.ts`
 
-**C20** - **owner** - with the real key, one deck's run file holds nonzero `inputTokens` and `outputTokens` and a 10-card `top10` taken from a real response
-Proof: `ANTHROPIC_API_KEY=<key> pnpm synergy:run llm --deck <ULID>` then reading `scripts/synergy-spike/out/runs/llm/<ULID>.json`
-
+**C20** - **owner** - with the real key, one deck's run file for one candidate holds nonzero `inputTokens` and `outputTokens` and a 10-card `top10` taken from a real response, and the request is accepted with `response_format` and `provider.require_parameters` set
+Proof: `OPENROUTER_API_KEY=<key> pnpm synergy:run gemini-3.8-flash --deck <ULID>` then reading `scripts/synergy-spike/out/runs/gemini-3.8-flash/<ULID>.json`
 
 ### S6 - the blind judging sheet · 2 files · 10 KB · ~12k
 
@@ -110,22 +109,22 @@ Proof: `pnpm exec tsx --test --test-name-pattern "^C25:" scripts/synergy-spike/_
 **C26** - A candidate with PASS on 3 decks makes `result.md` hold the line `STOP: <candidate> passed on 3 decks`; PASS on 2 decks does not (plan AC 25) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C26:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C27** - With `llm`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26) · done
+**C27** - With `gpt-6.1-sol`, `gemini-3.8-flash`, `mimo-v2.6-pro`, `heuristic` and `cooccurrence` all run on the same 3 decks and none passing on 3, `result.md` holds `STOP: all candidates tried once, none passed` (plan AC 26) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C27:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C28** - With `llm` run and none passing, `result.md` holds `CONTINUE: next candidate is heuristic`; with `llm` and `heuristic` run it holds `CONTINUE: next candidate is cooccurrence` (plan AC 27) · done
+**C28** - With `gpt-6.1-sol` run and none passing, `result.md` holds `CONTINUE: next candidate is gemini-3.8-flash`; with the three language-model candidates run it holds `CONTINUE: next candidate is heuristic` (plan AC 27) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C28:" scripts/synergy-spike/__tests__/score.test.ts`
 
 **C29** - A deck whose run is `untestable` or `failed` prints that status in place of a count, and the candidate counts as tried (plan AC 28) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C29:" scripts/synergy-spike/__tests__/score.test.ts`
 
-**C30** - When `llm` ran, `result.md` prints the sum of its input and output tokens over the decks (plan AC 29) · done
+**C30** - For each language-model candidate that ran, `result.md` prints the sum of its input tokens, output tokens and cost in USD over the decks (plan AC 29) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C30:" scripts/synergy-spike/__tests__/score.test.ts`
 
 
 ### Cross-cutting · 5 files · 8 KB · ~6k
 
-**C31** - Root `package.json` holds exactly 5 `synergy:*` scripts (decks, pool, run, sheet, score) and `@anthropic-ai/sdk` in `devDependencies`; only files under `scripts/synergy-spike/` import it; `.env.example` has one commented `ANTHROPIC_API_KEY` line with no value (plan Impact, Landing door 2) · done
+**C31** - Root `package.json` holds exactly 5 `synergy:*` scripts (decks, pool, run, sheet, score) and no `@anthropic-ai/sdk` anywhere in `package.json`; `.env.example` has one commented `OPENROUTER_API_KEY=` line with no value and no `ANTHROPIC_API_KEY` line; the three model ids live only in `scripts/synergy-spike/lib/models.config.ts` (plan Impact, Landing door 3) · done
 Proof: `pnpm exec tsx --test --test-name-pattern "^C31:" scripts/synergy-spike/__tests__/impact.test.ts`
 
 **C32** - The spike scripts typecheck, the whole repo typechecks and lints, and the engine suite is green · done
@@ -140,10 +139,11 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | --- | --- | --- |
 | step-5 per-card tests in the pool filter (5) | banned format C7 · format-legal C7 · hero scope via legalHeroes C7 · hero scope via legalOverrides C7 · hero scope via specializations C7 · Silver Age rarity C7 | - |
 | pool removals (3) | hero cards C8 · tokens C8 · cards already in the deck C8 | - |
-| candidates (3) | `llm` C16 · `heuristic` C10 · `cooccurrence` C14 | - |
+| candidates (5) | `gpt-6.1-sol` C16 · `gemini-3.8-flash` C16 · `mimo-v2.6-pro` C16 · `heuristic` C10 · `cooccurrence` C14 | - |
 | run statuses (3) | ok C10 · failed C11 · untestable C14 | - |
 | candidate output filters in `finalizeTop10` (2) | outside the pool C11 · in the deck C11 | - |
-| LLM stop reasons that fail the deck (2) | refusal C19 · max_tokens C19 | - |
+| failed-run triggers of a language-model deck (6) | finish_reason length C19 · finish_reason content_filter C19 · finish_reason error C19 · message.refusal C19 · HTTP 429 C19 · non-JSON content C19 | - |
+| language-model candidates and their pinned models (3) | `openai/gpt-6.1-sol` with reasoning high C16 · `google/gemini-3.8-flash` C16 · `xiaomi/mimo-v2.6-pro` C16 | - |
 | verdict values (5) | `yes` C24 · `no` C24 · blank C24 · `maybe` C24 · missing row C24 | - |
 | decks-list size (3) | 3 URLs C4 · 2 URLs C5 · 1 URL C5 | - |
 | deck load failures (2) | fetch fails C6 · identifier absent from the catalog C6 | - |
@@ -151,13 +151,13 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 | result lines (3) | STOP passed C26 · STOP all tried C27 · CONTINUE C28 | - |
 | `synergy:*` scripts (5) | decks C31 · pool C31 · run C31 · sheet C31 · score C31 | - |
 | sheet columns (6) | deck C21 · hero C21 · card C21 · pitch C21 · rules C21 · verdict C21 | - |
-| one-way doors in plan `Landing` (2) | door 1 `functionalText` C1, C2, C3 · door 2 SDK dependency C31, C16 | - |
+| one-way doors in plan `Landing` (3) | door 1 `functionalText` C1, C2, C3 · door 2 Anthropic SDK (superseded) C31 · door 3 OpenRouter over `fetch` C15, C16, C31 | - |
 | spike commands exit codes (3 non-zero paths) | decks C5 · pool C9 · run C15 | - |
 | plan `Surface` routes (0) | none - the plan's Surface is `None - nothing consumed outside` | - |
 | startup configuration (0) | none - scripts, no assembled application | - |
 
-- Claims naming a literal value (1,017, 5,139, 10, 25, 5, `claude-opus-5-5`): C1, C7, C10, C16, C25 - each proof asserts that value.
-- Live behaviour that cannot run without the owner's key: C20 only; every other language-model claim is proven against a fake client.
+- Claims naming a literal value (1,017, 5,139, 10, 25, 5, the three model ids): C1, C7, C10, C16, C25 - each proof asserts that value.
+- Live behaviour that cannot run without the owner's key: C20 only; every other language-model claim is proven against an injected fetch.
 - No other check claims more than the single case its proof exercises.
 
 ## Swept
@@ -183,3 +183,4 @@ Proof: `pnpm --filter @rathe-arsenal/engine test`
 - **Boundary:** C1-C19 and C21-C32 closed at `1ecf093`; C20 stays open for the owner's `ANTHROPIC_API_KEY`
 - **Settled mid-build:** the owner moved the catalog to 5.3.0 (#127), which closed the decks 2 and 3 gap; C1, C2, C7 literals renegotiated, see implementation-notes.md
 - **Abandoned:** a skip of the Fabrary 403 by credentials (none needed, a browser User-Agent was enough)
+- **Boundary (OpenRouter change):** C15-C19, C27, C28, C30, C31 re-closed at the commit that carries this line's parent; C20 now needs `OPENROUTER_API_KEY`

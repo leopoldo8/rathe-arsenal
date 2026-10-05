@@ -1,63 +1,67 @@
 import { catalog } from '../../packages/engine/src';
 import { readPool } from './lib/io';
-import { createLlmClientFromEnv, dryRunLlm, missingKeyMessage } from './lib/llm';
-import { createSdkClient } from './lib/llm-client';
+import { createOpenRouterClient, dryRunLlm, missingKeyMessage, readApiKey, type TFetch } from './lib/llm';
+import { MODEL_CONFIGS, configFor } from './lib/models.config';
 import { outDir } from './lib/paths';
 import { runCandidate, selectDecks } from './lib/run-candidate';
 import { CANDIDATE_ORDER, type TCandidateName } from './lib/types';
 
+const LLM_ALL = 'llm-all';
+
 interface IArgs {
-  readonly candidate: TCandidateName;
+  readonly candidates: readonly TCandidateName[];
   readonly deck?: string;
   readonly dryRun: boolean;
   readonly force: boolean;
 }
 
 function parseArgs(argv: readonly string[]): IArgs {
-  const candidate = argv.find((a) => !a.startsWith('--')) as TCandidateName | undefined;
-  if (!candidate || !CANDIDATE_ORDER.includes(candidate)) {
-    console.error(`usage: pnpm synergy:run <${CANDIDATE_ORDER.join('|')}> [--deck <ULID>] [--dry-run] [--force]`);
+  const name = argv.find((a) => !a.startsWith('--'));
+  const candidates = name === LLM_ALL
+    ? MODEL_CONFIGS.map((c) => c.candidate)
+    : CANDIDATE_ORDER.filter((c) => c === name);
+  if (candidates.length === 0) {
+    console.error(`usage: pnpm synergy:run <${[...CANDIDATE_ORDER, LLM_ALL].join('|')}> [--deck <ULID>] [--dry-run] [--force]`);
     process.exit(1);
   }
   const deckFlag = argv.indexOf('--deck');
   const flags = { dryRun: argv.includes('--dry-run'), force: argv.includes('--force') };
   return deckFlag >= 0 && argv[deckFlag + 1] !== undefined
-    ? { candidate, deck: argv[deckFlag + 1] as string, ...flags }
-    : { candidate, ...flags };
+    ? { candidates, deck: argv[deckFlag + 1] as string, ...flags }
+    : { candidates, ...flags };
 }
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const out = outDir();
+  const configs = args.candidates.flatMap((c) => configFor(c) ?? []);
 
-  const llm = args.candidate === 'llm' ? createLlmClientFromEnv(process.env, createSdkClient) : undefined;
-  if (args.candidate === 'llm' && llm === null) {
-    console.error(missingKeyMessage());
-    process.exit(1);
-  }
-
-  if (args.dryRun && llm) {
+  if (args.dryRun) {
     const decks = selectDecks(out, args.deck);
-    for (const line of await dryRunLlm(decks, (id) => readPool(out, id), catalog, llm)) console.log(line);
+    for (const line of dryRunLlm(configs, decks, (id) => readPool(out, id), catalog)) console.log(line);
     process.exit(0);
   }
 
-  const { runs, exitCode } = await runCandidate({
-    candidate: args.candidate,
-    out,
-    catalog,
-    onlyDeck: args.deck,
-    llm: llm ?? undefined,
-    force: args.force,
-  });
-  if (runs.length === 0) {
-    console.error('no decks found: run `pnpm synergy:decks` and `pnpm synergy:pool` first');
+  const apiKey = configs.length > 0 ? readApiKey(process.env) : null;
+  if (configs.length > 0 && apiKey === null) {
+    console.error(missingKeyMessage());
     process.exit(1);
   }
-  for (const run of runs) {
-    const usage = run.usage ? ` [${run.usage.inputTokens} in, ${run.usage.outputTokens} out]` : '';
-    const why = run.stopReason ?? run.error;
-    console.log(`${run.deck} ${args.candidate}: ${run.status}${why ? ` (${why})` : ''}${usage}`);
+  const llm = apiKey === null ? undefined : createOpenRouterClient(apiKey, fetch as unknown as TFetch);
+
+  let exitCode = 0;
+  for (const candidate of args.candidates) {
+    const result = await runCandidate({ candidate, out, catalog, onlyDeck: args.deck, llm, force: args.force });
+    if (result.runs.length === 0) {
+      console.error('no decks found: run `pnpm synergy:decks` and `pnpm synergy:pool` first');
+      process.exit(1);
+    }
+    for (const run of result.runs) {
+      const usage = run.usage ? ` [${run.usage.inputTokens} in, ${run.usage.outputTokens} out]` : '';
+      const why = run.stopReason ?? run.error;
+      console.log(`${run.deck} ${candidate}: ${run.status}${why ? ` (${why})` : ''}${usage}`);
+    }
+    exitCode = Math.max(exitCode, result.exitCode);
   }
   process.exit(exitCode);
 }

@@ -1,5 +1,6 @@
 import type { ICatalog } from '../../../packages/engine/src';
 import { readDecks, readRuns } from './io';
+import { MODEL_CONFIGS } from './models.config';
 import { readSheet } from './sheet';
 import {
   CANDIDATE_ORDER,
@@ -79,11 +80,14 @@ export function scoreAll(out: string, catalog: ICatalog): TScoreResult {
     }
   }
 
-  const llmUsage = (byCandidate.get('llm') ?? []).flatMap((s) => (s.run.usage ? [s.run.usage] : []));
-  if ((byCandidate.get('llm') ?? []).length > 0) {
-    const input = llmUsage.reduce((sum, u) => sum + u.inputTokens, 0);
-    const output = llmUsage.reduce((sum, u) => sum + u.outputTokens, 0);
-    lines.push('', `llm tokens used: ${input} input, ${output} output`);
+  for (const config of MODEL_CONFIGS) {
+    const scores = byCandidate.get(config.candidate) ?? [];
+    if (scores.length === 0) continue;
+    const usages = scores.flatMap((s) => (s.run.usage ? [s.run.usage] : []));
+    const input = usages.reduce((sum, u) => sum + u.inputTokens, 0);
+    const output = usages.reduce((sum, u) => sum + u.outputTokens, 0);
+    const cost = usages.reduce((sum, u) => sum + (u.costUsd ?? 0), 0);
+    lines.push('', `${config.candidate} tokens used: ${input} input, ${output} output, cost ${cost.toFixed(4)} USD`);
   }
 
   const winner = CANDIDATE_ORDER.find((c) => passes(c) >= REQUIRED_DECK_COUNT);

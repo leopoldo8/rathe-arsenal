@@ -40,7 +40,7 @@ function readRows(out: string): Record<string, string>[] {
 
 test('C21: the sheet has the six columns, one row per distinct (deck, card), an empty verdict and no candidate or rank', () => {
   const out = seedOut();
-  const llm = writeRun(out, 'llm', 0);
+  const llm = writeRun(out, 'gpt-6.1-sol', 0);
   const heuristic = writeRun(out, 'heuristic', 5);
 
   const result = runCli('sheet.ts', [], { SYNERGY_OUT_DIR: out });
@@ -57,7 +57,7 @@ test('C21: the sheet has the six columns, one row per distinct (deck, card), an 
     assert.equal(row['hero'], 'Dorinthea Ironsong');
     for (const [column, value] of Object.entries(row)) {
       if (column === 'rules') continue;
-      assert.ok(!/^(llm|heuristic|cooccurrence|rank.*)$/i.test(value), `${column} names a candidate or rank`);
+      assert.ok(!/^(gpt-6\.1-sol|gemini-3\.8-flash|mimo-v2\.6-pro|heuristic|cooccurrence|rank.*)$/i.test(value), `${column} names a candidate or rank`);
     }
   }
 });
@@ -66,7 +66,7 @@ test('C22: row order is a seeded shuffle and the key maps each card to its candi
   const first = seedOut();
   const second = seedOut();
   for (const out of [first, second]) {
-    writeRun(out, 'llm', 0);
+    writeRun(out, 'gpt-6.1-sol', 0);
     writeRun(out, 'heuristic', 5);
     runCli('sheet.ts', [], { SYNERGY_OUT_DIR: out });
   }
@@ -79,16 +79,16 @@ test('C22: row order is a seeded shuffle and the key maps each card to its candi
   }[];
   const shared = key.find((e) => e.card === POOL.cards[7]);
   assert.deepEqual(shared?.runs, [
-    { candidate: 'llm', rank: 8 },
+    { candidate: 'gpt-6.1-sol', rank: 8 },
     { candidate: 'heuristic', rank: 3 },
   ]);
   const llmOnly = key.find((e) => e.card === POOL.cards[0]);
-  assert.deepEqual(llmOnly?.runs, [{ candidate: 'llm', rank: 1 }]);
+  assert.deepEqual(llmOnly?.runs, [{ candidate: 'gpt-6.1-sol', rank: 1 }]);
 });
 
 test('C23: a rebuild keeps filled verdicts, adds only new pairs and repeats no row', () => {
   const out = seedOut();
-  writeRun(out, 'llm', 0);
+  writeRun(out, 'gpt-6.1-sol', 0);
   runCli('sheet.ts', [], { SYNERGY_OUT_DIR: out });
 
   const rows = readRows(out);
