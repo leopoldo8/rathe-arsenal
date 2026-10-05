@@ -6,7 +6,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // ---------------------------------------------------------------------------
@@ -161,6 +161,27 @@ describe('CsvSourceRow', () => {
       const input = screen.getByRole('textbox', { name: /editar nome da fonte/i });
       await userEvent.tripleClick(input);
       await userEvent.keyboard('New Name{Enter}');
+
+      expect(mockMutate).toHaveBeenCalledWith(
+        { sourceId: 'src-001', label: 'New Name' },
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
+    });
+
+    it('a selection that lands late does not eat a keystroke', async () => {
+      onTestFinished(() => vi.unstubAllGlobals());
+      const pendingFrames: FrameRequestCallback[] = [];
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { pendingFrames.push(cb); return 0; });
+      renderRow(buildSource());
+
+      const labelBtn = screen.getByRole('button', { name: /renomear.*my collection/i });
+      await userEvent.click(labelBtn);
+
+      const input = screen.getByRole('textbox', { name: /editar nome da fonte/i });
+      await userEvent.tripleClick(input);
+      await userEvent.keyboard('N');
+      pendingFrames.splice(0).forEach((cb) => cb(0));
+      await userEvent.keyboard('ew Name{Enter}');
 
       expect(mockMutate).toHaveBeenCalledWith(
         { sourceId: 'src-001', label: 'New Name' },
