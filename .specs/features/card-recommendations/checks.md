@@ -119,7 +119,7 @@ Proof: `... recommendation-queue.e2e-spec -t "logs the enqueue"`
 Proof: `... recommendation-schema.e2e-spec -t "enforces every one-way constraint"`
 
 **C31** - The migration's `up` creates the three tables with every index and CHECK the entities declare and replaces the `pickedFrom` CHECK; `down` restores the five-value CHECK and drops the three tables (doors 1-5) · done
-Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' --forceExit src/database/migrations/__tests__/add-card-recommendations.migration.int-spec.ts -t "up creates and down drops the recommendation tables"` (proof file renamed before any code: the repo proves migrations as `.int-spec.ts` in their own schema) (extended after verification round 2: `up` also leaves every column of the three tables with the type, length and nullability in `recommendation-columns.ts`, so `error` is pinned as `text`)
+Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' --forceExit src/database/migrations/__tests__/add-card-recommendations.migration.int-spec.ts -t "up creates and down drops the recommendation tables"` (proof file renamed before any code: the repo proves migrations as `.int-spec.ts` in their own schema) (extended after verification round 2: `up` also leaves every column of the three tables with the type, length and nullability in `recommendation-columns.ts`, so `error` is pinned as `text`) (extended after verification round 3: the shared table now also pins each column default, so `attempts DEFAULT 0` and both `createdAt DEFAULT now()` are proven; author-checked only, no independent round 4)
 
 **C32** - The fingerprint is the same for the same cards listed in another order and for one card split over two rows of a slot, and differs when a quantity, the hero, the format or a card's slot changes (door 6) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the fingerprint ignores order and tracks every input"`
@@ -270,7 +270,7 @@ Proof: `... alternatives-order.e2e-spec -t "a done run reorders a group without 
 | locales (2) | pt-BR C44 · en-US C44 | - |
 | startup config: `GEMINI_API_KEY` (2 assemblies) | `AppModule`'s `EnvDto`, shared by API and worker, optional there C66 · the worker's own assembly: `createRecommendationStep` reading the env per run and `runWorkerLoops` C69 · `runWorker`, `defaultWorkerDeps` and `main()` C73 | - |
 | Landing doors (8) | 1 run table C30, C31 · 2 recommendation table C30, C31 · 3 dismissal and pool C30, C13 · 4 `pickedFrom` C30, C63 · 5 one pending, atomic upsert C6, C30 · 6 fingerprint C32, C34 · 7 provider contract C16 · 8 second loop C28 | - |
-| column shapes, migration and entities (2 assemblies) | migration C31 · `synchronize` from entities C72 | - |
+| column shapes with defaults, migration and entities (2 assemblies) | migration C31 · `synchronize` from entities C72 | - |
 | Relations entities (4) | `recommendation_run` C30 · `recommendation` C30 · `recommendation_dismissal` C30 · `card_replacement` adoption C54 | - |
 
 **C65** - Each new route other than Generate answers `429` after the global throttler's 120-per-minute limit, table-driven over the read, dismiss, undo and adopt routes, and `GET /api/decks` still does; Generate's lower limit is C67 (reworded after verification round 1, which found five routes claimed and four driven) · done
@@ -295,7 +295,7 @@ Proof: `... recommendation-adopt.e2e-spec -t "concurrent adoptions of one cut ho
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "every mutation refreshes the data it changes"`
 
 **C72** - TypeORM `synchronize` over the entities builds the three recommendation tables with exactly the columns, types, lengths and nullability the migration builds (`RECOMMENDATION_COLUMNS`; added after verification round 2) · done
-Proof: `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' --forceExit src/database/entities/__tests__/recommendation-entities.int-spec.ts -t "synchronize builds the same columns as the migration"`
+Proof: `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' --forceExit src/database/entities/__tests__/recommendation-entities.int-spec.ts -t "synchronize builds the same columns as the migration"` (extended after verification round 3: defaults compared too)
 
 **C73** - The worker's `main()` boots the application context once and runs both drains, the recommendation runs with `process.env.GEMINI_API_KEY` and the global `fetch`; `runWorker` wires both drains from the context with the environment it is given; `defaultWorkerDeps()` is `process.env` and the global `fetch` (startup config row; added after verification round 2) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/stores/__tests__/variant-queue-worker.main.spec.ts -t "boots the application context and runs both drains with the process key"`

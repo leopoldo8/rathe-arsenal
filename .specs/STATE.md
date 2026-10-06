@@ -90,9 +90,11 @@
 
 ## Handoff
 
-- **Feature**: card-recommendations — `.specs/features/card-recommendations/` — plan and checks written on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
+- **Feature**: card-recommendations — `.specs/features/card-recommendations/` — planned, built and verified on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed, no PR. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
+- **Verification**: three independent rounds, each FAIL on fewer and smaller gaps (round 3: 73/73 checks proven, full gate green, one surviving mutant on unpinned migration column defaults). That last gap is fixed and author-checked, not independently re-verified: run one more scoped Verifier round so `validate_verification.py` exits 0.
 - **Blocks go-live**: `GEMINI_API_KEY` on the `scrapper-worker` service, and the migration on production. The live Gemini request shape is unproven until the first real run.
-- **Tests**: run this branch's api e2e against `postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs`, a separate database in the same container, so the new tables and the six-value `pickedFrom` CHECK never reach the dev database the `main` checkout synchronizes.
+- **Deviations and owner calls**: `.specs/features/card-recommendations/implementation-notes.md` (1-14 and "Needs owner").
+- **Tests**: run this branch's api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs`, a separate database in the same container; several int-specs otherwise default to the dev database.
 
 ### Previous handoff
 

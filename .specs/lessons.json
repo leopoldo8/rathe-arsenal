@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 13,
+  "next_id": 18,
   "lessons": [
     {
       "id": "L-010",
@@ -58,6 +58,96 @@
       ],
       "created": "2026-10-04T16:33:36Z",
       "last_seen": "2026-10-04T16:33:36Z"
+    },
+    {
+      "id": "L-013",
+      "key": "surviving_mutant::when a check claims an order oldest first seed at least two rows whose order the query must decide or a reversed order by survives",
+      "text": "When a check claims an order (oldest first), seed at least two rows whose order the query must decide, or a reversed ORDER BY survives.",
+      "signal": "surviving_mutant",
+      "scope": "apps/api/queue",
+      "status": "candidate",
+      "features": [
+        "card-recommendations"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 F1 recommendation-queue.service.ts:92 (apps/api/queue)"
+      ],
+      "created": "2026-10-06T22:18:11Z",
+      "last_seen": "2026-10-06T22:18:11Z"
+    },
+    {
+      "id": "L-014",
+      "key": "gate_fail::compute timestamps a test compares with the database clock in sql clock timestamp never with date now in the app or host and container clock skew makes the bound flaky",
+      "text": "Compute timestamps a test compares with the database clock in SQL (clock_timestamp), never with Date.now() in the app, or host and container clock skew makes the bound flaky.",
+      "signal": "gate_fail",
+      "scope": "apps/api/e2e",
+      "status": "candidate",
+      "features": [
+        "card-recommendations"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 C20/C21 recommendation-worker.e2e-spec.ts:198 (apps/api/e2e)"
+      ],
+      "created": "2026-10-06T22:18:11Z",
+      "last_seen": "2026-10-06T22:18:11Z"
+    },
+    {
+      "id": "L-015",
+      "key": "surviving_mutant::keep a process entry point to a boot plus one exported function and prove the entry point itself with the framework factory mocked or its wiring survives every fault",
+      "text": "Keep a process entry point to a boot plus one exported function, and prove the entry point itself with the framework factory mocked, or its wiring survives every fault.",
+      "signal": "surviving_mutant",
+      "scope": "apps/api/worker",
+      "status": "candidate",
+      "features": [
+        "card-recommendations"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round2 N6b/N6c variant-queue-worker.ts main() (apps/api/worker)"
+      ],
+      "created": "2026-10-06T22:18:11Z",
+      "last_seen": "2026-10-06T22:18:11Z"
+    },
+    {
+      "id": "L-016",
+      "key": "surviving_mutant::pin a new table s column type length nullability and default from one shared table compared against both the migration and a synchronize build of the entities",
+      "text": "Pin a new table's column type, length, nullability and default from one shared table, compared against both the migration and a synchronize build of the entities.",
+      "signal": "surviving_mutant",
+      "scope": "apps/api/migrations",
+      "status": "candidate",
+      "features": [
+        "card-recommendations"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round2 N8, round3 M1 recommendation-columns.ts (apps/api/migrations)"
+      ],
+      "created": "2026-10-06T22:18:12Z",
+      "last_seen": "2026-10-06T22:18:12Z"
+    },
+    {
+      "id": "L-017",
+      "key": "spec_deviation::before freezing a plan s surface and landing diff every field and column type against the binding design and log each intended difference as a deviation",
+      "text": "Before freezing a plan's Surface and Landing, diff every field and column type against the binding design, and log each intended difference as a deviation.",
+      "signal": "spec_deviation",
+      "scope": "plan",
+      "status": "candidate",
+      "features": [
+        "card-recommendations"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 binding sources run.status, error text (plan)"
+      ],
+      "created": "2026-10-06T22:18:12Z",
+      "last_seen": "2026-10-06T22:18:12Z"
     }
   ]
 }

@@ -20,8 +20,11 @@ Autonomous run, owner away. Every call below that needs the owner is marked **ne
 
 13. **Verification round 2 fixes.** The worker's assembly moved into `runWorker(app, deps, logger)` with `defaultWorkerDeps()`, and `main()` (now exported) only boots the context and calls it; a spec mocks `NestFactory` and `AppModule` to prove `main()` itself (C73). Column types of the three tables are pinned twice from one table, `recommendation-columns.ts`: against the migration (C31 extended) and against a `synchronize` build from the entities (C72). Observation, outside the gate: `entity-check-constraints.int-spec.ts` fails 8 of 8 on a freshly created empty database (it passes on the dev and `rathe_arsenal_recs` databases), which suggests it depends on state an older boot left there; not investigated further.
 
+14. **Verification round 3 fix, not independently verified.** Round 3 (the last of the three rounds the skill allows before escalating) closed both round 2 gaps and found one more: the migration's column defaults were unpinned (mutant M1, `attempts` default 0 to 1, survived). `recommendation-columns.ts` now compares `column_default` too, against the migration and the entities; the author re-ran M1 and it now fails the migration int-spec. No round 4 verifier ran: the report on file is round 3's FAIL at `2563a83`, and a fresh independent round is the owner's call.
+
 ## Needs owner
 
+- Verification: rounds 1-3 FAIL, each on fewer and smaller gaps; the round 3 gap (unpinned column defaults) is fixed but not independently re-verified. Run one more scoped Verifier round to close the gate (`validate_verification.py` must exit 0).
 - Profile `standard` and every plan Assumption marked `Confirmed? n`, chosen on an autonomous run.
 - `GEMINI_API_KEY` on the `scrapper-worker` service and the migration on production (plan open questions 1 and 2, block go-live). No push, PR or deploy was made.
 - The live Gemini request is unproven until the first real run (open question 3): every proof drives a stubbed `fetch` that follows the documented `generateContent` shape.
