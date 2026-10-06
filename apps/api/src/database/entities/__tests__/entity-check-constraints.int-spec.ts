@@ -85,9 +85,10 @@ describe('CHECK constraints declared on the entities', () => {
 
     const columns = Object.keys(row).map((column) => `"${column}"`).join(', ');
     const params = Object.values(row).map((_, index) => `$${index + 1}`).join(', ');
-    // CHECKs are evaluated before the foreign keys, so the violation surfaces without parent rows.
+    // CHECKs are evaluated before the foreign keys, so the violation surfaces without parent rows. The schema is
+    // explicit: unqualified, the insert resolves to public's migration-built table, not the one built from the entities.
     await expect(
-      dataSource.query(`INSERT INTO "${table}" (${columns}) VALUES (${params})`, Object.values(row)),
+      dataSource.query(`INSERT INTO "${SCHEMA}"."${table}" (${columns}) VALUES (${params})`, Object.values(row)),
     ).rejects.toMatchObject({ constraint });
   });
 
