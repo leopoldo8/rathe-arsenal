@@ -204,7 +204,7 @@ export function RecommendationsPanel({ deckId, deckCards }: IRecommendationsPane
         <button
           type="button"
           className={styles.generate}
-          disabled={isGenerating}
+          disabled={generate.isPending}
           aria-label={t('recommendations.generateAria')}
           onClick={() => {
             setActionError(null);

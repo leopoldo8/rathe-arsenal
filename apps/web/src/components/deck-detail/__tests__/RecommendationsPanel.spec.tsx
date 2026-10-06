@@ -90,6 +90,7 @@ describe('RecommendationsPanel', () => {
       }],
       ['pending with no run', response({ run: null, pending: true, recommendations: [] }), (panel) => {
         expect(within(panel).getByTestId('recommendations-generating')).toHaveTextContent('Generating recommendations');
+        expect(within(panel).getByTestId('recommendations-generate')).toBeEnabled();
         expect(within(panel).queryByTestId('recommendations-empty')).toBeNull();
         expect(within(panel).queryAllByTestId('recommendation-row')).toHaveLength(0);
       }],
