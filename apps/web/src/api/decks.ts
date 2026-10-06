@@ -177,6 +177,8 @@ export interface ITrackedDeckListItem {
   } | null;
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
+  /** Clear upgrades the deck's recommendations panel would list; 0 for a retired deck. */
+  readonly clearUpgradeCount: number;
 }
 
 /**

@@ -83,7 +83,7 @@ Only routes this adds or whose signature changes.
 | Route | In | Out | Status |
 | --- | --- | --- | --- |
 | `POST /api/decks/:deckId/recommendations/runs` | `deckId` in the path | `run` of `id`, `status`, `trigger`, `createdAt` | `202`, `400`, `401`, `404`, `429` |
-| `GET /api/decks/:deckId/recommendations` | `deckId` in the path | `run` of `id`, `trigger`, `finishedAt`, `stale` or null · `pending` · `failure` of `code`, `finishedAt` or null · `recommendations[]` of `id`, `rank`, `cardIdentifier`, `name`, `pitch`, `imageUrl`, `strength`, `reason`, `cutCardIdentifier`, `cutName`, `cutSlot`, `freeCopies`, `priceCents`, `productUrl` | `200`, `400`, `401`, `404`, `429` |
+| `GET /api/decks/:deckId/recommendations` | `deckId` in the path | `run` of `id`, `trigger`, `finishedAt`, `stale` or null · `pending` · `failure` of `code`, `finishedAt` or null · `recommendations[]` of `id`, `rank`, `cardIdentifier`, `name`, `pitch`, `imageUrl`, `slot` (added during build: the slot an adoption lands in, which the panel's cut selector filters on), `strength`, `reason`, `cutCardIdentifier`, `cutName`, `cutSlot`, `freeCopies`, `priceCents`, `productUrl` | `200`, `400`, `401`, `404`, `429` |
 | `POST /api/decks/:deckId/recommendations/dismissals` | `cardIdentifier` | `dismissal` of `cardIdentifier`, `createdAt` | `201`, `200`, `400`, `401`, `404`, `429` |
 | `DELETE /api/decks/:deckId/recommendations/dismissals/:cardIdentifier` | path only | empty | `204`, `400`, `401`, `404`, `429` |
 | `POST /api/decks/:deckId/recommendations/:recommendationId/adopt` | `cutCardIdentifier`, `cutSlot` | `replacement` (the shape the pick route returns) | `201`, `400`, `401`, `404`, `409`, `429` |

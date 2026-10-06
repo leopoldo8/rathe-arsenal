@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DeckTile } from '../DeckTile';
 import type { ITrackedDeckListItem } from '../../../api/decks';
 import { ToastProvider } from '../../ui/Toast/ToastProvider';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 import styles from '../DeckTile.module.css';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -53,6 +54,7 @@ function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckLi
     heroImageUrl: null,
     representativeCards: [],
     cardCounts: { owned: 63, missing: 4, total: 67 },
+    clearUpgradeCount: 0,
     ...overrides,
   };
 }
@@ -215,6 +217,19 @@ describe('DeckTile', () => {
       expect(screen.queryByTestId('replacement-prompt')).toBeNull();
       expect(screen.queryByText(/agora você tem a original/i)).toBeNull();
       expect(screen.queryByRole('button', { name: /voltar|manter/i })).toBeNull();
+    });
+  });
+
+  describe('recommendations (card-recommendations)', () => {
+    it('shows the upgrades marker only above 0', async () => {
+      await setTestLocale('en-US');
+      const { unmount } = renderTile(makeDeck({ clearUpgradeCount: 2 }));
+      expect(screen.getByTestId('deck-upgrades')).toHaveTextContent('2 upgrades suggested');
+      unmount();
+
+      renderTile(makeDeck({ clearUpgradeCount: 0 }));
+      expect(screen.queryByTestId('deck-upgrades')).toBeNull();
+      expect(screen.queryByText(/upgrade/i)).toBeNull();
     });
   });
 });

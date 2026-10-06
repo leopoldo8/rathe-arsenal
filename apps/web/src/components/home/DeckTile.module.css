@@ -30,6 +30,14 @@
   color: var(--ra-fg-muted);
 }
 
+.upgrades {
+  margin: 0;
+  color: var(--ra-accent);
+  font-family: var(--ra-font-ui);
+  font-size: 0.71875rem;
+  text-align: center;
+}
+
 .legalityIllegal {
   color: var(--ra-ready-low);
 }

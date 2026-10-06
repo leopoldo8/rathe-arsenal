@@ -78,6 +78,8 @@ export const home = {
   metaComplete: 'Completo · {{owned}}/{{total}}',
   metaIncomplete: '{{missing}} faltando · {{owned}}/{{total}}',
   metaDraft: 'Rascunho · sem lista',
+  upgradesSuggested_one: '{{count}} melhoria sugerida',
+  upgradesSuggested_other: '{{count}} melhorias sugeridas',
   groupActiveName: 'Ativos',
   groupActiveHint: 'Os que você está jogando',
   groupBuildingName: 'Construindo',

@@ -11,3 +11,7 @@
 .tags {
   margin-block-start: var(--ra-space-3);
 }
+
+.recommendationsRow {
+  margin-block-start: var(--ra-space-4);
+}

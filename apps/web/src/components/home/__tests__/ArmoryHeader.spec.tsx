@@ -33,6 +33,7 @@ function makeDeck(id: number, overrides: Partial<ITrackedDeckListItem> = {}): IT
     heroImageUrl: null,
     representativeCards: [],
     cardCounts: { owned: 60, missing: 0, total: 60 },
+    clearUpgradeCount: 0,
     ...overrides,
   };
 }

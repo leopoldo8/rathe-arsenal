@@ -61,6 +61,7 @@ function makeDeck(
     heroImageUrl: null,
     representativeCards: [],
     cardCounts: { owned: 60, missing: 7, total: 67 },
+    clearUpgradeCount: 0,
   };
 }
 

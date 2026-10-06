@@ -119,14 +119,14 @@ describe('recommendations read (e2e)', () => {
     const rows: Array<Record<string, unknown>> = (await read(deckId, jwt)).recommendations;
     const byCard = Object.fromEntries(rows.map((row) => [row.cardIdentifier, row]));
 
-    expect(byCard[A]).toEqual(expect.objectContaining({ freeCopies: 2, name: 'Ancestral Harmony' }));
+    expect(byCard[A]).toEqual(expect.objectContaining({ freeCopies: 2, name: 'Ancestral Harmony', slot: 'mainboard' }));
     expect(byCard[PRICED]).toEqual(
       expect.objectContaining({ freeCopies: 0, priceCents: 450, productUrl: 'https://www.cupuladt.com.br/produto/art-of-the-dragon-blood' }),
     );
     expect(byCard[UNSTOCKED]).toEqual(expect.objectContaining({ freeCopies: 0, priceCents: null, productUrl: null }));
     expect(Object.keys(rows[0]!).sort()).toEqual(
       [
-        'id', 'rank', 'cardIdentifier', 'name', 'pitch', 'imageUrl', 'strength', 'reason', 'cutCardIdentifier',
+        'id', 'rank', 'cardIdentifier', 'name', 'pitch', 'imageUrl', 'slot', 'strength', 'reason', 'cutCardIdentifier',
         'cutName', 'cutSlot', 'freeCopies', 'priceCents', 'productUrl',
       ].sort(),
     );

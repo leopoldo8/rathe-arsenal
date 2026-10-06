@@ -14,7 +14,7 @@ import {
 import { TRecommendationStrength } from '../database/entities/recommendation.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ShoppingLineService } from '../stores/shopping-line.service';
-import { computeDeckFingerprint } from './recommendation-prompt';
+import { computeDeckFingerprint, slotForCard } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
 import { RecommendationsQueryService } from './recommendations-query.service';
 
@@ -32,6 +32,7 @@ export interface IRecommendationCardResponse {
   readonly name: string;
   readonly pitch: number | null;
   readonly imageUrl: ICatalogCard['imageUrl'] | null;
+  readonly slot: 'mainboard' | 'equipment';
   readonly strength: TRecommendationStrength;
   readonly reason: string;
   readonly cutCardIdentifier: string | null;
@@ -161,6 +162,7 @@ export class RecommendationsService {
         name: card?.name ?? row.cardIdentifier,
         pitch: card?.pitch ?? null,
         imageUrl: card?.imageUrl ?? null,
+        slot: card ? slotForCard(card) : 'mainboard',
         strength: row.strength,
         reason: row.reason,
         cutCardIdentifier: cutStillThere ? row.cutCardIdentifier : null,

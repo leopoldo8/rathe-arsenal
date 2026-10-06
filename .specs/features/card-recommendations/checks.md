@@ -144,34 +144,34 @@ Proof: `... recommendations-read.e2e-spec -t "drops a cut that left the deck"`
 **C38** - The read answers `404` for another user's deck, `400` for deck id `abc`, `401` without a token (AC 36) · done
 Proof: `... recommendations-read.e2e-spec -t "refuses foreign, malformed and anonymous reads"`
 
-**C39** - Panel states, one render each: empty (Generate shown, no list); pending with no run ("generating", no list); pending with a run (list and "generating"); listed run (rows); stale (stale notice beside Generate); failure `RATE_LIMITED` with no pending (localized message and Generate, list kept); done with no cards ("no upgrades found") (AC 37, AC 38, AC 40, AC 41, AC 42)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "renders every panel state"`
+**C39** - Panel states, one render each: empty (Generate shown, no list); pending with no run ("generating", no list); pending with a run (list and "generating"); listed run (rows); stale (stale notice beside Generate); failure `RATE_LIMITED` with no pending (localized message and Generate, list kept); done with no cards ("no upgrades found") (AC 37, AC 38, AC 40, AC 41, AC 42) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "renders every panel state"`
 
-**C40** - With `pending: true` the panel refetches after 10 s (fake timers, 2 requests), and after the response turns `pending: false` no request follows in the next 30 s (AC 38)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "polls every 10 seconds only while pending"`
+**C40** - With `pending: true` the panel refetches after 10 s (fake timers, 2 requests), and after the response turns `pending: false` no request follows in the next 30 s (AC 38) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "polls every 10 seconds only while pending"`
 
-**C41** - A row shows art, name and reason; `freeCopies: 1` shows "owned"; `freeCopies: 0` with a price shows the formatted price linking to `productUrl`; `freeCopies: 0` with null price shows "out of stock"; a cut shows "replaces <cutName>", no cut shows no such text (AC 39)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "a row shows reason, ownership or price, and the cut"`
+**C41** - A row shows art, name and reason; `freeCopies: 1` shows "owned"; `freeCopies: 0` with a price shows the formatted price linking to `productUrl`; `freeCopies: 0` with null price shows "out of stock"; a cut shows "replaces <cutName>", no cut shows no such text (AC 39) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "a row shows reason, ownership or price, and the cut"`
 
-**C42** - Pressing Generate sends `POST /api/decks/7/recommendations/runs` and shows "generating" (AC 43)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "Generate sends the run request"`
+**C42** - Pressing Generate sends `POST /api/decks/7/recommendations/runs` and shows "generating" (AC 43) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "Generate sends the run request"`
 
-**C43** - On an incomplete deck the panel renders inside `deck-action-panels`, after the swaps panel in the same column; on a complete deck `deck-action-panels` holds only the recommendations panel (AC 44)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckDetailView.recommendations.test.tsx -t "places the panel under swaps or alone"`
+**C43** - On an incomplete deck the panel renders inside `deck-action-panels`, after the swaps panel in the same column; on a complete deck `deck-action-panels`, the missing panel and the swaps panel are absent and the recommendations panel sits alone in `deck-recommendations-row` (AC 44) (reworded before its proof existed: the existing page spec pins `deck-action-panels` absent on a complete deck) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/DeckDetailView.recommendations.spec.tsx -t "places the panel under swaps or alone"`
 
-**C44** - pt-BR and en-US each define every panel key and one message for each of the 12 failure codes, and the two locales hold the same `recommendations` key set (AC 45)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/recommendations-locales.test.ts -t "both locales cover the panel and every failure code"`
+**C44** - pt-BR and en-US each define every panel key and one message for each of the 12 failure codes, and the two locales hold the same `recommendations` key set (AC 45) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/recommendations-locales.spec.ts -t "both locales cover the panel and every failure code"`
 
 ### S3 - Clear upgrade notice · 6 files · 90 KB · ~22k
 
 **C45** - `clearUpgradeCount` on `GET /api/decks`: 2 for a deck whose run has 2 clear upgrades; 1 after one of them is dismissed; 0 after the other is adopted; 0 for a `retired` deck with a clear upgrade; 0 for a deck with no done run ; the route still answers `401` without a token (AC 46) · done
 Proof: `... recommendations-read.e2e-spec -t "clearUpgradeCount counts what the panel would show"`
 
-**C46** - The home tile shows "2 upgrades suggested" for `clearUpgradeCount: 2` and no marker for 0 (AC 47)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/home/__tests__/DeckTile.test.tsx -t "shows the upgrades marker only above 0"`
+**C46** - The home tile shows "2 upgrades suggested" for `clearUpgradeCount: 2` and no marker for 0 (AC 47) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/home/__tests__/DeckTile.spec.tsx -t "shows the upgrades marker only above 0"`
 
-**C47** - A `clear_upgrade` row carries the clear-upgrade badge and a `consider` row carries none (AC 48)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "badges clear upgrades only"`
+**C47** - A `clear_upgrade` row carries the clear-upgrade badge and a `consider` row carries none (AC 48) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "badges clear upgrades only"`
 
 ### S4 - Dismiss · 5 files · 50 KB · ~12k
 
@@ -187,8 +187,8 @@ Proof: `... recommendation-dismissals.e2e-spec -t "undo answers 204 whether or n
 **C51** - Both dismissal routes answer `404` for another user's deck and `401` without a token, and `400` for deck id `abc` (AC 53) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "refuses foreign, malformed and anonymous dismissals"`
 
-**C52** - Tapping Dismiss sends the dismissal, the row leaves the panel, and the toast's Undo sends `DELETE /api/decks/7/recommendations/dismissals/<card>` (AC 54)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "Dismiss removes the row and offers undo"`
+**C52** - Tapping Dismiss sends the dismissal, the row leaves the panel, and the toast's Undo sends `DELETE /api/decks/7/recommendations/dismissals/<card>` (AC 54) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "Dismiss removes the row and offers undo"`
 
 **C53** - The log carries `recommendations.dismissed` and `recommendations.undismissed` with `trackedDeckId` and `cardIdentifier` (AC 55) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "logs dismiss and undo"`
@@ -220,8 +220,8 @@ Proof: `... recommendation-adopt.e2e-spec -t "an adopted card never raises the o
 **C61** - The log carries `recommendations.adopted` with `trackedDeckId`, `recommendationId`, `rank`, `strength`, both card identifiers, `quantity` and `suggestedCut: true` for the suggested cut and `false` for another (AC 63) · done
 Proof: `... recommendation-adopt.e2e-spec -t "logs the adoption"`
 
-**C62** - Adopt sends the cut chosen in the row's selector, which defaults to the suggested cut and lists only deck cards of the recommended card's slot; a `409 REPLACEMENT_ILLEGAL` answer shows its localized message (AC 64, AC 65)
-Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "Adopt sends the chosen cut and reports a refusal"`
+**C62** - Adopt sends the cut chosen in the row's selector, which defaults to the suggested cut and lists only deck cards of the recommended card's slot; a `409 REPLACEMENT_ILLEGAL` answer shows its localized message (AC 64, AC 65) · done
+Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.spec.tsx -t "Adopt sends the chosen cut and reports a refusal"`
 
 **C63** - `POST /api/decks/:deckId/replacements` with `pickedFrom: recommendation` returns `400` (AC 66) · done
 Proof: `... recommendation-adopt.e2e-spec -t "the alternatives pick still refuses the recommendation origin"`

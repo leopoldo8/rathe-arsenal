@@ -78,6 +78,8 @@ export const home = {
   metaComplete: 'Complete · {{owned}}/{{total}}',
   metaIncomplete: '{{missing}} missing · {{owned}}/{{total}}',
   metaDraft: 'Draft · no list',
+  upgradesSuggested_one: '{{count}} upgrade suggested',
+  upgradesSuggested_other: '{{count}} upgrades suggested',
   groupActiveName: 'Active',
   groupActiveHint: "The ones you're playing",
   groupBuildingName: 'Building',
