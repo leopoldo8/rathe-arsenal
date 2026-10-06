@@ -20,33 +20,33 @@ Gemini is never called: the worker e2e checks drive one drain with a stub `fetch
 
 ### S1 - Queued, coalesced runs drained by the worker · 22 files · 260 KB · ~65k
 
-**C1** - After a composition save on a `building` deck with no run, the deck holds exactly one run: `pending`, `trigger: auto`, `runAfter` between 299 and 301 seconds after the save's response; a second save 10 seconds later leaves the same single row with `runAfter` pushed to 5 minutes after the second save (AC 1)
+**C1** - After a composition save on a `building` deck with no run, the deck holds exactly one run: `pending`, `trigger: auto`, `runAfter` between 299 and 301 seconds after the save's response; a second save 10 seconds later leaves the same single row with `runAfter` pushed to 5 minutes after the second save (AC 1) · done
 Proof: `... jest --testRegex '.*\.e2e-spec\.ts$' ... recommendation-queue.e2e-spec -t "a composition save leaves one pending auto run due in 5 minutes"`
 Proof: `... recommendation-queue.e2e-spec -t "a second change pushes the pending auto run back"`
 
-**C2** - A deck-list change while the pending run is `manual` leaves it `manual` with `runAfter` unchanged (AC 2)
+**C2** - A deck-list change while the pending run is `manual` leaves it `manual` with `runAfter` unchanged (AC 2) · done
 Proof: `... recommendation-queue.e2e-spec -t "a change leaves a pending manual run alone"`
 
-**C3** - Each of the six writers enqueues an auto run, table-driven: composition save, deck import (2 decks in one import give 2 runs, one per deck), pick, revert, adopt, `PATCH` with a different `format` (AC 3)
+**C3** - Each of the six writers enqueues an auto run, table-driven: composition save, deck import (2 decks in one import give 2 runs, one per deck), pick, revert, adopt, `PATCH` with a different `format` (AC 3) · done
 Proof: `... recommendation-queue.e2e-spec -t "every deck-list writer enqueues an auto run"`
 
-**C4** - None of these touch `recommendation_run`, table-driven with the row count read before and after: keep, mark-owned (`POST /api/collection/cards/batch`), scratch deck create, `PATCH` with `name` only, `PATCH` with the same `format` (AC 4)
+**C4** - None of these touch `recommendation_run`, table-driven with the row count read before and after: keep, mark-owned (`POST /api/collection/cards/batch`), scratch deck create, `PATCH` with `name` only, `PATCH` with the same `format` (AC 4) · done
 Proof: `... recommendation-queue.e2e-spec -t "non-writers enqueue nothing"`
 
-**C5** - A composition save on a `retired` deck creates no run (AC 5)
+**C5** - A composition save on a `retired` deck creates no run (AC 5) · done
 Proof: `... recommendation-queue.e2e-spec -t "a retired deck gets no automatic run"`
 
-**C6** - 8 concurrent composition saves on one deck leave exactly one `pending` run (AC 6)
+**C6** - 8 concurrent composition saves on one deck leave exactly one `pending` run (AC 6) · done
 Proof: `... recommendation-queue.e2e-spec -t "concurrent changes leave one pending run"`
 
-**C7** - Generate on a deck with no run returns `202` with `status: pending`, `trigger: manual`, an `id` and a `createdAt`, and the row's `runAfter` is within 1 second of the request; on a deck with a pending auto run due in 5 minutes it returns that run's `id`, now `manual` and due now, and the deck still holds one pending run (AC 7)
+**C7** - Generate on a deck with no run returns `202` with `status: pending`, `trigger: manual`, an `id` and a `createdAt`, and the row's `runAfter` is within 1 second of the request; on a deck with a pending auto run due in 5 minutes it returns that run's `id`, now `manual` and due now, and the deck still holds one pending run (AC 7) · done
 Proof: `... recommendation-queue.e2e-spec -t "Generate creates a manual run due now"`
 Proof: `... recommendation-queue.e2e-spec -t "Generate promotes the pending auto run"`
 
-**C8** - Generate while a run is `running` returns `202` with that running run and leaves the row count unchanged (AC 8)
+**C8** - Generate while a run is `running` returns `202` with that running run and leaves the row count unchanged (AC 8) · done
 Proof: `... recommendation-queue.e2e-spec -t "Generate returns the running run"`
 
-**C9** - Generate answers `404` for another user's deck and for a missing deck, `400` for deck id `abc`, `401` without a token (AC 9)
+**C9** - Generate answers `404` for another user's deck and for a missing deck, `400` for deck id `abc`, `401` without a token (AC 9) · done
 Proof: `... recommendation-queue.e2e-spec -t "Generate refuses foreign, missing and malformed decks"`
 
 **C10** - The claim takes the oldest due pending run, sets `running`, `startedAt`, `claimedAt` and `attempts` 1; it skips a run whose `runAfter` is in the future and a run whose deck already holds a running run, returning nothing when only those exist (AC 10)
@@ -62,20 +62,20 @@ Proof: `... recommendation-worker.e2e-spec -t "a deck without a hero fails witho
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the pool keeps legal cards and drops each excluded kind"`
 Proof: `... recommendation-worker.e2e-spec -t "the request leaves out dismissed and deck cards"`
 
-**C14** - The prompt names the hero and the format, lists `2x emissary-of-tides-red` and `2x flex-red` under `mainboard` and `talishar-the-lost-prince` under `weapon`, does not list the hero among deck cards, lists each pool card as identifier, name, type line and rules text, and asks for 25 cards with strength, cut and reason (AC 14)
+**C14** - The prompt names the hero and the format, lists `2x emissary-of-tides-red` and `2x flex-red` under `mainboard` and `talishar-the-lost-prince` under `weapon`, does not list the hero among deck cards, lists each pool card as identifier, name, type line and rules text, and asks for 25 cards with strength, cut and reason (AC 14) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the prompt lists the deck by slot and asks for 25 cards"`
 
 **C15** - With `GEMINI_API_KEY` unset, and again set to `"  "`, the run ends `failed` with `NO_API_KEY` and the stub `fetch` is never called (AC 15)
 Proof: `... recommendation-worker.e2e-spec -t "a missing key fails without a call"`
 
-**C16** - The client posts to `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent` with header `x-goog-api-key` set to the key, `generationConfig.responseMimeType` `application/json`, a `responseJsonSchema` whose items require `card`, `strength` (enum `clear_upgrade`, `consider`), `cut` and `reason`, and `maxOutputTokens` 32000 (door 7)
+**C16** - The client posts to `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent` with header `x-goog-api-key` set to the key, `generationConfig.responseMimeType` `application/json`, a `responseJsonSchema` whose items require `card`, `strength` (enum `clear_upgrade`, `consider`), `cut` and `reason`, and `maxOutputTokens` 32000 (door 7) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "posts the documented generateContent request"`
 
 **C17** - A `STOP` answer with 14 entries - 2 not in the pool, 1 repeating an earlier card, 1 with strength `great` - stores the first 10 valid entries as ranks 1-10 in answer order; the run ends `done` with a 64-character hex `deckFingerprint`, `model: gemini-3.8-flash`, `inputTokens` = `promptTokenCount` (41000) and `outputTokens` = `candidatesTokenCount` + `thoughtsTokenCount` (900 + 2100 = 3000) (AC 16)
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/validate-answer.spec.ts -t "keeps the first 10 valid entries in order"`
 Proof: `... recommendation-worker.e2e-spec -t "a valid answer stores ranked recommendations and usage"`
 
-**C18** - A cut naming a `mainboard` deck card for a mainboard recommendation is stored with `cutSlot: mainboard`; a cut naming the deck's weapon, a card not in the deck, an empty string, or a mainboard card for an Equipment recommendation is stored as null cut and null slot (AC 17)
+**C18** - A cut naming a `mainboard` deck card for a mainboard recommendation is stored with `cutSlot: mainboard`; a cut naming the deck's weapon, a card not in the deck, an empty string, or a mainboard card for an Equipment recommendation is stored as null cut and null slot (AC 17) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/validate-answer.spec.ts -t "keeps a cut only from the recommended card's slot"`
 
 **C19** - An answer whose every entry is dropped ends the run `done` with 0 recommendations (AC 18)
@@ -89,10 +89,10 @@ Proof: `... recommendation-worker.e2e-spec -t "a 429 backs off twice then fails 
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "classifies every provider outcome"`
 Proof: `... recommendation-worker.e2e-spec -t "a 503 backs off then fails PROVIDER_UNAVAILABLE"`
 
-**C22** - `400`, `403` and `404` answers and a `fetch` that rejects each end the run `failed` with `PROVIDER_ERROR` and no retry (AC 21)
+**C22** - `400`, `403` and `404` answers and a `fetch` that rejects each end the run `failed` with `PROVIDER_ERROR` and no retry (AC 21) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "classifies every provider outcome"`
 
-**C23** - A `fetch` that never answers is aborted at 180 s (fake timers) and the outcome is `MODEL_TIMEOUT` (AC 22)
+**C23** - A `fetch` that never answers is aborted at 180 s (fake timers) and the outcome is `MODEL_TIMEOUT` (AC 22) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "aborts a call at 180 seconds"`
 
 **C24** - `promptFeedback.blockReason: SAFETY` and each `finishReason` of `SAFETY`, `RECITATION`, `LANGUAGE`, `OTHER`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `FINISH_REASON_UNSPECIFIED` and an unknown `SPII` give `MODEL_REFUSED`; `MAX_TOKENS` gives `MODEL_TRUNCATED`; text `not json` and `{"ranking":[]}` give `MODEL_OFF_SCHEMA` (AC 23, AC 24, AC 25)
@@ -108,7 +108,7 @@ Proof: `... recommendation-worker.e2e-spec -t "reclaims orphans after 10 minutes
 **C27** - A `429` on a run whose deck gained a pending run while it ran ends it `failed` with `SUPERSEDED`, and the pending run's `runAfter` becomes the later of its own and the backoff time (AC 28)
 Proof: `... recommendation-worker.e2e-spec -t "a retry behind a newer pending run is superseded"`
 
-**C28** - With a recommendation drain that never resolves, the variant drain still runs at least 3 times in 3 poll intervals (fake timers) (AC 29, door 8)
+**C28** - With a recommendation drain that never resolves, the variant drain still runs at least 3 times in 3 poll intervals (fake timers) (AC 29, door 8) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/stores/__tests__/variant-queue-worker.spec.ts -t "a stuck recommendation drain does not block the variant drain"`
 
 **C29** - The log carries `recommendations.enqueued` (with `trackedDeckId`, `trigger`) on a save, `recommendations.run.claimed` and `.done` (with `trackedDeckId`, `runId`, `kept`, `dropped`, `clearUpgrades`, `inputTokens`, `outputTokens`, `durationMs`) on a valid answer, `.retry` (with `status`, `runAfter`) on a 429, `.failed` (with `code`, `attempts`) on a refusal (AC 30)
@@ -118,10 +118,10 @@ Proof: `... recommendation-queue.e2e-spec -t "logs the enqueue"`
 **C30** - Schema: `recommendation_run` rejects `trigger: soon` and `status: queued`; a second `pending` and a second `running` row for one deck each fail on the partial unique index; deleting the deck removes its runs, recommendations and dismissals; `recommendation` rejects rank 0, rank 11, a repeated (run, rank) and `strength: great`; `recommendation_dismissal` rejects a repeated (deck, card); `card_replacement` accepts `pickedFrom: recommendation` and rejects `pickedFrom: synergy` (doors 1-5)
 Proof: `... recommendation-schema.e2e-spec -t "enforces every one-way constraint"`
 
-**C31** - The migration's `up` creates the three tables with every index and CHECK the entities declare and replaces the `pickedFrom` CHECK; `down` restores the five-value CHECK and drops the three tables (doors 1-5)
-Proof: `pnpm --filter @rathe-arsenal/api exec jest src/database/migrations/__tests__/add-card-recommendations.migration.spec.ts -t "up creates and down drops the recommendation tables"`
+**C31** - The migration's `up` creates the three tables with every index and CHECK the entities declare and replaces the `pickedFrom` CHECK; `down` restores the five-value CHECK and drops the three tables (doors 1-5) · done
+Proof: `pnpm --filter @rathe-arsenal/api exec jest --testRegex '.*\.int-spec\.ts$' --forceExit src/database/migrations/__tests__/add-card-recommendations.migration.int-spec.ts -t "up creates and down drops the recommendation tables"` (proof file renamed before any code: the repo proves migrations as `.int-spec.ts` in their own schema)
 
-**C32** - The fingerprint is the same for the same cards listed in another order and for one card split over two rows of a slot, and differs when a quantity, the hero, the format or a card's slot changes (door 6)
+**C32** - The fingerprint is the same for the same cards listed in another order and for one card split over two rows of a slot, and differs when a quantity, the hero, the format or a card's slot changes (door 6) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the fingerprint ignores order and tracks every input"`
 
 ### S2 - The recommendations panel · 10 files · 120 KB · ~30k
@@ -271,7 +271,7 @@ Proof: `... alternatives-order.e2e-spec -t "a done run reorders a group without 
 **C65** - Each new route answers `429` after the global throttler's limit, table-driven over the five new routes, and `GET /api/decks` still does (status rows above)
 Proof: `... recommendations-throttle.e2e-spec -t "every recommendations route is throttled"`
 
-**C66** - `AppModule`'s environment validation accepts an environment with no `GEMINI_API_KEY` and one with a value (startup config row)
+**C66** - `AppModule`'s environment validation accepts an environment with no `GEMINI_API_KEY` and one with a value (startup config row) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/config/__tests__/env.dto.spec.ts -t "GEMINI_API_KEY is optional"`
 
 - Claims naming a status code, route or response shape: C7-C9, C33, C35-C38, C45, C48-C51, C54-C59, C63, C65 - each has a proof that crosses the HTTP boundary against real Postgres

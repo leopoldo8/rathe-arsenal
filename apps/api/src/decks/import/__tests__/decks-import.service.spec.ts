@@ -10,6 +10,7 @@ import { IDeckImportDto } from '../../../fabrary/dtos/deck-import.dto';
 import { FabraryImportError, EFabraryErrorCode } from '../../../fabrary/errors';
 import { DecksImportService } from '../decks-import.service';
 import { ImportDecksRequestDto } from '../dtos/import-decks.request.dto';
+import { RecommendationQueueService } from '../../../recommendations/recommendation-queue.service';
 
 const FABRARY_URL_1 = 'https://fabrary.net/decks/01H0000000000000000000AAAA';
 const FABRARY_URL_2 = 'https://fabrary.net/decks/01H0000000000000000000BBBB';
@@ -108,6 +109,7 @@ describe('DecksImportService', () => {
         { provide: FabraryService, useValue: fabraryService },
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: SourcesService, useValue: sourcesService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
       ],
     }).compile();
 

@@ -17,6 +17,7 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { AlternativesService } from '../alternatives.service';
 import { ReplacementsQueryService } from '../replacements-query.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const USER_ID = 'user-1';
 const DECK_ID = 9;
@@ -128,8 +129,11 @@ function harness(): IHarness {
     createMock<Repository<DeckReadinessSnapshotEntity>>(),
   );
 
+  const recommendations = createMock<RecommendationsQueryService>();
+  recommendations.latestDoneRuns.mockResolvedValue(new Map());
+
   return {
-    service: new AlternativesService(trackedDecks, deckCards, substitution, swaps, replacements, collection, shopping),
+    service: new AlternativesService(trackedDecks, deckCards, substitution, swaps, replacements, collection, shopping, recommendations),
     substitution,
     replacements,
     shopping,

@@ -42,6 +42,8 @@ import { describeSwapRationale } from '../swaps/describe-swap-rationale';
 import { ReplacementsQueryService } from '../replacements/replacements-query.service';
 import { buildReplacementViews } from '../replacements/build-replacement-views';
 import { buildProtectedCopies, findBrokenReplacements } from '../replacements/replacement-copies';
+import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../recommendations/recommendations-query.service';
 
 interface IStoredSubstitutionMatch {
   readonly substitute?: { readonly cardIdentifier?: string };
@@ -68,6 +70,8 @@ export class DecksService {
     private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly swapsReconciliationService: SwapsReconciliationService,
     private readonly replacementsQueryService: ReplacementsQueryService,
+    private readonly recommendationQueue: RecommendationQueueService,
+    private readonly recommendationsQueryService: RecommendationsQueryService,
   ) {}
 
   private cardNameOf(cardIdentifier: string): string {
@@ -265,6 +269,11 @@ export class DecksService {
       });
     }
 
+    const clearUpgradeCounts = await this.recommendationsQueryService.countClearUpgrades(
+      [...deckCardsByDeckId.values()].flat(),
+      decks.filter((deck) => deck.status !== 'retired').map((deck) => deck.id),
+    );
+
     const trackedDecks = decks.map((deck): ITrackedDeckListItem => {
       const snap = snapshotByDeckId.get(deck.id) ?? null;
       const previewMeta = snap
@@ -297,6 +306,7 @@ export class DecksService {
         heroImageUrl,
         representativeCards: previewMeta.representativeCards,
         cardCounts: snap ? this.deriveCardCounts(snap.breakdown) : null,
+        clearUpgradeCount: clearUpgradeCounts.get(deck.id) ?? 0,
       };
     });
 
@@ -773,12 +783,16 @@ export class DecksService {
 
       // --- format (metadata only; readiness does not depend on it) ---
       if (dto.format !== undefined) {
+        const before = await manager.findOne(TrackedDeckEntity, { where: { id: deckId, userId }, select: ['id', 'format'] });
         await manager
           .createQueryBuilder()
           .update(TrackedDeckEntity)
           .set({ format: dto.format })
           .where('id = :id AND "userId" = :userId', { id: deckId, userId })
           .execute();
+        if (before !== null && before.format !== dto.format) {
+          await this.recommendationQueue.enqueueAuto(manager, deckId);
+        }
       }
 
       // --- notes (null clears) ---
@@ -962,6 +976,8 @@ export class DecksService {
             format: dto.format,
           },
         );
+
+        await this.recommendationQueue.enqueueAuto(manager, deckId);
 
         // Reload the deck row to pick up the new updatedAt (set by the DB trigger
         // / TypeORM UpdateDateColumn after the update above).

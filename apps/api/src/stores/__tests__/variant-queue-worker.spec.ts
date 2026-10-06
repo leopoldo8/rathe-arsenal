@@ -1,4 +1,4 @@
-import { drainOnce, runPendingUrlSync } from '../variant-queue-worker';
+import { drainOnce, loopForever, POLL_MS, runPendingUrlSync } from '../variant-queue-worker';
 
 describe('drainOnce', () => {
   it('reclaims orphans, claims a job, resolves its cards, and processes it', async () => {
@@ -68,5 +68,26 @@ describe('runPendingUrlSync', () => {
     };
     await expect(runPendingUrlSync({ ingestion, logger } as never)).rejects.toThrow('db down');
     expect(ingestion.markUrlSyncIdle).toHaveBeenCalledWith('cupula-dt');
+  });
+});
+
+describe('loopForever', () => {
+  it('a stuck recommendation drain does not block the variant drain', async () => {
+    jest.useFakeTimers();
+    try {
+      let running = true;
+      const variantStep = jest.fn(async () => undefined);
+      const stuckRecommendationStep = jest.fn(() => new Promise<void>(() => undefined));
+
+      void loopForever(variantStep, POLL_MS, () => running);
+      void loopForever(stuckRecommendationStep, POLL_MS, () => running);
+      await jest.advanceTimersByTimeAsync(3 * POLL_MS);
+      running = false;
+
+      expect(stuckRecommendationStep).toHaveBeenCalledTimes(1);
+      expect(variantStep.mock.calls.length).toBeGreaterThanOrEqual(3);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

@@ -7,8 +7,14 @@ import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { StoreIngestionService } from './store-ingestion.service';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { IFetchCard } from './types/fetch-card';
+import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
+import {
+  drainRecommendationsOnce,
+  RecommendationRunnerService,
+} from '../recommendations/recommendation-runner.service';
+import { TGeminiFetch } from '../recommendations/gemini-client';
 
-const POLL_MS = 3000;
+export const POLL_MS = 3000;
 
 export interface IDrainDeps {
   readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext'>;
@@ -60,6 +66,18 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Runs `step` then waits `pollMs`, forever; each loop is independent, so a slow step stalls only its own loop. */
+export async function loopForever(
+  step: () => Promise<void>,
+  pollMs: number,
+  shouldContinue: () => boolean = () => true,
+): Promise<void> {
+  while (shouldContinue()) {
+    await step();
+    await sleep(pollMs);
+  }
+}
+
 async function main(): Promise<void> {
   const logger = new Logger('VariantQueueWorker');
   // Imported dynamically so loading this module for unit tests does not pull in
@@ -70,13 +88,15 @@ async function main(): Promise<void> {
   const processor = app.get(VariantJobProcessorService);
   const resolver = app.get(ResolveJobCardsService);
   const ingestion = app.get(StoreIngestionService);
+  const recommendationQueue = app.get(RecommendationQueueService);
+  const recommendationRunner = app.get(RecommendationRunnerService);
   const workerId = `worker-${randomUUID()}`;
   const resolveCards = (job: VariantFetchJobEntity): Promise<IFetchCard[]> =>
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
 
   logger.log({ event: 'variant-worker.started' });
 
-  while (true) {
+  const variantStep = async (): Promise<void> => {
     // Owner-triggered URL sync (no automatic cadence).
     try {
       await runPendingUrlSync({ ingestion, logger });
@@ -93,8 +113,22 @@ async function main(): Promise<void> {
         at: new Date().toISOString(),
       });
     }
-    await sleep(POLL_MS);
-  }
+  };
+
+  const recommendationStep = async (): Promise<void> => {
+    try {
+      await drainRecommendationsOnce({
+        queue: recommendationQueue,
+        runner: recommendationRunner,
+        readApiKey: () => process.env['GEMINI_API_KEY'],
+        fetch: fetch as unknown as TGeminiFetch,
+      });
+    } catch (err) {
+      logger.error({ event: 'recommendations.worker.error', error: (err as Error).message });
+    }
+  };
+
+  await Promise.all([loopForever(variantStep, POLL_MS), loopForever(recommendationStep, POLL_MS)]);
 }
 
 if (require.main === module) {

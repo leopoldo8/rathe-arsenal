@@ -17,6 +17,11 @@ describe('validateEnv', () => {
     FABRARY_ALLOW_HOSTS: 'fabrary.net',
   };
 
+  it('GEMINI_API_KEY is optional', () => {
+    expect(validateEnv(valid).GEMINI_API_KEY).toBeUndefined();
+    expect(validateEnv({ ...valid, GEMINI_API_KEY: 'AIza-test' }).GEMINI_API_KEY).toBe('AIza-test');
+  });
+
   it('parses a complete valid env (happy path)', () => {
     const dto = validateEnv(valid);
     expect(dto.NODE_ENV).toBe('development');

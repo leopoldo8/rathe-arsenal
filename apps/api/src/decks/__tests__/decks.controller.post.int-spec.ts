@@ -255,6 +255,7 @@ describe('DecksController POST /decks (int-spec)', () => {
             heroImageUrl: null,
             representativeCards: [],
             cardCounts: null,
+            clearUpgradeCount: 0,
           },
         ],
         collectionCardCount: 0,

@@ -39,6 +39,8 @@ import { CollectionReadService } from '../../collection/collection-read.service'
 import { DecksService } from '../decks.service';
 import { UpdateDeckMetaDto } from '../dto/update-deck-meta.dto';
 import { ITrackedDeckDetailResponse } from '../dtos/tracked-deck-detail.response.dto';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const USER_ID = 'user-uuid-update-meta';
 const DECK_ID = 10;
@@ -163,6 +165,11 @@ describe('DecksService.updateMeta', () => {
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
+        {
+          provide: RecommendationsQueryService,
+          useValue: createMock<RecommendationsQueryService>({ countClearUpgrades: jest.fn().mockResolvedValue(new Map()) }),
+        },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
       ],

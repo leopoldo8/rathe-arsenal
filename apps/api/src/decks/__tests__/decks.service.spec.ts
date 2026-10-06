@@ -16,6 +16,8 @@ import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.se
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const USER_ID = 'user-uuid-123';
 const OTHER_USER_ID = 'user-uuid-456';
@@ -129,6 +131,11 @@ describe('DecksService', () => {
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
+        {
+          provide: RecommendationsQueryService,
+          useValue: createMock<RecommendationsQueryService>({ countClearUpgrades: jest.fn().mockResolvedValue(new Map()) }),
+        },
       ],
     }).compile();
 
@@ -238,6 +245,7 @@ describe('DecksService', () => {
         heroImageUrl: null,
         representativeCards: [],
         cardCounts: { owned: 0, missing: 0, total: 0 },
+        clearUpgradeCount: 0,
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.
       expect(result.aggregateShoppingLine).toBeNull();

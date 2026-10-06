@@ -14,8 +14,13 @@ import { TrackedDeckEntity } from './tracked-deck.entity';
 export const REPLACEMENT_STATUSES = ['active', 'kept', 'reverted', 'removed'] as const;
 export type TReplacementStatus = (typeof REPLACEMENT_STATUSES)[number];
 
+/** Origins the alternatives pick route accepts: the group a card was picked from, or a name search. */
 export const REPLACEMENT_PICK_ORIGINS = ['very_close', 'close', 'other_pitch', 'generic', 'search'] as const;
 export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
+
+/** Every origin a stored record may carry: the pick origins plus an adopted recommendation. */
+export const REPLACEMENT_ORIGINS = [...REPLACEMENT_PICK_ORIGINS, 'recommendation'] as const;
+export type TReplacementOrigin = (typeof REPLACEMENT_ORIGINS)[number];
 
 /**
  * Remembers one pick: the owner swapped the missing copies of
@@ -34,7 +39,10 @@ export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
  * and not a Postgres enum rebuild.
  */
 @Check('CHK_card_replacement_status_valid', `status IN ('active', 'kept', 'reverted', 'removed')`)
-@Check('CHK_card_replacement_picked_from_valid', `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search')`)
+@Check(
+  'CHK_card_replacement_picked_from_valid',
+  `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search', 'recommendation')`,
+)
 @Check('CHK_card_replacement_quantity_positive', `quantity > 0`)
 @Entity({ name: 'card_replacement' })
 @Index('IDX_card_replacement_deck_status', ['trackedDeckId', 'status'])
@@ -61,9 +69,9 @@ export class CardReplacementEntity {
   @Column({ type: 'int' })
   quantity!: number;
 
-  /** The alternatives group the owner picked from; `search` for a name search. */
+  /** The alternatives group the owner picked from, `search` for a name search, `recommendation` for an adoption. */
   @Column({ type: 'varchar', length: 32 })
-  pickedFrom!: TReplacementPickOrigin;
+  pickedFrom!: TReplacementOrigin;
 
   @Column({ type: 'varchar', length: 32 })
   status!: TReplacementStatus;

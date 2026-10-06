@@ -11,6 +11,7 @@ import { AlternativesService } from './alternatives.service';
 import { ReplacementsController } from './replacements.controller';
 import { ReplacementsCoreModule } from './replacements-core.module';
 import { ReplacementsService } from './replacements.service';
+import { RecommendationsCoreModule } from '../recommendations/recommendations-core.module';
 
 @Module({
   imports: [
@@ -21,8 +22,10 @@ import { ReplacementsService } from './replacements.service';
     SubstitutionModule,
     SwapsCoreModule,
     ReplacementsCoreModule,
+    RecommendationsCoreModule,
   ],
   controllers: [ReplacementsController],
   providers: [AlternativesService, ReplacementsService],
+  exports: [ReplacementsService],
 })
 export class ReplacementsModule {}

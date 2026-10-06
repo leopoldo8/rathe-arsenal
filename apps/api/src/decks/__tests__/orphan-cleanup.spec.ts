@@ -56,6 +56,8 @@ import {
   computeEffectiveReadiness,
   computeDeckLegality,
 } from '@rathe-arsenal/engine';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const mockedReadiness = computeEffectiveReadiness as jest.MockedFunction<
   typeof computeEffectiveReadiness
@@ -189,6 +191,11 @@ describe('Orphan swap_suggestion cleanup (DecksService.updateComposition step 5)
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
+        {
+          provide: RecommendationsQueryService,
+          useValue: createMock<RecommendationsQueryService>({ countClearUpgrades: jest.fn().mockResolvedValue(new Map()) }),
+        },
       ],
     }).compile();
 
