@@ -45,6 +45,7 @@ export interface IRecommendationCard {
 export interface IRecommendationsResponse {
   readonly run: {
     readonly id: string;
+    readonly status: 'done';
     readonly trigger: 'auto' | 'manual';
     readonly finishedAt: string | null;
     readonly stale: boolean;

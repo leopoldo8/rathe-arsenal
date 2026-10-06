@@ -23,7 +23,7 @@ import { ReplacementsQueryService } from './replacements-query.service';
 import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
 import { RecommendationEntity } from '../database/entities/recommendation.entity';
 import { RecommendationRunEntity } from '../database/entities/recommendation-run.entity';
-import { slotForCard } from '../recommendations/recommendation-prompt';
+import { decideAdoption } from './adoption-rules';
 
 export interface IAdoptRequest {
   readonly cutCardIdentifier: string;
@@ -178,27 +178,17 @@ export class ReplacementsService {
         .getOne();
       if (!recommendation) throw new NotFoundException('Recommendation not found');
       const recommended = this.requireCard(recommendation.cardIdentifier);
-
-      if (
-        NON_REPLACEABLE_SLOTS.has(dto.cutSlot) ||
-        recommended.cardIdentifier === cut.cardIdentifier ||
-        slotForCard(recommended) !== dto.cutSlot
-      ) {
-        throw replacementConflict('REPLACEMENT_ILLEGAL');
-      }
-
       const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
-      const cutCopies = deckCards
-        .filter((row) => row.cardIdentifier === cut.cardIdentifier && row.slot === dto.cutSlot)
-        .reduce((sum, row) => sum + row.quantity, 0);
-      if (cutCopies === 0) throw replacementConflict('NOTHING_TO_REPLACE');
-
-      const copiesHeld = deckCards
-        .filter((row) => row.cardIdentifier === recommended.cardIdentifier)
-        .reduce((sum, row) => sum + row.quantity, 0);
-      const quantity = Math.min(cutCopies, getCopyLimit(recommended, deck.format as TSupportedFormat) - copiesHeld);
-      if (quantity <= 0) throw replacementConflict('REPLACEMENT_ILLEGAL');
-      this.assertLegal(deck, recommended, copiesHeld + quantity);
+      const decision = decideAdoption({
+        recommended,
+        cut,
+        cutSlot: dto.cutSlot,
+        heroCard: this.findHero(deck),
+        format: deck.format as TSupportedFormat,
+        deckCards,
+      });
+      if (decision.kind === 'refuse') throw replacementConflict(decision.code);
+      const { quantity } = decision;
 
       await this.moveCopies(manager, deckCards, {
         trackedDeckId: deckId,

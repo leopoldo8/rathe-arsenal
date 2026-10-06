@@ -65,8 +65,7 @@ export class RecommendationRunnerService {
 
     if (outcome.kind === 'retry') {
       if (run.attempts >= MAX_RUN_ATTEMPTS) return this.fail(run, outcome.code);
-      const runAfter = new Date(Date.now() + RETRY_BASE_MS * 2 ** (run.attempts - 1));
-      const result = await this.queue.retryAt(run, runAfter);
+      const { result, runAfter } = await this.queue.retryAfter(run, RETRY_BASE_MS * 2 ** (run.attempts - 1));
       this.logger.log({
         event: 'recommendations.run.retry',
         trackedDeckId: run.trackedDeckId,

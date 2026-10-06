@@ -69,7 +69,9 @@ describe('recommendation queue (e2e)', () => {
     const runs = await fixture.runs(deckId);
     expect(runs).toHaveLength(1);
     expect(runs[0]!.id).toBe(first!.id);
-    expect(await fixture.secondsUntilRunAfter(first!.id)).toBeGreaterThan(298);
+    const pushed = await fixture.secondsUntilRunAfter(first!.id);
+    expect(pushed).toBeGreaterThan(298);
+    expect(pushed).toBeLessThanOrEqual(300);
   });
 
   it('a change leaves a pending manual run alone', async () => {
@@ -176,6 +178,20 @@ describe('recommendation queue (e2e)', () => {
       label: 'scratch create',
       runs: 0,
     });
+  });
+
+  it('a change while a run is running queues an auto run behind it', async () => {
+    const { jwt, deckId } = await freshDeck();
+    const runningId = await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
+
+    await fixture.put(`/api/decks/${deckId}`, jwt).send(composition(3)).expect(200);
+
+    const runs = await fixture.runs(deckId);
+    expect(runs.map((run) => [run.status, run.trigger])).toEqual([
+      ['running', 'manual'],
+      ['pending', 'auto'],
+    ]);
+    expect(runs[0]!.id).toBe(runningId);
   });
 
   it('a retired deck gets no automatic run', async () => {

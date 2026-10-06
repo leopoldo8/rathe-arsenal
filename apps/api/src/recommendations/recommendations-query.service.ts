@@ -4,6 +4,7 @@ import { DataSource, In } from 'typeorm';
 import { RecommendationDismissalEntity } from '../database/entities/recommendation-dismissal.entity';
 import { RecommendationRunEntity } from '../database/entities/recommendation-run.entity';
 import { RecommendationEntity } from '../database/entities/recommendation.entity';
+import { listRecommendations } from './list-recommendations';
 
 export interface IDeckCardIdentifiers {
   readonly trackedDeckId: number;
@@ -54,15 +55,20 @@ export class RecommendationsQueryService {
       this.recommendationsOf([...runs.values()].map((run) => run.id)),
       this.dismissedCards(trackedDeckIds),
     ]);
-    const deckOfRun = new Map([...runs.values()].map((run) => [run.id, run.trackedDeckId]));
-    const inDeck = new Set(deckCards.map((card) => `${card.trackedDeckId}|${card.cardIdentifier}`));
+    const inDeck = new Map<number, Set<string>>();
+    for (const card of deckCards) {
+      const cards = inDeck.get(card.trackedDeckId) ?? new Set<string>();
+      cards.add(card.cardIdentifier);
+      inDeck.set(card.trackedDeckId, cards);
+    }
     const counts = new Map<number, number>();
-    for (const recommendation of recommendations) {
-      const trackedDeckId = deckOfRun.get(recommendation.runId);
-      if (trackedDeckId === undefined || recommendation.strength !== 'clear_upgrade') continue;
-      if (dismissed.get(trackedDeckId)?.has(recommendation.cardIdentifier)) continue;
-      if (inDeck.has(`${trackedDeckId}|${recommendation.cardIdentifier}`)) continue;
-      counts.set(trackedDeckId, (counts.get(trackedDeckId) ?? 0) + 1);
+    for (const run of runs.values()) {
+      const listed = listRecommendations(
+        recommendations.filter((row) => row.runId === run.id),
+        dismissed.get(run.trackedDeckId) ?? new Set(),
+        inDeck.get(run.trackedDeckId) ?? new Set(),
+      );
+      counts.set(run.trackedDeckId, listed.filter((row) => row.strength === 'clear_upgrade').length);
     }
     return counts;
   }

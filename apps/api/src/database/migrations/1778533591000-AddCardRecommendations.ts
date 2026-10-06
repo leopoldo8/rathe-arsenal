@@ -57,7 +57,7 @@ export class AddCardRecommendations1778533591000 implements MigrationInterface {
           { name: 'attempts', type: 'int', default: 0, isNullable: false },
           { name: 'inputTokens', type: 'int', isNullable: true },
           { name: 'outputTokens', type: 'int', isNullable: true },
-          { name: 'error', type: 'varchar', length: '32', isNullable: true },
+          { name: 'error', type: 'text', isNullable: true },
           { name: 'createdAt', type: 'timestamptz', default: 'now()', isNullable: false },
           { name: 'startedAt', type: 'timestamptz', isNullable: true },
           { name: 'finishedAt', type: 'timestamptz', isNullable: true },

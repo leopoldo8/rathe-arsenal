@@ -43,7 +43,7 @@ describe('recommendations read (e2e)', () => {
     const done = await fixture.seedDoneRun(donePending.deckId, [{ card: A }]);
     await fixture.seedRun(donePending.deckId, 'running', { claimedMinutesAgo: 0 });
     const donePendingBody = await read(donePending.deckId, donePending.jwt);
-    expect(donePendingBody.run).toEqual({ id: done.runId, trigger: 'manual', finishedAt: expect.any(String), stale: false });
+    expect(donePendingBody.run).toEqual({ id: done.runId, status: 'done', trigger: 'manual', finishedAt: expect.any(String), stale: false });
     expect(donePendingBody.pending).toBe(true);
     expect(donePendingBody.recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
 

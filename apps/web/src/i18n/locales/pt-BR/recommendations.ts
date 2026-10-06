@@ -15,6 +15,7 @@ export const recommendations = {
   buyAria: 'Comprar {{name}} na loja',
   replaces: 'substitui {{name}}',
   cutLabel: 'Substituir',
+  cutGone: 'Essa carta não está mais nesse lugar do deck.',
   cutNone: 'Escolha uma carta',
   adopt: 'Usar',
   adoptAria: 'Usar {{name}} no deck',

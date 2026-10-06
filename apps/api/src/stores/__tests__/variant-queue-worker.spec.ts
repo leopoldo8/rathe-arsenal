@@ -1,4 +1,4 @@
-import { drainOnce, loopForever, POLL_MS, runPendingUrlSync } from '../variant-queue-worker';
+import { createRecommendationStep, drainOnce, loopForever, POLL_MS, runPendingUrlSync, runWorkerLoops } from '../variant-queue-worker';
 
 describe('drainOnce', () => {
   it('reclaims orphans, claims a job, resolves its cards, and processes it', async () => {
@@ -86,6 +86,42 @@ describe('loopForever', () => {
 
       expect(stuckRecommendationStep).toHaveBeenCalledTimes(1);
       expect(variantStep.mock.calls.length).toBeGreaterThanOrEqual(3);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('worker assembly', () => {
+  it('the worker reads GEMINI_API_KEY per run and runs both loops', async () => {
+    const env: NodeJS.ProcessEnv = {};
+    const run = { id: 'run-1' };
+    const queue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(run) };
+    const runner = { process: jest.fn() };
+    const logger = { error: jest.fn() };
+    const fetch = jest.fn();
+    const step = createRecommendationStep({ queue, runner, env, fetch, logger } as never);
+
+    await step();
+    env['GEMINI_API_KEY'] = 'AIza-later';
+    await step();
+    runner.process.mockRejectedValueOnce(new Error('db down'));
+    await step();
+
+    expect(runner.process.mock.calls.map(([, deps]) => deps.apiKey)).toEqual([undefined, 'AIza-later', 'AIza-later']);
+    expect(runner.process.mock.calls[0][1].fetch).toBe(fetch);
+    expect(logger.error).toHaveBeenCalledWith({ event: 'recommendations.worker.error', error: 'db down' });
+
+    jest.useFakeTimers();
+    try {
+      let running = true;
+      const first = jest.fn(async () => undefined);
+      const second = jest.fn(async () => undefined);
+      void runWorkerLoops([first, second], POLL_MS, () => running);
+      await jest.advanceTimersByTimeAsync(2 * POLL_MS);
+      running = false;
+      expect(first.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(second.mock.calls.length).toBeGreaterThanOrEqual(2);
     } finally {
       jest.useRealTimers();
     }

@@ -8,6 +8,7 @@ import {
   useUndismissRecommendation,
   type IRecommendationCard,
 } from '../../api/recommendations';
+import { ApiError } from '../../lib/api-client';
 import { formatBrl } from '../../utils/format-brl';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { CardArt } from '../card-art/CardArt';
@@ -23,6 +24,15 @@ export interface IRecommendationDeckCard {
 interface IRecommendationsPanelProps {
   readonly deckId: number;
   readonly deckCards: readonly IRecommendationDeckCard[];
+}
+
+function isCutGone(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  try {
+    return (JSON.parse(error.message) as { code?: unknown }).code === 'NOTHING_TO_REPLACE';
+  } catch {
+    return false;
+  }
 }
 
 function toPitch(pitch: number | null): 1 | 2 | 3 | null {
@@ -191,7 +201,7 @@ export function RecommendationsPanel({ deckId, deckCards }: IRecommendationsPane
     setActionError(null);
     adopt.mutate(
       { recommendationId: recommendation.id, cutCardIdentifier, cutSlot: recommendation.slot },
-      { onError: (error) => setActionError(localizeApiError(error, t)) },
+      { onError: (error) => setActionError(isCutGone(error) ? t('recommendations.cutGone') : localizeApiError(error, t)) },
     );
   }
 

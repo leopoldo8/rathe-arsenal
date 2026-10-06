@@ -81,6 +81,13 @@ describe('recommendation worker (e2e)', () => {
     expect(await queue.claimNext()).toBeNull();
     expect((await run(future.runId)).status).toBe('pending');
     expect((await run(busy.runId)).status).toBe('pending');
+
+    const later = await deckWithManualRun();
+    const earlier = await deckWithManualRun();
+    await fixture.dataSource.query(`UPDATE recommendation_run SET "runAfter" = now() - interval '1 minute' WHERE id = $1`, [later.runId]);
+    await fixture.dataSource.query(`UPDATE recommendation_run SET "runAfter" = now() - interval '2 minutes' WHERE id = $1`, [earlier.runId]);
+    expect((await queue.claimNext())?.id).toBe(earlier.runId);
+    expect((await queue.claimNext())?.id).toBe(later.runId);
   });
 
   it('an auto run of a retired deck fails without a call', async () => {

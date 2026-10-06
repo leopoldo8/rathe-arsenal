@@ -144,33 +144,48 @@ export class RecommendationQueueService {
     );
   }
 
-  /** Back to pending at `runAfter`; when the deck already holds a newer pending run, this one is superseded by it. */
-  async retryAt(run: RecommendationRunEntity, runAfter: Date): Promise<'retried' | 'superseded'> {
+  /**
+   * Back to pending `delayMs` from now on the database clock, as enqueue is; when the deck already holds a newer
+   * pending run, this one is superseded by it.
+   */
+  async retryAfter(
+    run: RecommendationRunEntity,
+    delayMs: number,
+  ): Promise<{ readonly result: 'retried' | 'superseded'; readonly runAfter: Date }> {
+    const delay = String(delayMs);
     try {
-      const result = await this.dataSource.query(
-        `UPDATE recommendation_run SET "status" = 'pending', "runAfter" = $2, "claimedAt" = NULL
-          WHERE id = $1 AND NOT EXISTS (
-            SELECT 1 FROM recommendation_run p WHERE p."trackedDeckId" = $3 AND p."status" = 'pending'
-          )
-          RETURNING id`,
-        [run.id, runAfter, run.trackedDeckId],
+      const retried = firstRow<{ runAfter: Date }>(
+        await this.dataSource.query(
+          `UPDATE recommendation_run
+              SET "status" = 'pending', "runAfter" = clock_timestamp() + ($2 || ' milliseconds')::interval, "claimedAt" = NULL
+            WHERE id = $1 AND NOT EXISTS (
+              SELECT 1 FROM recommendation_run p WHERE p."trackedDeckId" = $3 AND p."status" = 'pending'
+            )
+            RETURNING "runAfter"`,
+          [run.id, delay, run.trackedDeckId],
+        ),
       );
-      if (firstRow(result)) return 'retried';
+      if (retried) return { result: 'retried', runAfter: new Date(retried.runAfter) };
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
     }
-    await this.dataSource.transaction(async (manager) => {
-      await manager.query(
-        `UPDATE recommendation_run SET "runAfter" = GREATEST("runAfter", $2)
-          WHERE "trackedDeckId" = $1 AND "status" = 'pending'`,
-        [run.trackedDeckId, runAfter],
+    const pending = await this.dataSource.transaction(async (manager) => {
+      const updated = firstRow<{ runAfter: Date }>(
+        await manager.query(
+          `UPDATE recommendation_run
+              SET "runAfter" = GREATEST("runAfter", clock_timestamp() + ($2 || ' milliseconds')::interval)
+            WHERE "trackedDeckId" = $1 AND "status" = 'pending'
+            RETURNING "runAfter"`,
+          [run.trackedDeckId, delay],
+        ),
       );
       await manager.query(
         `UPDATE recommendation_run SET "status" = 'failed', "error" = 'SUPERSEDED', "finishedAt" = clock_timestamp()
           WHERE id = $1`,
         [run.id],
       );
+      return updated;
     });
-    return 'superseded';
+    return { result: 'superseded', runAfter: new Date(pending?.runAfter ?? Date.now() + delayMs) };
   }
 }

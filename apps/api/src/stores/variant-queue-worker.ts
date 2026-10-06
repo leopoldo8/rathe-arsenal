@@ -78,6 +78,38 @@ export async function loopForever(
   }
 }
 
+export function runWorkerLoops(
+  steps: readonly (() => Promise<void>)[],
+  pollMs: number = POLL_MS,
+  shouldContinue: () => boolean = () => true,
+): Promise<void[]> {
+  return Promise.all(steps.map((step) => loopForever(step, pollMs, shouldContinue)));
+}
+
+export interface IRecommendationStepDeps {
+  readonly queue: Pick<RecommendationQueueService, 'reclaimOrphans' | 'claimNext'>;
+  readonly runner: Pick<RecommendationRunnerService, 'process'>;
+  readonly env: NodeJS.ProcessEnv;
+  readonly fetch: TGeminiFetch;
+  readonly logger: Pick<Logger, 'error'>;
+}
+
+/** One recommendation drain; the key is read from the environment on every run, so setting it needs no restart of the loop. */
+export function createRecommendationStep(deps: IRecommendationStepDeps): () => Promise<void> {
+  return async () => {
+    try {
+      await drainRecommendationsOnce({
+        queue: deps.queue,
+        runner: deps.runner,
+        readApiKey: () => deps.env['GEMINI_API_KEY'],
+        fetch: deps.fetch,
+      });
+    } catch (err) {
+      deps.logger.error({ event: 'recommendations.worker.error', error: (err as Error).message });
+    }
+  };
+}
+
 async function main(): Promise<void> {
   const logger = new Logger('VariantQueueWorker');
   // Imported dynamically so loading this module for unit tests does not pull in
@@ -115,20 +147,15 @@ async function main(): Promise<void> {
     }
   };
 
-  const recommendationStep = async (): Promise<void> => {
-    try {
-      await drainRecommendationsOnce({
-        queue: recommendationQueue,
-        runner: recommendationRunner,
-        readApiKey: () => process.env['GEMINI_API_KEY'],
-        fetch: fetch as unknown as TGeminiFetch,
-      });
-    } catch (err) {
-      logger.error({ event: 'recommendations.worker.error', error: (err as Error).message });
-    }
-  };
+  const recommendationStep = createRecommendationStep({
+    queue: recommendationQueue,
+    runner: recommendationRunner,
+    env: process.env,
+    fetch: fetch as unknown as TGeminiFetch,
+    logger,
+  });
 
-  await Promise.all([loopForever(variantStep, POLL_MS), loopForever(recommendationStep, POLL_MS)]);
+  await runWorkerLoops([variantStep, recommendationStep]);
 }
 
 if (require.main === module) {

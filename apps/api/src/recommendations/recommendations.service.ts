@@ -14,6 +14,7 @@ import {
 import { TRecommendationStrength } from '../database/entities/recommendation.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ShoppingLineService } from '../stores/shopping-line.service';
+import { listRecommendations } from './list-recommendations';
 import { computeDeckFingerprint, slotForCard } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
 import { RecommendationsQueryService } from './recommendations-query.service';
@@ -46,6 +47,7 @@ export interface IRecommendationCardResponse {
 export interface IRecommendationsResponse {
   readonly run: {
     readonly id: string;
+    readonly status: TRecommendationRunStatus;
     readonly trigger: TRecommendationRunTrigger;
     readonly finishedAt: string | null;
     readonly stale: boolean;
@@ -59,8 +61,6 @@ export interface IDismissalResponse {
   readonly cardIdentifier: string;
   readonly createdAt: string;
 }
-
-const STRENGTH_ORDER: Readonly<Record<TRecommendationStrength, number>> = { clear_upgrade: 0, consider: 1 };
 
 function findCard(cardIdentifier: string): ICatalogCard | null {
   try {
@@ -123,6 +123,7 @@ export class RecommendationsService {
       run: run
         ? {
             id: run.id,
+            status: run.status,
             trigger: run.trigger,
             finishedAt: run.finishedAt ? new Date(run.finishedAt).toISOString() : null,
             stale: run.deckFingerprint !== fingerprint,
@@ -141,9 +142,7 @@ export class RecommendationsService {
     dismissed: ReadonlySet<string> | undefined,
   ): Promise<IRecommendationCardResponse[]> {
     const inDeck = new Set(deckCards.map((row) => row.cardIdentifier));
-    const listed = (await this.query.recommendationsOf([run.id]))
-      .filter((row) => !dismissed?.has(row.cardIdentifier) && !inDeck.has(row.cardIdentifier))
-      .sort((a, b) => STRENGTH_ORDER[a.strength] - STRENGTH_ORDER[b.strength] || a.rank - b.rank);
+    const listed = listRecommendations(await this.query.recommendationsOf([run.id]), dismissed ?? new Set(), inDeck);
     const identifiers = listed.map((row) => row.cardIdentifier);
     const [owned, prices] = await Promise.all([
       this.collectionReadService.loadOwned(userId, identifiers),

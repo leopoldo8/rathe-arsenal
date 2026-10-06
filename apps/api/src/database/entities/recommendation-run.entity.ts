@@ -72,7 +72,7 @@ export class RecommendationRunEntity {
   @Column({ type: 'int', nullable: true })
   outputTokens!: number | null;
 
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({ type: 'text', nullable: true })
   error!: TRecommendationFailureCode | null;
 
   @CreateDateColumn({ type: 'timestamptz' })

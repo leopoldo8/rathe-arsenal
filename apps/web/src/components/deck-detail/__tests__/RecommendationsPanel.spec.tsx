@@ -17,6 +17,11 @@ vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: mockShow })
 
 import { ApiError } from '../../../lib/api-client';
 import { RecommendationsPanel, type IRecommendationDeckCard } from '../RecommendationsPanel';
+import { deckDetailQueryKey } from '../../../api/deck-detail';
+import { SWAPS_QUERY_KEY } from '../../../api/swaps';
+import { enUS } from '../../../i18n/locales/en-US';
+
+const NOTHING_TO_REPLACE_MESSAGE = enUS.recommendations.cutGone;
 
 const DECK_ID = 7;
 const BASE = `/decks/${DECK_ID}/recommendations`;
@@ -49,7 +54,7 @@ function recommendation(overrides: Partial<IRecommendationCard> = {}): IRecommen
   };
 }
 
-const RUN = { id: 'run-1', trigger: 'manual' as const, finishedAt: '2026-10-06T10:00:00.000Z', stale: false };
+const RUN = { id: 'run-1', status: 'done' as const, trigger: 'manual' as const, finishedAt: '2026-10-06T10:00:00.000Z', stale: false };
 
 function response(overrides: Partial<IRecommendationsResponse> = {}): IRecommendationsResponse {
   return { run: RUN, pending: false, failure: null, recommendations: [recommendation()], ...overrides };
@@ -271,5 +276,47 @@ describe('RecommendationsPanel', () => {
       body: JSON.stringify({ cutCardIdentifier: 'emissary-of-tides-red', cutSlot: 'mainboard' }),
     });
     expect(await screen.findByTestId('recommendations-action-error')).toHaveTextContent('That card cannot take this place in the deck.');
+
+    mockApiFetch.mockImplementation(async (path: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') throw new ApiError(409, JSON.stringify({ code: 'NOTHING_TO_REPLACE' }));
+      return response({ recommendations: [recommendation({ id: 'rec-9', cutCardIdentifier: 'flex-red', cutName: 'Flex', cutSlot: 'mainboard' })] });
+    });
+    await user.click(within(row).getByRole('button', { name: 'Use Adrenaline Rush in the deck' }));
+    expect(await screen.findByTestId('recommendations-action-error')).toHaveTextContent(NOTHING_TO_REPLACE_MESSAGE);
+  });
+
+  it('every mutation refreshes the data it changes', async () => {
+    const user = userEvent.setup();
+    mockApiFetch.mockImplementation(async (path: string, init?: { method?: string }) =>
+      init?.method ? { ok: true } : response({ recommendations: [recommendation({ id: 'rec-9', cutCardIdentifier: 'flex-red', cutName: 'Flex', cutSlot: 'mainboard' })] }),
+    );
+    renderPanel();
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const row = await screen.findByTestId('recommendation-row');
+    const keysAfter = async (act: () => Promise<void>): Promise<string[]> => {
+      invalidate.mockClear();
+      await act();
+      await waitFor(() => expect(invalidate).toHaveBeenCalled());
+      return invalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey)).sort();
+    };
+    const recommendationsKey = JSON.stringify(['recommendations', DECK_ID]);
+    const decksKey = JSON.stringify(['decks']);
+
+    expect(await keysAfter(() => user.click(screen.getByTestId('recommendations-generate')))).toEqual([decksKey, recommendationsKey].sort());
+    expect(
+      await keysAfter(() => user.click(within(row).getByRole('button', { name: 'Use Adrenaline Rush in the deck' }))),
+    ).toEqual([decksKey, recommendationsKey, JSON.stringify(deckDetailQueryKey(String(DECK_ID))), JSON.stringify(SWAPS_QUERY_KEY)].sort());
+    expect(mockApiFetch).toHaveBeenCalledWith(`${BASE}/rec-9/adopt`, {
+      method: 'POST',
+      body: JSON.stringify({ cutCardIdentifier: 'flex-red', cutSlot: 'mainboard' }),
+    });
+    expect(screen.queryByTestId('recommendations-action-error')).toBeNull();
+    const freshRow = await screen.findByTestId('recommendation-row');
+    expect(
+      await keysAfter(() => user.click(within(freshRow).getByRole('button', { name: 'Stop recommending Adrenaline Rush for this deck' }))),
+    ).toEqual([decksKey, recommendationsKey].sort());
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    const toast = mockShow.mock.calls[0]![0] as { action: { onClick: () => void } };
+    expect(await keysAfter(async () => act(() => toast.action.onClick()))).toEqual([decksKey, recommendationsKey].sort());
   });
 });

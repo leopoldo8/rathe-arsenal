@@ -104,6 +104,23 @@ describe('adopt a recommendation (e2e)', () => {
     }
   });
 
+  it('concurrent adoptions of one cut hold the deck lock', async () => {
+    const target = await deckWith(ADRENALINE, FLEX);
+    const body = { cutCardIdentifier: FLEX, cutSlot: 'mainboard' };
+
+    const responses = await Promise.all([
+      adopt(target.deckId, target.recommendationId, target.jwt, body),
+      adopt(target.deckId, target.recommendationId, target.jwt, body),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);
+    expect(responses.find((response) => response.status === 409)!.body.code).toBe('NOTHING_TO_REPLACE');
+    expect(await fixture.replacementRows(target.deckId)).toHaveLength(1);
+    const cards = await fixture.deckCards(target.deckId);
+    expect(cards[`${ADRENALINE}@mainboard`]).toBe(2);
+    expect(cards[`${FLEX}@mainboard`]).toBeUndefined();
+  });
+
   it('refuses a cut that is not in the slot', async () => {
     const target = await deckWith(ADRENALINE);
     const before = await snapshotOfRows(target.deckId);
