@@ -48,6 +48,11 @@ export interface ICatalogCard {
   /** Card rarity (from `@flesh-and-blood/types` Rarity enum). */
   readonly rarity: Rarity;
   /**
+   * The card's rules text, copied unchanged from `@flesh-and-blood/cards`.
+   * Optional — absent (never an empty string) when the package holds none.
+   */
+  readonly functionalText?: string;
+  /**
    * True for hero cards that are designated "young hero" versions.
    * Used for Blitz / Silver Age hero requirement checks.
    * False when not a young hero (coerced from upstream `true | undefined`).

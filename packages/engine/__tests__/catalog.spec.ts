@@ -211,3 +211,47 @@ describe('catalog', () => {
     });
   });
 });
+
+describe('catalog rules text', () => {
+  type TRawWithText = { cardIdentifier: string; functionalText?: string };
+
+  it('C1: carries the package rules text, on 5,139 of 5,177 cards', () => {
+    const raw = catalog.getRawCard('dorinthea-ironsong') as TRawWithText;
+    expect(raw.functionalText).toBeDefined();
+    expect(catalog.getCard('dorinthea-ironsong').functionalText).toBe(raw.functionalText);
+
+    const withText = catalog.cards.filter((c) => c.functionalText !== undefined);
+    expect(catalog.cards).toHaveLength(5177);
+    expect(withText).toHaveLength(5139);
+    for (const card of withText) {
+      const rawCard = catalog.getRawCard(card.cardIdentifier) as TRawWithText;
+      expect(card.functionalText).toBe(rawCard.functionalText);
+    }
+  });
+
+  it('C2: leaves the field absent, never an empty string, when the package has none', () => {
+    const without = catalog.cards.filter(
+      (c) => (catalog.getRawCard(c.cardIdentifier) as TRawWithText).functionalText === undefined,
+    );
+    expect(without).toHaveLength(38);
+    for (const card of without) {
+      expect(Object.prototype.hasOwnProperty.call(card, 'functionalText')).toBe(false);
+    }
+    expect(catalog.cards.filter((c) => c.functionalText === '')).toHaveLength(0);
+  });
+
+  it('C3: keeps exactly the pre-change field set plus the optional rules text, none added and none removed', () => {
+    const alwaysPresent = [
+      'cardIdentifier', 'name', 'classes', 'talents', 'types', 'pitch', 'power', 'defense',
+      'cost', 'keywords', 'subtypes', 'legalHeroes', 'legalFormats', 'rarity', 'young', 'sets', 'imageUrl',
+    ];
+    const optional = ['hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations', 'functionalText'];
+    const allowed = new Set([...alwaysPresent, ...optional]);
+
+    for (const card of catalog.cards) {
+      const keys = Object.keys(card);
+      expect(keys.filter((k) => !allowed.has(k))).toEqual([]);
+      expect(alwaysPresent.filter((k) => !keys.includes(k))).toEqual([]);
+    }
+  });
+});

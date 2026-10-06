@@ -1,0 +1,35 @@
+{
+  "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+  "candidate": "opus-5.5",
+  "status": "ok",
+  "top10": [
+    "madcap-muscle-red",
+    "madcap-charger-red",
+    "breakneck-battery-red",
+    "rumble-grunting-red",
+    "run-roughshod-blue",
+    "primeval-bellow-red",
+    "wrecking-ball-red",
+    "swing-fist-think-later-red",
+    "barraging-beatdown-red",
+    "predatory-assault-red"
+  ],
+  "usage": {
+    "inputTokens": 46518,
+    "outputTokens": 2235,
+    "reasoningTokens": 857,
+    "costUsd": 0.230772
+  },
+  "reasons": {
+    "madcap-muscle-red": "Its random discard cost fuels Kayo's Might trigger, and hitting a 6+ power card adds +3 power on top of a big red body.",
+    "madcap-charger-red": "It discards as a cost and gains go again off a 6+ power discard, which suits a deck full of cards that count as 6+ in hand.",
+    "breakneck-battery-red": "Another discard-for-go-again attack that chains Kayo's Might token into continued pressure.",
+    "rumble-grunting-red": "After the deck's many discard effects, it is a cheap +4 power go-again pump for the next Brute attack.",
+    "run-roughshod-blue": "It pays off the deck's discard-6+ engine, and as a blue it fits the resource curve.",
+    "primeval-bellow-red": "It gives +5 to the next Brute attack with go again, and its discard cost also enables Kayo's Might token and Mandible Claw.",
+    "wrecking-ball-red": "It draws then discards, which can trigger Kayo's Might, and it intimidates when a 6+ power card is discarded.",
+    "swing-fist-think-later-red": "It is a guaranteed go-again attacker whose random discard cost reliably feeds Kayo's hero ability.",
+    "barraging-beatdown-red": "It is a stronger version of the Beatdown already in the deck, giving +4 power, intimidate and go again.",
+    "predatory-assault-red": "It gains dominate after the deck's frequent 6+ power discards, making big hits hard to block."
+  }
+}

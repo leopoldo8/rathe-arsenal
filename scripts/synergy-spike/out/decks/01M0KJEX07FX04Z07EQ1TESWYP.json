@@ -1,0 +1,125 @@
+{
+  "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+  "url": "https://fabrary.net/decks/01M0KJEX07FX04Z07EQ1TESWYP",
+  "name": "Kayo SAGE",
+  "hero": "kayo",
+  "format": "Silver Age",
+  "mainboard": [
+    {
+      "card": "bare-fangs-red",
+      "quantity": 2
+    },
+    {
+      "card": "bare-fangs-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "barraging-beatdown-blue",
+      "quantity": 2
+    },
+    {
+      "card": "barraging-big-horn-blue",
+      "quantity": 2
+    },
+    {
+      "card": "barraging-big-horn-red",
+      "quantity": 2
+    },
+    {
+      "card": "blade-beckoner-gauntlets",
+      "quantity": 1
+    },
+    {
+      "card": "buckwild-blue",
+      "quantity": 2
+    },
+    {
+      "card": "buckwild-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "clash-of-might-red",
+      "quantity": 2
+    },
+    {
+      "card": "clash-of-might-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "flat-trackers",
+      "quantity": 1
+    },
+    {
+      "card": "headstrong-stampede-red",
+      "quantity": 2
+    },
+    {
+      "card": "high-pitched-howl-red",
+      "quantity": 2
+    },
+    {
+      "card": "knucklehead",
+      "quantity": 1
+    },
+    {
+      "card": "mandible-claw",
+      "quantity": 1
+    },
+    {
+      "card": "nullrune-gloves",
+      "quantity": 1
+    },
+    {
+      "card": "nullrune-hood",
+      "quantity": 1
+    },
+    {
+      "card": "nullrune-robe",
+      "quantity": 1
+    },
+    {
+      "card": "predatory-plating",
+      "quantity": 1
+    },
+    {
+      "card": "savage-feast-red",
+      "quantity": 2
+    },
+    {
+      "card": "shamanic-shinbones",
+      "quantity": 1
+    },
+    {
+      "card": "sirens-of-safe-harbor-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "strongest-survive-red",
+      "quantity": 2
+    },
+    {
+      "card": "unexpected-backhand-blue",
+      "quantity": 2
+    },
+    {
+      "card": "vigorous-roar-red",
+      "quantity": 2
+    },
+    {
+      "card": "vigorous-smashup-blue",
+      "quantity": 2
+    },
+    {
+      "card": "vigorous-smashup-yellow",
+      "quantity": 2
+    },
+    {
+      "card": "wild-ride-red",
+      "quantity": 2
+    },
+    {
+      "card": "wild-ride-yellow",
+      "quantity": 2
+    }
+  ]
+}

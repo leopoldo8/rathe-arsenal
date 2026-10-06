@@ -1,0 +1,35 @@
+{
+  "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "candidate": "mimo-v2.6-pro",
+  "status": "ok",
+  "top10": [
+    "long-shot-red",
+    "head-shot-red",
+    "over-flex-red",
+    "fletch-a-red-tail-red",
+    "hook-blue",
+    "blessing-of-focus-red",
+    "silver-the-tip-red",
+    "line-blue",
+    "sinker-blue",
+    "entangling-shot-red"
+  ],
+  "usage": {
+    "inputTokens": 27479,
+    "outputTokens": 5728,
+    "reasoningTokens": 4745,
+    "costUsd": 0.016936725
+  },
+  "reasons": {
+    "long-shot-red": "+2{p} with an aim counter is the biggest payoff for Crow's Nest counters and pushes power well above base for Bolt'n' Shot's go again + reload.",
+    "head-shot-red": "+2{p} when put face-up into arsenal triggers off Azalea's ability, Death Dealer, and any arsenal loader, simultaneously fueling Bolt'n' Shot.",
+    "over-flex-red": "+4{p} with Reload and go again is the premier pump that makes arrows exceed base power while refilling the arsenal.",
+    "fletch-a-red-tail-red": "+4{p} and red cards get -1{d} defending is the highest-impact pump for this red-heavy arrow deck.",
+    "hook-blue": "Puts an arrow from the top of deck face-up into arsenal with +1{p}, chaining Crow's Nest aim counters and Bolt'n' Shot triggers.",
+    "blessing-of-focus-red": "Start-of-turn opt 3 and arrow into arsenal with an aim counter pre-loads the entire engine every turn.",
+    "silver-the-tip-red": "Digs 4 cards deep for an arrow into arsenal when empty, chaining directly into Death Dealer or a Crow's Nest aim counter.",
+    "line-blue": "Puts an arrow face-up into arsenal with go again, setting up aim counters and extending action chains.",
+    "sinker-blue": "Puts an arrow face-up into arsenal with overpower, another cheap enabler for Crow's Nest and Bolt'n' Shot.",
+    "entangling-shot-red": "Taps a hero when put face-up into arsenal from Azalea or Death Dealer, adding strong tempo to the existing loop."
+  }
+}

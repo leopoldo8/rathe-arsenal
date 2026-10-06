@@ -71,6 +71,12 @@
 - **Reason**: Owner chose it in the card-alternatives discovery (`.design/card-alternatives.md`, Key decisions 1, 2 and 4) knowing the deck stops matching its imported decklist at pick time; the record lives outside `deck_card` because every composition save deletes and reinserts those rows.
 - **Trade-off**: Turning picks back into pinned stand-ins later needs a pinned-substitute engine input and user-created rows in swap reconciliation.
 - **Scope**: `packages/engine` (optional protected-copies input to `computeEffectiveReadiness`), `apps/api` (new table, replacement routes, `SubstitutionService.runReadiness`, `DecksService.updateComposition`), `apps/web` (deck detail).
+
+### AD-010
+- **Decision**: Synergy between a card and a deck is judged by a language model, Gemini 3.8 Flash, given the deck list, the hero and each candidate's rules text, returning a ranked top list. Claude Opus 5.5 is the equal-quality alternative. A keyword and subtype heuristic does not judge synergy well enough.
+- **Reason**: Synergy spike (`.specs/features/synergy-spike/`, result in `scripts/synergy-spike/out/result.md`, verified PASS): on the owner's three decks, blind-judged, Gemini 3.8 Flash had 5, 7 and 10 of its top 10 accepted and Opus 5.5 had 5, 7 and 9, both passing the 5-of-10 bar on every deck; GPT-6.1 Sol and MiMo-V2.6-Pro failed the Kayo deck; the heuristic failed all three (that comparison is confounded by row position, see the spike's implementation notes). Gemini cost 0.137 USD for the three decks against 0.82 USD for Opus.
+- **Trade-off**: The Kayo deck sat exactly on the bar for both passing models, so quality is good on most decks and thin on some. Each judgment is a paid external call taking seconds, so it cannot sit on an interactive path without caching. Gemini's list price doubles on 2027-01-01. Which API serves it in the product (Google directly or OpenRouter) is not decided here.
+- **Scope**: the Recommendations feature and the in-group order of card alternatives (design `.design/card-alternatives.md`, sections Synergy spike and Recommendations).
 - **Date**: 2026-10-04
 - **Status**: active
 

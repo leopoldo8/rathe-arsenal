@@ -1,0 +1,113 @@
+{
+  "deck": "01M2GEPE0X50C32E02KZNXAETH",
+  "url": "https://fabrary.net/decks/01M2GEPE0X50C32E02KZNXAETH",
+  "name": "Big Number Better",
+  "hero": "levia-shadowborn-abomination",
+  "format": "Classic Constructed",
+  "mainboard": [
+    {
+      "card": "beckoning-hunger-red",
+      "quantity": 3
+    },
+    {
+      "card": "blood-harvest",
+      "quantity": 3
+    },
+    {
+      "card": "bloodrush-bellow-yellow",
+      "quantity": 3
+    },
+    {
+      "card": "carrion-husk",
+      "quantity": 1
+    },
+    {
+      "card": "cleave-the-heavens-blue",
+      "quantity": 3
+    },
+    {
+      "card": "cleave-the-heavens-red",
+      "quantity": 3
+    },
+    {
+      "card": "consuming-lash-yellow",
+      "quantity": 3
+    },
+    {
+      "card": "deadwood-rumbler-blue",
+      "quantity": 3
+    },
+    {
+      "card": "diabolic-offering-blue",
+      "quantity": 3
+    },
+    {
+      "card": "doomsday-blue",
+      "quantity": 1
+    },
+    {
+      "card": "dread-screamer-red",
+      "quantity": 3
+    },
+    {
+      "card": "eye-of-ophidia-blue",
+      "quantity": 1
+    },
+    {
+      "card": "fallen-herald-yellow",
+      "quantity": 3
+    },
+    {
+      "card": "feasting-shadowbeast-red",
+      "quantity": 3
+    },
+    {
+      "card": "feeding-frenzy-red",
+      "quantity": 3
+    },
+    {
+      "card": "gauntlets-of-tyrannical-rex",
+      "quantity": 1
+    },
+    {
+      "card": "hexagore-the-death-hydra",
+      "quantity": 1
+    },
+    {
+      "card": "hooves-of-the-shadowbeast",
+      "quantity": 1
+    },
+    {
+      "card": "pull-from-beyond-blue",
+      "quantity": 3
+    },
+    {
+      "card": "rockyard-rodeo-blue",
+      "quantity": 3
+    },
+    {
+      "card": "scowling-flesh-bag",
+      "quantity": 1
+    },
+    {
+      "card": "shadowrealm-horror-red",
+      "quantity": 3
+    },
+    {
+      "card": "soul-harvest-blue",
+      "quantity": 1
+    },
+    {
+      "card": "vigorous-smashup-blue",
+      "quantity": 3
+    },
+    {
+      "card": "vigorous-smashup-yellow",
+      "quantity": 3
+    },
+    {
+      "card": "wrecker-romp-blue",
+      "quantity": 3
+    }
+  ]
+}

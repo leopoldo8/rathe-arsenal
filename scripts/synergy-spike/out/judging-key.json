@@ -1,0 +1,1202 @@
+[
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "hook-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 5
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 8
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "vigorous-smashup-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 6
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "feasting-shadowbeast-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "call-in-the-big-guns-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "call-in-the-big-guns-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-yellow",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 5
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "point-the-tip-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 1
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 1
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "endless-maw-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "feasting-shadowbeast-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "fletch-a-red-tail-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 4
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 6
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 4
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 4
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "read-the-glide-path-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "breakneck-battery-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 4
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 3
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "wild-ride-blue",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 1
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "fire-in-the-hole-red",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 9
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "endless-maw-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 3
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "rip-off-the-top-yellow",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 2
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "line-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 8
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 7
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-yellow",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 8
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "barraging-big-horn-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-charger-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 7
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 2
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-the-legions-of-doom-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 6
+      },
+      {
+        "candidate": "heuristic",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-yellow",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "tribute-to-demolition-blue",
+    "runs": [
+      {
+        "candidate": "heuristic",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "awakening-bellow-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "unworldly-bellow-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 1
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "swing-fist-think-later-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "wrecking-ball-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "mark-of-the-beast-yellow",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "run-roughshod-blue",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "consuming-strength-yellow",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "mighty-windup-yellow",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "rumble-grunting-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "wall-breaker-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "bare-fangs-blue",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "spire-sniping-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "sedation-shot-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 10
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "blasmophet-levia-consumed",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 2
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "head-shot-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 8
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "monkey-powder-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "writhing-beast-hulk-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 5
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "barraging-beatdown-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 7
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "buckwild-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "hamstring-shot-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "lead-with-speed-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "graveling-growl-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "memorial-ground-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "wild-ride-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "boneyard-marauder-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "convulsions-from-the-bellows-of-hell-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "predatory-assault-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "widowmaker-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 10
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "shadow-of-blasmophet-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 4
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "reincarnate-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "savage-feast-blue",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "ebon-fold",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "visit-the-boneyard-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "rumbling-hunger-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 8
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "levia-redeemed",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "agile-windup-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 3
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "visit-the-boneyard-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 1
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "reckless-swing-blue",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "madcap-muscle-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "sigil-of-cycles-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "darkest-hour-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "mighty-windup-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 6
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "swing-fist-think-later-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 1
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "swing-fist-think-later-yellow",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "no-fear-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "toxicity-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "beast-within-yellow",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 4
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "entangling-shot-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "increase-the-tension-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 8
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "withering-shot-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "seek-horizon-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "sinker-blue",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 9
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "long-shot-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "goremass-summoning-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 10
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 5
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 8
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "agile-windup-yellow",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "sleep-dart-red",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "buzzard-helm",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 10
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "whisper-of-the-oracle-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "trade-in-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "savage-feast-yellow",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "over-flex-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 5
+      },
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 5
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 3
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "blasmophets-boon-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 7
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "deep-rooted-evil-yellow",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 8
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 10
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 5
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "scabskin-leathers",
+    "runs": [
+      {
+        "candidate": "gemini-3.8-flash",
+        "rank": 9
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "blood-dripping-frenzy-blue",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 1
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 7
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "shadow-puppetry-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "silver-the-tip-red",
+    "runs": [
+      {
+        "candidate": "gpt-6.1-sol",
+        "rank": 7
+      },
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 7
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+    "card": "primeval-bellow-red",
+    "runs": [
+      {
+        "candidate": "opus-5.5",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2GEPE0X50C32E02KZNXAETH",
+    "card": "shaden-scream-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 6
+      }
+    ]
+  },
+  {
+    "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+    "card": "blessing-of-focus-red",
+    "runs": [
+      {
+        "candidate": "mimo-v2.6-pro",
+        "rank": 6
+      },
+      {
+        "candidate": "opus-5.5",
+        "rank": 2
+      }
+    ]
+  }
+]

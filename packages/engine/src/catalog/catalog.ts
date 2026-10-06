@@ -36,6 +36,7 @@ interface IRawCard {
   restrictedFormats?: string[];
   legalOverrides?: readonly { format: string; heroes: string[] }[];
   rarity?: string;
+  functionalText?: string;
   young?: boolean;
   specializations?: string[];
   defaultImage?: string;
@@ -166,6 +167,9 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
   // resulting object satisfies `exactOptionalPropertyTypes` on ICatalogCard.
   if (raw.hero != null) {
     card['hero'] = raw.hero as import('./types').Hero;
+  }
+  if (raw.functionalText != null) {
+    card['functionalText'] = raw.functionalText;
   }
   if (raw.bannedFormats != null) {
     card['bannedFormats'] = Object.freeze(raw.bannedFormats as Format[]);

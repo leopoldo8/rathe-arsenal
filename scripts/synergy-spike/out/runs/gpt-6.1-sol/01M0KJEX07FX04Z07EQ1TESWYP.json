@@ -1,0 +1,35 @@
+{
+  "deck": "01M0KJEX07FX04Z07EQ1TESWYP",
+  "candidate": "gpt-6.1-sol",
+  "status": "ok",
+  "top10": [
+    "visit-the-boneyard-blue",
+    "rip-off-the-top-yellow",
+    "agile-windup-red",
+    "trade-in-red",
+    "sigil-of-cycles-blue",
+    "mighty-windup-red",
+    "barraging-beatdown-red",
+    "awakening-bellow-red",
+    "lead-with-speed-red",
+    "reincarnate-red"
+  ],
+  "usage": {
+    "inputTokens": 29465,
+    "outputTokens": 3783,
+    "reasoningTokens": 2588,
+    "costUsd": 0.111491
+  },
+  "reasons": {
+    "visit-the-boneyard-blue": "Recovers a high-power attack, sets up a stronger clash reveal, and creates Vigor, with a six-base-power target also enabling Headstrong Stampede.",
+    "rip-off-the-top-yellow": "Can establish the six-power pitch card needed by Buckwild, High Pitched Howl, and Vigorous Roar while also boosting the next attack.",
+    "agile-windup-red": "Its self-discard creates Agility and, if its Kayo-adjusted power reaches six, can also trigger Kayo's Might and enable Mandible Claw's go again.",
+    "trade-in-red": "Lets you deliberately discard a qualifying six-power card to enable Kayo and Mandible Claw, replaces that card, and gains go again from arsenal.",
+    "sigil-of-cycles-blue": "Its action-phase discard can enable Kayo and Mandible Claw before you attack while replacing the discarded card.",
+    "mighty-windup-red": "Its self-discard creates Might and, when it qualifies as six power during your action phase, can produce Kayo's additional Might and enable Mandible Claw.",
+    "barraging-beatdown-red": "Intimidate makes Barraging Big Horn's go again harder to deny, while the conditional +4 power also pressures opponents to commit additional defenders.",
+    "awakening-bellow-red": "Combines intimidate with +3 power to support Barraging Big Horn's defense-count condition and make Strongest Survive's discard threat harder to avoid.",
+    "lead-with-speed-red": "Boosts a Brute attack by +3 while creating Agility to support the deck's multi-attack strategy.",
+    "reincarnate-red": "The deck's numerous random-discard effects turn its bottom-deck replacement into a way to preserve attack cards for later draws."
+  }
+}

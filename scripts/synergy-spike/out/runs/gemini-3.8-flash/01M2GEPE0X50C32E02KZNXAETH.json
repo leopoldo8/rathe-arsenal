@@ -1,0 +1,35 @@
+{
+  "deck": "01M2GEPE0X50C32E02KZNXAETH",
+  "candidate": "gemini-3.8-flash",
+  "status": "ok",
+  "top10": [
+    "levia-redeemed",
+    "blasmophet-levia-consumed",
+    "mark-of-the-beast-yellow",
+    "beast-within-yellow",
+    "writhing-beast-hulk-red",
+    "boneyard-marauder-red",
+    "wild-ride-red",
+    "graveling-growl-red",
+    "scabskin-leathers",
+    "reckless-swing-blue"
+  ],
+  "usage": {
+    "inputTokens": 52427,
+    "outputTokens": 5035,
+    "reasoningTokens": 3653,
+    "costUsd": 0.0582015
+  },
+  "reasons": {
+    "levia-redeemed": "Sits in your inventory as a specialized win condition that permanently removes blood debt damage once you reach 13 blood debt cards.",
+    "blasmophet-levia-consumed": "Provides a crucial inventory transformation at 13 health that lets you play blood debt cards from banished and shields you from blood debt damage.",
+    "mark-of-the-beast-yellow": "With 6 power, it banishes itself instantly whenever sent to the graveyard from anywhere, consistently turning off blood debt for the turn.",
+    "beast-within-yellow": "A 6-power card that triggers when discarded to Bloodrush Bellow or other effects to banish cards, dig for 6-power cards, and turn off blood debt.",
+    "writhing-beast-hulk-red": "A potent 6-power attack that banishes 3 graveyard cards to satisfy Levia's hero ability and threatens heavy dominated damage.",
+    "boneyard-marauder-red": "An efficient 6-power attack action that costs only 1 resource to banish 3 graveyard cards and mitigate blood debt.",
+    "wild-ride-red": "A 6-power attack that draws and discards, giving you card velocity and natural go again to string multiple high-power attacks together.",
+    "graveling-growl-red": "Offers an exceptional 7-power swing for just 1 resource after you fulfill Levia's requirement of banishing a 6-power card.",
+    "scabskin-leathers": "The defining Brute leg equipment that generates multiple action points, allowing you to turn Levia's massive single-swing turns into devastating combat chains.",
+    "reckless-swing-blue": "A premier blue defense reaction that blocks efficiently, pitches for 3 resources, and discards a 6-power card to damage the opponent while turning off blood debt."
+  }
+}

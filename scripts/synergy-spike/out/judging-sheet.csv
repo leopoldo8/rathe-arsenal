@@ -1,0 +1,319 @@
+deck,hero,card,pitch,rules,verdict
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,point-the-tip-blue,3,"Target face-up arrow in your arsenal gets +1{p} until end of turn. Put an aim counter on it.
+
+**Go again**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,hook-blue,3,"Look at the top card of your deck. If it's an arrow, you may put it face-up into your arsenal. If you do, it gets +1{p} this turn.
+
+**Go again**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,vigorous-smashup-red,1,"When this defends, **clash** with the attacking hero. The winner creates a Vigor token. You may put your revealed card on the bottom of its owner's deck.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,breakneck-battery-blue,3,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,point-the-tip-yellow,2,"Target face-up arrow in your arsenal gets +2{p} until end of turn. Put an aim counter on it.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",feasting-shadowbeast-blue,3,"When this attacks, banish the top card of your deck.
+
+If you've banished a card with 6 or more {p} this turn, this gets +2{p}.
+
+**Blood Debt**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,call-in-the-big-guns-blue,3,"Your next arrow attack this turn gets +1{p}.
+
+You may put an arrow from your hand face-up into your arsenal.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-the-legions-of-doom-yellow,2,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,call-in-the-big-guns-yellow,2,"Your next arrow attack this turn gets +2{p}.
+
+You may put an arrow from your hand face-up into your arsenal.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,breakneck-battery-yellow,2,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-demolition-red,1,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-the-legions-of-doom-blue,3,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,point-the-tip-red,1,"Target face-up arrow in your arsenal gets +3{p} until end of turn. Put an aim counter on it.
+
+**Go again**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",endless-maw-blue,3,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+If a card with 6 or more {p} is banished this way, this gets +3{p}.
+
+**Blood Debt**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",feasting-shadowbeast-yellow,2,"When this attacks, banish the top card of your deck.
+
+If you've banished a card with 6 or more {p} this turn, this gets +2{p}.
+
+**Blood Debt**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,fletch-a-red-tail-red,1,"Your next arrow attack this turn gets +4{p}.
+
+If it has an aim counter, it gets ""Red cards get -1{d} while defending this.""
+
+**Go again**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,read-the-glide-path-blue,3,"Your next arrow attack this turn gets +1{p}.
+
+**Opt 1**
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,breakneck-battery-red,1,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,wild-ride-blue,3,"When this attacks, draw a card, then discard a random card. If a card with 6 or more {p} is discarded this way, this gets **go again**.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,fire-in-the-hole-red,1,"Your next arrow attack this turn gets +3{p}.
+
+You may {u} a bow you control.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,madcap-charger-blue,3,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",endless-maw-red,1,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+If a card with 6 or more {p} is banished this way, this gets +3{p}.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,rip-off-the-top-yellow,2,"Draw a card, then pitch a random card from your hand. If it has 6 or more {p}, your next attack this turn gets +3{p}.
+
+**Go again**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,line-blue,3,"Look at the top card of your deck. If it's an arrow, you may put it face-up into your arsenal. If you do, it gets **go again** this turn.
+
+**Go again**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,madcap-charger-yellow,2,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,barraging-big-horn-yellow,2,"As an additional cost to play this, discard a random card.
+
+If this is defended by fewer than 2 non-equipment cards, it gets **go again**.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,madcap-charger-red,1,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets **go again**.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-the-legions-of-doom-red,1,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-demolition-yellow,2,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",tribute-to-demolition-blue,3,"As an additional cost to play this, banish a random card from your hand.
+
+If a card with 6 or more {p} is banished this way, this gets +2{p}.
+
+**Blood Debt**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,awakening-bellow-red,1,"**Intimidate**
+
+The next Brute attack action card you play this turn gets +3{p}.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",unworldly-bellow-red,1,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+The next Brute or Shadow attack action card you play this turn gets +4{p}.
+
+**Go again**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,swing-fist-think-later-blue,3,"As an additional cost to play this, discard a random card.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,wrecking-ball-red,1,"When this attacks, draw a card then discard a random card. If a card with 6 or more {p} is discarded this way, **intimidate**.",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",mark-of-the-beast-yellow,2,"If this would be put into your graveyard from anywhere, instead banish it.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,run-roughshod-blue,3,Play this only if you've discarded a card with 6 or more {p} this turn.,yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",consuming-strength-yellow,2,"Play this only if you control a Blasmophet.
+
+**Instant** - {r}, banish this from your hand: Your next attack this turn gets +2{p}.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,mighty-windup-yellow,2,**Instant** - Discard this: Create a Might token.,yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,rumble-grunting-red,1,"Play this only if you've discarded a card with 6 or more {p} this turn.
+
+Your next Brute attack this turn gets +4{p}.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",wall-breaker-red,1,"If you've banished a card with 6 or more {p} this turn, this gets **overpower**.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,bare-fangs-blue,3,"When this attacks, draw a card, then discard a random card. If a card with 6 or more {p} is discarded this way, this gets +2{p}.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,spire-sniping-red,1,"When this is put or turned face-up in arsenal, look at the top 2 cards of your deck, then put them back in any order.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,sedation-shot-red,1,"If this has an aim counter, it gets +1{p}.
+
+When this hits a hero, create an Inertia token under their control.",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",blasmophet-levia-consumed,,"**Legendary Levia Specialization**
+While this is in your inventory, when **blood debt** reduces your {h} to 13, you may **transform** into Blasmophet, Levia Consumed.
+Once each turn, you may play a card with **blood debt** from your banished zone. Whenever a card is put into your banished zone, turn it face-down. If you would lose {h} from **blood debt**, instead banish the top card of your deck.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,head-shot-red,1,"When this is put into your arsenal face-up, it gets +2{p} until end of turn.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,monkey-powder-red,1,"Your next arrow attack this turn gets +1{p} and **overpower**.
+
+Draw a card.
+
+**Go again**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",writhing-beast-hulk-red,1,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+If a card with 6 or more {p} is banished this way, this gets **dominate**.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,barraging-beatdown-red,1,"Your next Brute attack this turn gets ""If this is defended by fewer than 2 non-equipment cards, it gets +4{p}.""
+
+**Intimidate**
+
+**Go again**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,buckwild-red,1,"If there is a card with 6 or more {p} in your pitch zone, this gets **go again**.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,hamstring-shot-red,1,"When this hits a hero, their first attack during their next turn costs an additional {r} to play or activate.",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,lead-with-speed-red,1,"Your next Brute or Warrior attack this turn gets +3{p}.
+
+Create an Agility token.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",graveling-growl-red,1,"Play this only if a card with 6 or more {p} has been put into your banished zone this turn.
+
+**Blood Debt**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,memorial-ground-red,1,Put target attack action card with cost 2 or less from your graveyard on top of your deck.,yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",wild-ride-red,1,"When this attacks, draw a card, then discard a random card. If a card with 6 or more {p} is discarded this way, this gets **go again**.",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",boneyard-marauder-red,1,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",convulsions-from-the-bellows-of-hell-red,1,"As an additional cost to play this, banish 3 random cards from your graveyard.
+
+If a card with 6 or more {p} is banished this way, the next attack action card you play this turn gets +3{p} and **dominate**.
+
+**Go again**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,predatory-assault-red,1,"If you've discarded a card with 6 or more {p} this turn, this gets **dominate**.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,widowmaker-red,1,"Defense reactions can't be played to this chain link.
+
+If this is defended by fewer than 2 cards, it gets +3{p}.",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",shadow-of-blasmophet-red,1,"When this attacks, draw a card then discard a random card. If a card with 6 or more {p} is discarded this way, search your deck for a card with **blood debt**, banish it, then shuffle.
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,reincarnate-red,1,"When this is discarded at random, put it on the bottom of your deck.",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,savage-feast-blue,3,"As an additional cost to play this, discard a random card.
+
+When this attacks, if a card with 6 or more {p} was discarded as an additional cost to play it, draw a card.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",ebon-fold,,"**Instant** - {r}, destroy this: Banish a card from your hand. If it's a Shadow card, draw a card.
+
+**Spellvoid 2**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",visit-the-boneyard-blue,3,"Put a card with 6 or more {p} from your graveyard on top of your deck.
+
+Create a Vigor token.",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",rumbling-hunger-red,1,"When this hits, if you've banished a card with 6 or more {p} this turn, create a Blasmophet, the Insatiable Hunger token and this gets **go again**.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",levia-redeemed,,"**Legendary Levia Specialization**
+
+**Action** - Turn all cards in your banished zone face-down: **Transform** into Levia, Redeemed. Activate this only while this is in your inventory and you have 13 or more cards with **blood debt** in your banished zone.
+
+Cards you own lose **blood debt**.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,agile-windup-red,1,**Instant** - Discard this: Create an Agility token.,no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,visit-the-boneyard-blue,3,"Put a card with 6 or more {p} from your graveyard on top of your deck.
+
+Create a Vigor token.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",reckless-swing-blue,3,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, deal 2 damage to the attacking hero.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,madcap-muscle-red,1,"As an additional cost to play this, discard a random card.
+
+If the discarded card has 6 or more {p}, this gets +3{p}.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,sigil-of-cycles-blue,3,"**Go again**
+
+At the beginning of your action phase, destroy this.
+
+When this leaves the arena, discard a card then draw a card.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",darkest-hour-red,1,"You may put a card from your hand on top of your deck rather than pay this card's {r} cost.
+
+Your next Shadow attack this turn gets +4{p}. **Go again**
+
+**Blood Debt**",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,mighty-windup-red,1,**Instant** - Discard this: Create a Might token.,no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,swing-fist-think-later-red,1,"As an additional cost to play this, discard a random card.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,swing-fist-think-later-yellow,2,"As an additional cost to play this, discard a random card.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",no-fear-red,1,"As an additional cost to play this, banish any number of cards with 6 or more {p} from your hand. At the beginning of the end phase, return them to your hand.
+
+The next time you would be dealt damage this turn, prevent X of that damage, where X is 2 plus the number of cards banished to play this.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,toxicity-red,1,"The next Assassin or Ranger attack action card you play this turn gets ""When this hits a hero, they lose 5{h}.""
+
+**Go again**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",beast-within-yellow,2,"When this is put into a graveyard from anywhere other than the combat chain, banish the top card of your deck and lose 1{h}. If it has 6 or more {p}, put it into your hand, otherwise repeat this process.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,entangling-shot-red,1,"When this is put face-up into your arsenal, you may {t} target hero.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,increase-the-tension-red,1,"Your next arrow attack this turn gets +3{p} and ""Defense reactions can't be played from hand this chain link.""
+
+**Go again**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,withering-shot-red,1,"If this has an aim counter, it gets +1{p}.
+
+When this hits a hero, create a Frailty token under their control.",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,seek-horizon-red,1,"As an additional cost to play this, you may put a card from your hand on top of your deck. If you do, this gets **go again**.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,sinker-blue,3,"Look at the top card of your deck. If it's an arrow, you may put it face-up into your arsenal. If you do, it gets **overpower** this turn.
+
+**Go again**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,long-shot-red,1,"If this has an aim counter, it gets +2{p}.",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",goremass-summoning-blue,3,"If you've banished a card with 6 or more {p} this turn, create a Blasmophet, the Insatiable Hunger token.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,agile-windup-yellow,2,**Instant** - Discard this: Create an Agility token.,yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,sleep-dart-red,1,"When this hits a hero, that hero loses all abilities until the end of their next turn.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,buzzard-helm,,"When this defends, draw a card then discard a random card. If a card with 6 or more {p} is discarded this way, this gets +1{d} this turn.
+
+**Temper**",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,whisper-of-the-oracle-red,1,"**Opt 4**
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,trade-in-red,1,"When this attacks, you may discard a card. If you do, draw a card.
+
+If this was played from arsenal, it gets **go again**.",yes
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,savage-feast-yellow,2,"As an additional cost to play this, discard a random card.
+
+When this attacks, if a card with 6 or more {p} was discarded as an additional cost to play it, draw a card.",yes
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,over-flex-red,1,"Your next arrow attack this turn gets +4{p}.
+
+**Reload**
+
+**Go again**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",blasmophets-boon-blue,3,"If you control a Blasmophet, this card's {p} is 6. Otherwise, it's 0.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",deep-rooted-evil-yellow,2,"If a card with 6 or more {p} has been put into your banished zone this turn, you may play this from your banished zone.
+
+**Blood Debt**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",scabskin-leathers,,"**Once per Turn Action** - 0: Roll a 6 sided die. Gain action points equal to half the number rolled, rounded down.
+
+**Battleworn**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",blood-dripping-frenzy-blue,3,"As an additional cost to play this, banish your hand.
+
+Draw a card for each card with **blood debt** banished this way.
+
+Your Brute and Shadow attacks get +X{p} this turn, where X is number of cards with 6 or more {p} banished this way.
+
+**Go again**",yes
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",shadow-puppetry-red,1,"The next attack action card you play this turn gets +1{p}, **go again** and ""When this hits, look at the top card of your deck. You may banish it.""
+
+**Go again**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,silver-the-tip-red,1,"If you have no cards in your arsenal, look at the top 4 cards of your deck. You may put an arrow card from among them face-up into your arsenal, then put the rest on the bottom of your deck in any order.
+
+**Go again**",no
+01M0KJEX07FX04Z07EQ1TESWYP,Kayo,primeval-bellow-red,1,"As an additional cost to play this, discard a random card.
+
+Your next Brute attack this turn gets +5{p}.
+
+**Go again**",no
+01M2GEPE0X50C32E02KZNXAETH,"Levia, Shadowborn Abomination",shaden-scream-red,1,"As an additional cost to play this, banish a random card from your hand.
+
+Your next Brute or Shadow attack this turn gets +5{p}.
+
+**Go again**",no
+01M2EA2J62QDE6ZZYP0YPXEBG4,Azalea,blessing-of-focus-red,1,"At the start of your turn, destroy this then **opt 3** and reveal the top card of your deck. If it's an arrow, put it face-up into your arsenal with an aim counter.",no

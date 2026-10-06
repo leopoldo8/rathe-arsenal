@@ -1,0 +1,35 @@
+{
+  "deck": "01M2EA2J62QDE6ZZYP0YPXEBG4",
+  "candidate": "gpt-6.1-sol",
+  "status": "ok",
+  "top10": [
+    "point-the-tip-red",
+    "whisper-of-the-oracle-red",
+    "memorial-ground-red",
+    "fletch-a-red-tail-red",
+    "over-flex-red",
+    "seek-horizon-red",
+    "silver-the-tip-red",
+    "increase-the-tension-red",
+    "monkey-powder-red",
+    "widowmaker-red"
+  ],
+  "usage": {
+    "inputTokens": 27527,
+    "outputTokens": 5311,
+    "reasoningTokens": 4142,
+    "costUsd": 0.121926
+  },
+  "reasons": {
+    "point-the-tip-red": "Combines +3 power with an aim counter, enabling Bolt'n' Shot while unlocking the aim bonuses of arrows loaded by Death Dealer or Call in the Big Guns.",
+    "whisper-of-the-oracle-red": "Opt 4 helps put the right arrow on top for Azalea, improving access to dominate and Crow's Nest aim counters.",
+    "memorial-ground-red": "Returns an eligible spent arrow to the top of your deck so Azalea can load it with dominate and Crow's Nest can add an aim counter.",
+    "fletch-a-red-tail-red": "Its +4 power enables Bolt'n' Shot and Bolt'n Boots, while an aim counter adds a defense penalty that helps your stacked hit effects connect.",
+    "over-flex-red": "Adds +4 power to enable your Bolt'n effects, while reload can supply an arsenal card for Azalea to exchange.",
+    "seek-horizon-red": "Putting an arrow from hand on top sets up a guaranteed arrow for Azalea, and the resulting go again lets you continue into the dominated attack.",
+    "silver-the-tip-red": "Selects an arrow from the top four cards and loads it face-up from your deck, triggering Crow's Nest and your arrows' arsenal-entry abilities.",
+    "increase-the-tension-red": "Adds +3 power and closes off defense reactions from hand, complementing Release the Tension's restriction on arsenal reactions.",
+    "monkey-powder-red": "Its +1 power enables Bolt'n' Shot and Bolt'n Boots, while drawing a card replenishes fuel for pumps or additional arrows.",
+    "widowmaker-red": "Azalea's dominate makes its fewer-than-two-defenders bonus harder to avoid, while its defense-reaction ban strengthens your stacked arrow buffs."
+  }
+}
