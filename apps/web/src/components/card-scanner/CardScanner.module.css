@@ -16,14 +16,57 @@
   background: var(--ra-bg-canvas);
 }
 
+.scanner > * {
+  flex-shrink: 0;
+}
+
 .topBar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--ra-space-3);
   inline-size: 100%;
   max-inline-size: var(--scanner-max-inline);
   margin-inline: auto;
+}
+
+.topBarActions {
+  display: flex;
+  justify-self: end;
+  gap: var(--ra-space-2);
+}
+
+.zoomValue {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+}
+
+.debugPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  margin-inline: auto;
+}
+
+.debugCrop {
+  inline-size: 100%;
+  image-rendering: pixelated;
+  background: var(--ra-bg-sunken);
+}
+
+.debugText {
+  margin: 0;
+  padding: var(--ra-space-2);
+  overflow-x: auto;
+  border-radius: var(--ra-radius-sm);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-primary);
+  font-size: var(--ra-text-small);
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .topBarTitle {
