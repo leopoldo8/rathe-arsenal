@@ -10,7 +10,9 @@ import { DiscardChangesConfirm } from '../deck-detail/DiscardChangesConfirm';
 import { buildCollectorCodeIndex, resolveCollectorCode, type IScannedCard } from './collector-code';
 import type { IOcrEngine } from './ocr-engine';
 import { OCR_VARIANTS } from './ocr-variants';
-import { CameraError, useScannerDeps, type ITorchControl, type TCameraFailure } from './scanner-deps';
+import { preferredZoom, type ICameraControl, type ICameraState } from './camera-control';
+import type { IGrayImage } from './ocr-image';
+import { CameraError, useScannerDeps, type TCameraFailure } from './scanner-deps';
 import { createScanLoop, type IScanLoop } from './scan-loop';
 import {
   addSearchedCard,
@@ -30,6 +32,7 @@ import { NameSearchSheet } from './NameSearchSheet';
 import { ReviewSheet } from './ReviewSheet';
 import { ScanNotice, type TNotice, type TNoticeInput } from './ScanNotice';
 import { ScannerBar } from './ScannerBar';
+import { ScannerDebugPanel } from './ScannerDebugPanel';
 import { ScannerTopBar } from './ScannerTopBar';
 import styles from './CardScanner.module.css';
 
@@ -75,8 +78,12 @@ export function CardScanner(): React.ReactElement {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [summary, setSummary] = useState<ICommitSummary | null>(null);
   const [blocked, setBlocked] = useState<IBlockedNavigation | null>(null);
-  const [torch, setTorch] = useState<ITorchControl | null>(null);
-  const [torchOn, setTorchOn] = useState(false);
+  const [cameraControl, setCameraControl] = useState<ICameraControl | null>(null);
+  const [cameraState, setCameraState] = useState<ICameraState>({ torchOn: false, zoom: null });
+  const debug = useMemo(() => new URLSearchParams(window.location.search).has('debug'), []);
+  const [debugCamera, setDebugCamera] = useState<Record<string, unknown> | null>(null);
+  const [debugCrop, setDebugCrop] = useState<IGrayImage | null>(null);
+  const [debugTexts, setDebugTexts] = useState<Readonly<Record<string, string>>>({});
 
   const updateSession = useCallback((next: IScanSession) => {
     sessionRef.current = next;
@@ -111,9 +118,18 @@ export function CardScanner(): React.ReactElement {
         deps.attachStream(videoRef.current, opened);
         setCamera('ready');
         void deps
-          .detectTorch(videoRef.current, opened)
-          .then((control) => {
-            if (!cancelled) setTorch(control);
+          .setUpCamera(videoRef.current, opened)
+          .then((setup) => {
+            stream = setup.stream;
+            if (cancelled) {
+              setup.stream.getTracks().forEach((track) => track.stop());
+              return;
+            }
+            setCameraControl(setup.control);
+            if (setup.control) {
+              setCameraState(setup.control.initialState);
+              setDebugCamera(setup.control.describe());
+            }
           })
           .catch(() => undefined);
       })
@@ -155,9 +171,14 @@ export function CardScanner(): React.ReactElement {
       variants: OCR_VARIANTS,
       captureFrame: () =>
         videoRef.current && stageRef.current ? deps.captureCard(videoRef.current, stageRef.current) : null,
-      recognize: (card, variant) => engineRef.current!.recognize(card, variant),
-      onText: (variant, text) =>
-        applyStep(applyRecognition(sessionRef.current, variant.id, resolveCollectorCode(text, index))),
+      recognize: (card, variant) => {
+        if (debug && variant.id === OCR_VARIANTS[0]!.id) setDebugCrop(variant.prepare(card));
+        return engineRef.current!.recognize(card, variant);
+      },
+      onText: (variant, text) => {
+        if (debug) setDebugTexts((texts) => ({ ...texts, [variant.id]: text }));
+        applyStep(applyRecognition(sessionRef.current, variant.id, resolveCollectorCode(text, index)));
+      },
       onError: () => setEngine('error'),
     });
     loopRef.current = loop;
@@ -166,7 +187,7 @@ export function CardScanner(): React.ReactElement {
       cancelTicks();
       loopRef.current = null;
     };
-  }, [applyStep, camera, deps, engine, index]);
+  }, [applyStep, camera, debug, deps, engine, index]);
 
   useEffect(() => {
     loopRef.current?.setPaused(searchOpen || reviewOpen);
@@ -187,12 +208,26 @@ export function CardScanner(): React.ReactElement {
     onBlock: (proceed, stay) => setBlocked({ proceed, stay }),
   });
 
-  function handleTorchToggle(): void {
-    if (!torch) return;
-    const next = !torchOn;
-    setTorchOn(next);
-    torch.setOn(next).catch(() => setTorchOn(!next));
+  function changeCameraState(next: ICameraState): void {
+    if (!cameraControl) return;
+    const previous = cameraState;
+    setCameraState(next);
+    cameraControl
+      .apply(next)
+      .then(() => setDebugCamera(cameraControl.describe()))
+      .catch(() => setCameraState(previous));
   }
+
+  const zoomRange = cameraControl?.features.zoom ?? null;
+  const zoomedIn = preferredZoom(zoomRange);
+  const zoomToggle =
+    zoomRange && zoomedIn !== null && zoomedIn > zoomRange.min
+      ? {
+          zoom: cameraState.zoom ?? zoomRange.min,
+          onToggle: () =>
+            changeCameraState({ ...cameraState, zoom: cameraState.zoom === zoomedIn ? zoomRange.min : zoomedIn }),
+        }
+      : null;
 
   function handleWrong(rowKey: string, code: string): void {
     updateSession(undoScan(sessionRef.current, rowKey, code));
@@ -232,7 +267,7 @@ export function CardScanner(): React.ReactElement {
   if (camera === 'denied' || camera === 'no-camera') {
     return (
       <div className={styles.scanner}>
-        <ScannerTopBar torchAvailable={false} torchOn={false} onTorchToggle={() => undefined} />
+        <ScannerTopBar torch={null} zoom={null} />
         <CameraUnavailable failure={camera} />
       </div>
     );
@@ -249,7 +284,14 @@ export function CardScanner(): React.ReactElement {
 
   return (
     <div className={styles.scanner}>
-      <ScannerTopBar torchAvailable={torch !== null} torchOn={torchOn} onTorchToggle={handleTorchToggle} />
+      <ScannerTopBar
+        torch={
+          cameraControl?.features.torch
+            ? { on: cameraState.torchOn, onToggle: () => changeCameraState({ ...cameraState, torchOn: !cameraState.torchOn }) }
+            : null
+        }
+        zoom={zoomToggle}
+      />
 
       <div ref={stageRef} className={styles.stage}>
         <video ref={videoRef} className={styles.video} muted playsInline aria-hidden="true" />
@@ -292,6 +334,8 @@ export function CardScanner(): React.ReactElement {
           </Link>
         </div>
       )}
+
+      {debug && <ScannerDebugPanel camera={debugCamera} crop={debugCrop} texts={debugTexts} />}
 
       <ScannerBar
         total={totalQuantity(session)}

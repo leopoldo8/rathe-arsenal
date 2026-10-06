@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import { AuthContext, type IAuthContext } from '../../../auth/AuthContext';
 import type { ICollectorCodesResponse } from '../../../api/collector-codes';
+import type { ICameraControl } from '../../../components/card-scanner/camera-control';
 import type { IOcrEngine } from '../../../components/card-scanner/ocr-engine';
 import {
   BROWSER_SCANNER_DEPS,
@@ -59,6 +60,16 @@ let getUserMedia: ReturnType<typeof vi.fn>;
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+function cameraControl(overrides: Partial<ICameraControl> = {}): ICameraControl & { apply: ReturnType<typeof vi.fn> } {
+  return {
+    features: { continuousFocus: true, torch: true, zoom: { min: 1, max: 8 } },
+    initialState: { torchOn: false, zoom: 2 },
+    apply: vi.fn(async () => undefined),
+    describe: () => ({ label: 'camera2 0, facing back' }),
+    ...overrides,
+  } as ICameraControl & { apply: ReturnType<typeof vi.fn> };
 }
 
 function buildHarness(overrides: Partial<IScannerDeps> = {}): IHarness {
@@ -200,32 +211,71 @@ describe('/add-cards/scan', () => {
     expect(screen.queryByRole('button', { name: 'Flashlight' })).not.toBeInTheDocument();
   });
 
-  it('toggles the flashlight when the camera has a torch', async () => {
-    const setOn = vi.fn(async () => undefined);
-    renderScanner(buildHarness({ detectTorch: async () => ({ setOn }) }).deps);
+  it('toggles the flashlight without dropping the zoom', async () => {
+    const control = cameraControl();
+    renderScanner(buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) }).deps);
 
     const torch = await screen.findByRole('button', { name: 'Flashlight' });
     expect(torch).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.click(torch);
-    expect(setOn).toHaveBeenLastCalledWith(true);
+    expect(control.apply).toHaveBeenLastCalledWith({ torchOn: true, zoom: 2 });
     expect(torch).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(torch);
-    expect(setOn).toHaveBeenLastCalledWith(false);
+    expect(control.apply).toHaveBeenLastCalledWith({ torchOn: false, zoom: 2 });
     expect(torch).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('turns the flashlight button back off when the torch refuses', async () => {
-    const setOn = vi.fn(async () => {
-      throw new Error('OverconstrainedError');
-    });
-    renderScanner(buildHarness({ detectTorch: async () => ({ setOn }) }).deps);
+    const control = cameraControl({ apply: vi.fn(async () => Promise.reject(new Error('OverconstrainedError'))) });
+    renderScanner(buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) }).deps);
 
     const torch = await screen.findByRole('button', { name: 'Flashlight' });
     fireEvent.click(torch);
 
     await waitFor(() => expect(torch).toHaveAttribute('aria-pressed', 'false'));
+  });
+
+  it('switches the zoom between 1x and 2x', async () => {
+    const control = cameraControl();
+    renderScanner(buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) }).deps);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Zoom 2×' }));
+    expect(control.apply).toHaveBeenLastCalledWith({ torchOn: false, zoom: 1 });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Zoom 1×' }));
+    expect(control.apply).toHaveBeenLastCalledWith({ torchOn: false, zoom: 2 });
+  });
+
+  it('hides the zoom when the camera cannot zoom', async () => {
+    const control = cameraControl({ features: { continuousFocus: true, torch: true, zoom: null } });
+    renderScanner(buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) }).deps);
+
+    await screen.findByRole('button', { name: 'Flashlight' });
+    expect(screen.queryByRole('button', { name: /^Zoom/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the camera and OCR readout only with ?debug', async () => {
+    const control = cameraControl();
+    const { unmount } = renderScanner(buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) }).deps);
+    await screen.findByRole('button', { name: 'Flashlight' });
+    expect(screen.queryByTestId('scanner-debug')).not.toBeInTheDocument();
+    unmount();
+
+    window.history.pushState({}, '', '/add-cards/scan?debug=1');
+    try {
+      const harness = buildHarness({ setUpCamera: async (_video, stream) => ({ stream, control }) });
+      renderScanner(harness.deps);
+      await waitFor(() => expect(screen.queryByText('Getting the scanner ready…')).not.toBeInTheDocument());
+      await harness.read('EN | WTR218 Artist');
+
+      const panel = await screen.findByTestId('scanner-debug');
+      expect(panel).toHaveTextContent('camera2 0, facing back');
+      expect(panel).toHaveTextContent('EN | WTR218 Artist');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
   });
 
   it('shows loading and does not recognize while the engine downloads', async () => {
