@@ -1,4 +1,19 @@
-import { createRecommendationStep, drainOnce, loopForever, POLL_MS, runPendingUrlSync, runWorkerLoops } from '../variant-queue-worker';
+import {
+  createRecommendationStep,
+  defaultWorkerDeps,
+  drainOnce,
+  loopForever,
+  POLL_MS,
+  runPendingUrlSync,
+  runWorker,
+  runWorkerLoops,
+} from '../variant-queue-worker';
+import { VariantFetchQueueService } from '../variant-fetch-queue.service';
+import { VariantJobProcessorService } from '../variant-job-processor.service';
+import { ResolveJobCardsService } from '../resolve-job-cards.service';
+import { StoreIngestionService } from '../store-ingestion.service';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationRunnerService } from '../../recommendations/recommendation-runner.service';
 
 describe('drainOnce', () => {
   it('reclaims orphans, claims a job, resolves its cards, and processes it', async () => {
@@ -125,5 +140,48 @@ describe('worker assembly', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('runWorker', () => {
+  it('wires both drains from the application context and reads the key from the environment it is given', async () => {
+    jest.useFakeTimers();
+    try {
+      const variantQueue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(null) };
+      const ingestion = { claimPendingUrlSync: jest.fn().mockResolvedValue(null) };
+      const recommendationQueue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue({ id: 'run-1' }) };
+      const recommendationRunner = { process: jest.fn() };
+      const services = new Map<unknown, unknown>([
+        [VariantFetchQueueService, variantQueue],
+        [VariantJobProcessorService, { process: jest.fn() }],
+        [ResolveJobCardsService, { resolve: jest.fn() }],
+        [StoreIngestionService, ingestion],
+        [RecommendationQueueService, recommendationQueue],
+        [RecommendationRunnerService, recommendationRunner],
+      ]);
+      const app = { get: (token: unknown) => services.get(token) };
+      const fetch = jest.fn();
+      let running = true;
+
+      void runWorker(app as never, { env: { GEMINI_API_KEY: 'AIza-env' }, fetch, shouldContinue: () => running }, { log: jest.fn(), error: jest.fn() });
+      await jest.advanceTimersByTimeAsync(2 * POLL_MS);
+      running = false;
+
+      expect(variantQueue.claimNext.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(ingestion.claimPendingUrlSync).toHaveBeenCalled();
+      expect(recommendationRunner.process.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(recommendationRunner.process).toHaveBeenCalledWith({ id: 'run-1' }, { apiKey: 'AIza-env', fetch });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('defaults to the process environment and the global fetch', () => {
+    const deps = defaultWorkerDeps();
+
+    expect(deps.env).toBe(process.env);
+    expect(deps.fetch).toBe(fetch);
+    expect(deps.pollMs).toBeUndefined();
+    expect(deps.shouldContinue).toBeUndefined();
   });
 });

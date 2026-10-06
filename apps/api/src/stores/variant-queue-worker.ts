@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { INestApplicationContext, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
@@ -110,18 +110,27 @@ export function createRecommendationStep(deps: IRecommendationStepDeps): () => P
   };
 }
 
-async function main(): Promise<void> {
-  const logger = new Logger('VariantQueueWorker');
-  // Imported dynamically so loading this module for unit tests does not pull in
-  // AppModule's eager environment validation (which has no env in CI/test).
-  const { AppModule } = await import('../app.module');
-  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
+export interface IWorkerDeps {
+  readonly env: NodeJS.ProcessEnv;
+  readonly fetch: TGeminiFetch;
+  readonly pollMs?: number;
+  readonly shouldContinue?: () => boolean;
+}
+
+export function defaultWorkerDeps(): IWorkerDeps {
+  return { env: process.env, fetch: fetch as unknown as TGeminiFetch };
+}
+
+/** Builds both steps from the application context and runs them, each in its own loop. */
+export async function runWorker(
+  app: Pick<INestApplicationContext, 'get'>,
+  deps: IWorkerDeps,
+  logger: Pick<Logger, 'log' | 'error'>,
+): Promise<void> {
   const queue = app.get(VariantFetchQueueService);
   const processor = app.get(VariantJobProcessorService);
   const resolver = app.get(ResolveJobCardsService);
   const ingestion = app.get(StoreIngestionService);
-  const recommendationQueue = app.get(RecommendationQueueService);
-  const recommendationRunner = app.get(RecommendationRunnerService);
   const workerId = `worker-${randomUUID()}`;
   const resolveCards = (job: VariantFetchJobEntity): Promise<IFetchCard[]> =>
     resolver.resolve(job.storeId, job.cards.map((c) => c.cardIdentifier));
@@ -148,14 +157,23 @@ async function main(): Promise<void> {
   };
 
   const recommendationStep = createRecommendationStep({
-    queue: recommendationQueue,
-    runner: recommendationRunner,
-    env: process.env,
-    fetch: fetch as unknown as TGeminiFetch,
+    queue: app.get(RecommendationQueueService),
+    runner: app.get(RecommendationRunnerService),
+    env: deps.env,
+    fetch: deps.fetch,
     logger,
   });
 
-  await runWorkerLoops([variantStep, recommendationStep]);
+  await runWorkerLoops([variantStep, recommendationStep], deps.pollMs ?? POLL_MS, deps.shouldContinue);
+}
+
+export async function main(): Promise<void> {
+  const logger = new Logger('VariantQueueWorker');
+  // Imported dynamically so loading this module for unit tests does not pull in
+  // AppModule's eager environment validation (which has no env in CI/test).
+  const { AppModule } = await import('../app.module');
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
+  await runWorker(app, defaultWorkerDeps(), logger);
 }
 
 if (require.main === module) {

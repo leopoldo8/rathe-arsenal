@@ -18,6 +18,8 @@ Autonomous run, owner away. Every call below that needs the owner is marked **ne
 
 12. **Verification round 1 fixes.** The verifier found the design's read shape has `run.status` and its `error` column is `text`; both now conform (`status: 'done'`, `error text`). The retry backoff moved to the database clock, which removed a race between the host and the Postgres container clocks. The adopt decisions and the panel's list rule moved into pure functions (`adoption-rules.ts`, `list-recommendations.ts`) proven at their own layer, and `clearUpgradeCount` reuses the list rule. The worker's assembly (`createRecommendationStep`, `runWorkerLoops`) is extracted and proven. New checks C68-C71; C1, C10, C20, C35, C54, C55, C62 and C65 extended or reworded in place, each marked. An adopt refused with `NOTHING_TO_REPLACE` now says the cut card is no longer in that place, instead of the alternatives sheet's "no missing copies" copy.
 
+13. **Verification round 2 fixes.** The worker's assembly moved into `runWorker(app, deps, logger)` with `defaultWorkerDeps()`, and `main()` (now exported) only boots the context and calls it; a spec mocks `NestFactory` and `AppModule` to prove `main()` itself (C73). Column types of the three tables are pinned twice from one table, `recommendation-columns.ts`: against the migration (C31 extended) and against a `synchronize` build from the entities (C72). Observation, outside the gate: `entity-check-constraints.int-spec.ts` fails 8 of 8 on a freshly created empty database (it passes on the dev and `rathe_arsenal_recs` databases), which suggests it depends on state an older boot left there; not investigated further.
+
 ## Needs owner
 
 - Profile `standard` and every plan Assumption marked `Confirmed? n`, chosen on an autonomous run.

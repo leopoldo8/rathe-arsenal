@@ -1,5 +1,6 @@
 import { DataSource, QueryRunner } from 'typeorm';
 import { AddCardRecommendations1778533591000 } from '../1778533591000-AddCardRecommendations';
+import { RECOMMENDATION_COLUMNS, readRecommendationColumns } from './recommendation-columns';
 
 const DATABASE_URL =
   process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs';
@@ -42,6 +43,7 @@ describe('AddCardRecommendations1778533591000', () => {
     for (const table of ['recommendation_run', 'recommendation', 'recommendation_dismissal']) {
       expect({ table, exists: await queryRunner.hasTable(table) }).toEqual({ table, exists: true });
     }
+    expect(await readRecommendationColumns(queryRunner, SCHEMA)).toEqual(RECOMMENDATION_COLUMNS);
     const indexes: Array<{ indexname: string; indexdef: string }> = await queryRunner.query(
       `SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname LIKE 'IDX_recommendation%' ORDER BY indexname`,
       [SCHEMA],
