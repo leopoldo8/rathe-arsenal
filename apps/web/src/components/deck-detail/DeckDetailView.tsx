@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../api/deck-detail';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
+import type { IAlternativesTarget } from '../../api/replacements';
 import type { ISwapRow } from '../../api/swaps';
 import type { ITagResponse } from '../../api/tags';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
+import { AlternativesSheet } from './AlternativesSheet';
 import { DeckActionPanels } from './DeckActionPanels';
 import { DeckAnalysisRow } from './DeckAnalysisRow';
 import { DeckHeroBanner } from './DeckHeroBanner';
@@ -62,6 +64,7 @@ export function DeckDetailView({
   onPollingChange,
   onShoppingRetry,
 }: IDeckDetailViewProps): React.ReactElement {
+  const [alternativesTarget, setAlternativesTarget] = useState<IAlternativesTarget | null>(null);
   const summary = useMemo(
     () =>
       summariseDeck({
@@ -133,9 +136,18 @@ export function DeckDetailView({
           isCooldownActive={isCooldownActive}
           onPollingChange={onPollingChange}
           onShoppingRetry={onShoppingRetry}
+          replacements={deck.replacements}
+          onOpenAlternatives={setAlternativesTarget}
         />
       )}
-      <DeckList items={items} onEditCards={onEditCards} />
+      <DeckList items={items} onEditCards={onEditCards} deckId={deck.id} replacements={deck.replacements} />
+      {alternativesTarget !== null && (
+        <AlternativesSheet
+          deckId={deck.id}
+          target={alternativesTarget}
+          onClose={() => setAlternativesTarget(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { IBreakdown, IBreakdownEntry } from '../../api/deck-detail';
 import type { ISwapRow } from '../../api/swaps';
+import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacements';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { MissingPanel } from './MissingPanel';
@@ -24,6 +25,8 @@ interface IDeckActionPanelsProps {
   readonly isCooldownActive: boolean;
   readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
+  readonly replacements: readonly IDeckReplacement[];
+  readonly onOpenAlternatives: (target: IAlternativesTarget) => void;
 }
 
 export function DeckActionPanels({
@@ -43,6 +46,8 @@ export function DeckActionPanels({
   isCooldownActive,
   onPollingChange,
   onShoppingRetry,
+  replacements,
+  onOpenAlternatives,
 }: IDeckActionPanelsProps): React.ReactElement {
   return (
     <div className={styles.row} data-testid="deck-action-panels">
@@ -57,6 +62,8 @@ export function DeckActionPanels({
         isCooldownActive={isCooldownActive}
         onPollingChange={onPollingChange}
         onShoppingRetry={onShoppingRetry}
+        replacements={replacements}
+        onOpenAlternatives={onOpenAlternatives}
       />
       <SwapsPanel
         swaps={breakdown.substituted}
@@ -65,6 +72,7 @@ export function DeckActionPanels({
         onApprove={onApproveSwap}
         onReject={onRejectSwap}
         onUndo={onUndoSwap}
+        onOpenAlternatives={onOpenAlternatives}
       />
     </div>
   );

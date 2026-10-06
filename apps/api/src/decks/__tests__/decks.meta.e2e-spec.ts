@@ -52,7 +52,7 @@ describe('PATCH /api/decks/:deckId notes, format and status (E2E)', () => {
       }),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
-    await app.init();
+    await app.listen(0, '127.0.0.1');
 
     const server = app.getHttpServer();
     const email = `deck-meta-${suffix}@test.local`;

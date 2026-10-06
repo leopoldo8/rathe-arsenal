@@ -12,6 +12,7 @@ import {
 } from './types';
 import { computePath } from './compute-path';
 import { computeFidelity } from './compute-fidelity';
+import { buildProtectedKey } from './protected-key';
 
 /** Slots that are never eligible for substitution (R20 rule). */
 const NON_SUBSTITUTABLE_SLOTS = new Set(['hero', 'weapon']);
@@ -87,6 +88,12 @@ interface IDeck {
  * `design/07-swaps.md` §0 for the full rationale. Passing an empty set (the
  * default) preserves today's stricter "nothing counts until approved"
  * ceiling for every existing 5-arg call site.
+ *
+ * The optional `protectedCopies` map (keyed by `buildProtectedKey`) holds, per
+ * (card, slot), how many of the copies not covered exactly must never get a
+ * stand-in: they go straight to `missing`. It is how a replacement the owner
+ * picked stays in the deck as a card to acquire. Omitting it, or passing an
+ * empty map, preserves today's behavior.
  */
 export function computeEffectiveReadiness(
   deck: IDeck,
@@ -95,6 +102,7 @@ export function computeEffectiveReadiness(
   tolerance: IPitchTolerance = DEFAULT_PITCH_TOLERANCE,
   excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
   approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+  protectedCopies: ReadonlyMap<string, number> = new Map(),
 ): IEffectiveReadinessResult {
   // Mutable working copy of inventory quantities
   const remainingInventory = new Map<string, number>();
@@ -176,6 +184,10 @@ export function computeEffectiveReadiness(
   // from pass 1, so no card needed by its own slot can be offered here.
   // ---------------------------------------------------------------------------
 
+  // Working copy: a (card, slot) split across several deck rows spends its
+  // protected count row by row instead of protecting every row in full.
+  const remainingProtected = new Map(protectedCopies);
+
   for (const slot of pass1Slots) {
     const { deckCard, catalogCard, cardPitch, entryMeta, missingQty } = slot;
 
@@ -210,7 +222,18 @@ export function computeEffectiveReadiness(
 
     let remainingMissing = missingQty;
 
+    const protectedKey = buildProtectedKey(deckCard.cardIdentifier, deckCard.slot);
+    const protectedHere = Math.min(remainingProtected.get(protectedKey) ?? 0, missingQty);
+    if (protectedHere > 0) {
+      remainingProtected.set(protectedKey, (remainingProtected.get(protectedKey) ?? 0) - protectedHere);
+    }
+
     for (let i = 0; i < missingQty; i++) {
+      if (i < protectedHere) {
+        modifiedPitchEntries.push({ pitch: cardPitch, quantity: 1 });
+        continue;
+      }
+
       const match = findSubstitution(
         catalogCard,
         remainingInventory,

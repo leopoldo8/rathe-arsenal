@@ -1,0 +1,42 @@
+export const alternatives = {
+  // Control on the missing and swaps panels
+  open: 'Alternativas',
+  openAria: 'Ver alternativas para {{name}}',
+
+  // Sheet
+  title: 'Alternativas para {{name}}',
+  needed_one: 'Ocupa o lugar de {{count}} cópia que falta.',
+  needed_other: 'Ocupa o lugar de {{count}} cópias que faltam.',
+  close: 'Fechar',
+  loading: 'Procurando alternativas…',
+  retry: 'Tentar de novo',
+  empty: 'Nenhuma carta do catálogo se encaixa nesta. Busque pelo nome.',
+  searchLabel: 'Buscar pelo nome',
+  searchPlaceholder: 'Nome da carta',
+  searchHint: 'Digite pelo menos 2 letras para buscar em todo o catálogo.',
+  searchEmpty: 'Nenhuma carta com esse nome pode entrar neste deck.',
+  listAria: 'Alternativas',
+  pickAria: 'Usar {{name}} no lugar',
+  groupVeryClose: 'Muito parecidas',
+  groupClose: 'Parecidas',
+  groupOtherPitch: 'Outro pitch',
+  groupGeneric: 'Genéricas',
+  groupSearch: 'Resultados da busca',
+  owned: 'você tem',
+  free_one: '{{count}} livre',
+  free_other: '{{count}} livres',
+  outOfStock: 'sem estoque',
+  buyAria: 'Comprar {{name}} na loja',
+  relaxedPitch: 'O pitch é diferente do da original.',
+  relaxedClass: 'Carta Genérica, fora da classe da original.',
+
+  // Deck list marks and prompt
+  inPlaceOf: 'no lugar de {{name}}',
+  undo: 'Desfazer',
+  undoAria: 'Desfazer a troca de {{name}}',
+  originalOwned: 'Agora você tem a original',
+  keep: 'Manter',
+  keepAria: 'Manter a substituta no lugar de {{name}}',
+  goBack: 'Voltar',
+  goBackAria: 'Voltar para {{name}}',
+} as const;

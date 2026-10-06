@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -30,6 +31,9 @@ import { TrackedDeckEntity } from './tracked-deck.entity';
  * -- it is resolved at read time from the in-process catalog, so the row
  * stays immune to catalog data changing under it.
  */
+@Check('CHK_swap_suggestion_status_valid', `status IN ('pending', 'approved', 'rejected', 'retired')`)
+@Check('CHK_swap_suggestion_rejection_reason_valid', `"rejectionReason" IS NULL OR "rejectionReason" IN ('not_equivalent', 'dont_own', 'changes_plan', 'prefer_original', 'other')`)
+@Check('CHK_swap_suggestion_outcome_valid', `outcome IS NULL OR outcome IN ('worked', 'did_not_work')`)
 @Entity({ name: 'swap_suggestion' })
 @Index(['trackedDeckId', 'cardIdentifier', 'slot', 'substituteIdentifier'], { unique: true })
 @Index(['trackedDeckId', 'status'])

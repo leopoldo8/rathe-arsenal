@@ -59,7 +59,11 @@ const REQUIRED_OWNED: Readonly<Record<string, number>> = {
 
 // Exact-match padding first, then the three cards whose same-profile peers
 // the user owns: Brothers in Arms -> Erase Face, Bear Hug -> Assault and
-// Battery, Argh Smash -> Bloodrush Bellow. Order matters to the engine.
+// Battery, Argh Smash -> Bloodrush Bellow. Order matters to the engine, and so
+// does how much is missing: the first swap is tried while every other missing
+// copy still counts against the pitch-curve tolerance (red 2, yellow 1, blue
+// 1), so the deck leaves exactly red 3, yellow 1 and blue 1 missing. Any more
+// and the first swap is rejected and the deck yields fewer than three.
 const SWAP_DECK_COMPOSITION: ReadonlyArray<readonly [string, number]> = [
   ['cast-bones-red', 3],
   ['wild-ride-red', 3],
@@ -71,11 +75,8 @@ const SWAP_DECK_COMPOSITION: ReadonlyArray<readonly [string, number]> = [
   ['smash-instinct-blue', 3],
   ['run-roughshod-blue', 3],
   ['brothers-in-arms-red', 3],
-  ['show-of-strength-red', 3],
-  ['massacre-red', 3],
-  ['bear-hug-blue', 2],
-  ['bam-bam-yellow', 2],
-  ['argh-smash-yellow', 2],
+  ['bear-hug-blue', 1],
+  ['argh-smash-yellow', 1],
 ];
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

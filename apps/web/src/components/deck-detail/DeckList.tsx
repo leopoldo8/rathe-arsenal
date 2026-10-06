@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { IDeckReplacement } from '../../api/replacements';
 import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
@@ -9,11 +10,15 @@ import {
   type TDeckListGroupId,
   type TDeckListView,
 } from './deckListModel';
+import { ReplacementControls } from './ReplacementMark';
 import styles from './DeckList.module.css';
 
 interface IDeckListProps {
   readonly items: readonly IDeckListItem[];
   readonly onEditCards?: (() => void) | undefined;
+  /** Needed to undo, keep or revert a replacement; the cells show no controls without it. */
+  readonly deckId?: number | undefined;
+  readonly replacements?: readonly IDeckReplacement[] | undefined;
 }
 
 interface ILightboxState {
@@ -45,9 +50,13 @@ const GROUP_LABEL_KEY: Readonly<Record<TDeckListGroupId, string>> = {
 function DeckListCell({
   item,
   onOpen,
+  deckId,
+  replacement,
 }: {
   readonly item: IDeckListItem;
   readonly onOpen: (lightbox: ILightboxState) => void;
+  readonly deckId: number | undefined;
+  readonly replacement: IDeckReplacement | undefined;
 }): React.ReactElement {
   const { t } = useTranslation();
   const { entry } = item;
@@ -85,11 +94,14 @@ function DeckListCell({
       <span className={styles.name} title={entry.name}>
         {entry.name}
       </span>
+      {replacement !== undefined && deckId !== undefined && (
+        <ReplacementControls deckId={deckId} replacement={replacement} />
+      )}
     </li>
   );
 }
 
-export function DeckList({ items, onEditCards }: IDeckListProps): React.ReactElement {
+export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDeckListProps): React.ReactElement {
   const { t } = useTranslation();
   const [view, setView] = useState<TDeckListView>('type');
   const [lightbox, setLightbox] = useState<ILightboxState | null>(null);
@@ -141,7 +153,17 @@ export function DeckList({ items, onEditCards }: IDeckListProps): React.ReactEle
           </h3>
           <ul className={styles.grid}>
             {group.items.map((item) => (
-              <DeckListCell key={item.key} item={item} onOpen={setLightbox} />
+              <DeckListCell
+                key={item.key}
+                item={item}
+                onOpen={setLightbox}
+                deckId={deckId}
+                replacement={replacements.find(
+                  (candidate) =>
+                    candidate.replacementCardIdentifier === item.entry.cardIdentifier &&
+                    candidate.slot === item.entry.slot,
+                )}
+              />
             ))}
           </ul>
         </div>

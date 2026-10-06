@@ -7,6 +7,8 @@ import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
 import styles from '../MissingPanel.module.css';
 import fetchStyles from '../../ShoppingLineFetchControls.module.css';
+import type { IAlternativesTarget, IDeckReplacement } from '../../../api/replacements';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 
 const HOST = 'www.cupuladt.com.br';
 const NOW = Date.now();
@@ -331,5 +333,100 @@ describe('MissingPanel — one quiet store line (owner feedback round 2)', () =>
     const button = screen.getByRole('button', { name: 'Obter preços exatos' });
     expect(button).toHaveClass(fetchStyles.ctaQuiet!);
     expect(button).not.toHaveClass(fetchStyles.ctaBtn!);
+  });
+});
+
+describe('MissingPanel — alternatives and replacements (card-alternatives)', () => {
+  const replacementOf = (overrides: Partial<IDeckReplacement> = {}): IDeckReplacement => ({
+    id: 'replacement-1',
+    slot: 'mainboard',
+    originalCardIdentifier: 'emissary-of-tides-red',
+    originalName: 'Emissary of Tides',
+    replacementCardIdentifier: 'coax-a-commotion-red',
+    quantity: 2,
+    originalOwned: false,
+    ...overrides,
+  });
+
+  it('shows Alternatives only on replaceable rows', () => {
+    const onOpenAlternatives = vi.fn<(target: IAlternativesTarget) => void>();
+    renderPanel(null, {
+      entries: [
+        entry({ cardIdentifier: 'plain', name: 'Plain', slot: 'mainboard', quantity: 2 }),
+        entry({ cardIdentifier: 'boots', name: 'Boots', slot: 'equipment', quantity: 1 }),
+        entry({ cardIdentifier: 'hero', name: 'Hero', slot: 'hero', quantity: 1 }),
+        entry({ cardIdentifier: 'blade', name: 'Blade', slot: 'weapon', quantity: 1 }),
+        entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax', slot: 'mainboard', quantity: 2 }),
+      ],
+      replacements: [replacementOf()],
+      onOpenAlternatives,
+    });
+    const control = (name: string) => within(rowOf(name)).queryByRole('button', { name: /alternativas/i });
+
+    expect(control('Plain')).not.toBeNull();
+    expect(control('Boots')).not.toBeNull();
+    expect(control('Hero')).toBeNull();
+    expect(control('Blade')).toBeNull();
+    expect(control('Coax')).toBeNull();
+
+    fireEvent.click(control('Boots')!);
+    expect(onOpenAlternatives).toHaveBeenCalledWith({ cardIdentifier: 'boots', name: 'Boots', slot: 'equipment' });
+  });
+
+  it('offers alternatives for the copies a replacement does not hold', () => {
+    renderPanel(null, {
+      entries: [entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax', quantity: 3 })],
+      replacements: [replacementOf()],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    expect(within(rowOf('Coax')).queryByRole('button', { name: /alternativas/i })).not.toBeNull();
+  });
+
+  it('marks a missing replacement with its original', async () => {
+    await setTestLocale('en-US');
+    renderPanel(null, {
+      entries: [entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', quantity: 2 })],
+      replacements: [replacementOf()],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    expect(within(rowOf('Coax a Commotion')).getByTestId('replacement-mark')).toHaveTextContent(
+      'in place of Emissary of Tides',
+    );
+  });
+
+  it('marks a missing replacement with its original: a name with punctuation shows as the catalog spells it', async () => {
+    await setTestLocale('en-US');
+    renderPanel(null, {
+      entries: [entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', quantity: 2 })],
+      replacements: [replacementOf({ originalCardIdentifier: 'a-moments-peace-blue', originalName: "A Moment's Peace" })],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    expect(within(rowOf('Coax a Commotion')).getByTestId('replacement-mark')).toHaveTextContent(
+      "in place of A Moment's Peace",
+    );
+  });
+
+  it('marks a missing replacement with its original: only the slot the replacement is in', async () => {
+    await setTestLocale('en-US');
+    renderPanel(null, {
+      entries: [
+        entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', slot: 'mainboard', quantity: 2 }),
+        entry({ cardIdentifier: 'coax-a-commotion-red', name: 'Coax a Commotion', slot: 'equipment', quantity: 2 }),
+      ],
+      replacements: [replacementOf({ slot: 'equipment' })],
+      onOpenAlternatives: vi.fn(),
+    });
+
+    const rows = screen.getAllByTestId('missing-row');
+    const marked = rows.filter((row) => within(row).queryByTestId('replacement-mark') !== null);
+    expect(rows).toHaveLength(2);
+    expect(marked).toHaveLength(1);
+    // The equipment row is the replacement's own copies, so it offers no alternatives; the mainboard row does.
+    expect(within(marked[0]!).queryByRole('button', { name: /alternatives/i })).toBeNull();
+    const plain = rows.find((row) => row !== marked[0])!;
+    expect(within(plain).getByRole('button', { name: /alternatives/i })).toBeInTheDocument();
   });
 });

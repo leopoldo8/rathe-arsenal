@@ -33,9 +33,11 @@ import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
+import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
 import { UpdateDeckCompositionDto } from '../dto/update-deck-composition.dto';
 import { DeckCardInputDto } from '../dto/deck-card-input.dto';
+import { CardReplacementEntity } from '../../database/entities/card-replacement.entity';
 
 // ---------------------------------------------------------------------------
 // Engine mocks — controlled per test.
@@ -161,6 +163,7 @@ describe('DecksService.updateComposition', () => {
   let collectionReadService: jest.Mocked<CollectionReadService>;
   let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
+  let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
@@ -174,6 +177,9 @@ describe('DecksService.updateComposition', () => {
     collectionReadService = createMock<CollectionReadService>();
     swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     swapsReconciliationService = createMock<SwapsReconciliationService>();
+    replacementsQueryService = createMock<ReplacementsQueryService>();
+    replacementsQueryService.loadActive.mockResolvedValue([]);
+    replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
 
     // Default service stubs
     collectionReadService.loadOwned.mockResolvedValue(new Map());
@@ -211,6 +217,7 @@ describe('DecksService.updateComposition', () => {
         { provide: CollectionReadService, useValue: collectionReadService },
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
+        { provide: ReplacementsQueryService, useValue: replacementsQueryService },
       ],
     }).compile();
 
@@ -578,6 +585,162 @@ describe('DecksService.updateComposition', () => {
       expect(firstCallArgs[3]).toBeUndefined(); // tolerance = undefined
       expect(firstCallArgs[4]).toBeInstanceOf(Set); // excludedIdentifiers
       expect(firstCallArgs[5]).toBeInstanceOf(Set); // approvedIdentifiers (D7/SWAP-13)
+    });
+  });
+  // ---------------------------------------------------------------------------
+  // Replacements (card-alternatives): a save honours the picks it still covers
+  // ---------------------------------------------------------------------------
+
+  describe('replacements', () => {
+    const COAX = 'coax-a-commotion-red';
+
+    function replacement(id: string, quantity: number, slot = 'mainboard'): CardReplacementEntity {
+      return {
+        id,
+        userId: USER_ID,
+        trackedDeckId: DECK_ID,
+        slot,
+        originalCardIdentifier: 'emissary-of-tides-red',
+        replacementCardIdentifier: COAX,
+        quantity,
+        pickedFrom: 'very_close',
+        status: 'active',
+        createdAt: new Date('2026-10-04T10:00:00Z'),
+        resolvedAt: null,
+      } as CardReplacementEntity;
+    }
+
+    function coaxCopies(quantity: number): DeckCardEntity[] {
+      return quantity === 0 ? [] : [buildDeckCardEntity({ cardIdentifier: COAX, quantity })];
+    }
+
+    it('passes active replacements to both engine passes', async () => {
+      const manager = setupTransaction({ freshCards: coaxCopies(2) });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r1', 2)]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2)]));
+
+      expect(replacementsQueryService.loadActive).toHaveBeenNthCalledWith(1, DECK_ID, manager);
+      expect(mockedReadiness).toHaveBeenCalledTimes(2);
+      for (const call of mockedReadiness.mock.calls) {
+        expect(call[6]).toEqual(new Map([[`${COAX}::mainboard`, 2]]));
+      }
+    });
+
+    it.each([
+      ['it drops the replacement card from the slot', 0, [replacement('r1', 2)], ['r1']],
+      ['it lowers the card from 2 to 1 copy with one record of quantity 2', 1, [replacement('r1', 2)], ['r1']],
+      [
+        'two records of quantity 1 each face 1 remaining copy',
+        1,
+        [replacement('r1', 1), replacement('r2', 1)],
+        ['r1', 'r2'],
+      ],
+    ])('closes replacements the save broke as removed: %s', async (_label, copiesLeft, records, closedIds) => {
+      const manager = setupTransaction({ freshCards: coaxCopies(copiesLeft) });
+      replacementsQueryService.loadActive.mockResolvedValueOnce(records).mockResolvedValue([]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, copiesLeft)]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(closedIds, manager);
+      // A record the save closed no longer keeps copies out of stand-ins, in either pass.
+      for (const call of mockedReadiness.mock.calls) {
+        expect(call[6]).toEqual(new Map());
+      }
+    });
+
+    it('closes replacements the save broke as removed: only the slot it broke', async () => {
+      const manager = setupTransaction({ freshCards: coaxCopies(2) });
+      replacementsQueryService.loadActive.mockResolvedValueOnce([
+        replacement('kept', 2),
+        replacement('broken', 1, 'equipment'),
+      ]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2)]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(['broken'], manager);
+    });
+
+    it('closes replacements the save broke as removed: in the equipment slot', async () => {
+      // The replacement sits in equipment; the save leaves that slot without it, though mainboard holds a copy.
+      const manager = setupTransaction({
+        freshCards: [buildDeckCardEntity({ cardIdentifier: COAX, quantity: 2, slot: 'mainboard' })],
+      });
+      replacementsQueryService.loadActive.mockResolvedValueOnce([replacement('r-equipment', 2, 'equipment')]).mockResolvedValue([]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2, 'mainboard')]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(['r-equipment'], manager);
+    });
+
+    it('keeps replacements the save still covers: the response lists them with the original name', async () => {
+      catalogService.getCard.mockReturnValue({ name: 'Emissary of Tides' } as never);
+      setupTransaction({ freshCards: coaxCopies(2) });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r1', 2)]);
+
+      const result = await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2)]));
+
+      expect(result.replacements).toEqual([
+        {
+          id: 'r1',
+          slot: 'mainboard',
+          originalCardIdentifier: 'emissary-of-tides-red',
+          originalName: 'Emissary of Tides',
+          replacementCardIdentifier: COAX,
+          quantity: 2,
+          originalOwned: false,
+        },
+      ]);
+    });
+
+    it('closes replacements the save broke as removed: the response no longer lists them', async () => {
+      setupTransaction({ freshCards: [] });
+      replacementsQueryService.loadActive.mockResolvedValueOnce([replacement('r1', 2)]).mockResolvedValue([]);
+
+      const result = await service.updateComposition(DECK_ID, USER_ID, buildDto([]));
+
+      expect(result.replacements).toEqual([]);
+    });
+
+    it('keeps replacements the save still covers: in the equipment slot', async () => {
+      const manager = setupTransaction({
+        freshCards: [buildDeckCardEntity({ cardIdentifier: COAX, quantity: 2, slot: 'equipment' })],
+      });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r-equipment', 2, 'equipment')]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 2, 'equipment')]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith([], manager);
+      for (const call of mockedReadiness.mock.calls) {
+        expect(call[6]).toEqual(new Map([[`${COAX}::equipment`, 2]]));
+      }
+    });
+
+    it('keeps replacements the save still covers', async () => {
+      // Three copies of the replacement card against one record of quantity 2: two copies stay
+      // protected from stand-ins, the third may still get one.
+      const real = jest.requireActual('@rathe-arsenal/engine') as typeof import('@rathe-arsenal/engine');
+      const coax = real.catalog.getCard(COAX);
+      const standIns = real.catalog.cards.filter((card) => {
+        if (card.cardIdentifier === COAX) return false;
+        const score = real.scoreCandidate(coax, card, real.TIER_1_CONFIG);
+        return score !== null && score >= real.TIER_1_CONFIG.floorScore;
+      });
+      const standIn = standIns[0]!;
+      collectionReadService.loadOwned.mockResolvedValue(new Map([[standIn.cardIdentifier, 3]]));
+      mockedReadiness.mockImplementation(real.computeEffectiveReadiness);
+      const manager = setupTransaction({ freshCards: coaxCopies(3) });
+      replacementsQueryService.loadActive.mockResolvedValue([replacement('r1', 2)]);
+
+      await service.updateComposition(DECK_ID, USER_ID, buildDto([buildCard(COAX, 3)]));
+
+      expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith([], manager);
+      const breakdown = snapshotRepo.create.mock.calls[0]![0]!.breakdown as unknown as {
+        substituted: unknown[];
+        missing: { cardIdentifier: string; quantity: number }[];
+      };
+      expect(breakdown.substituted).toHaveLength(1);
+      expect(breakdown.missing).toEqual([expect.objectContaining({ cardIdentifier: COAX, quantity: 2 })]);
     });
   });
 });

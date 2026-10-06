@@ -367,6 +367,7 @@ function buildDeck(overrides: Partial<IDeckDetailResponse> = {}): IDeckDetailRes
     tags: ['liga local'],
     notes: null,
     legality: { category: 'legal', reasons: [] },
+    replacements: [],
     totalCards: 60,
     latestSnapshot: buildSnapshot(),
     ...overrides,

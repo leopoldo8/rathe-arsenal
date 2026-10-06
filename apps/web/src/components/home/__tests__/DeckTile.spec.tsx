@@ -192,4 +192,29 @@ describe('DeckTile', () => {
       expect(screen.getByTestId('deckbox')).toBeInTheDocument();
     });
   });
+
+  describe('replacements (card-alternatives)', () => {
+    it('shows no replacement prompt', () => {
+      // Even a deck payload that carries an active replacement with its original owned.
+      renderTile(
+        makeDeck({
+          replacements: [
+            {
+              id: 'replacement-1',
+              slot: 'mainboard',
+              originalCardIdentifier: 'emissary-of-tides-red',
+            originalName: 'Emissary of Tides',
+              replacementCardIdentifier: 'coax-a-commotion-red',
+              quantity: 2,
+              originalOwned: true,
+            },
+          ],
+        } as Partial<ITrackedDeckListItem>),
+      );
+
+      expect(screen.queryByTestId('replacement-prompt')).toBeNull();
+      expect(screen.queryByText(/agora você tem a original/i)).toBeNull();
+      expect(screen.queryByRole('button', { name: /voltar|manter/i })).toBeNull();
+    });
+  });
 });

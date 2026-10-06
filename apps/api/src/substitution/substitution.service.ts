@@ -18,6 +18,7 @@ import { AuthzService } from '../auth/authz.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { SwapsReconciliationService } from '../swaps/swaps-reconciliation.service';
 import { buildCurrentDeckSlots } from '../swaps/build-current-deck-slots';
+import { ReplacementsQueryService } from '../replacements/replacements-query.service';
 
 /**
  * Derived read-time fields that are NOT persisted on the snapshot row
@@ -42,6 +43,7 @@ export class SubstitutionService {
     private readonly authzService: AuthzService,
     private readonly collectionReadService: CollectionReadService,
     private readonly swapsReconciliationService: SwapsReconciliationService,
+    private readonly replacementsQueryService: ReplacementsQueryService,
   ) {}
 
   /**
@@ -65,6 +67,7 @@ export class SubstitutionService {
       userId,
       excludedIdentifiers,
       approvedIdentifiers,
+      manager,
     );
 
     const snapshot = snapshots.create({
@@ -110,25 +113,37 @@ export class SubstitutionService {
     userId: string,
     excludedIdentifiers: ReadonlySet<TExclusionKey>,
     approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
+    manager?: EntityManager,
   ): Promise<IEffectiveReadinessResult> {
     const { result } = await this.runReadiness(
       trackedDeckId,
       userId,
       excludedIdentifiers,
       approvedIdentifiers,
+      manager,
     );
     return result;
   }
 
+  /**
+   * Reads the deck, its cards and its active replacements through `manager`
+   * when one is passed: a pick, revert or keep rewrites `deck_card` inside its
+   * transaction, and a read through the injected repositories would still see
+   * the deck as it was before that write.
+   */
   private async runReadiness(
     trackedDeckId: number,
     userId: string,
     excludedIdentifiers: ReadonlySet<TExclusionKey>,
     approvedIdentifiers: ReadonlySet<TExclusionKey>,
+    manager?: EntityManager,
   ): Promise<{ result: IEffectiveReadinessResult; deckCardRows: DeckCardEntity[] }> {
     await this.authzService.assertOwnsTrackedDeck(userId, trackedDeckId);
 
-    const deck = await this.trackedDecks.findOne({
+    const trackedDecks = manager ? manager.getRepository(TrackedDeckEntity) : this.trackedDecks;
+    const deckCards = manager ? manager.getRepository(DeckCardEntity) : this.deckCards;
+
+    const deck = await trackedDecks.findOne({
       where: { id: trackedDeckId },
     });
 
@@ -136,9 +151,11 @@ export class SubstitutionService {
       throw new NotFoundException('Tracked deck not found');
     }
 
-    const deckCardRows = await this.deckCards.find({
+    const deckCardRows = await deckCards.find({
       where: { trackedDeckId },
     });
+
+    const protectedCopies = await this.replacementsQueryService.loadProtectedCopies(trackedDeckId, manager);
 
     // Load the effective collection: quantities summed across active sources.
     // CollectionReadService handles source filtering so the inventory map
@@ -160,6 +177,7 @@ export class SubstitutionService {
       undefined,
       excludedIdentifiers,
       approvedIdentifiers,
+      protectedCopies,
     );
 
     return { result, deckCardRows };

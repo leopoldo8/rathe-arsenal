@@ -77,6 +77,7 @@ function makeDeck(overrides: Partial<IDeckDetailResponse> = {}): IDeckDetailResp
     tags: ['liga local'],
     notes: null,
     legality: { category: 'legal', reasons: [] },
+    replacements: [],
     totalCards: 0,
     latestSnapshot: null,
     ...overrides,

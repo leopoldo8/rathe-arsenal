@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Switch from '@radix-ui/react-switch';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -75,10 +75,13 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
   function startEdit(): void {
     setLabelDraft(displayLabel);
     setEditingLabel(true);
-    requestAnimationFrame(() => {
-      labelInputRef.current?.select();
-    });
   }
+
+  // Select the label once the input is mounted. Doing it in an animation frame let the selection land
+  // after the first keystroke under load, and the next key then replaced that character.
+  useEffect(() => {
+    if (editingLabel) labelInputRef.current?.select();
+  }, [editingLabel]);
 
   // Commit the label edit
   function commitEdit(): void {

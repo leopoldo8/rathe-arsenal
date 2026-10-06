@@ -20,6 +20,7 @@ import { TCsvUploadAction } from './dtos/upload-csv.request.dto';
 import {
   IUploadCsvResponse,
   ICreatedResponse,
+  IExactMatchResponse,
   IUpdatedResponse,
   IReplacedResponse,
 } from './dtos/upload-csv.response.dto';
@@ -179,11 +180,66 @@ export class CsvUploadService {
     skipped: readonly import('./csv.types').ISkippedCsvRow[],
     originalFilename?: string,
     action: TCsvUploadAction = 'separate',
-  ): Promise<ICreatedResponse> {
+  ): Promise<ICreatedResponse | IExactMatchResponse> {
     const hash = computeContentHash(resolved);
     const baseLabel = originalFilename ?? 'Imported CSV';
 
-    const result = await this.dataSource.transaction(async (manager: EntityManager) => {
+    let result: CsvSourceEntity;
+    try {
+      result = await this.insertNewSource(userId, hash, baseLabel, resolved, originalFilename);
+    } catch (error) {
+      // The unique index on (userId, contentHash) fired: the same CSV is already a source,
+      // stored by an earlier or a concurrent upload.
+      if ((error as { code?: string }).code !== '23505') throw error;
+      const existing = await this.dataSource
+        .getRepository(CsvSourceEntity)
+        .findOne({ where: { userId, kind: 'csv', contentHash: hash } });
+      if (!existing) throw error;
+      this.logger.log({
+        event: 'csv.upload',
+        userId,
+        action,
+        kind: 'exact-match',
+        cardCount: resolved.length,
+        skippedCount: skipped.length,
+        existingSourceId: existing.id,
+      });
+      return {
+        kind: 'exact-match',
+        existingSourceId: existing.id,
+        existingLabel: existing.label,
+        cardCount: existing.cardCount ?? resolved.length,
+        skippedRows: skipped,
+      };
+    }
+
+    this.logger.log({
+      event: 'csv.upload',
+      userId,
+      action,
+      kind: 'created',
+      cardCount: resolved.length,
+      skippedCount: skipped.length,
+    });
+
+    await this.recomputeReadinessForUser(userId);
+
+    return {
+      kind: 'created',
+      sourceId: result.id,
+      cardCount: resolved.length,
+      skippedRows: skipped,
+    };
+  }
+
+  private async insertNewSource(
+    userId: string,
+    hash: string,
+    baseLabel: string,
+    resolved: readonly IResolvedCsvRow[],
+    originalFilename?: string,
+  ): Promise<CsvSourceEntity> {
+    return this.dataSource.transaction(async (manager: EntityManager) => {
       const label = await this.dedupeSourceLabel(manager, userId, baseLabel);
 
       const source = manager.create(CsvSourceEntity, {
@@ -212,24 +268,6 @@ export class CsvUploadService {
 
       return savedSource;
     });
-
-    this.logger.log({
-      event: 'csv.upload',
-      userId,
-      action,
-      kind: 'created',
-      cardCount: resolved.length,
-      skippedCount: skipped.length,
-    });
-
-    await this.recomputeReadinessForUser(userId);
-
-    return {
-      kind: 'created',
-      sourceId: result.id,
-      cardCount: resolved.length,
-      skippedRows: skipped,
-    };
   }
 
   private async replaceSource(

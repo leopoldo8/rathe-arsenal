@@ -4,6 +4,7 @@ import { buildIndices } from '../src/catalog/indices';
 import { DEFAULT_PITCH_TOLERANCE } from '../src/substitution/constants';
 import { buildExclusionKey, TExclusionKey } from '../src/substitution/exclusion-key';
 import { IEffectiveReadinessResult } from '../src/readiness/types';
+import { buildProtectedKey } from '../src/readiness/protected-key';
 
 /**
  * Runs `computeEffectiveReadiness` twice: once to discover every match the
@@ -1144,3 +1145,180 @@ describe('computeEffectiveReadiness', () => {
     });
   });
 });
+
+describe('protectedCopies parameter (card-alternatives)', () => {
+  const heroCard = makeCard({
+    cardIdentifier: 'dorinthea-ironsong',
+    types: [Type.Hero],
+    pitch: null,
+    power: null,
+    defense: null,
+    cost: null,
+    keywords: [],
+  });
+  const original = makeCard({ cardIdentifier: 'warrior-attack-red', pitch: 1 });
+  const standIn = makeCard({ cardIdentifier: 'warrior-attack-red-alt', pitch: 1 });
+  const catalog = makeCatalog([heroCard, original, standIn]);
+
+  // Three copies missing, three owned tier 1 candidates: today all three get a stand-in.
+  const deck = { cards: [{ cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' }] };
+  const inventory = new Map([['warrior-attack-red-alt', 3]]);
+
+  function run(protectedCopies: ReadonlyMap<string, number>): IEffectiveReadinessResult {
+    return computeEffectiveReadiness(
+      deck,
+      inventory,
+      catalog,
+      DEFAULT_PITCH_TOLERANCE,
+      new Set(),
+      new Set(),
+      protectedCopies,
+    );
+  }
+
+  function missingQuantity(result: IEffectiveReadinessResult): number {
+    return result.breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0);
+  }
+
+  it.each([
+    ['0 protected copies', 0, 3, 0],
+    ['1 protected copy', 1, 2, 1],
+    ['3 protected copies, equal to the missing copies', 3, 0, 3],
+    ['5 protected copies, above the missing copies', 5, 0, 3],
+  ])('protected copies get no stand-in: %s', (_label, protectedCount, substituted, missing) => {
+    const result = run(new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), protectedCount]]));
+
+    expect(result.breakdown.substituted).toHaveLength(substituted);
+    expect(missingQuantity(result)).toBe(missing);
+  });
+
+  it('protected copies get no stand-in: a count for the same card in another slot changes nothing', () => {
+    const result = run(new Map([[buildProtectedKey('warrior-attack-red', 'equipment'), 3]]));
+
+    expect(result.breakdown.substituted).toHaveLength(3);
+    expect(missingQuantity(result)).toBe(0);
+  });
+
+  it('protected copies get no stand-in: the protected copies stay in notOwned and consume no inventory', () => {
+    const result = run(new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 3]]));
+
+    expect(result.breakdown.notOwned).toEqual([
+      expect.objectContaining({ cardIdentifier: 'warrior-attack-red', slot: 'mainboard', quantity: 3 }),
+    ]);
+    expect(result.breakdown.exact).toHaveLength(0);
+  });
+
+  it('an empty protected input changes nothing', () => {
+    const tier2Original = makeCard({
+      cardIdentifier: 'warrior-tier2-original',
+      pitch: 2,
+      power: 4,
+      keywords: [Keyword.GoAgain],
+    });
+    const tier2StandIn = makeCard({ cardIdentifier: 'warrior-tier2-stand-in', pitch: 2, power: 6, keywords: [] });
+    const weapon = makeCard({
+      cardIdentifier: 'dawnblade',
+      types: [Type.Weapon],
+      pitch: null,
+      power: null,
+      defense: null,
+      cost: null,
+      keywords: [],
+    });
+    const wide = makeCatalog([heroCard, weapon, original, standIn, tier2Original, tier2StandIn]);
+    const rejected = new Set<TExclusionKey>([
+      buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
+    ]);
+    const approved = new Set<TExclusionKey>([
+      buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
+    ]);
+    const scenarios: ReadonlyArray<{
+      readonly deck: { readonly cards: readonly { cardIdentifier: string; quantity: number; slot: string }[] };
+      readonly inventory: ReadonlyMap<string, number>;
+      readonly excluded?: ReadonlySet<TExclusionKey>;
+      readonly approved?: ReadonlySet<TExclusionKey>;
+    }> = [
+      { deck: { cards: [] }, inventory: new Map() },
+      { deck, inventory: new Map([['warrior-attack-red', 3]]) },
+      { deck, inventory },
+      { deck, inventory, approved },
+      { deck, inventory, excluded: rejected },
+      { deck, inventory: new Map() },
+      {
+        deck: { cards: [{ cardIdentifier: 'warrior-tier2-original', quantity: 2, slot: 'mainboard' }] },
+        inventory: new Map([['warrior-tier2-stand-in', 2]]),
+      },
+      {
+        deck: {
+          cards: [
+            { cardIdentifier: 'dorinthea-ironsong', quantity: 1, slot: 'hero' },
+            { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
+            { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+            { cardIdentifier: 'warrior-attack-red', quantity: 1, slot: 'equipment' },
+            { cardIdentifier: 'not-in-the-catalog', quantity: 1, slot: 'mainboard' },
+          ],
+        },
+        inventory: new Map([
+          ['warrior-attack-red', 1],
+          ['warrior-attack-red-alt', 1],
+        ]),
+      },
+    ];
+
+    for (const scenario of scenarios) {
+      const omitted = computeEffectiveReadiness(
+        scenario.deck,
+        scenario.inventory,
+        wide,
+        DEFAULT_PITCH_TOLERANCE,
+        scenario.excluded ?? new Set(),
+        scenario.approved ?? new Set(),
+      );
+      const empty = computeEffectiveReadiness(
+        scenario.deck,
+        scenario.inventory,
+        wide,
+        DEFAULT_PITCH_TOLERANCE,
+        scenario.excluded ?? new Set(),
+        scenario.approved ?? new Set(),
+        new Map(),
+      );
+
+      expect(empty).toEqual(omitted);
+    }
+  });
+
+  it('protected copies get no stand-in: a count is spent across two deck rows of the same card and slot', () => {
+    // Nothing forbids a deck listing a card twice in one slot, and the replacement count is per card and slot.
+    const twoRows = {
+      cards: [
+        { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+        { cardIdentifier: 'warrior-attack-red', quantity: 2, slot: 'mainboard' },
+      ],
+    };
+
+    const result = computeEffectiveReadiness(
+      twoRows,
+      inventory,
+      catalog,
+      DEFAULT_PITCH_TOLERANCE,
+      new Set(),
+      new Set(),
+      new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 3]]),
+    );
+
+    // 3 of the 4 copies are protected, so only one can get a stand-in.
+    expect(result.breakdown.substituted).toHaveLength(1);
+    expect(result.breakdown.missing.reduce((sum, entry) => sum + entry.quantity, 0)).toBe(3);
+  });
+
+  it("protected copies get no stand-in: the caller's map is not changed by a compute that spends it", () => {
+    const protectedCopies = new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 2]]);
+
+    run(protectedCopies);
+    run(protectedCopies);
+
+    expect([...protectedCopies]).toEqual([[buildProtectedKey('warrior-attack-red', 'mainboard'), 2]]);
+  });
+});
+

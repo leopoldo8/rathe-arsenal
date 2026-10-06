@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -29,6 +30,7 @@ import { UserEntity } from './user.entity';
  * - `(userId, contentHash) WHERE kind='csv' AND contentHash IS NOT NULL` —
  *   DB-level backstop against exact-match duplicate imports.
  */
+@Check('CHK_csv_source_kind_valid', `kind IN ('csv', 'manual')`)
 @Entity({ name: 'csv_source' })
 @Index(['userId'])
 @Index(['userId', 'kind'])

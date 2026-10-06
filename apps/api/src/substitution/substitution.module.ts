@@ -8,6 +8,7 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { AuthModule } from '../auth/auth.module';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { SwapsCoreModule } from '../swaps/swaps-core.module';
+import { ReplacementsCoreModule } from '../replacements/replacements-core.module';
 import { SubstitutionService } from './substitution.service';
 
 @Module({
@@ -24,6 +25,8 @@ import { SubstitutionService } from './substitution.service';
     // computeAndStoreReadiness is the choke point that reconciles
     // swap_suggestion after every recompute (design §11).
     SwapsCoreModule,
+    // Active replacements reach the engine through runReadiness on every recompute.
+    ReplacementsCoreModule,
   ],
   providers: [CollectionReadService, SubstitutionService],
   exports: [SubstitutionService],

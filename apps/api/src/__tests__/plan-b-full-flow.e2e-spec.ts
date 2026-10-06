@@ -196,7 +196,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       }),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
-    await app.init();
+    await app.listen(0, '127.0.0.1');
 
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
   });

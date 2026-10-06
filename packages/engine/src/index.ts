@@ -29,6 +29,12 @@ export type {
   TExclusionKey,
   IRationaleDetail,
   TRationalePitch,
+  IAlternativeCard,
+  IAlternativeGroup,
+  IAlternativeRationale,
+  IAlternativesInput,
+  TAlternativeGroup,
+  TRelaxedRule,
 } from './substitution';
 export {
   TIER_1_FLOOR_SCORE,
@@ -49,6 +55,11 @@ export {
   findTierMatch,
   findSubstitution,
   buildExclusionKey,
+  ALTERNATIVE_GROUP_ORDER,
+  ALTERNATIVES_PER_GROUP,
+  OWNED_SCORE_BONUS,
+  compareAlternatives,
+  findAlternatives,
 } from './substitution';
 
 // Readiness
@@ -63,6 +74,7 @@ export {
   computeEffectiveReadiness,
   computePath,
   computeFidelity,
+  buildProtectedKey,
 } from './readiness';
 
 // Legality
@@ -75,4 +87,12 @@ export type {
   ILegalityDeckCard,
   TLegalityReasonDetail,
 } from './legality';
-export { FORMAT_RULES, computeDeckLegality } from './legality';
+export type { ICardLegalityViolation } from './legality';
+export {
+  FORMAT_RULES,
+  computeDeckLegality,
+  findCardScopeViolation,
+  findCardRarityViolation,
+  findCardLegalityViolation,
+  getCopyLimit,
+} from './legality';

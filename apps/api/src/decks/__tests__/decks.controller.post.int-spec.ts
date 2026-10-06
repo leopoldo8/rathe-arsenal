@@ -41,6 +41,7 @@ function buildDetailResponse(
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'], details: [] },
+    replacements: [],
     ...overrides,
   };
 }
@@ -83,7 +84,7 @@ async function buildApp(opts: {
     }),
   );
 
-  await app.init();
+  await app.listen(0, '127.0.0.1');
   return app;
 }
 

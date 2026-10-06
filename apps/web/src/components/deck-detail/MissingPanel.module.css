@@ -220,3 +220,21 @@
     column-gap: var(--ra-space-2);
   }
 }
+
+.alternatives {
+  min-block-size: 32px;
+  margin-inline-start: var(--ra-space-2);
+  padding: 0 var(--ra-space-2);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-sm);
+  background: transparent;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  cursor: pointer;
+}
+
+.alternatives:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

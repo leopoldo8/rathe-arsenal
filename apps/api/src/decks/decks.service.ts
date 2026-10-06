@@ -39,6 +39,9 @@ import { UpdateDeckCompositionDto } from './dto/update-deck-composition.dto';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
 import { TrackedDeckTagEntity } from '../database/entities/tracked-deck-tag.entity';
 import { describeSwapRationale } from '../swaps/describe-swap-rationale';
+import { ReplacementsQueryService } from '../replacements/replacements-query.service';
+import { buildReplacementViews } from '../replacements/build-replacement-views';
+import { buildProtectedCopies, findBrokenReplacements } from '../replacements/replacement-copies';
 
 interface IStoredSubstitutionMatch {
   readonly substitute?: { readonly cardIdentifier?: string };
@@ -64,7 +67,16 @@ export class DecksService {
     private readonly catalogService: CatalogService,
     private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly swapsReconciliationService: SwapsReconciliationService,
+    private readonly replacementsQueryService: ReplacementsQueryService,
   ) {}
+
+  private cardNameOf(cardIdentifier: string): string {
+    try {
+      return this.catalogService.getCard(cardIdentifier).name;
+    } catch {
+      return cardIdentifier;
+    }
+  }
 
   // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
   // Enrich on read from the catalog so UI surfaces always render a human
@@ -616,6 +628,15 @@ export class DecksService {
       }
     }
 
+    const activeReplacements = await this.replacementsQueryService.loadActive(deckId);
+    const ownedOriginals =
+      activeReplacements.length === 0
+        ? new Map<string, number>()
+        : await this.collectionReadService.loadOwned(
+            userId,
+            activeReplacements.map((replacement) => replacement.originalCardIdentifier),
+          );
+
     return {
       id: deck.id,
       fabraryUlid: deck.fabraryUlid,
@@ -632,6 +653,7 @@ export class DecksService {
       latestSnapshot: snapshotDto,
       shoppingLine,
       legality,
+      replacements: buildReplacementViews(activeReplacements, ownedOriginals, deckCards, (id) => this.cardNameOf(id)),
     };
   }
 
@@ -700,6 +722,7 @@ export class DecksService {
       latestSnapshot: null,
       shoppingLine: null,
       legality,
+      replacements: [],
     };
   }
 
@@ -874,8 +897,13 @@ export class DecksService {
     // -------------------------------------------------------------------------
     // Steps 1–5: inside a single transaction.
     // -------------------------------------------------------------------------
-    const { deck: updatedDeck, tagRows, readinessInsideTransaction, resolvedHeroIdentifier } =
-      await this.dataSource.transaction(async (manager) => {
+    const {
+      deck: updatedDeck,
+      tagRows,
+      readinessInsideTransaction,
+      resolvedHeroIdentifier,
+      replacements,
+    } = await this.dataSource.transaction(async (manager) => {
         // Step 1: Ownership check.
         const deck = await manager.findOne(TrackedDeckEntity, {
           where: { id: deckId, userId },
@@ -952,6 +980,18 @@ export class DecksService {
 
         const inventory = await this.collectionReadService.loadOwned(userId);
 
+        // A save that leaves fewer copies of a replacement card than its
+        // records claim closes those records as removed, in this transaction;
+        // the ones still covered keep their copies out of stand-ins below.
+        const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
+        const brokenReplacements = findBrokenReplacements(activeReplacements, freshCards);
+        await this.replacementsQueryService.closeAsRemoved(
+          brokenReplacements.map((replacement) => replacement.id),
+          manager,
+        );
+        const brokenIds = new Set(brokenReplacements.map((replacement) => replacement.id));
+        const stillActive = activeReplacements.filter((replacement) => !brokenIds.has(replacement.id));
+
         // Load persisted exclusions/approvals — swap_suggestion rows the
         // user has explicitly rejected or approved for this deck.
         const { excludedIdentifiers, approvedIdentifiers } =
@@ -972,6 +1012,7 @@ export class DecksService {
           undefined,
           excludedIdentifiers,
           approvedIdentifiers,
+          buildProtectedCopies(stillActive),
         );
 
         // Reconcile swap_suggestion against the fresh breakdown, inside this
@@ -1003,6 +1044,7 @@ export class DecksService {
           tagRows: tagRowsInTx ?? [],
           readinessInsideTransaction: transactionReadiness,
           resolvedHeroIdentifier: heroIdentifier,
+          replacements: buildReplacementViews(stillActive, inventory, freshCards, (id) => this.cardNameOf(id)),
         };
       });
 
@@ -1035,6 +1077,8 @@ export class DecksService {
       // the committed state, matching the existing pre-D7 pattern of
       // recomputing once more post-commit for staleness, not because the
       // answer differs.
+      const activeAfterCommit = await this.replacementsQueryService.loadActive(deckId);
+
       readinessResult = computeEffectiveReadiness(
         deckInput,
         inventory,
@@ -1042,6 +1086,7 @@ export class DecksService {
         undefined,
         excludedIdentifiers,
         approvedIdentifiers,
+        buildProtectedCopies(activeAfterCommit),
       );
 
       // Insert snapshot — best-effort.
@@ -1122,6 +1167,7 @@ export class DecksService {
       latestSnapshot: null,
       shoppingLine: null,
       legality,
+      replacements,
     };
   }
 

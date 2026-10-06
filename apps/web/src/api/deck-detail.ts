@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { IShoppingLineResponse } from './shopping-line';
+import type { IDeckReplacement } from './replacements';
 // Re-export shared v2 types so callers import from a single location
 export type { TDeckStatus, IDeckLegality } from './decks';
 
@@ -148,6 +149,8 @@ export interface IDeckDetailResponse {
   readonly latestSnapshot: IDeckDetailSnapshot | null;
   /** Shopping line data for this deck. Added in Phase 1b Unit 5. */
   readonly shoppingLine?: IShoppingLineResponse;
+  /** Active card replacements only (card-alternatives); each carries a derived `originalOwned`. */
+  readonly replacements: readonly IDeckReplacement[];
 }
 
 export interface IMarkOwnedResponse {
