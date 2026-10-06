@@ -255,6 +255,7 @@ Alternatives the deck's latest run recommends rise inside their group.
 | Price quantity | 1 copy (AC 34) | a recommendation has no single "needed" count; the unit price answers "what does it cost" | n |
 | Dismissed cards and the alternatives order | a dismissed card still rises among alternatives when the latest run has it (AC 67) | the design's rule reads "alternatives present in the run"; a dismissal is about recommendations | n |
 | Confirmation before adopt or dismiss | none | both are undone in one tap | n |
+| Generate rate limit | 10 requests per minute per client on `POST .../recommendations/runs`, on top of the one-pending-run coalescing (added during build) | a background security review flagged Generate as a way to repeat paid model calls; coalescing already bounds one deck to one call at a time, the limit bounds the number of decks a client can trigger | n |
 | Timeout and orphan window | 180 s abort, 10 min reclaim (AC 22, AC 27) | the reclaim must sit well above the abort or a slow call is run twice | n |
 
 **Open questions:**

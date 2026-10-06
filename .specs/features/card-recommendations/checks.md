@@ -49,43 +49,43 @@ Proof: `... recommendation-queue.e2e-spec -t "Generate returns the running run"`
 **C9** - Generate answers `404` for another user's deck and for a missing deck, `400` for deck id `abc`, `401` without a token (AC 9) · done
 Proof: `... recommendation-queue.e2e-spec -t "Generate refuses foreign, missing and malformed decks"`
 
-**C10** - The claim takes the oldest due pending run, sets `running`, `startedAt`, `claimedAt` and `attempts` 1; it skips a run whose `runAfter` is in the future and a run whose deck already holds a running run, returning nothing when only those exist (AC 10)
+**C10** - The claim takes the oldest due pending run, sets `running`, `startedAt`, `claimedAt` and `attempts` 1; it skips a run whose `runAfter` is in the future and a run whose deck already holds a running run, returning nothing when only those exist (AC 10) · done
 Proof: `... recommendation-worker.e2e-spec -t "claims only due runs of decks with nothing running"`
 
-**C11** - An auto run claimed after its deck became `retired` ends `failed` with `DECK_RETIRED` and the stub `fetch` is never called; a manual run of a retired deck is sent to the model (AC 11)
+**C11** - An auto run claimed after its deck became `retired` ends `failed` with `DECK_RETIRED` and the stub `fetch` is never called; a manual run of a retired deck is sent to the model (AC 11) · done
 Proof: `... recommendation-worker.e2e-spec -t "an auto run of a retired deck fails without a call"`
 
-**C12** - A run of a deck whose `heroIdentifier` is null ends `failed` with `DECK_INVALID` and no call (AC 12)
+**C12** - A run of a deck whose `heroIdentifier` is null ends `failed` with `DECK_INVALID` and no call (AC 12) · done
 Proof: `... recommendation-worker.e2e-spec -t "a deck without a hero fails without a call"`
 
-**C13** - The pool for the Katsu deck contains a legal Ninja card and a Generic card; it lacks a card banned in Classic Constructed, a card of another class, a Hero, a Token, a Weapon, `emissary-of-tides-red` and `flex-red` (in the deck), and a dismissed card - one asserted card per member (AC 13)
+**C13** - The pool for the Katsu deck contains a legal Ninja card and a Generic card; it lacks a card banned in Classic Constructed, a card of another class, a Hero, a Token, a Weapon, `emissary-of-tides-red` and `flex-red` (in the deck), and a dismissed card - one asserted card per member (AC 13) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the pool keeps legal cards and drops each excluded kind"`
 Proof: `... recommendation-worker.e2e-spec -t "the request leaves out dismissed and deck cards"`
 
 **C14** - The prompt names the hero and the format, lists `2x emissary-of-tides-red` and `2x flex-red` under `mainboard` and `talishar-the-lost-prince` under `weapon`, does not list the hero among deck cards, lists each pool card as identifier, name, type line and rules text, and asks for 25 cards with strength, cut and reason (AC 14) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/recommendation-prompt.spec.ts -t "the prompt lists the deck by slot and asks for 25 cards"`
 
-**C15** - With `GEMINI_API_KEY` unset, and again set to `"  "`, the run ends `failed` with `NO_API_KEY` and the stub `fetch` is never called (AC 15)
+**C15** - With `GEMINI_API_KEY` unset, and again set to `"  "`, the run ends `failed` with `NO_API_KEY` and the stub `fetch` is never called (AC 15) · done
 Proof: `... recommendation-worker.e2e-spec -t "a missing key fails without a call"`
 
 **C16** - The client posts to `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent` with header `x-goog-api-key` set to the key, `generationConfig.responseMimeType` `application/json`, a `responseJsonSchema` whose items require `card`, `strength` (enum `clear_upgrade`, `consider`), `cut` and `reason`, and `maxOutputTokens` 32000 (door 7) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "posts the documented generateContent request"`
 
-**C17** - A `STOP` answer with 14 entries - 2 not in the pool, 1 repeating an earlier card, 1 with strength `great` - stores the first 10 valid entries as ranks 1-10 in answer order; the run ends `done` with a 64-character hex `deckFingerprint`, `model: gemini-3.8-flash`, `inputTokens` = `promptTokenCount` (41000) and `outputTokens` = `candidatesTokenCount` + `thoughtsTokenCount` (900 + 2100 = 3000) (AC 16)
+**C17** - A `STOP` answer with 14 entries - 2 not in the pool, 1 repeating an earlier card, 1 with strength `great` - stores the first 10 valid entries as ranks 1-10 in answer order; the run ends `done` with a 64-character hex `deckFingerprint`, `model: gemini-3.8-flash`, `inputTokens` = `promptTokenCount` (41000) and `outputTokens` = `candidatesTokenCount` + `thoughtsTokenCount` (900 + 2100 = 3000) (AC 16) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/validate-answer.spec.ts -t "keeps the first 10 valid entries in order"`
 Proof: `... recommendation-worker.e2e-spec -t "a valid answer stores ranked recommendations and usage"`
 
 **C18** - A cut naming a `mainboard` deck card for a mainboard recommendation is stored with `cutSlot: mainboard`; a cut naming the deck's weapon, a card not in the deck, an empty string, or a mainboard card for an Equipment recommendation is stored as null cut and null slot (AC 17) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/validate-answer.spec.ts -t "keeps a cut only from the recommended card's slot"`
 
-**C19** - An answer whose every entry is dropped ends the run `done` with 0 recommendations (AC 18)
+**C19** - An answer whose every entry is dropped ends the run `done` with 0 recommendations (AC 18) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/validate-answer.spec.ts -t "an answer with nothing valid keeps nothing"`
 Proof: `... recommendation-worker.e2e-spec -t "an answer with nothing valid ends done and empty"`
 
-**C20** - A `429` puts the run back to `pending` with `runAfter` 60 s after the drain on attempt 1 and 120 s on attempt 2; the third `429` ends it `failed` with `RATE_LIMITED`, `attempts: 3` (AC 19)
+**C20** - A `429` puts the run back to `pending` with `runAfter` 60 s after the drain on attempt 1 and 120 s on attempt 2; the third `429` ends it `failed` with `RATE_LIMITED`, `attempts: 3` (AC 19) · done
 Proof: `... recommendation-worker.e2e-spec -t "a 429 backs off twice then fails RATE_LIMITED"`
 
-**C21** - `500`, `503` and `504` each back off as in C20, and a third one ends the run `failed` with `PROVIDER_UNAVAILABLE`, table-driven over the three (AC 20)
+**C21** - `500`, `503` and `504` each back off as in C20, and a third one ends the run `failed` with `PROVIDER_UNAVAILABLE`, table-driven over the three (AC 20) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "classifies every provider outcome"`
 Proof: `... recommendation-worker.e2e-spec -t "a 503 backs off then fails PROVIDER_UNAVAILABLE"`
 
@@ -95,27 +95,27 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__
 **C23** - A `fetch` that never answers is aborted at 180 s (fake timers) and the outcome is `MODEL_TIMEOUT` (AC 22) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "aborts a call at 180 seconds"`
 
-**C24** - `promptFeedback.blockReason: SAFETY` and each `finishReason` of `SAFETY`, `RECITATION`, `LANGUAGE`, `OTHER`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `FINISH_REASON_UNSPECIFIED` and an unknown `SPII` give `MODEL_REFUSED`; `MAX_TOKENS` gives `MODEL_TRUNCATED`; text `not json` and `{"ranking":[]}` give `MODEL_OFF_SCHEMA` (AC 23, AC 24, AC 25)
+**C24** - `promptFeedback.blockReason: SAFETY` and each `finishReason` of `SAFETY`, `RECITATION`, `LANGUAGE`, `OTHER`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `FINISH_REASON_UNSPECIFIED` and an unknown `SPII` give `MODEL_REFUSED`; `MAX_TOKENS` gives `MODEL_TRUNCATED`; text `not json` and `{"ranking":[]}` give `MODEL_OFF_SCHEMA` (AC 23, AC 24, AC 25) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__/gemini-client.spec.ts -t "classifies every provider outcome"`
 Proof: `... recommendation-worker.e2e-spec -t "a refusal fails the run and keeps the earlier list"`
 
-**C25** - After a deck's run ends `failed`, its earlier `done` run and that run's 10 `recommendation` rows are unchanged (AC 26)
+**C25** - After a deck's run ends `failed`, its earlier `done` run and that run's 10 `recommendation` rows are unchanged (AC 26) · done
 Proof: `... recommendation-worker.e2e-spec -t "a refusal fails the run and keeps the earlier list"`
 
-**C26** - A run claimed 11 minutes ago returns to `pending` with `claimedAt` null; one claimed 11 minutes ago on a deck that already holds a pending run ends `failed` with `WORKER_LOST`; one claimed 9 minutes ago stays `running` (AC 27)
+**C26** - A run claimed 11 minutes ago returns to `pending` with `claimedAt` null; one claimed 11 minutes ago on a deck that already holds a pending run ends `failed` with `WORKER_LOST`; one claimed 9 minutes ago stays `running` (AC 27) · done
 Proof: `... recommendation-worker.e2e-spec -t "reclaims orphans after 10 minutes"`
 
-**C27** - A `429` on a run whose deck gained a pending run while it ran ends it `failed` with `SUPERSEDED`, and the pending run's `runAfter` becomes the later of its own and the backoff time (AC 28)
+**C27** - A `429` on a run whose deck gained a pending run while it ran ends it `failed` with `SUPERSEDED`, and the pending run's `runAfter` becomes the later of its own and the backoff time (AC 28) · done
 Proof: `... recommendation-worker.e2e-spec -t "a retry behind a newer pending run is superseded"`
 
 **C28** - With a recommendation drain that never resolves, the variant drain still runs at least 3 times in 3 poll intervals (fake timers) (AC 29, door 8) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/stores/__tests__/variant-queue-worker.spec.ts -t "a stuck recommendation drain does not block the variant drain"`
 
-**C29** - The log carries `recommendations.enqueued` (with `trackedDeckId`, `trigger`) on a save, `recommendations.run.claimed` and `.done` (with `trackedDeckId`, `runId`, `kept`, `dropped`, `clearUpgrades`, `inputTokens`, `outputTokens`, `durationMs`) on a valid answer, `.retry` (with `status`, `runAfter`) on a 429, `.failed` (with `code`, `attempts`) on a refusal (AC 30)
+**C29** - The log carries `recommendations.enqueued` (with `trackedDeckId`, `trigger`) on a save, `recommendations.run.claimed` and `.done` (with `trackedDeckId`, `runId`, `kept`, `dropped`, `clearUpgrades`, `inputTokens`, `outputTokens`, `durationMs`) on a valid answer, `.retry` (with `status`, `runAfter`) on a 429, `.failed` (with `code`, `attempts`) on a refusal (AC 30) · done
 Proof: `... recommendation-worker.e2e-spec -t "logs each run transition"`
 Proof: `... recommendation-queue.e2e-spec -t "logs the enqueue"`
 
-**C30** - Schema: `recommendation_run` rejects `trigger: soon` and `status: queued`; a second `pending` and a second `running` row for one deck each fail on the partial unique index; deleting the deck removes its runs, recommendations and dismissals; `recommendation` rejects rank 0, rank 11, a repeated (run, rank) and `strength: great`; `recommendation_dismissal` rejects a repeated (deck, card); `card_replacement` accepts `pickedFrom: recommendation` and rejects `pickedFrom: synergy` (doors 1-5)
+**C30** - Schema: `recommendation_run` rejects `trigger: soon` and `status: queued`; a second `pending` and a second `running` row for one deck each fail on the partial unique index; deleting the deck removes its runs, recommendations and dismissals; `recommendation` rejects rank 0, rank 11, a repeated (run, rank) and `strength: great`; `recommendation_dismissal` rejects a repeated (deck, card); `card_replacement` accepts `pickedFrom: recommendation` and rejects `pickedFrom: synergy` (doors 1-5) · done
 Proof: `... recommendation-schema.e2e-spec -t "enforces every one-way constraint"`
 
 **C31** - The migration's `up` creates the three tables with every index and CHECK the entities declare and replaces the `pickedFrom` CHECK; `down` restores the five-value CHECK and drops the three tables (doors 1-5) · done
@@ -126,22 +126,22 @@ Proof: `pnpm --filter @rathe-arsenal/api exec jest src/recommendations/__tests__
 
 ### S2 - The recommendations panel · 10 files · 120 KB · ~30k
 
-**C33** - The read returns `run` (latest `done`, with `id`, `trigger`, `finishedAt`, `stale`), `pending`, `failure` and `recommendations`, table-driven over: no run (`run: null`, `pending: false`, `failure: null`, `[]`); pending only (`pending: true`); done then pending (`run` set, `pending: true`); done then failed `MODEL_REFUSED` (`failure.code: MODEL_REFUSED`); failed then done (`failure: null`) (AC 31)
+**C33** - The read returns `run` (latest `done`, with `id`, `trigger`, `finishedAt`, `stale`), `pending`, `failure` and `recommendations`, table-driven over: no run (`run: null`, `pending: false`, `failure: null`, `[]`); pending only (`pending: true`); done then pending (`run` set, `pending: true`); done then failed `MODEL_REFUSED` (`failure.code: MODEL_REFUSED`); failed then done (`failure: null`) (AC 31) · done
 Proof: `... recommendations-read.e2e-spec -t "reports run, pending and failure for each history"`
 
-**C34** - `stale` is false right after the run and true after a composition save that changes a quantity (AC 32)
+**C34** - `stale` is false right after the run and true after a composition save that changes a quantity (AC 32) · done
 Proof: `... recommendations-read.e2e-spec -t "stale follows the deck fingerprint"`
 
-**C35** - From a run ranking A (consider), B (clear_upgrade), C (consider), D (clear_upgrade), E (consider), with C dismissed and E now in the deck, the read lists B, D, A in that order (AC 33)
+**C35** - From a run ranking A (consider), B (clear_upgrade), C (consider), D (clear_upgrade), E (consider), with C dismissed and E now in the deck, the read lists B, D, A in that order (AC 33) · done
 Proof: `... recommendations-read.e2e-spec -t "lists clear upgrades first and hides dismissed and deck cards"`
 
-**C36** - A recommended card owned 2 with none in the deck has `freeCopies: 2`; an unowned card with store stock has the shopping line's unit price and product URL; an unowned card with no store row has `priceCents: null`, `productUrl: null` (AC 34)
+**C36** - A recommended card owned 2 with none in the deck has `freeCopies: 2`; an unowned card with store stock has the shopping line's unit price and product URL; an unowned card with no store row has `priceCents: null`, `productUrl: null` (AC 34) · done
 Proof: `... recommendations-read.e2e-spec -t "joins ownership and store price live"`
 
-**C37** - A stored cut still in its slot comes back with `cutName`; after a save removes that card, the same recommendation comes back with `cutCardIdentifier`, `cutName` and `cutSlot` null (AC 35)
+**C37** - A stored cut still in its slot comes back with `cutName`; after a save removes that card, the same recommendation comes back with `cutCardIdentifier`, `cutName` and `cutSlot` null (AC 35) · done
 Proof: `... recommendations-read.e2e-spec -t "drops a cut that left the deck"`
 
-**C38** - The read answers `404` for another user's deck, `400` for deck id `abc`, `401` without a token (AC 36)
+**C38** - The read answers `404` for another user's deck, `400` for deck id `abc`, `401` without a token (AC 36) · done
 Proof: `... recommendations-read.e2e-spec -t "refuses foreign, malformed and anonymous reads"`
 
 **C39** - Panel states, one render each: empty (Generate shown, no list); pending with no run ("generating", no list); pending with a run (list and "generating"); listed run (rows); stale (stale notice beside Generate); failure `RATE_LIMITED` with no pending (localized message and Generate, list kept); done with no cards ("no upgrades found") (AC 37, AC 38, AC 40, AC 41, AC 42)
@@ -164,7 +164,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/i18n/__tests__/reco
 
 ### S3 - Clear upgrade notice · 6 files · 90 KB · ~22k
 
-**C45** - `clearUpgradeCount` on `GET /api/decks`: 2 for a deck whose run has 2 clear upgrades; 1 after one of them is dismissed; 0 after the other is adopted; 0 for a `retired` deck with a clear upgrade; 0 for a deck with no done run ; the route still answers `401` without a token (AC 46)
+**C45** - `clearUpgradeCount` on `GET /api/decks`: 2 for a deck whose run has 2 clear upgrades; 1 after one of them is dismissed; 0 after the other is adopted; 0 for a `retired` deck with a clear upgrade; 0 for a deck with no done run ; the route still answers `401` without a token (AC 46) · done
 Proof: `... recommendations-read.e2e-spec -t "clearUpgradeCount counts what the panel would show"`
 
 **C46** - The home tile shows "2 upgrades suggested" for `clearUpgradeCount: 2` and no marker for 0 (AC 47)
@@ -175,60 +175,60 @@ Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-det
 
 ### S4 - Dismiss · 5 files · 50 KB · ~12k
 
-**C48** - A first dismissal returns `201` with `cardIdentifier` and `createdAt` and one row; a repeat returns `200` with the same `createdAt` and still one row (AC 49, AC 50)
+**C48** - A first dismissal returns `201` with `cardIdentifier` and `createdAt` and one row; a repeat returns `200` with the same `createdAt` and still one row (AC 49, AC 50) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "dismisses once and answers a repeat with 200"`
 
-**C49** - A missing `cardIdentifier`, one of 129 characters and `not-a-card` each return `400` with no row (AC 51)
+**C49** - A missing `cardIdentifier`, one of 129 characters and `not-a-card` each return `400` with no row (AC 51) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "refuses malformed dismissals"`
 
-**C50** - Undo of an existing dismissal returns `204` and removes the row; undo of an absent one returns `204` (AC 52)
+**C50** - Undo of an existing dismissal returns `204` and removes the row; undo of an absent one returns `204` (AC 52) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "undo answers 204 whether or not a dismissal existed"`
 
-**C51** - Both dismissal routes answer `404` for another user's deck and `401` without a token, and `400` for deck id `abc` (AC 53)
+**C51** - Both dismissal routes answer `404` for another user's deck and `401` without a token, and `400` for deck id `abc` (AC 53) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "refuses foreign, malformed and anonymous dismissals"`
 
 **C52** - Tapping Dismiss sends the dismissal, the row leaves the panel, and the toast's Undo sends `DELETE /api/decks/7/recommendations/dismissals/<card>` (AC 54)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "Dismiss removes the row and offers undo"`
 
-**C53** - The log carries `recommendations.dismissed` and `recommendations.undismissed` with `trackedDeckId` and `cardIdentifier` (AC 55)
+**C53** - The log carries `recommendations.dismissed` and `recommendations.undismissed` with `trackedDeckId` and `cardIdentifier` (AC 55) · done
 Proof: `... recommendation-dismissals.e2e-spec -t "logs dismiss and undo"`
 
 ### S5 - Adopt · 8 files · 140 KB · ~35k
 
-**C54** - Adopting a recommendation for a 3-copy limit card with `flex-red` x2 as cut moves 2 copies (`flex-red` row deleted, recommended card x2 in `mainboard`), inserts one `active` `card_replacement` with `quantity: 2`, `pickedFrom: recommendation`, writes a snapshot listing the new card, leaves one pending auto run, and returns `201`; a Legendary recommendation with cut `flex-red` x2 moves 1 copy and leaves `flex-red` x1 (AC 56)
+**C54** - Adopting a recommendation for a 3-copy limit card with `flex-red` x2 as cut moves 2 copies (`flex-red` row deleted, recommended card x2 in `mainboard`), inserts one `active` `card_replacement` with `quantity: 2`, `pickedFrom: recommendation`, writes a snapshot listing the new card, leaves one pending auto run, and returns `201`; a Legendary recommendation with cut `flex-red` x2 moves 1 copy and leaves `flex-red` x1 (AC 56) · done
 Proof: `... recommendation-adopt.e2e-spec -t "adopt moves the cut copies up to the copy limit"`
 
-**C55** - `409 REPLACEMENT_ILLEGAL` with no `deck_card`, `card_replacement` or `recommendation_run` change, table-driven: copy limit already reached, a card not legal for the hero, cut slot `weapon`, cut slot `hero`, an Equipment recommendation with a mainboard cut, cut equal to the recommended card (AC 57)
+**C55** - `409 REPLACEMENT_ILLEGAL` with no `deck_card`, `card_replacement` or `recommendation_run` change, table-driven: copy limit already reached, a card not legal for the hero, cut slot `weapon`, cut slot `hero`, an Equipment recommendation with a mainboard cut, cut equal to the recommended card (AC 57) · done
 Proof: `... recommendation-adopt.e2e-spec -t "refuses illegal adoptions without changing rows"`
 
-**C56** - A cut card absent from the given slot returns `409 NOTHING_TO_REPLACE` and changes no row (AC 58)
+**C56** - A cut card absent from the given slot returns `409 NOTHING_TO_REPLACE` and changes no row (AC 58) · done
 Proof: `... recommendation-adopt.e2e-spec -t "refuses a cut that is not in the slot"`
 
-**C57** - A recommendation of another deck's run, an unknown uuid, another user's deck and a missing deck each return `404` (AC 59)
+**C57** - A recommendation of another deck's run, an unknown uuid, another user's deck and a missing deck each return `404` (AC 59) · done
 Proof: `... recommendation-adopt.e2e-spec -t "answers 404 for foreign or unknown targets"`
 
-**C58** - A missing `cutCardIdentifier`, a missing `cutSlot`, a 65-character slot, a 129-character card and `not-a-card` each return `400` with no row; a non-uuid recommendation id returns `400`; no token returns `401` (AC 60)
+**C58** - A missing `cutCardIdentifier`, a missing `cutSlot`, a 65-character slot, a 129-character card and `not-a-card` each return `400` with no row; a non-uuid recommendation id returns `400`; no token returns `401` (AC 60) · done
 Proof: `... recommendation-adopt.e2e-spec -t "refuses malformed adoptions"`
 
-**C59** - Reverting the adoption returns `flex-red` x2 to `mainboard`, removes the recommended card, and the read lists the recommendation again (AC 61)
+**C59** - Reverting the adoption returns `flex-red` x2 to `mainboard`, removes the recommended card, and the read lists the recommendation again (AC 61) · done
 Proof: `... recommendation-adopt.e2e-spec -t "revert restores the cut and relists the card"`
 
-**C60** - With the cut card owned 4 after adoption, the deck detail sends the adopted replacement with `originalOwned: false`, while a `close` pick in the same deck with its original owned sends `true` (AC 62)
+**C60** - With the cut card owned 4 after adoption, the deck detail sends the adopted replacement with `originalOwned: false`, while a `close` pick in the same deck with its original owned sends `true` (AC 62) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/build-replacement-views.spec.ts -t "never prompts for an adopted recommendation"`
 Proof: `... recommendation-adopt.e2e-spec -t "an adopted card never raises the original prompt"`
 
-**C61** - The log carries `recommendations.adopted` with `trackedDeckId`, `recommendationId`, `rank`, `strength`, both card identifiers, `quantity` and `suggestedCut: true` for the suggested cut and `false` for another (AC 63)
+**C61** - The log carries `recommendations.adopted` with `trackedDeckId`, `recommendationId`, `rank`, `strength`, both card identifiers, `quantity` and `suggestedCut: true` for the suggested cut and `false` for another (AC 63) · done
 Proof: `... recommendation-adopt.e2e-spec -t "logs the adoption"`
 
 **C62** - Adopt sends the cut chosen in the row's selector, which defaults to the suggested cut and lists only deck cards of the recommended card's slot; a `409 REPLACEMENT_ILLEGAL` answer shows its localized message (AC 64, AC 65)
 Proof: `pnpm --filter @rathe-arsenal/web exec vitest run src/components/deck-detail/__tests__/RecommendationsPanel.test.tsx -t "Adopt sends the chosen cut and reports a refusal"`
 
-**C63** - `POST /api/decks/:deckId/replacements` with `pickedFrom: recommendation` returns `400` (AC 66)
+**C63** - `POST /api/decks/:deckId/replacements` with `pickedFrom: recommendation` returns `400` (AC 66) · done
 Proof: `... recommendation-adopt.e2e-spec -t "the alternatives pick still refuses the recommendation origin"`
 
 ### S6 - Alternatives order · 3 files · 40 KB · ~10k
 
-**C64** - Given a group [P, Q, R, S] and a run ranking S at 1 and Q at 4, the order becomes [S, Q, P, R]; with no run the group is unchanged; group membership and group order are identical with and without the run (AC 67, AC 68, AC 69)
+**C64** - Given a group [P, Q, R, S] and a run ranking S at 1 and Q at 4, the order becomes [S, Q, P, R]; with no run the group is unchanged; group membership and group order are identical with and without the run (AC 67, AC 68, AC 69) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/replacements/__tests__/order-by-recommendations.spec.ts -t "lifts run cards by rank and keeps membership"`
 Proof: `... alternatives-order.e2e-spec -t "a done run reorders a group without changing it"`
 
@@ -268,11 +268,14 @@ Proof: `... alternatives-order.e2e-spec -t "a done run reorders a group without 
 | Landing doors (8) | 1 run table C30, C31 · 2 recommendation table C30, C31 · 3 dismissal and pool C30, C13 · 4 `pickedFrom` C30, C63 · 5 one pending, atomic upsert C6, C30 · 6 fingerprint C32, C34 · 7 provider contract C16 · 8 second loop C28 | - |
 | Relations entities (4) | `recommendation_run` C30 · `recommendation` C30 · `recommendation_dismissal` C30 · `card_replacement` adoption C54 | - |
 
-**C65** - Each new route answers `429` after the global throttler's limit, table-driven over the five new routes, and `GET /api/decks` still does (status rows above)
+**C65** - Each new route answers `429` after the global throttler's limit, table-driven over the five new routes, and `GET /api/decks` still does (status rows above) · done
 Proof: `... recommendations-throttle.e2e-spec -t "every recommendations route is throttled"`
 
 **C66** - `AppModule`'s environment validation accepts an environment with no `GEMINI_API_KEY` and one with a value (startup config row) · done
 Proof: `pnpm --filter @rathe-arsenal/api exec jest src/config/__tests__/env.dto.spec.ts -t "GEMINI_API_KEY is optional"`
+
+**C67** - Generate answers `429` on the 11th request within a minute from one client, before the global 120-per-minute limit (added during build after a security review flagged repeated paid calls; plan Assumptions row "Generate rate limit") · done
+Proof: `... recommendations-throttle.e2e-spec -t "Generate allows 10 requests a minute"`
 
 - Claims naming a status code, route or response shape: C7-C9, C33, C35-C38, C45, C48-C51, C54-C59, C63, C65 - each has a proof that crosses the HTTP boundary against real Postgres
 - Decision tables proven at their own layer and again at the boundary: provider outcomes (C21-C24 client spec, plus C20, C21, C24 against Postgres); answer validation (C17-C19 unit, plus e2e); pool (C13 unit, plus the captured request); in-group order (C64 unit, plus e2e)

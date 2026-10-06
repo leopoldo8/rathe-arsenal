@@ -13,6 +13,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
@@ -28,6 +29,7 @@ import {
 } from './recommendations.service';
 
 const MAX_CARD_IDENTIFIER_LENGTH = 128;
+export const GENERATE_LIMIT_PER_MINUTE = 10;
 
 @Controller('decks/:deckId/recommendations')
 @UseGuards(OwnsTrackedDeckGuard)
@@ -47,6 +49,7 @@ export class RecommendationsController {
 
   @Post('runs')
   @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: { limit: GENERATE_LIMIT_PER_MINUTE, ttl: 60_000 } })
   async generate(@Param('deckId', ParseIntPipe) deckId: number): Promise<{ run: IRecommendationRunSummary }> {
     return { run: await this.recommendationsService.generate(deckId) };
   }
