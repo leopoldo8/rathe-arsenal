@@ -1,4 +1,4 @@
-import { ICatalog, ICatalogCard } from '../catalog/types';
+import { ICatalog, ICatalogCard, Keyword } from '../catalog/types';
 import { getClassKeys } from '../catalog/indices';
 import { ISubstitutionMatch, ITierConfig } from './types';
 import {
@@ -29,6 +29,14 @@ function keywordOverlapCount(a: readonly string[], b: readonly string[]): number
   return a.filter((kw) => setB.has(kw)).length;
 }
 
+/** Keywords a stand-in need not repeat: Go again is on most cards; Legendary and Specialization are deck-building rules. */
+const NON_EFFECT_KEYWORDS: ReadonlySet<string> = new Set([Keyword.GoAgain, Keyword.Legendary, Keyword.Specialization]);
+
+function keepsEffectKeywords(missing: ICatalogCard, candidate: ICatalogCard): boolean {
+  const held = new Set<string>(candidate.keywords);
+  return missing.keywords.every((keyword) => NON_EFFECT_KEYWORDS.has(keyword) || held.has(keyword));
+}
+
 /** Equipment slot subtypes that define which body slot the equipment occupies. */
 const EQUIPMENT_SLOTS = new Set(['Arms', 'Chest', 'Head', 'Legs']);
 
@@ -49,6 +57,7 @@ function getEquipmentSlot(card: ICatalogCard): string | null {
  *  - talent intersection (when missing has talents)
  *  - equipment body slot match (when missing is equipment)
  *  - power/defense delta within the tier's per-tier cap
+ *  - every effect keyword of the missing card (all but Go again, Legendary, Specialization)
  *
  * Tier-parameterized behavior:
  *  - `requireKeywordOverlap`: when true, zero overlap on a missing card that
@@ -84,6 +93,9 @@ export function scoreCandidate(
     const candidateSlot = getEquipmentSlot(candidate);
     if (candidateSlot !== missingSlot) return null;
   }
+
+  // A stand-in that drops an effect keyword (Opt, Reload, Overpower...) loses what the card is played for.
+  if (!keepsEffectKeywords(missing, candidate)) return null;
 
   let score = BASE_SCORE;
 
