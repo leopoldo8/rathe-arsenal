@@ -76,6 +76,8 @@ export interface ITrackedDeckListItem {
     readonly missing: number;
     readonly total: number;
   } | null;
+  /** Clear upgrades the deck's recommendations panel would list; 0 for a retired deck. */
+  readonly clearUpgradeCount: number;
 }
 
 /**

@@ -16,6 +16,7 @@ import {
   ISkippedUrl,
 } from './dtos/import-decks.response.dto';
 import { aggregateInventory } from './aggregate-inventory';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
 
 interface IParsedUrl {
   readonly url: string;
@@ -31,6 +32,7 @@ export class DecksImportService {
     private readonly fabraryService: FabraryService,
     private readonly substitutionService: SubstitutionService,
     private readonly sourcesService: SourcesService,
+    private readonly recommendationQueue: RecommendationQueueService,
   ) {}
 
   async run(
@@ -141,6 +143,7 @@ export class DecksImportService {
             }),
           );
           await manager.save(DeckCardEntity, deckCards);
+          await this.recommendationQueue.enqueueAuto(manager, saved.id);
 
           results.push({ trackedDeck: saved, deck });
         }

@@ -18,3 +18,6 @@ export {
   VariantFetchJobEntity,
   EVariantFetchJobStatus,
 } from './variant-fetch-job.entity';
+export { RecommendationRunEntity } from './recommendation-run.entity';
+export { RecommendationEntity } from './recommendation.entity';
+export { RecommendationDismissalEntity } from './recommendation-dismissal.entity';

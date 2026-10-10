@@ -80,14 +80,29 @@
 - **Date**: 2026-10-04
 - **Status**: active
 
+### AD-011
+- **Decision**: Language-model work runs as rows in a Postgres job table (`recommendation_run`, at most one `pending` and one `running` row per deck through partial unique indexes, coalesced by one atomic `INSERT ... ON CONFLICT ... DO UPDATE`) drained by the existing `variant-queue-worker` process in a loop of its own; no request path calls a model. The model is Gemini 3.8 Flash called directly on Google's `generateContent` REST endpoint with plain `fetch` and `GEMINI_API_KEY`, which only the worker reads and which is optional in the environment schema.
+- **Reason**: card-recommendations (`.specs/features/card-recommendations/plan.md`, Landing doors 5, 7 and 8): a call takes about a minute, must survive deploys, and must not stall variant fetches; the design (`.design/card-recommendations.md`) chose Google directly, free tier first.
+- **Trade-off**: A second job kind shares one process with the variant queue, so a crash takes both down until Railway restarts it. Switching to OpenRouter or another model replaces the client and its outcome table. Runs are never pruned.
+- **Scope**: `apps/api` (`recommendations` module, `stores/variant-queue-worker.ts`, deck-list writers that enqueue), the `scrapper-worker` Railway service environment.
+- **Date**: 2026-10-06
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: card-alternatives — `.specs/features/card-alternatives/` — **built and VERIFIED (PASS, round 5 scoped, independent Verifier, profile standard)**. Branch `feat/card-alternatives`, not pushed, no PR yet (owner's call). Grouped alternatives for a missing card (owned and buyable, legal for the deck), picking one as a `card_replacement` that rewrites the deck (AD-009), undo, and the keep-or-go-back prompt when the original returns.
-- **Deviations**: 1-20 in `.specs/features/card-alternatives/implementation-notes.md`; the range also fixes, outside the feature: the Playwright fixture broken by the 5.3.0 catalog (#127), entity-declared indexes and CHECKs that existed only in migrations, CSV duplicate upload answering `exact-match` instead of a 500, deck ids outside 1..2147483647 answering 400 instead of a 500, a rename race in `CsvSourceRow`, and one-listener e2e/int harnesses (the `407` flake).
-- **Open, owner**: the 0.05 owned bonus in the alternatives order is uncalibrated (plan open question 1); case-insensitive tag uniqueness (`IDX_deck_tag_user_name_ci`) and `user.preferences` still differ between migrations and entities.
-- **Next**: `spike/synergy` (synergy spike, verified PASS, AD-010) merges after this branch - `STATE.md` conflict is only AD-009 next to AD-010; then plan `.design/card-recommendations.md` (confirmed 2026-10-05) with tlc-spec-lean.
+- **Feature**: card-recommendations — `.specs/features/card-recommendations/` — planned, built and verified on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed, no PR. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
+- **Verification**: three independent rounds, each FAIL on fewer and smaller gaps (round 3: 73/73 checks proven, full gate green, one surviving mutant on unpinned migration column defaults). That last gap is fixed and author-checked, not independently re-verified: run one more scoped Verifier round so `validate_verification.py` exits 0.
+- **Blocks go-live**: `GEMINI_API_KEY` on the `scrapper-worker` service, and the migration on production. The live Gemini request shape is unproven until the first real run.
+- **Deviations and owner calls**: `.specs/features/card-recommendations/implementation-notes.md` (1-14 and "Needs owner").
+- **Tests**: run this branch's api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_recs`, a separate database in the same container; several int-specs otherwise default to the dev database.
 
 ### Previous handoff
+
+- **Feature**: card-alternatives — `.specs/features/card-alternatives/` — built and VERIFIED (PASS, round 5 scoped, profile standard), merged to `main` as #130; the synergy spike (AD-010) merged as #131.
+- **Deviations**: 1-20 in `.specs/features/card-alternatives/implementation-notes.md`.
+- **Open, owner**: the 0.05 owned bonus in the alternatives order is uncalibrated (plan open question 1); case-insensitive tag uniqueness (`IDX_deck_tag_user_name_ci`) and `user.preferences` still differ between migrations and entities.
+
+### Older handoff
 
 - **Feature**: card-scanner — `.specs/features/card-scanner/` — **built and VERIFIED (PASS, round 3, independent Verifier, profile standard)**. Merged to `main` as #122. Phone-camera scanning at `/add-cards/scan`: on-device OCR of the collector code with a 3-variant vote, per-card notice with Wrong + name search, review list, one atomic batch commit (AD-008).
 - **Deviations**: DEV-01..08 in `.specs/features/card-scanner/implementation-notes.md` (index shape grouped by card, tesseract.js 7, all 15 core files ship ~53 MB, confirm on the bar, re-arm rule, 2x2 tabs on phones, vitest on half the cores, e2e apps on 127.0.0.1).

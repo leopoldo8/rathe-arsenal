@@ -115,6 +115,11 @@ export function DeckTile({
         readinessPct={readinessPct}
       />
       <DeckMeta meta={meta} isIllegal={deck.legality.category === 'illegal'} />
+      {deck.clearUpgradeCount > 0 && (
+        <p className={styles.upgrades} data-testid="deck-upgrades">
+          {t('home.upgradesSuggested', { count: deck.clearUpgradeCount })}
+        </p>
+      )}
       <UntrackPin onClick={handleUntrack} disabled={isUntracking} deckName={deck.name} />
     </article>
   );

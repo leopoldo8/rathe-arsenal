@@ -236,6 +236,23 @@ vi.mock('../../../api/swaps', async (importOriginal) => {
   };
 });
 
+vi.mock('../../../api/recommendations', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/recommendations')>();
+  const idle = { mutate: vi.fn(), isPending: false };
+  return {
+    ...actual,
+    useRecommendationsQuery: () => ({
+      data: { run: null, pending: false, failure: null, recommendations: [] },
+      isError: false,
+      refetch: vi.fn(),
+    }),
+    useGenerateRecommendations: () => idle,
+    useDismissRecommendation: () => idle,
+    useUndismissRecommendation: () => idle,
+    useAdoptRecommendation: () => idle,
+  };
+});
+
 vi.mock('../../../api/variant-fetch', () => ({
   useVariantFetchMutation: () => ({
     mutate: mockVariantMutate,

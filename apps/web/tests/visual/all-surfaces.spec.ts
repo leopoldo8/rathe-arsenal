@@ -94,6 +94,15 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
     test(`auth: ${surface.name}`, async ({ page }) => {
       const url = surface.url.replace(':deckId', String(loadFixture().readyDeckId));
 
+      // Runs come from the worker, which `pnpm dev` does not start, so a deck's panel would depend on whatever was queued.
+      await page.route('**/api/decks/*/recommendations', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ run: null, pending: false, failure: null, recommendations: [] }),
+        }),
+      );
+
       if (surface.name === 'onboarding') {
         await page.route('**/api/decks', (route) =>
           route.fulfill({

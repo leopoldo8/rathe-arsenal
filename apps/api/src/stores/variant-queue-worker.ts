@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { INestApplicationContext, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { VariantFetchQueueService } from './variant-fetch-queue.service';
 import { VariantJobProcessorService } from './variant-job-processor.service';
@@ -7,8 +7,14 @@ import { ResolveJobCardsService } from './resolve-job-cards.service';
 import { StoreIngestionService } from './store-ingestion.service';
 import { VariantFetchJobEntity } from '../database/entities/variant-fetch-job.entity';
 import { IFetchCard } from './types/fetch-card';
+import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
+import {
+  drainRecommendationsOnce,
+  RecommendationRunnerService,
+} from '../recommendations/recommendation-runner.service';
+import { TGeminiFetch } from '../recommendations/gemini-client';
 
-const POLL_MS = 3000;
+export const POLL_MS = 3000;
 
 export interface IDrainDeps {
   readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext'>;
@@ -60,12 +66,67 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function main(): Promise<void> {
-  const logger = new Logger('VariantQueueWorker');
-  // Imported dynamically so loading this module for unit tests does not pull in
-  // AppModule's eager environment validation (which has no env in CI/test).
-  const { AppModule } = await import('../app.module');
-  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
+/** Runs `step` then waits `pollMs`, forever; each loop is independent, so a slow step stalls only its own loop. */
+export async function loopForever(
+  step: () => Promise<void>,
+  pollMs: number,
+  shouldContinue: () => boolean = () => true,
+): Promise<void> {
+  while (shouldContinue()) {
+    await step();
+    await sleep(pollMs);
+  }
+}
+
+export function runWorkerLoops(
+  steps: readonly (() => Promise<void>)[],
+  pollMs: number = POLL_MS,
+  shouldContinue: () => boolean = () => true,
+): Promise<void[]> {
+  return Promise.all(steps.map((step) => loopForever(step, pollMs, shouldContinue)));
+}
+
+export interface IRecommendationStepDeps {
+  readonly queue: Pick<RecommendationQueueService, 'reclaimOrphans' | 'claimNext'>;
+  readonly runner: Pick<RecommendationRunnerService, 'process'>;
+  readonly env: NodeJS.ProcessEnv;
+  readonly fetch: TGeminiFetch;
+  readonly logger: Pick<Logger, 'error'>;
+}
+
+/** One recommendation drain; the key is read from the environment on every run, so setting it needs no restart of the loop. */
+export function createRecommendationStep(deps: IRecommendationStepDeps): () => Promise<void> {
+  return async () => {
+    try {
+      await drainRecommendationsOnce({
+        queue: deps.queue,
+        runner: deps.runner,
+        readApiKey: () => deps.env['GEMINI_API_KEY'],
+        fetch: deps.fetch,
+      });
+    } catch (err) {
+      deps.logger.error({ event: 'recommendations.worker.error', error: (err as Error).message });
+    }
+  };
+}
+
+export interface IWorkerDeps {
+  readonly env: NodeJS.ProcessEnv;
+  readonly fetch: TGeminiFetch;
+  readonly pollMs?: number;
+  readonly shouldContinue?: () => boolean;
+}
+
+export function defaultWorkerDeps(): IWorkerDeps {
+  return { env: process.env, fetch: fetch as unknown as TGeminiFetch };
+}
+
+/** Builds both steps from the application context and runs them, each in its own loop. */
+export async function runWorker(
+  app: Pick<INestApplicationContext, 'get'>,
+  deps: IWorkerDeps,
+  logger: Pick<Logger, 'log' | 'error'>,
+): Promise<void> {
   const queue = app.get(VariantFetchQueueService);
   const processor = app.get(VariantJobProcessorService);
   const resolver = app.get(ResolveJobCardsService);
@@ -76,7 +137,7 @@ async function main(): Promise<void> {
 
   logger.log({ event: 'variant-worker.started' });
 
-  while (true) {
+  const variantStep = async (): Promise<void> => {
     // Owner-triggered URL sync (no automatic cadence).
     try {
       await runPendingUrlSync({ ingestion, logger });
@@ -93,8 +154,26 @@ async function main(): Promise<void> {
         at: new Date().toISOString(),
       });
     }
-    await sleep(POLL_MS);
-  }
+  };
+
+  const recommendationStep = createRecommendationStep({
+    queue: app.get(RecommendationQueueService),
+    runner: app.get(RecommendationRunnerService),
+    env: deps.env,
+    fetch: deps.fetch,
+    logger,
+  });
+
+  await runWorkerLoops([variantStep, recommendationStep], deps.pollMs ?? POLL_MS, deps.shouldContinue);
+}
+
+export async function main(): Promise<void> {
+  const logger = new Logger('VariantQueueWorker');
+  // Imported dynamically so loading this module for unit tests does not pull in
+  // AppModule's eager environment validation (which has no env in CI/test).
+  const { AppModule } = await import('../app.module');
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
+  await runWorker(app, defaultWorkerDeps(), logger);
 }
 
 if (require.main === module) {

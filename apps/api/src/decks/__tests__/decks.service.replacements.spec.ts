@@ -23,6 +23,8 @@ import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.se
 import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const USER_ID = 'user-uuid-replacements';
 const DECK_ID = 3;
@@ -131,6 +133,11 @@ describe('DecksService.getDetail replacements', () => {
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: createMock<SwapsReconciliationService>() },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
+        {
+          provide: RecommendationsQueryService,
+          useValue: createMock<RecommendationsQueryService>({ countClearUpgrades: jest.fn().mockResolvedValue(new Map()) }),
+        },
       ],
     }).compile();
 

@@ -29,7 +29,8 @@ export function buildReplacementViews(
       originalName: resolveName(replacement.originalCardIdentifier),
       replacementCardIdentifier: replacement.replacementCardIdentifier,
       quantity: replacement.quantity,
-      originalOwned: freeCopies >= replacement.quantity,
+      // An adopted recommendation cut a card the deck held, so its "original returned" prompt never applies.
+      originalOwned: replacement.pickedFrom !== 'recommendation' && freeCopies >= replacement.quantity,
     };
   });
 }

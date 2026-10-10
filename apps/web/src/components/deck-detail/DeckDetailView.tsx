@@ -12,6 +12,7 @@ import { DeckHeroBanner } from './DeckHeroBanner';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
 import { ModifiedViewBanner } from './ModifiedViewBanner';
+import { RecommendationsPanel, type IRecommendationDeckCard } from './RecommendationsPanel';
 import { TagChipRow } from './TagChipRow';
 import { summariseDeck } from './deckDetailModel';
 import { buildDeckList } from './deckListModel';
@@ -83,6 +84,14 @@ export function DeckDetailView({
     () => buildDeckList(snapshot.breakdown, summary.openMissing),
     [snapshot.breakdown, summary.openMissing],
   );
+  const deckCards = useMemo((): IRecommendationDeckCard[] => {
+    const seen = new Map<string, IRecommendationDeckCard>();
+    for (const { entry } of items) {
+      seen.set(`${entry.cardIdentifier}::${entry.slot}`, { cardIdentifier: entry.cardIdentifier, name: entry.name, slot: entry.slot });
+    }
+    return [...seen.values()];
+  }, [items]);
+  const recommendationsPanel = <RecommendationsPanel deckId={deck.id} deckCards={deckCards} />;
 
   return (
     <div className={styles.stack} data-testid="deck-detail-view">
@@ -118,7 +127,11 @@ export function DeckDetailView({
         />
       )}
       <DeckAnalysisRow items={items} />
-      {summary.kind !== 'complete' && (
+      {summary.kind === 'complete' ? (
+        <div className={styles.recommendationsRow} data-testid="deck-recommendations-row">
+          {recommendationsPanel}
+        </div>
+      ) : (
         <DeckActionPanels
           breakdown={snapshot.breakdown}
           deckSwaps={deckSwaps}
@@ -138,6 +151,7 @@ export function DeckDetailView({
           onShoppingRetry={onShoppingRetry}
           replacements={deck.replacements}
           onOpenAlternatives={setAlternativesTarget}
+          recommendations={recommendationsPanel}
         />
       )}
       <DeckList items={items} onEditCards={onEditCards} deckId={deck.id} replacements={deck.replacements} />

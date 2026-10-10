@@ -27,6 +27,7 @@ function makeDeck(overrides: Partial<ITrackedDeckListItem> = {}): ITrackedDeckLi
     heroImageUrl: null,
     representativeCards: [],
     cardCounts: { owned: 63, missing: 4, total: 67 },
+    clearUpgradeCount: 0,
     ...overrides,
   };
 }

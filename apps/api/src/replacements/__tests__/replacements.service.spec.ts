@@ -10,6 +10,7 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { ReplacementsQueryService } from '../replacements-query.service';
 import { ReplacementsService } from '../replacements.service';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
 
 const USER_ID = 'user-1';
 const DECK_ID = 4;
@@ -80,7 +81,7 @@ function build(options: {
   collection.loadOwned.mockResolvedValue(new Map(options.ownedReplacement ? [[COAX, options.ownedReplacement]] : []));
 
   return {
-    service: new ReplacementsService(dataSource, substitution, swaps, replacements, collection),
+    service: new ReplacementsService(dataSource, substitution, swaps, replacements, collection, createMock<RecommendationQueueService>()),
     substitution,
     manager,
   };

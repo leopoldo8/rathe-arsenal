@@ -16,6 +16,8 @@ import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { DecksService } from '../decks.service';
 import { CreateScratchDeckDto } from '../dto/create-scratch-deck.dto';
+import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
+import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
 
 const USER_ID = 'user-uuid-scratch';
 
@@ -126,6 +128,11 @@ describe('DecksService.createScratch', () => {
         { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
+        { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
+        {
+          provide: RecommendationsQueryService,
+          useValue: createMock<RecommendationsQueryService>({ countClearUpgrades: jest.fn().mockResolvedValue(new Map()) }),
+        },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
       ],

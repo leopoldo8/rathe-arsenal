@@ -20,6 +20,15 @@ import { computeNeeded } from './compute-needed';
 import { PickReplacementDto } from './dtos/pick-replacement.dto';
 import { replacementConflict } from './replacement-errors';
 import { ReplacementsQueryService } from './replacements-query.service';
+import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
+import { RecommendationEntity } from '../database/entities/recommendation.entity';
+import { RecommendationRunEntity } from '../database/entities/recommendation-run.entity';
+import { decideAdoption } from './adoption-rules';
+
+export interface IAdoptRequest {
+  readonly cutCardIdentifier: string;
+  readonly cutSlot: string;
+}
 
 export interface IReplacementResponse {
   readonly id: string;
@@ -66,6 +75,7 @@ export class ReplacementsService {
     private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly replacementsQueryService: ReplacementsQueryService,
     private readonly collectionReadService: CollectionReadService,
+    private readonly recommendationQueue: RecommendationQueueService,
   ) {}
 
   async pick(userId: string, deckId: number, dto: PickReplacementDto): Promise<IReplacementResponse> {
@@ -135,6 +145,7 @@ export class ReplacementsService {
       );
 
       await this.recompute(manager, userId, deckId);
+      await this.recommendationQueue.enqueueAuto(manager, deckId);
       return { saved, copiesHeld, needed };
     });
 
@@ -149,6 +160,74 @@ export class ReplacementsService {
       quantity: outcome.saved.quantity,
       pickedFrom: outcome.saved.pickedFrom,
       owned: (owned.get(replacement.cardIdentifier) ?? 0) - outcome.copiesHeld >= outcome.needed,
+    });
+    return toResponse(outcome.saved);
+  }
+
+  /** Swaps up to every copy of the cut card in its slot for the recommended card, capped by the copy limit. */
+  async adopt(userId: string, deckId: number, recommendationId: string, dto: IAdoptRequest): Promise<IReplacementResponse> {
+    const cut = this.requireCard(dto.cutCardIdentifier);
+
+    const outcome = await this.dataSource.transaction(async (manager) => {
+      const deck = await this.lockDeck(manager, deckId, userId);
+      const recommendation = await manager
+        .createQueryBuilder(RecommendationEntity, 'recommendation')
+        .innerJoin(RecommendationRunEntity, 'run', 'run.id = recommendation.runId')
+        .where('recommendation.id = :recommendationId', { recommendationId })
+        .andWhere('run.trackedDeckId = :deckId', { deckId })
+        .getOne();
+      if (!recommendation) throw new NotFoundException('Recommendation not found');
+      const recommended = this.requireCard(recommendation.cardIdentifier);
+      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+      const decision = decideAdoption({
+        recommended,
+        cut,
+        cutSlot: dto.cutSlot,
+        heroCard: this.findHero(deck),
+        format: deck.format as TSupportedFormat,
+        deckCards,
+      });
+      if (decision.kind === 'refuse') throw replacementConflict(decision.code);
+      const { quantity } = decision;
+
+      await this.moveCopies(manager, deckCards, {
+        trackedDeckId: deckId,
+        slot: dto.cutSlot,
+        from: cut.cardIdentifier,
+        to: recommended.cardIdentifier,
+        quantity,
+      });
+
+      const saved = await manager.save(
+        manager.create(CardReplacementEntity, {
+          userId,
+          trackedDeckId: deckId,
+          slot: dto.cutSlot,
+          originalCardIdentifier: cut.cardIdentifier,
+          replacementCardIdentifier: recommended.cardIdentifier,
+          quantity,
+          pickedFrom: 'recommendation',
+          status: 'active',
+          resolvedAt: null,
+        }),
+      );
+
+      await this.recompute(manager, userId, deckId);
+      await this.recommendationQueue.enqueueAuto(manager, deckId);
+      return { saved, recommendation };
+    });
+
+    this.logger.log({
+      event: 'recommendations.adopted',
+      userId,
+      trackedDeckId: deckId,
+      recommendationId,
+      rank: outcome.recommendation.rank,
+      strength: outcome.recommendation.strength,
+      cutCardIdentifier: outcome.saved.originalCardIdentifier,
+      recommendedCardIdentifier: outcome.saved.replacementCardIdentifier,
+      quantity: outcome.saved.quantity,
+      suggestedCut: outcome.recommendation.cutCardIdentifier === outcome.saved.originalCardIdentifier,
     });
     return toResponse(outcome.saved);
   }
@@ -172,6 +251,7 @@ export class ReplacementsService {
           to: record.originalCardIdentifier,
           quantity: record.quantity,
         });
+        await this.recommendationQueue.enqueueAuto(manager, record.trackedDeckId);
       }
 
       await manager.update(

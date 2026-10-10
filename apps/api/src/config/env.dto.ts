@@ -155,6 +155,11 @@ export class EnvDto {
   @IsString()
   FIRECRAWL_API_KEY?: string;
 
+  /** Read only by the worker's recommendation runs; absent, every run fails with `NO_API_KEY`. */
+  @IsOptional()
+  @IsString()
+  GEMINI_API_KEY?: string;
+
   /** The Firecrawl plan's /scrape limit: Free 10, Hobby 100, Standard 500. */
   @IsOptional()
   @IsInt()

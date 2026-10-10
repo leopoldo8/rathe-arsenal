@@ -19,6 +19,8 @@ import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.servi
 import { computeNeeded } from './compute-needed';
 import { replacementConflict } from './replacement-errors';
 import { ReplacementsQueryService } from './replacements-query.service';
+import { RecommendationsQueryService } from '../recommendations/recommendations-query.service';
+import { orderByRecommendations } from './order-by-recommendations';
 
 /** Slots whose cards never get stand-ins, so they get no alternatives either. */
 export const NON_REPLACEABLE_SLOTS: ReadonlySet<string> = new Set(['hero', 'weapon']);
@@ -64,6 +66,7 @@ export class AlternativesService {
     private readonly replacementsQueryService: ReplacementsQueryService,
     private readonly collectionReadService: CollectionReadService,
     private readonly shoppingLineService: ShoppingLineService,
+    private readonly recommendationsQueryService: RecommendationsQueryService,
   ) {}
 
   async list({ userId, deckId, cardIdentifier, slot, query }: IAlternativesRequest): Promise<IAlternativesResponse> {
@@ -101,6 +104,13 @@ export class AlternativesService {
     });
 
     return { needed, groups };
+  }
+
+  private async loadRecommendedRanks(trackedDeckId: number): Promise<Map<string, number>> {
+    const run = (await this.recommendationsQueryService.latestDoneRuns([trackedDeckId])).get(trackedDeckId);
+    if (!run) return new Map();
+    const recommendations = await this.recommendationsQueryService.recommendationsOf([run.id]);
+    return new Map(recommendations.map((row) => [row.cardIdentifier, row.rank]));
   }
 
   private findCard(cardIdentifier: string): ICatalogCard | null {
@@ -141,11 +151,17 @@ export class AlternativesService {
     );
 
     const listed = found.flatMap((group) => group.cards.map((entry) => entry.card.cardIdentifier));
-    const prices = await this.shoppingLineService.priceCards(listed, needed);
+    const [prices, recommendedRanks] = await Promise.all([
+      this.shoppingLineService.priceCards(listed, needed),
+      this.loadRecommendedRanks(deck.id),
+    ]);
 
     return found.map((group) => ({
       group: group.group,
-      cards: group.cards.map(({ card, freeCopies, rationale }) => ({
+      cards: orderByRecommendations(
+        group.cards.map((entry) => ({ ...entry, cardIdentifier: entry.card.cardIdentifier })),
+        recommendedRanks,
+      ).map(({ card, freeCopies, rationale }) => ({
         cardIdentifier: card.cardIdentifier,
         name: card.name,
         pitch: card.pitch,
