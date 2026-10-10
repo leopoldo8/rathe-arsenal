@@ -1,18 +1,19 @@
 import {
-  cropFraction,
   invert,
   stretchContrast,
   threshold,
   resizeToHeight,
   type IFractionRect,
+  type ICardImage,
   type IGrayImage,
 } from './ocr-image';
+import { cropLevelled } from './ocr-skew';
 
 export type TVariantId = 'full' | 'left-binary' | 'full-binary-sparse';
 
 export interface IOcrVariant {
   readonly id: TVariantId;
-  readonly prepare: (card: IGrayImage) => IGrayImage;
+  readonly prepare: (card: ICardImage) => IGrayImage;
   readonly parameters: Readonly<Record<string, string>>;
 }
 
@@ -38,19 +39,19 @@ const BASE_PARAMETERS = {
 export const OCR_VARIANTS: readonly IOcrVariant[] = [
   {
     id: 'full',
-    prepare: (card) => resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE)), LINE_HEIGHT),
+    prepare: (card) => resizeToHeight(stretchContrast(cropLevelled(card, CODE_LINE)), LINE_HEIGHT),
     parameters: BASE_PARAMETERS,
   },
   {
     id: 'left-binary',
     prepare: (card) =>
-      threshold(invert(resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE_LEFT)), LEFT_LINE_HEIGHT)), BINARY_CUTOFF),
+      threshold(invert(resizeToHeight(stretchContrast(cropLevelled(card, CODE_LINE_LEFT)), LEFT_LINE_HEIGHT)), BINARY_CUTOFF),
     parameters: BASE_PARAMETERS,
   },
   {
     id: 'full-binary-sparse',
     prepare: (card) =>
-      threshold(invert(resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE)), LINE_HEIGHT)), BINARY_CUTOFF),
+      threshold(invert(resizeToHeight(stretchContrast(cropLevelled(card, CODE_LINE)), LINE_HEIGHT)), BINARY_CUTOFF),
     parameters: {
       ...BASE_PARAMETERS,
       tessedit_pageseg_mode: SPARSE_TEXT_MODE,
