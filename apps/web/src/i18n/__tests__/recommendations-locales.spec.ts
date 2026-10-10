@@ -5,7 +5,7 @@ import { enUS } from '../locales/en-US';
 
 const PANEL_KEYS = [
   'title', 'generate', 'generateAria', 'generating', 'stale', 'empty', 'noUpgrades', 'loadError', 'retry', 'listAria',
-  'clearUpgrade', 'owned', 'outOfStock', 'buyAria', 'replaces', 'cutLabel', 'cutGone', 'cutNone', 'adopt', 'adoptAria', 'dismiss',
+  'clearUpgrade', 'owned', 'outOfStock', 'buyAria', 'previewAria', 'cost', 'replaces', 'cutLabel', 'cutGone', 'cutNone', 'adopt', 'adoptAria', 'dismiss',
   'dismissAria', 'dismissed', 'undo',
 ] as const;
 

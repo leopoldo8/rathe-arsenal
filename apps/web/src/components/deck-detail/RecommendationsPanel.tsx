@@ -12,6 +12,7 @@ import { ApiError } from '../../lib/api-client';
 import { formatBrl } from '../../utils/format-brl';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { CardArt } from '../card-art/CardArt';
+import { CardLightbox } from '../card-art/CardLightbox';
 import { useToast } from '../ui/Toast/useToast';
 import styles from './RecommendationsPanel.module.css';
 
@@ -19,6 +20,19 @@ export interface IRecommendationDeckCard {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly slot: string;
+  readonly pitch: number | null;
+}
+
+const PITCH_LABEL_KEY: Readonly<Record<number, string>> = {
+  1: 'library.pitchRedLabel',
+  2: 'library.pitchYellowLabel',
+  3: 'library.pitchBlueLabel',
+};
+
+/** "Name (Red)": cards that differ only by pitch share a name, so the pitch is part of how a card is named here. */
+function withPitch(name: string, pitch: number | null, t: (key: string) => string): string {
+  const key = pitch === null ? undefined : PITCH_LABEL_KEY[pitch];
+  return key === undefined ? name : `${name} (${t(key)})`;
 }
 
 interface IRecommendationsPanelProps {
@@ -45,6 +59,7 @@ interface IRecommendationRowProps {
   readonly busy: boolean;
   readonly onAdopt: (cutCardIdentifier: string) => void;
   readonly onDismiss: () => void;
+  readonly onPreview: () => void;
 }
 
 function RecommendationRow({
@@ -53,6 +68,7 @@ function RecommendationRow({
   busy,
   onAdopt,
   onDismiss,
+  onPreview,
 }: IRecommendationRowProps): React.ReactElement {
   const { t } = useTranslation();
   const selectId = useId();
@@ -67,7 +83,13 @@ function RecommendationRow({
       data-card={recommendation.cardIdentifier}
       data-strength={recommendation.strength}
     >
-      <span className={styles.art} data-testid="recommendation-art">
+      <button
+        type="button"
+        className={styles.art}
+        data-testid="recommendation-art"
+        aria-label={t('recommendations.previewAria', { name: withPitch(recommendation.name, recommendation.pitch, t) })}
+        onClick={onPreview}
+      >
         <CardArt
           name={recommendation.name}
           pitch={toPitch(recommendation.pitch)}
@@ -77,12 +99,17 @@ function RecommendationRow({
           size="xs"
           imageUrl={recommendation.imageUrl}
         />
-      </span>
+      </button>
       <div className={styles.body}>
         <div className={styles.nameLine}>
           <span className={styles.name} data-testid="recommendation-name">
-            {recommendation.name}
+            {withPitch(recommendation.name, recommendation.pitch, t)}
           </span>
+          {recommendation.cost !== null && (
+            <span className={styles.cost} data-testid="recommendation-cost">
+              {t('recommendations.cost', { cost: recommendation.cost })}
+            </span>
+          )}
           {isClear && (
             <span className={styles.badge} data-testid="clear-upgrade-badge">
               {t('recommendations.clearUpgrade')}
@@ -112,7 +139,8 @@ function RecommendationRow({
         <p className={styles.reason}>{recommendation.reason}</p>
         {recommendation.cutName !== null && (
           <p className={styles.cut} data-testid="recommendation-cut">
-            {t('recommendations.replaces', { name: recommendation.cutName })}
+            {t('recommendations.replaces', { name: withPitch(recommendation.cutName, recommendation.cutPitch, t) })}
+            {recommendation.cutCost !== null && ` · ${t('recommendations.cost', { cost: recommendation.cutCost })}`}
           </p>
         )}
         <div className={styles.actions}>
@@ -129,7 +157,7 @@ function RecommendationRow({
             <option value="">{t('recommendations.cutNone')}</option>
             {cutOptions.map((option) => (
               <option key={option.cardIdentifier} value={option.cardIdentifier}>
-                {option.name}
+                {withPitch(option.name, option.pitch, t)}
               </option>
             ))}
           </select>
@@ -167,6 +195,7 @@ export function RecommendationsPanel({ deckId, deckCards }: IRecommendationsPane
   const adopt = useAdoptRecommendation(deckId);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [actionError, setActionError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<IRecommendationCard | null>(null);
 
   const data = query.data;
   const isGenerating = generate.isPending || data?.pending === true;
@@ -275,9 +304,18 @@ export function RecommendationsPanel({ deckId, deckCards }: IRecommendationsPane
               busy={busy}
               onAdopt={(cut) => handleAdopt(recommendation, cut)}
               onDismiss={() => handleDismiss(recommendation)}
+              onPreview={() => setPreview(recommendation)}
             />
           ))}
         </ul>
+      )}
+      {preview !== null && preview.imageUrl !== null && (
+        <CardLightbox
+          imageUrl={preview.imageUrl.large}
+          sources={[preview.imageUrl.large, ...preview.imageUrl.sources.map((source) => source.large)]}
+          name={withPitch(preview.name, preview.pitch, t)}
+          onClose={() => setPreview(null)}
+        />
       )}
     </section>
   );
