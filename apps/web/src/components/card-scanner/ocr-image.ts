@@ -4,6 +4,18 @@ export interface IGrayImage {
   readonly pixels: Uint8ClampedArray;
 }
 
+export interface IPixelBox {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** A capture of the card guide; `guide` locates it when the capture also holds a margin around it. */
+export interface ICardImage extends IGrayImage {
+  readonly guide?: IPixelBox;
+}
+
 export interface IFractionRect {
   readonly left: number;
   readonly top: number;

@@ -1,8 +1,8 @@
-import { encodeBmp, type IGrayImage } from './ocr-image';
+import { encodeBmp, type ICardImage } from './ocr-image';
 import type { IOcrVariant } from './ocr-variants';
 
 export interface IOcrEngine {
-  readonly recognize: (card: IGrayImage, variant: IOcrVariant) => Promise<string>;
+  readonly recognize: (card: ICardImage, variant: IOcrVariant) => Promise<string>;
   readonly terminate: () => Promise<void>;
 }
 

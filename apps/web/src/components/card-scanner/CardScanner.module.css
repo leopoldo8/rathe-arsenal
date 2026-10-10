@@ -1,6 +1,6 @@
 .scanner {
   /* Leaves room for the top row, the notice and the bar so the 3:4 stage fits one screen. */
-  --scanner-notice-height: 5.5rem;
+  --scanner-notice-height: 6rem;
   --scanner-max-inline: min(100%, 36rem, calc((100dvh - 11rem - var(--scanner-notice-height)) * 0.75));
   position: fixed;
   inset: 0;
