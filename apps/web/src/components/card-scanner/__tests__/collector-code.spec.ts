@@ -6,6 +6,12 @@ const RESPONSE: ICollectorCodesResponse = {
   cards: [
     { cardIdentifier: 'blessing-of-qi-blue', name: 'Blessing of Qi', pitch: 3, printings: [{ code: 'MST172' }] },
     { cardIdentifier: 'nimblism-red', name: 'Nimblism', pitch: 1, printings: [{ code: 'WTR218' }] },
+    { cardIdentifier: 'monolith-red', name: 'Monolith', pitch: 1, printings: [{ code: 'MON042' }] },
+    { cardIdentifier: 'mono-four-red', name: 'Mono Four', pitch: 1, printings: [{ code: 'MON004' }] },
+    { cardIdentifier: 'wtr-185', name: 'Wtr 185', pitch: 1, printings: [{ code: 'WTR185' }] },
+    { cardIdentifier: 'ele-51', name: 'Ele 51', pitch: 1, printings: [{ code: 'ELE051' }] },
+    { cardIdentifier: 'ele-57', name: 'Ele 57', pitch: 1, printings: [{ code: 'ELE057' }] },
+    { cardIdentifier: 'arc-97', name: 'Arc 97', pitch: 1, printings: [{ code: 'ARC097' }] },
     { cardIdentifier: 'crane-dance-yellow', name: 'Crane Dance', pitch: 2, printings: [{ code: '1HP108' }] },
     { cardIdentifier: 'a-drop-in-the-ocean-blue', name: 'A Drop in the Ocean', pitch: 3, printings: [{ code: 'MST095' }] },
     { cardIdentifier: 'inner-chi-blue', name: 'Inner Chi', pitch: 3, printings: [{ code: 'MST095', image: 'MST095_BACK' }] },
@@ -44,6 +50,29 @@ describe('resolveCollectorCode', () => {
     expect(result?.code).toBe('WTR218');
     expect(result?.cards.map((card) => card.cardIdentifier)).toEqual(['nimblism-red']);
   });
+
+  it.each([
+    ['IAD © MoNo042 Phu Thieu', 'MON042'],
+    ['IAP @ MONO042 Phu Thieu', 'MON042'],
+    ['EN | MON0042 Phu Thieu', 'MON042'],
+  ])('drops a doubled first digit: %s -> %s', (text, expected) => {
+    expect(resolvedCode(text)).toBe(expected);
+  });
+
+  it('reads T as 7 when only that code exists', () => {
+    expect(resolvedCode('EN | ARC09T Artist')).toBe('ARC097');
+  });
+
+  it('skips a T that could be 1 or 7 when both codes exist', () => {
+    expect(resolvedCode('7" @) ELEOST Faizal Fikri')).toBeNull();
+  });
+
+  it.each([['EN | WTR2185 Artist'], ['EN | MON0049 Artist']])(
+    'does not read a code that runs into another digit: %s',
+    (text) => {
+      expect(resolvedCode(text)).toBeNull();
+    },
+  );
 
   it('keeps a digit-led set code', () => {
     const result = resolveCollectorCode('Nl (R) 1HP108 Asep Ariyanto © 2021', INDEX);

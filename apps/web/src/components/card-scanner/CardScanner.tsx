@@ -32,7 +32,7 @@ import { NameSearchSheet } from './NameSearchSheet';
 import { ReviewSheet } from './ReviewSheet';
 import { ScanNotice, type TNotice, type TNoticeInput } from './ScanNotice';
 import { ScannerBar } from './ScannerBar';
-import { ScannerDebugPanel } from './ScannerDebugPanel';
+import { ScannerDebugPanel, type IDebugRead } from './ScannerDebugPanel';
 import { ScannerTopBar } from './ScannerTopBar';
 import styles from './CardScanner.module.css';
 
@@ -83,7 +83,7 @@ export function CardScanner(): React.ReactElement {
   const debug = useMemo(() => new URLSearchParams(window.location.search).has('debug'), []);
   const [debugCamera, setDebugCamera] = useState<Record<string, unknown> | null>(null);
   const [debugCrop, setDebugCrop] = useState<IGrayImage | null>(null);
-  const [debugTexts, setDebugTexts] = useState<Readonly<Record<string, string>>>({});
+  const [debugReads, setDebugReads] = useState<Readonly<Record<string, IDebugRead>>>({});
 
   const updateSession = useCallback((next: IScanSession) => {
     sessionRef.current = next;
@@ -171,14 +171,16 @@ export function CardScanner(): React.ReactElement {
       variants: OCR_VARIANTS,
       captureFrame: () =>
         videoRef.current && stageRef.current ? deps.captureCard(videoRef.current, stageRef.current) : null,
-      recognize: (card, variant) => {
-        if (debug && variant.id === OCR_VARIANTS[0]!.id) setDebugCrop(variant.prepare(card));
-        return engineRef.current!.recognize(card, variant);
+      recognize: async (card, variant) => {
+        if (!debug) return engineRef.current!.recognize(card, variant);
+        if (variant.id === OCR_VARIANTS[0]!.id) setDebugCrop(variant.prepare(card));
+        const startedAt = performance.now();
+        const text = await engineRef.current!.recognize(card, variant);
+        setDebugReads((reads) => ({ ...reads, [variant.id]: { text, ms: Math.round(performance.now() - startedAt) } }));
+        return text;
       },
-      onText: (variant, text) => {
-        if (debug) setDebugTexts((texts) => ({ ...texts, [variant.id]: text }));
-        applyStep(applyRecognition(sessionRef.current, variant.id, resolveCollectorCode(text, index)));
-      },
+      onText: (variant, text) =>
+        applyStep(applyRecognition(sessionRef.current, variant.id, resolveCollectorCode(text, index))),
       onError: () => setEngine('error'),
     });
     loopRef.current = loop;
@@ -312,16 +314,17 @@ export function CardScanner(): React.ReactElement {
             </button>
           </div>
         )}
-        <ScanNotice
-          notice={notice}
-          session={session}
-          onWrong={handleWrong}
-          onSearch={() => {
-            setNotice(null);
-            setSearchOpen(true);
-          }}
-        />
       </div>
+
+      <ScanNotice
+        notice={notice}
+        session={session}
+        onWrong={handleWrong}
+        onSearch={() => {
+          setNotice(null);
+          setSearchOpen(true);
+        }}
+      />
 
       {summary && (
         <div className={styles.summary} role="status">
@@ -335,7 +338,7 @@ export function CardScanner(): React.ReactElement {
         </div>
       )}
 
-      {debug && <ScannerDebugPanel camera={debugCamera} crop={debugCrop} texts={debugTexts} />}
+      {debug && <ScannerDebugPanel camera={debugCamera} crop={debugCrop} reads={debugReads} />}
 
       <ScannerBar
         total={totalQuantity(session)}
