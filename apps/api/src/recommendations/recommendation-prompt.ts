@@ -26,6 +26,9 @@ const SYSTEM_PROMPT = [
   'Judge only from the rules text given. Answer only with cards from the candidate pool, using their exact identifiers.',
   'Label a card clear_upgrade only when it is plainly better for this deck than the deck card it would replace; label every other pick consider.',
   'For each pick name the deck card it should replace, from the deck list and in the same slot, or an empty string when none fits.',
+  "Replace a card of the same role, so the deck keeps its balance of card types: an arrow for an arrow, an arrow buff for an arrow buff, an attack for an attack, a defense card for a defense card.",
+  'Prefer the same resource cost as the card replaced; a higher cost is a real downside, not a neutral change.',
+  'Count only the parts of a rules text that do something in this deck: an effect that needs something the deck does not have (for example untapping a weapon the deck never taps) adds nothing.',
 ].join(' ');
 
 const EXCLUDED_POOL_TYPES: ReadonlySet<string> = new Set([Type.Hero, Type.Token, Type.Weapon]);
@@ -102,7 +105,7 @@ export function buildRecommendationPrompt(
     ...pool.map(cardLine),
     '',
     `Rank the ${RECOMMENDATION_ASK_COUNT} cards from the candidate pool that would best improve this deck, best first.`,
-    'For each give: card (its identifier), strength (clear_upgrade or consider), cut (the identifier of the deck card it should replace, or an empty string), and one sentence of reason.',
+    'For each give: card (its identifier), strength (clear_upgrade or consider), cut (the identifier of the deck card it should replace, or an empty string), one sentence of reason in English, and reason_pt_br, the same sentence in Brazilian Portuguese with card names kept in English.',
   ].join('\n');
   return { system: SYSTEM_PROMPT, prompt };
 }

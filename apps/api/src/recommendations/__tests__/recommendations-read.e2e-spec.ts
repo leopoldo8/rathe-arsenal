@@ -132,8 +132,8 @@ describe('recommendations read (e2e)', () => {
     expect(byCard[UNSTOCKED]).toEqual(expect.objectContaining({ freeCopies: 0, priceCents: null, productUrl: null }));
     expect(Object.keys(rows[0]!).sort()).toEqual(
       [
-        'id', 'rank', 'cardIdentifier', 'name', 'pitch', 'imageUrl', 'slot', 'strength', 'reason', 'cutCardIdentifier',
-        'cutName', 'cutSlot', 'freeCopies', 'priceCents', 'productUrl',
+        'id', 'rank', 'cardIdentifier', 'name', 'pitch', 'cost', 'imageUrl', 'slot', 'strength', 'reason', 'cutCardIdentifier',
+        'cutName', 'cutPitch', 'cutCost', 'cutSlot', 'freeCopies', 'priceCents', 'productUrl',
       ].sort(),
     );
   });
@@ -142,14 +142,45 @@ describe('recommendations read (e2e)', () => {
     const { jwt, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [{ card: A, cut: FLEX, cutSlot: 'mainboard' }]);
     expect((await read(deckId, jwt)).recommendations[0]).toEqual(
-      expect.objectContaining({ cutCardIdentifier: FLEX, cutName: 'Flex', cutSlot: 'mainboard' }),
+      expect.objectContaining({ cutCardIdentifier: FLEX, cutName: 'Flex', cutSlot: 'mainboard', cutPitch: 1, cutCost: 0, pitch: 3, cost: 0 }),
     );
 
     await fixture.dataSource.query(`DELETE FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [deckId, FLEX]);
 
     expect((await read(deckId, jwt)).recommendations[0]).toEqual(
-      expect.objectContaining({ cutCardIdentifier: null, cutName: null, cutSlot: null }),
+      expect.objectContaining({ cutCardIdentifier: null, cutName: null, cutSlot: null, cutPitch: null, cutCost: null }),
     );
+  });
+
+  it('sends the reason in the language the request asks for', async () => {
+    const { jwt, deckId } = await freshDeck();
+    await fixture.seedDoneRun(deckId, [{ card: A }]);
+    await fixture.dataSource.query(
+      `INSERT INTO recommendation ("runId", "cardIdentifier", rank, strength, reason) SELECT "runId", $1, 2, 'consider', 'English only' FROM recommendation WHERE "cardIdentifier" = $2 AND "runId" IN (SELECT id FROM recommendation_run WHERE "trackedDeckId" = $3)`,
+      [B, A, deckId],
+    );
+    const reasons = async (language: string) =>
+      (await fixture.get(`/api/decks/${deckId}/recommendations`, jwt).set('Accept-Language', language).expect(200)).body.recommendations.map(
+        (row: { reason: string }) => row.reason,
+      );
+
+    expect(await reasons('pt-BR')).toEqual([`Motivo ${A}`, 'English only']);
+    expect(await reasons('en-US')).toEqual([`Reason ${A}`, 'English only']);
+  });
+
+  it('hides a card the deck replaced through an alternative', async () => {
+    const { jwt, deckId } = await freshDeck();
+    await fixture.seedDoneRun(deckId, [{ card: EMISSARY }, { card: A }]);
+    await fixture.dataSource.query(`DELETE FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [deckId, EMISSARY]);
+    expect((await read(deckId, jwt)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([EMISSARY, A]);
+    const [{ userId }] = await fixture.dataSource.query(`SELECT "userId" FROM tracked_deck WHERE id = $1`, [deckId]);
+    await fixture.dataSource.query(
+      `INSERT INTO card_replacement ("userId", "trackedDeckId", slot, "originalCardIdentifier", "replacementCardIdentifier", quantity, "pickedFrom", status)
+       VALUES ($1, $2, 'mainboard', $3, 'coax-a-commotion-red', 2, 'close', 'active')`,
+      [userId, deckId, EMISSARY],
+    );
+
+    expect((await read(deckId, jwt)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
   });
 
   it('refuses foreign, malformed and anonymous reads', async () => {

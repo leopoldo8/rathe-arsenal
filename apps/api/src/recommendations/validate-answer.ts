@@ -12,6 +12,7 @@ export interface IKeptRecommendation {
   readonly cutCardIdentifier: string | null;
   readonly cutSlot: string | null;
   readonly reason: string;
+  readonly reasonPtBr: string | null;
 }
 
 export interface ISelectedRecommendations {
@@ -49,6 +50,7 @@ export function selectRecommendations(
       cutCardIdentifier: cutInSlot ? entry.cut : null,
       cutSlot: cutInSlot ? slot : null,
       reason: entry.reason,
+      reasonPtBr: entry.reason_pt_br.trim() === '' ? null : entry.reason_pt_br,
     });
   }
 

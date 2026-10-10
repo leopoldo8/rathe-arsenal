@@ -1,7 +1,7 @@
-import { callGemini, GEMINI_TIMEOUT_MS, TGeminiFetch } from '../gemini-client';
+import { callGemini, GEMINI_TIMEOUT_MS, parseThinkingLevel, TGeminiFetch } from '../gemini-client';
 
 const REQUEST = { system: 'system text', prompt: 'prompt text' };
-const ANSWER = { recommendations: [{ card: 'adrenaline-rush-red', strength: 'consider', cut: '', reason: 'r' }] };
+const ANSWER = { recommendations: [{ card: 'adrenaline-rush-red', strength: 'consider', cut: '', reason: 'r', reason_pt_br: 'm' }] };
 
 interface ICapturedCall {
   readonly url: string;
@@ -42,9 +42,22 @@ describe('callGemini', () => {
     expect(body.generationConfig.responseMimeType).toBe('application/json');
     expect(body.generationConfig.maxOutputTokens).toBe(32000);
     const items = body.generationConfig.responseJsonSchema.properties.recommendations.items;
-    expect(items.required).toEqual(['card', 'strength', 'cut', 'reason']);
+    expect(items.required).toEqual(['card', 'strength', 'cut', 'reason', 'reason_pt_br']);
     expect(items.properties.strength.enum).toEqual(['clear_upgrade', 'consider']);
     expect(body.generationConfig.responseJsonSchema.required).toEqual(['recommendations']);
+    expect(body.generationConfig.thinkingConfig).toBeUndefined();
+  });
+
+  it('sends thinkingConfig.thinkingLevel only when a level is set', async () => {
+    for (const level of ['low', 'medium', 'high'] as const) {
+      const { fetch, calls } = respond(200, answer('STOP'));
+      await callGemini('k', REQUEST, fetch, { thinkingLevel: level });
+      expect({ level, config: JSON.parse(calls[0]!.init.body).generationConfig.thinkingConfig }).toEqual({ level, config: { thinkingLevel: level } });
+    }
+  });
+
+  it('reads the thinking level from the environment value, ignoring anything else', () => {
+    expect(['low', ' Medium ', 'HIGH', 'minimal', '', undefined].map(parseThinkingLevel)).toEqual(['low', 'medium', 'high', undefined, undefined, undefined]);
   });
 
   it('classifies every provider outcome', async () => {
@@ -81,7 +94,7 @@ describe('callGemini', () => {
     }
   });
 
-  it('aborts a call at 180 seconds', async () => {
+  it('aborts a call at 290 seconds', async () => {
     jest.useFakeTimers();
     try {
       let signal: AbortSignal | undefined;
@@ -97,7 +110,7 @@ describe('callGemini', () => {
 
       await expect(pending).resolves.toEqual(expect.objectContaining({ kind: 'failed', code: 'MODEL_TIMEOUT' }));
       expect(signal?.aborted).toBe(true);
-      expect(GEMINI_TIMEOUT_MS).toBe(180_000);
+      expect(GEMINI_TIMEOUT_MS).toBe(290_000);
     } finally {
       jest.useRealTimers();
     }

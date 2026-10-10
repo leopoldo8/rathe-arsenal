@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "migration:run": "node node_modules/typeorm/cli.js migration:run -d dist/database/datasource.js",
-    "scrape": "node scrape-stores.js"
+    "scrape": "node scrape-stores.js",
+    "recommendations:probe": "node --enable-source-maps dist/recommendations/probe-gemini.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",

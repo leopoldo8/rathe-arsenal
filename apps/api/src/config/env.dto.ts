@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -159,6 +160,11 @@ export class EnvDto {
   @IsOptional()
   @IsString()
   GEMINI_API_KEY?: string;
+
+  /** `low`, `medium` or `high`; absent, Gemini 3.8 Flash thinks at its default (`medium`). */
+  @IsOptional()
+  @IsIn(['low', 'medium', 'high'])
+  GEMINI_THINKING_LEVEL?: string;
 
   /** The Firecrawl plan's /scrape limit: Free 10, Hobby 100, Standard 500. */
   @IsOptional()

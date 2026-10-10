@@ -1,5 +1,6 @@
 import { DataSource, QueryRunner } from 'typeorm';
 import { AddCardRecommendations1778533591000 } from '../1778533591000-AddCardRecommendations';
+import { AddRecommendationReasonPtBr1778533592000 } from '../1778533592000-AddRecommendationReasonPtBr';
 import { RECOMMENDATION_COLUMNS, readRecommendationColumns } from './recommendation-columns';
 
 const DATABASE_URL =
@@ -39,6 +40,7 @@ describe('AddCardRecommendations1778533591000', () => {
 
   it('up creates and down drops the recommendation tables', async () => {
     await new AddCardRecommendations1778533591000().up(queryRunner);
+    await new AddRecommendationReasonPtBr1778533592000().up(queryRunner);
 
     for (const table of ['recommendation_run', 'recommendation', 'recommendation_dismissal']) {
       expect({ table, exists: await queryRunner.hasTable(table) }).toEqual({ table, exists: true });
@@ -74,6 +76,10 @@ describe('AddCardRecommendations1778533591000', () => {
     await rejects(`INSERT INTO "card_replacement" ("pickedFrom") VALUES ('synergy')`);
 
     await queryRunner.query(`DELETE FROM "card_replacement"`);
+    await new AddRecommendationReasonPtBr1778533592000().down(queryRunner);
+    expect(await readRecommendationColumns(queryRunner, SCHEMA)).toEqual(
+      expect.objectContaining({ recommendation: expect.not.objectContaining({ reasonPtBr: expect.anything() }) }),
+    );
     await new AddCardRecommendations1778533591000().down(queryRunner);
 
     for (const table of ['recommendation_run', 'recommendation', 'recommendation_dismissal']) {

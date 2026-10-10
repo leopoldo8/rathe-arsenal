@@ -3,10 +3,9 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { RecommendationDismissalEntity } from '../database/entities/recommendation-dismissal.entity';
 import { RecommendationRunEntity, TRecommendationFailureCode } from '../database/entities/recommendation-run.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
-import { callGemini, GEMINI_MODEL, TGeminiFetch } from './gemini-client';
+import { callGemini, GEMINI_MODEL, TGeminiFetch, TGeminiThinkingLevel } from './gemini-client';
 import {
   buildRecommendationPool,
   buildRecommendationPrompt,
@@ -14,6 +13,7 @@ import {
   IDeckList,
 } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
+import { RecommendationsQueryService } from './recommendations-query.service';
 import { selectRecommendations } from './validate-answer';
 
 export const MAX_RUN_ATTEMPTS = 3;
@@ -22,6 +22,7 @@ export const RETRY_BASE_MS = 60_000;
 export interface IRunnerDeps {
   readonly apiKey: string | null | undefined;
   readonly fetch: TGeminiFetch;
+  readonly thinkingLevel?: TGeminiThinkingLevel | undefined;
 }
 
 @Injectable()
@@ -31,6 +32,7 @@ export class RecommendationRunnerService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly queue: RecommendationQueueService,
+    private readonly query: RecommendationsQueryService,
   ) {}
 
   async process(run: RecommendationRunEntity, deps: IRunnerDeps): Promise<void> {
@@ -45,23 +47,27 @@ export class RecommendationRunnerService {
     const apiKey = deps.apiKey?.trim();
     if (!apiKey) return this.fail(run, 'NO_API_KEY');
 
-    const [deckCards, dismissals] = await Promise.all([
+    const [deckCards, excluded] = await Promise.all([
       this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId: deck.id } }),
-      this.dataSource.getRepository(RecommendationDismissalEntity).find({ where: { trackedDeckId: deck.id } }),
+      this.query.excludedCards([deck.id]),
     ]);
     const deckList: IDeckList = {
       heroIdentifier: deck.heroIdentifier,
       format: deck.format,
       cards: deckCards.map((row) => ({ cardIdentifier: row.cardIdentifier, slot: row.slot, quantity: row.quantity })),
     };
-    const pool = buildRecommendationPool(
-      deckList,
-      heroCard,
-      new Set(dismissals.map((row) => row.cardIdentifier)),
-      catalog,
-    );
+    const pool = buildRecommendationPool(deckList, heroCard, excluded.get(deck.id) ?? new Set(), catalog);
     const deckFingerprint = computeDeckFingerprint(deckList);
-    const outcome = await callGemini(apiKey, buildRecommendationPrompt(deckList, heroCard, pool, catalog), deps.fetch);
+    const prompt = buildRecommendationPrompt(deckList, heroCard, pool, catalog);
+    this.logger.log({
+      event: 'recommendations.run.request',
+      trackedDeckId: run.trackedDeckId,
+      runId: run.id,
+      poolSize: pool.length,
+      promptChars: prompt.system.length + prompt.prompt.length,
+      thinkingLevel: deps.thinkingLevel ?? 'default',
+    });
+    const outcome = await callGemini(apiKey, prompt, deps.fetch, { thinkingLevel: deps.thinkingLevel });
 
     if (outcome.kind === 'retry') {
       if (run.attempts >= MAX_RUN_ATTEMPTS) return this.fail(run, outcome.code);
@@ -76,7 +82,7 @@ export class RecommendationRunnerService {
       });
       return;
     }
-    if (outcome.kind === 'failed') return this.fail(run, outcome.code, outcome.detail);
+    if (outcome.kind === 'failed') return this.fail(run, outcome.code, outcome.detail, Date.now() - startedAt);
 
     const { kept, dropped } = selectRecommendations(
       outcome.entries,
@@ -104,7 +110,12 @@ export class RecommendationRunnerService {
     });
   }
 
-  private async fail(run: RecommendationRunEntity, code: TRecommendationFailureCode, detail?: string): Promise<void> {
+  private async fail(
+    run: RecommendationRunEntity,
+    code: TRecommendationFailureCode,
+    detail?: string,
+    elapsedMs?: number,
+  ): Promise<void> {
     await this.queue.finishFailed(run.id, code);
     this.logger.warn({
       event: 'recommendations.run.failed',
@@ -113,6 +124,7 @@ export class RecommendationRunnerService {
       code,
       attempts: run.attempts,
       ...(detail === undefined ? {} : { detail }),
+      ...(elapsedMs === undefined ? {} : { elapsedMs }),
     });
   }
 
@@ -130,6 +142,7 @@ export interface IRecommendationDrainDeps {
   readonly queue: Pick<RecommendationQueueService, 'reclaimOrphans' | 'claimNext'>;
   readonly runner: Pick<RecommendationRunnerService, 'process'>;
   readonly readApiKey: () => string | null | undefined;
+  readonly readThinkingLevel?: () => TGeminiThinkingLevel | undefined;
   readonly fetch: TGeminiFetch;
 }
 
@@ -137,6 +150,10 @@ export async function drainRecommendationsOnce(deps: IRecommendationDrainDeps): 
   await deps.queue.reclaimOrphans();
   const run = await deps.queue.claimNext();
   if (!run) return false;
-  await deps.runner.process(run, { apiKey: deps.readApiKey(), fetch: deps.fetch });
+  await deps.runner.process(run, {
+    apiKey: deps.readApiKey(),
+    fetch: deps.fetch,
+    thinkingLevel: deps.readThinkingLevel?.(),
+  });
   return true;
 }
