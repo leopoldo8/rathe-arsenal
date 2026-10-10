@@ -207,7 +207,7 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
       expect(score!).toBeLessThan(TIER_1_FLOOR_SCORE);
     });
 
-    it('accepts tier 1 candidates with partial keyword overlap above the floor', () => {
+    it('accepts tier 1 candidates with partial keyword overlap above the floor, when only a non-effect keyword is missing', () => {
       // 3/4 keyword overlap: penalty = (1 - 0.75) * 0.35 = 0.0875
       // score = 1.0 - 0.0875 = 0.9125, above 0.90 floor
       const missing = makeCard({
@@ -220,13 +220,19 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
         cardIdentifier: 'kw-card-alt',
         power: 3,
         defense: 3,
+        keywords: [Keyword.Dominate, Keyword.Intimidate, Keyword.Overpower],
+      });
+      const droppingAnEffect = makeCard({
+        cardIdentifier: 'kw-card-no-overpower',
+        power: 3,
+        defense: 3,
         keywords: [Keyword.GoAgain, Keyword.Dominate, Keyword.Intimidate],
       });
 
       const score = scoreCandidate(missing, candidate, TIER_1_CONFIG);
-      expect(score).not.toBeNull();
+      expect(score).toBeCloseTo(0.9125);
       expect(score!).toBeGreaterThanOrEqual(TIER_1_FLOOR_SCORE);
-      expect(score!).toBeLessThan(1.0);
+      expect(scoreCandidate(missing, droppingAnEffect, TIER_1_CONFIG)).toBeNull();
     });
 
     it('returns null for tier 1 when power delta exceeds the tier 1 limit', () => {
@@ -326,14 +332,14 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
   });
 
   describe('tier 2 scoring (relaxed keywords + wider stat deltas)', () => {
-    it('accepts a candidate with no keyword overlap when missing has keywords', () => {
+    it('accepts a candidate with no keyword overlap when the missing card has only non-effect keywords', () => {
       // Tier 2 relaxes the keyword hard gate. Structural match is still
       // required (same pitch, class intersection, type intersection).
       const missing = makeCard({
         cardIdentifier: 'kw-missing',
         power: 3,
         defense: 3,
-        keywords: [Keyword.GoAgain, Keyword.Dominate],
+        keywords: [Keyword.GoAgain, Keyword.Legendary],
       });
       const candidate = makeCard({
         cardIdentifier: 'nokw-candidate',
@@ -341,10 +347,12 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
         defense: 3,
         keywords: [Keyword.Intimidate],
       });
+      const withEffect = makeCard({ cardIdentifier: 'effect-missing', power: 3, defense: 3, keywords: [Keyword.GoAgain, Keyword.Dominate] });
 
       const score = scoreCandidate(missing, candidate, TIER_2_CONFIG);
       expect(score).not.toBeNull();
       expect(score!).toBeGreaterThanOrEqual(TIER_2_FLOOR_SCORE);
+      expect(scoreCandidate(withEffect, candidate, TIER_2_CONFIG)).toBeNull();
     });
 
     it('accepts a candidate with power delta 2 at tier 2', () => {
@@ -382,7 +390,7 @@ describe('scoreCandidate (parameterized tier scoring)', () => {
         cardIdentifier: 'a',
         power: 3,
         defense: 3,
-        keywords: [Keyword.GoAgain, Keyword.Dominate, Keyword.Intimidate],
+        keywords: [Keyword.GoAgain, Keyword.Legendary, Keyword.Specialization],
       });
       const candidate = makeCard({
         cardIdentifier: 'b',
