@@ -106,6 +106,12 @@ describe('recommendations read (e2e)', () => {
 
   it('joins ownership and store price live', async () => {
     const { jwt, deckId } = await freshDeck();
+    // A database built by synchronize (CI) has no store row; the seed migration's row is what production has.
+    await fixture.dataSource.query(
+      `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
+       VALUES ('cupula-dt', 'Cúpula DT', 'https://www.cupuladt.com.br', '/?view=ecom/itens&tcg=8', 1500, true)
+       ON CONFLICT (slug) DO NOTHING`,
+    );
     await fixture.dataSource.query(
       `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt")
        VALUES ((SELECT id FROM store WHERE slug = 'cupula-dt'), $1, 450, 3, 'https://www.cupuladt.com.br/produto/art-of-the-dragon-blood', 'Art of the Dragon: Blood (Red)', now())
