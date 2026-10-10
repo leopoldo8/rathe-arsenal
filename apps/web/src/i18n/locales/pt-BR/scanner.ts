@@ -13,7 +13,7 @@ export const scanner = {
   noCameraBody: 'Este aparelho ou navegador não oferece uma câmera para o scanner.',
   goManual: 'Buscar pelo nome',
   noticeInTray: '× {{count}} na lista',
-  noticeWrong: 'Errada',
+  noticeWrong: 'Não é essa',
   noticeWrongAria: 'Desfazer a leitura de {{name}}',
   noticeRemoved: 'Removida',
   noticeSearch: 'Buscar pelo nome',
