@@ -18,6 +18,8 @@ import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
+import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { IReplacementResponse, ReplacementsService } from '../replacements/replacements.service';
 import { AdoptRecommendationDto } from './dtos/adopt-recommendation.dto';
 import { DismissRecommendationDto } from './dtos/dismiss-recommendation.dto';
@@ -43,8 +45,9 @@ export class RecommendationsController {
   read(
     @Param('deckId', ParseIntPipe) deckId: number,
     @CurrentUser() user: ICurrentUser,
+    @AcceptLanguage() locale: TLocale,
   ): Promise<IRecommendationsResponse> {
-    return this.recommendationsService.read(user.userId, deckId);
+    return this.recommendationsService.read(user.userId, deckId, locale);
   }
 
   @Post('runs')

@@ -64,6 +64,7 @@ export function geminiBody(entries: readonly IGeminiEntryInput[], finishReason =
     strength: entry.strength ?? 'consider',
     cut: entry.cut ?? '',
     reason: entry.reason ?? `Fits the deck: ${entry.card}`,
+    reason_pt_br: `Combina com o deck: ${entry.card}`,
   }));
   return {
     candidates: [{ finishReason, content: { parts: [{ text: JSON.stringify({ recommendations }) }] } }],
@@ -145,9 +146,9 @@ export async function bootRecommendationsFixture(options: { readonly throttle?: 
       const ids: string[] = [];
       for (const [index, entry] of entries.entries()) {
         const [{ id }] = await dataSource.query(
-          `INSERT INTO recommendation ("runId", "cardIdentifier", rank, strength, "cutCardIdentifier", "cutSlot", reason)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-          [runId, entry.card, index + 1, entry.strength ?? 'consider', entry.cut ?? null, entry.cut ? (entry.cutSlot ?? 'mainboard') : null, `Reason ${entry.card}`],
+          `INSERT INTO recommendation ("runId", "cardIdentifier", rank, strength, "cutCardIdentifier", "cutSlot", reason, "reasonPtBr")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+          [runId, entry.card, index + 1, entry.strength ?? 'consider', entry.cut ?? null, entry.cut ? (entry.cutSlot ?? 'mainboard') : null, `Reason ${entry.card}`, `Motivo ${entry.card}`],
         );
         ids.push(id);
       }

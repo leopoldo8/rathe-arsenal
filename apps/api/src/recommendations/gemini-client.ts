@@ -4,7 +4,21 @@ import { IRecommendationPrompt } from './recommendation-prompt';
 export const GEMINI_MODEL = 'gemini-3.8-flash';
 export const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 export const GEMINI_MAX_OUTPUT_TOKENS = 32000;
-export const GEMINI_TIMEOUT_MS = 180_000;
+/** Below the 300 s Node's fetch waits for response headers, so the abort, not the socket, decides. */
+export const GEMINI_TIMEOUT_MS = 290_000;
+
+export const GEMINI_THINKING_LEVELS = ['low', 'medium', 'high'] as const;
+export type TGeminiThinkingLevel = (typeof GEMINI_THINKING_LEVELS)[number];
+
+export interface IGeminiCallOptions {
+  readonly timeoutMs?: number;
+  readonly thinkingLevel?: TGeminiThinkingLevel | undefined;
+}
+
+export function parseThinkingLevel(value: string | undefined): TGeminiThinkingLevel | undefined {
+  const normalized = value?.trim().toLowerCase();
+  return (GEMINI_THINKING_LEVELS as readonly string[]).includes(normalized ?? '') ? (normalized as TGeminiThinkingLevel) : undefined;
+}
 
 export type TGeminiFetch = (
   url: string,
@@ -16,6 +30,7 @@ export interface IGeminiEntry {
   readonly strength: string;
   readonly cut: string;
   readonly reason: string;
+  readonly reason_pt_br: string;
 }
 
 export interface IGeminiUsage {
@@ -40,8 +55,9 @@ export const RECOMMENDATION_SCHEMA = {
           strength: { type: 'string', enum: ['clear_upgrade', 'consider'] },
           cut: { type: 'string' },
           reason: { type: 'string' },
+          reason_pt_br: { type: 'string' },
         },
-        required: ['card', 'strength', 'cut', 'reason'],
+        required: ['card', 'strength', 'cut', 'reason', 'reason_pt_br'],
         additionalProperties: false,
       },
     },
@@ -50,8 +66,11 @@ export const RECOMMENDATION_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-/** Request body of `models.generateContent`, per https://ai.google.dev/api/generate-content. */
-export function buildGeminiBody(request: IRecommendationPrompt): Record<string, unknown> {
+/**
+ * Request body of `models.generateContent`, per https://ai.google.dev/api/generate-content; `thinkingConfig` per
+ * https://ai.google.dev/gemini-api/docs/generate-content/thinking (Gemini 3.8 Flash: low, medium by default, high).
+ */
+export function buildGeminiBody(request: IRecommendationPrompt, thinkingLevel?: TGeminiThinkingLevel): Record<string, unknown> {
   return {
     systemInstruction: { parts: [{ text: request.system }] },
     contents: [{ role: 'user', parts: [{ text: request.prompt }] }],
@@ -59,6 +78,7 @@ export function buildGeminiBody(request: IRecommendationPrompt): Record<string, 
       responseMimeType: 'application/json',
       responseJsonSchema: RECOMMENDATION_SCHEMA,
       maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+      ...(thinkingLevel === undefined ? {} : { thinkingConfig: { thinkingLevel } }),
     },
   };
 }
@@ -87,7 +107,11 @@ function parseEntries(text: string): readonly IGeminiEntry[] | null {
         typeof (entry as IGeminiEntry).card === 'string' &&
         typeof (entry as IGeminiEntry).strength === 'string' &&
         typeof (entry as IGeminiEntry).reason === 'string',
-    ).map((entry) => ({ ...entry, cut: typeof entry.cut === 'string' ? entry.cut : '' }));
+    ).map((entry) => ({
+      ...entry,
+      cut: typeof entry.cut === 'string' ? entry.cut : '',
+      reason_pt_br: typeof entry.reason_pt_br === 'string' ? entry.reason_pt_br : '',
+    }));
   } catch {
     return null;
   }
@@ -124,8 +148,9 @@ export async function callGemini(
   apiKey: string,
   request: IRecommendationPrompt,
   fetchImpl: TGeminiFetch,
-  timeoutMs: number = GEMINI_TIMEOUT_MS,
+  options: IGeminiCallOptions = {},
 ): Promise<TGeminiOutcome> {
+  const timeoutMs = options.timeoutMs ?? GEMINI_TIMEOUT_MS;
   const controller = new AbortController();
   let timer: NodeJS.Timeout | undefined;
   const timedOut = new Promise<TGeminiOutcome>((resolve) => {
@@ -139,7 +164,7 @@ export async function callGemini(
       const response = await fetchImpl(GEMINI_URL, {
         method: 'POST',
         headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildGeminiBody(request)),
+        body: JSON.stringify(buildGeminiBody(request, options.thinkingLevel)),
         signal: controller.signal,
       });
       const retryCode = RETRYABLE_STATUSES.get(response.status);

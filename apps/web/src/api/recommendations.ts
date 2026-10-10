@@ -30,12 +30,15 @@ export interface IRecommendationCard {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;
+  readonly cost: number | null;
   readonly imageUrl: IAlternativeImageUrl | null;
   readonly slot: 'mainboard' | 'equipment';
   readonly strength: TRecommendationStrength;
   readonly reason: string;
   readonly cutCardIdentifier: string | null;
   readonly cutName: string | null;
+  readonly cutPitch: number | null;
+  readonly cutCost: number | null;
   readonly cutSlot: string | null;
   readonly freeCopies: number;
   readonly priceCents: number | null;

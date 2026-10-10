@@ -124,6 +124,10 @@ describe('worker assembly', () => {
     await step();
 
     expect(runner.process.mock.calls.map(([, deps]) => deps.apiKey)).toEqual([undefined, 'AIza-later', 'AIza-later']);
+    expect(runner.process.mock.calls.map(([, deps]) => deps.thinkingLevel)).toEqual([undefined, undefined, undefined]);
+    env['GEMINI_THINKING_LEVEL'] = 'low';
+    await step();
+    expect(runner.process.mock.calls[3][1].thinkingLevel).toBe('low');
     expect(runner.process.mock.calls[0][1].fetch).toBe(fetch);
     expect(logger.error).toHaveBeenCalledWith({ event: 'recommendations.worker.error', error: 'db down' });
 

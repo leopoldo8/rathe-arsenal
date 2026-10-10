@@ -35,6 +35,10 @@ export class RecommendationEntity {
   @Column({ type: 'text' })
   reason!: string;
 
+  /** The same reason in Brazilian Portuguese; null on runs stored before it was asked for. */
+  @Column({ type: 'text', nullable: true })
+  reasonPtBr!: string | null;
+
   @ManyToOne(() => RecommendationRunEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'runId' })
   run!: RecommendationRunEntity;

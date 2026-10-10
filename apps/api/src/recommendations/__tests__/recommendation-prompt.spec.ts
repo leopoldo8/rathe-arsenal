@@ -61,8 +61,11 @@ describe('recommendation pool and prompt', () => {
     expect(RECOMMENDATION_ASK_COUNT).toBe(25);
     expect(prompt).toMatch(/strength \(clear_upgrade or consider\)/);
     expect(prompt).toMatch(/cut \(the identifier of the deck card it should replace, or an empty string\)/);
-    expect(prompt).toMatch(/one sentence of reason/);
+    expect(prompt).toMatch(/one sentence of reason in English, and reason_pt_br, the same sentence in Brazilian Portuguese/);
     expect(system).toContain('clear_upgrade');
+    expect(system).toMatch(/same role, so the deck keeps its balance of card types: an arrow for an arrow, an arrow buff for an arrow buff/);
+    expect(system).toMatch(/Prefer the same resource cost as the card replaced; a higher cost is a real downside/);
+    expect(system).toMatch(/Count only the parts of a rules text that do something in this deck/);
   });
 
   it('the fingerprint ignores order and tracks every input', () => {

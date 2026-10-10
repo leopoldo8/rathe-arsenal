@@ -133,6 +133,22 @@ describe('recommendation worker (e2e)', () => {
     expect(poolIds).not.toContain(FLEX);
   });
 
+  it('the request leaves out a card the deck replaced through an alternative', async () => {
+    const { jwt, deckId } = await deckWithManualRun();
+    await fixture
+      .post(`/api/decks/${deckId}/replacements`, jwt)
+      .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: 'coax-a-commotion-red', pickedFrom: 'close' })
+      .expect(201);
+    await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE "trackedDeckId" = $1 AND status = 'pending' AND "trigger" = 'auto'`, [deckId]);
+    const stub = stubFetch(200, geminiBody([{ card: POOL[0] }]));
+
+    await fixture.drain(stub.fetch);
+
+    const poolIds = promptOf(stub).split('Candidate pool')[1]!.split('\n').slice(1).map((line) => line.split(' | ')[0]);
+    expect(poolIds).toContain(POOL[0]);
+    expect(poolIds).not.toContain(EMISSARY);
+  });
+
   it('a missing key fails without a call', async () => {
     for (const apiKey of [null, '  ']) {
       const { runId } = await deckWithManualRun();

@@ -27,6 +27,7 @@ export const RECOMMENDATION_COLUMNS: Readonly<Record<string, Readonly<Record<str
     cutCardIdentifier: 'character varying(128) NULL',
     cutSlot: 'character varying(64) NULL',
     reason: 'text NOT NULL',
+    reasonPtBr: 'text NULL',
   },
   recommendation_dismissal: {
     id: 'uuid NOT NULL DEFAULT uuid_generate_v4()',

@@ -5,6 +5,7 @@ import type { TSupportedFormat } from '../legality/types';
 import { TIER_1_CONFIG, TIER_2_CONFIG } from './constants';
 import { describeRationale, IRationaleDetail } from './rationale';
 import { scoreCandidate } from './score';
+import { rulesTextSimilarity } from './text-similarity';
 import type { TSubstitutionTier } from './types';
 
 export type TAlternativeGroup = 'very_close' | 'close' | 'other_pitch' | 'generic' | 'search';
@@ -21,9 +22,6 @@ export const ALTERNATIVE_GROUP_ORDER: readonly Exclude<TAlternativeGroup, 'searc
 ];
 
 export const ALTERNATIVES_PER_GROUP = 10;
-
-/** Added to a card's score inside its group when the owner has enough free copies. */
-export const OWNED_SCORE_BONUS = 0.05;
 
 /** Largest power or defense gap the `generic` group accepts. */
 const GENERIC_MAX_STAT_DELTA = 2;
@@ -108,17 +106,41 @@ function acceptGroup(missing: ICatalogCard, candidate: ICatalogCard): IAcceptanc
   return null;
 }
 
-/** Orders by score plus the owned bonus (6 decimals, so float noise never splits a tie), then name. */
+const SIX_DECIMALS = 1e6;
+
+function rounded(value: number): number {
+  return Math.round(value * SIX_DECIMALS);
+}
+
+/** A card's role is its whole subtype set: an arrow, an attack, a trap and a plain non-attack action differ. */
+function roleOf(card: ICatalogCard): string {
+  return [...card.subtypes].sort().join('|');
+}
+
+/**
+ * Orders by how well a card takes the missing card's place: score, then the same role (the same subtypes), then
+ * the closer cost, then the more similar rules text; ownership and the name only break what is left.
+ * Values are compared at 6 decimals, so float noise never splits a tie.
+ */
 export function compareAlternatives(
   a: Pick<IAlternativeCard, 'card' | 'score' | 'freeCopies'>,
   b: Pick<IAlternativeCard, 'card' | 'score' | 'freeCopies'>,
   needed: number,
+  missing: ICatalogCard,
 ): number {
-  const adjusted = (entry: Pick<IAlternativeCard, 'score' | 'freeCopies'>): number =>
-    Math.round(((entry.score ?? 0) + (entry.freeCopies >= needed ? OWNED_SCORE_BONUS : 0)) * 1e6);
-  const byScore = adjusted(b) - adjusted(a);
-  if (byScore !== 0) return byScore;
-  return a.card.name.localeCompare(b.card.name) || a.card.cardIdentifier.localeCompare(b.card.cardIdentifier);
+  const role = roleOf(missing);
+  const costGap = (card: ICatalogCard): number => Math.abs((card.cost ?? 0) - (missing.cost ?? 0));
+  const textFit = (card: ICatalogCard): number => rounded(rulesTextSimilarity(card.functionalText, missing.functionalText));
+  const owned = (entry: Pick<IAlternativeCard, 'freeCopies'>): number => (entry.freeCopies >= needed ? 0 : 1);
+  return (
+    rounded(b.score ?? 0) - rounded(a.score ?? 0) ||
+    Number(roleOf(a.card) !== role) - Number(roleOf(b.card) !== role) ||
+    costGap(a.card) - costGap(b.card) ||
+    textFit(b.card) - textFit(a.card) ||
+    owned(a) - owned(b) ||
+    a.card.name.localeCompare(b.card.name) ||
+    a.card.cardIdentifier.localeCompare(b.card.cardIdentifier)
+  );
 }
 
 function isListable(input: IAlternativesInput, candidate: ICatalogCard): boolean {
@@ -191,7 +213,7 @@ export function findAlternatives(input: IAlternativesInput, catalog: ICatalog): 
   return ALTERNATIVE_GROUP_ORDER.map((group) => ({
     group,
     cards: (byGroup.get(group) ?? [])
-      .sort((a, b) => compareAlternatives(a, b, input.needed))
+      .sort((a, b) => compareAlternatives(a, b, input.needed, input.missing))
       .slice(0, ALTERNATIVES_PER_GROUP),
   })).filter((entry) => entry.cards.length > 0);
 }

@@ -12,7 +12,7 @@ import {
   drainRecommendationsOnce,
   RecommendationRunnerService,
 } from '../recommendations/recommendation-runner.service';
-import { TGeminiFetch } from '../recommendations/gemini-client';
+import { parseThinkingLevel, TGeminiFetch } from '../recommendations/gemini-client';
 
 export const POLL_MS = 3000;
 
@@ -102,6 +102,7 @@ export function createRecommendationStep(deps: IRecommendationStepDeps): () => P
         queue: deps.queue,
         runner: deps.runner,
         readApiKey: () => deps.env['GEMINI_API_KEY'],
+        readThinkingLevel: () => parseThinkingLevel(deps.env['GEMINI_THINKING_LEVEL']),
         fetch: deps.fetch,
       });
     } catch (err) {

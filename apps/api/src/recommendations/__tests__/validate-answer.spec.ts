@@ -25,7 +25,7 @@ const POOL_CARDS = [
 const pool = new Set<string>(POOL_CARDS);
 
 function entry(card: string, overrides: Partial<IGeminiEntry> = {}): IGeminiEntry {
-  return { card, strength: 'consider', cut: '', reason: `reason for ${card}`, ...overrides };
+  return { card, strength: 'consider', cut: '', reason: `reason for ${card}`, reason_pt_br: `motivo de ${card}`, ...overrides };
 }
 
 describe('selectRecommendations', () => {
@@ -64,6 +64,7 @@ describe('selectRecommendations', () => {
     ]);
     expect(kept[0]!.strength).toBe('clear_upgrade');
     expect(kept[0]!.reason).toBe(`reason for ${POOL_CARDS[0]}`);
+    expect(kept[0]!.reasonPtBr).toBe(`motivo de ${POOL_CARDS[0]}`);
     expect(dropped).toBe(4);
   });
 
@@ -85,6 +86,17 @@ describe('selectRecommendations', () => {
       ['ancestral-harmony-blue', null, null],
       ['arcane-lantern', null, null],
     ]);
+  });
+
+  it('keeps the Portuguese reason, or null when the model left it blank', () => {
+    const { kept } = selectRecommendations(
+      [entry(POOL_CARDS[0]), entry(POOL_CARDS[1], { reason_pt_br: '  ' })],
+      pool,
+      deckCards,
+      catalog,
+    );
+
+    expect(kept.map((row) => row.reasonPtBr)).toEqual([`motivo de ${POOL_CARDS[0]}`, null]);
   });
 
   it('an answer with nothing valid keeps nothing', () => {

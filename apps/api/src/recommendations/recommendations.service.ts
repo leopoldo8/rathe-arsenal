@@ -14,6 +14,7 @@ import {
 import { TRecommendationStrength } from '../database/entities/recommendation.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ShoppingLineService } from '../stores/shopping-line.service';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { listRecommendations } from './list-recommendations';
 import { computeDeckFingerprint, slotForCard } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
@@ -32,12 +33,15 @@ export interface IRecommendationCardResponse {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;
+  readonly cost: number | null;
   readonly imageUrl: ICatalogCard['imageUrl'] | null;
   readonly slot: 'mainboard' | 'equipment';
   readonly strength: TRecommendationStrength;
   readonly reason: string;
   readonly cutCardIdentifier: string | null;
   readonly cutName: string | null;
+  readonly cutPitch: number | null;
+  readonly cutCost: number | null;
   readonly cutSlot: string | null;
   readonly freeCopies: number;
   readonly priceCents: number | null;
@@ -87,12 +91,12 @@ export class RecommendationsService {
     return { id: run.id, status: run.status, trigger: run.trigger, createdAt: new Date(run.createdAt).toISOString() };
   }
 
-  async read(userId: string, trackedDeckId: number): Promise<IRecommendationsResponse> {
-    const [deck, deckCards, runs, dismissed, latestFinished, active] = await Promise.all([
+  async read(userId: string, trackedDeckId: number, locale: TLocale = 'en-US'): Promise<IRecommendationsResponse> {
+    const [deck, deckCards, runs, excluded, latestFinished, active] = await Promise.all([
       this.dataSource.getRepository(TrackedDeckEntity).findOneOrFail({ where: { id: trackedDeckId, userId } }),
       this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId } }),
       this.query.latestDoneRuns([trackedDeckId]),
-      this.query.dismissedCards([trackedDeckId]),
+      this.query.excludedCards([trackedDeckId]),
       this.dataSource.getRepository(RecommendationRunEntity).findOne({
         where: [
           { trackedDeckId, status: 'done' },
@@ -131,18 +135,25 @@ export class RecommendationsService {
         : null,
       pending: active > 0,
       failure,
-      recommendations: run ? await this.listCards(userId, run, deckCards, dismissed.get(trackedDeckId)) : [],
+      recommendations: run ? await this.listCards({ userId, run, deckCards, excluded: excluded.get(trackedDeckId), locale }) : [],
     };
   }
 
-  private async listCards(
-    userId: string,
-    run: RecommendationRunEntity,
-    deckCards: readonly DeckCardEntity[],
-    dismissed: ReadonlySet<string> | undefined,
-  ): Promise<IRecommendationCardResponse[]> {
+  private async listCards({
+    userId,
+    run,
+    deckCards,
+    excluded,
+    locale,
+  }: {
+    readonly userId: string;
+    readonly run: RecommendationRunEntity;
+    readonly deckCards: readonly DeckCardEntity[];
+    readonly excluded: ReadonlySet<string> | undefined;
+    readonly locale: TLocale;
+  }): Promise<IRecommendationCardResponse[]> {
     const inDeck = new Set(deckCards.map((row) => row.cardIdentifier));
-    const listed = listRecommendations(await this.query.recommendationsOf([run.id]), dismissed ?? new Set(), inDeck);
+    const listed = listRecommendations(await this.query.recommendationsOf([run.id]), excluded ?? new Set(), inDeck);
     const identifiers = listed.map((row) => row.cardIdentifier);
     const [owned, prices] = await Promise.all([
       this.collectionReadService.loadOwned(userId, identifiers),
@@ -151,6 +162,7 @@ export class RecommendationsService {
 
     return listed.map((row) => {
       const card = findCard(row.cardIdentifier);
+      const cut = row.cutCardIdentifier ? findCard(row.cutCardIdentifier) : null;
       const cutStillThere =
         row.cutCardIdentifier !== null &&
         deckCards.some((deckCard) => deckCard.cardIdentifier === row.cutCardIdentifier && deckCard.slot === row.cutSlot);
@@ -160,12 +172,15 @@ export class RecommendationsService {
         cardIdentifier: row.cardIdentifier,
         name: card?.name ?? row.cardIdentifier,
         pitch: card?.pitch ?? null,
+        cost: card?.cost ?? null,
         imageUrl: card?.imageUrl ?? null,
         slot: card ? slotForCard(card) : 'mainboard',
         strength: row.strength,
-        reason: row.reason,
+        reason: locale === 'pt-BR' && row.reasonPtBr ? row.reasonPtBr : row.reason,
         cutCardIdentifier: cutStillThere ? row.cutCardIdentifier : null,
-        cutName: cutStillThere && row.cutCardIdentifier ? (findCard(row.cutCardIdentifier)?.name ?? row.cutCardIdentifier) : null,
+        cutName: cutStillThere && row.cutCardIdentifier ? (cut?.name ?? row.cutCardIdentifier) : null,
+        cutPitch: cutStillThere ? (cut?.pitch ?? null) : null,
+        cutCost: cutStillThere ? (cut?.cost ?? null) : null,
         cutSlot: cutStillThere ? row.cutSlot : null,
         freeCopies: Math.max(0, owned.get(row.cardIdentifier) ?? 0),
         priceCents: prices.get(row.cardIdentifier)?.priceCents ?? null,

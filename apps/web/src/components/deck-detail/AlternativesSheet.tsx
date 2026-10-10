@@ -65,14 +65,62 @@ interface ICardOptionProps {
   readonly needed: number;
   readonly disabled: boolean;
   readonly onPick: () => void;
+  readonly onPreview: () => void;
 }
 
-function CardOption({ card, needed, disabled, onPick }: ICardOptionProps): React.ReactElement {
+function OwnershipMark({ card, needed }: { readonly card: IAlternativeCard; readonly needed: number }): React.ReactElement {
   const { t } = useTranslation();
   const isOwned = card.freeCopies >= needed;
+  return (
+    <span className={isOwned ? styles.owned : styles.free} data-testid="alternative-ownership">
+      {isOwned ? t('alternatives.owned') : t('alternatives.free', { count: card.freeCopies })}
+    </span>
+  );
+}
+
+function PriceMark({ card, needed }: { readonly card: IAlternativeCard; readonly needed: number }): React.ReactElement | null {
+  const { t } = useTranslation();
+  if (card.freeCopies >= needed) return null;
+  return card.priceCents !== null && card.productUrl !== null ? (
+    <a
+      href={card.productUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      referrerPolicy="no-referrer"
+      className={styles.price}
+      aria-label={`${t('alternatives.buyAria', { name: card.name })} ${formatBrl(card.priceCents)}`}
+    >
+      {formatBrl(card.priceCents)}
+    </a>
+  ) : (
+    <span className={styles.stock} data-testid="alternative-out-of-stock">
+      {t('alternatives.outOfStock')}
+    </span>
+  );
+}
+
+function CardOption({ card, needed, disabled, onPick, onPreview }: ICardOptionProps): React.ReactElement {
+  const { t } = useTranslation();
 
   return (
     <li className={styles.option} data-testid="alternative-card" data-card={card.cardIdentifier}>
+      <button
+        type="button"
+        className={styles.previewButton}
+        aria-label={t('alternatives.previewAria', { name: card.name })}
+        data-testid="alternative-preview"
+        onClick={onPreview}
+      >
+        <CardArt
+          name={card.name}
+          pitch={toPitch(card.pitch)}
+          cost={null}
+          type="Action"
+          missing={false}
+          size="xs"
+          imageUrl={card.imageUrl}
+        />
+      </button>
       <button
         type="button"
         className={styles.pick}
@@ -80,17 +128,6 @@ function CardOption({ card, needed, disabled, onPick }: ICardOptionProps): React
         aria-label={t('alternatives.pickAria', { name: card.name })}
         onClick={onPick}
       >
-        <span className={styles.art}>
-          <CardArt
-            name={card.name}
-            pitch={toPitch(card.pitch)}
-            cost={null}
-            type="Action"
-            missing={false}
-            size="xs"
-            imageUrl={card.imageUrl}
-          />
-        </span>
         <span className={styles.text}>
           <span className={styles.name}>
             {card.pitch !== null && PITCH_CLASS[card.pitch] !== undefined && (
@@ -107,28 +144,62 @@ function CardOption({ card, needed, disabled, onPick }: ICardOptionProps): React
             {describeRationale(card, t)}
           </span>
         </span>
-        <span className={isOwned ? styles.owned : styles.free} data-testid="alternative-ownership">
-          {isOwned ? t('alternatives.owned') : t('alternatives.free', { count: card.freeCopies })}
-        </span>
+        <OwnershipMark card={card} needed={needed} />
       </button>
-      {!isOwned &&
-        (card.priceCents !== null && card.productUrl !== null ? (
-          <a
-            href={card.productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            referrerPolicy="no-referrer"
-            className={styles.price}
-            aria-label={`${t('alternatives.buyAria', { name: card.name })} ${formatBrl(card.priceCents)}`}
-          >
-            {formatBrl(card.priceCents)}
-          </a>
-        ) : (
-          <span className={styles.stock} data-testid="alternative-out-of-stock">
-            {t('alternatives.outOfStock')}
-          </span>
-        ))}
+      <PriceMark card={card} needed={needed} />
     </li>
+  );
+}
+
+interface ICardPreviewProps {
+  readonly card: IAlternativeCard;
+  readonly needed: number;
+  readonly disabled: boolean;
+  readonly onBack: () => void;
+  readonly onPick: () => void;
+}
+
+function CardPreview({ card, needed, disabled, onBack, onPick }: ICardPreviewProps): React.ReactElement {
+  const { t } = useTranslation();
+  const sources = card.imageUrl ? [card.imageUrl.large, ...card.imageUrl.sources.map((source) => source.large)] : [];
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const src = sources[sourceIndex];
+
+  return (
+    <section className={styles.preview} data-testid="alternative-preview-view" aria-label={card.name}>
+      {src !== undefined ? (
+        <img
+          className={styles.previewImage}
+          src={src}
+          alt={card.name}
+          referrerPolicy="no-referrer"
+          onError={() => setSourceIndex((index) => index + 1)}
+        />
+      ) : (
+        <CardArt name={card.name} pitch={toPitch(card.pitch)} cost={null} type="Action" missing={false} size="md" imageUrl={null} />
+      )}
+      <p className={styles.name}>{card.name}</p>
+      <p className={styles.rationale}>{describeRationale(card, t)}</p>
+      <p className={styles.previewMarks}>
+        <OwnershipMark card={card} needed={needed} />
+        <PriceMark card={card} needed={needed} />
+      </p>
+      <div className={styles.previewActions}>
+        <button type="button" className={styles.retry} onClick={onBack} data-testid="alternative-preview-back">
+          {t('alternatives.back')}
+        </button>
+        <button
+          type="button"
+          className={styles.usePick}
+          disabled={disabled}
+          aria-label={t('alternatives.pickAria', { name: card.name })}
+          onClick={onPick}
+          data-testid="alternative-preview-pick"
+        >
+          {t('alternatives.useThis')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -139,6 +210,7 @@ export function AlternativesSheet({ deckId, target, onClose }: IAlternativesShee
   const [text, setText] = useState('');
   const [debounced, setDebounced] = useState('');
   const [pickError, setPickError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ readonly card: IAlternativeCard; readonly group: TAlternativeGroup } | null>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebounced(text.trim()), SEARCH_DEBOUNCE_MS);
@@ -230,7 +302,17 @@ export function AlternativesSheet({ deckId, target, onClose }: IAlternativesShee
             </p>
           )}
 
-          {groups.map((group) => (
+          {preview !== null && (
+            <CardPreview
+              card={preview.card}
+              needed={needed}
+              disabled={pick.isPending}
+              onBack={() => setPreview(null)}
+              onPick={() => handlePick(preview.card, preview.group)}
+            />
+          )}
+
+          {preview === null && groups.map((group) => (
             <section key={group.group} className={styles.group} data-testid={`alternatives-group-${group.group}`}>
               <h3 className={styles.groupTitle}>{t(GROUP_LABEL_KEY[group.group])}</h3>
               <ul className={styles.list} aria-label={t('alternatives.listAria')}>
@@ -241,6 +323,7 @@ export function AlternativesSheet({ deckId, target, onClose }: IAlternativesShee
                     needed={needed}
                     disabled={pick.isPending}
                     onPick={() => handlePick(card, group.group)}
+                    onPreview={() => setPreview({ card, group: group.group })}
                   />
                 ))}
               </ul>

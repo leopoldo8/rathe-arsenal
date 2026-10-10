@@ -27,10 +27,10 @@ const DECK_ID = 7;
 const BASE = `/decks/${DECK_ID}/recommendations`;
 
 const DECK_CARDS: IRecommendationDeckCard[] = [
-  { cardIdentifier: 'flex-red', name: 'Flex', slot: 'mainboard' },
-  { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', slot: 'mainboard' },
-  { cardIdentifier: 'talishar-the-lost-prince', name: 'Talishar, the Lost Prince', slot: 'weapon' },
-  { cardIdentifier: 'arcanite-skullcap', name: 'Arcanite Skullcap', slot: 'equipment' },
+  { cardIdentifier: 'flex-red', name: 'Flex', slot: 'mainboard', pitch: 1 },
+  { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', slot: 'mainboard', pitch: 1 },
+  { cardIdentifier: 'talishar-the-lost-prince', name: 'Talishar, the Lost Prince', slot: 'weapon', pitch: null },
+  { cardIdentifier: 'arcanite-skullcap', name: 'Arcanite Skullcap', slot: 'equipment', pitch: null },
 ];
 
 function recommendation(overrides: Partial<IRecommendationCard> = {}): IRecommendationCard {
@@ -40,12 +40,15 @@ function recommendation(overrides: Partial<IRecommendationCard> = {}): IRecommen
     cardIdentifier: 'adrenaline-rush-red',
     name: 'Adrenaline Rush',
     pitch: 1,
+    cost: 0,
     imageUrl: null,
     slot: 'mainboard',
     strength: 'consider',
     reason: 'Pumps the attacks Katsu chains together.',
     cutCardIdentifier: null,
     cutName: null,
+    cutPitch: null,
+    cutCost: null,
     cutSlot: null,
     freeCopies: 0,
     priceCents: null,
@@ -191,6 +194,58 @@ describe('RecommendationsPanel', () => {
     expect(within(stockless).getByTestId('recommendation-out-of-stock')).toHaveTextContent('out of stock');
     expect(within(stockless).queryByTestId('recommendation-cut')).toBeNull();
     expect(within(stockless).queryByText(/replaces/)).toBeNull();
+  });
+
+  it('names cards with their pitch and shows the cost of the card and its cut', async () => {
+    mockApiFetch.mockResolvedValue(
+      response({
+        recommendations: [
+          recommendation({
+            cardIdentifier: 'spire-sniping-red',
+            name: 'Spire Sniping',
+            pitch: 1,
+            cost: 1,
+            cutCardIdentifier: 'spire-sniping-yellow',
+            cutName: 'Spire Sniping',
+            cutPitch: 2,
+            cutCost: 0,
+            cutSlot: 'mainboard',
+          }),
+        ],
+      }),
+    );
+    renderPanel();
+
+    const row = await screen.findByTestId('recommendation-row');
+    expect(within(row).getByTestId('recommendation-name')).toHaveTextContent('Spire Sniping (Red)');
+    expect(within(row).getByTestId('recommendation-cost')).toHaveTextContent('cost 1');
+    expect(within(row).getByTestId('recommendation-cut')).toHaveTextContent('replaces Spire Sniping (Yellow) · cost 0');
+    const options = [...(within(row).getByTestId('recommendation-cut-select') as HTMLSelectElement).options].map((option) => option.textContent);
+    expect(options).toEqual(['Pick a card', 'Flex (Red)', 'Emissary of Tides (Red)']);
+  });
+
+  it('tapping the art opens the card large without adopting it', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+    mockApiFetch.mockResolvedValue(
+      response({
+        recommendations: [
+          recommendation({
+            imageUrl: { small: 'https://img.test/a.webp', large: 'https://img.test/a-l.webp', sources: [{ small: 'https://img.test/b.webp', large: 'https://img.test/b-l.webp' }] },
+          }),
+        ],
+      }),
+    );
+    renderPanel();
+    const row = await screen.findByTestId('recommendation-row');
+
+    await userEvent.click(within(row).getByRole('button', { name: 'See Adrenaline Rush (Red)' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /Adrenaline Rush \(Red\)/ });
+    expect(within(dialog).getByRole('img')).toHaveAttribute('src', 'https://img.test/a-l.webp');
+    expect(mockApiFetch.mock.calls.some(([, init]) => (init as { method?: string } | undefined)?.method === 'POST')).toBe(false);
   });
 
   it('Generate sends the run request', async () => {

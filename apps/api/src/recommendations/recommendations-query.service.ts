@@ -48,12 +48,38 @@ export class RecommendationsQueryService {
     return dismissed;
   }
 
-  /** Clear upgrades of each deck's latest done run that the panel would still list: not dismissed, not in the deck. */
+  /** Cards each deck replaced through an active `card_replacement`: the owner chose to move away from them. */
+  async replacedOriginals(trackedDeckIds: readonly number[]): Promise<Map<number, Set<string>>> {
+    const replaced = new Map<number, Set<string>>();
+    if (trackedDeckIds.length === 0) return replaced;
+    const rows: Array<{ trackedDeckId: number; originalCardIdentifier: string }> = await this.dataSource.query(
+      `SELECT "trackedDeckId", "originalCardIdentifier" FROM card_replacement WHERE "trackedDeckId" = ANY($1) AND status = 'active'`,
+      [[...trackedDeckIds]],
+    );
+    for (const row of rows) {
+      const cards = replaced.get(row.trackedDeckId) ?? new Set<string>();
+      cards.add(row.originalCardIdentifier);
+      replaced.set(row.trackedDeckId, cards);
+    }
+    return replaced;
+  }
+
+  /** Dismissed cards and replaced originals: neither is sent to the model nor listed. */
+  async excludedCards(trackedDeckIds: readonly number[]): Promise<Map<number, Set<string>>> {
+    const [dismissed, replaced] = await Promise.all([this.dismissedCards(trackedDeckIds), this.replacedOriginals(trackedDeckIds)]);
+    const excluded = new Map<number, Set<string>>();
+    for (const trackedDeckId of trackedDeckIds) {
+      excluded.set(trackedDeckId, new Set([...(dismissed.get(trackedDeckId) ?? []), ...(replaced.get(trackedDeckId) ?? [])]));
+    }
+    return excluded;
+  }
+
+  /** Clear upgrades of each deck's latest done run that the panel would still list: not excluded, not in the deck. */
   async countClearUpgrades(deckCards: readonly IDeckCardIdentifiers[], trackedDeckIds: readonly number[]): Promise<Map<number, number>> {
     const runs = await this.latestDoneRuns(trackedDeckIds);
-    const [recommendations, dismissed] = await Promise.all([
+    const [recommendations, excluded] = await Promise.all([
       this.recommendationsOf([...runs.values()].map((run) => run.id)),
-      this.dismissedCards(trackedDeckIds),
+      this.excludedCards(trackedDeckIds),
     ]);
     const inDeck = new Map<number, Set<string>>();
     for (const card of deckCards) {
@@ -65,7 +91,7 @@ export class RecommendationsQueryService {
     for (const run of runs.values()) {
       const listed = listRecommendations(
         recommendations.filter((row) => row.runId === run.id),
-        dismissed.get(run.trackedDeckId) ?? new Set(),
+        excluded.get(run.trackedDeckId) ?? new Set(),
         inDeck.get(run.trackedDeckId) ?? new Set(),
       );
       counts.set(run.trackedDeckId, listed.filter((row) => row.strength === 'clear_upgrade').length);

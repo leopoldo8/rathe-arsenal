@@ -13,6 +13,8 @@ export const recommendations = {
   owned: 'na coleção',
   outOfStock: 'sem estoque',
   buyAria: 'Comprar {{name}} na loja',
+  previewAria: 'Ver {{name}}',
+  cost: 'custo {{cost}}',
   replaces: 'substitui {{name}}',
   cutLabel: 'Substituir',
   cutGone: 'Essa carta não está mais nesse lugar do deck.',

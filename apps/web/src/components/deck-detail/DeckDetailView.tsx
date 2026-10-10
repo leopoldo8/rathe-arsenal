@@ -87,7 +87,12 @@ export function DeckDetailView({
   const deckCards = useMemo((): IRecommendationDeckCard[] => {
     const seen = new Map<string, IRecommendationDeckCard>();
     for (const { entry } of items) {
-      seen.set(`${entry.cardIdentifier}::${entry.slot}`, { cardIdentifier: entry.cardIdentifier, name: entry.name, slot: entry.slot });
+      seen.set(`${entry.cardIdentifier}::${entry.slot}`, {
+        cardIdentifier: entry.cardIdentifier,
+        name: entry.name,
+        slot: entry.slot,
+        pitch: entry.pitch,
+      });
     }
     return [...seen.values()];
   }, [items]);
