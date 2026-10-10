@@ -55,34 +55,65 @@ function percentileBound(histogram: readonly number[], clipCount: number, direct
   return direction === 1 ? 0 : 255;
 }
 
-export function upscaleLanczos(image: IGrayImage, scale: number): IGrayImage {
-  const width = Math.round(image.width * scale);
-  const height = Math.round(image.height * scale);
+export function resizeLanczos(image: IGrayImage, scale: number): IGrayImage {
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const columns = resampleWeights(image.width, width, scale);
+  const rows = resampleWeights(image.height, height, scale);
+
+  const horizontal = new Float32Array(width * image.height);
+  for (let y = 0; y < image.height; y += 1) {
+    const sourceRow = y * image.width;
+    for (let x = 0; x < width; x += 1) {
+      const { indices, weights } = columns[x]!;
+      let sum = 0;
+      for (let tap = 0; tap < indices.length; tap += 1) sum += image.pixels[sourceRow + indices[tap]!]! * weights[tap]!;
+      horizontal[y * width + x] = sum;
+    }
+  }
+
   const pixels = new Uint8ClampedArray(width * height);
   for (let y = 0; y < height; y += 1) {
-    const sourceY = (y + 0.5) / scale - 0.5;
+    const { indices, weights } = rows[y]!;
     for (let x = 0; x < width; x += 1) {
-      pixels[y * width + x] = sampleLanczos(image, (x + 0.5) / scale - 0.5, sourceY);
+      let sum = 0;
+      for (let tap = 0; tap < indices.length; tap += 1) sum += horizontal[indices[tap]! * width + x]! * weights[tap]!;
+      pixels[y * width + x] = sum;
     }
   }
   return { width, height, pixels };
 }
 
-function sampleLanczos(image: IGrayImage, sourceX: number, sourceY: number): number {
-  const baseX = Math.floor(sourceX);
-  const baseY = Math.floor(sourceY);
-  let sum = 0;
-  let weightSum = 0;
-  for (let dy = 1 - LANCZOS_RADIUS; dy <= LANCZOS_RADIUS; dy += 1) {
-    const weightY = lanczos(sourceY - (baseY + dy));
-    const row = clamp(baseY + dy, image.height - 1) * image.width;
-    for (let dx = 1 - LANCZOS_RADIUS; dx <= LANCZOS_RADIUS; dx += 1) {
-      const weight = lanczos(sourceX - (baseX + dx)) * weightY;
-      sum += image.pixels[row + clamp(baseX + dx, image.width - 1)]! * weight;
-      weightSum += weight;
+export function resizeToHeight(image: IGrayImage, height: number): IGrayImage {
+  return resizeLanczos(image, height / image.height);
+}
+
+interface IResampleTaps {
+  readonly indices: Int32Array;
+  readonly weights: Float32Array;
+}
+
+// Shrinking widens the kernel by 1/scale so every source pixel contributes,
+// otherwise thin glyph strokes alias away.
+function resampleWeights(sourceSize: number, targetSize: number, scale: number): IResampleTaps[] {
+  const stretch = Math.max(1, 1 / scale);
+  const support = LANCZOS_RADIUS * stretch;
+  return Array.from({ length: targetSize }, (_, target) => {
+    const center = (target + 0.5) / scale - 0.5;
+    const first = Math.floor(center - support) + 1;
+    const last = Math.floor(center + support);
+    const indices: number[] = [];
+    const weights: number[] = [];
+    let total = 0;
+    for (let source = first; source <= last; source += 1) {
+      const weight = lanczos((center - source) / stretch);
+      if (weight === 0) continue;
+      indices.push(clamp(source, sourceSize - 1));
+      weights.push(weight);
+      total += weight;
     }
-  }
-  return sum / weightSum;
+    return { indices: Int32Array.from(indices), weights: Float32Array.from(weights, (weight) => weight / total) };
+  });
 }
 
 function lanczos(distance: number): number {

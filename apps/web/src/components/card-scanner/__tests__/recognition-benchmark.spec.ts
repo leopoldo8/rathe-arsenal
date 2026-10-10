@@ -19,6 +19,9 @@ const REFERENCE_CODES = [
 ] as const;
 
 const MIN_RIGHT = 32;
+// The official image's width, and the width a card takes in the guide on a phone filming at 1920x1080.
+const CARD_WIDTHS = [null, 885] as const;
+const CARD_ASPECT = 88 / 63;
 const MAX_WRONG = 0;
 const CARD_IMAGE_BASE = 'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large/';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +58,7 @@ function loadFullIndexResponse(): ICollectorCodesResponse {
   };
 }
 
-async function loadCardImage(code: string): Promise<IGrayImage> {
+async function loadCardImage(code: string, width: number | null): Promise<IGrayImage> {
   const file = path.join(CACHE_DIR, `${code}.webp`);
   if (!fs.existsSync(file)) {
     const response = await fetch(`${CARD_IMAGE_BASE}${code}.webp`);
@@ -63,7 +66,8 @@ async function loadCardImage(code: string): Promise<IGrayImage> {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
     fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()));
   }
-  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const image = width === null ? sharp(file) : sharp(file).resize(width, Math.round(width * CARD_ASPECT));
+  const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return rgbaToGray(new Uint8ClampedArray(data), info.width, info.height);
 }
 
@@ -85,15 +89,15 @@ describe('recognition pipeline over the reference set', () => {
     await engine?.terminate();
   });
 
-  it(
-    'accepts at least 32 right codes and no wrong code',
-    async () => {
+  it.each(CARD_WIDTHS)(
+    'accepts at least 32 right codes and no wrong code at card width %s',
+    async (width) => {
       const index = buildCollectorCodeIndex(loadFullIndexResponse());
       let right = 0;
       const wrong: string[] = [];
 
       for (const code of REFERENCE_CODES) {
-        const card = await loadCardImage(code);
+        const card = await loadCardImage(code, width);
         const readByVariant = new Map<string, string>();
         let session = EMPTY_SESSION;
         for (let attempt = 0; attempt < VOTE_WINDOW; attempt += 1) {
@@ -110,7 +114,7 @@ describe('recognition pipeline over the reference set', () => {
         }
       }
 
-      console.info(`recognition benchmark: ${right}/${REFERENCE_CODES.length} right, wrong: [${wrong.join(', ')}]`);
+      console.info(`recognition benchmark (width ${width ?? 'native'}): ${right}/${REFERENCE_CODES.length} right, wrong: [${wrong.join(', ')}]`);
       expect(wrong.length).toBeLessThanOrEqual(MAX_WRONG);
       expect(right).toBeGreaterThanOrEqual(MIN_RIGHT);
     },

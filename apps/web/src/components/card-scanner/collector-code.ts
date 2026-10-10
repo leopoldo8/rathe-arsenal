@@ -26,6 +26,9 @@ const DIGIT_LOOKALIKES: Readonly<Record<string, string>> = {
   S: '5', Z: '2', B: '8', G: '6',
 };
 
+// A T in the digits is read as 1 or as 7; a slice where both codes exist is ambiguous.
+const SECOND_DIGIT_READING: Readonly<Record<string, string>> = { T: '7' };
+
 const LETTER_LOOKALIKES: Readonly<Record<string, string>> = {
   '0': 'O', '1': 'I', '5': 'S', '2': 'Z', '8': 'B', '6': 'G',
 };
@@ -61,22 +64,53 @@ function candidateCodes(text: string, index: ICollectorCodeIndex): readonly stri
   const codes: string[] = [];
   for (const token of tokens) {
     for (let start = 0; start + CODE_LENGTH <= token.length; start += 1) {
-      codes.push(...codesForSlice(token.slice(start, start + CODE_LENGTH), index));
+      const slice = sliceAt(token, start);
+      if (slice !== null) codes.push(...codesForSlice(slice, index));
     }
   }
   return codes;
 }
 
+/**
+ * A printed code is never followed by another digit. When one follows, the
+ * OCR has usually read the first digit twice ("MONO042"), so that copy is dropped.
+ */
+function sliceAt(token: string, start: number): string | null {
+  const end = start + CODE_LENGTH;
+  if (!isDigit(token[end])) return token.slice(start, end);
+  const firstDigit = start + PREFIX_LENGTH;
+  const doubled = mapChars(token[firstDigit]!, DIGIT_LOOKALIKES) === mapChars(token[firstDigit + 1]!, DIGIT_LOOKALIKES);
+  if (!doubled || isDigit(token[end + 1])) return null;
+  return token.slice(start, firstDigit) + token.slice(firstDigit + 1, end + 1);
+}
+
+function isDigit(char: string | undefined): boolean {
+  return char !== undefined && char >= '0' && char <= '9';
+}
+
 function codesForSlice(slice: string, index: ICollectorCodeIndex): readonly string[] {
-  const digits = mapChars(slice.slice(PREFIX_LENGTH), DIGIT_LOOKALIKES);
-  if (!/^\d{3}$/.test(digits)) return [];
+  const digitReadings = readDigits(slice.slice(PREFIX_LENGTH));
+  if (digitReadings.length === 0) return [];
   const prefix = slice.slice(0, PREFIX_LENGTH);
   const prefixVariants = [
     prefix,
     mapChars(prefix, LETTER_LOOKALIKES),
     prefix[0] + mapChars(prefix.slice(1), LETTER_LOOKALIKES),
   ];
-  return prefixVariants.filter((variant) => index.prefixes.has(variant)).map((variant) => variant + digits);
+  return prefixVariants
+    .filter((variant) => index.prefixes.has(variant))
+    .flatMap((variant) => {
+      const indexed = digitReadings.map((digits) => variant + digits).filter((code) => index.byCode.has(code));
+      return indexed.length === 1 ? indexed : [];
+    });
+}
+
+function readDigits(chars: string): readonly string[] {
+  const readings = [...chars].reduce<string[]>((partials, char) => {
+    const options = [DIGIT_LOOKALIKES[char] ?? char, ...(SECOND_DIGIT_READING[char] ? [SECOND_DIGIT_READING[char]] : [])];
+    return partials.flatMap((partial) => options.map((option) => partial + option));
+  }, ['']);
+  return readings.filter((digits) => /^\d{3}$/.test(digits));
 }
 
 function mapChars(value: string, lookalikes: Readonly<Record<string, string>>): string {

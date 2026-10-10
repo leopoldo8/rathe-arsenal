@@ -3,7 +3,7 @@ import {
   invert,
   stretchContrast,
   threshold,
-  upscaleLanczos,
+  resizeToHeight,
   type IFractionRect,
   type IGrayImage,
 } from './ocr-image';
@@ -20,6 +20,10 @@ export interface IOcrVariant {
 const CODE_LINE: IFractionRect = { left: 0, top: 0.925, width: 1, height: 0.066 };
 const CODE_LINE_LEFT: IFractionRect = { ...CODE_LINE, width: 0.55 };
 
+// Code-line heights the recognizer was tuned on: 3x and 4x of the line in a
+// 763 px tall reference card. Camera crops are resized to the same height.
+const LINE_HEIGHT = 150;
+const LEFT_LINE_HEIGHT = 200;
 const BINARY_CUTOFF = 140;
 const SPARSE_TEXT_MODE = '11';
 const AUTO_MODE = '3';
@@ -34,19 +38,19 @@ const BASE_PARAMETERS = {
 export const OCR_VARIANTS: readonly IOcrVariant[] = [
   {
     id: 'full',
-    prepare: (card) => upscaleLanczos(stretchContrast(cropFraction(card, CODE_LINE)), 3),
+    prepare: (card) => resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE)), LINE_HEIGHT),
     parameters: BASE_PARAMETERS,
   },
   {
     id: 'left-binary',
     prepare: (card) =>
-      threshold(invert(upscaleLanczos(stretchContrast(cropFraction(card, CODE_LINE_LEFT)), 4)), BINARY_CUTOFF),
+      threshold(invert(resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE_LEFT)), LEFT_LINE_HEIGHT)), BINARY_CUTOFF),
     parameters: BASE_PARAMETERS,
   },
   {
     id: 'full-binary-sparse',
     prepare: (card) =>
-      threshold(invert(upscaleLanczos(stretchContrast(cropFraction(card, CODE_LINE)), 3)), BINARY_CUTOFF),
+      threshold(invert(resizeToHeight(stretchContrast(cropFraction(card, CODE_LINE)), LINE_HEIGHT)), BINARY_CUTOFF),
     parameters: {
       ...BASE_PARAMETERS,
       tessedit_pageseg_mode: SPARSE_TEXT_MODE,

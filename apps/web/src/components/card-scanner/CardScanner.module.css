@@ -1,6 +1,7 @@
 .scanner {
-  /* Leaves room for the top row and the bar so the 3:4 stage fits one screen. */
-  --scanner-max-inline: min(100%, 36rem, calc((100dvh - 11rem) * 0.75));
+  /* Leaves room for the top row, the notice and the bar so the 3:4 stage fits one screen. */
+  --scanner-notice-height: 5.5rem;
+  --scanner-max-inline: min(100%, 36rem, calc((100dvh - 11rem - var(--scanner-notice-height)) * 0.75));
   position: fixed;
   inset: 0;
   z-index: 800;
@@ -190,10 +191,12 @@
   margin: 0;
 }
 
+/* Holds its height while empty so the bar does not jump when a notice comes and goes. */
 .noticeRegion {
-  position: absolute;
-  inset-inline: var(--ra-space-3);
-  inset-block-start: 18%;
+  inline-size: 100%;
+  max-inline-size: var(--scanner-max-inline);
+  min-block-size: var(--scanner-notice-height);
+  margin-inline: auto;
 }
 
 .notice .cardName {

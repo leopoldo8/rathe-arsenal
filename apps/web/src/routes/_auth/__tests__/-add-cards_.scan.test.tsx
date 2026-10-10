@@ -302,6 +302,15 @@ describe('/add-cards/scan', () => {
     expect(within(notice).getByRole('button', { name: /Undo the scan of Nimblism/ })).toHaveTextContent('Wrong');
   });
 
+  it('shows the scan notice outside the camera so it never covers the card', async () => {
+    const harness = await renderReady();
+
+    await harness.scan('WTR218');
+
+    const stage = screen.getByTestId('card-guide').parentElement!;
+    expect(stage).not.toContainElement(screen.getByTestId('scan-notice'));
+  });
+
   it('names both faces in the notice', async () => {
     const harness = await renderReady();
 
