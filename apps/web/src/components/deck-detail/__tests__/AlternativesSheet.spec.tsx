@@ -210,6 +210,48 @@ describe('AlternativesSheet', () => {
     expect(screen.getByTestId('alternatives-group-search')).toHaveTextContent('Sink Below');
   });
 
+  describe('preview', () => {
+    it('tapping the art previews the card without picking it, and Back returns to the list', async () => {
+      mockApiFetch.mockImplementation(async (_path: string, init?: RequestInit) =>
+        init?.method === 'POST' ? { replacement: {} } : TWO_GROUPS,
+      );
+      renderSheet();
+      await screen.findByTestId('alternatives-group-other_pitch');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Coax a Commotion antes de escolher' }));
+
+      const view = screen.getByTestId('alternative-preview-view');
+      expect(within(view).getByRole('img', { name: 'Coax a Commotion' })).toHaveAttribute('src', 'https://img.test/coax-l.webp');
+      expect(view).toHaveTextContent('Coax a Commotion');
+      expect(screen.queryByTestId('alternatives-group-very_close')).toBeNull();
+      expect(mockApiFetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toBe(false);
+      expect(onClose).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByTestId('alternative-preview-back'));
+
+      expect(screen.queryByTestId('alternative-preview-view')).toBeNull();
+      expect(screen.getByTestId('alternatives-group-very_close')).toBeInTheDocument();
+      expect(mockApiFetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toBe(false);
+    });
+
+    it('"Use this card" in the preview sends the pick with its group', async () => {
+      mockApiFetch.mockImplementation(async (_path: string, init?: RequestInit) =>
+        init?.method === 'POST' ? { replacement: {} } : TWO_GROUPS,
+      );
+      renderSheet();
+      await screen.findByTestId('alternatives-group-other_pitch');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Brandish antes de escolher' }));
+      await userEvent.click(screen.getByTestId('alternative-preview-pick'));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+      const post = mockApiFetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST')!;
+      expect(JSON.parse((post[1] as RequestInit).body as string)).toEqual(
+        expect.objectContaining({ replacementCardIdentifier: 'brandish-blue', pickedFrom: 'other_pitch' }),
+      );
+    });
+  });
+
   describe('picking', () => {
     it('a tap sends the pick with its group', async () => {
       mockApiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
@@ -285,6 +327,9 @@ describe('AlternativesSheet', () => {
       'alternatives.searchEmpty',
       'alternatives.listAria',
       'alternatives.pickAria',
+      'alternatives.previewAria',
+      'alternatives.back',
+      'alternatives.useThis',
       'alternatives.groupVeryClose',
       'alternatives.groupClose',
       'alternatives.groupOtherPitch',
