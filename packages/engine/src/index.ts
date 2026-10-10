@@ -57,8 +57,8 @@ export {
   buildExclusionKey,
   ALTERNATIVE_GROUP_ORDER,
   ALTERNATIVES_PER_GROUP,
-  OWNED_SCORE_BONUS,
   compareAlternatives,
+  rulesTextSimilarity,
   findAlternatives,
 } from './substitution';
 

@@ -327,39 +327,91 @@ describe('findAlternatives legality', () => {
 });
 
 describe('findAlternatives ordering', () => {
-  const entry = (name: string, score: number, freeCopies: number) => ({
-    card: makeCard({ cardIdentifier: name }),
+  const MISSING_TEXT = 'Your next arrow attack this turn gets +3{p} and "When this hits a hero, create a Frailty token."';
+  const MISSING_BUFF = makeCard({ cardIdentifier: 'missing-buff', subtypes: ['Non-Attack'], cost: 0, functionalText: MISSING_TEXT });
+  const entry = (
+    name: string,
+    score: number,
+    freeCopies: number,
+    overrides: Partial<ICatalogCard> = {},
+  ) => ({
+    card: makeCard({ cardIdentifier: name, subtypes: ['Non-Attack'], cost: 0, functionalText: '', ...overrides }),
     score,
     freeCopies,
   });
+  const order = (entries: ReturnType<typeof entry>[], needed = 2): string[] =>
+    [...entries].sort((a, b) => compareAlternatives(a, b, needed, MISSING_BUFF)).map((e) => e.card.cardIdentifier);
 
-  it('orders by score with the owned bonus of 0.05: an owned card 0.04 below an unowned one sorts first', () => {
-    const sorted = [entry('unowned', 0.95, 0), entry('owned', 0.91, 2)].sort((a, b) => compareAlternatives(a, b, 2));
-
-    expect(sorted.map((e) => e.card.cardIdentifier)).toEqual(['owned', 'unowned']);
+  it('orders by fit: a higher score comes first whatever the other keys say', () => {
+    expect(order([entry('same-everything', 0.85, 3, { functionalText: MISSING_TEXT }), entry('higher-score', 0.9, 0, { cost: 3 })])).toEqual([
+      'higher-score',
+      'same-everything',
+    ]);
   });
 
-  it('orders by score with the owned bonus of 0.05: an owned card 0.06 below sorts second', () => {
-    const sorted = [entry('owned', 0.89, 2), entry('unowned', 0.95, 0)].sort((a, b) => compareAlternatives(a, b, 2));
-
-    expect(sorted.map((e) => e.card.cardIdentifier)).toEqual(['unowned', 'owned']);
+  it('orders by fit: at equal score, a card with the same subtypes as the missing card comes first', () => {
+    expect(
+      order([
+        entry('attack', 1, 3, { subtypes: ['Attack'] }),
+        entry('arrow', 1, 3, { subtypes: ['Arrow', 'Attack'] }),
+        entry('trap', 1, 3, { subtypes: ['Non-Attack', 'Trap'] }),
+        entry('buff', 1, 0, { cost: 2 }),
+      ]),
+    ).toEqual(['buff', 'arrow', 'attack', 'trap']);
   });
 
-  it('orders by score with the owned bonus of 0.05: equal adjusted scores sort by name ascending', () => {
-    const sorted = [entry('b-unowned', 0.95, 0), entry('a-owned', 0.9, 3), entry('c-unowned', 0.95, 1)].sort((a, b) =>
-      compareAlternatives(a, b, 3),
+  it('orders by fit: at equal score and role, the closer cost comes first', () => {
+    expect(order([entry('cost-2', 1, 3, { cost: 2 }), entry('cost-1', 1, 3, { cost: 1 }), entry('cost-0', 1, 0, { cost: 0 })])).toEqual([
+      'cost-0',
+      'cost-1',
+      'cost-2',
+    ]);
+  });
+
+  it('orders by fit: at equal score, role and cost, the more similar rules text comes first', () => {
+    expect(
+      order([
+        entry('unrelated', 1, 3, { functionalText: 'Draw a card.' }),
+        entry('extra-clause', 1, 3, { functionalText: 'Your next arrow attack this turn gets +3{p}. You may untap a bow you control.' }),
+        entry('sibling', 1, 0, { functionalText: 'Your next arrow attack this turn gets +3{p} and "When this hits a hero, create an Inertia token."' }),
+      ]),
+    ).toEqual(['sibling', 'extra-clause', 'unrelated']);
+  });
+
+  it('orders by fit: ownership only breaks a tie the fit keys leave, then the name does', () => {
+    expect(order([entry('b-unowned', 1, 0), entry('c-owned', 1, 2), entry('a-unowned', 1, 0), entry('d-some', 1, 1)])).toEqual([
+      'c-owned',
+      'a-unowned',
+      'b-unowned',
+      'd-some',
+    ]);
+    expect(order([entry('owned-cost-1', 1, 2, { cost: 1 }), entry('unowned-cost-0', 1, 0)])).toEqual(['unowned-cost-0', 'owned-cost-1']);
+  });
+
+  it('orders Lace with Bloodrot alternatives for Azalea by role, cost, then rules text, and keeps the 10 best', () => {
+    const lace = realCatalog.getCard('lace-with-bloodrot-red');
+    const groups = findAlternatives(
+      input(lace, { heroCard: realCatalog.getCard('azalea-ace-in-the-hole'), needed: 3 }),
+      realCatalog,
     );
 
-    expect(sorted.map((e) => e.card.cardIdentifier)).toEqual(['a-owned', 'b-unowned', 'c-unowned']);
+    expect(groups[0]!.group).toBe('very_close');
+    expect(groups[0]!.cards.map((c) => c.card.cardIdentifier)).toEqual([
+      'lace-with-frailty-red',
+      'lace-with-inertia-red',
+      'drop-the-anchor-red',
+      'fire-in-the-hole-red',
+      'seek-and-destroy-red',
+      'read-the-glide-path-red',
+      'release-the-tension-red',
+      'toxicity-red',
+      'call-in-the-big-guns-red',
+      'take-aim-red',
+    ]);
+    expect(groups[0]!.cards.every((c) => c.card.cost === 0 && c.card.subtypes.join() === 'Non-Attack')).toBe(true);
   });
 
-  it('orders by score with the owned bonus of 0.05: free copies below the needed count earn no bonus', () => {
-    const sorted = [entry('unowned', 0.95, 0), entry('some', 0.91, 1)].sort((a, b) => compareAlternatives(a, b, 2));
-
-    expect(sorted.map((e) => e.card.cardIdentifier)).toEqual(['unowned', 'some']);
-  });
-
-  it('orders by score with the owned bonus of 0.05: an owned card never moves into a stricter group', () => {
+  it('an owned card never moves into a stricter group', () => {
     const strict = makeCard({ cardIdentifier: 'strict' });
     const looser = makeCard({ cardIdentifier: 'looser', pitch: 2 });
 
