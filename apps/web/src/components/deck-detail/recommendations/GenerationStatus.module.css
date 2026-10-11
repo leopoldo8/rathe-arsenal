@@ -1,0 +1,74 @@
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  margin-block-start: var(--ra-space-1);
+}
+
+.clockLine {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.ring {
+  inline-size: 30px;
+  block-size: 30px;
+  flex-shrink: 0;
+}
+
+.track,
+.arc {
+  fill: none;
+  stroke-width: 3;
+}
+
+.track {
+  stroke: var(--ra-bg-raised);
+}
+
+.arc {
+  stroke: var(--ra-accent);
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s linear;
+}
+
+.mark {
+  stroke: var(--ra-fg-secondary);
+  stroke-width: 1.5;
+}
+
+.clock {
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.usual {
+  color: var(--ra-fg-tertiary);
+}
+
+.step,
+.overdue {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.step {
+  color: var(--ra-fg-tertiary);
+}
+
+.overdue {
+  color: var(--ra-ready-mid);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc {
+    transition: none;
+  }
+}

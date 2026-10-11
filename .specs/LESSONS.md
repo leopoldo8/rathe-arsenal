@@ -62,6 +62,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: round1 binding sources run.status, error text (plan)
 - last seen: 2026-10-06T22:18:12Z
 
+### L-018 - To prove a windowed aggregate (median of the latest N), seed enough out-of-window rows to change the answer if the window flips or the limit goes away; one outlier cannot move a median.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `api/aggregates` · harmful: 0
+- features: recommendations-rail
+- evidence: apps/api/src/recommendations/recommendations.service.ts ORDER BY finishedAt DESC (api/aggregates)
+- last seen: 2026-10-11T06:03:48Z
+
+### L-019 - For each animation criterion, write a negative case (when it must not play) and a timing case (state just after the trigger), not only the end state.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web/animation` · harmful: 0
+- features: recommendations-rail
+- evidence: AC 26, AC 31, AC 33 (web/animation)
+- last seen: 2026-10-11T06:03:48Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

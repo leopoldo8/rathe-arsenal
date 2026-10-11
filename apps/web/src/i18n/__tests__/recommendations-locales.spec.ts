@@ -4,9 +4,10 @@ import { ptBR } from '../locales/pt-BR';
 import { enUS } from '../locales/en-US';
 
 const PANEL_KEYS = [
-  'title', 'generate', 'generateAria', 'generating', 'stale', 'empty', 'noUpgrades', 'loadError', 'retry', 'listAria',
-  'clearUpgrade', 'owned', 'outOfStock', 'buyAria', 'previewAria', 'cost', 'replaces', 'cutLabel', 'cutGone', 'cutNone', 'adopt', 'adoptAria', 'dismiss',
-  'dismissAria', 'dismissed', 'undo',
+  'title', 'generate', 'generateAgain', 'generatingButton', 'generateAria', 'stale', 'empty', 'noUpgrades', 'loadError', 'retry',
+  'listAria', 'clearUpgrade', 'consider', 'owned', 'outOfStock', 'buyAria', 'previewAria', 'cost', 'costMore', 'costLess', 'costSame',
+  'cutIn', 'outLabel', 'cutGone', 'cutNone', 'adopt', 'adoptAria', 'dismiss', 'dismissAria', 'dismissed', 'undo', 'candidates', 'usual',
+  'overdue', 'clockAria',
 ] as const;
 
 describe('recommendations locales', () => {
@@ -18,6 +19,8 @@ describe('recommendations locales', () => {
         expect({ locale, key, value: typeof recommendations[key] }).toEqual({ locale, key, value: 'string' });
         expect({ locale, key, empty: (recommendations[key] as string).trim() === '' }).toEqual({ locale, key, empty: false });
       }
+      const step = recommendations['step'] as Record<string, string>;
+      expect({ locale, steps: Object.keys(step).sort() }).toEqual({ locale, steps: ['queued', 'retrying', 'running'] });
       const failure = recommendations['failure'] as Record<string, string>;
       expect({ locale, codes: Object.keys(failure).sort() }).toEqual({ locale, codes: [...RECOMMENDATION_FAILURE_CODES].sort() });
       for (const code of RECOMMENDATION_FAILURE_CODES) {

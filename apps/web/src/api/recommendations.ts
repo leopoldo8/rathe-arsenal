@@ -45,6 +45,22 @@ export interface IRecommendationCard {
   readonly productUrl: string | null;
 }
 
+export type TGenerationStatus = 'queued' | 'retrying' | 'running';
+
+export interface IPoolSampleCard {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly imageUrl: IAlternativeImageUrl;
+}
+
+export interface IGeneration {
+  readonly status: TGenerationStatus;
+  readonly elapsedMs: number;
+  readonly typicalMs: number | null;
+  readonly poolSize: number;
+  readonly poolSample: readonly IPoolSampleCard[];
+}
+
 export interface IRecommendationsResponse {
   readonly run: {
     readonly id: string;
@@ -55,6 +71,7 @@ export interface IRecommendationsResponse {
   } | null;
   readonly pending: boolean;
   readonly failure: { readonly code: TRecommendationFailureCode; readonly finishedAt: string | null } | null;
+  readonly generation: IGeneration | null;
   readonly recommendations: readonly IRecommendationCard[];
 }
 
@@ -73,7 +90,8 @@ export function useRecommendationsQuery(deckId: number) {
   return useQuery({
     queryKey: recommendationsQueryKey(deckId),
     queryFn: () => apiFetch<IRecommendationsResponse>(`/decks/${deckId}/recommendations`),
-    refetchInterval: (query) => (query.state.data?.pending ? RECOMMENDATIONS_POLL_MS : false),
+    refetchInterval: (query) =>
+      query.state.data?.pending || query.state.data?.generation ? RECOMMENDATIONS_POLL_MS : false,
   });
 }
 

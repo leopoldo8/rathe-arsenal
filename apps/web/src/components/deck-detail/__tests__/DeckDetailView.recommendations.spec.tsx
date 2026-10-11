@@ -11,9 +11,9 @@ vi.mock('../DeckAnalysisRow', () => ({ DeckAnalysisRow: () => <div data-testid="
 vi.mock('../DeckList', () => ({ DeckList: () => <div data-testid="deck-list" /> }));
 vi.mock('../MissingPanel', () => ({ MissingPanel: () => <section data-testid="missing-panel" /> }));
 vi.mock('../SwapsPanel', () => ({ SwapsPanel: () => <section data-testid="deck-swaps-panel" /> }));
-vi.mock('../RecommendationsPanel', () => ({
-  RecommendationsPanel: ({ deckCards }: { deckCards: unknown[] }) => (
-    <section data-testid="recommendations-panel" data-cards={deckCards.length} />
+vi.mock('../recommendations/RecommendationsRail', () => ({
+  RecommendationsRail: ({ deckCards, heroName }: { deckCards: unknown[]; heroName: string }) => (
+    <section data-testid="recommendations-panel" data-cards={deckCards.length} data-hero={heroName} />
   ),
 }));
 
@@ -81,23 +81,21 @@ function renderView(pct: number, missing: boolean): void {
 }
 
 describe('DeckDetailView recommendations placement', () => {
-  it('places the panel under swaps or alone', () => {
-    renderView(50, true);
-    const panels = screen.getByTestId('deck-action-panels');
-    const swaps = within(panels).getByTestId('deck-swaps-panel');
-    const recommendations = within(panels).getByTestId('recommendations-panel');
-    expect(swaps.parentElement).toBe(recommendations.parentElement);
-    expect(swaps.compareDocumentPosition(recommendations) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(panels).getByTestId('missing-panel').parentElement).not.toBe(recommendations.parentElement);
-    expect(screen.queryByTestId('deck-recommendations-row')).toBeNull();
-    document.body.innerHTML = '';
-
-    renderView(100, false);
-    expect(screen.queryByTestId('deck-action-panels')).toBeNull();
-    expect(screen.queryByTestId('missing-panel')).toBeNull();
-    expect(screen.queryByTestId('deck-swaps-panel')).toBeNull();
-    const row = screen.getByTestId('deck-recommendations-row');
-    expect(row.children).toHaveLength(1);
-    expect(within(row).getByTestId('recommendations-panel')).toHaveAttribute('data-cards', '1');
+  it('puts recommendations right under the status strip', () => {
+    for (const [pct, missing] of [[50, true], [100, false]] as const) {
+      renderView(pct, missing);
+      const view = screen.getByTestId('deck-detail-view');
+      const order = [...view.children].map((child) => child.getAttribute('data-testid'));
+      const strip = order.indexOf('status-strip');
+      expect(order[strip + 1]).toBe('recommendations-panel');
+      expect(order.indexOf('analysis-row')).toBeGreaterThan(strip + 1);
+      expect(screen.getAllByTestId('recommendations-panel')).toHaveLength(1);
+      expect(screen.getByTestId('recommendations-panel')).toHaveAttribute('data-hero', 'Katsu, the Wanderer');
+      expect(screen.getByTestId('recommendations-panel')).toHaveAttribute('data-cards', '1');
+      const panels = screen.queryByTestId('deck-action-panels');
+      if (missing) expect(within(panels!).queryByTestId('recommendations-panel')).toBeNull();
+      else expect(panels).toBeNull();
+      document.body.innerHTML = '';
+    }
   });
 });
