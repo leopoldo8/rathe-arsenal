@@ -87,10 +87,10 @@ Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.t
 **C21** - The step line, table-driven: `queued` -> "Na fila"; `retrying` -> "O modelo estava ocupado; tentando de novo"; `running` with `poolSize` 821 and hero "Azalea, Ace in the Hole" -> "O modelo avalia 821 cartas para Azalea, Ace in the Hole" (AC 25) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "names the step the server is on"`
 
-**C22** - `typicalMs` 100 000 shows "costuma levar ~2 min" and a typical-time mark on the ring; `typicalMs` `null` shows neither (AC 26) · done
+**C22** - `typicalMs` 100 000 shows "costuma levar ~2 min" and the usual-time mark; 70 000 shows "~1 min"; `null` shows neither (AC 26) (reworded on 2026-10-11: the label rounds to the nearest minute) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "shows the usual duration when known"`
 
-**C23** - With `elapsedMs` 118 000 and `typicalMs` 120 000 the step line shows the running step, and after 3 s of fake time it reads "Passou do tempo de costume. Pode sair da página; as recomendações aparecem aqui quando terminarem." (AC 27) · done
+**C23** - With `elapsedMs` 110 000 and `typicalMs` 100 000 (shown as ~2 min) the step line still shows the running step at 119 s and reads "Passou do tempo de costume. Pode sair da página; as recomendações aparecem aqui quando terminarem." at 121 s (AC 27) (reworded on 2026-10-11: the warning follows the shown minutes, not the raw median) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "says when the run passes the usual time"`
 
 **C24** - Without reduced motion, a lifted card appears on the pile within 1.2 s of fake time showing an image and the name of a `poolSample` card; with `prefers-reduced-motion: reduce` no lifted card appears after 5 s (AC 28, 35) · done
@@ -127,8 +127,8 @@ Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.t
 **C32** - In the browser, 60 ms after each dealt card lands its reason text is still below 0.5 opacity, and once the deal is over every reason is at opacity 1 (AC 33)
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriving cards exactly into place"` · done
 
-**C33** - The typical-time mark sits at the bottom of the ring (`x1` = `x2` = 15, `y1` > 15) and, with elapsed equal to the typical duration, the arc fills half the circumference (AC 26) · done
-Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "marks the usual time half way round the ring"`
+**C33** - With `typicalMs` 130 000 (shown as ~2 min) the mark sits at the bottom of the ring, the ring is a quarter full at 60 s, half full at 120 s with no warning yet, and at 122 s the warning shows with the ring just past half (AC 26, 27) (replaced on 2026-10-11 after the owner tested staging) · done
+Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "reaches the usual-time mark half way round the ring, exactly when the warning shows"`
 
 ## Coverage
 

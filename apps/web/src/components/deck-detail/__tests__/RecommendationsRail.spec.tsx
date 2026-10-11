@@ -111,6 +111,14 @@ function setReducedMotion(reduced: boolean): void {
   });
 }
 
+/** The server's elapsed time keeps growing between polls, as the real read route's does. */
+function serveGenerationFrom(elapsedMs: number, typicalMs: number): void {
+  const start = Date.now();
+  mockApiFetch.mockImplementation(async () =>
+    response({ run: null, pending: true, generation: generation({ elapsedMs: elapsedMs + Date.now() - start, typicalMs }), recommendations: [] }),
+  );
+}
+
 async function flush(): Promise<void> {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(0);
@@ -456,6 +464,11 @@ describe('RecommendationsRail', () => {
     expect(screen.getByTestId('generation-typical-mark')).toBeInTheDocument();
     document.body.innerHTML = '';
 
+    mockApiFetch.mockResolvedValue(response({ run: null, pending: true, generation: generation({ typicalMs: 70_000 }), recommendations: [] }));
+    renderRail();
+    expect(await screen.findByTestId('generation-usual')).toHaveTextContent('costuma levar ~1 min');
+    document.body.innerHTML = '';
+
     mockApiFetch.mockResolvedValue(response({ run: null, pending: true, generation: generation({ typicalMs: null }), recommendations: [] }));
     renderRail();
     await screen.findByTestId('generation-clock');
@@ -465,15 +478,19 @@ describe('RecommendationsRail', () => {
 
   it('says when the run passes the usual time', async () => {
     vi.useFakeTimers();
-    mockApiFetch.mockResolvedValue(
-      response({ run: null, pending: true, generation: generation({ elapsedMs: 118_000, typicalMs: 120_000 }), recommendations: [] }),
-    );
+    serveGenerationFrom(110_000, 100_000);
     renderRail();
     await flush();
+    expect(screen.getByTestId('generation-usual')).toHaveTextContent('costuma levar ~2 min');
     expect(screen.getByTestId('generation-step')).toHaveTextContent(`O modelo avalia 821 cartas para ${HERO}`);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(3_000);
+      await vi.advanceTimersByTimeAsync(9_000);
+    });
+    expect(screen.getByTestId('generation-step')).toHaveTextContent(`O modelo avalia 821 cartas para ${HERO}`);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
     });
 
     expect(screen.getByTestId('generation-step')).toHaveTextContent(
@@ -549,18 +566,36 @@ describe('RecommendationsRail', () => {
     expect(screen.queryByTestId('recommendations-pile')).toBeNull();
   });
 
-  it('marks the usual time half way round the ring', async () => {
-    mockApiFetch.mockResolvedValue(
-      response({ run: null, pending: true, generation: generation({ elapsedMs: 120_000, typicalMs: 120_000 }), recommendations: [] }),
-    );
+  it('reaches the usual-time mark half way round the ring, exactly when the warning shows', async () => {
+    vi.useFakeTimers();
+    serveGenerationFrom(60_000, 130_000);
     renderRail();
+    await flush();
+    const fill = (): number => {
+      const [filled, circumference] = (screen.getByTestId('generation-ring-arc').getAttribute('stroke-dasharray') ?? '')
+        .split(' ')
+        .map(Number) as [number, number];
+      return filled / circumference;
+    };
+    const mark = screen.getByTestId('generation-typical-mark');
 
-    const mark = await screen.findByTestId('generation-typical-mark');
+    expect(screen.getByTestId('generation-usual')).toHaveTextContent('costuma levar ~2 min');
     expect([mark.getAttribute('x1'), mark.getAttribute('x2')]).toEqual(['15', '15']);
     expect(Number(mark.getAttribute('y1'))).toBeGreaterThan(15);
-    const arc = mark.parentElement!.querySelectorAll('circle')[1]!;
-    const [filled, circumference] = (arc.getAttribute('stroke-dasharray') ?? '').split(' ').map(Number) as [number, number];
-    expect(filled / circumference).toBeCloseTo(0.5, 2);
+    expect(fill()).toBeCloseTo(0.25, 2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(fill()).toBeCloseTo(0.5, 2);
+    expect(screen.getByTestId('generation-step')).not.toHaveTextContent('Passou do tempo de costume');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(screen.getByTestId('generation-step')).toHaveTextContent('Passou do tempo de costume');
+    expect(fill()).toBeGreaterThan(0.5);
+    expect(fill()).toBeLessThan(0.52);
   });
 
   it('polls every 10 seconds only while a run is active', async () => {
