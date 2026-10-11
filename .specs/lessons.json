@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 20,
+  "next_id": 23,
   "lessons": [
     {
       "id": "L-010",
@@ -184,6 +184,60 @@
       ],
       "created": "2026-10-11T06:03:48Z",
       "last_seen": "2026-10-11T06:03:48Z"
+    },
+    {
+      "id": "L-020",
+      "key": "surviving_mutant::a proof through a path that catches and logs its own failure deck import recompute must assert the side effect such as a new snapshot row never only the http status",
+      "text": "A proof through a path that catches and logs its own failure (deck import recompute) must assert the side effect, such as a new snapshot row, never only the HTTP status.",
+      "signal": "surviving_mutant",
+      "scope": "apps/api",
+      "status": "candidate",
+      "features": [
+        "swaps-into-alternatives"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "apps/api/src/decks/import/decks-import.service.ts:205 (apps/api)"
+      ],
+      "created": "2026-10-11T09:06:13Z",
+      "last_seen": "2026-10-11T09:06:13Z"
+    },
+    {
+      "id": "L-021",
+      "key": "gate_fail::a removal proof written as a negated git grep must exclude test files that name the removed thing to assert its absence and must be run once before the checks are approved",
+      "text": "A removal proof written as a negated git grep must exclude test files that name the removed thing to assert its absence, and must be run once before the checks are approved.",
+      "signal": "gate_fail",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "swaps-into-alternatives"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "checks.md C34, C36 (checks)"
+      ],
+      "created": "2026-10-11T09:06:13Z",
+      "last_seen": "2026-10-11T09:06:13Z"
+    },
+    {
+      "id": "L-022",
+      "key": "gate_fail::before naming a single test with t as a proof run it alone int specs whose tests share one seeded schema must be proven as the whole file",
+      "text": "Before naming a single test with -t as a proof, run it alone; int-specs whose tests share one seeded schema must be proven as the whole file.",
+      "signal": "gate_fail",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "swaps-into-alternatives"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "checks.md C35 (checks)"
+      ],
+      "created": "2026-10-11T09:06:13Z",
+      "last_seen": "2026-10-11T09:06:13Z"
     }
   ]
 }

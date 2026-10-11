@@ -1,20 +1,20 @@
 # Swaps into alternatives verification
 
-**Verdict**: FAIL
+**Verdict**: PASS
 **Profile**: standard
-**Diff range**: 2aa6468..008ed9a
-**Round**: 2 - scoped
+**Diff range**: 2aa6468..f09ddd6
+**Round**: 3 - scoped
 **Verifier**: independent sub-agent (author != verifier)
 
-HEAD `008ed9a` on `feat/swaps-into-alternatives`. Round 1 (verified at `56cd8cb`) failed C33, C34, C35, C36. The fix commit `008ed9a` touched `suggested-uses.e2e-spec.ts`, `DeckCanvas.edit.spec.tsx`, `checks.md` and `implementation-notes.md` only; no production code changed. Scope of this round: every proof re-run in full at `008ed9a`; C33 to C36 and the new C40 re-judged; the coverage rows the fix touched recomputed; faults re-injected on the surfaces the fix touched or created. Everything else is carried from `56cd8cb` and marked. 39 of 40 checks are proven. C33 is not: its new import call asserts only a status that the import returns even when the recompute fails, and a mutant that makes that recompute throw survives.
+HEAD `f09ddd6` on `feat/swaps-into-alternatives`. Round 2 (verified at `008ed9a`) failed only C33. The fix commit `f09ddd6` changed `suggested-uses.e2e-spec.ts` (two lines in the C33 test), the wording of C33 in `checks.md`, and the round 2 report; no production code changed. Scope of this round: every proof re-run in full at `f09ddd6`; C33 re-judged; the "recompute paths" coverage row recomputed; the round 2 surviving fault re-injected. Everything else is carried from `008ed9a` (itself carried from `56cd8cb` where marked there) and marked. 40 of 40 checks are proven.
 
 ## Binding sources
 
-Carried from `56cd8cb`: profile `standard`, step 1 does not run. The plan marks no source binding beyond itself and the owner decisions it quotes.
+Carried from `56cd8cb` (not re-run, the fix touched no interface): profile `standard`, step 1 does not run. The plan marks no source binding beyond itself and the owner decisions it quotes.
 
 ## Checks
 
-Proofs verified at `008ed9a`. Runs: engine `jest __tests__/readiness.spec.ts` (3 names shown); API unit `jest` over 2 files (2 names shown); API e2e/int against the throwaway Postgres on 55433, `--runInBand` (every named test shown individually, C35 as the whole file); web unit `vitest run` over 9 files (12 names shown); Playwright `e2e-chromium` `suggestions-flow.spec.ts` (3 names shown, servers on 3100 and 5273 were up). Full suites for C37 re-run separately. Evidence cells for C1-C4, C12-C17, C23-C29, C31, C32, C38, C39 are carried from `56cd8cb` (files untouched by the fix, so line numbers are unchanged; their proofs re-ran at `008ed9a`); evidence cells for C5-C11, C18-C22, C30, C33-C36, C40 are refreshed at `008ed9a`.
+Proofs verified at `f09ddd6`. Runs: engine `jest __tests__/readiness.spec.ts` (3 names shown, after `pnpm --filter @rathe-arsenal/engine build`); API unit `jest` over 2 files (2 names shown); API e2e/int against the throwaway Postgres `ra-swaps-pg` on 55433, `--runInBand`, over 5 files (every named test shown individually, C35 as the whole file, 5/5); web unit `vitest run` over 8 files (12 names shown); Playwright `e2e-chromium` `suggestions-flow.spec.ts` (3 names shown, servers on 3100 and 5273 were up). Full suites for C37 re-run separately. Evidence cells are carried from `008ed9a` (line numbers unchanged: the fix added lines only inside the C33 test, after every cited line of the other checks in that file); the C33 cell is refreshed at `f09ddd6`.
 
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
@@ -45,15 +45,15 @@ Proofs verified at `008ed9a`. Runs: engine `jest __tests__/readiness.spec.ts` (3
 | C25 | onboarding variants | web `-t "offers to use every suggestion or not now"` and `"a deck with no suggestion shows the looking good step"` ok | `apps/web/src/components/onboarding/__tests__/Step3FirstReview.spec.tsx:98-100` both buttons, no approve/reject; `:103-104, :110-111` bulk once then complete, later complete with no request; `:118-119` heading "Tudo certo", no `Usar` | PASS |
 | C26 | browser: "Usar as 3" leaves 3 marks, strip no longer offers a use | Playwright `-g "Usar as N uses every suggestion"` 1 passed | `suggestions-flow.spec.ts:44` strip text; `:48` marks `toHaveCount(3)`; `:49` `strip-use-suggestions` `toHaveCount(0)` | PASS |
 | C27 | no "Trocas" link in the top bar and tab bar | web `-t "has no swaps entry"` x2 ok | `apps/web/src/components/shell/__tests__/TopBar.spec.tsx:145-146`; `BottomTabBar.spec.tsx:75-76` | PASS |
-| C28 | `/swaps` and `/reviews` land on `/home`; no "Trocas" link | Playwright `-g "the swaps addresses lead home"` 1 passed | `suggestions-flow.spec.ts:55` `toHaveURL(/\/home(\?|$)/)`; `:57` `getByRole('link',{name:'Trocas'})` `toHaveCount(0)` | PASS |
+| C28 | `/swaps` and `/reviews` land on `/home`; no "Trocas" link | Playwright `-g "the swaps addresses lead home"` 1 passed | `suggestions-flow.spec.ts:55` `toHaveURL(/\/home(\?, or end)/)`; `:57` `getByRole('link',{name:'Trocas'})` `toHaveCount(0)` | PASS |
 | C29 | deck page renders no swaps panel, banner or link | web `-t "shows no swaps panel, banner or link"` ok | `apps/web/src/components/deck-detail/__tests__/DeckDetailView.suggestions.spec.tsx:83-86` `deck-swaps-panel` null, "trocas recusadas" null, "Ver trocas" null, no `a[href^="/swaps"]` | PASS |
 | C30 | six swaps routes answer 404 | e2e `-t "the swaps routes are gone"` ok | `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:287` `get('/api/swaps').expect(404)`; `:289` loop over actions `.expect(404)` | PASS |
 | C31 | up drops table and empties snapshots; down recreates empty | int `-t "drops the swap table and empties the snapshots"` ok | `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migration.int-spec.ts:96-97` seeded 2 and 2; `:101-102` `hasTable` false, snapshots 0; `:106-107` down: table true, count 0 | PASS |
 | C32 | 7 origins accepted, `swap` refused; `suggested` refused after down | int `-t "accepts suggested as a replacement origin"` ok | `drop-swap-suggestion.migration.int-spec.ts:117-118` all ORIGINS `true`, `accepts('swap')` `toBe(false)`; `:122` `accepts('suggested')` `toBe(false)` after down | PASS |
-| C33 | every recompute path answers 2xx without a swap table, deck import included | e2e `-t "every recompute path runs without a swap table"` ok | `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:295` `expect(table).toBeNull()`; `:298-318` list, read, alternatives, pick, revert, bulk, batch add, mark owned, composition save, each `.expect(200/201)`; new at `:320-323` `post('/api/decks/import').send({ urls, seedInventory: true }).expect(201)`. That last call asserts only the status. The import service wraps the recompute of existing decks in try/catch and logs a warning (`apps/api/src/decks/import/decks-import.service.ts:203-211`), so the response is 201 even if the recompute throws. Mutant: replacing the call at `:205` with `throw new Error('relation "swap_suggestion" does not exist')` leaves this test green (see Faults). The import path is reached but the test cannot fail on it | FAIL |
-| C34 | no API source outside migrations names the swap table; API typechecks | `! git grep -nE "swap_suggestion\|SwapSuggestion\|SwapsReconciliation" -- apps/api/src ':!apps/api/src/database/migrations' ':!apps/api/src/**/__tests__/**'` exit 0 (git grep exit 1, no hits); API typecheck exit 0 | no hits outside migrations and `__tests__`; in a scratch tree a line `// swap_suggestion` appended to `plan-suggested-uses.ts` makes the proof exit 1 | PASS |
+| C33 | every recompute path answers 2xx without a swap table, deck import included, and the import stores a snapshot for the existing deck | e2e `-t "every recompute path runs without a swap table"` ok (verified at `f09ddd6`) | `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:295` `expect(table).toBeNull()`; `:298-318` list, read, alternatives, pick, revert, bulk, batch add, mark owned, composition save, each `.expect(200/201)`; import at `:320-326`: `snapshotsBeforeImport = await fixture.snapshotCount(owner.deckId)` (`:321`), `post('/api/decks/import').send({ urls, seedInventory: true }).expect(201)` (`:322-325`), then `expect(await fixture.snapshotCount(owner.deckId)).toBe(snapshotsBeforeImport + 1)` (`:326`). The import swallows recompute errors (`decks-import.service.ts:203-211`), so the snapshot count is the only observable of the recompute; the round 2 mutant (recompute throws) now fails here at the new assertion (Expected 8, Received 7, see Faults). One precision note: `+ 1` assumes the recompute stores exactly one snapshot for that deck, which matches the check wording ("one more stored snapshot") | PASS |
+| C34 | no API source outside migrations names the swap table; API typechecks | `! git grep -nE "swap_suggestion, SwapSuggestion, SwapsReconciliation (alternation)" -- apps/api/src ':!apps/api/src/database/migrations' ':!apps/api/src/**/__tests__/**'` exit 0 (git grep exit 1, no hits); API typecheck exit 0 | no hits outside migrations and `__tests__`; in a scratch tree a line `// swap_suggestion` appended to `plan-suggested-uses.ts` makes the proof exit 1 | PASS |
 | C35 | earlier migrations' int-specs still pass with the new migration in the chain | whole file `redesign-migrations-on-synchronized-schema.int-spec.ts` 5/5 ok; both `replace-substitute-decision...` names ok | `redesign-migrations-on-synchronized-schema.int-spec.ts:70` `expect(await constraintNames('swap_suggestion')).toEqual(arrayContaining([...]))` passes inside the whole-file run; `replace-substitute-decision-with-swap-suggestion.int-spec.ts` `up() drops substitute_decision` and `down() recreates substitute_decision` ok | PASS |
-| C36 | no web source imports the swaps client or components; web typechecks | `! git grep -nE "api/swaps\|components/swaps\|SwapsPanel\|ModifiedViewBanner" -- apps/web/src` exit 0 (git grep exit 1, no hits); web typecheck exit 0 | no hits; the stale mock was removed in `008ed9a` (`DeckCanvas.edit.spec.tsx` lost the `ModifiedViewBanner` mock at old lines 44-46); a scratch line `// ModifiedViewBanner` in `deckDetailModel.ts` makes the proof exit 1 | PASS |
+| C36 | no web source imports the swaps client or components; web typechecks | `! git grep -nE "api/swaps, components/swaps, SwapsPanel, ModifiedViewBanner (alternation)" -- apps/web/src` exit 0 (git grep exit 1, no hits); web typecheck exit 0 | no hits; the stale mock was removed in `008ed9a` (`DeckCanvas.edit.spec.tsx` lost the `ModifiedViewBanner` mock at old lines 44-46); a scratch line `// ModifiedViewBanner` in `deckDetailModel.ts` makes the proof exit 1 | PASS |
 | C37 | full suites green | `pnpm --filter @rathe-arsenal/engine test`, `api test`, `web test`, then Playwright `e2e-chromium` | engine 17 suites / 343 tests, API 82 suites / 881 tests, web 147 files / 2097 tests, Playwright 32 passed (exit 0 on all four, re-run at `008ed9a`) | PASS |
 | C38 | pick route 400, 401, 404 as missing, 409 | e2e, 4 names in the same run, all ok | `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts:220-226` `.expect(400)`; `:455-459` `.expect(401)`; `:312-314` foreign 404 body `toEqual` missing 404 body; `:168` `res.body.code` `toBe('NOTHING_TO_REPLACE')` | PASS |
 | C39 | pt-BR and en-US key paths identical | web `-t "pt-BR and en-US expose an identical set of translation key paths"` ok | `apps/web/src/i18n/__tests__/catalog-parity.spec.ts:27` `expect(en).toEqual(pt)` | PASS |
@@ -61,7 +61,7 @@ Proofs verified at `008ed9a`. Runs: engine `jest __tests__/readiness.spec.ts` (3
 
 ## Coverage
 
-Rows the fix touched are recomputed at `008ed9a` (marked verified); the others are carried from `56cd8cb`.
+The row the fix touched (recompute paths) is recomputed at `f09ddd6`; the others are carried from `008ed9a` or `56cd8cb` as each row marks.
 
 | Set (size) | Recomputed from | Member -> proof | Unproven |
 | --- | --- | --- | --- |
@@ -73,7 +73,7 @@ Rows the fix touched are recomputed at `008ed9a` (marked verified); the others a
 | missing-row suggestion cases (4), carried from 56cd8cb | `deckDetailModel.ts:32-49` | `deckDetailModel.spec.ts:43-48` | - |
 | status strip states (3), carried from 56cd8cb | `deckDetailModel.ts:54` | `DeckStatusStrip.spec.tsx:50-54` | - |
 | onboarding variants (2), carried from 56cd8cb | plan AC 12 | `Step3FirstReview.spec.tsx:98`, `:118` | - |
-| recompute paths that read approvals before (10), verified at 008ed9a | check C33 and plan AC 22 | list, read `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:298-299`; alternatives `:300-302`; pick `:303`, revert `:304`, bulk `:305`; collection batch `:306`; mark owned `:307`; composition save `:308-318`; deck import: the call exists at `:320-323` and the path is reached (the fixture's Fabrary mock answers any ULID, `replacements-e2e.fixture.ts:101`), but the assertion is a status only and the import swallows recompute errors (`decks-import.service.ts:203-211`); unit C4 proves the call inputs; CSV upload, sources, Fabrary collection import: grep only (C34) | deck import recompute: a throwing recompute passes C33 (fault 2) |
+| recompute paths that read approvals before (10), verified at f09ddd6 | check C33 and plan AC 22; call sites `decks-import.service.ts:203-211` and the API recompute callers | list, read `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:298-299`; alternatives `:300-302`; pick `:303`, revert `:304`, bulk `:305`; collection batch `:306`; mark owned `:307`; composition save `:308-318`; deck import `:320-326`: status 201 plus the stored-snapshot delta `toBe(snapshotsBeforeImport + 1)` at `:326`, which fails when the recompute throws (fault 2); unit C4 proves the call inputs; CSV upload, sources, Fabrary collection import: grep only (C34, exit 0 at f09ddd6) | - |
 | readiness fields (4), carried from 56cd8cb | `types.ts`, plan Impact | `effectivePercent` `readiness.spec.ts:1014`; `substituted` `:1021`; `fidelityPercent` `:1062`; `path` `:1060` | - |
 | Landing doors (4), carried from 56cd8cb | plan Landing | door 1 C32; door 2 `readiness.spec.ts:1014,1022`; door 3 `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:215`; door 4 `drop-swap-suggestion.migration.int-spec.ts:101` | - |
 | Relations entities (2), carried from 56cd8cb | plan Relations | `card_replacement` C8, C32; `swap_suggestion` C31 | - |
@@ -83,7 +83,7 @@ Rows the fix touched are recomputed at `008ed9a` (marked verified); the others a
 
 ## Test policy rows
 
-Carried from `56cd8cb` except the Removal row, re-judged at `008ed9a` because the fix touched C34, C36 and the files they cover.
+Carried from `008ed9a`. The fix touched only a test file and a check's wording; no file a row classifies changed, and C33 sits under the Removal row's `404`/absence expectation, which C30 and the greps still meet. Re-judged unmet rows: none were unmet.
 
 | Row | Files it classifies | Required proof | Expectation met |
 | --- | --- | --- | --- |
@@ -94,19 +94,21 @@ Carried from `56cd8cb` except the Removal row, re-judged at `008ed9a` because th
 
 ## Faults injected
 
-Scratch worktree at `008ed9a` (removed afterwards); real tree porcelain empty before and after (matches). Faults 1 to 4 are new this round. The five faults of round 1 (copy limit `<=` to `<`, `effectivePercent` offset, held-by-replacement condition, `pickedFrom` value, migration CHECK list) are carried from `56cd8cb`; they target files this fix did not touch.
+Scratch worktree at `f09ddd6` (removed afterwards); real tree porcelain empty before and after (matches). Fault 2 is re-injected this round; faults 1, 3, 4 and the five round 1 faults are carried (they target files and proofs the fix did not touch: `replacements.service.ts`, `plan-suggested-uses.ts`, `deckDetailModel.ts`; carried from `008ed9a` and `56cd8cb`).
 
 | Mutation | Location | Killed |
 | --- | --- | --- |
-| 1. bulk route answers 201 with no rows when every suggestion is skipped: `plan.uses.length === 0` -> `plan.uses.length === 0 && plan.skipped === 0` | `apps/api/src/replacements/replacements.service.ts:167` | yes - C40 `the bulk route refuses when every suggestion is skipped` failed; the other four bulk-route tests stayed green, so only C40 carries that surface |
-| 2. deck import: the recompute of the owner's existing decks throws `relation "swap_suggestion" does not exist` instead of calling `computeAndStoreReadiness` | `apps/api/src/decks/import/decks-import.service.ts:205` | no - C33 `every recompute path runs without a swap table` stayed green (the import swallows the error and answers 201). Unit C4 would fail on this mutant, but it asserts call arguments, not behaviour against a database without the table |
-| 3. a line naming `swap_suggestion` added to an API source file | `apps/api/src/replacements/plan-suggested-uses.ts:82` | yes - C34 grep proof exits 1 (one hit) |
-| 4. a line naming `ModifiedViewBanner` added to a web source file | `apps/web/src/components/deck-detail/deckDetailModel.ts:73` | yes - C36 grep proof exits 1 (one hit) |
+| 1. bulk route answers 201 with no rows when every suggestion is skipped: `plan.uses.length === 0` -> `plan.uses.length === 0 && plan.skipped === 0` (carried from 008ed9a) | `apps/api/src/replacements/replacements.service.ts:167` | yes - C40 failed; the other bulk-route tests stayed green |
+| 2. deck import: the recompute of the owner's existing decks throws `relation "swap_suggestion" does not exist` instead of calling `computeAndStoreReadiness` (re-injected at f09ddd6) | `apps/api/src/decks/import/decks-import.service.ts:205` | yes - C33 `every recompute path runs without a swap table` failed at `suggested-uses.e2e-spec.ts:326` (`toBe(snapshotsBeforeImport + 1)`, Expected 8, Received 7); the same fault was not caught at 008ed9a |
+| 3. a line naming `swap_suggestion` added to an API source file (carried from 008ed9a) | `apps/api/src/replacements/plan-suggested-uses.ts:82` | yes - C34 grep proof exits 1 |
+| 4. a line naming `ModifiedViewBanner` added to a web source file (carried from 008ed9a) | `apps/web/src/components/deck-detail/deckDetailModel.ts:73` | yes - C36 grep proof exits 1 |
+
+Carried round 1 faults (copy limit `<=` to `<`, `effectivePercent` offset, held-by-replacement condition, `pickedFrom` value, migration CHECK list): all killed at `56cd8cb`.
 
 ## Gate
 
-Proofs at `008ed9a`: engine 3/3, API unit 2/2, API e2e and int every named test plus the whole `redesign-migrations-on-synchronized-schema.int-spec.ts` (5/5), web unit 12/12, Playwright 3/3. Full suites: engine 343, API 881, web 2097, Playwright 32, all green. Typecheck: API and web exit 0. The `! git grep` proofs for C34 and C36 exit 0.
+Proofs at `f09ddd6`: engine 3/3, API unit 2/2, API e2e and int every named test plus the whole `redesign-migrations-on-synchronized-schema.int-spec.ts` (5/5), web unit 12/12, Playwright 3/3. Full suites (C37): engine 343 (17 suites), API 881 (82 suites), web 2097 (147 files), Playwright 32 passed, all exit 0. Typecheck: API and web exit 0. The `! git grep` proofs for C34 and C36 exit 0 (git grep exit 1, no hits).
 
-Gaps, ranked:
+`pnpm --filter @rathe-arsenal/engine test && pnpm --filter @rathe-arsenal/api test && pnpm --filter @rathe-arsenal/web test` and Playwright `e2e-chromium` - 3323 unit tests passed plus 32 e2e, 0 failed.
 
-1. C33 - the import step at `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts:320-323` asserts only `.expect(201)`, and `apps/api/src/decks/import/decks-import.service.ts:203-211` catches and logs any error from the recompute of existing decks, so the import answers 201 whether or not the recompute works. Fault 2 (the recompute throws a missing-table error) survives. Precision gap in the proof: assert the effect, for example that `fixture.snapshotCount(owner.deckId)` is higher after the import than before it (a stored snapshot for the pre-existing deck shows the recompute ran and stored without the table). C33 stays FAIL until a mutant on that path is killed.
+No open gaps.
