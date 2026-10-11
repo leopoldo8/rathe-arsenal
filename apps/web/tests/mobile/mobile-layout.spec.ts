@@ -37,7 +37,6 @@ const ROUTES: readonly IRoute[] = [
   { name: 'decks-new', url: '/decks/new', shell: true },
   { name: 'library', url: '/library', shell: true },
   { name: 'library-csv-sources', url: '/library-csv-sources', shell: true },
-  { name: 'swaps', url: '/swaps', shell: true },
   { name: 'settings', url: '/settings', shell: true },
   { name: 'add-cards', url: '/add-cards', shell: true },
   { name: 'add-cards-manual', url: '/add-cards/manual', shell: true },
@@ -166,7 +165,7 @@ test.describe('mobile layout', () => {
           expect(report.tabBar!.top).toBeGreaterThanOrEqual(0);
           expect(report.tabBar!.bottom).toBeLessThanOrEqual(report.viewportHeight + SUBPIXEL_PX);
           expect(report.tabBar!.right).toBeLessThanOrEqual(report.innerWidth + SUBPIXEL_PX);
-          expect(report.tabHeights.length).toBe(3);
+          expect(report.tabHeights.length).toBe(2);
           for (const height of report.tabHeights) {
             expect(height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
           }
