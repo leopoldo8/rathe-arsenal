@@ -131,7 +131,7 @@ Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migratio
 **C32** - After the migration's `up`, `card_replacement` accepts each of the 7 origins `very_close`, `close`, `other_pitch`, `generic`, `search`, `recommendation`, `suggested` and refuses `swap`; after `down` it refuses `suggested` again (door 1) · done
 Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migration.int-spec.ts -t "accepts suggested as a replacement origin"`
 
-**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and a deck import that seeds the collection and so recomputes the owner's existing decks (AC 22) (reworded after verification round 1: the import call was missing from the proof) · done
+**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and a deck import that seeds the collection, after which the owner's existing deck has one more stored snapshot (AC 22) (reworded after verification rounds 1 and 2: the import call was missing, then it asserted only its status, and the import swallows a failed recompute) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "every recompute path runs without a swap table"`
 
 **C34** - No API source outside the migrations and the tests names the swap table or its entity, and the API typechecks (AC 22) (reworded after verification round 1: the e2e proof of C33 names the table to assert it is absent) · done

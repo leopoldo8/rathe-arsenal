@@ -316,11 +316,13 @@ describe('suggestions from the collection (E2E)', () => {
         ],
       })
       .expect(200);
-    // A second import that seeds the collection recomputes the owner's existing decks.
+    // A second import that seeds the collection recomputes the owner's existing decks, and swallows a failed recompute.
+    const snapshotsBeforeImport = await fixture.snapshotCount(owner.deckId);
     await fixture
       .post('/api/decks/import', owner.jwt)
       .send({ urls: [`https://fabrary.net/decks/${newUlid()}`], seedInventory: true })
       .expect(201);
+    expect(await fixture.snapshotCount(owner.deckId)).toBe(snapshotsBeforeImport + 1);
 
     const [{ table: after }] = await fixture.dataSource.query(`SELECT to_regclass('swap_suggestion') AS table`);
     expect(after).toBeNull();
