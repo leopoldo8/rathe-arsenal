@@ -24,5 +24,6 @@ Autonomous run on 2026-10-11, owner away. Every call below that would normally w
 
 ## Needs owner
 
-- Pick a mockup for the chat screen and for the deck chat entry.
+- ~~Pick a mockup for the chat screen and for the deck chat entry.~~ Picked 2026-10-11: chat B and deck entry 3, with no money amount on screen.
+- Pick the assistant's name and mark from `.design/mockups/ai-chat/brand-1..3` (Escudeiro, Tutor, Astrolábio); the pick also goes into `buildSystemInstruction`.
 - Before go-live: run the migration on production, set `GEMINI_API_KEY` on the worker service (already there for recommendations), run `chat:grant` for the owner and the three friends, and run `chat:probe` once to prove the live multi-turn function-calling shape.

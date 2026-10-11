@@ -28,7 +28,7 @@ Nothing measures this today; the twice-a-month figure is the owner's own account
 
 In: a chat tab with saved conversations; a conversation started from a deck page and bound to that deck; a model that reads the user's decks, collection, latest recommendations, the card catalog with legality, a local copy of Fabrary tournament decks with placement, and the comprehensive rules; proposals of a new deck or of a card swap that the user applies with one click; a per-user access flag and a monthly spend cap.
 
-Out: the model changing decks without the user applying a proposal - a later step once proposals prove trustworthy. Out: charging for the feature - `docs/research/ip-posture.md` rules 1 and 3 forbid a paywall or a patron-gated feature that depends on card data without express permission from LSS; reopening it needs that permission or an ads/Patreon model that does not gate the feature. Out: hero win rates from Talishar online games - needs an API key obtained through Metafy and terms that allow product use, both the owner's to resolve; it becomes its own slice when the key exists. Out: YouTube content - no source. Out: fine-tuning and a name or brand for the assistant - copy and visuals, decided at any time; a working name is used until then. Out: opening to all Cúpula DT users. Out: a second model or provider fallback.
+Out: the model changing decks without the user applying a proposal - a later step once proposals prove trustworthy. Out: charging for the feature - `docs/research/ip-posture.md` rules 1 and 3 forbid a paywall or a patron-gated feature that depends on card data without express permission from LSS; reopening it needs that permission or an ads/Patreon model that does not gate the feature. Out: hero win rates from Talishar online games - needs an API key obtained through Metafy and terms that allow product use, both the owner's to resolve; it becomes its own slice when the key exists. Out: YouTube content - no source. Out: fine-tuning. In since 2026-10-11: a name and mark for the assistant, replacing the working name "Chat" on the tab, the answer label, the empty state and the deck entry; the owner picks from three alternatives (`.design/mockups/ai-chat/brand-*`), and the picked name also goes into the model's system instruction. Out: opening to all Cúpula DT users. Out: a second model or provider fallback.
 
 Unchanged: `recommendation_run` and its queue; the recommendations rail; card alternatives and their suggestions; readiness and its stand-in search; the Fabrary import. New cards still arrive only with a bump of `@flesh-and-blood/cards`; the model knows nothing a release added before that bump.
 
@@ -64,7 +64,7 @@ The heavier alternative answers on the request path and streams tokens to the sc
 | [Rules reference](#rules-reference) | the comprehensive rules stored as searchable sections | open — 2 defaults taken |
 | [Conversation](#conversation) | saved conversations whose turns the worker answers with tools, within the budget | open — 4 defaults taken |
 | [Chat proposal](#chat-proposal) | validated proposals of a new deck or a swap, applied or dismissed by the user | clear |
-| [Chat screen](#chat-screen) | the third tab: conversation list, thread, proposal cards, spend line | design |
+| [Chat screen](#chat-screen) | the third tab: conversation list, thread, proposal cards | design |
 | [Deck chat entry](#deck-chat-entry) | "talk about this deck" on the deck page, opening a bound conversation | design |
 | [Official coverage](#official-coverage) | an answer on whether fabtcg.com round results can feed hero matchups | spike |
 
@@ -271,13 +271,15 @@ sequenceDiagram
 
 **Delivers** the third main tab. **Status: design** - the owner picks from at least two mockups before it is built (project `CLAUDE.md`).
 
-- Design: conversation list, thread and composer, on phone and desktop; must answer for the states empty, waiting for an answer (the polled wait, which decides whether streaming becomes worth it), failed with retry, budget reached with reset date, a deck proposal card (counts of owned and missing cards, apply, dismiss, applied, stale), a swap proposal card, a bound conversation's deck chip, and the month's spend line.
+- Design: conversation list, thread and composer, on phone and desktop; must answer for the states empty, waiting for an answer (the polled wait, which decides whether streaming becomes worth it), failed with retry, budget reached with reset date, a deck proposal card (counts of owned and missing cards, apply, dismiss, applied, stale), a swap proposal card, and a bound conversation's deck chip.
+- Picked 2026-10-11: alternative B (thread first, one reading column, conversations in a bottom sheet or side panel). The screen shows no money amount: no spend line, and the budget-reached state names only the reset date. `GET /api/chat/usage` stays, so the composer can be disabled before the user types. Still open: the assistant's name and mark.
 
 ### Deck chat entry
 
 **Delivers** a "talk about this deck" action on the deck page that opens a new conversation bound to that deck. **Status: design** - same rule as Chat screen.
 
 - Design: where the action sits on the deck page beside the recommendations rail, and whether it lists the deck's earlier conversations.
+- Picked 2026-10-11: alternative 3, a tile at the head of the recommendations rail with three ready questions, the action and the count of the deck's earlier conversations.
 
 ### Official coverage
 
