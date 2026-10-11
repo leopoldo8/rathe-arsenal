@@ -92,6 +92,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: checks.md C35 (checks)
 - last seen: 2026-10-11T09:06:13Z
 
+### L-023 - Pin every numeric bound at its exact edge, one case on each side, not with a value well past it
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `tests` · harmful: 0
+- features: ai-chat
+- evidence: verification round 1 F3, chat-history.ts:3 (tests)
+- last seen: 2026-10-11T19:18:34Z
+
+### L-024 - Prove the step that branches on a due check, not only the due check it calls
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `worker` · harmful: 0
+- features: ai-chat
+- evidence: verification round 1 F4, reference-step.ts:17 (worker)
+- last seen: 2026-10-11T19:18:34Z
+
+### L-025 - Drive a dispatcher's refusal path through the real dispatcher, never through a stub that throws the expected error
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `tests` · harmful: 0
+- features: ai-chat
+- evidence: verification round 1 C51, chat-tools.ts:169 (tests)
+- last seen: 2026-10-11T19:18:34Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

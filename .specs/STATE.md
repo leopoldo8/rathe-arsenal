@@ -106,9 +106,11 @@
 
 ## Handoff
 
-- **Feature**: ai-chat - `.specs/features/ai-chat/` - planned and being built on an autonomous run (owner away), profile `standard` provisional. Branch `feat/ai-chat` in worktree `.claude/worktrees/ai-chat`, based on `46f7e2c`, not pushed. Backend only: chat access, tournament deck sync, rules reference, conversations answered in the worker, proposals. The chat tab and deck entry wait for the owner to pick a mockup.
-- **Tests**: run api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_chat`, a database built only by migrations (see `checks.md`); the worktree needs a copy of the root `.env` and a built `packages/engine`.
+- **Feature**: ai-chat - `.specs/features/ai-chat/` - planned, built and VERIFIED (PASS, round 2 scoped, independent Verifier, profile `standard` provisional) on an autonomous run with the owner away. Branch `feat/ai-chat` in worktree `.claude/worktrees/ai-chat`, based on `46f7e2c`, not pushed, no PR. Backend only: chat access flag and `chat:grant`, daily Fabrary tournament deck sync, comprehensive rules reference from rules.fabtcg.com, conversations answered by Gemini 3.8 Flash with nine tools in a worker loop of their own, US$5 monthly budget on a `chat_usage` ledger, deck and swap proposals applied by the user (AD-013).
+- **Waiting on the owner**: pick a chat screen and a deck entry from `.design/mockups/ai-chat/index.html`; the screens are not built (project `CLAUDE.md`, "UI changes").
+- **Blocks go-live**: run `chat:probe` once with the real key (the multi-call request shape is proven only against a stubbed fetch), the migration on production, `GEMINI_API_KEY` on the worker service, `chat:grant` for the four users.
 - **Deviations and owner calls**: `.specs/features/ai-chat/implementation-notes.md`.
+- **Tests**: api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_chat`, a database built only by migrations (see `checks.md`); the worktree needs a copy of the root `.env` and a built `packages/engine`.
 
 ### Previous handoff (card-recommendations, merged as #136)
 - **Feature**: card-recommendations — `.specs/features/card-recommendations/` — planned, built and verified on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed, no PR. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
