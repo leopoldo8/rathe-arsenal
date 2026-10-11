@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/recommendations-rail/plan.md`
 
-30 checks in 4 slices · 1 one-way door · 0 open
+33 checks in 4 slices · 1 one-way door · 0 open
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -33,7 +33,7 @@ Proof: `apps/api/src/recommendations/__tests__/generation-state.spec.ts -t "samp
 **C5** - On the read route: a deck with a `running` run started 30 s ago answers `generation.status` `running`, `elapsedMs` between 30 000 and 40 000, `poolSize` equal to `buildRecommendationPool(...)`'s length for that deck, and `poolSample` of 1 to 16 entries each with `cardIdentifier`, `name` and `imageUrl.small`; the same deck with a `manual` `pending` run answers `queued`; with an `auto` `pending` run due in 5 minutes answers `generation: null` and `pending: true`; with no active run answers `generation: null` and `pending: false` (AC 1, 3, 4, 5, 6, 8, 9) · done
 Proof: `apps/api/src/recommendations/__tests__/recommendations-read.e2e-spec.ts -t "reports a run in progress as generation"`
 
-**C6** - On the read route, with 3 `done` runs on other decks lasting 60, 90 and 300 s and one `failed` run lasting 10 s, a deck with a running run answers `typicalMs` 90 000; with only 2 `done` runs it answers `typicalMs` `null`; only the 20 most recently finished `done` runs count: 21 runs where the oldest-finished is 1 s and the other 20 are 100 s answer 100 000 (AC 7) · done
+**C6** - On the read route, with 3 `done` runs on other decks lasting 60, 90 and 300 s and one `failed` run lasting 10 s, a deck with a running run answers `typicalMs` 90 000; with only 2 `done` runs it answers `typicalMs` `null`; only the 20 most recently finished `done` runs count: 21 older runs of 1 s and 20 newer runs of 100 s answer 100 000, where the 20 oldest or all 41 would answer 1 000 (AC 7) (reworded after verification round 1: one 1 s outlier could not move the median, so the window direction was unproven)
 Proof: `apps/api/src/recommendations/__tests__/recommendations-read.e2e-spec.ts -t "typical duration comes from recent done runs"`
 
 **C7** - The read route still answers `401` without a token and `404` for another user's deck and for an unknown deck, with `generation` in neither body (Surface statuses) · done
@@ -117,6 +117,19 @@ Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriv
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "arrives without motion when motion is reduced"`
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "a finished run renders without a deal"`
 
+### Added after verification round 1
+
+The round-1 report found three plan criteria proven only in part; each gets its own check.
+
+**C31** - After a `generation` poll, a poll that returns the same run (here with a `MODEL_TIMEOUT` failure) removes the pile at once and leaves the cards undimmed, while a poll that returns a different run keeps the pile in place for the deal and removes it within 2 s (AC 31) · done
+Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "deals only when a different run arrives"`
+
+**C32** - In the browser, 60 ms after each dealt card lands its reason text is still below 0.5 opacity, and once the deal is over every reason is at opacity 1 (AC 33)
+Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriving cards exactly into place"` · done
+
+**C33** - The typical-time mark sits at the bottom of the ring (`x1` = `x2` = 15, `y1` > 15) and, with elapsed equal to the typical duration, the arc fills half the circumference (AC 26) · done
+Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "marks the usual time half way round the ring"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -130,6 +143,7 @@ Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "a finished run 
 | cost chip (6) | more C13 · less C13 · equal C13 · no cut C13 · cut cost unknown C13 · cost unknown C13 | - |
 | step line (4) | queued C21 · retrying C21 · running C21 · past usual C23 | - |
 | motion paths (2) | full C24, C28 · reduced C24, C30 | - |
+| deal trigger (2) | different run C31, C28 · same run C31 | - |
 | deck states for placement (2) | complete C8 · incomplete C8 | - |
 | locales (2) | pt-BR C9 · en-US C9 | - |
 | Landing door 1 (1) | `generation` shape C5 | - |

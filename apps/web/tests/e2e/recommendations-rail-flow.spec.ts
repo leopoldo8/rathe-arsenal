@@ -75,8 +75,9 @@ async function serveRecommendations(page: Page, body: () => unknown): Promise<vo
 /** Records, for every dealt card, its box when its flight finishes and the box of the slot it was flying to. */
 async function recordLandings(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const record = window as unknown as { __landings: unknown[]; __delays: number[]; __railHeights: number[] };
+    const record = window as unknown as { __landings: unknown[]; __delays: number[]; __railHeights: number[]; __reasonOpacityAfterLanding: number[] };
     record.__landings = [];
+    record.__reasonOpacityAfterLanding = [];
     record.__delays = [];
     record.__railHeights = [];
     const original = Element.prototype.animate;
@@ -92,6 +93,12 @@ async function recordLandings(page: Page): Promise<void> {
           const slot = document.querySelectorAll('[data-deal-slot]')[index];
           const box = this.getBoundingClientRect();
           const target = slot?.getBoundingClientRect();
+          const reason = [...(slot?.closest('[data-testid="recommendation-row"]')?.querySelectorAll('p') ?? [])].find((p) =>
+            p.textContent?.startsWith('Motivo'),
+          );
+          window.setTimeout(() => {
+            if (reason) record.__reasonOpacityAfterLanding.push(Number(getComputedStyle(reason).opacity));
+          }, 60);
           record.__landings.push({
             index,
             card: target ? [box.left - target.left, box.top - target.top, box.width - target.width, box.height - target.height] : null,
@@ -124,8 +131,18 @@ test.describe('Recommendations rail — E2E', () => {
     await expect(section.getByTestId('recommendations-pile')).toHaveCount(0, { timeout: 20_000 });
 
     const record = await page.evaluate(() => {
-      const recorded = window as unknown as { __landings: { index: number; card: number[] | null }[]; __delays: number[]; __railHeights: number[] };
-      return { __landings: recorded.__landings, __delays: recorded.__delays, __railHeights: recorded.__railHeights };
+      const recorded = window as unknown as {
+        __landings: { index: number; card: number[] | null }[];
+        __delays: number[];
+        __railHeights: number[];
+        __reasonOpacityAfterLanding: number[];
+      };
+      return {
+        __landings: recorded.__landings,
+        __delays: recorded.__delays,
+        __railHeights: recorded.__railHeights,
+        __reasonOpacityAfterLanding: recorded.__reasonOpacityAfterLanding,
+      };
     });
     expect(record.__delays).toEqual([0, 190, 380]);
     expect(record.__landings).toHaveLength(3);
@@ -141,6 +158,11 @@ test.describe('Recommendations rail — E2E', () => {
     const settledHeight = await section.getByTestId('recommendations-rail').evaluate((rail) => rail.getBoundingClientRect().height);
     expect(Math.abs(record.__railHeights[0]! - settledHeight)).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('dealt-card')).toHaveCount(0);
+    expect(record.__reasonOpacityAfterLanding).toHaveLength(3);
+    for (const opacity of record.__reasonOpacityAfterLanding) expect(opacity).toBeLessThan(0.5);
+    for (const name of ['Increase the Tension', 'Fletch a Red Tail', 'Lace with Frailty']) {
+      expect(await section.getByText(`Motivo para ${name}.`).evaluate((el) => Number(getComputedStyle(el).opacity))).toBe(1);
+    }
   });
 
   test('arrives without motion when motion is reduced', async ({ page }) => {

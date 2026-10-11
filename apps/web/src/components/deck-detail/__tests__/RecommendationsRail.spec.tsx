@@ -518,6 +518,51 @@ describe('RecommendationsRail', () => {
     expect(button).toBeDisabled();
   });
 
+  it('deals only when a different run arrives', async () => {
+    vi.useFakeTimers();
+    mockApiFetch.mockResolvedValue(response({ pending: true, generation: generation() }));
+    renderRail();
+    await flush();
+    expect(screen.getByTestId('recommendations-pile')).toBeInTheDocument();
+
+    mockApiFetch.mockResolvedValue(response({ failure: { code: 'MODEL_TIMEOUT', finishedAt: '2026-10-06T11:00:00.000Z' } }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_100);
+    });
+    expect(screen.getByTestId('recommendations-failure')).toBeInTheDocument();
+    expect(screen.queryByTestId('recommendations-pile')).toBeNull();
+    expect(screen.getByTestId('recommendation-row')).toHaveAttribute('data-dimmed', 'false');
+    document.body.innerHTML = '';
+
+    mockApiFetch.mockResolvedValue(response({ pending: true, generation: generation() }));
+    renderRail();
+    await flush();
+    mockApiFetch.mockResolvedValue(response({ run: { ...RUN, id: 'run-2' }, recommendations: [recommendation({ id: 'rec-new' })] }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_100);
+    });
+    expect(screen.getByTestId('recommendations-generate')).toHaveTextContent('Gerar de novo');
+    expect(screen.getByTestId('recommendations-pile')).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(screen.queryByTestId('recommendations-pile')).toBeNull();
+  });
+
+  it('marks the usual time half way round the ring', async () => {
+    mockApiFetch.mockResolvedValue(
+      response({ run: null, pending: true, generation: generation({ elapsedMs: 120_000, typicalMs: 120_000 }), recommendations: [] }),
+    );
+    renderRail();
+
+    const mark = await screen.findByTestId('generation-typical-mark');
+    expect([mark.getAttribute('x1'), mark.getAttribute('x2')]).toEqual(['15', '15']);
+    expect(Number(mark.getAttribute('y1'))).toBeGreaterThan(15);
+    const arc = mark.parentElement!.querySelectorAll('circle')[1]!;
+    const [filled, circumference] = (arc.getAttribute('stroke-dasharray') ?? '').split(' ').map(Number) as [number, number];
+    expect(filled / circumference).toBeCloseTo(0.5, 2);
+  });
+
   it('polls every 10 seconds only while a run is active', async () => {
     vi.useFakeTimers();
     mockApiFetch.mockResolvedValue(response({ pending: true, generation: generation() }));

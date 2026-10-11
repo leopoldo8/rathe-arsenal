@@ -249,9 +249,11 @@ describe('recommendations read (e2e)', () => {
     expect((await read(deckId, jwt)).generation.typicalMs).toBe(90_000);
 
     await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE status = 'done' AND "startedAt" IS NOT NULL`);
-    await seedFinished(others[0]!.deckId, 'done', 1, '2099-02-01T00:00:00Z');
-    for (let minute = 1; minute <= 20; minute += 1) {
-      await seedFinished(others[minute % 3]!.deckId, 'done', 100, `2099-02-01T00:${String(minute).padStart(2, '0')}:00Z`);
+    for (let minute = 0; minute < 21; minute += 1) {
+      await seedFinished(others[minute % 3]!.deckId, 'done', 1, `2099-02-01T00:${String(minute).padStart(2, '0')}:00Z`);
+    }
+    for (let minute = 0; minute < 20; minute += 1) {
+      await seedFinished(others[minute % 3]!.deckId, 'done', 100, `2099-02-01T01:${String(minute).padStart(2, '0')}:00Z`);
     }
     expect((await read(deckId, jwt)).generation.typicalMs).toBe(100_000);
   });
