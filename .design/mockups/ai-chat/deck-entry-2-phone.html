@@ -1,0 +1,120 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Entrada no deck 2, celular: bloco de conversas</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600&family=UnifrakturCook:wght@700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"><style>
+:root{--ui:"Hanken Grotesk",system-ui,sans-serif;--display:"Newsreader",Georgia,serif;--goth:"UnifrakturCook",serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+--canvas:#0b0c0f;--surface:#14161c;--surface2:#0e1016;--raised:#1e2128;--sunken:#0a0b0e;--muted:#1a1c22;
+--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.12);--fg:#e8e6e1;--fg2:#c8cad2;--fg3:#8b8d96;--fgm:#7a7c84;--fginv:#0b0c0f;
+--accent:#d0a84c;--accent-hi:#f0c060;--accent-deep:#b8863a;--accent-soft:rgba(208,168,76,.14);--accent-bd:rgba(208,168,76,.35);--accent-ink:#1a1408;
+--ok:#63b678;--ok-bg:rgba(99,182,120,.10);--ok-bd:rgba(99,182,120,.40);--warn:#c8843c;--warn-bg:rgba(200,132,60,.10);--warn-bd:rgba(200,132,60,.40);--warn-ink:#d6954c;
+--bad:#d0645a;--bad-bg:rgba(208,100,90,.08);--bad-bd:rgba(208,100,90,.35);--info:#6a90b8;--idea:#8f7cf0;--build:#4a7fc0;
+--red:#c0473e;--yellow:#d6a83e;--blue:#4a7fc0;--red-ink:#d97068;--blue-ink:#6fa0d8;
+--r-xs:6px;--r-sm:9px;--r-md:11px;--r-lg:14px;--r-xl:16px;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#07080a;color:var(--fg);font-family:var(--ui);font-size:14px;line-height:1.55}
+button{font:inherit;color:inherit}
+.pg{padding:16px 12px 40px}.pg.d{padding:24px 20px 60px}
+.pg h1{font:500 24px/1.25 var(--display);margin:0 0 4px}.pg .sub{color:var(--fg3);margin:0 0 20px;font-size:13px;max-width:70ch}
+.fl{font:700 11px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:26px 0 8px}
+.fn{color:var(--fg3);font-size:12px;margin:-2px 0 8px;max-width:80ch}
+.nav{font-size:12px;margin-bottom:12px}.nav a{color:var(--accent);min-height:44px;display:inline-flex;align-items:center}
+.frame{background:var(--canvas);border:1px solid var(--bd2);border-radius:var(--r-xl);overflow:hidden;display:flex;flex-direction:column;min-height:700px;width:100%;position:relative}
+.d .frame{min-height:620px}
+/* shell */
+.top{height:56px;flex:0 0 56px;display:flex;align-items:center;gap:12px;padding-inline:16px;background:var(--surface);border-bottom:1px solid var(--bd);box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.logo{width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--accent-bd);display:grid;place-items:center;font:700 20px/1 var(--goth);color:var(--accent)}
+.wm{display:flex;flex-direction:column;line-height:1}.wm b{font:700 22px/.9 var(--goth);color:var(--accent)}.wm i{font:700 8px/1 var(--ui);letter-spacing:.44em;text-transform:uppercase;color:#f0d289;border-top:1.5px solid rgba(208,168,76,.5);margin-top:3px;padding-top:4px;text-align:center;font-style:normal}
+.tnav{display:flex;gap:4px;margin-inline:16px}.tnav span{padding:8px 14px;border-radius:var(--r-sm);color:var(--fg3);font-weight:500}.tnav span.on{color:var(--accent);background:var(--accent-soft)}
+.av{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--raised);border:1px solid var(--bd2);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--fg2)}
+.ttl{font:500 18px/1.2 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tabs{margin-top:auto;flex:0 0 60px;height:60px;display:flex;background:var(--surface);border-top:1px solid var(--bd)}
+.tabs span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--fgm);min-height:44px}
+.tabs span.on{color:var(--accent)}.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{width:44px;height:44px;border-radius:var(--r-sm);display:grid;place-items:center;border:0;background:transparent;color:var(--fg2);flex:0 0 44px}
+.ib.bd{border:1px solid var(--bd2)}
+/* buttons chips */
+.btn{min-height:44px;padding:4px 16px;border-radius:var(--r-sm);border:1px solid var(--bd2);background:transparent;color:var(--fg2);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
+.btn.p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.s{border-color:var(--accent-bd);background:var(--accent-soft);color:var(--accent);font-weight:700}
+.btn:disabled,.btn.dis{opacity:.5}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:var(--r-xs);border:1px solid var(--bd2);background:var(--muted);font-size:12px;color:var(--fg2);max-width:100%}
+.chip.deck{border-color:var(--accent-bd);background:var(--accent-soft);color:var(--accent)}
+.chip.rule{font-family:var(--mono);font-size:11px;color:var(--info);border-color:rgba(106,144,184,.4);background:rgba(106,144,184,.10)}
+.chip.ok{color:var(--ok);border-color:var(--ok-bd);background:var(--ok-bg)}.chip.warn{color:var(--warn-ink);border-color:var(--warn-bd);background:var(--warn-bg)}.chip.bad{color:var(--bad);border-color:var(--bad-bd);background:var(--bad-bg)}
+.chip.idea{color:var(--idea);border-color:rgba(143,124,240,.4);background:rgba(143,124,240,.1)}.chip.build{color:#7aa6dc;border-color:rgba(74,127,192,.45);background:rgba(74,127,192,.1)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}.dot.r{background:var(--red)}.dot.y{background:var(--yellow)}.dot.b{background:var(--blue)}
+.cap{font:700 11px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)}
+.mut{color:var(--fg3);font-size:12px}
+/* chat common */
+.msgs{flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.u{align-self:flex-end;max-width:85%;background:var(--accent-soft);border:1px solid var(--accent-bd);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:10px 14px}
+.ai{align-self:flex-start;max-width:100%;min-width:0;display:flex;gap:10px}
+.ai .who{flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:var(--surface);border:1px solid var(--accent-bd);color:var(--accent);display:grid;place-items:center;font:700 14px/1 var(--display)}
+.ai .bub{min-width:0;display:flex;flex-direction:column;gap:10px}
+.bubble .t{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r-lg) var(--r-lg) var(--r-lg) 4px;padding:12px 14px}
+.t p{margin:0 0 8px}.t p:last-child{margin:0}
+.t{overflow-wrap:anywhere}
+.tdecks{display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:var(--r-md);overflow:hidden;background:var(--surface2)}
+.tdecks div{display:flex;align-items:center;gap:10px;padding:8px 12px;min-height:40px;border-top:1px solid var(--bd);font-size:13px}.tdecks div:first-child{border-top:0}
+.tdecks .pl{font:700 12px var(--mono);color:var(--accent);min-width:28px}.tdecks .ev{flex:1;min-width:0}.tdecks .ev small{display:block;color:var(--fg3);font-size:12px}
+.comp{border-top:1px solid var(--bd);background:var(--surface);padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.comp .row{display:flex;gap:8px;align-items:flex-end}
+.inp{flex:1;min-height:44px;border:1px solid var(--bd2);background:var(--surface2);border-radius:var(--r-md);padding:10px 14px;color:var(--fg3);font-size:14px}
+.inp.dis{background:var(--sunken);border-style:dashed}
+.spend{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--fg3)}
+.spend .bar{flex:0 0 72px;height:4px;border-radius:2px;background:var(--raised);overflow:hidden}.spend .bar i{display:block;height:100%;background:var(--accent)}.spend.full .bar i{background:var(--bad)}
+.spend b{color:var(--fg2);font-weight:600}
+/* wait */
+.pulse{display:inline-flex;gap:4px}.pulse i{width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.35;animation:p 1.2s infinite var(--ease)}.pulse i:nth-child(2){animation-delay:.2s}.pulse i:nth-child(3){animation-delay:.4s}
+@keyframes p{50%{opacity:1}}@media(prefers-reduced-motion:reduce){.pulse i{animation:none;opacity:.8}}
+.steps{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.steps li{display:flex;gap:8px;align-items:center;color:var(--fg3)}.steps li.dn{color:var(--fg2)}.steps li.on{color:var(--fg)}
+.steps .m{width:32px;flex:0 0 32px;text-align:center;font-size:12px}.steps .dn .m{color:var(--ok)}.steps .on .m{color:var(--accent)}
+.shim{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--raised),#2a2e38,var(--raised));background-size:200% 100%;animation:s 1.6s infinite linear}@keyframes s{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.shim{animation:none}}
+.fail{border:1px solid var(--bad-bd);background:var(--bad-bg);border-radius:var(--r-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.banner{border:1px solid var(--bad-bd);background:var(--bad-bg);border-radius:var(--r-md);padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px}
+.banner b{color:var(--fg)}
+/* proposals */
+.pr{border:1px solid var(--bd2);background:var(--surface);border-radius:var(--r-xl);padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0;width:100%}
+.pr.pend{border-color:var(--accent-bd);background-image:linear-gradient(180deg,var(--accent-soft),transparent 55%)}
+.pr.done{border-color:var(--ok-bd);background:var(--ok-bg)}.pr.stale{border-style:dashed;opacity:.92}
+.pr h4{margin:0;font:500 19px/1.2 var(--display)}.pr .hd{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.pr .why{margin:0;color:var(--fg2);font-size:13px}
+.own{display:flex;flex-direction:column;gap:6px}.own .bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--raised)}.own .bar i:first-child{background:var(--ok)}.own .bar i:last-child{background:var(--warn)}
+.own .n{display:flex;gap:14px;font-size:13px;flex-wrap:wrap}.own .n b{font-weight:700}
+.pcards{display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:var(--r-md);background:var(--surface2);overflow:hidden}
+.pcards div{display:flex;gap:8px;align-items:center;padding:6px 12px;min-height:34px;font-size:13px;border-top:1px solid var(--bd)}.pcards div:first-child{border-top:0}
+.pcards .q{font:600 12px var(--mono);color:var(--fg3);min-width:22px}.pcards .s{margin-left:auto;font-size:12px}.s.o{color:var(--ok)}.s.m{color:var(--warn-ink)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:0 1 auto}
+.swp{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.sc{border:1px solid var(--bd);background:var(--surface2);border-radius:var(--r-md);padding:10px 12px;min-width:0}.sc small{display:block;color:var(--fg3);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.sc.n{border-color:var(--accent-bd)}.sc div{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.arr{color:var(--accent)}
+.pr .stat{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--fg2);flex-wrap:wrap}
+/* empty */
+.empty{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:24px 16px}
+.empty h2{font:500 26px/1.2 var(--display);margin:0}.empty p{margin:6px 0 0;color:var(--fg2);max-width:52ch}
+.sug{display:flex;flex-direction:column;gap:8px}.sug div{min-height:48px;padding:10px 14px;border:1px solid var(--bd2);background:var(--surface);border-radius:var(--r-md);display:flex;align-items:center;gap:10px;font-size:14px}.sug div::after{content:"\2192";margin-left:auto;color:var(--accent)}
+/* lists */
+.li{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:var(--r-md);border:1px solid transparent;min-height:56px}
+.li.on{background:var(--accent-soft);border-color:var(--accent-bd)}.li b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.li .m{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--fg3);min-width:0}
+.li .m .chip{min-height:20px;font-size:11px;padding:0 7px;max-width:70%}.li .m .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sep{height:1px;background:var(--bd)}
+</style><style>
+.dh{padding:16px;border-bottom:1px solid var(--bd)}.dh h2{font:500 28px/1.2 var(--display);margin:6px 0 4px}.d .dh{padding:20px 28px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:var(--fg3);font-size:13px}
+.rd{font:500 34px/1 var(--display);color:var(--accent)}.rdw{display:flex;flex-direction:column;gap:2px}
+.act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.body{flex:1;padding:16px;display:flex;flex-direction:column;gap:20px;min-width:0}.d .body{padding:24px 28px;display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start}
+.side{display:flex;flex-direction:column;gap:14px}.card{border:1px solid var(--bd);background:var(--surface);border-radius:var(--r-lg);padding:14px}
+.canvas{display:flex;flex-direction:column;gap:24px;min-width:0}
+.lst{border:1px solid var(--bd);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}.lst div{display:flex;gap:10px;align-items:center;padding:8px 14px;min-height:40px;border-top:1px solid var(--bd);font-size:13px}.lst div:first-child{border-top:0}.lst .q{font:600 12px var(--mono);color:var(--fg3);min-width:22px}
+.rh{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:10px}.rh h3{margin:0;font:500 22px/1.2 var(--display)}
+.rail{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.rail>*{scroll-snap-align:start}
+.sw{flex:0 0 220px;border:1px solid var(--bd);background:var(--surface);border-radius:var(--r-xl);padding:14px;display:flex;flex-direction:column;gap:8px}
+.sw .a{aspect-ratio:450/300;border-radius:8px;background:var(--raised);display:grid;place-items:center;color:var(--fg3);font-size:12px}
+.sw.clear{border-color:var(--accent-bd)}.sw b{font-weight:600;font-size:14px}
+.tile{flex:0 0 280px;border:1px solid var(--accent-bd);background:var(--accent-soft);border-radius:var(--r-xl);padding:14px;display:flex;flex-direction:column;gap:10px}
+.tile .q{min-height:44px;display:flex;align-items:center;padding:6px 12px;border:1px solid var(--bd2);background:var(--surface);border-radius:var(--r-md);font-size:13px}
+.cv{display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}.cv div{display:flex;align-items:center;gap:10px;padding:10px 14px;min-height:48px;border-top:1px solid var(--bd);font-size:13px}.cv div:first-child{border-top:0}.cv .m{margin-left:auto;color:var(--fg3);font-size:12px;white-space:nowrap}.cv b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.panel{border:1px solid var(--bd2);background:var(--surface);border-radius:var(--r-xl);padding:16px;display:flex;flex-direction:column;gap:12px}
+.hl{outline:1px dashed var(--accent);outline-offset:3px;border-radius:var(--r-md)}
+.fab{position:absolute;right:16px;bottom:76px;box-shadow:var(--sh,0 10px 20px rgba(0,0,0,.45))}
+</style></head><body><div class="pg "><div class="nav"><a href="index.html">&larr; Todos os mockups</a></div><h1>Entrada no deck 2, celular: bloco de conversas</h1><p class="sub">Pergunta direto no deck e lista as conversas anteriores. No desktop o bloco fica na coluna principal, abaixo da faixa.</p><div class="fl">Deck com 3 conversas anteriores</div><div class="frame" ><div class="top"><span class="ib" aria-label="Voltar"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span><span class="ttl">Katsu CC Agressivo</span><span style="margin-left:auto;display:flex"></span></div><div class="dh"><div class="meta"><span>Decks</span><span>&rsaquo;</span><span>Katsu</span></div><h2>Katsu CC Agressivo</h2><div class="meta"><span class="chip build">Construindo</span><span>Katsu</span><span>&middot;</span><span>Classic Constructed</span><span>&middot;</span><span>60 cartas</span></div><div class="act"><button class="btn">Editar</button><button class="btn ib bd" style="padding:0;width:44px" aria-label="Mais"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div></div><div class="body"><div class="side"><div class="card rdw"><span class="cap">Prontidão</span><span class="rd">78%</span><span class="mut">47 de 60 cartas na coleção</span></div><div class="card"><span class="cap">Faltam</span><p style="margin:8px 0 0;font-size:13px">13 cartas &middot; R$ 412 nas lojas</p></div></div><div class="canvas"><section><div class="rh"><h3>Lista</h3><span class="mut">60 cartas</span></div><div class="lst"><div><span class="q">3x</span><span class="dot b"></span>Emissary of Tides<span class="chip ok" style="margin-left:auto">tem</span></div><div><span class="q">3x</span><span class="dot r"></span>Flex<span class="chip ok" style="margin-left:auto">tem</span></div><div><span class="q">2x</span><span class="dot y"></span>Lunging Press<span class="chip warn" style="margin-left:auto">falta 1</span></div><div><span class="q">3x</span><span class="dot b"></span>Springboard Somersault<span class="chip bad" style="margin-left:auto">falta 3</span></div></div></section><section><div class="rh"><h3>Recomendações</h3><button class="btn" style="min-height:44px">Gerar de novo</button></div><div class="rail"><div class="sw clear"><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Flex &rarr; Emissary of Tides</b><button class="btn s">Usar</button></div><div class="sw "><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Lunging Press &rarr; Springboard Somersault</b><button class="btn s">Usar</button></div><div class="sw "><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Whirling Mist Blossom &rarr; Head Jab</b><button class="btn s">Usar</button></div></div></section><section class="panel hl"><div class="rh" style="margin:0"><div><h3 style="margin:0;font:500 22px/1.2 var(--display)">Conversas deste deck</h3><span class="mut">3 conversas salvas</span></div></div><div class="cv"><div><b>Katsu nos torneios recentes</b><span class="m">agora</span></div><div><b>Vale trocar Whirling Mist Blossom?</b><span class="m">ontem</span></div><div><b>Faltam quantas cartas?</b><span class="m">3 out</span></div></div><div class="comp" style="padding:0;border:0;background:none"><div class="row" style="display:flex;gap:8px"><div class="inp">Pergunte sobre este deck</div><button class="btn p" style="width:44px;padding:0" aria-label="Enviar"><svg class="ic" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div><div><button class="btn">Ver todas no Chat</button></div></section></div></div><nav class="tabs"><span class=""><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Início</span><span class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Biblioteca</span><span class=""><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Chat</span></nav></div><div class="fl">Deck sem conversas anteriores</div><p class="fn">Sem histórico, o bloco vira um convite com perguntas prontas.</p><div class="frame" ><div class="top"><span class="ib" aria-label="Voltar"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span><span class="ttl">Katsu CC Agressivo</span><span style="margin-left:auto;display:flex"></span></div><div class="dh"><div class="meta"><span>Decks</span><span>&rsaquo;</span><span>Katsu</span></div><h2>Katsu CC Agressivo</h2><div class="meta"><span class="chip build">Construindo</span><span>Katsu</span><span>&middot;</span><span>Classic Constructed</span><span>&middot;</span><span>60 cartas</span></div><div class="act"><button class="btn">Editar</button><button class="btn ib bd" style="padding:0;width:44px" aria-label="Mais"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div></div><div class="body"><div class="side"><div class="card rdw"><span class="cap">Prontidão</span><span class="rd">78%</span><span class="mut">47 de 60 cartas na coleção</span></div><div class="card"><span class="cap">Faltam</span><p style="margin:8px 0 0;font-size:13px">13 cartas &middot; R$ 412 nas lojas</p></div></div><div class="canvas"><section><div class="rh"><h3>Lista</h3><span class="mut">60 cartas</span></div><div class="lst"><div><span class="q">3x</span><span class="dot b"></span>Emissary of Tides<span class="chip ok" style="margin-left:auto">tem</span></div><div><span class="q">3x</span><span class="dot r"></span>Flex<span class="chip ok" style="margin-left:auto">tem</span></div><div><span class="q">2x</span><span class="dot y"></span>Lunging Press<span class="chip warn" style="margin-left:auto">falta 1</span></div><div><span class="q">3x</span><span class="dot b"></span>Springboard Somersault<span class="chip bad" style="margin-left:auto">falta 3</span></div></div></section><section><div class="rh"><h3>Recomendações</h3><button class="btn" style="min-height:44px">Gerar de novo</button></div><div class="rail"><div class="sw clear"><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Flex &rarr; Emissary of Tides</b><button class="btn s">Usar</button></div><div class="sw "><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Lunging Press &rarr; Springboard Somersault</b><button class="btn s">Usar</button></div><div class="sw "><div class="a">carta</div><span class="mut">Troca sugerida</span><b>Whirling Mist Blossom &rarr; Head Jab</b><button class="btn s">Usar</button></div></div></section><section class="panel hl"><div class="rh" style="margin:0"><div><h3 style="margin:0;font:500 22px/1.2 var(--display)">Conversas deste deck</h3><span class="mut">Nenhuma conversa ainda</span></div></div><div class="comp" style="padding:0;border:0;background:none"><div class="row" style="display:flex;gap:8px"><div class="inp">Pergunte sobre este deck</div><button class="btn p" style="width:44px;padding:0" aria-label="Enviar"><svg class="ic" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip">Como outros jogam este herói?</span><span class="chip">O que falta para ficar pronto?</span></div></section></div></div><nav class="tabs"><span class=""><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Início</span><span class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Biblioteca</span><span class=""><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Chat</span></nav></div></div></body></html>
