@@ -34,64 +34,64 @@ Proof: `e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "a revoke takes effect
 
 ### S2 - Tournament decks · 10 files · 70 KB · ~18k
 
-**C5** - The reference loop's tournament step runs on an empty table, runs when the latest `syncedAt` is 25 hours old, and sends no request when it is 23 hours old (AC 6)
+**C5** - The reference loop's tournament step runs on an empty table, runs when the latest `syncedAt` is 25 hours old, and sends no request when it is 23 hours old (AC 6) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "syncs when empty or a day old, never sooner"`
 
-**C6** - Listing: a format whose facet count is 999 is listed once; a format whose count is 1,000 is listed once per hero facet value; every listed id reaches the sync once, table-driven over the two cases (AC 7, door 10)
+**C6** - Listing: a format whose facet count is 999 is listed once; a format whose count is 1,000 is listed once per hero facet value; every listed id reaches the sync once, table-driven over the two cases (AC 7, door 10) · done
 Proof: `unit src/reference/__tests__/fabrary-index.spec.ts -t "lists a format whole under 1000 and by hero at 1000"`
 
-**C7** - The index client posts to `https://4e2ysy5y4i-dsn.algolia.net/1/indexes/*/queries` with the app id and key, index `public_decks` and a filter containing `isTournament:true`, through the fetch guard with that host allowed (door 10)
+**C7** - The index client posts to `https://4e2ysy5y4i-dsn.algolia.net/1/indexes/*/queries` with the app id and key, index `public_decks` and a filter containing `isTournament:true`, through the fetch guard with that host allowed (door 10) · done
 Proof: `unit src/reference/__tests__/fabrary-index.spec.ts -t "posts the documented Algolia request through the fetch guard"`
 
-**C8** - On an empty table with 3 listed decks, the sync fetches 3 lists, stores 3 `tournament_deck` rows and their cards with a card that has deck quantity 2 and inventory quantity 1 stored as `quantity: 2`, `sideboardQuantity: 1`; the stubbed clock shows at least 300 ms between fetches (AC 8)
+**C8** - On an empty table with 3 listed decks, the sync fetches 3 lists, stores 3 `tournament_deck` rows and their cards with a card that has deck quantity 2 and inventory quantity 1 stored as `quantity: 2`, `sideboardQuantity: 1`; the stubbed clock shows at least 300 ms between fetches (AC 8) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "stores new decks with their cards, paced"`
 
-**C9** - A second sync over the same 3 ids fetches nothing and moves each `syncedAt` to the second sync's time (AC 9)
+**C9** - A second sync over the same 3 ids fetches nothing and moves each `syncedAt` to the second sync's time (AC 9) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "a known deck is touched, not fetched"`
 
-**C10** - Names parse, table-driven: `Calling: São Paulo 5th 🇧🇷` -> (`Calling: São Paulo`, 5); `100th Calling: Atlanta 1st 🇺🇸` -> (`100th Calling: Atlanta`, 1); `Sunday Showdown: Bilbao 2nd 🇪🇸` -> 2; `ProQuest 3rd` -> 3; `Nationals 22nd` -> 22; `My spicy brew` -> (null, null); `Top 8 Calling` -> (null, null) (AC 10)
+**C10** - Names parse, table-driven: `Calling: São Paulo 5th 🇧🇷` -> (`Calling: São Paulo`, 5); `100th Calling: Atlanta 1st 🇺🇸` -> (`100th Calling: Atlanta`, 1); `Sunday Showdown: Bilbao 2nd 🇪🇸` -> 2; `ProQuest 3rd` -> 3; `Nationals 22nd` -> 22; `My spicy brew` -> (null, null); `Top 8 Calling` -> (null, null) (AC 10) · done
 Proof: `unit src/reference/__tests__/tournament-name.spec.ts -t "parses event and placement or leaves both null"`
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "an unparsed name is stored with no placement"`
 
-**C11** - `01M441KWV10XFZDC1ZJ4589A0P` gives the `deckCreatedAt` its first 10 ULID characters encode (computed in the test from the Crockford alphabet, not by calling the code under test) (AC 11)
+**C11** - `01M441KWV10XFZDC1ZJ4589A0P` gives the `deckCreatedAt` its first 10 ULID characters encode (computed in the test from the Crockford alphabet, not by calling the code under test) (AC 11) · done
 Proof: `unit src/reference/__tests__/tournament-name.spec.ts -t "deck date comes from the ULID timestamp"`
 
-**C12** - One of 3 fetches rejects: 2 decks are stored, the failed one is absent, `tournament.sync.deck_failed` is logged; the next sync fetches only that one (AC 12)
+**C12** - One of 3 fetches rejects: 2 decks are stored, the failed one is absent, `tournament.sync.deck_failed` is logged; the next sync fetches only that one (AC 12) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "a failed deck is skipped and fetched next time"`
 
-**C13** - The index client throwing stores nothing, logs `tournament.sync.failed`, and the step sends no request again until 1 hour has passed on the stubbed clock (AC 13)
+**C13** - The index client throwing stores nothing, logs `tournament.sync.failed`, and the step sends no request again until 1 hour has passed on the stubbed clock (AC 13) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "an index failure stores nothing and waits an hour"`
 
-**C14** - A hero listing returning 1,000 hits logs `tournament.sync.truncated` with format and hero, and its decks are stored (AC 14)
+**C14** - A hero listing returning 1,000 hits logs `tournament.sync.truncated` with format and hero, and its decks are stored (AC 14) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "a truncated listing is logged and kept"`
 
-**C15** - A stored deck absent from the next listing is still stored afterwards (AC 15)
+**C15** - A stored deck absent from the next listing is still stored afterwards (AC 15) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "a deck that left the index is kept"`
 
-**C16** - The sync logs `tournament.sync.done` with `listed`, `fetched`, `failed`, `kept` and `durationMs` (AC 16)
+**C16** - The sync logs `tournament.sync.done` with `listed`, `fetched`, `failed`, `kept` and `durationMs` (AC 16) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "logs the sync totals"`
 
 ### S3 - Rules reference · 6 files · 40 KB · ~10k
 
-**C17** - The rules step fetches when the table is empty and when `fetchedAt` is 25 hours old, and not when it is 23 hours old (AC 17)
+**C17** - The rules step fetches when the table is empty and when `fetchedAt` is 25 hours old, and not when it is 23 hours old (AC 17) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "fetches when empty or a day old"`
 
-**C18** - Parsing the fixture index: rule `1.1.1a` exists with section `1.1`, title `Players` and its text starting `To participate`; a glossary term is an entry; no entry comes from a `trp/` or `ppg/` location; no entry text contains an HTML tag (AC 18, door 11)
+**C18** - Parsing the fixture index: rule `1.1.1a` exists with section `1.1`, title `Players` and its text starting `To participate`; a glossary term is an entry; no entry comes from a `trp/` or `ppg/` location; no entry text contains an HTML tag (AC 18, door 11) · done
 Proof: `unit src/reference/__tests__/rules-parse.spec.ts -t "one entry per numbered rule and glossary term, cr only"`
 
-**C19** - Importing the fixture replaces the table with the parsed entries and the fixture's SHA-256; a second import of the same bytes leaves every row's id and text and moves only `fetchedAt`; an import of changed bytes replaces the entries (AC 18, AC 19)
+**C19** - Importing the fixture replaces the table with the parsed entries and the fixture's SHA-256; a second import of the same bytes leaves every row's id and text and moves only `fetchedAt`; an import of changed bytes replaces the entries (AC 18, AC 19) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "replaces on a new hash and only touches fetchedAt otherwise"`
 
-**C20** - A failing fetch, and an index with no `cr/` location, each keep the stored entries and log `rules.sync.failed` (AC 20)
+**C20** - A failing fetch, and an index with no `cr/` location, each keep the stored entries and log `rules.sync.failed` (AC 20) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "a failed or empty fetch keeps the stored rules"`
 
-**C21** - `search_rules` over the imported fixture: `"1.1.1a"` returns `1.1.1a` first; `"go again"` returns at most 8 entries each containing `go again`; every text is at most 1,500 characters and every entry has `ruleNumber`, `sectionTitle`, `text` and `url`; `"zzqx"` returns `{ found: false, entries: [] }` (AC 21, AC 22)
+**C21** - `search_rules` over the imported fixture: `"1.1.1a"` returns `1.1.1a` first; `"go again"` returns at most 8 entries each containing `go again`; every text is at most 1,500 characters and every entry has `ruleNumber`, `sectionTitle`, `text` and `url`; `"zzqx"` returns `{ found: false, entries: [] }` (AC 21, AC 22) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "search ranks an exact number first and caps the result"`
 
 **C22** - The system instruction tells the model to say it could not confirm a rule when the rules tool finds nothing (AC 22)
 Proof: `unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction covers language, citations, proposals and unconfirmed rules"`
 
-**C23** - A replacing import logs `rules.sync.done` with `entries` and `sourceHash` (AC 23)
+**C23** - A replacing import logs `rules.sync.done` with `entries` and `sourceHash` (AC 23) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "logs the import"`
 
 ### S4 - Conversation · 24 files · 300 KB · ~75k
@@ -254,10 +254,10 @@ Proof: `e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "logs apply, dismis
 **C72** - Schema: `chat_message` rejects `role: system` and `status: queued`; a second `pending` and a `pending` beside a `running` in one conversation fail the partial unique index; `chat_proposal` rejects `kind: card` and `status: open`; deleting a conversation cascades messages and proposals and sets `chat_usage.messageId` null; deleting a user cascades conversations and usage; deleting a deck sets `chat_conversation.trackedDeckId` and `chat_proposal.trackedDeckId` null; `tournament_deck.fabraryUlid` and (`tournamentDeckId`, `cardIdentifier`) and `rules_entry.ruleNumber` reject duplicates; `card_replacement` accepts `pickedFrom: chat`; `user.chatAccess` defaults to false (doors 1-6)
 Proof: `e2e src/chat/__tests__/chat-schema.e2e-spec.ts -t "enforces every one-way constraint"`
 
-**C73** - The migration's `up` creates the seven tables and the column, with every column's type, length, nullability and default as the shared column table pins them, every index and CHECK, and the eight-value `pickedFrom` CHECK; `down` restores the seven-value CHECK, drops the column and the tables, and refuses when a `chat` replacement exists (doors 1-6)
+**C73** - The migration's `up` creates the seven tables and the column, with every column's type, length, nullability and default as the shared column table pins them, every index and CHECK, and the eight-value `pickedFrom` CHECK; `down` restores the seven-value CHECK, drops the column and the tables, and refuses when a `chat` replacement exists (doors 1-6) · done
 Proof: `int src/database/migrations/__tests__/add-ai-chat.migration.int-spec.ts -t "up creates and down drops the chat and reference tables"`
 
-**C74** - TypeORM `synchronize` over the entities builds the same columns, types, lengths, nullability and defaults as the migration for the seven tables and `user.chatAccess` (doors 1-6)
+**C74** - TypeORM `synchronize` over the entities builds the same columns, types, lengths, nullability and defaults as the migration for the seven tables and `user.chatAccess` (doors 1-6) · done
 Proof: `int src/database/entities/__tests__/chat-entities.int-spec.ts -t "synchronize builds the same columns as the migration"`
 
 ## Coverage

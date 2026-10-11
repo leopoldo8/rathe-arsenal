@@ -22,6 +22,13 @@ import {
   RecommendationRunEntity,
   RecommendationEntity,
   RecommendationDismissalEntity,
+  ChatConversationEntity,
+  ChatMessageEntity,
+  ChatProposalEntity,
+  ChatUsageEntity,
+  TournamentDeckEntity,
+  TournamentDeckCardEntity,
+  RulesEntryEntity,
 } from './entities';
 
 /**
@@ -62,6 +69,13 @@ import {
             RecommendationRunEntity,
             RecommendationEntity,
             RecommendationDismissalEntity,
+            ChatConversationEntity,
+            ChatMessageEntity,
+            ChatProposalEntity,
+            ChatUsageEntity,
+            TournamentDeckEntity,
+            TournamentDeckCardEntity,
+            RulesEntryEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.

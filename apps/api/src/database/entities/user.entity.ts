@@ -34,6 +34,10 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 20, default: EUserRole.User })
   role!: EUserRole;
 
+  /** Set only by the `chat:grant` script; never from a user-writable route (AD-013). */
+  @Column({ type: 'boolean', default: false })
+  chatAccess!: boolean;
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 255 })
   email!: string;

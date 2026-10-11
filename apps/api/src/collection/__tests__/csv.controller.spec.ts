@@ -98,6 +98,7 @@ describe('CsvController (e2e)', () => {
           userId,
           email: `${userId}@example.com`,
           role: EUserRole.User,
+          chatAccess: false,
         };
       }
       next();

@@ -15,7 +15,7 @@ const THROTTLER_LIMIT_KEY = 'THROTTLER:LIMITdefault';
 const THROTTLER_TTL_KEY = 'THROTTLER:TTLdefault';
 const MINUTE_MS = 60 * 1000;
 
-const MOCK_USER: ICurrentUser = { userId: 'user-uuid-test', email: 'test@test.local', role: EUserRole.User };
+const MOCK_USER: ICurrentUser = { userId: 'user-uuid-test', email: 'test@test.local', role: EUserRole.User, chatAccess: false };
 
 describe('TagsController', () => {
   let controller: TagsController;

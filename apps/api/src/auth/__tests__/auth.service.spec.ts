@@ -362,7 +362,7 @@ describe('AuthService.resetPassword', () => {
 
 describe('AuthService.getMe', () => {
   function makeCurrentUser(overrides: Partial<{ userId: string; email: string; role: EUserRole }> = {}) {
-    return { userId: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User, ...overrides };
+    return { userId: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User, chatAccess: false, ...overrides };
   }
 
   it('returns id, email, role, and settings.theme=dark for user without preferences (default)', async () => {

@@ -30,4 +30,19 @@ describe('buildReplacementViews', () => {
       ['picked', true],
     ]);
   });
+  it('never prompts for a chat swap', () => {
+    const owned = new Map([['flex-red', 4]]);
+
+    const views = buildReplacementViews(
+      [replacement({ id: 'chat', pickedFrom: 'chat' }), replacement({ id: 'picked', pickedFrom: 'close' })],
+      owned,
+      [],
+      (id) => id,
+    );
+
+    expect(views.map((view) => [view.id, view.originalOwned])).toEqual([
+      ['chat', false],
+      ['picked', true],
+    ]);
+  });
 });

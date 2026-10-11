@@ -18,8 +18,8 @@ export type TReplacementStatus = (typeof REPLACEMENT_STATUSES)[number];
 export const REPLACEMENT_PICK_ORIGINS = ['very_close', 'close', 'other_pitch', 'generic', 'search', 'suggested'] as const;
 export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
 
-/** Every origin a stored record may carry: the pick origins plus an adopted recommendation. */
-export const REPLACEMENT_ORIGINS = [...REPLACEMENT_PICK_ORIGINS, 'recommendation'] as const;
+/** Every origin a stored record may carry: the pick origins plus an adopted recommendation or an applied chat swap. */
+export const REPLACEMENT_ORIGINS = [...REPLACEMENT_PICK_ORIGINS, 'recommendation', 'chat'] as const;
 export type TReplacementOrigin = (typeof REPLACEMENT_ORIGINS)[number];
 
 /**
@@ -40,7 +40,7 @@ export type TReplacementOrigin = (typeof REPLACEMENT_ORIGINS)[number];
 @Check('CHK_card_replacement_status_valid', `status IN ('active', 'kept', 'reverted', 'removed')`)
 @Check(
   'CHK_card_replacement_picked_from_valid',
-  `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search', 'suggested', 'recommendation')`,
+  `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search', 'suggested', 'recommendation', 'chat')`,
 )
 @Check('CHK_card_replacement_quantity_positive', `quantity > 0`)
 @Entity({ name: 'card_replacement' })
@@ -68,7 +68,7 @@ export class CardReplacementEntity {
   @Column({ type: 'int' })
   quantity!: number;
 
-  /** The alternatives group the owner picked from, `search` for a name search, `suggested` for a one-click use, `recommendation` for an adoption. */
+  /** The alternatives group the owner picked from, `search` for a name search, `suggested` for a one-click use, `recommendation` for an adoption, `chat` for an applied chat swap. */
   @Column({ type: 'varchar', length: 32 })
   pickedFrom!: TReplacementOrigin;
 
