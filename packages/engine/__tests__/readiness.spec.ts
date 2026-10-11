@@ -2,53 +2,8 @@ import { computeEffectiveReadiness } from '../src/readiness/compute';
 import { ICatalog, ICatalogCard, Class, Format, Keyword, Rarity, Talent, Type } from '../src';
 import { buildIndices } from '../src/catalog/indices';
 import { DEFAULT_PITCH_TOLERANCE } from '../src/substitution/constants';
-import { buildExclusionKey, TExclusionKey } from '../src/substitution/exclusion-key';
 import { IEffectiveReadinessResult } from '../src/readiness/types';
 import { buildProtectedKey } from '../src/readiness/protected-key';
-
-/**
- * Runs `computeEffectiveReadiness` twice: once to discover every match the
- * engine finds, then again with every discovered match's key pre-approved.
- *
- * Tests that predate D7/SWAP-13 assert an `effectivePercent` ceiling that
- * assumed every found substitution counted. This helper reproduces that
- * ceiling under the new gated semantics (§0) without changing what each
- * test is actually about -- it decouples "does the engine find the right
- * substitution" from "is a pending substitution approved", which is this
- * design's own recommendation for tests whose subject isn't gating itself.
- */
-function computeWithAllFoundApproved(
-  deck: Parameters<typeof computeEffectiveReadiness>[0],
-  inventory: ReadonlyMap<string, number>,
-  catalog: ICatalog,
-  tolerance = DEFAULT_PITCH_TOLERANCE,
-  excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
-): IEffectiveReadinessResult {
-  const discovery = computeEffectiveReadiness(
-    deck,
-    inventory,
-    catalog,
-    tolerance,
-    excludedIdentifiers,
-  );
-  const approvedIdentifiers = new Set<TExclusionKey>(
-    discovery.breakdown.substituted.map((entry) =>
-      buildExclusionKey(
-        entry.original.cardIdentifier,
-        entry.original.slot,
-        entry.match.substitute.cardIdentifier,
-      ),
-    ),
-  );
-  return computeEffectiveReadiness(
-    deck,
-    inventory,
-    catalog,
-    tolerance,
-    excludedIdentifiers,
-    approvedIdentifiers,
-  );
-}
 
 function makeCard(overrides: Partial<ICatalogCard> & { cardIdentifier: string }): ICatalogCard {
   const base: ICatalogCard = {
@@ -176,10 +131,10 @@ describe('computeEffectiveReadiness', () => {
       ['warrior-attack-red-alt', 1],
     ]);
 
-    const result = computeWithAllFoundApproved(deck, inventory, catalog);
+    const result = computeEffectiveReadiness(deck, inventory, catalog);
 
     expect(result.rawPercent).toBeCloseTo(66.7, 0);
-    expect(result.effectivePercent).toBe(100);
+    expect(result.effectivePercent).toBe(result.rawPercent);
     expect(result.breakdown.exact).toHaveLength(1);
     expect(result.breakdown.exact[0]!.quantity).toBe(2);
     expect(result.breakdown.substituted).toHaveLength(1);
@@ -361,7 +316,7 @@ describe('computeEffectiveReadiness', () => {
     // pitch curve won't break. This test verifies the pitch check path runs.
     const inventory = new Map([['blue-candidate', 1]]);
 
-    const result = computeWithAllFoundApproved(
+    const result = computeEffectiveReadiness(
       deck,
       inventory,
       smallCatalog,
@@ -370,7 +325,7 @@ describe('computeEffectiveReadiness', () => {
 
     // Since both cards have pitch 1, the substitution should succeed
     // (pitch curve stays the same)
-    expect(result.effectivePercent).toBe(100);
+    expect(result.effectivePercent).toBe(result.rawPercent);
     expect(result.breakdown.substituted).toHaveLength(1);
   });
 
@@ -399,30 +354,10 @@ describe('computeEffectiveReadiness', () => {
         ['warrior-attack-red-alt', 1],
       ]);
 
-      const result = computeWithAllFoundApproved(deck, inventory, catalog);
-
-      expect(result.path).toBe('B');
-      expect(result.effectivePercent).toBe(100);
-    });
-
-    it('returns Path B while pct sits below 100 when its substitution is not yet approved (D7/SWAP-13)', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-
-      // No approvedIdentifiers passed -- the substitution is found but pending.
       const result = computeEffectiveReadiness(deck, inventory, catalog);
 
       expect(result.path).toBe('B');
-      expect(result.effectivePercent).toBeLessThan(100);
-      expect(result.breakdown.substituted).toHaveLength(1);
-      expect(result.breakdown.substituted[0]!.approved).toBe(false);
+      expect(result.effectivePercent).toBe(result.rawPercent);
     });
 
     it('returns Path C when some cards remain missing after substitution', () => {
@@ -515,10 +450,10 @@ describe('computeEffectiveReadiness', () => {
         ['warrior-attack-red-alt', 1],
       ]);
 
-      const result = computeWithAllFoundApproved(deck, inventory, catalog);
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
 
       expect(result.path).toBe('B');
-      expect(result.effectivePercent).toBe(100);
+      expect(result.effectivePercent).toBe(result.rawPercent);
       expect(result.fidelityPercent).toBeCloseTo(96.6666, 3);
       expect(result.fidelityPercent).toBeLessThan(100);
     });
@@ -560,12 +495,12 @@ describe('computeEffectiveReadiness', () => {
       };
       const inventory = new Map([['tier2-candidate', 1]]);
 
-      const result = computeWithAllFoundApproved(deck, inventory, tieredCatalog);
+      const result = computeEffectiveReadiness(deck, inventory, tieredCatalog);
 
       expect(result.breakdown.substituted).toHaveLength(1);
       expect(result.breakdown.substituted[0]!.match.tier).toBe(2);
       expect(result.path).toBe('B');
-      expect(result.effectivePercent).toBe(100);
+      expect(result.effectivePercent).toBe(result.rawPercent);
     });
 
     it('populates substitutions array with tier 2 match when tier 2 fires', () => {
@@ -581,117 +516,6 @@ describe('computeEffectiveReadiness', () => {
       expect(result.substitutions).toHaveLength(1);
       expect(result.substitutions[0]!.tier).toBe(2);
       expect(result.substitutions[0]!.rationale).toContain('Tier 2 substitute');
-    });
-  });
-
-  describe('excludedIdentifiers parameter (re-solve)', () => {
-    it('skips tier 1 candidates in the exclusion set and falls through to tier 2', () => {
-      const missing = makeCard({
-        cardIdentifier: 'pick-me',
-        pitch: 1,
-        power: 3,
-        defense: 3,
-        keywords: [Keyword.GoAgain],
-      });
-      const tier1Best = makeCard({
-        cardIdentifier: 'tier1-best',
-        pitch: 1,
-        power: 3,
-        defense: 3,
-        keywords: [Keyword.GoAgain],
-      });
-      const tier2Fallback = makeCard({
-        cardIdentifier: 'tier2-fallback',
-        pitch: 1,
-        power: 3,
-        defense: 3,
-        keywords: [Keyword.Intimidate],
-      });
-
-      const exclusionCatalog = makeCatalog([missing, tier1Best, tier2Fallback]);
-
-      const deck = {
-        cards: [
-          { cardIdentifier: 'pick-me', quantity: 1, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['tier1-best', 1],
-        ['tier2-fallback', 1],
-      ]);
-
-      // Without exclusions: picks tier 1 best
-      const unrestricted = computeEffectiveReadiness(
-        deck,
-        inventory,
-        exclusionCatalog,
-      );
-      expect(unrestricted.breakdown.substituted[0]!.match.substitute.cardIdentifier).toBe('tier1-best');
-      expect(unrestricted.breakdown.substituted[0]!.match.tier).toBe(1);
-
-      // With tier 1 best excluded: falls through to tier 2 fallback
-      const restricted = computeEffectiveReadiness(
-        deck,
-        inventory,
-        exclusionCatalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set([buildExclusionKey('pick-me', 'mainboard', 'tier1-best')]),
-      );
-      expect(restricted.breakdown.substituted[0]!.match.substitute.cardIdentifier).toBe('tier2-fallback');
-      expect(restricted.breakdown.substituted[0]!.match.tier).toBe(2);
-    });
-
-    it('moves a card to missing when every candidate is excluded and reports Path C', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-
-      // Excluding the only substitute -> third copy cannot be substituted.
-      const result = computeEffectiveReadiness(
-        deck,
-        inventory,
-        catalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set([buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt')]),
-      );
-
-      expect(result.breakdown.missing).toHaveLength(1);
-      expect(result.breakdown.missing[0]!.quantity).toBe(1);
-      expect(result.breakdown.substituted).toHaveLength(0);
-      expect(result.path).toBe('C');
-    });
-
-    it('empty exclusion set matches the default no-exclusion behavior', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-
-      const withEmptySet = computeEffectiveReadiness(
-        deck,
-        inventory,
-        catalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set<TExclusionKey>(),
-      );
-      const withoutArg = computeEffectiveReadiness(deck, inventory, catalog);
-
-      expect(withEmptySet.effectivePercent).toBe(withoutArg.effectivePercent);
-      expect(withEmptySet.path).toBe(withoutArg.path);
-      expect(withEmptySet.breakdown.substituted.length).toBe(
-        withoutArg.breakdown.substituted.length,
-      );
     });
   });
 
@@ -821,11 +645,11 @@ describe('computeEffectiveReadiness', () => {
         ['warrior-attack-red-alt', 1],
       ]);
 
-      const result = computeWithAllFoundApproved(deck, inventory, catalog);
+      const result = computeEffectiveReadiness(deck, inventory, catalog);
 
       // Core readiness fields must not regress.
       expect(result.rawPercent).toBeCloseTo(66.7, 0);
-      expect(result.effectivePercent).toBe(100);
+      expect(result.effectivePercent).toBe(result.rawPercent);
       expect(result.path).toBe('B');
       expect(result.breakdown.exact[0]!.slot).toBe('mainboard');
       expect(result.breakdown.exact[0]!.quantity).toBe(2);
@@ -1001,149 +825,6 @@ describe('computeEffectiveReadiness', () => {
     });
   });
 
-  describe('approvedIdentifiers parameter (D7/SWAP-13)', () => {
-    it('a found match with an empty approvedIdentifiers set does not count toward effectivePercent', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-
-      const result = computeEffectiveReadiness(deck, inventory, catalog);
-
-      expect(result.breakdown.substituted).toHaveLength(1);
-      expect(result.breakdown.substituted[0]!.approved).toBe(false);
-      // 2 exact / 3 total -- the pending substitution does not add to it.
-      expect(result.effectivePercent).toBeCloseTo(66.7, 0);
-    });
-
-    it('the same match with its key present in approvedIdentifiers counts toward effectivePercent', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-      const approvedIdentifiers = new Set([
-        buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
-      ]);
-
-      const result = computeEffectiveReadiness(
-        deck,
-        inventory,
-        catalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set(),
-        approvedIdentifiers,
-      );
-
-      expect(result.breakdown.substituted).toHaveLength(1);
-      expect(result.breakdown.substituted[0]!.approved).toBe(true);
-      expect(result.effectivePercent).toBe(100);
-    });
-
-    it('notOwned is identical whether or not the substitution is approved', () => {
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-      const approvedIdentifiers = new Set([
-        buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
-      ]);
-
-      const pending = computeEffectiveReadiness(deck, inventory, catalog);
-      const approved = computeEffectiveReadiness(
-        deck,
-        inventory,
-        catalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set(),
-        approvedIdentifiers,
-      );
-
-      expect(approved.breakdown.notOwned).toEqual(pending.breakdown.notOwned);
-    });
-
-    it('approving one of two distinct substitutions counts only that one', () => {
-      const origOne = makeCard({ cardIdentifier: 'orig-one' });
-      const origTwo = makeCard({ cardIdentifier: 'orig-two' });
-      const shared = makeCard({ cardIdentifier: 'shared-substitute' });
-      const twoCatalog = makeCatalog([origOne, origTwo, shared]);
-      const deck = {
-        cards: [
-          { cardIdentifier: 'orig-one', quantity: 1, slot: 'mainboard' },
-          { cardIdentifier: 'orig-two', quantity: 1, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([['shared-substitute', 2]]);
-      const approvedIdentifiers = new Set([
-        buildExclusionKey('orig-one', 'mainboard', 'shared-substitute'),
-      ]);
-
-      const result = computeEffectiveReadiness(
-        deck,
-        inventory,
-        twoCatalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set(),
-        approvedIdentifiers,
-      );
-
-      const byOriginal = new Map(
-        result.breakdown.substituted.map((entry) => [entry.original.cardIdentifier, entry.approved]),
-      );
-      expect(byOriginal).toEqual(new Map([['orig-one', true], ['orig-two', false]]));
-      expect(result.effectivePercent).toBe(50);
-    });
-
-    it('inventory is consumed identically whether or not the substitution is approved', () => {
-      // Approval must not change *which* substitute is chosen -- only
-      // whether it counts. Both runs should leave the same remaining
-      // owned quantity for the substitute (verified indirectly: both
-      // pick the same substitute, and a third recompute against the
-      // post-substitution inventory sees the same shortage either way).
-      const deck = {
-        cards: [
-          { cardIdentifier: 'warrior-attack-red', quantity: 3, slot: 'mainboard' },
-        ],
-      };
-      const inventory = new Map([
-        ['warrior-attack-red', 2],
-        ['warrior-attack-red-alt', 1],
-      ]);
-      const approvedIdentifiers = new Set([
-        buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
-      ]);
-
-      const pending = computeEffectiveReadiness(deck, inventory, catalog);
-      const approved = computeEffectiveReadiness(
-        deck,
-        inventory,
-        catalog,
-        DEFAULT_PITCH_TOLERANCE,
-        new Set(),
-        approvedIdentifiers,
-      );
-
-      expect(pending.breakdown.substituted[0]!.match.substitute.cardIdentifier).toBe(
-        approved.breakdown.substituted[0]!.match.substitute.cardIdentifier,
-      );
-      expect(pending.substitutions).toHaveLength(1);
-      expect(approved.substitutions).toHaveLength(1);
-    });
-  });
 });
 
 describe('protectedCopies parameter (card-alternatives)', () => {
@@ -1170,8 +851,6 @@ describe('protectedCopies parameter (card-alternatives)', () => {
       inventory,
       catalog,
       DEFAULT_PITCH_TOLERANCE,
-      new Set(),
-      new Set(),
       protectedCopies,
     );
   }
@@ -1226,23 +905,13 @@ describe('protectedCopies parameter (card-alternatives)', () => {
       keywords: [],
     });
     const wide = makeCatalog([heroCard, weapon, original, standIn, tier2Original, tier2StandIn]);
-    const rejected = new Set<TExclusionKey>([
-      buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
-    ]);
-    const approved = new Set<TExclusionKey>([
-      buildExclusionKey('warrior-attack-red', 'mainboard', 'warrior-attack-red-alt'),
-    ]);
     const scenarios: ReadonlyArray<{
       readonly deck: { readonly cards: readonly { cardIdentifier: string; quantity: number; slot: string }[] };
       readonly inventory: ReadonlyMap<string, number>;
-      readonly excluded?: ReadonlySet<TExclusionKey>;
-      readonly approved?: ReadonlySet<TExclusionKey>;
     }> = [
       { deck: { cards: [] }, inventory: new Map() },
       { deck, inventory: new Map([['warrior-attack-red', 3]]) },
       { deck, inventory },
-      { deck, inventory, approved },
-      { deck, inventory, excluded: rejected },
       { deck, inventory: new Map() },
       {
         deck: { cards: [{ cardIdentifier: 'warrior-tier2-original', quantity: 2, slot: 'mainboard' }] },
@@ -1271,16 +940,12 @@ describe('protectedCopies parameter (card-alternatives)', () => {
         scenario.inventory,
         wide,
         DEFAULT_PITCH_TOLERANCE,
-        scenario.excluded ?? new Set(),
-        scenario.approved ?? new Set(),
       );
       const empty = computeEffectiveReadiness(
         scenario.deck,
         scenario.inventory,
         wide,
         DEFAULT_PITCH_TOLERANCE,
-        scenario.excluded ?? new Set(),
-        scenario.approved ?? new Set(),
         new Map(),
       );
 
@@ -1302,8 +967,6 @@ describe('protectedCopies parameter (card-alternatives)', () => {
       inventory,
       catalog,
       DEFAULT_PITCH_TOLERANCE,
-      new Set(),
-      new Set(),
       new Map([[buildProtectedKey('warrior-attack-red', 'mainboard'), 3]]),
     );
 
@@ -1322,3 +985,87 @@ describe('protectedCopies parameter (card-alternatives)', () => {
   });
 });
 
+
+describe('readiness counts the deck as it is (swaps merged into alternatives)', () => {
+  const owned = makeCard({ cardIdentifier: 'warrior-owned-red' });
+  const missingWithStandIn = makeCard({ cardIdentifier: 'warrior-missing-red', power: 4 });
+  const standIn = makeCard({ cardIdentifier: 'warrior-stand-in-red', power: 4 });
+  const missingAlone = makeCard({ cardIdentifier: 'wizard-missing-red', classes: [Class.Wizard], types: [Type.Action] });
+  const catalog = makeCatalog([owned, missingWithStandIn, standIn, missingAlone]);
+
+  const tenCopies = {
+    cards: [
+      { cardIdentifier: 'warrior-owned-red', quantity: 6, slot: 'mainboard' },
+      // Before the card with stand-ins: the engine checks the pitch curve copy by copy against the deck's
+      // full curve, so a copy still to be visited counts as a gap while earlier stand-ins are tried.
+      { cardIdentifier: 'wizard-missing-red', quantity: 1, slot: 'mainboard' },
+      { cardIdentifier: 'warrior-missing-red', quantity: 3, slot: 'mainboard' },
+    ],
+  };
+  const inventory = new Map([
+    ['warrior-owned-red', 6],
+    ['warrior-stand-in-red', 3],
+  ]);
+
+  it('effectivePercent counts exact copies only', () => {
+    const result = computeEffectiveReadiness(tenCopies, inventory, catalog);
+
+    expect(result.rawPercent).toBe(60);
+    expect(result.effectivePercent).toBe(60);
+    expect(result.breakdown.substituted).toHaveLength(3);
+  });
+
+  it('suggestions carry no approval and the fifth input protects copies', () => {
+    const plain = computeEffectiveReadiness(tenCopies, inventory, catalog);
+    for (const entry of plain.breakdown.substituted) {
+      expect(Object.keys(entry).sort()).toEqual(['match', 'original']);
+      expect(entry).not.toHaveProperty('approved');
+    }
+
+    const protectedOne = computeEffectiveReadiness(
+      tenCopies,
+      inventory,
+      catalog,
+      DEFAULT_PITCH_TOLERANCE,
+      new Map([[buildProtectedKey('warrior-missing-red', 'mainboard'), 1]]),
+    );
+
+    expect(protectedOne.breakdown.substituted).toHaveLength(2);
+    expect(protectedOne.breakdown.missing).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ cardIdentifier: 'warrior-missing-red', slot: 'mainboard', quantity: 1 }),
+      ]),
+    );
+  });
+
+  it('suggestions, fidelity and path come from the collection alone', () => {
+    const covered = computeEffectiveReadiness(
+      {
+        cards: [
+          { cardIdentifier: 'warrior-owned-red', quantity: 2, slot: 'mainboard' },
+          { cardIdentifier: 'warrior-missing-red', quantity: 2, slot: 'mainboard' },
+        ],
+      },
+      new Map([
+        ['warrior-owned-red', 2],
+        ['warrior-stand-in-red', 2],
+      ]),
+      catalog,
+    );
+
+    expect(covered.breakdown.substituted.map((entry) => entry.match.substitute.cardIdentifier)).toEqual([
+      'warrior-stand-in-red',
+      'warrior-stand-in-red',
+    ]);
+    expect(covered.path).toBe('B');
+    // (2 exact + 0.9 per tier 1 copy * 2) / 4 copies
+    expect(covered.fidelityPercent).toBeCloseTo(95, 6);
+    expect(covered.effectivePercent).toBe(50);
+
+    const partly = computeEffectiveReadiness(tenCopies, inventory, catalog);
+    expect(partly.path).toBe('C');
+    expect(partly.breakdown.missing).toEqual([
+      expect.objectContaining({ cardIdentifier: 'wizard-missing-red', quantity: 1 }),
+    ]);
+  });
+});

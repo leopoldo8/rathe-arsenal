@@ -15,7 +15,6 @@ import { AuthzService } from '../auth/authz.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { SourcesService } from './sources/sources.service';
-import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
 import {
   IBreakdown,
   ISubstitutionEntry,
@@ -56,7 +55,6 @@ export class CollectionService {
     private readonly authzService: AuthzService,
     private readonly catalogService: CatalogService,
     private readonly substitutionService: SubstitutionService,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly sourcesService: SourcesService,
   ) {}
 
@@ -114,18 +112,9 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
-    // Load rejected/approved decisions so the recompute respects them.
-    const { excludedIdentifiers, approvedIdentifiers } =
-      await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
-
     // Recompute readiness
     const newSnapshotEntity =
-      await this.substitutionService.computeAndStoreReadiness(
-        deckId,
-        userId,
-        excludedIdentifiers,
-        approvedIdentifiers,
-      );
+      await this.substitutionService.computeAndStoreReadiness(deckId, userId);
 
     // Derive path + fidelityPercent for the response. deckCards is already
     // loaded above, so totalCards is cheap to compute locally.
@@ -339,14 +328,7 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of trackedDeckIds) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
-        const snapshot = await this.substitutionService.computeAndStoreReadiness(
-          trackedDeckId,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        const snapshot = await this.substitutionService.computeAndStoreReadiness(trackedDeckId, userId);
         recomputedDecks.push({
           trackedDeckId,
           rawPercent: snapshot.rawPercent,
@@ -461,14 +443,7 @@ export class CollectionService {
     const recomputedDecks: IAddCardRecomputedDeck[] = [];
     for (const trackedDeckId of affectedDeckIds) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId);
-        const snapshot = await this.substitutionService.computeAndStoreReadiness(
-          trackedDeckId,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        const snapshot = await this.substitutionService.computeAndStoreReadiness(trackedDeckId, userId);
         recomputedDecks.push({
           trackedDeckId,
           rawPercent: snapshot.rawPercent,

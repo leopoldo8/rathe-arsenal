@@ -68,7 +68,6 @@ export interface IFixture {
   own(jwt: string, items: readonly { cardIdentifier: string; quantity: number }[]): Promise<void>;
   deckCards(deckId: number): Promise<Record<string, number>>;
   replacementRows(deckId: number): Promise<Array<Record<string, unknown>>>;
-  swapRows(deckId: number): Promise<Array<Record<string, unknown>>>;
   latestBreakdown(deckId: number): Promise<{
     exact: Array<{ cardIdentifier: string; quantity: number }>;
     substituted: Array<{ original: { cardIdentifier: string; quantity: number }; match: { substitute: { cardIdentifier: string } } }>;
@@ -158,8 +157,6 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
     },
     replacementRows: (deckId) =>
       dataSource.query(`SELECT * FROM card_replacement WHERE "trackedDeckId" = $1 ORDER BY "createdAt", id`, [deckId]),
-    swapRows: (deckId) =>
-      dataSource.query(`SELECT * FROM swap_suggestion WHERE "trackedDeckId" = $1 ORDER BY id`, [deckId]),
     async latestBreakdown(deckId) {
       const rows = await dataSource.query(
         `SELECT breakdown FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1 ORDER BY "computedAt" DESC, id DESC LIMIT 1`,

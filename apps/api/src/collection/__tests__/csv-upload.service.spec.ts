@@ -13,7 +13,6 @@ import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { CsvParserService } from '../csv/csv-parser.service';
 import { DuplicateDetectionService } from '../csv/duplicate-detection.service';
 import { CsvUploadService } from '../csv/csv-upload.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import {
   ICsvParseResult,
@@ -90,7 +89,6 @@ describe('CsvUploadService', () => {
   let dataSource: DeepMocked<DataSource>;
   let csvParserService: DeepMocked<CsvParserService>;
   let duplicateDetectionService: DeepMocked<DuplicateDetectionService>;
-  let swapSuggestionQueryService: DeepMocked<SwapSuggestionQueryService>;
   let substitutionService: DeepMocked<SubstitutionService>;
 
   beforeEach(async () => {
@@ -101,15 +99,10 @@ describe('CsvUploadService', () => {
     dataSource = createMock<DataSource>();
     csvParserService = createMock<CsvParserService>();
     duplicateDetectionService = createMock<DuplicateDetectionService>();
-    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     substitutionService = createMock<SubstitutionService>();
 
     // Default: no tracked decks (skip recompute loop)
     trackedDeckRepo.find.mockResolvedValue([]);
-    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
     substitutionService.computeAndStoreReadiness.mockResolvedValue({} as never);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -122,7 +115,6 @@ describe('CsvUploadService', () => {
         { provide: DataSource, useValue: dataSource },
         { provide: CsvParserService, useValue: csvParserService },
         { provide: DuplicateDetectionService, useValue: duplicateDetectionService },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SubstitutionService, useValue: substitutionService },
       ],
     }).compile();
@@ -552,10 +544,6 @@ describe('CsvUploadService', () => {
       trackedDeckRepo.find.mockResolvedValue([
         { id: 1, userId: USER_ID } as TrackedDeckEntity,
       ]);
-      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
       substitutionService.computeAndStoreReadiness.mockRejectedValue(
         new Error('Readiness engine failure'),
       );

@@ -58,7 +58,6 @@ describe('card replacements (E2E)', () => {
     return {
       deckCards: await fixture.deckCards(owner.deckId),
       replacements: await fixture.replacementRows(owner.deckId),
-      swaps: await fixture.swapRows(owner.deckId),
     };
   }
 
@@ -128,37 +127,6 @@ describe('card replacements (E2E)', () => {
       expect.arrayContaining([expect.objectContaining({ cardIdentifier: COAX, quantity: 2 })]),
     );
     expect(breakdown.substituted.filter((entry) => entry.original.cardIdentifier === COAX)).toEqual([]);
-  });
-
-  it("a pick retires the original's pending and approved swaps", async () => {
-    // One emissary owned: the original stays in its slot after the pick, so reconciliation alone would leave its swap rows alone.
-    const owner = await fixture.scenario();
-    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
-    const insertSwap = (substitute: string, status: string) =>
-      fixture.dataSource.query(
-        `INSERT INTO swap_suggestion ("userId", "trackedDeckId", "cardIdentifier", slot, "substituteIdentifier", quantity, tier, confidence, rationale, status)
-         SELECT d."userId", d.id, $2, 'mainboard', $3, 1, 1, 95, 'seeded', $4 FROM tracked_deck d WHERE d.id = $1`,
-        [owner.deckId, EMISSARY, substitute, status],
-      );
-    await insertSwap('blow-for-a-blow-red', 'pending');
-    await insertSwap('wounded-bull-red', 'approved');
-    await insertSwap('sink-below-red', 'rejected');
-    const before = await fixture.swapRows(owner.deckId);
-    const idOf = (rows: Array<Record<string, unknown>>, status: string) => rows.find((r) => r.status === status)!.id as string;
-
-    await pick(owner);
-
-    const after = await fixture.swapRows(owner.deckId);
-    const emissaryRows = after.filter((row) => row.cardIdentifier === EMISSARY);
-    expect(emissaryRows.find((r) => r.id === idOf(before, 'pending'))!.status).toBe('retired');
-    expect(emissaryRows.find((r) => r.id === idOf(before, 'approved'))!.status).toBe('retired');
-    expect(emissaryRows.find((r) => r.id === idOf(before, 'rejected'))!.status).toBe('rejected');
-
-    const listed = (await fixture.get('/api/swaps?state=all', owner.jwt).expect(200)).body.rows as Array<{ id: string }>;
-    const listedIds = listed.map((row) => row.id);
-    expect(listedIds).not.toContain(idOf(before, 'pending'));
-    expect(listedIds).not.toContain(idOf(before, 'approved'));
-    expect(listedIds).toContain(idOf(before, 'rejected'));
   });
 
   it('refuses an illegal replacement and changes nothing', async () => {

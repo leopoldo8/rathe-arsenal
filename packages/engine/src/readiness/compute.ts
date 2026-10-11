@@ -3,7 +3,6 @@ import { ISubstitutionMatch, IPitchTolerance } from '../substitution/types';
 import { DEFAULT_PITCH_TOLERANCE } from '../substitution/constants';
 import { computePitchCurve, computePitchDelta, isWithinTolerance } from '../substitution/pitch-curve';
 import { findSubstitution } from '../substitution/find-substitution';
-import { buildExclusionKey, TExclusionKey } from '../substitution/exclusion-key';
 import {
   IBreakdownEntry,
   IEffectiveReadinessResult,
@@ -75,19 +74,8 @@ interface IDeck {
  * Compute effective readiness for a deck against a user's inventory.
  * Pure function -- no side effects, no async, deterministic.
  *
- * The optional `excludedIdentifiers` set lets the interactive swap editor
- * re-solve a deck while skipping substitutes the user has explicitly
- * rejected. Passing an empty set preserves Phase 0 behavior.
- *
- * The optional `approvedIdentifiers` set (D7/SWAP-13) gates what counts
- * toward `effectivePercent`: a substitution the engine finds is always
- * reported in `breakdown.substituted[]` (with `approved` reflecting whether
- * its key is in this set), but only approved substitutions add to
- * `substitutedCount`. `rawPercent`, `fidelityPercent`, `path`, `notOwned`,
- * and inventory reservation are all unaffected by approval -- see
- * `design/07-swaps.md` §0 for the full rationale. Passing an empty set (the
- * default) preserves today's stricter "nothing counts until approved"
- * ceiling for every existing 5-arg call site.
+ * `effectivePercent` counts exact copies only: `breakdown.substituted[]`
+ * entries are suggestions and count toward nothing until used (AD-012).
  *
  * The optional `protectedCopies` map (keyed by `buildProtectedKey`) holds, per
  * (card, slot), how many of the copies not covered exactly must never get a
@@ -100,8 +88,6 @@ export function computeEffectiveReadiness(
   inventory: ReadonlyMap<string, number>,
   catalog: ICatalog,
   tolerance: IPitchTolerance = DEFAULT_PITCH_TOLERANCE,
-  excludedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
-  approvedIdentifiers: ReadonlySet<TExclusionKey> = new Set(),
   protectedCopies: ReadonlyMap<string, number> = new Map(),
 ): IEffectiveReadinessResult {
   // Mutable working copy of inventory quantities
@@ -117,7 +103,6 @@ export function computeEffectiveReadiness(
 
   let totalCards = 0;
   let exactCount = 0;
-  let substitutedCount = 0;
 
   // Build original pitch curve entries from the deck (same regardless of pass).
   const originalPitchEntries: Array<{ pitch: number | null; quantity: number }> = [];
@@ -239,7 +224,6 @@ export function computeEffectiveReadiness(
         remainingInventory,
         catalog,
         deckCard.slot,
-        excludedIdentifiers,
       );
 
       if (match) {
@@ -260,20 +244,8 @@ export function computeEffectiveReadiness(
             ...entryMeta,
           });
 
-          const approved = approvedIdentifiers.has(
-            buildExclusionKey(deckCard.cardIdentifier, deckCard.slot, match.substitute.cardIdentifier),
-          );
-
-          substituted.push(Object.freeze({ original: originalEntry, match, approved }));
+          substituted.push(Object.freeze({ original: originalEntry, match }));
           substitutions.push(match);
-          // Only approved substitutions count toward effectivePercent
-          // (D7/SWAP-13). Everything else in this branch -- inventory
-          // consumption, remainingMissing, pitch-curve tracking -- stays
-          // unconditional: approval changes what counts, never what the
-          // engine found or which substitute it reserved.
-          if (approved) {
-            substitutedCount += 1;
-          }
           remainingMissing -= 1;
 
           // Consume from inventory.
@@ -301,7 +273,7 @@ export function computeEffectiveReadiness(
   }
 
   const rawPercent = totalCards > 0 ? Math.round((exactCount / totalCards) * 1000) / 10 : 0;
-  const effectivePercent = totalCards > 0 ? Math.round(((exactCount + substitutedCount) / totalCards) * 1000) / 10 : 0;
+  const effectivePercent = rawPercent;
 
   const originalCurve = computePitchCurve(originalPitchEntries);
   const modifiedCurve = computePitchCurve(modifiedPitchEntries);

@@ -26,40 +26,40 @@ Terms pinned here, because several checks count them:
 
 ### S3 - readiness counts the deck as it is · 14 files · 290 KB · ~73k
 
-**C1** - For a deck of 10 copies where 6 are owned exactly, 3 have a stand-in from the collection and 1 has none, `computeEffectiveReadiness` returns `rawPercent` 60, `effectivePercent` 60 and 3 `substituted` entries (AC 13)
+**C1** - For a deck of 10 copies where 6 are owned exactly, 3 have a stand-in from the collection and 1 has none, `computeEffectiveReadiness` returns `rawPercent` 60, `effectivePercent` 60 and 3 `substituted` entries (AC 13) · done
 Proof: `packages/engine/__tests__/readiness.spec.ts -t "effectivePercent counts exact copies only"`
 
-**C2** - A `substituted` entry carries `original` and `match` and no `approved` property, and the fifth argument of `computeEffectiveReadiness` is the protected-copies map: passing `{ card::slot -> 1 }` there sends one copy straight to `missing` (door 2)
+**C2** - A `substituted` entry carries `original` and `match` and no `approved` property, and the fifth argument of `computeEffectiveReadiness` is the protected-copies map: passing `{ card::slot -> 1 }` there sends one copy straight to `missing` (door 2) · done
 Proof: `packages/engine/__tests__/readiness.spec.ts -t "suggestions carry no approval and the fifth input protects copies"`
 
-**C3** - For a deck whose every missing copy has a stand-in, `path` is `B`, `fidelityPercent` is the tier-weighted value (exact + 0.9 per tier 1 copy over total) and `effectivePercent` stays below 100; for a deck with a copy no stand-in covers, `path` is `C` (AC 14)
+**C3** - For a deck whose every missing copy has a stand-in, `path` is `B`, `fidelityPercent` is the tier-weighted value (exact + 0.9 per tier 1 copy over total) and `effectivePercent` stays below 100; for a deck with a copy no stand-in covers, `path` is `C` (AC 14) · done
 Proof: `packages/engine/__tests__/readiness.spec.ts -t "suggestions, fidelity and path come from the collection alone"`
 
-**C4** - The deck-import recompute of the owner's other decks calls `computeAndStoreReadiness` with exactly `(deckId, userId)`, the inputs a deck read recomputes with, and `computeAndStoreReadiness` has no approval or exclusion parameter (AC 15)
+**C4** - The deck-import recompute of the owner's other decks calls `computeAndStoreReadiness` with exactly `(deckId, userId)`, the inputs a deck read recomputes with, and `computeAndStoreReadiness` has no approval or exclusion parameter (AC 15) · done
 Proof: `apps/api/src/decks/import/__tests__/decks-import.service.spec.ts -t "recomputes the other decks with the inputs a deck read uses"`
 Proof: `pnpm --filter @rathe-arsenal/engine build && pnpm --filter @rathe-arsenal/api typecheck`
 
-**C5** - For a deck with two suggestions, `GET /api/decks` and `GET /api/decks/:deckId` both answer `effectivePercent` equal to `rawPercent`, and `fidelityPercent` above it (AC 16)
+**C5** - For a deck with two suggestions, `GET /api/decks` and `GET /api/decks/:deckId` both answer `effectivePercent` equal to `rawPercent`, and the deck read's `fidelityPercent` is above it (AC 16) (reworded during build: the list item carries no `fidelityPercent`) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the list and the deck read count the deck as it is"`
 
-**C6** - `GET /api/decks/:deckId` breakdown `substituted` entries have no `approved` field (Impact, API response)
+**C6** - `GET /api/decks/:deckId` breakdown `substituted` entries have no `approved` field (Impact, API response) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the list and the deck read count the deck as it is"`
 
-**C7** - With the user's snapshots deleted, the first `GET /api/decks` stores exactly one fresh snapshot for each of the user's 2 decks, and a first `GET /api/decks/:deckId` on a deck with none stores one (AC 17)
+**C7** - With the user's snapshots deleted, the first `GET /api/decks` stores exactly one fresh snapshot for each of the user's 2 decks, and a first `GET /api/decks/:deckId` on a deck with none stores one (AC 17) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the first read after the truncate stores a fresh snapshot"`
 
 ### S1 - one click uses the collection's best card · 12 files · 150 KB · ~38k
 
-**C8** - `POST /api/decks/:deckId/replacements` with `pickedFrom: suggested` and the deck's suggestion answers `201` with `replacement.pickedFrom` `suggested` and `quantity` 2, the deck holds 2 copies of the suggestion and none of the original in that slot, and `card_replacement` holds one `active` row with `pickedFrom` `suggested` (AC 2, 4, 5)
+**C8** - `POST /api/decks/:deckId/replacements` with `pickedFrom: suggested` and the deck's suggestion answers `201` with `replacement.pickedFrom` `suggested` and `quantity` 2, the deck holds 2 copies of the suggestion and none of the original in that slot, and `card_replacement` holds one `active` row with `pickedFrom` `suggested` (AC 2, 4, 5) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "a one-click use is a pick recorded as suggested"`
 
-**C9** - When the owner has 1 copy of the suggestion for 2 missing copies, a use moves both: the deck holds 2 copies of the suggestion, the next snapshot counts 1 of them exact and 1 missing, and none gets a stand-in (Flow 3, a use moves what a pick moves)
+**C9** - When the owner has 1 copy of the suggestion for 2 missing copies, a use moves both: the deck holds 2 copies of the suggestion, the next snapshot counts 1 of them exact and 1 missing, and none gets a stand-in (Flow 3, a use moves what a pick moves) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "a use moves every missing copy even when the collection covers fewer"`
 
-**C10** - The pick route answers `400` for `pickedFrom: swap` and changes nothing, and `201` for `pickedFrom: suggested` (AC 4)
+**C10** - The pick route answers `400` for `pickedFrom: swap` and changes nothing, and `201` for `pickedFrom: suggested` (AC 4) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "accepts suggested and refuses swap as an origin"`
 
-**C11** - After a use, `GET /api/decks/:deckId` lists the replacement under `replacements` with the original's identifier and name, which is what the deck list marks "no lugar de" (AC 5)
+**C11** - After a use, `GET /api/decks/:deckId` lists the replacement under `replacements` with the original's identifier and name, which is what the deck list marks "no lugar de" (AC 5) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "a one-click use is a pick recorded as suggested"`
 
 **C12** - The suggestion of each missing row, table-driven over 4 rows: a card whose copies got stand-ins A then B -> A; a card with no stand-in -> none; a card in two slots -> one suggestion per slot; a row whose copies are all held by an active replacement -> none; N for that deck is 2 (AC 1, 3, 6)
@@ -79,22 +79,22 @@ Proof: `apps/web/tests/e2e/suggestions-flow.spec.ts -g "Usar on a missing row us
 
 ### S2 - every suggestion at once · 12 files · 140 KB · ~35k
 
-**C17** - The bulk rule, table-driven over 6 rows: two suggestions, both legal and owned -> 2 uses, 0 skipped; a suggestion whose copies would exceed the copy limit (deck holds 2, needed 2, limit 3) -> skipped; a suggestion illegal for the hero -> skipped; a suggestion with no free copy left after an earlier use in the batch (owned 2, the earlier use moved 2) -> skipped; two rows suggesting the same card where the first use reaches the limit -> the second skipped; a row whose copies are all held by replacements -> no use and not counted (AC 8, 10)
+**C17** - The bulk rule, table-driven over 6 rows: two suggestions, both legal and owned -> 2 uses, 0 skipped; a suggestion whose copies would exceed the copy limit (deck holds 2, needed 2, limit 3) -> skipped; a suggestion illegal for the hero -> skipped; a suggestion with no free copy left after an earlier use in the batch (owned 2, the earlier use moved 2) -> skipped; two rows suggesting the same card where the first use reaches the limit -> the second skipped; a row whose copies are all held by replacements -> no use and not counted (AC 8, 10) · done
 Proof: `apps/api/src/replacements/__tests__/plan-suggested-uses.spec.ts -t "plans one use per suggestion and skips what cannot take its place"`
 
-**C18** - `POST /api/decks/:deckId/replacements/suggested` on a deck with 2 suggestions answers `201` with `replacements` of 2 rows, each `pickedFrom` `suggested` and `status` `active`, and `skipped` 0; the deck holds the moved copies; the deck's snapshot rows grow by exactly 1 (AC 7, 8, door 3)
+**C18** - `POST /api/decks/:deckId/replacements/suggested` on a deck with 2 suggestions answers `201` with `replacements` of 2 rows, each `pickedFrom` `suggested` and `status` `active`, and `skipped` 0; the deck holds the moved copies; the deck's snapshot rows grow by exactly 1 (AC 7, 8, door 3) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route uses every suggestion with one recompute"`
 
-**C19** - On a deck with no suggestion the bulk route answers `409` with `code` `NOTHING_TO_REPLACE`, and the deck cards, the `card_replacement` rows and the snapshot count are unchanged (AC 9)
+**C19** - On a deck with no suggestion the bulk route answers `409` with `code` `NOTHING_TO_REPLACE`, and the deck cards, the `card_replacement` rows and the snapshot count are unchanged (AC 9) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route refuses a deck with no suggestion"`
 
-**C20** - On a deck that already holds 2 copies of the emissary's stand-in, where the emissary's 2 missing copies would take it to 4, the bulk route answers `201` with 1 replacement (the other card's) and `skipped` 1, and the emissary stays in the deck (AC 10)
+**C20** - On a deck that already holds 2 copies of the emissary's stand-in, where the emissary's 2 missing copies would take it to 4, the bulk route answers `201` with 1 replacement (the other card's) and `skipped` 1, and the emissary stays in the deck (AC 10) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route skips a suggestion past the copy limit and uses the others"`
 
-**C21** - Two bulk requests sent together on one deck answer `201` and `409` `NOTHING_TO_REPLACE`, and the deck ends with exactly the replacements of one run (AC 11)
+**C21** - Two bulk requests sent together on one deck answer `201` and `409` `NOTHING_TO_REPLACE`, and the deck ends with exactly the replacements of one run (AC 11) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "two bulk requests race and one finds nothing left"`
 
-**C22** - The bulk route answers `401` without a token, and `404` for another user's deck and for a deck id that does not exist (Surface)
+**C22** - The bulk route answers `401` without a token, and `404` for another user's deck and for a deck id that does not exist (Surface) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route refuses anonymous and foreign decks"`
 
 **C23** - The status strip, table-driven over 3 states: complete -> "Sua coleção cobre o deck inteiro."; 4 missing copies and no suggestion -> "Faltam 4 cartas." with no use button; 5 missing copies and 3 suggestions -> a message containing "Dá para cobrir 3 cartas com a sua coleção" and a button "Usar as 3"; no state shows "Ver trocas" (AC 6, 20, 23)
@@ -122,23 +122,23 @@ Proof: `apps/web/tests/e2e/suggestions-flow.spec.ts -g "the swaps addresses lead
 **C29** - The deck page for a deck with suggestions renders no swaps panel (`deck-swaps-panel`), no modified-view banner and no link to `/swaps` (AC 20)
 Proof: `apps/web/src/components/deck-detail/__tests__/DeckDetailView.suggestions.spec.tsx -t "shows no swaps panel, banner or link"`
 
-**C30** - With a valid token, `GET /api/swaps` and `POST /api/swaps/<uuid>/approve`, `/reject`, `/revert`, `/restore` and `/outcome` each answer `404` (AC 21)
+**C30** - With a valid token, `GET /api/swaps` and `POST /api/swaps/<uuid>/approve`, `/reject`, `/revert`, `/restore` and `/outcome` each answer `404` (AC 21) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the swaps routes are gone"`
 
-**C31** - The migration's `up`, on a schema holding `swap_suggestion` with an approved and a pending row and `deck_readiness_snapshot` with 2 rows, leaves no `swap_suggestion` table and 0 snapshot rows; its `down` recreates `swap_suggestion` empty (AC 17, 22, door 4)
+**C31** - The migration's `up`, on a schema holding `swap_suggestion` with an approved and a pending row and `deck_readiness_snapshot` with 2 rows, leaves no `swap_suggestion` table and 0 snapshot rows; its `down` recreates `swap_suggestion` empty (AC 17, 22, door 4) · done
 Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migration.int-spec.ts -t "drops the swap table and empties the snapshots"`
 
-**C32** - After the migration's `up`, `card_replacement` accepts each of the 7 origins `very_close`, `close`, `other_pitch`, `generic`, `search`, `recommendation`, `suggested` and refuses `swap`; after `down` it refuses `suggested` again (door 1)
+**C32** - After the migration's `up`, `card_replacement` accepts each of the 7 origins `very_close`, `close`, `other_pitch`, `generic`, `search`, `recommendation`, `suggested` and refuses `swap`; after `down` it refuses `suggested` again (door 1) · done
 Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migration.int-spec.ts -t "accepts suggested as a replacement origin"`
 
-**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and deck import (AC 22)
+**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and deck import (AC 22) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "every recompute path runs without a swap table"`
 
-**C34** - No API source outside the migrations names the swap table or its entity, and the API typechecks (AC 22)
+**C34** - No API source outside the migrations names the swap table or its entity, and the API typechecks (AC 22) · done
 Proof: `! git grep -nE "swap_suggestion|SwapSuggestion|SwapsReconciliation" -- apps/api/src ':!apps/api/src/database/migrations'`
 Proof: `pnpm --filter @rathe-arsenal/engine build && pnpm --filter @rathe-arsenal/api typecheck`
 
-**C35** - The two earlier migrations' int-specs still pass with the new migration in the chain (door 4 does not break the history)
+**C35** - The two earlier migrations' int-specs still pass with the new migration in the chain (door 4 does not break the history) · done
 Proof: `apps/api/src/database/migrations/__tests__/redesign-migrations-on-synchronized-schema.int-spec.ts -t "rebuilds an empty synchronize-created swap_suggestion with the migration-owned constraints"`
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "up() drops substitute_decision"`
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "down() recreates substitute_decision"`
@@ -153,7 +153,7 @@ Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chro
 
 ### Kept obligations the change must not break
 
-**C38** - The pick route still answers `400` for a malformed body, `401` without a token, `404` for another user's deck exactly as for a missing deck, and `409` `NOTHING_TO_REPLACE` when nothing is missing (Surface, pick route statuses)
+**C38** - The pick route still answers `400` for a malformed body, `401` without a token, `404` for another user's deck exactly as for a missing deck, and `409` `NOTHING_TO_REPLACE` when nothing is missing (Surface, pick route statuses) · done
 Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "rejects malformed picks with 400"`
 Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "rejects every replacement route without a token"`
 Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "answers another user's deck exactly like a missing deck"`

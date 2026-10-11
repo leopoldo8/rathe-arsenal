@@ -31,8 +31,6 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
-import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
 import { UpdateDeckCompositionDto } from '../dto/update-deck-composition.dto';
@@ -163,8 +161,6 @@ describe('DecksService.updateComposition', () => {
   let shoppingLineService: jest.Mocked<ShoppingLineService>;
   let catalogService: jest.Mocked<CatalogService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
-  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
-  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
   let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
@@ -177,18 +173,12 @@ describe('DecksService.updateComposition', () => {
     shoppingLineService = createMock<ShoppingLineService>();
     catalogService = createMock<CatalogService>();
     collectionReadService = createMock<CollectionReadService>();
-    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
-    swapsReconciliationService = createMock<SwapsReconciliationService>();
     replacementsQueryService = createMock<ReplacementsQueryService>();
     replacementsQueryService.loadActive.mockResolvedValue([]);
     replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
 
     // Default service stubs
     collectionReadService.loadOwned.mockResolvedValue(new Map());
-    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
     snapshotRepo.create.mockReturnValue({} as DeckReadinessSnapshotEntity);
     snapshotRepo.save.mockResolvedValue({} as DeckReadinessSnapshotEntity);
 
@@ -217,8 +207,6 @@ describe('DecksService.updateComposition', () => {
         { provide: ShoppingLineService, useValue: shoppingLineService },
         { provide: CatalogService, useValue: catalogService },
         { provide: CollectionReadService, useValue: collectionReadService },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
-        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
         { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
         {
@@ -372,126 +360,6 @@ describe('DecksService.updateComposition', () => {
     });
   });
 
-  describe('edge case — approved substitute survives if still in new substitute set', () => {
-    it('does NOT delete the decision when the substitute card remains recommended', async () => {
-      // Arrange
-      const substituteId = 'zen-state-blue';
-      const manager = setupTransaction({
-        freshCards: [buildDeckCardEntity({ cardIdentifier: 'snatch-red' })],
-      });
-
-      // Engine result includes the same substitute
-      mockedReadiness.mockReturnValue(
-        buildReadinessResult({
-          breakdown: {
-            exact: [],
-            substituted: [
-              {
-                original: {
-                  cardIdentifier: 'snatch-red',
-                  quantity: 3,
-                  slot: 'mainboard',
-                  name: 'Snatch',
-                  pitch: 1,
-                  cost: 0,
-                  type: 'Action',
-                  imageUrl: null,
-                },
-                match: {
-                  substitute: {
-                    cardIdentifier: substituteId,
-                    name: 'Zen State',
-                    types: ['Action'] as unknown as readonly string[],
-                    pitch: 3,
-                    classes: [],
-                    talents: [],
-                    power: null,
-                    defense: null,
-                    cost: null,
-                    keywords: [],
-                    subtypes: [],
-                    legalHeroes: [],
-                    legalFormats: [],
-                    bannedFormats: [],
-                    rarity: 'Common',
-                    young: false,
-                    sets: [],
-                  } as unknown as ReturnType<typeof computeEffectiveReadiness>['breakdown']['substituted'][0]['match']['substitute'],
-                  tier: 1 as const,
-                  score: 0.9,
-                  rationale: 'Same class',
-                },
-                approved: false,
-              },
-            ],
-            missing: [],
-            notOwned: [],
-          },
-        }),
-      );
-
-      const dto = buildDto([buildCard('snatch-red')]);
-
-      // Act
-      await service.updateComposition(DECK_ID, USER_ID, dto);
-
-      // Assert: orphan cleanup is now reconciliation (SWAP-02: retire, never
-      // delete), not a hard delete against SubstituteDecisionEntity. The
-      // in-transaction pass reconciles the fresh breakdown (which still
-      // contains the surviving substitute) against swap_suggestion, inside
-      // the same transaction manager.
-      expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
-        USER_ID,
-        DECK_ID,
-        expect.objectContaining({
-          substituted: expect.arrayContaining([
-            expect.objectContaining({
-              match: expect.objectContaining({
-                substitute: expect.objectContaining({ cardIdentifier: substituteId }),
-              }),
-            }),
-          ]),
-        }),
-        expect.any(Set),
-        manager,
-      );
-    });
-  });
-
-  describe('edge case — orphan cleanup reconciles (retires) when card removed', () => {
-    it('reconciles with an empty fresh breakdown when the new substitute set is empty', async () => {
-      // Arrange
-      const manager = setupTransaction({ freshCards: [] });
-
-      // Engine returns no substitutions
-      mockedReadiness.mockReturnValue(buildReadinessResult({
-        breakdown: {
-          exact: [],
-          substituted: [],
-          missing: [],
-          notOwned: [],
-        },
-      }));
-
-      const dto = buildDto([]);
-
-      // Act
-      await service.updateComposition(DECK_ID, USER_ID, dto);
-
-      // Assert: reconciliation runs with an empty substituted[] and the
-      // transaction manager — any previously-persisted row for this deck
-      // with no matching fresh group and a position no longer in the deck
-      // is retired by reconcileSwapSuggestions, never hard-deleted.
-      expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
-        USER_ID,
-        DECK_ID,
-        expect.objectContaining({ substituted: [] }),
-        expect.any(Set),
-        manager,
-      );
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Error paths
   // ---------------------------------------------------------------------------
@@ -590,8 +458,7 @@ describe('DecksService.updateComposition', () => {
       expect(allCalls.length).toBeGreaterThanOrEqual(1);
       const firstCallArgs = allCalls[0]!;
       expect(firstCallArgs[3]).toBeUndefined(); // tolerance = undefined
-      expect(firstCallArgs[4]).toBeInstanceOf(Set); // excludedIdentifiers
-      expect(firstCallArgs[5]).toBeInstanceOf(Set); // approvedIdentifiers (D7/SWAP-13)
+      expect(firstCallArgs[4]).toBeInstanceOf(Map); // protectedCopies
     });
   });
   // ---------------------------------------------------------------------------
@@ -630,7 +497,7 @@ describe('DecksService.updateComposition', () => {
       expect(replacementsQueryService.loadActive).toHaveBeenNthCalledWith(1, DECK_ID, manager);
       expect(mockedReadiness).toHaveBeenCalledTimes(2);
       for (const call of mockedReadiness.mock.calls) {
-        expect(call[6]).toEqual(new Map([[`${COAX}::mainboard`, 2]]));
+        expect(call[4]).toEqual(new Map([[`${COAX}::mainboard`, 2]]));
       }
     });
 
@@ -652,7 +519,7 @@ describe('DecksService.updateComposition', () => {
       expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith(closedIds, manager);
       // A record the save closed no longer keeps copies out of stand-ins, in either pass.
       for (const call of mockedReadiness.mock.calls) {
-        expect(call[6]).toEqual(new Map());
+        expect(call[4]).toEqual(new Map());
       }
     });
 
@@ -719,7 +586,7 @@ describe('DecksService.updateComposition', () => {
 
       expect(replacementsQueryService.closeAsRemoved).toHaveBeenCalledWith([], manager);
       for (const call of mockedReadiness.mock.calls) {
-        expect(call[6]).toEqual(new Map([[`${COAX}::equipment`, 2]]));
+        expect(call[4]).toEqual(new Map([[`${COAX}::equipment`, 2]]));
       }
     });
 

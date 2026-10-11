@@ -17,7 +17,6 @@ import {
 import { computeContentHash } from '../csv/csv-parser.service';
 import type { IResolvedCsvRow } from '../csv/csv.types';
 import { nextDedupedLabel } from './source-label.util';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 
 export interface IFabraryImportResult {
@@ -61,7 +60,6 @@ export class FabraryImportService {
     private readonly trackedDeckRepo: Repository<TrackedDeckEntity>,
     private readonly dataSource: DataSource,
     private readonly fabraryService: FabraryService,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly substitutionService: SubstitutionService,
   ) {}
 
@@ -199,14 +197,7 @@ export class FabraryImportService {
 
     for (const deck of decks) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
-        await this.substitutionService.computeAndStoreReadiness(
-          deck.id,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
       } catch (error) {
         this.logger.warn({
           msg: 'Failed to recompute readiness for deck after Fabrary import',

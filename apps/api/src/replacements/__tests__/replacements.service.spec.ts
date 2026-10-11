@@ -1,13 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { createMock } from '@golevelup/ts-jest';
-import { DataSource, EntityManager, FindOperator } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
-import { SwapSuggestionEntity } from '../../database/entities/swap-suggestion.entity';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { CardReplacementEntity } from '../../database/entities/card-replacement.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { SubstitutionService } from '../../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { ReplacementsQueryService } from '../replacements-query.service';
 import { ReplacementsService } from '../replacements.service';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
@@ -70,18 +68,16 @@ function build(options: {
   const dataSource = createMock<DataSource>();
   (dataSource.transaction as jest.Mock).mockImplementation(async (callback: (m: EntityManager) => unknown) => callback(manager));
   const substitution = createMock<SubstitutionService>();
-  substitution.computeReadinessWithExclusions.mockResolvedValue({
+  substitution.computeReadiness.mockResolvedValue({
     breakdown: { notOwned: options.needed === 0 ? [] : [{ cardIdentifier: EMISSARY, slot: 'mainboard', quantity: options.needed }] },
   } as never);
-  const swaps = createMock<SwapSuggestionQueryService>();
-  swaps.loadReadinessInputs.mockResolvedValue({ excludedIdentifiers: new Set(), approvedIdentifiers: new Set() });
   const replacements = createMock<ReplacementsQueryService>();
   replacements.loadActive.mockResolvedValue([]);
   const collection = createMock<CollectionReadService>();
   collection.loadOwned.mockResolvedValue(new Map(options.ownedReplacement ? [[COAX, options.ownedReplacement]] : []));
 
   return {
-    service: new ReplacementsService(dataSource, substitution, swaps, replacements, collection, createMock<RecommendationQueueService>()),
+    service: new ReplacementsService(dataSource, substitution, replacements, collection, createMock<RecommendationQueueService>()),
     substitution,
     manager,
   };
@@ -228,20 +224,6 @@ describe('ReplacementsService', () => {
       });
 
       expect(writes(manager)).toEqual([]);
-    });
-
-    it('retires only the original\'s pending and approved swaps for that slot, never a rejected one', async () => {
-      const { service, manager } = build({ needed: 1 });
-
-      await service.pick(USER_ID, DECK_ID, body);
-
-      const call = (manager.update as jest.Mock).mock.calls.find(([entity]) => entity === SwapSuggestionEntity)!;
-      const [, criteria, patch] = call as [unknown, { status: FindOperator<string[]>; cardIdentifier: string; slot: string; trackedDeckId: number }, unknown];
-      expect(criteria.status.value).toEqual(['pending', 'approved']);
-      expect(criteria).toEqual(
-        expect.objectContaining({ trackedDeckId: DECK_ID, cardIdentifier: EMISSARY, slot: 'mainboard' }),
-      );
-      expect(patch).toEqual({ status: 'retired' });
     });
 
     const deckRows = (original: number | null, other: number | null) => [

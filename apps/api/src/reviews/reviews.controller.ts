@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { SWAPS_MIGRATION_PAYLOAD } from '../swaps/legacy-routes-gone';
+import { SWAPS_MIGRATION_PAYLOAD } from '../common/legacy-routes-gone';
 
 /**
  * 410 Gone stubs for the retired `/api/reviews` routes, kept so a stale

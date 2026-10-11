@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { createMock } from '@golevelup/ts-jest';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CardNotFoundError, TExclusionKey } from '@rathe-arsenal/engine';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
@@ -12,7 +12,6 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SourcesService } from '../sources/sources.service';
 import { CollectionService } from '../collection.service';
 
@@ -102,7 +101,6 @@ describe('CollectionService', () => {
   let authzService: jest.Mocked<AuthzService>;
   let catalogService: jest.Mocked<CatalogService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
-  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let sourcesService: jest.Mocked<SourcesService>;
 
   beforeEach(async () => {
@@ -121,14 +119,9 @@ describe('CollectionService', () => {
     authzService = createMock<AuthzService>();
     catalogService = createMock<CatalogService>();
     substitutionService = createMock<SubstitutionService>();
-    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     sourcesService = createMock<SourcesService>();
 
     // Default: no rejections — exclusion set is empty.
-    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
     // Default: manual source always resolves for the test user.
     sourcesService.ensureManualSource.mockResolvedValue(buildManualSource());
 
@@ -159,7 +152,6 @@ describe('CollectionService', () => {
         { provide: AuthzService, useValue: authzService },
         { provide: CatalogService, useValue: catalogService },
         { provide: SubstitutionService, useValue: substitutionService },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SourcesService, useValue: sourcesService },
       ],
     }).compile();
@@ -217,44 +209,7 @@ describe('CollectionService', () => {
         USER_ID,
         DECK_ID,
       );
-      // U9: exclusions loaded from SwapSuggestionQueryService, not from rejected_substitute.
-      expect(swapSuggestionQueryService.loadReadinessInputs).toHaveBeenCalledWith(DECK_ID);
-      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
-        DECK_ID,
-        USER_ID,
-        new Set(),
-        new Set(),
-      );
-    });
-
-    it('(regression: markOwned auto-recompute) respects rejected decisions in exclusion set', async () => {
-      // Arrange: a rejection exists — it must appear in the exclusion set passed to recompute.
-      const deckCard = buildDeckCard();
-      const newSnapshot = buildSnapshot({ id: 20 });
-
-      authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
-      deckCardRepo.find.mockResolvedValue([deckCard]);
-      collectionCardRepo.findOne.mockResolvedValue(null);
-      collectionCardRepo.create.mockReturnValue(buildCollectionCard({ quantity: 1 }));
-      collectionCardRepo.save.mockResolvedValue(buildCollectionCard({ quantity: 1 }));
-
-      // Simulate one rejected card.
-      const exclusions = new Set(['rejected-proxy'] as TExclusionKey[]);
-      swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-        excludedIdentifiers: exclusions,
-        approvedIdentifiers: new Set(),
-      });
-      substitutionService.computeAndStoreReadiness.mockResolvedValue(newSnapshot);
-
-      // Act
-      await service.markOwned(USER_ID, DECK_ID, CARD_IDENTIFIER);
-
-      // Assert: exclusion set forwarded.
-      expect(swapSuggestionQueryService.loadReadinessInputs).toHaveBeenCalledWith(DECK_ID);
-      const exclusionsArg = (
-        substitutionService.computeAndStoreReadiness as jest.Mock
-      ).mock.calls[0][2] as Set<string>;
-      expect(exclusionsArg.has('rejected-proxy')).toBe(true);
+      expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(DECK_ID, USER_ID);
     });
 
     it('should throw BadRequestException when card is not part of the deck', async () => {
@@ -434,8 +389,6 @@ describe('CollectionService', () => {
 
       // Assert
       expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledTimes(3);
-      // Exclusions loaded per deck from SwapSuggestionQueryService (not rejected_substitute).
-      expect(swapSuggestionQueryService.loadReadinessInputs).toHaveBeenCalledTimes(3);
       expect(result.recomputedDecks).toHaveLength(3);
       expect(result.recomputedDecks[0]).toEqual({
         trackedDeckId: 1,

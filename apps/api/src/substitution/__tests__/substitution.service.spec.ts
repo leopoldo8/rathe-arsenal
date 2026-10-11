@@ -9,7 +9,6 @@ import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
-import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 
 // Mock the engine module to avoid loading the full catalog in unit tests
@@ -80,7 +79,6 @@ describe('SubstitutionService', () => {
   let snapshotRepo: jest.Mocked<Repository<DeckReadinessSnapshotEntity>>;
   let authzService: jest.Mocked<AuthzService>;
   let collectionReadService: jest.Mocked<CollectionReadService>;
-  let swapsReconciliationService: jest.Mocked<SwapsReconciliationService>;
   let replacementsQueryService: jest.Mocked<ReplacementsQueryService>;
 
   beforeEach(async () => {
@@ -89,7 +87,6 @@ describe('SubstitutionService', () => {
     snapshotRepo = createMock<Repository<DeckReadinessSnapshotEntity>>();
     authzService = createMock<AuthzService>();
     collectionReadService = createMock<CollectionReadService>();
-    swapsReconciliationService = createMock<SwapsReconciliationService>();
     replacementsQueryService = createMock<ReplacementsQueryService>();
     replacementsQueryService.loadActive.mockResolvedValue([]);
     replacementsQueryService.loadProtectedCopies.mockResolvedValue(new Map());
@@ -105,7 +102,6 @@ describe('SubstitutionService', () => {
         { provide: getRepositoryToken(DeckReadinessSnapshotEntity), useValue: snapshotRepo },
         { provide: AuthzService, useValue: authzService },
         { provide: CollectionReadService, useValue: collectionReadService },
-        { provide: SwapsReconciliationService, useValue: swapsReconciliationService },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
       ],
     }).compile();
@@ -217,7 +213,7 @@ describe('SubstitutionService', () => {
     expect(result.id).toBe(10);
   });
 
-  it('saves the snapshot and reconciles through the caller-supplied transaction manager', async () => {
+  it('saves the snapshot through the caller-supplied transaction manager', async () => {
     const trackedDeckId = 42;
     const userId = 'user-456';
     trackedDeckRepo.findOne.mockResolvedValue({ id: trackedDeckId, userId } as TrackedDeckEntity);
@@ -229,24 +225,11 @@ describe('SubstitutionService', () => {
     const manager = createMock<EntityManager>();
     manager.getRepository.mockReturnValue(txSnapshotRepo as never);
 
-    const result = await service.computeAndStoreReadiness(
-      trackedDeckId,
-      userId,
-      new Set(),
-      new Set(),
-      manager,
-    );
+    const result = await service.computeAndStoreReadiness(trackedDeckId, userId, manager);
 
     expect(manager.getRepository).toHaveBeenCalledWith(DeckReadinessSnapshotEntity);
     expect(txSnapshotRepo.save).toHaveBeenCalledWith(savedSnapshot);
     expect(snapshotRepo.save).not.toHaveBeenCalled();
-    expect(swapsReconciliationService.reconcile).toHaveBeenCalledWith(
-      userId,
-      trackedDeckId,
-      expect.anything(),
-      expect.any(Set),
-      manager,
-    );
     expect(result.id).toBe(11);
   });
 
@@ -284,8 +267,6 @@ describe('SubstitutionService', () => {
       expect.any(Map),
       expect.anything(),
       undefined,
-      expect.any(Set),
-      expect.any(Set),
       expect.any(Map),
     );
 
@@ -322,7 +303,7 @@ describe('SubstitutionService', () => {
     const manager = createMock<EntityManager>();
     manager.getRepository.mockImplementation(((entity: unknown) => repositories.get(entity)) as never);
 
-    await service.computeAndStoreReadiness(trackedDeckId, userId, new Set(), new Set(), manager);
+    await service.computeAndStoreReadiness(trackedDeckId, userId, manager);
 
     expect(replacementsQueryService.loadProtectedCopies).toHaveBeenCalledWith(trackedDeckId, manager);
     expect(computeEffectiveReadiness).toHaveBeenCalledWith(
@@ -330,8 +311,6 @@ describe('SubstitutionService', () => {
       expect.any(Map),
       expect.anything(),
       undefined,
-      expect.any(Set),
-      expect.any(Set),
       protectedCopies,
     );
     expect(trackedDeckRepo.findOne).not.toHaveBeenCalled();

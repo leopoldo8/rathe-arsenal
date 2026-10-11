@@ -14,7 +14,6 @@ import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { AlternativesService } from '../alternatives.service';
 import { ReplacementsQueryService } from '../replacements-query.service';
 import { RecommendationsQueryService } from '../../recommendations/recommendations-query.service';
@@ -99,11 +98,9 @@ function harness(): IHarness {
   deckCards.find.mockResolvedValue([deckRow(EMISSARY, 2)]);
 
   const substitution = createMock<SubstitutionService>();
-  substitution.computeReadinessWithExclusions.mockResolvedValue({
+  substitution.computeReadiness.mockResolvedValue({
     breakdown: { notOwned: [notOwned(EMISSARY, 2)] },
   } as never);
-  const swaps = createMock<SwapSuggestionQueryService>();
-  swaps.loadReadinessInputs.mockResolvedValue({ excludedIdentifiers: new Set(), approvedIdentifiers: new Set() });
   const replacements = createMock<ReplacementsQueryService>();
   replacements.loadActive.mockResolvedValue([]);
 
@@ -133,7 +130,7 @@ function harness(): IHarness {
   recommendations.latestDoneRuns.mockResolvedValue(new Map());
 
   return {
-    service: new AlternativesService(trackedDecks, deckCards, substitution, swaps, replacements, collection, shopping, recommendations),
+    service: new AlternativesService(trackedDecks, deckCards, substitution, replacements, collection, shopping, recommendations),
     substitution,
     replacements,
     shopping,
@@ -169,13 +166,13 @@ describe('AlternativesService', () => {
     const h = harness();
     expect((await h.service.list(request)).needed).toBe(2);
 
-    h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+    h.substitution.computeReadiness.mockResolvedValue({
       breakdown: { notOwned: [notOwned(EMISSARY, 1)] },
     } as never);
     expect((await h.service.list(request)).needed).toBe(1);
 
     // One active replacement holds both copies of coax, none owned: nothing is left to replace.
-    h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+    h.substitution.computeReadiness.mockResolvedValue({
       breakdown: { notOwned: [notOwned(COAX, 2)] },
     } as never);
     h.replacements.loadActive.mockResolvedValue([replacement(COAX, 2)]);
@@ -186,7 +183,7 @@ describe('AlternativesService', () => {
 
   it('a slot split across two notOwned entries is not mixed with another slot', async () => {
     const h = harness();
-    h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+    h.substitution.computeReadiness.mockResolvedValue({
       breakdown: { notOwned: [notOwned(EMISSARY, 2, 'mainboard'), notOwned(EMISSARY, 1, 'equipment')] },
     } as never);
 
@@ -225,7 +222,7 @@ describe('AlternativesService', () => {
       expect(owned3.groups.flatMap((g) => g.cards).find((c) => c.cardIdentifier === candidate)?.freeCopies).toBe(2);
 
       // One missing copy, so two copies of the candidate in the deck still fit the copy limit.
-      h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+      h.substitution.computeReadiness.mockResolvedValue({
         breakdown: { notOwned: [notOwned(EMISSARY, 1)] },
       } as never);
       h.setOwned([{ cardIdentifier: candidate, quantity: 1, active: true }]);
@@ -237,7 +234,7 @@ describe('AlternativesService', () => {
     it("freeCopies subtracts this deck's copies: a card in two slots counts both", async () => {
       const candidate = firstCandidate();
       const h = harness();
-      h.substitution.computeReadinessWithExclusions.mockResolvedValue({
+      h.substitution.computeReadiness.mockResolvedValue({
         breakdown: { notOwned: [notOwned(EMISSARY, 1)] },
       } as never);
       h.setOwned([{ cardIdentifier: candidate, quantity: 3, active: true }]);
@@ -396,7 +393,7 @@ describe('AlternativesService', () => {
     );
 
     logSpy.mockClear();
-    h.substitution.computeReadinessWithExclusions.mockResolvedValue({ breakdown: { notOwned: [] } } as never);
+    h.substitution.computeReadiness.mockResolvedValue({ breakdown: { notOwned: [] } } as never);
     await expect(h.service.list(request)).rejects.toBeInstanceOf(HttpException);
     expect(logSpy).not.toHaveBeenCalled();
   });

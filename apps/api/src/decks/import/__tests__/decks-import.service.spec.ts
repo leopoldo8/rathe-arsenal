@@ -166,6 +166,31 @@ describe('DecksImportService', () => {
     });
   });
 
+  it('recomputes the other decks with the inputs a deck read uses', async () => {
+    // Arrange
+    const dto: ImportDecksRequestDto = { urls: [FABRARY_URL_1] };
+    (fabraryService.fetchDeck as jest.Mock).mockResolvedValue(buildDeckFixture(ULID_1, 'New Deck'));
+    (substitutionService.computeAndStoreReadiness as jest.Mock).mockResolvedValue({
+      rawPercent: 50,
+      effectivePercent: 50,
+    });
+    (mockTrackedDeckRepo.find as jest.Mock).mockResolvedValue([
+      { id: 7, userId: USER_ID },
+      { id: 8, userId: USER_ID },
+    ]);
+
+    // Act
+    await service.run(dto, { userId: USER_ID });
+
+    // Assert
+    const calls = (substitutionService.computeAndStoreReadiness as jest.Mock).mock.calls as unknown[][];
+    const existingDeckCalls = calls.filter(([deckId]) => deckId === 7 || deckId === 8);
+    expect(existingDeckCalls).toEqual([
+      [7, USER_ID],
+      [8, USER_ID],
+    ]);
+  });
+
   it('should skip duplicate URLs within the same request', async () => {
     // Arrange
     const dto: ImportDecksRequestDto = {

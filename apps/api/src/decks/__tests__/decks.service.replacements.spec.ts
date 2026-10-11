@@ -19,8 +19,6 @@ import { SubstitutionService } from '../../substitution/substitution.service';
 import { ShoppingLineService } from '../../stores/shopping-line.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
-import { SwapsReconciliationService } from '../../swaps/swaps-reconciliation.service';
 import { ReplacementsQueryService } from '../../replacements/replacements-query.service';
 import { DecksService } from '../decks.service';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
@@ -87,11 +85,6 @@ describe('DecksService.getDetail replacements', () => {
     const substitutionService = createMock<SubstitutionService>();
     substitutionService.computeAndStoreReadiness.mockRejectedValue(new Error('not needed'));
     const shoppingLineService = createMock<ShoppingLineService>();
-    const swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
-    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
     const dataSource = createMock<DataSource>();
     (dataSource.query as jest.Mock).mockResolvedValue([]);
     replacementsQueryService = createMock<ReplacementsQueryService>();
@@ -130,8 +123,6 @@ describe('DecksService.getDetail replacements', () => {
         { provide: SubstitutionService, useValue: substitutionService },
         { provide: ShoppingLineService, useValue: shoppingLineService },
         { provide: CatalogService, useValue: catalogService },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
-        { provide: SwapsReconciliationService, useValue: createMock<SwapsReconciliationService>() },
         { provide: ReplacementsQueryService, useValue: replacementsQueryService },
         { provide: RecommendationQueueService, useValue: createMock<RecommendationQueueService>() },
         {

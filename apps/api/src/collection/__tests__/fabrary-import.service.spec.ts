@@ -19,7 +19,6 @@ import { FabraryService } from '../../fabrary/fabrary.service';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import {
   FabraryImportError,
@@ -142,7 +141,6 @@ describe('FabraryImportService', () => {
   let collectionCardRepo: jest.Mocked<Repository<CollectionCardEntity>>;
   let trackedDeckRepo: jest.Mocked<Repository<TrackedDeckEntity>>;
   let dataSource: jest.Mocked<DataSource>;
-  let swapSuggestionQueryService: jest.Mocked<SwapSuggestionQueryService>;
   let substitutionService: jest.Mocked<SubstitutionService>;
   let manager: jest.Mocked<EntityManager>;
 
@@ -151,7 +149,6 @@ describe('FabraryImportService', () => {
     csvSourceRepo = createMock<Repository<CsvSourceEntity>>();
     collectionCardRepo = createMock<Repository<CollectionCardEntity>>();
     trackedDeckRepo = createMock<Repository<TrackedDeckEntity>>();
-    swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
     substitutionService = createMock<SubstitutionService>();
 
     manager = createMock<EntityManager>();
@@ -192,7 +189,6 @@ describe('FabraryImportService', () => {
           useValue: trackedDeckRepo,
         },
         { provide: DataSource, useValue: dataSource },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SubstitutionService, useValue: substitutionService },
       ],
     }).compile();
