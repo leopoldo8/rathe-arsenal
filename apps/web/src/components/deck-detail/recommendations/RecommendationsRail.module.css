@@ -92,8 +92,18 @@
   padding: var(--ra-space-1) var(--ra-space-1) var(--ra-space-14px);
   overflow-x: auto;
   list-style: none;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snapping is for swiping; on a mouse it would pull each wheel step back to the nearest card. */
+@media (pointer: coarse) {
+  .rail {
+    scroll-snap-type: x proximity;
+  }
 }
 
 .placeholder {

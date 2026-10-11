@@ -193,6 +193,44 @@ test.describe('Recommendations rail — E2E', () => {
     expect(await page.evaluate(() => (window as unknown as { __dealt: number }).__dealt)).toBe(0);
   });
 
+  test('the mouse wheel scrolls the rail sideways, and the page once the rail ends', async ({ page }) => {
+    const many = {
+      ...DONE,
+      recommendations: [
+        ...DONE.recommendations,
+        card('rec-4', 4, 'drop-the-anchor-red', 'Drop the Anchor', 'SAZ021'),
+        card('rec-5', 5, 'take-aim-red', 'Take Aim', 'SAZ029'),
+        card('rec-6', 6, 'read-the-glide-path-red', 'Read the Glide Path', 'SAZ026'),
+      ],
+    };
+    await serveRecommendations(page, () => many);
+    await page.goto(`${BASE_URL}/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle', timeout: 20000 });
+    const rail = page.getByTestId('recommendations-rail');
+    await expect(rail.getByTestId('recommendation-row')).toHaveCount(6);
+
+    const shape = await rail.evaluate((element) => ({
+      scrollbarWidth: getComputedStyle(element).scrollbarWidth,
+      scrollbarSpace: element.offsetHeight - element.clientHeight,
+      overflows: element.scrollWidth > element.clientWidth,
+    }));
+    expect(shape).toEqual({ scrollbarWidth: 'none', scrollbarSpace: 0, overflows: true });
+
+    await page.evaluate(() => window.scrollTo(0, 200));
+    const box = (await rail.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 120);
+    const pageTop = await page.evaluate(() => window.scrollY);
+
+    await page.mouse.wheel(0, 200);
+    await expect.poll(() => rail.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(pageTop);
+
+    for (let step = 0; step < 15; step += 1) await page.mouse.wheel(0, 200);
+    await expect
+      .poll(() => rail.evaluate((element) => element.scrollWidth - element.clientWidth - element.scrollLeft))
+      .toBeLessThanOrEqual(1);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(pageTop);
+  });
+
   test('a finished run renders without a deal', async ({ page }) => {
     await serveRecommendations(page, () => DONE);
     await page.goto(`${BASE_URL}/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle', timeout: 20000 });

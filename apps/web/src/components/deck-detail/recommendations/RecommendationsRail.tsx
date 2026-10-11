@@ -10,6 +10,7 @@ import {
   type IRecommendationCard,
 } from '../../../api/recommendations';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
+import { useWheelScrollsSideways } from '../../../hooks/useWheelScrollsSideways';
 import { ApiError } from '../../../lib/api-client';
 import { localizeApiError } from '../../card-scanner/localize-api-error';
 import { CardLightbox } from '../../card-art/CardLightbox';
@@ -60,6 +61,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
   const [pileGeneration, setPileGeneration] = useState<IGeneration | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const pileRef = useRef<HTMLDivElement | null>(null);
+  const railRef = useWheelScrollsSideways<HTMLUListElement>();
 
   const data = query.data;
   const generation = data?.generation ?? null;
@@ -214,7 +216,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
       )}
 
       {(showPile || listed.length > 0) && (
-        <ul className={styles.rail} aria-label={t('recommendations.listAria')} data-testid="recommendations-rail">
+        <ul ref={railRef} className={styles.rail} aria-label={t('recommendations.listAria')} data-testid="recommendations-rail">
           {showPile && (
             <CandidatePile
               ref={pileRef}
