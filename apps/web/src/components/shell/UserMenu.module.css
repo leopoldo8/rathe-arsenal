@@ -52,6 +52,15 @@
   white-space: nowrap;
 }
 
+/* On phones the address is dropped (the trigger keeps its aria-label): a long
+   email otherwise pushes the top bar wider than the screen, which widens the
+   layout viewport and drags the fixed bottom tab bar off screen. */
+@media (max-width: 639px) {
+  .email {
+    display: none;
+  }
+}
+
 .chevron {
   flex-shrink: 0;
   opacity: 0.6;

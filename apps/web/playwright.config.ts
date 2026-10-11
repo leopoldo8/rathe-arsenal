@@ -44,6 +44,26 @@ export default defineConfig({
       },
       snapshotPathTemplate: '{testDir}/visual/__snapshots__/{testName}-{projectName}.png',
     },
+    // Phone-sized layout checks. Chromium-based on purpose (CI installs only
+    // Chromium); the viewport sizes and touch emulation are what matter.
+    {
+      name: 'mobile-360',
+      testMatch: '**/mobile/**/*.spec.ts',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 360, height: 740 },
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
+    {
+      name: 'mobile-390',
+      testMatch: '**/mobile/**/*.spec.ts',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 390, height: 844 },
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
     {
       name: 'e2e-chromium',
       testMatch: '**/e2e/**/*.spec.ts',

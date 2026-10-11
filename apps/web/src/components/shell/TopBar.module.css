@@ -144,3 +144,16 @@
   margin-inline-start: auto;
   flex-shrink: 0;
 }
+
+/* Phones: tighter gutters so mark + controls always fit (360px and up). */
+@media (max-width: 639px) {
+  .header {
+    gap: var(--ra-space-2);
+    padding-inline: var(--ra-space-4);
+  }
+
+  .controls {
+    gap: var(--ra-space-2);
+    min-inline-size: 0;
+  }
+}
