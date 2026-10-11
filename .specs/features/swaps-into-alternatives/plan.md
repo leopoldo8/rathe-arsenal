@@ -15,17 +15,17 @@ Each missing card in the deck's missing panel shows the best card from the colle
 The status strip offers "Usar as N cartas da coleção" to take every suggestion at once.
 Using a suggestion is the same deck change as picking an alternative today.
 The Swaps page, the swaps panel, the approve / reject / revert / restore / outcome actions and the "modified view" banner are gone.
-Swaps the owner had approved become picks, so no deck loses readiness.
+Swaps the owner had approved are discarded at deploy: those cards show as missing again, each with its suggestion one click away.
 
 ## Flow
 
-Reuses the replacement pick (`ReplacementsService`, `card_replacement`, the `tracked_deck` lock, the copy move, the recompute and the "original returns" prompt from AD-009), the engine's existing stand-in search (`findSubstitution` inside `computeEffectiveReadiness`) as the source of the suggestion, and the one-off script pattern of `backfill-swap-suggestions.ts` for the data conversion.
+Reuses the replacement pick (`ReplacementsService`, `card_replacement`, the `tracked_deck` lock, the copy move, the recompute and the "original returns" prompt from AD-009), and the engine's existing stand-in search (`findSubstitution` inside `computeEffectiveReadiness`) as the source of the suggestion.
 
 1. readiness recompute -> `SubstitutionService` (exists) -> `computeEffectiveReadiness` (exists) without approved or rejected sets (door 2): `substituted` entries become suggestions only; the snapshot no longer reconciles `swap_suggestion`
 2. `GET /api/decks/:deckId` (exists) -> `DecksService.getDetail` (exists): each missing copy carries its suggestion from `breakdown.substituted`; the headline readiness counts the deck as it is (door 2)
 3. "Usar" on one missing card -> `POST /api/decks/:deckId/replacements` (exists) with `pickedFrom: suggested` (door 1) -> `ReplacementsService.pick` (exists): same lock, copy move, `card_replacement` row and recompute as any pick
 4. "Usar as N cartas da coleção" -> `POST /api/decks/:deckId/replacements/suggested` (new route, door 3) -> `ReplacementsService` (exists): under one `tracked_deck` lock, one pick per current suggestion, one recompute
-5. deploy -> conversion script (new, door 4, the backfill pattern): every `approved` swap becomes an active `card_replacement` with `pickedFrom: swap` and its copies moved in `deck_card`, then that deck is recomputed
+5. deploy -> migration (door 4) drops `swap_suggestion` with every row in it; the next recompute of each deck stores a snapshot without approvals
 6. web: the missing panel (exists) gains the suggestion and "Usar"; the status strip (exists) gains the bulk action; the Swaps page, the swaps panel, the modified-view banner, the nav item and the swaps client go; the onboarding's first-review step offers the bulk action instead of approvals
 
 ## Impact
@@ -35,10 +35,11 @@ Reuses the replacement pick (`ReplacementsService`, `card_replacement`, the `tra
 | domain | retired term: `swap` (troca) - the approvable stand-in with its lifecycle; AD-005, AD-006 and AD-007 are superseded |
 | domain | existing term: `stand-in` / `substituted` - meant a swap waiting for approval or approved; now means only "the best card from the collection for this missing copy", a suggestion that counts toward nothing until used |
 | domain | existing term: `effectivePercent` - meant exact plus approved stand-ins over total; now equals exact over total of the deck as it is, the same value as `rawPercent`. Read today by the hero medallion, the Home tiles and averages (`DeckTile.tsx:99`, `homeGroups.ts:67, :88`), the collection write responses and the deck import response; the field is kept with the new meaning and removing the duplicate is a later cleanup |
-| domain | existing term: `pickedFrom` - gains `suggested` (one-click use of the engine's suggestion) and `swap` (an approved swap converted at deploy); the pick DTO accepts `suggested`, never `swap` |
+| domain | existing term: `pickedFrom` - gains `suggested` (one-click use of the engine's suggestion); the pick DTO accepts it |
 | API response | `GET /api/decks/:deckId` breakdown entries lose the `approved` flag; `fidelityPercent` and `path` keep their meaning (what the collection could reach); all consumed only by this SPA, deployed with it |
 | routes | `/api/swaps` and its five actions are removed; the older 410 routes for decisions, reject-substitute, re-solve and reviews stay as they are |
-| stored data | `swap_suggestion` stops being written or read; its `approved` rows are converted by the script (door 4); the table itself is dropped in a later release, after the conversion has run in production |
+| stored data | `swap_suggestion` is dropped with all its rows (door 4), approved ones included, as the owner chose; the same migration empties `deck_readiness_snapshot`, so no stored number still counts an approved swap; `DecksService.listForUser` and `getDetail` recompute a missing snapshot on the next read, as after the two earlier truncates (`1776785666000-TruncateDeckReadinessSnapshotForImageUrl.ts`) |
+| readiness at deploy | a deck that relied on approved swaps loses those copies from its headline readiness; they show as missing, each with its suggestion |
 | shopping line | unchanged: cards with a suggestion are still listed as upgrade candidates rather than in the primary list, as pending swaps were |
 | onboarding | the first-review step (`Step3FirstReview`) stops approving swaps one by one and offers using every suggestion at once, or skipping |
 | prior decisions | supersedes AD-005, AD-006 and AD-007; conforms to AD-009 (a use is a pick) and AD-003 (error codes); recorded as AD-012 |
@@ -48,10 +49,10 @@ Reuses the replacement pick (`ReplacementsService`, `card_replacement`, the `tra
 ```mermaid
 erDiagram
     tracked_deck ||--o{ card_replacement : "records picks and uses in"
-    tracked_deck ||--o{ swap_suggestion : "no longer written; approved rows converted, then dropped later"
+    tracked_deck ||--o{ swap_suggestion : "dropped (door 4)"
 ```
 
-One-way constraints: `card_replacement.pickedFrom` limited to eight values (door 1); a converted swap leaves exactly one active `card_replacement` per (deck, original card, slot) it covered (door 4).
+One-way constraints: `card_replacement.pickedFrom` limited to seven values (door 1); `swap_suggestion` no longer exists (door 4).
 No columns and no types here.
 
 ## Surface
@@ -66,12 +67,12 @@ No columns and no types here.
 
 | One-way door | Literal shape | Alternative rejected |
 | --- | --- | --- |
-| 1. replacement origins | `CHECK ("pickedFrom" IN ('very_close','close','other_pitch','generic','search','recommendation','suggested','swap'))`; `REPLACEMENT_PICK_ORIGINS` adds `suggested` only | one shared value for the one-click use and the converted swaps: it would make the conversion indistinguishable from the owner's own choices in `card_replacement`, the record AD-009 keeps for exactly that kind of question |
+| 1. replacement origins | `CHECK ("pickedFrom" IN ('very_close','close','other_pitch','generic','search','recommendation','suggested'))`; `REPLACEMENT_PICK_ORIGINS` adds `suggested` | recording a one-click use as `very_close` or `close`: the alternatives group of the suggested card is not what the owner chose from, and `card_replacement` is the record AD-009 keeps to tell picks from the list apart from other origins |
 | 2. readiness without approvals | `computeEffectiveReadiness` loses `approvedIdentifiers` and `excludedIdentifiers`; `effectivePercent = exact / total`; `substituted[]` entries carry no `approved` flag | keeping approvals as an engine input with nothing feeding it: dead input that every recompute path would still have to thread, and the import path at `decks-import.service.ts:205` already shows how such an input gets forgotten |
 | 3. bulk use route | `POST /api/decks/:deckId/replacements/suggested` -> `201 { replacements: IReplacement[], skipped: number }`; `409 NOTHING_TO_REPLACE` when the deck has no suggestion | looping the single pick route from the web: N requests, N recomputes and N lock waits for one click, and a partial failure leaves the deck half-converted with no single answer to show |
-| 4. approved swaps become picks | one-off script `convert-approved-swaps` run once after deploy, as `backfill-swap-suggestions` is: per approved swap, under the deck lock, move `min(quantity, copies still missing)` copies to the substitute and insert `card_replacement (pickedFrom 'swap', status 'active')`; skip when nothing is missing any more; recompute the deck | discarding approved swaps: every deck that relied on them loses readiness at deploy, with no record of what the owner had accepted; a TypeORM migration: migrations cannot call the engine to recompute, and the precedent for engine-aware data work is a script |
+| 4. swaps are discarded | migration `DROP TABLE "swap_suggestion"` and `TRUNCATE "deck_readiness_snapshot"` in this release, its `down` recreating the empty swap table; the entity, the reconciliation service, the backfill script and its deploy step are deleted | converting approved swaps into picks: the owner chose to discard them (2026-10-11); keeping the table unused for a later release: nothing would read it, and it would hold rows no code can interpret any more |
 
-- Nothing else in this change is hard to reverse: removing the Swaps page and panel is a code deletion, and the `swap_suggestion` table stays in place until a later release drops it.
+- Nothing else in this change is hard to reverse: removing the Swaps page and panel is a code deletion.
 
 ## Criteria
 
@@ -115,35 +116,22 @@ No number depends on an approval any more.
 14. The engine SHALL still compute `substituted` suggestions, `fidelityPercent` and `path` from the collection exactly as it did for a deck with no approved and no rejected swaps
 15. WHEN a deck import recomputes the owner's other decks THEN their headline readiness SHALL equal what a deck-page read computes for the same deck
 16. The hero medallion, the Home tiles and the Home average SHALL show the deck-as-it-is readiness
+17. WHEN the migration runs THEN `deck_readiness_snapshot` SHALL be empty, and the first read of the decks list or a deck page after it SHALL store a fresh snapshot for each deck it shows
 
 **Independent test:** engine unit tests over a deck with exact copies, suggestions and missing cards.
 
-### S4: approved swaps survive as picks (P1)
-
-Nothing the owner accepted is lost at deploy.
-
-**Acceptance Criteria**
-
-17. WHEN the conversion script runs THEN every `approved` swap whose original still has missing copies SHALL become one active `card_replacement` with `pickedFrom: swap`, its copies moved to the substitute in `deck_card`
-18. WHEN the conversion script runs THEN a deck's readiness after conversion SHALL be at least its `effectivePercent` before conversion
-19. IF an approved swap's original has no missing copies left THEN the script SHALL skip it and change nothing for it
-20. WHEN the conversion script runs a second time THEN it SHALL change nothing
-21. The script SHALL log one line per converted swap and one summary with converted, skipped and failed counts, and SHALL exit non-zero if any deck failed
-
-**Independent test:** run the script against a database seeded with approved, pending and rejected swaps.
-
-### S5: the swap feature is gone (P1)
+### S4: the swap feature is gone (P1)
 
 No screen, route or action about swaps remains.
 
 **Acceptance Criteria**
 
-22. The top bar and the bottom tab bar SHALL show no "Trocas" entry
-23. WHEN the owner opens `/swaps` or `/reviews` THEN the site SHALL redirect to `/`
-24. The deck page SHALL show no swaps panel, no "modified view" banner and no "Ver trocas" link
-25. The routes `GET /api/swaps` and `POST /api/swaps/:id/{approve,reject,revert,restore,outcome}` SHALL answer `404`
-26. WHEN any recompute runs THEN the system SHALL write no `swap_suggestion` row
-27. The status strip SHALL read, for a complete deck, "Sua coleção cobre o deck inteiro"; for a deck with missing cards and no suggestion, "Faltam N cartas"; and with suggestions, the copy in AC 6
+18. The top bar and the bottom tab bar SHALL show no "Trocas" entry
+19. WHEN the owner opens `/swaps` or `/reviews` THEN the site SHALL redirect to `/`
+20. The deck page SHALL show no swaps panel, no "modified view" banner and no "Ver trocas" link
+21. The routes `GET /api/swaps` and `POST /api/swaps/:id/{approve,reject,revert,restore,outcome}` SHALL answer `404`
+22. WHEN the migration runs THEN the database SHALL have no `swap_suggestion` table, and every recompute path SHALL run without reading or writing one
+23. The status strip SHALL read, for a complete deck, "Sua coleção cobre o deck inteiro"; for a deck with missing cards and no suggestion, "Faltam N cartas"; and with suggestions, the copy in AC 6
 
 **Independent test:** the visual baselines and the Playwright suite with the swaps specs replaced.
 
@@ -151,7 +139,6 @@ No screen, route or action about swaps remains.
 
 | Excluded | Why |
 | --- | --- |
-| dropping the `swap_suggestion` table | it must outlive the conversion run in production; a later release drops it in its own migration |
 | removing `effectivePercent` in favour of `rawPercent` | a field rename across every response and the Home; the value is already the same after this change |
 | the Gemini judging suggestions for missing cards | a separate improvement on top of the single flow; the engine's suggestion is unchanged here |
 | dismissing a suggestion ("not this one") | the swaps had rejection with reasons; with "Ver alternativas" one click away, a dismiss is not part of the merge |
@@ -162,18 +149,13 @@ No screen, route or action about swaps remains.
 
 | Assumption | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
-| what "Usar" does | a pick: the deck list changes, the original is remembered in `card_replacement`, and the "original returns" prompt offers going back when the card enters the collection | it is the model alternatives already use (AD-009); a pinned stand-in that keeps the imported list intact would need a new engine input and its own reconciliation, which is what is being removed | n |
-| approved swaps at deploy | converted into picks with `pickedFrom: swap` | the owner keeps every deck's readiness and a record of what he had accepted | n |
-| pending and rejected swaps at deploy | dropped with nothing kept; their reasons and notes are lost | pending ones reappear as suggestions on their own; rejection reasons and outcomes have no reader | n |
+| pending and rejected swaps at deploy | dropped with the table; their reasons and notes are lost | pending ones reappear as suggestions on their own; rejection reasons and outcomes have no reader | n |
 | the onboarding's first-review step | kept, offering "Usar as N cartas da coleção" or "Agora não" | removing the step would leave a new deck at its raw readiness with no hint that the collection can cover cards | n |
 | suggestion label | "da sua coleção" under the card name, "Usar" as the button | matches the alternatives sheet's "Usar" and says why this card is offered | n |
 
-**Open questions:**
+Decided by the owner on 2026-10-11: "Usar" changes the deck as a pick does (AD-009), not a pinned stand-in that keeps the imported list; approved swaps are discarded at deploy, not converted.
 
-| # | Kind | Question | Until answered |
-| --- | --- | --- | --- |
-| 1 | blocks | Should "Usar" change the deck list (a pick, as alternatives do), or keep the imported list and only count the card (a pinned stand-in)? | S1, S2 and S4 cannot be built; the default is a pick |
-| 2 | blocks go-live | Convert the approved swaps into picks at deploy, or let them go? | the conversion script (S4) does not run in production |
+**Open questions:** none - all resolved or logged above.
 
 ## Observable
 
@@ -185,20 +167,19 @@ No screen, route or action about swaps remains.
 | screen deck page · missing panel | unauthorised state | existing - the deck route redirects to sign-in |
 | screen deck page · missing panel | density and ordering | existing - the panel's current order; the suggestion adds one line per row (AC 1) |
 | screen deck page · missing panel | destructive action confirms | existing - a use is undone from the deck list's "Desfazer", as any pick |
-| screen deck page · status strip | copy per state | AC 6, AC 27 |
+| screen deck page · status strip | copy per state | AC 6, AC 23 |
 | screen deck page · status strip | error state | AC 9, AC 10 |
 | screen onboarding · first review | empty state | existing - with no suggestion the step shows its "looking good" variant, as it does today with no swaps (`Step3FirstReview.tsx:160`) |
-| screen Swaps page | removal | AC 22, AC 23 |
+| screen Swaps page | removal | AC 18, AC 19 |
 | API `POST /api/decks/:deckId/replacements/suggested` | response shape | AC 8 |
 | API `POST /api/decks/:deckId/replacements/suggested` | error shape and codes | AC 9, AC 11 |
 | API `POST /api/decks/:deckId/replacements/suggested` | who may call it | existing - `OwnsTrackedDeckGuard`, as the pick route |
 | API `POST /api/decks/:deckId/replacements/suggested` | rate limits | existing - the global throttle, as the pick route |
-| API `/api/swaps*` | removal and versioning | AC 25 - consumed only by this SPA, deployed with it |
-| command `convert-approved-swaps` | output and exit codes | AC 21 |
-| command `convert-approved-swaps` | failing halfway | AC 20 - each deck converts in its own transaction, and a rerun converts only what is left |
+| API `/api/swaps*` | removal and versioning | AC 21 - consumed only by this SPA, deployed with it |
 
 ## Sources
 
+- The owner's answers on 2026-10-11: "Muda o deck" and "Descartar".
 - The owner's request on 2026-10-11 after testing staging: "a parte de swaps não faz mais sentido ... as recomendações fazem isso muito melhor ... de uma maneira pior e duplicada"; the merge into alternatives was proposed in reply and he asked for this plan.
 - `.specs/STATE.md` AD-005, AD-006, AD-007 (superseded) and AD-009 (conformed to).
 - `.design/card-alternatives.md` - the pick model, the "original returns" prompt, and the swap-lifecycle defects it logged as separate work.
