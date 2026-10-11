@@ -6,7 +6,6 @@ import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { StoresModule } from '../stores/stores.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
-import { SwapsCoreModule } from '../swaps/swaps-core.module';
 import { AlternativesService } from './alternatives.service';
 import { ReplacementsController } from './replacements.controller';
 import { ReplacementsCoreModule } from './replacements-core.module';
@@ -20,7 +19,6 @@ import { RecommendationsCoreModule } from '../recommendations/recommendations-co
     CollectionModule,
     StoresModule,
     SubstitutionModule,
-    SwapsCoreModule,
     ReplacementsCoreModule,
     RecommendationsCoreModule,
   ],

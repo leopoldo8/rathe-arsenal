@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../api/deck-detail';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { IAlternativesTarget } from '../../api/replacements';
-import type { ISwapRow } from '../../api/swaps';
 import type { ITagResponse } from '../../api/tags';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { AlternativesSheet } from './AlternativesSheet';
@@ -11,11 +10,10 @@ import { DeckAnalysisRow } from './DeckAnalysisRow';
 import { DeckHeroBanner } from './DeckHeroBanner';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
-import { ModifiedViewBanner } from './ModifiedViewBanner';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
 import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
-import { summariseDeck } from './deckDetailModel';
+import { findSuggestions, summariseDeck } from './deckDetailModel';
 import { buildDeckList } from './deckListModel';
 import styles from './DeckDetailView.module.css';
 
@@ -29,13 +27,6 @@ interface IDeckDetailViewProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly deckSwaps: readonly ISwapRow[];
-  readonly pendingSwapId: string | null;
-  readonly onApproveSwap: (swapId: string) => void;
-  readonly onRejectSwap: (swapId: string) => void;
-  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
-  readonly onClearRejections: () => void;
-  readonly isClearingRejections: boolean;
   readonly onFetchVariants: () => void;
   readonly fetchMutationStatus: TVariantFetchMutationStatus;
   readonly isCooldownActive: boolean;
@@ -53,13 +44,6 @@ export function DeckDetailView({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  deckSwaps,
-  pendingSwapId,
-  onApproveSwap,
-  onRejectSwap,
-  onUndoSwap,
-  onClearRejections,
-  isClearingRejections,
   onFetchVariants,
   fetchMutationStatus,
   isCooldownActive,
@@ -71,15 +55,14 @@ export function DeckDetailView({
     () =>
       summariseDeck({
         pct: snapshot.effectivePercent,
-        path: snapshot.path,
         breakdown: snapshot.breakdown,
-        swaps: deckSwaps,
+        replacements: deck.replacements,
       }),
-    [snapshot, deckSwaps],
+    [snapshot, deck.replacements],
   );
-  const rejectedCount = useMemo(
-    () => deckSwaps.filter((swap) => swap.status === 'rejected').length,
-    [deckSwaps],
+  const suggestions = useMemo(
+    () => findSuggestions(snapshot.breakdown, deck.replacements),
+    [snapshot.breakdown, deck.replacements],
   );
   const items = useMemo(
     () => buildDeckList(snapshot.breakdown, summary.openMissing),
@@ -117,37 +100,22 @@ export function DeckDetailView({
         <TagChipRow deckId={deck.id} tags={tags} />
       </div>
       <DeckStatusStrip
+        deckId={deck.id}
         summary={summary}
         fabraryUlid={deck.fabraryUlid}
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
-        reachPercent={
-          Math.round(snapshot.fidelityPercent) > Math.round(snapshot.rawPercent)
-            ? Math.round(snapshot.fidelityPercent)
-            : null
-        }
       />
-      {rejectedCount > 0 && (
-        <ModifiedViewBanner
-          rejectedCount={rejectedCount}
-          onClearRejections={onClearRejections}
-          isClearing={isClearingRejections}
-        />
-      )}
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (
         <DeckActionPanels
-          breakdown={snapshot.breakdown}
-          deckSwaps={deckSwaps}
+          deckId={deck.id}
           openMissing={summary.openMissing}
+          suggestions={suggestions}
           shoppingData={shoppingData}
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
-          pendingSwapId={pendingSwapId}
-          onApproveSwap={onApproveSwap}
-          onRejectSwap={onRejectSwap}
-          onUndoSwap={onUndoSwap}
           onFetchVariants={onFetchVariants}
           fetchMutationStatus={fetchMutationStatus}
           isCooldownActive={isCooldownActive}

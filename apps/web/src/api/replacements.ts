@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
-import { deckDetailQueryKey } from './deck-detail';
-import { SWAPS_QUERY_KEY, type IRationaleDetail } from './swaps';
+import { deckDetailQueryKey, type IRationaleDetail } from './deck-detail';
 
 export type TAlternativeGroup = 'very_close' | 'close' | 'other_pitch' | 'generic' | 'search';
 
@@ -48,7 +47,12 @@ export interface IPickReplacementVariables {
   readonly originalCardIdentifier: string;
   readonly slot: string;
   readonly replacementCardIdentifier: string;
-  readonly pickedFrom: TAlternativeGroup;
+  readonly pickedFrom: TAlternativeGroup | 'suggested';
+}
+
+export interface ISuggestedUsesResponse {
+  readonly replacements: readonly unknown[];
+  readonly skipped: number;
 }
 
 export type TResolveAction = 'revert' | 'keep';
@@ -79,12 +83,11 @@ export function useAlternativesQuery(deckId: number, target: IAlternativesTarget
   });
 }
 
-/** A pick, an undo or a keep changes the deck list, readiness and the swaps shown, so all three refresh. */
+/** A pick, an undo or a keep changes the deck list and readiness, so both refresh. */
 function useRefreshDeck(deckId: number): () => void {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(String(deckId)) });
-    void queryClient.invalidateQueries({ queryKey: SWAPS_QUERY_KEY });
     void queryClient.invalidateQueries({ queryKey: ['decks'] });
   };
 }
@@ -101,6 +104,20 @@ export function usePickReplacement(deckId: number) {
       }),
     onSuccess: refresh,
     // A refused pick means the deck moved on since the list was fetched.
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(String(deckId)) });
+    },
+  });
+}
+
+/** Uses every suggestion of the deck at once. */
+export function useUseSuggestions(deckId: number) {
+  const apiFetch = useApiClient();
+  const refresh = useRefreshDeck(deckId);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<ISuggestedUsesResponse>(`/decks/${deckId}/replacements/suggested`, { method: 'POST' }),
+    onSuccess: refresh,
     onError: () => {
       void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(String(deckId)) });
     },

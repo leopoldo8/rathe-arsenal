@@ -8,7 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { SWAPS_MIGRATION_PAYLOAD } from '../../swaps/legacy-routes-gone';
+import { SWAPS_MIGRATION_PAYLOAD } from '../../common/legacy-routes-gone';
 
 /**
  * Deprecation stub for the old re-solve endpoints. All three endpoints now

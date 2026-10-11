@@ -15,7 +15,6 @@ import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { SubstitutionService } from '../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
 import { computeNeeded } from './compute-needed';
 import { replacementConflict } from './replacement-errors';
 import { ReplacementsQueryService } from './replacements-query.service';
@@ -62,7 +61,6 @@ export class AlternativesService {
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
     private readonly substitutionService: SubstitutionService,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly replacementsQueryService: ReplacementsQueryService,
     private readonly collectionReadService: CollectionReadService,
     private readonly shoppingLineService: ShoppingLineService,
@@ -71,19 +69,13 @@ export class AlternativesService {
 
   async list({ userId, deckId, cardIdentifier, slot, query }: IAlternativesRequest): Promise<IAlternativesResponse> {
     const deck = await this.trackedDecks.findOne({ where: { id: deckId, userId } });
-    const [deckCardRows, activeReplacements, readinessInputs] = await Promise.all([
+    const [deckCardRows, activeReplacements] = await Promise.all([
       this.deckCards.find({ where: { trackedDeckId: deckId } }),
       this.replacementsQueryService.loadActive(deckId),
-      this.swapSuggestionQueryService.loadReadinessInputs(deckId),
     ]);
 
     // A fresh compute, not the stored snapshot: the collection may have changed since it was written.
-    const readiness = await this.substitutionService.computeReadinessWithExclusions(
-      deckId,
-      userId,
-      readinessInputs.excludedIdentifiers,
-      readinessInputs.approvedIdentifiers,
-    );
+    const readiness = await this.substitutionService.computeReadiness(deckId, userId);
     const needed = computeNeeded(readiness.breakdown.notOwned, activeReplacements, cardIdentifier, slot);
     const missing = this.findCard(cardIdentifier);
     if (needed === 0 || missing === null || deck === null) throw replacementConflict('NOTHING_TO_REPLACE');

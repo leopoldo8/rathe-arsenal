@@ -1,67 +1,78 @@
-import React from 'react';
-import { Link } from '@tanstack/react-router';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SWAPS_LINK_SEARCH, type IDeckSummary, type TStripKind } from './deckDetailModel';
+import { useUseSuggestions } from '../../api/replacements';
+import { localizeApiError } from '../card-scanner/localize-api-error';
+import { Button } from '../ui/Button/Button';
+import type { IDeckSummary, TStripKind } from './deckDetailModel';
 import styles from './DeckStatusStrip.module.css';
 
 export const MISSING_PANEL_ID = 'deck-missing-panel';
 
 interface IDeckStatusStripProps {
+  readonly deckId: number;
   readonly summary: IDeckSummary;
   readonly fabraryUlid: string | null;
   readonly offFormat?: string | null;
-  readonly reachPercent?: number | null;
 }
 
 const TONE_CLASS: Readonly<Record<TStripKind, string>> = {
   complete: styles.toneComplete ?? '',
-  solvable: styles.toneSolvable ?? '',
+  suggestions: styles.toneSolvable ?? '',
   incomplete: styles.toneIncomplete ?? '',
 };
 
-function useStripMessage(summary: IDeckSummary, offFormat: string | null, reachPercent: number | null): string {
+function useStripMessage(summary: IDeckSummary, offFormat: string | null): string {
   const { t } = useTranslation();
   if (summary.kind === 'complete') {
     return offFormat ? t('deckDetail.stripCompleteOffFormat', { format: offFormat }) : t('deckDetail.stripComplete');
   }
-  if (summary.kind === 'solvable') {
-    return t('deckDetail.stripSolvable', { count: summary.pendingSwaps });
+  const gap = `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
+  if (summary.kind === 'incomplete') return gap;
+  return `${gap} ${t('deckDetail.stripCoverable', { count: summary.suggestionCount })}`;
+}
+
+function UseSuggestionsButton({ deckId, count }: { readonly deckId: number; readonly count: number }): React.ReactElement {
+  const { t } = useTranslation();
+  const useSuggestions = useUseSuggestions(deckId);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleUse(): void {
+    setError(null);
+    useSuggestions.mutate(undefined, { onError: (failure) => setError(localizeApiError(failure, t)) });
   }
 
-  const gap = t('deckDetail.stripMissingCards', { count: summary.missingCards });
-  const progress: string[] = [];
-  if (summary.approvedSwaps > 0) {
-    progress.push(t('deckDetail.stripApplied', { count: summary.approvedSwaps }));
-    if (summary.pendingSwaps > 0) {
-      progress.push(t('deckDetail.stripWaiting', { count: summary.pendingSwaps }));
-    }
-    return `${gap} — ${progress.join(', ')}.`;
-  }
-  if (summary.pendingSwaps === 0) return `${gap} — ${t('deckDetail.stripNoSwaps')}.`;
-  const closer = t('deckDetail.stripPendingCloser', { count: summary.pendingSwaps });
-  const unsolved =
-    summary.unsolvedCards > 0
-      ? ` ${t('deckDetail.stripUnsolved', { count: summary.unsolvedCards })}`
-      : '';
-  const reach =
-    reachPercent !== null
-      ? ` ${t('deckDetail.stripReachesWithSwaps', { count: summary.pendingSwaps, pct: reachPercent })}`
-      : '';
-  return `${gap} — ${closer}${unsolved}.${reach}`;
+  return (
+    <>
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onClick={handleUse}
+        disabled={useSuggestions.isPending}
+        data-testid="strip-use-suggestions"
+      >
+        {t('deckDetail.useSuggestions', { count })}
+      </Button>
+      {error !== null && (
+        <p role="alert" className={styles.error} data-testid="strip-use-error">
+          {error}
+        </p>
+      )}
+    </>
+  );
 }
 
 export function DeckStatusStrip({
+  deckId,
   summary,
   fabraryUlid,
   offFormat = null,
-  reachPercent = null,
 }: IDeckStatusStripProps): React.ReactElement {
   const { t } = useTranslation();
-  const message = useStripMessage(summary, offFormat, reachPercent);
-  const hasSwaps = summary.pendingSwaps + summary.approvedSwaps > 0;
-  const showSwapsLink = summary.kind !== 'complete' && hasSwaps;
-  const showShoppingLink = summary.kind === 'incomplete' && summary.missingCards > 0;
-  const showFabrary = summary.kind === 'incomplete' && fabraryUlid !== null;
+  const message = useStripMessage(summary, offFormat);
+  const showUse = summary.kind === 'suggestions';
+  const showShoppingLink = summary.kind !== 'complete' && summary.missingCards > 0;
+  const showFabrary = summary.kind !== 'complete' && fabraryUlid !== null;
   const tone = summary.kind === 'complete' && offFormat ? TONE_CLASS.incomplete : TONE_CLASS[summary.kind];
   const stripClass = [styles.strip, tone].join(' ');
 
@@ -75,13 +86,9 @@ export function DeckStatusStrip({
       <p className={styles.message} data-testid="deck-status-strip-message">
         {message}
       </p>
-      {(showSwapsLink || showShoppingLink || showFabrary) && (
+      {(showUse || showShoppingLink || showFabrary) && (
         <div className={styles.actions}>
-          {showSwapsLink && (
-            <Link to="/swaps" search={SWAPS_LINK_SEARCH} className={styles.action} data-testid="strip-view-swaps">
-              {t('deckDetail.seeSwaps')}
-            </Link>
-          )}
+          {showUse && <UseSuggestionsButton deckId={deckId} count={summary.suggestionCount} />}
           {showShoppingLink && (
             <a href={`#${MISSING_PANEL_ID}`} className={styles.action} data-testid="strip-view-shopping">
               {t('deckDetail.seeShopping')}

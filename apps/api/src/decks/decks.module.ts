@@ -21,7 +21,6 @@ import { AuthModule } from '../auth/auth.module';
 import { StoresModule } from '../stores/stores.module';
 import { DecisionsController } from './decisions/decisions.controller';
 import { HeroIdentifierExistsInCatalog } from './validators/hero-identifier-exists.validator';
-import { SwapsCoreModule } from '../swaps/swaps-core.module';
 import { ReplacementsCoreModule } from '../replacements/replacements-core.module';
 import { RecommendationsCoreModule } from '../recommendations/recommendations-core.module';
 
@@ -39,7 +38,6 @@ import { RecommendationsCoreModule } from '../recommendations/recommendations-co
     CollectionModule,
     AuthModule,
     StoresModule,
-    SwapsCoreModule,
     ReplacementsCoreModule,
     RecommendationsCoreModule,
   ],

@@ -22,7 +22,6 @@ import { ApiError } from '../../../lib/api-client';
 import { RecommendationsRail } from '../recommendations/RecommendationsRail';
 import type { IRecommendationDeckCard } from '../recommendations/card-naming';
 import { deckDetailQueryKey } from '../../../api/deck-detail';
-import { SWAPS_QUERY_KEY } from '../../../api/swaps';
 import { ptBR } from '../../../i18n/locales/pt-BR';
 
 const DECK_ID = 7;
@@ -402,7 +401,7 @@ describe('RecommendationsRail', () => {
     const decksKey = JSON.stringify(['decks']);
 
     expect(await keysAfter(() => user.click(within(card).getByRole('button', { name: 'Usar Adrenaline Rush no deck' })))).toEqual(
-      [decksKey, recommendationsKey, JSON.stringify(deckDetailQueryKey(String(DECK_ID))), JSON.stringify(SWAPS_QUERY_KEY)].sort(),
+      [decksKey, recommendationsKey, JSON.stringify(deckDetailQueryKey(String(DECK_ID)))].sort(),
     );
     const freshCard = await screen.findByTestId('recommendation-row');
     expect(

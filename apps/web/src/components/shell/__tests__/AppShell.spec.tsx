@@ -8,7 +8,7 @@
  *  - A11y: correct landmark roles and aria-labels
  *  - Theme toggle: updates documentElement dataset.theme + localStorage
  *  - Sign out: calls signOut + navigates to /sign-in
- *  - Placeholder routes: /library and /swaps render "Coming in v1" stub
+ *  - Placeholder routes: /library renders "Coming in v1" stub
  */
 
 import React from 'react';
@@ -138,13 +138,13 @@ describe('AppShell — happy path', () => {
     expect(main).toHaveTextContent('page content');
   });
 
-  it('renders primary nav with Home, Library, Swaps links (no Import)', () => {
+  it('renders primary nav with Home and Library links (no Swaps, no Import)', () => {
     render(<AppShell><div /></AppShell>);
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     expect(nav).toBeInTheDocument();
     expect(nav).toHaveTextContent('Início');
     expect(nav).toHaveTextContent('Biblioteca');
-    expect(nav).toHaveTextContent('Trocas');
+    expect(nav).not.toHaveTextContent('Trocas');
     expect(nav).not.toHaveTextContent('Import');
   });
 

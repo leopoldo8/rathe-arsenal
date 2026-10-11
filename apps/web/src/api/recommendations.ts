@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { deckDetailQueryKey } from './deck-detail';
 import type { IAlternativeImageUrl } from './replacements';
-import { SWAPS_QUERY_KEY } from './swaps';
 
 export type TRecommendationStrength = 'clear_upgrade' | 'consider';
 
@@ -137,7 +136,7 @@ export function useUndismissRecommendation(deckId: number) {
   });
 }
 
-/** An adoption changes the deck list, readiness, swaps, the decks list and the recommendations shown. */
+/** An adoption changes the deck list, readiness, the decks list and the recommendations shown. */
 export function useAdoptRecommendation(deckId: number) {
   const apiFetch = useApiClient();
   const queryClient = useQueryClient();
@@ -151,7 +150,6 @@ export function useAdoptRecommendation(deckId: number) {
     onSuccess: () => {
       refresh();
       void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(String(deckId)) });
-      void queryClient.invalidateQueries({ queryKey: SWAPS_QUERY_KEY });
     },
   });
 }

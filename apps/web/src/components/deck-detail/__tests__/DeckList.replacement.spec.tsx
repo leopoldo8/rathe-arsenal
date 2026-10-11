@@ -117,7 +117,6 @@ describe('DeckList replacement marks', () => {
     await waitFor(() => {
       const keys = spy.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
       expect(keys).toContain(JSON.stringify(['deck-detail', String(DECK_ID)]));
-      expect(keys).toContain(JSON.stringify(['swaps']));
     });
   });
 
@@ -152,7 +151,7 @@ describe('DeckList replacement marks', () => {
 
     const keys = spy.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
     expect(keys.filter((key) => key === JSON.stringify(['deck-detail', String(DECK_ID)]))).toHaveLength(2);
-    expect(keys.filter((key) => key === JSON.stringify(['swaps']))).toHaveLength(2);
+    expect(keys.filter((key) => key === JSON.stringify(['decks']))).toHaveLength(2);
   });
 });
 

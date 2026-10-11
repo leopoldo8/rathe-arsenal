@@ -5,7 +5,6 @@ import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { DeckReadinessSnapshotEntity } from '../../database/entities/deck-readiness-snapshot.entity';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +61,6 @@ export class SourcesService {
     @InjectRepository(DeckReadinessSnapshotEntity)
     private readonly snapshotRepo: Repository<DeckReadinessSnapshotEntity>,
     private readonly dataSource: DataSource,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly substitutionService: SubstitutionService,
   ) {}
 
@@ -344,14 +342,7 @@ export class SourcesService {
 
     for (const deck of decks) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
-        await this.substitutionService.computeAndStoreReadiness(
-          deck.id,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
       } catch (error) {
         this.logger.warn({
           msg: 'Failed to recompute readiness for deck after source deletion',
@@ -387,14 +378,7 @@ export class SourcesService {
 
     for (const deck of decks) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
-        await this.substitutionService.computeAndStoreReadiness(
-          deck.id,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
       } catch (error) {
         this.logger.warn({
           msg: 'Failed to recompute readiness for deck after source change',

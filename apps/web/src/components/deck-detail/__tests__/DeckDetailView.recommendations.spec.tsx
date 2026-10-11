@@ -10,7 +10,6 @@ vi.mock('../DeckStatusStrip', () => ({ DeckStatusStrip: () => <div data-testid="
 vi.mock('../DeckAnalysisRow', () => ({ DeckAnalysisRow: () => <div data-testid="analysis-row" /> }));
 vi.mock('../DeckList', () => ({ DeckList: () => <div data-testid="deck-list" /> }));
 vi.mock('../MissingPanel', () => ({ MissingPanel: () => <section data-testid="missing-panel" /> }));
-vi.mock('../SwapsPanel', () => ({ SwapsPanel: () => <section data-testid="deck-swaps-panel" /> }));
 vi.mock('../recommendations/RecommendationsRail', () => ({
   RecommendationsRail: ({ deckCards, heroName }: { deckCards: unknown[]; heroName: string }) => (
     <section data-testid="recommendations-panel" data-cards={deckCards.length} data-hero={heroName} />
@@ -64,13 +63,6 @@ function renderView(pct: number, missing: boolean): void {
       onMarkOwned={noop}
       isMarkingOwned={false}
       pendingCard={null}
-      deckSwaps={[]}
-      pendingSwapId={null}
-      onApproveSwap={noop}
-      onRejectSwap={noop}
-      onUndoSwap={noop}
-      onClearRejections={noop}
-      isClearingRejections={false}
       onFetchVariants={noop}
       fetchMutationStatus="idle"
       isCooldownActive={false}

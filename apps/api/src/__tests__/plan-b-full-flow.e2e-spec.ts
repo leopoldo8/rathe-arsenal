@@ -3,7 +3,7 @@
  *
  * Exercises the complete Plan B API chain end-to-end:
  *   sign-up → email verify → sign-in → CSV upload → deck import →
- *   GET swaps (pending) → approve swap → assert readiness improved →
+ *   use the suggestions → assert readiness improved →
  *   source toggle (active=false) → assert readiness drops
  *
  * This spec replaces the retired Gate 2 presencial walkthrough per
@@ -28,7 +28,7 @@
  * - The substitution engine proposes coax-a-commotion-red as a tier-1
  *   substitute for emissary-of-tides-red (delta power=0, def=0, same class,
  *   no keyword mismatch). Score=1.0, clears tier-1 floor (0.9).
- * - This produces 2 entries in breakdown.substituted → 1 pending swap row (both copies collapse into one group).
+ * - This produces 2 entries in breakdown.substituted → one suggestion for that card.
  */
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -95,7 +95,7 @@ const FIXTURE_FABRARY_URL =
  *   - missing[]:     talishar-the-lost-prince (weapon, non-substitutable)
  *                    katsu-the-wanderer (hero, non-substitutable)
  *
- * Therefore breakdown.substituted.length = 2 → 1 pending swap row (both copies collapse into one group).
+ * Therefore breakdown.substituted.length = 2 → one suggestion for that card.
  */
 const FIXTURE_DECK_DTO: IDeckImportDto = {
   ulid: '01HPABCDEFGHJKMN0000000QR1',
@@ -215,7 +215,7 @@ describe('Plan B full flow (E2E, U11)', () => {
   });
 
   it(
-    'completes sign-up → CSV upload → deck import → swap approve → source toggle flow',
+    'completes sign-up → CSV upload → deck import → use suggestions → source toggle flow',
     async () => {
       const server = app.getHttpServer();
 
@@ -291,35 +291,19 @@ describe('Plan B full flow (E2E, U11)', () => {
       expect(snapshot).not.toBeNull();
 
       // -----------------------------------------------------------------------
-      // Step 5: GET /api/swaps?state=pending -> expect >=1 pending row
-      //
-      // The fixture deck has emissary-of-tides-red (qty 2) that the user does
-      // not own. The readiness engine proposes coax-a-commotion-red as a tier-1
-      // substitute (same pitch/class/type, power delta=0, def delta=0, score=1.0).
-      // Both missing copies collapse into one persisted group (quantity=2).
+      // Step 5: the deck read suggests coax-a-commotion-red, the owned
+      // same-profile card, for both missing copies of emissary-of-tides-red.
       // -----------------------------------------------------------------------
-      const swapsRes = await request(server)
-        .get('/api/swaps')
-        .query({ state: 'pending' })
+      const detailRes = await request(server)
+        .get(`/api/decks/${deckId}`)
         .set('Authorization', `Bearer ${bearerJwt}`)
         .expect(200);
-
-      const rows: unknown = swapsRes.body.rows;
-      expect(Array.isArray(rows)).toBe(true);
-      const pendingRows = rows as Array<{
-        id: string;
-        trackedDeckId: number;
-        status: string;
-        substituteIdentifier: string;
+      const substituted = detailRes.body.latestSnapshot.breakdown.substituted as Array<{
+        original: { cardIdentifier: string };
+        match: { substitute: { cardIdentifier: string } };
       }>;
-      expect(pendingRows.length).toBeGreaterThanOrEqual(1);
-
-      const firstRow = pendingRows[0];
-      expect(firstRow).toBeDefined();
-      expect(firstRow?.trackedDeckId).toBe(deckId);
-      expect(firstRow?.status).toBe('pending');
-      const pendingSwapId = firstRow?.id as string;
-      expect(typeof pendingSwapId).toBe('string');
+      expect(substituted.length).toBeGreaterThanOrEqual(1);
+      expect(substituted[0]?.original.cardIdentifier).toBe('emissary-of-tides-red');
 
       // -----------------------------------------------------------------------
       // Step 6: GET /api/decks → capture effectivePercent before approval
@@ -341,16 +325,15 @@ describe('Plan B full flow (E2E, U11)', () => {
       const effectiveBefore = deckRowBefore?.latestSnapshot?.effectivePercent ?? 0;
 
       // -----------------------------------------------------------------------
-      // Step 7: POST /api/swaps/:id/approve -- approve the first pending row
+      // Step 7: use every suggestion of the deck at once
       // -----------------------------------------------------------------------
-      const approveRes = await request(server)
-        .post(`/api/swaps/${pendingSwapId}/approve`)
+      const useRes = await request(server)
+        .post(`/api/decks/${deckId}/replacements/suggested`)
         .set('Authorization', `Bearer ${bearerJwt}`)
-        .expect(200);
+        .expect(201);
 
-      expect(approveRes.body.deckId).toBe(deckId);
-      expect(approveRes.body.swap.id).toBe(pendingSwapId);
-      expect(approveRes.body.swap.status).toBe('approved');
+      expect(useRes.body.skipped).toBe(0);
+      expect(useRes.body.replacements.length).toBeGreaterThanOrEqual(1);
 
       // The retired reviews/decisions routes answer 410 behind the real
       // global guards and prefix, not just in an isolated controller.
@@ -364,24 +347,8 @@ describe('Plan B full flow (E2E, U11)', () => {
         .expect(410);
 
       // -----------------------------------------------------------------------
-      // Step 8: GET /api/decks → effectivePercent should be strictly higher
-      // than before approval.
-      //
-      // D7/SWAP-13: only *approved* substitutions count toward
-      // effectivePercent. Before this approval, the engine had already
-      // found the coax-a-commotion-red substitution (breakdown.substituted
-      // is non-empty, which is why step 5's GET /api/swaps returned
-      // pending rows at all) but it did not count -- effectiveBefore
-      // reflects exact-owned coverage only. The approve call above
-      // updates the swap_suggestion row, which -- because both missing copies of
-      // emissary-of-tides-red resolve to the same substitute and collapse
-      // into one persisted group (quantity=2, AD-007) -- approves both
-      // copies in a single write. The very next recompute (triggered by
-      // the approve's post-commit phase) then finds the same substitution
-      // again with its key now present in approvedIdentifiers, so it
-      // counts. This is the D7 owner-accepted behavior change from the
-      // pre-redesign engine, where every found substitution counted
-      // unconditionally and approval was inert.
+      // Step 8: GET /api/decks → effectivePercent rises: the suggestion now
+      // sits in the deck and the collection owns it.
       // -----------------------------------------------------------------------
       const decksAfterApproveRes = await request(server)
         .get('/api/decks')
@@ -400,9 +367,6 @@ describe('Plan B full flow (E2E, U11)', () => {
       const effectiveAfterApprove =
         deckRowAfterApprove?.latestSnapshot?.effectivePercent ?? 0;
 
-      // D7/SWAP-13: the pending substitution did not count before approval;
-      // approving it moves the deck from "found but not counted" to
-      // "counted" -- effectivePercent must strictly rise, not just hold.
       expect(effectiveAfterApprove).toBeGreaterThan(effectiveBefore);
 
       // -----------------------------------------------------------------------

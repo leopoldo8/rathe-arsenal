@@ -277,7 +277,6 @@ describe('AlternativesSheet', () => {
       });
       const keys = invalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
       expect(keys).toContain(JSON.stringify(['deck-detail', String(DECK_ID)]));
-      expect(keys).toContain(JSON.stringify(['swaps']));
 
       onClose.mockReset();
       await userEvent.type(screen.getByRole('searchbox'), 'si');

@@ -74,6 +74,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: AC 26, AC 31, AC 33 (web/animation)
 - last seen: 2026-10-11T06:03:48Z
 
+### L-020 - A proof through a path that catches and logs its own failure (deck import recompute) must assert the side effect, such as a new snapshot row, never only the HTTP status.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `apps/api` · harmful: 0
+- features: swaps-into-alternatives
+- evidence: apps/api/src/decks/import/decks-import.service.ts:205 (apps/api)
+- last seen: 2026-10-11T09:06:13Z
+
+### L-021 - A removal proof written as a negated git grep must exclude test files that name the removed thing to assert its absence, and must be run once before the checks are approved.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: swaps-into-alternatives
+- evidence: checks.md C34, C36 (checks)
+- last seen: 2026-10-11T09:06:13Z
+
+### L-022 - Before naming a single test with -t as a proof, run it alone; int-specs whose tests share one seeded schema must be proven as the whole file.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: swaps-into-alternatives
+- evidence: checks.md C35 (checks)
+- last seen: 2026-10-11T09:06:13Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

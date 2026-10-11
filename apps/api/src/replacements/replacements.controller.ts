@@ -17,7 +17,7 @@ import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
 import { AlternativesService, IAlternativesResponse } from './alternatives.service';
 import { AlternativesQueryDto } from './dtos/alternatives-query.dto';
 import { PickReplacementDto } from './dtos/pick-replacement.dto';
-import { IReplacementResponse, ReplacementsService } from './replacements.service';
+import { IReplacementResponse, ISuggestedUsesResponse, ReplacementsService } from './replacements.service';
 
 @Controller()
 export class ReplacementsController {
@@ -51,6 +51,16 @@ export class ReplacementsController {
     @CurrentUser() user: ICurrentUser,
   ): Promise<{ replacement: IReplacementResponse }> {
     return { replacement: await this.replacementsService.pick(user.userId, deckId, body) };
+  }
+
+  @Post('decks/:deckId/replacements/suggested')
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.CREATED)
+  useSuggestions(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ISuggestedUsesResponse> {
+    return this.replacementsService.useSuggestions(user.userId, deckId);
   }
 
   @Post('replacements/:id/revert')

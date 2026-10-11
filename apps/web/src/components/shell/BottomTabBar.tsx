@@ -30,22 +30,9 @@ function LibraryIcon(): React.ReactElement {
   );
 }
 
-function ReviewsIcon(): React.ReactElement {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
-    </svg>
-  );
-}
-
 /**
  * BottomTabBar — fixed bottom navigation, visible only <960px.
- * 3 equal-width items with icon + short label.
- * Each item min-width 107px to fit 3 items at 320px viewport.
+ * Equal-width items with icon + short label.
  * Active state uses brass accent.
  */
 export function BottomTabBar(): React.ReactElement {
@@ -54,11 +41,10 @@ export function BottomTabBar(): React.ReactElement {
   const activeNavKey = resolveActiveNavKey(pathname);
 
   // /home is handled separately with a typed Link+search prop.
-  // /library and /swaps use string-typed `to` so TypeScript does not enforce
-  // their route-specific search params here — their validateSearch accepts empty.
+  // /library uses a string-typed `to` so TypeScript does not enforce
+  // its route-specific search params here — its validateSearch accepts empty.
   const otherTabItems: readonly ITabItem[] = [
     { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon />, key: 'library' },
-    { to: '/swaps', label: t('shell.navSwaps'), icon: <ReviewsIcon />, key: 'swaps' },
   ];
 
   const homeActive = activeNavKey === 'home';

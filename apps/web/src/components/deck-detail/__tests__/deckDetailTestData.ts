@@ -3,8 +3,6 @@ import type {
   IBreakdownEntry,
   ISubstitutedEntry,
 } from '../../../api/deck-detail';
-import type { TSwapStatus } from '../../../api/swaps';
-import type { IDeckSwap } from '../deckDetailModel';
 
 export function entry(overrides: Partial<IBreakdownEntry> = {}): IBreakdownEntry {
   return {
@@ -24,15 +22,16 @@ export function swap(
   original: Partial<IBreakdownEntry>,
   substituteId: string,
   score = 0.92,
+  substitute: { readonly name?: string; readonly pitch?: number | null } = {},
 ): ISubstitutedEntry {
   return {
     original: entry(original),
     match: {
       substitute: {
         cardIdentifier: substituteId,
-        name: `Sub ${substituteId}`,
+        name: substitute.name ?? `Sub ${substituteId}`,
         classes: [],
-        pitch: null,
+        pitch: substitute.pitch ?? null,
         power: null,
         defense: null,
         keywords: [],
@@ -55,23 +54,4 @@ export function breakdown(overrides: Partial<IBreakdown> = {}): IBreakdown {
     notOwned: overrides.notOwned ?? [...missing, ...substituted.map((s) => s.original)],
     ...overrides,
   };
-}
-
-export function deckSwap(
-  cardIdentifier: string,
-  substituteIdentifier: string,
-  status: TSwapStatus,
-  slot = 'mainboard',
-): IDeckSwap {
-  return { cardIdentifier, slot, substituteIdentifier, status };
-}
-
-export function storedSwap(
-  id: string,
-  cardIdentifier: string,
-  substituteIdentifier: string,
-  quantity: number,
-  status: TSwapStatus = 'pending',
-): IDeckSwap & { readonly id: string; readonly quantity: number } {
-  return { id, quantity, ...deckSwap(cardIdentifier, substituteIdentifier, status) };
 }

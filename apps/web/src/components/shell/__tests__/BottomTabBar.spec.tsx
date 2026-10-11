@@ -2,7 +2,7 @@
  * BottomTabBar tests — Unit 9
  *
  * Covers:
- *  - Happy path: 3 tab items (Home / Library / Swaps), no Import
+ *  - Happy path: 2 tab items (Home / Library), no Swaps, no Import
  *  - A11y: mobile nav has correct aria-label
  *  - No /import data-to attribute
  */
@@ -53,11 +53,11 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('BottomTabBar — tab items', () => {
-  it('renders exactly 3 tab links', () => {
+  it('renders exactly 2 tab links', () => {
     render(<BottomTabBar />);
     const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
     const links = nav.querySelectorAll('a');
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(2);
   });
 
   it('renders the Home tab', () => {
@@ -70,9 +70,10 @@ describe('BottomTabBar — tab items', () => {
     expect(screen.getByText('Biblioteca')).toBeInTheDocument();
   });
 
-  it('renders the Swaps tab', () => {
-    render(<BottomTabBar />);
-    expect(screen.getByText('Trocas')).toBeInTheDocument();
+  it('has no swaps entry', () => {
+    const { container } = render(<BottomTabBar />);
+    expect(screen.queryByText('Trocas')).toBeNull();
+    expect(container.querySelector('a[href^="/swaps"]')).toBeNull();
   });
 
   it('does not render an Import tab', () => {

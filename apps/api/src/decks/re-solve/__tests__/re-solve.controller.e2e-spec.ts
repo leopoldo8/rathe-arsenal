@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import request from 'supertest';
 import { ReSolveController } from '../re-solve.controller';
-import { SWAPS_MIGRATION_PAYLOAD } from '../../../swaps/legacy-routes-gone';
+import { SWAPS_MIGRATION_PAYLOAD } from '../../../common/legacy-routes-gone';
 
 /**
  * Tests for the deprecated re-solve endpoints.

@@ -1,14 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IBreakdownEntry } from '../../api/deck-detail';
+import type { IBreakdownEntry, ISubstitutedEntry } from '../../api/deck-detail';
 import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacements';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { useVariantFetchPolling } from '../useVariantFetchPolling';
+import { withPitch } from './recommendations/card-naming';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { MissingRowBuy, MissingRowStoreMeta, MissingRowVariants } from './MissingRowStore';
 import { MissingStoreSummary } from './MissingStoreSummary';
 import { ReplacementMark } from './ReplacementMark';
+import { SuggestionUseButton } from './SuggestionUseButton';
 import { entryKey } from './deckDetailModel';
 import { resolveRowStore } from './missingStoreModel';
 import { MISSING_PANEL_ID } from './DeckStatusStrip';
@@ -28,6 +30,9 @@ interface IMissingPanelProps {
   /** Active replacements of the deck; a row for a replacement's own copies is marked and offers no alternatives. */
   readonly replacements?: readonly IDeckReplacement[];
   readonly onOpenAlternatives?: ((target: IAlternativesTarget) => void) | undefined;
+  readonly deckId?: number;
+  /** The collection's best card for each missing row, keyed by `entryKey`. */
+  readonly suggestions?: ReadonlyMap<string, ISubstitutedEntry>;
 }
 
 /** Slots whose cards never get stand-ins, so they get no alternatives either. */
@@ -56,6 +61,8 @@ export function MissingPanel({
   onShoppingRetry,
   replacements = [],
   onOpenAlternatives,
+  deckId = 0,
+  suggestions = new Map(),
 }: IMissingPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const populated = shoppingData?.kind === 'populated' ? shoppingData : null;
@@ -100,6 +107,7 @@ export function MissingPanel({
                 replacement.replacementCardIdentifier === entry.cardIdentifier && replacement.slot === entry.slot,
             );
             const heldCopies = held.reduce((sum, replacement) => sum + replacement.quantity, 0);
+            const suggestion = suggestions.get(entryKey(entry));
             const canReplace =
               onOpenAlternatives !== undefined &&
               !NON_REPLACEABLE_SLOTS.has(entry.slot) &&
@@ -110,9 +118,18 @@ export function MissingPanel({
                 <div className={styles.body}>
                   <span className={styles.name}>{entry.name}</span>
                   {held[0] !== undefined && <ReplacementMark replacement={held[0]} />}
+                  {suggestion !== undefined && (
+                    <span className={styles.suggestion} data-testid="missing-row-suggestion">
+                      <span className={styles.suggestionName}>
+                        {withPitch(suggestion.match.substitute.name, suggestion.match.substitute.pitch, t)}
+                      </span>
+                      <span>{t('deckDetail.suggestionFrom')}</span>
+                    </span>
+                  )}
+
                   <span className={styles.meta} data-testid="missing-row-meta">
                     {entry.slot !== 'mainboard' && (
-                      <span>{t(`swaps.slot.${entry.slot}`, { defaultValue: entry.slot })} </span>
+                      <span>{t(`deckDetail.slot.${entry.slot}`, { defaultValue: entry.slot })} </span>
                     )}
                     <MissingRowStoreMeta
                       store={store}
@@ -125,6 +142,9 @@ export function MissingPanel({
                 <span className={styles.qty}>{t('deckDetail.missingCopies', { count: entry.quantity })}</span>
                 <span className={styles.action}>
                   <MissingRowBuy store={store} cardName={entry.name} />
+                  {suggestion !== undefined && (
+                    <SuggestionUseButton deckId={deckId} entry={entry} suggestion={suggestion} />
+                  )}
                   {canReplace && (
                     <button
                       type="button"

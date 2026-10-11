@@ -1,8 +1,17 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiError } from '../../../lib/api-client';
 import type { IShoppingLineLine, IShoppingLinePopulated } from '../../../api/shopping-line';
-import { entry } from './deckDetailTestData';
+import { entry, swap } from './deckDetailTestData';
+const mockApiFetch = vi.fn();
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => mockApiFetch };
+});
+
 import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
 import styles from '../MissingPanel.module.css';
@@ -428,5 +437,88 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
     expect(within(marked[0]!).queryByRole('button', { name: /alternatives/i })).toBeNull();
     const plain = rows.find((row) => row !== marked[0])!;
     expect(within(plain).getByRole('button', { name: /alternatives/i })).toBeInTheDocument();
+  });
+});
+
+describe('MissingPanel — suggestions from the collection', () => {
+  const DECK_ID = 7;
+  const suggestion = swap({ cardIdentifier: 'card-a', name: 'Card A', quantity: 1 }, 'erase-face-red', 0.9, {
+    name: 'Erase Face',
+    pitch: 1,
+  });
+
+  function renderWithSuggestion(): void {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MissingPanel
+          entries={ENTRIES}
+          shoppingData={null}
+          onMarkOwned={vi.fn()}
+          isMarkingOwned={false}
+          pendingCard={null}
+          onFetchVariants={vi.fn()}
+          fetchMutationStatus="idle"
+          isCooldownActive={false}
+          onPollingChange={vi.fn()}
+          onShoppingRetry={vi.fn()}
+          onOpenAlternatives={vi.fn()}
+          deckId={DECK_ID}
+          suggestions={new Map([['card-a::mainboard', suggestion]])}
+        />
+      </QueryClientProvider>,
+    );
+  }
+
+  it("shows the collection's suggestion with Usar beside Ver alternativas", async () => {
+    await setTestLocale('pt-BR');
+    renderWithSuggestion();
+
+    const row = rowOf('Card A');
+    expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('Erase Face (Vermelho)');
+    expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('da sua coleção');
+    expect(within(row).getByRole('button', { name: /^Usar Erase Face \(Vermelho\) da sua coleção no lugar de Card A$/ })).toHaveTextContent('Usar');
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card A' })).toBeInTheDocument();
+  });
+
+  it('a row without a suggestion offers only the alternatives', async () => {
+    await setTestLocale('pt-BR');
+    renderWithSuggestion();
+
+    const row = rowOf('Card B');
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card B' })).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: /^Usar / })).toBeNull();
+    expect(within(row).queryByTestId('missing-row-suggestion')).toBeNull();
+    expect(row).not.toHaveTextContent('da sua coleção');
+  });
+
+  it('Usar sends the suggestion as a suggested pick', async () => {
+    await setTestLocale('pt-BR');
+    mockApiFetch.mockReset();
+    let finish: (value: unknown) => void = () => undefined;
+    mockApiFetch.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    renderWithSuggestion();
+    const use = () => within(rowOf('Card A')).getByRole('button', { name: /^Usar Erase Face/ });
+
+    await userEvent.click(use());
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = mockApiFetch.mock.calls[0]!;
+    expect(path).toBe(`/decks/${DECK_ID}/replacements`);
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      originalCardIdentifier: 'card-a',
+      slot: 'mainboard',
+      replacementCardIdentifier: 'erase-face-red',
+      pickedFrom: 'suggested',
+    });
+    expect(use()).toBeDisabled();
+    finish({ replacement: {} });
+    await waitFor(() => expect(use()).toBeEnabled());
+
+    mockApiFetch.mockRejectedValueOnce(new ApiError(409, JSON.stringify({ code: 'NOTHING_TO_REPLACE', message: 'server text' })));
+    await userEvent.click(use());
+    expect(await within(rowOf('Card A')).findByTestId('missing-row-use-error')).toHaveTextContent(
+      'Esta carta não tem mais cópias faltando para substituir.',
+    );
   });
 });

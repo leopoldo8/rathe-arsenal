@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import {
   catalog,
   findCardLegalityViolation,
@@ -11,10 +11,8 @@ import {
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CardReplacementEntity } from '../database/entities/card-replacement.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { SwapSuggestionEntity } from '../database/entities/swap-suggestion.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { SubstitutionService } from '../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
 import { NON_REPLACEABLE_SLOTS } from './alternatives.service';
 import { computeNeeded } from './compute-needed';
 import { PickReplacementDto } from './dtos/pick-replacement.dto';
@@ -24,6 +22,7 @@ import { RecommendationQueueService } from '../recommendations/recommendation-qu
 import { RecommendationEntity } from '../database/entities/recommendation.entity';
 import { RecommendationRunEntity } from '../database/entities/recommendation-run.entity';
 import { decideAdoption } from './adoption-rules';
+import { planSuggestedUses } from './plan-suggested-uses';
 
 export interface IAdoptRequest {
   readonly cutCardIdentifier: string;
@@ -40,6 +39,11 @@ export interface IReplacementResponse {
   readonly status: CardReplacementEntity['status'];
   readonly createdAt: string;
   readonly resolvedAt: string | null;
+}
+
+export interface ISuggestedUsesResponse {
+  readonly replacements: readonly IReplacementResponse[];
+  readonly skipped: number;
 }
 
 export type TResolveAction = 'revert' | 'keep';
@@ -60,7 +64,7 @@ function toResponse(entity: CardReplacementEntity): IReplacementResponse {
 
 /**
  * Picks, reverts and keeps. Each takes the `tracked_deck` `FOR NO KEY UPDATE`
- * lock first, as `SwapsService.applyTransition` does, then decides from rows it
+ * lock first, then decides from rows it
  * reads after the lock: a second request for the same copies waits, then finds
  * them gone.
  */
@@ -72,7 +76,6 @@ export class ReplacementsService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly substitutionService: SubstitutionService,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
     private readonly replacementsQueryService: ReplacementsQueryService,
     private readonly collectionReadService: CollectionReadService,
     private readonly recommendationQueue: RecommendationQueueService,
@@ -94,14 +97,7 @@ export class ReplacementsService {
 
       const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
       const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
-      const inputs = await this.swapSuggestionQueryService.loadReadinessInputs(deckId, manager);
-      const readiness = await this.substitutionService.computeReadinessWithExclusions(
-        deckId,
-        userId,
-        inputs.excludedIdentifiers,
-        inputs.approvedIdentifiers,
-        manager,
-      );
+      const readiness = await this.substitutionService.computeReadiness(deckId, userId, manager);
       const needed = computeNeeded(readiness.breakdown.notOwned, activeReplacements, original.cardIdentifier, dto.slot);
       if (needed === 0) throw replacementConflict('NOTHING_TO_REPLACE');
 
@@ -132,18 +128,6 @@ export class ReplacementsService {
         }),
       );
 
-      // Reconciliation only retires a row whose position left the deck; a partly owned original stays in its slot.
-      await manager.update(
-        SwapSuggestionEntity,
-        {
-          trackedDeckId: deckId,
-          cardIdentifier: original.cardIdentifier,
-          slot: dto.slot,
-          status: In(['pending', 'approved']),
-        },
-        { status: 'retired' },
-      );
-
       await this.recompute(manager, userId, deckId);
       await this.recommendationQueue.enqueueAuto(manager, deckId);
       return { saved, copiesHeld, needed };
@@ -162,6 +146,66 @@ export class ReplacementsService {
       owned: (owned.get(replacement.cardIdentifier) ?? 0) - outcome.copiesHeld >= outcome.needed,
     });
     return toResponse(outcome.saved);
+  }
+
+  /** Uses every current suggestion of the deck at once: one pick each, under one lock, with one recompute. */
+  async useSuggestions(userId: string, deckId: number): Promise<ISuggestedUsesResponse> {
+    const outcome = await this.dataSource.transaction(async (manager) => {
+      const deck = await this.lockDeck(manager, deckId, userId);
+      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+      const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
+      const readiness = await this.substitutionService.computeReadiness(deckId, userId, manager);
+      const plan = planSuggestedUses({
+        notOwned: readiness.breakdown.notOwned,
+        substituted: readiness.breakdown.substituted,
+        activeReplacements,
+        deckCards,
+        owned: await this.collectionReadService.loadOwned(userId),
+        heroCard: this.findHero(deck),
+        format: deck.format as TSupportedFormat,
+      });
+      if (plan.uses.length === 0) throw replacementConflict('NOTHING_TO_REPLACE');
+
+      const saved: CardReplacementEntity[] = [];
+      for (const use of plan.uses) {
+        const current = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+        await this.moveCopies(manager, current, {
+          trackedDeckId: deckId,
+          slot: use.slot,
+          from: use.original,
+          to: use.replacement,
+          quantity: use.quantity,
+        });
+        saved.push(
+          await manager.save(
+            manager.create(CardReplacementEntity, {
+              userId,
+              trackedDeckId: deckId,
+              slot: use.slot,
+              originalCardIdentifier: use.original,
+              replacementCardIdentifier: use.replacement,
+              quantity: use.quantity,
+              pickedFrom: 'suggested',
+              status: 'active',
+              resolvedAt: null,
+            }),
+          ),
+        );
+      }
+
+      await this.recompute(manager, userId, deckId);
+      await this.recommendationQueue.enqueueAuto(manager, deckId);
+      return { saved, skipped: plan.skipped };
+    });
+
+    this.logger.log({
+      event: 'replacements.used_suggestions',
+      userId,
+      trackedDeckId: deckId,
+      used: outcome.saved.length,
+      skipped: outcome.skipped,
+    });
+    return { replacements: outcome.saved.map(toResponse), skipped: outcome.skipped };
   }
 
   /** Swaps up to every copy of the cut card in its slot for the recommended card, capped by the copy limit. */
@@ -347,14 +391,6 @@ export class ReplacementsService {
   }
 
   private async recompute(manager: EntityManager, userId: string, trackedDeckId: number): Promise<void> {
-    const { excludedIdentifiers, approvedIdentifiers } =
-      await this.swapSuggestionQueryService.loadReadinessInputs(trackedDeckId, manager);
-    await this.substitutionService.computeAndStoreReadiness(
-      trackedDeckId,
-      userId,
-      excludedIdentifiers,
-      approvedIdentifiers,
-      manager,
-    );
+    await this.substitutionService.computeAndStoreReadiness(trackedDeckId, userId, manager);
   }
 }

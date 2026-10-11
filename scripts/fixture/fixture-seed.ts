@@ -23,8 +23,12 @@ interface IDeckSummary {
   readonly tags: readonly string[];
 }
 
-interface ISwapRow {
-  readonly id: string;
+interface IDeckDetail {
+  readonly latestSnapshot: {
+    readonly breakdown: {
+      readonly substituted: readonly { readonly original: { readonly cardIdentifier: string; readonly slot: string } }[];
+    };
+  } | null;
 }
 
 export const SWAP_DECK_NAME = 'Rhinar Swap Test';
@@ -35,12 +39,12 @@ const FABRARY_DECK_URLS = [
   'https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT',
   'https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8',
 ];
-const MIN_PENDING_SWAPS = 3;
+const MIN_SUGGESTIONS = 3;
 const SIGN_IN_RETRY_MS = 15_000;
 const SIGN_IN_MAX_WAIT_MS = 150_000;
 
-// Cards the user must own for the swap deck below to produce its pending
-// swaps. The deck's pitch curve has to stay within the engine's tolerance,
+// Cards the user must own for the swap deck below to produce its
+// suggestions. The deck's pitch curve has to stay within the engine's tolerance,
 // which is why the exact-match padding is part of the contract.
 const REQUIRED_OWNED: Readonly<Record<string, number>> = {
   'erase-face-red': 3,
@@ -203,6 +207,18 @@ async function ensureTag(creds: IFixtureCredentials, jwt: string): Promise<numbe
   return created.id;
 }
 
+async function putSwapDeckComposition(creds: IFixtureCredentials, jwt: string, deckId: number): Promise<void> {
+  await authed(creds, jwt, 'PUT', `/decks/${deckId}`, {
+    heroIdentifier: SWAP_DECK_HERO,
+    format: 'Classic Constructed',
+    cards: SWAP_DECK_COMPOSITION.map(([cardIdentifier, quantity]) => ({
+      cardIdentifier,
+      quantity,
+      slot: 'mainboard',
+    })),
+  });
+}
+
 async function ensureSwapDeck(creds: IFixtureCredentials, jwt: string): Promise<number> {
   const decks = await listDecks(creds, jwt);
   let deckId = decks.find((deck) => deck.name === SWAP_DECK_NAME)?.id;
@@ -213,15 +229,7 @@ async function ensureSwapDeck(creds: IFixtureCredentials, jwt: string): Promise<
     });
     deckId = created.id;
   }
-  await authed(creds, jwt, 'PUT', `/decks/${deckId}`, {
-    heroIdentifier: SWAP_DECK_HERO,
-    format: 'Classic Constructed',
-    cards: SWAP_DECK_COMPOSITION.map(([cardIdentifier, quantity]) => ({
-      cardIdentifier,
-      quantity,
-      slot: 'mainboard',
-    })),
-  });
+  await putSwapDeckComposition(creds, jwt, deckId);
   const tagId = await ensureTag(creds, jwt);
   await authed(creds, jwt, 'PATCH', `/decks/${deckId}`, {
     name: SWAP_DECK_NAME,
@@ -229,11 +237,6 @@ async function ensureSwapDeck(creds: IFixtureCredentials, jwt: string): Promise<
     addTagIds: [tagId],
   });
   return deckId;
-}
-
-async function listSwaps(creds: IFixtureCredentials, jwt: string, state: string): Promise<readonly ISwapRow[]> {
-  const { rows } = await authed<{ rows: ISwapRow[] }>(creds, jwt, 'GET', `/swaps?state=${state}`);
-  return rows;
 }
 
 async function pruneExtraDecks(creds: IFixtureCredentials, jwt: string): Promise<void> {
@@ -245,20 +248,23 @@ async function pruneExtraDecks(creds: IFixtureCredentials, jwt: string): Promise
 }
 
 /**
- * Puts the fixture user back to the state the specs assume: every swap pending,
- * and no decks beyond the imported ones and the swap deck.
+ * Puts the fixture user back to the state the specs assume: the swap deck with
+ * its composition (which closes any replacement a spec left behind) and its
+ * suggestions, and no decks beyond the imported ones and the swap deck.
  */
 export async function resetFixtureState(creds: IFixtureCredentials, jwt: string): Promise<void> {
   await pruneExtraDecks(creds, jwt);
-  for (const row of await listSwaps(creds, jwt, 'approved')) {
-    await authed(creds, jwt, 'POST', `/swaps/${row.id}/revert`);
-  }
-  for (const row of await listSwaps(creds, jwt, 'rejected')) {
-    await authed(creds, jwt, 'POST', `/swaps/${row.id}/restore`);
-  }
-  const pending = await listSwaps(creds, jwt, 'pending');
-  if (pending.length < MIN_PENDING_SWAPS) {
-    throw new Error(`expected at least ${MIN_PENDING_SWAPS} pending swaps, found ${pending.length}`);
+  const deckId = (await listDecks(creds, jwt)).find((deck) => deck.name === SWAP_DECK_NAME)?.id;
+  if (deckId === undefined) throw new Error(`the fixture has no deck named ${SWAP_DECK_NAME}`);
+  await putSwapDeckComposition(creds, jwt, deckId);
+  const detail = await authed<IDeckDetail>(creds, jwt, 'GET', `/decks/${deckId}`);
+  const suggested = new Set(
+    (detail.latestSnapshot?.breakdown.substituted ?? []).map(
+      (entry) => `${entry.original.cardIdentifier}::${entry.original.slot}`,
+    ),
+  );
+  if (suggested.size < MIN_SUGGESTIONS) {
+    throw new Error(`expected at least ${MIN_SUGGESTIONS} suggestions on the swap deck, found ${suggested.size}`);
   }
 }
 
@@ -269,12 +275,4 @@ export async function seedFixture(creds: IFixtureCredentials): Promise<IFixtureH
   const swapDeckId = await ensureSwapDeck(creds, jwt);
   await resetFixtureState(creds, jwt);
   return { jwt, swapDeckId, readyDeckId };
-}
-
-export async function approveSwaps(creds: IFixtureCredentials, jwt: string, count: number): Promise<void> {
-  const pending = await listSwaps(creds, jwt, 'pending');
-  if (pending.length < count) throw new Error(`cannot approve ${count} swaps, only ${pending.length} pending`);
-  for (const row of pending.slice(0, count)) {
-    await authed(creds, jwt, 'POST', `/swaps/${row.id}/approve`);
-  }
 }

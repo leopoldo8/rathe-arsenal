@@ -1,24 +1,16 @@
 /**
- * Step3FirstReview — approve/reject toggle-off (UXUI-13 AC2) and the swaps API
- *
- * Asserts that clicking Approve or Reject a second time toggles the decision
- * back to null (un-pressed state), matching WAI-ARIA toggle-button semantics,
- * and that every click reaches the single-swap endpoints by swap id.
+ * Step3FirstReview — the collection's first suggestions: use them all at once,
+ * or not now, with no per-card approve or reject (swaps-into-alternatives AC 12).
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { setTestLocale } from '../../../test/i18n-test-utils';
 import { Step3FirstReview } from '../Step3FirstReview';
-
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
 
 const mockDecksQuery = vi.fn();
 const mockDeckDetailQuery = vi.fn();
-const mockSwapMutateAsync = vi.fn();
-const mockRefetchSwaps = vi.fn();
-let mockSwapRows: unknown[] = [];
+const mockUseSuggestions = vi.fn();
 
 vi.mock('../../../api/decks', () => ({
   useDecksQuery: () => mockDecksQuery(),
@@ -30,14 +22,9 @@ vi.mock('../../../api/deck-detail', () => ({
   ISubstitutedEntry: undefined,
 }));
 
-vi.mock('../../../api/swaps', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../api/swaps')>();
-  return {
-    ...actual,
-    useSwapsQuery: () => ({ data: { rows: mockSwapRows }, refetch: mockRefetchSwaps }),
-    useSwapMutation: () => ({ mutateAsync: mockSwapMutateAsync }),
-  };
-});
+vi.mock('../../../api/replacements', () => ({
+  useUseSuggestions: () => ({ mutate: mockUseSuggestions, isPending: false }),
+}));
 
 vi.mock('../CongratsAllPlayable', () => ({
   CongratsAllPlayable: ({ onComplete }: { onComplete: () => void }) => (
@@ -47,262 +34,96 @@ vi.mock('../CongratsAllPlayable', () => ({
   ),
 }));
 
-// Mock CardArt to avoid SVG glyph imports
 vi.mock('../../card-art/CardArt', () => ({
   CardArt: ({ name }: { name: string }) => <div data-testid={`card-art-${name}`}>{name}</div>,
 }));
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
+function original(cardIdentifier: string, name: string) {
+  return { cardIdentifier, name, slot: 'mainboard', quantity: 1, pitch: 1 as const, cost: 1, type: 'Action', imageUrl: null };
+}
 
-const MOCK_SUB = {
-  original: {
-    cardIdentifier: 'ABC001',
-    slot: 'Briar',
-    pitch: 1 as 1 | 2 | 3,
-    cost: 2,
-    type: 'hero',
-  },
-  match: {
-    substitute: { cardIdentifier: 'SUB001', name: 'Substitute Name', pitch: 2 },
-    rationale: 'Good fit for budget builds.',
-    score: 80,
-  },
-};
+function suggestion(cardIdentifier: string, name: string, substitute: string) {
+  return {
+    original: original(cardIdentifier, name),
+    match: {
+      substitute: { cardIdentifier: substitute, name: `Sub ${name}`, pitch: 1 },
+      rationale: 'Same profile.',
+      score: 1,
+      tier: 1,
+    },
+  };
+}
 
-const SWAP_ROW = {
-  id: 'swap-1',
-  trackedDeckId: 1,
-  cardIdentifier: 'ABC001',
-  slot: 'Briar',
-  substituteIdentifier: 'SUB001',
-  status: 'pending',
-};
-
-function setupWithSubstitution() {
-  mockSwapRows = [SWAP_ROW];
-  mockSwapMutateAsync.mockResolvedValue({});
+function setup(substituted: ReturnType<typeof suggestion>[], missing: ReturnType<typeof original>[] = []) {
   mockDecksQuery.mockReturnValue({
     isLoading: false,
-    data: {
-      trackedDecks: [
-        {
-          id: 1,
-          latestSnapshot: { rawPercent: 75 },
-        },
-      ],
-    },
+    data: { trackedDecks: [{ id: 1, latestSnapshot: { rawPercent: 60 } }] },
   });
-
   mockDeckDetailQuery.mockReturnValue({
     isLoading: false,
     data: {
+      replacements: [],
       latestSnapshot: {
         breakdown: {
-          substituted: [MOCK_SUB],
+          exact: [],
+          substituted,
+          missing,
+          notOwned: [...substituted.map((entry) => entry.original), ...missing],
         },
       },
     },
   });
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+function renderStep(onComplete = vi.fn()) {
+  render(<Step3FirstReview importedDeckIds={[1]} onComplete={onComplete} onBack={vi.fn()} onSkip={vi.fn()} />);
+  return onComplete;
+}
 
-describe('Step3FirstReview — approve/reject toggle-off (UXUI-13 AC2)', () => {
-  beforeEach(() => {
+describe('Step3FirstReview', () => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    setupWithSubstitution();
+    await setTestLocale('pt-BR');
   });
 
-  it('approve button starts with aria-pressed=false', () => {
-    render(
-      <Step3FirstReview
-        importedDeckIds={[1]}
-        onComplete={vi.fn()}
-        onBack={vi.fn()}
-        onSkip={vi.fn()}
-      />,
-    );
-    const approveBtn = screen.getByRole('button', {
-      name: /aprovar.*briar|approve.*briar/i,
-    });
-    expect(approveBtn).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('clicking approve sets aria-pressed=true', () => {
-    render(
-      <Step3FirstReview
-        importedDeckIds={[1]}
-        onComplete={vi.fn()}
-        onBack={vi.fn()}
-        onSkip={vi.fn()}
-      />,
-    );
-    const approveBtn = screen.getByRole('button', {
-      name: /aprovar.*briar|approve.*briar/i,
-    });
-    fireEvent.click(approveBtn);
-    expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('clicking approve twice toggles decision back to null (aria-pressed=false)', () => {
-    render(
-      <Step3FirstReview
-        importedDeckIds={[1]}
-        onComplete={vi.fn()}
-        onBack={vi.fn()}
-        onSkip={vi.fn()}
-      />,
-    );
-    const approveBtn = screen.getByRole('button', {
-      name: /aprovar.*briar|approve.*briar/i,
-    });
-    // First click — approved
-    fireEvent.click(approveBtn);
-    expect(approveBtn).toHaveAttribute('aria-pressed', 'true');
-    // Second click — toggle off
-    fireEvent.click(approveBtn);
-    expect(approveBtn).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('clicking reject twice toggles decision back to null (aria-pressed=false)', () => {
-    render(
-      <Step3FirstReview
-        importedDeckIds={[1]}
-        onComplete={vi.fn()}
-        onBack={vi.fn()}
-        onSkip={vi.fn()}
-      />,
-    );
-    const rejectBtn = screen.getByRole('button', {
-      name: /recusar.*briar|reject.*briar/i,
-    });
-    // First click — rejected
-    fireEvent.click(rejectBtn);
-    expect(rejectBtn).toHaveAttribute('aria-pressed', 'true');
-    // Second click — toggle off
-    fireEvent.click(rejectBtn);
-    expect(rejectBtn).toHaveAttribute('aria-pressed', 'false');
-  });
-});
-
-describe('Step3FirstReview — decisions reach the swaps API by swap id', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupWithSubstitution();
-  });
-
-  function renderStep() {
-    render(
-      <Step3FirstReview importedDeckIds={[1]} onComplete={vi.fn()} onBack={vi.fn()} onSkip={vi.fn()} />,
-    );
-  }
-
-  const approveName = /aprovar.*briar|approve.*briar/i;
-  const rejectName = /recusar.*briar|reject.*briar/i;
-
-  it('approves the swap that matches card, slot and substitute', async () => {
-    renderStep();
-
-    fireEvent.click(screen.getByRole('button', { name: approveName }));
-
-    await waitFor(() =>
-      expect(mockSwapMutateAsync).toHaveBeenCalledWith({ swapId: 'swap-1', action: { kind: 'approve' } }),
-    );
-  });
-
-  it('rejects by swap id', async () => {
-    renderStep();
-
-    fireEvent.click(screen.getByRole('button', { name: rejectName }));
-
-    await waitFor(() =>
-      expect(mockSwapMutateAsync).toHaveBeenCalledWith({ swapId: 'swap-1', action: { kind: 'reject' } }),
-    );
-  });
-
-  it('takes an approval back with revert when the button is pressed again', async () => {
-    renderStep();
-    const approve = screen.getByRole('button', { name: approveName });
-
-    fireEvent.click(approve);
-    await waitFor(() => expect(mockSwapMutateAsync).toHaveBeenCalledTimes(1));
-    fireEvent.click(approve);
-
-    await waitFor(() =>
-      expect(mockSwapMutateAsync).toHaveBeenLastCalledWith({ swapId: 'swap-1', action: { kind: 'revert' } }),
-    );
-  });
-
-  it('takes a rejection back with restore when the button is pressed again', async () => {
-    renderStep();
-    const reject = screen.getByRole('button', { name: rejectName });
-
-    fireEvent.click(reject);
-    await waitFor(() => expect(mockSwapMutateAsync).toHaveBeenCalledTimes(1));
-    fireEvent.click(reject);
-
-    await waitFor(() =>
-      expect(mockSwapMutateAsync).toHaveBeenLastCalledWith({ swapId: 'swap-1', action: { kind: 'restore' } }),
-    );
-  });
-
-  it('undoes an approval before rejecting when the user changes sides', async () => {
-    renderStep();
-
-    fireEvent.click(screen.getByRole('button', { name: approveName }));
-    await waitFor(() => expect(mockSwapMutateAsync).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: rejectName }));
-
-    await waitFor(() => expect(mockSwapMutateAsync).toHaveBeenCalledTimes(3));
-    expect(mockSwapMutateAsync.mock.calls.map((call) => call[0].action.kind)).toEqual([
-      'approve',
-      'revert',
-      'reject',
+  it('offers to use every suggestion or not now', async () => {
+    setup([
+      suggestion('a', 'Card A', 'sub-a'),
+      suggestion('b', 'Card B', 'sub-b'),
+      suggestion('c', 'Card C', 'sub-c'),
     ]);
+    mockUseSuggestions.mockImplementation((_variables: unknown, options: { onSuccess: () => void }) => options.onSuccess());
+    const onComplete = renderStep();
+
+    expect(screen.getByRole('button', { name: 'Usar as 3 cartas da coleção' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agora não' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aprovar|recusar/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Usar as 3 cartas da coleção' }));
+    expect(mockUseSuggestions).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
+
+    vi.clearAllMocks();
+    setup([suggestion('a', 'Card A', 'sub-a')]);
+    const onCompleteLater = renderStep();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Agora não' })[1]!);
+    expect(onCompleteLater).toHaveBeenCalledTimes(1);
+    expect(mockUseSuggestions).not.toHaveBeenCalled();
   });
 
-  it('sends nothing, and keeps the button un-pressed, until the swaps list knows the swap', () => {
-    mockSwapRows = [];
+  it('a deck with no suggestion shows the looking good step', () => {
+    setup([], [original('a', 'Card A')]);
     renderStep();
-    const approve = screen.getByRole('button', { name: approveName });
 
-    fireEvent.click(approve);
-
-    expect(mockSwapMutateAsync).not.toHaveBeenCalled();
-    expect(approve).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('heading', { name: 'Tudo certo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
   });
 
-  it('refetches the swaps list once the snapshot that carries the suggestions arrives', () => {
-    mockDeckDetailQuery.mockReturnValue({
-      isLoading: false,
-      data: {
-        latestSnapshot: { computedAt: '2026-10-03T10:00:00Z', breakdown: { substituted: [MOCK_SUB] } },
-      },
-    });
-
+  it('previews each suggestion with the missing card and the card from the collection', () => {
+    setup([suggestion('a', 'Card A', 'sub-a')]);
     renderStep();
 
-    expect(mockRefetchSwaps).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not refetch before any snapshot exists', () => {
-    renderStep();
-
-    expect(mockRefetchSwaps).not.toHaveBeenCalled();
-  });
-
-  it('ignores a swap of the same card in another slot', async () => {
-    mockSwapRows = [{ ...SWAP_ROW, id: 'other', slot: 'equipment' }, SWAP_ROW];
-    renderStep();
-
-    fireEvent.click(screen.getByRole('button', { name: approveName }));
-
-    await waitFor(() =>
-      expect(mockSwapMutateAsync).toHaveBeenCalledWith({ swapId: 'swap-1', action: { kind: 'approve' } }),
-    );
+    expect(screen.getByTestId('card-art-Card A')).toBeInTheDocument();
+    expect(screen.getByTestId('card-art-Sub Card A')).toBeInTheDocument();
   });
 });

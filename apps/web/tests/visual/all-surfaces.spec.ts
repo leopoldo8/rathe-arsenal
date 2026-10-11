@@ -29,7 +29,6 @@ const AUTH_SURFACES = [
   { name: 'deck-detail', url: '/decks/:deckId' },
   { name: 'library', url: '/library' },
   { name: 'library-csv-sources', url: '/library-csv-sources' },
-  { name: 'swaps', url: '/swaps' },
   { name: 'settings', url: '/settings' },
   { name: 'add-cards', url: '/add-cards' },
   { name: 'add-cards-manual', url: '/add-cards/manual' },

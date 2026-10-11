@@ -60,15 +60,10 @@ vi.mock('../../../api/deck-detail', () => ({
   deckDetailQueryKey: (id: string) => ['deck-detail', id],
 }));
 
-// API: swaps
-vi.mock('../../../api/swaps', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../api/swaps')>();
-  return {
-    ...actual,
-    useSwapsQuery: () => ({ data: { rows: [] }, refetch: vi.fn() }),
-    useSwapMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  };
-});
+// API: replacements
+vi.mock('../../../api/replacements', () => ({
+  useUseSuggestions: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 
 // ---------------------------------------------------------------------------
 // Lazy imports (after mocks are set)
@@ -156,8 +151,9 @@ function makeDetailQueryWithSubs() {
             {
               original: {
                 cardIdentifier: 'EVO001',
+                name: 'Ironsong Determination',
                 quantity: 1,
-                slot: 'Ironsong Determination (1)',
+                slot: 'mainboard',
                 pitch: 1 as const,
                 cost: 0,
                 type: 'attack',
@@ -179,9 +175,12 @@ function makeDetailQueryWithSubs() {
             },
           ],
           missing: [],
-          notOwned: [],
+          notOwned: [
+            { cardIdentifier: 'EVO001', name: 'Ironsong Determination', quantity: 1, slot: 'mainboard', pitch: 1 as const, cost: 0, type: 'attack' },
+          ],
         },
       },
+      replacements: [],
     },
   };
 }
@@ -434,11 +433,11 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/revise as trocas/i)).toBeInTheDocument();
+      expect(screen.getByText(/cartas da sua coleção/i)).toBeInTheDocument();
     });
   });
 
-  it('step 3 shows substitution approve/reject buttons', async () => {
+  it('step 3 offers to use the suggestions, with no approve or reject', async () => {
     const user = userEvent.setup();
     renderWizard();
 
@@ -450,12 +449,12 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
-      expect(screen.getAllByRole('button', { name: /aprovar/i })).toHaveLength(1);
-      expect(screen.getAllByRole('button', { name: /recusar/i })).toHaveLength(1);
+      expect(screen.getByRole('button', { name: 'Usar a carta da coleção' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /aprovar|recusar/i })).toBeNull();
     });
   });
 
-  it('"Enter the arsenal" on step 3 navigates to /home', async () => {
+  it('"Agora não" on step 3 navigates to /home', async () => {
     const user = userEvent.setup();
     renderWizard();
 
@@ -467,10 +466,10 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /entrar no arsenal/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Agora não' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: /entrar no arsenal/i }));
+    await user.click(screen.getByRole('button', { name: 'Agora não' }));
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
   });
 });
@@ -620,7 +619,7 @@ describe('OnboardingWizard — edge case: 10s computation timeout', () => {
 
     // Step 3 renders loading state immediately
     await waitFor(() => {
-      expect(screen.getByText(/calculando trocas/i)).toBeInTheDocument();
+      expect(screen.getByText(/comparando com a sua coleção/i)).toBeInTheDocument();
     });
 
     // Advance 10+ seconds to trigger the computation timeout

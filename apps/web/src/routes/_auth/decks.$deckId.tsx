@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -8,13 +8,6 @@ import {
   useMarkOwnedMutation,
   deckDetailQueryKey,
 } from '../../api/deck-detail';
-import {
-  selectDeckSwaps,
-  useRestoreRejectedSwaps,
-  useSwapMutation,
-  useSwapsQuery,
-} from '../../api/swaps';
-import type { ISwapRow, TSwapAction } from '../../api/swaps';
 import { useVariantFetchMutation } from '../../api/variant-fetch';
 import { requestOpenVariantQueueDrawer } from '../../components/variant-queue/variantQueueDrawerBus';
 import { useVariantJobsQuery } from '../../api/variant-jobs';
@@ -79,20 +72,6 @@ function DeckDetailPage(): React.ReactElement {
   const detailQuery = useDeckDetailQuery(deckId, pollingStartedAt);
   const tagsQuery = useTagsQuery();
   const markOwnedMutation = useMarkOwnedMutation(deckId);
-  const swapsQuery = useSwapsQuery();
-  const swapMutation = useSwapMutation();
-  const restoreRejectedMutation = useRestoreRejectedSwaps();
-  const swapRows = swapsQuery.data?.rows;
-  const refetchSwaps = swapsQuery.refetch;
-  const snapshotComputedAt = detailQuery.data?.latestSnapshot?.computedAt ?? null;
-  // A new snapshot can carry new suggestions, so the swaps list is refreshed with it.
-  useEffect(() => {
-    if (snapshotComputedAt !== null) void refetchSwaps();
-  }, [snapshotComputedAt, refetchSwaps]);
-  const deckSwaps = React.useMemo(
-    () => selectDeckSwaps(swapRows, Number(deckId)),
-    [swapRows, deckId],
-  );
   const variantFetchMutation = useVariantFetchMutation(deckId);
 
   // Derive this deck's variant-fetch progress from the global jobs queue.
@@ -147,54 +126,6 @@ function DeckDetailPage(): React.ReactElement {
       message: t('decks.retryShoppingLineToast'),
     });
   }, [queryClient, deckId, showToast, t]);
-
-  function handleClearRejections(): void {
-    restoreRejectedMutation.mutate(
-      deckSwaps.filter((swap) => swap.status === 'rejected'),
-      {
-        onSuccess: (result) => {
-          if (result.failed > 0) {
-            showToast({
-              kind: 'error',
-              message: t('swaps.bulkPartial', {
-                done: result.restored,
-                total: result.attempted,
-                label: t('swaps.bulkLabelReset'),
-                failed: t('swaps.bulkFailed', { count: result.failed }),
-              }),
-              retry: handleClearRejections,
-            });
-          } else if (result.remaining > 0) {
-            showToast({
-              kind: 'success',
-              message: t('decks.clearRejectionsCapped', {
-                count: result.remaining,
-                restored: result.restored,
-              }),
-            });
-          }
-        },
-        onError: (err) => {
-          showToast({
-            kind: 'error',
-            message: t('decks.failedToClearRejections', { error: (err as Error).message }),
-            retry: handleClearRejections,
-          });
-        },
-      },
-    );
-  }
-
-  function runSwapAction(swapId: string, action: TSwapAction): void {
-    swapMutation.mutate(
-      { swapId, action },
-      {
-        onError: () => {
-          showToast({ kind: 'error', message: t('decks.failedSwapAction') });
-        },
-      },
-    );
-  }
 
   const isCooldownActive =
     variantFetchMutation.isSuccess &&
@@ -265,15 +196,6 @@ function DeckDetailPage(): React.ReactElement {
       }}
       isMarkingOwned={markOwnedMutation.isPending}
       pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
-      deckSwaps={deckSwaps}
-      pendingSwapId={swapMutation.isPending ? (swapMutation.variables?.swapId ?? null) : null}
-      onApproveSwap={(swapId) => runSwapAction(swapId, { kind: 'approve' })}
-      onRejectSwap={(swapId) => runSwapAction(swapId, { kind: 'reject' })}
-      onUndoSwap={(swapId, decision) =>
-        runSwapAction(swapId, { kind: decision === 'approved' ? 'revert' : 'restore' })
-      }
-      onClearRejections={handleClearRejections}
-      isClearingRejections={restoreRejectedMutation.isPending}
       onFetchVariants={handleFetchVariants}
       fetchMutationStatus={variantFetchMutation.status}
       isCooldownActive={isCooldownActive}
@@ -307,13 +229,6 @@ interface IDeckDetailPageWithDataProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly deckSwaps: readonly ISwapRow[];
-  readonly pendingSwapId: string | null;
-  readonly onApproveSwap: (swapId: string) => void;
-  readonly onRejectSwap: (swapId: string) => void;
-  readonly onUndoSwap: (swapId: string, decision: 'approved' | 'rejected') => void;
-  readonly onClearRejections: () => void;
-  readonly isClearingRejections: boolean;
   readonly onFetchVariants: () => void;
   readonly fetchMutationStatus: string;
   readonly isCooldownActive: boolean;
@@ -339,13 +254,6 @@ function DeckDetailPageWithData({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  deckSwaps,
-  pendingSwapId,
-  onApproveSwap,
-  onRejectSwap,
-  onUndoSwap,
-  onClearRejections,
-  isClearingRejections,
   onFetchVariants,
   fetchMutationStatus,
   isCooldownActive,
@@ -561,13 +469,6 @@ function DeckDetailPageWithData({
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
-          deckSwaps={deckSwaps}
-          pendingSwapId={pendingSwapId}
-          onApproveSwap={onApproveSwap}
-          onRejectSwap={onRejectSwap}
-          onUndoSwap={onUndoSwap}
-          onClearRejections={onClearRejections}
-          isClearingRejections={isClearingRejections}
           onFetchVariants={onFetchVariants}
           fetchMutationStatus={typedFetchStatus}
           isCooldownActive={isCooldownActive}

@@ -9,9 +9,6 @@ import { SubstitutionService } from '../substitution/substitution.service';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { CatalogService } from '../catalog/catalog.service';
-import { SwapSuggestionQueryService } from '../swaps/swap-suggestion-query.service';
-import { SwapsReconciliationService } from '../swaps/swaps-reconciliation.service';
-import { buildCurrentDeckSlots } from '../swaps/build-current-deck-slots';
 import {
   IRepresentativeCard,
   ITrackedDeckListItem,
@@ -38,7 +35,7 @@ import { UpdateDeckMetaDto } from './dto/update-deck-meta.dto';
 import { UpdateDeckCompositionDto } from './dto/update-deck-composition.dto';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
 import { TrackedDeckTagEntity } from '../database/entities/tracked-deck-tag.entity';
-import { describeSwapRationale } from '../swaps/describe-swap-rationale';
+import { describeSwapRationale } from './describe-swap-rationale';
 import { ReplacementsQueryService } from '../replacements/replacements-query.service';
 import { buildReplacementViews } from '../replacements/build-replacement-views';
 import { buildProtectedCopies, findBrokenReplacements } from '../replacements/replacement-copies';
@@ -67,8 +64,6 @@ export class DecksService {
     private readonly shoppingLineService: ShoppingLineService,
     private readonly collectionReadService: CollectionReadService,
     private readonly catalogService: CatalogService,
-    private readonly swapSuggestionQueryService: SwapSuggestionQueryService,
-    private readonly swapsReconciliationService: SwapsReconciliationService,
     private readonly replacementsQueryService: ReplacementsQueryService,
     private readonly recommendationQueue: RecommendationQueueService,
     private readonly recommendationsQueryService: RecommendationsQueryService,
@@ -186,21 +181,10 @@ export class DecksService {
     }
 
     // Auto-recompute missing snapshots.
-    // BUG FIX (U9): load the exclusion set for each deck BEFORE recomputing
-    // so that rejected decisions are honoured. Previously, computeAndStoreReadiness
-    // was called without an exclusion set, silently treating all rejections as
-    // pending and producing an over-optimistic readiness score.
     for (const deck of decks) {
       if (!snapshotByDeckId.has(deck.id)) {
         try {
-          const { excludedIdentifiers, approvedIdentifiers } =
-            await this.swapSuggestionQueryService.loadReadinessInputs(deck.id);
-          const snap = await this.substitutionService.computeAndStoreReadiness(
-            deck.id,
-            userId,
-            excludedIdentifiers,
-            approvedIdentifiers,
-          );
+          const snap = await this.substitutionService.computeAndStoreReadiness(deck.id, userId);
           snapshotByDeckId.set(deck.id, snap);
         } catch (error) {
           this.logger.warn({
@@ -531,18 +515,9 @@ export class DecksService {
     });
 
     // Auto-recompute if no snapshot exists.
-    // BUG FIX (U9): load exclusions before recompute so that rejected decisions
-    // are honoured — symmetric fix to the listForUser bug fix above.
     if (!latestSnapshot) {
       try {
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
-        latestSnapshot = await this.substitutionService.computeAndStoreReadiness(
-          deckId,
-          userId,
-          excludedIdentifiers,
-          approvedIdentifiers,
-        );
+        latestSnapshot = await this.substitutionService.computeAndStoreReadiness(deckId, userId);
       } catch (error) {
         this.logger.warn({
           msg: 'Failed to auto-recompute readiness',
@@ -1008,11 +983,6 @@ export class DecksService {
         const brokenIds = new Set(brokenReplacements.map((replacement) => replacement.id));
         const stillActive = activeReplacements.filter((replacement) => !brokenIds.has(replacement.id));
 
-        // Load persisted exclusions/approvals — swap_suggestion rows the
-        // user has explicitly rejected or approved for this deck.
-        const { excludedIdentifiers, approvedIdentifiers } =
-          await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
-
         const deckInput = {
           cards: freshCards.map((row) => ({
             cardIdentifier: row.cardIdentifier,
@@ -1026,22 +996,7 @@ export class DecksService {
           inventory,
           catalog,
           undefined,
-          excludedIdentifiers,
-          approvedIdentifiers,
           buildProtectedCopies(stillActive),
-        );
-
-        // Reconcile swap_suggestion against the fresh breakdown, inside this
-        // same transaction — this is where currentDeckSlots is naturally
-        // already available (freshCards). Replaces the old hard-delete
-        // orphan cleanup: a suggestion whose position left the deck is
-        // retired, never deleted (SWAP-02).
-        await this.swapsReconciliationService.reconcile(
-          userId,
-          deckId,
-          transactionReadiness.breakdown,
-          buildCurrentDeckSlots(freshCards),
-          manager,
         );
 
         // Fetch tags for the response (within the transaction so we read a
@@ -1073,8 +1028,6 @@ export class DecksService {
     let readinessResult = readinessInsideTransaction;
     try {
       const inventory = await this.collectionReadService.loadOwned(userId);
-      const { excludedIdentifiers, approvedIdentifiers } =
-        await this.swapSuggestionQueryService.loadReadinessInputs(deckId);
       const freshCards = await this.deckCardRepo.find({
         where: { trackedDeckId: deckId },
       });
@@ -1087,12 +1040,8 @@ export class DecksService {
         })),
       };
 
-      // Not reconciled again here — the in-transaction pass above already
-      // reconciled against this same freshCards/inventory input; this
-      // recompute exists only so the snapshot (and the 200 response) reflect
-      // the committed state, matching the existing pre-D7 pattern of
-      // recomputing once more post-commit for staleness, not because the
-      // answer differs.
+      // Recomputed once more after the commit so the snapshot (and the 200
+      // response) reflect the committed state.
       const activeAfterCommit = await this.replacementsQueryService.loadActive(deckId);
 
       readinessResult = computeEffectiveReadiness(
@@ -1100,8 +1049,6 @@ export class DecksService {
         inventory,
         catalog,
         undefined,
-        excludedIdentifiers,
-        approvedIdentifiers,
         buildProtectedCopies(activeAfterCommit),
       );
 

@@ -11,7 +11,6 @@ import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { AuthzService } from '../../auth/authz.service';
 import { CatalogService } from '../../catalog/catalog.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
-import { SwapSuggestionQueryService } from '../../swaps/swap-suggestion-query.service';
 import { SourcesService } from '../sources/sources.service';
 import { CollectionService } from '../collection.service';
 
@@ -65,11 +64,6 @@ describe('CollectionService.addCardsBatch', () => {
       rawPercent: 50,
       effectivePercent: 60,
     } as never);
-    const swapSuggestionQueryService = createMock<SwapSuggestionQueryService>();
-    swapSuggestionQueryService.loadReadinessInputs.mockResolvedValue({
-      excludedIdentifiers: new Set(),
-      approvedIdentifiers: new Set(),
-    });
     const sourcesService = createMock<SourcesService>();
     sourcesService.ensureManualSource.mockResolvedValue({ id: SOURCE_ID } as CsvSourceEntity);
 
@@ -88,7 +82,6 @@ describe('CollectionService.addCardsBatch', () => {
         { provide: AuthzService, useValue: createMock<AuthzService>() },
         { provide: CatalogService, useValue: createMock<CatalogService>() },
         { provide: SubstitutionService, useValue: substitutionService },
-        { provide: SwapSuggestionQueryService, useValue: swapSuggestionQueryService },
         { provide: SourcesService, useValue: sourcesService },
       ],
     }).compile();
@@ -134,8 +127,6 @@ describe('CollectionService.addCardsBatch', () => {
     expect(substitutionService.computeAndStoreReadiness).toHaveBeenCalledWith(
       DECK_WITH_B,
       USER_ID,
-      expect.anything(),
-      expect.anything(),
     );
     expect(response.recomputedDeckCount).toBe(1);
   });
