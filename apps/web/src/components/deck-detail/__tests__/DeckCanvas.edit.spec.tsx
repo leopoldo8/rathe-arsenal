@@ -41,9 +41,6 @@ vi.mock('../../card-art/use-lightbox-sources', () => ({ lightboxSourcesFor: () =
 vi.mock('../MarkOwnedButton', () => ({
   MarkOwnedButton: () => <button data-testid="mark-owned-btn">Own it</button>,
 }));
-vi.mock('../ModifiedViewBanner', () => ({
-  ModifiedViewBanner: () => <div data-testid="modified-view-banner" />,
-}));
 vi.mock('../../../assets/icons/slot-mainboard.svg?react', () => ({ default: () => null }));
 vi.mock('../../../assets/icons/slot-hero.svg?react', () => ({ default: () => null }));
 vi.mock('../../../assets/icons/slot-weapon.svg?react', () => ({ default: () => null }));

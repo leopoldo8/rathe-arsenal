@@ -37,6 +37,12 @@ function standIns(): readonly [string, string] {
 
 const [FIRST, SECOND] = standIns();
 
+const ULID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+function newUlid(): string {
+  return `01HP${Array.from({ length: 22 }, () => ULID_ALPHABET[Math.floor(Math.random() * ULID_ALPHABET.length)]).join('')}`;
+}
+
 describe('suggestions from the collection (E2E)', () => {
   let fixture: IFixture;
 
@@ -224,6 +230,23 @@ describe('suggestions from the collection (E2E)', () => {
     expect(await fixture.snapshotCount(owner.deckId)).toBe(before.snapshots);
   });
 
+  it('the bulk route refuses when every suggestion is skipped', async () => {
+    // Emissary's only suggestion would take FIRST from 2 copies in the deck to 4; flex is owned, so nothing else is suggested.
+    const owner = await fixture.scenario([mainboard(FIRST, 2)]);
+    await fixture.own(owner.jwt, [
+      { cardIdentifier: FLEX, quantity: 2 },
+      { cardIdentifier: FIRST, quantity: 4 },
+    ]);
+    expect(await suggestionsOf(owner)).toEqual({ [EMISSARY]: FIRST });
+    const before = await fixture.deckCards(owner.deckId);
+
+    const res = await useAll(owner).expect(409);
+
+    expect(res.body.code).toBe('NOTHING_TO_REPLACE');
+    expect(await fixture.deckCards(owner.deckId)).toEqual(before);
+    expect(await fixture.replacementRows(owner.deckId)).toEqual([]);
+  });
+
   it('the bulk route skips a suggestion past the copy limit and uses the others', async () => {
     // FIRST x2 in the deck and 4 owned: two free copies, both suggested for emissary, which would make 4.
     const owner = await twoSuggestions([mainboard(FIRST, 2)], [[FIRST, 2]]);
@@ -293,6 +316,11 @@ describe('suggestions from the collection (E2E)', () => {
         ],
       })
       .expect(200);
+    // A second import that seeds the collection recomputes the owner's existing decks.
+    await fixture
+      .post('/api/decks/import', owner.jwt)
+      .send({ urls: [`https://fabrary.net/decks/${newUlid()}`], seedInventory: true })
+      .expect(201);
 
     const [{ table: after }] = await fixture.dataSource.query(`SELECT to_regclass('swap_suggestion') AS table`);
     expect(after).toBeNull();

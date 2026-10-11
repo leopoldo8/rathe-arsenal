@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/swaps-into-alternatives/plan.md`
 
-39 checks in 4 slices · 4 one-way doors · 0 open
+40 checks in 4 slices · 4 one-way doors · 0 open
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -131,15 +131,15 @@ Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migratio
 **C32** - After the migration's `up`, `card_replacement` accepts each of the 7 origins `very_close`, `close`, `other_pitch`, `generic`, `search`, `recommendation`, `suggested` and refuses `swap`; after `down` it refuses `suggested` again (door 1) · done
 Proof: `apps/api/src/database/migrations/__tests__/drop-swap-suggestion.migration.int-spec.ts -t "accepts suggested as a replacement origin"`
 
-**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and deck import (AC 22) · done
+**C33** - With `swap_suggestion` dropped from the e2e database, each recompute path answers 2xx: deck list, deck read, composition save, pick, revert, bulk use, alternatives list, collection batch add, mark owned, and a deck import that seeds the collection and so recomputes the owner's existing decks (AC 22) (reworded after verification round 1: the import call was missing from the proof) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "every recompute path runs without a swap table"`
 
-**C34** - No API source outside the migrations names the swap table or its entity, and the API typechecks (AC 22) · done
-Proof: `! git grep -nE "swap_suggestion|SwapSuggestion|SwapsReconciliation" -- apps/api/src ':!apps/api/src/database/migrations'`
+**C34** - No API source outside the migrations and the tests names the swap table or its entity, and the API typechecks (AC 22) (reworded after verification round 1: the e2e proof of C33 names the table to assert it is absent) · done
+Proof: `! git grep -nE "swap_suggestion|SwapSuggestion|SwapsReconciliation" -- apps/api/src ':!apps/api/src/database/migrations' ':!apps/api/src/**/__tests__/**'`
 Proof: `pnpm --filter @rathe-arsenal/engine build && pnpm --filter @rathe-arsenal/api typecheck`
 
 **C35** - The two earlier migrations' int-specs still pass with the new migration in the chain (door 4 does not break the history) · done
-Proof: `apps/api/src/database/migrations/__tests__/redesign-migrations-on-synchronized-schema.int-spec.ts -t "rebuilds an empty synchronize-created swap_suggestion with the migration-owned constraints"`
+Proof: `apps/api/src/database/migrations/__tests__/redesign-migrations-on-synchronized-schema.int-spec.ts` (the whole file: its tests share one schema the first one seeds; reworded after verification round 1)
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "up() drops substitute_decision"`
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "down() recreates substitute_decision"`
 
@@ -150,6 +150,11 @@ Proof: `pnpm --filter @rathe-arsenal/web typecheck`
 **C37** - The full suites are green after the removal: engine, API unit, web unit, and the Playwright e2e project (rule: removed tests are listed below, none skipped) · done
 Proof: `pnpm --filter @rathe-arsenal/engine test && pnpm --filter @rathe-arsenal/api test && pnpm --filter @rathe-arsenal/web test`
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium`
+
+### Added after verification round 1
+
+**C40** - On a deck whose only suggestion would pass the copy limit, the bulk route answers `409` `NOTHING_TO_REPLACE` and changes neither the deck cards nor the `card_replacement` rows (implementation-notes deviation 2) · done
+Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route refuses when every suggestion is skipped"`
 
 ### Kept obligations the change must not break
 
@@ -178,10 +183,10 @@ Removed because the code they prove is deleted, not to make a suite pass:
 | Set (size) | Member -> proof | Unproven |
 | --- | --- | --- |
 | `POST /api/decks/:deckId/replacements` statuses (5) | 201 C8 · 400 C10, C38 · 401 C38 · 404 C38 · 409 C38 | - |
-| `POST /api/decks/:deckId/replacements/suggested` statuses (4) | 201 C18 · 401 C22 · 404 C22 · 409 C19, C21 | - |
+| `POST /api/decks/:deckId/replacements/suggested` statuses (4) | 201 C18 · 401 C22 · 404 C22 · 409 C19, C21, C40 | - |
 | removed swaps routes (6) | `GET /api/swaps` C30 · approve C30 · reject C30 · revert C30 · restore C30 · outcome C30 | - |
 | `card_replacement.pickedFrom` values (8) | `very_close` C32 · `close` C32 · `other_pitch` C32 · `generic` C32 · `search` C32 · `recommendation` C32 · `suggested` C32, C8 · `swap` refused C32, C10 | - |
-| bulk outcomes per suggestion (5) | used C17, C18 · copy limit C17, C20 · hero-illegal C17 · no free copy C17 · held by replacements C17 | - |
+| bulk outcomes per suggestion (6) | used C17, C18 · copy limit C17, C20 · hero-illegal C17 · no free copy C17 · held by replacements C17 · all skipped C40 | - |
 | missing-row suggestion cases (4) | first of two stand-ins C12 · none C12, C14 · two slots C12 · held by replacement C12 | - |
 | status strip states (3) | complete C23 · missing without suggestion C23 · with suggestions C23 | - |
 | onboarding first-review variants (2) | with suggestions C25 · without C25 | - |
