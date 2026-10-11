@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/recommendations-rail/plan.md`
 
-33 checks in 4 slices · 1 one-way door · 0 open
+36 checks in 5 slices · 1 one-way door · 0 open
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -130,6 +130,19 @@ Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriv
 **C33** - With `typicalMs` 130 000 (shown as ~2 min) the mark sits at the bottom of the ring, the ring is a quarter full at 60 s, half full at 120 s with no warning yet, and at 122 s the warning shows with the ring just past half (AC 26, 27) (replaced on 2026-10-11 after the owner tested staging) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "reaches the usual-time mark half way round the ring, exactly when the warning shows"`
 
+### S5 - the rail scrolls like a carousel on desktop (added 2026-10-11, owner feedback)
+
+**C34** - In the browser, the rail's computed `scrollbar-width` is `none`, it reserves 0 px for a scrollbar, and with six cards it overflows sideways (AC 37) · done
+Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "the mouse wheel scrolls the rail sideways"`
+
+**C35** - In the browser, a 200 px wheel over the rail moves the rail right and leaves the page where it was; once the rail reaches its end, further wheel turns scroll the page down (AC 38, 39) · done
+Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "the mouse wheel scrolls the rail sideways"`
+
+**C36** - The wheel rule, table-driven over a 1000 px rail in a 400 px box: +100 px moves to 100 and is cancelled; 3 lines move 120 px; a large turn stops at 600; past the end nothing is cancelled; -250 moves back to 350; at the start a turn back, a sideways gesture and ctrl + wheel are not cancelled; a rail that fits never cancels (AC 38, 39) · done
+Proof: `apps/web/src/hooks/__tests__/useWheelScrollsSideways.spec.tsx -t "turns a vertical wheel into sideways scrolling until an end is reached"`
+Proof: `apps/web/src/hooks/__tests__/useWheelScrollsSideways.spec.tsx -t "leaves sideways gestures, pinch-zoom and the start edge to the browser"`
+Proof: `apps/web/src/hooks/__tests__/useWheelScrollsSideways.spec.tsx -t "does nothing when the content fits"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -143,6 +156,7 @@ Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.t
 | cost chip (6) | more C13 · less C13 · equal C13 · no cut C13 · cut cost unknown C13 · cost unknown C13 | - |
 | step line (4) | queued C21 · retrying C21 · running C21 · past usual C23 | - |
 | motion paths (2) | full C24, C28 · reduced C24, C30 | - |
+| wheel outcomes (5) | moves sideways C35, C36 · past the end C35, C36 · sideways gesture C36 · pinch-zoom C36 · content fits C36 | - |
 | deal trigger (2) | different run C31, C28 · same run C31 | - |
 | deck states for placement (2) | complete C8 · incomplete C8 | - |
 | locales (2) | pt-BR C9 · en-US C9 | - |

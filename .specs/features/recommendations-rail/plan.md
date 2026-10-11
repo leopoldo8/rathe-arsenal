@@ -125,6 +125,18 @@ When the new run's cards arrive while the page is open, each card flies from the
 
 **Independent test:** unit test of the deal geometry; Playwright flow measuring the landed boxes against the slots.
 
+### S5: the rail scrolls like a carousel on desktop (P2)
+
+Added on 2026-10-11 from the owner's feedback after testing staging.
+
+**Acceptance Criteria**
+
+37. The rail SHALL scroll sideways with no visible scrollbar and no space reserved for one
+38. WHEN the mouse wheel turns vertically over the rail and the rail can still move in that direction THEN the rail SHALL scroll sideways by the wheel's distance and the page SHALL NOT scroll
+39. IF the rail is already at the end the wheel moves towards, or the gesture is sideways, or it is a pinch-zoom (ctrl + wheel) THEN the system SHALL leave the wheel to the page
+
+**Independent test:** Playwright over a rail of six cards.
+
 ## Out of scope
 
 | Excluded | Why |
