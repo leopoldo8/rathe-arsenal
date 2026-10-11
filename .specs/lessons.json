@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 18,
+  "next_id": 20,
   "lessons": [
     {
       "id": "L-010",
@@ -148,6 +148,42 @@
       ],
       "created": "2026-10-06T22:18:12Z",
       "last_seen": "2026-10-06T22:18:12Z"
+    },
+    {
+      "id": "L-018",
+      "key": "surviving_mutant::to prove a windowed aggregate median of the latest n seed enough out of window rows to change the answer if the window flips or the limit goes away one outlier cannot move a median",
+      "text": "To prove a windowed aggregate (median of the latest N), seed enough out-of-window rows to change the answer if the window flips or the limit goes away; one outlier cannot move a median.",
+      "signal": "surviving_mutant",
+      "scope": "api/aggregates",
+      "status": "candidate",
+      "features": [
+        "recommendations-rail"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "apps/api/src/recommendations/recommendations.service.ts ORDER BY finishedAt DESC (api/aggregates)"
+      ],
+      "created": "2026-10-11T06:03:48Z",
+      "last_seen": "2026-10-11T06:03:48Z"
+    },
+    {
+      "id": "L-019",
+      "key": "ac_gap::for each animation criterion write a negative case when it must not play and a timing case state just after the trigger not only the end state",
+      "text": "For each animation criterion, write a negative case (when it must not play) and a timing case (state just after the trigger), not only the end state.",
+      "signal": "ac_gap",
+      "scope": "web/animation",
+      "status": "candidate",
+      "features": [
+        "recommendations-rail"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC 26, AC 31, AC 33 (web/animation)"
+      ],
+      "created": "2026-10-11T06:03:48Z",
+      "last_seen": "2026-10-11T06:03:48Z"
     }
   ]
 }
