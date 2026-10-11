@@ -46,6 +46,8 @@
 
 .kpiStrip {
   display: flex;
+  /* Never wider than the page: on phones the tiles shrink and wrap instead. */
+  max-inline-size: 100%;
   border: 1px solid var(--ra-border-strong);
   border-radius: var(--ra-radius-md);
 }
@@ -56,6 +58,8 @@
   align-items: center;
   gap: var(--ra-space-1);
   padding: var(--ra-space-3) var(--ra-space-5);
+  min-inline-size: 0;
+  text-align: center;
 }
 
 .kpiCell + .kpiCell {
@@ -85,7 +89,6 @@
   text-transform: uppercase;
   letter-spacing: var(--ra-track-caps);
   color: var(--ra-fg-muted);
-  white-space: nowrap;
 }
 
 .cta {
