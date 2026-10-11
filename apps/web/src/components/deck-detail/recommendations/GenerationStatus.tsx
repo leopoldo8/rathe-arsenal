@@ -5,7 +5,7 @@ import styles from './GenerationStatus.module.css';
 
 const RING_RADIUS = 12;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-const FULL_TURN_WITHOUT_TYPICAL_MS = 240_000;
+const FULL_TURN_WITHOUT_USUAL_MS = 240_000;
 const MINUTE_MS = 60_000;
 
 interface IGenerationStatusProps {
@@ -33,8 +33,10 @@ export function GenerationStatus({ status, elapsedMs, measuredAt, typicalMs, poo
   }, []);
 
   const elapsed = elapsedMs + Math.max(0, now - measuredAt);
-  const fullTurnMs = typicalMs === null ? FULL_TURN_WITHOUT_TYPICAL_MS : typicalMs * 2;
-  const overdue = typicalMs !== null && elapsed > typicalMs;
+  const usualMinutes = typicalMs === null ? null : Math.max(1, Math.round(typicalMs / MINUTE_MS));
+  const usualMs = usualMinutes === null ? null : usualMinutes * MINUTE_MS;
+  const fullTurnMs = usualMs === null ? FULL_TURN_WITHOUT_USUAL_MS : usualMs * 2;
+  const overdue = usualMs !== null && elapsed > usualMs;
   const step =
     status === 'running'
       ? t('recommendations.step.running', { count: poolSize ?? 0, hero: heroName })
@@ -47,20 +49,21 @@ export function GenerationStatus({ status, elapsedMs, measuredAt, typicalMs, poo
           <circle className={styles.track} cx="15" cy="15" r={RING_RADIUS} />
           <circle
             className={styles.arc}
+            data-testid="generation-ring-arc"
             cx="15"
             cy="15"
             r={RING_RADIUS}
             strokeDasharray={`${Math.min(1, elapsed / fullTurnMs) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
             transform="rotate(-90 15 15)"
           />
-          {typicalMs !== null && <line className={styles.mark} x1="15" y1="26" x2="15" y2="30" data-testid="generation-typical-mark" />}
+          {usualMs !== null && <line className={styles.mark} x1="15" y1="26" x2="15" y2="30" data-testid="generation-typical-mark" />}
         </svg>
         <span className={styles.clock} aria-label={t('recommendations.clockAria')} data-testid="generation-clock">
           {formatClock(elapsed)}
         </span>
-        {typicalMs !== null && (
+        {usualMinutes !== null && (
           <span className={styles.usual} data-testid="generation-usual">
-            · {t('recommendations.usual', { minutes: Math.ceil(typicalMs / MINUTE_MS) })}
+            · {t('recommendations.usual', { minutes: usualMinutes })}
           </span>
         )}
       </div>
