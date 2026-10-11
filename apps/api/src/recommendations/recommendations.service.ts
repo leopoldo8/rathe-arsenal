@@ -164,7 +164,8 @@ export class RecommendationsService {
     deckList: IDeckList,
     excluded: ReadonlySet<string> | undefined,
   ): Promise<IGenerationResponse | null> {
-    const now = new Date();
+    // The run's timestamps come from the database clock; the host clock can trail it by milliseconds.
+    const [{ now }] = (await this.dataSource.query(`SELECT clock_timestamp() AS now`)) as [{ now: Date }];
     const run = active.find((row) => row.status === 'running') ?? active[0];
     const status = run ? deriveGenerationStatus(run, now) : null;
     if (!run || status === null) return null;
