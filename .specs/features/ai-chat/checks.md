@@ -36,6 +36,7 @@ Proof: `e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "a revoke takes effect
 
 **C5** - The reference loop's tournament step runs on an empty table, runs when the latest `syncedAt` is 25 hours old, and sends no request when it is 23 hours old (AC 6) · done
 Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "syncs when empty or a day old, never sooner"`
+Proof: `unit src/reference/__tests__/reference-step.spec.ts -t "runs a source only when it is due"` (added after verification round 1, which found the step's due gate untested)
 
 **C6** - Listing: a format whose facet count is 999 is listed once; a format whose count is 1,000 is listed once per hero facet value; every listed id reaches the sync once, table-driven over the two cases (AC 7, door 10) · done
 Proof: `unit src/reference/__tests__/fabrary-index.spec.ts -t "lists a format whole under 1000 and by hero at 1000"`
@@ -75,6 +76,7 @@ Proof: `e2e src/reference/__tests__/tournament-sync.e2e-spec.ts -t "logs the syn
 
 **C17** - The rules step fetches when the table is empty and when `fetchedAt` is 25 hours old, and not when it is 23 hours old (AC 17) · done
 Proof: `e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "fetches when empty or a day old"`
+Proof: `unit src/reference/__tests__/reference-step.spec.ts -t "runs a source only when it is due"` (added after verification round 1, same gap as C5)
 
 **C18** - Parsing the fixture index: rule `1.1.1a` exists with section `1.1`, title `Players` and its text starting `To participate`; a glossary term is an entry; no entry comes from a `trp/` or `ppg/` location; no entry text contains an HTML tag (AC 18, door 11) · done
 Proof: `unit src/reference/__tests__/rules-parse.spec.ts -t "one entry per numbered rule and glossary term, cr only"`
@@ -158,7 +160,7 @@ Proof: `unit src/chat/__tests__/chat-tools.spec.ts -t "every tool bounds its inp
 Proof: `e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "each read tool answers from the database"`
 
 **C44** - History: two done exchanges and a failed one replay as `user` text, the first turn's `modelContent` verbatim (a `thoughtSignature` field kept byte for byte), the second's, and the new message last; the failed turn's assistant content is absent and consecutive user texts merge into one content; with 40,000 estimated tokens the oldest whole exchange is dropped, never a `functionCall` without its `functionResponse` (AC 43, door 8) · done
-Proof: `unit src/chat/__tests__/chat-history.spec.ts -t "replays done turns verbatim and trims whole exchanges"`
+Proof: `unit src/chat/__tests__/chat-history.spec.ts -t "replays done turns verbatim and trims whole exchanges"` (extended after verification round 1: the same test also pins the boundary, 30,000 estimated tokens kept and 30,001 trimmed, since the 40,000 case alone let a 39,000 threshold pass)
 
 **C45** - A model answer with two `functionCall` parts (`id` `c1` `get_deck`, `id` `c2` `search_rules`) leads to a second request whose `contents` end with that model content exactly as received and one `user` content holding two `functionResponse` parts with names and ids `c1`, `c2`; the third answer's text ends the turn (AC 44, door 8) · done
 Proof: `e2e src/chat/__tests__/chat-worker.e2e-spec.ts -t "answers every call in one turn and replays the model content"`
@@ -179,11 +181,11 @@ Proof: `e2e src/chat/__tests__/chat-worker.e2e-spec.ts -t "a provider error fail
 
 **C50** - A call that never answers is aborted at 120 s (fake timers) as `MODEL_TIMEOUT`; a turn whose clock passes 480 s before its next call ends `TURN_TIMEOUT` (AC 49, door 9) · done
 Proof: `unit src/chat/__tests__/gemini-chat-client.spec.ts -t "aborts a call at 120 seconds"`
-Proof: `unit src/chat/__tests__/chat-turn.spec.ts -t "a turn past 480 seconds stops"`
+Proof: `unit src/chat/__tests__/chat-turn.spec.ts -t "a turn past 480 seconds stops"` (extended after verification round 1: the turn test also pins the boundary, a second call at 479,999 ms and none at 480,000 ms)
 
 **C51** - Answer outcomes classify, table-driven: `blockReason` and each of `SAFETY`, `RECITATION`, `LANGUAGE`, `OTHER`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `SPII`, `FINISH_REASON_UNSPECIFIED`, `UNEXPECTED_TOOL_CALL`, `MALFORMED_RESPONSE` and an unknown value -> `MODEL_REFUSED`; `MAX_TOKENS` -> `MODEL_TRUNCATED`; `MALFORMED_FUNCTION_CALL` -> `MODEL_BAD_TOOL_CALL`; `TOO_MANY_TOOL_CALLS` -> `TOO_MANY_TOOL_ROUNDS`; `MISSING_THOUGHT_SIGNATURE` -> `HISTORY_REJECTED`; `STOP` with no text and no call -> `MODEL_EMPTY`; a call to `drop_table` -> `MODEL_BAD_TOOL_CALL` (AC 50) · done
 Proof: `unit src/chat/__tests__/gemini-chat-client.spec.ts -t "classifies every answer outcome"`
-Proof: `unit src/chat/__tests__/chat-turn.spec.ts -t "an undeclared function fails the turn"`
+Proof: `unit src/chat/__tests__/chat-turn.spec.ts -t "an undeclared function fails the turn"` (extended after verification round 1: the undeclared-function case now runs through the real `runChatTool`, which throws `UnknownTool` for a name outside the nine even when a toolbox entry exists)
 
 **C52** - A turn that called `propose_deck` validly and then got a `503` ends `failed`: its usage row stays, no `chat_proposal` exists, the user message stays (AC 51, door 4) · done
 Proof: `e2e src/chat/__tests__/chat-worker.e2e-spec.ts -t "a failed turn keeps usage and stores no proposal"`
@@ -309,7 +311,7 @@ Proof: `int src/database/entities/__tests__/chat-entities.int-spec.ts -t "synchr
 Proof: `e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route requires a token"`
 
 **C76** - Every chat route other than send and retry answers `429` after the global 120-per-minute limit, table-driven (Surface `429` members) · done
-Proof: `e2e src/chat/__tests__/chat-throttle.e2e-spec.ts -t "every chat route is throttled"`
+Proof: `e2e src/chat/__tests__/chat-throttle.e2e-spec.ts -t "every chat route is throttled"` (extended after verification round 1: no route answers 429 within its first 120 requests, so the limit itself is pinned)
 
 - Claims naming a status code, route or response shape: C1-C4, C24-C35, C57, C62-C68, C70, C75, C76 - each has a proof that crosses the HTTP boundary against real Postgres
 - Decision tables proven at their own layer and again at the boundary: provider and answer outcomes (C49, C51 client and turn specs, plus C48, C49, C52 against Postgres); proposal validation (C58, C59 unit, plus C60, C41 e2e); history (C44 unit, plus C45 e2e); listing split (C6 unit, plus C8 e2e); name parse (C10 unit and e2e); rules parse (C18 unit, plus C19, C21 e2e)

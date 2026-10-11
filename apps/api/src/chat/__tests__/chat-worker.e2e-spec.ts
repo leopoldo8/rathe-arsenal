@@ -51,7 +51,8 @@ describe('chat worker (E2E)', () => {
 
     await fixture.drain(stub.fetch);
 
-    expect((await fixture.message(assistantMessageId))['error']).toBe('BUDGET_EXHAUSTED');
+    const overBudget = await fixture.message(assistantMessageId);
+    expect([overBudget['status'], overBudget['error']]).toEqual(['failed', 'BUDGET_EXHAUSTED']);
     expect(stub.requests).toHaveLength(0);
   });
 
@@ -151,7 +152,8 @@ describe('chat worker (E2E)', () => {
 
     await fixture.drain(stub.fetch);
 
-    expect((await fixture.message(assistantMessageId))['error']).toBe('TOO_MANY_TOOL_ROUNDS');
+    const capped = await fixture.message(assistantMessageId);
+    expect([capped['status'], capped['error']]).toEqual(['failed', 'TOO_MANY_TOOL_ROUNDS']);
     expect(stub.requests).toHaveLength(6);
   });
 
@@ -214,6 +216,7 @@ describe('chat worker (E2E)', () => {
 
     await fixture.drain(fetch);
 
+    expect((await fixture.message(assistantMessageId))['status']).toBe('done');
     expect(seen).toHaveLength(2);
     expect(seen[1]!.getTime()).toBeGreaterThan(seen[0]!.getTime());
   });

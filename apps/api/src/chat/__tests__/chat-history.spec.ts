@@ -45,6 +45,18 @@ describe('chat history', () => {
 
     expect(trimmed[0]).toEqual({ role: 'user', parts: [{ text: 'recent' }] });
     expect(trimmed[trimmed.length - 1]).toEqual({ role: 'user', parts: [{ text: 'now' }] });
+    const exchange = (text: string): IHistoryMessage[] => [
+      { role: 'user', status: 'done', text, modelContent: null },
+      { role: 'assistant', status: 'done', text: 'a', modelContent: [{ role: 'model', parts: [{ text: 'a' }] }] },
+    ];
+    const current: IHistoryMessage = { role: 'user', status: 'done', text: 'now', modelContent: null };
+    const sizedTo = (tokens: number): IHistoryMessage[] => {
+      const base = buildHistory([...exchange(''), current], Number.MAX_SAFE_INTEGER);
+      const padding = tokens * 4 - JSON.stringify(base).length;
+      return [...exchange('p'.repeat(padding)), current];
+    };
+    expect(buildHistory(sizedTo(30_000))).toHaveLength(3);
+    expect(buildHistory(sizedTo(30_001))).toEqual([{ role: 'user', parts: [{ text: 'now' }] }]);
     const calls = trimmed.flatMap((content) => content.parts).filter((part) => part.functionCall).map((part) => part.functionCall!.id);
     const responses = trimmed.flatMap((content) => content.parts).filter((part) => part.functionResponse).map((part) => part.functionResponse!.id);
     expect(calls).toEqual(responses);

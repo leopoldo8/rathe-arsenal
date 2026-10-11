@@ -10,13 +10,18 @@ describe('chat throttle (E2E)', () => {
     fixture = await bootChatFixture({ throttle: true });
   }, 60_000);
 
+  async function conversationOf(userId: string): Promise<string> {
+    const [{ id }] = (await fixture.dataSource.query(`INSERT INTO chat_conversation ("userId") VALUES ($1) RETURNING id`, [userId])) as [{ id: string }];
+    return id;
+  }
+
   afterAll(async () => {
     await fixture.close();
   });
 
   it('send and retry allow 20 a minute', async () => {
     const user = await fixture.chatUser();
-    const conversationId = await fixture.conversation(user);
+    const conversationId = await conversationOf(user.userId);
     const send = () => fixture.post(`/api/chat/conversations/${conversationId}/messages`, user.jwt).send({ text: 'hi' });
     const retry = () => fixture.post(`/api/chat/conversations/${conversationId}/messages/${SOME_UUID}/retry`, user.jwt);
 
@@ -33,7 +38,7 @@ describe('chat throttle (E2E)', () => {
 
   it('every chat route is throttled', async () => {
     const user = await fixture.chatUser();
-    const conversationId = await fixture.conversation(user);
+    const conversationId = await conversationOf(user.userId);
     const server = request(fixture.app.getHttpServer());
     const routes: Array<[string, string]> = [
       ['get', '/api/chat/conversations'],
@@ -48,12 +53,17 @@ describe('chat throttle (E2E)', () => {
       (method === 'get' ? server.get(path) : method === 'delete' ? server.delete(path) : server.post(path)).set('Authorization', `Bearer ${user.jwt}`);
 
     const last: number[] = [];
+    const earlyLimits: string[] = [];
     for (const [method, path] of routes) {
       let status = 0;
-      for (let i = 0; i < 121; i += 1) status = (await hit(method, path)).status;
+      for (let i = 0; i < 121; i += 1) {
+        status = (await hit(method, path)).status;
+        if (i < 120 && status === 429) earlyLimits.push(`${method} ${path} #${i + 1}`);
+      }
       last.push(status);
     }
 
+    expect(earlyLimits).toEqual([]);
     expect(last).toEqual(routes.map(() => 429));
   });
 });
