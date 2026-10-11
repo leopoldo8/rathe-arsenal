@@ -107,13 +107,13 @@ Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.t
 **C27** - The deal keyframes map the pile box onto the slot box: for pile `{ left: 40, top: 300, width: 110 }` in a section at `{ left: 10, top: 100 }` and slot `{ left: 400, top: 260, width: 202 }`, the first keyframe is `translate(30px, 200px) scale(1) rotate(0deg)`, the last is `translate(390px, 160px) scale(1.8363636363636364) rotate(0deg)`, the middle keyframe's vertical position is above both ends, and the transform origin is `0 0` (AC 31, 32) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/deal-geometry.spec.ts -t "maps the pile box onto the slot box"`
 
-**C28** - In the browser, after a poll moves from a `generation` payload to a done run with 3 recommendations, three flying cards are created 190 ms apart and each one's box when its flight finishes equals its slot's art box within 0.5 px in left, top, width and height; afterwards the pile is gone and 3 swap cards are visible with their reason text (AC 31, 32, 33, 34)
+**C28** - In the browser, after a poll moves from a `generation` payload to a done run with 3 recommendations, three flying cards are created 190 ms apart and each one's box when its flight finishes equals its slot's art box within 0.5 px in left, top, width and height; afterwards the pile is gone and 3 swap cards are visible with their reason text (AC 31, 32, 33, 34) · done
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriving cards exactly into place"`
 
-**C29** - In the browser, the rail's height before the first card lands equals its height after every card has settled, within 1 px (AC 33)
+**C29** - In the browser, the rail's height before the first card lands equals its height after every card has settled, within 1 px (AC 33) · done
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "deals the arriving cards exactly into place"`
 
-**C30** - With reduced motion emulated, the same transition creates no flying card and the 3 swap cards are visible; opening a deck whose run is already done shows the swap cards with no pile and no flying card (AC 35, 36)
+**C30** - With reduced motion emulated, the same transition creates no flying card and the 3 swap cards are visible; opening a deck whose run is already done shows the swap cards with no pile and no flying card (AC 35, 36) · done
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "arrives without motion when motion is reduced"`
 Proof: `apps/web/tests/e2e/recommendations-rail-flow.spec.ts -g "a finished run renders without a deal"`
 

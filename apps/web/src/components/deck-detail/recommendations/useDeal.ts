@@ -7,6 +7,7 @@ const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const FLIP_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
 export const PILE_FOLD_DELAY_MS = 700;
 export const PILE_FOLD_MS = 520;
+const IMAGE_WAIT_MS = 1500;
 
 export interface IDealCard {
   readonly id: string;
@@ -59,6 +60,22 @@ function buildFlyingCard(card: IDealCard, width: number, classNames: IDealClassN
   return flying;
 }
 
+/** A card that lands before its image has decoded shows half a picture, so the deal waits for them, but never long. */
+function preloadImages(cards: readonly IDealCard[]): Promise<void> {
+  const decoded = Promise.all(
+    cards
+      .map((card) => card.imageSrc)
+      .filter((src): src is string => src !== null)
+      .map((src) => {
+        const image = new Image();
+        image.src = src;
+        return image.decode().catch(() => undefined);
+      }),
+  ).then(() => undefined);
+  const timeout = new Promise<void>((resolve) => window.setTimeout(resolve, IMAGE_WAIT_MS));
+  return Promise.race([decoded, timeout]);
+}
+
 /**
  * Flies each card from the pile to its slot (`[data-deal-slot]` inside the section, in card order), marks it landed in
  * the same frame the flying copy is removed, then folds the pile away.
@@ -86,34 +103,45 @@ export function useDeal({ dealKey, cards, sectionRef, pileRef, classNames, onDon
       return () => timers.forEach((timer) => window.clearTimeout(timer));
     }
 
-    const container = section.getBoundingClientRect();
-    const from = pile.getBoundingClientRect();
-    const flights = cards.map((card, index) => {
-      const slot = slots[index]!.getBoundingClientRect();
-      const flying = buildFlyingCard(card, from.width, classNames);
-      section.appendChild(flying);
-      const delay = index * DEAL_GAP_MS;
-      const flight = flying.animate(dealKeyframes(from, slot, container).map((keyframe) => ({ ...keyframe })), { duration: DEAL_FLIGHT_MS, delay, easing: EASE, fill: 'both' });
-      flying.querySelector(`.${classNames.flip.split(' ')[0]}`)?.animate(
-        [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(180deg)' }],
-        { duration: DEAL_FLIGHT_MS * 0.5, delay: delay + DEAL_FLIGHT_MS * 0.18, easing: FLIP_EASE, fill: 'both' },
-      );
-      flying.querySelector(`.${classNames.shadow.split(' ')[0]}`)?.animate(
-        [{ opacity: 0.35 }, { opacity: 1, offset: 0.45 }, { opacity: 0 }],
-        { duration: DEAL_FLIGHT_MS, delay, easing: EASE, fill: 'both' },
-      );
-      const finished = flight.finished
-        .then(() => {
-          flushSync(() => setLanded((current) => new Set([...current, card.id])));
-          flying.remove();
-        })
-        .catch(() => flying.remove());
-      return { flying, flight, finished };
-    });
     let cancelled = false;
-    void Promise.all(flights.map((entry) => entry.finished)).then(() => {
-      if (!cancelled) fold();
-    });
+    let flights: { flying: HTMLDivElement; flight: Animation }[] = [];
+    const start = (): void => {
+      if (cancelled) return;
+      const container = section.getBoundingClientRect();
+      const from = pile.getBoundingClientRect();
+      const launched = cards.map((card, index) => {
+        const slot = slots[index]!.getBoundingClientRect();
+        const flying = buildFlyingCard(card, from.width, classNames);
+        section.appendChild(flying);
+        const delay = index * DEAL_GAP_MS;
+        const flight = flying.animate(dealKeyframes(from, slot, container).map((keyframe) => ({ ...keyframe })), {
+          duration: DEAL_FLIGHT_MS,
+          delay,
+          easing: EASE,
+          fill: 'both',
+        });
+        flying.querySelector(`.${classNames.flip.split(' ')[0]}`)?.animate(
+          [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(180deg)' }],
+          { duration: DEAL_FLIGHT_MS * 0.5, delay: delay + DEAL_FLIGHT_MS * 0.18, easing: FLIP_EASE, fill: 'both' },
+        );
+        flying.querySelector(`.${classNames.shadow.split(' ')[0]}`)?.animate(
+          [{ opacity: 0.35 }, { opacity: 1, offset: 0.45 }, { opacity: 0 }],
+          { duration: DEAL_FLIGHT_MS, delay, easing: EASE, fill: 'both' },
+        );
+        const finished = flight.finished
+          .then(() => {
+            flushSync(() => setLanded((current) => new Set([...current, card.id])));
+            flying.remove();
+          })
+          .catch(() => flying.remove());
+        return { flying, flight, finished };
+      });
+      flights = launched;
+      void Promise.all(launched.map((entry) => entry.finished)).then(() => {
+        if (!cancelled) fold();
+      });
+    };
+    void preloadImages(cards).then(start);
 
     return () => {
       cancelled = true;
