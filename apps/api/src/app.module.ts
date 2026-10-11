@@ -23,6 +23,7 @@ import { TagsModule } from './tags/tags.module';
 import { ReplacementsModule } from './replacements/replacements.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { ReferenceModule } from './reference/reference.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ReferenceModule } from './reference/reference.module';
     ReplacementsModule,
     RecommendationsModule,
     ReferenceModule,
+    ChatModule,
     // Serve the built SPA from apps/web/dist in production.
     // Path resolves at runtime relative to the compiled apps/api/dist/main.js.
     ServeStaticModule.forRoot({

@@ -58,15 +58,15 @@ export class ChatProposalEntity {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @ManyToOne(() => ChatMessageEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ChatMessageEntity, { onDelete: 'CASCADE', deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'messageId' })
   message!: ChatMessageEntity;
 
-  @ManyToOne(() => TrackedDeckEntity, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => TrackedDeckEntity, { onDelete: 'SET NULL', nullable: true, deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'trackedDeckId' })
   trackedDeck!: TrackedDeckEntity | null;
 
-  @ManyToOne(() => CardReplacementEntity, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => CardReplacementEntity, { onDelete: 'SET NULL', nullable: true, deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'cardReplacementId' })
   cardReplacement!: CardReplacementEntity | null;
 }

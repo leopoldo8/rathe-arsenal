@@ -89,7 +89,7 @@ export class ChatMessageEntity {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @ManyToOne(() => ChatConversationEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ChatConversationEntity, { onDelete: 'CASCADE', deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'conversationId' })
   conversation!: ChatConversationEntity;
 }

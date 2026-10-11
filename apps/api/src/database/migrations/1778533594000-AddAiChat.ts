@@ -56,7 +56,14 @@ async function replacePickedFromCheck(queryRunner: QueryRunner, values: readonly
 }
 
 function cascadeTo(column: string, table: string, onDelete: 'CASCADE' | 'SET NULL'): TableForeignKey {
-  return new TableForeignKey({ columnNames: [column], referencedTableName: table, referencedColumnNames: ['id'], onDelete });
+  // Deferred: deleting a user reaches one proposal row by two cascade paths at once (plan Landing door 12).
+  return new TableForeignKey({
+    columnNames: [column],
+    referencedTableName: table,
+    referencedColumnNames: ['id'],
+    onDelete,
+    deferrable: 'INITIALLY DEFERRED',
+  });
 }
 
 export class AddAiChat1778533594000 implements MigrationInterface {

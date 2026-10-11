@@ -30,11 +30,11 @@ export class ChatUsageEntity {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'userId' })
   user!: UserEntity;
 
-  @ManyToOne(() => ChatMessageEntity, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => ChatMessageEntity, { onDelete: 'SET NULL', nullable: true, deferrable: 'INITIALLY DEFERRED' })
   @JoinColumn({ name: 'messageId' })
   message!: ChatMessageEntity | null;
 }

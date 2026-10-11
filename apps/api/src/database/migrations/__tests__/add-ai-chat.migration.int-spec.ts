@@ -66,6 +66,15 @@ describe('AddAiChat1778533594000', () => {
     expect(byName['UQ_tournament_deck_fabrary_ulid']).toMatch(/UNIQUE .*\("fabraryUlid"\)/);
     expect(byName['UQ_rules_entry_rule_number']).toMatch(/UNIQUE .*\("ruleNumber"\)/);
 
+    const foreignKeys: Array<{ table: string; deferred: boolean }> = await queryRunner.query(
+      `SELECT c.conrelid::regclass::text AS table, c.condeferred AS deferred FROM pg_constraint c
+         JOIN pg_namespace n ON n.oid = c.connamespace
+        WHERE n.nspname = $1 AND c.contype = 'f' AND c.conrelid::regclass::text LIKE '%chat_%'`,
+      [SCHEMA],
+    );
+    expect(foreignKeys).toHaveLength(8);
+    expect(foreignKeys.filter((key) => !key.deferred)).toEqual([]);
+
     const [{ id: userId }] = await queryRunner.query(`INSERT INTO "user" DEFAULT VALUES RETURNING id`);
     const [{ id: conversationId }] = await queryRunner.query(
       `INSERT INTO chat_conversation ("userId") VALUES ($1) RETURNING id`,

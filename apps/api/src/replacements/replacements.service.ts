@@ -276,6 +276,59 @@ export class ReplacementsService {
     return toResponse(outcome.saved);
   }
 
+  /**
+   * Applies an accepted chat swap inside the caller's transaction, as adopt does; a deck gone or one that
+   * `decideAdoption` now refuses comes back as stale, with nothing written.
+   */
+  async applyChatSwap(
+    manager: EntityManager,
+    userId: string,
+    swap: { readonly trackedDeckId: number; readonly originalCardIdentifier: string; readonly slot: string; readonly replacementCardIdentifier: string },
+  ): Promise<{ readonly kind: 'applied'; readonly replacementId: string } | { readonly kind: 'stale'; readonly reason: string }> {
+    const deck = await manager.findOne(TrackedDeckEntity, {
+      where: { id: swap.trackedDeckId, userId },
+      lock: { mode: 'for_no_key_update' },
+    });
+    if (!deck) return { kind: 'stale', reason: 'DECK_GONE' };
+    const original = this.findCard(swap.originalCardIdentifier);
+    const replacement = this.findCard(swap.replacementCardIdentifier);
+    if (!original || !replacement) return { kind: 'stale', reason: 'CARD_UNKNOWN' };
+    const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deck.id } });
+    const decision = decideAdoption({
+      recommended: replacement,
+      cut: original,
+      cutSlot: swap.slot,
+      heroCard: this.findHero(deck),
+      format: deck.format as TSupportedFormat,
+      deckCards,
+    });
+    if (decision.kind === 'refuse') return { kind: 'stale', reason: decision.code };
+
+    await this.moveCopies(manager, deckCards, {
+      trackedDeckId: deck.id,
+      slot: swap.slot,
+      from: original.cardIdentifier,
+      to: replacement.cardIdentifier,
+      quantity: decision.quantity,
+    });
+    const saved = await manager.save(
+      manager.create(CardReplacementEntity, {
+        userId,
+        trackedDeckId: deck.id,
+        slot: swap.slot,
+        originalCardIdentifier: original.cardIdentifier,
+        replacementCardIdentifier: replacement.cardIdentifier,
+        quantity: decision.quantity,
+        pickedFrom: 'chat',
+        status: 'active',
+        resolvedAt: null,
+      }),
+    );
+    await this.recompute(manager, userId, deck.id);
+    await this.recommendationQueue.enqueueAuto(manager, deck.id);
+    return { kind: 'applied', replacementId: saved.id };
+  }
+
   async resolve(userId: string, replacementId: string, action: TResolveAction): Promise<IReplacementResponse> {
     const resolved = await this.dataSource.transaction(async (manager) => {
       const located = await manager.findOne(CardReplacementEntity, { where: { id: replacementId, userId } });
@@ -346,6 +399,14 @@ export class ReplacementsService {
       copiesAfterPick > getCopyLimit(replacement, format)
     ) {
       throw replacementConflict('REPLACEMENT_ILLEGAL');
+    }
+  }
+
+  private findCard(cardIdentifier: string): ICatalogCard | null {
+    try {
+      return catalog.getCard(cardIdentifier);
+    } catch {
+      return null;
     }
   }
 

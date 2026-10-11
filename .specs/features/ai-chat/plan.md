@@ -115,6 +115,7 @@ A proposal in a message carries `{ id, kind, status, reason, payload, ownedCount
 | 9. Two more worker loops | `runWorker` passes four steps to `runWorkerLoops`: variants, recommendations, chat turns, reference sync; the chat turn has a 480 s deadline and a 120 s per-call abort, below the 10-minute orphan window, and refreshes `claimedAt` after each call | the recommendation loop - a minute-long recommendation run would hold a chat turn (design Key decision 1); one loop for chat and reference sync - the backfill takes about 20 minutes |
 | 10. Fabrary index read | `POST https://4e2ysy5y4i-dsn.algolia.net/1/indexes/*/queries` with Fabrary's public read-only key, index `public_decks`, filter `isTournament:true`; per format, one listing when its count is under 1,000, otherwise one listing per `heroIdentifier` facet value; a listing reaching 1,000 hits is logged as `tournament.sync.truncated` and its decks are still stored | one query over every tournament deck - Algolia returns at most 1,000 hits and there are 1,948 |
 | 11. Rules source | `GET https://rules.fabtcg.com/en/search/search_index.json` (MkDocs search index); entries whose `location` starts with `cr/`; each paragraph that starts with a rule number becomes one `rules_entry`, glossary terms become one entry each; a fetch whose SHA-256 matches the stored `sourceHash` changes nothing | the owner saving the page in a browser (design default) - `rules.fabtcg.com` answers plain HTTP, so a manual step buys nothing; scraping the rendered pages - one request per chapter for the same text |
+| 12. Deferred foreign keys on the chat tables (added during build) | every foreign key of `chat_conversation`, `chat_message`, `chat_proposal` and `chat_usage` is `DEFERRABLE INITIALLY DEFERRED`, in the migration and the entities | immediate checks - deleting a user cascades its conversations (and so messages and proposals) while the `ON DELETE SET NULL` from its decks and replacements updates the same proposal rows, and the update re-checks `messageId` against a message the other path already deleted (`FK_..._messageId` violation, found by the e2e teardown); dropping the `SET NULL` foreign keys - a proposal would keep pointing at a deleted deck |
 
 - Nothing else in this change is hard to reverse
 
@@ -302,6 +303,6 @@ Validated proposals of a new deck or a swap, applied or dismissed by the user.
 
 ## Sources
 
-- `.design/ai-chat.md` - the confirmed design: Key decisions 1-7, slice states, table shapes and defaults (binding)
+- `.design/ai-chat.md` - the confirmed design: Key decisions 1-7, slice states, table shapes and defaults
 - `.specs/STATE.md` AD-003, AD-008 to AD-012 - error codes, atomic writes, swaps as deck changes, the model and the worker
 - https://ai.google.dev/api/generate-content - `Part.thoughtSignature`, `FunctionCall.id`, `FunctionResponse.id`, `FunctionDeclaration.parametersJsonSchema`, the `FinishReason` enum (read 2026-10-11)

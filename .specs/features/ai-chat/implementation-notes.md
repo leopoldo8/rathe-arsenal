@@ -19,6 +19,8 @@ Autonomous run on 2026-10-11, owner away. Every call below that would normally w
 5. **No automatic retry of provider errors inside a turn**; the user retries the failed message.
 6. **Client copy for the new error codes deferred** to the UI slices (AD-003 asks for a client entry per code; no client reads them yet).
 7. **Applying a proposal enqueues a recommendation run** for its deck, extending card-recommendations' set of deck-list writers.
+8. **Deferred foreign keys on the chat tables** (plan Landing door 12): deleting a user failed on two cascade paths meeting on one `chat_proposal` row; found by the e2e teardown, which deletes its users.
+9. **Deck proposal rows are bounded at 80** (AC 57) while AC 42 bounds tool lists at 50: AC 57 is the specific rule for that field; `get_owned_copies` keeps 50.
 
 ## Needs owner
 
