@@ -15,8 +15,17 @@ import { TRecommendationStrength } from '../database/entities/recommendation.ent
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ShoppingLineService } from '../stores/shopping-line.service';
 import { TLocale } from '../common/i18n/resolve-locale';
+import {
+  deriveGenerationStatus,
+  IPoolSampleCard,
+  measureElapsedMs,
+  medianDurationMs,
+  samplePool,
+  TGenerationStatus,
+  TYPICAL_DURATION_WINDOW,
+} from './generation-state';
 import { listRecommendations } from './list-recommendations';
-import { computeDeckFingerprint, slotForCard } from './recommendation-prompt';
+import { buildRecommendationPool, computeDeckFingerprint, IDeckList, slotForCard } from './recommendation-prompt';
 import { RecommendationQueueService } from './recommendation-queue.service';
 import { RecommendationsQueryService } from './recommendations-query.service';
 
@@ -48,6 +57,14 @@ export interface IRecommendationCardResponse {
   readonly productUrl: string | null;
 }
 
+export interface IGenerationResponse {
+  readonly status: TGenerationStatus;
+  readonly elapsedMs: number;
+  readonly typicalMs: number | null;
+  readonly poolSize: number;
+  readonly poolSample: readonly IPoolSampleCard[];
+}
+
 export interface IRecommendationsResponse {
   readonly run: {
     readonly id: string;
@@ -58,6 +75,7 @@ export interface IRecommendationsResponse {
   } | null;
   readonly pending: boolean;
   readonly failure: { readonly code: TRecommendationFailureCode; readonly finishedAt: string | null } | null;
+  readonly generation: IGenerationResponse | null;
   readonly recommendations: readonly IRecommendationCardResponse[];
 }
 
@@ -104,7 +122,7 @@ export class RecommendationsService {
         ],
         order: { finishedAt: 'DESC', createdAt: 'DESC' },
       }),
-      this.dataSource.getRepository(RecommendationRunEntity).count({
+      this.dataSource.getRepository(RecommendationRunEntity).find({
         where: [
           { trackedDeckId, status: 'pending' },
           { trackedDeckId, status: 'running' },
@@ -117,11 +135,12 @@ export class RecommendationsService {
         ? { code: latestFinished.error, finishedAt: latestFinished.finishedAt ? new Date(latestFinished.finishedAt).toISOString() : null }
         : null;
 
-    const fingerprint = computeDeckFingerprint({
+    const deckList: IDeckList = {
       heroIdentifier: deck.heroIdentifier,
       format: deck.format,
       cards: deckCards.map((row) => ({ cardIdentifier: row.cardIdentifier, slot: row.slot, quantity: row.quantity })),
-    });
+    };
+    const fingerprint = computeDeckFingerprint(deckList);
 
     return {
       run: run
@@ -133,9 +152,39 @@ export class RecommendationsService {
             stale: run.deckFingerprint !== fingerprint,
           }
         : null,
-      pending: active > 0,
+      pending: active.length > 0,
       failure,
+      generation: await this.describeGeneration(active, deckList, excluded.get(trackedDeckId)),
       recommendations: run ? await this.listCards({ userId, run, deckCards, excluded: excluded.get(trackedDeckId), locale }) : [],
+    };
+  }
+
+  private async describeGeneration(
+    active: readonly RecommendationRunEntity[],
+    deckList: IDeckList,
+    excluded: ReadonlySet<string> | undefined,
+  ): Promise<IGenerationResponse | null> {
+    const now = new Date();
+    const run = active.find((row) => row.status === 'running') ?? active[0];
+    const status = run ? deriveGenerationStatus(run, now) : null;
+    if (!run || status === null) return null;
+
+    const heroCard = findCard(deckList.heroIdentifier ?? '');
+    const pool = heroCard ? buildRecommendationPool(deckList, heroCard, excluded ?? new Set(), catalog) : [];
+    const durations: Array<{ ms: string }> = await this.dataSource.query(
+      `SELECT EXTRACT(EPOCH FROM ("finishedAt" - "startedAt")) * 1000 AS ms
+         FROM recommendation_run
+        WHERE status = 'done' AND "startedAt" IS NOT NULL AND "finishedAt" IS NOT NULL
+        ORDER BY "finishedAt" DESC
+        LIMIT $1`,
+      [TYPICAL_DURATION_WINDOW],
+    );
+    return {
+      status,
+      elapsedMs: measureElapsedMs(run, now),
+      typicalMs: medianDurationMs(durations.map((row) => Math.round(Number(row.ms)))),
+      poolSize: pool.length,
+      poolSample: samplePool(pool),
     };
   }
 

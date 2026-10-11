@@ -1,3 +1,5 @@
+import { catalog } from '@rathe-arsenal/engine';
+import { buildRecommendationPool } from '../recommendation-prompt';
 import { bootRecommendationsFixture, EMISSARY, FLEX, IRecommendationsFixture, KATSU, TALISHAR } from './recommendations-e2e.fixture';
 
 const A = 'ancestral-harmony-blue';
@@ -31,7 +33,7 @@ describe('recommendations read (e2e)', () => {
 
   it('reports run, pending and failure for each history', async () => {
     const none = await freshDeck();
-    expect(await read(none.deckId, none.jwt)).toEqual({ run: null, pending: false, failure: null, recommendations: [] });
+    expect(await read(none.deckId, none.jwt)).toEqual({ run: null, pending: false, failure: null, generation: null, recommendations: [] });
 
     const pendingOnly = await freshDeck();
     await fixture.seedRun(pendingOnly.deckId, 'pending');
@@ -183,13 +185,88 @@ describe('recommendations read (e2e)', () => {
     expect((await read(deckId, jwt)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
   });
 
+  it('reports a run in progress as generation', async () => {
+    const { jwt, deckId } = await freshDeck();
+    const runId = await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
+    await fixture.dataSource.query(`UPDATE recommendation_run SET "startedAt" = clock_timestamp() - interval '30 seconds' WHERE id = $1`, [runId]);
+    const cards = await fixture.dataSource.query(`SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1`, [deckId]);
+    const expectedPool = buildRecommendationPool(
+      { heroIdentifier: KATSU, format: 'Classic Constructed', cards },
+      catalog.getCard(KATSU),
+      new Set(),
+      catalog,
+    );
+
+    const running = (await read(deckId, jwt)).generation;
+
+    expect(running.status).toBe('running');
+    expect(running.elapsedMs).toBeGreaterThanOrEqual(30_000);
+    expect(running.elapsedMs).toBeLessThan(40_000);
+    expect(running.poolSize).toBe(expectedPool.length);
+    expect(running.poolSample.length).toBeGreaterThanOrEqual(1);
+    expect(running.poolSample.length).toBeLessThanOrEqual(16);
+    for (const card of running.poolSample) {
+      expect(card).toEqual(
+        expect.objectContaining({ cardIdentifier: expect.any(String), name: expect.any(String), imageUrl: expect.objectContaining({ small: expect.any(String) }) }),
+      );
+    }
+
+    await fixture.clearRuns(deckId);
+    await fixture.seedRun(deckId, 'pending');
+    expect((await read(deckId, jwt)).generation.status).toBe('queued');
+
+    await fixture.clearRuns(deckId);
+    await fixture.seedRun(deckId, 'pending', { trigger: 'auto' });
+    await fixture.dataSource.query(
+      `UPDATE recommendation_run SET "runAfter" = clock_timestamp() + interval '5 minutes' WHERE "trackedDeckId" = $1`,
+      [deckId],
+    );
+    expect(await read(deckId, jwt)).toEqual(expect.objectContaining({ generation: null, pending: true }));
+
+    await fixture.clearRuns(deckId);
+    expect(await read(deckId, jwt)).toEqual(expect.objectContaining({ generation: null, pending: false }));
+  });
+
+  it('typical duration comes from recent done runs', async () => {
+    const { jwt, deckId } = await freshDeck();
+    const others = [await freshDeck(), await freshDeck(), await freshDeck()];
+    await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE status = 'done' AND "startedAt" IS NOT NULL`);
+    const seedFinished = async (otherDeckId: number, status: 'done' | 'failed', seconds: number, finishedAt: string): Promise<void> => {
+      const runId = await fixture.seedRun(otherDeckId, status, { finishedAt });
+      await fixture.dataSource.query(
+        `UPDATE recommendation_run SET "startedAt" = "finishedAt" - ($2::int * interval '1 second') WHERE id = $1`,
+        [runId, seconds],
+      );
+    };
+    await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
+
+    await seedFinished(others[0]!.deckId, 'done', 60, '2099-01-01T10:00:00Z');
+    await seedFinished(others[1]!.deckId, 'done', 90, '2099-01-01T10:01:00Z');
+    expect((await read(deckId, jwt)).generation.typicalMs).toBeNull();
+
+    await seedFinished(others[2]!.deckId, 'done', 300, '2099-01-01T10:02:00Z');
+    await seedFinished(others[2]!.deckId, 'failed', 10, '2099-01-01T10:03:00Z');
+    expect((await read(deckId, jwt)).generation.typicalMs).toBe(90_000);
+
+    await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE status = 'done' AND "startedAt" IS NOT NULL`);
+    await seedFinished(others[0]!.deckId, 'done', 1, '2099-02-01T00:00:00Z');
+    for (let minute = 1; minute <= 20; minute += 1) {
+      await seedFinished(others[minute % 3]!.deckId, 'done', 100, `2099-02-01T00:${String(minute).padStart(2, '0')}:00Z`);
+    }
+    expect((await read(deckId, jwt)).generation.typicalMs).toBe(100_000);
+  });
+
   it('refuses foreign, malformed and anonymous reads', async () => {
     const { deckId } = await freshDeck();
     const stranger = await fixture.signUp('stranger');
 
-    await fixture.get(`/api/decks/${deckId}/recommendations`, stranger.jwt).expect(404);
+    await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
+
+    const foreign = await fixture.get(`/api/decks/${deckId}/recommendations`, stranger.jwt).expect(404);
+    const unknown = await fixture.get(`/api/decks/999999999/recommendations`, stranger.jwt).expect(404);
     await fixture.get(`/api/decks/abc/recommendations`, stranger.jwt).expect(400);
-    await fixture.get(`/api/decks/${deckId}/recommendations`, '').expect(401);
+    const anonymous = await fixture.get(`/api/decks/${deckId}/recommendations`, '').expect(401);
+    for (const body of [foreign.body, unknown.body, anonymous.body]) expect(body).not.toHaveProperty('generation');
   });
 
   it('clearUpgradeCount counts what the panel would show', async () => {
