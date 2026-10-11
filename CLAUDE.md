@@ -47,6 +47,12 @@ this order before doing non-trivial work.
   walkthrough, A17 tier-2 external labeler session, 3-5 tester
   observation rounds, formal pre-release user studies.
 
+## UI changes
+
+Before implementing any new screen or visible UI change, show the owner
+mockups with at least two alternatives and wait for a pick. Design
+documents mark such slices `design` until that pick is made.
+
 ## Language
 
 Code + docs + commit messages: English. Conversation with owner:
