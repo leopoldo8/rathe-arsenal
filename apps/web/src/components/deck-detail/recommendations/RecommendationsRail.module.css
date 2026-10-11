@@ -1,0 +1,167 @@
+.section {
+  position: relative;
+  margin-block-start: var(--ra-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+  min-inline-size: 0;
+  overflow-x: clip;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+}
+
+.heading {
+  min-inline-size: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-medium);
+  line-height: var(--ra-leading-snug);
+}
+
+.generate,
+.secondary {
+  min-block-size: 44px;
+  padding: var(--ra-space-1) var(--ra-space-4);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  cursor: pointer;
+}
+
+.generate {
+  border: 1px solid var(--ra-accent-soft-bd);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-weight: var(--ra-weight-bold);
+}
+
+.secondary {
+  border: 1px solid var(--ra-border-strong);
+  background: transparent;
+  color: var(--ra-fg-secondary);
+}
+
+.generate:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.generate:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.notice,
+.error {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.notice {
+  color: var(--ra-fg-secondary);
+}
+
+.error {
+  color: var(--ra-fg-primary);
+}
+
+.errorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+}
+
+.rail {
+  display: flex;
+  gap: var(--ra-space-4);
+  margin: 0;
+  padding: var(--ra-space-1) var(--ra-space-1) var(--ra-space-14px);
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.placeholder {
+  flex: 0 0 236px;
+  min-block-size: 520px;
+  padding: var(--ra-space-14px) calc(var(--ra-space-14px) + var(--ra-space-34px)) var(--ra-space-14px) var(--ra-space-14px);
+  border: 1px dashed var(--ra-border-strong);
+  border-radius: var(--ra-radius-xl);
+}
+
+.placeholderArt {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 450 / 628;
+  border: 1px dashed var(--ra-border-strong);
+  border-radius: 4.5% / 3.2%;
+}
+
+/* The card flying from the pile to its slot; positioned and scaled by the deal animation from its top-left corner. */
+.flying {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 2;
+  aspect-ratio: 450 / 628;
+  perspective: 1000px;
+  pointer-events: none;
+}
+
+.flyingShadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 4.5% / 3.2%;
+  box-shadow: var(--ra-shadow-md);
+}
+
+.flyingFlip {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.flyingFace {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 4.5% / 3.2%;
+  object-fit: cover;
+  backface-visibility: hidden;
+}
+
+.flyingFront {
+  transform: rotateY(180deg);
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: var(--ra-text-h2);
+  }
+
+  .placeholder {
+    flex-basis: 268px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail {
+    scroll-behavior: auto;
+  }
+}

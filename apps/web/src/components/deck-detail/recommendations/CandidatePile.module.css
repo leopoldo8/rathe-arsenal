@@ -1,0 +1,140 @@
+.column {
+  display: flex;
+  flex: 0 0 150px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding-block-start: var(--ra-space-60px);
+  overflow: hidden;
+  list-style: none;
+  scroll-snap-align: start;
+  transition: flex-basis 520ms var(--ra-ease), margin 520ms var(--ra-ease), opacity 320ms var(--ra-ease);
+}
+
+.folding {
+  flex-basis: 0;
+  margin-inline-end: calc(-1 * var(--ra-space-4));
+  opacity: 0;
+}
+
+.stack {
+  position: relative;
+  inline-size: 110px;
+  aspect-ratio: 450 / 628;
+}
+
+.back {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 4.5% / 3.2%;
+  box-shadow: var(--ra-shadow);
+  object-fit: cover;
+}
+
+.back:nth-child(2) {
+  transform: translate(3px, -3px);
+}
+
+.back:nth-child(3) {
+  transform: translate(6px, -6px);
+}
+
+.lift {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  perspective: 900px;
+  animation: pile-lift 1100ms var(--ra-ease) forwards;
+}
+
+.flip {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: pile-flip 520ms var(--ra-ease) 260ms both;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 4.5% / 3.2%;
+  object-fit: cover;
+  backface-visibility: hidden;
+}
+
+.front {
+  transform: rotateY(180deg);
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  color: var(--ra-fg-tertiary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  text-align: center;
+}
+
+.number {
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h2);
+  font-variant-numeric: tabular-nums;
+}
+
+.peek {
+  min-block-size: 1.4em;
+  margin: 0;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-body);
+  text-align: center;
+}
+
+@keyframes pile-lift {
+  25% {
+    transform: translate(12px, -10px) rotate(4deg);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(12px, -10px) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(60px, 10px) rotate(14deg);
+  }
+}
+
+@keyframes pile-flip {
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .column {
+    flex-basis: 120px;
+    padding-block-start: var(--ra-space-24px);
+  }
+
+  .stack {
+    inline-size: 92px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column {
+    transition: none;
+  }
+
+  .lift,
+  .flip {
+    animation: none;
+  }
+}

@@ -77,7 +77,7 @@ The section sits right under the status strip on every deck, titled "Recomendaç
 
 **Acceptance Criteria**
 
-10. The deck page SHALL render the recommendations section directly after the status strip and before the analysis row, for both an incomplete and a complete deck, and SHALL NOT render it inside the action panels
+10. The deck page SHALL render the recommendations section directly after the status strip (after the modified-view banner when that banner is shown, since it explains the strip) and before the analysis row, for both an incomplete and a complete deck, and SHALL NOT render it inside the action panels
 11. The section SHALL be titled "Recomendações para este deck" in pt-BR and "Recommendations for this deck" in en-US
 12. WHEN a done run has recommendations THEN the section SHALL render one swap card per recommendation, in rank order, in one horizontal row that scrolls sideways
 13. The rail SHALL show on each swap card the recommended card's art, its name with its pitch, a "melhoria clara" or "considerar" chip, a cost chip, an ownership chip ("na coleção", the price linking to the store, or "sem estoque"), the reason, a "no lugar de" cut choice and the Usar and Dispensar buttons

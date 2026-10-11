@@ -12,7 +12,8 @@ import { DeckHeroBanner } from './DeckHeroBanner';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
 import { ModifiedViewBanner } from './ModifiedViewBanner';
-import { RecommendationsPanel, type IRecommendationDeckCard } from './RecommendationsPanel';
+import type { IRecommendationDeckCard } from './recommendations/card-naming';
+import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
 import { summariseDeck } from './deckDetailModel';
 import { buildDeckList } from './deckListModel';
@@ -92,11 +93,12 @@ export function DeckDetailView({
         name: entry.name,
         slot: entry.slot,
         pitch: entry.pitch,
+        cost: entry.cost,
+        imageUrl: entry.imageUrl,
       });
     }
     return [...seen.values()];
   }, [items]);
-  const recommendationsPanel = <RecommendationsPanel deckId={deck.id} deckCards={deckCards} />;
 
   return (
     <div className={styles.stack} data-testid="deck-detail-view">
@@ -131,12 +133,9 @@ export function DeckDetailView({
           isClearing={isClearingRejections}
         />
       )}
+      <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
-      {summary.kind === 'complete' ? (
-        <div className={styles.recommendationsRow} data-testid="deck-recommendations-row">
-          {recommendationsPanel}
-        </div>
-      ) : (
+      {summary.kind !== 'complete' && (
         <DeckActionPanels
           breakdown={snapshot.breakdown}
           deckSwaps={deckSwaps}
@@ -156,7 +155,6 @@ export function DeckDetailView({
           onShoppingRetry={onShoppingRetry}
           replacements={deck.replacements}
           onOpenAlternatives={setAlternativesTarget}
-          recommendations={recommendationsPanel}
         />
       )}
       <DeckList items={items} onEditCards={onEditCards} deckId={deck.id} replacements={deck.replacements} />

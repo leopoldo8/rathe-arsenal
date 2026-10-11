@@ -41,70 +41,70 @@ Proof: `apps/api/src/recommendations/__tests__/recommendations-read.e2e-spec.ts 
 
 ### S2 - recommendations are a full-width rail of swap cards · 10 files · 90 KB · ~23k
 
-**C8** - On the deck page the recommendations section is the next section after the status strip and before the analysis row, for a complete deck and for an incomplete deck, and the action panels contain no recommendations section (AC 10)
+**C8** - On the deck page, with no rejected swaps, the recommendations section is the next section after the status strip and before the analysis row, for a complete deck and for an incomplete deck, and the action panels contain no recommendations section (AC 10) (reworded during build: the modified-view banner, when shown, stays attached to the strip it explains) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/DeckDetailView.recommendations.spec.tsx -t "puts recommendations right under the status strip"`
 
-**C9** - The section heading reads "Recomendações para este deck" in pt-BR and "Recommendations for this deck" in en-US (AC 11)
+**C9** - The section heading reads "Recomendações para este deck" in pt-BR and "Recommendations for this deck" in en-US (AC 11) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "titles the section in both languages"`
 
-**C10** - A done run with 3 recommendations renders 3 swap cards in rank order inside one list whose container scrolls horizontally (`overflow-x: auto` in the CSS module rule the list uses) (AC 12)
+**C10** - A done run with 3 recommendations renders 3 swap cards in rank order inside one list whose container scrolls horizontally (`overflow-x: auto` in the CSS module rule the list uses) (AC 12) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "renders one swap card per recommendation in rank order"`
 
-**C11** - A swap card shows the art, "Name (Vermelho)", the "melhoria clara" chip for a clear upgrade and "considerar" otherwise, the reason, the cut choice labelled "No lugar de", and the Usar and Dispensar buttons; ownership reads "na coleção" when owned, the price as a link to the store when priced, and "sem estoque" otherwise (AC 13)
+**C11** - A swap card shows the art, "Name (Vermelho)", the "melhoria clara" chip for a clear upgrade and "considerar" otherwise, the reason, the cut choice labelled "No lugar de", and the Usar and Dispensar buttons; ownership reads "na coleção" when owned, the price as a link to the store when priced, and "sem estoque" otherwise (AC 13) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "a swap card shows art, name, chips, reason, cut and actions"`
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "ownership reads owned, price or out of stock"`
 
-**C12** - A recommendation with a cut shows the cut card's art behind the recommended card with the label "sai", and the cut choice starts on the cut card; one without a cut shows no tucked card and the choice starts empty (AC 14)
+**C12** - A recommendation with a cut shows the cut card's art behind the recommended card with the label "sai", and the cut choice starts on the cut card; one without a cut shows no tucked card and the choice starts empty (AC 14) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "tucks the cut card behind and preselects it"`
 
-**C13** - The cost chip, table-driven over 6 rows: cost 1 cut 0 -> "+1 custo"; cost 0 cut 2 -> "-2 custo"; cost 1 cut 1 -> "mesmo custo"; cost 2 no cut -> "custo 2"; cost 2 cut cost unknown -> "custo 2"; cost unknown -> no chip (AC 15)
+**C13** - The cost chip, table-driven over 6 rows: cost 1 cut 0 -> "+1 custo"; cost 0 cut 2 -> "-2 custo"; cost 1 cut 1 -> "mesmo custo"; cost 2 no cut -> "custo 2"; cost 2 cut cost unknown -> "custo 2"; cost unknown -> no chip (AC 15) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "the cost chip compares with the cut card"`
 
-**C14** - Tapping the art opens the large preview with the card's name and sends no adopt request (AC 16)
+**C14** - Tapping the art opens the large preview with the card's name and sends no adopt request (AC 16) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "tapping the art opens the card large without adopting it"`
 
-**C15** - Usar sends `POST .../recommendations/:id/adopt` with the chosen `cutCardIdentifier` and the recommendation's `cutSlot`; with no cut chosen Usar is disabled; a `NOTHING_TO_REPLACE` refusal shows the cut-gone message (AC 17)
+**C15** - Usar sends `POST .../recommendations/:id/adopt` with the chosen `cutCardIdentifier` and the recommendation's `cutSlot`; with no cut chosen Usar is disabled; a `NOTHING_TO_REPLACE` refusal shows the cut-gone message (AC 17) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "Usar adopts with the chosen cut"`
 
-**C16** - Dispensar hides the card, sends `POST .../dismissals` with the card, and shows a toast whose Desfazer sends `DELETE .../dismissals/:card` and brings the card back (AC 18)
+**C16** - Dispensar hides the card, sends `POST .../dismissals` with the card, and shows a toast whose Desfazer sends `DELETE .../dismissals/:card` and brings the card back (AC 18) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "Dispensar hides the card and offers undo"`
 
-**C17** - The section states, table-driven: no run and nothing active -> the empty message and a button "Gerar"; a done run -> the button "Gerar de novo"; a done run with no recommendations -> the no-upgrades message; a later failed run with `MODEL_TIMEOUT` -> "O modelo demorou demais para responder."; a read error -> the load error and Tentar de novo, which refetches; a stale run -> the stale notice (AC 19, 20, 21, 22)
+**C17** - The section states, table-driven: no run and nothing active -> the empty message and a button "Gerar"; a done run -> the button "Gerar de novo"; a done run with no recommendations -> the no-upgrades message; a later failed run with `MODEL_TIMEOUT` -> "O modelo demorou demais para responder."; a read error -> the load error and Tentar de novo, which refetches; a stale run -> the stale notice (AC 19, 20, 21, 22) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "renders every section state"`
 
-**C18** - Gerar sends `POST .../recommendations/runs` and every mutation refreshes the recommendations query and the decks list (AC 19)
+**C18** - Gerar sends `POST .../recommendations/runs` and every mutation refreshes the recommendations query and the decks list (AC 19) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "Gerar sends the run request"`
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "every mutation refreshes the data it changes"`
 
 ### S3 - the wait is a pile, a clock and the real step · 6 files · 50 KB · ~13k
 
-**C19** - With `generation` present the section shows the pile with an image of the card back (`src` ending `card-back.webp`), the number 821 and "cartas candidatas" (AC 23)
+**C19** - With `generation` present the section shows the pile with an image of the card back (`src` ending `card-back.webp`), the number 821 and "cartas candidatas" (AC 23) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "shows the candidate pile while generating"`
 
-**C20** - The clock starts at `elapsedMs` 65 000 as "1:05" and reads "1:08" after 3 s of fake time (AC 24)
+**C20** - The clock starts at `elapsedMs` 65 000 as "1:05" and reads "1:08" after 3 s of fake time (AC 24) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "the clock starts at the elapsed time and ticks every second"`
 
-**C21** - The step line, table-driven: `queued` -> "Na fila"; `retrying` -> "O modelo estava ocupado; tentando de novo"; `running` with `poolSize` 821 and hero "Azalea, Ace in the Hole" -> "O modelo avalia 821 cartas para Azalea, Ace in the Hole" (AC 25)
+**C21** - The step line, table-driven: `queued` -> "Na fila"; `retrying` -> "O modelo estava ocupado; tentando de novo"; `running` with `poolSize` 821 and hero "Azalea, Ace in the Hole" -> "O modelo avalia 821 cartas para Azalea, Ace in the Hole" (AC 25) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "names the step the server is on"`
 
-**C22** - `typicalMs` 100 000 shows "costuma levar ~2 min" and a typical-time mark on the ring; `typicalMs` `null` shows neither (AC 26)
+**C22** - `typicalMs` 100 000 shows "costuma levar ~2 min" and a typical-time mark on the ring; `typicalMs` `null` shows neither (AC 26) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "shows the usual duration when known"`
 
-**C23** - With `elapsedMs` 118 000 and `typicalMs` 120 000 the step line shows the running step, and after 3 s of fake time it reads "Passou do tempo de costume. Pode sair da página; as recomendações aparecem aqui quando terminarem." (AC 27)
+**C23** - With `elapsedMs` 118 000 and `typicalMs` 120 000 the step line shows the running step, and after 3 s of fake time it reads "Passou do tempo de costume. Pode sair da página; as recomendações aparecem aqui quando terminarem." (AC 27) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "says when the run passes the usual time"`
 
-**C24** - Without reduced motion, a lifted card appears on the pile within 1.2 s of fake time showing an image and the name of a `poolSample` card; with `prefers-reduced-motion: reduce` no lifted card appears after 5 s (AC 28, 35)
+**C24** - Without reduced motion, a lifted card appears on the pile within 1.2 s of fake time showing an image and the name of a `poolSample` card; with `prefers-reduced-motion: reduce` no lifted card appears after 5 s (AC 28, 35) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "lifts pool cards off the pile unless motion is reduced"`
 
-**C25** - While generating, Gerar reads "Gerando…" and is disabled, and the previous run's swap cards stay in the document dimmed (`data-dimmed="true"`) with Usar and Dispensar disabled (AC 29)
+**C25** - While generating, Gerar reads "Gerando…" and is disabled, and the previous run's swap cards stay in the document dimmed (`data-dimmed="true"`) with Usar and Dispensar disabled (AC 29) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "keeps the previous cards dimmed while generating"`
 
-**C26** - The query refetches every 10 s while `generation` is present or `pending` is true, and stops when both are absent (AC 30)
+**C26** - The query refetches every 10 s while `generation` is present or `pending` is true, and stops when both are absent (AC 30) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "polls every 10 seconds only while a run is active"`
 
 ### S4 - the answer is dealt into place · 6 files · 50 KB · ~13k
 
-**C27** - The deal keyframes map the pile box onto the slot box: for pile `{ left: 40, top: 300, width: 110 }` in a section at `{ left: 10, top: 100 }` and slot `{ left: 400, top: 260, width: 202 }`, the first keyframe is `translate(30px, 200px) scale(1) rotate(0deg)`, the last is `translate(390px, 160px) scale(1.8363636363636364) rotate(0deg)`, the middle keyframe's vertical position is above both ends, and the transform origin is `0 0` (AC 31, 32)
+**C27** - The deal keyframes map the pile box onto the slot box: for pile `{ left: 40, top: 300, width: 110 }` in a section at `{ left: 10, top: 100 }` and slot `{ left: 400, top: 260, width: 202 }`, the first keyframe is `translate(30px, 200px) scale(1) rotate(0deg)`, the last is `translate(390px, 160px) scale(1.8363636363636364) rotate(0deg)`, the middle keyframe's vertical position is above both ends, and the transform origin is `0 0` (AC 31, 32) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/deal-geometry.spec.ts -t "maps the pile box onto the slot box"`
 
 **C28** - In the browser, after a poll moves from a `generation` payload to a done run with 3 recommendations, three flying cards are created 190 ms apart and each one's box when its flight finishes equals its slot's art box within 0.5 px in left, top, width and height; afterwards the pile is gone and 3 swap cards are visible with their reason text (AC 31, 32, 33, 34)
