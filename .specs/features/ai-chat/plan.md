@@ -60,6 +60,7 @@ flowchart TD
 | external calls | Fabrary's Algolia index (`4e2ysy5y4i-dsn.algolia.net`) and `rules.fabtcg.com`, once a day from the worker; Fabrary GraphQL `getDeck` for each new tournament deck, paced |
 | configuration | reuses optional `GEMINI_API_KEY`; optional `GEMINI_CHAT_THINKING_LEVEL`; model prices live in code with an effective date |
 | error catalog | new codes `CHAT_ACCESS_DENIED`, `CHAT_TURN_IN_PROGRESS`, `CHAT_BUDGET_EXHAUSTED`, `PROPOSAL_NOT_PENDING`, `PROPOSAL_STALE`, `MESSAGE_NOT_RETRYABLE`, and the turn failure codes; client copy deferred to the UI slices (no client reads them yet) |
+| API error envelope | `HttpExceptionFilter` now passes a `details` object through when a thrown error carries one (added during build, for `resetsAt` on `CHAT_BUDGET_EXHAUSTED`); every existing error body is unchanged, since none carried `details` |
 | stored data | seven new tables, a new `user` column defaulting to `false`, and a replaced CHECK on `card_replacement."pickedFrom"`; no backfill of existing rows; the first reference sync fills the two reference sources |
 | prior decisions | conforms to AD-003 (codes), AD-008 (atomic writes), AD-009 (a swap is a deck change), AD-010 (the model), AD-011 (worker-only model calls); records chat access and the chat model loop as AD-013 |
 
