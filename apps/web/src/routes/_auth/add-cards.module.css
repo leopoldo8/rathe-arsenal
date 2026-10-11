@@ -130,6 +130,10 @@
 }
 
 @media (max-width: 639px) {
+  .panel {
+    padding: var(--ra-space-4);
+  }
+
   .title {
     font-size: var(--ra-text-h2);
   }
