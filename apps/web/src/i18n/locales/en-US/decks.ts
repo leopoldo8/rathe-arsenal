@@ -94,12 +94,6 @@ export const decks = {
   // MarkOwnedButton
   markOwned: 'I own this',
   markOwnedSaving: 'Saving...',
-  // ModifiedViewBanner
-  modifiedView: 'Rejected swaps.',
-  rejectedSwaps_one: 'You rejected {{count}} swap in this deck, and it is no longer suggested.',
-  rejectedSwaps_other: 'You rejected {{count}} swaps in this deck, and they are no longer suggested.',
-  clearingRejections: 'Restoring…',
-  clearRejections: 'Suggest again',
   // ReadinessHero
   viewOnFabraryLink: 'View on Fabrary ↗',
   // SaveCascadeConfirmModal
@@ -220,10 +214,6 @@ export const decks = {
   retryShoppingLineToast: 'Retrying shopping line…',
   failedToLoadDeck: 'Failed to load deck: {{error}}',
   failedToMarkCard: 'Failed to mark card: {{error}}',
-  clearRejectionsCapped_one: 'Swaps restored: {{restored}}. {{count}} more left: click Suggest again once more.',
-  clearRejectionsCapped_other: 'Swaps restored: {{restored}}. {{count}} more left: click Suggest again once more.',
-  failedToClearRejections: 'Could not restore the swaps: {{error}}',
-  failedSwapAction: 'Could not save the swap. Please try again.',
   // DeckDetailSidebar
   legalityAria: 'Legality: {{category}}',
   heroFallback: 'Hero',

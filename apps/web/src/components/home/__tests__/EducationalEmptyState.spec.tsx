@@ -81,7 +81,7 @@ describe('EducationalEmptyState', () => {
     renderEmpty();
     expect(screen.getByText('Importe um deck')).toBeInTheDocument();
     expect(screen.getByText(/veja o que falta/i)).toBeInTheDocument();
-    expect(screen.getByText(/decida as trocas/i)).toBeInTheDocument();
+    expect(screen.getByText(/use a sua coleção/i)).toBeInTheDocument();
   });
 
   it('renders the primary CTA link pointing to /decks/new', () => {

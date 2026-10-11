@@ -238,3 +238,49 @@
   outline: 2px solid var(--ra-accent);
   outline-offset: 2px;
 }
+
+.suggestion {
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+.suggestion > :not(:last-child)::after {
+  content: '\00a0·\00a0';
+  color: var(--ra-fg-muted);
+}
+
+.suggestionName {
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-medium);
+}
+
+.useError {
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+.use {
+  min-block-size: 32px;
+  margin-inline-start: var(--ra-space-2);
+  padding: 0 var(--ra-space-3);
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.use:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.use:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

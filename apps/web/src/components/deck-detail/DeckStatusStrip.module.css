@@ -81,3 +81,11 @@
   color: var(--ra-accent-hover);
   text-decoration: underline;
 }
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}

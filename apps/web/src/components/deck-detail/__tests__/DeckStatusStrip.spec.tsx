@@ -1,200 +1,131 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiError } from '../../../lib/api-client';
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import type { IDeckSummary } from '../deckDetailModel';
 
-const linkSpy = vi.fn();
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: (props: { to: string; children: React.ReactNode; className?: string }) => {
-    linkSpy(props);
-    return (
-      <a href={props.to} className={props.className} data-testid="strip-view-swaps">
-        {props.children}
-      </a>
-    );
-  },
-}));
+const mockApiFetch = vi.fn();
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => mockApiFetch };
+});
 
 import { DeckStatusStrip } from '../DeckStatusStrip';
 import styles from '../DeckStatusStrip.module.css';
+
+const DECK_ID = 7;
 
 function summary(overrides: Partial<IDeckSummary>): IDeckSummary {
   return {
     kind: 'incomplete',
     missingCards: 4,
-    missingSlots: 3,
-    unsolvedCards: 2,
-    pendingSwaps: 2,
-    approvedSwaps: 0,
+    suggestionCount: 0,
     openMissing: [],
     ...overrides,
   };
 }
 
+function renderStrip(props: Partial<React.ComponentProps<typeof DeckStatusStrip>> = {}): void {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <DeckStatusStrip deckId={DECK_ID} summary={summary({})} fabraryUlid={null} {...props} />
+    </QueryClientProvider>,
+  );
+}
+
 const message = (): string => screen.getByTestId('deck-status-strip-message').textContent ?? '';
 
-beforeEach(() => {
-  linkSpy.mockClear();
+beforeEach(async () => {
+  mockApiFetch.mockReset();
+  await setTestLocale('pt-BR');
 });
 
-describe('DeckStatusStrip — complete', () => {
-  it('renders the complete copy in the ready tone with no actions', () => {
-    render(<DeckStatusStrip summary={summary({ kind: 'complete', pendingSwaps: 0 })} fabraryUlid="abc" />);
+describe('DeckStatusStrip', () => {
+  it('says what the collection covers in each state', () => {
+    const states: ReadonlyArray<{ summary: IDeckSummary; text: RegExp; button: string | null }> = [
+      { summary: summary({ kind: 'complete', missingCards: 0 }), text: /^Sua coleção cobre o deck inteiro\.$/, button: null },
+      { summary: summary({ kind: 'incomplete', missingCards: 4 }), text: /^Faltam 4 cartas\.$/, button: null },
+      {
+        summary: summary({ kind: 'suggestions', missingCards: 5, suggestionCount: 3 }),
+        text: /Dá para cobrir 3 cartas com a sua coleção/,
+        button: 'Usar as 3',
+      },
+    ];
 
-    const strip = screen.getByTestId('deck-status-strip');
-    expect(message()).toBe('Sua coleção cobre o deck inteiro.');
-    expect(strip).toHaveClass(styles.toneComplete!);
-    expect(strip).not.toHaveClass(styles.toneIncomplete!);
-    expect(screen.queryByRole('link')).toBeNull();
+    for (const state of states) {
+      const { unmount } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <DeckStatusStrip deckId={DECK_ID} summary={state.summary} fabraryUlid="abc" />
+        </QueryClientProvider>,
+      );
+
+      expect(message()).toMatch(state.text);
+      const use = screen.queryByTestId('strip-use-suggestions');
+      expect(use?.textContent ?? null).toBe(state.button);
+      expect(screen.queryByText('Ver trocas')).toBeNull();
+      expect(document.querySelector('a[href^="/swaps"]')).toBeNull();
+      unmount();
+    }
   });
-});
 
-describe('DeckStatusStrip — solvable, pending approval', () => {
-  it('uses the accent tone and the possible-versus-applied copy', () => {
-    render(
-      <DeckStatusStrip summary={summary({ kind: 'solvable', pendingSwaps: 2, approvedSwaps: 0 })} fabraryUlid="abc" />,
+  it('Usar as N sends one bulk request', async () => {
+    let finish: (value: unknown) => void = () => undefined;
+    mockApiFetch.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    renderStrip({ summary: summary({ kind: 'suggestions', missingCards: 5, suggestionCount: 3 }) });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Usar as 3' }));
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(1);
+    expect(mockApiFetch).toHaveBeenCalledWith(`/decks/${DECK_ID}/replacements/suggested`, { method: 'POST' });
+    // The shared Button disables through aria-disabled so it stays focusable.
+    expect(screen.getByRole('button', { name: 'Usar as 3' })).toHaveAttribute('aria-disabled', 'true');
+    finish({ replacements: [], skipped: 0 });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Usar as 3' })).not.toHaveAttribute('aria-disabled', 'true'),
     );
 
-    expect(message()).toBe(
-      'Sua coleção cobre este deck se você aprovar 2 trocas.',
+    mockApiFetch.mockRejectedValueOnce(
+      new ApiError(409, JSON.stringify({ code: 'NOTHING_TO_REPLACE', message: 'server text' })),
     );
-    expect(screen.getByTestId('deck-status-strip')).toHaveClass(styles.toneSolvable!);
-  });
-
-  it('uses the singular at exactly one swap', () => {
-    render(<DeckStatusStrip summary={summary({ kind: 'solvable', pendingSwaps: 1 })} fabraryUlid={null} />);
-
-    expect(message()).toBe('Sua coleção cobre este deck se você aprovar 1 troca.');
-  });
-
-  it('offers only "Ver trocas": no shopping link and no Fabrary link', () => {
-    render(<DeckStatusStrip summary={summary({ kind: 'solvable', pendingSwaps: 2 })} fabraryUlid="abc" />);
-
-    expect(screen.getByTestId('strip-view-swaps')).toBeInTheDocument();
-    expect(screen.queryByTestId('strip-view-shopping')).toBeNull();
-    expect(screen.queryByTestId('deck-fabrary-link')).toBeNull();
-  });
-});
-
-describe('DeckStatusStrip — incomplete, no swaps applied yet', () => {
-  it('names the gap, the swaps that get closer and the unsolved remainder', () => {
-    render(<DeckStatusStrip summary={summary({})} fabraryUlid="abc" />);
-
-    expect(message()).toBe(
-      'Faltam 4 cartas — 2 trocas sugeridas cobrem parte e 2 só comprando.',
-    );
-    expect(screen.getByTestId('deck-status-strip')).toHaveClass(styles.toneIncomplete!);
-  });
-
-  it('uses every singular at count 1', () => {
-    render(
-      <DeckStatusStrip
-        summary={summary({ missingCards: 1, missingSlots: 1, pendingSwaps: 1, unsolvedCards: 1 })}
-        fabraryUlid={null}
-      />,
-    );
-
-    expect(message()).toBe(
-      'Falta 1 carta — 1 troca sugerida cobre parte e 1 só comprando.',
+    await userEvent.click(screen.getByRole('button', { name: 'Usar as 3' }));
+    expect(await screen.findByTestId('strip-use-error')).toHaveTextContent(
+      'Esta carta não tem mais cópias faltando para substituir.',
     );
   });
 
-  it('says no swap is available when none is pending', () => {
-    render(<DeckStatusStrip summary={summary({ pendingSwaps: 0 })} fabraryUlid={null} />);
-
-    expect(message()).toBe('Faltam 4 cartas — nenhuma troca possível com a sua coleção.');
-    expect(screen.queryByTestId('strip-view-swaps')).toBeNull();
-  });
-
-  it('omits the unsolved remainder when nothing is unsolved', () => {
-    render(<DeckStatusStrip summary={summary({ unsolvedCards: 0 })} fabraryUlid={null} />);
-
-    expect(message()).toBe('Faltam 4 cartas — 2 trocas sugeridas cobrem parte.');
-  });
-
-  it('renders the shopping anchor, the swaps link and one Fabrary link', () => {
-    render(<DeckStatusStrip summary={summary({})} fabraryUlid="abc123" />);
-
-    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '#deck-missing-panel');
-    expect(screen.getByTestId('strip-view-swaps')).toBeInTheDocument();
-    const fabrary = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.com'));
-    expect(fabrary).toHaveLength(1);
-    expect(fabrary[0]).toHaveAttribute('href', 'https://fabrary.com/decks/abc123');
-  });
-
-  it('renders no Fabrary link for a deck without a Fabrary id', () => {
-    render(<DeckStatusStrip summary={summary({})} fabraryUlid={null} />);
-
-    expect(screen.queryByTestId('deck-fabrary-link')).toBeNull();
-  });
-
-  it('routes "Ver trocas" through the router Link to /swaps', () => {
-    render(<DeckStatusStrip summary={summary({})} fabraryUlid={null} />);
-
-    expect(linkSpy).toHaveBeenCalledWith(expect.objectContaining({ to: '/swaps' }));
-  });
-
-  it('hides the shopping anchor when no card is left to buy', () => {
-    render(<DeckStatusStrip summary={summary({ missingCards: 0, missingSlots: 0 })} fabraryUlid={null} />);
-
-    expect(screen.queryByTestId('strip-view-shopping')).toBeNull();
-  });
-});
-
-describe('DeckStatusStrip — incomplete, swaps already applied', () => {
-  it('acknowledges applied swaps and the ones still waiting', () => {
-    render(<DeckStatusStrip summary={summary({ approvedSwaps: 2, pendingSwaps: 3 })} fabraryUlid={null} />);
-
-    expect(message()).toBe('Faltam 4 cartas — 2 trocas já aplicadas, 3 aguardando aprovação.');
-  });
-
-  it('omits the waiting clause when nothing is pending, singular at one applied swap', () => {
-    render(<DeckStatusStrip summary={summary({ approvedSwaps: 1, pendingSwaps: 0 })} fabraryUlid={null} />);
-
-    expect(message()).toBe('Faltam 4 cartas — 1 troca já aplicada.');
-  });
-
-  it('still offers "Ver trocas" so an applied swap can be reviewed', () => {
-    render(<DeckStatusStrip summary={summary({ approvedSwaps: 1, pendingSwaps: 0 })} fabraryUlid={null} />);
-
-    expect(screen.getByTestId('strip-view-swaps')).toBeInTheDocument();
-  });
-});
-
-describe('DeckStatusStrip — en-US', () => {
-  it('renders the solvable copy in English', async () => {
-    await setTestLocale('en-US');
-    render(<DeckStatusStrip summary={summary({ kind: 'solvable', pendingSwaps: 2 })} fabraryUlid={null} />);
-
-    expect(message()).toBe(
-      'Your collection covers this deck — 2 swaps waiting for approval to reach 100%.',
-    );
+  it('keeps the tones: ready when complete, accent with suggestions, low when incomplete', () => {
+    renderStrip({ summary: summary({ kind: 'complete', missingCards: 0 }) });
+    expect(screen.getByTestId('deck-status-strip')).toHaveClass(styles.toneComplete!);
   });
 
   it('does not call a full collection good news when the deck breaks its format rules', () => {
-    render(
-      <DeckStatusStrip
-        summary={summary({ kind: 'complete', pendingSwaps: 0 })}
-        fabraryUlid={null}
-        offFormat="Classic Constructed"
-      />,
-    );
+    renderStrip({ summary: summary({ kind: 'complete', missingCards: 0 }), offFormat: 'Classic Constructed' });
 
     expect(message()).toBe('Sua coleção cobre o deck inteiro, mas ele está fora das regras de Classic Constructed.');
     expect(screen.getByTestId('deck-status-strip')).not.toHaveClass(styles.toneComplete!);
   });
 
-  it('ends with how far the pending swaps take the deck, as one rounded number', () => {
-    render(
-      <DeckStatusStrip
-        summary={summary({ kind: 'incomplete', missingCards: 15, pendingSwaps: 1, unsolvedCards: 13 })}
-        fabraryUlid={null}
-        reachPercent={69}
-      />,
-    );
+  it('renders the shopping anchor and one Fabrary link while cards are missing', () => {
+    renderStrip({ fabraryUlid: 'abc123' });
 
-    expect(message()).toMatch(/Com ela, o deck chega a 69%\.$/);
+    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '#deck-missing-panel');
+    const fabrary = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.com'));
+    expect(fabrary).toHaveLength(1);
+    expect(fabrary[0]).toHaveAttribute('href', 'https://fabrary.com/decks/abc123');
+  });
+
+  it('uses the singular at one card, and renders English copy in en-US', async () => {
+    renderStrip({ summary: summary({ kind: 'suggestions', missingCards: 1, suggestionCount: 1 }) });
+    expect(message()).toBe('Falta 1 carta. Dá para cobrir 1 carta com a sua coleção.');
+
+    await setTestLocale('en-US');
+    renderStrip({ summary: summary({ kind: 'suggestions', missingCards: 5, suggestionCount: 3 }) });
+    expect(screen.getAllByTestId('deck-status-strip-message')[1]).toHaveTextContent(
+      '5 cards missing. Your collection can cover 3 cards.',
+    );
   });
 });

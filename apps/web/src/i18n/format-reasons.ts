@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { IDeckLegality, ILegalityReasonDetail } from '../api/decks';
-import type { IRationaleDetail } from '../api/swaps';
+import type { IRationaleDetail } from '../api/deck-detail';
 
 const PITCH_KEYS: Readonly<Record<string, string>> = {
   red: 'reasons.rationale.pitchRed',

@@ -94,12 +94,6 @@ export const decks = {
   // MarkOwnedButton
   markOwned: 'Já tenho',
   markOwnedSaving: 'Salvando…',
-  // ModifiedViewBanner
-  modifiedView: 'Trocas recusadas.',
-  rejectedSwaps_one: 'Você recusou {{count}} troca neste deck, e ela não é mais sugerida.',
-  rejectedSwaps_other: 'Você recusou {{count}} trocas neste deck, e elas não são mais sugeridas.',
-  clearingRejections: 'Restaurando…',
-  clearRejections: 'Sugerir de novo',
   // ReadinessHero
   viewOnFabraryLink: 'Ver no Fabrary ↗',
   // SaveCascadeConfirmModal
@@ -220,10 +214,6 @@ export const decks = {
   retryShoppingLineToast: 'Carregando a lista de compras de novo…',
   failedToLoadDeck: 'Não foi possível carregar o deck: {{error}}',
   failedToMarkCard: 'Não foi possível marcar a carta: {{error}}',
-  clearRejectionsCapped_one: 'Trocas restauradas: {{restored}}. Falta {{count}}: clique em Sugerir de novo outra vez.',
-  clearRejectionsCapped_other: 'Trocas restauradas: {{restored}}. Faltam {{count}}: clique em Sugerir de novo outra vez.',
-  failedToClearRejections: 'Não foi possível restaurar as trocas: {{error}}',
-  failedSwapAction: 'Não foi possível salvar a troca. Tente de novo.',
   // DeckDetailSidebar
   legalityAria: 'Legalidade: {{category}}',
   heroFallback: 'Herói',

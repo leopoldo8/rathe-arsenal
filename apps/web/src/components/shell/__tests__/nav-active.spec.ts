@@ -58,16 +58,9 @@ describe('resolveActiveNavKey — Library', () => {
   });
 });
 
-describe('resolveActiveNavKey — Swaps', () => {
-  it('activates Swaps on /swaps', () => {
-    expect(resolveActiveNavKey('/swaps')).toBe('swaps');
-  });
-
-  it('activates Swaps on a /swaps/ sub-route', () => {
-    expect(resolveActiveNavKey('/swaps/123')).toBe('swaps');
-  });
-
-  it('does NOT activate Swaps on /reviews — it is a route-level redirect to /swaps and never renders its own page (§5.2)', () => {
+describe('resolveActiveNavKey — retired swaps addresses', () => {
+  it('activates nothing on /swaps or /reviews, which redirect home', () => {
+    expect(resolveActiveNavKey('/swaps')).toBe(null);
     expect(resolveActiveNavKey('/reviews')).toBe(null);
   });
 });

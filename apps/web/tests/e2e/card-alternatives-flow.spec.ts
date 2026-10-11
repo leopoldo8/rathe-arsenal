@@ -8,7 +8,7 @@
  * cards are the rows this flow starts from.
  */
 import { test, expect } from '@playwright/test';
-import { BASE_URL, pinPortuguese } from './swaps-helpers';
+import { BASE_URL, pinPortuguese } from './helpers';
 import { loadFixture, resetFixture } from '../support/fixture';
 
 test.describe('Card alternatives — E2E', () => {

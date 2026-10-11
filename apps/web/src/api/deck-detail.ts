@@ -64,19 +64,26 @@ export interface ISubstituteCard {
     | null;
 }
 
+export interface IRationaleDetail {
+  readonly tier: number;
+  readonly pitch: string;
+  readonly sharedClasses: readonly string[];
+  readonly powerDelta: number;
+  readonly defenseDelta: number;
+  readonly sharedKeywords: readonly string[];
+}
+
 export interface ISubstitutionMatch {
   readonly substitute: ISubstituteCard;
   readonly tier: number;
   readonly score: number;
   readonly rationale: string;
-  readonly rationaleDetail?: import('./swaps').IRationaleDetail | null;
+  readonly rationaleDetail?: IRationaleDetail | null;
 }
 
 export interface ISubstitutedEntry {
   readonly original: IBreakdownEntry;
   readonly match: ISubstitutionMatch;
-  /** The engine's own flag for an approved swap; the stored snapshot carries it. */
-  readonly approved?: boolean;
 }
 
 export interface IBreakdown {

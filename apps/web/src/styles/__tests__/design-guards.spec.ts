@@ -1138,10 +1138,10 @@ describe('DECK-04 — analysis row', () => {
   });
 });
 
-describe('DECK-05 — missing and swaps panels', () => {
-  it('lays the panels in two equal columns 14px apart', () => {
+describe('DECK-05 — missing panel', () => {
+  it('gives the one panel the full row, 14px below its neighbours', () => {
     const body = ruleBody(readDeckBaseCss('DeckActionPanels.module.css'), '.row');
-    expect(body).toContain('grid-template-columns: 1fr 1fr');
+    expect(body).toContain('grid-template-columns: minmax(0, 1fr)');
     expect(body).toContain('gap: 14px');
   });
 
@@ -1149,14 +1149,6 @@ describe('DECK-05 — missing and swaps panels', () => {
     const body = ruleBody(readDeckCss('MissingPanel.module.css'), '.pitchBar');
     expect(body).toContain('inline-size: 4px');
     expect(body).toContain('block-size: 30px');
-  });
-
-  it('strikes the original in #c9938f-family miss tone and bands confidence', () => {
-    const css = readDeckCss('SwapsPanel.module.css');
-    expect(ruleBody(css, '.originalName')).toContain('text-decoration: line-through');
-    expect(ruleBody(css, '.bandHigh')).toContain('color: var(--ra-status-ready)');
-    expect(ruleBody(css, '.bandMid')).toContain('color: var(--ra-accent)');
-    expect(ruleBody(css, '.bandLow')).toContain('color: var(--ra-ready-mid-accent)');
   });
 });
 
@@ -1227,7 +1219,6 @@ describe('Page frame — every page starts its title and content at the same pla
     ['Library', LIBRARY_ROUTE_CSS],
     ['Sources', SOURCES_ROUTE_CSS],
     ['Add cards', ADD_CARDS_SHELL_CSS],
-    ['Swaps', SWAPS_ROUTE_CSS],
     ['Settings', SETTINGS_CSS],
     ['New deck', NEW_DECK_PAGE_CSS],
     ['Edit deck', EDIT_PAGE_CSS],
@@ -1641,168 +1632,6 @@ describe('Phase 8 — onboarding stepper and panel (AUTH-02, handoff §2)', () =
     expect(body).toContain('max-width: 640px');
     expect(body).toContain('margin-inline: auto');
     expect(body).toContain('padding: 64px 32px 80px');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Phase 9 — Swaps (SWAP-07, SWAP-10, SWAP-12). Literals from handoff §10.
-// ---------------------------------------------------------------------------
-
-const SWAPS_ROUTE_CSS = readCss('routes/_auth/swaps.module.css');
-const SWAP_ROW_CSS = readCss('components/swaps/SwapRow.module.css');
-const SWAP_REJECT_CSS = readCss('components/swaps/SwapRejectPanel.module.css');
-const SWAP_OUTCOME_CSS = readCss('components/swaps/SwapOutcomeBar.module.css');
-const SWAP_TABS_CSS = readCss('components/swaps/SwapsTabs.module.css');
-
-describe('SWAP — screen column', () => {
-  it('caps the page at the shared page width and centres it', () => {
-    const body = ruleBody(SWAPS_ROUTE_CSS, '.page');
-    expect(body).toContain('max-inline-size: var(--ra-page-max-inline)');
-    expect(body).toContain('margin-inline: auto');
-  });
-});
-
-describe('SWAP-12 — row anatomy', () => {
-  it('sets each row on a 14px surface card padded 16px 20px', () => {
-    const row = ruleBody(SWAP_ROW_CSS, '.row');
-    expect(row).toContain('border-radius: 14px');
-    expect(row).toContain('background: var(--ra-bg-surface)');
-    expect(ruleBody(SWAP_ROW_CSS, '.main')).toContain('padding: 16px 20px');
-  });
-
-  it('gives the deck column 150px and the confidence column 110px', () => {
-    expect(ruleBody(SWAP_ROW_CSS, '.main')).toContain(
-      'grid-template-columns: auto 150px minmax(0, 1fr) 110px auto',
-    );
-  });
-
-  it('dims the outgoing thumbnail to .5 and borders the incoming one in gold', () => {
-    expect(ruleBody(SWAP_ROW_CSS, '.thumbOut')).toContain('opacity: 0.5');
-    expect(ruleBody(SWAP_ROW_CSS, '.thumbIn')).toContain('border: 1px solid var(--ra-accent-soft-bd)');
-  });
-
-  it('draws the arrow in a 26px circle on the accent wash', () => {
-    const body = ruleBody(SWAP_ROW_CSS, '.arrow');
-    expect(body).toContain('inline-size: 26px');
-    expect(body).toContain('block-size: 26px');
-    expect(body).toContain('background: var(--ra-accent-soft-bg)');
-  });
-
-  it('strikes the outgoing name', () => {
-    expect(ruleBody(SWAP_ROW_CSS, '.nameOut')).toContain('text-decoration: line-through');
-  });
-
-  it('sets the confidence as quiet muted UI text, not a coloured numeral', () => {
-    const value = ruleBody(SWAP_ROW_CSS, '.confidence');
-    expect(value).toContain('font-family: var(--ra-font-ui)');
-    expect(value).toContain('color: var(--ra-fg-muted)');
-  });
-
-  it('keeps every action at the 44px touch target', () => {
-    expect(ruleBody(SWAP_ROW_CSS, '.approve, .ghost')).toContain('min-block-size: 44px');
-  });
-
-  it('stacks the pair, confidence and actions below 768px', () => {
-    const media = atRuleBody(readCssWithMedia('components/swaps/SwapRow.module.css'), '@media (max-width: 767px)');
-    expect(media).toContain('grid-template-columns: auto minmax(0, 1fr)');
-    expect(media).toContain('.pair, .confidenceCol, .actions { grid-column: 1 / -1; }');
-  });
-});
-
-describe('SWAP-07 — rejected rows', () => {
-  it('renders a rejected row at opacity .6', () => {
-    expect(ruleBody(SWAP_ROW_CSS, '.rowRejected')).toContain('opacity: 0.6');
-  });
-});
-
-describe('SWAP-06 and SWAP-10 — feedback panels', () => {
-  it('opens the reason panel under a top border on the sunken surface', () => {
-    const body = ruleBody(SWAP_REJECT_CSS, '.panel');
-    expect(body).toContain('padding: 16px 20px');
-    expect(body).toContain('border-top: 1px solid var(--ra-border)');
-  });
-
-  it('sets the panel title at 12.5px/600 and its hint at 11.5px', () => {
-    const title = ruleBody(SWAP_REJECT_CSS, '.title');
-    expect(title).toContain('font-size: 12.5px');
-    expect(title).toContain('font-weight: var(--ra-weight-semibold)');
-    expect(ruleBody(SWAP_REJECT_CSS, '.hint')).toContain('font-size: 11.5px');
-  });
-
-  it('washes the selected reason chip in gold', () => {
-    const body = ruleBody(SWAP_REJECT_CSS, '.chipSelected');
-    expect(body).toContain('background: var(--ra-accent-soft-bg)');
-    expect(body).toContain('border-color: var(--ra-accent-soft-bd)');
-    expect(body).toContain('color: var(--ra-accent)');
-  });
-
-  it('gives the note a 60px minimum height and fills the confirm button with the miss tone', () => {
-    expect(ruleBody(SWAP_REJECT_CSS, '.note')).toContain('min-block-size: 60px');
-    expect(ruleBody(SWAP_REJECT_CSS, '.confirm')).toContain('background: var(--ra-ready-low)');
-  });
-
-  it('turns the active outcome pills green and red', () => {
-    expect(ruleBody(SWAP_OUTCOME_CSS, '.pillWorked')).toContain('color: var(--ra-ready-high)');
-    expect(ruleBody(SWAP_OUTCOME_CSS, '.pillDidNotWork')).toContain('color: var(--ra-ready-low)');
-  });
-});
-
-describe('SWAP-14 — filter trigger and tab counts', () => {
-  const filtersCss = readCss('components/swaps/SwapsFilters.module.css');
-
-  it('styles the Filtros trigger as a surface pill, gold when active', () => {
-    const body = ruleBody(filtersCss, '.toggle');
-    expect(body).toContain('background: var(--ra-bg-surface)');
-    expect(body).toContain('border: 1px solid var(--ra-border)');
-    expect(body).toContain('font-family: var(--ra-font-ui)');
-    expect(ruleBody(filtersCss, '.toggleActive')).toContain('color: var(--ra-accent)');
-  });
-
-  it('sets the tab counts in the UI font with tabular numerals, not mono', () => {
-    const body = ruleBody(SWAP_TABS_CSS, '.badge');
-    expect(body).toContain('font-family: var(--ra-font-ui)');
-    expect(body).toContain('font-variant-numeric: tabular-nums');
-    expect(body).not.toContain('mono');
-  });
-
-  it('sizes both thumbnail boxes 34 by 48 so the card has room to draw', () => {
-    for (const selector of ['.thumbOut', '.thumbIn']) {
-      const body = ruleBody(SWAP_ROW_CSS, selector);
-      expect(body).toContain('inline-size: 34px');
-      expect(body).toContain('block-size: 48px');
-    }
-  });
-});
-
-describe('SWAP-14 — tabs', () => {
-  it('washes the active tab in gold with the accent text', () => {
-    const body = ruleBody(SWAP_TABS_CSS, ".trigger[data-state='active']");
-    expect(body).toContain('background: var(--ra-accent-soft-bg)');
-    expect(body).toContain('color: var(--ra-accent)');
-  });
-});
-
-describe('SWAP — no banned motifs in the screen', () => {
-  const swapSources = walkSync(path.join(SRC_ROOT, 'components/swaps'))
-    .filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`))
-    .concat(path.join(SRC_ROOT, 'routes/_auth/swaps.tsx'), path.join(SRC_ROOT, 'routes/_auth/swaps.module.css'));
-
-  it.each(swapSources.map((file) => [path.relative(SRC_ROOT, file), file]))(
-    '%s has no diamond glyph, roman-numeral tier or display serif on a label',
-    (_name, file) => {
-      const source = fs.readFileSync(file as string, 'utf-8');
-      expect(source).not.toContain('◆');
-      expect(source).not.toMatch(/tierI{1,3}\b/);
-    },
-  );
-
-  it('keeps the display serif to the page title and the empty-state title', () => {
-    const offenders = swapSources
-      .filter((file) => file.endsWith('.css'))
-      .filter((file) => fs.readFileSync(file, 'utf-8').includes('--ra-font-display'))
-      .map((file) => path.basename(file))
-      .sort();
-    expect(offenders).toEqual(['SwapsEmptyState.module.css', 'swaps.module.css']);
   });
 });
 

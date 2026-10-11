@@ -14,8 +14,6 @@ const AUTH_SHELL_PREFIXES = [
   '/library',
   '/library-csv-sources',
   '/add-cards',
-  '/reviews',
-  '/swaps',
   '/settings',
   '/decks',
   '/onboarding',

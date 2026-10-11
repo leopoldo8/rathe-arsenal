@@ -7,8 +7,9 @@ import { CongratsAllPlayable } from './CongratsAllPlayable';
 import { formatSwapRationale } from '../../i18n/format-reasons';
 import { useDecksQuery, ITrackedDeckListItem } from '../../api/decks';
 import { useDeckDetailQuery, ISubstitutedEntry } from '../../api/deck-detail';
-import { findSwap, selectDeckSwaps, useSwapMutation, useSwapsQuery } from '../../api/swaps';
-import type { ISwapRow } from '../../api/swaps';
+import { useUseSuggestions } from '../../api/replacements';
+import { localizeApiError } from '../card-scanner/localize-api-error';
+import { findSuggestions } from '../deck-detail/deckDetailModel';
 import styles from './Step3FirstReview.module.css';
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ import styles from './Step3FirstReview.module.css';
 /** Milliseconds to wait for substitution computation before showing fallback. */
 const COMPUTATION_TIMEOUT_MS = 10_000;
 
-/** Max number of substitutions to show in the onboarding preview. */
+/** Max number of suggestions to show in the onboarding preview. */
 const MAX_PREVIEW_SUBS = 3;
 
 // ---------------------------------------------------------------------------
@@ -38,9 +39,9 @@ export interface IStep3FirstReviewProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Step 3 of the onboarding wizard — first substitution review.
+ * Step 3 of the onboarding wizard — the collection's first suggestions.
  *
- * Shows up to 3 pending substitutions across imported decks.
+ * Previews up to 3 suggestions of the first imported deck and offers to use them all at once.
  * When all decks have raw 100% readiness, renders <CongratsAllPlayable> instead.
  * After 10s without substitutions loading, shows a "Continue without review" fallback.
  */
@@ -52,6 +53,7 @@ export function Step3FirstReview({
 }: IStep3FirstReviewProps): React.ReactElement {
   const { t } = useTranslation();
   const [timedOut, setTimedOut] = useState(false);
+  const [useError, setUseError] = useState<string | null>(null);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -67,21 +69,22 @@ export function Step3FirstReview({
   // parent wizard somehow renders Step3 without completing Step1 first.
   const safeDeckIdStr = deckIdStr || '0';
   const deckDetailQuery = useDeckDetailQuery(safeDeckIdStr);
-  const swapsQuery = useSwapsQuery();
-  const swapMutation = useSwapMutation();
-  const deckSwaps = selectDeckSwaps(swapsQuery.data?.rows, Number(safeDeckIdStr));
-  const refetchSwaps = swapsQuery.refetch;
-  const snapshotComputedAt = deckDetailQuery.data?.latestSnapshot?.computedAt ?? null;
-  // The suggestions are written while the snapshot is computed, so the swaps
-  // list loaded earlier may not have them yet.
-  useEffect(() => {
-    if (snapshotComputedAt !== null) void refetchSwaps();
-  }, [snapshotComputedAt, refetchSwaps]);
+  const useSuggestions = useUseSuggestions(Number(safeDeckIdStr));
 
   const isLoading = decksQuery.isLoading || deckDetailQuery.isLoading;
   const snapshot = deckDetailQuery.data?.latestSnapshot;
-  const substitutions: readonly ISubstitutedEntry[] = snapshot?.breakdown.substituted ?? [];
-  const previewSubs = substitutions.slice(0, MAX_PREVIEW_SUBS);
+  const suggestions: readonly ISubstitutedEntry[] = snapshot
+    ? [...findSuggestions(snapshot.breakdown, deckDetailQuery.data?.replacements ?? []).values()]
+    : [];
+  const previewSubs = suggestions.slice(0, MAX_PREVIEW_SUBS);
+
+  function handleUseAll(): void {
+    setUseError(null);
+    useSuggestions.mutate(undefined, {
+      onSuccess: onComplete,
+      onError: (error) => setUseError(localizeApiError(error, t)),
+    });
+  }
 
   // Determine if ALL imported decks are 100% ready (no substitutions needed).
   const trackedDecks: readonly ITrackedDeckListItem[] = decksQuery.data?.trackedDecks ?? [];
@@ -189,37 +192,26 @@ export function Step3FirstReview({
 
       <ul className={styles.subList} aria-label={t('onboarding.substitutionPreviewsLabel')}>
         {previewSubs.map((sub) => (
-          <SubstitutionPreviewRow
-            key={sub.original.cardIdentifier}
-            sub={sub}
-            swap={
-              findSwap(deckSwaps, {
-                cardIdentifier: sub.original.cardIdentifier,
-                slot: sub.original.slot,
-                substituteIdentifier: sub.match.substitute.cardIdentifier,
-              }) ?? null
-            }
-            onAct={(swapId, steps) => {
-              void (async () => {
-                for (const kind of steps) {
-                  await swapMutation.mutateAsync({ swapId, action: { kind } });
-                }
-              })().catch(() => undefined);
-            }}
-          />
+          <SubstitutionPreviewRow key={`${sub.original.cardIdentifier}::${sub.original.slot}`} sub={sub} />
         ))}
       </ul>
+
+      {useError !== null && (
+        <p role="alert" className={styles.body}>
+          {useError}
+        </p>
+      )}
 
       <div className={styles.actions}>
         <Button type="button" variant="ghost" onClick={onBack}>
           {t('onboarding.backButton')}
         </Button>
         <div className={styles.actionsRight}>
-          <Button type="button" variant="ghost" onClick={onSkip}>
-            {t('onboarding.skipForNow')}
+          <Button type="button" variant="ghost" onClick={onComplete}>
+            {t('onboarding.notNow')}
           </Button>
-          <Button type="button" variant="primary" onClick={onComplete}>
-            {t('onboarding.enterArmory')}
+          <Button type="button" variant="primary" onClick={handleUseAll} disabled={useSuggestions.isPending}>
+            {t('onboarding.useSuggestions', { count: suggestions.length })}
           </Button>
         </div>
       </div>
@@ -231,58 +223,26 @@ export function Step3FirstReview({
 // SubstitutionPreviewRow (internal)
 // ---------------------------------------------------------------------------
 
-type TPreviewAction = 'approve' | 'reject' | 'revert' | 'restore';
-
 interface ISubstitutionPreviewRowProps {
   readonly sub: ISubstitutedEntry;
-  readonly swap: ISwapRow | null;
-  readonly onAct: (swapId: string, steps: readonly TPreviewAction[]) => void;
 }
 
-function SubstitutionPreviewRow({
-  sub,
-  swap,
-  onAct,
-}: ISubstitutionPreviewRowProps): React.ReactElement {
+function SubstitutionPreviewRow({ sub }: ISubstitutionPreviewRowProps): React.ReactElement {
   const { t } = useTranslation();
   const { original, match } = sub;
-  const [localDecision, setLocalDecision] = useState<'approved' | 'rejected' | null>(null);
-
-  // Pressing the active button again takes the decision back, and switching
-  // sides undoes the first decision before making the second, so the server
-  // never holds a state the screen no longer shows.
-  function handleApprove(): void {
-    if (swap === null) return;
-    const steps: TPreviewAction[] =
-      localDecision === 'approved' ? ['revert'] : localDecision === 'rejected' ? ['restore', 'approve'] : ['approve'];
-    setLocalDecision(localDecision === 'approved' ? null : 'approved');
-    onAct(swap.id, steps);
-  }
-
-  function handleReject(): void {
-    if (swap === null) return;
-    const steps: TPreviewAction[] =
-      localDecision === 'rejected' ? ['restore'] : localDecision === 'approved' ? ['revert', 'reject'] : ['reject'];
-    setLocalDecision(localDecision === 'rejected' ? null : 'rejected');
-    onAct(swap.id, steps);
-  }
-
-  const approveLabel = t('onboarding.approveSubAriaLabel', { substitute: match.substitute.name, original: original.slot });
-  const rejectLabel = t('onboarding.rejectSubAriaLabel', { substitute: match.substitute.name, original: original.slot });
-
   return (
     <li className={styles.subRow}>
       <div className={styles.subCards}>
         <div className={styles.subCardSlot}>
           <CardArt
-            name={original.slot}
+            name={original.name}
             pitch={original.pitch}
             cost={original.cost}
             type={original.type}
             missing
             size="sm"
           />
-          <span className={styles.subCardLabel}>{original.slot}</span>
+          <span className={styles.subCardLabel}>{original.name}</span>
         </div>
         <span className={styles.subArrow} aria-hidden="true">→</span>
         <div className={styles.subCardSlot}>
@@ -303,29 +263,6 @@ function SubstitutionPreviewRow({
       </div>
 
       <p className={styles.subRationale}>{formatSwapRationale(match.rationaleDetail, match.rationale, t)}</p>
-
-      <div className={styles.subActions}>
-        <Button
-          type="button"
-          variant={localDecision === 'approved' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={handleApprove}
-          aria-label={approveLabel}
-          aria-pressed={localDecision === 'approved'}
-        >
-          {t('onboarding.approveButton')}
-        </Button>
-        <Button
-          type="button"
-          variant={localDecision === 'rejected' ? 'danger' : 'secondary'}
-          size="sm"
-          onClick={handleReject}
-          aria-label={rejectLabel}
-          aria-pressed={localDecision === 'rejected'}
-        >
-          {t('onboarding.rejectButton')}
-        </Button>
-      </div>
     </li>
   );
 }

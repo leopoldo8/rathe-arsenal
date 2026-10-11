@@ -62,19 +62,19 @@ Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "accep
 **C11** - After a use, `GET /api/decks/:deckId` lists the replacement under `replacements` with the original's identifier and name, which is what the deck list marks "no lugar de" (AC 5) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "a one-click use is a pick recorded as suggested"`
 
-**C12** - The suggestion of each missing row, table-driven over 4 rows: a card whose copies got stand-ins A then B -> A; a card with no stand-in -> none; a card in two slots -> one suggestion per slot; a row whose copies are all held by an active replacement -> none; N for that deck is 2 (AC 1, 3, 6)
+**C12** - The suggestion of each missing row, table-driven over 4 rows: a card whose copies got stand-ins A then B -> A; a card with no stand-in -> none; a card in two slots -> one suggestion per slot; a row whose copies are all held by an active replacement -> none; and N is 2 for a deck whose missing rows a and b have stand-ins and c has none (AC 1, 3, 6) (reworded during build: the four-row deck has three suggestions, so N is shown on its own deck) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/deckDetailModel.spec.ts -t "a missing row's suggestion is the first stand-in found for its card and slot"`
 
-**C13** - A missing row with a suggestion shows the suggestion as "Erase Face (Vermelho)", the label "da sua coleção", a button "Usar" and the button "Ver alternativas" (AC 1)
+**C13** - A missing row with a suggestion shows the suggestion as "Erase Face (Vermelho)", the label "da sua coleção", a button "Usar" and the button "Ver alternativas" (AC 1) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "shows the collection's suggestion with Usar beside Ver alternativas"`
 
-**C14** - A missing row without a suggestion shows "Ver alternativas" and no "Usar" and no "da sua coleção" (AC 3)
+**C14** - A missing row without a suggestion shows "Ver alternativas" and no "Usar" and no "da sua coleção" (AC 3) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "a row without a suggestion offers only the alternatives"`
 
-**C15** - Pressing "Usar" sends one `POST /api/decks/7/replacements` with `{ originalCardIdentifier, slot, replacementCardIdentifier: <suggestion>, pickedFrom: 'suggested' }`, the button is disabled while it runs, and a `409` `NOTHING_TO_REPLACE` shows the localized message the alternatives sheet shows (AC 2, Observable loading and error)
+**C15** - Pressing "Usar" sends one `POST /api/decks/7/replacements` with `{ originalCardIdentifier, slot, replacementCardIdentifier: <suggestion>, pickedFrom: 'suggested' }`, the button is disabled while it runs, and a `409` `NOTHING_TO_REPLACE` shows the localized message the alternatives sheet shows (AC 2, Observable loading and error) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "Usar sends the suggestion as a suggested pick"`
 
-**C16** - In the browser, on the fixture's swap deck, "Usar" on the first missing row with a suggestion removes that card from the missing panel after the deck reloads, and the deck list shows one "no lugar de" mark naming it (AC 2, 5, S1 independent test)
+**C16** - In the browser, on the fixture's swap deck, "Usar" on the first missing row with a suggestion removes that card from the missing panel after the deck reloads, and the deck list shows one "no lugar de" mark naming it (AC 2, 5, S1 independent test) · done
 Proof: `apps/web/tests/e2e/suggestions-flow.spec.ts -g "Usar on a missing row uses the collection's card"`
 
 ### S2 - every suggestion at once · 12 files · 140 KB · ~35k
@@ -97,29 +97,29 @@ Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "two b
 **C22** - The bulk route answers `401` without a token, and `404` for another user's deck and for a deck id that does not exist (Surface) · done
 Proof: `apps/api/src/replacements/__tests__/suggested-uses.e2e-spec.ts -t "the bulk route refuses anonymous and foreign decks"`
 
-**C23** - The status strip, table-driven over 3 states: complete -> "Sua coleção cobre o deck inteiro."; 4 missing copies and no suggestion -> "Faltam 4 cartas." with no use button; 5 missing copies and 3 suggestions -> a message containing "Dá para cobrir 3 cartas com a sua coleção" and a button "Usar as 3"; no state shows "Ver trocas" (AC 6, 20, 23)
+**C23** - The status strip, table-driven over 3 states: complete -> "Sua coleção cobre o deck inteiro."; 4 missing copies and no suggestion -> "Faltam 4 cartas." with no use button; 5 missing copies and 3 suggestions -> a message containing "Dá para cobrir 3 cartas com a sua coleção" and a button "Usar as 3"; no state shows "Ver trocas" (AC 6, 20, 23) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/DeckStatusStrip.spec.tsx -t "says what the collection covers in each state"`
 
-**C24** - Pressing "Usar as 3" sends exactly one `POST /api/decks/7/replacements/suggested`, disables the button while it runs, and a `409` `NOTHING_TO_REPLACE` shows the localized message (AC 7, Observable error)
+**C24** - Pressing "Usar as 3" sends exactly one `POST /api/decks/7/replacements/suggested`, disables the button while it runs, and a `409` `NOTHING_TO_REPLACE` shows the localized message (AC 7, Observable error) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/DeckStatusStrip.spec.tsx -t "Usar as N sends one bulk request"`
 
-**C25** - The onboarding's first-review step, on a deck with 3 suggestions, shows "Usar as 3 cartas da coleção" and "Agora não" and no approve or reject button; the first sends one bulk request and then completes the step, the second completes it with no request; with no suggestion it shows the "looking good" variant (AC 12)
+**C25** - The onboarding's first-review step, on a deck with 3 suggestions, shows "Usar as 3 cartas da coleção" and "Agora não" and no approve or reject button; the first sends one bulk request and then completes the step, the second completes it with no request; with no suggestion it shows the "looking good" variant (AC 12) · done
 Proof: `apps/web/src/components/onboarding/__tests__/Step3FirstReview.spec.tsx -t "offers to use every suggestion or not now"`
 Proof: `apps/web/src/components/onboarding/__tests__/Step3FirstReview.spec.tsx -t "a deck with no suggestion shows the looking good step"`
 
-**C26** - In the browser, on the fixture's swap deck, "Usar as 3" in the status strip leaves 3 "no lugar de" marks in the deck list and the strip no longer offers a use (S2 independent test)
+**C26** - In the browser, on the fixture's swap deck, "Usar as 3" in the status strip leaves 3 "no lugar de" marks in the deck list and the strip no longer offers a use (S2 independent test) · done
 Proof: `apps/web/tests/e2e/suggestions-flow.spec.ts -g "Usar as N uses every suggestion"`
 
 ### S4 - the swap feature is gone · 60 files deleted, 20 edited · 170 KB · ~43k
 
-**C27** - The top bar and the bottom tab bar render no link named "Trocas" and none to `/swaps` (AC 18)
+**C27** - The top bar and the bottom tab bar render no link named "Trocas" and none to `/swaps` (AC 18) · done
 Proof: `apps/web/src/components/shell/__tests__/TopBar.spec.tsx -t "has no swaps entry"`
 Proof: `apps/web/src/components/shell/__tests__/BottomTabBar.spec.tsx -t "has no swaps entry"`
 
-**C28** - In the browser, opening `/swaps` and `/reviews` lands on `/` (AC 19)
+**C28** - In the browser, opening `/swaps` and `/reviews` lands on `/`, which takes a signed-in owner to `/home`, and no link named "Trocas" is shown (AC 18, 19) (reworded during build: `/` itself redirects to `/home`) · done
 Proof: `apps/web/tests/e2e/suggestions-flow.spec.ts -g "the swaps addresses lead home"`
 
-**C29** - The deck page for a deck with suggestions renders no swaps panel (`deck-swaps-panel`), no modified-view banner and no link to `/swaps` (AC 20)
+**C29** - The deck page for a deck with suggestions renders no swaps panel (`deck-swaps-panel`), no modified-view banner and no link to `/swaps` (AC 20) · done
 Proof: `apps/web/src/components/deck-detail/__tests__/DeckDetailView.suggestions.spec.tsx -t "shows no swaps panel, banner or link"`
 
 **C30** - With a valid token, `GET /api/swaps` and `POST /api/swaps/<uuid>/approve`, `/reject`, `/revert`, `/restore` and `/outcome` each answer `404` (AC 21) · done
@@ -143,11 +143,11 @@ Proof: `apps/api/src/database/migrations/__tests__/redesign-migrations-on-synchr
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "up() drops substitute_decision"`
 Proof: `apps/api/src/database/migrations/__tests__/replace-substitute-decision-with-swap-suggestion.int-spec.ts -t "down() recreates substitute_decision"`
 
-**C36** - No web source outside the routes' redirect stubs imports the swaps client or the swaps components, and the web app typechecks (AC 18, 20)
+**C36** - No web source outside the routes' redirect stubs imports the swaps client or the swaps components, and the web app typechecks (AC 18, 20) · done
 Proof: `! git grep -nE "api/swaps|components/swaps|SwapsPanel|ModifiedViewBanner" -- apps/web/src`
 Proof: `pnpm --filter @rathe-arsenal/web typecheck`
 
-**C37** - The full suites are green after the removal: engine, API unit, web unit, and the Playwright e2e project (rule: removed tests are listed below, none skipped)
+**C37** - The full suites are green after the removal: engine, API unit, web unit, and the Playwright e2e project (rule: removed tests are listed below, none skipped) · done
 Proof: `pnpm --filter @rathe-arsenal/engine test && pnpm --filter @rathe-arsenal/api test && pnpm --filter @rathe-arsenal/web test`
 Proof: `pnpm --filter @rathe-arsenal/web exec playwright test --project=e2e-chromium`
 
@@ -159,7 +159,7 @@ Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "rejects
 Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "answers another user's deck exactly like a missing deck"`
 Proof: `apps/api/src/replacements/__tests__/replacements.e2e-spec.ts -t "refuses a pick when nothing is missing"`
 
-**C39** - Every new pt-BR string has its en-US key: the two catalogs expose an identical set of key paths (AC 1, 6, 12, 23 in both languages)
+**C39** - Every new pt-BR string has its en-US key: the two catalogs expose an identical set of key paths (AC 1, 6, 12, 23 in both languages) · done
 Proof: `apps/web/src/i18n/__tests__/catalog-parity.spec.ts -t "pt-BR and en-US expose an identical set of translation key paths"`
 
 ### Tests removed with the code they covered

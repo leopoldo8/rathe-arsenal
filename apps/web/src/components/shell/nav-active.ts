@@ -8,13 +8,12 @@
  * on `/add-cards`. This explicit route map replaces both.
  */
 
-export type TNavKey = 'home' | 'library' | 'swaps';
+export type TNavKey = 'home' | 'library';
 
 const HOME_PATHS: readonly string[] = ['/home', '/decks/new'];
 const HOME_PREFIXES: readonly string[] = ['/home/', '/decks/'];
 const LIBRARY_PATHS: readonly string[] = ['/library', '/library-csv-sources'];
 const LIBRARY_PREFIXES: readonly string[] = ['/add-cards'];
-const SWAPS_PATHS: readonly string[] = ['/swaps'];
 
 /**
  * Resolves which primary nav item (if any) should render as active for a
@@ -37,10 +36,6 @@ export function resolveActiveNavKey(pathname: string): TNavKey | null {
     LIBRARY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   ) {
     return 'library';
-  }
-
-  if (SWAPS_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-    return 'swaps';
   }
 
   return null;

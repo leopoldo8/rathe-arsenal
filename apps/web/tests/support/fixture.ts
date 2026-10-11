@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { approveSwaps, resetFixtureState, type IFixtureCredentials } from '../../../../scripts/fixture/fixture-seed';
+import { resetFixtureState, type IFixtureCredentials } from '../../../../scripts/fixture/fixture-seed';
 
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
 
@@ -30,8 +30,4 @@ export function loadFixture(): IFixtureFile {
 
 export async function resetFixture(): Promise<void> {
   await resetFixtureState(fixtureCredentials(), loadFixture().jwt);
-}
-
-export async function arrangeApprovedSwaps(count: number): Promise<void> {
-  await approveSwaps(fixtureCredentials(), loadFixture().jwt, count);
 }

@@ -20,7 +20,7 @@ interface INavItem {
  *
  * Layout:
  *  - Left: wordmark (>=960px) or logo-mark (<960px) as Link to /home
- *  - Center: primary nav (Home / Library / Swaps)
+ *  - Center: primary nav (Home / Library)
  *  - Right: ThemeToggle + UserMenu
  *
  * Primary nav is hidden <960px (replaced by BottomTabBar in AppShell).
@@ -31,12 +31,11 @@ export function TopBar(): React.ReactElement {
   const activeNavKey = resolveActiveNavKey(pathname);
 
   // /home is handled separately below with a typed Link+search.
-  // /library and /swaps are kept as plain string `to` so TypeScript
-  // does not enforce their route-specific search params here — their
-  // validateSearch functions accept empty objects and apply defaults.
+  // /library is kept as a plain string `to` so TypeScript does not
+  // enforce its route-specific search params here — its validateSearch
+  // accepts an empty object and applies defaults.
   const otherNavItems: readonly INavItem[] = [
     { to: '/library', label: t('shell.navLibrary'), key: 'library' },
-    { to: '/swaps', label: t('shell.navSwaps'), key: 'swaps' },
   ];
 
   return (

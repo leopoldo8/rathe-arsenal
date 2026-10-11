@@ -1,5 +1,5 @@
 export const alternatives = {
-  // Control on the missing and swaps panels
+  // Control on the missing panel
   open: 'Alternativas',
   openAria: 'Ver alternativas para {{name}}',
 

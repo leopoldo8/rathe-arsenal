@@ -5,7 +5,7 @@
  * PREREQUISITES: dev server up (api :3000, web :5173); the Playwright global setup seeds the fixture deck.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { BASE_URL, pinPortuguese } from './swaps-helpers';
+import { BASE_URL, pinPortuguese } from './helpers';
 import { loadFixture } from '../support/fixture';
 
 const IMAGE_BASE = 'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards';

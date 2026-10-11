@@ -22,9 +22,9 @@ Swaps the owner had approved are discarded at deploy: those cards show as missin
 Reuses the replacement pick (`ReplacementsService`, `card_replacement`, the `tracked_deck` lock, the copy move, the recompute and the "original returns" prompt from AD-009), and the engine's existing stand-in search (`findSubstitution` inside `computeEffectiveReadiness`) as the source of the suggestion.
 
 1. readiness recompute -> `SubstitutionService` (exists) -> `computeEffectiveReadiness` (exists) without approved or rejected sets (door 2): `substituted` entries become suggestions only; the snapshot no longer reconciles `swap_suggestion`
-2. `GET /api/decks/:deckId` (exists) -> `DecksService.getDetail` (exists): each missing copy carries its suggestion from `breakdown.substituted`; the headline readiness counts the deck as it is (door 2)
+2. `GET /api/decks/:deckId` (exists) -> `DecksService.getDetail` (exists): the breakdown carries `substituted` entries, and the web's `findSuggestions` (new, `deckDetailModel.ts`) takes the first one per missing (card, slot) as that row's suggestion; the headline readiness counts the deck as it is (door 2)
 3. "Usar" on one missing card -> `POST /api/decks/:deckId/replacements` (exists) with `pickedFrom: suggested` (door 1) -> `ReplacementsService.pick` (exists): same lock, copy move, `card_replacement` row and recompute as any pick
-4. "Usar as N cartas da coleção" -> `POST /api/decks/:deckId/replacements/suggested` (new route, door 3) -> `ReplacementsService` (exists): under one `tracked_deck` lock, one pick per current suggestion, one recompute
+4. "Usar as N cartas da coleção" -> `POST /api/decks/:deckId/replacements/suggested` (new route, door 3) -> `ReplacementsService.useSuggestions` (new method) with `planSuggestedUses` (new, pure): under one `tracked_deck` lock, one pick per current suggestion, one recompute
 5. deploy -> migration (door 4) drops `swap_suggestion` with every row in it; the next recompute of each deck stores a snapshot without approvals
 6. web: the missing panel (exists) gains the suggestion and "Usar"; the status strip (exists) gains the bulk action; the Swaps page, the swaps panel, the modified-view banner, the nav item and the swaps client go; the onboarding's first-review step offers the bulk action instead of approvals
 

@@ -3,11 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import type { IDeckReplacement } from '../../../api/replacements';
 import { setTestLocale } from '../../../test/i18n-test-utils';
-import { breakdown, entry } from './deckDetailTestData';
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: (props: { to: string; children: React.ReactNode }) => <a href={props.to}>{props.children}</a>,
-}));
+import { entry } from './deckDetailTestData';
 
 import { DeckActionPanels } from '../DeckActionPanels';
 
@@ -30,17 +26,13 @@ describe('DeckActionPanels', () => {
 
     render(
       <DeckActionPanels
-        breakdown={breakdown({ missing: [missing, other] })}
-        deckSwaps={[]}
+        deckId={7}
         openMissing={[missing, other]}
+        suggestions={new Map()}
         shoppingData={null}
         onMarkOwned={vi.fn()}
         isMarkingOwned={false}
         pendingCard={null}
-        pendingSwapId={null}
-        onApproveSwap={vi.fn()}
-        onRejectSwap={vi.fn()}
-        onUndoSwap={vi.fn()}
         onFetchVariants={vi.fn()}
         fetchMutationStatus="idle"
         isCooldownActive={false}
