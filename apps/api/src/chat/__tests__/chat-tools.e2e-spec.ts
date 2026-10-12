@@ -149,9 +149,78 @@ describe('chat tools (E2E)', () => {
     const meta = await runChatTool(toolbox, 'get_tournament_meta', { format: 'Living Legend', since: '2026-01-01' });
 
     expect(meta['heroes']).toEqual([
-      { heroIdentifier: 'kano-dracai-of-aether', decks: 2, top8: 1, wins: 1, playerNamed: 0, latest: expect.anything() },
-      { heroIdentifier: 'dorinthea-ironsong', decks: 1, top8: 1, wins: 0, playerNamed: 1, latest: expect.anything() },
+      expect.objectContaining({ heroIdentifier: 'kano-dracai-of-aether', decks: 2, top8: 1, wins: 1, playerNamed: 0 }),
+      expect.objectContaining({ heroIdentifier: 'dorinthea-ironsong', decks: 1, top8: 1, wins: 0, playerNamed: 1 }),
     ]);
     expect(meta['decks']).toBe(3);
+  });
+
+  it('get_collection lists owned copies, what each deck already uses and the spare copies', async () => {
+    const user = await fixture.chatUser();
+    await fixture.own(user.jwt, [
+      { cardIdentifier: FLEX, quantity: 3 },
+      { cardIdentifier: EMISSARY, quantity: 2 },
+      { cardIdentifier: COAX, quantity: 1 },
+      { cardIdentifier: 'consuming-volition-red', quantity: 1 },
+    ]);
+    const toolbox = toolboxFor(user);
+
+    const forKatsu = await runChatTool(toolbox, 'get_collection', { heroIdentifier: KATSU, format: 'Classic Constructed' });
+    const everything = await runChatTool(toolbox, 'get_collection', {});
+
+    const rows = forKatsu['cards'] as Array<Record<string, unknown>>;
+    expect(rows.find((row) => row['cardIdentifier'] === FLEX)).toEqual(
+      expect.objectContaining({ owned: 3, spare: 1, usedByDecks: [{ deckId: user.deckId, quantity: 2 }] }),
+    );
+    expect(rows.find((row) => row['cardIdentifier'] === EMISSARY)).toEqual(expect.objectContaining({ owned: 2, spare: 0 }));
+    expect(rows.find((row) => row['cardIdentifier'] === COAX)).toEqual(expect.objectContaining({ owned: 1, spare: 1, usedByDecks: [] }));
+    expect(rows.map((row) => row['cardIdentifier'])).not.toContain('consuming-volition-red');
+    expect((everything['cards'] as Array<{ cardIdentifier: string }>).map((row) => row.cardIdentifier)).toContain('consuming-volition-red');
+  });
+
+  it("get_tournament_deck compared with one of the user's decks marks each card's legality there, owned copies and copies in that deck", async () => {
+    const user = await fixture.chatUser();
+    await fixture.own(user.jwt, [{ cardIdentifier: FLEX, quantity: 3 }]);
+    const toolbox = toolboxFor(user);
+    const [{ id }] = (await fixture.dataSource.query(
+      `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)
+       VALUES ('01TOOLS0000000000000000041', 'Calling: Recife 1st', 'Calling: Recife', 1, $1, 'Classic Constructed', now(), now(), 'tournament') RETURNING id`,
+      [KATSU],
+    )) as [{ id: string }];
+    await fixture.dataSource.query(
+      `INSERT INTO tournament_deck_card ("tournamentDeckId", "cardIdentifier", quantity, "sideboardQuantity") VALUES ($1, $2, 3, 0), ($1, 'consuming-volition-red', 1, 0)`,
+      [id, FLEX],
+    );
+
+    const compared = await runChatTool(toolbox, 'get_tournament_deck', { id, compareDeckId: user.deckId });
+    const other = await fixture.chatUser();
+
+    const cards = compared['cards'] as Array<Record<string, unknown>>;
+    expect(cards.find((card) => card['cardIdentifier'] === FLEX)).toEqual(expect.objectContaining({ legalInYourDeck: true, owned: 3, inYourDeck: 2 }));
+    expect(cards.find((card) => card['cardIdentifier'] === 'consuming-volition-red')).toEqual(
+      expect.objectContaining({ legalInYourDeck: false, owned: 0, inYourDeck: 0 }),
+    );
+    expect(await runChatTool(toolbox, 'get_tournament_deck', { id, compareDeckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
+  });
+
+  it('get_tournament_meta says whether each hero is legal in that format today and when it first appeared', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+    const insert = `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)
+      VALUES ($1, 'x', null, 1, $2, 'Open', $3, now(), 'tournament')`;
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000051', 'victor-goldmane-high-and-mighty', '2025-03-01T00:00:00Z']);
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000052', 'victor-goldmane-high-and-mighty', '2026-03-01T00:00:00Z']);
+    await fixture.dataSource.query(insert.replace("'Open'", "'Classic Constructed'"), ['01TOOLS0000000000000000053', 'victor-goldmane-high-and-mighty', '2025-04-01T00:00:00Z']);
+
+    const open = await runChatTool(toolbox, 'get_tournament_meta', { format: 'Open' });
+    const cc = await runChatTool(toolbox, 'get_tournament_meta', { format: 'Classic Constructed' });
+
+    expect((open['heroes'] as Array<Record<string, unknown>>)[0]).toEqual(
+      expect.objectContaining({ heroIdentifier: 'victor-goldmane-high-and-mighty', heroLegal: true, firstSeen: expect.anything() }),
+    );
+    expect(new Date((open['heroes'] as Array<{ firstSeen: string }>)[0]!.firstSeen).toISOString()).toBe('2025-03-01T00:00:00.000Z');
+    expect((cc['heroes'] as Array<Record<string, unknown>>).find((hero) => hero['heroIdentifier'] === 'victor-goldmane-high-and-mighty')).toEqual(
+      expect.objectContaining({ heroLegal: false }),
+    );
   });
 });

@@ -30,6 +30,9 @@ describe('chat system instruction', () => {
     expect(text).toContain('quote the totals get_deck or get_tournament_deck return; never add them up yourself');
     expect(text).toContain('Describe what a card does only from text a tool returned in this answer');
     expect(text).toContain('To rank heroes or describe a meta, use get_tournament_meta');
+    expect(text).toContain('Recommend only heroes and cards that are legal today in the format in question');
+    expect(text).toContain('For what the user owns or has spare, use get_collection');
+    expect(text).toContain('Never show tool names, field names or ids');
   });
 
   it('the instruction names the assistant Tutor in every locale', () => {

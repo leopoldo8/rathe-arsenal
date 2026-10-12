@@ -22,6 +22,7 @@ import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, valid
 const CARD_TEXT_MAX = 300;
 const HERO_COUNT_LIMIT = 60;
 const META_HEROES_MAX = 60;
+const COLLECTION_ROWS_MAX = 150;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECK_NOT_FOUND: TToolResult = { error: 'DECK_NOT_FOUND' };
 
@@ -41,6 +42,12 @@ function findCard(cardIdentifier: string): ICatalogCard | null {
   } catch {
     return null;
   }
+}
+
+function isHeroLegal(heroIdentifier: string, format: string): boolean {
+  const hero = findCard(heroIdentifier);
+  if (!hero) return false;
+  return (hero.legalFormats as readonly string[]).includes(format) && !((hero.bannedFormats ?? []) as readonly string[]).includes(format);
 }
 
 function typeLine(card: ICatalogCard): string {
@@ -65,7 +72,8 @@ export class ChatToolsService {
       search_cards: (args) => this.searchCards(args),
       get_recommendations: (args) => this.latestRecommendations(scope, readInteger(args, 'deckId', { min: 1 })!),
       search_tournament_decks: (args) => this.searchTournamentDecks(args),
-      get_tournament_deck: (args) => this.tournamentDeck(readString(args, 'id')!),
+      get_tournament_deck: (args) => this.tournamentDeck(scope, readString(args, 'id')!, readInteger(args, 'compareDeckId', { min: 1, optional: true })),
+      get_collection: (args) => this.collectionCards(scope, args),
       get_tournament_meta: (args) => this.tournamentMeta(args),
       search_rules: async (args) => ({ ...(await this.rules.search(readString(args, 'query')!)) }),
       propose_deck: async (args) => {
@@ -205,7 +213,45 @@ export class ChatToolsService {
     )) as TToolResult[];
   }
 
-  private async tournamentDeck(id: string): Promise<TToolResult> {
+  private async collectionCards(scope: IToolScope, args: Record<string, unknown>): Promise<TToolResult> {
+    const heroIdentifier = readString(args, 'heroIdentifier', { optional: true });
+    const format = readString(args, 'format', { optional: true });
+    const query = readString(args, 'query', { optional: true })?.trim().toLowerCase();
+    const hero = heroIdentifier ? findCard(heroIdentifier) : null;
+    const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
+    const owned = await this.collection.loadOwned(scope.userId);
+    const usage = await this.deckUsage(scope.userId);
+    const rows = [...owned.entries()].flatMap(([cardIdentifier, copies]) => {
+      const card = findCard(cardIdentifier);
+      if (!card) return [];
+      if (hero && legalityFormat && findCardLegalityViolation(card, hero, legalityFormat) !== null) return [];
+      if (query && !card.name.toLowerCase().includes(query) && !typeLine(card).toLowerCase().includes(query)) return [];
+      const usedByDecks = usage.get(cardIdentifier) ?? [];
+      const used = usedByDecks.reduce((sum, deck) => sum + deck.quantity, 0);
+      return [{ cardIdentifier, name: card.name, pitch: card.pitch, typeLine: typeLine(card), owned: copies, spare: Math.max(0, copies - used), usedByDecks }];
+    });
+    rows.sort((a, b) => a.name.localeCompare(b.name) || a.cardIdentifier.localeCompare(b.cardIdentifier));
+    return {
+      matching: rows.length,
+      ...(rows.length > COLLECTION_ROWS_MAX ? { note: `Only the first ${COLLECTION_ROWS_MAX} of ${rows.length}; narrow with query.` } : {}),
+      cards: rows.slice(0, COLLECTION_ROWS_MAX),
+    };
+  }
+
+  private async deckUsage(userId: string): Promise<Map<string, Array<{ deckId: number; quantity: number }>>> {
+    const rows = (await this.dataSource.query(
+      `SELECT c."cardIdentifier", d.id AS "deckId", sum(c.quantity)::int AS quantity
+         FROM deck_card c JOIN tracked_deck d ON d.id = c."trackedDeckId"
+        WHERE d."userId" = $1 AND c.slot <> 'hero'
+        GROUP BY c."cardIdentifier", d.id ORDER BY d.id`,
+      [userId],
+    )) as Array<{ cardIdentifier: string; deckId: number; quantity: number }>;
+    const usage = new Map<string, Array<{ deckId: number; quantity: number }>>();
+    for (const row of rows) usage.set(row.cardIdentifier, [...(usage.get(row.cardIdentifier) ?? []), { deckId: row.deckId, quantity: row.quantity }]);
+    return usage;
+  }
+
+  private async tournamentDeck(scope: IToolScope, id: string, compareDeckId: number | undefined): Promise<TToolResult> {
     if (!UUID.test(id)) throw new InvalidToolArguments('id must be a tournament deck id');
     const [deck] = (await this.dataSource.query(
       `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date, source FROM tournament_deck WHERE id = $1`,
@@ -218,10 +264,36 @@ export class ChatToolsService {
     )) as Array<{ cardIdentifier: string; quantity: number; sideboardQuantity: number }>;
     const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string, format: deck['format'] as string, rows: cards });
     const sideboard = new Map(cards.map((card) => [card.cardIdentifier, card.sideboardQuantity]));
+    const compare = compareDeckId === undefined ? null : await this.comparison(scope, compareDeckId, cards.map((card) => card.cardIdentifier));
+    if (compare !== null && typeof compare !== 'function') return DECK_NOT_FOUND;
     return {
       ...deck,
       ...facts,
-      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, sideboardQuantity: sideboard.get(card.cardIdentifier) ?? 0 })),
+      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({
+        ...card,
+        sideboardQuantity: sideboard.get(card.cardIdentifier) ?? 0,
+        ...(compare === null ? {} : compare(card.cardIdentifier)),
+      })),
+    };
+  }
+
+  private async comparison(
+    scope: IToolScope,
+    deckId: number,
+    cardIdentifiers: readonly string[],
+  ): Promise<((cardIdentifier: string) => TToolResult) | typeof DECK_NOT_FOUND> {
+    const yours = await this.swapDeck(scope.userId, deckId);
+    if (!yours) return DECK_NOT_FOUND;
+    const hero = yours.heroIdentifier ? findCard(yours.heroIdentifier) : null;
+    const format = (SUPPORTED_FORMATS as readonly string[]).includes(yours.format) ? (yours.format as TSupportedFormat) : null;
+    const owned = await this.collection.loadOwned(scope.userId, cardIdentifiers);
+    return (cardIdentifier) => {
+      const card = findCard(cardIdentifier);
+      return {
+        legalInYourDeck: card !== null && hero !== null && format !== null && findCardLegalityViolation(card, hero, format) === null,
+        owned: owned.get(cardIdentifier) ?? 0,
+        inYourDeck: yours.cards.filter((row) => row.cardIdentifier === cardIdentifier).reduce((sum, row) => sum + row.quantity, 0),
+      };
     };
   }
 
@@ -235,6 +307,7 @@ export class ChatToolsService {
               count(*) FILTER (WHERE source = 'tournament' AND placement <= 8)::int AS top8,
               count(*) FILTER (WHERE source = 'tournament' AND placement = 1)::int AS wins,
               count(*) FILTER (WHERE source = 'player-named')::int AS "playerNamed",
+              min("deckCreatedAt") AS "firstSeen",
               max("deckCreatedAt") AS latest
          FROM tournament_deck
         WHERE format = $1 AND ($2::timestamptz IS NULL OR "deckCreatedAt" >= $2)
@@ -247,7 +320,7 @@ export class ChatToolsService {
       format,
       since: since ?? null,
       decks: heroes.reduce((sum, hero) => sum + (hero['decks'] as number), 0),
-      heroes,
+      heroes: heroes.map((hero) => ({ ...hero, heroLegal: isHeroLegal(hero['heroIdentifier'] as string, format) })),
     };
   }
 }

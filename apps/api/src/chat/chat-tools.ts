@@ -79,16 +79,35 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_tournament_meta',
     description:
-      'Per hero, how many tournament decks one format has, how many placed top 8 and how many won, plus player-named decks, most decks first. Use it to rank heroes or describe the meta instead of counting a search sample.',
+      'Per hero, how many tournament decks one format has, how many placed top 8 and how many won, player-named decks, when the hero first and last appeared, and whether the hero is legal in that format today, most decks first. The data holds mostly top finishes, so it shows who places, not win rates. Use it to rank heroes or describe the meta instead of counting a search sample.',
     parametersJsonSchema: object(
       { format: string('Format, for example "Classic Constructed".'), since: string('Optional ISO date; only decks from this date on.') },
       ['format'],
     ),
   },
   {
+    name: 'get_collection',
+    description:
+      "The user's owned cards, one collection shared by all their decks: owned copies, the copies each deck already uses and the spare copies. Filter by heroIdentifier and format to keep only cards legal there, or by words of the name or type.",
+    parametersJsonSchema: object(
+      {
+        heroIdentifier: string('Optional hero; with format, keeps only cards that hero can play there.'),
+        format: string('Optional format.'),
+        query: string('Optional words of the card name or type, for example "arrow" or "Flex".'),
+      },
+      [],
+    ),
+  },
+  {
     name: 'get_tournament_deck',
     description: 'The full card list of one tournament deck with its source and date, each card\'s text and legality, and the counted totals.',
-    parametersJsonSchema: object({ id: string('Tournament deck id from search_tournament_decks.') }, ['id']),
+    parametersJsonSchema: object(
+      {
+        id: string('Tournament deck id from search_tournament_decks.'),
+        compareDeckId: integer("Optional id of one of the user's decks: each card then says whether it is legal in that deck, the owned copies and the copies already in it."),
+      },
+      ['id'],
+    ),
   },
   {
     name: 'search_rules',
