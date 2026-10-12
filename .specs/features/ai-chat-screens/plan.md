@@ -17,7 +17,7 @@ Reuses the PR #145 routes as they are, the recommendations rail as the host of t
 3. `/chat` and `/chat/$conversationId` (door 1) - redirect to `/home` without access; otherwise the chat screen (new, no door - placement per conventions) reads `GET /api/chat/conversations`, `GET /api/chat/conversations/:id` and `GET /api/chat/usage`
 4. composer send -> `POST /api/chat/conversations` (only for a new conversation, with `trackedDeckId` from `?deck=`) then `POST /api/chat/conversations/:id/messages` -> navigates to `/chat/<id>`
 5. while an assistant message is `pending` or `running`, the chat screen refetches the conversation every 3 s; `ChatService.read` (exists) returns proposals with their display fields (door 3)
-6. the answer text -> the answer renderer (door 2) - a markdown subset into React elements; the system instruction (exists, `chat-prompt.ts`) asks the model for that subset (door 4)
+6. the answer text -> the answer renderer (door 2) - `react-markdown` with `remark-gfm` into React elements; the system instruction (exists, `chat-prompt.ts`) tells the model which Markdown it may write (door 4)
 7. proposal card -> `POST /api/chat/proposals/:id/apply` (exists) or `POST /api/chat/proposals/:id/dismiss` (exists) -> refetches the conversation and invalidates `['decks']`
 8. deck page -> `RecommendationsRail` (exists) renders the Tutor tile first while `chatAccess`; a ready question runs hop 4 with the deck bound, "Conversar sobre este deck" opens `/chat?deck=<id>`
 
@@ -55,9 +55,9 @@ Only routes this adds or whose signature changes.
 | One-way door | Literal shape | Alternative rejected |
 | --- | --- | --- |
 | 1. Chat URLs | `/chat` (new conversation; `?deck=<trackedDeckId>` binds it), `/chat/$conversationId` | `/tutor`: the brand is reversible, a bookmarked URL is not; a conversation id in search params: no back-button history per conversation |
-| 2. Answer rendering | an in-house renderer of a markdown subset into React elements - paragraphs, `-`/`*` and `1.` lists, `**bold**`, `` `code` ``, and `(rule 1.2.3)` / `(regra 1.2.3)` as a rule chip; anything else stays literal text; never `dangerouslySetInnerHTML` | `react-markdown` + `remark-gfm`: a new dependency that renders tables, headings, links and images the screen does not style, and links in model output are an injection surface; plain text: lists the model writes would show as raw `-` and `**` |
+| 2. Answer rendering | new dependencies `react-markdown@^10` and `remark-gfm@^4` in `apps/web`; no `rehype-raw` (raw HTML stays literal text), `img` disallowed, links only for `http:`/`https:` and opened with `target="_blank" rel="noopener noreferrer nofollow"`, headings rendered at one size; `(rule 1.2.3)` / `(regra 1.2.3)` rewritten to inline code before rendering so it shows as the rule chip; never `dangerouslySetInnerHTML` | an in-house renderer of a Markdown subset (owner picked the library on 2026-10-11): tables and links the model writes would show as raw text; plain text: lists would show as raw `-` and `**` |
 | 3. Proposal display fields | `display` built server-side from the engine `catalog` and the owner's collection at read time, never stored; `trackedDeckId` is the proposal row's | a client lookup by identifier: the web has no catalog lookup by id, and N card searches per proposal |
-| 4. Formatting line in the system instruction | `Format answers as short paragraphs. You may use bullet or numbered lists, **bold** and inline code. Do not use headings, tables, links or images.` | no instruction: Gemini writes headings and tables the renderer would show as raw text |
+| 4. Formatting line in the system instruction | `Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.` | no instruction: the model could link to invented URLs or embed images the renderer drops |
 
 - Nothing else in this change is hard to reverse
 
@@ -102,8 +102,8 @@ The conversation reads as a column: user bubbles, Tutor answers as running text,
 **Acceptance Criteria**
 
 15. The thread SHALL show user messages as right-aligned bubbles and assistant answers under a label row with the mark and `TUTOR`, as running text without a bubble, in `createdAt` order
-16. The answer renderer SHALL render paragraphs, `-`/`*` bullet lists, `1.` numbered lists, `**bold**` and `` `code` ``, and SHALL render `(rule 6.2.1)` or `(regra 6.2.1)` as a chip reading `regra 6.2.1` (pt-BR) or `rule 6.2.1` (en-US)
-17. The answer renderer SHALL render any other markup, HTML included, as literal text
+16. The answer renderer SHALL render Markdown paragraphs, bullet and numbered lists, `**bold**`, `` `code` ``, GFM tables and headings, and SHALL render `(rule 6.2.1)` or `(regra 6.2.1)` as a chip reading `regra 6.2.1` (pt-BR) or `rule 6.2.1` (en-US)
+17. The answer renderer SHALL render raw HTML as literal text, SHALL render no image, and SHALL render a link only when its URL is `http:` or `https:`, opening in a new tab with `rel="noopener noreferrer nofollow"`; any other link SHALL render as its text alone
 18. WHILE the conversation's last assistant message is `pending` or `running` the thread SHALL show `Buscando` with the whole seconds since that message's `createdAt` (`há 18 s`), the hint `Costuma levar de 20 a 40 segundos. Pode sair desta tela, a resposta fica salva.`, and a disabled composer with placeholder `Aguardando a resposta`
 19. WHILE an assistant message is `pending` or `running` the screen SHALL refetch the conversation every 3000 ms; WHILE none is, it SHALL NOT refetch on a timer
 20. IF an assistant message is `failed` with a code other than `BUDGET_EXHAUSTED` THEN it SHALL show `O Tutor não conseguiu responder`, the cause line for its code (criterion 21) and a `Tentar de novo` button
@@ -182,7 +182,7 @@ What the model writes fits the renderer, and every new string exists in both lan
 
 | Excluded | Why |
 | --- | --- |
-| The tournament results table and the "Fonte: cópia local do Fabrary" line of the mockup | the API returns answer text only; a structured block needs a new field from the model loop, a later slice if the owner wants it |
+| The styled results list and the "Fonte: cópia local do Fabrary" line of the mockup | the API returns answer text only; the model may write the results as a Markdown table (AC 16), but a styled block with a source line needs a new field from the model loop |
 | The wait-stage list of chat B ("Li o seu deck…") | the API exposes no stage; the picked Tutor mockup shows only `Buscando` |
 | Streaming answers | Key decision 1 of `.design/ai-chat.md`; reopened only if the polled wait feels broken in use |
 | Renaming a conversation, searching conversations, copying an answer | not in the design |
@@ -192,7 +192,7 @@ What the model writes fits the renderer, and every new string exists in both lan
 
 | Assumption | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
-| Rendering of answer text | door 2, an in-house markdown subset, with the formatting line of door 4 | no new dependency and no link or HTML path from model output | n |
+| Rendering of answer text | door 2, `react-markdown` with `remark-gfm`, with the formatting line of door 4 | owner picked the full Markdown library on 2026-10-11 | y |
 | Profile | `ui` | the screens bind to picked mockups; `ui` compares against them per screen | n |
 | Second ready question on the deck tile | `Que carta deste deck vale trocar?` instead of the mockup's `Vale trocar Whirling Mist Blossom?` | the mockup names a card the client would have to choose without a rule for choosing it | n |
 | Count on the deck tile | links to the most recently updated bound conversation | the mockup shows a count, not a list; the list is one tap away from there | n |
