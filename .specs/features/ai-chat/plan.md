@@ -236,6 +236,7 @@ Validated proposals of a new deck or a swap, applied or dismissed by the user.
 70. WHEN a chat swap is reverted THEN its copies SHALL return as for an adopted recommendation
 71. The alternatives pick route SHALL refuse `pickedFrom: chat` with `400`
 72. The API SHALL log `chat.proposal.applied` and `chat.proposal.dismissed` with proposal id, kind and user id, and `chat.proposal.stale` with the reason
+73. The system instruction SHALL name the assistant `Tutor` in every locale, so the model introduces itself by the name the screens show (added 2026-10-11, when the owner picked the name)
 
 **Independent test:** store a deck and a swap proposal through a stubbed turn, apply both, read the new deck and the replacement; apply again and get `409`.
 
@@ -300,7 +301,7 @@ Validated proposals of a new deck or a swap, applied or dismissed by the user.
 | worker chat loop | output and failure | AC 55 |
 | collection: tournament decks | duplicates, the name that does not fit | AC 9 (one per id), AC 10 (unparsed name kept) |
 | collection: rules entries | ordering, the exception | AC 21 (rank, exact number first), AC 22 (none found) |
-| copy: system instruction | tone, what the model does next | AC 39 |
+| copy: system instruction | tone, what the model does next, the assistant's name | AC 39, AC 73 |
 
 ## Sources
 

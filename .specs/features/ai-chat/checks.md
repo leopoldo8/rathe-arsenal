@@ -313,6 +313,9 @@ Proof: `e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route requ
 **C76** - Every chat route other than send and retry answers `429` after the global 120-per-minute limit, table-driven (Surface `429` members) · done
 Proof: `e2e src/chat/__tests__/chat-throttle.e2e-spec.ts -t "every chat route is throttled"` (extended after verification round 1: no route answers 429 within its first 120 requests, so the limit itself is pinned)
 
+**C77** - The system instruction contains `You are Tutor, the deck-building assistant of Rathe Arsenal` for both `pt-BR` and `en-US` (AC 73; added 2026-10-11 when the owner picked the name)
+Proof: `unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction names the assistant Tutor in every locale"`
+
 - Claims naming a status code, route or response shape: C1-C4, C24-C35, C57, C62-C68, C70, C75, C76 - each has a proof that crosses the HTTP boundary against real Postgres
 - Decision tables proven at their own layer and again at the boundary: provider and answer outcomes (C49, C51 client and turn specs, plus C48, C49, C52 against Postgres); proposal validation (C58, C59 unit, plus C60, C41 e2e); history (C44 unit, plus C45 e2e); listing split (C6 unit, plus C8 e2e); name parse (C10 unit and e2e); rules parse (C18 unit, plus C19, C21 e2e)
 - No other check claims more than the single case its proof exercises

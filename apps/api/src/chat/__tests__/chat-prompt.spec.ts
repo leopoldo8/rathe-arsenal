@@ -18,6 +18,14 @@ describe('chat system instruction', () => {
     expect(en).toContain('could not confirm the rule');
   });
 
+  it('the instruction names the assistant Tutor in every locale', () => {
+    const today = new Date('2026-10-11T00:00:00Z');
+
+    const texts = ['pt-BR', 'en-US'].map((locale) => buildSystemInstruction({ locale, decks: [], boundDeck: null, today }));
+
+    for (const text of texts) expect(text).toContain('You are Tutor, the deck-building assistant of Rathe Arsenal');
+  });
+
   it("the summary lists every deck and a bound deck's cards", () => {
     const text = buildSystemInstruction({
       locale: 'en-US',
