@@ -99,6 +99,11 @@ export function chatConversationQueryKey(conversationId: string) {
   return ['chat', 'conversation', conversationId] as const;
 }
 
+// The id comes from the URL; unencoded, `..%2F` segments would reach other API routes with the user's token.
+export function conversationPath(conversationId: string): string {
+  return `/chat/conversations/${encodeURIComponent(conversationId)}`;
+}
+
 export function lastAssistantMessage(conversation: IChatConversation | undefined): IChatMessage | null {
   return [...(conversation?.messages ?? [])].reverse().find((message) => message.role === 'assistant') ?? null;
 }
@@ -138,7 +143,7 @@ export function useChatConversationQuery(conversationId: string | null) {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: chatConversationQueryKey(conversationId ?? ''),
-    queryFn: () => apiFetch<IChatConversation>(`/chat/conversations/${conversationId}`),
+    queryFn: () => apiFetch<IChatConversation>(conversationPath(conversationId ?? '')),
     enabled: conversationId !== null,
     retry: false,
     refetchInterval: (query) => chatRefetchInterval(query.state.data),
@@ -173,7 +178,7 @@ export function useStartConversation() {
         body: JSON.stringify(trackedDeckId === null ? {} : { trackedDeckId }),
       });
       try {
-        await apiFetch(`/chat/conversations/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) });
+        await apiFetch(`${conversationPath(id)}/messages`, { method: 'POST', body: JSON.stringify({ text }) });
       } catch (error) {
         throw new FirstMessageError(id, error);
       }
@@ -196,7 +201,7 @@ export function useSendMessage(conversationId: string) {
   const refresh = useRefreshConversation(conversationId);
   return useMutation({
     mutationFn: (text: string) =>
-      apiFetch<{ userMessageId: string; assistantMessageId: string }>(`/chat/conversations/${conversationId}/messages`, {
+      apiFetch<{ userMessageId: string; assistantMessageId: string }>(`${conversationPath(conversationId)}/messages`, {
         method: 'POST',
         body: JSON.stringify({ text }),
       }),
@@ -209,7 +214,7 @@ export function useRetryMessage(conversationId: string) {
   const refresh = useRefreshConversation(conversationId);
   return useMutation({
     mutationFn: (messageId: string) =>
-      apiFetch<{ assistantMessageId: string }>(`/chat/conversations/${conversationId}/messages/${messageId}/retry`, { method: 'POST' }),
+      apiFetch<{ assistantMessageId: string }>(`${conversationPath(conversationId)}/messages/${encodeURIComponent(messageId)}/retry`, { method: 'POST' }),
     onSuccess: refresh,
   });
 }
@@ -218,7 +223,7 @@ export function useDeleteConversation() {
   const apiFetch = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (conversationId: string) => apiFetch<void>(`/chat/conversations/${conversationId}`, { method: 'DELETE' }),
+    mutationFn: (conversationId: string) => apiFetch<void>(conversationPath(conversationId), { method: 'DELETE' }),
     onSuccess: (_result, conversationId) => {
       queryClient.setQueryData<IChatConversationSummary[]>(CHAT_CONVERSATIONS_QUERY_KEY, (current) =>
         current?.filter((conversation) => conversation.id !== conversationId),
@@ -233,7 +238,7 @@ export function useDecideProposal(conversationId: string, decision: 'apply' | 'd
   const queryClient = useQueryClient();
   const refresh = useRefreshConversation(conversationId);
   return useMutation({
-    mutationFn: (proposalId: string) => apiFetch<unknown>(`/chat/proposals/${proposalId}/${decision}`, { method: 'POST' }),
+    mutationFn: (proposalId: string) => apiFetch<unknown>(`/chat/proposals/${encodeURIComponent(proposalId)}/${decision}`, { method: 'POST' }),
     onSuccess: async () => {
       if (decision === 'apply') void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
       await refresh();
