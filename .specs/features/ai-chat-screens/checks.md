@@ -32,7 +32,7 @@ Proof: `web unit src/components/shell/__tests__/TopBar.spec.tsx -t "the Tutor li
 Proof: `web unit src/components/shell/__tests__/nav-active.spec.ts -t "chat paths resolve to the Tutor tab"`
 Proof: `web unit src/components/shell/__tests__/BottomTabBar.spec.tsx -t "the Tutor tab is active on chat paths"`
 
-**C5** - With `/auth/me` stubbed to `chatAccess: false`, opening `/chat` and `/chat/00000000-0000-4000-8000-000000000001` ends on `/home` (AC 6; door 1)
+**C5** - With `/auth/me` stubbed to `chatAccess: false`, opening `/chat` and `/chat/00000000-0000-4000-8000-000000000001` ends on `/home` (AC 6; door 1) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "chat routes redirect without access"`
 
 ### S2 - New conversation
@@ -131,7 +131,7 @@ Proof: `web unit src/components/chat/__tests__/ConversationList.spec.tsx -t "the
 **C34** - The open list orders three conversations by `updatedAt` newest first, shows `Nova conversa` for a null title, a deck chip only on bound ones, a relative time on each, and `aria-current="true"` on the open one; picking one navigates to `/chat/<id>` and closes the list; an empty list shows `Nenhuma conversa ainda.` (AC 40, AC 41, AC 42) · done
 Proof: `web unit src/components/chat/__tests__/ConversationList.spec.tsx -t "the list orders, marks and opens conversations"`
 
-**C35** - At 1440 px the open list is a panel 380 px wide on the right edge; at 390 px it is a sheet spanning the viewport width anchored to the bottom (AC 40)
+**C35** - At 1440 px the open list is a panel 380 px wide on the right edge; at 390 px it is a sheet spanning the viewport width anchored to the bottom (AC 40) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "the list is a side panel on desktop"`
 Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "the list is a bottom sheet on a phone"`
 
@@ -164,7 +164,7 @@ Proof: `web unit src/i18n/__tests__/chat-locales.spec.ts -t "chat copy and error
 **C43** - No file under `src/components/chat/` nor `DeckTutorTile.tsx` contains a JSX text node with a letter, or a `placeholder`, `aria-label`, `title` or `alt` attribute given a string literal (AC 52) · done
 Proof: `web unit src/i18n/__tests__/chat-locales.spec.ts -t "chat components hold no user-facing literals"`
 
-**C44** - The phone screen at 390 px with `chatAccess: true` shows three tabs, `Tutor` last, all inside the viewport, and the chat composer sits above the tab bar without overlapping it (AC 3; door 1)
+**C44** - The phone screen at 390 px with `chatAccess: true` shows three tabs, `Tutor` last, all inside the viewport, and the chat composer sits above the tab bar without overlapping it (AC 3; door 1) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "three tabs and the composer fit a phone"`
 
 ### Unchanged statuses of the changed routes

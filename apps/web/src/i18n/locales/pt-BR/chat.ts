@@ -30,6 +30,8 @@ export const chat = {
   loadError: 'Não foi possível carregar a conversa.',
   ruleChip: 'regra {{number}}',
   conversations: 'Conversas',
+  conversationsAria_one: 'Conversas, {{count}} conversa',
+  conversationsAria_other: 'Conversas, {{count}} conversas',
   newConversation: 'Nova',
   listTitle: 'Conversas',
   listEmpty: 'Nenhuma conversa ainda.',

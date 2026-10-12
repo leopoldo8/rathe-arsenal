@@ -13,7 +13,7 @@ When this ships, a user with access sees a Tutor tab, asks a question, waits on 
 Reuses the PR #145 routes as they are, the recommendations rail as the host of the deck tile, the existing `useApiClient` and React Query polling pattern of `api/recommendations.ts`, the `AlternativesSheet` Radix dialog for the conversation sheet, and `delete-account-modal`'s confirm pattern for deleting a conversation.
 
 1. sign-in, verify-email, reset-password and `GET /api/auth/me` -> `AuthService` (exists) - every `user` it returns now carries `chatAccess`; `AuthProvider` (exists) keeps it on `IAuthUser`
-2. `TopBar` and `BottomTabBar` (exist) - render the Tutor tab only while `user.chatAccess`; `nav-active` (exists) resolves `/chat*` to it
+2. `TopBar` and `BottomTabBar` (exist) - render the Tutor tab only while `user.chatAccess`; `nav-active` (exists) resolves `/chat*` to it; `__root.tsx` (exists) wraps `/chat*` in the `AppShell` like the other signed-in pages
 3. `/chat` and `/chat/$conversationId` (door 1) - redirect to `/home` without access; otherwise the chat screen (new, no door - placement per conventions) reads `GET /api/chat/conversations`, `GET /api/chat/conversations/:id` and `GET /api/chat/usage`
 4. composer send -> `POST /api/chat/conversations` (only for a new conversation, with `trackedDeckId` from `?deck=`) then `POST /api/chat/conversations/:id/messages` -> navigates to `/chat/<id>`
 5. while an assistant message is `pending` or `running`, the chat screen refetches the conversation every 3 s; `ChatService.read` (exists) returns proposals with their display fields (door 3)
@@ -32,7 +32,7 @@ Reuses the PR #145 routes as they are, the recommendations rail as the host of t
 | API | each proposal in `GET /api/chat/conversations/:id` gains `trackedDeckId` and `display` (additive; door 3) |
 | API | the system instruction gains one formatting line (door 4) |
 | copy | `apiErrors` gains the 6 chat codes (AD-003; logged as deferred in `.specs/features/ai-chat/implementation-notes.md` deviation 6); a new `chat` namespace in both locales (AD-001) |
-| tests | `tests/mobile/mobile-layout.spec.ts` expects two tabs with its stubbed `/auth/me`; that case stays and a `chatAccess: true` case is added |
+| tests | `tests/mobile/mobile-layout.spec.ts` expects two tabs with its stubbed `/auth/me` and stays as it is; `tests/mobile/chat-layout.spec.ts` covers the three-tab case with `chatAccess: true`. Five existing component and route specs that render the recommendations rail mock `useAuth` without chat access |
 | stored data | nothing to migrate; no schema change |
 
 ## Relations

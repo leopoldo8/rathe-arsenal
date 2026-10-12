@@ -169,7 +169,12 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
           )}
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.listButton} onClick={() => setListOpen(true)}>
+          <button
+            type="button"
+            className={styles.listButton}
+            aria-label={t('chat.conversationsAria', { count: conversations.data?.length ?? 0 })}
+            onClick={() => setListOpen(true)}
+          >
             <ListIcon />
             <span className={styles.listLabel}>{t('chat.conversations')}</span>
             <span className={styles.count} data-testid="conversation-count">

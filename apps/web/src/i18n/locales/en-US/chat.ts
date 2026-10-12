@@ -30,6 +30,8 @@ export const chat = {
   loadError: 'The conversation could not be loaded.',
   ruleChip: 'rule {{number}}',
   conversations: 'Conversations',
+  conversationsAria_one: 'Conversations, {{count}} conversation',
+  conversationsAria_other: 'Conversations, {{count}} conversations',
   newConversation: 'New',
   listTitle: 'Conversations',
   listEmpty: 'No conversations yet.',

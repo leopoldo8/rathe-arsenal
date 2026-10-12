@@ -17,6 +17,7 @@ const AUTH_SHELL_PREFIXES = [
   '/settings',
   '/decks',
   '/onboarding',
+  '/chat',
 ];
 
 // Authenticated routes that take the whole screen; checked before the shell prefixes.

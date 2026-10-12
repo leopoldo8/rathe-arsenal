@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useDeleteConversation, type IChatConversationSummary } from '../../api/chat';
 import { formatRelativeTime } from '../../utils/format-relative-time';
@@ -66,6 +66,9 @@ export function ConversationList({ open, onOpenChange, conversations, currentId,
             <span className={styles.grip} aria-hidden="true" />
             <div className={styles.header}>
               <Dialog.Title className={styles.title}>{t('chat.listTitle')}</Dialog.Title>
+              <Link to="/chat" search={{}} className={styles.new} onClick={() => onOpenChange(false)}>
+                {t('chat.newConversation')}
+              </Link>
               <Dialog.Close className={styles.close} aria-label={t('chat.close')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
