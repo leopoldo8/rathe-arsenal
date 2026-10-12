@@ -4,7 +4,7 @@ import { IChatRequest, IChatUsage, IGeminiContent, IGeminiPart, TChatCallOutcome
 
 export const MAX_MODEL_CALLS = 8;
 export const TURN_DEADLINE_MS = 480_000;
-export const ANSWER_RESERVE_MS = 150_000;
+export const ANSWER_RESERVE_MS = 200_000;
 
 export interface ITurnDeps {
   readonly system: string;
@@ -35,6 +35,7 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
 
   let mustAnswer = false;
   let finalRetried = false;
+  let firstCallRetried = false;
   while (true) {
     const elapsed = deps.now() - startedAt;
     if (elapsed >= TURN_DEADLINE_MS) return failed('TURN_TIMEOUT', `${elapsed} ms`);
@@ -55,10 +56,16 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
       };
     }
     if (outcome.kind === 'failed') {
-      const canStillAnswer = outcome.code === 'MODEL_TIMEOUT' && !answerNow && contents.length > 0;
-      if (!canStillAnswer) return failed(outcome.code, outcome.detail);
-      mustAnswer = true;
-      continue;
+      const timedOut = outcome.code === 'MODEL_TIMEOUT' && !answerNow;
+      if (timedOut && contents.length > 0) {
+        mustAnswer = true;
+        continue;
+      }
+      if (timedOut && !firstCallRetried) {
+        firstCallRetried = true;
+        continue;
+      }
+      return failed(outcome.code, outcome.detail);
     }
 
     if (outcome.calls.length === 0) return { kind: 'done', text: outcome.text, contents: [...contents, outcome.content], usage, calls };

@@ -39,7 +39,7 @@ describe('chat turn', () => {
     expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, false, false, false, false, false, true]);
   });
 
-  it('a call made with less than 150 seconds of the turn left must answer in text', async () => {
+  it('a call made with less than 200 seconds of the turn left must answer in text', async () => {
     let clock = 0;
     const script = scriptedCall(
       (request) => (request.answerNow ? textAnswer('ok') : callAnswer('get_deck')),
@@ -103,12 +103,26 @@ describe('chat turn', () => {
     expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, true]);
   });
 
-  it('a first call that times out fails the turn', async () => {
-    const script = scriptedCall(() => ({ kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 120000 ms' }));
+  it('a first call that times out is made once more', async () => {
+    let clock = 0;
+    const script = scriptedCall((_request, index) => {
+      if (index > 0) return textAnswer('Second try.');
+      clock += 180_000;
+      return { kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 180000 ms' };
+    });
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => clock });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Second try.', calls: 2 }));
+    expect(script.requests[1]!.answerNow).toBeUndefined();
+  });
+
+  it('a first call that times out twice fails the turn', async () => {
+    const script = scriptedCall(() => ({ kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 180000 ms' }));
 
     const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
 
-    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'MODEL_TIMEOUT', calls: 1 }));
+    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'MODEL_TIMEOUT', calls: 2 }));
   });
 
   it('a turn past 480 seconds stops', async () => {

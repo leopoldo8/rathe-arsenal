@@ -2,7 +2,7 @@ import { GEMINI_MODEL, GEMINI_URL, TGeminiFetch, TGeminiThinkingLevel } from '..
 import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 
 export const CHAT_MODEL = GEMINI_MODEL;
-export const CHAT_CALL_TIMEOUT_MS = 120_000;
+export const CHAT_CALL_TIMEOUT_MS = 180_000;
 export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
 // Google answers 503 "high demand" and 429 in short spikes and asks callers to retry with a growing wait.
 export const CHAT_RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 10_000];

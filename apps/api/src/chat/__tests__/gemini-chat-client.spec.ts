@@ -31,7 +31,7 @@ describe('Gemini chat client', () => {
     expect(rejected).toEqual(expect.objectContaining({ kind: 'failed', code: 'PROVIDER_ERROR' }));
   });
 
-  it('aborts a call at 120 seconds', async () => {
+  it('aborts a call at 180 seconds', async () => {
     jest.useFakeTimers();
     try {
       let aborted = false;
@@ -44,7 +44,7 @@ describe('Gemini chat client', () => {
         });
       const pending = callGeminiChat('k', REQUEST, never);
 
-      await jest.advanceTimersByTimeAsync(119_999);
+      await jest.advanceTimersByTimeAsync(179_999);
       expect(aborted).toBe(false);
       await jest.advanceTimersByTimeAsync(1);
 
