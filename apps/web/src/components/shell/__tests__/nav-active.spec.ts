@@ -82,3 +82,9 @@ describe('resolveActiveNavKey — no match', () => {
     expect(resolveActiveNavKey('/')).toBe(null);
   });
 });
+
+describe('resolveActiveNavKey — Tutor', () => {
+  it('chat paths resolve to the Tutor tab', () => {
+    expect([resolveActiveNavKey('/chat'), resolveActiveNavKey('/chat/abc'), resolveActiveNavKey('/chatter')]).toEqual(['chat', 'chat', null]);
+  });
+});

@@ -21,14 +21,14 @@ Web component tests mock `useApiClient` as `AlternativesSheet.spec.tsx` does and
 **C1** - Sign-in, verify-email and reset-password return `user.chatAccess` equal to the stored flag: `true` for a granted user, `false` otherwise (AC 1) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "every auth response carries chatAccess"` (the controller returns the service's object unchanged)
 
-**C2** - `IAuthUser.chatAccess` is `true` after a sign-in response with `chatAccess: true`, `true` after an `/auth/me` response with `chatAccess: true`, and `false` after an `/auth/me` response without the field (AC 2)
+**C2** - `IAuthUser.chatAccess` is `true` after a sign-in response with `chatAccess: true`, `true` after an `/auth/me` response with `chatAccess: true`, and `false` after an `/auth/me` response without the field (AC 2) · done
 Proof: `web unit src/auth/__tests__/AuthProvider.chat-access.spec.tsx -t "chatAccess follows the auth responses"`
 
-**C3** - With `chatAccess: true` the bottom tab bar has three links, the third named `Tutor` with `href="/chat"`; the top navigation has a `Tutor` link to `/chat`; with `chatAccess: false` neither has a `Tutor` link (AC 3, AC 4)
+**C3** - With `chatAccess: true` the bottom tab bar has three links, the third named `Tutor` with `href="/chat"`; the top navigation has a `Tutor` link to `/chat`; with `chatAccess: false` neither has a `Tutor` link (AC 3, AC 4) · done
 Proof: `web unit src/components/shell/__tests__/BottomTabBar.spec.tsx -t "the Tutor tab follows chat access"`
 Proof: `web unit src/components/shell/__tests__/TopBar.spec.tsx -t "the Tutor link follows chat access"`
 
-**C4** - `resolveActiveNavKey` returns `chat` for `/chat` and `/chat/abc`, and `null` for `/chatter`; on `/chat/abc` the Tutor tab has `aria-current="page"` and the top link `data-active="true"` (AC 5)
+**C4** - `resolveActiveNavKey` returns `chat` for `/chat` and `/chat/abc`, and `null` for `/chatter`; on `/chat/abc` the Tutor tab has `aria-current="page"` and the top link `data-active="true"` (AC 5) · done
 Proof: `web unit src/components/shell/__tests__/nav-active.spec.ts -t "chat paths resolve to the Tutor tab"`
 Proof: `web unit src/components/shell/__tests__/BottomTabBar.spec.tsx -t "the Tutor tab is active on chat paths"`
 

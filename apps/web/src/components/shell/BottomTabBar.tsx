@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
+import { useAuth } from '../../auth/useAuth';
+import { TutorMark } from '../chat/TutorMark';
 import { resolveActiveNavKey, type TNavKey } from './nav-active';
 import styles from './BottomTabBar.module.css';
 
@@ -39,12 +41,14 @@ export function BottomTabBar(): React.ReactElement {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
   const activeNavKey = resolveActiveNavKey(pathname);
+  const { user } = useAuth();
 
   // /home is handled separately with a typed Link+search prop.
   // /library uses a string-typed `to` so TypeScript does not enforce
   // its route-specific search params here — its validateSearch accepts empty.
   const otherTabItems: readonly ITabItem[] = [
     { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon />, key: 'library' },
+    ...(user?.chatAccess ? [{ to: '/chat', label: t('shell.navTutor'), icon: <TutorMark />, key: 'chat' as const }] : []),
   ];
 
   const homeActive = activeNavKey === 'home';

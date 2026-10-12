@@ -3,6 +3,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
+import { useAuth } from '../../auth/useAuth';
 import { VariantQueuePill } from '../variant-queue/VariantQueuePill';
 import LogoMark from '../../assets/logo-mark.svg?react';
 import { DEFAULT_HOME_SEARCH } from '../../routes/_auth/-home.helpers';
@@ -29,6 +30,7 @@ export function TopBar(): React.ReactElement {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? '/';
   const activeNavKey = resolveActiveNavKey(pathname);
+  const { user } = useAuth();
 
   // /home is handled separately below with a typed Link+search.
   // /library is kept as a plain string `to` so TypeScript does not
@@ -36,6 +38,7 @@ export function TopBar(): React.ReactElement {
   // accepts an empty object and applies defaults.
   const otherNavItems: readonly INavItem[] = [
     { to: '/library', label: t('shell.navLibrary'), key: 'library' },
+    ...(user?.chatAccess ? [{ to: '/chat', label: t('shell.navTutor'), key: 'chat' as const }] : []),
   ];
 
   return (

@@ -6,6 +6,8 @@ export interface IAuthUser {
   id: string;
   email: string;
   role: TUserRole;
+  /** Server-side chat flag (`user.chatAccess`); hiding the Tutor tab is presentation, the API enforces access. */
+  chatAccess: boolean;
 }
 
 export interface IAuthSettings {
