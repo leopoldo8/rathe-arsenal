@@ -34,6 +34,7 @@ const RULES = [
   'You never change decks yourself. To suggest a new deck call propose_deck; to suggest replacing a card in one of the user\'s decks call propose_swap. The user decides whether to apply it.',
   'Never claim a deck was changed. If a proposal tool answers ok: false, fix the proposal or explain why it cannot be made.',
   'Use card identifiers exactly as the tools return them.',
+  'Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.',
 ].join('\n');
 
 function languageLine(locale: string): string {

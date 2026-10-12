@@ -18,7 +18,7 @@ Web component tests mock `useApiClient` as `AlternativesSheet.spec.tsx` does and
 
 ### S1 - Access and navigation
 
-**C1** - Sign-in, verify-email and reset-password return `user.chatAccess` equal to the stored flag: `true` for a granted user, `false` otherwise (AC 1)
+**C1** - Sign-in, verify-email and reset-password return `user.chatAccess` equal to the stored flag: `true` for a granted user, `false` otherwise (AC 1) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "every auth response carries chatAccess"` (the controller returns the service's object unchanged)
 
 **C2** - `IAuthUser.chatAccess` is `true` after a sign-in response with `chatAccess: true`, `true` after an `/auth/me` response with `chatAccess: true`, and `false` after an `/auth/me` response without the field (AC 2)
@@ -102,7 +102,7 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "a bound c
 
 ### S4 - Proposals
 
-**C26** - `GET /api/chat/conversations/:id` returns, for a deck proposal, `trackedDeckId: null` and `display.heroName` = the hero's name and `display.cards` with `name`, `pitch`, `quantity`, `slot`, `ownedQuantity` per card (`emissary-of-tides-red`: `Emissary of Tides`, pitch 1, owned 2 of 3); for a swap proposal `trackedDeckId` = the deck and `display.original` `{ name: 'Flex', copiesInDeck: 2 }`, `display.replacement.freeCopies` = owned minus copies in the deck; after applying the deck proposal its `trackedDeckId` is the created deck (AC 30, AC 31, AC 35; door 3)
+**C26** - `GET /api/chat/conversations/:id` returns, for a deck proposal, `trackedDeckId: null` and `display.heroName` = the hero's name and `display.cards` with `name`, `pitch`, `quantity`, `slot`, `ownedQuantity` per card (with 4 `emissary-of-tides-red` owned, a proposal of 3 shows `Emissary of Tides`, pitch 1, `ownedQuantity` 3, and `flex-red` 0); for a swap proposal `trackedDeckId` = the deck and `display.original` `{ name: 'Flex', copiesInDeck: 2 }`, and `display.replacement.freeCopies` 2 for `emissary-of-tides-red` (4 owned minus 2 in the deck); after applying the deck proposal its `trackedDeckId` is the created deck (AC 30, AC 31, AC 35; door 3) · done
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "proposals carry display fields and their deck"`
 
 **C27** - A pending deck proposal of 60 cards (41 owned, 19 missing) shows `Proposta de deck`, its name, `Katsu, the Wanderer · Classic Constructed · 60 cartas`, `Pendente`, its reason, `41 você tem`, `19 faltam`, four card rows with quantity, name and `tem` or `falta 1`, and `e mais <n> cartas` for the remaining distinct cards (AC 30)
@@ -154,7 +154,7 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t 
 
 ### S7 - Model format and copy
 
-**C41** - The system instruction contains `Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.` for `pt-BR` and `en-US` (AC 51; door 4)
+**C41** - The system instruction contains `Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.` for `pt-BR` and `en-US` (AC 51; door 4) · done
 Proof: `api unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction tells the model which Markdown to write"`
 
 **C42** - pt-BR and en-US catalogs have the same keys, including the `chat` namespace and `apiErrors.CHAT_ACCESS_DENIED`, `CHAT_TURN_IN_PROGRESS`, `CHAT_BUDGET_EXHAUSTED`, `MESSAGE_NOT_RETRYABLE`, `PROPOSAL_NOT_PENDING`, `PROPOSAL_STALE` (AC 52)
@@ -169,20 +169,20 @@ Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "three 
 
 ### Unchanged statuses of the changed routes
 
-**C45** - Sign-in still answers `401` with `INVALID_CREDENTIALS` for a wrong password, `403` with `EMAIL_NOT_VERIFIED` for an unverified user, and `429` on the sixth request in a minute (Surface: sign-in)
+**C45** - Sign-in still answers `401` with `INVALID_CREDENTIALS` for a wrong password, `403` with `EMAIL_NOT_VERIFIED` for an unverified user, and `429` on the sixth request in a minute (Surface: sign-in) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.signIn throws INVALID_CREDENTIALS for wrong password"`
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.signIn throws EMAIL_NOT_VERIFIED for unverified user with correct password"`
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps INVALID_CREDENTIALS to UnauthorizedException with the error code in the response"`
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps EMAIL_NOT_VERIFIED to ForbiddenException with the error code"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "returns 200 for the first 5 requests and 429 on the 6th"`
 
-**C46** - Verify-email and reset-password still answer `400` for a wrong token, and `429` past their hourly limits (10 and 5) (Surface: verify-email, reset-password)
+**C46** - Verify-email and reset-password still answer `400` for a wrong token, and `429` past their hourly limits (10 and 5) (Surface: verify-email, reset-password) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.verifyEmail throws INVALID_TOKEN for a wrong token"`
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.resetPassword throws INVALID_TOKEN for a wrong token"`
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps INVALID_TOKEN to BadRequestException with the error code"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "verify-email and reset-password are throttled per hour"`
 
-**C47** - The conversation read still answers `400` for a malformed id, `404` for another user's conversation, `401` without a token, `403` without access and `429` past the global limit; `/auth/me` reports `chatAccess` (Surface: conversation read; `/auth/me`)
+**C47** - The conversation read still answers `400` for a malformed id, `404` for another user's conversation, `401` without a token, `403` without access and `429` past the global limit; `/auth/me` reports `chatAccess` (Surface: conversation read; `/auth/me`) · done
 Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign and malformed conversations"`
 Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route requires a token"`
 Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route refuses a user without access"`

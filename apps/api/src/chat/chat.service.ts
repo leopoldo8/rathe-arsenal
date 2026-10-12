@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
+import { catalog } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { ChatConversationEntity } from '../database/entities/chat-conversation.entity';
@@ -19,6 +20,22 @@ export interface IConversationSummary {
   readonly updatedAt: string;
 }
 
+interface ICardLabel {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: number | null;
+}
+
+export interface IDeckProposalDisplay {
+  readonly heroName: string;
+  readonly cards: readonly (ICardLabel & { readonly quantity: number; readonly slot: string; readonly ownedQuantity: number })[];
+}
+
+export interface ISwapProposalDisplay {
+  readonly original: ICardLabel & { readonly copiesInDeck: number };
+  readonly replacement: ICardLabel & { readonly freeCopies: number };
+}
+
 export interface IProposalView {
   readonly id: string;
   readonly kind: string;
@@ -27,6 +44,8 @@ export interface IProposalView {
   readonly payload: IDeckProposalPayload | ISwapProposalPayload;
   readonly ownedCount: number;
   readonly missingCount: number;
+  readonly trackedDeckId: number | null;
+  readonly display: IDeckProposalDisplay | ISwapProposalDisplay;
 }
 
 export interface IMessageView {
@@ -41,6 +60,16 @@ export interface IMessageView {
 
 export interface IConversationView extends IConversationSummary {
   readonly messages: readonly IMessageView[];
+}
+
+// Names come from the catalog at read time: a card a later catalog bump renamed shows its new name.
+function cardLabel(cardIdentifier: string): ICardLabel {
+  try {
+    const card = catalog.getCard(cardIdentifier);
+    return { cardIdentifier, name: card.name, pitch: card.pitch ?? null };
+  } catch {
+    return { cardIdentifier, name: cardIdentifier, pitch: null };
+  }
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -216,17 +245,26 @@ export class ChatService {
     return proposals.map((proposal) => {
       let ownedCount = 0;
       let missingCount = 0;
+      let display: IDeckProposalDisplay | ISwapProposalDisplay;
       if (proposal.kind === 'deck') {
-        for (const card of (proposal.payload as IDeckProposalPayload).cards) {
-          const covered = Math.min(card.quantity, owned.get(card.cardIdentifier) ?? 0);
-          ownedCount += covered;
-          missingCount += card.quantity - covered;
-        }
+        const payload = proposal.payload as IDeckProposalPayload;
+        const cards = payload.cards.map((card) => {
+          const ownedQuantity = Math.min(card.quantity, owned.get(card.cardIdentifier) ?? 0);
+          ownedCount += ownedQuantity;
+          missingCount += card.quantity - ownedQuantity;
+          return { ...cardLabel(card.cardIdentifier), quantity: card.quantity, slot: card.slot, ownedQuantity };
+        });
+        display = { heroName: cardLabel(payload.heroIdentifier).name, cards };
       } else {
-        const replacement = (proposal.payload as ISwapProposalPayload).replacementCardIdentifier;
+        const payload = proposal.payload as ISwapProposalPayload;
+        const replacement = payload.replacementCardIdentifier;
         const free = (owned.get(replacement) ?? 0) - (inDeck.get(`${proposal.trackedDeckId}|${replacement}`) ?? 0);
         ownedCount = free > 0 ? 1 : 0;
         missingCount = free > 0 ? 0 : 1;
+        display = {
+          original: { ...cardLabel(payload.originalCardIdentifier), copiesInDeck: inDeck.get(`${proposal.trackedDeckId}|${payload.originalCardIdentifier}`) ?? 0 },
+          replacement: { ...cardLabel(replacement), freeCopies: Math.max(free, 0) },
+        };
       }
       return {
         messageId: proposal.messageId,
@@ -237,6 +275,8 @@ export class ChatService {
         payload: proposal.payload,
         ownedCount,
         missingCount,
+        trackedDeckId: proposal.trackedDeckId,
+        display,
       };
     });
   }

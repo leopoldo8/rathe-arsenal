@@ -29,7 +29,17 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService = createMock<AuthService>();
     authService.signIn.mockResolvedValue({
       jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User },
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+      settings: { theme: 'dark' },
+    });
+    authService.verifyEmail.mockResolvedValue({
+      jwt: 'jwt-token',
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+      settings: { theme: 'dark' },
+    });
+    authService.resetPassword.mockResolvedValue({
+      jwt: 'jwt-token',
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
       settings: { theme: 'dark' },
     });
     authService.signUp.mockResolvedValue({
@@ -133,6 +143,26 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .set('X-Forwarded-For', '203.0.113.2')
         .send(body);
       expect(bFirst.status).toBe(200);
+    });
+  });
+
+  describe('verify-email (10/hour) and reset-password (5/hour)', () => {
+    it('verify-email and reset-password are throttled per hour', async () => {
+      const server = app.getHttpServer();
+      const token = 'a'.repeat(64);
+      const statusesOf = async (path: string, body: object, times: number, ip: string): Promise<number[]> => {
+        const statuses: number[] = [];
+        for (let i = 0; i < times; i++) {
+          statuses.push((await request(server).post(path).set('X-Forwarded-For', ip).send(body)).status);
+        }
+        return statuses;
+      };
+
+      const verify = await statusesOf('/auth/verify-email', { token }, 11, '203.0.113.20');
+      const reset = await statusesOf('/auth/reset-password', { token, newPassword: 'newpasswordlongenough' }, 6, '203.0.113.21');
+
+      expect(verify).toEqual([...Array(10).fill(200), 429]);
+      expect(reset).toEqual([...Array(5).fill(200), 429]);
     });
   });
 

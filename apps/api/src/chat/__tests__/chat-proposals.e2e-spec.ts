@@ -79,6 +79,39 @@ describe('chat proposals (E2E)', () => {
     ]);
   });
 
+  it('proposals carry display fields and their deck', async () => {
+    const user = await fixture.chatUser();
+    await fixture.own(user.jwt, [{ cardIdentifier: EMISSARY, quantity: 4 }]);
+    const { conversationId, messageId } = await answeredMessage(user);
+    const deckProposal = await seed(messageId, { kind: 'deck', payload: deckPayload([[EMISSARY, 3], [FLEX, 1]]) });
+    await seed(messageId, { kind: 'swap', payload: swapPayload(user, EMISSARY), trackedDeckId: user.deckId });
+    const read = async () =>
+      (await fixture.get(`/api/chat/conversations/${conversationId}`, user.jwt).expect(200)).body.messages[1].proposals as Array<Record<string, unknown>>;
+
+    const [deck, swap] = await read();
+
+    expect([deck!['trackedDeckId'], deck!['display']]).toEqual([
+      null,
+      {
+        heroName: 'Katsu, the Wanderer',
+        cards: [
+          { cardIdentifier: EMISSARY, name: 'Emissary of Tides', pitch: 1, quantity: 3, slot: 'mainboard', ownedQuantity: 3 },
+          { cardIdentifier: FLEX, name: 'Flex', pitch: 1, quantity: 1, slot: 'mainboard', ownedQuantity: 0 },
+        ],
+      },
+    ]);
+    expect([swap!['trackedDeckId'], swap!['display']]).toEqual([
+      user.deckId,
+      {
+        original: { cardIdentifier: FLEX, name: 'Flex', pitch: 1, copiesInDeck: 2 },
+        replacement: { cardIdentifier: EMISSARY, name: 'Emissary of Tides', pitch: 1, freeCopies: 2 },
+      },
+    ]);
+
+    const applied = await fixture.post(`/api/chat/proposals/${deckProposal}/apply`, user.jwt).expect(201);
+    expect((await read())[0]!['trackedDeckId']).toBe(applied.body.trackedDeckId);
+  });
+
   it('applying a deck proposal creates the deck with its cards', async () => {
     const user = await fixture.chatUser();
     const { messageId } = await answeredMessage(user);
