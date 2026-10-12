@@ -1,5 +1,5 @@
 import { TGeminiFetch } from '../../recommendations/gemini-client';
-import { callGeminiChat, classifyChatAnswer, IChatRequest } from '../gemini-chat-client';
+import { callGeminiChat, CHAT_RETRY_DELAYS_MS, classifyChatAnswer, IChatRequest, TChatCallOutcome, withProviderRetry } from '../gemini-chat-client';
 
 const REQUEST: IChatRequest = { system: 's', contents: [{ role: 'user', parts: [{ text: 'hi' }] }], tools: [] };
 
@@ -76,5 +76,78 @@ describe('Gemini chat client', () => {
     expect(code(answer('STOP', [{ functionCall: { name: 'get_deck', args: { deckId: 1 } } }]))).toBe('answer');
     const usage = classifyChatAnswer(answer('MAX_TOKENS') as never);
     expect(usage.usage).toEqual({ inputTokens: 10, outputTokens: 5 });
+  });
+
+  it('a refused call carries the provider message', async () => {
+    const overloaded = await callGeminiChat('k', REQUEST, respond(503, { error: { code: 503, message: 'This model is currently experiencing high demand.' } }));
+    const unreadable = await callGeminiChat('k', REQUEST, async () => ({
+      ok: false,
+      status: 503,
+      json: async () => {
+        throw new SyntaxError('Unexpected token');
+      },
+    }));
+
+    expect(overloaded).toEqual({ kind: 'failed', code: 'PROVIDER_UNAVAILABLE', detail: 'HTTP 503: This model is currently experiencing high demand.' });
+    expect(unreadable).toEqual({ kind: 'failed', code: 'PROVIDER_UNAVAILABLE', detail: 'HTTP 503' });
+  });
+});
+
+describe('withProviderRetry', () => {
+  const busy: TChatCallOutcome = { kind: 'failed', code: 'PROVIDER_UNAVAILABLE', detail: 'HTTP 503' };
+  const limited: TChatCallOutcome = { kind: 'failed', code: 'RATE_LIMITED', detail: 'HTTP 429' };
+  const done: TChatCallOutcome = { kind: 'answer', content: { role: 'model', parts: [{ text: 'ok' }] }, calls: [], text: 'ok', usage: { inputTokens: 1, outputTokens: 1 } };
+
+  function scripted(outcomes: TChatCallOutcome[]): { call: () => Promise<TChatCallOutcome>; count: () => number } {
+    let calls = 0;
+    return { call: async () => outcomes[Math.min(calls++, outcomes.length - 1)]!, count: () => calls };
+  }
+
+  it('waits 2, 5 and 10 seconds between retries of an overloaded or rate-limited call', async () => {
+    const slept: number[] = [];
+    const retries: unknown[] = [];
+    const script = scripted([busy, limited, busy, done]);
+
+    const outcome = await withProviderRetry(script.call, { sleep: async (ms) => void slept.push(ms), onRetry: (retry) => void retries.push(retry) });
+
+    expect(CHAT_RETRY_DELAYS_MS).toEqual([2_000, 5_000, 10_000]);
+    expect(outcome).toBe(done);
+    expect(script.count()).toBe(4);
+    expect(slept).toEqual([2_000, 5_000, 10_000]);
+    expect(retries).toEqual([
+      { attempt: 1, code: 'PROVIDER_UNAVAILABLE', detail: 'HTTP 503', delayMs: 2_000 },
+      { attempt: 2, code: 'RATE_LIMITED', detail: 'HTTP 429', delayMs: 5_000 },
+      { attempt: 3, code: 'PROVIDER_UNAVAILABLE', detail: 'HTTP 503', delayMs: 10_000 },
+    ]);
+  });
+
+  it('gives up after the third retry with the last failure', async () => {
+    const script = scripted([busy]);
+
+    const outcome = await withProviderRetry(script.call, { sleep: async () => undefined });
+
+    expect(outcome).toBe(busy);
+    expect(script.count()).toBe(4);
+  });
+
+  it('never retries an answer or any other failure', async () => {
+    const others: TChatCallOutcome[] = [
+      done,
+      { kind: 'failed', code: 'PROVIDER_ERROR', detail: 'HTTP 400' },
+      { kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 120000 ms' },
+      { kind: 'failed', code: 'MODEL_REFUSED', detail: 'finishReason SAFETY', usage: { inputTokens: 5, outputTokens: 0 } },
+    ];
+    const slept: number[] = [];
+
+    const counts = await Promise.all(
+      others.map(async (other) => {
+        const script = scripted([other, done]);
+        expect(await withProviderRetry(script.call, { sleep: async (ms) => void slept.push(ms) })).toBe(other);
+        return script.count();
+      }),
+    );
+
+    expect(counts).toEqual([1, 1, 1, 1]);
+    expect(slept).toEqual([]);
   });
 });

@@ -19,6 +19,7 @@ export const chat = {
   waitingHint: 'It usually takes 20 to 40 seconds. You can leave this screen; the answer is saved.',
   failureTitle: 'The Tutor could not answer',
   failure: {
+    busy: 'The Tutor is overloaded right now. Try again in a few minutes.',
     timeout: 'The model service did not answer in time. Your question is saved; try again.',
     generic: 'The answer could not be finished. Your question is saved; try again.',
   },

@@ -11,13 +11,14 @@ import { runChatTool } from './chat-tools';
 import { ChatToolsService } from './chat-tools.service';
 import { runTurn } from './chat-turn';
 import { ChatTurnQueueService, IClaimedTurn } from './chat-turn-queue.service';
-import { callGeminiChat, CHAT_MODEL, IGeminiContent } from './gemini-chat-client';
+import { callGeminiChat, CHAT_MODEL, IGeminiContent, withProviderRetry } from './gemini-chat-client';
 
 export interface IChatRunnerDeps {
   readonly apiKey: string | null | undefined;
   readonly fetch: TGeminiFetch;
   readonly thinkingLevel?: TGeminiThinkingLevel | undefined;
   readonly now?: () => Date;
+  readonly sleep?: ((ms: number) => Promise<void>) | undefined;
 }
 
 @Injectable()
@@ -52,7 +53,14 @@ export class ChatRunnerService {
         today: now(),
       }),
       history: buildHistory(await this.historyBefore(turn)),
-      call: (request) => callGeminiChat(apiKey, request, deps.fetch, { thinkingLevel: deps.thinkingLevel }),
+      call: (request) =>
+        withProviderRetry(() => callGeminiChat(apiKey, request, deps.fetch, { thinkingLevel: deps.thinkingLevel }), {
+          sleep: deps.sleep,
+          onRetry: async (retry) => {
+            this.logger.log({ event: 'chat.turn.retry', ...base, ...retry });
+            await this.queue.heartbeat(turn.id);
+          },
+        }),
       recordUsage: async (usage) => {
         const cost = priceCall(CHAT_MODEL, usage, now());
         costUsd += cost;
@@ -139,12 +147,13 @@ export interface IChatDrainDeps {
   readonly readApiKey: () => string | null | undefined;
   readonly readThinkingLevel?: () => TGeminiThinkingLevel | undefined;
   readonly fetch: TGeminiFetch;
+  readonly sleep?: ((ms: number) => Promise<void>) | undefined;
 }
 
 export async function drainChatOnce(deps: IChatDrainDeps): Promise<boolean> {
   await deps.queue.reclaimOrphans();
   const turn = await deps.queue.claimNext();
   if (!turn) return false;
-  await deps.runner.process(turn, { apiKey: deps.readApiKey(), fetch: deps.fetch, thinkingLevel: deps.readThinkingLevel?.() });
+  await deps.runner.process(turn, { apiKey: deps.readApiKey(), fetch: deps.fetch, thinkingLevel: deps.readThinkingLevel?.(), sleep: deps.sleep });
   return true;
 }

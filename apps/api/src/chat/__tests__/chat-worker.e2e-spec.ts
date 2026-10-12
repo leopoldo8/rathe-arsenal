@@ -165,6 +165,22 @@ describe('chat worker (E2E)', () => {
     const row = await fixture.message(assistantMessageId);
     expect([row['status'], row['error']]).toEqual(['failed', 'PROVIDER_UNAVAILABLE']);
     expect((await fixture.message(userMessageId))['status']).toBe('done');
+    expect(fixture.slept).toEqual([2_000, 5_000, 10_000]);
+  });
+
+  it('an overloaded model is called again and the turn still answers', async () => {
+    const log = jest.spyOn(Logger.prototype, 'log');
+    const { assistantMessageId } = await turn();
+    const stub = scriptedFetch([503, 429, textAnswer('ok')]);
+
+    await fixture.drain(stub.fetch);
+
+    const row = await fixture.message(assistantMessageId);
+    expect([row['status'], row['text']]).toEqual(['done', 'ok']);
+    expect(stub.requests).toHaveLength(3);
+    expect(log).toHaveBeenCalledWith(expect.objectContaining({ event: 'chat.turn.retry', attempt: 1, code: 'PROVIDER_UNAVAILABLE', delayMs: 2_000 }));
+    expect(log).toHaveBeenCalledWith(expect.objectContaining({ event: 'chat.turn.retry', attempt: 2, code: 'RATE_LIMITED', delayMs: 5_000 }));
+    log.mockRestore();
   });
 
   it('a failed turn keeps usage and stores no proposal', async () => {

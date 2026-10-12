@@ -67,7 +67,8 @@ function RetryIcon(): React.ReactElement {
 
 function Failure({ message, onRetry, retrying }: { readonly message: IChatMessage; readonly onRetry: () => void; readonly retrying: boolean }): React.ReactElement {
   const { t } = useTranslation();
-  const outcome = failureOutcome(message.error) === 'timeout' ? 'timeout' : 'generic';
+  const kind = failureOutcome(message.error);
+  const outcome = kind === 'busy' || kind === 'timeout' ? kind : 'generic';
   return (
     <div className={styles.failure} role="alert">
       <p className={styles.failureTitle}>{t('chat.failureTitle')}</p>

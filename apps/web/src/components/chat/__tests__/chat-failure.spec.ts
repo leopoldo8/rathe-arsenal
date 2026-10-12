@@ -20,8 +20,8 @@ describe('failureOutcome', () => {
     expect(outcomes).toEqual({
       BUDGET_EXHAUSTED: 'limit',
       NO_API_KEY: 'generic',
-      RATE_LIMITED: 'timeout',
-      PROVIDER_UNAVAILABLE: 'timeout',
+      RATE_LIMITED: 'busy',
+      PROVIDER_UNAVAILABLE: 'busy',
       PROVIDER_ERROR: 'generic',
       MODEL_TIMEOUT: 'timeout',
       TURN_TIMEOUT: 'timeout',
