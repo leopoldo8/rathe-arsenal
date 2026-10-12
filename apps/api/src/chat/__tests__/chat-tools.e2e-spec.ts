@@ -112,4 +112,46 @@ describe('chat tools (E2E)', () => {
     expect((found['decks'] as Array<{ source: string }>).map((deck) => deck.source)).toEqual(['player-named', 'player-named']);
     expect(found['note']).toBeUndefined();
   });
+
+  it('get_deck and get_tournament_deck carry the counted totals, card text and the deck source', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+    const [{ id }] = (await fixture.dataSource.query(
+      `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)
+       VALUES ('01TOOLS0000000000000000021', 'Skirmish 3 Winner', null, null, $1, 'Blitz', '2026-05-01T00:00:00Z', now(), 'player-named') RETURNING id`,
+      [KATSU],
+    )) as [{ id: string }];
+    await fixture.dataSource.query(
+      `INSERT INTO tournament_deck_card ("tournamentDeckId", "cardIdentifier", quantity, "sideboardQuantity") VALUES ($1, $2, 2, 0), ($1, $3, 1, 0)`,
+      [id, FLEX, TALISHAR],
+    );
+
+    const deck = await runChatTool(toolbox, 'get_deck', { deckId: user.deckId });
+    const tournament = await runChatTool(toolbox, 'get_tournament_deck', { id });
+
+    expect(deck['totals']).toEqual(expect.objectContaining({ bySlot: expect.any(Object), mainboardByPitch: expect.any(Object), cardPool: expect.any(Number) }));
+    expect(deck['cards']).toEqual(expect.arrayContaining([expect.objectContaining({ cardIdentifier: FLEX, text: expect.any(String), owned: expect.any(Number) })]));
+    expect(tournament).toEqual(expect.objectContaining({ source: 'player-named', format: 'Blitz' }));
+    expect(tournament['totals']).toEqual(expect.objectContaining({ bySlot: { weapon: 1, mainboard: 2 }, cardPool: 3 }));
+  });
+
+  it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+    const insert = `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)
+      VALUES ($1, 'x', null, $2, $3, 'Living Legend', $4, now(), $5)`;
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000031', 1, 'kano-dracai-of-aether', '2026-08-01T00:00:00Z', 'tournament']);
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000032', 12, 'kano-dracai-of-aether', '2026-08-02T00:00:00Z', 'tournament']);
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000033', 3, 'dorinthea-ironsong', '2026-08-03T00:00:00Z', 'tournament']);
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000034', 1, 'dorinthea-ironsong', '2026-08-04T00:00:00Z', 'player-named']);
+    await fixture.dataSource.query(insert, ['01TOOLS0000000000000000035', 1, 'dorinthea-ironsong', '2025-01-01T00:00:00Z', 'tournament']);
+
+    const meta = await runChatTool(toolbox, 'get_tournament_meta', { format: 'Living Legend', since: '2026-01-01' });
+
+    expect(meta['heroes']).toEqual([
+      { heroIdentifier: 'kano-dracai-of-aether', decks: 2, top8: 1, wins: 1, playerNamed: 0, latest: expect.anything() },
+      { heroIdentifier: 'dorinthea-ironsong', decks: 1, top8: 1, wins: 0, playerNamed: 1, latest: expect.anything() },
+    ]);
+    expect(meta['decks']).toBe(3);
+  });
 });

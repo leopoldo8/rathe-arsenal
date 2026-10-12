@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { resolveLocale } from '../common/i18n/resolve-locale';
 import { TGeminiFetch, TGeminiThinkingLevel } from '../recommendations/gemini-client';
 import { ChatBudgetService } from './chat-budget.service';
+import { cleanAnswerText } from './answer-text';
 import { buildHistory, IHistoryMessage } from './chat-history';
 import { priceCall } from './chat-pricing';
 import { buildSystemInstruction, IBoundDeck, IDeckSummary } from './chat-prompt';
@@ -74,7 +75,7 @@ export class ChatRunnerService {
     const totals = { model: CHAT_MODEL, inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens, costUsd };
 
     if (result.kind === 'failed') return this.fail(turn, result.code, { ...totals, detail: result.detail });
-    await this.queue.finishDone(turn, { text: result.text, contents: result.contents, proposals, ...totals });
+    await this.queue.finishDone(turn, { text: cleanAnswerText(result.text), contents: result.contents, proposals, ...totals });
     this.logger.log({
       event: 'chat.turn.done',
       ...base,

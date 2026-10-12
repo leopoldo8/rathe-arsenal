@@ -16,10 +16,12 @@ import {
   TChatToolbox,
   TToolResult,
 } from './chat-tools';
-import { ISwapDeck, readSwapArgs, slotOf, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
+import { describeDeck } from './deck-facts';
+import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 
 const CARD_TEXT_MAX = 300;
 const HERO_COUNT_LIMIT = 60;
+const META_HEROES_MAX = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECK_NOT_FOUND: TToolResult = { error: 'DECK_NOT_FOUND' };
 
@@ -39,10 +41,6 @@ function findCard(cardIdentifier: string): ICatalogCard | null {
   } catch {
     return null;
   }
-}
-
-function nameOf(cardIdentifier: string): string {
-  return findCard(cardIdentifier)?.name ?? cardIdentifier;
 }
 
 function typeLine(card: ICatalogCard): string {
@@ -68,6 +66,7 @@ export class ChatToolsService {
       get_recommendations: (args) => this.latestRecommendations(scope, readInteger(args, 'deckId', { min: 1 })!),
       search_tournament_decks: (args) => this.searchTournamentDecks(args),
       get_tournament_deck: (args) => this.tournamentDeck(readString(args, 'id')!),
+      get_tournament_meta: (args) => this.tournamentMeta(args),
       search_rules: async (args) => ({ ...(await this.rules.search(readString(args, 'query')!)) }),
       propose_deck: async (args) => {
         const check = validateDeckProposal(args, catalog);
@@ -110,9 +109,11 @@ export class ChatToolsService {
       [deckId],
     )) as Array<{ cardIdentifier: string; slot: string; quantity: number }>;
     const owned = await this.collection.loadOwned(scope.userId, cards.map((card) => card.cardIdentifier));
+    const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string | null, format: deck['format'] as string, rows: cards });
     return {
       ...deck,
-      cards: cards.map((card) => ({ ...card, name: nameOf(card.cardIdentifier), owned: owned.get(card.cardIdentifier) ?? 0 })),
+      ...facts,
+      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 })),
     };
   }
 
@@ -207,7 +208,7 @@ export class ChatToolsService {
   private async tournamentDeck(id: string): Promise<TToolResult> {
     if (!UUID.test(id)) throw new InvalidToolArguments('id must be a tournament deck id');
     const [deck] = (await this.dataSource.query(
-      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date FROM tournament_deck WHERE id = $1`,
+      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date, source FROM tournament_deck WHERE id = $1`,
       [id],
     )) as Array<Record<string, unknown>>;
     if (!deck) return { error: 'TOURNAMENT_DECK_NOT_FOUND' };
@@ -215,12 +216,38 @@ export class ChatToolsService {
       `SELECT "cardIdentifier", quantity, "sideboardQuantity" FROM tournament_deck_card WHERE "tournamentDeckId" = $1 ORDER BY "cardIdentifier"`,
       [id],
     )) as Array<{ cardIdentifier: string; quantity: number; sideboardQuantity: number }>;
+    const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string, format: deck['format'] as string, rows: cards });
+    const sideboard = new Map(cards.map((card) => [card.cardIdentifier, card.sideboardQuantity]));
     return {
       ...deck,
-      cards: cards.map((card) => {
-        const known = findCard(card.cardIdentifier);
-        return { ...card, name: known?.name ?? card.cardIdentifier, slot: known ? slotOf(known) : 'mainboard' };
-      }),
+      ...facts,
+      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, sideboardQuantity: sideboard.get(card.cardIdentifier) ?? 0 })),
+    };
+  }
+
+  private async tournamentMeta(args: Record<string, unknown>): Promise<TToolResult> {
+    const format = readString(args, 'format')!;
+    const since = readString(args, 'since', { optional: true });
+    if (since !== undefined && Number.isNaN(Date.parse(since))) throw new InvalidToolArguments('since must be an ISO date');
+    const heroes = (await this.dataSource.query(
+      `SELECT "heroIdentifier",
+              count(*) FILTER (WHERE source = 'tournament')::int AS decks,
+              count(*) FILTER (WHERE source = 'tournament' AND placement <= 8)::int AS top8,
+              count(*) FILTER (WHERE source = 'tournament' AND placement = 1)::int AS wins,
+              count(*) FILTER (WHERE source = 'player-named')::int AS "playerNamed",
+              max("deckCreatedAt") AS latest
+         FROM tournament_deck
+        WHERE format = $1 AND ($2::timestamptz IS NULL OR "deckCreatedAt" >= $2)
+        GROUP BY "heroIdentifier"
+        ORDER BY decks DESC, top8 DESC, "playerNamed" DESC, "heroIdentifier"
+        LIMIT $3`,
+      [format, since ?? null, META_HEROES_MAX],
+    )) as Array<Record<string, unknown>>;
+    return {
+      format,
+      since: since ?? null,
+      decks: heroes.reduce((sum, hero) => sum + (hero['decks'] as number), 0),
+      heroes,
     };
   }
 }

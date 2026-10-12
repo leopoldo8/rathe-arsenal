@@ -5,7 +5,7 @@ export const TOOL_REASON_MAX = 1000;
 export const TOOL_LIST_MAX = 50;
 export const TOOL_LIMIT_MAX = 20;
 export const DECK_PROPOSAL_ROWS_MAX = 80;
-export const TOOL_RESULT_MAX_CHARS = 12_000;
+export const TOOL_RESULT_MAX_CHARS = 30_000;
 
 export type TToolResult = Record<string, unknown>;
 
@@ -31,7 +31,8 @@ const cardRow = object(
 export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
-    description: "One of the user's decks: hero, format, status and every card with slot, quantity and owned copies.",
+    description:
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, text and legality, the counted totals (cards per slot, mainboard per pitch, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
@@ -76,8 +77,17 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_tournament_meta',
+    description:
+      'Per hero, how many tournament decks one format has, how many placed top 8 and how many won, plus player-named decks, most decks first. Use it to rank heroes or describe the meta instead of counting a search sample.',
+    parametersJsonSchema: object(
+      { format: string('Format, for example "Classic Constructed".'), since: string('Optional ISO date; only decks from this date on.') },
+      ['format'],
+    ),
+  },
+  {
     name: 'get_tournament_deck',
-    description: 'The full card list of one tournament deck.',
+    description: 'The full card list of one tournament deck with its source and date, each card\'s text and legality, and the counted totals.',
     parametersJsonSchema: object({ id: string('Tournament deck id from search_tournament_decks.') }, ['id']),
   },
   {
