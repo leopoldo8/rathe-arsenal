@@ -116,7 +116,7 @@ export class ChatRunnerService {
 
   private async deckSummaries(userId: string): Promise<IDeckSummary[]> {
     return (await this.dataSource.query(
-      `SELECT d.id, d.name, d.hero, d.format, d.status, s."effectivePercent"::float8 AS "readinessPercent"
+      `SELECT d.id, d.name, d.hero, d."heroIdentifier", d.format, d.status, s."effectivePercent"::float8 AS "readinessPercent"
          FROM tracked_deck d
          LEFT JOIN LATERAL (
            SELECT "effectivePercent" FROM deck_readiness_snapshot WHERE "trackedDeckId" = d.id ORDER BY "computedAt" DESC, id DESC LIMIT 1

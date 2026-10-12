@@ -1,5 +1,5 @@
 import { TGeminiFetch } from '../../recommendations/gemini-client';
-import { callGeminiChat, CHAT_RETRY_DELAYS_MS, classifyChatAnswer, IChatRequest, TChatCallOutcome, withProviderRetry } from '../gemini-chat-client';
+import { ANSWER_NOW_INSTRUCTION, buildChatBody, callGeminiChat, CHAT_RETRY_DELAYS_MS, classifyChatAnswer, IChatRequest, TChatCallOutcome, withProviderRetry } from '../gemini-chat-client';
 
 const REQUEST: IChatRequest = { system: 's', contents: [{ role: 'user', parts: [{ text: 'hi' }] }], tools: [] };
 
@@ -76,6 +76,34 @@ describe('Gemini chat client', () => {
     expect(code(answer('STOP', [{ functionCall: { name: 'get_deck', args: { deckId: 1 } } }]))).toBe('answer');
     const usage = classifyChatAnswer(answer('MAX_TOKENS') as never);
     expect(usage.usage).toEqual({ inputTokens: 10, outputTokens: 5 });
+  });
+
+  it('a request that must answer now declares no tool, turns tool calls into text and says why', () => {
+    const tools = [{ name: 'get_deck', description: 'd', parametersJsonSchema: {} }];
+    const contents: IChatRequest['contents'] = [
+      { role: 'user', parts: [{ text: 'Swap what?' }] },
+      {
+        role: 'model',
+        parts: [
+          { text: 'planning', thought: true },
+          { functionCall: { id: 'c1', name: 'get_deck', args: { deckId: 12 } }, thoughtSignature: 'sig' },
+        ],
+      },
+      { role: 'user', parts: [{ functionResponse: { id: 'c1', name: 'get_deck', response: { cards: ['flex-red'] } } }] },
+    ];
+
+    const normal = buildChatBody({ ...REQUEST, contents, tools });
+    const final = buildChatBody({ ...REQUEST, contents, tools, answerNow: true });
+
+    expect(normal['tools']).toEqual([{ functionDeclarations: tools }]);
+    expect(normal['contents']).toEqual(contents);
+    expect(final['tools']).toBeUndefined();
+    expect(final['contents']).toEqual([
+      { role: 'user', parts: [{ text: 'Swap what?' }] },
+      { role: 'model', parts: [{ text: '(called get_deck with {"deckId":12})' }] },
+      { role: 'user', parts: [{ text: '(get_deck returned {"cards":["flex-red"]})' }, { text: ANSWER_NOW_INSTRUCTION }] },
+    ]);
+    expect(final['systemInstruction']).toEqual({ parts: [{ text: `s\n\n${ANSWER_NOW_INSTRUCTION}` }] });
   });
 
   it('a refused call carries the provider message', async () => {

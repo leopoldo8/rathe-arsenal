@@ -35,6 +35,7 @@ describe('tournament deck sync (E2E)', () => {
   let index: FabraryIndexClient;
   let fabrary: jest.Mocked<FabraryService>;
   let listing: IIndexDeck[];
+  let playerNamed: IIndexDeck[];
 
   function clock(start: Date = T0): ISyncClock & { sleeps: number[] } {
     const sleeps: number[] = [];
@@ -69,7 +70,12 @@ describe('tournament deck sync (E2E)', () => {
     await fixture.dataSource.query(`DELETE FROM tournament_deck`);
     (service as unknown as { retryNotBefore: number }).retryNotBefore = 0;
     listing = [listed(ulid(1)), listed(ulid(2)), listed(ulid(3))];
+    playerNamed = [];
     (index as unknown as { query: (r: IIndexRequest) => Promise<IIndexResult> }).query = async (request) => {
+      if (request.query) {
+        const hits = playerNamed.filter((deck) => request.query === 'skirmish' && request.filters.includes(`format:"${deck.format}"`));
+        return { nbHits: hits.length, hits };
+      }
       if (request.facets?.[0] === 'format') {
         return { nbHits: listing.length, hits: [], facets: { format: { 'Classic Constructed': listing.length } } };
       }
@@ -210,5 +216,33 @@ describe('tournament deck sync (E2E)', () => {
       expect.objectContaining({ event: 'tournament.sync.done', listed: 4, fetched: 1, failed: 0, kept: 3, durationMs: expect.any(Number) }),
     );
     log.mockRestore();
+  });
+
+  it('a restart resumes a sync the last process left unfinished', async () => {
+    await service.sync(clock());
+    const restarted = new TournamentSyncService(fixture.dataSource, index, fabrary);
+
+    expect(await restarted.isDue(new Date(T0.getTime() + HOUR))).toBe(true);
+    await restarted.sync(clock(new Date(T0.getTime() + HOUR)));
+    expect(await restarted.isDue(new Date(T0.getTime() + 2 * HOUR))).toBe(false);
+  });
+
+  it('a hero and format with no tournament deck takes decks a player named after an event placement', async () => {
+    const blitz = (deckId: string, name: string, heroIdentifier = 'katsu'): IIndexDeck => ({ deckId, name, format: 'Blitz', heroIdentifier });
+    playerNamed = [
+      blitz(ulid(10), 'Skirmish Season 10 Winner'),
+      blitz(ulid(11), 'Skirmish practice'),
+      { deckId: ulid(12), name: 'Skirmish 2nd', format: 'Classic Constructed', heroIdentifier: 'katsu-the-wanderer' },
+    ];
+
+    await service.sync(clock());
+
+    const stored = await fixture.dataSource.query(`SELECT "fabraryUlid", source, "heroIdentifier", format FROM tournament_deck ORDER BY "fabraryUlid"`);
+    expect(stored).toEqual([
+      { fabraryUlid: ulid(1), source: 'tournament', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
+      { fabraryUlid: ulid(2), source: 'tournament', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
+      { fabraryUlid: ulid(3), source: 'tournament', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
+      { fabraryUlid: ulid(10), source: 'player-named', heroIdentifier: 'katsu', format: 'Blitz' },
+    ]);
   });
 });

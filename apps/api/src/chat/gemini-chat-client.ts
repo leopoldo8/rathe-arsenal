@@ -7,6 +7,7 @@ export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
 // Google answers 503 "high demand" and 429 in short spikes and asks callers to retry with a growing wait.
 export const CHAT_RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 10_000];
 const PROVIDER_MESSAGE_MAX_LENGTH = 300;
+const TOOL_RESULT_AS_TEXT_MAX = 12_000;
 
 export interface IGeminiPart {
   readonly text?: string;
@@ -32,7 +33,11 @@ export interface IChatRequest {
   readonly system: string;
   readonly contents: readonly IGeminiContent[];
   readonly tools: readonly IFunctionDeclaration[];
+  readonly answerNow?: boolean;
 }
+
+export const ANSWER_NOW_INSTRUCTION =
+  'You cannot call more tools for this answer. Answer the user now from what the tools already returned, and say plainly what you could not find or check.';
 
 export interface IChatUsage {
   readonly inputTokens: number;
@@ -68,11 +73,30 @@ const FINISH_FAILURES: ReadonlyMap<string, TChatTurnFailureCode> = new Map([
   ['MISSING_THOUGHT_SIGNATURE', 'HISTORY_REJECTED'],
 ]);
 
+function partAsText(part: IGeminiPart): IGeminiPart | null {
+  if (part.thought === true) return null;
+  if (part.functionCall) return { text: `(called ${part.functionCall.name} with ${JSON.stringify(part.functionCall.args ?? {})})` };
+  if (part.functionResponse) {
+    return { text: `(${part.functionResponse.name} returned ${JSON.stringify(part.functionResponse.response).slice(0, TOOL_RESULT_AS_TEXT_MAX)})` };
+  }
+  return typeof part.text === 'string' ? { text: part.text } : null;
+}
+
+// gemini-3.8-flash kept emitting tool calls after many tool rounds even with no tool declared; plain text history stops it.
+function historyAsText(contents: readonly IGeminiContent[]): IGeminiContent[] {
+  const flat = contents
+    .map((content) => ({ role: content.role, parts: content.parts.map(partAsText).filter((part): part is IGeminiPart => part !== null) }))
+    .filter((content) => content.parts.length > 0);
+  const last = flat[flat.length - 1];
+  if (last?.role === 'user') return [...flat.slice(0, -1), { role: 'user', parts: [...last.parts, { text: ANSWER_NOW_INSTRUCTION }] }];
+  return [...flat, { role: 'user', parts: [{ text: ANSWER_NOW_INSTRUCTION }] }];
+}
+
 export function buildChatBody(request: IChatRequest, thinkingLevel?: TGeminiThinkingLevel): Record<string, unknown> {
   return {
-    systemInstruction: { parts: [{ text: request.system }] },
-    contents: request.contents,
-    tools: [{ functionDeclarations: request.tools }],
+    systemInstruction: { parts: [{ text: request.answerNow ? `${request.system}\n\n${ANSWER_NOW_INSTRUCTION}` : request.system }] },
+    contents: request.answerNow ? historyAsText(request.contents) : request.contents,
+    ...(request.answerNow ? {} : { tools: [{ functionDeclarations: request.tools }] }),
     generationConfig: {
       maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
       ...(thinkingLevel === undefined ? {} : { thinkingConfig: { thinkingLevel } }),

@@ -2,8 +2,9 @@ import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 import { CHAT_TOOL_DECLARATIONS, TToolResult, UnknownTool } from './chat-tools';
 import { IChatRequest, IChatUsage, IGeminiContent, IGeminiPart, TChatCallOutcome } from './gemini-chat-client';
 
-export const MAX_MODEL_CALLS = 6;
+export const MAX_MODEL_CALLS = 8;
 export const TURN_DEADLINE_MS = 480_000;
+export const ANSWER_RESERVE_MS = 150_000;
 
 export interface ITurnDeps {
   readonly system: string;
@@ -20,6 +21,11 @@ export type TTurnResult =
   | { readonly kind: 'done'; readonly text: string; readonly contents: readonly IGeminiContent[]; readonly usage: IChatUsage; readonly calls: number }
   | { readonly kind: 'failed'; readonly code: TChatTurnFailureCode; readonly detail: string; readonly usage: IChatUsage; readonly calls: number };
 
+// A stored call with no response would make the next turn's history invalid.
+function textOnly(content: IGeminiContent): IGeminiContent {
+  return { ...content, parts: content.parts.filter((part) => part.functionCall === undefined) };
+}
+
 export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
   const startedAt = deps.now();
   const contents: IGeminiContent[] = [];
@@ -27,11 +33,19 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
   let calls = 0;
   const failed = (code: TChatTurnFailureCode, detail: string): TTurnResult => ({ kind: 'failed', code, detail, usage, calls });
 
+  let mustAnswer = false;
+  let finalRetried = false;
   while (true) {
-    if (calls >= MAX_MODEL_CALLS) return failed('TOO_MANY_TOOL_ROUNDS', `${calls} model calls`);
-    if (deps.now() - startedAt >= TURN_DEADLINE_MS) return failed('TURN_TIMEOUT', `${deps.now() - startedAt} ms`);
+    const elapsed = deps.now() - startedAt;
+    if (elapsed >= TURN_DEADLINE_MS) return failed('TURN_TIMEOUT', `${elapsed} ms`);
+    const answerNow = mustAnswer || calls === MAX_MODEL_CALLS - 1 || elapsed >= TURN_DEADLINE_MS - ANSWER_RESERVE_MS;
 
-    const outcome = await deps.call({ system: deps.system, contents: [...deps.history, ...contents], tools: CHAT_TOOL_DECLARATIONS });
+    const outcome = await deps.call({
+      system: deps.system,
+      contents: [...deps.history, ...contents],
+      tools: CHAT_TOOL_DECLARATIONS,
+      ...(answerNow ? { answerNow: true } : {}),
+    });
     calls += 1;
     if (outcome.usage) {
       await deps.recordUsage(outcome.usage);
@@ -40,10 +54,22 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
         outputTokens: usage.outputTokens + outcome.usage.outputTokens,
       };
     }
-    if (outcome.kind === 'failed') return failed(outcome.code, outcome.detail);
+    if (outcome.kind === 'failed') {
+      const canStillAnswer = outcome.code === 'MODEL_TIMEOUT' && !answerNow && contents.length > 0;
+      if (!canStillAnswer) return failed(outcome.code, outcome.detail);
+      mustAnswer = true;
+      continue;
+    }
 
+    if (outcome.calls.length === 0) return { kind: 'done', text: outcome.text, contents: [...contents, outcome.content], usage, calls };
+    if (answerNow) {
+      if (outcome.text !== '') return { kind: 'done', text: outcome.text, contents: [...contents, textOnly(outcome.content)], usage, calls };
+      if (finalRetried) return failed('TOO_MANY_TOOL_ROUNDS', `${calls} model calls`);
+      finalRetried = true;
+      mustAnswer = true;
+      continue;
+    }
     contents.push(outcome.content);
-    if (outcome.calls.length === 0) return { kind: 'done', text: outcome.text, contents, usage, calls };
 
     const responses: IGeminiPart[] = [];
     for (const call of outcome.calls) {

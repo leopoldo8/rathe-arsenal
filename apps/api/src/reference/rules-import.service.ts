@@ -98,9 +98,11 @@ export class RulesImportService {
     const rows = (await this.dataSource.query(
       `SELECT "ruleNumber", "sectionTitle", "text", url FROM rules_entry
         WHERE lower("ruleNumber") = lower($1)
+           OR ($1 ~ '^[0-9]+(\.[0-9]+)*$' AND "ruleNumber" LIKE $1 || '.%')
            OR to_tsvector('simple', ${document}) @@ phraseto_tsquery('simple', $1)
            OR to_tsvector('english', ${document}) @@ plainto_tsquery('english', $1)
         ORDER BY lower("ruleNumber") = lower($1) DESC,
+                 "ruleNumber" LIKE $1 || '.%' DESC,
                  to_tsvector('simple', ${document}) @@ phraseto_tsquery('simple', $1) DESC,
                  ts_rank(to_tsvector('english', ${document}), plainto_tsquery('english', $1)) DESC,
                  "ruleNumber"

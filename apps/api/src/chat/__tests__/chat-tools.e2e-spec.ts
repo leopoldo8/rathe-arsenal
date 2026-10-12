@@ -83,10 +83,33 @@ describe('chat tools (E2E)', () => {
     expect(catalog.getCard(RUNEBLADE_EMISSARY).classes).toEqual(['Runeblade']);
     expect(cards.find((card) => card.cardIdentifier === RUNEBLADE_EMISSARY)?.legal).toBe(false);
     expect(recommendations['recommendations']).toEqual([expect.objectContaining({ cardIdentifier: COAX, strength: 'clear_upgrade', cut: FLEX })]);
-    expect((decks['decks'] as Array<{ name: string }>).map((row) => row.name)).toEqual(['Calling: Pelotas 1st', 'Calling: Rio 3rd']);
+    expect((decks['decks'] as Array<{ name: string; source: string }>).map((row) => [row.name, row.source])).toEqual([
+      ['Calling: Pelotas 1st', 'tournament'],
+      ['Calling: Rio 3rd', 'tournament'],
+    ]);
     expect(tournament['cards']).toEqual([
       expect.objectContaining({ cardIdentifier: FLEX, quantity: 3, slot: 'mainboard' }),
       expect.objectContaining({ cardIdentifier: TALISHAR, quantity: 1, slot: 'weapon' }),
     ]);
+  });
+
+  it('an empty tournament search says so and names related heroes and the heroes with decks', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+    const insertDeck = `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)
+      VALUES ($1, $2, null, null, $3, $4, now(), now(), $5)`;
+    await fixture.dataSource.query(insertDeck, ['01TOOLS0000000000000000011', 'Calling: Lyon 2nd', 'azalea-ace-in-the-hole', 'Classic Constructed', 'tournament']);
+    await fixture.dataSource.query(insertDeck, ['01TOOLS0000000000000000012', 'Skirmish 9 Winner', 'kano', 'Silver Age', 'player-named']);
+    await fixture.dataSource.query(insertDeck, ['01TOOLS0000000000000000013', 'Skirmish 9 2nd', 'kano', 'Silver Age', 'player-named']);
+
+    const empty = await runChatTool(toolbox, 'search_tournament_decks', { heroIdentifier: 'azalea', format: 'Silver Age' });
+    const found = await runChatTool(toolbox, 'search_tournament_decks', { heroIdentifier: 'kano', format: 'Silver Age' });
+
+    expect(empty['decks']).toEqual([]);
+    expect(empty['note']).toEqual(expect.stringContaining('No tournament deck matches'));
+    expect(empty['relatedHeroes']).toEqual([{ heroIdentifier: 'azalea-ace-in-the-hole', format: 'Classic Constructed', decks: 1 }]);
+    expect(empty['heroesWithDecks']).toEqual([{ heroIdentifier: 'kano', format: 'Silver Age', decks: 2 }]);
+    expect((found['decks'] as Array<{ source: string }>).map((deck) => deck.source)).toEqual(['player-named', 'player-named']);
+    expect(found['note']).toBeUndefined();
   });
 });

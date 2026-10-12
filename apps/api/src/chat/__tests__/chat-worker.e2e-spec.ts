@@ -146,7 +146,19 @@ describe('chat worker (E2E)', () => {
     expect(rows.map((row) => Number(row.costUsd))).toEqual([0.045, 0.045]);
   });
 
-  it('a seventh call fails the turn', async () => {
+  it('the eighth call declares no tool and its answer ends the turn', async () => {
+    const { user, assistantMessageId } = await turn();
+    const lookup = callAnswer([{ name: 'get_deck', args: { deckId: user.deckId } }]);
+    const stub = scriptedFetch([lookup, lookup, lookup, lookup, lookup, lookup, lookup, textAnswer('From what I found.')]);
+
+    await fixture.drain(stub.fetch);
+
+    const row = await fixture.message(assistantMessageId);
+    expect([row['status'], row['text']]).toEqual(['done', 'From what I found.']);
+    expect(stub.requests.map((request) => 'tools' in request)).toEqual([...Array(7).fill(true), false]);
+  });
+
+  it('a model that still asks for a tool on the final call and its retry fails the turn', async () => {
     const { user, assistantMessageId } = await turn();
     const stub = scriptedFetch([callAnswer([{ name: 'get_deck', args: { deckId: user.deckId } }])]);
 
@@ -154,7 +166,7 @@ describe('chat worker (E2E)', () => {
 
     const capped = await fixture.message(assistantMessageId);
     expect([capped['status'], capped['error']]).toEqual(['failed', 'TOO_MANY_TOOL_ROUNDS']);
-    expect(stub.requests).toHaveLength(6);
+    expect(stub.requests).toHaveLength(9);
   });
 
   it('a provider error fails the turn and keeps the user message', async () => {

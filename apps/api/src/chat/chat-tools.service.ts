@@ -19,6 +19,7 @@ import {
 import { ISwapDeck, readSwapArgs, slotOf, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 
 const CARD_TEXT_MAX = 300;
+const HERO_COUNT_LIMIT = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECK_NOT_FOUND: TToolResult = { error: 'DECK_NOT_FOUND' };
 
@@ -174,7 +175,7 @@ export class ChatToolsService {
     const since = readString(args, 'since', { optional: true });
     if (since !== undefined && Number.isNaN(Date.parse(since))) throw new InvalidToolArguments('since must be an ISO date');
     const decks = (await this.dataSource.query(
-      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date
+      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date, source
          FROM tournament_deck
         WHERE ($1::varchar IS NULL OR "heroIdentifier" = $1)
           AND ($2::varchar IS NULL OR format = $2)
@@ -183,7 +184,24 @@ export class ChatToolsService {
         LIMIT $4`,
       [heroIdentifier, format, since ?? null, readLimit(args)],
     )) as Array<Record<string, unknown>>;
-    return { decks };
+    if (decks.length > 0) return { decks };
+    return {
+      decks,
+      note: 'No tournament deck matches these filters. Do not repeat the search with small changes: use a related hero or a hero with decks below, and tell the user what is missing.',
+      relatedHeroes: heroIdentifier === null ? [] : await this.tournamentHeroCounts({ namePrefix: heroIdentifier.split('-')[0]!, exclude: heroIdentifier }),
+      heroesWithDecks: await this.tournamentHeroCounts({ format }),
+    };
+  }
+
+  private async tournamentHeroCounts(filter: { namePrefix?: string; exclude?: string; format?: string | null }): Promise<TToolResult[]> {
+    return (await this.dataSource.query(
+      `SELECT "heroIdentifier", format, count(*)::int AS decks FROM tournament_deck
+        WHERE ($1::varchar IS NULL OR "heroIdentifier" = $1 OR "heroIdentifier" LIKE $1 || '-%')
+          AND ($2::varchar IS NULL OR "heroIdentifier" <> $2)
+          AND ($3::varchar IS NULL OR format = $3)
+        GROUP BY "heroIdentifier", format ORDER BY decks DESC, "heroIdentifier", format LIMIT $4`,
+      [filter.namePrefix ?? null, filter.exclude ?? null, filter.format ?? null, HERO_COUNT_LIMIT],
+    )) as TToolResult[];
   }
 
   private async tournamentDeck(id: string): Promise<TToolResult> {

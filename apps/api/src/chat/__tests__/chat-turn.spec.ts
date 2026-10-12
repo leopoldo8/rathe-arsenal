@@ -1,6 +1,6 @@
-import { runTurn } from '../chat-turn';
+import { MAX_MODEL_CALLS, runTurn } from '../chat-turn';
 import { runChatTool, UnknownTool } from '../chat-tools';
-import { TChatCallOutcome } from '../gemini-chat-client';
+import { IChatRequest, TChatCallOutcome } from '../gemini-chat-client';
 
 function callAnswer(name: string): TChatCallOutcome {
   return {
@@ -12,7 +12,105 @@ function callAnswer(name: string): TChatCallOutcome {
   };
 }
 
+function textAnswer(text: string): TChatCallOutcome {
+  return { kind: 'answer', content: { role: 'model', parts: [{ text }] }, calls: [], text, usage: { inputTokens: 1, outputTokens: 1 } };
+}
+
+function scriptedCall(answer: (request: IChatRequest, index: number) => TChatCallOutcome, onCall: () => void = () => undefined) {
+  const requests: IChatRequest[] = [];
+  const call = async (request: IChatRequest): Promise<TChatCallOutcome> => {
+    requests.push(request);
+    onCall();
+    return answer(request, requests.length - 1);
+  };
+  return { call, requests };
+}
+
+const QUIET = { system: 's', history: [], recordUsage: async () => undefined, runTool: async () => ({}) };
+
 describe('chat turn', () => {
+  it('the last allowed call must answer in text', async () => {
+    const script = scriptedCall((request) => (request.answerNow ? textAnswer('Here is what I found.') : callAnswer('search_tournament_decks')));
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(MAX_MODEL_CALLS).toBe(8);
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Here is what I found.', calls: 8 }));
+    expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, false, false, false, false, false, true]);
+  });
+
+  it('a call made with less than 150 seconds of the turn left must answer in text', async () => {
+    let clock = 0;
+    const script = scriptedCall(
+      (request) => (request.answerNow ? textAnswer('ok') : callAnswer('get_deck')),
+      () => {
+        clock += 165_000;
+      },
+    );
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => clock });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', calls: 3 }));
+    expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, true]);
+  });
+
+  it('a final call that still asks for a tool is asked once more, then fails the turn', async () => {
+    const script = scriptedCall(() => callAnswer('get_collection'));
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'TOO_MANY_TOOL_ROUNDS', calls: 9 }));
+    expect(script.requests.slice(7).map((request) => request.answerNow)).toEqual([true, true]);
+  });
+
+  it('a final call that asks for a tool on its first try and answers on its second ends the turn done', async () => {
+    let finals = 0;
+    const script = scriptedCall((request) => {
+      if (!request.answerNow) return callAnswer('get_deck');
+      finals += 1;
+      return finals === 1 ? callAnswer('get_collection') : textAnswer('Second try.');
+    });
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Second try.', calls: 9 }));
+  });
+
+  it('a final call that writes text beside a tool call keeps the text', async () => {
+    const script = scriptedCall((request) =>
+      request.answerNow
+        ? { ...callAnswer('get_collection'), text: 'Swap Flex for Coax.', content: { role: 'model', parts: [{ text: 'Swap Flex for Coax.' }, { functionCall: { name: 'get_collection', args: {} } }] } }
+        : callAnswer('get_deck'),
+    );
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Swap Flex for Coax.', calls: 8 }));
+  });
+
+  it('a call that times out after a tool round gets one call that must answer', async () => {
+    let clock = 0;
+    const script = scriptedCall((request, index) => {
+      if (request.answerNow) return textAnswer('Answer from what I had.');
+      if (index === 0) return callAnswer('get_deck');
+      clock += 120_000;
+      return { kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 120000 ms' };
+    });
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => clock });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Answer from what I had.', calls: 3 }));
+    expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, true]);
+  });
+
+  it('a first call that times out fails the turn', async () => {
+    const script = scriptedCall(() => ({ kind: 'failed', code: 'MODEL_TIMEOUT', detail: 'no answer in 120000 ms' }));
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'MODEL_TIMEOUT', calls: 1 }));
+  });
+
   it('a turn past 480 seconds stops', async () => {
     const callsBeforeStop = async (elapsedAfterFirstCall: number): Promise<number> => {
       let clock = 0;

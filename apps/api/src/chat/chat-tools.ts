@@ -63,10 +63,11 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   },
   {
     name: 'search_tournament_decks',
-    description: 'Tournament decks copied from Fabrary, newest first, with event name and placement when known.',
+    description:
+      'Tournament decks copied from Fabrary, newest first, with event name and placement when known. source "tournament" is event coverage Fabrary marks as a tournament deck; source "player-named" is a deck its owner named after an event and a placement, so it is player-reported. When nothing matches, the answer says so and lists related heroes and the heroes that have decks.',
     parametersJsonSchema: object(
       {
-        heroIdentifier: string('Optional hero card identifier.'),
+        heroIdentifier: string('Optional hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
         format: string('Optional format.'),
         since: string('Optional ISO date; only decks from this date on.'),
         limit: integer('At most 20; default 10.'),

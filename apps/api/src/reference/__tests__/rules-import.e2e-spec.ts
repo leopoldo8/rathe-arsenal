@@ -94,6 +94,16 @@ describe('rules reference (E2E)', () => {
     expect(none).toEqual({ found: false, entries: [] });
   });
 
+  it('a section number with no rule of its own returns the first rules of that section', async () => {
+    await service.importIndex(async () => FIXTURE, T0);
+
+    const section = await service.search('1.1');
+
+    expect(section.found).toBe(true);
+    expect(section.entries.map((entry) => entry.ruleNumber).every((number) => number.startsWith('1.1.'))).toBe(true);
+    expect(section.entries[0]!.ruleNumber).toBe('1.1.1');
+  });
+
   it('logs the import', async () => {
     const log = jest.spyOn(Logger.prototype, 'log');
 
