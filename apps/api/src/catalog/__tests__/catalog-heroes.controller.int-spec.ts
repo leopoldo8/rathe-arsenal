@@ -20,6 +20,7 @@ const MOCK_USER: ICurrentUser = {
   userId: 'user-uuid-u17-ctrl',
   email: 'test@rathe-arsenal.test',
   role: EUserRole.User,
+  chatAccess: false,
 };
 
 describe('CatalogController — GET /catalog/heroes (U17)', () => {

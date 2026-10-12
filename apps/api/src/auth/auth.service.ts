@@ -222,7 +222,7 @@ export class AuthService {
 
   async getMe(
     currentUser: ICurrentUser,
-  ): Promise<{ id: string; email: string; role: EUserRole; settings: IAuthSettings }> {
+  ): Promise<{ id: string; email: string; role: EUserRole; chatAccess: boolean; settings: IAuthSettings }> {
     // JwtStrategy.validate() already rejected soft-deleted users, so the NULL
     // path here is only reachable on a narrow race (concurrent hard-delete, or
     // the row vanished mid-request). Fail loudly instead of returning synthetic
@@ -235,6 +235,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      chatAccess: user.chatAccess,
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }

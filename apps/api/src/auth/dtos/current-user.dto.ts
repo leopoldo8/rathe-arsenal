@@ -4,4 +4,5 @@ export interface ICurrentUser {
   userId: string;
   email: string;
   role: EUserRole;
+  chatAccess: boolean;
 }

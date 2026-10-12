@@ -1,0 +1,76 @@
+import { catalog } from '@rathe-arsenal/engine';
+import { validateDeckProposal, validateSwapProposal } from '../proposal-validation';
+
+const KATSU = 'katsu-the-wanderer';
+const CC = 'Classic Constructed';
+
+function deck(cards: Array<{ cardIdentifier: string; quantity: number; slot: string }>, overrides: Record<string, unknown> = {}) {
+  return { name: 'Katsu tempo', heroIdentifier: KATSU, format: CC, cards, reason: 'fast', ...overrides };
+}
+
+function findBy(predicate: (card: (typeof catalog.cards)[number]) => boolean): string {
+  const found = catalog.cards.find(predicate);
+  if (!found) throw new Error('fixture card missing');
+  return found.cardIdentifier;
+}
+
+describe('proposal validation', () => {
+  const katsu = catalog.getCard(KATSU);
+  const legal = (id: string) => {
+    const result = validateDeckProposal(deck([{ cardIdentifier: id, quantity: 1, slot: 'mainboard' }]), catalog);
+    return result.ok;
+  };
+  const otherClass = findBy((card) => card.classes.length > 0 && !card.classes.some((c) => katsu.classes.includes(c)) && card.types.includes('Action' as never) && !legal(card.cardIdentifier));
+  const equipment = findBy((card) => card.types.includes('Equipment' as never) && card.classes.includes('Generic' as never));
+  const weapon = findBy((card) => card.types.includes('Weapon' as never) && card.classes.some((c) => katsu.classes.includes(c)));
+
+  it('validates a deck proposal against the catalog', () => {
+    const code = (args: Record<string, unknown>) => {
+      const result = validateDeckProposal(args, catalog);
+      return result.ok ? 'ok' : result.error;
+    };
+
+    expect(code(deck([{ cardIdentifier: 'flex-red', quantity: 3, slot: 'mainboard' }, { cardIdentifier: 'emissary-of-tides-red', quantity: 2, slot: 'mainboard' }]))).toBe('ok');
+    expect(code(deck([], { heroIdentifier: 'flex-red' }))).toBe('HERO_INVALID');
+    expect(code(deck([{ cardIdentifier: 'not-a-card', quantity: 1, slot: 'mainboard' }]))).toBe('CARD_UNKNOWN');
+    expect(code(deck([{ cardIdentifier: otherClass, quantity: 1, slot: 'mainboard' }]))).toBe('CARD_ILLEGAL');
+    expect(code(deck([{ cardIdentifier: equipment, quantity: 1, slot: 'mainboard' }]))).toBe('SLOT_MISMATCH');
+    expect(code(deck([{ cardIdentifier: weapon, quantity: 1, slot: 'equipment' }]))).toBe('SLOT_MISMATCH');
+    expect(code(deck([{ cardIdentifier: 'flex-red', quantity: 3, slot: 'mainboard' }, { cardIdentifier: 'flex-red', quantity: 1, slot: 'mainboard' }]))).toBe('COPY_LIMIT');
+    expect(code(deck([], { name: '' }))).toBe('INVALID_ARGUMENTS');
+    expect(code(deck([], { name: 'n'.repeat(121) }))).toBe('INVALID_ARGUMENTS');
+    expect(code(deck(Array.from({ length: 81 }, () => ({ cardIdentifier: 'flex-red', quantity: 1, slot: 'mainboard' }))))).toBe('INVALID_ARGUMENTS');
+  });
+
+  it('validates a swap with the adoption rules', () => {
+    const katsuDeck = {
+      heroIdentifier: KATSU,
+      format: CC,
+      cards: [
+        { cardIdentifier: 'emissary-of-tides-red', slot: 'mainboard', quantity: 2 },
+        { cardIdentifier: 'flex-red', slot: 'mainboard', quantity: 2 },
+        { cardIdentifier: 'talishar-the-lost-prince', slot: 'weapon', quantity: 1 },
+      ],
+    };
+    const ninjaCard = findBy(
+      (card) => card.classes.includes('Ninja' as never) && card.types.includes('Action' as never) && card.cardIdentifier !== 'emissary-of-tides-red' && legal(card.cardIdentifier),
+    );
+    const swap = (overrides: Record<string, unknown>) => ({
+      trackedDeckId: 1,
+      originalCardIdentifier: 'flex-red',
+      slot: 'mainboard',
+      replacementCardIdentifier: ninjaCard,
+      reason: 'better',
+      ...overrides,
+    });
+    const code = (args: Record<string, unknown>, target: typeof katsuDeck | null = katsuDeck) => {
+      const result = validateSwapProposal(args as never, target, catalog);
+      return result.ok ? 'ok' : result.error;
+    };
+
+    expect(code(swap({}))).toBe('ok');
+    expect(code(swap({ originalCardIdentifier: 'coax-a-commotion-red' }))).toBe('NOTHING_TO_REPLACE');
+    expect(code(swap({ originalCardIdentifier: 'talishar-the-lost-prince', slot: 'weapon' }))).toBe('REPLACEMENT_ILLEGAL');
+    expect(code(swap({}), null)).toBe('DECK_NOT_FOUND');
+  });
+});

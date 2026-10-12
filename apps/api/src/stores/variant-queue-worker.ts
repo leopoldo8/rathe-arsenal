@@ -13,6 +13,11 @@ import {
   RecommendationRunnerService,
 } from '../recommendations/recommendation-runner.service';
 import { parseThinkingLevel, TGeminiFetch } from '../recommendations/gemini-client';
+import { ChatTurnQueueService } from '../chat/chat-turn-queue.service';
+import { ChatRunnerService, drainChatOnce } from '../chat/chat-runner.service';
+import { createReferenceStep } from '../reference/reference-step';
+import { RulesImportService } from '../reference/rules-import.service';
+import { TournamentSyncService } from '../reference/tournament-sync.service';
 
 export const POLL_MS = 3000;
 
@@ -111,6 +116,31 @@ export function createRecommendationStep(deps: IRecommendationStepDeps): () => P
   };
 }
 
+export interface IChatStepDeps {
+  readonly queue: Pick<ChatTurnQueueService, 'reclaimOrphans' | 'claimNext'>;
+  readonly runner: Pick<ChatRunnerService, 'process'>;
+  readonly env: NodeJS.ProcessEnv;
+  readonly fetch: TGeminiFetch;
+  readonly logger: Pick<Logger, 'error'>;
+}
+
+/** One chat drain; like recommendations, the key is read from the environment on every turn. */
+export function createChatStep(deps: IChatStepDeps): () => Promise<void> {
+  return async () => {
+    try {
+      await drainChatOnce({
+        queue: deps.queue,
+        runner: deps.runner,
+        readApiKey: () => deps.env['GEMINI_API_KEY'],
+        readThinkingLevel: () => parseThinkingLevel(deps.env['GEMINI_CHAT_THINKING_LEVEL']),
+        fetch: deps.fetch,
+      });
+    } catch (err) {
+      deps.logger.error({ event: 'chat.worker.error', error: (err as Error).message });
+    }
+  };
+}
+
 export interface IWorkerDeps {
   readonly env: NodeJS.ProcessEnv;
   readonly fetch: TGeminiFetch;
@@ -122,7 +152,7 @@ export function defaultWorkerDeps(): IWorkerDeps {
   return { env: process.env, fetch: fetch as unknown as TGeminiFetch };
 }
 
-/** Builds both steps from the application context and runs them, each in its own loop. */
+/** Builds every step from the application context and runs each in its own loop. */
 export async function runWorker(
   app: Pick<INestApplicationContext, 'get'>,
   deps: IWorkerDeps,
@@ -165,7 +195,21 @@ export async function runWorker(
     logger,
   });
 
-  await runWorkerLoops([variantStep, recommendationStep], deps.pollMs ?? POLL_MS, deps.shouldContinue);
+  const chatStep = createChatStep({
+    queue: app.get(ChatTurnQueueService),
+    runner: app.get(ChatRunnerService),
+    env: deps.env,
+    fetch: deps.fetch,
+    logger,
+  });
+
+  const referenceStep = createReferenceStep({
+    tournaments: app.get(TournamentSyncService),
+    rules: app.get(RulesImportService),
+    logger,
+  });
+
+  await runWorkerLoops([variantStep, recommendationStep, chatStep, referenceStep], deps.pollMs ?? POLL_MS, deps.shouldContinue);
 }
 
 export async function main(): Promise<void> {

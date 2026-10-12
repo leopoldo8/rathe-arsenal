@@ -20,7 +20,7 @@ function buildController(serviceOverrides: Partial<{
   return { controller, service };
 }
 
-const MOCK_USER: ICurrentUser = { userId: 'user-1', email: 'test@example.com', role: EUserRole.User };
+const MOCK_USER: ICurrentUser = { userId: 'user-1', email: 'test@example.com', role: EUserRole.User, chatAccess: false };
 
 describe('UsersController.getSettings', () => {
   it('delegates to service.getSettings with the authenticated user id', async () => {

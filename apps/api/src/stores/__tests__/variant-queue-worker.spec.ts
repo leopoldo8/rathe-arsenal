@@ -14,6 +14,10 @@ import { ResolveJobCardsService } from '../resolve-job-cards.service';
 import { StoreIngestionService } from '../store-ingestion.service';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
 import { RecommendationRunnerService } from '../../recommendations/recommendation-runner.service';
+import { ChatTurnQueueService } from '../../chat/chat-turn-queue.service';
+import { ChatRunnerService } from '../../chat/chat-runner.service';
+import { TournamentSyncService } from '../../reference/tournament-sync.service';
+import { RulesImportService } from '../../reference/rules-import.service';
 
 describe('drainOnce', () => {
   it('reclaims orphans, claims a job, resolves its cards, and processes it', async () => {
@@ -187,5 +191,46 @@ describe('runWorker', () => {
     expect(deps.fetch).toBe(fetch);
     expect(deps.pollMs).toBeUndefined();
     expect(deps.shouldContinue).toBeUndefined();
+  });
+});
+
+describe('worker loops', () => {
+  it('chat and reference loops run beside a stuck recommendation drain', async () => {
+    jest.useFakeTimers();
+    try {
+      const chatQueue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue({ id: 'turn-1' }) };
+      const chatRunner = { process: jest.fn() };
+      const tournaments = { isDue: jest.fn().mockResolvedValue(false), sync: jest.fn() };
+      const rules = { isDue: jest.fn().mockResolvedValue(false), importIndex: jest.fn() };
+      const services = new Map<unknown, unknown>([
+        [VariantFetchQueueService, { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(null) }],
+        [VariantJobProcessorService, { process: jest.fn() }],
+        [ResolveJobCardsService, { resolve: jest.fn() }],
+        [StoreIngestionService, { claimPendingUrlSync: jest.fn().mockResolvedValue(null) }],
+        [RecommendationQueueService, { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue({ id: 'run-1' }) }],
+        [RecommendationRunnerService, { process: jest.fn(() => new Promise<void>(() => undefined)) }],
+        [ChatTurnQueueService, chatQueue],
+        [ChatRunnerService, chatRunner],
+        [TournamentSyncService, tournaments],
+        [RulesImportService, rules],
+      ]);
+      const fetch = jest.fn();
+      let running = true;
+
+      void runWorker(
+        { get: (token: unknown) => services.get(token) } as never,
+        { env: { GEMINI_API_KEY: 'AIza-env', GEMINI_CHAT_THINKING_LEVEL: 'low' }, fetch, shouldContinue: () => running },
+        { log: jest.fn(), error: jest.fn() },
+      );
+      await jest.advanceTimersByTimeAsync(3 * POLL_MS);
+      running = false;
+
+      expect(chatRunner.process.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(chatRunner.process).toHaveBeenCalledWith({ id: 'turn-1' }, { apiKey: 'AIza-env', fetch, thinkingLevel: 'low' });
+      expect(tournaments.isDue.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(rules.isDue.mock.calls.length).toBeGreaterThanOrEqual(3);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

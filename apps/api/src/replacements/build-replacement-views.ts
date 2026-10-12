@@ -7,6 +7,8 @@ import { IDeckReplacement } from '../decks/dtos/tracked-deck-detail.response.dto
  * owner's free copies of the original, owned across active sources minus the
  * copies already in this deck in any slot, cover the replaced quantity.
  */
+const CUT_ORIGINS: ReadonlySet<string> = new Set(['recommendation', 'chat']);
+
 export function buildReplacementViews(
   activeReplacements: readonly CardReplacementEntity[],
   owned: ReadonlyMap<string, number>,
@@ -29,8 +31,8 @@ export function buildReplacementViews(
       originalName: resolveName(replacement.originalCardIdentifier),
       replacementCardIdentifier: replacement.replacementCardIdentifier,
       quantity: replacement.quantity,
-      // An adopted recommendation cut a card the deck held, so its "original returned" prompt never applies.
-      originalOwned: replacement.pickedFrom !== 'recommendation' && freeCopies >= replacement.quantity,
+      // An adoption or a chat swap cut a card the deck held, so its "original returned" prompt never applies.
+      originalOwned: !CUT_ORIGINS.has(replacement.pickedFrom) && freeCopies >= replacement.quantity,
     };
   });
 }

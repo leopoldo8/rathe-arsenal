@@ -23,7 +23,7 @@ import { EUserRole } from '../../database/entities/user.entity';
 const USER_ID = 'user-uuid-ctrl-001';
 const CSV_SOURCE_ID = 'csv-source-ctrl-uuid-001';
 
-const mockCurrentUser: ICurrentUser = { userId: USER_ID, email: 'test@example.com', role: EUserRole.User };
+const mockCurrentUser: ICurrentUser = { userId: USER_ID, email: 'test@example.com', role: EUserRole.User, chatAccess: false };
 
 function buildSource(overrides: Partial<CsvSourceEntity> = {}): CsvSourceEntity {
   return {

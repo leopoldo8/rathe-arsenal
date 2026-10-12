@@ -32,12 +32,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? payload
       : (payload as { message?: string }).message ?? payload;
     const code = !payloadIsString ? (payload as { code?: string }).code : undefined;
+    const details = !payloadIsString ? (payload as { details?: unknown }).details : undefined;
 
     response.status(status).json({
       success: false,
       statusCode: status,
       error: errorMessage,
       ...(typeof code === 'string' ? { code } : {}),
+      ...(typeof details === 'object' && details !== null ? { details } : {}),
       timestamp: new Date().toISOString(),
     });
   }

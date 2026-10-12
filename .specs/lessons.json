@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 23,
+  "next_id": 26,
   "lessons": [
     {
       "id": "L-010",
@@ -238,6 +238,60 @@
       ],
       "created": "2026-10-11T09:06:13Z",
       "last_seen": "2026-10-11T09:06:13Z"
+    },
+    {
+      "id": "L-023",
+      "key": "surviving_mutant::pin every numeric bound at its exact edge one case on each side not with a value well past it",
+      "text": "Pin every numeric bound at its exact edge, one case on each side, not with a value well past it",
+      "signal": "surviving_mutant",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "ai-chat"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification round 1 F3, chat-history.ts:3 (tests)"
+      ],
+      "created": "2026-10-11T19:18:34Z",
+      "last_seen": "2026-10-11T19:18:34Z"
+    },
+    {
+      "id": "L-024",
+      "key": "surviving_mutant::prove the step that branches on a due check not only the due check it calls",
+      "text": "Prove the step that branches on a due check, not only the due check it calls",
+      "signal": "surviving_mutant",
+      "scope": "worker",
+      "status": "candidate",
+      "features": [
+        "ai-chat"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification round 1 F4, reference-step.ts:17 (worker)"
+      ],
+      "created": "2026-10-11T19:18:34Z",
+      "last_seen": "2026-10-11T19:18:34Z"
+    },
+    {
+      "id": "L-025",
+      "key": "ac_gap::drive a dispatcher s refusal path through the real dispatcher never through a stub that throws the expected error",
+      "text": "Drive a dispatcher's refusal path through the real dispatcher, never through a stub that throws the expected error",
+      "signal": "ac_gap",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "ai-chat"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification round 1 C51, chat-tools.ts:169 (tests)"
+      ],
+      "created": "2026-10-11T19:18:34Z",
+      "last_seen": "2026-10-11T19:18:34Z"
     }
   ]
 }

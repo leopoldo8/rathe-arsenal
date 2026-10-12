@@ -16,7 +16,9 @@
     "lint": "eslint \"src/**/*.ts\"",
     "migration:run": "node node_modules/typeorm/cli.js migration:run -d dist/database/datasource.js",
     "scrape": "node scrape-stores.js",
-    "recommendations:probe": "node --enable-source-maps dist/recommendations/probe-gemini.js"
+    "recommendations:probe": "node --enable-source-maps dist/recommendations/probe-gemini.js",
+    "chat:grant": "node --enable-source-maps dist/chat/chat-grant.cli.js",
+    "chat:probe": "node --enable-source-maps dist/chat/probe-chat.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",

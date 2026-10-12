@@ -96,8 +96,23 @@
 - **Date**: 2026-10-11
 - **Status**: active
 
+### AD-013
+- **Decision**: The AI chat is gated by a server-side `user.chatAccess` flag (default false, set only by the `chat:grant` script) enforced by `ChatAccessGuard` on every `/api/chat/*` route. A chat turn is an assistant `chat_message` row (at most one `pending` or `running` per conversation by a partial unique index) answered only in the worker, in a loop of its own, by Gemini 3.8 Flash with function calling over read-only tools scoped to the user; the model's content is stored and replayed verbatim. Every model call writes a `chat_usage` row that survives conversation deletion, and a user's spend per UTC month (US$5) is checked at send and at claim. The model only proposes; applying a proposal is the feature's only deck write.
+- **Reason**: ai-chat (`.specs/features/ai-chat/plan.md`, Landing doors 1, 3, 4, 6, 8, 9) from the confirmed design `.design/ai-chat.md` (Key decisions 1-6); `preferences` is user-writable, and a cost summed from messages would reset when a conversation is deleted.
+- **Trade-off**: Answers arrive whole after a polled wait (no streaming). Two more loops share the worker process. The budget can be overshot by turns already running when the cap is crossed.
+- **Scope**: `apps/api` (`chat` and `reference` modules, auth, replacements origin, `stores/variant-queue-worker.ts`), the `scrapper-worker` service environment.
+- **Date**: 2026-10-11
+- **Status**: active
+
 ## Handoff
 
+- **Feature**: ai-chat - `.specs/features/ai-chat/` - planned, built and VERIFIED (PASS, round 2 scoped, independent Verifier, profile `standard` provisional) on an autonomous run with the owner away. Branch `feat/ai-chat` in worktree `.claude/worktrees/ai-chat`, based on `46f7e2c`, not pushed, no PR. Backend only: chat access flag and `chat:grant`, daily Fabrary tournament deck sync, comprehensive rules reference from rules.fabtcg.com, conversations answered by Gemini 3.8 Flash with nine tools in a worker loop of their own, US$5 monthly budget on a `chat_usage` ledger, deck and swap proposals applied by the user (AD-013).
+- **Waiting on the owner**: pick a chat screen and a deck entry from `.design/mockups/ai-chat/index.html`; the screens are not built (project `CLAUDE.md`, "UI changes").
+- **Blocks go-live**: run `chat:probe` once with the real key (the multi-call request shape is proven only against a stubbed fetch), the migration on production, `GEMINI_API_KEY` on the worker service, `chat:grant` for the four users.
+- **Deviations and owner calls**: `.specs/features/ai-chat/implementation-notes.md`.
+- **Tests**: api e2e and int-specs with `DATABASE_URL=postgresql://postgres:dev@localhost:5432/rathe_arsenal_chat`, a database built only by migrations (see `checks.md`); the worktree needs a copy of the root `.env` and a built `packages/engine`.
+
+### Previous handoff (card-recommendations, merged as #136)
 - **Feature**: card-recommendations — `.specs/features/card-recommendations/` — planned, built and verified on an autonomous run (owner away), profile `standard` provisional. Branch `feat/card-recommendations` in worktree `.claude/worktrees/card-recommendations`, based on `5ad1916`, not pushed, no PR. Per-deck recommendations judged by Gemini 3.8 Flash (AD-010, AD-011): queued runs drained by the worker, the deck-page panel, the home clear-upgrade marker, dismiss, adopt as a `card_replacement` with `pickedFrom = 'recommendation'`, and the alternatives in-group order.
 - **Verification**: three independent rounds, each FAIL on fewer and smaller gaps (round 3: 73/73 checks proven, full gate green, one surviving mutant on unpinned migration column defaults). That last gap is fixed and author-checked, not independently re-verified: run one more scoped Verifier round so `validate_verification.py` exits 0.
 - **Blocks go-live**: `GEMINI_API_KEY` on the `scrapper-worker` service, and the migration on production. The live Gemini request shape is unproven until the first real run.

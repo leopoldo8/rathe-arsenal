@@ -79,6 +79,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
           userId,
           email: `${userId}@example.com`,
           role: EUserRole.User,
+          chatAccess: false,
         };
       }
       next();
