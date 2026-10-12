@@ -8,6 +8,38 @@ const CONVERSATIONS = [
   { id: '00000000-0000-4000-8000-000000000003', title: 'Regra de gatilhos ao atacar', trackedDeckId: null, updatedAt: '2026-10-03T10:00:00.000Z' },
 ];
 
+const card = (cardIdentifier: string, name: string, pitch: number, quantity: number, ownedQuantity: number) => ({
+  cardIdentifier,
+  name,
+  pitch,
+  quantity,
+  slot: 'mainboard',
+  ownedQuantity,
+});
+
+const DECK_PROPOSAL = {
+  id: 'p-1',
+  kind: 'deck',
+  status: 'pending',
+  reason: 'Aproveita o que você já tem.',
+  ownedCount: 41,
+  missingCount: 19,
+  trackedDeckId: null,
+  cardReplacementId: null,
+  replacementStatus: null,
+  payload: { name: 'Katsu Tempo', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
+  display: {
+    heroName: 'Katsu, the Wanderer',
+    cards: [
+      card('emissary-of-tides-red', 'Emissary of Tides', 1, 3, 3),
+      card('flex-red', 'Flex', 1, 3, 3),
+      card('lunging-press-yellow', 'Lunging Press', 2, 2, 1),
+      card('springboard-somersault-blue', 'Springboard Somersault', 3, 3, 0),
+      card('whirling-mist-blossom-yellow', 'Whirling Mist Blossom', 2, 49, 34),
+    ],
+  },
+};
+
 const THREAD = {
   ...CONVERSATIONS[0],
   messages: [
@@ -18,7 +50,7 @@ const THREAD = {
       status: 'done',
       text: '6 decks de Katsu no top 8 desde agosto. Sobre a ordem dos gatilhos, vale a (rule 6.2.1).\n\n- 3 Flick Knives\n- 3 Lunging Press',
       error: null,
-      proposals: [],
+      proposals: [DECK_PROPOSAL],
       createdAt: '2026-10-11T10:00:30.000Z',
     },
   ],

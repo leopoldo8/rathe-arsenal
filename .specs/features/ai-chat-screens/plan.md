@@ -18,7 +18,7 @@ Reuses the PR #145 routes as they are, the recommendations rail as the host of t
 4. composer send -> `POST /api/chat/conversations` (only for a new conversation, with `trackedDeckId` from `?deck=`) then `POST /api/chat/conversations/:id/messages` -> navigates to `/chat/<id>`
 5. while an assistant message is `pending` or `running`, the chat screen refetches the conversation every 3 s; `ChatService.read` (exists) returns proposals with their display fields (door 3)
 6. the answer text -> the answer renderer (door 2) - `react-markdown` with `remark-gfm` into React elements; the system instruction (exists, `chat-prompt.ts`) tells the model which Markdown it may write (door 4)
-7. proposal card -> `POST /api/chat/proposals/:id/apply` (exists) or `POST /api/chat/proposals/:id/dismiss` (exists) -> refetches the conversation and invalidates `['decks']`
+7. proposal card -> `POST /api/chat/proposals/:id/apply` (exists) or `POST /api/chat/proposals/:id/dismiss` (exists) -> refetches the conversation and invalidates `['decks']`; an applied swap's `Desfazer` -> `POST /api/replacements/:id/revert` (exists, AD-009)
 8. deck page -> `RecommendationsRail` (exists) renders the Tutor tile first while `chatAccess`; a ready question runs hop 4 with the deck bound, "Conversar sobre este deck" opens `/chat?deck=<id>`
 
 ## Impact
@@ -48,6 +48,7 @@ Only routes this adds or whose signature changes.
 | `POST /api/auth/sign-in` (changed) | unchanged | `user` gains `chatAccess` | `200`, `401`, `403`, `429` |
 | `POST /api/auth/verify-email` (changed) | unchanged | `user` gains `chatAccess` | `200`, `400`, `429` |
 | `POST /api/auth/reset-password` (changed) | unchanged | `user` gains `chatAccess` | `200`, `400`, `429` |
+| `GET /api/chat/conversations/:id` (changed, added after verification round 1) | unchanged | each proposal also gains `cardReplacementId` and `replacementStatus` (`active`, `kept`, `reverted`, `removed`, or null) | `200`, `400`, `401`, `403`, `404`, `429` |
 | `GET /api/chat/conversations/:id` (changed) | unchanged | each proposal gains `trackedDeckId` and `display`: deck `{ heroName, cards: [{ cardIdentifier, name, pitch, quantity, slot, ownedQuantity }] }`, swap `{ original: { cardIdentifier, name, pitch, copiesInDeck }, replacement: { cardIdentifier, name, pitch, freeCopies } }` | `200`, `400`, `401`, `403`, `404`, `429` |
 
 ## Landing
@@ -71,7 +72,7 @@ A user with access finds the Tutor tab; a user without access sees nothing new.
 
 1. The API SHALL return `chatAccess` in the `user` of sign-in, verify-email and reset-password responses, equal to the stored flag
 2. WHEN the client receives a `user` from sign-in, verify-email, reset-password or `/auth/me` THEN `IAuthUser.chatAccess` SHALL equal the received value, and SHALL be `false` when the field is absent
-3. WHILE `user.chatAccess` is true the bottom tab bar (under 960 px) and the top navigation (960 px and over) SHALL show a third item labelled `Tutor` with the card-fan mark, linking to `/chat`
+3. WHILE `user.chatAccess` is true the bottom tab bar (under 960 px) SHALL show a third item labelled `Tutor` with the card-fan mark, and the top navigation (960 px and over) a third text item `Tutor`, both linking to `/chat` (corrected after verification round 1: `brand-2-desktop` draws the top item as text only)
 4. WHILE `user.chatAccess` is false neither navigation SHALL show the Tutor item
 5. WHILE the path is `/chat` or starts with `/chat/` the Tutor item SHALL be the active one (`aria-current="page"` in the tab bar, `data-active="true"` in the top navigation)
 6. IF a user without chat access opens `/chat` or `/chat/<id>` THEN the app SHALL redirect to `/home`
@@ -130,10 +131,12 @@ A proposal shows what it would change and applies or dismisses in one click.
 32. The status badge SHALL read `Pendente`, `Aplicada`, `Dispensada` or `Desatualizada` for `pending`, `applied`, `dismissed` and `stale`
 33. WHILE a proposal is `pending` it SHALL offer `Aplicar` (deck) or `Aplicar troca` (swap) and `Dispensar`; WHILE it is not, it SHALL offer neither
 34. WHEN the user applies a proposal and the API answers `201` THEN the client SHALL refetch the conversation and invalidate `['decks']`, and the proposal SHALL show `Aplicada`
-35. WHILE a deck proposal is `applied` it SHALL show `Deck criado como ideia.` and `Abrir deck` linking to `/decks/<trackedDeckId>`; WHILE a swap proposal is `applied` it SHALL show `Troca aplicada.` and `Abrir deck` linking to `/decks/<trackedDeckId>`
+35. WHILE a deck proposal is `applied` it SHALL show `Deck criado como ideia.` and `Abrir deck` linking to `/decks/<trackedDeckId>`; WHILE a swap proposal is `applied` it SHALL show `Troca feita no deck.` and, while its replacement is `active`, `Desfazer`; after the replacement is `reverted` it SHALL show `Troca desfeita.` with no button (corrected after verification round 1: `chat-b` draws `Desfazer`, and undo by revert already exists per AD-009)
 36. WHEN the user dismisses a proposal and the API answers `200` THEN the proposal SHALL show `Dispensada` after the refetch
 37. WHILE a proposal is `stale` it SHALL show `Esta proposta não vale mais: o deck mudou desde a resposta.`
 38. IF apply or dismiss answers `409` THEN the client SHALL refetch the conversation and show `apiErrors.PROPOSAL_STALE` or `apiErrors.PROPOSAL_NOT_PENDING` on that proposal
+
+53. WHEN the user presses `Desfazer` on an applied swap THEN the client SHALL call `POST /api/replacements/<cardReplacementId>/revert`, refetch the conversation and invalidate `['decks']` (added after verification round 1)
 
 **Independent test:** a stubbed conversation with one proposal of each kind in each status; apply the pending deck and land on its page through `Abrir deck`.
 
@@ -149,6 +152,8 @@ Earlier conversations are one tap away and can be deleted.
 42. IF the user has no conversations THEN the list SHALL show `Nenhuma conversa ainda.`
 43. WHEN the user deletes a conversation from the list THEN the client SHALL ask `Apagar esta conversa?` with `As mensagens e as propostas somem. O que você já aplicou continua nos seus decks.`, and only on `Apagar` call `DELETE /api/chat/conversations/<id>`
 44. WHEN a delete answers `204` THEN the conversation SHALL leave the list, and IF it was the open one THEN the client SHALL navigate to `/chat`
+
+54. WHILE the viewport is 960 px or wider the thread SHALL read in one column at most 760 px wide, centred, with user bubbles on its right, a deck proposal's card list in two columns, and the header count and `Nova` visible; under 960 px the card list SHALL be one column and the header count and `Nova` hidden, `Nova` moving into the conversation list (added after verification round 1, from `chat-b-desktop` frame 2 and 7 and `chat-b-phone` frame 6)
 
 **Independent test:** with three stubbed conversations, open the list, open one, delete another after confirming.
 
@@ -198,6 +203,8 @@ What the model writes fits the renderer, and every new string exists in both lan
 | Count on the deck tile | links to the most recently updated bound conversation | the mockup shows a count, not a list; the list is one tap away from there | n |
 | Stale proposal | no button | `dismiss` accepts only `pending` rows, so the mockup's `Dispensar` on a stale card would answer `409` | n |
 | Polling cadence | 3000 ms while a turn is open | answers take 20 to 40 s; recommendations poll 10 s for minute-long runs | n |
+| Elements no mockup draws | the delete button on each conversation row (AC 43), `Tentar de novo` in the limit banner when usage has room again (implementation notes, deviation 6) | the backend can delete and the reset would otherwise lock a conversation; both are additions, not contradictions | n |
+| Phone header | no brand tile beside the title | `brand-2-phone` draws the app logo there because its frame has no top bar; the app's top bar already shows it | n |
 | Binding mockups | `brand-2-*` for copy, the mark and the waiting state; `chat-b-*` and `deck-entry-3-*` for arrangement where `brand-2-*` does not show it | `chat-b-*` and `deck-entry-3-*` predate the brand pick and still say Chat | y |
 
 **Open questions:** none - all resolved or logged above.

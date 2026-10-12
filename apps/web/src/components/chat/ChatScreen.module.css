@@ -26,16 +26,6 @@
   min-inline-size: 0;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 32px;
-  block-size: 32px;
-  border: 1px solid var(--ra-accent-soft-bd);
-  border-radius: var(--ra-radius-sm);
-  color: var(--ra-accent);
-}
 
 .title {
   margin: 0;
@@ -117,10 +107,6 @@
 
   .header {
     padding: var(--ra-space-4) var(--ra-space-6);
-  }
-
-  .brand {
-    display: none;
   }
 
   .listLabel,

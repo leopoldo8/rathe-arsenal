@@ -56,6 +56,8 @@ interface IProposalBase {
   readonly ownedCount: number;
   readonly missingCount: number;
   readonly trackedDeckId: number | null;
+  readonly cardReplacementId: string | null;
+  readonly replacementStatus: 'active' | 'kept' | 'reverted' | 'removed' | null;
 }
 
 export interface IDeckProposal extends IProposalBase {
@@ -241,6 +243,20 @@ export function useDecideProposal(conversationId: string, decision: 'apply' | 'd
     mutationFn: (proposalId: string) => apiFetch<unknown>(`/chat/proposals/${encodeURIComponent(proposalId)}/${decision}`, { method: 'POST' }),
     onSuccess: async () => {
       if (decision === 'apply') void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
+      await refresh();
+    },
+    onError: refresh,
+  });
+}
+
+export function useUndoSwap(conversationId: string) {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  const refresh = useRefreshConversation(conversationId);
+  return useMutation({
+    mutationFn: (replacementId: string) => apiFetch<unknown>(`/replacements/${encodeURIComponent(replacementId)}/revert`, { method: 'POST' }),
+    onSuccess: async () => {
+      void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
       await refresh();
     },
     onError: refresh,

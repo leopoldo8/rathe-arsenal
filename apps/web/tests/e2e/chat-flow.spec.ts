@@ -6,8 +6,10 @@
 import { test, expect } from '@playwright/test';
 import { BASE_URL, pinPortuguese } from './helpers';
 import { CONVERSATION_ID, stubChat } from '../support/chat-stubs';
+import { loadFixture } from '../support/fixture';
 
 const PANEL_WIDTH_PX = 380;
+const COLUMN_MAX_PX = 760;
 const SUBPIXEL_PX = 1;
 
 test.describe('Tutor chat', () => {
@@ -37,5 +39,38 @@ test.describe('Tutor chat', () => {
     expect(Math.abs(box.x + box.width - viewport.width)).toBeLessThanOrEqual(SUBPIXEL_PX);
     expect(box.y).toBeLessThanOrEqual(SUBPIXEL_PX);
     expect(Math.abs(box.y + box.height - viewport.height)).toBeLessThanOrEqual(SUBPIXEL_PX);
+  });
+
+  test('the thread reads in one centred column on desktop', async ({ page }) => {
+    await pinPortuguese(page);
+    await stubChat(page, true);
+    await page.goto(`${BASE_URL}/chat/${CONVERSATION_ID}`);
+    const bubble = page.getByText('Como o pessoal está montando o Katsu nos torneios?');
+    await expect(bubble).toBeVisible();
+    const viewport = page.viewportSize()!;
+
+    const column = (await page.getByTestId('chat-column').boundingBox())!;
+    const bubbleBox = (await bubble.boundingBox())!;
+    const rows = page.getByTestId('proposal-card-row');
+    const first = (await rows.nth(0).boundingBox())!;
+    const second = (await rows.nth(1).boundingBox())!;
+
+    expect(column.width).toBeLessThanOrEqual(COLUMN_MAX_PX + SUBPIXEL_PX);
+    expect(Math.abs(column.x + column.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
+    expect(bubbleBox.x).toBeGreaterThan(column.x + column.width / 4);
+    expect(Math.abs(second.y - first.y)).toBeLessThanOrEqual(SUBPIXEL_PX);
+    expect(second.x).toBeGreaterThan(first.x + first.width - SUBPIXEL_PX);
+    await expect(page.getByTestId('conversation-count')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Nova' })).toBeVisible();
+  });
+
+  test('a deck link opens a bound draft', async ({ page }) => {
+    const { readyDeckId } = loadFixture();
+    await pinPortuguese(page);
+    await stubChat(page, true);
+
+    await page.goto(`${BASE_URL}/chat?deck=${readyDeckId}`);
+
+    await expect(page.getByTestId('chat-header').getByTestId('deck-chip')).toHaveAttribute('href', `/decks/${readyDeckId}`);
   });
 });

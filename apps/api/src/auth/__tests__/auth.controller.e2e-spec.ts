@@ -220,6 +220,27 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
   });
 
+  describe('auth errors keep their statuses over HTTP', () => {
+    it('sign-in, verify-email and reset-password map their errors to 401, 403 and 400', async () => {
+      const server = app.getHttpServer();
+      const token = 'b'.repeat(64);
+      authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password'));
+      authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.EmailNotVerified, 'Email not verified'));
+      authService.verifyEmail.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
+      authService.resetPassword.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
+      const body = { email: 'a@b.com', password: 'longenoughpassword' };
+
+      const statuses = [
+        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.71').send({ token })).status,
+        (await request(server).post('/auth/reset-password').set('X-Forwarded-For', '203.0.113.72').send({ token, newPassword: 'newpasswordlongenough' })).status,
+      ];
+
+      expect(statuses).toEqual([401, 403, 400, 400]);
+    });
+  });
+
   describe('error envelope includes stable code (T18)', () => {
     it('auth error response body includes code when AuthService throws an AuthError', async () => {
       authService.signIn.mockRejectedValueOnce(

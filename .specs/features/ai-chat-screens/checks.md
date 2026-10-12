@@ -3,7 +3,7 @@
 Profile: ui
 Plan: `.specs/features/ai-chat-screens/plan.md`
 
-47 checks in 7 slices · 4 one-way doors · 0 open
+51 checks in 7 slices · 4 one-way doors · 0 open
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -19,18 +19,20 @@ Web component tests mock `useApiClient` as `AlternativesSheet.spec.tsx` does and
 ### S1 - Access and navigation
 
 **C1** - Sign-in, verify-email and reset-password return `user.chatAccess` equal to the stored flag: `true` for a granted user, `false` otherwise (AC 1) · done
-Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "every auth response carries chatAccess"` (the controller returns the service's object unchanged)
+Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "every auth response carries chatAccess"`
+Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "sign-in, verify-email and reset-password return chatAccess over HTTP"` (added after verification round 1: the boundary proof the Test policy row asks for)
 
-**C2** - `IAuthUser.chatAccess` is `true` after a sign-in response with `chatAccess: true`, `true` after an `/auth/me` response with `chatAccess: true`, and `false` after an `/auth/me` response without the field (AC 2) · done
+**C2** - `IAuthUser.chatAccess` is `true` after a sign-in response with `chatAccess: true`, `true` after an `/auth/me` response with `chatAccess: true`, `false` after an `/auth/me` response without the field, and follows the verify-email (`true`) and reset-password (`false`) responses (AC 2) · done
 Proof: `web unit src/auth/__tests__/AuthProvider.chat-access.spec.tsx -t "chatAccess follows the auth responses"`
 
-**C3** - With `chatAccess: true` the bottom tab bar has three links, the third named `Tutor` with `href="/chat"`; the top navigation has a `Tutor` link to `/chat`; with `chatAccess: false` neither has a `Tutor` link (AC 3, AC 4) · done
+**C3** - With `chatAccess: true` the bottom tab bar has three links, the third named `Tutor` with `href="/chat"` and the card-fan mark inside; the top navigation has a `Tutor` link to `/chat`; with `chatAccess: false` neither has a `Tutor` link (AC 3, AC 4) · done
 Proof: `web unit src/components/shell/__tests__/BottomTabBar.spec.tsx -t "the Tutor tab follows chat access"`
 Proof: `web unit src/components/shell/__tests__/TopBar.spec.tsx -t "the Tutor link follows chat access"`
 
 **C4** - `resolveActiveNavKey` returns `chat` for `/chat` and `/chat/abc`, and `null` for `/chatter`; on `/chat/abc` the Tutor tab has `aria-current="page"` and the top link `data-active="true"` (AC 5) · done
 Proof: `web unit src/components/shell/__tests__/nav-active.spec.ts -t "chat paths resolve to the Tutor tab"`
 Proof: `web unit src/components/shell/__tests__/BottomTabBar.spec.tsx -t "the Tutor tab is active on chat paths"`
+Proof: `web unit src/components/shell/__tests__/TopBar.spec.tsx -t "the Tutor link is active on chat paths"`
 
 **C5** - With `/auth/me` stubbed to `chatAccess: false`, opening `/chat` and `/chat/00000000-0000-4000-8000-000000000001` ends on `/home` (AC 6; door 1) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "chat routes redirect without access"`
@@ -51,16 +53,18 @@ Proof: `web unit src/components/chat/__tests__/Composer.spec.tsx -t "the compose
 
 **C10** - On `/chat?deck=7`, where deck 7 is `Katsu CC`, the header shows the chip `Katsu CC` before any send (AC 13) · done
 Proof: `web unit src/components/chat/__tests__/ChatScreen.new.spec.tsx -t "a deck draft shows its chip"`
+Proof: `web unit src/routes/_auth/__tests__/-chat-search.spec.ts -t "reads the deck a draft is bound to"` (added after verification round 1: `?deck=` reads `7` and `'7'`, and drops `abc`, `-1`, `1.5`, `0`)
+Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "a deck link opens a bound draft"`
 
 **C11** - When the message post answers `409 CHAT_TURN_IN_PROGRESS` after the conversation was created, the client navigates to `/chat/c-1`, the composer keeps the text and shows `apiErrors.CHAT_TURN_IN_PROGRESS` (AC 14) · done
 Proof: `web unit src/components/chat/__tests__/ChatScreen.new.spec.tsx -t "a failed first post keeps the text"`
 
 ### S3 - Thread
 
-**C12** - A conversation with a user message and a done answer renders the user text in a bubble (`data-role="user"`) and the answer after a label `TUTOR` (`data-role="assistant"`), in `createdAt` order (AC 15) · done
+**C12** - A conversation whose read lists the answer before the question renders them in `createdAt` order: the user text in a bubble (`data-role="user"`), then the answer after a label `TUTOR` with the card-fan mark (`data-role="assistant"`) (AC 15; fixture order reversed after verification round 1) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "messages read in order with the Tutor label"`
 
-**C13** - The answer renderer turns a paragraph, `- a`/`- b`, `1. x`, `**forte**`, `` `code` ``, a GFM table with header `Evento` and a `## Título` into `p`, `ul > li` x2, `ol > li`, `strong`, `code`, `table` with `th` `Evento`, and a heading; `(rule 6.2.1)` becomes a chip `regra 6.2.1` in pt-BR and `rule 6.2.1` in en-US (AC 16; door 2) · done
+**C13** - The answer renderer turns a paragraph, `- a`/`- b`, `1. x`, `**forte**`, `` `code` ``, a GFM table with header `Evento` and a `## Título` into `p`, `ul > li` x2, `ol > li`, `strong`, `code`, `table` with `th` `Evento`, and `# Grande` and `## Título` both as `h3`; `(rule 6.2.1)` becomes a chip `regra 6.2.1` in pt-BR and `rule 6.2.1` in en-US (AC 16; door 2) · done
 Proof: `web unit src/components/chat/__tests__/AnswerMarkdown.spec.tsx -t "renders the Markdown the model writes"`
 Proof: `web unit src/components/chat/__tests__/AnswerMarkdown.spec.tsx -t "rule citations become chips"`
 
@@ -82,7 +86,7 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "a failed 
 **C19** - Pressing `Tentar de novo` calls `POST /chat/conversations/c-1/messages/m-2/retry` once and refetches the conversation (AC 22) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "retry reopens the turn"`
 
-**C20** - The limit banner `Limite do mês atingido.` / `Volta a ser liberado em 1 de novembro. Suas conversas continuam abertas para leitura.` and a composer disabled with placeholder `Limite do mês atingido` appear in each of three cases: usage `{ spentUsd: 5, budgetUsd: 5, resetsAt: '2026-11-01T00:00:00.000Z' }`; a send answering `429` with code `CHAT_BUDGET_EXHAUSTED` and `details.resetsAt`; the last answer `failed` with `BUDGET_EXHAUSTED`; in en-US the date reads `November 1` (AC 23) · done
+**C20** - The limit banner `Limite do mês atingido.` / `Volta a ser liberado em 1 de novembro. Suas conversas continuam abertas para leitura.` and a composer disabled with placeholder `Limite do mês atingido` appear in each of three cases: usage `{ spentUsd: 5, budgetUsd: 5, resetsAt: '2026-11-01T00:00:00.000Z' }`; a send answering `429` with code `CHAT_BUDGET_EXHAUSTED` and `details.resetsAt`; the last answer `failed` with `BUDGET_EXHAUSTED`; the banner follows the last message; in en-US the date reads `November 1` (AC 23) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "the monthly limit shows its reset date"`
 
 **C21** - Rendering the chat screen at the limit, with a deck and a swap proposal, and the deck tile, the document text matches neither `/R\$|US\$|\$\s?\d|USD|BRL/` nor the values `5` of `spentUsd`/`budgetUsd` as an amount (AC 24) · done
@@ -97,7 +101,7 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "send and 
 **C24** - While the first read is pending the thread shows `data-testid="chat-thread-skeleton"` and no message (AC 28) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "the first read shows a skeleton"`
 
-**C25** - A conversation with `trackedDeckId: 7` (deck `Katsu CC`) shows a chip `Katsu CC` linking to `/decks/7`; with `trackedDeckId: null` no chip (AC 29) · done
+**C25** - The header heading reads the conversation's title; a conversation with `trackedDeckId: 7` (deck `Katsu CC`) shows a chip `Katsu CC` linking to `/decks/7`; with `trackedDeckId: null` no chip (AC 29) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "a bound conversation shows its deck chip"`
 
 ### S4 - Proposals
@@ -105,13 +109,13 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "a bound c
 **C26** - `GET /api/chat/conversations/:id` returns, for a deck proposal, `trackedDeckId: null` and `display.heroName` = the hero's name and `display.cards` with `name`, `pitch`, `quantity`, `slot`, `ownedQuantity` per card (with 4 `emissary-of-tides-red` owned, a proposal of 3 shows `Emissary of Tides`, pitch 1, `ownedQuantity` 3, and `flex-red` 0); for a swap proposal `trackedDeckId` = the deck and `display.original` `{ name: 'Flex', copiesInDeck: 2 }`, and `display.replacement.freeCopies` 2 for `emissary-of-tides-red` (4 owned minus 2 in the deck); after applying the deck proposal its `trackedDeckId` is the created deck (AC 30, AC 31, AC 35; door 3) · done
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "proposals carry display fields and their deck"`
 
-**C27** - A pending deck proposal of 60 cards (41 owned, 19 missing) shows `Proposta de deck`, its name, `Katsu, the Wanderer · Classic Constructed · 60 cartas`, `Pendente`, its reason, `41 você tem`, `19 faltam`, four card rows with quantity, name and `tem` or `falta 1`, and `e mais <n> cartas` for the remaining distinct cards (AC 30) · done
+**C27** - A pending deck proposal of 60 cards (41 owned, 19 missing) shows `Proposta de deck`, its name, `Katsu, the Wanderer · Classic Constructed · 60 cartas`, `Pendente`, its reason, `41 você tem`, `19 faltam`, four card rows with quantity, name and `tem` or `falta 1`, and `e mais <n> cartas` for the remaining distinct cards; the bar is named `41 de 60 cartas na sua coleção` and each row carries its pitch (AC 30) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a deck proposal shows what it builds"`
 
-**C28** - A pending swap proposal shows `Proposta de troca`, the deck chip, `SAI` `Flex` `2 cópias no deck`, `ENTRA` `Emissary of Tides` `você tem 3`; with `freeCopies: 0` it shows `você não tem cópias livres` (AC 31) · done
+**C28** - A pending swap proposal shows `Proposta de troca`, the deck chip, `SAI` `Flex` `2 cópias no deck`, `ENTRA` `Emissary of Tides` `você tem 3`; each side carries its pitch; with `freeCopies: 0` it shows `você não tem cópias livres` (AC 31) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a swap proposal shows what goes out and in"`
 
-**C29** - Table-driven over kind (`deck`, `swap`) x status (`pending`, `applied`, `dismissed`, `stale`): the badge reads `Pendente`, `Aplicada`, `Dispensada`, `Desatualizada`; only `pending` has the apply button (`Aplicar` / `Aplicar troca`) and `Dispensar`; `applied` deck shows `Deck criado como ideia.`, `applied` swap `Troca aplicada.`, both with `Abrir deck` to `/decks/<trackedDeckId>`; `stale` shows `Esta proposta não vale mais: o deck mudou desde a resposta.` (AC 32, AC 33, AC 35, AC 37) · done
+**C29** - Table-driven over kind (`deck`, `swap`) x status (`pending`, `applied`, `dismissed`, `stale`): the badge reads `Pendente`, `Aplicada`, `Dispensada`, `Desatualizada`; only `pending` has the apply button (`Aplicar` / `Aplicar troca`) and `Dispensar`; `applied` deck shows `Deck criado como ideia.` with `Abrir deck` to `/decks/<trackedDeckId>`, `applied` swap with an active replacement `Troca feita no deck.` with `Desfazer` (corrected after verification round 1 to match `chat-b`); `stale` shows `Esta proposta não vale mais: o deck mudou desde a resposta.` (AC 32, AC 33, AC 35, AC 37) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "each status shows its badge and actions"`
 
 **C30** - Pressing `Aplicar` calls `POST /chat/proposals/p-1/apply` once, then refetches the conversation and invalidates the `['decks']` query (AC 34) · done
@@ -128,7 +132,7 @@ Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a refus
 **C33** - The header has `Conversas` with the count `3` for three conversations and `Nova` linking to `/chat` (AC 39) · done
 Proof: `web unit src/components/chat/__tests__/ConversationList.spec.tsx -t "the header opens the list and starts a new one"`
 
-**C34** - The open list orders three conversations by `updatedAt` newest first, shows `Nova conversa` for a null title, a deck chip only on bound ones, a relative time on each, and `aria-current="true"` on the open one; picking one navigates to `/chat/<id>` and closes the list; an empty list shows `Nenhuma conversa ainda.` (AC 40, AC 41, AC 42) · done
+**C34** - The open list orders three conversations by `updatedAt` newest first, shows `Nova conversa` for a null title, a deck chip only on bound ones, a relative time on each, and `aria-current="true"` on the open one; picking one navigates to `/chat/<id>` and closes the list; the open list carries a `Nova` link to `/chat`; an empty list shows `Nenhuma conversa ainda.` (AC 40, AC 41, AC 42) · done
 Proof: `web unit src/components/chat/__tests__/ConversationList.spec.tsx -t "the list orders, marks and opens conversations"`
 
 **C35** - At 1440 px the open list is a panel 380 px wide on the right edge; at 390 px it is a sheet spanning the viewport width anchored to the bottom (AC 40) · done
@@ -143,7 +147,7 @@ Proof: `web unit src/components/chat/__tests__/ConversationList.spec.tsx -t "del
 **C37** - With `chatAccess: true` and a deck whose recommendations response has `run: null`, the rail's first item is the Tutor tile; with `chatAccess: false` no tile renders and the rail matches the pre-feature rendering (AC 45, AC 46) · done
 Proof: `web unit src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "the Tutor tile follows chat access"`
 
-**C38** - The tile shows `Pergunte ao Tutor`, `Como outros jogam o Katsu nos torneios?`, `Que carta deste deck vale trocar?`, `O que mais falta para ficar pronto?` and `Conversar sobre este deck` (AC 47) · done
+**C38** - The tile shows the card-fan mark beside `Pergunte ao Tutor` and inside `Conversar sobre este deck`, `Como outros jogam o Katsu nos torneios?`, `Que carta deste deck vale trocar?`, `O que mais falta para ficar pronto?` and `Conversar sobre este deck` (AC 47) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t "the tile offers questions about this deck"`
 
 **C39** - With two conversations bound to deck 7 (`c-old`, `c-new` newer) and one bound to deck 9, the tile on deck 7 shows `2 conversas` linking to `/chat/c-new`; with one, `1 conversa`; with none, no count (AC 48) · done
@@ -175,12 +179,15 @@ Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.signIn 
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps INVALID_CREDENTIALS to UnauthorizedException with the error code in the response"`
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps EMAIL_NOT_VERIFIED to ForbiddenException with the error code"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "returns 200 for the first 5 requests and 429 on the 6th"`
+Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "sign-in, verify-email and reset-password map their errors to 401, 403 and 400"` (added after verification round 1)
+Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "auth error response body includes code when AuthService throws an AuthError"`
 
 **C46** - Verify-email and reset-password still answer `400` for a wrong token, and `429` past their hourly limits (10 and 5) (Surface: verify-email, reset-password) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.verifyEmail throws INVALID_TOKEN for a wrong token"`
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "AuthService.resetPassword throws INVALID_TOKEN for a wrong token"`
 Proof: `api unit src/auth/__tests__/auth-error.mapper.spec.ts -t "maps INVALID_TOKEN to BadRequestException with the error code"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "verify-email and reset-password are throttled per hour"`
+Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "sign-in, verify-email and reset-password map their errors to 401, 403 and 400"`
 
 **C47** - The conversation read still answers `400` for a malformed id, `404` for another user's conversation, `401` without a token, `403` without access and `429` past the global limit; `/auth/me` reports `chatAccess` (Surface: conversation read; `/auth/me`) · done
 Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign and malformed conversations"`
@@ -188,6 +195,21 @@ Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route 
 Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "every chat route refuses a user without access"`
 Proof: `api e2e src/chat/__tests__/chat-throttle.e2e-spec.ts -t "every chat route is throttled"`
 Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "auth me reports the flag and a grant takes effect at once"`
+
+### Added after verification round 1
+
+**C48** - Each proposal in a conversation read carries `cardReplacementId` and `replacementStatus`: `[null, null]` before a swap is applied, `[<id>, 'active']` after applying, `[<id>, 'reverted']` after `POST /api/replacements/<id>/revert` (AC 35, AC 53; Surface) · done
+Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "an applied swap carries its replacement and its status"`
+
+**C49** - Pressing `Desfazer` on an applied swap calls `POST /replacements/r-1/revert` once, refetches the conversation and invalidates `['decks']`; with `replacementStatus: 'reverted'` the card shows `Troca desfeita.` and no `Desfazer` (AC 35, AC 53) · done
+Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "undoing an applied swap reverts it"`
+
+**C50** - At 1440 px the chat column is at most 760 px wide and centred within 2 px, the user bubble starts past the column's first quarter, the first two card rows of a deck proposal sit side by side, and the header count and `Nova` are visible (AC 54) · done
+Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "the thread reads in one centred column on desktop"`
+
+**C51** - At 360 and 390 px the user bubble ends past 75 % of the width, the first two card rows stack in one column, and the header count and the header `Nova` are hidden (AC 54) · done
+Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "the phone layout stacks cards and hides the header extras"`
+Proof: `web e2e --project=mobile-360 tests/mobile/chat-layout.spec.ts -g "the phone layout stacks cards and hides the header extras"`
 
 ## Coverage
 
@@ -202,12 +224,14 @@ Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "auth me reports t
 | limit triggers (3) | usage at cap C20 · send 429 C20 · failed `BUDGET_EXHAUSTED` C20 | - |
 | message statuses on screen (4) | `pending` C15 · `running` C15 · `done` C12 · `failed` C18 | - |
 | proposal kind x status (8) | C29, table-driven over all 8 | - |
-| proposal actions (2) | apply C30, C32 · dismiss C31 | - |
+| proposal actions (3) | apply C30, C32 · dismiss C31 · undo C49 | - |
 | Markdown constructs (9) | paragraph C13 · bullet list C13 · numbered list C13 · bold C13 · code C13 · table C13 · heading C13 · rule citation C13 · link C14 | - |
 | inert inputs (4) | raw HTML C14 · image C14 · `javascript:` link C14 · `<script>` C14 | - |
 | read failures (3) | `404` C22 · `400` C22 · other C22 | - |
 | ready-question sources (3) | latest deck hero C7 · no decks C7 · deck tile C38 | - |
 | list layouts (2) | desktop panel C35 · phone sheet C35 | - |
+| thread arrangement (2 widths) | desktop column, bubbles, two-column cards, header extras C50 · phone bubbles, one-column cards, hidden header extras C51 | - |
+| applied swap replacement statuses (3 shown) | `active` C48, C49 · `reverted` C48, C49 · none yet C48 | - |
 | `POST /api/auth/sign-in` statuses (4) | 200 C1 · 401 C45 · 403 C45 · 429 C45 | - |
 | `POST /api/auth/verify-email` statuses (3) | 200 C1 · 400 C46 · 429 C46 | - |
 | `POST /api/auth/reset-password` statuses (3) | 200 C1 · 400 C46 · 429 C46 | - |
@@ -215,14 +239,14 @@ Proof: `api e2e src/chat/__tests__/chat-access.e2e-spec.ts -t "auth me reports t
 | Landing doors (4) | 1 chat URLs C5, C8, C44 · 2 answer rendering C13, C14 · 3 display fields C26 · 4 formatting line C41 | - |
 | locales (2) | pt-BR C13, C20, C42 · en-US C13, C20, C42 | - |
 
-- Claims naming a status code, route or response shape: C1, C26 cross the HTTP boundary against real Postgres; the client claims about status codes (C11, C20, C22, C23, C32) assert the screen's response to a mocked `ApiError` and do not claim the API's behaviour
+- Claims naming a status code, route or response shape: C1, C26, C48 cross the HTTP boundary against real Postgres, and C45, C46 cross it with the auth service doubled; the client claims about status codes (C11, C20, C22, C23, C32) assert the screen's response to a mocked `ApiError` and do not claim the API's behaviour
 - No other check claims more than the cases its proof exercises
 
 ## Test policy
 
 | Code | Required proofs | Coverage expectation |
 | --- | --- | --- |
-| Decides, reached across a boundary (API display fields, auth responses) | one at the boundary | the contract fields with concrete values |
+| Decides, reached across a boundary (API display fields, auth responses) | one at the boundary (C1, C26, C48 over HTTP) | the contract fields with concrete values |
 | Decides, client-only (failure mapping, poll interval, ready questions, proposal status, Markdown policy) | one at its own layer | one asserted case per row of the decision table |
 | Layout that only CSS decides (sheet vs panel, tabs fitting) | one Playwright run at each width | the measured box |
 | Instrumentation (query hooks forwarding to `apiFetch`) | none of its own | covered by the component that calls them |

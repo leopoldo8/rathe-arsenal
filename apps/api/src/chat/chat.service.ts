@@ -46,6 +46,8 @@ export interface IProposalView {
   readonly missingCount: number;
   readonly trackedDeckId: number | null;
   readonly display: IDeckProposalDisplay | ISwapProposalDisplay;
+  readonly cardReplacementId: string | null;
+  readonly replacementStatus: string | null;
 }
 
 export interface IMessageView {
@@ -241,6 +243,12 @@ export class ChatService {
       )) as Array<{ trackedDeckId: number; cardIdentifier: string; quantity: number }>;
       for (const row of rows) inDeck.set(`${row.trackedDeckId}|${row.cardIdentifier}`, row.quantity);
     }
+    const replacementIds = proposals.flatMap((proposal) => (proposal.cardReplacementId === null ? [] : [proposal.cardReplacementId]));
+    const replacementStatuses = new Map<string, string>();
+    if (replacementIds.length > 0) {
+      const rows = (await this.dataSource.query(`SELECT id, status FROM card_replacement WHERE id = ANY($1)`, [replacementIds])) as Array<{ id: string; status: string }>;
+      for (const row of rows) replacementStatuses.set(row.id, row.status);
+    }
     return proposals.map((proposal) => {
       let ownedCount = 0;
       let missingCount = 0;
@@ -276,6 +284,8 @@ export class ChatService {
         missingCount,
         trackedDeckId: proposal.trackedDeckId,
         display,
+        cardReplacementId: proposal.cardReplacementId,
+        replacementStatus: proposal.cardReplacementId === null ? null : (replacementStatuses.get(proposal.cardReplacementId) ?? null),
       };
     });
   }

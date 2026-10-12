@@ -103,6 +103,8 @@ export function deckProposal(overrides: Partial<IDeckProposal> = {}): IDeckPropo
     ownedCount: 41,
     missingCount: 19,
     trackedDeckId: null,
+    cardReplacementId: null,
+    replacementStatus: null,
     payload: { name: 'Katsu Tempo', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
     display: { heroName: 'Katsu, the Wanderer', cards: DECK_CARDS },
     ...overrides,
@@ -118,6 +120,8 @@ export function swapProposal(overrides: Partial<ISwapProposal> = {}): ISwapPropo
     ownedCount: 1,
     missingCount: 0,
     trackedDeckId: 7,
+    cardReplacementId: null,
+    replacementStatus: null,
     payload: { trackedDeckId: 7, slot: 'mainboard' },
     display: {
       original: { cardIdentifier: 'flex-red', name: 'Flex', pitch: 1, copiesInDeck: 2 },

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useDecideProposal, type IDeckProposal, type ISwapProposal, type TChatProposal } from '../../api/chat';
+import { useDecideProposal, useUndoSwap, type IDeckProposal, type ISwapProposal, type TChatProposal } from '../../api/chat';
 import { useDecksQuery } from '../../api/decks';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { Button } from '../ui/Button/Button';
@@ -13,7 +13,13 @@ const LISTED_CARDS = 4;
 const PITCH_CLASS: Readonly<Record<number, string | undefined>> = { 1: styles.pitchRed, 2: styles.pitchYellow, 3: styles.pitchBlue };
 
 function PitchDot({ pitch }: { readonly pitch: number | null }): React.ReactElement {
-  return <span className={`${styles.pitch} ${(pitch !== null && PITCH_CLASS[pitch]) || styles.pitchNone}`} aria-hidden="true" />;
+  return (
+    <span
+      className={`${styles.pitch} ${(pitch !== null && PITCH_CLASS[pitch]) || styles.pitchNone}`}
+      data-pitch={pitch ?? 'none'}
+      aria-hidden="true"
+    />
+  );
 }
 
 function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.ReactElement {
@@ -103,10 +109,16 @@ export function ProposalCard({ conversationId, proposal }: { readonly conversati
   const { t } = useTranslation();
   const apply = useDecideProposal(conversationId, 'apply');
   const dismiss = useDecideProposal(conversationId, 'dismiss');
+  const undo = useUndoSwap(conversationId);
   const decks = useDecksQuery();
   const [error, setError] = useState<string | null>(null);
   const deckName = decks.data?.trackedDecks.find((deck) => deck.id === proposal.trackedDeckId)?.name ?? null;
-  const busy = apply.isPending || dismiss.isPending;
+  const busy = apply.isPending || dismiss.isPending || undo.isPending;
+
+  function undoSwap(replacementId: string): void {
+    setError(null);
+    undo.mutate(replacementId, { onError: (cause) => setError(localizeApiError(cause, t)) });
+  }
 
   function decide(mutation: typeof apply): void {
     setError(null);
@@ -123,13 +135,25 @@ export function ProposalCard({ conversationId, proposal }: { readonly conversati
       </header>
       {proposal.kind === 'deck' ? <DeckBody proposal={proposal} /> : <SwapBody proposal={proposal} deckName={deckName} />}
       {proposal.status === 'stale' && <p className={styles.note}>{t('chat.proposal.stale')}</p>}
-      {proposal.status === 'applied' && (
+      {proposal.status === 'applied' && proposal.kind === 'deck' && (
         <div className={styles.actions}>
-          <span className={styles.note}>{proposal.kind === 'deck' ? t('chat.proposal.deckCreated') : t('chat.proposal.swapApplied')}</span>
+          <span className={styles.note}>{t('chat.proposal.deckCreated')}</span>
           {proposal.trackedDeckId !== null && (
             <Link to="/decks/$deckId" params={{ deckId: String(proposal.trackedDeckId) }} search={{ edit: undefined }} className={styles.openDeck}>
               {t('chat.proposal.openDeck')}
             </Link>
+          )}
+        </div>
+      )}
+      {proposal.status === 'applied' && proposal.kind === 'swap' && (
+        <div className={styles.actions}>
+          <span className={styles.note}>
+            {proposal.replacementStatus === 'reverted' ? t('chat.proposal.swapUndone') : t('chat.proposal.swapDone')}
+          </span>
+          {proposal.replacementStatus === 'active' && proposal.cardReplacementId !== null && (
+            <Button variant="secondary" size="sm" loading={undo.isPending} disabled={busy} onClick={() => undoSwap(proposal.cardReplacementId!)}>
+              {t('chat.proposal.undo')}
+            </Button>
           )}
         </div>
       )}

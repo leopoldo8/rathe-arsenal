@@ -1,5 +1,7 @@
 import request from 'supertest';
 import { setChatAccess } from '../chat-grant';
+import { TokenGeneratorService } from '../../auth/services/token-generator.service';
+import { PASSWORD } from '../../replacements/__tests__/replacements-e2e.fixture';
 import { bootChatFixture, IChatFixture } from './chat-e2e.fixture';
 
 const SOME_UUID = '3f1d2c3b-4a5b-4c6d-8e7f-001122334455';
@@ -44,6 +46,35 @@ describe('chat access (E2E)', () => {
     await fixture.grant(user.email);
 
     expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(true);
+  });
+
+  it('sign-in, verify-email and reset-password return chatAccess over HTTP', async () => {
+    const tokens = new TokenGeneratorService();
+    const user = await fixture.chatUser({ access: false });
+    const server = fixture.app.getHttpServer();
+    const signIn = async (password: string) =>
+      (await request(server).post('/api/auth/sign-in').send({ email: user.email, password }).expect(200)).body.user.chatAccess as boolean;
+
+    const refused = await signIn(PASSWORD);
+    await fixture.grant(user.email);
+    const granted = await signIn(PASSWORD);
+
+    const verifyToken = tokens.generateRawToken();
+    await fixture.dataSource.query(
+      `UPDATE "user" SET "verificationTokenHash" = $2, "verificationTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
+      [user.email, tokens.hashToken(verifyToken)],
+    );
+    const verified = (await request(server).post('/api/auth/verify-email').send({ token: verifyToken }).expect(200)).body.user.chatAccess as boolean;
+
+    const resetToken = tokens.generateRawToken();
+    await fixture.dataSource.query(
+      `UPDATE "user" SET "passwordResetTokenHash" = $2, "passwordResetTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
+      [user.email, tokens.hashToken(resetToken)],
+    );
+    const reset = (await request(server).post('/api/auth/reset-password').send({ token: resetToken, newPassword: 'another-password-123' }).expect(200)).body.user
+      .chatAccess as boolean;
+
+    expect([refused, granted, verified, reset]).toEqual([false, true, true, true]);
   });
 
   it('every chat route refuses a user without access', async () => {

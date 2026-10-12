@@ -34,13 +34,14 @@ describe('DeckTutorTile', () => {
     renderWithClient(<DeckTutorTile deckId={7} heroName="Katsu" />);
 
     expect(screen.getByText('Pergunte ao Tutor')).toBeInTheDocument();
-    expect(screen.getByTestId('tutor-mark')).toBeInTheDocument();
     expect(screen.getAllByTestId('tile-question').map((button) => button.textContent)).toEqual([
       'Como outros jogam o Katsu nos torneios?',
       'Que carta deste deck vale trocar?',
       'O que mais falta para ficar pronto?',
     ]);
-    expect(screen.getByRole('button', { name: 'Conversar sobre este deck' })).toBeInTheDocument();
+    const start = screen.getByRole('button', { name: 'Conversar sobre este deck' });
+    expect(start.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
+    expect(screen.getByText('Pergunte ao Tutor').parentElement?.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
   });
 
   it('the count links to the latest conversation', async () => {

@@ -156,11 +156,8 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
 
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
+      <header className={styles.header} data-testid="chat-header">
         <div className={styles.titleRow}>
-          <span className={styles.brand} aria-hidden="true">
-            <TutorMark size={18} />
-          </span>
           <h1 className={styles.title}>{conversation?.title ?? t('chat.newTitle')}</h1>
           {boundDeckId !== null && boundDeckName !== undefined && (
             <span className={styles.headerChip}>
@@ -188,7 +185,7 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
         </div>
       </header>
 
-      <div className={styles.column}>
+      <div className={styles.column} data-testid="chat-column">
         {conversationId !== null && thread.isPending && (
           <div className={styles.skeleton} data-testid="chat-thread-skeleton" aria-hidden="true">
             <span className={styles.skeletonBubble} />
@@ -240,7 +237,7 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
         )}
 
         {limitResetsAt !== null && (
-          <div className={styles.limit} role="status">
+          <div className={styles.limit} role="status" data-testid="chat-limit">
             <p className={styles.limitTitle}>{t('chat.limitTitle')}</p>
             <p className={styles.limitBody}>{t('chat.limitBody', { date: resetDate })}</p>
             {turnRefused && !usageAtCap && refusedUntil === null && lastAnswer !== null && (

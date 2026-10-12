@@ -51,4 +51,23 @@ test.describe('Tutor chat on a phone', () => {
     expect(Math.abs(box.width - viewport.width)).toBeLessThanOrEqual(SUBPIXEL_PX);
     expect(Math.abs(box.y + box.height - viewport.height)).toBeLessThanOrEqual(SUBPIXEL_PX);
   });
+
+  test('the phone layout stacks cards and hides the header extras', async ({ page }) => {
+    await openChat(page, `/chat/${CONVERSATION_ID}`);
+    const bubble = page.getByText('Como o pessoal está montando o Katsu nos torneios?');
+    await expect(bubble).toBeVisible();
+    const viewport = page.viewportSize()!;
+
+    const bubbleBox = (await bubble.boundingBox())!;
+    const rows = page.getByTestId('proposal-card-row');
+    const first = (await rows.nth(0).boundingBox())!;
+    const second = (await rows.nth(1).boundingBox())!;
+
+    expect(bubbleBox.x + bubbleBox.width).toBeGreaterThan(viewport.width * 0.75);
+    expect(bubbleBox.x).toBeGreaterThan(viewport.width * 0.1);
+    expect(Math.abs(second.x - first.x)).toBeLessThanOrEqual(SUBPIXEL_PX);
+    expect(second.y).toBeGreaterThan(first.y + first.height - SUBPIXEL_PX);
+    await expect(page.getByTestId('conversation-count')).toBeHidden();
+    await expect(page.getByTestId('chat-header').getByRole('link', { name: 'Nova' })).toBeHidden();
+  });
 });

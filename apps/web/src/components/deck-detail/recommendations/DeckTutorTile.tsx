@@ -11,14 +11,6 @@ interface IDeckTutorTileProps {
   readonly heroName: string;
 }
 
-function ChatIcon(): React.ReactElement {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
-    </svg>
-  );
-}
-
 export function DeckTutorTile({ deckId, heroName }: IDeckTutorTileProps): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -67,7 +59,7 @@ export function DeckTutorTile({ deckId, heroName }: IDeckTutorTileProps): React.
         className={styles.start}
         onClick={() => void navigate({ to: '/chat', search: { deck: deckId } })}
       >
-        <ChatIcon />
+        <TutorMark size={16} />
         <span>{t('chat.tile.start')}</span>
       </button>
       {bound[0] !== undefined && (

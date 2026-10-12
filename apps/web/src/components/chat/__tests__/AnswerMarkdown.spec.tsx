@@ -18,6 +18,8 @@ const MARKDOWN = [
   '',
   'Texto **forte** e `code`.',
   '',
+  '# Grande',
+  '',
   '## Título',
   '',
   '| Evento | Lugar |',
@@ -34,7 +36,11 @@ describe('AnswerMarkdown', () => {
     expect(Array.from(container.querySelectorAll('ol > li')).map((li) => li.textContent)).toEqual(['x']);
     expect(container.querySelector('strong')?.textContent).toBe('forte');
     expect(container.querySelector('code')?.textContent).toBe('code');
-    expect(container.querySelector('h1, h2, h3, h4, h5, h6')?.textContent).toBe('Título');
+    const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+    expect(headings.map((heading) => [heading.tagName, heading.textContent])).toEqual([
+      ['H3', 'Grande'],
+      ['H3', 'Título'],
+    ]);
     expect(Array.from(container.querySelectorAll('table th')).map((th) => th.textContent)).toEqual(['Evento', 'Lugar']);
   });
 

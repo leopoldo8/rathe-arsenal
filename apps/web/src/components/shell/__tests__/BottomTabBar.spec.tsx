@@ -142,6 +142,7 @@ describe('BottomTabBar — Tutor', () => {
     const links = Array.from(granted.container.querySelectorAll('nav a'));
     expect(links).toHaveLength(3);
     expect([links[2]!.textContent, links[2]!.getAttribute('href')]).toEqual(['Tutor', '/chat']);
+    expect(links[2]!.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
     granted.unmount();
 
     mockChatAccess = false;

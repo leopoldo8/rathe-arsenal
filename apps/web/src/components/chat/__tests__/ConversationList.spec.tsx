@@ -80,6 +80,7 @@ describe('Conversation list', () => {
 
     const list = await openList(user);
 
+    expect(within(list).getByRole('link', { name: 'Nova' })).toHaveAttribute('href', '/chat');
     const rows = within(list).getAllByTestId('conversation-row');
     expect(rows.map((row) => within(row).getByTestId('conversation-title').textContent)).toEqual(['Katsu nos torneios', 'Nova conversa', 'Regra de gatilhos']);
     expect(rows.map((row) => within(row).queryByTestId('deck-chip')?.textContent ?? null)).toEqual(['Katsu CC', null, null]);

@@ -57,7 +57,7 @@ describe('ChatScreen thread', () => {
   it('messages read in order with the Tutor label', async () => {
     serveThread(() =>
       conversation({
-        messages: [QUESTION, message({ id: 'm-2', role: 'assistant', text: 'Seis decks de Katsu.', createdAt: '2026-10-11T10:00:30.000Z' })],
+        messages: [message({ id: 'm-2', role: 'assistant', text: 'Seis decks de Katsu.', createdAt: '2026-10-11T10:00:30.000Z' }), QUESTION],
       }),
     );
 
@@ -70,6 +70,7 @@ describe('ChatScreen thread', () => {
     expect(items[0]).toContainElement(user);
     expect(items[1]).toContainElement(answer);
     expect(within(items[1]!).getByTestId('answer-label').textContent).toMatch(/^tutor$/i);
+    expect(within(items[1]!).getByTestId('answer-label').parentElement).toContainElement(within(items[1]!).getByTestId('tutor-mark'));
     expect(within(items[0]!).queryByTestId('answer-label')).toBeNull();
   });
 
@@ -138,6 +139,8 @@ describe('ChatScreen thread', () => {
     serveThread(() => done, AT_CAP);
     const atCap = renderThread();
     await expectLimit('1 de novembro');
+    const lastMessage = screen.getAllByTestId('chat-message').at(-1)!;
+    expect(lastMessage.compareDocumentPosition(screen.getByTestId('chat-limit')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     atCap.unmount();
 
     serveThread(() => done, NOT_AT_CAP, {
@@ -233,6 +236,7 @@ describe('ChatScreen thread', () => {
   it('a bound conversation shows its deck chip', async () => {
     serveThread(() => conversation({ trackedDeckId: 7, messages: [QUESTION] }));
     const bound = renderThread();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Katsu nos torneios' })).toBeInTheDocument();
     const chip = await screen.findByRole('link', { name: 'Katsu CC' });
     expect(chip).toHaveAttribute('href', '/decks/7');
     bound.unmount();
