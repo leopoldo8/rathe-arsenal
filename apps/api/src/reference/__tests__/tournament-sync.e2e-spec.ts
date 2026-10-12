@@ -230,7 +230,7 @@ describe('tournament deck sync (E2E)', () => {
   it('a hero and format with no tournament deck takes decks a player named after an event placement', async () => {
     const blitz = (deckId: string, name: string, heroIdentifier = 'katsu'): IIndexDeck => ({ deckId, name, format: 'Blitz', heroIdentifier });
     playerNamed = [
-      blitz(ulid(10), 'Skirmish Season 10 Winner'),
+      blitz(ulid(10), `Skirmish Season 10 Winner ${'x'.repeat(200)}`),
       blitz(ulid(11), 'Skirmish practice'),
       { deckId: ulid(12), name: 'Skirmish 2nd', format: 'Classic Constructed', heroIdentifier: 'katsu-the-wanderer' },
     ];
@@ -244,5 +244,7 @@ describe('tournament deck sync (E2E)', () => {
       { fabraryUlid: ulid(3), source: 'tournament', heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' },
       { fabraryUlid: ulid(10), source: 'player-named', heroIdentifier: 'katsu', format: 'Blitz' },
     ]);
+    const [{ length }] = await fixture.dataSource.query(`SELECT length(name) AS length FROM tournament_deck WHERE "fabraryUlid" = $1`, [ulid(10)]);
+    expect(length).toBe(120);
   });
 });

@@ -12,6 +12,7 @@ export const TOURNAMENT_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 export const TOURNAMENT_SYNC_RETRY_MS = 60 * 60 * 1000;
 export const DECK_FETCH_PACE_MS = 300;
 const NAME_MAX = 255;
+const PLAYER_NAMED_NAME_MAX = 120;
 
 export interface ISyncClock {
   readonly now: () => Date;
@@ -123,7 +124,7 @@ export class TournamentSyncService {
   }
 
   private async store({ listed, source }: { listed: IIndexDeck; source: TTournamentDeckSource }, fetched: IDeckImportDto, syncedAt: Date): Promise<void> {
-    const name = listed.name.slice(0, NAME_MAX);
+    const name = listed.name.slice(0, source === 'player-named' ? PLAYER_NAMED_NAME_MAX : NAME_MAX);
     const { eventName, placement } = parseTournamentName(listed.name);
     await this.dataSource.transaction(async (manager) => {
       const deck = await manager.save(

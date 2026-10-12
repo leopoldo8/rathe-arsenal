@@ -1,6 +1,6 @@
 import { INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { DataSource } from 'typeorm';
 import { DecksImportService } from '../../decks/import/decks-import.service';
 import { parseThinkingLevel, TGeminiFetch } from '../../recommendations/gemini-client';
@@ -41,6 +41,7 @@ interface IEvalOptions {
   readonly only: readonly string[];
   readonly drive: boolean;
   readonly out: string;
+  readonly extra: readonly IEvalScenario[];
 }
 
 function readOptions(argv: readonly string[]): IEvalOptions {
@@ -54,6 +55,7 @@ function readOptions(argv: readonly string[]): IEvalOptions {
     only: (value('--only') ?? '').split(',').filter(Boolean),
     drive: !argv.includes('--observe'),
     out: value('--out') ?? 'chat-eval-report',
+    extra: value('--scenarios') ? (JSON.parse(readFileSync(value('--scenarios')!, 'utf8')) as IEvalScenario[]) : [],
   };
 }
 
@@ -195,7 +197,7 @@ export function renderReport(runs: readonly IEvalRun[]): string {
   return lines.join('\n');
 }
 
-/** `chat:eval [--runs N] [--concurrency N] [--only id,id] [--observe] [--out path]`: real Gemini turns through the real runner and tools. */
+/** `chat:eval [--runs N] [--concurrency N] [--only id,id] [--scenarios file.json] [--observe] [--out path]`: real Gemini turns through the real runner and tools. */
 async function main(): Promise<void> {
   const options = readOptions(process.argv.slice(2));
   const apiKey = process.env['GEMINI_API_KEY']?.trim();
@@ -210,7 +212,7 @@ async function main(): Promise<void> {
   const userId = await ensureEvalUser(dataSource);
   const decks = await ensureEvalDecks(app, dataSource, userId);
   await releaseBudget(dataSource, userId);
-  const scenarios = EVAL_SCENARIOS.filter((scenario) => options.only.length === 0 || options.only.includes(scenario.id));
+  const scenarios = [...EVAL_SCENARIOS, ...options.extra].filter((scenario) => options.only.length === 0 || options.only.includes(scenario.id));
   const sent: ISentTurn[] = [];
   for (const scenario of scenarios) {
     for (let run = 1; run <= options.runs; run += 1) {
