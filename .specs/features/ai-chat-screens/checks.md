@@ -3,7 +3,7 @@
 Profile: ui
 Plan: `.specs/features/ai-chat-screens/plan.md`
 
-51 checks in 7 slices · 4 one-way doors · 0 open
+54 checks in 7 slices · 4 one-way doors · 0 open
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -109,7 +109,7 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "a bound c
 **C26** - `GET /api/chat/conversations/:id` returns, for a deck proposal, `trackedDeckId: null` and `display.heroName` = the hero's name and `display.cards` with `name`, `pitch`, `quantity`, `slot`, `ownedQuantity` per card (with 4 `emissary-of-tides-red` owned, a proposal of 3 shows `Emissary of Tides`, pitch 1, `ownedQuantity` 3, and `flex-red` 0); for a swap proposal `trackedDeckId` = the deck and `display.original` `{ name: 'Flex', copiesInDeck: 2 }`, and `display.replacement.freeCopies` 2 for `emissary-of-tides-red` (4 owned minus 2 in the deck); after applying the deck proposal its `trackedDeckId` is the created deck (AC 30, AC 31, AC 35; door 3) · done
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "proposals carry display fields and their deck"`
 
-**C27** - A pending deck proposal of 60 cards (41 owned, 19 missing) shows `Proposta de deck`, its name, `Katsu, the Wanderer · Classic Constructed · 60 cartas`, `Pendente`, its reason, `41 você tem`, `19 faltam`, four card rows with quantity, name and `tem` or `falta 1`, and `e mais <n> cartas` for the remaining distinct cards; the bar is named `41 de 60 cartas na sua coleção` and each row carries its pitch (AC 30) · done
+**C27** - A pending deck proposal of 60 cards (41 owned, 19 missing) shows `Proposta de deck`, its name, `Katsu, the Wanderer · Classic Constructed · 60 cartas`, `Pendente`, its reason, `41 você tem`, `19 faltam`, four card rows with quantity, name and `tem` or `falta 1`, and `e mais <n> cartas` for the remaining distinct cards; the bar is named `41 de 60 cartas na sua coleção` and fills `68.33…%`, and each row carries its pitch (AC 30; fill asserted after verification round 2) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a deck proposal shows what it builds"`
 
 **C28** - A pending swap proposal shows `Proposta de troca`, the deck chip, `SAI` `Flex` `2 cópias no deck`, `ENTRA` `Emissary of Tides` `você tem 3`; each side carries its pitch; with `freeCopies: 0` it shows `você não tem cópias livres` (AC 31) · done
@@ -204,12 +204,26 @@ Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "an applied swa
 **C49** - Pressing `Desfazer` on an applied swap calls `POST /replacements/r-1/revert` once, refetches the conversation and invalidates `['decks']`; with `replacementStatus: 'reverted'` the card shows `Troca desfeita.` and no `Desfazer` (AC 35, AC 53) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "undoing an applied swap reverts it"`
 
-**C50** - At 1440 px the chat column is at most 760 px wide and centred within 2 px, the user bubble starts past the column's first quarter, the first two card rows of a deck proposal sit side by side, and the header count and `Nova` are visible (AC 54) · done
+**C50** - At 1440 px the chat column is at most 760 px wide and centred within 2 px, the user bubble ends within 2 px of the column's inner right edge, a bound draft's deck chip sits on the title's line after it, the first two card rows of a deck proposal sit side by side, and the header count and `Nova` are visible (AC 54) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "the thread reads in one centred column on desktop"`
+Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "a deck link opens a bound draft"`
 
-**C51** - At 360 and 390 px the user bubble ends past 75 % of the width, the first two card rows stack in one column, and the header count and the header `Nova` are hidden (AC 54) · done
+**C51** - At 360 and 390 px the user bubble ends within 2 px of the column's inner right edge, a bound draft's deck chip sits under the title and the list button, aligned with the title, the first two card rows stack in one column, and the header count and the header `Nova` are hidden (AC 54) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "the phone layout stacks cards and hides the header extras"`
 Proof: `web e2e --project=mobile-360 tests/mobile/chat-layout.spec.ts -g "the phone layout stacks cards and hides the header extras"`
+Proof: `web e2e --project=mobile-390 tests/mobile/chat-layout.spec.ts -g "a bound deck chip sits in its own band under the title"`
+Proof: `web e2e --project=mobile-360 tests/mobile/chat-layout.spec.ts -g "a bound deck chip sits in its own band under the title"`
+
+### Added after verification round 2
+
+**C52** - An applied swap reads `Troca feita no deck.` with `Desfazer` for `active`, `Troca feita no deck.` without it for `kept` and for no replacement, `Troca desfeita.` for `reverted`, and `A troca saiu do deck.` for `removed`, the last four with no `Desfazer` (AC 35) · done
+Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "an applied swap reads its replacement status"`
+
+**C53** - Undo answering `409 REPLACEMENT_NOT_ACTIVE` shows `Esta substituição já foi resolvida.` and refetches the conversation; dismiss answering `409 PROPOSAL_NOT_PENDING` shows `Esta proposta já foi decidida.` and refetches (AC 38, AC 53) · done
+Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a refused undo or dismiss refetches and explains"`
+
+**C54** - With the last answer `failed` on `BUDGET_EXHAUSTED`, the limit banner offers no `Tentar de novo` while usage is at the cap, and offers it when usage has room; pressing it posts the retry once (Assumptions: elements no mockup draws) · done
+Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "the limit banner retries a refused turn once the month has room"`
 
 ## Coverage
 
@@ -231,7 +245,8 @@ Proof: `web e2e --project=mobile-360 tests/mobile/chat-layout.spec.ts -g "the ph
 | ready-question sources (3) | latest deck hero C7 · no decks C7 · deck tile C38 | - |
 | list layouts (2) | desktop panel C35 · phone sheet C35 | - |
 | thread arrangement (2 widths) | desktop column, bubbles, two-column cards, header extras C50 · phone bubbles, one-column cards, hidden header extras C51 | - |
-| applied swap replacement statuses (3 shown) | `active` C48, C49 · `reverted` C48, C49 · none yet C48 | - |
+| applied swap replacement statuses (5) | `active` C48, C49, C52 · `reverted` C48, C49, C52 · `kept` C52 · `removed` C52 · none C48, C52 | - |
+| refused decisions (3) | apply C32 · dismiss C53 · undo C53 | - |
 | `POST /api/auth/sign-in` statuses (4) | 200 C1 · 401 C45 · 403 C45 · 429 C45 | - |
 | `POST /api/auth/verify-email` statuses (3) | 200 C1 · 400 C46 · 429 C46 | - |
 | `POST /api/auth/reset-password` statuses (3) | 200 C1 · 400 C46 · 429 C46 | - |

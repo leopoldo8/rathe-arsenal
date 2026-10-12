@@ -3,10 +3,11 @@
  * every `/chat` route are stubbed.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { BASE_URL } from '../support/fixture';
+import { BASE_URL, loadFixture } from '../support/fixture';
 import { CONVERSATION_ID, stubChat } from '../support/chat-stubs';
 
 const SUBPIXEL_PX = 1;
+const COLUMN_PADDING_PX = 16;
 
 async function openChat(page: Page, path: string): Promise<void> {
   await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
@@ -63,11 +64,28 @@ test.describe('Tutor chat on a phone', () => {
     const first = (await rows.nth(0).boundingBox())!;
     const second = (await rows.nth(1).boundingBox())!;
 
-    expect(bubbleBox.x + bubbleBox.width).toBeGreaterThan(viewport.width * 0.75);
+    const column = (await page.getByTestId('chat-column').boundingBox())!;
+    expect(Math.abs(bubbleBox.x + bubbleBox.width - (column.x + column.width - COLUMN_PADDING_PX))).toBeLessThanOrEqual(2);
     expect(bubbleBox.x).toBeGreaterThan(viewport.width * 0.1);
     expect(Math.abs(second.x - first.x)).toBeLessThanOrEqual(SUBPIXEL_PX);
     expect(second.y).toBeGreaterThan(first.y + first.height - SUBPIXEL_PX);
     await expect(page.getByTestId('conversation-count')).toBeHidden();
     await expect(page.getByTestId('chat-header').getByRole('link', { name: 'Nova' })).toBeHidden();
+  });
+
+  test('a bound deck chip sits in its own band under the title', async ({ page }) => {
+    const { readyDeckId } = loadFixture();
+    await openChat(page, `/chat?deck=${readyDeckId}`);
+    const header = page.getByTestId('chat-header');
+    const chip = header.getByTestId('deck-chip');
+    await expect(chip).toHaveAttribute('href', `/decks/${readyDeckId}`);
+
+    const chipBox = (await chip.boundingBox())!;
+    const title = (await header.getByRole('heading', { level: 1 }).boundingBox())!;
+    const list = (await header.getByRole('button', { name: /^Conversas/ }).boundingBox())!;
+
+    expect(chipBox.y).toBeGreaterThanOrEqual(title.y + title.height - SUBPIXEL_PX);
+    expect(chipBox.y).toBeGreaterThanOrEqual(list.y + list.height - SUBPIXEL_PX);
+    expect(Math.abs(chipBox.x - title.x)).toBeLessThanOrEqual(2);
   });
 });

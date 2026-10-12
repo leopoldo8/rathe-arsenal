@@ -157,14 +157,12 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
   return (
     <div className={styles.screen}>
       <header className={styles.header} data-testid="chat-header">
-        <div className={styles.titleRow}>
-          <h1 className={styles.title}>{conversation?.title ?? t('chat.newTitle')}</h1>
-          {boundDeckId !== null && boundDeckName !== undefined && (
-            <span className={styles.headerChip}>
-              <DeckChip deckId={boundDeckId} name={boundDeckName} />
-            </span>
-          )}
-        </div>
+        <h1 className={styles.title}>{conversation?.title ?? t('chat.newTitle')}</h1>
+        {boundDeckId !== null && boundDeckName !== undefined && (
+          <span className={styles.headerChip}>
+            <DeckChip deckId={boundDeckId} name={boundDeckName} />
+          </span>
+        )}
         <div className={styles.headerActions}>
           <button
             type="button"

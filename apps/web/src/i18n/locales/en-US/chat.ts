@@ -65,6 +65,7 @@ export const chat = {
     deckCreated: 'Deck created as an idea.',
     swapDone: 'Swap made in the deck.',
     swapUndone: 'Swap undone.',
+    swapRemoved: 'The swap is no longer in the deck.',
     undo: 'Undo',
     openDeck: 'Open deck',
     stale: 'This proposal no longer applies: the deck changed since the answer.',

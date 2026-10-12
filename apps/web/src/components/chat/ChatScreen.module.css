@@ -9,25 +9,20 @@
   position: sticky;
   z-index: 10;
   inset-block-start: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title actions'
+    'chip chip';
   align-items: center;
-  justify-content: space-between;
-  gap: var(--ra-space-3);
+  gap: var(--ra-space-2) var(--ra-space-3);
   padding: var(--ra-space-3) var(--ra-space-4);
   border-block-end: 1px solid var(--ra-border);
   background: var(--ra-bg-canvas);
 }
 
-.titleRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ra-space-2) var(--ra-space-3);
-  min-inline-size: 0;
-}
-
-
 .title {
+  grid-area: title;
   margin: 0;
   overflow: hidden;
   font-family: var(--ra-font-display);
@@ -38,13 +33,16 @@
 }
 
 .headerChip {
+  grid-area: chip;
   display: inline-flex;
+  justify-self: start;
   min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .headerActions {
+  grid-area: actions;
   display: flex;
-  flex: 0 0 auto;
   gap: var(--ra-space-2);
 }
 
@@ -106,6 +104,8 @@
   }
 
   .header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'title chip actions';
     padding: var(--ra-space-4) var(--ra-space-6);
   }
 

@@ -131,7 +131,7 @@ A proposal shows what it would change and applies or dismisses in one click.
 32. The status badge SHALL read `Pendente`, `Aplicada`, `Dispensada` or `Desatualizada` for `pending`, `applied`, `dismissed` and `stale`
 33. WHILE a proposal is `pending` it SHALL offer `Aplicar` (deck) or `Aplicar troca` (swap) and `Dispensar`; WHILE it is not, it SHALL offer neither
 34. WHEN the user applies a proposal and the API answers `201` THEN the client SHALL refetch the conversation and invalidate `['decks']`, and the proposal SHALL show `Aplicada`
-35. WHILE a deck proposal is `applied` it SHALL show `Deck criado como ideia.` and `Abrir deck` linking to `/decks/<trackedDeckId>`; WHILE a swap proposal is `applied` it SHALL show `Troca feita no deck.` and, while its replacement is `active`, `Desfazer`; after the replacement is `reverted` it SHALL show `Troca desfeita.` with no button (corrected after verification round 1: `chat-b` draws `Desfazer`, and undo by revert already exists per AD-009)
+35. WHILE a deck proposal is `applied` it SHALL show `Deck criado como ideia.` and `Abrir deck` linking to `/decks/<trackedDeckId>`; WHILE a swap proposal is `applied` it SHALL show `Troca feita no deck.` and, while its replacement is `active`, `Desfazer`; after the replacement is `reverted` it SHALL show `Troca desfeita.`, when `removed` (a deck edit took the card out) `A troca saiu do deck.`, and when `kept` or unknown `Troca feita no deck.`, each with no button (corrected after verification rounds 1 and 2: `chat-b` draws `Desfazer`, and undo by revert already exists per AD-009)
 36. WHEN the user dismisses a proposal and the API answers `200` THEN the proposal SHALL show `Dispensada` after the refetch
 37. WHILE a proposal is `stale` it SHALL show `Esta proposta não vale mais: o deck mudou desde a resposta.`
 38. IF apply or dismiss answers `409` THEN the client SHALL refetch the conversation and show `apiErrors.PROPOSAL_STALE` or `apiErrors.PROPOSAL_NOT_PENDING` on that proposal
@@ -153,7 +153,7 @@ Earlier conversations are one tap away and can be deleted.
 43. WHEN the user deletes a conversation from the list THEN the client SHALL ask `Apagar esta conversa?` with `As mensagens e as propostas somem. O que você já aplicou continua nos seus decks.`, and only on `Apagar` call `DELETE /api/chat/conversations/<id>`
 44. WHEN a delete answers `204` THEN the conversation SHALL leave the list, and IF it was the open one THEN the client SHALL navigate to `/chat`
 
-54. WHILE the viewport is 960 px or wider the thread SHALL read in one column at most 760 px wide, centred, with user bubbles on its right, a deck proposal's card list in two columns, and the header count and `Nova` visible; under 960 px the card list SHALL be one column and the header count and `Nova` hidden, `Nova` moving into the conversation list (added after verification round 1, from `chat-b-desktop` frame 2 and 7 and `chat-b-phone` frame 6)
+54. WHILE the viewport is 960 px or wider the thread SHALL read in one column at most 760 px wide, centred, with user bubbles on its right, a deck proposal's card list in two columns, the header count and `Nova` visible, and a bound deck's chip on the title's line; under 960 px the card list SHALL be one column, the header count and `Nova` hidden, `Nova` moving into the conversation list, and the deck chip in its own band under the title (chip placement added after verification round 2, from `chat-b-phone` frame 8) (added after verification round 1, from `chat-b-desktop` frame 2 and 7 and `chat-b-phone` frame 6)
 
 **Independent test:** with three stubbed conversations, open the list, open one, delete another after confirming.
 
@@ -204,6 +204,7 @@ What the model writes fits the renderer, and every new string exists in both lan
 | Stale proposal | no button | `dismiss` accepts only `pending` rows, so the mockup's `Dispensar` on a stale card would answer `409` | n |
 | Polling cadence | 3000 ms while a turn is open | answers take 20 to 40 s; recommendations poll 10 s for minute-long runs | n |
 | Elements no mockup draws | the delete button on each conversation row (AC 43), `Tentar de novo` in the limit banner when usage has room again (implementation notes, deviation 6) | the backend can delete and the reset would otherwise lock a conversation; both are additions, not contradictions | n |
+| Copy for a swap whose replacement left the deck | `A troca saiu do deck.` | `removed` means a deck edit took the card out, so `Troca feita no deck.` would be untrue; no mockup draws this state | n |
 | Phone header | no brand tile beside the title | `brand-2-phone` draws the app logo there because its frame has no top bar; the app's top bar already shows it | n |
 | Binding mockups | `brand-2-*` for copy, the mark and the waiting state; `chat-b-*` and `deck-entry-3-*` for arrangement where `brand-2-*` does not show it | `chat-b-*` and `deck-entry-3-*` predate the brand pick and still say Chat | y |
 

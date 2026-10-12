@@ -39,7 +39,7 @@ function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.Rea
         role="img"
         aria-label={t('chat.proposal.ownedBarAria', { owned: proposal.ownedCount, total })}
       >
-        <VarFill className={styles.barOwned!} cssVar="--owned-share" value={`${ownedShare}%`} />
+        <VarFill className={styles.barOwned!} cssVar="--owned-share" value={`${ownedShare}%`} testId="owned-share" />
       </div>
       <p className={styles.counts}>
         <span className={styles.owned}>{t('chat.proposal.owned', { count: proposal.ownedCount })}</span>
@@ -148,7 +148,11 @@ export function ProposalCard({ conversationId, proposal }: { readonly conversati
       {proposal.status === 'applied' && proposal.kind === 'swap' && (
         <div className={styles.actions}>
           <span className={styles.note}>
-            {proposal.replacementStatus === 'reverted' ? t('chat.proposal.swapUndone') : t('chat.proposal.swapDone')}
+            {proposal.replacementStatus === 'reverted'
+              ? t('chat.proposal.swapUndone')
+              : proposal.replacementStatus === 'removed'
+                ? t('chat.proposal.swapRemoved')
+                : t('chat.proposal.swapDone')}
           </span>
           {proposal.replacementStatus === 'active' && proposal.cardReplacementId !== null && (
             <Button variant="secondary" size="sm" loading={undo.isPending} disabled={busy} onClick={() => undoSwap(proposal.cardReplacementId!)}>

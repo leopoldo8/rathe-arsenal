@@ -246,4 +246,21 @@ describe('ChatScreen thread', () => {
     await screen.findByText('Como o pessoal monta o Katsu?');
     expect(screen.queryByRole('link', { name: 'Katsu CC' })).toBeNull();
   });
+
+  it('the limit banner retries a refused turn once the month has room', async () => {
+    const user = userEvent.setup();
+    const refused = () => conversation({ messages: [QUESTION, message({ id: 'm-2', role: 'assistant', status: 'failed', error: 'BUDGET_EXHAUSTED' })] });
+    serveThread(refused, AT_CAP);
+    const atCap = renderThread();
+    const capBanner = await screen.findByTestId('chat-limit');
+    await waitFor(() => expect(callsTo('GET /chat/usage').length).toBeGreaterThan(0));
+    expect(within(capBanner).queryByRole('button', { name: 'Tentar de novo' })).toBeNull();
+    atCap.unmount();
+
+    serveThread(refused, NOT_AT_CAP, { 'POST /chat/conversations/c-1/messages/m-2/retry': () => ({ assistantMessageId: 'm-2' }) });
+    renderThread();
+    const banner = await screen.findByTestId('chat-limit');
+    await user.click(await within(banner).findByRole('button', { name: 'Tentar de novo' }));
+    await waitFor(() => expect(callsTo('POST /chat/conversations/c-1/messages/m-2/retry')).toHaveLength(1));
+  });
 });

@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe('ProposalCard', () => {
-  it('a deck proposal shows what it builds', () => {
+  it('a deck proposal shows what it builds', async () => {
     renderCard(deckProposal());
 
     const card = screen.getByTestId('proposal-card');
@@ -48,6 +48,7 @@ describe('ProposalCard', () => {
     ]);
     expect(within(card).getByText('e mais 1 carta')).toBeInTheDocument();
     expect(within(card).getByRole('img', { name: '41 de 60 cartas na sua coleção' })).toBeInTheDocument();
+    await waitFor(() => expect(within(card).getByTestId('owned-share').style.getPropertyValue('--owned-share')).toMatch(/^68\.33\d*%$/));
     expect(rows.map((row) => row.querySelector('[data-pitch]')?.getAttribute('data-pitch'))).toEqual(['3', '1', '2', '3']);
   });
 
@@ -162,5 +163,46 @@ describe('ProposalCard', () => {
     expect(screen.getByText('Troca desfeita.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull();
     expect(screen.queryByText('Troca feita no deck.')).toBeNull();
+  });
+
+  it('an applied swap reads its replacement status', () => {
+    const cases = [
+      ['active', 'Troca feita no deck.', true],
+      ['kept', 'Troca feita no deck.', false],
+      ['reverted', 'Troca desfeita.', false],
+      ['removed', 'A troca saiu do deck.', false],
+      [null, 'Troca feita no deck.', false],
+    ] as const;
+    for (const [replacementStatus, copy, undoable] of cases) {
+      const view = renderCard(swapProposal({ status: 'applied', cardReplacementId: replacementStatus === null ? null : 'r-1', replacementStatus }));
+      const card = screen.getByTestId('proposal-card');
+
+      expect([within(card).queryByText(copy) !== null, within(card).queryByRole('button', { name: 'Desfazer' }) !== null]).toEqual([true, undoable]);
+      view.unmount();
+    }
+  });
+
+  it('a refused undo or dismiss refetches and explains', async () => {
+    const user = userEvent.setup();
+    const undo = renderCard(swapProposal({ status: 'applied', cardReplacementId: 'r-1', replacementStatus: 'active' }), {
+      'POST /replacements/r-1/revert': () => {
+        throw apiError(409, 'REPLACEMENT_NOT_ACTIVE');
+      },
+    });
+    const undoInvalidate = vi.spyOn(undo.client, 'invalidateQueries');
+    await user.click(screen.getByRole('button', { name: 'Desfazer' }));
+    expect(await screen.findByText('Esta substituição já foi resolvida.')).toBeInTheDocument();
+    expect(undoInvalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey))).toContain(JSON.stringify(chatConversationQueryKey('c-1')));
+    undo.unmount();
+
+    const dismiss = renderCard(swapProposal({ id: 'p-1' }), {
+      'POST /chat/proposals/p-1/dismiss': () => {
+        throw apiError(409, 'PROPOSAL_NOT_PENDING');
+      },
+    });
+    const dismissInvalidate = vi.spyOn(dismiss.client, 'invalidateQueries');
+    await user.click(screen.getByRole('button', { name: 'Dispensar' }));
+    expect(await screen.findByText('Esta proposta já foi decidida.')).toBeInTheDocument();
+    expect(dismissInvalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey))).toContain(JSON.stringify(chatConversationQueryKey('c-1')));
   });
 });

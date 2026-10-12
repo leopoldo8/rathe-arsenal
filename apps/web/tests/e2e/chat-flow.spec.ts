@@ -10,6 +10,7 @@ import { loadFixture } from '../support/fixture';
 
 const PANEL_WIDTH_PX = 380;
 const COLUMN_MAX_PX = 760;
+const COLUMN_PADDING_PX = 16;
 const SUBPIXEL_PX = 1;
 
 test.describe('Tutor chat', () => {
@@ -58,6 +59,7 @@ test.describe('Tutor chat', () => {
     expect(column.width).toBeLessThanOrEqual(COLUMN_MAX_PX + SUBPIXEL_PX);
     expect(Math.abs(column.x + column.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
     expect(bubbleBox.x).toBeGreaterThan(column.x + column.width / 4);
+    expect(Math.abs(bubbleBox.x + bubbleBox.width - (column.x + column.width - COLUMN_PADDING_PX))).toBeLessThanOrEqual(2);
     expect(Math.abs(second.y - first.y)).toBeLessThanOrEqual(SUBPIXEL_PX);
     expect(second.x).toBeGreaterThan(first.x + first.width - SUBPIXEL_PX);
     await expect(page.getByTestId('conversation-count')).toBeVisible();
@@ -72,5 +74,9 @@ test.describe('Tutor chat', () => {
     await page.goto(`${BASE_URL}/chat?deck=${readyDeckId}`);
 
     await expect(page.getByTestId('chat-header').getByTestId('deck-chip')).toHaveAttribute('href', `/decks/${readyDeckId}`);
+    const chip = (await page.getByTestId('chat-header').getByTestId('deck-chip').boundingBox())!;
+    const title = (await page.getByTestId('chat-header').getByRole('heading', { level: 1 }).boundingBox())!;
+    expect(Math.abs(chip.y + chip.height / 2 - (title.y + title.height / 2))).toBeLessThanOrEqual(4);
+    expect(chip.x).toBeGreaterThan(title.x + title.width - SUBPIXEL_PX);
   });
 });
