@@ -19,6 +19,7 @@ export const chat = {
   waitingHint: 'Costuma levar de 20 a 40 segundos. Pode sair desta tela, a resposta fica salva.',
   failureTitle: 'O Tutor não conseguiu responder',
   failure: {
+    busy: 'O Tutor está sobrecarregado agora. Tente de novo em alguns minutos.',
     timeout: 'O serviço do modelo não respondeu a tempo. Sua pergunta ficou salva; tente de novo.',
     generic: 'A resposta não pôde ser concluída. Sua pergunta ficou salva; tente de novo.',
   },

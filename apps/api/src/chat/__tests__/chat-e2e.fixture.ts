@@ -27,6 +27,8 @@ export interface IChatFixture extends IFixture {
   send(user: IChatUser, conversationId: string, text: string, locale?: string): Promise<{ userMessageId: string; assistantMessageId: string }>;
   seedUsage(userId: string, costUsd: number, createdAt?: Date): Promise<void>;
   drain(fetch: TGeminiFetch, apiKey?: string | null): Promise<boolean>;
+  /** The retry waits of the last drain, recorded instead of slept. */
+  readonly slept: readonly number[];
   message(id: string): Promise<Record<string, unknown>>;
 }
 
@@ -67,6 +69,7 @@ export async function bootChatFixture(options: { readonly throttle?: boolean } =
   const server = base.app.getHttpServer();
   const queue = base.app.get(ChatTurnQueueService);
   const runner = base.app.get(ChatRunnerService);
+  let slept: number[] = [];
   const fixture: IChatFixture = {
     ...base,
     async chatUser(chatOptions = {}) {
@@ -97,7 +100,13 @@ export async function bootChatFixture(options: { readonly throttle?: boolean } =
         [userId, costUsd, createdAt],
       );
     },
-    drain: (fetch, apiKey = 'test-key') => drainChatOnce({ queue, runner, readApiKey: () => apiKey, fetch }),
+    drain: (fetch, apiKey = 'test-key') => {
+      slept = [];
+      return drainChatOnce({ queue, runner, readApiKey: () => apiKey, fetch, sleep: async (ms) => void slept.push(ms) });
+    },
+    get slept() {
+      return slept;
+    },
     async message(id) {
       const [row] = (await base.dataSource.query(`SELECT * FROM chat_message WHERE id = $1`, [id])) as Array<Record<string, unknown>>;
       return row!;

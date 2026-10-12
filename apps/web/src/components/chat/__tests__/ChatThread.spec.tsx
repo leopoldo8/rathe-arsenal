@@ -99,8 +99,14 @@ describe('ChatScreen thread', () => {
     timeout.unmount();
 
     serveThread(() => conversation({ messages: [QUESTION, message({ id: 'm-2', role: 'assistant', status: 'failed', error: 'MODEL_EMPTY' })] }));
-    renderThread();
+    const generic = renderThread();
     expect(await screen.findByText('A resposta não pôde ser concluída. Sua pergunta ficou salva; tente de novo.')).toBeInTheDocument();
+    generic.unmount();
+
+    serveThread(() => conversation({ messages: [QUESTION, message({ id: 'm-2', role: 'assistant', status: 'failed', error: 'PROVIDER_UNAVAILABLE' })] }));
+    renderThread();
+    expect(await screen.findByText('O Tutor está sobrecarregado agora. Tente de novo em alguns minutos.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument();
   });
 
   it('retry reopens the turn', async () => {

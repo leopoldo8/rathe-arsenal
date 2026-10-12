@@ -4,6 +4,9 @@ import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 export const CHAT_MODEL = GEMINI_MODEL;
 export const CHAT_CALL_TIMEOUT_MS = 120_000;
 export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
+// Google answers 503 "high demand" and 429 in short spikes and asks callers to retry with a growing wait.
+export const CHAT_RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 10_000];
+const PROVIDER_MESSAGE_MAX_LENGTH = 300;
 
 export interface IGeminiPart {
   readonly text?: string;
@@ -77,6 +80,47 @@ export function buildChatBody(request: IChatRequest, thinkingLevel?: TGeminiThin
   };
 }
 
+const RETRYABLE_CODES: ReadonlySet<TChatTurnFailureCode> = new Set(['RATE_LIMITED', 'PROVIDER_UNAVAILABLE']);
+
+export interface IProviderRetry {
+  readonly attempt: number;
+  readonly code: TChatTurnFailureCode;
+  readonly detail: string;
+  readonly delayMs: number;
+}
+
+export interface IProviderRetryOptions {
+  readonly sleep?: ((ms: number) => Promise<void>) | undefined;
+  readonly onRetry?: (retry: IProviderRetry) => void | Promise<void>;
+}
+
+function sleepFor(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withProviderRetry(call: () => Promise<TChatCallOutcome>, options: IProviderRetryOptions = {}): Promise<TChatCallOutcome> {
+  const sleep = options.sleep ?? sleepFor;
+  let outcome = await call();
+  for (const [index, delayMs] of CHAT_RETRY_DELAYS_MS.entries()) {
+    if (outcome.kind !== 'failed' || !RETRYABLE_CODES.has(outcome.code)) return outcome;
+    await options.onRetry?.({ attempt: index + 1, code: outcome.code, detail: outcome.detail, delayMs });
+    await sleep(delayMs);
+    outcome = await call();
+  }
+  return outcome;
+}
+
+async function readFailureDetail(response: { status: number; json(): Promise<unknown> }): Promise<string> {
+  const status = `HTTP ${response.status}`;
+  try {
+    const body = (await response.json()) as { error?: { message?: unknown } } | null;
+    const message = body?.error?.message;
+    return typeof message === 'string' ? `${status}: ${message.slice(0, PROVIDER_MESSAGE_MAX_LENGTH)}` : status;
+  } catch {
+    return status;
+  }
+}
+
 function classifyStatus(status: number): TChatTurnFailureCode {
   if (status === 429) return 'RATE_LIMITED';
   if (status === 500 || status === 503 || status === 504) return 'PROVIDER_UNAVAILABLE';
@@ -133,7 +177,7 @@ export async function callGeminiChat(
         body: JSON.stringify(buildChatBody(request, options.thinkingLevel)),
         signal: controller.signal,
       });
-      if (!response.ok) return { kind: 'failed', code: classifyStatus(response.status), detail: `HTTP ${response.status}` };
+      if (!response.ok) return { kind: 'failed', code: classifyStatus(response.status), detail: await readFailureDetail(response) };
       return classifyChatAnswer((await response.json()) as IGenerateContentResponse);
     } catch (error) {
       return { kind: 'failed', code: 'PROVIDER_ERROR', detail: (error as Error).message };
