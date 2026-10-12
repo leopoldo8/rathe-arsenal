@@ -110,6 +110,36 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: verification round 1 C51, chat-tools.ts:169 (tests)
 - last seen: 2026-10-11T19:18:34Z
 
+### L-026 - Derive every UI state check from the binding mockup frame that draws it, never from memory of the flow: an applied-swap card drew Desfazer and the check said Abrir deck.
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `apps/web ui checks` · harmful: 0
+- features: ai-chat-screens
+- evidence: C29 / AC 35 (verification round 1) (apps/web ui checks)
+- last seen: 2026-10-12T04:32:55Z
+
+### L-027 - Feed ordering tests their input out of order; a fixture already sorted cannot fail when the sort is removed.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `apps/web tests` · harmful: 0
+- features: ai-chat-screens
+- evidence: ChatThread.spec.tsx C12 (round 1) (apps/web tests)
+- last seen: 2026-10-12T04:32:55Z
+
+### L-028 - Give every arrangement a mockup draws (column width, bubble side, card columns, where a chip sits per breakpoint) its own Playwright check with measured boxes; copy-only checks pass a different composition.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `apps/web ui checks` · harmful: 0
+- features: ai-chat-screens
+- evidence: C50/C51 (rounds 1-2) (apps/web ui checks)
+- last seen: 2026-10-12T04:32:55Z
+
+### L-029 - A field promised in an HTTP response needs a proof that boots the real controller; a service-level test survives the controller dropping it.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `apps/api auth` · harmful: 0
+- features: ai-chat-screens
+- evidence: C1 controller mutant (round 1) (apps/api auth)
+- last seen: 2026-10-12T04:32:55Z
+
+### L-030 - When a screen branches on a stored status, enumerate every value the entity's CHECK allows, not only the ones the happy path reaches.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `apps/web ui checks` · harmful: 0
+- features: ai-chat-screens
+- evidence: C52 / card-replacement.entity.ts:40 (round 2) (apps/web ui checks)
+- last seen: 2026-10-12T04:32:55Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

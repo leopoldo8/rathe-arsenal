@@ -143,7 +143,7 @@ export class AuthService {
     this.logger.log({ event: 'auth.sign_in.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
       // U12: include settings for first-paint theme correctness. Nullish fallback
       // guards against NULL preferences on rows created before migration 1776621087000.
       settings: { theme: user.preferences?.theme ?? 'dark' },
@@ -168,7 +168,7 @@ export class AuthService {
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }
@@ -215,7 +215,7 @@ export class AuthService {
     this.logger.log({ event: 'auth.reset_password.success', userId: user.id });
     return {
       jwt,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }

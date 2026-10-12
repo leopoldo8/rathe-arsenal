@@ -17,6 +17,7 @@ import { reasons } from './reasons';
 import { scanner } from './scanner';
 import { alternatives } from './alternatives';
 import { recommendations } from './recommendations';
+import { chat } from './chat';
 
 export const ptBR = {
   common,
@@ -38,6 +39,7 @@ export const ptBR = {
   scanner,
   alternatives,
   recommendations,
+  chat,
 } as const;
 
 /**

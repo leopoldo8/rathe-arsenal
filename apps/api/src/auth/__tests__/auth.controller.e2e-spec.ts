@@ -29,7 +29,17 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService = createMock<AuthService>();
     authService.signIn.mockResolvedValue({
       jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User },
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+      settings: { theme: 'dark' },
+    });
+    authService.verifyEmail.mockResolvedValue({
+      jwt: 'jwt-token',
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+      settings: { theme: 'dark' },
+    });
+    authService.resetPassword.mockResolvedValue({
+      jwt: 'jwt-token',
+      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
       settings: { theme: 'dark' },
     });
     authService.signUp.mockResolvedValue({
@@ -136,6 +146,26 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
   });
 
+  describe('verify-email (10/hour) and reset-password (5/hour)', () => {
+    it('verify-email and reset-password are throttled per hour', async () => {
+      const server = app.getHttpServer();
+      const token = 'a'.repeat(64);
+      const statusesOf = async (path: string, body: object, times: number, ip: string): Promise<number[]> => {
+        const statuses: number[] = [];
+        for (let i = 0; i < times; i++) {
+          statuses.push((await request(server).post(path).set('X-Forwarded-For', ip).send(body)).status);
+        }
+        return statuses;
+      };
+
+      const verify = await statusesOf('/auth/verify-email', { token }, 11, '203.0.113.20');
+      const reset = await statusesOf('/auth/reset-password', { token, newPassword: 'newpasswordlongenough' }, 6, '203.0.113.21');
+
+      expect(verify).toEqual([...Array(10).fill(200), 429]);
+      expect(reset).toEqual([...Array(5).fill(200), 429]);
+    });
+  });
+
   describe('sign-up (3/hour per IP, generic 202)', () => {
     it('returns 202 for the first 3 requests and 429 on the 4th', async () => {
       const server = app.getHttpServer();
@@ -187,6 +217,27 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   describe('regression: A4 dead-code removal', () => {
     it('EAuthErrorCode no longer has an EmailInUse entry', () => {
       expect((EAuthErrorCode as Record<string, string>).EmailInUse).toBeUndefined();
+    });
+  });
+
+  describe('auth errors keep their statuses over HTTP', () => {
+    it('sign-in, verify-email and reset-password map their errors to 401, 403 and 400', async () => {
+      const server = app.getHttpServer();
+      const token = 'b'.repeat(64);
+      authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password'));
+      authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.EmailNotVerified, 'Email not verified'));
+      authService.verifyEmail.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
+      authService.resetPassword.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
+      const body = { email: 'a@b.com', password: 'longenoughpassword' };
+
+      const statuses = [
+        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.71').send({ token })).status,
+        (await request(server).post('/auth/reset-password').set('X-Forwarded-For', '203.0.113.72').send({ token, newPassword: 'newpasswordlongenough' })).status,
+      ];
+
+      expect(statuses).toEqual([401, 403, 400, 400]);
     });
   });
 

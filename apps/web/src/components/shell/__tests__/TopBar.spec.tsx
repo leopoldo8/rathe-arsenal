@@ -67,9 +67,10 @@ vi.mock('../../../api/user-settings', () => ({
   patchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
   fetchUserSettings: vi.fn(() => Promise.resolve({ theme: 'dark' })),
 }));
+let mockChatAccess = false;
 vi.mock('../../../auth/useAuth', () => ({
   useAuth: () => ({
-    user: { id: '1', email: 'hero@rathe.gg' },
+    user: { id: '1', email: 'hero@rathe.gg', chatAccess: mockChatAccess },
     token: 'test-token',
     signOut: vi.fn(),
     setSettings: vi.fn(),
@@ -255,5 +256,32 @@ describe('TopBar — FND-06 active-item rule', () => {
     render(<TopBar />);
     const libraryLink = screen.getByRole('link', { name: 'Biblioteca' });
     expect(libraryLink).not.toHaveAttribute('data-active');
+  });
+});
+
+describe('TopBar — Tutor', () => {
+  it('the Tutor link follows chat access', () => {
+    mockChatAccess = true;
+    const granted = render(<TopBar />);
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    const tutor = Array.from(nav.querySelectorAll('a')).find((link) => link.textContent === 'Tutor');
+    expect(tutor?.getAttribute('href')).toBe('/chat');
+    granted.unmount();
+
+    mockChatAccess = false;
+    render(<TopBar />);
+    const refusedNav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(Array.from(refusedNav.querySelectorAll('a')).some((link) => link.textContent === 'Tutor')).toBe(false);
+  });
+
+  it('the Tutor link is active on chat paths', () => {
+    mockChatAccess = true;
+    mockPathname = '/chat/abc';
+    render(<TopBar />);
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    const tutor = Array.from(nav.querySelectorAll('a')).find((link) => link.textContent === 'Tutor');
+    expect(tutor).toHaveAttribute('data-active', 'true');
+    mockPathname = '/home';
+    mockChatAccess = false;
   });
 });

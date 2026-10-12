@@ -32,12 +32,13 @@ interface IAuthMeResponse {
   id: string;
   email: string;
   role: TUserRole;
+  chatAccess?: boolean;
   settings: IAuthSettings;
 }
 
 interface IAuthSignResponse {
   jwt: string;
-  user: IAuthUser;
+  user: Omit<IAuthUser, 'chatAccess'> & { chatAccess?: boolean };
   settings: IAuthSettings;
 }
 
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         // Default to 'user' if an older server response omits role (fail-safe:
         // never grant admin UI on a missing field).
-        setUser({ id: res.id, email: res.email, role: res.role ?? 'user' });
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true });
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
         if (res.settings?.theme) {
@@ -79,11 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, [token]);
 
-  const persist = useCallback((jwt: string, u: IAuthUser, s: IAuthSettings) => {
+  const persist = useCallback((jwt: string, u: IAuthSignResponse['user'], s: IAuthSettings) => {
     localStorage.setItem(STORAGE_KEY, jwt);
     justPersistedRef.current = true;
     setToken(jwt);
-    setUser(u);
+    setUser({ ...u, chatAccess: u.chatAccess === true });
     setSettingsState(s);
     applyTheme(s.theme);
   }, []);

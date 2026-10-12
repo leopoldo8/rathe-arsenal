@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
   tagRowTags: { current: [] as readonly { id: number; name: string }[] },
 }));
 
+vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => () => ({ useParams: () => ({ deckId: '42' }) }),
   useNavigate: () => vi.fn(),

@@ -104,7 +104,21 @@
 - **Date**: 2026-10-11
 - **Status**: active
 
+### AD-014
+- **Decision**: Model-written text is rendered in the web app with `react-markdown` and `remark-gfm` only, never `dangerouslySetInnerHTML` and never `rehype-raw`: raw HTML stays literal text, images are dropped, links open only for `http:`/`https:` with `target="_blank" rel="noopener noreferrer nofollow"`, and headings render at one size. The system instruction tells the model which Markdown it may write.
+- **Reason**: ai-chat-screens (`.specs/features/ai-chat-screens/plan.md`, Landing doors 2 and 4); the owner picked the full Markdown library over an in-house subset on 2026-10-11 so tables and lists the Tutor writes show as such.
+- **Trade-off**: Two new web dependencies; any future model output on screen should reuse `components/chat/AnswerMarkdown` rather than a second renderer.
+- **Scope**: `apps/web` (chat answers), `apps/api/src/chat/chat-prompt.ts`.
+- **Date**: 2026-10-12
+- **Status**: active
+
 ## Handoff
+
+- **Feature**: ai-chat-screens - `.specs/features/ai-chat-screens/` - planned, built and VERIFIED (PASS, round 3 scoped, independent Verifier, profile `ui`). Branch `feat/ai-chat-ui` in worktree `.claude/worktrees/ai-chat-ui`, stacked on `feat/ai-chat` (PR #145), not pushed, no PR. The Tutor tab, `/chat` and `/chat/<id>` (chat B), proposal cards with apply, dismiss and undo, the conversation list (sheet on phones, side panel on desktop), and the Tutor tile on the deck page (entry 3); small API additions for `chatAccess` on every auth response and proposal display fields (AD-014).
+- **Owner calls**: deviations 8 and 10 in `implementation-notes.md` confirmed 2026-10-12 (applied swap follows chat-B's `Desfazer`, AC 3 text-only top item, `A troca saiu do deck.`, phone chip band without tint). Still the owner's: walking the flow (verification step 5).
+- **Local environment**: the dev database's `CHK_card_replacement_picked_from_valid` was realigned to the entity's eight values (implementation notes).
+
+### Previous handoff (ai-chat backend, PR #145)
 
 - **Feature**: ai-chat - `.specs/features/ai-chat/` - planned, built and VERIFIED (PASS, round 2 scoped, independent Verifier, profile `standard` provisional) on an autonomous run with the owner away. Branch `feat/ai-chat` in worktree `.claude/worktrees/ai-chat`, based on `46f7e2c`, not pushed, no PR. Backend only: chat access flag and `chat:grant`, daily Fabrary tournament deck sync, comprehensive rules reference from rules.fabtcg.com, conversations answered by Gemini 3.8 Flash with nine tools in a worker loop of their own, US$5 monthly budget on a `chat_usage` ledger, deck and swap proposals applied by the user (AD-013).
 - **Waiting on the owner**: pick a chat screen and a deck entry from `.design/mockups/ai-chat/index.html`; the screens are not built (project `CLAUDE.md`, "UI changes").

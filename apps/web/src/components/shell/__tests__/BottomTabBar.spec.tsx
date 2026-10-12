@@ -42,10 +42,16 @@ vi.mock('@tanstack/react-router', () => ({
   },
 }));
 
+let mockChatAccess = false;
+vi.mock('../../../auth/useAuth', () => ({
+  useAuth: () => ({ user: { id: '1', email: 'hero@rathe.gg', role: 'user', chatAccess: mockChatAccess } }),
+}));
+
 import { BottomTabBar } from '../BottomTabBar';
 
 beforeEach(() => {
   mockPathname = '/home';
+  mockChatAccess = false;
 });
 
 // ---------------------------------------------------------------------------
@@ -126,5 +132,29 @@ describe('BottomTabBar — FND-06 active-item rule', () => {
     render(<BottomTabBar />);
     const libraryTab = screen.getByRole('link', { name: /Biblioteca/i });
     expect(libraryTab).toHaveAttribute('data-active', 'true');
+  });
+});
+
+describe('BottomTabBar — Tutor', () => {
+  it('the Tutor tab follows chat access', () => {
+    mockChatAccess = true;
+    const granted = render(<BottomTabBar />);
+    const links = Array.from(granted.container.querySelectorAll('nav a'));
+    expect(links).toHaveLength(3);
+    expect([links[2]!.textContent, links[2]!.getAttribute('href')]).toEqual(['Tutor', '/chat']);
+    expect(links[2]!.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
+    granted.unmount();
+
+    mockChatAccess = false;
+    const refused = render(<BottomTabBar />);
+    expect(refused.container.querySelectorAll('nav a')).toHaveLength(2);
+    expect(screen.queryByText('Tutor')).toBeNull();
+  });
+
+  it('the Tutor tab is active on chat paths', () => {
+    mockChatAccess = true;
+    mockPathname = '/chat/abc';
+    render(<BottomTabBar />);
+    expect(screen.getByText('Tutor').closest('a')).toHaveAttribute('aria-current', 'page');
   });
 });

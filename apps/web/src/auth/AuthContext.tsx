@@ -6,6 +6,7 @@ export interface IAuthUser {
   id: string;
   email: string;
   role: TUserRole;
+  chatAccess: boolean;
 }
 
 export interface IAuthSettings {

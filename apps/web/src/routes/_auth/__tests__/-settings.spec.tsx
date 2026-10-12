@@ -113,7 +113,7 @@ const noopAsync = async () => {
 
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
-    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' },
+    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false },
     token: 'jwt',
     isLoading: false,
     setSettings: vi.fn(),
@@ -223,7 +223,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
 
 describe('SettingsPage — Profile section', () => {
   it('displays the authenticated user email', () => {
-    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg', role: 'user' } }));
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg', role: 'user', chatAccess: false } }));
     expect(screen.getByText('archer@rathe.gg')).toBeInTheDocument();
   });
 
@@ -310,7 +310,7 @@ describe('SettingsPage — A11y: heading levels', () => {
 });
 
 describe('SettingsPage — admin store-sync section', () => {
-  const admin = makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin' } });
+  const admin = makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin', chatAccess: false } });
   const rateLimitFailure = {
     message: 'Fetch failed for page=11: Firecrawl returned HTTP 429: Rate limit exceeded',
     at: '2026-10-04T16:00:13.000Z',
@@ -323,12 +323,12 @@ describe('SettingsPage — admin store-sync section', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('is hidden for a regular user', () => {
-    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'hero@rathe.gg', role: 'user' } }));
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false } }));
     expect(screen.queryByTestId('store-sync-trigger')).not.toBeInTheDocument();
   });
 
   it('is shown for an admin and triggers the sync on click', async () => {
-    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin' } }));
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'admin@rathe.gg', role: 'admin', chatAccess: false } }));
     const button = screen.getByTestId('store-sync-trigger');
     expect(button).toBeInTheDocument();
     await userEvent.click(button);

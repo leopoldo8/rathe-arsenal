@@ -481,3 +481,43 @@ describe('AuthService.deleteAccount', () => {
     expect(save).not.toHaveBeenCalled();
   });
 });
+
+describe('AuthService chat access in auth responses', () => {
+  it('every auth response carries chatAccess', async () => {
+    const tokens = new TokenGeneratorService();
+    const hasher = new PasswordHasherService();
+    const passwordHash = await hasher.hash('longenoughpassword');
+    const results: boolean[] = [];
+
+    for (const chatAccess of [true, false]) {
+      const verifyRaw = tokens.generateRawToken();
+      const resetRaw = tokens.generateRawToken();
+      const signInUser: Partial<UserEntity> = { id: 'u1', email: 'a@b.com', passwordHash, emailVerifiedAt: new Date(), chatAccess };
+      const verifyUser: Partial<UserEntity> = {
+        id: 'u1',
+        email: 'a@b.com',
+        emailVerifiedAt: null,
+        verificationTokenHash: tokens.hashToken(verifyRaw),
+        verificationTokenExpiresAt: new Date(Date.now() + 60_000),
+        chatAccess,
+      };
+      const resetUser: Partial<UserEntity> = {
+        id: 'u1',
+        email: 'a@b.com',
+        emailVerifiedAt: new Date(),
+        passwordResetTokenHash: tokens.hashToken(resetRaw),
+        passwordResetTokenExpiresAt: new Date(Date.now() + 60_000),
+        passwordHash: 'old-hash',
+        chatAccess,
+      };
+
+      const signIn = await buildService({ findOne: jest.fn().mockResolvedValue(signInUser) }).service.signIn('a@b.com', 'longenoughpassword');
+      const verify = await buildService({ findOne: jest.fn().mockResolvedValue(verifyUser) }).service.verifyEmail(verifyRaw);
+      const reset = await buildService({ findOne: jest.fn().mockResolvedValue(resetUser) }).service.resetPassword(resetRaw, 'newpasswordlongenough');
+
+      results.push(signIn.user.chatAccess, verify.user.chatAccess, reset.user.chatAccess);
+    }
+
+    expect(results).toEqual([true, true, true, false, false, false]);
+  });
+});

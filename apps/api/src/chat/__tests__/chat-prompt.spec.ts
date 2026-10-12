@@ -26,6 +26,18 @@ describe('chat system instruction', () => {
     for (const text of texts) expect(text).toContain('You are Tutor, the deck-building assistant of Rathe Arsenal');
   });
 
+  it('the instruction tells the model which Markdown to write', () => {
+    const today = new Date('2026-10-11T00:00:00Z');
+
+    const texts = ['pt-BR', 'en-US'].map((locale) => buildSystemInstruction({ locale, decks: [], boundDeck: null, today }));
+
+    for (const text of texts) {
+      expect(text).toContain(
+        'Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.',
+      );
+    }
+  });
+
   it("the summary lists every deck and a bound deck's cards", () => {
     const text = buildSystemInstruction({
       locale: 'en-US',

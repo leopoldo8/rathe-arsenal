@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 26,
+  "next_id": 31,
   "lessons": [
     {
       "id": "L-010",
@@ -292,6 +292,96 @@
       ],
       "created": "2026-10-11T19:18:34Z",
       "last_seen": "2026-10-11T19:18:34Z"
+    },
+    {
+      "id": "L-026",
+      "key": "spec_deviation::derive every ui state check from the binding mockup frame that draws it never from memory of the flow an applied swap card drew desfazer and the check said abrir deck",
+      "text": "Derive every UI state check from the binding mockup frame that draws it, never from memory of the flow: an applied-swap card drew Desfazer and the check said Abrir deck.",
+      "signal": "spec_deviation",
+      "scope": "apps/web ui checks",
+      "status": "candidate",
+      "features": [
+        "ai-chat-screens"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C29 / AC 35 (verification round 1) (apps/web ui checks)"
+      ],
+      "created": "2026-10-12T04:32:55Z",
+      "last_seen": "2026-10-12T04:32:55Z"
+    },
+    {
+      "id": "L-027",
+      "key": "surviving_mutant::feed ordering tests their input out of order a fixture already sorted cannot fail when the sort is removed",
+      "text": "Feed ordering tests their input out of order; a fixture already sorted cannot fail when the sort is removed.",
+      "signal": "surviving_mutant",
+      "scope": "apps/web tests",
+      "status": "candidate",
+      "features": [
+        "ai-chat-screens"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "ChatThread.spec.tsx C12 (round 1) (apps/web tests)"
+      ],
+      "created": "2026-10-12T04:32:55Z",
+      "last_seen": "2026-10-12T04:32:55Z"
+    },
+    {
+      "id": "L-028",
+      "key": "ac_gap::give every arrangement a mockup draws column width bubble side card columns where a chip sits per breakpoint its own playwright check with measured boxes copy only checks pass a different composition",
+      "text": "Give every arrangement a mockup draws (column width, bubble side, card columns, where a chip sits per breakpoint) its own Playwright check with measured boxes; copy-only checks pass a different composition.",
+      "signal": "ac_gap",
+      "scope": "apps/web ui checks",
+      "status": "candidate",
+      "features": [
+        "ai-chat-screens"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C50/C51 (rounds 1-2) (apps/web ui checks)"
+      ],
+      "created": "2026-10-12T04:32:55Z",
+      "last_seen": "2026-10-12T04:32:55Z"
+    },
+    {
+      "id": "L-029",
+      "key": "surviving_mutant::a field promised in an http response needs a proof that boots the real controller a service level test survives the controller dropping it",
+      "text": "A field promised in an HTTP response needs a proof that boots the real controller; a service-level test survives the controller dropping it.",
+      "signal": "surviving_mutant",
+      "scope": "apps/api auth",
+      "status": "candidate",
+      "features": [
+        "ai-chat-screens"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C1 controller mutant (round 1) (apps/api auth)"
+      ],
+      "created": "2026-10-12T04:32:55Z",
+      "last_seen": "2026-10-12T04:32:55Z"
+    },
+    {
+      "id": "L-030",
+      "key": "ac_gap::when a screen branches on a stored status enumerate every value the entity s check allows not only the ones the happy path reaches",
+      "text": "When a screen branches on a stored status, enumerate every value the entity's CHECK allows, not only the ones the happy path reaches.",
+      "signal": "ac_gap",
+      "scope": "apps/web ui checks",
+      "status": "candidate",
+      "features": [
+        "ai-chat-screens"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C52 / card-replacement.entity.ts:40 (round 2) (apps/web ui checks)"
+      ],
+      "created": "2026-10-12T04:32:55Z",
+      "last_seen": "2026-10-12T04:32:55Z"
     }
   ]
 }
