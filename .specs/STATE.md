@@ -115,7 +115,7 @@
 ## Handoff
 
 - **Feature**: ai-chat-screens - `.specs/features/ai-chat-screens/` - planned, built and VERIFIED (PASS, round 3 scoped, independent Verifier, profile `ui`). Branch `feat/ai-chat-ui` in worktree `.claude/worktrees/ai-chat-ui`, stacked on `feat/ai-chat` (PR #145), not pushed, no PR. The Tutor tab, `/chat` and `/chat/<id>` (chat B), proposal cards with apply, dismiss and undo, the conversation list (sheet on phones, side panel on desktop), and the Tutor tile on the deck page (entry 3); small API additions for `chatAccess` on every auth response and proposal display fields (AD-014).
-- **Waiting on the owner**: confirm deviations 8 and 10 in `implementation-notes.md` (applied swap follows chat-B's `Desfazer`, AC 3 text-only top item, provisional copy `A troca saiu do deck.`), and walk the flow (verification step 5).
+- **Owner calls**: deviations 8 and 10 in `implementation-notes.md` confirmed 2026-10-12 (applied swap follows chat-B's `Desfazer`, AC 3 text-only top item, `A troca saiu do deck.`, phone chip band without tint). Still the owner's: walking the flow (verification step 5).
 - **Local environment**: the dev database's `CHK_card_replacement_picked_from_valid` was realigned to the entity's eight values (implementation notes).
 
 ### Previous handoff (ai-chat backend, PR #145)

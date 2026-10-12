@@ -203,9 +203,9 @@ What the model writes fits the renderer, and every new string exists in both lan
 | Count on the deck tile | links to the most recently updated bound conversation | the mockup shows a count, not a list; the list is one tap away from there | n |
 | Stale proposal | no button | `dismiss` accepts only `pending` rows, so the mockup's `Dispensar` on a stale card would answer `409` | n |
 | Polling cadence | 3000 ms while a turn is open | answers take 20 to 40 s; recommendations poll 10 s for minute-long runs | n |
-| Elements no mockup draws | the delete button on each conversation row (AC 43), `Tentar de novo` in the limit banner when usage has room again (implementation notes, deviation 6) | the backend can delete and the reset would otherwise lock a conversation; both are additions, not contradictions | n |
-| Copy for a swap whose replacement left the deck | `A troca saiu do deck.` | `removed` means a deck edit took the card out, so `Troca feita no deck.` would be untrue; no mockup draws this state | n |
-| Phone header | no brand tile beside the title | `brand-2-phone` draws the app logo there because its frame has no top bar; the app's top bar already shows it | n |
+| Elements no mockup draws | the delete button on each conversation row (AC 43), `Tentar de novo` in the limit banner when usage has room again (implementation notes, deviation 6) | the backend can delete and the reset would otherwise lock a conversation; both are additions, not contradictions | y |
+| Copy for a swap whose replacement left the deck | `A troca saiu do deck.` | `removed` means a deck edit took the card out, so `Troca feita no deck.` would be untrue; no mockup draws this state | y |
+| Phone header | no brand tile beside the title | `brand-2-phone` draws the app logo there because its frame has no top bar; the app's top bar already shows it | y |
 | Binding mockups | `brand-2-*` for copy, the mark and the waiting state; `chat-b-*` and `deck-entry-3-*` for arrangement where `brand-2-*` does not show it | `chat-b-*` and `deck-entry-3-*` predate the brand pick and still say Chat | y |
 
 **Open questions:** none - all resolved or logged above.
