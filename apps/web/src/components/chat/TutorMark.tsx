@@ -5,8 +5,8 @@ interface ITutorMarkProps {
   readonly className?: string;
 }
 
-/** The Tutor's card-fan mark. Each instance owns its mask id, so two marks on one page never share a mask. */
 export function TutorMark({ size = 20, className }: ITutorMarkProps): React.ReactElement {
+  // One id per instance: a shared mask id breaks every mark after the first on the page.
   const maskId = `tutor-front-${useId().replace(/:/g, '')}`;
   return (
     <svg

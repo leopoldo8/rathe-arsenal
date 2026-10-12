@@ -62,7 +62,6 @@ export interface IConversationView extends IConversationSummary {
   readonly messages: readonly IMessageView[];
 }
 
-// Names come from the catalog at read time: a card a later catalog bump renamed shows its new name.
 function cardLabel(cardIdentifier: string): ICardLabel {
   try {
     const card = catalog.getCard(cardIdentifier);

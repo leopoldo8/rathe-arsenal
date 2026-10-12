@@ -10,6 +10,12 @@ export const apiErrors = {
   NOTHING_TO_REPLACE: 'This card has no missing copies left to replace.',
   REPLACEMENT_ILLEGAL: 'That card cannot take this place in the deck.',
   REPLACEMENT_NOT_ACTIVE: 'This replacement was already settled.',
+  CHAT_ACCESS_DENIED: 'The Tutor is not enabled for your account.',
+  CHAT_TURN_IN_PROGRESS: 'An answer is still on its way in this conversation.',
+  CHAT_BUDGET_EXHAUSTED: "This month's limit is reached.",
+  MESSAGE_NOT_RETRYABLE: 'Only a failed answer can be retried.',
+  PROPOSAL_NOT_PENDING: 'This proposal was already decided.',
+  PROPOSAL_STALE: 'This proposal no longer fits the deck.',
   generic: 'Something went wrong. Please try again.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Too many attempts. Please wait a moment and try again.',

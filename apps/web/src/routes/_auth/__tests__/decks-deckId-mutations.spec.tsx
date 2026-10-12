@@ -33,6 +33,7 @@ const mockNavigate = vi.fn();
 const mockLink = vi.fn();
 let mockEdit: 1 | undefined;
 
+vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (config: Record<string, unknown>) => ({
     useParams: () => ({ deckId: '1' }),

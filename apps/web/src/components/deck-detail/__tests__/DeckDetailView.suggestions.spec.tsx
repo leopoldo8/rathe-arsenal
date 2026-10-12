@@ -6,6 +6,7 @@ import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import { breakdown, entry, swap } from './deckDetailTestData';
 
+vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
   return { ...actual, useApiClient: () => vi.fn() };

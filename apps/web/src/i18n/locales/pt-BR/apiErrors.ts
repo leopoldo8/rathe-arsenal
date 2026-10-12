@@ -10,6 +10,12 @@ export const apiErrors = {
   NOTHING_TO_REPLACE: 'Esta carta não tem mais cópias faltando para substituir.',
   REPLACEMENT_ILLEGAL: 'Essa carta não pode ocupar esse lugar no deck.',
   REPLACEMENT_NOT_ACTIVE: 'Esta substituição já foi resolvida.',
+  CHAT_ACCESS_DENIED: 'O Tutor não está liberado para a sua conta.',
+  CHAT_TURN_IN_PROGRESS: 'Ainda há uma resposta a caminho nesta conversa.',
+  CHAT_BUDGET_EXHAUSTED: 'O limite do mês foi atingido.',
+  MESSAGE_NOT_RETRYABLE: 'Só uma resposta que falhou pode ser tentada de novo.',
+  PROPOSAL_NOT_PENDING: 'Esta proposta já foi decidida.',
+  PROPOSAL_STALE: 'Esta proposta não vale mais para o deck.',
   generic: 'Algo deu errado. Tente novamente.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Muitas tentativas. Aguarde um momento e tente novamente.',

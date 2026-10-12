@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IGeneration, IRecommendationCard, IRecommendationsResponse } from '../../../api/recommendations';
@@ -17,6 +17,11 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
 
 const mockShow = vi.fn();
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: mockShow }) }));
+
+let mockChatAccess = false;
+vi.mock('../../../auth/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: mockChatAccess } }),
+}));
 
 import { ApiError } from '../../../lib/api-client';
 import { RecommendationsRail } from '../recommendations/RecommendationsRail';
@@ -125,6 +130,7 @@ async function flush(): Promise<void> {
 }
 
 beforeEach(async () => {
+  mockChatAccess = false;
   await setTestLocale('pt-BR');
   setReducedMotion(false);
   mockApiFetch.mockReset();
@@ -623,5 +629,22 @@ describe('RecommendationsRail', () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
     expect(reads()).toBe(3);
+  });
+
+  it('the Tutor tile follows chat access', async () => {
+    mockApiFetch.mockImplementation(async (path: string) => (path === '/chat/conversations' ? [] : response({ run: null, recommendations: [] })));
+
+    mockChatAccess = true;
+    renderRail();
+    const rail = await screen.findByTestId('recommendations-rail');
+    expect(rail.firstElementChild).toHaveAttribute('data-testid', 'tutor-tile');
+    expect(await screen.findByTestId('recommendations-empty')).toBeInTheDocument();
+    cleanup();
+
+    mockChatAccess = false;
+    renderRail();
+    expect(await screen.findByTestId('recommendations-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('tutor-tile')).toBeNull();
+    expect(screen.queryByTestId('recommendations-rail')).toBeNull();
   });
 });

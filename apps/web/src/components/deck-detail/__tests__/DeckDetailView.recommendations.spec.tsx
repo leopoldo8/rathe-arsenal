@@ -4,6 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck-detail';
 import { breakdown, entry } from './deckDetailTestData';
 
+vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('../DeckHeroBanner', () => ({ DeckHeroBanner: () => <div data-testid="hero-banner" /> }));
 vi.mock('../TagChipRow', () => ({ TagChipRow: () => <div data-testid="tag-row" /> }));
 vi.mock('../DeckStatusStrip', () => ({ DeckStatusStrip: () => <div data-testid="status-strip" /> }));

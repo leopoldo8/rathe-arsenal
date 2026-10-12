@@ -15,6 +15,8 @@ import { ApiError } from '../../../lib/api-client';
 import { localizeApiError } from '../../card-scanner/localize-api-error';
 import { CardLightbox } from '../../card-art/CardLightbox';
 import { useToast } from '../../ui/Toast/useToast';
+import { useAuth } from '../../../auth/useAuth';
+import { DeckTutorTile } from './DeckTutorTile';
 import { CandidatePile } from './CandidatePile';
 import { imageSources, withPitch, type IRecommendationDeckCard } from './card-naming';
 import { GenerationStatus } from './GenerationStatus';
@@ -47,6 +49,8 @@ function isCutGone(error: unknown): boolean {
 export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommendationsRailProps): React.ReactElement {
   const { t } = useTranslation();
   const { show } = useToast();
+  const { user } = useAuth();
+  const chatAccess = user?.chatAccess === true;
   const reducedMotion = usePrefersReducedMotion();
   const query = useRecommendationsQuery(deckId);
   const generate = useGenerateRecommendations(deckId);
@@ -215,8 +219,9 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
         </p>
       )}
 
-      {(showPile || listed.length > 0) && (
+      {(chatAccess || showPile || listed.length > 0) && (
         <ul ref={railRef} className={styles.rail} aria-label={t('recommendations.listAria')} data-testid="recommendations-rail">
+          {chatAccess && <DeckTutorTile deckId={deckId} heroName={heroName} />}
           {showPile && (
             <CandidatePile
               ref={pileRef}

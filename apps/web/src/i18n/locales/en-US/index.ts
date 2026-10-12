@@ -18,6 +18,7 @@ import { reasons } from './reasons';
 import { scanner } from './scanner';
 import { alternatives } from './alternatives';
 import { recommendations } from './recommendations';
+import { chat } from './chat';
 
 /**
  * EN-US catalog typed against TTranslationResources (typeof ptBR) — a missing
@@ -43,4 +44,5 @@ export const enUS: TTranslationResources = {
   scanner,
   alternatives,
   recommendations,
+  chat,
 };
