@@ -148,16 +148,16 @@ describe('chat worker (E2E)', () => {
     expect(rows.map((row) => Number(row.costUsd))).toEqual([0.045, 0.045]);
   });
 
-  it('the eighth call declares no tool and its answer ends the turn', async () => {
+  it('the fifth call declares no tool and its answer ends the turn', async () => {
     const { user, assistantMessageId } = await turn();
     const lookup = callAnswer([{ name: 'get_deck', args: { deckId: user.deckId } }]);
-    const stub = scriptedFetch([lookup, lookup, lookup, lookup, lookup, lookup, lookup, textAnswer('From what I found.')]);
+    const stub = scriptedFetch([lookup, lookup, lookup, lookup, textAnswer('From what I found.')]);
 
     await fixture.drain(stub.fetch);
 
     const row = await fixture.message(assistantMessageId);
     expect([row['status'], row['text']]).toEqual(['done', 'From what I found.']);
-    expect(stub.requests.map((request) => 'tools' in request)).toEqual([...Array(7).fill(true), false]);
+    expect(stub.requests.map((request) => 'tools' in request)).toEqual([...Array(4).fill(true), false]);
   });
 
   it('a model that still asks for a tool on the final call and its retry fails the turn', async () => {
@@ -168,7 +168,7 @@ describe('chat worker (E2E)', () => {
 
     const capped = await fixture.message(assistantMessageId);
     expect([capped['status'], capped['error']]).toEqual(['failed', 'TOO_MANY_TOOL_ROUNDS']);
-    expect(stub.requests).toHaveLength(9);
+    expect(stub.requests).toHaveLength(6);
   });
 
   it('a provider error fails the turn and keeps the user message', async () => {
@@ -307,5 +307,43 @@ describe('chat worker (E2E)', () => {
       (part) => (part['functionResponse'] as { response: Record<string, unknown> }).response,
     );
     expect(responses).toEqual([{ ok: true }, expect.objectContaining({ ok: false, error: 'CARD_UNKNOWN' }), { ok: true }]);
+  });
+
+  it('a turn through OpenRouter replays its tool round, records the model and the cost OpenRouter charged', async () => {
+    const { assistantMessageId } = await turn();
+    const usage = { prompt_tokens: 5_000, completion_tokens: 200, prompt_tokens_details: { cached_tokens: 3_000 }, cost: 0.0007 };
+    const urls: string[] = [];
+    const stub = scriptedFetch([
+      {
+        choices: [
+          {
+            finish_reason: 'tool_calls',
+            message: { content: null, tool_calls: [{ id: 'or-1', type: 'function', function: { name: 'search_cards', arguments: '{"query":"flex"}' } }] },
+          },
+        ],
+        usage,
+      },
+      { choices: [{ finish_reason: 'stop', message: { content: 'Flex is a Guardian card.' } }], usage },
+    ]);
+
+    await fixture.drain(async (url, init) => (urls.push(url), stub.fetch(url, init)), 'or-key', 'anthropic/claude-haiku-5.5');
+
+    const message = await fixture.message(assistantMessageId);
+    expect([message['status'], message['text'], message['model']]).toEqual(['done', 'Flex is a Guardian card.', 'anthropic/claude-haiku-5.5']);
+    expect(urls.every((url) => url.startsWith('https://openrouter.ai/'))).toBe(true);
+    const second = stub.requests[1] as unknown as { model: string; messages: Array<Record<string, unknown>> };
+    expect(second.model).toBe('anthropic/claude-haiku-5.5');
+    expect(second.messages.slice(-2)).toEqual([
+      { role: 'assistant', content: null, tool_calls: [{ id: 'or-1', type: 'function', function: { name: 'search_cards', arguments: '{"query":"flex"}' } }] },
+      { role: 'tool', tool_call_id: 'or-1', content: expect.stringContaining('flex') },
+    ]);
+    const rows = (await fixture.dataSource.query(
+      `SELECT model, "inputTokens", "cachedInputTokens", "costUsd" FROM chat_usage WHERE "messageId" = $1 ORDER BY "createdAt"`,
+      [assistantMessageId],
+    )) as Array<Record<string, unknown>>;
+    expect(rows).toEqual([
+      { model: 'anthropic/claude-haiku-5.5', inputTokens: 5_000, cachedInputTokens: 3_000, costUsd: '0.000700' },
+      { model: 'anthropic/claude-haiku-5.5', inputTokens: 5_000, cachedInputTokens: 3_000, costUsd: '0.000700' },
+    ]);
   });
 });

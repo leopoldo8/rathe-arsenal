@@ -27,10 +27,14 @@ export interface IEvalRun {
   readonly scenario: string;
   readonly run: number;
   readonly question: string;
+  readonly model: string | null;
   readonly status: string;
   readonly error: string | null;
   readonly turnMs: number;
   readonly costUsd: number;
+  readonly inputTokens: number;
+  readonly cachedInputTokens: number;
+  readonly outputTokens: number;
   readonly calls: readonly IModelCallTrace[];
   readonly text: string | null;
 }
@@ -42,7 +46,11 @@ interface IEvalOptions {
   readonly drive: boolean;
   readonly out: string;
   readonly extra: readonly IEvalScenario[];
+  readonly model: string | undefined;
+  readonly maxUsd: number;
 }
+
+const DEFAULT_MAX_USD = 3;
 
 function readOptions(argv: readonly string[]): IEvalOptions {
   const value = (flag: string): string | undefined => {
@@ -56,6 +64,8 @@ function readOptions(argv: readonly string[]): IEvalOptions {
     drive: !argv.includes('--observe'),
     out: value('--out') ?? 'chat-eval-report',
     extra: value('--scenarios') ? (JSON.parse(readFileSync(value('--scenarios')!, 'utf8')) as IEvalScenario[]) : [],
+    model: value('--model'),
+    maxUsd: Number(value('--max-usd') ?? DEFAULT_MAX_USD),
   };
 }
 
@@ -96,24 +106,36 @@ async function releaseBudget(dataSource: DataSource, userId: string): Promise<vo
   ]);
 }
 
+interface ITracedBody {
+  candidates?: { finishReason?: string; content?: { parts?: { functionCall?: { name: string; args?: unknown } }[] } }[];
+  choices?: { finish_reason?: string; message?: { tool_calls?: { function: { name: string; arguments: string } }[] } }[];
+  error?: { message?: string };
+}
+
+function traceOf(body: ITracedBody | null): Pick<IModelCallTrace, 'finishReason' | 'toolCalls'> {
+  const shown = (name: string, args: string): string => `${name}(${args.slice(0, TOOL_ARGS_SHOWN)})`;
+  const choice = body?.choices?.[0];
+  if (choice) {
+    return {
+      finishReason: choice.finish_reason ?? null,
+      toolCalls: (choice.message?.tool_calls ?? []).map((call) => shown(call.function.name, call.function.arguments)),
+    };
+  }
+  const candidate = body?.candidates?.[0];
+  return {
+    finishReason: candidate?.finishReason ?? null,
+    toolCalls: (candidate?.content?.parts ?? []).flatMap((part) =>
+      part.functionCall ? [shown(part.functionCall.name, JSON.stringify(part.functionCall.args ?? {}))] : [],
+    ),
+  };
+}
+
 function tracingFetch(calls: IModelCallTrace[]): TGeminiFetch {
   return async (url, init) => {
     const startedAt = Date.now();
     const response = await fetch(url, init);
-    const body = (await response.json().catch(() => null)) as {
-      candidates?: { finishReason?: string; content?: { parts?: { functionCall?: { name: string; args?: unknown } }[] } }[];
-      error?: { message?: string };
-    } | null;
-    const candidate = body?.candidates?.[0];
-    calls.push({
-      ms: Date.now() - startedAt,
-      status: response.status,
-      finishReason: candidate?.finishReason ?? null,
-      toolCalls: (candidate?.content?.parts ?? []).flatMap((part) =>
-        part.functionCall ? [`${part.functionCall.name}(${JSON.stringify(part.functionCall.args ?? {}).slice(0, TOOL_ARGS_SHOWN)})`] : [],
-      ),
-      error: response.ok ? null : (body?.error?.message ?? null),
-    });
+    const body = (await response.json().catch(() => null)) as ITracedBody | null;
+    calls.push({ ms: Date.now() - startedAt, status: response.status, ...traceOf(body), error: body?.error?.message ?? null });
     return { ok: response.ok, status: response.status, json: async () => body };
   };
 }
@@ -125,24 +147,54 @@ interface ISentTurn {
   readonly sentAt: number;
 }
 
-async function driveTurns(app: INestApplicationContext, userId: string, apiKey: string, workers: number): Promise<Map<string, IModelCallTrace[]>> {
+interface IDriveOptions {
+  readonly apiKey: string;
+  readonly openRouterModel: string | undefined;
+  readonly workers: number;
+  readonly maxUsd: number;
+  readonly messageIds: readonly string[];
+}
+
+async function spentOn(dataSource: DataSource, messageIds: readonly string[]): Promise<number> {
+  const [{ spent }] = (await dataSource.query(`SELECT COALESCE(sum("costUsd"), 0)::float8 AS spent FROM chat_usage WHERE "messageId" = ANY($1)`, [
+    messageIds,
+  ])) as [{ spent: number }];
+  return spent;
+}
+
+async function driveTurns(app: INestApplicationContext, userId: string, options: IDriveOptions): Promise<Map<string, IModelCallTrace[]>> {
   const dataSource = app.get(DataSource);
   const queue = app.get(ChatTurnQueueService);
   const runner = app.get(ChatRunnerService);
   const traces = new Map<string, IModelCallTrace[]>();
-  const thinkingLevel = parseThinkingLevel(process.env['GEMINI_THINKING_LEVEL']);
+  const thinkingLevel = parseThinkingLevel(process.env['GEMINI_CHAT_THINKING_LEVEL']);
+  const logger = new Logger('ChatEval');
   const worker = async (): Promise<void> => {
     while (true) {
+      const spent = await spentOn(dataSource, options.messageIds);
+      if (spent >= options.maxUsd) {
+        logger.warn(`stopped: $${spent.toFixed(4)} spent, the cap is $${options.maxUsd}`);
+        return;
+      }
       await releaseBudget(dataSource, userId);
       const turn = await queue.claimNext();
       if (!turn) return;
       const calls: IModelCallTrace[] = [];
       traces.set(turn.id, calls);
-      await runner.process(turn, { apiKey, fetch: tracingFetch(calls), thinkingLevel });
+      await runner.process(turn, { apiKey: options.apiKey, openRouterModel: options.openRouterModel, fetch: tracingFetch(calls), thinkingLevel });
     }
   };
-  await Promise.all(Array.from({ length: workers }, worker));
+  await Promise.all(Array.from({ length: options.workers }, worker));
   return traces;
+}
+
+// A turn left pending would be claimed by the next eval or by any worker on the same database.
+async function closeOpenTurns(dataSource: DataSource, userId: string): Promise<void> {
+  await dataSource.query(
+    `UPDATE chat_message SET status = 'failed', error = 'WORKER_LOST' WHERE status IN ('pending', 'running')
+       AND "conversationId" IN (SELECT id FROM chat_conversation WHERE "userId" = $1)`,
+    [userId],
+  );
 }
 
 async function observeTurns(dataSource: DataSource, userId: string, messageIds: readonly string[]): Promise<void> {
@@ -162,34 +214,52 @@ async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly 
     `SELECT status, error, text, EXTRACT(EPOCH FROM ("finishedAt" - "startedAt")) * 1000 AS ms FROM chat_message WHERE id = $1`,
     [sent.messageId],
   )) as Array<{ status: string; error: string | null; text: string | null; ms: number | null }>;
-  const [{ cost }] = (await dataSource.query(`SELECT COALESCE(sum("costUsd"), 0)::float8 AS cost FROM chat_usage WHERE "messageId" = $1`, [
-    sent.messageId,
-  ])) as [{ cost: number }];
+  const [usage] = (await dataSource.query(
+    `SELECT max(model) AS model, COALESCE(sum("costUsd"), 0)::float8 AS cost, COALESCE(sum("inputTokens"), 0)::int AS input,
+            COALESCE(sum("cachedInputTokens"), 0)::int AS cached, COALESCE(sum("outputTokens"), 0)::int AS output
+       FROM chat_usage WHERE "messageId" = $1`,
+    [sent.messageId],
+  )) as Array<{ model: string | null; cost: number; input: number; cached: number; output: number }>;
   return {
     scenario: sent.scenario.id,
     run: sent.run,
     question: sent.scenario.question,
+    model: usage!.model,
     status: message!.status,
     error: message!.error,
     turnMs: Math.round(Number(message!.ms ?? 0)),
-    costUsd: cost,
+    costUsd: usage!.cost,
+    inputTokens: usage!.input,
+    cachedInputTokens: usage!.cached,
+    outputTokens: usage!.output,
     calls,
     text: message!.text,
   };
 }
 
+function percentile(values: readonly number[], fraction: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted.length === 0 ? 0 : sorted[Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))]!;
+}
+
 export function renderReport(runs: readonly IEvalRun[]): string {
-  const done = runs.filter((run) => run.status === 'done').length;
+  const done = runs.filter((run) => run.status === 'done');
+  const spent = runs.reduce((sum, run) => sum + run.costUsd, 0);
+  const input = runs.reduce((sum, run) => sum + run.inputTokens, 0);
+  const cached = runs.reduce((sum, run) => sum + run.cachedInputTokens, 0);
+  const models = [...new Set(runs.map((run) => run.model).filter((model): model is string => model !== null))];
   const lines = [
-    `# Tutor eval`,
+    `# Tutor eval${models.length > 0 ? `: ${models.join(', ')}` : ''}`,
     '',
-    `${done}/${runs.length} turns done, $${runs.reduce((sum, run) => sum + run.costUsd, 0).toFixed(4)} spent.`,
+    `${done.length}/${runs.length} turns done, $${spent.toFixed(4)} spent, $${(done.length === 0 ? 0 : spent / done.length).toFixed(4)} per done turn.`,
+    `Turn time median ${percentile(done.map((run) => run.turnMs), 0.5)} ms, 90th percentile ${percentile(done.map((run) => run.turnMs), 0.9)} ms.`,
+    `Model calls per turn ${(runs.reduce((sum, run) => sum + run.calls.length, 0) / Math.max(1, runs.length)).toFixed(1)}; ${input === 0 ? 0 : Math.round((cached / input) * 100)}% of ${input} input tokens came from the cache.`,
     '',
-    '| Scenario | Run | Status | Calls | Tools | Slowest call | Turn |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| Scenario | Run | Status | Calls | Tools | Slowest call | Turn | Cost |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
     ...runs.map(
       (run) =>
-        `| ${run.scenario} | ${run.run} | ${run.status}${run.error ? ` ${run.error}` : ''} | ${run.calls.length} | ${run.calls.flatMap((call) => call.toolCalls).join(', ')} | ${Math.max(0, ...run.calls.map((call) => call.ms))} ms | ${run.turnMs} ms |`,
+        `| ${run.scenario} | ${run.run} | ${run.status}${run.error ? ` ${run.error}` : ''} | ${run.calls.length} | ${run.calls.flatMap((call) => call.toolCalls).join(', ')} | ${Math.max(0, ...run.calls.map((call) => call.ms))} ms | ${run.turnMs} ms | $${run.costUsd.toFixed(4)} |`,
     ),
     '',
     ...runs.flatMap((run) => [`## ${run.scenario} #${run.run}`, '', `> ${run.question}`, '', run.text ?? `_${run.status} ${run.error ?? ''}_`, '']),
@@ -197,12 +267,16 @@ export function renderReport(runs: readonly IEvalRun[]): string {
   return lines.join('\n');
 }
 
-/** `chat:eval [--runs N] [--concurrency N] [--only id,id] [--scenarios file.json] [--observe] [--out path]`: real Gemini turns through the real runner and tools. */
+/**
+ * `chat:eval [--model openrouter/id] [--max-usd N] [--runs N] [--concurrency N] [--only id,id] [--scenarios file.json] [--observe] [--out path]`:
+ * real model turns through the real runner and tools; Gemini with GEMINI_API_KEY, or the OpenRouter model with OPENROUTER_API_KEY.
+ */
 async function main(): Promise<void> {
   const options = readOptions(process.argv.slice(2));
-  const apiKey = process.env['GEMINI_API_KEY']?.trim();
+  const keyName = options.model ? 'OPENROUTER_API_KEY' : 'GEMINI_API_KEY';
+  const apiKey = process.env[keyName]?.trim();
   if (options.drive && !apiKey) {
-    console.error('chat:eval needs GEMINI_API_KEY to drive turns; pass --observe to let a running worker answer them');
+    console.error(`chat:eval needs ${keyName} to drive turns; pass --observe to let a running worker answer them`);
     process.exit(1);
   }
   const { AppModule } = await import('../../app.module');
@@ -210,6 +284,7 @@ async function main(): Promise<void> {
   const dataSource = app.get(DataSource);
   const chat = app.get(ChatService);
   const userId = await ensureEvalUser(dataSource);
+  await closeOpenTurns(dataSource, userId);
   const decks = await ensureEvalDecks(app, dataSource, userId);
   await releaseBudget(dataSource, userId);
   const scenarios = [...EVAL_SCENARIOS, ...options.extra].filter((scenario) => options.only.length === 0 || options.only.includes(scenario.id));
@@ -221,10 +296,12 @@ async function main(): Promise<void> {
       sent.push({ scenario, run, messageId: assistantMessageId, sentAt: Date.now() });
     }
   }
+  const messageIds = sent.map((turn) => turn.messageId);
   const traces = options.drive
-    ? await driveTurns(app, userId, apiKey!, options.concurrency)
-    : (await observeTurns(dataSource, userId, sent.map((turn) => turn.messageId)), new Map<string, IModelCallTrace[]>());
+    ? await driveTurns(app, userId, { apiKey: apiKey!, openRouterModel: options.model, workers: options.concurrency, maxUsd: options.maxUsd, messageIds })
+    : (await observeTurns(dataSource, userId, messageIds), new Map<string, IModelCallTrace[]>());
   const runs = await Promise.all(sent.map((turn) => readRun(dataSource, turn, traces.get(turn.messageId) ?? [])));
+  await closeOpenTurns(dataSource, userId);
   writeFileSync(`${options.out}.json`, JSON.stringify(runs, null, 2));
   writeFileSync(`${options.out}.md`, renderReport(runs));
   new Logger('ChatEval').warn(`${runs.filter((run) => run.status === 'done').length}/${runs.length} done; report at ${options.out}.md`);

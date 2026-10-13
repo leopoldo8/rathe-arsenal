@@ -89,7 +89,7 @@ function partAsText(part: IGeminiPart): IGeminiPart | null {
 }
 
 // gemini-3.8-flash kept emitting tool calls after many tool rounds even with no tool declared; plain text history stops it.
-function historyAsText(contents: readonly IGeminiContent[]): IGeminiContent[] {
+export function historyAsText(contents: readonly IGeminiContent[]): IGeminiContent[] {
   const flat = contents
     .map((content) => ({ role: content.role, parts: content.parts.map(partAsText).filter((part): part is IGeminiPart => part !== null) }))
     .filter((content) => content.parts.length > 0);
@@ -98,10 +98,17 @@ function historyAsText(contents: readonly IGeminiContent[]): IGeminiContent[] {
   return [...flat, { role: 'user', parts: [{ text: ANSWER_NOW_INSTRUCTION }] }];
 }
 
+// reasoningDetails is what OpenRouter stores for its own replay; it is not a Gemini part field.
+function geminiParts(contents: readonly IGeminiContent[]): IGeminiContent[] {
+  return contents
+    .map((content) => ({ role: content.role, parts: content.parts.filter((part) => part.reasoningDetails === undefined) }))
+    .filter((content) => content.parts.length > 0);
+}
+
 export function buildChatBody(request: IChatRequest, thinkingLevel?: TGeminiThinkingLevel): Record<string, unknown> {
   return {
     systemInstruction: { parts: [{ text: request.answerNow ? `${request.system}\n\n${ANSWER_NOW_INSTRUCTION}` : request.system }] },
-    contents: request.answerNow ? historyAsText(request.contents) : request.contents,
+    contents: request.answerNow ? historyAsText(request.contents) : geminiParts(request.contents),
     ...(request.answerNow ? {} : { tools: [{ functionDeclarations: request.tools }] }),
     generationConfig: {
       maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
@@ -140,7 +147,7 @@ export async function withProviderRetry(call: () => Promise<TChatCallOutcome>, o
   return outcome;
 }
 
-async function readFailureDetail(response: { status: number; json(): Promise<unknown> }): Promise<string> {
+export async function readFailureDetail(response: { status: number; json(): Promise<unknown> }): Promise<string> {
   const status = `HTTP ${response.status}`;
   try {
     const body = (await response.json()) as { error?: { message?: unknown } } | null;
@@ -151,7 +158,7 @@ async function readFailureDetail(response: { status: number; json(): Promise<unk
   }
 }
 
-function classifyStatus(status: number): TChatTurnFailureCode {
+export function classifyStatus(status: number): TChatTurnFailureCode {
   if (status === 429) return 'RATE_LIMITED';
   if (status === 500 || status === 503 || status === 504) return 'PROVIDER_UNAVAILABLE';
   return 'PROVIDER_ERROR';
@@ -185,13 +192,15 @@ export function classifyChatAnswer(json: IGenerateContentResponse): TChatCallOut
   return { kind: 'answer', content, calls, text, usage };
 }
 
-export async function callGeminiChat(
-  apiKey: string,
-  request: IChatRequest,
-  fetchImpl: TGeminiFetch,
-  options: { readonly timeoutMs?: number; readonly thinkingLevel?: TGeminiThinkingLevel | undefined } = {},
-): Promise<TChatCallOutcome> {
-  const timeoutMs = options.timeoutMs ?? CHAT_CALL_TIMEOUT_MS;
+export interface IChatPost {
+  readonly url: string;
+  readonly headers: Record<string, string>;
+  readonly body: Record<string, unknown>;
+  readonly classify: (json: unknown) => TChatCallOutcome;
+}
+
+/** One provider call that never throws and never outlives its timeout. */
+export async function postChat(post: IChatPost, fetchImpl: TGeminiFetch, timeoutMs: number = CHAT_CALL_TIMEOUT_MS): Promise<TChatCallOutcome> {
   const controller = new AbortController();
   let timer: NodeJS.Timeout | undefined;
   const timedOut = new Promise<TChatCallOutcome>((resolve) => {
@@ -202,14 +211,14 @@ export async function callGeminiChat(
   });
   const answered = (async (): Promise<TChatCallOutcome> => {
     try {
-      const response = await fetchImpl(GEMINI_URL, {
+      const response = await fetchImpl(post.url, {
         method: 'POST',
-        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildChatBody(request, options.thinkingLevel)),
+        headers: { ...post.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(post.body),
         signal: controller.signal,
       });
       if (!response.ok) return { kind: 'failed', code: classifyStatus(response.status), detail: await readFailureDetail(response) };
-      return classifyChatAnswer((await response.json()) as IGenerateContentResponse);
+      return post.classify(await response.json());
     } catch (error) {
       return { kind: 'failed', code: 'PROVIDER_ERROR', detail: (error as Error).message };
     }
@@ -219,4 +228,22 @@ export async function callGeminiChat(
   } finally {
     clearTimeout(timer);
   }
+}
+
+export function callGeminiChat(
+  apiKey: string,
+  request: IChatRequest,
+  fetchImpl: TGeminiFetch,
+  options: { readonly timeoutMs?: number; readonly thinkingLevel?: TGeminiThinkingLevel | undefined } = {},
+): Promise<TChatCallOutcome> {
+  return postChat(
+    {
+      url: GEMINI_URL,
+      headers: { 'x-goog-api-key': apiKey },
+      body: buildChatBody(request, options.thinkingLevel),
+      classify: (json) => classifyChatAnswer(json as IGenerateContentResponse),
+    },
+    fetchImpl,
+    options.timeoutMs,
+  );
 }

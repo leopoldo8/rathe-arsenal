@@ -124,14 +124,19 @@ export interface IChatStepDeps {
   readonly logger: Pick<Logger, 'error'>;
 }
 
-/** One chat drain; like recommendations, the key is read from the environment on every turn. */
+function readOpenRouterModel(env: NodeJS.ProcessEnv): string | undefined {
+  return env['CHAT_OPENROUTER_MODEL']?.trim() || undefined;
+}
+
+/** One chat drain; like recommendations, the key and the model are read from the environment on every turn. */
 export function createChatStep(deps: IChatStepDeps): () => Promise<void> {
   return async () => {
     try {
       await drainChatOnce({
         queue: deps.queue,
         runner: deps.runner,
-        readApiKey: () => deps.env['GEMINI_API_KEY'],
+        readApiKey: () => (readOpenRouterModel(deps.env) ? deps.env['OPENROUTER_API_KEY'] : deps.env['GEMINI_API_KEY']),
+        readOpenRouterModel: () => readOpenRouterModel(deps.env),
         readThinkingLevel: () => parseThinkingLevel(deps.env['GEMINI_CHAT_THINKING_LEVEL']),
         fetch: deps.fetch,
       });
