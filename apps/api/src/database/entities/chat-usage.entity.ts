@@ -21,6 +21,9 @@ export class ChatUsageEntity {
   @Column({ type: 'int' })
   inputTokens!: number;
 
+  @Column({ type: 'int', default: 0 })
+  cachedInputTokens!: number;
+
   @Column({ type: 'int' })
   outputTokens!: number;
 

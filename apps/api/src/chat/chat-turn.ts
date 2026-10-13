@@ -2,7 +2,7 @@ import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 import { CHAT_TOOL_DECLARATIONS, TToolResult, UnknownTool } from './chat-tools';
 import { IChatRequest, IChatUsage, IGeminiContent, IGeminiPart, TChatCallOutcome } from './gemini-chat-client';
 
-export const MAX_MODEL_CALLS = 8;
+export const MAX_MODEL_CALLS = 5;
 export const TURN_DEADLINE_MS = 480_000;
 export const ANSWER_RESERVE_MS = 200_000;
 
@@ -21,18 +21,29 @@ export type TTurnResult =
   | { readonly kind: 'done'; readonly text: string; readonly contents: readonly IGeminiContent[]; readonly usage: IChatUsage; readonly calls: number }
   | { readonly kind: 'failed'; readonly code: TChatTurnFailureCode; readonly detail: string; readonly usage: IChatUsage; readonly calls: number };
 
+export const REPEATED_CALL_NOTE = 'You already made this exact call in this answer; its result is above. Use it instead of calling again.';
+
 // A stored call with no response would make the next turn's history invalid.
 function textOnly(content: IGeminiContent): IGeminiContent {
   return { ...content, parts: content.parts.filter((part) => part.functionCall === undefined) };
 }
 
+function addUsage(total: IChatUsage, call: IChatUsage): IChatUsage {
+  return {
+    inputTokens: total.inputTokens + call.inputTokens,
+    outputTokens: total.outputTokens + call.outputTokens,
+    cachedInputTokens: (total.cachedInputTokens ?? 0) + (call.cachedInputTokens ?? 0),
+  };
+}
+
 export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
   const startedAt = deps.now();
   const contents: IGeminiContent[] = [];
-  let usage: IChatUsage = { inputTokens: 0, outputTokens: 0 };
+  let usage: IChatUsage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 };
   let calls = 0;
   const failed = (code: TChatTurnFailureCode, detail: string): TTurnResult => ({ kind: 'failed', code, detail, usage, calls });
 
+  const callsMade = new Set<string>();
   let mustAnswer = false;
   let finalRetried = false;
   let firstCallRetried = false;
@@ -50,10 +61,7 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
     calls += 1;
     if (outcome.usage) {
       await deps.recordUsage(outcome.usage);
-      usage = {
-        inputTokens: usage.inputTokens + outcome.usage.inputTokens,
-        outputTokens: usage.outputTokens + outcome.usage.outputTokens,
-      };
+      usage = addUsage(usage, outcome.usage);
     }
     if (outcome.kind === 'failed') {
       const timedOut = outcome.code === 'MODEL_TIMEOUT' && !answerNow;
@@ -80,6 +88,12 @@ export async function runTurn(deps: ITurnDeps): Promise<TTurnResult> {
 
     const responses: IGeminiPart[] = [];
     for (const call of outcome.calls) {
+      const key = `${call.name}:${JSON.stringify(call.args)}`;
+      if (callsMade.has(key)) {
+        responses.push({ functionResponse: { ...(call.id === undefined ? {} : { id: call.id }), name: call.name, response: { note: REPEATED_CALL_NOTE } } });
+        continue;
+      }
+      callsMade.add(key);
       const toolStarted = deps.now();
       let response: TToolResult;
       try {

@@ -8,10 +8,13 @@ import { RecommendationsService } from '../recommendations/recommendations.servi
 import { RulesImportService } from '../reference/rules-import.service';
 import { IAcceptedProposal } from './chat-turn-queue.service';
 import {
+  BATCH_CARD_LIMIT,
+  BATCH_RULE_LIMIT,
   InvalidToolArguments,
   readInteger,
   readLimit,
   readList,
+  readQueries,
   readString,
   TChatToolbox,
   TToolResult,
@@ -75,7 +78,7 @@ export class ChatToolsService {
       get_tournament_deck: (args) => this.tournamentDeck(scope, readString(args, 'id')!, readInteger(args, 'compareDeckId', { min: 1, optional: true })),
       get_collection: (args) => this.collectionCards(scope, args),
       get_tournament_meta: (args) => this.tournamentMeta(args),
-      search_rules: async (args) => ({ ...(await this.rules.search(readString(args, 'query')!)) }),
+      search_rules: (args) => this.searchRules(args),
       propose_deck: async (args) => {
         const check = validateDeckProposal(args, catalog);
         if (!check.ok) return { ok: false, error: check.error, detail: check.detail };
@@ -135,28 +138,38 @@ export class ChatToolsService {
   }
 
   private searchCards(args: Record<string, unknown>): Promise<TToolResult> {
-    const query = readString(args, 'query')!.trim().toLowerCase();
+    const queries = readQueries(args);
     const heroIdentifier = readString(args, 'heroIdentifier', { optional: true });
     const format = readString(args, 'format', { optional: true });
-    const limit = readLimit(args);
     const hero = heroIdentifier ? findCard(heroIdentifier) : null;
     const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
-    const byName = catalog.cards.filter((card) => card.name.toLowerCase().includes(query));
-    const byText = catalog.cards.filter(
-      (card) => !card.name.toLowerCase().includes(query) && (card.functionalText ?? '').toLowerCase().includes(query),
-    );
-    const cards = [...byName, ...byText].slice(0, limit).map((card) => ({
-      cardIdentifier: card.cardIdentifier,
-      name: card.name,
-      typeLine: typeLine(card),
-      pitch: card.pitch,
-      cost: card.cost,
-      power: card.power,
-      defense: card.defense,
-      text: (card.functionalText ?? '').slice(0, CARD_TEXT_MAX),
-      ...(hero && legalityFormat ? { legal: findCardLegalityViolation(card, hero, legalityFormat) === null } : {}),
-    }));
-    return Promise.resolve({ cards });
+    const find = (text: string, limit: number): TToolResult[] => {
+      const query = text.trim().toLowerCase();
+      const byName = catalog.cards.filter((card) => card.name.toLowerCase().includes(query));
+      const byText = catalog.cards.filter(
+        (card) => !card.name.toLowerCase().includes(query) && (card.functionalText ?? '').toLowerCase().includes(query),
+      );
+      return [...byName, ...byText].slice(0, limit).map((card) => ({
+        cardIdentifier: card.cardIdentifier,
+        name: card.name,
+        typeLine: typeLine(card),
+        pitch: card.pitch,
+        cost: card.cost,
+        power: card.power,
+        defense: card.defense,
+        text: (card.functionalText ?? '').slice(0, CARD_TEXT_MAX),
+        ...(hero && legalityFormat ? { legal: findCardLegalityViolation(card, hero, legalityFormat) === null } : {}),
+      }));
+    };
+    if (args['queries'] === undefined || args['queries'] === null) return Promise.resolve({ cards: find(queries[0]!, readLimit(args)) });
+    return Promise.resolve({ results: queries.map((query) => ({ query, cards: find(query, BATCH_CARD_LIMIT) })) });
+  }
+
+  private async searchRules(args: Record<string, unknown>): Promise<TToolResult> {
+    if (args['queries'] === undefined || args['queries'] === null) return { ...(await this.rules.search(readString(args, 'query')!)) };
+    const results = [];
+    for (const query of readQueries(args)) results.push({ query, ...(await this.rules.search(query, BATCH_RULE_LIMIT)) });
+    return { results };
   }
 
   private async latestRecommendations(scope: IToolScope, deckId: number): Promise<TToolResult> {

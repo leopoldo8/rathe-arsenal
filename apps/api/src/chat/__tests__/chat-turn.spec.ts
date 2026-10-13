@@ -1,4 +1,4 @@
-import { MAX_MODEL_CALLS, runTurn } from '../chat-turn';
+import { MAX_MODEL_CALLS, REPEATED_CALL_NOTE, runTurn } from '../chat-turn';
 import { runChatTool, UnknownTool } from '../chat-tools';
 import { IChatRequest, TChatCallOutcome } from '../gemini-chat-client';
 
@@ -34,9 +34,9 @@ describe('chat turn', () => {
 
     const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
 
-    expect(MAX_MODEL_CALLS).toBe(8);
-    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Here is what I found.', calls: 8 }));
-    expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, false, false, false, false, false, true]);
+    expect(MAX_MODEL_CALLS).toBe(5);
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Here is what I found.', calls: 5 }));
+    expect(script.requests.map((request) => request.answerNow === true)).toEqual([false, false, false, false, true]);
   });
 
   it('a call made with less than 200 seconds of the turn left must answer in text', async () => {
@@ -59,8 +59,8 @@ describe('chat turn', () => {
 
     const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
 
-    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'TOO_MANY_TOOL_ROUNDS', calls: 9 }));
-    expect(script.requests.slice(7).map((request) => request.answerNow)).toEqual([true, true]);
+    expect(result).toEqual(expect.objectContaining({ kind: 'failed', code: 'TOO_MANY_TOOL_ROUNDS', calls: MAX_MODEL_CALLS + 1 }));
+    expect(script.requests.slice(MAX_MODEL_CALLS - 1).map((request) => request.answerNow)).toEqual([true, true]);
   });
 
   it('a final call that asks for a tool on its first try and answers on its second ends the turn done', async () => {
@@ -73,7 +73,7 @@ describe('chat turn', () => {
 
     const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
 
-    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Second try.', calls: 9 }));
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Second try.', calls: MAX_MODEL_CALLS + 1 }));
   });
 
   it('a final call that writes text beside a tool call keeps the text', async () => {
@@ -85,7 +85,40 @@ describe('chat turn', () => {
 
     const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
 
-    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Swap Flex for Coax.', calls: 8 }));
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', text: 'Swap Flex for Coax.', calls: MAX_MODEL_CALLS }));
+  });
+
+  it('a call repeated with the same arguments is answered with a note instead of running the tool again', async () => {
+    const runTool = jest.fn(async () => ({ cards: ['a'] }));
+    const script = scriptedCall((request, index) => {
+      if (index === 2) return textAnswer('done');
+      return {
+        ...callAnswer('get_deck'),
+        content: { role: 'model', parts: [{ functionCall: { name: 'get_deck', args: { deckId: 1 } } }] },
+        calls: [{ id: `c${index}`, name: 'get_deck', args: { deckId: 1 } }],
+      };
+    });
+
+    const result = await runTurn({ ...QUIET, runTool, call: script.call, now: () => 0 });
+
+    expect(result).toEqual(expect.objectContaining({ kind: 'done', calls: 3 }));
+    expect(runTool).toHaveBeenCalledTimes(1);
+    const responses = script.requests[2]!.contents.flatMap((content) => content.parts).flatMap((part) => (part.functionResponse ? [part.functionResponse] : []));
+    expect(responses).toEqual([
+      { id: 'c0', name: 'get_deck', response: { cards: ['a'] } },
+      { id: 'c1', name: 'get_deck', response: { note: REPEATED_CALL_NOTE } },
+    ]);
+  });
+
+  it('adds up the tokens every call read from the cache', async () => {
+    const script = scriptedCall((_request, index) => {
+      const usage = { inputTokens: 1_000, outputTokens: 10, cachedInputTokens: index * 400 };
+      return index === 0 ? { ...callAnswer('get_deck'), usage } : { ...textAnswer('ok'), usage };
+    });
+
+    const result = await runTurn({ ...QUIET, call: script.call, now: () => 0 });
+
+    expect(result.usage).toEqual({ inputTokens: 2_000, outputTokens: 20, cachedInputTokens: 400 });
   });
 
   it('a call that times out after a tool round gets one call that must answer', async () => {

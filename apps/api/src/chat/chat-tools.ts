@@ -6,6 +6,9 @@ export const TOOL_LIST_MAX = 50;
 export const TOOL_LIMIT_MAX = 20;
 export const DECK_PROPOSAL_ROWS_MAX = 80;
 export const TOOL_RESULT_MAX_CHARS = 30_000;
+export const TOOL_QUERIES_MAX = 8;
+export const BATCH_CARD_LIMIT = 5;
+export const BATCH_RULE_LIMIT = 4;
 
 export type TToolResult = Record<string, unknown>;
 
@@ -46,15 +49,16 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'search_cards',
     description:
-      'Search the card catalog by name or rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format.',
+      'Search the card catalog by name or rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format. To look up several cards, pass them all in queries in one call.',
     parametersJsonSchema: object(
       {
         query: string('Words from the card name or rules text.'),
+        queries: { type: 'array', items: { type: 'string' }, description: `Instead of query: up to ${TOOL_QUERIES_MAX} searches answered together, ${BATCH_CARD_LIMIT} cards each.` },
         heroIdentifier: string('Optional hero card identifier for legality.'),
         format: string('Optional format for legality.'),
         limit: integer('At most 20; default 10.'),
       },
-      ['query'],
+      [],
     ),
   },
   {
@@ -111,8 +115,15 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   },
   {
     name: 'search_rules',
-    description: 'Search the Flesh and Blood comprehensive rules by rule number or words. Returns at most 8 rules.',
-    parametersJsonSchema: object({ query: string('A rule number like 1.3.2 or words like "go again".') }, ['query']),
+    description:
+      'Search the Flesh and Blood comprehensive rules by rule number or words. Returns at most 8 rules; to look up several topics, pass them all in queries in one call.',
+    parametersJsonSchema: object(
+      {
+        query: string('A rule number like 1.3.2 or words like "go again".'),
+        queries: { type: 'array', items: { type: 'string' }, description: `Instead of query: up to ${TOOL_QUERIES_MAX} searches answered together, ${BATCH_RULE_LIMIT} rules each.` },
+      },
+      [],
+    ),
   },
   {
     name: 'propose_deck',
@@ -175,6 +186,16 @@ export function readList(args: Record<string, unknown>, key: string, max: number
   const value = args[key];
   if (!Array.isArray(value) || value.length > max) throw new InvalidToolArguments(`${key} must be a list of at most ${max} entries`);
   return value;
+}
+
+/** `queries` when given, else the single required `query`. */
+export function readQueries(args: Record<string, unknown>): string[] {
+  if (args['queries'] === undefined || args['queries'] === null) return [readString(args, 'query')!];
+  const queries = readList(args, 'queries', TOOL_QUERIES_MAX);
+  if (queries.length === 0 || queries.some((query) => typeof query !== 'string' || query.trim() === '' || query.length > TOOL_STRING_MAX)) {
+    throw new InvalidToolArguments(`queries must hold 1 to ${TOOL_QUERIES_MAX} searches of at most ${TOOL_STRING_MAX} characters`);
+  }
+  return queries as string[];
 }
 
 export function readLimit(args: Record<string, unknown>, fallback = 10): number {

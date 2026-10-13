@@ -1,5 +1,5 @@
 import { catalog } from '@rathe-arsenal/engine';
-import { runChatTool } from '../chat-tools';
+import { BATCH_CARD_LIMIT, BATCH_RULE_LIMIT, runChatTool } from '../chat-tools';
 import { ChatToolsService } from '../chat-tools.service';
 import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
 
@@ -16,6 +16,7 @@ describe('chat tools (E2E)', () => {
 
   afterAll(async () => {
     await fixture.dataSource.query(`DELETE FROM tournament_deck WHERE "fabraryUlid" LIKE '01TOOLS%'`);
+    await fixture.dataSource.query(`DELETE FROM rules_entry WHERE "ruleNumber" LIKE 'tools-%'`);
     await fixture.close();
   });
 
@@ -68,6 +69,7 @@ describe('chat tools (E2E)', () => {
 
     const deck = await runChatTool(toolbox, 'get_deck', { deckId: user.deckId });
     const search = await runChatTool(toolbox, 'search_cards', { query: 'emissary', heroIdentifier: KATSU, format: 'Classic Constructed', limit: 20 });
+    const batch = await runChatTool(toolbox, 'search_cards', { queries: ['emissary', 'talishar'], heroIdentifier: KATSU, format: 'Classic Constructed' });
     const recommendations = await runChatTool(toolbox, 'get_recommendations', { deckId: user.deckId });
     const decks = await runChatTool(toolbox, 'search_tournament_decks', { heroIdentifier: KATSU, format: 'Classic Constructed' });
     const tournament = await runChatTool(toolbox, 'get_tournament_deck', { id: newer });
@@ -82,6 +84,10 @@ describe('chat tools (E2E)', () => {
     expect(cards.find((card) => card.cardIdentifier === EMISSARY)?.legal).toBe(true);
     expect(catalog.getCard(RUNEBLADE_EMISSARY).classes).toEqual(['Runeblade']);
     expect(cards.find((card) => card.cardIdentifier === RUNEBLADE_EMISSARY)?.legal).toBe(false);
+    const batched = batch['results'] as Array<{ query: string; cards: Array<{ cardIdentifier: string; legal: boolean }> }>;
+    expect(batched.map((result) => result.query)).toEqual(['emissary', 'talishar']);
+    expect(batched.every((result) => result.cards.length > 0 && result.cards.length <= BATCH_CARD_LIMIT)).toBe(true);
+    expect(batched[1]!.cards.map((card) => card.cardIdentifier)).toContain(TALISHAR);
     expect(recommendations['recommendations']).toEqual([expect.objectContaining({ cardIdentifier: COAX, strength: 'clear_upgrade', cut: FLEX })]);
     expect((decks['decks'] as Array<{ name: string; source: string }>).map((row) => [row.name, row.source])).toEqual([
       ['Calling: Pelotas 1st', 'tournament'],
@@ -222,5 +228,22 @@ describe('chat tools (E2E)', () => {
     expect((cc['heroes'] as Array<Record<string, unknown>>).find((hero) => hero['heroIdentifier'] === 'victor-goldmane-high-and-mighty')).toEqual(
       expect.objectContaining({ heroLegal: false }),
     );
+  });
+
+  it('search_rules answers several topics in one call, a few rules each', async () => {
+    const toolbox = toolboxFor(await fixture.chatUser());
+    const insertRule = `INSERT INTO rules_entry ("ruleNumber", "sectionNumber", "sectionTitle", text, url, "sourceHash", "fetchedAt") VALUES ($1, '9.9', 'Tools', $2, 'u', 'h', now())`;
+    for (let index = 1; index <= 6; index += 1) await fixture.dataSource.query(insertRule, [`tools-${index}`, `zanzibar quokka rule ${index}`]);
+    await fixture.dataSource.query(insertRule, ['tools-7', 'xylophone wombat rule']);
+
+    const result = await runChatTool(toolbox, 'search_rules', { queries: ['zanzibar quokka', 'xylophone wombat'] });
+
+    const results = result['results'] as Array<{ query: string; found: boolean; entries: Array<{ ruleNumber: string }> }>;
+    expect(results.map((entry) => [entry.query, entry.found])).toEqual([
+      ['zanzibar quokka', true],
+      ['xylophone wombat', true],
+    ]);
+    expect(results[0]!.entries).toHaveLength(BATCH_RULE_LIMIT);
+    expect(results[1]!.entries.map((entry) => entry.ruleNumber)).toEqual(['tools-7']);
   });
 });

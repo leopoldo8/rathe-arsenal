@@ -75,7 +75,7 @@ describe('Gemini chat client', () => {
     expect(code(answer('STOP', [{ text: 'Katsu plays well.' }]))).toBe('answer');
     expect(code(answer('STOP', [{ functionCall: { name: 'get_deck', args: { deckId: 1 } } }]))).toBe('answer');
     const usage = classifyChatAnswer(answer('MAX_TOKENS') as never);
-    expect(usage.usage).toEqual({ inputTokens: 10, outputTokens: 5 });
+    expect(usage.usage).toEqual({ inputTokens: 10, outputTokens: 5, cachedInputTokens: 0 });
   });
 
   it('a request that must answer now declares no tool, turns tool calls into text and says why', () => {

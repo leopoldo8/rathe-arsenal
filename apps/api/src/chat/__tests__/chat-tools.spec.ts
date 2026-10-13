@@ -1,4 +1,15 @@
-import { CHAT_TOOL_DECLARATIONS, readInteger, readList, readLimit, readString, runChatTool, TChatToolbox, TOOL_RESULT_MAX_CHARS } from '../chat-tools';
+import {
+  CHAT_TOOL_DECLARATIONS,
+  readInteger,
+  readList,
+  readLimit,
+  readQueries,
+  readString,
+  runChatTool,
+  TChatToolbox,
+  TOOL_QUERIES_MAX,
+  TOOL_RESULT_MAX_CHARS,
+} from '../chat-tools';
 
 const stringTool = (args: Record<string, unknown>) => Promise.resolve({ value: readString(args, 'query') });
 const listTool = (args: Record<string, unknown>) => Promise.resolve({ size: readList(args, 'cardIdentifiers').length });
@@ -35,5 +46,24 @@ describe('chat tools', () => {
     expect(big['truncated']).toBe(true);
     expect(CHAT_TOOL_DECLARATIONS.map((tool) => tool.name)).toHaveLength(11);
     expect(TOOL_RESULT_MAX_CHARS).toBe(30_000);
+  });
+
+  it('a search takes one query or a list of up to eight', async () => {
+    const toolbox: TChatToolbox = { search_cards: async (args) => ({ queries: readQueries(args) }) };
+    const refused = [
+      {},
+      { queries: [] },
+      { queries: Array.from({ length: TOOL_QUERIES_MAX + 1 }, () => 'flex') },
+      { queries: ['flex', 3] },
+      { queries: ['flex', ' '] },
+      { queries: ['a'.repeat(201)] },
+    ];
+
+    const results = await Promise.all(refused.map((args) => runChatTool(toolbox, 'search_cards', args)));
+
+    expect(results.map((result) => result['error'])).toEqual(refused.map(() => 'INVALID_ARGUMENTS'));
+    expect(await runChatTool(toolbox, 'search_cards', { query: 'flex' })).toEqual({ queries: ['flex'] });
+    expect(await runChatTool(toolbox, 'search_cards', { queries: ['flex', 'coax'] })).toEqual({ queries: ['flex', 'coax'] });
+    expect(TOOL_QUERIES_MAX).toBe(8);
   });
 });

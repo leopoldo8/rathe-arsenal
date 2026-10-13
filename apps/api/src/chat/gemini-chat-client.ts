@@ -42,6 +42,10 @@ export const ANSWER_NOW_INSTRUCTION =
 export interface IChatUsage {
   readonly inputTokens: number;
   readonly outputTokens: number;
+  /** Included in inputTokens. */
+  readonly cachedInputTokens?: number;
+  /** Set only when the provider reports what it charged; it then wins over the price list. */
+  readonly costUsd?: number;
 }
 
 export interface IFunctionCall {
@@ -63,7 +67,7 @@ export type TChatCallOutcome =
 interface IGenerateContentResponse {
   candidates?: { finishReason?: string; content?: IGeminiContent }[];
   promptFeedback?: { blockReason?: string };
-  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
+  usageMetadata?: { promptTokenCount?: number; cachedContentTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 }
 
 const FINISH_FAILURES: ReadonlyMap<string, TChatTurnFailureCode> = new Map([
@@ -158,6 +162,7 @@ export function classifyChatAnswer(json: IGenerateContentResponse): TChatCallOut
   const usage = {
     inputTokens: metadata.promptTokenCount ?? 0,
     outputTokens: (metadata.candidatesTokenCount ?? 0) + (metadata.thoughtsTokenCount ?? 0),
+    cachedInputTokens: metadata.cachedContentTokenCount ?? 0,
   };
   if (json.promptFeedback?.blockReason) {
     return { kind: 'failed', code: 'MODEL_REFUSED', detail: `blockReason ${json.promptFeedback.blockReason}`, usage };
