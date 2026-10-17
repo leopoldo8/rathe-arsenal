@@ -26,7 +26,7 @@ export interface IChatFixture extends IFixture {
   conversation(user: IChatUser, body?: Record<string, unknown>): Promise<string>;
   send(user: IChatUser, conversationId: string, text: string, locale?: string): Promise<{ userMessageId: string; assistantMessageId: string }>;
   seedUsage(userId: string, costUsd: number, createdAt?: Date): Promise<void>;
-  drain(fetch: TGeminiFetch, apiKey?: string | null): Promise<boolean>;
+  drain(fetch: TGeminiFetch, apiKey?: string | null, openRouterModel?: string): Promise<boolean>;
   /** The retry waits of the last drain, recorded instead of slept. */
   readonly slept: readonly number[];
   message(id: string): Promise<Record<string, unknown>>;
@@ -100,9 +100,9 @@ export async function bootChatFixture(options: { readonly throttle?: boolean } =
         [userId, costUsd, createdAt],
       );
     },
-    drain: (fetch, apiKey = 'test-key') => {
+    drain: (fetch, apiKey = 'test-key', openRouterModel) => {
       slept = [];
-      return drainChatOnce({ queue, runner, readApiKey: () => apiKey, fetch, sleep: async (ms) => void slept.push(ms) });
+      return drainChatOnce({ queue, runner, readApiKey: () => apiKey, readOpenRouterModel: () => openRouterModel, fetch, sleep: async (ms) => void slept.push(ms) });
     },
     get slept() {
       return slept;

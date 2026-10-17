@@ -201,6 +201,26 @@ describe('recommendation worker (e2e)', () => {
     expect(rows[0]).toEqual(expect.objectContaining({ strength: 'clear_upgrade', cutCardIdentifier: FLEX, cutSlot: 'mainboard' }));
   });
 
+  it('with an OpenRouter model the same prompt goes to OpenRouter and the run records that model', async () => {
+    const { runId } = await deckWithManualRun();
+    const content = JSON.stringify({ recommendations: [{ card: POOL[0], strength: 'clear_upgrade', cut: FLEX, reason: 'r', reason_pt_br: 'm' }] });
+    const stub = stubFetch(200, { choices: [{ finish_reason: 'stop', message: { content } }], usage: { prompt_tokens: 36000, completion_tokens: 1800 } });
+    const gemini = stubFetch(200, geminiBody([]));
+    await fixture.drain(gemini.fetch);
+    await fixture.seedRun((await run(runId)).trackedDeckId, 'pending', { trigger: 'manual' });
+
+    await fixture.drain(stub.fetch, 'openrouter-key', 'openai/gpt-6-luna');
+
+    const [latest] = await fixture.dataSource.query(
+      `SELECT * FROM recommendation_run WHERE "trackedDeckId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+      [(await run(runId)).trackedDeckId],
+    );
+    expect(latest).toEqual(expect.objectContaining({ status: 'done', model: 'openai/gpt-6-luna', inputTokens: 36000, outputTokens: 1800 }));
+    expect((await recommendationRows(latest.id)).map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([POOL[0]]);
+    expect(stub.calls[0]!.url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect((stub.calls[0]!.body as unknown as { messages: Array<{ content: string }> }).messages[1]!.content).toBe(promptOf(gemini));
+  });
+
   it('an answer with nothing valid ends done and empty', async () => {
     const { runId } = await deckWithManualRun();
 

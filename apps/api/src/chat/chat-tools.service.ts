@@ -8,17 +8,24 @@ import { RecommendationsService } from '../recommendations/recommendations.servi
 import { RulesImportService } from '../reference/rules-import.service';
 import { IAcceptedProposal } from './chat-turn-queue.service';
 import {
+  BATCH_CARD_LIMIT,
+  BATCH_RULE_LIMIT,
   InvalidToolArguments,
   readInteger,
   readLimit,
   readList,
+  readQueries,
   readString,
   TChatToolbox,
   TToolResult,
 } from './chat-tools';
-import { ISwapDeck, readSwapArgs, slotOf, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
+import { describeDeck } from './deck-facts';
+import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 
 const CARD_TEXT_MAX = 300;
+const HERO_COUNT_LIMIT = 60;
+const META_HEROES_MAX = 60;
+const COLLECTION_ROWS_MAX = 150;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECK_NOT_FOUND: TToolResult = { error: 'DECK_NOT_FOUND' };
 
@@ -40,8 +47,10 @@ function findCard(cardIdentifier: string): ICatalogCard | null {
   }
 }
 
-function nameOf(cardIdentifier: string): string {
-  return findCard(cardIdentifier)?.name ?? cardIdentifier;
+function isHeroLegal(heroIdentifier: string, format: string): boolean {
+  const hero = findCard(heroIdentifier);
+  if (!hero) return false;
+  return (hero.legalFormats as readonly string[]).includes(format) && !((hero.bannedFormats ?? []) as readonly string[]).includes(format);
 }
 
 function typeLine(card: ICatalogCard): string {
@@ -66,8 +75,10 @@ export class ChatToolsService {
       search_cards: (args) => this.searchCards(args),
       get_recommendations: (args) => this.latestRecommendations(scope, readInteger(args, 'deckId', { min: 1 })!),
       search_tournament_decks: (args) => this.searchTournamentDecks(args),
-      get_tournament_deck: (args) => this.tournamentDeck(readString(args, 'id')!),
-      search_rules: async (args) => ({ ...(await this.rules.search(readString(args, 'query')!)) }),
+      get_tournament_deck: (args) => this.tournamentDeck(scope, readString(args, 'id')!, readInteger(args, 'compareDeckId', { min: 1, optional: true })),
+      get_collection: (args) => this.collectionCards(scope, args),
+      get_tournament_meta: (args) => this.tournamentMeta(args),
+      search_rules: (args) => this.searchRules(args),
       propose_deck: async (args) => {
         const check = validateDeckProposal(args, catalog);
         if (!check.ok) return { ok: false, error: check.error, detail: check.detail };
@@ -109,9 +120,11 @@ export class ChatToolsService {
       [deckId],
     )) as Array<{ cardIdentifier: string; slot: string; quantity: number }>;
     const owned = await this.collection.loadOwned(scope.userId, cards.map((card) => card.cardIdentifier));
+    const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string | null, format: deck['format'] as string, rows: cards });
     return {
       ...deck,
-      cards: cards.map((card) => ({ ...card, name: nameOf(card.cardIdentifier), owned: owned.get(card.cardIdentifier) ?? 0 })),
+      ...facts,
+      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 })),
     };
   }
 
@@ -125,28 +138,38 @@ export class ChatToolsService {
   }
 
   private searchCards(args: Record<string, unknown>): Promise<TToolResult> {
-    const query = readString(args, 'query')!.trim().toLowerCase();
+    const queries = readQueries(args);
     const heroIdentifier = readString(args, 'heroIdentifier', { optional: true });
     const format = readString(args, 'format', { optional: true });
-    const limit = readLimit(args);
     const hero = heroIdentifier ? findCard(heroIdentifier) : null;
     const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
-    const byName = catalog.cards.filter((card) => card.name.toLowerCase().includes(query));
-    const byText = catalog.cards.filter(
-      (card) => !card.name.toLowerCase().includes(query) && (card.functionalText ?? '').toLowerCase().includes(query),
-    );
-    const cards = [...byName, ...byText].slice(0, limit).map((card) => ({
-      cardIdentifier: card.cardIdentifier,
-      name: card.name,
-      typeLine: typeLine(card),
-      pitch: card.pitch,
-      cost: card.cost,
-      power: card.power,
-      defense: card.defense,
-      text: (card.functionalText ?? '').slice(0, CARD_TEXT_MAX),
-      ...(hero && legalityFormat ? { legal: findCardLegalityViolation(card, hero, legalityFormat) === null } : {}),
-    }));
-    return Promise.resolve({ cards });
+    const find = (text: string, limit: number): TToolResult[] => {
+      const query = text.trim().toLowerCase();
+      const byName = catalog.cards.filter((card) => card.name.toLowerCase().includes(query));
+      const byText = catalog.cards.filter(
+        (card) => !card.name.toLowerCase().includes(query) && (card.functionalText ?? '').toLowerCase().includes(query),
+      );
+      return [...byName, ...byText].slice(0, limit).map((card) => ({
+        cardIdentifier: card.cardIdentifier,
+        name: card.name,
+        typeLine: typeLine(card),
+        pitch: card.pitch,
+        cost: card.cost,
+        power: card.power,
+        defense: card.defense,
+        text: (card.functionalText ?? '').slice(0, CARD_TEXT_MAX),
+        ...(hero && legalityFormat ? { legal: findCardLegalityViolation(card, hero, legalityFormat) === null } : {}),
+      }));
+    };
+    if (args['queries'] === undefined || args['queries'] === null) return Promise.resolve({ cards: find(queries[0]!, readLimit(args)) });
+    return Promise.resolve({ results: queries.map((query) => ({ query, cards: find(query, BATCH_CARD_LIMIT) })) });
+  }
+
+  private async searchRules(args: Record<string, unknown>): Promise<TToolResult> {
+    if (args['queries'] === undefined || args['queries'] === null) return { ...(await this.rules.search(readString(args, 'query')!)) };
+    const results = [];
+    for (const query of readQueries(args)) results.push({ query, ...(await this.rules.search(query, BATCH_RULE_LIMIT)) });
+    return { results };
   }
 
   private async latestRecommendations(scope: IToolScope, deckId: number): Promise<TToolResult> {
@@ -174,7 +197,7 @@ export class ChatToolsService {
     const since = readString(args, 'since', { optional: true });
     if (since !== undefined && Number.isNaN(Date.parse(since))) throw new InvalidToolArguments('since must be an ISO date');
     const decks = (await this.dataSource.query(
-      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date
+      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date, source
          FROM tournament_deck
         WHERE ($1::varchar IS NULL OR "heroIdentifier" = $1)
           AND ($2::varchar IS NULL OR format = $2)
@@ -183,13 +206,68 @@ export class ChatToolsService {
         LIMIT $4`,
       [heroIdentifier, format, since ?? null, readLimit(args)],
     )) as Array<Record<string, unknown>>;
-    return { decks };
+    if (decks.length > 0) return { decks };
+    return {
+      decks,
+      note: 'No tournament deck matches these filters. Do not repeat the search with small changes: use a related hero or a hero with decks below, and tell the user what is missing.',
+      relatedHeroes: heroIdentifier === null ? [] : await this.tournamentHeroCounts({ namePrefix: heroIdentifier.split('-')[0]!, exclude: heroIdentifier }),
+      heroesWithDecks: await this.tournamentHeroCounts({ format }),
+    };
   }
 
-  private async tournamentDeck(id: string): Promise<TToolResult> {
+  private async tournamentHeroCounts(filter: { namePrefix?: string; exclude?: string; format?: string | null }): Promise<TToolResult[]> {
+    return (await this.dataSource.query(
+      `SELECT "heroIdentifier", format, count(*)::int AS decks FROM tournament_deck
+        WHERE ($1::varchar IS NULL OR "heroIdentifier" = $1 OR "heroIdentifier" LIKE $1 || '-%')
+          AND ($2::varchar IS NULL OR "heroIdentifier" <> $2)
+          AND ($3::varchar IS NULL OR format = $3)
+        GROUP BY "heroIdentifier", format ORDER BY decks DESC, "heroIdentifier", format LIMIT $4`,
+      [filter.namePrefix ?? null, filter.exclude ?? null, filter.format ?? null, HERO_COUNT_LIMIT],
+    )) as TToolResult[];
+  }
+
+  private async collectionCards(scope: IToolScope, args: Record<string, unknown>): Promise<TToolResult> {
+    const heroIdentifier = readString(args, 'heroIdentifier', { optional: true });
+    const format = readString(args, 'format', { optional: true });
+    const query = readString(args, 'query', { optional: true })?.trim().toLowerCase();
+    const hero = heroIdentifier ? findCard(heroIdentifier) : null;
+    const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
+    const owned = await this.collection.loadOwned(scope.userId);
+    const usage = await this.deckUsage(scope.userId);
+    const rows = [...owned.entries()].flatMap(([cardIdentifier, copies]) => {
+      const card = findCard(cardIdentifier);
+      if (!card) return [];
+      if (hero && legalityFormat && findCardLegalityViolation(card, hero, legalityFormat) !== null) return [];
+      if (query && !card.name.toLowerCase().includes(query) && !typeLine(card).toLowerCase().includes(query)) return [];
+      const usedByDecks = usage.get(cardIdentifier) ?? [];
+      const used = usedByDecks.reduce((sum, deck) => sum + deck.quantity, 0);
+      return [{ cardIdentifier, name: card.name, pitch: card.pitch, typeLine: typeLine(card), owned: copies, spare: Math.max(0, copies - used), usedByDecks }];
+    });
+    rows.sort((a, b) => a.name.localeCompare(b.name) || a.cardIdentifier.localeCompare(b.cardIdentifier));
+    return {
+      matching: rows.length,
+      ...(rows.length > COLLECTION_ROWS_MAX ? { note: `Only the first ${COLLECTION_ROWS_MAX} of ${rows.length}; narrow with query.` } : {}),
+      cards: rows.slice(0, COLLECTION_ROWS_MAX),
+    };
+  }
+
+  private async deckUsage(userId: string): Promise<Map<string, Array<{ deckId: number; quantity: number }>>> {
+    const rows = (await this.dataSource.query(
+      `SELECT c."cardIdentifier", d.id AS "deckId", sum(c.quantity)::int AS quantity
+         FROM deck_card c JOIN tracked_deck d ON d.id = c."trackedDeckId"
+        WHERE d."userId" = $1 AND c.slot <> 'hero'
+        GROUP BY c."cardIdentifier", d.id ORDER BY d.id`,
+      [userId],
+    )) as Array<{ cardIdentifier: string; deckId: number; quantity: number }>;
+    const usage = new Map<string, Array<{ deckId: number; quantity: number }>>();
+    for (const row of rows) usage.set(row.cardIdentifier, [...(usage.get(row.cardIdentifier) ?? []), { deckId: row.deckId, quantity: row.quantity }]);
+    return usage;
+  }
+
+  private async tournamentDeck(scope: IToolScope, id: string, compareDeckId: number | undefined): Promise<TToolResult> {
     if (!UUID.test(id)) throw new InvalidToolArguments('id must be a tournament deck id');
     const [deck] = (await this.dataSource.query(
-      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date FROM tournament_deck WHERE id = $1`,
+      `SELECT id, name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt" AS date, source FROM tournament_deck WHERE id = $1`,
       [id],
     )) as Array<Record<string, unknown>>;
     if (!deck) return { error: 'TOURNAMENT_DECK_NOT_FOUND' };
@@ -197,12 +275,65 @@ export class ChatToolsService {
       `SELECT "cardIdentifier", quantity, "sideboardQuantity" FROM tournament_deck_card WHERE "tournamentDeckId" = $1 ORDER BY "cardIdentifier"`,
       [id],
     )) as Array<{ cardIdentifier: string; quantity: number; sideboardQuantity: number }>;
+    const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string, format: deck['format'] as string, rows: cards });
+    const sideboard = new Map(cards.map((card) => [card.cardIdentifier, card.sideboardQuantity]));
+    const compare = compareDeckId === undefined ? null : await this.comparison(scope, compareDeckId, cards.map((card) => card.cardIdentifier));
+    if (compare !== null && typeof compare !== 'function') return DECK_NOT_FOUND;
     return {
       ...deck,
-      cards: cards.map((card) => {
-        const known = findCard(card.cardIdentifier);
-        return { ...card, name: known?.name ?? card.cardIdentifier, slot: known ? slotOf(known) : 'mainboard' };
-      }),
+      ...facts,
+      cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({
+        ...card,
+        sideboardQuantity: sideboard.get(card.cardIdentifier) ?? 0,
+        ...(compare === null ? {} : compare(card.cardIdentifier)),
+      })),
+    };
+  }
+
+  private async comparison(
+    scope: IToolScope,
+    deckId: number,
+    cardIdentifiers: readonly string[],
+  ): Promise<((cardIdentifier: string) => TToolResult) | typeof DECK_NOT_FOUND> {
+    const yours = await this.swapDeck(scope.userId, deckId);
+    if (!yours) return DECK_NOT_FOUND;
+    const hero = yours.heroIdentifier ? findCard(yours.heroIdentifier) : null;
+    const format = (SUPPORTED_FORMATS as readonly string[]).includes(yours.format) ? (yours.format as TSupportedFormat) : null;
+    const owned = await this.collection.loadOwned(scope.userId, cardIdentifiers);
+    return (cardIdentifier) => {
+      const card = findCard(cardIdentifier);
+      return {
+        legalInYourDeck: card !== null && hero !== null && format !== null && findCardLegalityViolation(card, hero, format) === null,
+        owned: owned.get(cardIdentifier) ?? 0,
+        inYourDeck: yours.cards.filter((row) => row.cardIdentifier === cardIdentifier).reduce((sum, row) => sum + row.quantity, 0),
+      };
+    };
+  }
+
+  private async tournamentMeta(args: Record<string, unknown>): Promise<TToolResult> {
+    const format = readString(args, 'format')!;
+    const since = readString(args, 'since', { optional: true });
+    if (since !== undefined && Number.isNaN(Date.parse(since))) throw new InvalidToolArguments('since must be an ISO date');
+    const heroes = (await this.dataSource.query(
+      `SELECT "heroIdentifier",
+              count(*) FILTER (WHERE source = 'tournament')::int AS decks,
+              count(*) FILTER (WHERE source = 'tournament' AND placement <= 8)::int AS top8,
+              count(*) FILTER (WHERE source = 'tournament' AND placement = 1)::int AS wins,
+              count(*) FILTER (WHERE source = 'player-named')::int AS "playerNamed",
+              min("deckCreatedAt") AS "firstSeen",
+              max("deckCreatedAt") AS latest
+         FROM tournament_deck
+        WHERE format = $1 AND ($2::timestamptz IS NULL OR "deckCreatedAt" >= $2)
+        GROUP BY "heroIdentifier"
+        ORDER BY decks DESC, top8 DESC, "playerNamed" DESC, "heroIdentifier"
+        LIMIT $3`,
+      [format, since ?? null, META_HEROES_MAX],
+    )) as Array<Record<string, unknown>>;
+    return {
+      format,
+      since: since ?? null,
+      decks: heroes.reduce((sum, hero) => sum + (hero['decks'] as number), 0),
+      heroes: heroes.map((hero) => ({ ...hero, heroLegal: isHeroLegal(hero['heroIdentifier'] as string, format) })),
     };
   }
 }

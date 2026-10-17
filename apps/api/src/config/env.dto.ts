@@ -161,6 +161,20 @@ export class EnvDto {
   @IsString()
   GEMINI_API_KEY?: string;
 
+  /** An OpenRouter model id such as `anthropic/claude-haiku-5.5`; set, chat turns go to it with OPENROUTER_API_KEY instead of Gemini. */
+  @IsOptional()
+  @IsString()
+  CHAT_OPENROUTER_MODEL?: string;
+
+  /** Same as CHAT_OPENROUTER_MODEL, for deck recommendations. */
+  @IsOptional()
+  @IsString()
+  RECOMMENDATION_OPENROUTER_MODEL?: string;
+
+  @IsOptional()
+  @IsString()
+  OPENROUTER_API_KEY?: string;
+
   /** `low`, `medium` or `high`; absent, Gemini 3.8 Flash thinks at its default (`medium`). */
   @IsOptional()
   @IsIn(['low', 'medium', 'high'])

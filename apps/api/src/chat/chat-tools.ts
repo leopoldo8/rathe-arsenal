@@ -5,7 +5,10 @@ export const TOOL_REASON_MAX = 1000;
 export const TOOL_LIST_MAX = 50;
 export const TOOL_LIMIT_MAX = 20;
 export const DECK_PROPOSAL_ROWS_MAX = 80;
-export const TOOL_RESULT_MAX_CHARS = 12_000;
+export const TOOL_RESULT_MAX_CHARS = 30_000;
+export const TOOL_QUERIES_MAX = 8;
+export const BATCH_CARD_LIMIT = 5;
+export const BATCH_RULE_LIMIT = 4;
 
 export type TToolResult = Record<string, unknown>;
 
@@ -31,7 +34,8 @@ const cardRow = object(
 export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
-    description: "One of the user's decks: hero, format, status and every card with slot, quantity and owned copies.",
+    description:
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, text and legality, the counted totals (cards per slot, mainboard per pitch, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
@@ -45,15 +49,16 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'search_cards',
     description:
-      'Search the card catalog by name or rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format.',
+      'Search the card catalog by name or rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format. To look up several cards, pass them all in queries in one call.',
     parametersJsonSchema: object(
       {
         query: string('Words from the card name or rules text.'),
+        queries: { type: 'array', items: { type: 'string' }, description: `Instead of query: up to ${TOOL_QUERIES_MAX} searches answered together, ${BATCH_CARD_LIMIT} cards each.` },
         heroIdentifier: string('Optional hero card identifier for legality.'),
         format: string('Optional format for legality.'),
         limit: integer('At most 20; default 10.'),
       },
-      ['query'],
+      [],
     ),
   },
   {
@@ -63,10 +68,11 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   },
   {
     name: 'search_tournament_decks',
-    description: 'Tournament decks copied from Fabrary, newest first, with event name and placement when known.',
+    description:
+      'Tournament decks copied from Fabrary, newest first, with event name and placement when known. source "tournament" is event coverage Fabrary marks as a tournament deck; source "player-named" is a deck its owner named after an event and a placement, so it is player-reported. When nothing matches, the answer says so and lists related heroes and the heroes that have decks.',
     parametersJsonSchema: object(
       {
-        heroIdentifier: string('Optional hero card identifier.'),
+        heroIdentifier: string('Optional hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
         format: string('Optional format.'),
         since: string('Optional ISO date; only decks from this date on.'),
         limit: integer('At most 20; default 10.'),
@@ -75,14 +81,49 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_tournament_meta',
+    description:
+      'Per hero, how many tournament decks one format has, how many placed top 8 and how many won, player-named decks, when the hero first and last appeared, and whether the hero is legal in that format today, most decks first. The data holds mostly top finishes, so it shows who places, not win rates. Use it to rank heroes or describe the meta instead of counting a search sample.',
+    parametersJsonSchema: object(
+      { format: string('Format, for example "Classic Constructed".'), since: string('Optional ISO date; only decks from this date on.') },
+      ['format'],
+    ),
+  },
+  {
+    name: 'get_collection',
+    description:
+      "The user's owned cards, one collection shared by all their decks: owned copies, the copies each deck already uses and the spare copies. Filter by heroIdentifier and format to keep only cards legal there, or by words of the name or type.",
+    parametersJsonSchema: object(
+      {
+        heroIdentifier: string('Optional hero; with format, keeps only cards that hero can play there.'),
+        format: string('Optional format.'),
+        query: string('Optional words of the card name or type, for example "arrow" or "Flex".'),
+      },
+      [],
+    ),
+  },
+  {
     name: 'get_tournament_deck',
-    description: 'The full card list of one tournament deck.',
-    parametersJsonSchema: object({ id: string('Tournament deck id from search_tournament_decks.') }, ['id']),
+    description: 'The full card list of one tournament deck with its source and date, each card\'s text and legality, and the counted totals.',
+    parametersJsonSchema: object(
+      {
+        id: string('Tournament deck id from search_tournament_decks.'),
+        compareDeckId: integer("Optional id of one of the user's decks: each card then says whether it is legal in that deck, the owned copies and the copies already in it."),
+      },
+      ['id'],
+    ),
   },
   {
     name: 'search_rules',
-    description: 'Search the Flesh and Blood comprehensive rules by rule number or words. Returns at most 8 rules.',
-    parametersJsonSchema: object({ query: string('A rule number like 1.3.2 or words like "go again".') }, ['query']),
+    description:
+      'Search the Flesh and Blood comprehensive rules by rule number or words. Returns at most 8 rules; to look up several topics, pass them all in queries in one call.',
+    parametersJsonSchema: object(
+      {
+        query: string('A rule number like 1.3.2 or words like "go again".'),
+        queries: { type: 'array', items: { type: 'string' }, description: `Instead of query: up to ${TOOL_QUERIES_MAX} searches answered together, ${BATCH_RULE_LIMIT} rules each.` },
+      },
+      [],
+    ),
   },
   {
     name: 'propose_deck',
@@ -145,6 +186,16 @@ export function readList(args: Record<string, unknown>, key: string, max: number
   const value = args[key];
   if (!Array.isArray(value) || value.length > max) throw new InvalidToolArguments(`${key} must be a list of at most ${max} entries`);
   return value;
+}
+
+/** `queries` when given, else the single required `query`. */
+export function readQueries(args: Record<string, unknown>): string[] {
+  if (args['queries'] === undefined || args['queries'] === null) return [readString(args, 'query')!];
+  const queries = readList(args, 'queries', TOOL_QUERIES_MAX);
+  if (queries.length === 0 || queries.some((query) => typeof query !== 'string' || query.trim() === '' || query.length > TOOL_STRING_MAX)) {
+    throw new InvalidToolArguments(`queries must hold 1 to ${TOOL_QUERIES_MAX} searches of at most ${TOOL_STRING_MAX} characters`);
+  }
+  return queries as string[];
 }
 
 export function readLimit(args: Record<string, unknown>, fallback = 10): number {

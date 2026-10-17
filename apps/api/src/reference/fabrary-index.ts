@@ -11,6 +11,12 @@ export const FABRARY_INDEX_NAME = 'public_decks';
 export const INDEX_HIT_CAP = 1000;
 
 const TOURNAMENT_FILTER = 'isTournament:true';
+const PLAYER_NAMED_FILTER = 'NOT isTournament:true AND NOT isPrecon:true';
+export const PLAYER_NAMED_FORMATS = ['Classic Constructed', 'Blitz', 'Living Legend', 'Silver Age'] as const;
+export const PLAYER_NAMED_SEARCH_WORDS = ['armory', 'skirmish', 'proquest', 'pq', 'nationals', 'calling', 'battle hardened', 'rtn', 'showdown', 'pro tour', 'worlds'] as const;
+export const PLAYER_NAMED_PER_HERO_FORMAT = 5;
+const PLAYER_NAMED_PLACEMENT = /\b(1st|2nd|3rd|[4-8]th|top ?(4|8|16|32)|winner|champion|undefeated|[0-9]-0)\b/i;
+const PLAYER_NAMED_EVENT = /\b(armory|skirmish|proquest|pq\+?|nationals?|calling|battle hardened|road to nationals|rtn|showdown|pro tour|worlds?)\b/i;
 const TIMEOUT_MS = 30_000;
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -22,6 +28,7 @@ export interface IIndexDeck {
 }
 
 export interface IIndexRequest {
+  readonly query?: string;
   readonly filters: string;
   readonly hitsPerPage: number;
   readonly facets?: readonly string[];
@@ -75,13 +82,40 @@ export async function listTournamentDecks(query: TIndexQuery): Promise<ITourname
   return { decks: [...decks.values()], truncated };
 }
 
+export function pairKey(deck: Pick<IIndexDeck, 'format' | 'heroIdentifier'>): string {
+  return `${deck.format}|${deck.heroIdentifier}`;
+}
+
+export function isPlayerNamedPlacement(name: string): boolean {
+  return PLAYER_NAMED_PLACEMENT.test(name) && PLAYER_NAMED_EVENT.test(name);
+}
+
+export async function listPlayerNamedDecks(query: TIndexQuery, covered: ReadonlySet<string>): Promise<IIndexDeck[]> {
+  const byPair = new Map<string, Map<string, IIndexDeck>>();
+  for (const format of PLAYER_NAMED_FORMATS) {
+    for (const word of PLAYER_NAMED_SEARCH_WORDS) {
+      const result = await query({ query: word, filters: `${PLAYER_NAMED_FILTER} AND format:${quoted(format)}`, hitsPerPage: INDEX_HIT_CAP });
+      for (const hit of result.hits) {
+        if (hit.format !== format || covered.has(pairKey(hit)) || !isPlayerNamedPlacement(hit.name)) continue;
+        const pair = byPair.get(pairKey(hit)) ?? new Map<string, IIndexDeck>();
+        pair.set(hit.deckId, hit);
+        byPair.set(pairKey(hit), pair);
+      }
+    }
+  }
+  // A ULID sorts by creation time, so the largest ids are the newest decks.
+  return [...byPair.values()].flatMap((pair) =>
+    [...pair.values()].sort((a, b) => b.deckId.localeCompare(a.deckId)).slice(0, PLAYER_NAMED_PER_HERO_FORMAT),
+  );
+}
+
 @Injectable()
 export class FabraryIndexClient {
   constructor(private readonly fetchGuard: FetchGuardService) {}
 
   readonly query: TIndexQuery = async (request) => {
     const params = new URLSearchParams({
-      query: '',
+      query: request.query ?? '',
       filters: request.filters,
       hitsPerPage: String(request.hitsPerPage),
       attributesToRetrieve: JSON.stringify(['deckId', 'name', 'format', 'heroIdentifier']),

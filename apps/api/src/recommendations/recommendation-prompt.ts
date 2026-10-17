@@ -106,6 +106,7 @@ export function buildRecommendationPrompt(
     '',
     `Rank the ${RECOMMENDATION_ASK_COUNT} cards from the candidate pool that would best improve this deck, best first.`,
     'For each give: card (its identifier), strength (clear_upgrade or consider), cut (the identifier of the deck card it should replace, or an empty string), one sentence of reason in English, and reason_pt_br, the same sentence in Brazilian Portuguese with card names kept in English.',
+    'Name a deck card as the cut no more times than its quantity in the deck.',
   ].join('\n');
   return { system: SYSTEM_PROMPT, prompt };
 }

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { resolveLocale } from '../common/i18n/resolve-locale';
 import { TGeminiFetch, TGeminiThinkingLevel } from '../recommendations/gemini-client';
 import { ChatBudgetService } from './chat-budget.service';
+import { cleanAnswerText } from './answer-text';
 import { buildHistory, IHistoryMessage } from './chat-history';
 import { priceCall } from './chat-pricing';
 import { buildSystemInstruction, IBoundDeck, IDeckSummary } from './chat-prompt';
@@ -11,10 +12,13 @@ import { runChatTool } from './chat-tools';
 import { ChatToolsService } from './chat-tools.service';
 import { runTurn } from './chat-turn';
 import { ChatTurnQueueService, IClaimedTurn } from './chat-turn-queue.service';
-import { callGeminiChat, CHAT_MODEL, IGeminiContent, withProviderRetry } from './gemini-chat-client';
+import { callGeminiChat, CHAT_MODEL, IChatRequest, IGeminiContent, TChatCallOutcome, withProviderRetry } from './gemini-chat-client';
+import { callOpenRouterChat } from './openrouter-chat-client';
 
 export interface IChatRunnerDeps {
   readonly apiKey: string | null | undefined;
+  /** Set, the turn goes to this OpenRouter model and apiKey is an OpenRouter key; unset, to Gemini. */
+  readonly openRouterModel?: string | undefined;
   readonly fetch: TGeminiFetch;
   readonly thinkingLevel?: TGeminiThinkingLevel | undefined;
   readonly now?: () => Date;
@@ -42,6 +46,11 @@ export class ChatRunnerService {
     const apiKey = deps.apiKey?.trim();
     if (!apiKey) return this.fail(turn, 'NO_API_KEY');
 
+    const model = deps.openRouterModel ?? CHAT_MODEL;
+    const callModel = (request: IChatRequest): Promise<TChatCallOutcome> =>
+      deps.openRouterModel
+        ? callOpenRouterChat(apiKey, deps.openRouterModel, request, deps.fetch, { effort: deps.thinkingLevel })
+        : callGeminiChat(apiKey, request, deps.fetch, { thinkingLevel: deps.thinkingLevel });
     const locale = resolveLocale(turn.locale);
     const { toolbox, proposals } = this.tools.forTurn({ userId: turn.userId, locale });
     let costUsd = 0;
@@ -54,7 +63,7 @@ export class ChatRunnerService {
       }),
       history: buildHistory(await this.historyBefore(turn)),
       call: (request) =>
-        withProviderRetry(() => callGeminiChat(apiKey, request, deps.fetch, { thinkingLevel: deps.thinkingLevel }), {
+        withProviderRetry(() => callModel(request), {
           sleep: deps.sleep,
           onRetry: async (retry) => {
             this.logger.log({ event: 'chat.turn.retry', ...base, ...retry });
@@ -62,19 +71,19 @@ export class ChatRunnerService {
           },
         }),
       recordUsage: async (usage) => {
-        const cost = priceCall(CHAT_MODEL, usage, now());
+        const cost = priceCall(model, usage, now());
         costUsd += cost;
-        await this.queue.recordUsage(turn, { model: CHAT_MODEL, ...usage, costUsd: cost });
+        await this.queue.recordUsage(turn, { model, ...usage, costUsd: cost });
         await this.queue.heartbeat(turn.id);
       },
       runTool: (name, args) => runChatTool(toolbox, name, args),
       now: () => now().getTime(),
       onTool: (tool, durationMs) => this.logger.log({ event: 'chat.turn.tool', ...base, tool, durationMs }),
     });
-    const totals = { model: CHAT_MODEL, inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens, costUsd };
+    const totals = { model, inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens, costUsd };
 
     if (result.kind === 'failed') return this.fail(turn, result.code, { ...totals, detail: result.detail });
-    await this.queue.finishDone(turn, { text: result.text, contents: result.contents, proposals, ...totals });
+    await this.queue.finishDone(turn, { text: cleanAnswerText(result.text), contents: result.contents, proposals, ...totals });
     this.logger.log({
       event: 'chat.turn.done',
       ...base,
@@ -116,7 +125,7 @@ export class ChatRunnerService {
 
   private async deckSummaries(userId: string): Promise<IDeckSummary[]> {
     return (await this.dataSource.query(
-      `SELECT d.id, d.name, d.hero, d.format, d.status, s."effectivePercent"::float8 AS "readinessPercent"
+      `SELECT d.id, d.name, d.hero, d."heroIdentifier", d.format, d.status, s."effectivePercent"::float8 AS "readinessPercent"
          FROM tracked_deck d
          LEFT JOIN LATERAL (
            SELECT "effectivePercent" FROM deck_readiness_snapshot WHERE "trackedDeckId" = d.id ORDER BY "computedAt" DESC, id DESC LIMIT 1
@@ -145,6 +154,7 @@ export interface IChatDrainDeps {
   readonly queue: Pick<ChatTurnQueueService, 'reclaimOrphans' | 'claimNext'>;
   readonly runner: Pick<ChatRunnerService, 'process'>;
   readonly readApiKey: () => string | null | undefined;
+  readonly readOpenRouterModel?: () => string | undefined;
   readonly readThinkingLevel?: () => TGeminiThinkingLevel | undefined;
   readonly fetch: TGeminiFetch;
   readonly sleep?: ((ms: number) => Promise<void>) | undefined;
@@ -154,6 +164,12 @@ export async function drainChatOnce(deps: IChatDrainDeps): Promise<boolean> {
   await deps.queue.reclaimOrphans();
   const turn = await deps.queue.claimNext();
   if (!turn) return false;
-  await deps.runner.process(turn, { apiKey: deps.readApiKey(), fetch: deps.fetch, thinkingLevel: deps.readThinkingLevel?.(), sleep: deps.sleep });
+  await deps.runner.process(turn, {
+    apiKey: deps.readApiKey(),
+    openRouterModel: deps.readOpenRouterModel?.(),
+    fetch: deps.fetch,
+    thinkingLevel: deps.readThinkingLevel?.(),
+    sleep: deps.sleep,
+  });
   return true;
 }

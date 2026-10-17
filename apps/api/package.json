@@ -18,7 +18,8 @@
     "scrape": "node scrape-stores.js",
     "recommendations:probe": "node --enable-source-maps dist/recommendations/probe-gemini.js",
     "chat:grant": "node --enable-source-maps dist/chat/chat-grant.cli.js",
-    "chat:probe": "node --enable-source-maps dist/chat/probe-chat.js"
+    "chat:probe": "node --enable-source-maps dist/chat/probe-chat.js",
+    "chat:eval": "node --enable-source-maps dist/chat/eval/chat-eval.cli.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",

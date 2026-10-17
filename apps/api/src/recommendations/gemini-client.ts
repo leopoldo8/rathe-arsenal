@@ -89,14 +89,15 @@ interface IGenerateContentResponse {
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 }
 
-const RETRYABLE_STATUSES: ReadonlyMap<number, TRecommendationFailureCode> = new Map([
+export const RETRYABLE_STATUSES: ReadonlyMap<number, TRecommendationFailureCode> = new Map([
   [429, 'RATE_LIMITED'],
   [500, 'PROVIDER_UNAVAILABLE'],
+  [502, 'PROVIDER_UNAVAILABLE'],
   [503, 'PROVIDER_UNAVAILABLE'],
   [504, 'PROVIDER_UNAVAILABLE'],
 ]);
 
-function parseEntries(text: string): readonly IGeminiEntry[] | null {
+export function parseEntries(text: string): readonly IGeminiEntry[] | null {
   try {
     const parsed = JSON.parse(text) as { recommendations?: unknown };
     if (!Array.isArray(parsed.recommendations)) return null;
@@ -144,13 +145,14 @@ function classifyAnswer(json: IGenerateContentResponse): TGeminiOutcome {
   };
 }
 
-export async function callGemini(
-  apiKey: string,
-  request: IRecommendationPrompt,
-  fetchImpl: TGeminiFetch,
-  options: IGeminiCallOptions = {},
-): Promise<TGeminiOutcome> {
-  const timeoutMs = options.timeoutMs ?? GEMINI_TIMEOUT_MS;
+export interface IRecommendationPost {
+  readonly url: string;
+  readonly headers: Record<string, string>;
+  readonly body: Record<string, unknown>;
+  readonly classify: (json: unknown) => TGeminiOutcome;
+}
+
+export async function postRecommendation(post: IRecommendationPost, fetchImpl: TGeminiFetch, timeoutMs: number): Promise<TGeminiOutcome> {
   const controller = new AbortController();
   let timer: NodeJS.Timeout | undefined;
   const timedOut = new Promise<TGeminiOutcome>((resolve) => {
@@ -161,16 +163,16 @@ export async function callGemini(
   });
   const answered = (async (): Promise<TGeminiOutcome> => {
     try {
-      const response = await fetchImpl(GEMINI_URL, {
+      const response = await fetchImpl(post.url, {
         method: 'POST',
-        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildGeminiBody(request, options.thinkingLevel)),
+        headers: { ...post.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(post.body),
         signal: controller.signal,
       });
       const retryCode = RETRYABLE_STATUSES.get(response.status);
       if (retryCode) return { kind: 'retry', status: response.status, code: retryCode };
       if (!response.ok) return { kind: 'failed', code: 'PROVIDER_ERROR', detail: `HTTP ${response.status}` };
-      return classifyAnswer((await response.json()) as IGenerateContentResponse);
+      return post.classify(await response.json());
     } catch (error) {
       return { kind: 'failed', code: 'PROVIDER_ERROR', detail: (error as Error).message };
     }
@@ -180,4 +182,22 @@ export async function callGemini(
   } finally {
     clearTimeout(timer);
   }
+}
+
+export function callGemini(
+  apiKey: string,
+  request: IRecommendationPrompt,
+  fetchImpl: TGeminiFetch,
+  options: IGeminiCallOptions = {},
+): Promise<TGeminiOutcome> {
+  return postRecommendation(
+    {
+      url: GEMINI_URL,
+      headers: { 'x-goog-api-key': apiKey },
+      body: buildGeminiBody(request, options.thinkingLevel),
+      classify: (json) => classifyAnswer(json as IGenerateContentResponse),
+    },
+    fetchImpl,
+    options.timeoutMs ?? GEMINI_TIMEOUT_MS,
+  );
 }

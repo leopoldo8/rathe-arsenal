@@ -2,16 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { TournamentDeckCardEntity } from '../database/entities/tournament-deck-card.entity';
-import { TournamentDeckEntity } from '../database/entities/tournament-deck.entity';
+import { TournamentDeckEntity, TTournamentDeckSource } from '../database/entities/tournament-deck.entity';
 import { IDeckImportDto } from '../fabrary/dtos/deck-import.dto';
 import { FabraryService } from '../fabrary/fabrary.service';
-import { FabraryIndexClient, IIndexDeck, listTournamentDecks } from './fabrary-index';
+import { FabraryIndexClient, IIndexDeck, listPlayerNamedDecks, listTournamentDecks, pairKey } from './fabrary-index';
 import { parseTournamentName, ulidTime } from './tournament-name';
 
 export const TOURNAMENT_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 export const TOURNAMENT_SYNC_RETRY_MS = 60 * 60 * 1000;
 export const DECK_FETCH_PACE_MS = 300;
 const NAME_MAX = 255;
+const PLAYER_NAMED_NAME_MAX = 120;
 
 export interface ISyncClock {
   readonly now: () => Date;
@@ -25,6 +26,7 @@ export const REAL_CLOCK: ISyncClock = {
 
 export interface ITournamentSyncSummary {
   readonly listed: number;
+  readonly playerNamed: number;
   readonly fetched: number;
   readonly failed: number;
   readonly kept: number;
@@ -46,6 +48,8 @@ function cardRows(deck: IDeckImportDto): Map<string, { quantity: number; sideboa
 export class TournamentSyncService {
   private readonly logger = new Logger(TournamentSyncService.name);
   private retryNotBefore = 0;
+  // Stored rows only say when a sync started; a restart mid-sync would otherwise leave the rest for a day.
+  private completedSinceBoot = false;
 
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -55,6 +59,7 @@ export class TournamentSyncService {
 
   async isDue(now: Date): Promise<boolean> {
     if (now.getTime() < this.retryNotBefore) return false;
+    if (!this.completedSinceBoot) return true;
     const [{ latest }] = (await this.dataSource.query(`SELECT max("syncedAt") AS latest FROM tournament_deck`)) as [
       { latest: Date | null },
     ];
@@ -64,8 +69,10 @@ export class TournamentSyncService {
   async sync(clock: ISyncClock = REAL_CLOCK): Promise<ITournamentSyncSummary | null> {
     const startedAt = clock.now();
     let listing;
+    let playerNamed;
     try {
       listing = await listTournamentDecks(this.index.query);
+      playerNamed = await listPlayerNamedDecks(this.index.query, new Set(listing.decks.map(pairKey)));
     } catch (error) {
       this.retryNotBefore = startedAt.getTime() + TOURNAMENT_SYNC_RETRY_MS;
       this.logger.error({ event: 'tournament.sync.failed', error: (error as Error).message });
@@ -75,10 +82,14 @@ export class TournamentSyncService {
       this.logger.warn({ event: 'tournament.sync.truncated', ...listingLabel });
     }
 
+    const listed: Array<{ deck: IIndexDeck; source: TTournamentDeckSource }> = [
+      ...listing.decks.map((deck) => ({ deck, source: 'tournament' as const })),
+      ...playerNamed.map((deck) => ({ deck, source: 'player-named' as const })),
+    ];
     const known = new Set(
       (
         (await this.dataSource.query(`SELECT "fabraryUlid" FROM tournament_deck WHERE "fabraryUlid" = ANY($1)`, [
-          listing.decks.map((deck) => deck.deckId),
+          listed.map(({ deck }) => deck.deckId),
         ])) as Array<{ fabraryUlid: string }>
       ).map((row) => row.fabraryUlid),
     );
@@ -89,10 +100,10 @@ export class TournamentSyncService {
 
     let fetched = 0;
     let failed = 0;
-    for (const deck of listing.decks.filter((listed) => !known.has(listed.deckId))) {
+    for (const { deck, source } of listed.filter(({ deck }) => !known.has(deck.deckId))) {
       if (fetched + failed > 0) await clock.sleep(DECK_FETCH_PACE_MS);
       try {
-        await this.store(deck, await this.fabrary.fetchDeck(deck.deckId), startedAt);
+        await this.store({ listed: deck, source }, await this.fabrary.fetchDeck(deck.deckId), startedAt);
         fetched += 1;
       } catch (error) {
         failed += 1;
@@ -102,7 +113,8 @@ export class TournamentSyncService {
 
     // An empty table whose every fetch failed is still due by stored state; the hour keeps it from relisting every pass.
     this.retryNotBefore = startedAt.getTime() + TOURNAMENT_SYNC_RETRY_MS;
-    const summary = { listed: listing.decks.length, fetched, failed, kept: known.size };
+    this.completedSinceBoot = true;
+    const summary = { listed: listing.decks.length, playerNamed: playerNamed.length, fetched, failed, kept: known.size };
     this.logger.log({
       event: 'tournament.sync.done',
       ...summary,
@@ -111,8 +123,8 @@ export class TournamentSyncService {
     return summary;
   }
 
-  private async store(listed: IIndexDeck, fetched: IDeckImportDto, syncedAt: Date): Promise<void> {
-    const name = listed.name.slice(0, NAME_MAX);
+  private async store({ listed, source }: { listed: IIndexDeck; source: TTournamentDeckSource }, fetched: IDeckImportDto, syncedAt: Date): Promise<void> {
+    const name = listed.name.slice(0, source === 'player-named' ? PLAYER_NAMED_NAME_MAX : NAME_MAX);
     const { eventName, placement } = parseTournamentName(listed.name);
     await this.dataSource.transaction(async (manager) => {
       const deck = await manager.save(
@@ -125,6 +137,7 @@ export class TournamentSyncService {
           format: listed.format,
           deckCreatedAt: ulidTime(listed.deckId),
           syncedAt,
+          source,
         }),
       );
       const rows = [...cardRows(fetched).entries()].map(([cardIdentifier, copies]) => ({

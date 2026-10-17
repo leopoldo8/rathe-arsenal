@@ -88,12 +88,16 @@ export class ChatTurnQueueService {
     ]);
   }
 
-  async recordUsage(turn: IClaimedTurn, usage: { model: string; inputTokens: number; outputTokens: number; costUsd: number }): Promise<void> {
+  async recordUsage(
+    turn: IClaimedTurn,
+    usage: { model: string; inputTokens: number; cachedInputTokens?: number; outputTokens: number; costUsd: number },
+  ): Promise<void> {
     await this.dataSource.getRepository(ChatUsageEntity).insert({
       userId: turn.userId,
       messageId: turn.id,
       model: usage.model,
       inputTokens: usage.inputTokens,
+      cachedInputTokens: usage.cachedInputTokens ?? 0,
       outputTokens: usage.outputTokens,
       costUsd: usage.costUsd.toFixed(6),
     });

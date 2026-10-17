@@ -44,7 +44,7 @@ export interface IRecommendationsFixture extends IFixture {
   secondsUntilRunAfter(runId: string): Promise<number>;
   seedDoneRun(deckId: number, entries: readonly ISeedEntry[], options?: { readonly stale?: boolean; readonly finishedAt?: string }): Promise<{ runId: string; ids: string[] }>;
   seedRun(deckId: number, status: string, options?: { readonly trigger?: string; readonly error?: string; readonly finishedAt?: string; readonly claimedMinutesAgo?: number }): Promise<string>;
-  drain(fetch: TGeminiFetch, apiKey?: string | null): Promise<boolean>;
+  drain(fetch: TGeminiFetch, apiKey?: string | null, openRouterModel?: string): Promise<boolean>;
   patch(path: string, jwt: string): request.Test;
   del(path: string, jwt: string): request.Test;
   importDecks(jwt: string, count: number): Promise<number[]>;
@@ -155,8 +155,8 @@ export async function bootRecommendationsFixture(options: { readonly throttle?: 
       return { runId, ids };
     },
     seedRun,
-    drain: (fetch, apiKey = 'test-key') =>
-      drainRecommendationsOnce({ queue, runner, readApiKey: () => apiKey, fetch }),
+    drain: (fetch, apiKey = 'test-key', openRouterModel) =>
+      drainRecommendationsOnce({ queue, runner, readApiKey: () => apiKey, readOpenRouterModel: () => openRouterModel, fetch }),
     patch: (path, jwt) => request(server).patch(path).set('Authorization', `Bearer ${jwt}`),
     del: (path, jwt) => request(server).delete(path).set('Authorization', `Bearer ${jwt}`),
     importDecks: async (jwt, count) => {

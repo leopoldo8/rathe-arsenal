@@ -1,5 +1,8 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
+export const TOURNAMENT_DECK_SOURCES = ['tournament', 'player-named'] as const;
+export type TTournamentDeckSource = (typeof TOURNAMENT_DECK_SOURCES)[number];
+
 @Entity({ name: 'tournament_deck' })
 @Index('IDX_tournament_deck_hero_format_created', ['heroIdentifier', 'format', 'deckCreatedAt'])
 export class TournamentDeckEntity {
@@ -30,4 +33,7 @@ export class TournamentDeckEntity {
 
   @Column({ type: 'timestamptz' })
   syncedAt!: Date;
+
+  @Column({ type: 'varchar', length: 20, default: 'tournament' })
+  source!: TTournamentDeckSource;
 }
