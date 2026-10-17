@@ -6,6 +6,7 @@ import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { RecommendationRunEntity, TRecommendationFailureCode } from '../database/entities/recommendation-run.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { callGemini, GEMINI_MODEL, TGeminiFetch, TGeminiThinkingLevel } from './gemini-client';
+import { callOpenRouterRecommendation } from './openrouter-recommendation-client';
 import {
   buildRecommendationPool,
   buildRecommendationPrompt,
@@ -23,6 +24,7 @@ export interface IRunnerDeps {
   readonly apiKey: string | null | undefined;
   readonly fetch: TGeminiFetch;
   readonly thinkingLevel?: TGeminiThinkingLevel | undefined;
+  readonly openRouterModel?: string | undefined;
 }
 
 @Injectable()
@@ -63,11 +65,16 @@ export class RecommendationRunnerService {
       event: 'recommendations.run.request',
       trackedDeckId: run.trackedDeckId,
       runId: run.id,
+      model: deps.openRouterModel ?? GEMINI_MODEL,
       poolSize: pool.length,
       promptChars: prompt.system.length + prompt.prompt.length,
       thinkingLevel: deps.thinkingLevel ?? 'default',
     });
-    const outcome = await callGemini(apiKey, prompt, deps.fetch, { thinkingLevel: deps.thinkingLevel });
+    const model = deps.openRouterModel ?? GEMINI_MODEL;
+    const options = { thinkingLevel: deps.thinkingLevel };
+    const outcome = deps.openRouterModel
+      ? await callOpenRouterRecommendation(apiKey, deps.openRouterModel, prompt, deps.fetch, options)
+      : await callGemini(apiKey, prompt, deps.fetch, options);
 
     if (outcome.kind === 'retry') {
       if (run.attempts >= MAX_RUN_ATTEMPTS) return this.fail(run, outcome.code);
@@ -92,7 +99,7 @@ export class RecommendationRunnerService {
     );
     await this.queue.finishDone(run, {
       deckFingerprint,
-      model: GEMINI_MODEL,
+      model,
       inputTokens: outcome.usage.inputTokens,
       outputTokens: outcome.usage.outputTokens,
       kept,
@@ -143,6 +150,7 @@ export interface IRecommendationDrainDeps {
   readonly runner: Pick<RecommendationRunnerService, 'process'>;
   readonly readApiKey: () => string | null | undefined;
   readonly readThinkingLevel?: () => TGeminiThinkingLevel | undefined;
+  readonly readOpenRouterModel?: () => string | undefined;
   readonly fetch: TGeminiFetch;
 }
 
@@ -154,6 +162,7 @@ export async function drainRecommendationsOnce(deps: IRecommendationDrainDeps): 
     apiKey: deps.readApiKey(),
     fetch: deps.fetch,
     thinkingLevel: deps.readThinkingLevel?.(),
+    openRouterModel: deps.readOpenRouterModel?.(),
   });
   return true;
 }

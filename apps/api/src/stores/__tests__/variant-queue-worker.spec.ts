@@ -1,4 +1,5 @@
 import {
+  createChatStep,
   createRecommendationStep,
   defaultWorkerDeps,
   drainOnce,
@@ -148,6 +149,33 @@ describe('worker assembly', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('model choice', () => {
+  it('each feature goes to OpenRouter with its key only when its own model variable is set', async () => {
+    const env: NodeJS.ProcessEnv = { GEMINI_API_KEY: 'gemini-key', OPENROUTER_API_KEY: 'openrouter-key', CHAT_OPENROUTER_MODEL: 'openai/gpt-6-luna' };
+    const deps = () => ({
+      queue: { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue({ id: 'run-1' }) },
+      runner: { process: jest.fn() },
+      env,
+      fetch: jest.fn(),
+      logger: { error: jest.fn() },
+    });
+    const recommendation = deps();
+    const chat = deps();
+
+    await createRecommendationStep(recommendation as never)();
+    await createChatStep(chat as never)();
+    env['RECOMMENDATION_OPENROUTER_MODEL'] = ' openai/gpt-6-luna ';
+    await createRecommendationStep(recommendation as never)();
+
+    const seen = (step: ReturnType<typeof deps>) => step.runner.process.mock.calls.map(([, used]) => [used.apiKey, used.openRouterModel]);
+    expect(seen(recommendation)).toEqual([
+      ['gemini-key', undefined],
+      ['openrouter-key', 'openai/gpt-6-luna'],
+    ]);
+    expect(seen(chat)).toEqual([['openrouter-key', 'openai/gpt-6-luna']]);
   });
 });
 

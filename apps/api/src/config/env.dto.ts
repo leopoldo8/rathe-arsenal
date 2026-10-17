@@ -166,6 +166,11 @@ export class EnvDto {
   @IsString()
   CHAT_OPENROUTER_MODEL?: string;
 
+  /** Same as CHAT_OPENROUTER_MODEL, for deck recommendations. */
+  @IsOptional()
+  @IsString()
+  RECOMMENDATION_OPENROUTER_MODEL?: string;
+
   @IsOptional()
   @IsString()
   OPENROUTER_API_KEY?: string;

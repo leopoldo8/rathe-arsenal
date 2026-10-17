@@ -20,6 +20,8 @@ import { RulesImportService } from '../reference/rules-import.service';
 import { TournamentSyncService } from '../reference/tournament-sync.service';
 
 export const POLL_MS = 3000;
+const CHAT_MODEL_VARIABLE = 'CHAT_OPENROUTER_MODEL';
+const RECOMMENDATION_MODEL_VARIABLE = 'RECOMMENDATION_OPENROUTER_MODEL';
 
 export interface IDrainDeps {
   readonly queue: Pick<VariantFetchQueueService, 'reclaimOrphans' | 'claimNext'>;
@@ -106,7 +108,8 @@ export function createRecommendationStep(deps: IRecommendationStepDeps): () => P
       await drainRecommendationsOnce({
         queue: deps.queue,
         runner: deps.runner,
-        readApiKey: () => deps.env['GEMINI_API_KEY'],
+        readApiKey: () => apiKeyFor(deps.env, RECOMMENDATION_MODEL_VARIABLE),
+        readOpenRouterModel: () => readOpenRouterModel(deps.env, RECOMMENDATION_MODEL_VARIABLE),
         readThinkingLevel: () => parseThinkingLevel(deps.env['GEMINI_THINKING_LEVEL']),
         fetch: deps.fetch,
       });
@@ -124,8 +127,12 @@ export interface IChatStepDeps {
   readonly logger: Pick<Logger, 'error'>;
 }
 
-function readOpenRouterModel(env: NodeJS.ProcessEnv): string | undefined {
-  return env['CHAT_OPENROUTER_MODEL']?.trim() || undefined;
+function readOpenRouterModel(env: NodeJS.ProcessEnv, variable: string): string | undefined {
+  return env[variable]?.trim() || undefined;
+}
+
+function apiKeyFor(env: NodeJS.ProcessEnv, modelVariable: string): string | undefined {
+  return readOpenRouterModel(env, modelVariable) ? env['OPENROUTER_API_KEY'] : env['GEMINI_API_KEY'];
 }
 
 /** One chat drain; like recommendations, the key and the model are read from the environment on every turn. */
@@ -135,8 +142,8 @@ export function createChatStep(deps: IChatStepDeps): () => Promise<void> {
       await drainChatOnce({
         queue: deps.queue,
         runner: deps.runner,
-        readApiKey: () => (readOpenRouterModel(deps.env) ? deps.env['OPENROUTER_API_KEY'] : deps.env['GEMINI_API_KEY']),
-        readOpenRouterModel: () => readOpenRouterModel(deps.env),
+        readApiKey: () => apiKeyFor(deps.env, CHAT_MODEL_VARIABLE),
+        readOpenRouterModel: () => readOpenRouterModel(deps.env, CHAT_MODEL_VARIABLE),
         readThinkingLevel: () => parseThinkingLevel(deps.env['GEMINI_CHAT_THINKING_LEVEL']),
         fetch: deps.fetch,
       });
