@@ -31,6 +31,7 @@ export function selectRecommendations(
   catalog: ICatalog,
 ): ISelectedRecommendations {
   const seen = new Set<string>();
+  const cutsLeft = new Map(deckCards.map((card) => [`${card.slot}:${card.cardIdentifier}`, card.quantity]));
   const kept: IKeptRecommendation[] = [];
   let dropped = 0;
 
@@ -42,7 +43,10 @@ export function selectRecommendations(
     }
     seen.add(entry.card);
     const slot = slotForCard(catalog.getCard(entry.card));
-    const cutInSlot = deckCards.some((card) => card.cardIdentifier === entry.cut && card.slot === slot);
+    const cutKey = `${slot}:${entry.cut}`;
+    const copiesLeft = cutsLeft.get(cutKey) ?? 0;
+    const cutInSlot = copiesLeft > 0;
+    if (cutInSlot) cutsLeft.set(cutKey, copiesLeft - 1);
     kept.push({
       cardIdentifier: entry.card,
       rank: kept.length + 1,

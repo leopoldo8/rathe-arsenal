@@ -88,6 +88,25 @@ describe('selectRecommendations', () => {
     ]);
   });
 
+  it('cuts a deck card no more times than its copies in the deck, keeping later recommendations without a cut', () => {
+    const entries = [
+      entry('adrenaline-rush-red', { cut: 'flex-red' }),
+      entry('adrenaline-rush-yellow', { cut: 'flex-red' }),
+      entry('adrenaline-rush-blue', { cut: 'flex-red' }),
+      entry('ancestral-harmony-blue', { cut: 'emissary-of-tides-red' }),
+    ];
+
+    const { kept, dropped } = selectRecommendations(entries, pool, deckCards, catalog);
+
+    expect(kept.map((row) => [row.cardIdentifier, row.cutCardIdentifier, row.cutSlot])).toEqual([
+      ['adrenaline-rush-red', 'flex-red', 'mainboard'],
+      ['adrenaline-rush-yellow', 'flex-red', 'mainboard'],
+      ['adrenaline-rush-blue', null, null],
+      ['ancestral-harmony-blue', 'emissary-of-tides-red', 'mainboard'],
+    ]);
+    expect(dropped).toBe(0);
+  });
+
   it('keeps the Portuguese reason, or null when the model left it blank', () => {
     const { kept } = selectRecommendations(
       [entry(POOL_CARDS[0]), entry(POOL_CARDS[1], { reason_pt_br: '  ' })],
