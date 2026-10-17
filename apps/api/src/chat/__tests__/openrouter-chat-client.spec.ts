@@ -86,6 +86,8 @@ describe('OpenRouter chat client', () => {
         provider: { data_collection: 'deny' },
       }),
     );
+    expect(body['cache_control']).toEqual({ type: 'ephemeral' });
+    expect(buildOpenRouterBody('openai/gpt-6-luna', request)['cache_control']).toBeUndefined();
     expect(final['tools']).toBeUndefined();
     expect(final['reasoning']).toBeUndefined();
     const messages = final['messages'] as Array<Record<string, unknown>>;

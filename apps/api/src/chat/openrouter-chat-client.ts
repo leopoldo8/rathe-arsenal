@@ -93,6 +93,8 @@ export function buildOpenRouterBody(model: string, request: IChatRequest, effort
         }),
     max_tokens: CHAT_MAX_OUTPUT_TOKENS,
     ...(effort === undefined ? {} : { reasoning: { effort } }),
+    // Anthropic models reuse a cached prompt only when the request asks for it; Gemini and OpenAI cache on their own.
+    ...(model.startsWith('anthropic/') ? { cache_control: { type: 'ephemeral' } } : {}),
     provider: { data_collection: 'deny' },
   };
 }
