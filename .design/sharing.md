@@ -65,7 +65,7 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 
 | Slice | Delivers | Status |
 |---|---|---|
-| [LSS disclaimer](#lss-disclaimer) | Every surface carries the Third Party Apps disclaimer, and every surface showing card faces carries "© Legend Story Studios" | clear |
+| [LSS disclaimer](#lss-disclaimer) | Every surface carries the Third Party Apps disclaimer, and every surface showing card faces carries "© Legend Story Studios" | done - PR #151 |
 | [Shared deck](#shared-deck) | The owner turns a deck's share link on and off; anyone with the address sees the deck or only what the owner misses | design |
 | [Share attribution](#share-attribution) | Link creations, opens and sign-ups from links are recorded and can be counted for the review | clear |
 | [Share Preview](#share-preview) | A branded image, generated per link, that WhatsApp shows when a deck or list address is pasted | design |

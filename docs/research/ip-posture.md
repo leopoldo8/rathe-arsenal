@@ -34,9 +34,9 @@ Public pages, share links, and user-to-user sell and want lists are permitted, p
 3. **Third Party Apps may not be created by a commercial entity.** Incorporating the project would remove the permission it currently relies on, so it is now a blocker in the frontmatter.
 4. **FAB logos may not be used in Third Party Applications** - consistent with Rule 10, now explicit in the policy.
 
-**Gaps to close (open):**
-- [ ] Replace the live disclaimer (footer, `/about`, anonymous auth screens, `README.md`, both locales) with the Third Party Apps wording in "Required Disclaimer" below.
-- [ ] Show "© Legend Story Studios" on every surface that shows card images, including generated share images.
+**Gaps to close:**
+- [x] Replace the live disclaimer (footer, `/about`, anonymous auth screens, `README.md`, both locales) with the Third Party Apps wording in "Required Disclaimer" below. Done in PR #151.
+- [x] Show "© Legend Story Studios" on every surface that shows card images, including generated share images. Done for every existing surface in PR #151 (the disclaimer ends with the line, and the full-screen scanner, which has no footer, shows it on its own); generated share images carry it per `.design/sharing.md` Key decision 1.
 
 ---
 
@@ -130,7 +130,7 @@ Verbatim text to surface in-product and in the repository (the Third Party Apps 
 
 > Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios
 
-The text shipped on 2026-07-01 is the Fan Fiction wording ("... Characters and names may be protected by copyright.") and is superseded; replacing it is an open gap in "Review — 2026-10-18".
+The text shipped on 2026-07-01 is the Fan Fiction wording ("... Characters and names may be protected by copyright.") and was replaced on 2026-10-18 (PR #151).
 
 **Placement (required before Phase 2 monetization activates, recommended from v1 launch):**
 
@@ -142,7 +142,7 @@ The text shipped on 2026-07-01 is the Fan Fiction wording ("... Characters and n
 
 The disclaimer is a hard requirement of the LSS policy. It is not a best-effort nicety.
 
-**Status (2026-07-01) — disclaimer surfaces are LIVE.** Shipped in `feat/pre-launch-hardening` (`.specs/features/pre-launch-hardening/`): placement #1 (site footer, in the authenticated app shell, linking to `/about`), #2 (the `/about` page with the full disclaimer + fan-project context), and #3 (`README.md` top-of-file block) are all live, plus the disclaimer on the anonymous auth screens. Text is localized (pt-BR / en-US) with the en-US string verbatim from this section. Placements #4 (app-store listing) and #5 (Patreon "About") remain deferred until those surfaces exist. The remaining Phase 2 activation-checklist items (screenshot evidence archive, takedown dry-run, legal-counsel read) still stand — this covers only the disclaimer-live requirement, not the full monetization gate. **Update (2026-10-18):** these surfaces are live with the superseded Fan Fiction wording; see "Review — 2026-10-18".
+**Status (2026-07-01) — disclaimer surfaces are LIVE.** Shipped in `feat/pre-launch-hardening` (`.specs/features/pre-launch-hardening/`): placement #1 (site footer, in the authenticated app shell, linking to `/about`), #2 (the `/about` page with the full disclaimer + fan-project context), and #3 (`README.md` top-of-file block) are all live, plus the disclaimer on the anonymous auth screens. Text is localized (pt-BR / en-US) with the en-US string verbatim from this section. Placements #4 (app-store listing) and #5 (Patreon "About") remain deferred until those surfaces exist. The remaining Phase 2 activation-checklist items (screenshot evidence archive, takedown dry-run, legal-counsel read) still stand — this covers only the disclaimer-live requirement, not the full monetization gate. **Update (2026-10-18):** these surfaces now show the Third Party Apps wording ending in "© Legend Story Studios" (PR #151).
 
 ---
 
@@ -191,7 +191,7 @@ Rathe Arsenal does not activate any monetization surface until all of the follow
 
 - [ ] **Re-retrieve the full LSS policy** and diff it against the last verbatim retrieval (2026-10-18, in "What the LSS Policy Actually Says"). Re-do this at activation time even though it was done on 2026-10-18 - the page changes without notice.
 - [x] **Diff against the 2026-04-19 extract** - done 2026-10-18; findings in "Review — 2026-10-18".
-- [~] **Disclaimer surfaces are live, with superseded wording (replace per "Review — 2026-10-18")** — ✅ footer (authenticated shell), ✅ `/about` page section, ✅ `README.md` header block, ✅ anonymous auth screens, all shipped 2026-07-01 in `feat/pre-launch-hardening`. Still pending: Patreon "About" section (if Patreon activates) and screenshot evidence archived in `docs/research/ip-posture-evidence/`.
+- [~] **Disclaimer surfaces are live, with the Third Party Apps wording since PR #151** — ✅ footer (authenticated shell), ✅ `/about` page section, ✅ `README.md` header block, ✅ anonymous auth screens, all shipped 2026-07-01 in `feat/pre-launch-hardening`. Still pending: Patreon "About" section (if Patreon activates) and screenshot evidence archived in `docs/research/ip-posture-evidence/`.
 - [ ] **Takedown path is exercised at least once** — add a dry-run admin command that removes a chosen card image from the rendered surface within 5 minutes, end-to-end, before Phase 2 ships. This proves Rule #5 is real, not aspirational.
 - [ ] **Patreon tier design is reviewed against Rule #3** — written rationale for each tier's perks, confirming none gate IP-dependent features. File: `docs/research/patreon-tier-design.md` (create when Patreon activates).
 - [ ] **Ad placement plan is reviewed against Rule #2** — wireframes or screenshots of each ad slot, no interstitial/popup/autoplay. File: `docs/research/ad-placement-plan.md` (create when ads activate).
