@@ -25,6 +25,10 @@ export interface IIndexDeck {
   readonly name: string;
   readonly format: string;
   readonly heroIdentifier: string;
+  readonly updatedAt?: string;
+  readonly hasResults?: boolean;
+  readonly hasMatchups?: boolean;
+  readonly hasNotes?: boolean;
 }
 
 export interface IIndexRequest {
@@ -52,7 +56,7 @@ export interface ITournamentListing {
   readonly truncated: readonly ITruncatedListing[];
 }
 
-function quoted(value: string): string {
+export function quoted(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
@@ -118,7 +122,7 @@ export class FabraryIndexClient {
       query: request.query ?? '',
       filters: request.filters,
       hitsPerPage: String(request.hitsPerPage),
-      attributesToRetrieve: JSON.stringify(['deckId', 'name', 'format', 'heroIdentifier']),
+      attributesToRetrieve: JSON.stringify(['deckId', 'name', 'format', 'heroIdentifier', 'updatedAt', 'hasResults', 'hasMatchups', 'hasNotes']),
       attributesToHighlight: '[]',
       ...(request.facets ? { facets: JSON.stringify(request.facets), maxValuesPerFacet: '1000' } : {}),
     });

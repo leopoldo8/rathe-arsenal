@@ -3,9 +3,9 @@ import { Type } from '@rathe-arsenal/engine';
 import { CatalogService } from '../catalog/catalog.service';
 import { CardNotFoundError } from '@rathe-arsenal/engine';
 import { AwsIamTransport } from './aws-iam.transport';
-import { IDeckCardEntry, IDeckImportDto } from './dtos/deck-import.dto';
+import { ICommunityDeckImport, IDeckCardEntry, IDeckImportDto } from './dtos/deck-import.dto';
 import { EFabraryErrorCode, FabraryImportError } from './errors';
-import { GET_DECK_QUERY } from './queries/get-deck.query';
+import { GET_COMMUNITY_DECK_QUERY, GET_DECK_QUERY } from './queries/get-deck.query';
 
 interface IRawDeckCard {
   readonly cardIdentifier: string;
@@ -22,6 +22,7 @@ interface IRawDeckResponse {
       readonly heroIdentifier: string;
       readonly hero: { readonly cardIdentifier: string; readonly name: string };
       readonly deckCards: readonly IRawDeckCard[];
+      readonly matchups?: readonly unknown[] | null;
     };
   };
   readonly errors?: readonly { readonly message: string }[];
@@ -55,10 +56,19 @@ export class FabraryService {
   ) {}
 
   async fetchDeck(ulid: string): Promise<IDeckImportDto> {
+    return (await this.load(ulid, GET_DECK_QUERY)).deck;
+  }
+
+  async fetchCommunityDeck(ulid: string): Promise<ICommunityDeckImport> {
+    const { deck, matchups } = await this.load(ulid, GET_COMMUNITY_DECK_QUERY);
+    return { ...deck, matchupPlans: matchups };
+  }
+
+  private async load(ulid: string, query: string): Promise<{ deck: IDeckImportDto; matchups: number }> {
     this.logger.log({ msg: 'Fetching deck from Fabrary', ulid });
 
     const body = JSON.stringify({
-      query: GET_DECK_QUERY,
+      query,
       variables: { deckId: ulid },
     });
 
@@ -191,7 +201,7 @@ export class FabraryService {
       inventoryCount: inventory.length,
     });
 
-    return result;
+    return { deck: result, matchups: deck.matchups?.length ?? 0 };
   }
 
   private classifyCard(

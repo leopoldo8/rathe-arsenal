@@ -69,7 +69,7 @@ describe('chat worker (E2E)', () => {
     }
   });
 
-  it('declares the eleven tools', async () => {
+  it('declares the twelve tools', async () => {
     await turn();
     const stub = scriptedFetch([textAnswer('Hello')]);
 
@@ -82,6 +82,7 @@ describe('chat worker (E2E)', () => {
       'search_cards',
       'get_recommendations',
       'search_tournament_decks',
+      'get_community_decks',
       'get_tournament_meta',
       'get_collection',
       'get_tournament_deck',
