@@ -20,7 +20,7 @@ import { setTestLocale } from '../../test/i18n-test-utils';
 import { AboutPage } from '../about';
 
 const VERBATIM_EN_DISCLAIMER =
-  'Rathe Arsenal is in no way affiliated with Legend Story Studios. Flesh and Blood™, and set names are trademarks of Legend Story Studios®. Characters and names may be protected by copyright.';
+  'Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios';
 
 // Router mock — Link renders as a plain <a> with href, matching the pattern
 // used across other route/component tests (e.g. Footer.spec.tsx).

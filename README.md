@@ -2,7 +2,7 @@
 
 > Your Flesh and Blood collection, ready to play.
 
-> **Disclaimer.** Rathe Arsenal is in no way affiliated with Legend Story Studios. Flesh and Blood™, and set names are trademarks of Legend Story Studios®. Characters and names may be protected by copyright.
+> **Disclaimer.** Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios
 
 Private closed-beta web app that turns Fabrary deck URLs into a tracked deck list with a substitution-aware "effective readiness" score, computed against the cards you actually own — plus an interactive swap editor, Path C ("closest playable version"), and a variant-aware shopping line against Cúpula DT.
 

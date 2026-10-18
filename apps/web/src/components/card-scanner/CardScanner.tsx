@@ -301,6 +301,7 @@ export function CardScanner(): React.ReactElement {
           <span className={styles.codeLine} />
         </div>
         <p className={styles.hint}>{t('scanner.hint')}</p>
+        <p className={styles.copyright}>{t('about.copyright')}</p>
         {isLoading && !hasError && (
           <p className={styles.status} role="status">
             {t('scanner.loadingEngine')}
