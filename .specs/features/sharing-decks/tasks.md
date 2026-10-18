@@ -30,6 +30,7 @@ F and W start together. A and B start when F is merged. W merges last, after A, 
 ## A - API
 
 - [ ] A1 `PATCH /api/users/me/display-name` + `displayName` on `GET /api/auth/me`; DTO trims, 2 to 40 characters. Unit + controller tests.
+- [ ] A1b `PATCH /api/users/me/contact` + `whatsappNumber` on `GET /api/auth/me`; `PATCH /api/decks/:deckId/share` `{ showContact }`; `contactWhatsapp` on the shared deck response (SD-11).
 - [ ] A2 `DeckShareController`: `GET/POST/DELETE /api/decks/:deckId/share` (SD-01..03, SA-01). `POST` without display name → `409 DISPLAY_NAME_REQUIRED`.
 - [ ] A3 `ShareEventsService.record` (never throws) and `ShareReferralService.resolve`.
 - [ ] A4 `GET /api/shared/decks/:token` (SD-05..08, SA-02): enriched `cards`, `missing` from the owner's `notOwned`, `isOwner`, `opened` unless owner; `X-Robots-Tag`.
@@ -51,4 +52,5 @@ F and W start together. A and B start when F is merged. W merges last, after A, 
 - [ ] W2 Route `d.$token.tsx` and `components/shared-deck/` per `shared-deck-b` mockups: deck, missing view (`?view=missing`, side panel / bottom sheet), copy-as-text, unavailable page, owner view (no comparison, no copy), anonymous invitation, logged-in coverage + copy → navigate to the new deck. Disclaimer and copyright line. Query with refetch off.
 - [ ] W3 Share card on the deck detail per `share-control-b` mockups: switch, address + copy, missing-view link, download image while on, display-name prompt on `DISPLAY_NAME_REQUIRED`.
 - [ ] W4 Settings display-name field.
+- [ ] W6 (after its mockups are picked) WhatsApp button on the shared page, "show my WhatsApp" switch in the share card, number field in Settings (SD-11).
 - [ ] W5 Return after auth: `ra.shareReturn` in `localStorage`; sign-up sends `shareToken`; sign-in navigates to a guarded `returnTo` (`/d/` or `/l/` only); unit tests for the guard.

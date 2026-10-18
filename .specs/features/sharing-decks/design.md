@@ -12,6 +12,8 @@ No other migration in this feature; anything else needing schema goes after `177
 |---|---|---|---|
 | `tracked_deck.shareToken` | varchar(32) | yes | unique index `IDX_tracked_deck_shareToken` (Postgres unique allows many nulls) |
 | `user.displayName` | varchar(40) | yes | |
+| `user.whatsappNumber` | varchar(16) | yes | digits only, with country code |
+| `tracked_deck.shareShowsContact` | boolean | no | default true |
 | `user.referredByUserId` | uuid | yes | FK `user.id` on delete set null |
 | `user.referredVia` | varchar(8) | yes | check `IN ('deck','want','sell')` |
 | `share_event.id` | bigserial | no | |
@@ -48,7 +50,7 @@ New module `apps/api/src/sharing/`:
 
 | Route | Auth | Response |
 |---|---|---|
-| `GET /api/decks/:deckId/share` | owner (`OwnsTrackedDeckGuard`) | `200 { url: string \| null, token: string \| null }` |
+| `GET /api/decks/:deckId/share` | owner (`OwnsTrackedDeckGuard`) | `200 { url: string \| null, token: string \| null, showContact: boolean }` |
 | `POST /api/decks/:deckId/share` `{}` | owner | `200 { url, token }`; `409 DISPLAY_NAME_REQUIRED` when the owner has no display name; idempotent while on; records `created` only when a token is issued |
 | `DELETE /api/decks/:deckId/share` | owner | `204`; clears the token and deletes the deck's `share_image` row |
 | `GET /api/shared/decks/:token` | public + optional | `200 ISharedDeckResponse`; `404 SHARE_LINK_UNAVAILABLE`; records `opened` unless the visitor is the owner |
@@ -56,7 +58,9 @@ New module `apps/api/src/sharing/`:
 | `POST /api/shared/decks/:token/copy` `{}` | logged in | `201 { deckId }`; `404 SHARE_LINK_UNAVAILABLE` |
 | `GET /api/shared/decks/:token/image` | public | `200 image/jpeg`; generic image for unavailable tokens; `?download=1` adds `Content-Disposition: attachment; filename="<deck-slug>.jpg"` |
 | `PATCH /api/users/me/display-name` `{ displayName }` | logged in | `200 { displayName }`; trimmed, 2 to 40 characters, else `400` |
-| `GET /api/auth/me` | logged in | gains `displayName: string \| null` (additive) |
+| `PATCH /api/users/me/contact` `{ whatsappNumber: string \| null }` | logged in | `200 { whatsappNumber }`; non-digits stripped; 10 or 11 digits get the Brazilian `55` prefix; 12 to 15 digits kept; else `400`; `null` clears |
+| `PATCH /api/decks/:deckId/share` `{ showContact: boolean }` | owner | `200 { url, token, showContact }`; works whether or not sharing is on |
+| `GET /api/auth/me` | logged in | gains `displayName: string \| null` and `whatsappNumber: string \| null` (additive) |
 | `POST /api/auth/sign-up` | public | body gains optional `shareToken` (`@IsOptional() @IsString() @MaxLength(64)`); response unchanged |
 
 ```ts
@@ -78,6 +82,7 @@ interface ISharedDeckResponse {
   heroIdentifier: string | null;
   format: string;
   sharerName: string;      // user.displayName (non-null: sharing required it)
+  contactWhatsapp: string | null; // digits; set only when the owner saved a number and showContact is on
   isOwner: boolean;        // true when the optional visitor is the owner
   updatedAt: string;
   totalCards: number;

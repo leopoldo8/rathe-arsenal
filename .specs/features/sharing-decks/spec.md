@@ -19,6 +19,7 @@ Card lists, shared lists, list previews and price suggestion are a later feature
 | SD-07 | The page always shows the deck as it is now | "The deck changed since the link was posted" |
 | SD-08 | A turned-off, deleted, owner-deleted (including soft-deleted) or unknown address returns `404` `SHARE_LINK_UNAVAILABLE`, and the page reads "this link is no longer available" with no deck data | "Address turned off, deck deleted, owner deleted, or never existed" |
 | SD-09 | The first HTML response for `/d/<token>` carries the deck's title, description and preview image in `og:*` tags, escaped, without running script; an unknown token gets the generic title and image | "Address pasted in WhatsApp" |
+| SD-11 | The sharer can save an optional WhatsApp number in the profile; each link has a "show my WhatsApp" switch, on by default; the shared page shows a button opening a WhatsApp chat only when a number is saved and the switch is on. API and storage ship in this feature; the visible parts ship after their mockups are picked | Shared deck contact rows (added 2026-10-18) |
 | SD-10 | An anonymous visitor who wants to compare or copy is offered sign-up or sign-in and comes back to the same address afterwards, including across the email-verification round trip | "Anonymous visitor wants to compare or copy" |
 
 ### Share attribution (SA)
