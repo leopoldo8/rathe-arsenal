@@ -1,7 +1,7 @@
 # Sharing: decks, want lists and sell lists
 
 > Plan from this document. Each slice below carries its own shape - copy it, do not re-derive it.
-> Status: confirmed by Rodrigo, 2026-10-18 - build shared decks, want lists and sell lists with attribution; Price suggestion waits on one owner decision after its spike (2026-10-18), so sell lists ship hand-priced first.
+> Status: confirmed by Rodrigo, 2026-10-18 - build shared decks, want lists and sell lists with attribution; Price suggestion builds on tcgcsv market prices, decided after its spike; screens picked from the mockups the same day.
 
 ## Situation
 
@@ -66,16 +66,16 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 | Slice | Delivers | Status |
 |---|---|---|
 | [LSS disclaimer](#lss-disclaimer) | Every surface carries the Third Party Apps disclaimer, and every surface showing card faces carries "© Legend Story Studios" | done - PR #151 |
-| [Shared deck](#shared-deck) | The owner turns a deck's share link on and off; anyone with the address sees the deck or only what the owner misses | design |
+| [Shared deck](#shared-deck) | The owner turns a deck's share link on and off; anyone with the address sees the deck or only what the owner misses | open - 2 defaults taken |
 | [Share attribution](#share-attribution) | Link creations, opens and sign-ups from links are recorded and can be counted for the review | clear |
-| [Share Preview](#share-preview) | A branded image, generated per link, that WhatsApp shows when a deck or list address is pasted | design |
-| [Copy Deck](#copy-deck) | A logged-in visitor sees how much of a shared deck they own and copies it into their decks | design |
-| [Card list](#card-list) | The owner keeps `want` and `sell` lists, filled from a deck or by hand, and copies any list as text | design |
-| [Shared list](#shared-list) | Anyone with the address sees a card list; a logged-in visitor sees which lines match their collection or decks | design |
-| [Price suggestion](#price-suggestion) | Sell lines priced from the TCGplayer market price in dollars times the list's multiplier | open - needs the owner |
+| [Share Preview](#share-preview) | A branded image, generated per link, that WhatsApp shows when a deck or list address is pasted | open - 1 default taken |
+| [Copy Deck](#copy-deck) | A logged-in visitor sees how much of a shared deck they own and copies it into their decks | clear |
+| [Card list](#card-list) | The owner keeps `want` and `sell` lists, filled from a deck or by hand, and copies any list as text | open - 4 defaults taken |
+| [Shared list](#shared-list) | Anyone with the address sees a card list; a logged-in visitor sees which lines match their collection or decks | clear |
+| [Price suggestion](#price-suggestion) | Sell lines priced from the TCGplayer market price in dollars times the list's multiplier | open - 3 defaults taken |
 
 Order: LSS disclaimer (first, so old and new wording are never live together) → Shared deck with Share attribution (they ship together, or the first links go uncounted) and Share Preview for decks → Copy Deck → Card list → Shared list, with Share Preview for lists.
-Sell lists ship hand-priced; Price suggestion follows once the owner settles its question 1.
+Price suggestion ships with Card list: sell lists can be priced by hand from day one, and the suggestion needs only the daily price job.
 
 Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens, returning to the shared page afterwards; a recipient who already has an account → the existing sign-in.
 
@@ -95,7 +95,7 @@ The current specs assert the old sentence verbatim (the footer, `/about` and the
 
 ### Shared deck
 
-**Delivers** a share link per deck that the owner turns on and off, and a page at that address showing the deck or only the owner's missing cards. **Status: design.** Holds the door (Key decision 3).
+**Delivers** a share link per deck that the owner turns on and off, and a page at that address showing the deck or only the owner's missing cards. **Status: open.** Holds the door (Key decision 3).
 
 | State | What should happen | Caller sees |
 |---|---|---|
@@ -153,7 +153,7 @@ Alternatives considered: missing cards visible only on a separate token - wins i
 1. Display name asked at the first share, editable in Settings - default, the owner did not answer this one.
 2. The owner's missing cards are visible to anyone holding the deck address, through its missing view - default.
 
-- Design: the shared deck page (full view and missing view, anonymous and logged-in, owner viewing their own link, unavailable) and the share control on the deck detail (off, on with address, turning off) - mockups with two alternatives before building, per the project rule. Mockups for the owner to pick from: `.design/mockups/sharing/deck/shared-deck-{a,b}-{phone,desktop}` (A: card grid with a comparison column; B: comparison first, compact list) and `.design/mockups/sharing/deck/share-control-{a,b}-{phone,desktop}` (A: a Share button opening a popover or sheet; B: an always-visible sharing card with a switch).
+Screens, picked by Rodrigo on 2026-10-18: alternative B of `.design/mockups/sharing/deck/shared-deck-b-{phone,desktop}` (comparison and invitation at the top, compact card list, missing view in a side panel or bottom sheet) and of `.design/mockups/sharing/deck/share-control-b-{phone,desktop}` (an always-visible sharing card with a switch on the deck detail).
 
 ### Share attribution
 
@@ -190,7 +190,7 @@ No IP address, user agent or referrer URL is stored, as the planned `outbound_cl
 
 ### Share Preview
 
-**Delivers** an image the server generates for each live share link - our wordmark, what the deck or list holds, a few card faces - used as the link preview when the address is pasted in WhatsApp, and downloadable by the owner to send as a picture. **Status: design.**
+**Delivers** an image the server generates for each live share link - our wordmark, what the deck or list holds, a few card faces - used as the link preview when the address is pasted in WhatsApp, and downloadable by the owner to send as a picture. **Status: open.**
 
 | State | What should happen | Caller sees |
 |---|---|---|
@@ -204,22 +204,22 @@ No IP address, user agent or referrer URL is stored, as the planned `outbound_cl
 | Owner downloads the image from the share control | The same image as the preview, saved as a file named after the deck or list; it carries the share address as text so a forwarded picture still leads to the site | a file download |
 | Owner downloads while sharing is off | Not offered: the image exists only for a live link, because it carries the address | the action is hidden |
 
-`GET /api/shared/decks/:token/image` (public) → `200` PNG or JPEG
-`GET /api/shared/lists/:token/image` (public) → `200` PNG or JPEG
+`GET /api/shared/decks/:token/image` (public) → `200` JPEG
+`GET /api/shared/lists/:token/image` (public) → `200` JPEG
 The download uses the same two routes with a `download=1` query, which only adds a download filename.
 
 The image is at least 1200 pixels wide, no wider than 4:1, and under 600 KB, the limits Meta documents for WhatsApp link previews; a link pasted into WhatsApp and Meta's sharing debugger are the check, since Meta says previews are best effort.
-The card faces come from the LSS bucket, which serves only WebP (`large/<code>.webp` answers 200 anonymously, `.png` and `.jpg` answer 403), so the generated file is our own composition in a format WhatsApp renders, whatever WhatsApp does with WebP.
+The card faces come from the LSS bucket, which serves only WebP (`large/<code>.webp` answers 200 anonymously, `.png` and `.jpg` answer 403), so the generated file is our own JPEG composition, whatever WhatsApp does with WebP.
 
 Alternatives considered: the hero's card face straight from the LSS bucket as the preview - wins only if generating images on the server proves unworkable; it shows one card, no brand and nothing of what a list holds.
 
 1. Generated on first request and kept until the deck or list changes, or until deleted on an LSS request - default.
 
-- Design: the image for a deck, a `want` list and a `sell` list, including a list of one card and a list of fifty, and where the download action sits in the share control - two alternatives before building. Mockups for the owner to pick from: `.design/mockups/sharing/preview/` (A "Capa": text-led, cards cascading on the right, fits under 600 KB as PNG; B "Leque": a fan of large card faces, needs JPEG to stay under 600 KB), with each in a WhatsApp chat in `whatsapp-{a,b}.png`; the download action is in the share control mockups.
+Image, picked by Rodrigo on 2026-10-18: alternative B, "Leque" - a fan of large card faces over a blurred backdrop, with a bottom bar for kind, sharer, title, count and price (`.design/mockups/sharing/preview/*-b.png`, in a chat in `whatsapp-b.png`). It exceeds 600 KB as PNG for most cases and stays near 40 to 120 KB as JPEG at quality 85, so the image is served as JPEG. The download action sits in the sharing card of `share-control-b`.
 
 ### Copy Deck
 
-**Delivers** to a logged-in visitor of a shared deck how much of it their collection covers, and a copy of it in their own decks. **Status: design.**
+**Delivers** to a logged-in visitor of a shared deck how much of it their collection covers, and a copy of it in their own decks. **Status: clear.**
 
 | State | What should happen | Caller sees |
 |---|---|---|
@@ -234,11 +234,11 @@ Alternatives considered: the hero's card face straight from the LSS bucket as th
 
 The copy takes the deck list as it stands, which already includes the sharer's replacements (they live in `deck_card`); the sharer's `card_replacement` rows, swaps and tags are not copied.
 
-- Design: the comparison and copy area on the shared deck page, anonymous (invitation) and logged-in (coverage, copy, after copy) - drawn inside the `shared-deck` mockups of [Shared deck](#shared-deck).
+Screens: the comparison and copy area is part of the picked `shared-deck-b` mockups of [Shared deck](#shared-deck).
 
 ### Card list
 
-**Delivers** to a logged-in user `want` and `sell` lists they fill from a deck or by hand, mark lines sold, and copy as text. **Status: design.**
+**Delivers** to a logged-in user `want` and `sell` lists they fill from a deck or by hand, mark lines sold, and copy as text. **Status: open.**
 
 | State | What should happen | Caller sees |
 |---|---|---|
@@ -299,11 +299,11 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 3. A line's price is per copy, shown as "R$ 6,00 cada", because a suggested price is one card's last sale times the multiplier - default.
 4. Sold lines are left out of the copied text, which lists what is still for sale - default.
 
-- Design: where lists live in the navigation, the list screen for each kind (empty, filling from a deck, lines with and without price and condition, sold lines, total price), and adding a card. Mockups for the owner to pick from: `.design/mockups/sharing/lists/lists-home-{a,b}-{phone,desktop}` (A: a new Lists tab; B: Cards and Lists tabs inside the Library) and `.design/mockups/sharing/lists/list-editor-{a,b}-{phone,desktop}` (A: an editable table; B: a card grid with an edit panel).
+Screens, picked by Rodrigo on 2026-10-18: alternative A of `.design/mockups/sharing/lists/lists-home-a-{phone,desktop}` (a new Lists tab in the main navigation, the index split into Procuro and Vendo) and alternative B of `.design/mockups/sharing/lists/list-editor-b-{phone,desktop}` (a card grid with condition and price under each card, an edit panel or sheet per line, totals and actions in a fixed bottom bar).
 
 ### Shared list
 
-**Delivers** a share link per card list and the page behind it, with matches for a logged-in visitor. **Status: design.**
+**Delivers** a share link per card list and the page behind it, with matches for a logged-in visitor. **Status: clear.**
 
 | State | What should happen | Caller sees |
 |---|---|---|
@@ -322,11 +322,11 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 `GET /api/shared/lists/:token` (public) → `200` `{ kind, name, notes, sharerName, totalPriceCents, lines: [{ id, cardIdentifier, quantity, printing, condition, priceCents, sold }] }`
 `GET /api/shared/lists/:token/matches` → `200` `{ lines: [{ lineId, owned, missingInDecks }] }`
 
-- Design: the shared list page for each kind, anonymous and logged-in, with sold lines and lines missing price or condition. Mockups for the owner to pick from: `.design/mockups/sharing/lists/shared-list-{a,b}-{phone,desktop}` (A: a single-column price list; B: a card gallery with a side column).
+Screens, picked by Rodrigo on 2026-10-18: alternative B of `.design/mockups/sharing/lists/shared-list-b-{phone,desktop}` (a card gallery with a side column for sharer, total, notes, copy and invitation; on phone the invitation is a fixed bottom bar).
 
 ### Price suggestion
 
-**Delivers** a suggested BRL price for sell lines: the card's TCGplayer market price in dollars times the list's multiplier. **Status: open - one decision needs the owner (question 1 below); the rest have defaults.**
+**Delivers** a suggested BRL price for sell lines: the card's TCGplayer market price in dollars times the list's multiplier. **Status: open - 3 defaults taken.**
 
 Decided by the owner: each `sell` list has a multiplier (typically 4x to 8x, default 7x); the price is `USD × multiplier`, read directly as BRL with no exchange rate, because the multiplier already includes it; any line can carry its own price instead.
 Settled by the price spike (`.specs/features/price-spike/result.md`): the source is tcgcsv.com, a free daily public mirror of TCGplayer prices keyed by the TCGplayer product id the catalog already carries per printing; it covered all 82 cards of the owner's three decks.
@@ -353,10 +353,10 @@ Table `card_price` (shared, written only by the price job); `card_list` gains `p
 | `midPriceCents` | int | yes | | USD cents |
 | `fetchedAt` | timestamptz | no | | |
 
-1. **Needs the owner:** tcgcsv republishes TCGplayer's data, while TCGplayer's own terms forbid scraping TCGplayer's websites; tcgcsv itself allows server use, and TCGplayer's official API needs a key that is no longer handed out freely. Building on tcgcsv accepts that grey area. Not decided; sell lists ship hand-priced until it is.
-2. A line without a chosen printing is priced from the cheapest non-foil printing with a market price, or the cheapest printing of any finish when the card is foil-only (4 of 82 cards in the spike), and the seller can pick another - default, because the cheapest is the conservative suggestion and printings of one card differ several-fold.
-3. Applying a suggestion writes the price into the line; prices do not move under a posted list until the seller applies the suggestion again - default.
-4. Suggested prices are rounded to whole reais - default.
+Decided by Rodrigo on 2026-10-18: build on tcgcsv, accepting that it republishes TCGplayer's data while TCGplayer's own terms forbid scraping TCGplayer's websites (tcgcsv itself allows server use; TCGplayer's official API needs a key no longer handed out freely). Checked the same day: tcgcsv rebuilds once a day around 20:00 UTC, and its market prices matched the prices shown on TCGplayer's product pages for 5 of 5 printings sampled (Fallen Herald normal 25.41 against 25.40 and rainbow foil 38.98 against 39.66, a day's movement; 10,000 Year Reunion normal 0.36 and rainbow foil 0.75; Bare Fangs from Armory Deck: Kayo 0.30, all equal). Two of the three product pages showed no most recent sale at all, so last sale would often be missing even where it could be read.
+1. A line without a chosen printing is priced from the cheapest non-foil printing with a market price, or the cheapest printing of any finish when the card is foil-only (4 of 82 cards in the spike), and the seller can pick another - default, because the cheapest is the conservative suggestion and printings of one card differ several-fold.
+2. Applying a suggestion writes the price into the line; prices do not move under a posted list until the seller applies the suggestion again - default.
+3. Suggested prices are rounded to whole reais - default.
 
 ## Sources
 
