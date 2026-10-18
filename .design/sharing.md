@@ -1,7 +1,7 @@
 # Sharing: decks, want lists and sell lists
 
 > Plan from this document. Each slice below carries its own shape - copy it, do not re-derive it.
-> Status: confirmed by Rodrigo, 2026-10-18 - build shared decks, want lists and sell lists with attribution; Price suggestion is a spike, and whether sell lists ship before it is decided when the spike answers.
+> Status: confirmed by Rodrigo, 2026-10-18 - build shared decks, want lists and sell lists with attribution; Price suggestion waits on one owner decision after its spike (2026-10-18), so sell lists ship hand-priced first.
 
 ## Situation
 
@@ -26,7 +26,7 @@ Unmeasured: the site has no analytics beyond error reporting, so how often these
 
 ## Boundary
 
-In: an owner-revocable share link for a deck, showing the whole deck or only what the owner still misses; card lists of two kinds, `want` and `sell`, independent of decks, each shareable; comparing a shared deck or list with the logged-in visitor's own collection; copying a shared deck into one's decks; copy-as-text for any list; a link preview when the address is pasted in WhatsApp, and the same image downloadable to send as a picture; attribution of sign-ups to the link that brought them; a spike on suggested sell prices.
+In: an owner-revocable share link for a deck, showing the whole deck or only what the owner still misses; card lists of two kinds, `want` and `sell`, independent of decks, each shareable; comparing a shared deck or list with the logged-in visitor's own collection; copying a shared deck into one's decks; copy-as-text for any list; a link preview when the address is pasted in WhatsApp, and the same image downloadable to send as a picture; attribution of sign-ups to the link that brought them; suggested sell prices from TCGplayer market prices.
 
 Out: a referral programme with rewards - one 47-person group sees the release message directly, there is nothing to give, and `ip-posture.md` forbids gating features behind rewards or payment.
 Out: in-site negotiation - messages, offers, reservations, payment; contact stays in WhatsApp.
@@ -72,10 +72,10 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 | [Copy Deck](#copy-deck) | A logged-in visitor sees how much of a shared deck they own and copies it into their decks | design |
 | [Card list](#card-list) | The owner keeps `want` and `sell` lists, filled from a deck or by hand, and copies any list as text | design |
 | [Shared list](#shared-list) | Anyone with the address sees a card list; a logged-in visitor sees which lines match their collection or decks | design |
-| [Price suggestion](#price-suggestion) | Sell lines priced from a source's last sale in dollars times the list's multiplier | spike |
+| [Price suggestion](#price-suggestion) | Sell lines priced from the TCGplayer market price in dollars times the list's multiplier | open - needs the owner |
 
 Order: LSS disclaimer (first, so old and new wording are never live together) → Shared deck with Share attribution (they ship together, or the first links go uncounted) and Share Preview for decks → Copy Deck → Card list → Shared list, with Share Preview for lists.
-Price suggestion's spike can run from the start; whether sell lists ship before it or wait for it is decided when the spike answers.
+Sell lists ship hand-priced; Price suggestion follows once the owner settles its question 1.
 
 Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens, returning to the shared page afterwards; a recipient who already has an account → the existing sign-in.
 
@@ -326,17 +326,40 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 
 ### Price suggestion
 
-**Delivers** a suggested BRL price for sell lines: the card's last sale in dollars on the chosen source, times the list's multiplier. **Status: spike.**
+**Delivers** a suggested BRL price for sell lines: the card's TCGplayer market price in dollars times the list's multiplier. **Status: open - one decision needs the owner (question 1 below); the rest have defaults.**
 
-Decided by the owner: each `sell` list has a source (TCGPlayer or Star City Games) and a multiplier (typically 4x to 8x, default 7x); the price is `last sale in USD × multiplier`, read directly as BRL with no exchange rate, because the multiplier already includes it; any line can carry its own price instead.
-Prices are fetched only for cards on sell lists, when asked, and kept for reuse; never a periodic crawl of a whole catalog, per `docs/research/scraper-cost-scaling.md`.
+Decided by the owner: each `sell` list has a multiplier (typically 4x to 8x, default 7x); the price is `USD × multiplier`, read directly as BRL with no exchange rate, because the multiplier already includes it; any line can carry its own price instead.
+Settled by the price spike (`.specs/features/price-spike/result.md`): the source is tcgcsv.com, a free daily public mirror of TCGplayer prices keyed by the TCGplayer product id the catalog already carries per printing; it covered all 82 cards of the owner's three decks.
+It has no last-sale field, so the suggestion is built on `marketPrice`, which TCGplayer computes from recent sales, and is worded as market price, never as last sale.
+Star City Games is out: its terms forbid automated reading of prices, so the list's source is TCGplayer only and the source choice disappears from the screen until a second source exists.
+Prices are read by a server job, at most once a day per set and only for sets that have a card on some sell list, as tcgcsv's guidelines ask (no calls from user-facing requests, one sync per day); one shared snapshot serves every list, so nothing is stored per user.
 
-- Spike: can the last TCGPlayer sale be read by the TCGPlayer product id that `@flesh-and-blood/cards` already carries per printing, and if not, is the market price an acceptable stand-in? Can Star City Games' Flesh and Blood catalog be read the way Cúpula DT's is, and at what Firecrawl cost per card? What do both sites' terms allow? - Yes for a source means its schema and fetch become a slice here; no for both means sell lists stay hand-priced and this slice closes; the answer also decides whether sell lists ship before it. - Stops when every card of the owner's decks has a price from at least one working source, or when both sources are ruled out.
+| State | What should happen | Caller sees |
+|---|---|---|
+| Line whose printing has a market price | Suggested price = market price × multiplier, rounded to whole reais | "R$ 14 (mercado TCGplayer de <date>)" |
+| Market price is null but mid price exists | Mid price × multiplier, marked approximate | the suggestion with an "aproximado" mark |
+| No price row for the printing (88 of 440 printings in the spike) | No suggestion; the price field stays for the seller to fill | "sem sugestão" |
+| Seller changes the multiplier | Lines that took the suggestion are recomputed; lines with a typed price keep it | the new suggestions |
+| tcgcsv is down or a fetch fails | The previous snapshot keeps serving, with its date | the last known suggestion and its date |
 
-1. Applying a suggestion writes the price into the line; prices do not move under a posted list until the seller applies the suggestion again - default.
+Table `card_price` (shared, written only by the price job); `card_list` gains `priceMultiplier` (numeric, null means no suggestion) and `card_list_line` gains `priceSource` (`suggested` | `typed`, null when no price).
+
+| Column | Type | Null | References | Note |
+|---|---|---|---|---|
+| `productId` | varchar | no | | TCGplayer product id from the catalog's printing |
+| `subType` | varchar(32) | no | | edition and foiling as tcgcsv names them; unique with `productId` |
+| `marketPriceCents` | int | yes | | USD cents |
+| `midPriceCents` | int | yes | | USD cents |
+| `fetchedAt` | timestamptz | no | | |
+
+1. **Needs the owner:** tcgcsv republishes TCGplayer's data, while TCGplayer's own terms forbid scraping TCGplayer's websites; tcgcsv itself allows server use, and TCGplayer's official API needs a key that is no longer handed out freely. Building on tcgcsv accepts that grey area. Not decided; sell lists ship hand-priced until it is.
+2. The market price stands in for "last sale" - default, since no allowed source carries last sale.
+3. A line without a chosen printing is priced from the cheapest non-foil printing with a market price, and the seller can pick another - default, because the cheapest is the conservative suggestion and printings of one card differ several-fold.
+4. A suggested price follows the snapshot (recomputed when prices refresh) until the seller types a price, which then never moves - default, replacing the earlier "applying writes the price" default, because a posted list shows the current state (Key decision 4).
 
 ## Sources
 
+- `.specs/features/price-spike/result.md` - tcgcsv as the price source, its guidelines, coverage of the owner's decks, and Star City Games ruled out by its terms.
 - `docs/research/ip-posture.md` (re-reviewed 2026-10-18) - public pages, generated images and user-to-user lists are permitted; the Third Party Apps disclaimer, "© Legend Story Studios" wherever card images appear, takedown readiness, no feature gating behind payment or rewards.
 - LSS, Terms of Use for Game and Studio Assets and IP, retrieved verbatim 2026-10-18: https://fabtcg.com/resources/terms-use-licensed-assets/
 - Meta, WhatsApp link previews (image under 600 KB, at least 300 px wide, at most 4:1, best effort): https://developers.secure.facebook.com/docs/whatsapp/link-previews
