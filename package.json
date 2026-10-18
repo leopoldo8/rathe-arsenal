@@ -26,6 +26,8 @@
     "synergy:sheet": "tsx scripts/synergy-spike/sheet.ts",
     "synergy:score": "tsx scripts/synergy-spike/score.ts",
     "synergy:judge": "tsx scripts/synergy-spike/judge.ts",
+    "price:coverage": "tsx scripts/price-spike/run.ts",
+    "price:test": "tsx --test scripts/price-spike/__tests__/*.test.ts",
     "screenshot": "tsx scripts/screenshot-all-surfaces.ts",
     "seed:fixture": "tsx scripts/seed-fixture.ts"
   },
