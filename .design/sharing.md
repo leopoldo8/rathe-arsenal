@@ -330,19 +330,20 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 
 Decided by the owner: each `sell` list has a multiplier (typically 4x to 8x, default 7x); the price is `USD × multiplier`, read directly as BRL with no exchange rate, because the multiplier already includes it; any line can carry its own price instead.
 Settled by the price spike (`.specs/features/price-spike/result.md`): the source is tcgcsv.com, a free daily public mirror of TCGplayer prices keyed by the TCGplayer product id the catalog already carries per printing; it covered all 82 cards of the owner's three decks.
-It has no last-sale field, so the suggestion is built on `marketPrice`, which TCGplayer computes from recent sales, and is worded as market price, never as last sale.
-Star City Games is out: its terms forbid automated reading of prices, so the list's source is TCGplayer only and the source choice disappears from the screen until a second source exists.
+The owner asked for TCGplayer's last sale; no allowed source provides it (TCGplayer's terms forbid scraping its sites, and tcgcsv carries no last-sale field), so the suggestion is built on `marketPrice`, which TCGplayer computes from recent sales, and is worded as market price, never as last sale.
+The owner asked for Star City Games as a second source; its terms forbid automated reading of prices, so the list's source is TCGplayer only and the source choice disappears from the screen until an allowed second source exists.
 Prices are read by a server job, at most once a day per set and only for sets that have a card on some sell list, as tcgcsv's guidelines ask (no calls from user-facing requests, one sync per day); one shared snapshot serves every list, so nothing is stored per user.
 
 | State | What should happen | Caller sees |
 |---|---|---|
-| Line whose printing has a market price | Suggested price = market price × multiplier, rounded to whole reais | "R$ 14 (mercado TCGplayer de <date>)" |
+| Line whose printing has a market price | Suggested price = market price × multiplier | "R$ 14 (mercado TCGplayer de <date>)" |
 | Market price is null but mid price exists | Mid price × multiplier, marked approximate | the suggestion with an "aproximado" mark |
 | No price row for the printing (88 of 440 printings in the spike) | No suggestion; the price field stays for the seller to fill | "sem sugestão" |
-| Seller changes the multiplier | Lines that took the suggestion are recomputed; lines with a typed price keep it | the new suggestions |
+| Seller applies the suggestion to a line or to the whole list | The suggested value is written as the line's price | the new prices |
+| Prices refresh or the seller changes the multiplier | The suggestion shown next to each line updates; prices already written stay until the seller applies again | the new suggestion beside the unchanged price |
 | tcgcsv is down or a fetch fails | The previous snapshot keeps serving, with its date | the last known suggestion and its date |
 
-Table `card_price` (shared, written only by the price job); `card_list` gains `priceMultiplier` (numeric, null means no suggestion) and `card_list_line` gains `priceSource` (`suggested` | `typed`, null when no price).
+Table `card_price` (shared, written only by the price job); `card_list` gains `priceMultiplier` (numeric, null means no suggestion) and no `card_list_line` column changes.
 
 | Column | Type | Null | References | Note |
 |---|---|---|---|---|
@@ -353,9 +354,9 @@ Table `card_price` (shared, written only by the price job); `card_list` gains `p
 | `fetchedAt` | timestamptz | no | | |
 
 1. **Needs the owner:** tcgcsv republishes TCGplayer's data, while TCGplayer's own terms forbid scraping TCGplayer's websites; tcgcsv itself allows server use, and TCGplayer's official API needs a key that is no longer handed out freely. Building on tcgcsv accepts that grey area. Not decided; sell lists ship hand-priced until it is.
-2. The market price stands in for "last sale" - default, since no allowed source carries last sale.
-3. A line without a chosen printing is priced from the cheapest non-foil printing with a market price, and the seller can pick another - default, because the cheapest is the conservative suggestion and printings of one card differ several-fold.
-4. A suggested price follows the snapshot (recomputed when prices refresh) until the seller types a price, which then never moves - default, replacing the earlier "applying writes the price" default, because a posted list shows the current state (Key decision 4).
+2. A line without a chosen printing is priced from the cheapest non-foil printing with a market price, or the cheapest printing of any finish when the card is foil-only (4 of 82 cards in the spike), and the seller can pick another - default, because the cheapest is the conservative suggestion and printings of one card differ several-fold.
+3. Applying a suggestion writes the price into the line; prices do not move under a posted list until the seller applies the suggestion again - default.
+4. Suggested prices are rounded to whole reais - default.
 
 ## Sources
 
