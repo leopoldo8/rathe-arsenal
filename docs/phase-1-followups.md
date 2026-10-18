@@ -362,6 +362,8 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 **Update (2026-07-01):** the preparatory disclaimer step is **done** — footer (authenticated shell), public `/about` page, anonymous auth screens, and the `README.md` block all ship the localized disclaimer (`feat/pre-launch-hardening`, `.specs/features/pre-launch-hardening/`; en-US verbatim, pt-BR translated). This does **not** activate any monetization surface; the full Phase 2 activation checklist in `docs/research/ip-posture.md` remains untouched and binding before ads/Patreon/affiliate links ship.
 
+**Update (2026-10-18):** the IP posture was re-reviewed against the verbatim policy (`docs/research/ip-posture.md`, "Review — 2026-10-18"). The live disclaimer uses the Fan Fiction wording; the Third Party Apps wording and "© Legend Story Studios" on card-image surfaces are required and still open (slice LSS disclaimer in `.design/sharing.md`). The ~47-person audience limit is not a policy requirement and no longer blocks public pages.
+
 **Phase 2 trigger to revisit:** any of —
 - First activation of display ads (AdSense / Ezoic / direct) anywhere in the product
 - First Patreon page creation or first donation surface (even a "Buy me a coffee" link)
