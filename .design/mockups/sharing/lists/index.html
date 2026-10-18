@@ -1,0 +1,94 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Listas e compartilhamento: mockups</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600&family=UnifrakturCook:wght@700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"><style>
+:root{--ui:"Hanken Grotesk",system-ui,sans-serif;--display:"Newsreader",Georgia,serif;--goth:"UnifrakturCook",serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+--canvas:#0b0c0f;--surface:#14161c;--surface2:#0e1016;--raised:#1e2128;--sunken:#0a0b0e;--muted:#1a1c22;
+--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.12);--fg:#e8e6e1;--fg2:#c8cad2;--fg3:#8b8d96;--fgm:#7a7c84;--fginv:#0b0c0f;
+--accent:#d0a84c;--accent-hi:#f0c060;--accent-deep:#b8863a;--accent-soft:rgba(208,168,76,.14);--accent-bd:rgba(208,168,76,.35);--accent-ink:#1a1408;
+--ok:#63b678;--ok-bg:rgba(99,182,120,.10);--ok-bd:rgba(99,182,120,.40);--warn:#c8843c;--warn-bg:rgba(200,132,60,.10);--warn-bd:rgba(200,132,60,.40);--warn-ink:#d6954c;
+--bad:#d0645a;--bad-bg:rgba(208,100,90,.08);--bad-bd:rgba(208,100,90,.35);--info:#6a90b8;--idea:#8f7cf0;--build:#4a7fc0;
+--red:#c0473e;--yellow:#d6a83e;--blue:#4a7fc0;--r-xs:6px;--r-sm:9px;--r-md:11px;--r-lg:14px;--r-xl:16px;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#07080a;color:var(--fg);font-family:var(--ui);font-size:14px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+a{color:inherit}
+.pg{padding:16px 12px 40px}.pg.d{padding:24px 20px 60px}
+.pg h1.t{font:500 24px/1.25 var(--display);margin:0 0 4px}.pg .sub{color:var(--fg3);margin:0 0 20px;font-size:13px;max-width:78ch}
+.fl{font:700 11px/1.3 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:26px 0 8px}
+.fn{color:var(--fg3);font-size:12px;margin:-2px 0 8px;max-width:90ch}
+.navl{font-size:12px;margin-bottom:12px}.navl a{color:var(--accent);min-height:44px;display:inline-flex;align-items:center}
+.frame{background:var(--canvas);border:1px solid var(--bd2);border-radius:var(--r-xl);overflow:hidden;display:flex;flex-direction:column;min-height:700px;width:100%;position:relative}
+.d .frame{min-height:620px}
+.body{flex:1;min-width:0}
+.top{height:56px;flex:0 0 56px;display:flex;align-items:center;gap:12px;padding-inline:16px;background:var(--surface);border-bottom:1px solid var(--bd);box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.logo{width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--accent-bd);display:grid;place-items:center;font:700 20px/1 var(--goth);color:var(--accent)}
+.wm{display:flex;flex-direction:column;line-height:1}.wm b{font:700 22px/.9 var(--goth);color:var(--accent)}.wm i{font:700 8px/1 var(--ui);letter-spacing:.44em;text-transform:uppercase;color:#f0d289;border-top:1.5px solid rgba(208,168,76,.5);margin-top:3px;padding-top:4px;text-align:center;font-style:normal}
+.tnav{display:flex;gap:4px;margin-inline:16px}.tnav span{padding:8px 14px;border-radius:var(--r-sm);color:var(--fg3);font-weight:500}.tnav span.on{color:var(--accent);background:var(--accent-soft)}
+.av{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--raised);border:1px solid var(--bd2);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--fg2);flex:0 0 34px}
+.ttl{font:500 18px/1.2 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tabs{margin-top:auto;flex:0 0 60px;height:60px;display:flex;background:var(--surface);border-top:1px solid var(--bd)}
+.tabs span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--fgm);min-height:44px}
+.tabs span.on{color:var(--accent)}
+.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.ic.s{width:16px;height:16px}
+.ib{width:44px;height:44px;border-radius:var(--r-sm);display:grid;place-items:center;border:0;background:transparent;color:var(--fg2);flex:0 0 44px}
+.ib.bd{border:1px solid var(--bd2)}
+.btn{min-height:44px;padding:4px 16px;border-radius:var(--r-sm);border:1px solid var(--bd2);background:transparent;color:var(--fg2);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
+.btn.p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.s{border-color:var(--accent-bd);background:var(--accent-soft);color:var(--accent);font-weight:700}
+.btn.sm{min-height:36px;padding:2px 12px;font-size:12px}
+.btn.dis{opacity:.5}
+.btn.full{width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:var(--r-xs);border:1px solid var(--bd2);background:var(--muted);font-size:12px;color:var(--fg2);max-width:100%;white-space:nowrap}
+.chip.acc{border-color:var(--accent-bd);background:var(--accent-soft);color:var(--accent)}
+.chip.ok{color:var(--ok);border-color:var(--ok-bd);background:var(--ok-bg)}.chip.warn{color:var(--warn-ink);border-color:var(--warn-bd);background:var(--warn-bg)}.chip.bad{color:var(--bad);border-color:var(--bad-bd);background:var(--bad-bg)}
+.chip.soon{border-style:dashed;color:var(--fg3);background:transparent;font-size:11px;letter-spacing:.04em}
+.chip.mono{font-family:var(--mono);font-size:11px}
+.chip.want{color:#7aa6dc;border-color:rgba(74,127,192,.45);background:rgba(74,127,192,.1)}
+.chip.sell{color:var(--accent);border-color:var(--accent-bd);background:var(--accent-soft)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;display:inline-block}.dot.r{background:var(--red)}.dot.y{background:var(--yellow)}.dot.b{background:var(--blue)}
+.cap{font:700 11px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)}
+.mut{color:var(--fg3);font-size:12px}.ok-t{color:var(--ok)}.acc-t{color:var(--accent)}.warn-t{color:var(--warn-ink)}
+.cth{display:block;width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:5px;background:var(--raised)}
+.h1{font:500 28px/1.15 var(--display);margin:0}.d .h1{font-size:34px}
+.h2{font:500 20px/1.2 var(--display);margin:0}
+.panel{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r-lg);padding:16px}
+.inpt{min-height:44px;border:1px solid var(--bd2);background:var(--surface2);border-radius:var(--r-md);padding:10px 14px;color:var(--fg2);font-size:14px;display:flex;align-items:center;gap:8px}
+.inpt.ph{color:var(--fg3)}
+.lab{font-size:12px;color:var(--fg3);margin:0 0 6px;display:block}
+.mono-box{font:12px/1.6 var(--mono);color:var(--fg2);background:var(--sunken);border:1px solid var(--bd);border-radius:var(--r-md);padding:10px 12px;overflow-wrap:anywhere}
+.stp{display:inline-flex;align-items:center;border:1px solid var(--bd2);border-radius:var(--r-sm);background:var(--surface2);height:36px}
+.stp b{min-width:28px;text-align:center;font-weight:700;font-size:14px}.stp span{width:32px;height:34px;display:grid;place-items:center;color:var(--fg2)}
+.fld{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;min-height:36px;padding:2px 10px;border:1px solid var(--bd2);border-radius:var(--r-sm);background:var(--surface2);font-size:13px;color:var(--fg);min-width:0}
+.fld.blank{border-style:dashed;color:var(--fgm);background:transparent}
+.fld .ic{width:14px;height:14px;color:var(--fg3)}
+.cond{font:700 11px/1 var(--mono);letter-spacing:.04em}
+.seg{display:inline-flex;border:1px solid var(--bd2);border-radius:var(--r-md);padding:3px;background:var(--surface2);gap:2px}
+.seg span{min-height:38px;padding:0 14px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:6px;color:var(--fg3);font-weight:600;font-size:13px}
+.seg span.on{background:var(--accent-soft);color:var(--accent)}.seg span small{font-size:11px;opacity:.8}
+.sw{width:36px;height:20px;border-radius:10px;background:var(--raised);border:1px solid var(--bd2);position:relative;flex:0 0 36px}.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--fg3)}
+.sw.on{background:var(--accent-soft);border-color:var(--accent-bd)}.sw.on::after{left:18px;background:var(--accent)}
+.sold-t{text-decoration:line-through;color:var(--fg3)}
+.scrim{position:absolute;inset:0;background:rgba(5,6,8,.74);z-index:5}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--bd2);border-radius:16px 16px 0 0;padding:8px 16px 20px;max-height:94%;overflow:hidden;box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--bd2);margin:0 auto 12px}
+.modal{position:absolute;z-index:6;left:50%;top:40px;transform:translateX(-50%);width:min(600px,92%);background:var(--surface);border:1px solid var(--bd2);border-radius:var(--r-xl);padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.pop{position:absolute;z-index:6;background:var(--surface);border:1px solid var(--bd2);border-radius:var(--r-lg);padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.55)}
+.mh{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.radio{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--surface2)}
+.radio.on{border-color:var(--accent-bd);background:var(--accent-soft)}
+.radio .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--fgm);flex:0 0 18px;margin-top:2px}.radio.on .rd{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}
+.radio b{display:block;font-weight:600}.radio small{color:var(--fg3);font-size:12px;display:block;margin-top:2px}
+.menuit{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:var(--r-md);min-height:44px}
+.menuit b{display:block;font-weight:600}.menuit small{display:block;color:var(--fg3);font-size:12px}
+.menuit.open{background:var(--surface2);border:1px solid var(--bd2)}
+.sep{height:1px;background:var(--bd);margin:6px 0}
+.deckrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-top:1px solid var(--bd);font-size:13px;min-height:44px}
+.deckrow.on{background:var(--accent-soft)}
+.foot{padding:20px 16px 28px;border-top:1px solid var(--bd);color:var(--fg3);font-size:11.5px;line-height:1.55;background:var(--surface2)}
+.foot b{color:var(--fg2);font-weight:600}
+.pt{aspect-ratio:5/7;border-radius:5px;overflow:hidden;position:relative}
+.soonbox{border:1px dashed var(--bd2);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:10px;background:transparent}
+.soonbox .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;opacity:.6}
+.soonbox .fld{background:transparent}
+.toast{position:absolute;z-index:7;left:50%;transform:translateX(-50%);bottom:84px;background:var(--raised);border:1px solid var(--bd2);border-radius:var(--r-md);padding:10px 16px;display:flex;gap:8px;align-items:center;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body><div class="pg d" style="max-width:900px"><h1 class="t">Listas e compartilhamento: mockups</h1><p class="sub">Duas alternativas por tela, em celular (390) e desktop (1440). PNG na mesma pasta.</p><div style="border:1px solid var(--bd2);background:var(--surface);border-radius:14px;padding:16px;margin-bottom:12px"><h3 style="margin:0 0 6px;font:500 20px/1.2 var(--display)">1. Onde as listas ficam e o índice</h3><p style="margin:0 0 4px;color:var(--fg2)">A: aba própria "Listas" na navegação, índice em duas áreas (Procuro, Vendo) com cartões; criar lista num diálogo único.</p><p style="margin:0 0 6px;color:var(--fg2)">B: aba "Listas" dentro da Biblioteca, índice em tabela com filtro; criar por menu e também pela tela do deck.</p><p style="margin:0 0 10px;color:var(--fg3);font-size:13px"><b style="color:var(--fg2)">Trade-off:</b> A deixa as listas à vista e aumenta a navegação para 4 itens; B mantém 3 itens e esconde as listas um toque mais fundo.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn s" href="lists-home-a-phone.html">A Celular</a><a class="btn s" href="lists-home-a-desktop.html">A Desktop</a><a class="btn s" href="lists-home-b-phone.html">B Celular</a><a class="btn s" href="lists-home-b-desktop.html">B Desktop</a></div></div><div style="border:1px solid var(--bd2);background:var(--surface);border-radius:14px;padding:16px;margin-bottom:12px"><h3 style="margin:0 0 6px;font:500 20px/1.2 var(--display)">2. Editor da lista (procuro e vendo)</h3><p style="margin:0 0 4px;color:var(--fg2)">A: tabela editável, campos na própria linha, coluna lateral com preço do deck, notas e texto.</p><p style="margin:0 0 6px;color:var(--fg2)">B: grade de cartas, detalhes num painel, total e ações numa barra fixa.</p><p style="margin:0 0 10px;color:var(--fg3);font-size:13px"><b style="color:var(--fg2)">Trade-off:</b> A é rápida para preencher muitas linhas e densa no celular; B é mais bonita e fiel às cartas, mas exige um toque a mais por linha.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn s" href="list-editor-a-phone.html">A Celular</a><a class="btn s" href="list-editor-a-desktop.html">A Desktop</a><a class="btn s" href="list-editor-b-phone.html">B Celular</a><a class="btn s" href="list-editor-b-desktop.html">B Desktop</a></div></div><div style="border:1px solid var(--bd2);background:var(--surface);border-radius:14px;padding:16px;margin-bottom:12px"><h3 style="margin:0 0 6px;font:500 20px/1.2 var(--display)">3. Página pública /l/<token></h3><p style="margin:0 0 4px;color:var(--fg2)">A: documento em coluna única, convite antes das linhas, selos numa coluna.</p><p style="margin:0 0 6px;color:var(--fg2)">B: galeria de cartas com coluna lateral (celular: barra fixa de convite), selos sobre a imagem.</p><p style="margin:0 0 10px;color:var(--fg3);font-size:13px"><b style="color:var(--fg2)">Trade-off:</b> A lê como lista de preços e cabe bem no WhatsApp; B mostra as cartas e vende melhor o visual, mas preço e condição ficam pequenos.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn s" href="shared-list-a-phone.html">A Celular</a><a class="btn s" href="shared-list-a-desktop.html">A Desktop</a><a class="btn s" href="shared-list-b-phone.html">B Celular</a><a class="btn s" href="shared-list-b-desktop.html">B Desktop</a></div></div></div></body></html>
