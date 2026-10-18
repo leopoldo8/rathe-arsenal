@@ -77,7 +77,7 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 Order: LSS disclaimer (first, so old and new wording are never live together) → Shared deck with Share attribution (they ship together, or the first links go uncounted) and Share Preview for decks → Copy Deck → Card list → Shared list, with Share Preview for lists.
 Price suggestion ships with Card list: sell lists can be priced by hand from day one, and the suggestion needs only the daily price job.
 
-Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens, returning to the shared page afterwards; a recipient who already has an account → the existing sign-in.
+Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens; a recipient who already has an account → the existing sign-in. Returning to the shared page afterwards is new work (sign-in always went to `/`), planned in `.specs/features/sharing-decks/design.md`.
 
 Derivable from the repository, left to the plan: error envelope codes and their client `apiErrors` entries, rate limits on public routes, pt-BR and en-US copy, card naming and images on cards - all as the deck detail and the recommendations rail do them; the length and alphabet of tokens, as long as they are unguessable.
 
@@ -107,7 +107,7 @@ The current specs assert the old sentence verbatim (the footer, `/about` and the
 | Anyone opens the deck address | Deck name, hero, format, the sharer's display name and the full card list with images; disclaimer and copyright line (Key decision 1); `noindex` | `200` |
 | Anyone opens the missing view of the address | Only the cards the owner still misses, with quantities, as the owner's deck missing panel counts them; a copy-as-text action | `200` |
 | The deck changed since the link was posted | The current deck | `200` |
-| Address turned off, deck deleted, owner deleted, or never existed | No deck data | `404` `share_link_unavailable`, page reads "this link is no longer available" |
+| Address turned off, deck deleted, owner deleted, or never existed | No deck data | `404` `SHARE_LINK_UNAVAILABLE`, page reads "this link is no longer available" |
 | Address pasted in WhatsApp | The first HTML response already carries the deck's title, description and [Share Preview](#share-preview) image, without running script | link preview |
 | Anonymous visitor wants to compare or copy | Offered sign-up or sign-in, then returned to the same address | the auth screens |
 
@@ -139,7 +139,7 @@ sequenceDiagram
   W->>A: GET /api/shared/decks/<token>
   A->>DB: read deck, its cards and the owner's collection
   alt no deck for this token
-    A-->>W: 404 share_link_unavailable
+    A-->>W: 404 SHARE_LINK_UNAVAILABLE
   else
     A->>DB: record opened (Share attribution)
     A-->>W: 200 deck, missing
@@ -227,7 +227,7 @@ Image, picked by Rodrigo on 2026-10-18: alternative B, "Leque" - a fan of large 
 | The sharer opens their own shared deck | No comparison and no copy | the page without them |
 | Visitor copies the deck | A new deck of theirs with the same cards, name, hero and format, status `idea`, no Fabrary origin; readiness computed as for any new deck | `201`, then their new deck's detail |
 | Visitor copies the same deck twice | A second deck | `201` |
-| Link turned off between loading and copying | Nothing created | `404` `share_link_unavailable` |
+| Link turned off between loading and copying | Nothing created | `404` `SHARE_LINK_UNAVAILABLE` |
 
 `GET /api/shared/decks/:token/coverage` → `200` `{ ownedCopies, totalCopies, percent }`
 `POST /api/shared/decks/:token/copy` `{}` → `201` `{ deckId }`
@@ -314,7 +314,7 @@ Screens, picked by Rodrigo on 2026-10-18: alternative A of `.design/mockups/shar
 | Logged-in visitor on a `sell` list | Each available line whose card is missing in any of their non-retired decks is marked (Key decision 7) | marks per line |
 | The sharer opens their own list | No matches | the page without them |
 | A line sold or a price changed since posting | The current list (Key decision 4) | |
-| Address dead or unknown | As in [Shared deck](#shared-deck) | `404` `share_link_unavailable` |
+| Address dead or unknown | As in [Shared deck](#shared-deck) | `404` `SHARE_LINK_UNAVAILABLE` |
 | Address pasted in WhatsApp | The first HTML response already carries the list's title, description and [Share Preview](#share-preview) image | link preview |
 
 `POST /api/lists/:listId/share` `{}` → `200` `{ url }`
