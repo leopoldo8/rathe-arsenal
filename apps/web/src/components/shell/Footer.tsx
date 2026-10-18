@@ -6,7 +6,7 @@ import styles from "./Footer.module.css";
 /**
  * Footer — persistent fan-content disclaimer, mounted in AppShell (DISC-01).
  *
- * Satisfies the LSS Fan Content Policy requirement that the disclaimer be
+ * Satisfies the LSS Third Party Apps policy requirement that the disclaimer be
  * visible on every authenticated page (docs/research/ip-posture.md). Renders
  * the localized disclaimer as small, muted body text plus a link to the full
  * /about page.

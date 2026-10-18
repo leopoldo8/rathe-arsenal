@@ -243,7 +243,7 @@ describe('AppShell — footer / disclaimer (DISC-01)', () => {
     render(<AppShell><div>child</div></AppShell>);
     expect(
       screen.getByText(
-        'A Rathe Arsenal não tem nenhuma afiliação com a Legend Story Studios. Flesh and Blood™ e os nomes de coleções são marcas registradas da Legend Story Studios®. Personagens e nomes podem estar protegidos por direitos autorais.',
+        'A Rathe Arsenal não tem nenhuma afiliação com a Legend Story Studios. Legend Story Studios®, Flesh and Blood™ e os nomes de coleções são marcas registradas da Legend Story Studios. Os personagens, cartas, logotipos e artes de Flesh and Blood são propriedade da Legend Story Studios. © Legend Story Studios',
       ),
     ).toBeInTheDocument();
   });

@@ -197,6 +197,11 @@ describe('/add-cards/scan', () => {
     expect(screen.getByText('Line up the bottom edge of the card with the guide.')).toBeInTheDocument();
   });
 
+  it('shows the Legend Story Studios copyright line over the camera', async () => {
+    await renderReady();
+    expect(screen.getByText('© Legend Story Studios')).toBeInTheDocument();
+  });
+
   it('closes back to the add-cards page', async () => {
     renderScanner(buildHarness().deps);
 

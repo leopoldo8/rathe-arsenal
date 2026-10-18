@@ -171,6 +171,19 @@
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
 }
 
+.copyright {
+  position: absolute;
+  inset-inline: var(--ra-space-4);
+  inset-block-end: var(--ra-space-2);
+  margin: 0;
+  text-align: center;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+  pointer-events: none;
+}
+
 .status {
   position: absolute;
   inset-inline: var(--ra-space-4);

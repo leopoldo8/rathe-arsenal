@@ -14,7 +14,7 @@ import { ptBR } from '../locales/pt-BR';
 import { enUS } from '../locales/en-US';
 
 const VERBATIM_EN_DISCLAIMER =
-  'Rathe Arsenal is in no way affiliated with Legend Story Studios. Flesh and Blood™, and set names are trademarks of Legend Story Studios®. Characters and names may be protected by copyright.';
+  'Rathe Arsenal is in no way affiliated with Legend Story Studios. Legend Story Studios®, Flesh and Blood™, and set names are trademarks of Legend Story Studios. Flesh and Blood characters, cards, logos, and art are property of Legend Story Studios. © Legend Story Studios';
 
 describe('about i18n catalog', () => {
   it('en-US about.disclaimer strictly equals the verbatim LSS-required text', () => {
@@ -24,6 +24,7 @@ describe('about i18n catalog', () => {
   it('pt-BR about.disclaimer preserves the "Flesh and Blood™" and "Legend Story Studios®" trademark substrings', () => {
     expect(ptBR.about.disclaimer).toContain('Flesh and Blood™');
     expect(ptBR.about.disclaimer).toContain('Legend Story Studios®');
+    expect(ptBR.about.disclaimer.endsWith('© Legend Story Studios')).toBe(true);
   });
 
   it('pt-BR and en-US about namespaces expose the same key set', () => {
