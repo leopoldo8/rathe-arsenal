@@ -74,6 +74,10 @@ vi.mock('../../../api/store-admin', () => ({
   useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
 }));
 
+// Display-name PATCH (sharing) — stubbed so the field is tested without a network.
+const { patchDisplayNameMock } = vi.hoisted(() => ({ patchDisplayNameMock: vi.fn() }));
+vi.mock('../../../api/shared-decks', () => ({ patchDisplayName: patchDisplayNameMock }));
+
 // DeleteAccountModal — smoke-stub so settings tests focus on the page layout
 vi.mock('../../../components/delete-account-modal', () => ({
   DeleteAccountModal: ({
@@ -126,6 +130,7 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: noopAsync,
+    setDisplayName: () => undefined,
     ...overrides,
   };
 }
@@ -222,16 +227,40 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
 });
 
 describe('SettingsPage — Profile section', () => {
+  beforeEach(() => patchDisplayNameMock.mockReset());
+
   it('displays the authenticated user email', () => {
     renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg', role: 'user', chatAccess: false } }));
     expect(screen.getByText('archer@rathe.gg')).toBeInTheDocument();
   });
 
-  it('does NOT render a display-name input (out of v1 scope)', () => {
+  it('renders the display-name field inside the profile panel, prefilled from the user', () => {
+    renderSettings(
+      makeAuthContext({
+        user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu_Pelotas' },
+      }),
+    );
+    const input = screen.getByRole('textbox', { name: /nome de exibição/i });
+    expect(input).toHaveValue('Dudu_Pelotas');
+    expect(input.closest('section')).toBe(screen.getByRole('heading', { level: 2, name: /perfil/i }).closest('section'));
+  });
+
+  it('saves the trimmed display name with PATCH and mirrors it into the auth context', async () => {
+    patchDisplayNameMock.mockResolvedValueOnce({ displayName: 'Dudu' });
+    const setDisplayName = vi.fn();
+    renderSettings(makeAuthContext({ setDisplayName }));
+    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), '  Dudu  ');
+    await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
+    expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu', 'jwt');
+    expect(setDisplayName).toHaveBeenCalledWith('Dudu');
+    expect(await screen.findByText(/nome salvo/i)).toBeInTheDocument();
+  });
+
+  it('does not send a name shorter than 2 characters', async () => {
     renderSettings();
-    // There must be no text input or field labeled "display name" or "name"
-    const inputs = screen.queryAllByRole('textbox');
-    expect(inputs).toHaveLength(0);
+    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), 'D');
+    await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
+    expect(patchDisplayNameMock).not.toHaveBeenCalled();
   });
 });
 

@@ -18,6 +18,7 @@ import { Route as CheckYourEmailRouteImport } from './routes/check-your-email'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as AuthSwapsRouteImport } from './routes/_auth/swaps'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
@@ -79,6 +80,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DTokenRoute = DTokenRouteImport.update({
+  id: '/d/$token',
+  path: '/d/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSwapsRoute = AuthSwapsRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
   '/swaps': typeof AuthSwapsRoute
+  '/d/$token': typeof DTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
   '/swaps': typeof AuthSwapsRoute
+  '/d/$token': typeof DTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/swaps': typeof AuthSwapsRoute
+  '/d/$token': typeof DTokenRoute
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/reviews'
     | '/settings'
     | '/swaps'
+    | '/d/$token'
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/reviews'
     | '/settings'
     | '/swaps'
+    | '/d/$token'
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/_auth/reviews'
     | '/_auth/settings'
     | '/_auth/swaps'
+    | '/d/$token'
     | '/_auth/add-cards/csv'
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
@@ -354,6 +366,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  DTokenRoute: typeof DTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/d/$token': {
+      id: '/d/$token'
+      path: '/d/$token'
+      fullPath: '/d/$token'
+      preLoaderRoute: typeof DTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/swaps': {
@@ -614,6 +634,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  DTokenRoute: DTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

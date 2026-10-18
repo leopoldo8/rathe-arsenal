@@ -8,6 +8,7 @@ import { AlternativesSheet } from './AlternativesSheet';
 import { DeckActionPanels } from './DeckActionPanels';
 import { DeckAnalysisRow } from './DeckAnalysisRow';
 import { DeckHeroBanner } from './DeckHeroBanner';
+import { DeckShareCard } from './DeckShareCard';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
@@ -106,6 +107,7 @@ export function DeckDetailView({
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
       />
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
+      <DeckShareCard deckId={deck.id} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (
         <DeckActionPanels

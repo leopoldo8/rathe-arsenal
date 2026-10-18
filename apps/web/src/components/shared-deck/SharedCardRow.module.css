@@ -1,0 +1,74 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  min-block-size: 56px;
+  padding: var(--ra-space-2) var(--ra-space-3);
+  border-block-start: 1px solid var(--ra-border);
+}
+
+.row:first-child {
+  border-block-start: 0;
+}
+
+.thumb,
+.thumbFallback {
+  flex: 0 0 34px;
+  inline-size: 34px;
+  block-size: 48px;
+  border-radius: 4px;
+  background: var(--ra-bg-sunken);
+  object-fit: cover;
+}
+
+.pitchDot {
+  flex: 0 0 9px;
+  inline-size: 9px;
+  block-size: 9px;
+  border-radius: var(--ra-radius-full);
+}
+
+.pitchRed {
+  background: var(--ra-pitch-red);
+}
+
+.pitchYellow {
+  background: var(--ra-pitch-yellow);
+}
+
+.pitchBlue {
+  background: var(--ra-pitch-blue);
+}
+
+.name {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-medium);
+}
+
+.quantity {
+  min-inline-size: 30px;
+  text-align: end;
+  color: var(--ra-accent);
+  font-family: var(--ra-font-mono);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-bold);
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

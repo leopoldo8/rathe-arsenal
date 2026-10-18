@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { clearShareReturn, readShareReturn } from '../lib/share-return';
 import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
@@ -19,6 +20,7 @@ function VerifyEmailPage(): React.ReactElement {
   const { token } = Route.useSearch();
   const { verifyEmail } = useAuth();
   const navigate = useNavigate();
+  const router = useRouter();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -27,8 +29,14 @@ function VerifyEmailPage(): React.ReactElement {
     verifyEmail(token)
       .then(() => {
         setStatus('success');
-        // A3: verified users land on /onboarding per R43
-        setTimeout(() => void navigate({ to: '/onboarding' }), 1500);
+        // A3: verified users land on /onboarding per R43, unless they signed up from a
+        // shared page: then they go back to it (SD-10), including across the email round trip.
+        const shareReturn = readShareReturn();
+        clearShareReturn();
+        setTimeout(() => {
+          if (shareReturn) router.history.push(shareReturn.returnTo);
+          else void navigate({ to: '/onboarding' });
+        }, 1500);
       })
       .catch((err: unknown) => { setStatus('error'); setErrorMsg(localizeAuthError(err, t)); });
   // eslint-disable-next-line react-hooks/exhaustive-deps

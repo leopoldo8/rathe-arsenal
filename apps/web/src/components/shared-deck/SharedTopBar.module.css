@@ -1,0 +1,90 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  min-block-size: 56px;
+  padding-inline: var(--ra-space-4);
+  background: var(--ra-bg-surface);
+  border-block-end: 1px solid var(--ra-border);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 44px;
+  text-decoration: none;
+}
+
+.seal {
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 8px;
+}
+
+.wordmark {
+  font-family: var(--ra-font-gothic);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ra-accent);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+}
+
+.ghost,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ghost {
+  color: var(--ra-fg-secondary);
+}
+
+.ghost:hover {
+  color: var(--ra-fg-primary);
+}
+
+.primary {
+  background: var(--ra-accent-soft-bg);
+  border: 1px solid var(--ra-accent-soft-bd);
+  color: var(--ra-accent);
+}
+
+.primary:hover {
+  color: var(--ra-accent-hover);
+}
+
+.ghost:focus-visible,
+.primary:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* The phone mockup shows only "Entrar"; sign-up stays inside the invitation. */
+@media (max-width: 719px) {
+  .primary {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .bar {
+    padding-inline: var(--ra-space-8);
+  }
+}

@@ -1,0 +1,19 @@
+.footer {
+  padding: var(--ra-space-6) var(--ra-space-5);
+  border-block-start: 1px solid var(--ra-border);
+  background: var(--ra-bg-surface-2);
+  color: var(--ra-fg-muted);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  line-height: var(--ra-leading-normal);
+}
+
+.footer p {
+  margin: 0 0 var(--ra-space-2);
+  max-inline-size: 92ch;
+}
+
+.copyright {
+  color: var(--ra-fg-tertiary);
+  font-weight: var(--ra-weight-semibold);
+}

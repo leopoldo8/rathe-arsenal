@@ -52,6 +52,7 @@ function renderModal(opts: IRenderOpts) {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: opts.deleteAccount,
+    setDisplayName: () => undefined,
     setSettings: () => {
       /* test stub */
     },

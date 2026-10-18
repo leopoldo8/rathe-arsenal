@@ -34,6 +34,7 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: noopAsync,
+    setDisplayName: () => undefined,
     ...overrides,
   };
 }

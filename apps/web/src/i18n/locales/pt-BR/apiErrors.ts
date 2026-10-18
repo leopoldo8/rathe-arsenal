@@ -16,6 +16,8 @@ export const apiErrors = {
   MESSAGE_NOT_RETRYABLE: 'Só uma resposta que falhou pode ser tentada de novo.',
   PROPOSAL_NOT_PENDING: 'Esta proposta já foi decidida.',
   PROPOSAL_STALE: 'Esta proposta não vale mais para o deck.',
+  DISPLAY_NAME_REQUIRED: 'Escolha um nome de exibição antes de compartilhar.',
+  SHARE_LINK_UNAVAILABLE: 'Este link não está mais disponível.',
   generic: 'Algo deu errado. Tente novamente.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Muitas tentativas. Aguarde um momento e tente novamente.',
