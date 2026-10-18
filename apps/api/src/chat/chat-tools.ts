@@ -81,6 +81,18 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_community_decks',
+    description:
+      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them. Use it only after search_tournament_decks found no deck for that hero and format.',
+    parametersJsonSchema: object(
+      {
+        heroIdentifier: string('Hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
+        format: string('Format, for example "Silver Age".'),
+      },
+      ['heroIdentifier', 'format'],
+    ),
+  },
+  {
     name: 'get_tournament_meta',
     description:
       'Per hero, how many tournament decks one format has, how many placed top 8 and how many won, player-named decks, when the hero first and last appeared, and whether the hero is legal in that format today, most decks first. The data holds mostly top finishes, so it shows who places, not win rates. Use it to rank heroes or describe the meta instead of counting a search sample.',

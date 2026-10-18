@@ -1,6 +1,9 @@
-import { catalog } from '@rathe-arsenal/engine';
+import { catalog, findCardLegalityViolation } from '@rathe-arsenal/engine';
 import { BATCH_CARD_LIMIT, BATCH_RULE_LIMIT, runChatTool } from '../chat-tools';
 import { ChatToolsService } from '../chat-tools.service';
+import { FabraryService } from '../../fabrary/fabrary.service';
+import { FabraryIndexClient, IIndexRequest, IIndexResult } from '../../reference/fabrary-index';
+import { slotOf } from '../proposal-validation';
 import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
 
 const RUNEBLADE_EMISSARY = 'aurora-emissary-of-lightning';
@@ -113,6 +116,7 @@ describe('chat tools (E2E)', () => {
 
     expect(empty['decks']).toEqual([]);
     expect(empty['note']).toEqual(expect.stringContaining('No tournament deck matches'));
+    expect(empty['note']).toEqual(expect.stringContaining('get_community_decks'));
     expect(empty['relatedHeroes']).toEqual([{ heroIdentifier: 'azalea-ace-in-the-hole', format: 'Classic Constructed', decks: 1 }]);
     expect(empty['heroesWithDecks']).toEqual([{ heroIdentifier: 'kano', format: 'Silver Age', decks: 2 }]);
     expect((found['decks'] as Array<{ source: string }>).map((deck) => deck.source)).toEqual(['player-named', 'player-named']);
@@ -245,5 +249,62 @@ describe('chat tools (E2E)', () => {
     ]);
     expect(results[0]!.entries).toHaveLength(BATCH_RULE_LIMIT);
     expect(results[1]!.entries.map((entry) => entry.ruleNumber)).toEqual(['tools-7']);
+  });
+
+  it('get_community_decks sums the complete legal regular decks of that exact hero and format and says they are not tournament results', async () => {
+    const toolbox = toolboxFor(await fixture.chatUser());
+    const hero = catalog.getCard('azalea');
+    const mainboard = catalog.cards
+      .filter((card) => slotOf(card) === 'mainboard' && findCardLegalityViolation(card, hero, 'Silver Age') === null)
+      .slice(0, 20)
+      .map((card) => ({ cardIdentifier: card.cardIdentifier, quantity: 2, slot: 'mainboard' as const }));
+    const recent = new Date(Date.now() - 86_400_000).toISOString();
+    const requests: IIndexRequest[] = [];
+    (fixture.app.get(FabraryIndexClient) as unknown as { query: (request: IIndexRequest) => Promise<IIndexResult> }).query = async (request) => {
+      requests.push(request);
+      return {
+        nbHits: 2,
+        hits: [
+          { deckId: '01COMMUNITY00000000000001', name: 'Azalea SAGE', format: 'Silver Age', heroIdentifier: 'azalea', updatedAt: recent, hasResults: true },
+          { deckId: '01COMMUNITY00000000000002', name: 'Half built', format: 'Silver Age', heroIdentifier: 'azalea', updatedAt: recent },
+        ],
+      };
+    };
+    const fabrary = fixture.app.get(FabraryService) as jest.Mocked<FabraryService>;
+    fabrary.fetchCommunityDeck.mockImplementation(async (ulid: string) => ({
+      ulid,
+      name: ulid,
+      format: 'Silver Age',
+      hero: { cardIdentifier: 'azalea', name: 'Azalea' },
+      mainboard: ulid.endsWith('1') ? mainboard : mainboard.slice(0, 5),
+      equipment: [],
+      weapons: [],
+      inventory: [],
+      matchupPlans: 3,
+    }));
+
+    const result = await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Silver Age' });
+    const badFormat = await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Commoner' });
+
+    expect(requests[0]!.filters).toContain('heroIdentifier:"azalea"');
+    expect(result['note']).toEqual(expect.stringContaining('not tournament results'));
+    expect(result['decksUsed']).toBe(1);
+    expect(result['decksChecked']).toBe(2);
+    expect(result['decks']).toEqual([
+      { name: 'Azalea SAGE', updatedAt: recent.slice(0, 10), hasResults: true, matchupPlans: 3, inventoryCards: 0, url: 'https://fabrary.net/decks/01COMMUNITY00000000000001' },
+    ]);
+    expect((result['cards'] as Array<{ decks: number; averageCopies: number }>)[0]).toEqual(expect.objectContaining({ decks: 1, averageCopies: 2 }));
+    expect(badFormat).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it('get_community_decks answers that the decks are unavailable when Fabrary cannot be reached', async () => {
+    const toolbox = toolboxFor(await fixture.chatUser());
+    (fixture.app.get(FabraryIndexClient) as unknown as { query: () => Promise<IIndexResult> }).query = async () => {
+      throw new Error('index down');
+    };
+
+    const result = await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'kano', format: 'Blitz' });
+
+    expect(result).toEqual(expect.objectContaining({ error: 'COMMUNITY_DECKS_UNAVAILABLE' }));
   });
 });

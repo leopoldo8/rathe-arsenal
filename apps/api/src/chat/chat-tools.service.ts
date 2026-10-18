@@ -5,6 +5,7 @@ import { catalog, findCardLegalityViolation, ICatalogCard, TSupportedFormat } fr
 import { CollectionReadService } from '../collection/collection-read.service';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { RecommendationsService } from '../recommendations/recommendations.service';
+import { CommunityDecksService } from '../reference/community-decks.service';
 import { RulesImportService } from '../reference/rules-import.service';
 import { IAcceptedProposal } from './chat-turn-queue.service';
 import {
@@ -64,6 +65,7 @@ export class ChatToolsService {
     private readonly collection: CollectionReadService,
     private readonly recommendations: RecommendationsService,
     private readonly rules: RulesImportService,
+    private readonly community: CommunityDecksService,
   ) {}
 
   /** A fresh toolbox per turn; accepted proposals are collected and stored only with the finished answer. */
@@ -78,6 +80,7 @@ export class ChatToolsService {
       get_tournament_deck: (args) => this.tournamentDeck(scope, readString(args, 'id')!, readInteger(args, 'compareDeckId', { min: 1, optional: true })),
       get_collection: (args) => this.collectionCards(scope, args),
       get_tournament_meta: (args) => this.tournamentMeta(args),
+      get_community_decks: (args) => this.communityDecks(args),
       search_rules: (args) => this.searchRules(args),
       propose_deck: async (args) => {
         const check = validateDeckProposal(args, catalog);
@@ -209,9 +212,36 @@ export class ChatToolsService {
     if (decks.length > 0) return { decks };
     return {
       decks,
-      note: 'No tournament deck matches these filters. Do not repeat the search with small changes: use a related hero or a hero with decks below, and tell the user what is missing.',
+      note:
+        heroIdentifier !== null && format !== null
+          ? 'No tournament deck matches these filters. Do not repeat the search with small changes: call get_community_decks with this hero and format for regular decks players published, and tell the user there are no tournament lists.'
+          : 'No tournament deck matches these filters. Do not repeat the search with small changes: use a related hero or a hero with decks below, and tell the user what is missing.',
       relatedHeroes: heroIdentifier === null ? [] : await this.tournamentHeroCounts({ namePrefix: heroIdentifier.split('-')[0]!, exclude: heroIdentifier }),
       heroesWithDecks: await this.tournamentHeroCounts({ format }),
+    };
+  }
+
+  private async communityDecks(args: Record<string, unknown>): Promise<TToolResult> {
+    const heroIdentifier = readString(args, 'heroIdentifier')!;
+    const format = readString(args, 'format')!;
+    if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) throw new InvalidToolArguments(`format must be one of ${SUPPORTED_FORMATS.join(', ')}`);
+    const found = await this.community.latest(heroIdentifier, format as TSupportedFormat);
+    if (found === null) {
+      return { error: 'COMMUNITY_DECKS_UNAVAILABLE', note: 'Fabrary could not be reached; tell the user the regular decks could not be loaded right now.' };
+    }
+    if (found.decks.length === 0) {
+      return {
+        decksChecked: found.inspected,
+        decks: [],
+        note: 'No complete, legal deck of this hero and format was published on Fabrary in the last 12 months; say there is no data on how it is built.',
+      };
+    }
+    return {
+      note: `These are regular decks players published on Fabrary, not tournament results. Say so, say the summary uses ${found.decks.length} decks, give their dates, and describe the cards most of them play. decksChecked also counts incomplete or illegal decks that were left out; do not quote it as the number of decks.`,
+      decksUsed: found.decks.length,
+      decksChecked: found.inspected,
+      decks: found.decks,
+      cards: found.cards,
     };
   }
 

@@ -24,3 +24,7 @@ export interface IDeckImportDto {
    */
   readonly inventory: readonly IDeckCardEntry[];
 }
+
+export interface ICommunityDeckImport extends IDeckImportDto {
+  readonly matchupPlans: number;
+}

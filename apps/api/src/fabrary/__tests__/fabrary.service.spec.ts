@@ -268,4 +268,34 @@ describe('FabraryService', () => {
       await expect(service.fetchDeck('01HTXYZ1234567890ABCDEFGH')).rejects.toBe(originalError);
     });
   });
+
+  describe('fetchCommunityDeck', () => {
+    it('asks for the matchup plans only in its own query and counts them, while fetchDeck keeps the import query', async () => {
+      // Arrange
+      catalogService.getCard.mockImplementation((identifier: string) => ({
+        cardIdentifier: identifier,
+        types: identifier === 'kassai-of-the-golden-sand' ? [Type.Hero] : ['Action'],
+        subtypes: [],
+      }) as never);
+      transport.post.mockResolvedValue({
+        data: {
+          getDeck: {
+            ...fixture.data.getDeck,
+            matchups: [{ matchupId: 'a' }, { matchupId: 'b' }],
+          },
+        },
+      });
+
+      // Act
+      const community = await service.fetchCommunityDeck('01HTXYZ1234567890ABCDEFGH');
+      await service.fetchDeck('01HTXYZ1234567890ABCDEFGH');
+
+      // Assert
+      expect(community.matchupPlans).toBe(2);
+      expect(community.hero.cardIdentifier).toBe('kassai-of-the-golden-sand');
+      const [communityBody, importBody] = transport.post.mock.calls.map(([body]) => JSON.parse(body as string).query as string);
+      expect(communityBody).toContain('matchups');
+      expect(importBody).not.toContain('matchups');
+    });
+  });
 });
