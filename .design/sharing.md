@@ -153,7 +153,7 @@ Alternatives considered: missing cards visible only on a separate token - wins i
 1. Display name asked at the first share, editable in Settings - default, the owner did not answer this one.
 2. The owner's missing cards are visible to anyone holding the deck address, through its missing view - default.
 
-- Design: the shared deck page (full view and missing view, anonymous and logged-in, owner viewing their own link, unavailable) and the share control on the deck detail (off, on with address, turning off) - mockups with two alternatives before building, per the project rule.
+- Design: the shared deck page (full view and missing view, anonymous and logged-in, owner viewing their own link, unavailable) and the share control on the deck detail (off, on with address, turning off) - mockups with two alternatives before building, per the project rule. Mockups for the owner to pick from: `.design/mockups/sharing/deck/shared-deck-{a,b}-{phone,desktop}` (A: card grid with a comparison column; B: comparison first, compact list) and `.design/mockups/sharing/deck/share-control-{a,b}-{phone,desktop}` (A: a Share button opening a popover or sheet; B: an always-visible sharing card with a switch).
 
 ### Share attribution
 
@@ -215,7 +215,7 @@ Alternatives considered: the hero's card face straight from the LSS bucket as th
 
 1. Generated on first request and kept until the deck or list changes, or until deleted on an LSS request - default.
 
-- Design: the image for a deck, a `want` list and a `sell` list, including a list of one card and a list of fifty, and where the download action sits in the share control - two alternatives before building.
+- Design: the image for a deck, a `want` list and a `sell` list, including a list of one card and a list of fifty, and where the download action sits in the share control - two alternatives before building. Mockups for the owner to pick from: `.design/mockups/sharing/preview/` (A "Capa": text-led, cards cascading on the right, fits under 600 KB as PNG; B "Leque": a fan of large card faces, needs JPEG to stay under 600 KB), with each in a WhatsApp chat in `whatsapp-{a,b}.png`; the download action is in the share control mockups.
 
 ### Copy Deck
 
@@ -234,7 +234,7 @@ Alternatives considered: the hero's card face straight from the LSS bucket as th
 
 The copy takes the deck list as it stands, which already includes the sharer's replacements (they live in `deck_card`); the sharer's `card_replacement` rows, swaps and tags are not copied.
 
-- Design: the comparison and copy area on the shared deck page, anonymous (invitation) and logged-in (coverage, copy, after copy).
+- Design: the comparison and copy area on the shared deck page, anonymous (invitation) and logged-in (coverage, copy, after copy) - drawn inside the `shared-deck` mockups of [Shared deck](#shared-deck).
 
 ### Card list
 
@@ -252,7 +252,7 @@ The copy takes the deck list as it stands, which already includes the sharer's r
 | Line marked sold | Stays on the list, shown as sold; the collection is unchanged | `200` |
 | Line unmarked | Back to available | `200` |
 | The source deck changes later | The list does not change (Key decision 6) | |
-| Copy as text | One line per card, `2x Name (pitch)`, plus condition and price on sell lists, plus the share address when shared | text on the clipboard |
+| Copy as text | One line per card, `2x Name (pitch)`, plus condition and price on sell lists, plus the share address when shared; sold lines are left out | text on the clipboard |
 | List deleted | Lines and share address gone | `204` |
 | Another user's list | Nothing | `404` |
 
@@ -283,7 +283,7 @@ Tables `card_list` and `card_list_line`; no existing table changes.
 | `card_list_line.quantity` | int | no | | 1 to 20, as the collection caps quantities |
 | `card_list_line.printing` | varchar | yes | | `sell` only; a printing of the card, which decides foiling and the TCGPlayer product |
 | `card_list_line.condition` | varchar(4) | yes | | `sell` only |
-| `card_list_line.priceCents` | int | yes | | BRL; `sell` only |
+| `card_list_line.priceCents` | int | yes | | BRL per copy; `sell` only |
 | `card_list_line.soldAt` | timestamptz | yes | | null means available |
 
 ```mermaid
@@ -296,8 +296,10 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 
 1. Conditions are `NM`, `LP`, `MP`, `HP`, `DMG` - default, the owner did not name a scale.
 2. A `want` list from a deck takes the missing cards only; a `sell` list from a deck takes the whole deck - default, from the two uses the owner described.
+3. A line's price is per copy, shown as "R$ 6,00 cada", because a suggested price is one card's last sale times the multiplier - default.
+4. Sold lines are left out of the copied text, which lists what is still for sale - default.
 
-- Design: where lists live in the navigation, the list screen for each kind (empty, filling from a deck, lines with and without price and condition, sold lines, total price), and adding a card.
+- Design: where lists live in the navigation, the list screen for each kind (empty, filling from a deck, lines with and without price and condition, sold lines, total price), and adding a card. Mockups for the owner to pick from: `.design/mockups/sharing/lists/lists-home-{a,b}-{phone,desktop}` (A: a new Lists tab; B: Cards and Lists tabs inside the Library) and `.design/mockups/sharing/lists/list-editor-{a,b}-{phone,desktop}` (A: an editable table; B: a card grid with an edit panel).
 
 ### Shared list
 
@@ -320,7 +322,7 @@ Alternatives considered: a sale flag on `collection_card` - wins if sellers want
 `GET /api/shared/lists/:token` (public) → `200` `{ kind, name, notes, sharerName, totalPriceCents, lines: [{ id, cardIdentifier, quantity, printing, condition, priceCents, sold }] }`
 `GET /api/shared/lists/:token/matches` → `200` `{ lines: [{ lineId, owned, missingInDecks }] }`
 
-- Design: the shared list page for each kind, anonymous and logged-in, with sold lines and lines missing price or condition.
+- Design: the shared list page for each kind, anonymous and logged-in, with sold lines and lines missing price or condition. Mockups for the owner to pick from: `.design/mockups/sharing/lists/shared-list-{a,b}-{phone,desktop}` (A: a single-column price list; B: a card gallery with a side column).
 
 ### Price suggestion
 
