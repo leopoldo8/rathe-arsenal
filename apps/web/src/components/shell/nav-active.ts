@@ -8,12 +8,13 @@
  * on `/add-cards`. This explicit route map replaces both.
  */
 
-export type TNavKey = 'home' | 'library' | 'chat';
+export type TNavKey = 'home' | 'library' | 'lists' | 'chat';
 
 const HOME_PATHS: readonly string[] = ['/home', '/decks/new'];
 const HOME_PREFIXES: readonly string[] = ['/home/', '/decks/'];
 const LIBRARY_PATHS: readonly string[] = ['/library', '/library-csv-sources'];
 const LIBRARY_PREFIXES: readonly string[] = ['/add-cards'];
+const LISTS_PATH = '/lists';
 const CHAT_PATH = '/chat';
 
 /**
@@ -37,6 +38,10 @@ export function resolveActiveNavKey(pathname: string): TNavKey | null {
     LIBRARY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   ) {
     return 'library';
+  }
+
+  if (pathname === LISTS_PATH || pathname.startsWith(`${LISTS_PATH}/`)) {
+    return 'lists';
   }
 
   if (pathname === CHAT_PATH || pathname.startsWith(`${CHAT_PATH}/`)) {

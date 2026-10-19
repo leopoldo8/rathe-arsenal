@@ -1,6 +1,7 @@
 export const shell = {
   navHome: 'Home',
   navLibrary: 'Library',
+  navLists: 'Lists',
   navTutor: 'Tutor',
   primaryNavAriaLabel: 'Primary',
   mobileNavAriaLabel: 'Mobile primary',

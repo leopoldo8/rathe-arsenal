@@ -121,11 +121,11 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('TopBar — nav items', () => {
-  it('renders exactly 2 nav links', () => {
+  it('renders exactly 3 nav links', () => {
     render(<TopBar />);
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     const links = nav.querySelectorAll('a');
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(3);
   });
 
   it('renders the Home nav link', () => {
@@ -256,6 +256,15 @@ describe('TopBar — FND-06 active-item rule', () => {
     render(<TopBar />);
     const libraryLink = screen.getByRole('link', { name: 'Biblioteca' });
     expect(libraryLink).not.toHaveAttribute('data-active');
+  });
+});
+
+describe('TopBar — Lists', () => {
+  it('links Listas after Biblioteca', () => {
+    render(<TopBar />);
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    const links = Array.from(nav.querySelectorAll('a'));
+    expect(links.map((link) => link.textContent)).toEqual(['Início', 'Biblioteca', 'Listas']);
   });
 });
 

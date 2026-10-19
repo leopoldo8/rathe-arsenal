@@ -59,11 +59,11 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('BottomTabBar — tab items', () => {
-  it('renders exactly 2 tab links', () => {
+  it('renders exactly 3 tab links', () => {
     render(<BottomTabBar />);
     const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
     const links = nav.querySelectorAll('a');
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(3);
   });
 
   it('renders the Home tab', () => {
@@ -135,19 +135,31 @@ describe('BottomTabBar — FND-06 active-item rule', () => {
   });
 });
 
+describe('BottomTabBar — Lists', () => {
+  it('puts Listas between Biblioteca and Tutor and marks it active on list paths', () => {
+    mockChatAccess = true;
+    mockPathname = '/lists/4';
+    const { container } = render(<BottomTabBar />);
+    const links = Array.from(container.querySelectorAll('nav a'));
+    expect(links.map((link) => link.textContent)).toEqual(['Início', 'Biblioteca', 'Listas', 'Tutor']);
+    expect(links[2]!.getAttribute('href')).toBe('/lists');
+    expect(links[2]).toHaveAttribute('aria-current', 'page');
+  });
+});
+
 describe('BottomTabBar — Tutor', () => {
   it('the Tutor tab follows chat access', () => {
     mockChatAccess = true;
     const granted = render(<BottomTabBar />);
     const links = Array.from(granted.container.querySelectorAll('nav a'));
-    expect(links).toHaveLength(3);
-    expect([links[2]!.textContent, links[2]!.getAttribute('href')]).toEqual(['Tutor', '/chat']);
-    expect(links[2]!.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
+    expect(links).toHaveLength(4);
+    expect([links[3]!.textContent, links[3]!.getAttribute('href')]).toEqual(['Tutor', '/chat']);
+    expect(links[3]!.querySelector('[data-testid="tutor-mark"]')).not.toBeNull();
     granted.unmount();
 
     mockChatAccess = false;
     const refused = render(<BottomTabBar />);
-    expect(refused.container.querySelectorAll('nav a')).toHaveLength(2);
+    expect(refused.container.querySelectorAll('nav a')).toHaveLength(3);
     expect(screen.queryByText('Tutor')).toBeNull();
   });
 

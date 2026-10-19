@@ -88,3 +88,9 @@ describe('resolveActiveNavKey — Tutor', () => {
     expect([resolveActiveNavKey('/chat'), resolveActiveNavKey('/chat/abc'), resolveActiveNavKey('/chatter')]).toEqual(['chat', 'chat', null]);
   });
 });
+
+describe('resolveActiveNavKey — Lists', () => {
+  it('list paths resolve to the Lists tab', () => {
+    expect([resolveActiveNavKey('/lists'), resolveActiveNavKey('/lists/7'), resolveActiveNavKey('/listsx')]).toEqual(['lists', 'lists', null]);
+  });
+});
