@@ -31,3 +31,5 @@ export { ShareEventEntity } from './share-event.entity';
 export { ShareImageEntity } from './share-image.entity';
 export { ShareLinkEntity } from './share-link.entity';
 export { CardArtBlockEntity } from './card-art-block.entity';
+export { CardListEntity } from './card-list.entity';
+export { CardListLineEntity } from './card-list-line.entity';
