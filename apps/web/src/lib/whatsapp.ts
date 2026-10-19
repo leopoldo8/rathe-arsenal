@@ -36,3 +36,8 @@ export function formatNumberForDisplay(stored: string): string {
 export function buildWhatsappUrl(digits: string, message: string): string {
   return `https://wa.me/${digits.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
 }
+
+/** wa.me link with no recipient: WhatsApp asks the sender to pick the chat or group. */
+export function buildWhatsappShareUrl(message: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+}

@@ -19,6 +19,7 @@ import type {
 } from '../../../api/deck-detail';
 import stripStyles from '../../../components/deck-detail/DeckStatusStrip.module.css';
 import listStyles from '../../../components/deck-detail/DeckList.module.css';
+import galleryStyles from '../../../components/card-gallery/CardGallery.module.css';
 import viewStyles from '../../../components/deck-detail/DeckDetailView.module.css';
 import bannerStyles from '../../../components/deck-detail/DeckHeroBanner.module.css';
 import analysisStyles from '../../../components/deck-detail/DeckAnalysisRow.module.css';
@@ -459,8 +460,8 @@ describe('DeckDetailPage — rendered elements carry the classes the layout rule
     expect(screen.getByTestId('deck-hero-eyebrow')).toHaveClass(bannerStyles.eyebrow!);
     expect(screen.getByTestId('deck-analysis-row')).toHaveClass(analysisStyles.row!);
     expect(screen.getByTestId('deck-action-panels')).toHaveClass(panelsStyles.row!);
-    expect(screen.getAllByTestId('deck-list-cell')[0]!.parentElement).toHaveClass(listStyles.grid!);
-    expect(screen.getAllByTestId('deck-list-cell')[0]!.firstElementChild).toHaveClass(listStyles.thumb!);
+    expect(screen.getAllByTestId('deck-list-cell')[0]!.parentElement).toHaveClass(galleryStyles.grid!);
+    expect(screen.getAllByTestId('deck-list-cell')[0]!.firstElementChild).toHaveClass(galleryStyles.thumb!);
   });
 
   it('colours the missing-row pitch bar by the card pitch', () => {
@@ -811,8 +812,8 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     populate(partialDeck());
     renderPage();
 
-    expect(cellFor('Partial')).toHaveClass(listStyles.cellMissing!);
-    expect(cellFor('Full Set')).not.toHaveClass(listStyles.cellMissing!);
+    expect(cellFor('Partial')).toHaveClass(galleryStyles.cellMissing!);
+    expect(cellFor('Full Set')).not.toHaveClass(galleryStyles.cellMissing!);
     expect(within(cellFor('Full Set')).getByTestId('card-art-stub')).toHaveAttribute('data-missing-count', '0');
   });
 

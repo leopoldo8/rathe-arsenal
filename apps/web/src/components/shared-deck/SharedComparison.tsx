@@ -34,9 +34,8 @@ function OwnerNote({ deckId }: { readonly deckId: number | null }): React.ReactE
   const { t } = useTranslation();
   return (
     <aside className={styles.panel} aria-labelledby="shared-owner-title" data-testid="shared-owner-note">
-      <p className={styles.eyebrow}>{t('sharing.owner.title')}</p>
-      <p id="shared-owner-title" className={styles.copy}>
-        {t('sharing.owner.body')}
+      <p id="shared-owner-title" className={styles.eyebrow}>
+        {t('sharing.owner.title')}
       </p>
       {deckId !== null && (
         <div className={styles.actions}>
@@ -57,7 +56,6 @@ function OwnerNote({ deckId }: { readonly deckId: number | null }): React.ReactE
 function Invitation({ token }: { readonly token: string }): React.ReactElement {
   const { t } = useTranslation();
   const remember = (): void => writeShareReturn(token);
-  const steps = [t('sharing.invite.step1'), t('sharing.invite.step2'), t('sharing.invite.step3')];
 
   return (
     <aside className={`${styles.panel} ${styles.brass}`} aria-labelledby="shared-invite-title" data-testid="shared-invite">
@@ -65,17 +63,6 @@ function Invitation({ token }: { readonly token: string }): React.ReactElement {
       <h2 id="shared-invite-title" className={styles.title}>
         {t('sharing.invite.title')}
       </h2>
-      <p className={styles.copy}>{t('sharing.invite.body')}</p>
-      <ol className={styles.steps}>
-        {steps.map((label, index) => (
-          <li key={label} className={styles.step}>
-            <span className={styles.stepNumber} aria-hidden="true">
-              {index + 1}
-            </span>
-            {label}
-          </li>
-        ))}
-      </ol>
       <div className={styles.actions}>
         <Link to="/sign-up" className={styles.primaryLink} onClick={remember}>
           {t('sharing.invite.signUp')}
@@ -84,7 +71,6 @@ function Invitation({ token }: { readonly token: string }): React.ReactElement {
           {t('sharing.invite.signIn')}
         </Link>
       </div>
-      <p className={styles.note}>{t('sharing.invite.returnNote')}</p>
     </aside>
   );
 }
@@ -154,7 +140,6 @@ function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.
           {t('sharing.coverage.copy')}
         </Button>
       </div>
-      <p className={styles.note}>{t('sharing.coverage.copyNote', { name: deck.sharerName })}</p>
       {copy.isError && (
         <p className={styles.error} role="alert">
           {localizeAuthError(copy.error, t)}

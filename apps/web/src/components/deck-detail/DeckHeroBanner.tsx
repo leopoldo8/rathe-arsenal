@@ -22,6 +22,7 @@ interface IDeckHeroBannerProps {
   readonly heroFallbackName: string;
   readonly pct: number;
   readonly onEdit: () => void;
+  readonly onShare: () => void;
 }
 
 export function DeckHeroBanner({
@@ -34,6 +35,7 @@ export function DeckHeroBanner({
   heroFallbackName,
   pct,
   onEdit,
+  onShare,
 }: IDeckHeroBannerProps): React.ReactElement {
   const { t } = useTranslation();
   const hero = useDeckHero(heroIdentifier, heroFallbackName);
@@ -71,6 +73,9 @@ export function DeckHeroBanner({
         </Link>
         <div className={styles.actions} data-testid="deck-detail-action-bar">
           <StatusDropdown deckId={deckId} currentStatus={status} />
+          <button type="button" className={styles.shareBtn} onClick={onShare} data-testid="deck-detail-share-btn">
+            {t('sharing.dialog.trigger')}
+          </button>
           <button
             type="button"
             className={styles.editBtn}

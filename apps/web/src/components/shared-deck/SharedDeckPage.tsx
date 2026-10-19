@@ -5,21 +5,23 @@ import { isShareLinkUnavailable, useSharedDeckQuery } from '../../api/shared-dec
 import { SharedContactButton } from './SharedContactButton';
 import { SharedComparison } from './SharedComparison';
 import { SharedDeckFooter } from './SharedDeckFooter';
+import { SharedDeckGallery } from './SharedDeckGallery';
 import { SharedDeckHeader } from './SharedDeckHeader';
-import { SharedDeckList } from './SharedDeckList';
 import { SharedDeckUnavailable } from './SharedDeckUnavailable';
-import { SharedMissingView } from './SharedMissingView';
+import { SharedMissingGallery } from './SharedMissingGallery';
 import { SharedTopBar } from './SharedTopBar';
 import styles from './SharedDeckPage.module.css';
 
 interface ISharedDeckPageProps {
   readonly token: string;
-  readonly view: 'missing' | undefined;
-  readonly onViewChange: (view: 'missing' | undefined) => void;
 }
 
-/** Public page behind /d/:token. Works without an account; signed-in visitors get coverage and copy. */
-export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPageProps): React.ReactElement {
+/**
+ * Public page behind /d/:token. Works without an account. The link's intent
+ * picks the page: a deck (gallery, comparison and copy) or a want list for
+ * the cards the sharer is missing (gallery, WhatsApp, copy list).
+ */
+export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElement {
   const { t } = useTranslation();
   const { user } = useAuth();
   const query = useSharedDeckQuery(token);
@@ -32,7 +34,7 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
         <main className={styles.main}>
           <SharedDeckUnavailable />
         </main>
-        <SharedDeckFooter showRobotsNote={false} />
+        <SharedDeckFooter />
       </div>
     );
   }
@@ -40,7 +42,7 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
   const contactWhatsapp = deck?.contactWhatsapp ?? null;
   const contactProps =
     deck !== undefined && contactWhatsapp !== null
-      ? { whatsapp: contactWhatsapp, sharerName: deck.sharerName, deckName: deck.name }
+      ? { whatsapp: contactWhatsapp, sharerName: deck.sharerName, deckName: deck.name, intent: deck.intent }
       : null;
 
   return (
@@ -62,25 +64,21 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
         )}
         {deck !== undefined && (
           <div className={styles.content}>
-            <div className={styles.top}>
+            <div className={deck.intent === 'deck' ? styles.top : styles.topSingle}>
               <SharedDeckHeader
                 deck={deck}
-                contact={contactProps === null ? undefined : <SharedContactButton {...contactProps} variant="pill" />}
+                contact={
+                  contactProps === null ? undefined : (
+                    <SharedContactButton {...contactProps} variant="pill" primary={deck.intent === 'missing'} />
+                  )
+                }
               />
-              <SharedComparison deck={deck} />
+              {deck.intent === 'deck' && <SharedComparison deck={deck} />}
             </div>
-            <SharedDeckList
-              cards={deck.cards}
-              totalCards={deck.totalCards}
-              missingCount={deck.missingCount}
-              onOpenMissing={() => onViewChange('missing')}
-            />
+            {deck.intent === 'deck' ? <SharedDeckGallery cards={deck.cards} /> : <SharedMissingGallery deck={deck} />}
           </div>
         )}
       </main>
-      {deck !== undefined && view === 'missing' && (
-        <SharedMissingView deck={deck} onClose={() => onViewChange(undefined)} />
-      )}
       <SharedDeckFooter />
       {contactProps !== null && <SharedContactButton {...contactProps} variant="bar" />}
     </div>

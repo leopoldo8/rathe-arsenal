@@ -29,6 +29,9 @@ export const deckDetail = {
 
   // DeckActionPanels
   missingTitle: 'What to buy',
+  shareMissingCallout_one: '{{count}} card is not in the store. Ask in the groups.',
+  shareMissingCallout_other: '{{count}} cards are not in the store. Ask in the groups.',
+  shareMissingAction: 'Share what is missing',
   missingEmpty: 'Nothing to buy.',
   missingCopies_one: '{{count}} missing',
   missingCopies_other: '{{count}} missing',

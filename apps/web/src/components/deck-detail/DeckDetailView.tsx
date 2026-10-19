@@ -8,7 +8,8 @@ import { AlternativesSheet } from './AlternativesSheet';
 import { DeckActionPanels } from './DeckActionPanels';
 import { DeckAnalysisRow } from './DeckAnalysisRow';
 import { DeckHeroBanner } from './DeckHeroBanner';
-import { DeckShareCard } from './DeckShareCard';
+import { ShareDialog } from './ShareDialog';
+import type { TShareIntent } from '../../api/shared-decks';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
@@ -52,6 +53,10 @@ export function DeckDetailView({
   onShoppingRetry,
 }: IDeckDetailViewProps): React.ReactElement {
   const [alternativesTarget, setAlternativesTarget] = useState<IAlternativesTarget | null>(null);
+  const [share, setShare] = useState<{ readonly open: boolean; readonly intent: TShareIntent | null }>({
+    open: false,
+    intent: null,
+  });
   const summary = useMemo(
     () =>
       summariseDeck({
@@ -96,6 +101,7 @@ export function DeckDetailView({
         heroFallbackName={deck.hero}
         pct={snapshot.effectivePercent}
         onEdit={onEdit}
+        onShare={() => setShare({ open: true, intent: null })}
       />
       <div className={styles.tags}>
         <TagChipRow deckId={deck.id} tags={tags} />
@@ -107,7 +113,6 @@ export function DeckDetailView({
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
       />
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
-      <DeckShareCard deckId={deck.id} deckName={deck.name} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (
         <DeckActionPanels
@@ -125,9 +130,18 @@ export function DeckDetailView({
           onShoppingRetry={onShoppingRetry}
           replacements={deck.replacements}
           onOpenAlternatives={setAlternativesTarget}
+          onShareMissing={() => setShare({ open: true, intent: 'missing' })}
         />
       )}
       <DeckList items={items} onEditCards={onEditCards} deckId={deck.id} replacements={deck.replacements} />
+      <ShareDialog
+        deckId={deck.id}
+        deckName={deck.name}
+        missingCount={summary.missingCards}
+        open={share.open}
+        initialIntent={share.intent}
+        onOpenChange={(open) => setShare((current) => ({ ...current, open }))}
+      />
       {alternativesTarget !== null && (
         <AlternativesSheet
           deckId={deck.id}

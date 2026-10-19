@@ -15,7 +15,7 @@ interface IDisplayNameFormProps {
   readonly onCancel: () => void;
 }
 
-/** "Before turning it on, how do you want to appear?" prompt of the share card. */
+/** Asks for the name shown on shared links, before the first link is made. */
 export function DisplayNameForm({
   initialName,
   saving,
@@ -38,7 +38,6 @@ export function DisplayNameForm({
         if (valid && !saving) onSubmit(name.trim());
       }}
     >
-      <p className={styles.title}>{t('sharing.displayName.promptTitle')}</p>
       <label className={styles.label} htmlFor={inputId}>
         {t('sharing.displayName.label')}
       </label>
@@ -50,7 +49,7 @@ export function DisplayNameForm({
           value={name}
           maxLength={DISPLAY_NAME_MAX_LENGTH}
           autoComplete="nickname"
-          // The prompt only appears after the owner flipped the switch, so moving focus to it is expected.
+          // The name step is the only thing on screen when it appears, so it takes focus.
           autoFocus
           onChange={(event) => setName(event.target.value)}
         />

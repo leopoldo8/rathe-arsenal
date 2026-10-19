@@ -48,7 +48,7 @@ export function buildMissingText(
   t: TTranslate,
 ): string {
   const lines = missing.map((card) =>
-    t('sharing.missing.textLine', {
+    t('sharing.wanted.textLine', {
       count: card.quantity,
       name: withPitch(card.name, card.pitch, (key) => t(key)),
     }),

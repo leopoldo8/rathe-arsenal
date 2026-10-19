@@ -242,7 +242,7 @@ describe('SettingsPage — Profile section', () => {
         user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu_Pelotas' },
       }),
     );
-    const input = screen.getByRole('textbox', { name: /nome de exibição/i });
+    const input = screen.getByRole('textbox', { name: /seu nome nos links/i });
     expect(input).toHaveValue('Dudu_Pelotas');
     expect(input.closest('section')).toBe(screen.getByRole('heading', { level: 2, name: /perfil/i }).closest('section'));
   });
@@ -251,7 +251,7 @@ describe('SettingsPage — Profile section', () => {
     patchDisplayNameMock.mockResolvedValueOnce({ displayName: 'Dudu' });
     const setDisplayName = vi.fn();
     renderSettings(makeAuthContext({ setDisplayName }));
-    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), '  Dudu  ');
+    await userEvent.type(screen.getByRole('textbox', { name: /seu nome nos links/i }), '  Dudu  ');
     await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
     expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu', 'jwt');
     expect(setDisplayName).toHaveBeenCalledWith('Dudu');
@@ -260,7 +260,7 @@ describe('SettingsPage — Profile section', () => {
 
   it('does not send a name shorter than 2 characters', async () => {
     renderSettings();
-    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), 'D');
+    await userEvent.type(screen.getByRole('textbox', { name: /seu nome nos links/i }), 'D');
     await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
     expect(patchDisplayNameMock).not.toHaveBeenCalled();
   });
@@ -273,17 +273,15 @@ describe('SettingsPage — Contact panel (WhatsApp)', () => {
     user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu', whatsappNumber: '5553999990000' },
   });
 
-  it('shows the saved number without the country code, a preview and "Remover número"', () => {
+  it('shows the saved number without the country code and "Remover número"', () => {
     renderSettings(saved);
     const panel = screen.getByRole('heading', { level: 2, name: /contato/i }).closest('section')!;
     expect(panel.querySelector('input[type="tel"]')).toHaveValue('53 99999-0000');
-    expect(panel).toHaveTextContent('Chamar Dudu no WhatsApp');
     expect(screen.getByRole('button', { name: 'Remover número' })).toBeInTheDocument();
   });
 
-  it('has no preview and no remove button while no number is saved', () => {
+  it('has no remove button while no number is saved', () => {
     renderSettings();
-    expect(screen.queryByTestId('whatsapp-preview')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Remover número' })).not.toBeInTheDocument();
   });
 

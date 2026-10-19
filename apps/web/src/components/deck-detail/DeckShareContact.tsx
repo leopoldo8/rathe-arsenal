@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { patchContact, useSetDeckShareContactMutation } from '../../api/shared-decks';
+import { patchContact, useSetDeckShareContactMutation, type TShareIntent } from '../../api/shared-decks';
 import { useAuth } from '../../auth/useAuth';
 import { AuthFetchError } from '../../lib/auth-fetch';
 import { formatNumberForDisplay, isPlausibleWhatsappNumber } from '../../lib/whatsapp';
 import { WhatsappGlyph } from '../contact/WhatsappGlyph';
 import { WhatsappNumberField } from '../contact/WhatsappNumberField';
-import { WhatsappPreview } from '../contact/WhatsappPreview';
 import styles from './DeckShareContact.module.css';
 
 interface IDeckShareContactProps {
   readonly deckId: number;
-  readonly deckName: string;
+  readonly intent: TShareIntent;
   /** This link's "show my WhatsApp" setting, as the API last reported it. */
   readonly showContact: boolean;
 }
 
 /**
- * "Show my WhatsApp" row of the share card. The switch is per link; the number
- * lives in the profile, so without one the card asks for it inline and turns
- * the switch on once it is saved.
+ * "Show my WhatsApp" row of the share dialog. The switch is per link; the
+ * number lives in the profile, so without one the row asks for it inline and
+ * turns the switch on once it is saved.
  */
-export function DeckShareContact({ deckId, deckName, showContact }: IDeckShareContactProps): React.ReactElement {
+export function DeckShareContact({ deckId, intent, showContact }: IDeckShareContactProps): React.ReactElement {
   const { t } = useTranslation();
   const { token, user, setWhatsappNumber } = useAuth();
   const setContact = useSetDeckShareContactMutation(deckId);
@@ -33,11 +32,10 @@ export function DeckShareContact({ deckId, deckName, showContact }: IDeckShareCo
   const savedNumber = user?.whatsappNumber ?? null;
   const hasNumber = savedNumber !== null;
   const isOn = hasNumber && showContact;
-  const sharerName = user?.displayName ?? t('sharing.contact.previewFallbackName');
 
   function toggle(next: boolean): void {
     setMessage(null);
-    setContact.mutate(next, { onError: () => setMessage(t('sharing.contact.toggleFailed')) });
+    setContact.mutate({ intent, showContact: next }, { onError: () => setMessage(t('sharing.contact.toggleFailed')) });
   }
 
   async function handleSaveAndShow(event: React.FormEvent): Promise<void> {
@@ -65,11 +63,7 @@ export function DeckShareContact({ deckId, deckName, showContact }: IDeckShareCo
     }
   }
 
-  const statusText = !hasNumber
-    ? t('sharing.contact.needNumber')
-    : isOn
-      ? t('sharing.contact.numberLine', { number: formatNumberForDisplay(savedNumber) })
-      : t('sharing.contact.off');
+  const statusText = hasNumber ? t('sharing.contact.numberLine', { number: formatNumberForDisplay(savedNumber) }) : null;
 
   return (
     <div className={styles.row} data-testid="deck-share-contact">
@@ -79,7 +73,7 @@ export function DeckShareContact({ deckId, deckName, showContact }: IDeckShareCo
         </span>
         <div className={styles.headText}>
           <p className={styles.title}>{t('sharing.contact.switchLabel')}</p>
-          <p className={styles.sub}>{statusText}</p>
+          {statusText !== null && <p className={styles.sub}>{statusText}</p>}
         </div>
         <button
           type="button"
@@ -112,12 +106,7 @@ export function DeckShareContact({ deckId, deckName, showContact }: IDeckShareCo
           <button type="submit" className={styles.save} aria-busy={saving ? 'true' : undefined}>
             {saving ? t('sharing.contact.saving') : t('sharing.contact.saveAndShow')}
           </button>
-          <p className={styles.note}>{t('sharing.contact.savedNote')}</p>
         </form>
-      )}
-
-      {isOn && (
-        <WhatsappPreview name={sharerName} message={t('sharing.contact.message', { deck: deckName })} />
       )}
 
       {message !== null && (

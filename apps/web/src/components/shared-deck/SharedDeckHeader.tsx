@@ -18,6 +18,7 @@ function findHeroCard(cards: readonly ISharedCard[]): ISharedCard | undefined {
 export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const heroCard = deck.heroCard ?? findHeroCard(deck.cards);
+  const isMissing = deck.intent === 'missing';
   const art = useImageFallback(imageSources(heroCard?.imageUrl ?? null, 'large'));
 
   return (
@@ -38,18 +39,22 @@ export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): Rea
           />
         )}
         <div className={styles.identity}>
-          <p className={styles.eyebrow}>{t('sharing.page.eyebrow')}</p>
+          <p className={styles.eyebrow}>{isMissing ? t('sharing.page.eyebrowMissing') : t('sharing.page.eyebrow')}</p>
           <h1 id="shared-deck-title" className={styles.title}>
             {deck.name}
           </h1>
           <div className={styles.chips}>
             <span className={styles.chipAccent}>{deck.format}</span>
             <span className={styles.chip}>{t('sharing.page.heroLine', { hero: deck.hero })}</span>
-            <span className={styles.chip}>{t('sharing.page.cardCount', { count: deck.totalCards })}</span>
+            <span className={styles.chip}>
+              {isMissing
+                ? t('sharing.page.missingCount', { count: deck.missingCount })
+                : t('sharing.page.cardCount', { count: deck.totalCards })}
+            </span>
           </div>
           <div className={styles.bylineRow}>
             <p className={styles.byline}>
-              {t('sharing.page.bylinePrefix')} <b>{deck.sharerName}</b> · {t('sharing.page.bylineSuffix')}
+              {t('sharing.page.byline')} <b>{deck.sharerName}</b>
             </p>
             {contact}
           </div>

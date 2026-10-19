@@ -34,7 +34,7 @@ export function DisplayNameSetting(): React.ReactElement {
   return (
     <form className={styles.form} noValidate onSubmit={(event) => void handleSubmit(event)}>
       <label className={styles.label} htmlFor={inputId}>
-        {t('sharing.displayName.label')}
+        {t('sharing.displayName.settingsLabel')}
       </label>
       <div className={styles.row}>
         <input
