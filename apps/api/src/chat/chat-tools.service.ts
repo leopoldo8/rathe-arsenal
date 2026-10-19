@@ -22,6 +22,7 @@ import {
 } from './chat-tools';
 import { describeDeck } from './deck-facts';
 import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
+import { compareSwap, swapCandidates } from './swap-analysis';
 
 const CARD_TEXT_MAX = 300;
 const HERO_COUNT_LIMIT = 60;
@@ -88,12 +89,22 @@ export class ChatToolsService {
         proposals.push({ kind: 'deck', payload: check.payload, reason: check.reason, trackedDeckId: null });
         return { ok: true };
       },
+      get_swap_candidates: (args) =>
+        this.swapCandidates(scope, readInteger(args, 'deckId', { min: 1 })!, readString(args, 'cardIdentifier')!, readString(args, 'slot')!),
       propose_swap: async (args) => {
         const swap = readSwapArgs(args);
-        const check = validateSwapProposal(swap, await this.swapDeck(scope.userId, swap.trackedDeckId), catalog);
+        const deck = await this.swapDeck(scope.userId, swap.trackedDeckId);
+        const check = validateSwapProposal(swap, deck, catalog);
         if (!check.ok) return { ok: false, error: check.error, detail: check.detail };
         proposals.push({ kind: 'swap', payload: check.payload, reason: check.reason, trackedDeckId: check.payload.trackedDeckId });
-        return { ok: true };
+        const comparison = compareSwap({
+          original: catalog.getCard(check.payload.originalCardIdentifier),
+          replacement: catalog.getCard(check.payload.replacementCardIdentifier),
+          slot: check.payload.slot,
+          quantity: check.copies,
+          deckCards: deck!.cards,
+        });
+        return { ok: true, comparison };
       },
     };
     return { toolbox, proposals };
@@ -129,6 +140,21 @@ export class ChatToolsService {
       ...facts,
       cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 })),
     };
+  }
+
+  private async swapCandidates(scope: IToolScope, deckId: number, cardIdentifier: string, slot: string): Promise<TToolResult> {
+    const deck = await this.swapDeck(scope.userId, deckId);
+    if (!deck) return DECK_NOT_FOUND;
+    const original = findCard(cardIdentifier);
+    const heroCard = deck.heroIdentifier ? findCard(deck.heroIdentifier) : null;
+    const format = (SUPPORTED_FORMATS as readonly string[]).includes(deck.format) ? (deck.format as TSupportedFormat) : null;
+    if (!original || !deck.cards.some((card) => card.cardIdentifier === cardIdentifier && card.slot === slot)) return { error: 'CARD_NOT_IN_DECK' };
+    if (!heroCard || !format) return { error: 'DECK_HAS_NO_HERO_OR_FORMAT' };
+    const [owned, usage] = await Promise.all([this.collection.loadOwned(scope.userId), this.deckUsage(scope.userId)]);
+    const spare = new Map(
+      [...owned.entries()].map(([id, copies]) => [id, Math.max(0, copies - (usage.get(id) ?? []).reduce((sum, used) => sum + used.quantity, 0))]),
+    );
+    return { ...swapCandidates({ original, slot, heroCard, format, deckCards: deck.cards, spare }) };
   }
 
   private async ownedCopies(scope: IToolScope, identifiers: readonly unknown[]): Promise<TToolResult> {
@@ -237,10 +263,11 @@ export class ChatToolsService {
       };
     }
     return {
-      note: `These are regular decks players published on Fabrary, not tournament results. Say so, say the summary uses ${found.decks.length} decks, give their dates, and describe the cards most of them play. decksChecked also counts incomplete or illegal decks that were left out; do not quote it as the number of decks.`,
+      note: `These are regular decks players published on Fabrary, not tournament results. Say so, say the summary uses ${found.decks.length} decks, give their dates, and describe the cards most of them play. To compare a deck's makeup, use each deck's mainboardByType and averageMainboardByType. decksChecked also counts incomplete or illegal decks that were left out; do not quote it as the number of decks.`,
       decksUsed: found.decks.length,
       decksChecked: found.inspected,
       decks: found.decks,
+      averageMainboardByType: found.averageMainboardByType,
       cards: found.cards,
     };
   }
@@ -271,7 +298,9 @@ export class ChatToolsService {
       if (query && !card.name.toLowerCase().includes(query) && !typeLine(card).toLowerCase().includes(query)) return [];
       const usedByDecks = usage.get(cardIdentifier) ?? [];
       const used = usedByDecks.reduce((sum, deck) => sum + deck.quantity, 0);
-      return [{ cardIdentifier, name: card.name, pitch: card.pitch, typeLine: typeLine(card), owned: copies, spare: Math.max(0, copies - used), usedByDecks }];
+      return [
+        { cardIdentifier, name: card.name, pitch: card.pitch, cost: card.cost, typeLine: typeLine(card), owned: copies, spare: Math.max(0, copies - used), usedByDecks },
+      ];
     });
     rows.sort((a, b) => a.name.localeCompare(b.name) || a.cardIdentifier.localeCompare(b.cardIdentifier));
     return {

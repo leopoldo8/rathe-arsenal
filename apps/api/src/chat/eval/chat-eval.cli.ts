@@ -7,7 +7,7 @@ import { parseThinkingLevel, TGeminiFetch } from '../../recommendations/gemini-c
 import { ChatRunnerService } from '../chat-runner.service';
 import { ChatTurnQueueService } from '../chat-turn-queue.service';
 import { ChatService } from '../chat.service';
-import { EVAL_DECKS, EVAL_SCENARIOS, IEvalScenario, TEvalDeckKey } from './chat-eval-scenarios';
+import { EVAL_DECKS, EVAL_SCENARIOS, IEvalScenario, IEvalSwap, TEvalDeckKey } from './chat-eval-scenarios';
 
 export const EVAL_USER_EMAIL = 'tutor-eval@rathe-arsenal.invalid';
 const UNUSABLE_PASSWORD_HASH = '!'.repeat(60);
@@ -37,6 +37,8 @@ export interface IEvalRun {
   readonly outputTokens: number;
   readonly calls: readonly IModelCallTrace[];
   readonly text: string | null;
+  readonly swaps: readonly IEvalSwap[];
+  readonly check: { readonly failure: string | null } | null;
 }
 
 interface IEvalOptions {
@@ -220,6 +222,15 @@ async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly 
        FROM chat_usage WHERE "messageId" = $1`,
     [sent.messageId],
   )) as Array<{ model: string | null; cost: number; input: number; cached: number; output: number }>;
+  const swaps = (
+    (await dataSource.query(`SELECT payload FROM chat_proposal WHERE "messageId" = $1 AND kind = 'swap' ORDER BY "createdAt"`, [sent.messageId])) as Array<{
+      payload: { originalCardIdentifier: string; replacementCardIdentifier: string };
+    }>
+  ).map(({ payload }) => ({ original: payload.originalCardIdentifier, replacement: payload.replacementCardIdentifier }));
+  const done = message!.status === 'done';
+  const check = sent.scenario.check
+    ? { failure: done ? sent.scenario.check({ text: message!.text ?? '', toolCalls: calls.flatMap((call) => call.toolCalls), swaps }) : 'turn not done' }
+    : null;
   return {
     scenario: sent.scenario.id,
     run: sent.run,
@@ -234,6 +245,8 @@ async function readRun(dataSource: DataSource, sent: ISentTurn, calls: readonly 
     outputTokens: usage!.output,
     calls,
     text: message!.text,
+    swaps,
+    check,
   };
 }
 
@@ -248,18 +261,22 @@ export function renderReport(runs: readonly IEvalRun[]): string {
   const input = runs.reduce((sum, run) => sum + run.inputTokens, 0);
   const cached = runs.reduce((sum, run) => sum + run.cachedInputTokens, 0);
   const models = [...new Set(runs.map((run) => run.model).filter((model): model is string => model !== null))];
+  const checked = runs.filter((run) => run.check !== null);
+  const passed = checked.filter((run) => run.check!.failure === null);
+  const checkCell = (run: IEvalRun): string => (run.check === null ? '-' : run.check.failure === null ? 'pass' : `fail: ${run.check.failure}`);
   const lines = [
     `# Tutor eval${models.length > 0 ? `: ${models.join(', ')}` : ''}`,
     '',
     `${done.length}/${runs.length} turns done, $${spent.toFixed(4)} spent, $${(done.length === 0 ? 0 : spent / done.length).toFixed(4)} per done turn.`,
     `Turn time median ${percentile(done.map((run) => run.turnMs), 0.5)} ms, 90th percentile ${percentile(done.map((run) => run.turnMs), 0.9)} ms.`,
     `Model calls per turn ${(runs.reduce((sum, run) => sum + run.calls.length, 0) / Math.max(1, runs.length)).toFixed(1)}; ${input === 0 ? 0 : Math.round((cached / input) * 100)}% of ${input} input tokens came from the cache.`,
+    `Checks: ${passed.length}/${checked.length} passed.`,
     '',
-    '| Scenario | Run | Status | Calls | Tools | Slowest call | Turn | Cost |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Scenario | Run | Status | Check | Calls | Tools | Slowest call | Turn | Cost |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...runs.map(
       (run) =>
-        `| ${run.scenario} | ${run.run} | ${run.status}${run.error ? ` ${run.error}` : ''} | ${run.calls.length} | ${run.calls.flatMap((call) => call.toolCalls).join(', ')} | ${Math.max(0, ...run.calls.map((call) => call.ms))} ms | ${run.turnMs} ms | $${run.costUsd.toFixed(4)} |`,
+        `| ${run.scenario} | ${run.run} | ${run.status}${run.error ? ` ${run.error}` : ''} | ${checkCell(run)} | ${run.calls.length} | ${run.calls.flatMap((call) => call.toolCalls).join(', ')} | ${Math.max(0, ...run.calls.map((call) => call.ms))} ms | ${run.turnMs} ms | $${run.costUsd.toFixed(4)} |`,
     ),
     '',
     ...runs.flatMap((run) => [`## ${run.scenario} #${run.run}`, '', `> ${run.question}`, '', run.text ?? `_${run.status} ${run.error ?? ''}_`, '']),
@@ -306,7 +323,7 @@ async function main(): Promise<void> {
   writeFileSync(`${options.out}.md`, renderReport(runs));
   new Logger('ChatEval').warn(`${runs.filter((run) => run.status === 'done').length}/${runs.length} done; report at ${options.out}.md`);
   await app.close();
-  process.exit(runs.every((run) => run.status === 'done') ? 0 : 1);
+  process.exit(runs.every((run) => run.status === 'done' && (run.check === null || run.check.failure === null)) ? 0 : 1);
 }
 
 if (require.main === module) {

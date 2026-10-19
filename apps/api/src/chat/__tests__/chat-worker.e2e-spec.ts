@@ -69,7 +69,7 @@ describe('chat worker (E2E)', () => {
     }
   });
 
-  it('declares the twelve tools', async () => {
+  it('declares the thirteen tools', async () => {
     await turn();
     const stub = scriptedFetch([textAnswer('Hello')]);
 
@@ -88,6 +88,7 @@ describe('chat worker (E2E)', () => {
       'get_tournament_deck',
       'search_rules',
       'propose_deck',
+      'get_swap_candidates',
       'propose_swap',
     ]);
     expect(declarations.map((tool) => tool.parametersJsonSchema.type)).toEqual(CHAT_TOOL_DECLARATIONS.map(() => 'object'));
@@ -307,7 +308,11 @@ describe('chat worker (E2E)', () => {
     const responses = stub.requests[1]!.contents[stub.requests[1]!.contents.length - 1]!.parts.map(
       (part) => (part['functionResponse'] as { response: Record<string, unknown> }).response,
     );
-    expect(responses).toEqual([{ ok: true }, expect.objectContaining({ ok: false, error: 'CARD_UNKNOWN' }), { ok: true }]);
+    expect(responses).toEqual([
+      { ok: true },
+      expect.objectContaining({ ok: false, error: 'CARD_UNKNOWN' }),
+      { ok: true, comparison: expect.objectContaining({ copies: 2, sameRole: true }) },
+    ]);
   });
 
   it('a turn through OpenRouter replays its tool round, records the model and the cost OpenRouter charged', async () => {

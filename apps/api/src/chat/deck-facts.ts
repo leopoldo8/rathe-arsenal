@@ -35,11 +35,36 @@ function slotFor(row: IDeckRow, card: ICatalogCard | null): string {
   return card ? slotOf(card) : 'mainboard';
 }
 
+/** Mainboard copies per resource cost, cheapest first; a card with no cost counts under `noCost`. */
+export function mainboardByCost(rows: readonly IDeckRow[]): Record<string, number> {
+  const counts = new Map<number | 'noCost', number>();
+  for (const row of rows) {
+    const card = findCard(row.cardIdentifier);
+    if (slotFor(row, card) !== 'mainboard') continue;
+    const cost = card?.cost ?? 'noCost';
+    counts.set(cost, (counts.get(cost) ?? 0) + row.quantity);
+  }
+  const ordered = [...counts.entries()].sort(([a], [b]) => (a === 'noCost' ? 1 : b === 'noCost' ? -1 : a - b));
+  return Object.fromEntries(ordered.map(([cost, count]) => [String(cost), count]));
+}
+
+/** Mainboard copies per card type and subtype, such as "Action Arrow Attack" or "Action Non-Attack", most played first. */
+export function mainboardByType(rows: readonly IDeckRow[]): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const card = findCard(row.cardIdentifier);
+    if (!card || slotFor(row, card) !== 'mainboard') continue;
+    const kind = [...card.types, ...card.subtypes].join(' ');
+    counts.set(kind, (counts.get(kind) ?? 0) + row.quantity);
+  }
+  return Object.fromEntries([...counts.entries()].sort(([, a], [, b]) => b - a));
+}
+
 function supportedFormat(format: string): TSupportedFormat | null {
   return (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
 }
 
-/** Every card with its text and legality, and the counts a model gets wrong when it adds them up itself. */
+/** Every card with its text, cost and legality, and the counts a model gets wrong when it adds them up itself. */
 export function describeDeck(input: IDeckFactsInput): Record<string, unknown> {
   const format = supportedFormat(input.format);
   const hero = input.heroIdentifier ? findCard(input.heroIdentifier) : null;
@@ -51,6 +76,9 @@ export function describeDeck(input: IDeckFactsInput): Record<string, unknown> {
       slot: slotFor(row, card),
       quantity: row.quantity,
       pitch: card?.pitch ?? null,
+      cost: card?.cost ?? null,
+      power: card?.power ?? null,
+      defense: card?.defense ?? null,
       typeLine: card ? typeLine(card) : null,
       text: (card?.functionalText ?? '').slice(0, DECK_CARD_TEXT_MAX),
       ...(card && hero && format ? { legal: findCardLegalityViolation(card, hero, format) === null } : {}),
@@ -69,6 +97,8 @@ export function describeDeck(input: IDeckFactsInput): Record<string, unknown> {
     totals: {
       bySlot,
       mainboardByPitch,
+      mainboardByCost: mainboardByCost(input.rows),
+      mainboardByType: mainboardByType(input.rows),
       cardPool: cards.filter((card) => card.slot !== 'hero').reduce((sum, card) => sum + card.quantity, 0),
       illegalCards: cards.filter((card) => card.legal === false).map((card) => card.cardIdentifier),
     },

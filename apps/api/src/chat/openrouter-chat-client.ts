@@ -3,7 +3,6 @@ import { TChatTurnFailureCode } from '../database/entities/chat-message.entity';
 import {
   ANSWER_NOW_INSTRUCTION,
   CHAT_MAX_OUTPUT_TOKENS,
-  historyAsText,
   IChatRequest,
   IChatUsage,
   IGeminiContent,
@@ -79,18 +78,15 @@ export function toOpenRouterMessages(system: string, contents: readonly IGeminiC
 }
 
 export function buildOpenRouterBody(model: string, request: IChatRequest, effort?: TGeminiThinkingLevel): Record<string, unknown> {
-  const system = request.answerNow ? `${request.system}\n\n${ANSWER_NOW_INSTRUCTION}` : request.system;
+  const messages = toOpenRouterMessages(request.system, request.contents);
   return {
     model,
-    messages: toOpenRouterMessages(system, request.answerNow ? historyAsText(request.contents) : request.contents),
-    ...(request.answerNow
-      ? {}
-      : {
-          tools: request.tools.map((tool) => ({
-            type: 'function',
-            function: { name: tool.name, description: tool.description, parameters: tool.parametersJsonSchema },
-          })),
-        }),
+    messages: request.answerNow ? [...messages, { role: 'user', content: ANSWER_NOW_INSTRUCTION }] : messages,
+    tools: request.tools.map((tool) => ({
+      type: 'function',
+      function: { name: tool.name, description: tool.description, parameters: tool.parametersJsonSchema },
+    })),
+    ...(request.answerNow ? { tool_choice: 'none' } : {}),
     max_tokens: CHAT_MAX_OUTPUT_TOKENS,
     ...(effort === undefined ? {} : { reasoning: { effort } }),
     // Anthropic models reuse a cached prompt only when the request asks for it; Gemini and OpenAI cache on their own.

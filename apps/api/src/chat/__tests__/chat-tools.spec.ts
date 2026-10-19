@@ -44,7 +44,7 @@ describe('chat tools', () => {
     expect(accepted.map((result) => result['error'])).toEqual([undefined, undefined, undefined]);
     expect(JSON.stringify(big).length).toBeLessThanOrEqual(TOOL_RESULT_MAX_CHARS);
     expect(big['truncated']).toBe(true);
-    expect(CHAT_TOOL_DECLARATIONS.map((tool) => tool.name)).toHaveLength(12);
+    expect(CHAT_TOOL_DECLARATIONS.map((tool) => tool.name)).toHaveLength(13);
     expect(TOOL_RESULT_MAX_CHARS).toBe(30_000);
   });
 

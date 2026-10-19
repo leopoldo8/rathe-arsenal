@@ -64,7 +64,7 @@ describe('OpenRouter chat client', () => {
     ]);
   });
 
-  it('declares the tools, keeps data collection off, and on a final call sends no tool and only text', () => {
+  it('declares the tools, keeps data collection off, and on a final call forbids tools but keeps the cached prompt unchanged', () => {
     const request: IChatRequest = {
       system: 's',
       contents: [
@@ -88,13 +88,11 @@ describe('OpenRouter chat client', () => {
     );
     expect(body['cache_control']).toEqual({ type: 'ephemeral' });
     expect(buildOpenRouterBody('openai/gpt-6-luna', request)['cache_control']).toBeUndefined();
-    expect(final['tools']).toBeUndefined();
+    expect(body['tool_choice']).toBeUndefined();
+    expect(final['tools']).toEqual(body['tools']);
+    expect(final['tool_choice']).toBe('none');
     expect(final['reasoning']).toBeUndefined();
-    const messages = final['messages'] as Array<Record<string, unknown>>;
-    expect(messages.every((message) => message['role'] === 'system' || message['role'] === 'user' || message['role'] === 'assistant')).toBe(true);
-    expect(messages.some((message) => 'tool_calls' in message)).toBe(false);
-    expect(String(messages[0]!['content'])).toContain(ANSWER_NOW_INSTRUCTION);
-    expect(String(messages[messages.length - 1]!['content'])).toContain(ANSWER_NOW_INSTRUCTION);
+    expect(final['messages']).toEqual([...(body['messages'] as unknown[]), { role: 'user', content: ANSWER_NOW_INSTRUCTION }]);
   });
 
   it('reads text, tool calls, reasoning to send back, and the usage with the cost OpenRouter charged', () => {

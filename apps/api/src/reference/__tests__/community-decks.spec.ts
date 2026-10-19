@@ -19,6 +19,33 @@ function legalDeck(ulid: string, firstCard = 0, extra: Partial<ICommunityDeckImp
   return { ulid, name: ulid, format: FORMAT, hero: { cardIdentifier: HERO, name: 'Azalea' }, mainboard, equipment: [], weapons: [], inventory: [], matchupPlans: 0, ...extra };
 }
 
+const JYREM_MAINBOARD = [
+  'boltn-shot-red',
+  'call-in-the-big-guns-red',
+  'drill-shot-red',
+  'dry-powder-shot-red',
+  'infecting-shot-blue',
+  'infecting-shot-red',
+  'infecting-shot-yellow',
+  'lace-with-frailty-red',
+  'lace-with-inertia-red',
+  'murkmire-grapnel-red',
+  'ravenous-rabble-red',
+  'read-the-glide-path-red',
+  'release-the-tension-red',
+  'ridge-rider-shot-red',
+  'scout-the-periphery-red',
+  'searing-shot-red',
+  'spire-sniping-yellow',
+  'swift-shot-red',
+  'take-aim-red',
+];
+
+function azaleaDeck(ulid: string, twentiethCard: string): ICommunityDeckImport {
+  const mainboard = [...JYREM_MAINBOARD, twentiethCard].map((cardIdentifier) => ({ cardIdentifier, quantity: 2, slot: 'mainboard' as const }));
+  return { ...legalDeck(ulid), mainboard };
+}
+
 function hit(deckId: string, updatedAt: string, overrides: Partial<IIndexDeck> = {}): IIndexDeck {
   return { deckId, name: `Deck ${deckId}`, format: FORMAT, heroIdentifier: HERO, updatedAt, hasResults: false, ...overrides };
 }
@@ -94,6 +121,7 @@ describe('loadCommunityDecks', () => {
       matchupPlans: 0,
       inventoryCards: 0,
       url: 'https://fabrary.net/decks/played',
+      mainboardByType: expect.any(Object),
     });
   });
 
@@ -138,13 +166,29 @@ describe('loadCommunityDecks', () => {
     expect(result.cards.at(-1)!.decks).toBe(1);
   });
 
+  it("gives each deck's mainboard by card type and the average across the decks, so a deck's makeup can be compared", async () => {
+    const source = sourceOf([hit('a', '2026-10-10T00:00:00Z'), hit('b', '2026-10-09T00:00:00Z')], {
+      a: azaleaDeck('a', 'lace-with-bloodrot-red'),
+      b: azaleaDeck('b', 'widowmaker-yellow'),
+    });
+
+    const result = await loadCommunityDecks(source, { heroIdentifier: HERO, format: FORMAT, now: NOW });
+
+    expect(result.decks.map((deck) => deck.mainboardByType)).toEqual([
+      { 'Action Arrow Attack': 22, 'Action Non-Attack': 16, 'Action Attack': 2 },
+      { 'Action Arrow Attack': 24, 'Action Non-Attack': 14, 'Action Attack': 2 },
+    ]);
+    expect(result.averageMainboardByType).toEqual({ 'Action Arrow Attack': 23, 'Action Non-Attack': 15, 'Action Attack': 2 });
+    expect(result.cards.find((row) => row.cardIdentifier === 'widowmaker-yellow')?.type).toBe('Action Arrow Attack');
+  });
+
   it('caps the deck names players wrote and never returns who wrote them', async () => {
     const source = sourceOf([hit('a', '2026-10-10T00:00:00Z', { name: 'x'.repeat(300) })], { a: legalDeck('a') });
 
     const result = await loadCommunityDecks(source, { heroIdentifier: HERO, format: FORMAT, now: NOW });
 
     expect(result.decks[0]!.name).toHaveLength(80);
-    expect(Object.keys(result.decks[0]!)).toEqual(['name', 'updatedAt', 'hasResults', 'matchupPlans', 'inventoryCards', 'url']);
+    expect(Object.keys(result.decks[0]!)).toEqual(['name', 'updatedAt', 'hasResults', 'matchupPlans', 'inventoryCards', 'url', 'mainboardByType']);
   });
 
   it('fails when every fetch fails, so the caller can say the decks are unavailable', async () => {

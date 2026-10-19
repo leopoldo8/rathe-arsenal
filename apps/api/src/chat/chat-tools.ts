@@ -35,7 +35,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
     description:
-      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, text and legality, the counted totals (cards per slot, mainboard per pitch, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and legality, the counted totals (cards per slot, mainboard per pitch, per cost and per card type, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
@@ -83,7 +83,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_community_decks',
     description:
-      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them. Use it only after search_tournament_decks found no deck for that hero and format.',
+      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them and every deck\'s mainboard by card type with the average. Use it only after search_tournament_decks found no deck for that hero and format.',
     parametersJsonSchema: object(
       {
         heroIdentifier: string('Hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
@@ -152,8 +152,22 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_swap_candidates',
+    description:
+      "Cards that could take the place of one card in one of the user's decks, ranked by the site's alternatives search from the closest group (very_close) to the loosest. Each candidate has its type line, cost and cost change, pitch, power, defense, whether it keeps the card's role (same types and subtypes) and the user's free copies. Only legal cards the deck can still hold. Use it before proposing a swap that keeps the card's role.",
+    parametersJsonSchema: object(
+      {
+        deckId: integer('Deck id.'),
+        cardIdentifier: string('The card in the deck to replace.'),
+        slot: { type: 'string', enum: ['mainboard', 'equipment'] },
+      },
+      ['deckId', 'cardIdentifier', 'slot'],
+    ),
+  },
+  {
     name: 'propose_swap',
-    description: "Propose replacing every copy of one card in one of the user's decks with another card.",
+    description:
+      "Propose replacing every copy of one card in one of the user's decks with another card. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, the changes, and the mainboard cost curve before and after.",
     parametersJsonSchema: object(
       {
         deckId: integer('Deck id.'),

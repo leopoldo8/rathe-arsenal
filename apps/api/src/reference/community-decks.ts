@@ -28,12 +28,14 @@ export interface ICommunityDeckSummary {
   readonly matchupPlans: number;
   readonly inventoryCards: number;
   readonly url: string;
+  readonly mainboardByType: Record<string, number>;
 }
 
 export interface ICommunityCard {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;
+  readonly type: string | null;
   readonly slot: string;
   readonly decks: number;
   readonly averageCopies: number;
@@ -42,6 +44,7 @@ export interface ICommunityCard {
 export interface ICommunityDecks {
   readonly inspected: number;
   readonly decks: readonly ICommunityDeckSummary[];
+  readonly averageMainboardByType: Record<string, number>;
   readonly cards: readonly ICommunityCard[];
 }
 
@@ -96,6 +99,27 @@ function findCard(cardIdentifier: string): ICatalogCard | null {
   }
 }
 
+function typeOf(card: ICatalogCard | null): string | null {
+  return card ? [...card.types, ...card.subtypes].join(' ') : null;
+}
+
+function mainboardByType(deck: IDeckImportDto): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of deck.mainboard) {
+    const kind = typeOf(findCard(row.cardIdentifier));
+    if (kind !== null) counts.set(kind, (counts.get(kind) ?? 0) + row.quantity);
+  }
+  return Object.fromEntries([...counts.entries()].sort(([, a], [, b]) => b - a));
+}
+
+function averageByType(perDeck: readonly Record<string, number>[]): Record<string, number> {
+  const sums = new Map<string, number>();
+  for (const counts of perDeck) for (const [kind, count] of Object.entries(counts)) sums.set(kind, (sums.get(kind) ?? 0) + count);
+  return Object.fromEntries(
+    [...sums.entries()].sort(([, a], [, b]) => b - a).map(([kind, sum]) => [kind, Math.round((sum / perDeck.length) * 10) / 10]),
+  );
+}
+
 function cardTotals(decks: readonly IDeckImportDto[]): ICommunityCard[] {
   const totals = new Map<string, { slot: string; decks: number; copies: number }>();
   for (const deck of decks) {
@@ -109,6 +133,7 @@ function cardTotals(decks: readonly IDeckImportDto[]): ICommunityCard[] {
       cardIdentifier,
       name: findCard(cardIdentifier)?.name ?? cardIdentifier,
       pitch: findCard(cardIdentifier)?.pitch ?? null,
+      type: typeOf(findCard(cardIdentifier)),
       slot: total.slot,
       decks: total.decks,
       averageCopies: Math.round((total.copies / total.decks) * 10) / 10,
@@ -124,7 +149,7 @@ export async function loadCommunityDecks(source: ICommunityDeckSource, request: 
     hitsPerPage: INDEX_HIT_CAP,
   });
   const picked = candidates(result.hits, request);
-  if (picked.length === 0) return { inspected: 0, decks: [], cards: [] };
+  if (picked.length === 0) return { inspected: 0, decks: [], averageMainboardByType: {}, cards: [] };
 
   const fetched = await fetchAll(source, picked);
   if (fetched.every((deck) => deck === null)) throw new Error('No community deck could be fetched from Fabrary');
@@ -143,7 +168,9 @@ export async function loadCommunityDecks(source: ICommunityDeckSource, request: 
       matchupPlans: deck.matchupPlans,
       inventoryCards: inventoryCards(deck),
       url: `https://fabrary.net/decks/${hit.deckId}`,
+      mainboardByType: mainboardByType(deck),
     })),
+    averageMainboardByType: kept.length === 0 ? {} : averageByType(kept.map(({ deck }) => mainboardByType(deck))),
     cards: cardTotals(kept.map(({ deck }) => deck)),
   };
 }

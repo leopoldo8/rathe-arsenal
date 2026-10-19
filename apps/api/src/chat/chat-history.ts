@@ -27,9 +27,9 @@ function asPlainText(exchange: readonly IGeminiContent[]): IGeminiContent[] {
 
 /**
  * The conversation as `contents`, oldest first, ending with the current user message (the last `user` message).
- * An exchange is one or more user messages and the assistant turns after them; only the exchange right before the
- * current one keeps its tool rounds. Whole exchanges are dropped from the oldest until the estimate fits,
- * so a function call never loses its response.
+ * An exchange is one or more user messages and the assistant turns after them; earlier exchanges keep only their
+ * text, so the replayed history stays the same from one answer to the next. Whole exchanges are dropped from the
+ * oldest until the estimate fits.
  */
 export function buildHistory(messages: readonly IHistoryMessage[], tokenBudget: number = HISTORY_TOKEN_BUDGET): IGeminiContent[] {
   const exchanges: IGeminiContent[][] = [];
@@ -49,7 +49,7 @@ export function buildHistory(messages: readonly IHistoryMessage[], tokenBudget: 
     current.push(...message.modelContent);
   }
 
-  let kept = exchanges.map((exchange, index) => (index < exchanges.length - 2 ? asPlainText(exchange) : exchange));
+  let kept = exchanges.map((exchange, index) => (index < exchanges.length - 1 ? asPlainText(exchange) : exchange));
   while (kept.length > 1 && estimateTokens(kept.flat()) > tokenBudget) kept = kept.slice(1);
   return kept.flat();
 }

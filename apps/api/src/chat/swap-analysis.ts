@@ -1,0 +1,133 @@
+import { catalog, findAlternatives, ICatalogCard, TAlternativeGroup, TSupportedFormat } from '@rathe-arsenal/engine';
+import { IDeckRow, mainboardByCost } from './deck-facts';
+
+const CANDIDATES_PER_GROUP = 6;
+
+interface IDeckCardRow {
+  readonly cardIdentifier: string;
+  readonly slot: string;
+  readonly quantity: number;
+}
+
+export interface ISwapCardFacts {
+  readonly name: string;
+  readonly typeLine: string;
+  readonly cost: number | null;
+  readonly pitch: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+}
+
+export interface ISwapComparison {
+  readonly copies: number;
+  readonly original: ISwapCardFacts;
+  readonly replacement: ISwapCardFacts;
+  readonly sameRole: boolean;
+  readonly costDelta: number | null;
+  readonly pitchDelta: number | null;
+  readonly powerDelta: number | null;
+  readonly defenseDelta: number | null;
+  readonly mainboardByCostBefore: Record<string, number>;
+  readonly mainboardByCostAfter: Record<string, number>;
+}
+
+export interface ISwapCandidate {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly typeLine: string;
+  readonly cost: number | null;
+  readonly costDelta: number | null;
+  readonly pitch: number | null;
+  readonly power: number | null;
+  readonly defense: number | null;
+  readonly sameRole: boolean;
+  readonly freeCopies: number;
+}
+
+export interface ISwapCandidates {
+  readonly copies: number;
+  readonly groups: readonly { readonly group: TAlternativeGroup; readonly cards: readonly ISwapCandidate[] }[];
+}
+
+function typeLine(card: ICatalogCard): string {
+  return [...card.classes, ...card.talents, ...card.types, ...card.subtypes].join(' ');
+}
+
+function facts(card: ICatalogCard): ISwapCardFacts {
+  return { name: card.name, typeLine: typeLine(card), cost: card.cost, pitch: card.pitch, power: card.power, defense: card.defense };
+}
+
+function delta(from: number | null, to: number | null): number | null {
+  return from === null || to === null ? null : to - from;
+}
+
+function sameValues(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
+}
+
+export function hasSameRole(a: ICatalogCard, b: ICatalogCard): boolean {
+  return sameValues(a.types, b.types) && sameValues(a.subtypes, b.subtypes);
+}
+
+export function compareSwap(input: {
+  readonly original: ICatalogCard;
+  readonly replacement: ICatalogCard;
+  readonly slot: string;
+  readonly quantity: number;
+  readonly deckCards: readonly IDeckCardRow[];
+}): ISwapComparison {
+  const { original, replacement, slot, quantity, deckCards } = input;
+  const removed = deckCards.map((row) =>
+    row.cardIdentifier === original.cardIdentifier && row.slot === slot ? { ...row, quantity: row.quantity - quantity } : row,
+  );
+  const after: IDeckRow[] = [...removed, { cardIdentifier: replacement.cardIdentifier, slot, quantity }];
+  return {
+    copies: quantity,
+    original: facts(original),
+    replacement: facts(replacement),
+    sameRole: hasSameRole(original, replacement),
+    costDelta: delta(original.cost, replacement.cost),
+    pitchDelta: delta(original.pitch, replacement.pitch),
+    powerDelta: delta(original.power, replacement.power),
+    defenseDelta: delta(original.defense, replacement.defense),
+    mainboardByCostBefore: mainboardByCost(deckCards),
+    mainboardByCostAfter: mainboardByCost(after.filter((row) => row.quantity > 0)),
+  };
+}
+
+/** `spare` is each card's owned copies that none of the user's decks use. */
+export function swapCandidates(input: {
+  readonly original: ICatalogCard;
+  readonly slot: string;
+  readonly heroCard: ICatalogCard;
+  readonly format: TSupportedFormat;
+  readonly deckCards: readonly IDeckCardRow[];
+  readonly spare: ReadonlyMap<string, number>;
+}): ISwapCandidates {
+  const { original, slot, heroCard, format, deckCards, spare } = input;
+  const deckCopies = new Map<string, number>();
+  for (const row of deckCards) deckCopies.set(row.cardIdentifier, (deckCopies.get(row.cardIdentifier) ?? 0) + row.quantity);
+  const copies = deckCards
+    .filter((row) => row.cardIdentifier === original.cardIdentifier && row.slot === slot)
+    .reduce((sum, row) => sum + row.quantity, 0);
+  const owned = new Map([...spare.entries()].map(([cardIdentifier, free]) => [cardIdentifier, free + (deckCopies.get(cardIdentifier) ?? 0)]));
+  const groups = findAlternatives({ missing: original, needed: Math.max(copies, 1), heroCard, format, deckCopies, owned }, catalog);
+  return {
+    copies,
+    groups: groups.map((group) => ({
+      group: group.group,
+      cards: group.cards.slice(0, CANDIDATES_PER_GROUP).map(({ card, freeCopies }) => ({
+        cardIdentifier: card.cardIdentifier,
+        name: card.name,
+        typeLine: typeLine(card),
+        cost: card.cost,
+        costDelta: delta(original.cost, card.cost),
+        pitch: card.pitch,
+        power: card.power,
+        defense: card.defense,
+        sameRole: hasSameRole(original, card),
+        freeCopies,
+      })),
+    })),
+  };
+}

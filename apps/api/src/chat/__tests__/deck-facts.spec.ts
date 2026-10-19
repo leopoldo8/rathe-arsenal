@@ -10,24 +10,37 @@ const KATSU_ROWS = [
 ];
 
 describe('deck facts', () => {
-  it('counts slots, pitch and the card pool, and flags cards the hero cannot play', () => {
+  it('counts slots, pitch, cost, card types and the card pool, and flags cards the hero cannot play', () => {
     const facts = describeDeck({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed', rows: KATSU_ROWS });
 
     expect(facts['totals']).toEqual({
       bySlot: { hero: 1, weapon: 1, mainboard: 9 },
       mainboardByPitch: { red: 4, yellow: 2, blue: 3, noPitch: 0 },
+      mainboardByCost: { '0': 8, '1': 1 },
+      mainboardByType: { 'Action Attack': 6, 'Action Non-Attack': 3 },
       cardPool: 10,
       illegalCards: ['consuming-volition-red'],
     });
     expect(facts['formatRules']).toEqual({ minMainboard: 60, exactMainboard: null, maxCardPool: 80, maxCopies: 3 });
   });
 
-  it('gives every card its name, type, pitch and text', () => {
+  it('gives every card its name, type, pitch, cost, power, defense and text', () => {
     const facts = describeDeck({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed', rows: KATSU_ROWS });
     const flex = (facts['cards'] as Array<Record<string, unknown>>).find((card) => card['cardIdentifier'] === 'flex-red');
 
     expect(flex).toEqual(
-      expect.objectContaining({ name: 'Flex', slot: 'mainboard', quantity: 3, pitch: 1, typeLine: 'Generic Action Attack', legal: true, text: expect.any(String) }),
+      expect.objectContaining({
+        name: 'Flex',
+        slot: 'mainboard',
+        quantity: 3,
+        pitch: 1,
+        cost: 0,
+        power: 4,
+        defense: 2,
+        typeLine: 'Generic Action Attack',
+        legal: true,
+        text: expect.any(String),
+      }),
     );
     expect((flex!['text'] as string).length).toBeGreaterThan(0);
   });

@@ -35,6 +35,22 @@ describe('chat system instruction', () => {
     expect(text).toContain('Never show tool names, field names or ids');
   });
 
+  it('the instruction tells the model how to weigh a swap: role, cost, pitch and what the deck can support', () => {
+    const text = buildSystemInstruction({ locale: 'en-US', decks: [], boundDeck: null, today: new Date('2026-10-19') });
+
+    expect(text).toContain('call get_swap_candidates for the card going out');
+    expect(text).toContain('Keep the card\'s role (the same types and subtypes');
+    expect(text).toContain('unless the user asks for a different kind of card, such as more arrows');
+    expect(text).toContain('When a swap changes the role, say so');
+    expect(text).toContain('When the new card costs more, say how much more and quote the mainboard cost curve before and after');
+    expect(text).toContain('Do not propose a card that only works with a card or condition the deck lacks');
+    expect(text).toContain('Use a card from get_recommendations only for the cut it names');
+    expect(text).toContain('Never say the user owns or already has a card unless a tool said so in this answer');
+    expect(text).toContain('the format limits copies per card (formatRules.maxCopies in get_deck)');
+    expect(text).not.toContain('at most 3 times');
+    expect(text).toContain("give the user's numbers, the other decks' average and their lowest and highest, and never call them similar without those numbers");
+  });
+
   it('the instruction names the assistant Tutor in every locale', () => {
     const today = new Date('2026-10-11T00:00:00Z');
 
