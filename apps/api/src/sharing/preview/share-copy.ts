@@ -22,8 +22,8 @@ export function buildDeckShareMeta(
 ): IShareMeta {
   const base = trimTrailingSlash(baseUrl);
   return {
-    title: `${deck.name} - ${deck.hero} (${deck.format})`,
-    description: `Deck de ${deck.sharerName} no Rathe Arsenal - ${deck.totalCards} cartas`,
+    title: deck.name,
+    description: `Deck de ${deck.sharerName} no Rathe Arsenal: ${deck.hero}, ${deck.format}, ${deck.totalCards} cartas`,
     imageUrl: `${base}/api/shared/decks/${token}/image`,
     pageUrl: `${base}/d/${token}`,
   };

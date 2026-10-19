@@ -149,10 +149,10 @@ describe('Share preview (E2E)', () => {
       expect(res.text).toContain('<div id="root">');
       expect(res.text).not.toContain('<script>alert(1)</script>');
       expect(res.text).toContain(
-        'og:title" content="Blades &lt;script&gt;alert(1)&lt;/script&gt; &quot;quoted&quot; - Dorinthea Ironsong (Classic Constructed)"',
+        'og:title" content="Blades &lt;script&gt;alert(1)&lt;/script&gt; &quot;quoted&quot;"',
       );
       expect(res.text).toContain(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image"`);
-      expect(res.text).toContain('content="Deck de Rodrigo H. no Rathe Arsenal - 10 cartas"');
+      expect(res.text).toContain('content="Deck de Rodrigo H. no Rathe Arsenal: Dorinthea Ironsong, Classic Constructed, 10 cartas"');
       expect(res.text).toContain('name="robots" content="noindex,nofollow"');
       expect(res.text.match(/<title>/g)).toHaveLength(1);
       expect(res.text).not.toContain('spa default');

@@ -25,8 +25,8 @@ describe('share meta tags', () => {
 
     expect(html).not.toContain('<script>');
     expect(html).not.toContain('<b>Rodrigo</b>');
-    expect(html).toContain('og:title" content="Blades &quot;of&quot; &lt;script&gt;alert(1)&lt;/script&gt; &amp; co - Dori&#39;s hero (Classic Constructed)"');
-    expect(html).toContain('content="Deck de &lt;b&gt;Rodrigo&lt;/b&gt; no Rathe Arsenal - 60 cartas"');
+    expect(html).toContain('og:title" content="Blades &quot;of&quot; &lt;script&gt;alert(1)&lt;/script&gt; &amp; co"');
+    expect(html).toContain('content="Deck de &lt;b&gt;Rodrigo&lt;/b&gt; no Rathe Arsenal: Dori&#39;s hero, Classic Constructed, 60 cartas"');
   });
 
   it('builds absolute urls from the base url, tolerating a trailing slash', () => {
