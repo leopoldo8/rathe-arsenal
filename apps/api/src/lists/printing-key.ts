@@ -2,6 +2,7 @@ import { catalog } from '@rathe-arsenal/engine';
 
 interface IRawPrinting {
   readonly identifier?: string;
+  readonly set?: string;
   readonly foiling?: string;
   readonly edition?: string;
   readonly tcgplayer?: { readonly productId?: string };
@@ -15,6 +16,7 @@ export interface ICardPrinting {
   readonly key: string;
   readonly label: string;
   readonly identifier: string;
+  readonly set: string | null;
   readonly foiling: string | null;
   readonly edition: string | null;
   readonly productId: string | null;
@@ -71,6 +73,7 @@ export function toCardPrintings(printings: readonly IRawPrinting[]): ICardPrinti
       key,
       label: buildPrintingLabel(parts),
       identifier: raw.identifier,
+      set: raw.set ?? null,
       foiling: raw.foiling ?? null,
       edition: raw.edition ?? null,
       productId,

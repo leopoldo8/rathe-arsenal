@@ -35,6 +35,8 @@ import {
   CardArtBlockEntity,
   CardListEntity,
   CardListLineEntity,
+  CardPriceEntity,
+  CardPriceGroupSyncEntity,
 } from './entities';
 
 /**
@@ -88,6 +90,8 @@ import {
             CardArtBlockEntity,
             CardListEntity,
             CardListLineEntity,
+            CardPriceEntity,
+            CardPriceGroupSyncEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.

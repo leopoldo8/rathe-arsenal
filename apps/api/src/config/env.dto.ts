@@ -111,6 +111,11 @@ export class EnvDto {
   @IsBoolean()
   STORE_SCRAPER_ENABLED: boolean = false;
 
+  /** Hourly in-process read of tcgcsv prices for the sets on sell lists. Off by default; tests and local runs never call tcgcsv. */
+  @IsOptional()
+  @IsBoolean()
+  PRICE_SYNC_ENABLED: boolean = false;
+
   /**
    * Comma-separated hostnames the scraper is allowed to fetch from.
    * Passed verbatim to FetchGuardService as the per-call allowHosts list.
@@ -201,9 +206,9 @@ export class EnvDto {
  * non-empty string (including 'false') to true for boolean-typed fields —
  * explicit pre-processing is the only reliable workaround.
  *
- * Only applies to fields declared as booleans in EnvDto. Currently: STORE_SCRAPER_ENABLED.
+ * Only applies to fields declared as booleans in EnvDto. Currently: STORE_SCRAPER_ENABLED, PRICE_SYNC_ENABLED.
  */
-const BOOLEAN_ENV_KEYS: ReadonlyArray<keyof EnvDto> = ['STORE_SCRAPER_ENABLED'] as const;
+const BOOLEAN_ENV_KEYS: ReadonlyArray<keyof EnvDto> = ['STORE_SCRAPER_ENABLED', 'PRICE_SYNC_ENABLED'] as const;
 
 function parseBooleanStrings(raw: Record<string, unknown>): Record<string, unknown> {
   const result = { ...raw };

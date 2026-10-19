@@ -8,6 +8,7 @@ import { ListAccess } from './list-access.service';
 import { capQuantity, findMergeCandidate } from './line-math';
 import { cardListNotFound, sellOnlyField, unknownCard, unknownPrinting } from './lists-errors';
 import { printingsOfCard } from './printing-key';
+import { PriceSuggestionService } from '../prices/price-suggestion.service';
 
 export interface IAddLineResult {
   list: ICardList;
@@ -33,7 +34,10 @@ function assertPrintingBelongs(cardIdentifier: string, printing: string | null |
 
 @Injectable()
 export class ListLinesService {
-  constructor(private readonly access: ListAccess) {}
+  constructor(
+    private readonly access: ListAccess,
+    private readonly prices: PriceSuggestionService,
+  ) {}
 
   async add(userId: string, listId: number, dto: AddLineDto): Promise<IAddLineResult> {
     if (!catalog.indices.byIdentifier.has(dto.cardIdentifier)) throw unknownCard();
@@ -102,9 +106,27 @@ export class ListLinesService {
   }
 
   async printings(userId: string, listId: number, cardIdentifier: string): Promise<IListPrintingOption[]> {
-    await this.access.read(userId, listId);
+    const list = await this.access.read(userId, listId);
     const printings = printingsOfCard(cardIdentifier);
     if (!printings) throw unknownCard();
-    return printings.map((printing) => ({ printing: printing.key, label: printing.label, suggestion: null }));
+    const suggestions = await this.prices.forPrintings(list, printings);
+    return printings.map((printing) => ({
+      printing: printing.key,
+      label: printing.label,
+      suggestion: suggestions.get(printing.key) ?? null,
+    }));
+  }
+
+  /** Writes the suggestion as the line's price. Without ids, every available line that has a suggestion. */
+  async applySuggestions(userId: string, listId: number, lineIds: readonly number[] | undefined): Promise<ICardList> {
+    const { list } = await this.access.write(userId, listId, async ({ manager, list: current }) => {
+      const lines = await manager.find(CardListLineEntity, { where: { listId: current.id } });
+      const targets = lines.filter((line) => (lineIds === undefined ? line.soldAt === null : lineIds.includes(line.id)));
+      const suggestions = await this.prices.forLines(current, targets);
+      for (const [lineId, suggestion] of suggestions) {
+        await manager.update(CardListLineEntity, { id: lineId }, { priceCents: suggestion.cents });
+      }
+    });
+    return list;
   }
 }

@@ -5,15 +5,18 @@ import { CardListEntity } from '../database/entities/card-list.entity';
 import { lookupCardInfo } from './card-lookup';
 import { ICardList, ICardListLine, IPriceSuggestion } from './dtos/card-list.dto';
 import { printingsOfCard } from './printing-key';
+import { PriceSuggestionService } from '../prices/price-suggestion.service';
 
 @Injectable()
 export class ListViewService {
+  constructor(private readonly suggestions: PriceSuggestionService) {}
+
   async build(manager: EntityManager, list: CardListEntity): Promise<ICardList> {
     const lines = await manager.find(CardListLineEntity, {
       where: { listId: list.id },
       order: { createdAt: 'ASC', id: 'ASC' },
     });
-    const suggestions = await this.suggestionsFor(manager, list, lines);
+    const suggestions = await this.suggestions.forLines(list, lines);
     return {
       id: list.id,
       kind: list.kind,
@@ -26,13 +29,6 @@ export class ListViewService {
     };
   }
 
-  protected async suggestionsFor(
-    _manager: EntityManager,
-    _list: CardListEntity,
-    _lines: readonly CardListLineEntity[],
-  ): Promise<ReadonlyMap<number, IPriceSuggestion>> {
-    return new Map();
-  }
 }
 
 function printingLabelOf(line: CardListLineEntity): string | null {
