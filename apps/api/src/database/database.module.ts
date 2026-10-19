@@ -33,6 +33,8 @@ import {
   ShareImageEntity,
   ShareLinkEntity,
   CardArtBlockEntity,
+  CardListEntity,
+  CardListLineEntity,
 } from './entities';
 
 /**
@@ -84,6 +86,8 @@ import {
             ShareImageEntity,
             ShareLinkEntity,
             CardArtBlockEntity,
+            CardListEntity,
+            CardListLineEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.
