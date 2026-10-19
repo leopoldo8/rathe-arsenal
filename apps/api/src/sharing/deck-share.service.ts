@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { UserEntity } from '../database/entities/user.entity';
+import { SharePreviewStore } from './preview/share-preview.store';
 import { ICreatedShare, IShareState } from './dtos/share-state.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildDeckShareUrl } from './share-url';
@@ -19,6 +20,7 @@ export class DeckShareService {
     private readonly users: Repository<UserEntity>,
     private readonly events: ShareEventsService,
     private readonly config: ConfigService,
+    private readonly previewImages: SharePreviewStore,
   ) {}
 
   async getState(userId: string, deckId: number): Promise<IShareState> {
@@ -47,12 +49,14 @@ export class DeckShareService {
   }
 
   async disable(userId: string, deckId: number): Promise<void> {
-    await this.decks
+    const result = await this.decks
       .createQueryBuilder()
       .update()
       .set({ shareToken: null, updatedAt: () => '"updatedAt"' })
       .where({ id: deckId, userId })
       .execute();
+    // Only when the deck is the caller's: another user's deck id must not lose its stored image.
+    if (result.affected === 1) await this.previewImages.deleteFor('deck', deckId);
   }
 
   async setShowContact(userId: string, deckId: number, showContact: boolean): Promise<IShareState> {

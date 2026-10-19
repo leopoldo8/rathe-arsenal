@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { UserEntity } from '../../database/entities/user.entity';
 import { DeckShareService } from '../deck-share.service';
+import { SharePreviewStore } from '../preview/share-preview.store';
 import { ShareEventsService } from '../share-events.service';
 
 function build(options: { displayName: string | null; affected: number; token?: string | null }) {
@@ -25,7 +26,13 @@ function build(options: { displayName: string | null; affected: number; token?: 
   const events = createMock<ShareEventsService>();
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
-  return { service: new DeckShareService(decks, users, events, config), events, queryBuilder };
+  const previewImages = createMock<SharePreviewStore>();
+  return {
+    service: new DeckShareService(decks, users, events, config, previewImages),
+    events,
+    queryBuilder,
+    previewImages,
+  };
 }
 
 describe('DeckShareService.enable', () => {
@@ -70,5 +77,21 @@ describe('DeckShareService state', () => {
     await service.disable('user-1', 5);
 
     expect(queryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ shareToken: null }));
+  });
+
+  it('deletes the stored preview image when the owner turns sharing off', async () => {
+    const { service, previewImages } = build({ displayName: 'Rodrigo', affected: 1 });
+
+    await service.disable('user-1', 5);
+
+    expect(previewImages.deleteFor).toHaveBeenCalledWith('deck', 5);
+  });
+
+  it('leaves the preview image alone when the deck is not the caller\'s', async () => {
+    const { service, previewImages } = build({ displayName: 'Rodrigo', affected: 0 });
+
+    await service.disable('someone-else', 5);
+
+    expect(previewImages.deleteFor).not.toHaveBeenCalled();
   });
 });

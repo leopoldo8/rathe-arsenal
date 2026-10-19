@@ -19,12 +19,14 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { FetchGuardService } from '../common/fetch-guard/fetch-guard.service';
 import { configureHttpApp } from '../http/configure-http-app';
+import { DeckShareService } from '../sharing/deck-share.service';
 import { DecksService } from '../decks/decks.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { UserEntity } from '../database/entities/user.entity';
 import { generateShareToken } from '../sharing/share-token';
 import { SPA_INDEX_HTML } from '../sharing/preview/spa-index-html';
+import { DELETE_SHARE_IMAGES_FOR_USERS_SQL } from '../sharing/preview/share-image-cleanup';
 import { buildPurgeStatements } from '../sharing/preview/purge-plan';
 
 const SPA_FIXTURE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -293,6 +295,24 @@ describe('Share preview (E2E)', () => {
       const [row] = await dataSource.query(`SELECT "cardIdentifiers" FROM share_image WHERE "targetId" = $1`, [deckId]);
       expect(row.cardIdentifiers).not.toContain('dawnblade');
       await dataSource.query(`DELETE FROM card_art_block`);
+    });
+
+    it('removes the stored image when the owner is hard-deleted by the purge scripts', async () => {
+      const { token, deckId, userId } = await createSharedDeck();
+      await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
+
+      await dataSource.query(DELETE_SHARE_IMAGES_FOR_USERS_SQL, [[userId]]);
+
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+    });
+
+    it('removes the stored image when sharing is turned off', async () => {
+      const { token, deckId, userId } = await createSharedDeck();
+      await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
+
+      await app.get(DeckShareService).disable(userId, deckId);
+
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
     });
 
     it('removes the stored image when the deck is deleted', async () => {
