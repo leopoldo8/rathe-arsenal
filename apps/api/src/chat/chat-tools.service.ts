@@ -22,6 +22,7 @@ import {
 } from './chat-tools';
 import { describeDeck } from './deck-facts';
 import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
+import { compareWithCommunity } from './community-comparison';
 import { compareSwap, swapCandidates } from './swap-analysis';
 
 const CARD_TEXT_MAX = 300;
@@ -81,7 +82,7 @@ export class ChatToolsService {
       get_tournament_deck: (args) => this.tournamentDeck(scope, readString(args, 'id')!, readInteger(args, 'compareDeckId', { min: 1, optional: true })),
       get_collection: (args) => this.collectionCards(scope, args),
       get_tournament_meta: (args) => this.tournamentMeta(args),
-      get_community_decks: (args) => this.communityDecks(args),
+      get_community_decks: (args) => this.communityDecks(scope, args),
       search_rules: (args) => this.searchRules(args),
       propose_deck: async (args) => {
         const check = validateDeckProposal(args, catalog);
@@ -247,9 +248,10 @@ export class ChatToolsService {
     };
   }
 
-  private async communityDecks(args: Record<string, unknown>): Promise<TToolResult> {
+  private async communityDecks(scope: IToolScope, args: Record<string, unknown>): Promise<TToolResult> {
     const heroIdentifier = readString(args, 'heroIdentifier')!;
     const format = readString(args, 'format')!;
+    const compareDeckId = readInteger(args, 'compareDeckId', { min: 1, optional: true });
     if (!(SUPPORTED_FORMATS as readonly string[]).includes(format)) throw new InvalidToolArguments(`format must be one of ${SUPPORTED_FORMATS.join(', ')}`);
     const found = await this.community.latest(heroIdentifier, format as TSupportedFormat);
     if (found === null) {
@@ -262,13 +264,16 @@ export class ChatToolsService {
         note: 'No complete, legal deck of this hero and format was published on Fabrary in the last 12 months; say there is no data on how it is built.',
       };
     }
+    const yours = compareDeckId === undefined ? null : await this.swapDeck(scope.userId, compareDeckId);
+    if (compareDeckId !== undefined && yours === null) return DECK_NOT_FOUND;
     return {
-      note: `These are regular decks players published on Fabrary, not tournament results. Say so, say the summary uses ${found.decks.length} decks, give their dates, and describe the cards most of them play. To compare a deck's makeup, use each deck's mainboardByType and averageMainboardByType. decksChecked also counts incomplete or illegal decks that were left out; do not quote it as the number of decks.`,
+      note: `These are regular decks players published on Fabrary, not tournament results. Say so, say the summary uses ${found.decks.length} decks, give their dates, and describe the cards most of them play. To compare a deck's makeup, use each deck's mainboardByType, mainboardByPitch and mainboardByCost and mainboardRange (average, lowest and highest across the decks). decksChecked also counts incomplete or illegal decks that were left out; do not quote it as the number of decks.`,
       decksUsed: found.decks.length,
       decksChecked: found.inspected,
       decks: found.decks,
-      averageMainboardByType: found.averageMainboardByType,
+      mainboardRange: found.mainboardRange,
       cards: found.cards,
+      ...(yours === null ? {} : { comparison: compareWithCommunity(found, yours.cards) }),
     };
   }
 

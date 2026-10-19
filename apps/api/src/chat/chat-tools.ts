@@ -83,11 +83,12 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_community_decks',
     description:
-      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them and every deck\'s mainboard by card type with the average. Use it only after search_tournament_decks found no deck for that hero and format.',
+      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them, every deck\'s mainboard by card type, pitch and cost, and their average, lowest and highest. Use it only after search_tournament_decks found no deck for that hero and format.',
     parametersJsonSchema: object(
       {
         heroIdentifier: string('Hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
         format: string('Format, for example "Silver Age".'),
+        compareDeckId: integer("Optional id of one of the user's decks: then each of its cards says in how many of these decks it appears, and the cards most of these decks play that it lacks are listed."),
       },
       ['heroIdentifier', 'format'],
     ),

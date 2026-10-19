@@ -310,7 +310,9 @@ describe('chat tools (E2E)', () => {
   });
 
   it('get_community_decks sums the complete legal regular decks of that exact hero and format and says they are not tournament results', async () => {
-    const toolbox = toolboxFor(await fixture.chatUser());
+    const user = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
     const hero = catalog.getCard('azalea');
     const mainboard = catalog.cards
       .filter((card) => slotOf(card) === 'mainboard' && findCardLegalityViolation(card, hero, 'Silver Age') === null)
@@ -357,9 +359,31 @@ describe('chat tools (E2E)', () => {
         inventoryCards: 0,
         url: 'https://fabrary.net/decks/01COMMUNITY00000000000001',
         mainboardByType: expect.any(Object),
+        mainboardByPitch: expect.any(Object),
+        mainboardByCost: expect.any(Object),
       },
     ]);
-    expect(result['averageMainboardByType']).toEqual((result['decks'] as Array<{ mainboardByType: unknown }>)[0]!.mainboardByType);
+    const [only] = result['decks'] as Array<{ mainboardByType: Record<string, number> }>;
+    const byType = (result['mainboardRange'] as { byType: Record<string, { average: number; min: number; max: number }> }).byType;
+    expect(Object.fromEntries(Object.entries(byType).map(([kind, range]) => [kind, [range.average, range.min, range.max]]))).toEqual(
+      Object.fromEntries(Object.entries(only!.mainboardByType).map(([kind, count]) => [kind, [count, count, count]])),
+    );
+    expect(result['comparison']).toBeUndefined();
+
+    const compared = await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Silver Age', compareDeckId: user.deckId });
+    const yourRows = (await fixture.dataSource.query(`SELECT "cardIdentifier", slot FROM deck_card WHERE "trackedDeckId" = $1`, [user.deckId])) as Array<{
+      cardIdentifier: string;
+      slot: string;
+    }>;
+    const yourCards = new Set(yourRows.filter((row) => row.slot !== 'hero').map((row) => row.cardIdentifier));
+    const reference = new Set(mainboard.map((row) => row.cardIdentifier));
+    const comparison = compared['comparison'] as { yourCards: Array<{ cardIdentifier: string; referenceDecks: number }>; commonCardsYouLack: Array<{ cardIdentifier: string }> };
+    expect(new Set(comparison.yourCards.map((card) => card.cardIdentifier))).toEqual(yourCards);
+    expect(comparison.yourCards.every((card) => card.referenceDecks === (reference.has(card.cardIdentifier) ? 1 : 0))).toBe(true);
+    expect(new Set(comparison.commonCardsYouLack.map((card) => card.cardIdentifier))).toEqual(new Set([...reference].filter((id) => !yourCards.has(id))));
+    expect(await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Silver Age', compareDeckId: other.deckId })).toEqual({
+      error: 'DECK_NOT_FOUND',
+    });
     expect((result['cards'] as Array<{ decks: number; averageCopies: number }>)[0]).toEqual(expect.objectContaining({ decks: 1, averageCopies: 2 }));
     expect(badFormat).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
   });
