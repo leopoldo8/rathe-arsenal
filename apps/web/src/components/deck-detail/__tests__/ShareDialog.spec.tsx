@@ -93,6 +93,14 @@ describe('ShareDialog', () => {
 
   it('choosing an intent turns that link on and shows its address, WhatsApp and the small actions', async () => {
     api.handlers.set('POST /decks/7/share', () => link('missing'));
+    api.handlers.set('GET /shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs', () => ({
+      hero: 'Rhinar, Reckless Rampage',
+      url: MISSING_URL,
+      missing: [
+        { cardIdentifier: 'gauntlet', name: 'Goliath Gauntlet', pitch: null, type: 'Equipment', slot: 'equipment', quantity: 1, imageUrl: null },
+        { cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, type: 'Action - Attack', slot: 'mainboard', quantity: 2, imageUrl: null },
+      ],
+    }));
     renderDialog();
 
     await userEvent.click(await screen.findByTestId('share-intent-missing'));
@@ -101,10 +109,16 @@ describe('ShareDialog', () => {
     expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'missing' });
     const whatsapp = screen.getByTestId('share-whatsapp');
     expect(whatsapp).toHaveTextContent('Enviar no WhatsApp');
-    expect(whatsapp.getAttribute('href')).toBe(
-      `https://wa.me/?text=${encodeURIComponent(`Procuro estas cartas do deck Rhinar Rampage. Quem tem?\n${MISSING_URL}`)}`,
+    await waitFor(() =>
+      expect(whatsapp.getAttribute('href')).toBe(
+        `https://wa.me/?text=${encodeURIComponent(
+          `Comprando essas cartas para meu deck de Rhinar:\n1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\n${MISSING_URL}`,
+        )}`,
+      ),
     );
-    expect(screen.getByTestId('share-download')).toHaveAttribute('href', '/api/shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs/image?download=1');
+    const download = screen.getByTestId('share-download');
+    expect(download).toHaveTextContent('Baixar imagem das cartas');
+    expect(download).toHaveAttribute('href', '/api/shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs/image?download=1');
     expect(screen.getByTestId('share-turn-off')).toHaveTextContent('Desativar link');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });

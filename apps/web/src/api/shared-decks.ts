@@ -213,6 +213,20 @@ export function useSharedDeckQuery(token: string) {
   });
 }
 
+/**
+ * The owner's own view of one of their links, for the share dialog's message.
+ * Separate key from the visitor query so it refetches on every open; the
+ * server records no "open" for the owner.
+ */
+export function useOwnSharedDeckQuery(token: string, enabled: boolean) {
+  const { token: authToken } = useAuth();
+  return useQuery({
+    queryKey: ['shared-deck-own', token] as const,
+    queryFn: () => getSharedDeck(token, authToken),
+    enabled,
+  });
+}
+
 /** The logged-in visitor's exact coverage of the shared deck. Not for the owner or anonymous visitors. */
 export function useSharedCoverageQuery(token: string, enabled: boolean) {
   const { token: authToken, user } = useAuth();

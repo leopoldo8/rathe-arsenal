@@ -170,6 +170,11 @@
   filter: brightness(1.05);
 }
 
+.whatsappBtn[aria-disabled='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .secondaryBtn:focus-visible,
 .whatsappBtn:focus-visible,
 .textBtn:focus-visible {

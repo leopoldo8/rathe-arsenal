@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   sharedDeckImageDownloadPath,
   useDisableDeckShareMutation,
+  useOwnSharedDeckQuery,
   type ILinkState,
-} from '../../api/shared-decks';
-import { buildWhatsappShareUrl } from '../../lib/whatsapp';
-import { WhatsappGlyph } from '../contact/WhatsappGlyph';
-import { DeckShareContact } from './DeckShareContact';
-import styles from './ShareFlow.module.css';
+} from "../../api/shared-decks";
+import { buildWhatsappShareUrl } from "../../lib/whatsapp";
+import { WhatsappGlyph } from "../contact/WhatsappGlyph";
+import { buildMissingMessage } from "../shared-deck/sharedDeckModel";
+import { DeckShareContact } from "./DeckShareContact";
+import styles from "./ShareFlow.module.css";
 
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -21,10 +23,17 @@ interface IShareLinkStepProps {
 }
 
 /** Third step: the chosen link, ready to send. */
-export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLinkStepProps): React.ReactElement {
+export function ShareLinkStep({
+  deckId,
+  deckName,
+  link,
+  onTurnedOff,
+}: IShareLinkStepProps): React.ReactElement {
   const { t } = useTranslation();
   const disable = useDisableDeckShareMutation(deckId);
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
+    "idle",
+  );
   const [confirmingOff, setConfirmingOff] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -35,20 +44,30 @@ export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLin
     [],
   );
 
-  const message = t(link.intent === 'deck' ? 'sharing.dialog.messageDeck' : 'sharing.dialog.messageMissing', {
-    deck: deckName,
-  });
-  const whatsappHref = buildWhatsappShareUrl(`${message}\n${link.url}`);
+  const isMissing = link.intent === "missing";
+  const ownView = useOwnSharedDeckQuery(link.token, isMissing);
+  const message =
+    isMissing && ownView.data !== undefined
+      ? buildMissingMessage(
+          ownView.data,
+          (key, options) =>
+            (options === undefined ? t(key) : t(key, options)) as string,
+        )
+      : `${t("sharing.dialog.messageDeck", { deck: deckName })}\n${link.url}`;
+  const whatsappReady = !isMissing || ownView.data !== undefined;
 
   async function handleCopy(): Promise<void> {
     try {
       await navigator.clipboard.writeText(link.url);
-      setCopyState('copied');
+      setCopyState("copied");
     } catch {
-      setCopyState('failed');
+      setCopyState("failed");
     }
     if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => setCopyState('idle'), COPIED_FEEDBACK_MS);
+    resetTimer.current = setTimeout(
+      () => setCopyState("idle"),
+      COPIED_FEEDBACK_MS,
+    );
   }
 
   function handleTurnOff(): void {
@@ -63,41 +82,54 @@ export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLin
           type="text"
           readOnly
           value={link.url}
-          aria-label={t('sharing.dialog.addressLabel')}
+          aria-label={t("sharing.dialog.addressLabel")}
           onFocus={(event) => event.currentTarget.select()}
           data-testid="share-address"
         />
-        <button type="button" className={styles.secondaryBtn} onClick={() => void handleCopy()}>
-          {copyState === 'copied' ? t('sharing.dialog.copied') : t('sharing.dialog.copy')}
+        <button
+          type="button"
+          className={styles.secondaryBtn}
+          onClick={() => void handleCopy()}
+        >
+          {copyState === "copied"
+            ? t("sharing.dialog.copied")
+            : t("sharing.dialog.copy")}
         </button>
       </div>
       <p className={styles.status} role="status">
-        {copyState === 'failed' ? t('sharing.dialog.copyFailed') : ''}
+        {copyState === "failed" ? t("sharing.dialog.copyFailed") : ""}
       </p>
 
       <a
         className={styles.whatsappBtn}
-        href={whatsappHref}
+        href={whatsappReady ? buildWhatsappShareUrl(message) : undefined}
+        aria-disabled={whatsappReady ? undefined : true}
         target="_blank"
         rel="noopener noreferrer"
         data-testid="share-whatsapp"
       >
         <WhatsappGlyph />
-        {t('sharing.dialog.sendWhatsapp')}
+        {t("sharing.dialog.sendWhatsapp")}
       </a>
 
-      <DeckShareContact deckId={deckId} intent={link.intent} showContact={link.showContact} />
+      <DeckShareContact
+        deckId={deckId}
+        intent={link.intent}
+        showContact={link.showContact}
+      />
 
       {disable.isError && (
         <p className={styles.error} role="alert">
-          {t('sharing.dialog.turnOffFailed')}
+          {t("sharing.dialog.turnOffFailed")}
         </p>
       )}
 
       <div className={styles.footer}>
         {confirmingOff ? (
           <>
-            <span className={styles.confirmText}>{t('sharing.dialog.turnOffConfirm')}</span>
+            <span className={styles.confirmText}>
+              {t("sharing.dialog.turnOffConfirm")}
+            </span>
             <span className={styles.confirmActions}>
               <button
                 type="button"
@@ -106,10 +138,14 @@ export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLin
                 aria-disabled={disable.isPending || undefined}
                 data-testid="share-turn-off-confirm"
               >
-                {t('sharing.dialog.turnOffYes')}
+                {t("sharing.dialog.turnOffYes")}
               </button>
-              <button type="button" className={styles.textBtn} onClick={() => setConfirmingOff(false)}>
-                {t('sharing.dialog.turnOffNo')}
+              <button
+                type="button"
+                className={styles.textBtn}
+                onClick={() => setConfirmingOff(false)}
+              >
+                {t("sharing.dialog.turnOffNo")}
               </button>
             </span>
           </>
@@ -121,7 +157,11 @@ export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLin
               download
               data-testid="share-download"
             >
-              {t('sharing.dialog.download')}
+              {t(
+                isMissing
+                  ? "sharing.dialog.downloadMissing"
+                  : "sharing.dialog.downloadDeck",
+              )}
             </a>
             <button
               type="button"
@@ -129,7 +169,7 @@ export function ShareLinkStep({ deckId, deckName, link, onTurnedOff }: IShareLin
               onClick={() => setConfirmingOff(true)}
               data-testid="share-turn-off"
             >
-              {t('sharing.dialog.turnOff')}
+              {t("sharing.dialog.turnOff")}
             </button>
           </>
         )}

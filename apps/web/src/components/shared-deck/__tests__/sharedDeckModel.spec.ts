@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import i18n from '../../../i18n';
 import type { ISharedCard } from '../../../api/shared-decks';
-import { buildMissingText, groupSharedCards } from '../sharedDeckModel';
+import { buildMissingMessage, buildMissingText, groupSharedCards } from '../sharedDeckModel';
 
 function card(overrides: Partial<ISharedCard>): ISharedCard {
   return {
@@ -62,5 +62,25 @@ describe('buildMissingText', () => {
     expect(text).toBe(
       '1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\nhttps://rathearsenal.app/d/abc',
     );
+  });
+});
+
+describe('buildMissingMessage', () => {
+  const t = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
+  const url = 'https://rathearsenal.app/d/abc';
+
+  it('opens with the hero short name, lists the cards in text and ends with the address', () => {
+    const message = buildMissingMessage(
+      { hero: 'Azalea, Ace in the Hole', url, missing: [card({ name: 'Pack Hunt', pitch: 1, quantity: 3 })] },
+      t,
+    );
+    expect(message).toBe(`Comprando essas cartas para meu deck de Azalea:\n3x Pack Hunt (Vermelho)\n\n${url}`);
+  });
+
+  it('stops after 30 lines and counts the copies left for the link', () => {
+    const missing = Array.from({ length: 32 }, (_, index) => card({ name: `Card ${index}`, quantity: 2 }));
+    const lines = buildMissingMessage({ hero: 'Kano', url, missing }, t).split('\n');
+    expect(lines).toHaveLength(1 + 30 + 1 + 2);
+    expect(lines[31]).toBe('e mais 4 cartas no link');
   });
 });

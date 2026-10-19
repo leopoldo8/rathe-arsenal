@@ -96,3 +96,9 @@ The deck-intent response must not carry the missing cards (enforced in the API, 
 - **Copy:** remove every line that explains the system ("mostra o deck como ele está agora", "Esta página não aparece em buscas…", "As edições que você fizer aparecem…", the image explanation, etc.). Settings: "Nome de exibição" becomes "Seu nome nos links" with helper "Aparece para quem abre um link seu."; the contact panel keeps a one-line helper at most.
 - **WhatsApp icon:** reproduce the broken icon at 390 and 1440 on the shared page and fix it.
 - Keep the disclaimer (it already ends with "© Legend Story Studios") on the shared pages.
+
+## Follow-up after the owner's second review (2026-10-19)
+
+- **Missing-cards message carries the cards as text.** In the buy-and-sell groups people reply to a list they can read, not to a link they must open. The WhatsApp message of a missing-cards link is "Comprando essas cartas para meu deck de <hero short name>:", one `Nx Name (pitch)` line per card (at most 30 lines, then "e mais N cartas no link"), a blank line and the address. The address still carries the preview image and the full gallery. The deck-intent message is unchanged.
+- **Download label names the image:** "Baixar imagem do deck" on a deck link, "Baixar imagem das cartas" on a missing-cards link.
+- **WhatsApp mark redrawn:** the hand-drawn glyph had the handset pushed against the ring; it is now the Simple Icons mark (CC0).
