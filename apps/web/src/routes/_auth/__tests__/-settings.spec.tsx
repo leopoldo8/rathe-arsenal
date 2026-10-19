@@ -242,7 +242,7 @@ describe('SettingsPage — Profile section', () => {
         user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu_Pelotas' },
       }),
     );
-    const input = screen.getByRole('textbox', { name: /seu nome nos links/i });
+    const input = screen.getByRole('textbox', { name: /seu nome para outros jogadores/i });
     expect(input).toHaveValue('Dudu_Pelotas');
     expect(input.closest('section')).toBe(screen.getByRole('heading', { level: 2, name: /perfil/i }).closest('section'));
   });
@@ -251,7 +251,7 @@ describe('SettingsPage — Profile section', () => {
     patchDisplayNameMock.mockResolvedValueOnce({ displayName: 'Dudu' });
     const setDisplayName = vi.fn();
     renderSettings(makeAuthContext({ setDisplayName }));
-    await userEvent.type(screen.getByRole('textbox', { name: /seu nome nos links/i }), '  Dudu  ');
+    await userEvent.type(screen.getByRole('textbox', { name: /seu nome para outros jogadores/i }), '  Dudu  ');
     await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
     expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu', 'jwt');
     expect(setDisplayName).toHaveBeenCalledWith('Dudu');
@@ -260,7 +260,7 @@ describe('SettingsPage — Profile section', () => {
 
   it('does not send a name shorter than 2 characters', async () => {
     renderSettings();
-    await userEvent.type(screen.getByRole('textbox', { name: /seu nome nos links/i }), 'D');
+    await userEvent.type(screen.getByRole('textbox', { name: /seu nome para outros jogadores/i }), 'D');
     await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
     expect(patchDisplayNameMock).not.toHaveBeenCalled();
   });
@@ -275,7 +275,7 @@ describe('SettingsPage — Contact panel (WhatsApp)', () => {
 
   it('shows the saved number without the country code and "Remover número"', () => {
     renderSettings(saved);
-    const panel = screen.getByRole('heading', { level: 2, name: /contato/i }).closest('section')!;
+    const panel = screen.getByRole('heading', { level: 2, name: /seu whatsapp/i }).closest('section')!;
     expect(panel.querySelector('input[type="tel"]')).toHaveValue('53 99999-0000');
     expect(screen.getByRole('button', { name: 'Remover número' })).toBeInTheDocument();
   });
@@ -300,7 +300,7 @@ describe('SettingsPage — Contact panel (WhatsApp)', () => {
     renderSettings();
     await userEvent.type(screen.getByLabelText('WhatsApp (opcional)'), '53 9999');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar número' }));
-    expect(await screen.findByText(/Número incompleto/)).toBeInTheDocument();
+    expect(await screen.findByText(/Número inválido/)).toBeInTheDocument();
     expect(patchContactMock).not.toHaveBeenCalled();
   });
 

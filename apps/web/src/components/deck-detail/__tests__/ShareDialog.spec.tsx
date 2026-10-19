@@ -61,7 +61,7 @@ describe('ShareDialog', () => {
     api.handlers.set('PATCH /users/me/display-name', ({ body }) => ({ displayName: (body as { displayName: string }).displayName }));
     renderDialog({ auth: makeAuth({ user: { ...SIGNED_IN_USER, displayName: null }, setDisplayName }) });
 
-    expect(await screen.findByText('Como você quer aparecer nos links?')).toBeInTheDocument();
+    expect(await screen.findByText('Que nome os outros jogadores vão ver?')).toBeInTheDocument();
     expect(screen.queryByText('Mostrar o deck')).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Seu nome'), 'Dudu');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
@@ -73,7 +73,7 @@ describe('ShareDialog', () => {
   it('skips the name step when the user already has a name, and offers both intents', async () => {
     renderDialog();
     expect(await screen.findByTestId('share-intent-deck')).toHaveTextContent('Quem abrir vê todas as cartas do deck.');
-    expect(screen.getByTestId('share-intent-missing')).toHaveTextContent('Quem abrir vê só as 11 cartas que faltam e pode te chamar.');
+    expect(screen.getByTestId('share-intent-missing')).toHaveTextContent('Quem abrir vê só as 11 cartas que faltam.');
     expect(screen.queryByText('Nome de exibição')).not.toBeInTheDocument();
   });
 
@@ -81,7 +81,7 @@ describe('ShareDialog', () => {
     renderDialog({ missingCount: 0 });
     const option = await screen.findByTestId('share-intent-missing');
     expect(option).toBeDisabled();
-    expect(option).toHaveTextContent('Nada falta neste deck.');
+    expect(option).toHaveTextContent('Não falta nenhuma carta.');
   });
 
   it('marks the intents whose link is on', async () => {
@@ -105,7 +105,7 @@ describe('ShareDialog', () => {
       `https://wa.me/?text=${encodeURIComponent(`Procuro estas cartas do deck Rhinar Rampage. Quem tem?\n${MISSING_URL}`)}`,
     );
     expect(screen.getByTestId('share-download')).toHaveAttribute('href', '/api/shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs/image?download=1');
-    expect(screen.getByTestId('share-turn-off')).toHaveTextContent('Desligar link');
+    expect(screen.getByTestId('share-turn-off')).toHaveTextContent('Desativar link');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
@@ -152,7 +152,7 @@ describe('ShareDialog', () => {
     renderDialog();
 
     await userEvent.click(await screen.findByTestId('share-intent-deck'));
-    await screen.findByText('Como você quer aparecer nos links?');
+    await screen.findByText('Que nome os outros jogadores vão ver?');
     await userEvent.clear(screen.getByLabelText('Seu nome'));
     await userEvent.type(screen.getByLabelText('Seu nome'), 'Dudu');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
@@ -184,7 +184,7 @@ describe('ShareDialog', () => {
     renderDialog({ intent: 'deck' });
 
     await userEvent.click(await screen.findByTestId('share-turn-off'));
-    expect(screen.getByText('Desligar este link?')).toBeInTheDocument();
+    expect(screen.getByText('Desativar? Quem tem o link não vai mais conseguir abrir.')).toBeInTheDocument();
     await userEvent.click(screen.getByTestId('share-turn-off-confirm'));
 
     expect(await screen.findByTestId('share-intent-deck')).toBeInTheDocument();

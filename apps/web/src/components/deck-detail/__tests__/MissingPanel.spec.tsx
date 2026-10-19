@@ -529,8 +529,8 @@ describe('MissingPanel — share call to action', () => {
     renderPanel(populated(), { onShareMissing });
 
     const callout = screen.getByTestId('missing-share-callout');
-    expect(callout).toHaveTextContent('2 cartas não estão na loja. Peça nos grupos.');
-    await userEvent.click(within(callout).getByRole('button', { name: 'Compartilhar o que falta' }));
+    expect(callout).toHaveTextContent('2 cartas não estão na loja.');
+    await userEvent.click(within(callout).getByRole('button', { name: 'Pedir nos grupos' }));
     expect(onShareMissing).toHaveBeenCalledTimes(1);
   });
 

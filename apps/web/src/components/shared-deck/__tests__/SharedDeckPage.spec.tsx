@@ -221,7 +221,7 @@ describe('SharedDeckPage', () => {
       const panel = await screen.findByTestId('shared-coverage');
       expect(await within(panel).findByText('75')).toBeInTheDocument();
       expect(within(panel).getByText('6 de 8')).toBeInTheDocument();
-      expect(within(panel).getByText('Faltam 2 cópias.')).toBeInTheDocument();
+      expect(within(panel).getByText('Faltam 2 cartas.')).toBeInTheDocument();
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
     });
 
@@ -229,7 +229,7 @@ describe('SharedDeckPage', () => {
       api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
       renderPage(undefined, makeAuth());
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Copiar para meus decks' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
 
       await waitFor(() =>
         expect(navigateMock).toHaveBeenCalledWith({
@@ -247,7 +247,7 @@ describe('SharedDeckPage', () => {
       });
       renderPage(undefined, makeAuth());
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Copiar para meus decks' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Este link não está mais disponível.');
       expect(navigateMock).not.toHaveBeenCalled();
@@ -260,7 +260,7 @@ describe('SharedDeckPage', () => {
       renderPage(undefined, makeAuth());
 
       expect(await screen.findByTestId('shared-owner-note')).toHaveTextContent('Este é o seu link');
-      expect(screen.queryByRole('button', { name: 'Copiar para meus decks' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Salvar nos meus decks' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
       expect(api.calls.some((call) => call.key.includes('/coverage'))).toBe(false);
     });
@@ -268,14 +268,14 @@ describe('SharedDeckPage', () => {
     it('gets a link back to the deck', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true, deckId: 7 }));
       renderPage(undefined, makeAuth());
-      expect(await screen.findByRole('link', { name: 'Abrir o deck' })).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: 'Gerenciar no deck' })).toBeInTheDocument();
     });
 
     it('has no manage link when the API sends no deck id', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true }));
       renderPage(undefined, makeAuth());
       await screen.findByTestId('shared-owner-note');
-      expect(screen.queryByRole('link', { name: 'Abrir o deck' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Gerenciar no deck' })).not.toBeInTheDocument();
     });
   });
 
@@ -353,7 +353,7 @@ describe('SharedDeckPage', () => {
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      await user.click(await screen.findByRole('button', { name: 'Copiar lista' }));
+      await user.click(await screen.findByRole('button', { name: 'Copiar lista em texto' }));
 
       expect(writeText).toHaveBeenCalledWith(
         `1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\nhttps://rathearsenal.app/d/${MISSING_TOKEN}`,
@@ -367,7 +367,7 @@ describe('SharedDeckPage', () => {
 
       const pill = await screen.findByTestId('shared-contact-pill');
       expect(pill.getAttribute('href')).toContain(
-        encodeURIComponent('Oi! Tenho cartas que você procura para o deck Rhinar Rampage.'),
+        encodeURIComponent('Oi! Vi que você procura cartas para o deck Rhinar Rampage.'),
       );
     });
 
@@ -403,7 +403,7 @@ describe('SharedDeckPage', () => {
     it('says nothing is missing when the owner has every copy', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, missing: [], missingCount: 0 }));
       renderPage(undefined, undefined, MISSING_TOKEN);
-      expect(await screen.findByText('Nada falta neste deck.')).toBeInTheDocument();
+      expect(await screen.findByText('Não falta nenhuma carta.')).toBeInTheDocument();
     });
   });
 
