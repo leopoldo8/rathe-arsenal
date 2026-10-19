@@ -9,6 +9,7 @@ export const CONDITIONS: readonly TCondition[] = ['NM', 'LP', 'MP', 'HP', 'DMG']
 export const LINE_QUANTITY_MIN = 1;
 export const LINE_QUANTITY_MAX = 20;
 export const LIST_NAME_MAX = 80;
+export const MULTIPLIER_MAX = 50;
 
 export interface IListCardImage {
   readonly small: string;
@@ -189,6 +190,16 @@ export function useAddLineMutation(listId: number | string) {
 export function usePatchLineMutation(listId: number | string) {
   return useListWrite<{ readonly lineId: number; readonly body: IPatchLineBody }>(listId, ({ lineId, body }, token) =>
     authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'PATCH', ...json(body) }, token),
+  );
+}
+
+export function useApplySuggestionsMutation(listId: number | string) {
+  return useListWrite<readonly number[] | undefined>(listId, (lineIds, token) =>
+    authFetch<ICardList>(
+      `/lists/${listId}/apply-suggestions`,
+      { method: 'POST', ...json(lineIds === undefined ? {} : { lineIds }) },
+      token,
+    ),
   );
 }
 

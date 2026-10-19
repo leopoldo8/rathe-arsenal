@@ -125,6 +125,18 @@ export const lists = {
     failed: 'Não foi possível adicionar.',
     pick: 'Escolher {{name}}',
   },
+  pricing: {
+    multiplierLabel: 'Multiplicador',
+    multiplierInvalid: 'Use um número entre 1 e 50.',
+    useAll: 'Usar sugestões em todas',
+    suggestion: 'Sugestão {{price}}',
+    market: 'mercado TCGplayer de {{date}}',
+    approximate: 'aproximado',
+    none: 'sem sugestão',
+    useOne: 'Usar sugestão',
+    printingOption: '{{label}} · {{price}}',
+    printingOptionNone: '{{label}} · sem sugestão',
+  },
   text: {
     line: '{{count}}x {{name}}',
     each: '{{price}} cada',

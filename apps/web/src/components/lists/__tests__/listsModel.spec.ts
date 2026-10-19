@@ -4,6 +4,9 @@ import { makeLine, makeList, makeSummary } from './listsTestKit';
 import {
   buildListText,
   formatBrl,
+  formatBrlWhole,
+  formatSnapshotDate,
+  parseMultiplier,
   formatMoneyInput,
   groupListsByKind,
   listMeta,
@@ -137,5 +140,29 @@ describe('card count wording', () => {
     expect(i18n.t('lists.bar.cards', { count: 0 })).toBe('0 cartas');
     expect(i18n.t('lists.cardCount', { count: 0 })).toBe('0 cartas');
     expect(i18n.t('lists.bar.cards', { count: 1 })).toBe('1 carta');
+  });
+});
+
+describe('price suggestion helpers', () => {
+  it('writes suggestions in whole reais', () => {
+    expect(formatBrlWhole(1400)).toBe('R$ 14');
+    expect(formatBrlWhole(142000)).toBe('R$ 1.420');
+  });
+
+  it('writes the snapshot day as day and month', () => {
+    expect(formatSnapshotDate('2026-10-18T20:05:00.000Z')).toBe('18/10');
+  });
+
+  it.each([
+    ['7', 7],
+    ['7x', 7],
+    ['7,5', 7.5],
+    ['', null],
+  ])('reads the multiplier %s', (raw, value) => {
+    expect(parseMultiplier(raw)).toEqual({ valid: true, value });
+  });
+
+  it.each(['0', '51', 'abc', '7,555'])('rejects the multiplier %s', (raw) => {
+    expect(parseMultiplier(raw)).toEqual({ valid: false });
   });
 });

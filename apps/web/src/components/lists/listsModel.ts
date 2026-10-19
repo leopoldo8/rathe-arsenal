@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { ICardList, IListLine, IListSummary, TListKind } from '../../api/lists';
+import { MULTIPLIER_MAX, type ICardList, type IListLine, type IListSummary, type TListKind } from '../../api/lists';
 import { withPitch } from '../deck-detail/recommendations/card-naming';
 
 export type TTranslate = (key: string, options?: Record<string, unknown>) => string;
@@ -31,6 +31,28 @@ const BRL_NUMBER = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, ma
 /** "R$ 6,00": built by hand so the space is a plain one, safe to paste into a chat. */
 export function formatBrl(cents: number): string {
   return `R$ ${BRL_NUMBER.format(cents / 100)}`;
+}
+
+/** "R$ 14": suggestions are whole reais. */
+export function formatBrlWhole(cents: number): string {
+  return `R$ ${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Math.round(cents / 100))}`;
+}
+
+/** "18/10": the day of the price snapshot. */
+export function formatSnapshotDate(fetchedAt: string): string {
+  const date = new Date(fetchedAt);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+}
+
+/** Accepts "7", "7,5", "7.5"; empty clears the multiplier. */
+export function parseMultiplier(raw: string): { readonly valid: true; readonly value: number | null } | { readonly valid: false } {
+  const text = raw.replace(/x/gi, '').replace(/\s/g, '').replace(',', '.');
+  if (text === '') return { valid: true, value: null };
+  if (!/^\d+(\.\d{1,2})?$/.test(text)) return { valid: false };
+  const value = Number(text);
+  return value > 0 && value <= MULTIPLIER_MAX ? { valid: true, value } : { valid: false };
 }
 
 /** Value for a money input: "6,50", no symbol. */

@@ -15,6 +15,7 @@ import { AddCardDialog } from './AddCardDialog';
 import { InlineText } from './InlineText';
 import { LineEditPanel } from './LineEditPanel';
 import { LineTile } from './LineTile';
+import { ListPricing } from './ListPricing';
 import { ListTotalsBar } from './ListTotalsBar';
 import styles from './ListEditor.module.css';
 
@@ -90,6 +91,8 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
           {t('lists.editor.deleteList')}
         </button>
       </div>
+
+      {list.kind === 'sell' && <ListPricing list={list} />}
 
       <div className={styles.notes}>
         <InlineText

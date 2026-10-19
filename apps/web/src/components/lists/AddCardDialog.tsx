@@ -14,6 +14,7 @@ import { useSearchCardsQuery, type ISearchCardResult } from '../../api/catalog';
 import { CardArt } from '../card-art/CardArt';
 import { withPitch } from '../deck-detail/recommendations/card-naming';
 import { MoneyInput } from './MoneyInput';
+import { formatBrlWhole } from './listsModel';
 import dialog from './ListDialog.module.css';
 import styles from './AddCardDialog.module.css';
 
@@ -160,7 +161,11 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
                     <select className={styles.smallSelect} aria-label={t('lists.add.printing')} value={printing} onChange={(event) => setPrinting(event.currentTarget.value)}>
                       <option value="">{t('lists.add.printing')}</option>
                       {(printings.data ?? []).map((option) => (
-                        <option key={option.printing} value={option.printing}>{option.label}</option>
+                        <option key={option.printing} value={option.printing}>
+                          {option.suggestion === null
+                            ? option.label
+                            : t('lists.pricing.printingOption', { label: option.label, price: formatBrlWhole(option.suggestion.cents) })}
+                        </option>
                       ))}
                     </select>
                     <select className={styles.smallSelect} aria-label={t('lists.add.condition')} value={condition} onChange={(event) => setCondition(event.currentTarget.value as TCondition | '')}>

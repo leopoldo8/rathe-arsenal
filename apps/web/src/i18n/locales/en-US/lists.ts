@@ -125,6 +125,18 @@ export const lists = {
     failed: 'Could not add.',
     pick: 'Pick {{name}}',
   },
+  pricing: {
+    multiplierLabel: 'Multiplier',
+    multiplierInvalid: 'Use a number between 1 and 50.',
+    useAll: 'Use suggestions on all',
+    suggestion: 'Suggestion {{price}}',
+    market: 'TCGplayer market of {{date}}',
+    approximate: 'approximate',
+    none: 'no suggestion',
+    useOne: 'Use suggestion',
+    printingOption: '{{label}} · {{price}}',
+    printingOptionNone: '{{label}} · no suggestion',
+  },
   text: {
     line: '{{count}}x {{name}}',
     each: '{{price}} each',

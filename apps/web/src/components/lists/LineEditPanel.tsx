@@ -5,6 +5,7 @@ import {
   CONDITIONS,
   LINE_QUANTITY_MAX,
   LINE_QUANTITY_MIN,
+  useApplySuggestionsMutation,
   useListPrintingsQuery,
   usePatchLineMutation,
   useRemoveLineMutation,
@@ -15,6 +16,8 @@ import {
 import { CardArt } from '../card-art/CardArt';
 import { withPitch } from '../deck-detail/recommendations/card-naming';
 import { MoneyInput } from './MoneyInput';
+import { SuggestionBlock } from './SuggestionBlock';
+import { formatBrlWhole } from './listsModel';
 import styles from './ListEditor.module.css';
 
 interface ILineEditPanelProps {
@@ -27,9 +30,10 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
   const { t } = useTranslation();
   const patch = usePatchLineMutation(list.id);
   const remove = useRemoveLineMutation(list.id);
+  const applySuggestion = useApplySuggestionsMutation(list.id);
   const isSell = list.kind === 'sell';
   const printings = useListPrintingsQuery(list.id, isSell ? line.cardIdentifier : null);
-  const busy = patch.isPending || remove.isPending;
+  const busy = patch.isPending || remove.isPending || applySuggestion.isPending;
 
   const update = (body: IPatchLineBody): void => patch.mutate({ lineId: line.id, body });
   const printingOptions = printings.data ?? [];
@@ -92,7 +96,11 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                       <option value={line.printing}>{line.printingLabel ?? line.printing}</option>
                     )}
                     {printingOptions.map((option) => (
-                      <option key={option.printing} value={option.printing}>{option.label}</option>
+                      <option key={option.printing} value={option.printing}>
+                        {option.suggestion === null
+                          ? t('lists.pricing.printingOptionNone', { label: option.label })
+                          : t('lists.pricing.printingOption', { label: option.label, price: formatBrlWhole(option.suggestion.cents) })}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -123,11 +131,12 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                     invalidMessage={t('lists.panel.priceInvalid')}
                     onCommit={(cents) => update({ priceCents: cents })}
                   />
+                  <SuggestionBlock suggestion={line.suggestion} busy={busy} onUse={() => applySuggestion.mutate([line.id])} />
                 </div>
               </>
             )}
 
-            {(patch.isError || remove.isError) && (
+            {(patch.isError || remove.isError || applySuggestion.isError) && (
               <p className={styles.fieldError} role="alert">{t('lists.editor.saveFailed')}</p>
             )}
 
