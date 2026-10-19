@@ -112,7 +112,21 @@
 - **Date**: 2026-10-12
 - **Status**: active
 
+### AD-015
+- **Decision**: A deck is shared through an unguessable token stored on `tracked_deck.shareToken`, resolved only by `SharedDeckLookup.findLive` (shape check, token match, owner not soft-deleted). Public routes that want the visitor use `OptionalJwtAuthGuard`, which never rejects. Share pages (`/d/:token`, `/l/:token`) sit outside the `api` prefix and the SPA fallback through `configureHttpApp`, and every bootstrap, `main.ts` and e2e alike, calls it. Generated preview images are stored in `share_image` keyed by a content hash, and `card_art_block` with `pnpm share-images:purge` removes card art without a deploy. Attribution lives in `share_event` and `user.referredByUserId`, read by `pnpm share:report`.
+- **Reason**: sharing-decks (`.specs/features/sharing-decks/design.md`) from the confirmed design `.design/sharing.md` (Key decisions 1-8).
+- **Trade-off**: One live address per deck (no per-recipient links). Each page load counts as an open, so a refetch inflates opens (`docs/phase-1-followups.md` SH4).
+- **Scope**: `apps/api` (`sharing`, `sharing/preview`, auth sign-up, users), `apps/web` (`/d/$token`, deck detail share card, Settings, auth return).
+- **Date**: 2026-10-18
+- **Status**: active
+
 ## Handoff
+
+- **Feature**: sharing-decks - `.specs/features/sharing-decks/` - planned, built and merged (#156 to #161): shared deck page with missing view, share card with WhatsApp contact (alternative B), display name and contact in Settings, return to the shared page after sign-in or verification, share attribution and `pnpm share:report`, link-preview tags and generated images, copy a shared deck. Verified by API unit (1073) and e2e (283) suites, web suite (2252), and a browser walkthrough against the real API.
+- **Next**: Card list, Shared list (with list previews) and Price suggestion from `.design/sharing.md`.
+- **Open**: `docs/phase-1-followups.md` SH1 to SH6, of which SH1 (a real WhatsApp paste after the production deploy) is the owner's.
+
+### Previous handoff (ai-chat-screens)
 
 - **Feature**: ai-chat-screens - `.specs/features/ai-chat-screens/` - planned, built and VERIFIED (PASS, round 3 scoped, independent Verifier, profile `ui`). Branch `feat/ai-chat-ui` in worktree `.claude/worktrees/ai-chat-ui`, stacked on `feat/ai-chat` (PR #145), not pushed, no PR. The Tutor tab, `/chat` and `/chat/<id>` (chat B), proposal cards with apply, dismiss and undo, the conversation list (sheet on phones, side panel on desktop), and the Tutor tile on the deck page (entry 3); small API additions for `chatAccess` on every auth response and proposal display fields (AD-014).
 - **Owner calls**: deviations 8 and 10 in `implementation-notes.md` confirmed 2026-10-12 (applied swap follows chat-B's `Desfazer`, AC 3 text-only top item, `A troca saiu do deck.`, phone chip band without tint). Still the owner's: walking the flow (verification step 5).
