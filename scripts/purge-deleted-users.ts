@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { Client } from 'pg';
+import { DELETE_SHARE_IMAGES_FOR_USERS_SQL } from '../apps/api/src/sharing/preview/share-image-cleanup';
 
 /**
  * Phase 1a Unit 2 (A8) — LGPD-compliant 30-day purge. Permanently removes
@@ -171,6 +172,9 @@ async function main(): Promise<void> {
          )`,
         [userIds],
       );
+
+      // share_image has no foreign key to the deck, so it is removed here with the decks.
+      await client.query(DELETE_SHARE_IMAGES_FOR_USERS_SQL, [userIds]);
 
       await client.query(`DELETE FROM "tracked_deck" WHERE "userId" = ANY($1::uuid[])`, [userIds]);
       await client.query(`DELETE FROM "collection_card" WHERE "userId" = ANY($1::uuid[])`, [userIds]);

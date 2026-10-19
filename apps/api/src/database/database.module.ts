@@ -30,6 +30,8 @@ import {
   TournamentDeckCardEntity,
   RulesEntryEntity,
   ShareEventEntity,
+  ShareImageEntity,
+  CardArtBlockEntity,
 } from './entities';
 
 /**
@@ -78,6 +80,8 @@ import {
             TournamentDeckCardEntity,
             RulesEntryEntity,
             ShareEventEntity,
+            ShareImageEntity,
+            CardArtBlockEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.

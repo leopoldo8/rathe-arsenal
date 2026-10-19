@@ -28,3 +28,5 @@ export { TournamentDeckEntity } from './tournament-deck.entity';
 export { TournamentDeckCardEntity } from './tournament-deck-card.entity';
 export { RulesEntryEntity } from './rules-entry.entity';
 export { ShareEventEntity } from './share-event.entity';
+export { ShareImageEntity } from './share-image.entity';
+export { CardArtBlockEntity } from './card-art-block.entity';
