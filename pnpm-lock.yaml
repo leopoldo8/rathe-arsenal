@@ -353,11 +353,11 @@ importers:
   packages/engine:
     dependencies:
       '@flesh-and-blood/cards':
-        specifier: ^5.3.0
-        version: 5.3.0
+        specifier: ^7.1.1
+        version: 7.1.1
       '@flesh-and-blood/types':
-        specifier: ^5.3.0
-        version: 5.3.0
+        specifier: ^7.1.1
+        version: 7.1.1
     devDependencies:
       '@types/jest':
         specifier: ^29.5.14
@@ -542,6 +542,10 @@ packages:
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/code-frame@7.29.7':
+    resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/compat-data@7.29.0':
     resolution: {integrity: sha512-T1NCJqT/j9+cn8fvkt7jtwbLBfLC/1y1c7NtCeXFRgzGTsafi68MRv8yzkYSapBnFA6L3U2VSc02ciDzoAJhJg==}
     engines: {node: '>=6.9.0'}
@@ -582,6 +586,10 @@ packages:
 
   '@babel/helper-validator-identifier@7.28.5':
     resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/helper-validator-identifier@7.29.7':
+    resolution: {integrity: sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-validator-option@7.27.1':
@@ -699,6 +707,10 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
+
+  '@babel/runtime@7.29.10':
+    resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.29.2':
     resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
@@ -1249,11 +1261,11 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@flesh-and-blood/cards@5.3.0':
-    resolution: {integrity: sha512-BX9SwZqzZ9sTKHv4gyDFVrDgtBb4FF/HjkoPbh0zvS4jMSvCA6FUivmyUQiKz+xM4+90oSG9mnVek4P0wsAPPA==}
+  '@flesh-and-blood/cards@7.1.1':
+    resolution: {integrity: sha512-FI0rRy6T1I91JTqx46mT6ZZILBn6v4RAamt+gHT1IUJnmeI3VbkmhJP9rJoD8wbqwpOxgexZhFzhO7RWXDmY6w==}
 
-  '@flesh-and-blood/types@5.3.0':
-    resolution: {integrity: sha512-t8/0b7MD5W2hRzRSyY+VPzCt0ey1b3boRXbpRennccDxHa4hirncfR1HjM3op0iK5FNH4kEvKM+QksdHJUELyQ==}
+  '@flesh-and-blood/types@7.1.1':
+    resolution: {integrity: sha512-QHp980kOFQ3bFBwzwivZOrINBLP99Kth8GUDy0oL2dkGVlMj5EX4OVkBx9ylJdaO4myyJlDBp7z1v/DcrS35tw==}
 
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
@@ -7586,6 +7598,12 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
+  '@babel/code-frame@7.29.7':
+    dependencies:
+      '@babel/helper-validator-identifier': 7.29.7
+      js-tokens: 4.0.0
+      picocolors: 1.1.1
+
   '@babel/compat-data@7.29.0': {}
 
   '@babel/core@7.29.0':
@@ -7647,6 +7665,8 @@ snapshots:
   '@babel/helper-string-parser@7.27.1': {}
 
   '@babel/helper-validator-identifier@7.28.5': {}
+
+  '@babel/helper-validator-identifier@7.29.7': {}
 
   '@babel/helper-validator-option@7.27.1': {}
 
@@ -7753,6 +7773,8 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.0
       '@babel/helper-plugin-utils': 7.28.6
+
+  '@babel/runtime@7.29.10': {}
 
   '@babel/runtime@7.29.2': {}
 
@@ -8086,11 +8108,11 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@flesh-and-blood/cards@5.3.0':
+  '@flesh-and-blood/cards@7.1.1':
     dependencies:
-      '@flesh-and-blood/types': 5.3.0
+      '@flesh-and-blood/types': 7.1.1
 
-  '@flesh-and-blood/types@5.3.0': {}
+  '@flesh-and-blood/types@7.1.1': {}
 
   '@floating-ui/core@1.7.5':
     dependencies:
@@ -10005,8 +10027,8 @@ snapshots:
 
   '@testing-library/dom@10.4.1':
     dependencies:
-      '@babel/code-frame': 7.29.0
-      '@babel/runtime': 7.29.2
+      '@babel/code-frame': 7.29.7
+      '@babel/runtime': 7.29.10
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0
       dom-accessibility-api: 0.5.16
