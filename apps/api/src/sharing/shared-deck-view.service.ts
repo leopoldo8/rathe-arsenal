@@ -6,15 +6,15 @@ import { catalog, computeEffectiveReadiness } from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { ISharedDeckCoverage, ISharedDeckResponse } from './dtos/shared-deck.dto';
+import { ISharedDeckCoverage, ISharedDeckMatches, ISharedDeckResponse } from './dtos/shared-deck.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildDeckShareUrl } from './share-url';
 import { SharedDeckLookup } from './shared-deck-lookup';
+import { SharedDeckMissingService } from './shared-deck-missing.service';
 import { shareLinkUnavailable } from './sharing-errors';
 import {
   resolveHeroCard,
   sumQuantities,
-  toSharedCardFromBreakdown,
   toSharedCardFromRow,
 } from './shared-deck-cards';
 
@@ -31,6 +31,7 @@ export class SharedDeckViewService {
   constructor(
     private readonly lookup: SharedDeckLookup,
     private readonly events: ShareEventsService,
+    private readonly missingCards: SharedDeckMissingService,
     private readonly collectionRead: CollectionReadService,
     private readonly config: ConfigService,
     @InjectRepository(DeckCardEntity)
@@ -40,12 +41,11 @@ export class SharedDeckViewService {
   async view(token: string, visitor: ICurrentUser | null): Promise<ISharedDeckResponse> {
     const live = await this.lookup.findLive(token);
     if (!live) throw shareLinkUnavailable();
-    const { deck, owner } = live;
+    const { link, deck, owner } = live;
 
     const rows = await this.deckCards.find({ where: { trackedDeckId: deck.id }, order: { id: 'ASC' } });
-    const ownerInventory = await this.collectionRead.loadOwned(owner.id);
-    const { breakdown } = computeEffectiveReadiness({ cards: rows }, ownerInventory, catalog);
-    const missing = breakdown.notOwned.map(toSharedCardFromBreakdown);
+    const showsMissing = link.intent === 'missing';
+    const missing = showsMissing ? await this.missingCards.missingFor(owner.id, rows) : [];
     const isOwner = visitor?.userId === owner.id;
 
     if (!isOwner) {
@@ -53,12 +53,14 @@ export class SharedDeckViewService {
         kind: 'opened',
         targetKind: 'deck',
         targetId: deck.id,
+        intent: link.intent,
         ownerUserId: owner.id,
         actorUserId: visitor?.userId ?? null,
       });
     }
 
     return {
+      intent: link.intent,
       token,
       url: buildDeckShareUrl(this.config.get<string>('APP_BASE_URL'), token),
       name: deck.name,
@@ -67,12 +69,12 @@ export class SharedDeckViewService {
       heroCard: resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard),
       format: deck.format,
       sharerName: owner.displayName ?? '',
-      contactWhatsapp: deck.shareShowsContact ? owner.whatsappNumber : null,
+      contactWhatsapp: link.showsContact ? owner.whatsappNumber : null,
       isOwner,
       deckId: isOwner ? deck.id : null,
       updatedAt: deck.updatedAt.toISOString(),
       totalCards: sumQuantities(rows),
-      cards: rows.map((row) => toSharedCardFromRow(row, lookupCatalogCard)),
+      cards: showsMissing ? [] : rows.map((row) => toSharedCardFromRow(row, lookupCatalogCard)),
       missing,
       missingCount: sumQuantities(missing),
     };
@@ -80,7 +82,7 @@ export class SharedDeckViewService {
 
   /** Raw exact copies against the visitor's own collection: engine stand-ins never count. */
   async coverage(token: string, visitorId: string): Promise<ISharedDeckCoverage> {
-    const live = await this.lookup.findLive(token);
+    const live = await this.lookup.findLive(token, 'deck');
     if (!live) throw shareLinkUnavailable();
 
     const rows = await this.deckCards.find({ where: { trackedDeckId: live.deck.id } });
@@ -91,5 +93,22 @@ export class SharedDeckViewService {
     const totalCopies = sumQuantities(rows);
     const percent = totalCopies === 0 ? 0 : Math.round((ownedCopies / totalCopies) * 100);
     return { ownedCopies, totalCopies, percent };
+  }
+
+  /** What the visitor owns of each missing card, zero included, so the page can mark the ones they could lend. */
+  async matches(token: string, visitorId: string): Promise<ISharedDeckMatches> {
+    const live = await this.lookup.findLive(token, 'missing');
+    if (!live) throw shareLinkUnavailable();
+
+    const rows = await this.deckCards.find({ where: { trackedDeckId: live.deck.id } });
+    const missing = await this.missingCards.missingFor(live.owner.id, rows);
+    const identifiers = [...new Set(missing.map((card) => card.cardIdentifier))];
+    const visitorInventory = await this.collectionRead.loadOwned(visitorId, identifiers);
+    return {
+      cards: identifiers.map((cardIdentifier) => ({
+        cardIdentifier,
+        owned: visitorInventory.get(cardIdentifier) ?? 0,
+      })),
+    };
   }
 }

@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TReferredVia } from '../database/entities/user.entity';
 import { TShareTargetKind } from '../database/entities/share-event.entity';
+import { TShareIntent } from '../database/entities/share-link.entity';
 import { SharedDeckLookup } from './shared-deck-lookup';
 
 export interface IShareReferral {
   readonly ownerUserId: string;
   readonly targetKind: TShareTargetKind;
   readonly targetId: number;
+  readonly intent: TShareIntent;
   readonly via: TReferredVia;
 }
 
@@ -25,7 +27,8 @@ export class ShareReferralService {
         ownerUserId: live.owner.id,
         targetKind: 'deck',
         targetId: live.deck.id,
-        via: 'deck',
+        intent: live.link.intent,
+        via: live.link.intent === 'missing' ? 'want' : 'deck',
       };
     } catch (error) {
       this.logger.warn({

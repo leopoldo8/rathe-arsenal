@@ -84,6 +84,7 @@ export class AuthService {
         kind: 'signed_up',
         targetKind: referral.targetKind,
         targetId: referral.targetId,
+        intent: referral.intent,
         ownerUserId: referral.ownerUserId,
         actorUserId: saved.id,
       });

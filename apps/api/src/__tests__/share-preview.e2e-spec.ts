@@ -23,10 +23,11 @@ import { DeckShareService } from '../sharing/deck-share.service';
 import { DecksService } from '../decks/decks.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
+import { ShareLinkEntity, TDeckShareIntent } from '../database/entities/share-link.entity';
 import { UserEntity } from '../database/entities/user.entity';
 import { generateShareToken } from '../sharing/share-token';
 import { SPA_INDEX_HTML } from '../sharing/preview/spa-index-html';
-import { DELETE_SHARE_IMAGES_FOR_USERS_SQL } from '../sharing/preview/share-image-cleanup';
+import { DELETE_SHARE_LINKS_FOR_USERS_SQL } from '../sharing/preview/share-link-cleanup';
 import { buildPurgeStatements } from '../sharing/preview/purge-plan';
 
 const SPA_FIXTURE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -51,11 +52,30 @@ describe('Share preview (E2E)', () => {
   const suffix = Date.now().toString(36);
   const createdUserIds: string[] = [];
 
+  async function createLink(
+    deckId: number,
+    userId: string,
+    intent: TDeckShareIntent,
+  ): Promise<{ token: string; linkId: number }> {
+    const token = generateShareToken();
+    const link = await dataSource.getRepository(ShareLinkEntity).save(
+      dataSource.getRepository(ShareLinkEntity).create({
+        token,
+        targetKind: 'deck',
+        targetId: deckId,
+        intent,
+        ownerUserId: userId,
+      }),
+    );
+    return { token, linkId: link.id };
+  }
+
   async function createSharedDeck(options: {
     name?: string;
     displayName?: string;
     deletedAt?: Date | null;
-  } = {}): Promise<{ token: string; deckId: number; userId: string }> {
+    intent?: TDeckShareIntent;
+  } = {}): Promise<{ token: string; deckId: number; userId: string; linkId: number }> {
     const user = await dataSource.getRepository(UserEntity).save(
       dataSource.getRepository(UserEntity).create({
         email: `share-preview-${suffix}-${createdUserIds.length}@test.local`,
@@ -66,7 +86,6 @@ describe('Share preview (E2E)', () => {
       }),
     );
     createdUserIds.push(user.id);
-    const token = generateShareToken();
     const deck = await dataSource.getRepository(TrackedDeckEntity).save(
       dataSource.getRepository(TrackedDeckEntity).create({
         userId: user.id,
@@ -75,7 +94,6 @@ describe('Share preview (E2E)', () => {
         heroIdentifier: 'dorinthea-ironsong',
         format: 'Classic Constructed',
         status: 'building',
-        shareToken: token,
       }),
     );
     const cards = [
@@ -85,7 +103,8 @@ describe('Share preview (E2E)', () => {
     await dataSource.getRepository(DeckCardEntity).save(
       cards.map((card) => dataSource.getRepository(DeckCardEntity).create({ ...card, trackedDeckId: deck.id })),
     );
-    return { token, deckId: deck.id, userId: user.id };
+    const { token, linkId } = await createLink(deck.id, user.id, options.intent ?? 'deck');
+    return { token, deckId: deck.id, userId: user.id, linkId };
   }
 
   beforeAll(async () => {
@@ -158,6 +177,17 @@ describe('Share preview (E2E)', () => {
       expect(res.text).not.toContain('spa default');
     });
 
+    it('answers a missing-cards link with tags that ask for the missing cards', async () => {
+      const { token } = await createSharedDeck({ intent: 'missing', name: 'Blades' });
+
+      const res = await request(app.getHttpServer()).get(`/d/${token}`).expect(200);
+
+      expect(res.text).toContain('og:title" content="Procuro cartas para Blades"');
+      expect(res.text).toMatch(/og:description" content="Rodrigo H\. procura \d+ cartas: \d+x /);
+      expect(res.text).toContain(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image"`);
+      expect(res.text.match(/<title>/g)).toHaveLength(1);
+    });
+
     it('answers an unknown token with the generic tags and no deck data', async () => {
       const res = await request(app.getHttpServer()).get(`/d/${generateShareToken()}`).expect(200);
 
@@ -191,7 +221,7 @@ describe('Share preview (E2E)', () => {
 
   describe('GET /api/shared/decks/:token/image', () => {
     it('serves a stored JPEG under 600 KB for a live token and reuses it while nothing changes', async () => {
-      const { token, deckId } = await createSharedDeck();
+      const { token, linkId } = await createSharedDeck();
 
       const first = await request(app.getHttpServer())
         .get(`/api/shared/decks/${token}/image`)
@@ -206,7 +236,7 @@ describe('Share preview (E2E)', () => {
       expect(await sharp(first.body).metadata()).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
       expect(fetchStub.guardedFetch).toHaveBeenCalled();
 
-      const stored = await dataSource.query(`SELECT "contentHash", "cardIdentifiers" FROM share_image WHERE "targetId" = $1`, [deckId]);
+      const stored = await dataSource.query(`SELECT "contentHash", "cardIdentifiers" FROM share_image WHERE "shareLinkId" = $1`, [linkId]);
       expect(stored).toHaveLength(1);
       expect(stored[0].cardIdentifiers).toEqual(expect.arrayContaining(['dorinthea-ironsong', 'steelblade-supremacy-red']));
 
@@ -222,13 +252,13 @@ describe('Share preview (E2E)', () => {
     });
 
     it('draws again when the display name changes', async () => {
-      const { token, deckId, userId } = await createSharedDeck();
+      const { token, linkId, userId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
-      const [before] = await dataSource.query(`SELECT "contentHash" FROM share_image WHERE "targetId" = $1`, [deckId]);
+      const [before] = await dataSource.query(`SELECT "contentHash" FROM share_image WHERE "shareLinkId" = $1`, [linkId]);
 
       await dataSource.getRepository(UserEntity).update({ id: userId }, { displayName: 'Another Name' });
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
-      const [after] = await dataSource.query(`SELECT "contentHash" FROM share_image WHERE "targetId" = $1`, [deckId]);
+      const [after] = await dataSource.query(`SELECT "contentHash" FROM share_image WHERE "shareLinkId" = $1`, [linkId]);
 
       expect(after.contentHash).not.toBe(before.contentHash);
     });
@@ -259,7 +289,7 @@ describe('Share preview (E2E)', () => {
     });
 
     it('draws a card back for a face that fails to load, and does not store that image', async () => {
-      const { token, deckId } = await createSharedDeck();
+      const { token, linkId } = await createSharedDeck();
       failingUrls = DAWNBLADE_FACE_URLS;
       const failing = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
@@ -272,18 +302,18 @@ describe('Share preview (E2E)', () => {
 
       expect(await sharp(res.body).metadata()).toMatchObject({ width: 1200, height: 630 });
       expect(res.headers['cache-control']).toBe('public, max-age=60');
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
     });
 
     it('never fetches or draws a blocked card, and the purge removes the stored image showing it', async () => {
-      const { token, deckId } = await createSharedDeck();
+      const { token, linkId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(1);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(1);
 
       for (const statement of buildPurgeStatements({ mode: 'cards', cardIdentifiers: ['dawnblade'] })) {
         await dataSource.query(statement.sql, [...statement.params]);
       }
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
 
       fetchStub.guardedFetch.mockClear();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
@@ -292,36 +322,79 @@ describe('Share preview (E2E)', () => {
       expect(fetchedUrls.length).toBeGreaterThan(0);
       expect(fetchedUrls.length).toBe(4);
       expect(fetchedUrls.some((url) => DAWNBLADE_FACE_URLS.includes(url))).toBe(false);
-      const [row] = await dataSource.query(`SELECT "cardIdentifiers" FROM share_image WHERE "targetId" = $1`, [deckId]);
+      const [row] = await dataSource.query(`SELECT "cardIdentifiers" FROM share_image WHERE "shareLinkId" = $1`, [linkId]);
       expect(row.cardIdentifiers).not.toContain('dawnblade');
       await dataSource.query(`DELETE FROM card_art_block`);
     });
 
     it('removes the stored image when the owner is hard-deleted by the purge scripts', async () => {
-      const { token, deckId, userId } = await createSharedDeck();
+      const { token, linkId, userId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
 
-      await dataSource.query(DELETE_SHARE_IMAGES_FOR_USERS_SQL, [[userId]]);
+      await dataSource.query(DELETE_SHARE_LINKS_FOR_USERS_SQL, [[userId]]);
 
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
     });
 
     it('removes the stored image when sharing is turned off', async () => {
-      const { token, deckId, userId } = await createSharedDeck();
+      const { token, deckId, userId, linkId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
 
-      await app.get(DeckShareService).disable(userId, deckId);
+      await app.get(DeckShareService).disable(userId, deckId, 'deck');
 
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
     });
 
-    it('removes the stored image when the deck is deleted', async () => {
-      const { token, deckId, userId } = await createSharedDeck();
+    it('removes the stored image and the link when the deck is deleted', async () => {
+      const { token, deckId, userId, linkId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
 
       await app.get(DecksService).untrack(userId, deckId);
 
-      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "targetId" = $1`, [deckId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_link WHERE id = $1`, [linkId])).toHaveLength(0);
+    });
+
+    it('draws and stores a separate image for each intent of one deck', async () => {
+      const { token: deckToken, deckId, userId, linkId: deckLinkId } = await createSharedDeck();
+      const { token: missingToken, linkId: missingLinkId } = await createLink(deckId, userId, 'missing');
+
+      const deckImage = await request(app.getHttpServer())
+        .get(`/api/shared/decks/${deckToken}/image`)
+        .buffer(true)
+        .parse(binaryParser as never)
+        .expect(200);
+      const missingImage = await request(app.getHttpServer())
+        .get(`/api/shared/decks/${missingToken}/image`)
+        .buffer(true)
+        .parse(binaryParser as never)
+        .expect(200);
+
+      expect(deckToken).not.toBe(missingToken);
+      expect(missingImage.body.equals(deckImage.body)).toBe(false);
+      expect(await sharp(missingImage.body).metadata()).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
+      const stored = await dataSource.query(
+        `SELECT "shareLinkId", "contentHash" FROM share_image WHERE "shareLinkId" = ANY($1::int[])`,
+        [[deckLinkId, missingLinkId]],
+      );
+      expect(stored).toHaveLength(2);
+      expect(new Set(stored.map((row: { contentHash: string }) => row.contentHash)).size).toBe(2);
+      if (process.env['SHARE_RENDER_DIR']) {
+        await writeFile(join(process.env['SHARE_RENDER_DIR'], 'missing-intent.jpg'), missingImage.body);
+        await writeFile(join(process.env['SHARE_RENDER_DIR'], 'deck-intent.jpg'), deckImage.body);
+      }
+    });
+
+    it('removes only the image of the link that is turned off', async () => {
+      const { token: deckToken, deckId, userId, linkId: deckLinkId } = await createSharedDeck();
+      const { token: missingToken, linkId: missingLinkId } = await createLink(deckId, userId, 'missing');
+      await request(app.getHttpServer()).get(`/api/shared/decks/${deckToken}/image`).expect(200);
+      await request(app.getHttpServer()).get(`/api/shared/decks/${missingToken}/image`).expect(200);
+
+      await app.get(DeckShareService).disable(userId, deckId, 'missing');
+
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [missingLinkId])).toHaveLength(0);
+      expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [deckLinkId])).toHaveLength(1);
     });
   });
 });

@@ -82,8 +82,6 @@ function buildDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeckEntit
     format: 'cc',
     status: 'building',
     notes: null,
-    shareToken: null,
-    shareShowsContact: true,
     trackedAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     user: {} as TrackedDeckEntity['user'],

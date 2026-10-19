@@ -4,7 +4,8 @@ import { Client } from 'pg';
 
 /**
  * Sharing success numbers (see .design/sharing.md), read straight from
- * `share_event` and `user`. Raw `pg` like purge-deleted-users.ts: no TypeORM boot for a report.
+ * `share_event` and `user`, broken down by link intent (events from before intents existed show as `unknown`).
+ * Raw `pg` like purge-deleted-users.ts: no TypeORM boot for a report.
  *
  * Usage: pnpm share:report [--since YYYY-MM-DD] [--until YYYY-MM-DD]
  * `--until` is inclusive of that whole day. Without flags the whole history is counted.
@@ -39,6 +40,7 @@ function parsePeriod(argv: readonly string[]): IPeriod {
 
 interface IKindRow {
   targetKind: string;
+  intent: string;
   createdBy: string;
   createdEvents: string;
   openedEvents: string;
@@ -61,7 +63,7 @@ async function main(): Promise<void> {
 
   try {
     const perKind = await client.query<IKindRow>(
-      `SELECT "targetKind",
+      `SELECT "targetKind", COALESCE("intent", 'unknown') AS "intent",
               COUNT(DISTINCT "ownerUserId") FILTER (WHERE kind = 'created') AS "createdBy",
               COUNT(*) FILTER (WHERE kind = 'created') AS "createdEvents",
               COUNT(*) FILTER (WHERE kind = 'opened') AS "openedEvents",
@@ -69,8 +71,8 @@ async function main(): Promise<void> {
               COUNT(*) FILTER (WHERE kind = 'signed_up') AS "signedUpEvents"
          FROM share_event
         WHERE "occurredAt" >= $1 AND "occurredAt" < $2
-        GROUP BY "targetKind"
-        ORDER BY "targetKind"`,
+        GROUP BY "targetKind", COALESCE("intent", 'unknown')
+        ORDER BY "targetKind", COALESCE("intent", 'unknown')`,
       [since, until],
     );
 
@@ -86,7 +88,7 @@ async function main(): Promise<void> {
     console.log(`Share report, ${since.toISOString()} to ${until.toISOString()} (end exclusive)`);
     if (perKind.rows.length === 0) console.log('No share events in the period.');
     for (const row of perKind.rows) {
-      console.log(`\n[${row.targetKind}]`);
+      console.log(`\n[${row.targetKind} / ${row.intent}]`);
       console.log(`  users who shared:        ${row.createdBy} (${row.createdEvents} links created)`);
       console.log(`  opens:                   ${row.openedEvents} (${row.openedBy} distinct signed-in visitors)`);
       console.log(`  sign-ups via a link:     ${row.signedUpEvents}`);

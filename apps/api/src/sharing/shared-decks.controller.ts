@@ -5,7 +5,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OptionalCurrentUser } from '../auth/decorators/optional-current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { ISharedDeckCoverage, ISharedDeckResponse } from './dtos/shared-deck.dto';
+import { ISharedDeckCoverage, ISharedDeckMatches, ISharedDeckResponse } from './dtos/shared-deck.dto';
 import { SharedDeckCopyService } from './shared-deck-copy.service';
 import { SharedDeckViewService } from './shared-deck-view.service';
 
@@ -38,6 +38,15 @@ export class SharedDecksController {
     @CurrentUser() visitor: ICurrentUser,
   ): Promise<ISharedDeckCoverage> {
     return this.view.coverage(token, visitor.userId);
+  }
+
+  @Throttle({ default: { limit: PUBLIC_READ_LIMIT, ttl: MINUTE_MS } })
+  @Get(':token/matches')
+  async matches(
+    @Param('token') token: string,
+    @CurrentUser() visitor: ICurrentUser,
+  ): Promise<ISharedDeckMatches> {
+    return this.view.matches(token, visitor.userId);
   }
 
   @Post(':token/copy')

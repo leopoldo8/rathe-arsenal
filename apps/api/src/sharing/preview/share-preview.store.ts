@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CardArtBlockEntity } from '../../database/entities/card-art-block.entity';
 import { ShareImageEntity } from '../../database/entities/share-image.entity';
-import type { TShareTargetKind } from '../../database/entities/share-event.entity';
 
 export interface IStoredShareImage {
   readonly contentHash: string;
@@ -11,8 +10,7 @@ export interface IStoredShareImage {
 }
 
 export interface IShareImageToStore {
-  readonly targetKind: TShareTargetKind;
-  readonly targetId: number;
+  readonly shareLinkId: number;
   readonly contentHash: string;
   readonly cardIdentifiers: readonly string[];
   readonly jpeg: Buffer;
@@ -27,9 +25,9 @@ export class SharePreviewStore {
     private readonly blocks: Repository<CardArtBlockEntity>,
   ) {}
 
-  async find(targetKind: TShareTargetKind, targetId: number): Promise<IStoredShareImage | null> {
+  async find(shareLinkId: number): Promise<IStoredShareImage | null> {
     const row = await this.images.findOne({
-      where: { targetKind, targetId },
+      where: { shareLinkId },
       select: { contentHash: true, jpeg: true },
     });
     return row ? { contentHash: row.contentHash, jpeg: row.jpeg } : null;
@@ -38,19 +36,14 @@ export class SharePreviewStore {
   async save(image: IShareImageToStore): Promise<void> {
     await this.images.upsert(
       {
-        targetKind: image.targetKind,
-        targetId: image.targetId,
+        shareLinkId: image.shareLinkId,
         contentHash: image.contentHash,
         cardIdentifiers: [...image.cardIdentifiers],
         jpeg: image.jpeg,
         createdAt: new Date(),
       },
-      ['targetKind', 'targetId'],
+      ['shareLinkId'],
     );
-  }
-
-  async deleteFor(targetKind: TShareTargetKind, targetId: number): Promise<void> {
-    await this.images.delete({ targetKind, targetId });
   }
 
   async blockedAmong(cardIdentifiers: readonly string[]): Promise<string[]> {

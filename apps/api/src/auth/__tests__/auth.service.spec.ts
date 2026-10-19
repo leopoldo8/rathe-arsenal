@@ -375,6 +375,7 @@ describe('AuthService.signUp share attribution', () => {
     ownerUserId: 'owner-1',
     targetKind: 'deck',
     targetId: 7,
+    intent: 'deck',
     via: 'deck',
   };
 
@@ -394,9 +395,23 @@ describe('AuthService.signUp share attribution', () => {
       kind: 'signed_up',
       targetKind: 'deck',
       targetId: 7,
+      intent: 'deck',
       ownerUserId: 'owner-1',
       actorUserId: 'new-id',
     });
+  });
+
+  it('stores want as the channel for a sign-up from a missing-cards link', async () => {
+    const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
+    const { service, shareEvents } = buildService({
+      create,
+      resolveReferral: jest.fn().mockResolvedValue({ ...REFERRAL, intent: 'missing', via: 'want' }),
+    });
+
+    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ referredVia: 'want' }));
+    expect(shareEvents.record).toHaveBeenCalledWith(expect.objectContaining({ intent: 'missing' }));
   });
 
   it('ignores a dead token: no referral columns, no event, same response', async () => {

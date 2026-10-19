@@ -1,3 +1,5 @@
+import { TDeckShareIntent } from '../../database/entities/share-link.entity';
+
 export interface ISharedCardImage {
   small: string;
   large: string;
@@ -15,6 +17,7 @@ export interface ISharedCard {
 }
 
 export interface ISharedDeckResponse {
+  intent: TDeckShareIntent;
   token: string;
   url: string;
   name: string;
@@ -29,7 +32,9 @@ export interface ISharedDeckResponse {
   deckId: number | null;
   updatedAt: string;
   totalCards: number;
+  /** Every card for the 'deck' intent; empty for 'missing'. */
   cards: ISharedCard[];
+  /** The owner's missing cards for the 'missing' intent; empty for 'deck', enforced here and not only in the UI. */
   missing: ISharedCard[];
   missingCount: number;
 }
@@ -38,4 +43,8 @@ export interface ISharedDeckCoverage {
   ownedCopies: number;
   totalCopies: number;
   percent: number;
+}
+
+export interface ISharedDeckMatches {
+  cards: { cardIdentifier: string; owned: number }[];
 }

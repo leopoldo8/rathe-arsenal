@@ -6,9 +6,11 @@ import { ICurrentUser } from '../../auth/dtos/current-user.dto';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
+import { ShareLinkEntity, TDeckShareIntent } from '../../database/entities/share-link.entity';
 import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { ShareEventsService } from '../share-events.service';
 import { SharedDeckLookup } from '../shared-deck-lookup';
+import { SharedDeckMissingService } from '../shared-deck-missing.service';
 import { SharedDeckViewService } from '../shared-deck-view.service';
 
 const [CARD_A, CARD_B] = catalog.cards
@@ -22,7 +24,6 @@ const DECK = {
   hero: 'Some Hero',
   heroIdentifier: 'some-hero',
   format: 'cc',
-  shareShowsContact: true,
   updatedAt: new Date('2026-10-01T00:00:00Z'),
 } as TrackedDeckEntity;
 
@@ -38,27 +39,48 @@ const visitor = (userId: string): ICurrentUser => ({
   chatAccess: false,
 });
 
-function build(inventories: Record<string, Map<string, number>> = {}, deck: TrackedDeckEntity = DECK) {
+function build(
+  inventories: Record<string, Map<string, number>> = {},
+  options: { intent?: TDeckShareIntent; showsContact?: boolean } = {},
+) {
+  const link = {
+    id: 1,
+    intent: options.intent ?? 'missing',
+    showsContact: options.showsContact ?? true,
+  } as ShareLinkEntity & { intent: TDeckShareIntent };
   const lookup = createMock<SharedDeckLookup>();
-  lookup.findLive.mockImplementation(async (token) =>
-    token === 'live' ? { deck, owner: OWNER } : null,
+  lookup.findLive.mockImplementation(async (token, intent) =>
+    token === 'live' && (!intent || intent === link.intent) ? { link, deck: DECK, owner: OWNER } : null,
   );
   const events = createMock<ShareEventsService>();
   const collection = createMock<CollectionReadService>();
-  collection.loadOwned.mockImplementation(async (userId) => inventories[userId] ?? new Map());
+  collection.loadOwned.mockImplementation(async (userId, identifiers) => {
+    const inventory = inventories[userId] ?? new Map<string, number>();
+    return identifiers ? new Map([...inventory].filter(([id]) => identifiers.includes(id))) : inventory;
+  });
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
   const deckCards = createMock<Repository<DeckCardEntity>>();
   deckCards.find.mockResolvedValue(ROWS);
-  return { service: new SharedDeckViewService(lookup, events, collection, config, deckCards), events };
+  const service = new SharedDeckViewService(
+    lookup,
+    events,
+    new SharedDeckMissingService(collection),
+    collection,
+    config,
+    deckCards,
+  );
+  return { service, events };
 }
 
 describe('SharedDeckViewService.view', () => {
-  it('groups what the owner is missing and counts it', async () => {
+  it('groups what the owner is missing and counts it for the missing intent', async () => {
     const { service } = build({ 'owner-1': new Map([[CARD_A.cardIdentifier, 1]]) });
 
     const result = await service.view('live', visitor('visitor-1'));
 
+    expect(result.intent).toBe('missing');
+    expect(result.cards).toEqual([]);
     expect(result.totalCards).toBe(4);
     expect(result.missing.map((card) => [card.cardIdentifier, card.quantity])).toEqual(
       expect.arrayContaining([
@@ -71,9 +93,20 @@ describe('SharedDeckViewService.view', () => {
     expect(result.sharerName).toBe('Rodrigo');
   });
 
-  it('exposes the contact only while the deck shows it', async () => {
+  it('lists every card and no missing card for the deck intent', async () => {
+    const { service } = build({}, { intent: 'deck' });
+
+    const result = await service.view('live', null);
+
+    expect(result.intent).toBe('deck');
+    expect(result.cards.map((card) => card.cardIdentifier)).toEqual([CARD_A.cardIdentifier, CARD_B.cardIdentifier]);
+    expect(result.missing).toEqual([]);
+    expect(result.missingCount).toBe(0);
+  });
+
+  it('exposes the contact only while the link shows it', async () => {
     const shown = await build().service.view('live', null);
-    const hidden = await build({}, { ...DECK, shareShowsContact: false } as TrackedDeckEntity).service.view('live', null);
+    const hidden = await build({}, { showsContact: false }).service.view('live', null);
 
     expect(shown.contactWhatsapp).toBe('5551999990000');
     expect(hidden.contactWhatsapp).toBeNull();
@@ -85,7 +118,7 @@ describe('SharedDeckViewService.view', () => {
     await service.view('live', visitor('visitor-1'));
     await service.view('live', null);
 
-    expect(events.record).toHaveBeenNthCalledWith(1, expect.objectContaining({ kind: 'opened', actorUserId: 'visitor-1' }));
+    expect(events.record).toHaveBeenNthCalledWith(1, expect.objectContaining({ kind: 'opened', intent: 'missing', actorUserId: 'visitor-1' }));
     expect(events.record).toHaveBeenNthCalledWith(2, expect.objectContaining({ kind: 'opened', actorUserId: null }));
   });
 
@@ -110,7 +143,7 @@ describe('SharedDeckViewService.view', () => {
 
 describe('SharedDeckViewService.coverage', () => {
   it('counts only exact copies from the visitor collection', async () => {
-    const { service } = build({ 'visitor-1': new Map([[CARD_A.cardIdentifier, 2]]) });
+    const { service } = build({ 'visitor-1': new Map([[CARD_A.cardIdentifier, 2]]) }, { intent: 'deck' });
 
     expect(await service.coverage('live', 'visitor-1')).toEqual({
       ownedCopies: 2,
@@ -125,16 +158,40 @@ describe('SharedDeckViewService.coverage', () => {
         [CARD_A.cardIdentifier, 9],
         [CARD_B.cardIdentifier, 9],
       ]),
-    });
+    }, { intent: 'deck' });
 
     expect(await service.coverage('live', 'visitor-1')).toMatchObject({ ownedCopies: 4, percent: 100 });
   });
 
   it('is zero for an empty collection', async () => {
-    expect(await build().service.coverage('live', 'visitor-1')).toMatchObject({ ownedCopies: 0, percent: 0 });
+    expect(await build({}, { intent: 'deck' }).service.coverage('live', 'visitor-1')).toMatchObject({ ownedCopies: 0, percent: 0 });
   });
 
   it('answers 404 for a dead token', async () => {
-    await expect(build().service.coverage('dead', 'visitor-1')).rejects.toMatchObject({ status: 404 });
+    await expect(build({}, { intent: 'deck' }).service.coverage('dead', 'visitor-1')).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('answers 404 for a missing-intent link', async () => {
+    await expect(build().service.coverage('live', 'visitor-1')).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('SharedDeckViewService.matches', () => {
+  it('reports what the visitor owns of each missing card, zero included', async () => {
+    const { service } = build({ 'visitor-1': new Map([[CARD_B.cardIdentifier, 2]]) });
+
+    const result = await service.matches('live', 'visitor-1');
+
+    expect(result.cards).toEqual(
+      expect.arrayContaining([
+        { cardIdentifier: CARD_A.cardIdentifier, owned: 0 },
+        { cardIdentifier: CARD_B.cardIdentifier, owned: 2 },
+      ]),
+    );
+    expect(result.cards).toHaveLength(2);
+  });
+
+  it('answers 404 for a deck-intent link', async () => {
+    await expect(build({}, { intent: 'deck' }).service.matches('live', 'visitor-1')).rejects.toMatchObject({ status: 404 });
   });
 });

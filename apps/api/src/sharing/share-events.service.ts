@@ -6,11 +6,13 @@ import {
   TShareEventKind,
   TShareTargetKind,
 } from '../database/entities/share-event.entity';
+import { TShareIntent } from '../database/entities/share-link.entity';
 
 export interface IShareEventInput {
   readonly kind: TShareEventKind;
   readonly targetKind: TShareTargetKind;
   readonly targetId: number;
+  readonly intent: TShareIntent;
   readonly ownerUserId: string;
   readonly actorUserId: string | null;
 }
@@ -34,6 +36,7 @@ export class ShareEventsService {
         kind: input.kind,
         targetKind: input.targetKind,
         targetId: input.targetId,
+        intent: input.intent,
         error: error instanceof Error ? error.message : 'unknown',
       });
     }

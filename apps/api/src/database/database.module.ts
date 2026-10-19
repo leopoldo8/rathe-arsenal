@@ -31,6 +31,7 @@ import {
   RulesEntryEntity,
   ShareEventEntity,
   ShareImageEntity,
+  ShareLinkEntity,
   CardArtBlockEntity,
 } from './entities';
 
@@ -81,6 +82,7 @@ import {
             RulesEntryEntity,
             ShareEventEntity,
             ShareImageEntity,
+            ShareLinkEntity,
             CardArtBlockEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev

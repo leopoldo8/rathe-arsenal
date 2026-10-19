@@ -102,10 +102,14 @@ async function cardShadow(slot: IFanSlot): Promise<IPositionedLayer> {
   );
 }
 
-/** Layers for the fan, bottom to top: each card's shadow then its face, farthest cards first. */
+/**
+ * Layers for the fan, bottom to top: each card's shadow then its face, farthest cards first.
+ * The centre card gets the gold frame only when it is the hero.
+ */
 export async function buildFanLayers(
   slots: readonly IFanSlot[],
   facesInSlotOrder: readonly (Buffer | null)[],
+  emphasizeCenter: boolean,
 ): Promise<IPositionedLayer[]> {
   const order = slots
     .map((slot, index) => ({ slot, face: facesInSlotOrder[index] ?? null }))
@@ -114,7 +118,7 @@ export async function buildFanLayers(
   const layers: IPositionedLayer[] = [];
   for (const { slot, face } of order) {
     layers.push(await cardShadow(slot));
-    const faceImage = await cardFace(face, slot.isHeroSlot);
+    const faceImage = await cardFace(face, slot.isHeroSlot && emphasizeCenter);
     layers.push(await placeRotated(faceImage, slot.angleDegrees, slot.centerX, slot.centerY));
   }
   return layers;

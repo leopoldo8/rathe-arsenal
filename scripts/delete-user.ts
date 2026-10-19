@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { Client } from 'pg';
-import { DELETE_SHARE_IMAGES_FOR_USERS_SQL } from '../apps/api/src/sharing/preview/share-image-cleanup';
+import { DELETE_SHARE_LINKS_FOR_USERS_SQL } from '../apps/api/src/sharing/preview/share-link-cleanup';
 
 /**
  * Phase 0 operator escape hatch — hard-deletes a single user and all
@@ -131,7 +131,7 @@ async function main(): Promise<void> {
         );
       }
 
-      await client.query(DELETE_SHARE_IMAGES_FOR_USERS_SQL, [[userId]]);
+      await client.query(DELETE_SHARE_LINKS_FOR_USERS_SQL, [[userId]]);
       await client.query('DELETE FROM "tracked_deck" WHERE "userId" = $1', [
         userId,
       ]);

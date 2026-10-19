@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { DELETE_SHARE_IMAGE_FOR_DECK_SQL } from '../sharing/preview/share-image-cleanup';
+import { DELETE_SHARE_LINKS_FOR_DECK_SQL } from '../sharing/preview/share-link-cleanup';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
@@ -1138,7 +1138,7 @@ export class DecksService {
   async untrack(userId: string, deckId: number): Promise<void> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
     await this.trackedDeckRepo.delete({ id: deckId, userId });
-    // share_image has no foreign key to the deck, so its row would otherwise outlive it.
-    await this.dataSource.query(DELETE_SHARE_IMAGE_FOR_DECK_SQL, [deckId]);
+    // share_link has no foreign key to the deck, so its rows (and their images) would otherwise outlive it.
+    await this.dataSource.query(DELETE_SHARE_LINKS_FOR_DECK_SQL, [deckId]);
   }
 }

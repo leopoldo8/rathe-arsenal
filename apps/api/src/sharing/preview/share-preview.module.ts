@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CardArtBlockEntity } from '../../database/entities/card-art-block.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { ShareImageEntity } from '../../database/entities/share-image.entity';
+import { CollectionModule } from '../../collection/collection.module';
+import { SharedDeckMissingService } from '../shared-deck-missing.service';
 import { SharingCoreModule } from '../sharing-core.module';
 import { CardFaceFetcher } from './card-face-fetcher';
 import { ShareHtmlController } from './share-html.controller';
@@ -14,6 +16,7 @@ import { DEFAULT_SPA_INDEX_PATH, SPA_INDEX_HTML, SpaIndexHtml } from './spa-inde
 @Module({
   imports: [
     SharingCoreModule,
+    CollectionModule,
     TypeOrmModule.forFeature([DeckCardEntity, ShareImageEntity, CardArtBlockEntity]),
   ],
   controllers: [ShareHtmlController, ShareImageController],
@@ -21,9 +24,10 @@ import { DEFAULT_SPA_INDEX_PATH, SPA_INDEX_HTML, SpaIndexHtml } from './spa-inde
     { provide: SPA_INDEX_HTML, useValue: DEFAULT_SPA_INDEX_PATH },
     SpaIndexHtml,
     SharePreviewStore,
+    SharedDeckMissingService,
     CardFaceFetcher,
     ShareImageService,
   ],
-  exports: [SharePreviewStore],
+  exports: [SharedDeckMissingService],
 })
 export class SharePreviewModule {}

@@ -81,9 +81,9 @@ describe('Sharing (E2E)', () => {
     return rows[0]?.n ?? 0;
   }
 
-  async function startSharing(session: ISession, deckId: number): Promise<string> {
+  async function startSharing(session: ISession, deckId: number, intent: 'deck' | 'missing' = 'deck'): Promise<string> {
     await request(server).patch('/api/users/me/display-name').set(...auth(session)).send({ displayName: 'Rodrigo' }).expect(200);
-    const res = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(session)).send({}).expect(200);
+    const res = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(session)).send({ intent }).expect(200);
     return res.body.token as string;
   }
 
@@ -116,33 +116,116 @@ describe('Sharing (E2E)', () => {
     jest.clearAllMocks();
   });
 
-  it('turns sharing on, on again, off and on again, and the old link dies', async () => {
+  it('turns a link on, on again, off and on again, and the old link dies', async () => {
     const owner = await createSession('lifecycle');
     const deckId = await createDeck(owner);
 
-    const blocked = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({}).expect(409);
+    const blocked = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(409);
     expect(blocked.body.code).toBe('DISPLAY_NAME_REQUIRED');
+    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({}).expect(400);
+    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'want' }).expect(400);
 
     const first = await startSharing(owner, deckId);
-    const again = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({}).expect(200);
-    expect(again.body.token).toBe(first);
-    expect(again.body.url).toBe(`http://localhost:5173/d/${first}`);
+    const again = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(200);
+    expect(again.body).toEqual({ intent: 'deck', url: `http://localhost:5173/d/${first}`, token: first, showContact: true });
     expect(await countEvents('created', owner.userId)).toBe(1);
 
     const state = await request(server).get(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(200);
-    expect(state.body).toEqual({ url: again.body.url, token: first, showContact: true });
+    expect(state.body).toEqual({ deck: again.body, missing: null });
     await request(server).get(`/api/shared/decks/${first}`).expect(200);
 
-    await request(server).delete(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(204);
+    await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).expect(204);
     await request(server).get(`/api/shared/decks/${first}`).expect(404);
     const off = await request(server).get(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(200);
-    expect(off.body).toEqual({ url: null, token: null, showContact: true });
+    expect(off.body).toEqual({ deck: null, missing: null });
 
-    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({}).expect(200);
+    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(200);
     expect(second.body.token).not.toBe(first);
     await request(server).get(`/api/shared/decks/${first}`).expect(404);
     await request(server).get(`/api/shared/decks/${second.body.token}`).expect(200);
     expect(await countEvents('created', owner.userId)).toBe(2);
+  });
+
+  it('gives each intent of one deck its own address, page and contact switch', async () => {
+    const owner = await createSession('intents');
+    const deckId = await createDeck(owner);
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    const missingToken = await startSharing(owner, deckId, 'missing');
+    await request(server).patch('/api/users/me/contact').set(...auth(owner)).send({ whatsappNumber: '(51) 99999-0000' }).expect(200);
+
+    expect(missingToken).not.toBe(deckToken);
+    const state = await request(server).get(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(200);
+    expect(state.body.deck).toMatchObject({ intent: 'deck', token: deckToken });
+    expect(state.body.missing).toMatchObject({ intent: 'missing', token: missingToken });
+
+    await request(server).patch(`/api/decks/${deckId}/share/missing`).set(...auth(owner)).send({ showContact: false }).expect(200);
+    const deckPage = await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    const missingPage = await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+    expect(deckPage.body.contactWhatsapp).toBe('5551999990000');
+    expect(missingPage.body.contactWhatsapp).toBeNull();
+
+    await request(server).delete(`/api/decks/${deckId}/share/missing`).set(...auth(owner)).expect(204);
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(404);
+    await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    await request(server).patch(`/api/decks/${deckId}/share/missing`).set(...auth(owner)).send({ showContact: true }).expect(404);
+    await request(server).delete(`/api/decks/${deckId}/share/nonsense`).set(...auth(owner)).expect(400);
+  });
+
+  it('never puts the missing cards in the deck page nor the deck cards in the missing page', async () => {
+    const owner = await createSession('separation');
+    const deckId = await createDeck(owner);
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    const missingToken = await startSharing(owner, deckId, 'missing');
+    await ownCopies(owner, CARD_A.cardIdentifier, 1);
+
+    const deckPage = await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    expect(deckPage.body).toMatchObject({ intent: 'deck', missing: [], missingCount: 0, totalCards: 4 });
+    expect(deckPage.body.cards).toHaveLength(2);
+
+    const missingPage = await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+    expect(missingPage.body).toMatchObject({ intent: 'missing', cards: [], missingCount: 3, totalCards: 4 });
+    expect(missingPage.body.missing.map((card: { quantity: number }) => card.quantity).sort()).toEqual([1, 2]);
+  });
+
+  it('answers coverage and copy only for the deck intent', async () => {
+    const owner = await createSession('deck-only');
+    const visitor = await createSession('deck-only-visitor');
+    const deckId = await createDeck(owner);
+    const missingToken = await startSharing(owner, deckId, 'missing');
+
+    const coverage = await request(server).get(`/api/shared/decks/${missingToken}/coverage`).set(...auth(visitor)).expect(404);
+    expect(coverage.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+    await request(server).post(`/api/shared/decks/${missingToken}/copy`).set(...auth(visitor)).send({}).expect(404);
+  });
+
+  it('answers matches only for the missing intent, with what the visitor owns of each missing card', async () => {
+    const owner = await createSession('matches');
+    const visitor = await createSession('matches-visitor');
+    const deckId = await createDeck(owner);
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    const missingToken = await startSharing(owner, deckId, 'missing');
+
+    await request(server).get(`/api/shared/decks/${missingToken}/matches`).expect(401);
+    const deckMatches = await request(server).get(`/api/shared/decks/${deckToken}/matches`).set(...auth(visitor)).expect(404);
+    expect(deckMatches.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+
+    const none = await request(server).get(`/api/shared/decks/${missingToken}/matches`).set(...auth(visitor)).expect(200);
+    expect(none.body.cards).toEqual(
+      expect.arrayContaining([
+        { cardIdentifier: CARD_A.cardIdentifier, owned: 0 },
+        { cardIdentifier: CARD_B.cardIdentifier, owned: 0 },
+      ]),
+    );
+
+    await ownCopies(visitor, CARD_A.cardIdentifier, 2);
+    const some = await request(server).get(`/api/shared/decks/${missingToken}/matches`).set(...auth(visitor)).expect(200);
+    expect(some.body.cards).toHaveLength(2);
+    expect(some.body.cards).toEqual(
+      expect.arrayContaining([
+        { cardIdentifier: CARD_A.cardIdentifier, owned: 2 },
+        { cardIdentifier: CARD_B.cardIdentifier, owned: 0 },
+      ]),
+    );
   });
 
   it('keeps sharing controls to the deck owner', async () => {
@@ -150,8 +233,8 @@ describe('Sharing (E2E)', () => {
     const stranger = await createSession('stranger');
     const deckId = await createDeck(owner);
 
-    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(stranger)).send({}).expect(404);
-    await request(server).delete(`/api/decks/${deckId}/share`).set(...auth(stranger)).expect(404);
+    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(stranger)).send({ intent: 'deck' }).expect(404);
+    await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(stranger)).expect(404);
   });
 
   it('answers 404 once the owner is soft-deleted, and for malformed or unknown tokens', async () => {
@@ -180,6 +263,7 @@ describe('Sharing (E2E)', () => {
 
     expect(res.headers['x-robots-tag']).toBe('noindex, nofollow');
     expect(res.body).toMatchObject({
+      intent: 'deck',
       token,
       url: `http://localhost:5173/d/${token}`,
       name: 'Shared test deck',
@@ -188,13 +272,11 @@ describe('Sharing (E2E)', () => {
       isOwner: false,
       deckId: null,
       totalCards: 4,
-      missingCount: 3,
     });
     expect(res.body.cards).toHaveLength(2);
-    expect(res.body.missing.map((card: { quantity: number }) => card.quantity).sort()).toEqual([1, 2]);
     expect(JSON.stringify(res.body)).not.toContain(owner.userId);
 
-    await request(server).patch(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ showContact: false }).expect(200);
+    await request(server).patch(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).send({ showContact: false }).expect(200);
     const hidden = await request(server).get(`/api/shared/decks/${token}`).expect(200);
     expect(hidden.body.contactWhatsapp).toBeNull();
   });
@@ -219,6 +301,11 @@ describe('Sharing (E2E)', () => {
       [owner.userId],
     )) as { actorUserId: string | null }[];
     expect(actors.map((row) => row.actorUserId)).toEqual([visitor.userId, null, null]);
+    const intents = (await dataSource.query(
+      `SELECT DISTINCT intent FROM share_event WHERE "ownerUserId" = $1`,
+      [owner.userId],
+    )) as { intent: string }[];
+    expect(intents).toEqual([{ intent: 'deck' }]);
   });
 
   it('reports coverage from the visitor collection and requires login', async () => {
@@ -236,7 +323,7 @@ describe('Sharing (E2E)', () => {
     const partial = await request(server).get(`/api/shared/decks/${token}/coverage`).set(...auth(visitor)).expect(200);
     expect(partial.body).toEqual({ ownedCopies: 2, totalCopies: 4, percent: 50 });
 
-    await request(server).delete(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(204);
+    await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).expect(204);
     const dead = await request(server).get(`/api/shared/decks/${token}/coverage`).set(...auth(visitor)).expect(404);
     expect(dead.body.code).toBe('SHARE_LINK_UNAVAILABLE');
   });
@@ -252,13 +339,13 @@ describe('Sharing (E2E)', () => {
 
     const copy = await request(server).get(`/api/decks/${res.body.deckId}`).set(...auth(visitor)).expect(200);
     expect(copy.body).toMatchObject({ name: 'Shared test deck', status: 'idea', totalCards: 4 });
-    const [row] = (await dataSource.query(`SELECT "shareToken", "fabraryUlid" FROM tracked_deck WHERE id = $1`, [res.body.deckId])) as {
-      shareToken: string | null;
+    const [row] = (await dataSource.query(`SELECT "fabraryUlid" FROM tracked_deck WHERE id = $1`, [res.body.deckId])) as {
       fabraryUlid: string | null;
     }[];
-    expect(row).toEqual({ shareToken: null, fabraryUlid: null });
+    expect(row).toEqual({ fabraryUlid: null });
+    expect(await dataSource.query(`SELECT 1 FROM share_link WHERE "targetId" = $1`, [res.body.deckId])).toHaveLength(0);
 
-    await request(server).delete(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(204);
+    await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).expect(204);
     await request(server).post(`/api/shared/decks/${token}/copy`).set(...auth(visitor)).send({}).expect(404);
   });
 
@@ -292,6 +379,25 @@ describe('Sharing (E2E)', () => {
         expect(byEmail.get(emailFor(label))).toMatchObject({ referredByUserId: null, referredVia: null });
       }
       expect(await countEvents('signed_up', owner.userId)).toBe(1);
+    });
+
+    it('stores want as the channel for a sign-up from a missing-cards link', async () => {
+      const owner = await createSession('referral-want-owner');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'missing');
+
+      await signUpRaw(emailFor('via-want'), token).expect(202);
+
+      const [row] = (await dataSource.query(
+        `SELECT "referredByUserId", "referredVia" FROM "user" WHERE email = $1`,
+        [emailFor('via-want')],
+      )) as { referredByUserId: string | null; referredVia: string | null }[];
+      expect(row).toEqual({ referredByUserId: owner.userId, referredVia: 'want' });
+      const [event] = (await dataSource.query(
+        `SELECT intent FROM share_event WHERE kind = 'signed_up' AND "ownerUserId" = $1`,
+        [owner.userId],
+      )) as { intent: string }[];
+      expect(event?.intent).toBe('missing');
     });
 
     it('records nothing when the email already exists', async () => {
