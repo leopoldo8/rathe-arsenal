@@ -1,0 +1,39 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgb(0 0 0 / 0.6);
+}
+
+/* Phone: bottom sheet with a fixed height, so no step changes its size. */
+.panel {
+  position: fixed;
+  z-index: 901;
+  inset-inline: 0;
+  inset-block-end: 0;
+  display: flex;
+  flex-direction: column;
+  block-size: min(560px, 88vh);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--ra-border-strong);
+  border-block-end: 0;
+  border-start-start-radius: var(--ra-radius-xl);
+  border-start-end-radius: var(--ra-radius-xl);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-primary);
+}
+
+/* Desktop: centred dialog, fixed width and height. */
+@media (min-width: 720px) {
+  .panel {
+    inset-block: 50% auto;
+    inset-inline: 50% auto;
+    transform: translate(-50%, -50%);
+    inline-size: 460px;
+    block-size: min(540px, 90vh);
+    border: 1px solid var(--ra-border-strong);
+    border-radius: var(--ra-radius-lg);
+    box-shadow: var(--ra-shadow-lg);
+  }
+}

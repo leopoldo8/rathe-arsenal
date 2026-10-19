@@ -22,12 +22,6 @@
   color: var(--ra-whatsapp);
 }
 
-.body {
-  margin: 0 0 var(--ra-space-4);
-  color: var(--ra-fg-secondary);
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
-}
 
 .form {
   display: flex;

@@ -30,6 +30,8 @@ interface IMissingPanelProps {
   /** Active replacements of the deck; a row for a replacement's own copies is marked and offers no alternatives. */
   readonly replacements?: readonly IDeckReplacement[];
   readonly onOpenAlternatives?: ((target: IAlternativesTarget) => void) | undefined;
+  /** Opens the share dialog on the missing-cards link; the callout shows only when this is given. */
+  readonly onShareMissing?: (() => void) | undefined;
   readonly deckId?: number;
   /** The collection's best card for each missing row, keyed by `entryKey`. */
   readonly suggestions?: ReadonlyMap<string, ISubstitutedEntry>;
@@ -61,6 +63,7 @@ export function MissingPanel({
   onShoppingRetry,
   replacements = [],
   onOpenAlternatives,
+  onShareMissing,
   deckId = 0,
   suggestions = new Map(),
 }: IMissingPanelProps): React.ReactElement {
@@ -68,6 +71,11 @@ export function MissingPanel({
   const populated = shoppingData?.kind === 'populated' ? shoppingData : null;
   const isFetching = useVariantFetchPolling(populated?.variantFetchProgress, onPollingChange);
   const cardStatus = populated?.variantFetchProgress?.cards;
+  // Same test the rows use, so the number matches the rows marked as not in the store.
+  const unavailableCopies = entries.reduce(
+    (sum, entry) => (resolveRowStore(shoppingData, entry.cardIdentifier).kind === 'unavailable' ? sum + entry.quantity : sum),
+    0,
+  );
 
   return (
     <section
@@ -87,6 +95,14 @@ export function MissingPanel({
           fetchMutationStatus={fetchMutationStatus}
           isCooldownActive={isCooldownActive}
         />
+      )}
+      {onShareMissing !== undefined && populated !== null && unavailableCopies > 0 && (
+        <div className={styles.shareCallout} data-testid="missing-share-callout">
+          <p className={styles.shareCalloutText}>{t('deckDetail.shareMissingCallout', { count: unavailableCopies })}</p>
+          <button type="button" className={styles.shareCalloutBtn} onClick={onShareMissing} data-testid="missing-share-btn">
+            {t('deckDetail.shareMissingAction')}
+          </button>
+        </div>
       )}
       {shoppingData?.kind === 'error' && (
         <div role="status" className={styles.storeError}>

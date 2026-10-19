@@ -1153,7 +1153,7 @@ describe('DECK-05 — missing panel', () => {
 });
 
 describe('DECK-06/08 — decklist grid and thumbnails', () => {
-  const css = readDeckBaseCss('DeckList.module.css');
+  const css = readCss('components/card-gallery/CardGallery.module.css');
 
   it('lays six columns 10px apart', () => {
     const body = ruleBody(css, '.grid');

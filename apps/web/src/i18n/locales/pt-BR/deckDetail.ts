@@ -29,6 +29,9 @@ export const deckDetail = {
 
   // DeckActionPanels
   missingTitle: 'O que falta comprar',
+  shareMissingCallout_one: '{{count}} carta não está na loja.',
+  shareMissingCallout_other: '{{count}} cartas não estão na loja.',
+  shareMissingAction: 'Pedir nos grupos',
   missingEmpty: 'Nada a comprar.',
   missingCopies_one: 'falta {{count}}',
   missingCopies_other: 'faltam {{count}}',

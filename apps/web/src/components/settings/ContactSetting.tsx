@@ -6,7 +6,6 @@ import { AuthFetchError } from '../../lib/auth-fetch';
 import { formatNumberForField, isPlausibleWhatsappNumber } from '../../lib/whatsapp';
 import { WhatsappGlyph } from '../contact/WhatsappGlyph';
 import { WhatsappNumberField } from '../contact/WhatsappNumberField';
-import { WhatsappPreview } from '../contact/WhatsappPreview';
 import styles from './ContactSetting.module.css';
 
 type TStatus = 'idle' | 'saving' | 'saved' | 'removed' | 'failed';
@@ -56,7 +55,6 @@ export function ContactSetting({ className }: { readonly className?: string | un
         </span>
         {t('sharing.contact.settingsTitle')}
       </h2>
-      <p className={styles.body}>{t('sharing.contact.settingsBody')}</p>
       <form className={styles.form} noValidate onSubmit={handleSubmit}>
         <WhatsappNumberField
           label={t('sharing.contact.settingsLabel')}
@@ -69,9 +67,6 @@ export function ContactSetting({ className }: { readonly className?: string | un
           error={fieldError}
         />
         <p className={styles.hint}>{t('sharing.contact.settingsHint')}</p>
-        {saved !== null && (
-          <WhatsappPreview name={user?.displayName ?? t('sharing.contact.previewFallbackName')} />
-        )}
         <div className={styles.actions}>
           <button
             type="submit"

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IDeckReplacement } from '../../api/replacements';
-import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
-import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
+import { CardGalleryCell, type ICardGalleryLightbox } from '../card-gallery/CardGalleryCell';
+import { CardGalleryGrid } from '../card-gallery/CardGalleryGrid';
 import {
   groupDeckList,
   type IDeckListItem,
@@ -19,12 +19,6 @@ interface IDeckListProps {
   /** Needed to undo, keep or revert a replacement; the cells show no controls without it. */
   readonly deckId?: number | undefined;
   readonly replacements?: readonly IDeckReplacement[] | undefined;
-}
-
-interface ILightboxState {
-  readonly imageUrl: string;
-  readonly sources: readonly string[];
-  readonly name: string;
 }
 
 const VIEWS: readonly { readonly id: TDeckListView; readonly labelKey: string }[] = [
@@ -54,57 +48,40 @@ function DeckListCell({
   replacement,
 }: {
   readonly item: IDeckListItem;
-  readonly onOpen: (lightbox: ILightboxState) => void;
+  readonly onOpen: (lightbox: ICardGalleryLightbox) => void;
   readonly deckId: number | undefined;
   readonly replacement: IDeckReplacement | undefined;
 }): React.ReactElement {
   const { t } = useTranslation();
   const { entry } = item;
-  const isShort = item.missing > 0;
-  const cellClass = [styles.cell, isShort ? styles.cellMissing : ''].filter(Boolean).join(' ');
-  const image = entry.imageUrl;
 
   return (
-    <li className={cellClass} data-testid="deck-list-cell" data-missing={isShort}>
-      <div className={styles.thumb}>
-        <CardArt
-          name={entry.name}
-          pitch={entry.pitch}
-          cost={entry.cost}
-          type={entry.type}
-          missing={item.missing >= item.quantity}
-          missingCount={item.missing}
-          size="lg"
-          imageUrl={image}
-          onClick={
-            image
-              ? () =>
-                  onOpen({
-                    imageUrl: image.large,
-                    sources: lightboxSourcesFor(image),
-                    name: entry.name,
-                  })
-              : undefined
-          }
-        />
-        <span className={styles.qtyBadge} data-testid="deck-list-qty">
-          {t('deckDetail.cardQuantity', { count: item.quantity })}
-        </span>
-      </div>
-      <span className={styles.name} title={entry.name}>
-        {entry.name}
-      </span>
-      {replacement !== undefined && deckId !== undefined && (
-        <ReplacementControls deckId={deckId} replacement={replacement} />
-      )}
-    </li>
+    <CardGalleryCell
+      name={entry.name}
+      pitch={entry.pitch}
+      cost={entry.cost}
+      type={entry.type}
+      imageUrl={entry.imageUrl}
+      missing={item.missing >= item.quantity}
+      missingCount={item.missing}
+      quantityLabel={t('deckDetail.cardQuantity', { count: item.quantity })}
+      quantityTestId="deck-list-qty"
+      testId="deck-list-cell"
+      dataMissing={item.missing > 0}
+      onOpen={onOpen}
+      footer={
+        replacement !== undefined && deckId !== undefined ? (
+          <ReplacementControls deckId={deckId} replacement={replacement} />
+        ) : undefined
+      }
+    />
   );
 }
 
 export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDeckListProps): React.ReactElement {
   const { t } = useTranslation();
   const [view, setView] = useState<TDeckListView>('type');
-  const [lightbox, setLightbox] = useState<ILightboxState | null>(null);
+  const [lightbox, setLightbox] = useState<ICardGalleryLightbox | null>(null);
   const groups = groupDeckList(items, view);
 
   return (
@@ -151,7 +128,7 @@ export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDec
             {t(GROUP_LABEL_KEY[group.id])}
             <span className={styles.groupCount}>{t('deckDetail.groupCount', { count: group.total })}</span>
           </h3>
-          <ul className={styles.grid}>
+          <CardGalleryGrid>
             {group.items.map((item) => (
               <DeckListCell
                 key={item.key}
@@ -165,7 +142,7 @@ export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDec
                 )}
               />
             ))}
-          </ul>
+          </CardGalleryGrid>
         </div>
       ))}
 

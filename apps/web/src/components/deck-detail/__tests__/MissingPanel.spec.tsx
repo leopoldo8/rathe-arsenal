@@ -522,3 +522,33 @@ describe('MissingPanel — suggestions from the collection', () => {
     );
   });
 });
+
+describe('MissingPanel — share call to action', () => {
+  it('shows when cards are unavailable at the store and opens the share dialog on that click', async () => {
+    const onShareMissing = vi.fn();
+    renderPanel(populated(), { onShareMissing });
+
+    const callout = screen.getByTestId('missing-share-callout');
+    expect(callout).toHaveTextContent('2 cartas não estão na loja.');
+    await userEvent.click(within(callout).getByRole('button', { name: 'Pedir nos grupos' }));
+    expect(onShareMissing).toHaveBeenCalledTimes(1);
+  });
+
+  it('is absent when the store has every missing card', () => {
+    renderPanel(
+      populated({ lines: [line({}), line({ cardIdentifier: 'card-b', cardName: 'Card B', quantityNeeded: 2, quantityAvailable: 2 })] }),
+      { onShareMissing: vi.fn() },
+    );
+    expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+  });
+
+  it('is absent without store data, since nothing is known about availability', () => {
+    renderPanel({ kind: 'unscraped' }, { onShareMissing: vi.fn() });
+    expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+  });
+
+  it('is absent when nothing is missing', () => {
+    renderPanel(populated(), { onShareMissing: vi.fn(), entries: [] });
+    expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+  });
+});

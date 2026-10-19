@@ -15,6 +15,20 @@
   text-shadow: none;
 }
 
+.pillPrimary {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border-color: var(--ra-whatsapp);
+  background: var(--ra-whatsapp);
+  color: var(--ra-whatsapp-ink);
+  font-size: var(--ra-text-small);
+}
+
+.pillPrimary:hover {
+  background: var(--ra-whatsapp);
+  filter: brightness(1.05);
+}
+
 .pill:hover {
   background: var(--ra-whatsapp-line);
 }

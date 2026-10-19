@@ -21,6 +21,7 @@ interface IDeckActionPanelsProps {
   readonly onShoppingRetry: () => void;
   readonly replacements: readonly IDeckReplacement[];
   readonly onOpenAlternatives: (target: IAlternativesTarget) => void;
+  readonly onShareMissing?: (() => void) | undefined;
 }
 
 export function DeckActionPanels({
@@ -38,6 +39,7 @@ export function DeckActionPanels({
   onShoppingRetry,
   replacements,
   onOpenAlternatives,
+  onShareMissing,
 }: IDeckActionPanelsProps): React.ReactElement {
   return (
     <div className={styles.row} data-testid="deck-action-panels">
@@ -56,6 +58,7 @@ export function DeckActionPanels({
         onShoppingRetry={onShoppingRetry}
         replacements={replacements}
         onOpenAlternatives={onOpenAlternatives}
+        onShareMissing={onShareMissing}
       />
     </div>
   );

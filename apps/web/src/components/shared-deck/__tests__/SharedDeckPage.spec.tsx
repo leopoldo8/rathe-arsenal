@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ISharedCard, ISharedDeckResponse } from '../../../api/shared-decks';
 import { SHARE_RETURN_STORAGE_KEY } from '../../../lib/share-return';
@@ -73,6 +73,7 @@ const MISSING: ISharedCard[] = [
 ];
 
 const DECK: ISharedDeckResponse = {
+  intent: 'deck',
   token: TOKEN,
   url: URL,
   name: 'Rhinar Rampage',
@@ -90,16 +91,25 @@ const DECK: ISharedDeckResponse = {
     ...MISSING,
     card({ cardIdentifier: 'swing-red', name: 'Reckless Swing', pitch: 1, type: 'Attack Reaction', quantity: 3 }),
   ],
-  missing: MISSING,
-  missingCount: 3,
+  missing: [],
+  missingCount: 0,
   contactWhatsapp: null,
   deckId: null,
 };
 
-function renderPage(view: 'missing' | undefined = undefined, auth = makeAuth({ user: null, token: null })) {
-  const onViewChange = vi.fn();
-  renderWithProviders(<SharedDeckPage token={TOKEN} view={view} onViewChange={onViewChange} />, auth);
-  return { onViewChange };
+const MISSING_TOKEN = 'mQ8rZ3nUp2bX5yKdFgHjLs';
+const WANTED: ISharedDeckResponse = {
+  ...DECK,
+  intent: 'missing',
+  token: MISSING_TOKEN,
+  url: `https://rathearsenal.app/d/${MISSING_TOKEN}`,
+  cards: [],
+  missing: MISSING,
+  missingCount: 3,
+};
+
+function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null, token: null }), token = TOKEN) {
+  renderWithProviders(<SharedDeckPage token={token} />, auth);
 }
 
 describe('SharedDeckPage', () => {
@@ -173,7 +183,7 @@ describe('SharedDeckPage', () => {
       const invite = await screen.findByTestId('shared-invite');
       expect(within(invite).getByText('Quanto deste deck você já tem?')).toBeInTheDocument();
       expect(within(invite).getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/sign-up');
-      expect(within(invite).getByRole('link', { name: 'Já tenho conta, entrar' })).toHaveAttribute('href', '/sign-in');
+      expect(within(invite).getByRole('link', { name: 'Já tenho conta' })).toHaveAttribute('href', '/sign-in');
       expect(api.calls.some((call) => call.key.includes('/coverage'))).toBe(false);
     });
 
@@ -194,7 +204,7 @@ describe('SharedDeckPage', () => {
       renderPage();
       const invite = await screen.findByTestId('shared-invite');
 
-      await userEvent.click(within(invite).getByRole('link', { name: 'Já tenho conta, entrar' }));
+      await userEvent.click(within(invite).getByRole('link', { name: 'Já tenho conta' }));
 
       expect(localStorage.getItem(SHARE_RETURN_STORAGE_KEY)).toContain(TOKEN);
     });
@@ -211,7 +221,7 @@ describe('SharedDeckPage', () => {
       const panel = await screen.findByTestId('shared-coverage');
       expect(await within(panel).findByText('75')).toBeInTheDocument();
       expect(within(panel).getByText('6 de 8')).toBeInTheDocument();
-      expect(within(panel).getByText('Faltam 2 cópias, contando só as exatas.')).toBeInTheDocument();
+      expect(within(panel).getByText('Faltam 2 cartas.')).toBeInTheDocument();
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
     });
 
@@ -219,7 +229,7 @@ describe('SharedDeckPage', () => {
       api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
       renderPage(undefined, makeAuth());
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Copiar para meus decks' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
 
       await waitFor(() =>
         expect(navigateMock).toHaveBeenCalledWith({
@@ -237,7 +247,7 @@ describe('SharedDeckPage', () => {
       });
       renderPage(undefined, makeAuth());
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Copiar para meus decks' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Este link não está mais disponível.');
       expect(navigateMock).not.toHaveBeenCalled();
@@ -250,22 +260,22 @@ describe('SharedDeckPage', () => {
       renderPage(undefined, makeAuth());
 
       expect(await screen.findByTestId('shared-owner-note')).toHaveTextContent('Este é o seu link');
-      expect(screen.queryByRole('button', { name: 'Copiar para meus decks' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Salvar nos meus decks' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
       expect(api.calls.some((call) => call.key.includes('/coverage'))).toBe(false);
     });
 
-    it('gets a link back to the sharing card of the deck', async () => {
+    it('gets a link back to the deck', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true, deckId: 7 }));
       renderPage(undefined, makeAuth());
-      expect(await screen.findByRole('link', { name: 'Gerenciar compartilhamento' })).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: 'Gerenciar no deck' })).toBeInTheDocument();
     });
 
     it('has no manage link when the API sends no deck id', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true }));
       renderPage(undefined, makeAuth());
       await screen.findByTestId('shared-owner-note');
-      expect(screen.queryByRole('link', { name: 'Gerenciar compartilhamento' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Gerenciar no deck' })).not.toBeInTheDocument();
     });
   });
 
@@ -318,54 +328,90 @@ describe('SharedDeckPage', () => {
     });
   });
 
-  describe('missing view', () => {
-    it('opens from the list button', async () => {
-      const { onViewChange } = renderPage();
-      await userEvent.click(await screen.findByTestId('shared-open-missing'));
-      expect(onViewChange).toHaveBeenCalledWith('missing');
+  describe('missing-cards link', () => {
+    const wantedKey = `GET /shared/decks/${MISSING_TOKEN}`;
+
+    beforeEach(() => {
+      api.handlers.set(wantedKey, () => WANTED);
     });
 
-    it('lists only the missing cards, with the text to copy and the address', async () => {
-      renderPage('missing');
+    it('shows the "looking for" header and only the missing cards, with no deck comparison', async () => {
+      renderPage(undefined, undefined, MISSING_TOKEN);
 
-      const view = await screen.findByTestId('shared-missing-view');
-      expect(within(view).getByText('O que falta · 3 cartas')).toBeInTheDocument();
-      expect(within(view).getByTestId('shared-missing-rows')).toHaveTextContent('Goliath Gauntlet');
-      expect(within(view).getByTestId('shared-missing-rows')).not.toHaveTextContent('Reckless Swing');
-      expect(within(view).getByTestId('shared-missing-text')).toHaveTextContent(
-        `1x Goliath Gauntlet 2x Pack Hunt (Vermelho) ${URL}`,
-      );
+      expect(await screen.findByText('Procuro cartas')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Rhinar Rampage' })).toBeInTheDocument();
+      expect(screen.getByText('Faltam 3 cartas')).toBeInTheDocument();
+      const cards = screen.getAllByTestId('shared-card');
+      expect(cards).toHaveLength(2);
+      expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-deck-list')).not.toBeInTheDocument();
+      expect(screen.queryByText('Reckless Swing')).not.toBeInTheDocument();
     });
 
-    it('copies the missing list as text', async () => {
-      const user = userEvent.setup(); // installs navigator.clipboard
+    it('copies the list as text with the address', async () => {
+      const user = userEvent.setup();
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
-      renderPage('missing');
+      renderPage(undefined, undefined, MISSING_TOKEN);
 
-      await user.click(await screen.findByRole('button', { name: 'Copiar como texto' }));
+      await user.click(await screen.findByRole('button', { name: 'Copiar lista em texto' }));
 
-      expect(writeText).toHaveBeenCalledWith(`1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\n${URL}`);
+      expect(writeText).toHaveBeenCalledWith(
+        `1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\nhttps://rathearsenal.app/d/${MISSING_TOKEN}`,
+      );
       expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
     });
 
-    it('closes through the close button', async () => {
-      const { onViewChange } = renderPage('missing');
-      await userEvent.click(await screen.findByRole('button', { name: 'Fechar a lista do que falta' }));
-      expect(onViewChange).toHaveBeenCalledWith(undefined);
+    it('offers WhatsApp as the main action with the missing-cards message', async () => {
+      api.handlers.set(wantedKey, () => ({ ...WANTED, contactWhatsapp: '5553999990000' }));
+      renderPage(undefined, undefined, MISSING_TOKEN);
+
+      const pill = await screen.findByTestId('shared-contact-pill');
+      expect(pill.getAttribute('href')).toContain(
+        encodeURIComponent('Oi! Vi que você procura cartas para o deck Rhinar Rampage.'),
+      );
     });
 
-    it('closes with Escape', async () => {
-      const { onViewChange } = renderPage('missing');
-      await screen.findByTestId('shared-missing-view');
-      fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
-      expect(onViewChange).toHaveBeenCalledWith(undefined);
+    it('invites an anonymous visitor to sign up and makes no matches request', async () => {
+      renderPage(undefined, undefined, MISSING_TOKEN);
+      expect(await screen.findByTestId('shared-signup-prompt')).toHaveTextContent('Crie uma conta para ver quais você já tem.');
+      expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
+    });
+
+    it('shows "você tem N" on the cards a logged-in visitor owns', async () => {
+      api.handlers.set(`GET /shared/decks/${MISSING_TOKEN}/matches`, () => ({
+        cards: [
+          { cardIdentifier: 'gauntlet', owned: 0 },
+          { cardIdentifier: 'pack-hunt-red', owned: 2 },
+        ],
+      }));
+      renderPage(undefined, makeAuth(), MISSING_TOKEN);
+
+      const owned = await screen.findByTestId('shared-owned');
+      expect(owned).toHaveTextContent('você tem 2');
+      expect(screen.getAllByTestId('shared-owned')).toHaveLength(1);
+      expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
+      expect(api.calls.some((call) => call.key.includes('/coverage') || call.key.includes('/copy'))).toBe(false);
+    });
+
+    it('does not ask the owner for matches', async () => {
+      api.handlers.set(wantedKey, () => ({ ...WANTED, isOwner: true, deckId: 7 }));
+      renderPage(undefined, makeAuth(), MISSING_TOKEN);
+      await screen.findByText('Procuro cartas');
+      expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
     });
 
     it('says nothing is missing when the owner has every copy', async () => {
-      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, missing: [], missingCount: 0 }));
-      renderPage('missing');
-      expect(await screen.findByText(/Nada falta/)).toBeInTheDocument();
+      api.handlers.set(wantedKey, () => ({ ...WANTED, missing: [], missingCount: 0 }));
+      renderPage(undefined, undefined, MISSING_TOKEN);
+      expect(await screen.findByText('Não falta nenhuma carta.')).toBeInTheDocument();
     });
+  });
+
+  it('deck link has no button to a missing view', async () => {
+    renderPage();
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByTestId('shared-open-missing')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('shared-card').length).toBeGreaterThan(0);
   });
 
   describe('unavailable link', () => {
