@@ -5,6 +5,7 @@ import { CardListEntity } from '../../database/entities/card-list.entity';
 import { ListAccess, IListWriteContext } from '../list-access.service';
 import { ListLinesService } from '../list-lines.service';
 import { printingsOfCard } from '../printing-key';
+import { PriceSuggestionService } from '../../prices/price-suggestion.service';
 
 const CARD = 'fallen-herald-yellow';
 const PRINTING_KEY = printingsOfCard(CARD)?.[0]?.key ?? '';
@@ -16,7 +17,7 @@ function line(overrides: Partial<CardListLineEntity>): CardListLineEntity {
 describe('ListLinesService', () => {
   const access = createMock<ListAccess>();
   const manager = createMock<EntityManager>();
-  const service = new ListLinesService(access);
+  const service = new ListLinesService(access, createMock<PriceSuggestionService>());
 
   function openList(kind: 'want' | 'sell'): void {
     access.write.mockImplementation(async (_user, _list, work) => {

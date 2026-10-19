@@ -18,6 +18,7 @@
     "share-images:purge": "tsx scripts/share-images-purge.ts",
     "purge:deleted-users": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/purge-deleted-users.ts",
     "share:report": "tsx scripts/share-report.ts",
+    "prices:sync": "pnpm --filter @rathe-arsenal/api build && pnpm --filter @rathe-arsenal/api prices:sync",
     "gold:sample": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/sample-decks.ts",
     "gold:generate": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/generate-candidates.ts",
     "gold:export": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/export-csv.ts",

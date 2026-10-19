@@ -141,3 +141,12 @@ A printing is valid for a card when its key is one of the keys built from that c
 - Lines are ordered by `card_list_line.createdAt`, a column the design's table did not list.
 - A sell list made from a deck takes the deck's card rows; a scratch deck's hero, which has no card row, is not included.
 - `sold` can be set on any list.
+
+### Price job (Prices PR)
+
+- Needed sets: the set of the line's own printing, or every set of the card's printings when the line has none, for every line of every sell list. Set to group: the set name against the group name (ignoring case and punctuation), then the set code against the group abbreviation; a set that matches neither is logged and skipped. Many deck products (Blitz, Silver Age, Armory) are named differently by tcgcsv and do not map yet.
+- Sub type: Normal, Rainbow Foil, Cold Foil, Gold Foil, prefixed `1st Edition ` or `Unlimited Edition ` by the edition. Alpha printings and unknown finishes have no sub type and never get a suggestion.
+- The group list is read at most once per UTC day while the process runs (kept in memory; a restart reads it again). `last-updated.txt` is read only when some needed group was not read today.
+- A suggestion is never below R$ 1,00 (a card worth a few cents would otherwise suggest R$ 0).
+- `pnpm prices:sync` builds the API and runs one pass with the same rules. `PRICE_SYNC_ENABLED=true` turns on the hourly check.
+- `apply-suggestions` on a want list changes nothing (it has no suggestions) and answers 200.

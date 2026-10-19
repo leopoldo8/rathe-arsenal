@@ -1,5 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -116,4 +118,16 @@ export class UpdateLineDto {
   @ValidateIf((dto: UpdateLineDto) => dto.sold !== undefined)
   @IsBoolean()
   sold?: boolean;
+}
+
+const MAX_APPLY_LINE_IDS = 1000;
+
+export class ApplySuggestionsDto {
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_APPLY_LINE_IDS)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(MAX_INT32, { each: true })
+  lineIds?: number[];
 }
