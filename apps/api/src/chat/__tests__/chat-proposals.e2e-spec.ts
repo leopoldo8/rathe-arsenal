@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { catalog } from '@rathe-arsenal/engine';
 import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
 
 const ADRENALINE = 'adrenaline-rush-red';
@@ -103,8 +104,8 @@ describe('chat proposals (E2E)', () => {
     expect([swap!['trackedDeckId'], swap!['display']]).toEqual([
       user.deckId,
       {
-        original: { cardIdentifier: FLEX, name: 'Flex', pitch: 1, copiesInDeck: 2 },
-        replacement: { cardIdentifier: EMISSARY, name: 'Emissary of Tides', pitch: 1, freeCopies: 2 },
+        original: { cardIdentifier: FLEX, name: 'Flex', pitch: 1, imageUrl: catalog.getCard(FLEX).imageUrl, copiesInDeck: 2 },
+        replacement: { cardIdentifier: EMISSARY, name: 'Emissary of Tides', pitch: 1, imageUrl: catalog.getCard(EMISSARY).imageUrl, freeCopies: 2 },
       },
     ]);
 

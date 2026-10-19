@@ -7,6 +7,9 @@ import { localizeApiError } from '../card-scanner/localize-api-error';
 import { Button } from '../ui/Button/Button';
 import { VarFill } from '../deck-detail/VarFill';
 import { DeckChip } from './DeckChip';
+import { CardLightbox } from '../card-art/CardLightbox';
+import { imageSources } from '../deck-detail/recommendations/card-naming';
+import { useImageFallback } from '../../hooks/useImageFallback';
 import styles from './ProposalCard.module.css';
 
 const LISTED_CARDS = 4;
@@ -67,9 +70,48 @@ function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.Rea
   );
 }
 
+function SwapSide({
+  label,
+  card,
+  note,
+  testId,
+  className,
+  onPreview,
+}: {
+  readonly label: string;
+  readonly card: ISwapProposal['display']['original' | 'replacement'];
+  readonly note: React.ReactElement;
+  readonly testId: string;
+  readonly className: string;
+  readonly onPreview: () => void;
+}): React.ReactElement {
+  const { t } = useTranslation();
+  const { src, onError } = useImageFallback(imageSources(card.imageUrl, 'large'));
+  return (
+    <div className={`${styles.side} ${className}`} data-testid={testId}>
+      <span className={styles.sideLabel}>{label}</span>
+      {src === null ? (
+        <span className={`${styles.art} ${styles.artFallback}`} data-testid="swap-art-fallback">
+          {card.name}
+        </span>
+      ) : (
+        <button type="button" className={styles.art} aria-label={t('chat.proposal.previewAria', { name: card.name })} onClick={onPreview}>
+          <img className={styles.artImage} src={src} alt={card.name} onError={onError} draggable={false} />
+        </button>
+      )}
+      <span className={styles.sideCard}>
+        <PitchDot pitch={card.pitch} />
+        <span>{card.name}</span>
+      </span>
+      {note}
+    </div>
+  );
+}
+
 function SwapBody({ proposal, deckName }: { readonly proposal: ISwapProposal; readonly deckName: string | null }): React.ReactElement {
   const { t } = useTranslation();
   const { original, replacement } = proposal.display;
+  const [preview, setPreview] = useState<typeof original | typeof replacement | null>(null);
   return (
     <>
       {deckName !== null && proposal.trackedDeckId !== null && (
@@ -78,29 +120,39 @@ function SwapBody({ proposal, deckName }: { readonly proposal: ISwapProposal; re
         </div>
       )}
       <div className={styles.swap}>
-        <div className={styles.side} data-testid="swap-out">
-          <span className={styles.sideLabel}>{t('chat.proposal.out')}</span>
-          <span className={styles.sideCard}>
-            <PitchDot pitch={original.pitch} />
-            <span>{original.name}</span>
-          </span>
-          <span className={styles.sideNote}>{t('chat.proposal.copiesInDeck', { count: original.copiesInDeck })}</span>
-        </div>
+        <SwapSide
+          label={t('chat.proposal.out')}
+          card={original}
+          note={<span className={styles.sideNote}>{t('chat.proposal.copiesInDeck', { count: original.copiesInDeck })}</span>}
+          testId="swap-out"
+          className={styles.sideOut!}
+          onPreview={() => setPreview(original)}
+        />
         <span className={styles.arrow} aria-hidden="true">
           →
         </span>
-        <div className={`${styles.side} ${styles.sideIn}`} data-testid="swap-in">
-          <span className={styles.sideLabel}>{t('chat.proposal.in')}</span>
-          <span className={styles.sideCard}>
-            <PitchDot pitch={replacement.pitch} />
-            <span>{replacement.name}</span>
-          </span>
-          <span className={replacement.freeCopies > 0 ? styles.has : styles.lacks}>
-            {replacement.freeCopies > 0 ? t('chat.proposal.freeCopies', { count: replacement.freeCopies }) : t('chat.proposal.noFreeCopies')}
-          </span>
-        </div>
+        <SwapSide
+          label={t('chat.proposal.in')}
+          card={replacement}
+          note={
+            <span className={replacement.freeCopies > 0 ? styles.has : styles.lacks}>
+              {replacement.freeCopies > 0 ? t('chat.proposal.freeCopies', { count: replacement.freeCopies }) : t('chat.proposal.noFreeCopies')}
+            </span>
+          }
+          testId="swap-in"
+          className={styles.sideIn!}
+          onPreview={() => setPreview(replacement)}
+        />
       </div>
       <p className={styles.reason}>{proposal.reason}</p>
+      {preview !== null && preview.imageUrl !== null && (
+        <CardLightbox
+          imageUrl={preview.imageUrl.large}
+          sources={imageSources(preview.imageUrl, 'large')}
+          name={preview.name}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </>
   );
 }

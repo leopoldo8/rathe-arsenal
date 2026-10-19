@@ -76,6 +76,7 @@ export const chat = {
     copiesInDeck_other: '{{count}} cópias no deck',
     freeCopies: 'você tem {{count}}',
     noFreeCopies: 'você não tem cópias livres',
+    previewAria: 'Ver {{name}}',
     ownedBarAria: '{{owned}} de {{total}} cartas na sua coleção',
   },
   tile: {

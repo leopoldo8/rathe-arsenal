@@ -117,7 +117,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     'open delete'
     'chip delete';
@@ -135,6 +135,7 @@
 .open {
   grid-area: open;
   display: flex;
+  min-inline-size: 0;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--ra-space-3);

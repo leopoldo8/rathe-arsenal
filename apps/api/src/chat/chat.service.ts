@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
-import { catalog } from '@rathe-arsenal/engine';
+import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { ChatConversationEntity } from '../database/entities/chat-conversation.entity';
@@ -31,9 +31,11 @@ export interface IDeckProposalDisplay {
   readonly cards: readonly (ICardLabel & { readonly quantity: number; readonly slot: string; readonly ownedQuantity: number })[];
 }
 
+type TSwapCardLabel = ICardLabel & { readonly imageUrl: ICatalogCard['imageUrl'] };
+
 export interface ISwapProposalDisplay {
-  readonly original: ICardLabel & { readonly copiesInDeck: number };
-  readonly replacement: ICardLabel & { readonly freeCopies: number };
+  readonly original: TSwapCardLabel & { readonly copiesInDeck: number };
+  readonly replacement: TSwapCardLabel & { readonly freeCopies: number };
 }
 
 export interface IProposalView {
@@ -70,6 +72,15 @@ function cardLabel(cardIdentifier: string): ICardLabel {
     return { cardIdentifier, name: card.name, pitch: card.pitch ?? null };
   } catch {
     return { cardIdentifier, name: cardIdentifier, pitch: null };
+  }
+}
+
+function swapCardLabel(cardIdentifier: string): TSwapCardLabel {
+  const label = cardLabel(cardIdentifier);
+  try {
+    return { ...label, imageUrl: catalog.getCard(cardIdentifier).imageUrl };
+  } catch {
+    return { ...label, imageUrl: null };
   }
 }
 
@@ -269,8 +280,8 @@ export class ChatService {
         ownedCount = free > 0 ? 1 : 0;
         missingCount = free > 0 ? 0 : 1;
         display = {
-          original: { ...cardLabel(payload.originalCardIdentifier), copiesInDeck: inDeck.get(`${proposal.trackedDeckId}|${payload.originalCardIdentifier}`) ?? 0 },
-          replacement: { ...cardLabel(replacement), freeCopies: Math.max(free, 0) },
+          original: { ...swapCardLabel(payload.originalCardIdentifier), copiesInDeck: inDeck.get(`${proposal.trackedDeckId}|${payload.originalCardIdentifier}`) ?? 0 },
+          replacement: { ...swapCardLabel(replacement), freeCopies: Math.max(free, 0) },
         };
       }
       return {
