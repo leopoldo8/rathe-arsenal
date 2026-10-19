@@ -107,7 +107,7 @@ export function DeckDetailView({
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
       />
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
-      <DeckShareCard deckId={deck.id} />
+      <DeckShareCard deckId={deck.id} deckName={deck.name} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (
         <DeckActionPanels

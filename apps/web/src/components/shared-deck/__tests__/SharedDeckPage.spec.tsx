@@ -92,6 +92,7 @@ const DECK: ISharedDeckResponse = {
   missing: MISSING,
   missingCount: 3,
   contactWhatsapp: null,
+  deckId: null,
 };
 
 function renderPage(view: 'missing' | undefined = undefined, auth = makeAuth({ user: null, token: null })) {
@@ -122,7 +123,7 @@ describe('SharedDeckPage', () => {
   });
 
   describe('deck', () => {
-    it('shows name, hero, format, sharer, grouped cards, disclaimer and copyright', async () => {
+    it('shows name, hero, format, sharer, grouped cards and the disclaimer with its copyright once', async () => {
       renderPage();
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Rhinar Rampage' })).toBeInTheDocument();
@@ -136,7 +137,7 @@ describe('SharedDeckPage', () => {
       expect(screen.getByTestId('shared-group-reactions')).toHaveTextContent('Reckless Swing');
       const footer = screen.getByTestId('shared-deck-footer');
       expect(footer).toHaveTextContent('Legend Story Studios®');
-      expect(footer).toHaveTextContent(/^.*© Legend Story Studios/s);
+      expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
     it('loads the deck without a Bearer token when anonymous', async () => {
@@ -184,6 +185,7 @@ describe('SharedDeckPage', () => {
       expect(JSON.parse(localStorage.getItem(SHARE_RETURN_STORAGE_KEY) ?? 'null')).toEqual({
         returnTo: `/d/${TOKEN}`,
         shareToken: TOKEN,
+        savedAt: expect.any(Number),
       });
     });
 
@@ -250,6 +252,68 @@ describe('SharedDeckPage', () => {
       expect(screen.queryByRole('button', { name: 'Copiar para meus decks' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
       expect(api.calls.some((call) => call.key.includes('/coverage'))).toBe(false);
+    });
+
+    it('gets a link back to the sharing card of the deck', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true, deckId: 7 }));
+      renderPage(undefined, makeAuth());
+      expect(await screen.findByRole('link', { name: 'Gerenciar compartilhamento' })).toBeInTheDocument();
+    });
+
+    it('has no manage link when the API sends no deck id', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, isOwner: true }));
+      renderPage(undefined, makeAuth());
+      await screen.findByTestId('shared-owner-note');
+      expect(screen.queryByRole('link', { name: 'Gerenciar compartilhamento' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('WhatsApp contact', () => {
+    const WA_URL =
+      'https://wa.me/5553999990000?text=Oi!%20Vi%20seu%20deck%20Rhinar%20Rampage%20no%20Rathe%20Arsenal.';
+
+    it('shows the pill and the fixed bar, both opening wa.me with the ready message', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, contactWhatsapp: '5553999990000' }));
+      renderPage();
+
+      const pill = await screen.findByTestId('shared-contact-pill');
+      expect(pill).toHaveAttribute('href', WA_URL);
+      expect(pill).toHaveAttribute('aria-label', 'Chamar Dudu_Pelotas no WhatsApp');
+      const bar = screen.getByTestId('shared-contact-bar');
+      expect(within(bar).getByRole('link', { name: 'Chamar Dudu_Pelotas no WhatsApp' })).toHaveAttribute('href', WA_URL);
+    });
+
+    it('is also offered to a logged-in visitor', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, contactWhatsapp: '5553999990000' }));
+      api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({ ownedCopies: 1, totalCopies: 8, percent: 13 }));
+      renderPage(undefined, makeAuth());
+      expect(await screen.findByTestId('shared-contact-pill')).toBeInTheDocument();
+    });
+
+    it('is absent when the link shows no contact', async () => {
+      renderPage();
+      await screen.findByRole('heading', { level: 1 });
+      expect(screen.queryByTestId('shared-contact-pill')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-contact-bar')).not.toBeInTheDocument();
+    });
+
+    it('is absent on an unavailable link', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => {
+        throw apiError(404, 'SHARE_LINK_UNAVAILABLE');
+      });
+      renderPage();
+      await screen.findByTestId('shared-unavailable');
+      expect(screen.queryByTestId('shared-contact-bar')).not.toBeInTheDocument();
+    });
+
+    it('speaks English to an English visitor', async () => {
+      await (await import('../../../test/i18n-test-utils')).setTestLocale('en-US');
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({ ...DECK, contactWhatsapp: '5553999990000' }));
+      renderPage();
+      expect(await screen.findByTestId('shared-contact-pill')).toHaveAttribute(
+        'href',
+        'https://wa.me/5553999990000?text=Hi!%20I%20saw%20your%20deck%20Rhinar%20Rampage%20on%20Rathe%20Arsenal.',
+      );
     });
   });
 

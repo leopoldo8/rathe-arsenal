@@ -15,9 +15,16 @@ const SAFE_RETURN_PREFIXES: readonly string[] = ['/d/', '/l/'];
 /** Shape of a share token; the API rejects anything else before touching the database. */
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{1,64}$/;
 
+/** A stored return older than this is stale: the visitor most likely moved on. */
+export const SHARE_RETURN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface IShareReturn {
   readonly returnTo: string;
   readonly shareToken: string;
+}
+
+interface IStoredShareReturn extends IShareReturn {
+  readonly savedAt: number;
 }
 
 /**
@@ -38,9 +45,15 @@ export function readShareReturn(): IShareReturn | null {
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
-    const { returnTo, shareToken } = parsed as Record<string, unknown>;
+    const { returnTo, shareToken, savedAt } = parsed as Record<string, unknown>;
     if (!isSafeReturnPath(returnTo)) return null;
     if (typeof shareToken !== 'string' || !TOKEN_SHAPE.test(shareToken)) return null;
+    // Entries without a timestamp predate the expiry and are treated as stale.
+    const isFresh = typeof savedAt === 'number' && Date.now() - savedAt <= SHARE_RETURN_MAX_AGE_MS;
+    if (!isFresh) {
+      clearShareReturn();
+      return null;
+    }
     return { returnTo, shareToken };
   } catch {
     return null;
@@ -50,7 +63,7 @@ export function readShareReturn(): IShareReturn | null {
 export function writeShareReturn(shareToken: string): void {
   if (!TOKEN_SHAPE.test(shareToken)) return;
   try {
-    const value: IShareReturn = { returnTo: `/d/${shareToken}`, shareToken };
+    const value: IStoredShareReturn = { returnTo: `/d/${shareToken}`, shareToken, savedAt: Date.now() };
     localStorage.setItem(SHARE_RETURN_STORAGE_KEY, JSON.stringify(value));
   } catch {
     // Private mode or storage blocked: the visitor just lands on the default page after auth.

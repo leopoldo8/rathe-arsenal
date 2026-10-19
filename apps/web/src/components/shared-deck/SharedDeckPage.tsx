@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { isShareLinkUnavailable, useSharedDeckQuery } from '../../api/shared-decks';
+import { SharedContactButton } from './SharedContactButton';
 import { SharedComparison } from './SharedComparison';
 import { SharedDeckFooter } from './SharedDeckFooter';
 import { SharedDeckHeader } from './SharedDeckHeader';
@@ -36,8 +37,14 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
     );
   }
 
+  const contactWhatsapp = deck?.contactWhatsapp ?? null;
+  const contactProps =
+    deck !== undefined && contactWhatsapp !== null
+      ? { whatsapp: contactWhatsapp, sharerName: deck.sharerName, deckName: deck.name }
+      : null;
+
   return (
-    <div className={styles.page}>
+    <div className={contactProps === null ? styles.page : `${styles.page} ${styles.withBar}`}>
       <SharedTopBar shareToken={token} isSignedIn={user !== null} />
       <main className={styles.main}>
         {deck === undefined && query.isError && (
@@ -56,7 +63,10 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
         {deck !== undefined && (
           <div className={styles.content}>
             <div className={styles.top}>
-              <SharedDeckHeader deck={deck} />
+              <SharedDeckHeader
+                deck={deck}
+                contact={contactProps === null ? undefined : <SharedContactButton {...contactProps} variant="pill" />}
+              />
               <SharedComparison deck={deck} />
             </div>
             <SharedDeckList
@@ -72,6 +82,7 @@ export function SharedDeckPage({ token, view, onViewChange }: ISharedDeckPagePro
         <SharedMissingView deck={deck} onClose={() => onViewChange(undefined)} />
       )}
       <SharedDeckFooter />
+      {contactProps !== null && <SharedContactButton {...contactProps} variant="bar" />}
     </div>
   );
 }

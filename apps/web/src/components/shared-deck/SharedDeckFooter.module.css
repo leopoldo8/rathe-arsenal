@@ -12,8 +12,3 @@
   margin: 0 0 var(--ra-space-2);
   max-inline-size: 92ch;
 }
-
-.copyright {
-  color: var(--ra-fg-tertiary);
-  font-weight: var(--ra-weight-semibold);
-}

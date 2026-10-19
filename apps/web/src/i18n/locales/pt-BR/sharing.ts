@@ -46,8 +46,40 @@ export const sharing = {
   },
   // The owner opening their own link
   owner: {
+    manage: 'Gerenciar compartilhamento',
     title: 'Este é o seu link',
     body: 'Você está vendo o deck como qualquer pessoa vê. A comparação e a cópia aparecem só para os outros.',
+  },
+  // WhatsApp contact (shared page, share card, Settings)
+  contact: {
+    chatButton: 'Chamar {{name}} no WhatsApp',
+    pill: 'WhatsApp',
+    barNote: 'Tem esta carta ou quer trocar? Abre uma conversa com mensagem pronta.',
+    message: 'Oi! Vi seu deck {{deck}} no Rathe Arsenal.',
+    switchLabel: 'Mostrar meu WhatsApp',
+    needNumber: 'Adicione um número para ligar.',
+    numberLine: 'Número {{number}}',
+    previewLabel: 'Como aparece no link',
+    previewMessage: 'Mensagem pronta: "{{message}}"',
+    off: 'Desligado. O link não mostra seu número nem o botão.',
+    fieldLabel: 'Número do WhatsApp (opcional)',
+    countryPrefix: '+55',
+    saveAndShow: 'Salvar e mostrar',
+    savedNote: 'Fica salvo no seu perfil e vale para todos os seus links. Você pode trocar em Configurações.',
+    toggleFailed: 'Não foi possível mudar o WhatsApp deste link. Tente novamente.',
+    invalid: 'Número incompleto. Digite DDD e número, por exemplo 53 99999-0000.',
+    saveFailed: 'Não foi possível salvar o número. Tente novamente.',
+    settingsTitle: 'Contato',
+    settingsBody: 'Opcional. Deixe um jeito de as pessoas falarem com você.',
+    settingsLabel: 'WhatsApp (opcional)',
+    settingsHint:
+      'O número só aparece nos links em que você ligar "Mostrar meu WhatsApp". Quem abrir o link fala com você pelo WhatsApp, sem ver seu e-mail.',
+    save: 'Salvar número',
+    saving: 'Salvando',
+    remove: 'Remover número',
+    saved: 'Número salvo.',
+    removed: 'Número removido.',
+    previewFallbackName: 'você',
   },
   // Compact card list
   list: {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { ContactSetting } from '../../components/settings/ContactSetting';
 import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
@@ -100,6 +101,9 @@ export function SettingsPage() {
         </div>
         <DisplayNameSetting />
       </section>
+
+      {/* ---- Section: Contact (optional WhatsApp number shown on shared links) ---- */}
+      <ContactSetting className={styles.section} />
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">

@@ -25,12 +25,12 @@ interface ISharedComparisonProps {
  */
 export function SharedComparison({ deck }: ISharedComparisonProps): React.ReactElement {
   const { user } = useAuth();
-  if (deck.isOwner) return <OwnerNote />;
+  if (deck.isOwner) return <OwnerNote deckId={deck.deckId} />;
   if (user === null) return <Invitation token={deck.token} />;
   return <CoveragePanel deck={deck} />;
 }
 
-function OwnerNote(): React.ReactElement {
+function OwnerNote({ deckId }: { readonly deckId: number | null }): React.ReactElement {
   const { t } = useTranslation();
   return (
     <aside className={styles.panel} aria-labelledby="shared-owner-title" data-testid="shared-owner-note">
@@ -38,6 +38,18 @@ function OwnerNote(): React.ReactElement {
       <p id="shared-owner-title" className={styles.copy}>
         {t('sharing.owner.body')}
       </p>
+      {deckId !== null && (
+        <div className={styles.actions}>
+          <Link
+            to="/decks/$deckId"
+            params={{ deckId: String(deckId) }}
+            search={{ edit: undefined }}
+            className={styles.secondaryLink}
+          >
+            {t('sharing.owner.manage')}
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

@@ -34,7 +34,6 @@ interface IAuthMeResponse {
   role: TUserRole;
   chatAccess?: boolean;
   displayName?: string | null;
-  /** Returned by the API; no UI reads it yet. */
   whatsappNumber?: string | null;
   settings: IAuthSettings;
 }
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         // Default to 'user' if an older server response omits role (fail-safe:
         // never grant admin UI on a missing field).
-        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, displayName: res.displayName ?? null });
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null });
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
         if (res.settings?.theme) {
@@ -140,6 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev === null ? prev : { ...prev, displayName }));
   }, []);
 
+  const setWhatsappNumber = useCallback((whatsappNumber: string | null) => {
+    setUser((prev) => (prev === null ? prev : { ...prev, whatsappNumber }));
+  }, []);
+
   const verifyEmail = useCallback(async (tkn: string) => {
     const res = await apiFetch<IAuthSignResponse>(
       '/auth/verify-email', { method: 'POST', body: JSON.stringify({ token: tkn }) },
@@ -185,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // assigning `undefined` to an optional field is a type error.
     ...(settings !== undefined ? { settings } : {}),
     setSettings,
-    signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount, setDisplayName,
-  }), [user, token, isLoading, settings, setSettings, setDisplayName, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
+    signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount, setDisplayName, setWhatsappNumber,
+  }), [user, token, isLoading, settings, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

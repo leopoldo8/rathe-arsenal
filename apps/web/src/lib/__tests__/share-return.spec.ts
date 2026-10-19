@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  SHARE_RETURN_MAX_AGE_MS,
   SHARE_RETURN_STORAGE_KEY,
   clearShareReturn,
   isSafeReturnPath,
@@ -40,6 +41,7 @@ describe('share return storage', () => {
   afterEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('round-trips the shared page the visitor came from', () => {
@@ -52,6 +54,7 @@ describe('share return storage', () => {
     expect(JSON.parse(localStorage.getItem(SHARE_RETURN_STORAGE_KEY) ?? 'null')).toEqual({
       returnTo: `/d/${TOKEN}`,
       shareToken: TOKEN,
+      savedAt: expect.any(Number),
     });
   });
 
@@ -63,7 +66,7 @@ describe('share return storage', () => {
   it('ignores a stored value whose returnTo is not a shared path', () => {
     localStorage.setItem(
       SHARE_RETURN_STORAGE_KEY,
-      JSON.stringify({ returnTo: 'https://evil.example', shareToken: TOKEN }),
+      JSON.stringify({ returnTo: 'https://evil.example', shareToken: TOKEN, savedAt: Date.now() }),
     );
     expect(readShareReturn()).toBeNull();
   });
@@ -71,6 +74,29 @@ describe('share return storage', () => {
   it('ignores malformed JSON', () => {
     localStorage.setItem(SHARE_RETURN_STORAGE_KEY, '{nope');
     expect(readShareReturn()).toBeNull();
+  });
+
+  it('still returns an entry just inside the 7-day window', () => {
+    vi.useFakeTimers();
+    writeShareReturn(TOKEN);
+    vi.advanceTimersByTime(SHARE_RETURN_MAX_AGE_MS - 1000);
+    expect(readShareReturn()).not.toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('ignores and clears an entry older than 7 days', () => {
+    vi.useFakeTimers();
+    writeShareReturn(TOKEN);
+    vi.advanceTimersByTime(SHARE_RETURN_MAX_AGE_MS + 1000);
+    expect(readShareReturn()).toBeNull();
+    expect(localStorage.getItem(SHARE_RETURN_STORAGE_KEY)).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('treats an entry with no timestamp as expired and clears it', () => {
+    localStorage.setItem(SHARE_RETURN_STORAGE_KEY, JSON.stringify({ returnTo: `/d/${TOKEN}`, shareToken: TOKEN }));
+    expect(readShareReturn()).toBeNull();
+    expect(localStorage.getItem(SHARE_RETURN_STORAGE_KEY)).toBeNull();
   });
 
   it('clears the key', () => {

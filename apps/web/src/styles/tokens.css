@@ -115,6 +115,12 @@
   --ra-radius-xl:   16px; /* large panels */
   --ra-radius-full: 9999px;
 
+  /* ---------- Contact: WhatsApp brand green and the dark ink readable on it ---------- */
+  --ra-whatsapp:       #25d366;
+  --ra-whatsapp-ink:   #07210f;
+  --ra-whatsapp-soft:  rgba(37, 211, 102, 0.1);
+  --ra-whatsapp-line:  rgba(37, 211, 102, 0.4);
+
   /* ---------- Motion ---------- */
   --ra-ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
   --ra-duration:    120ms;

@@ -7,13 +7,15 @@ import styles from './SharedDeckHeader.module.css';
 
 interface ISharedDeckHeaderProps {
   readonly deck: ISharedDeckResponse;
+  /** WhatsApp pill shown beside the sharer's name (desktop); omitted when the link shows no contact. */
+  readonly contact?: React.ReactNode;
 }
 
 function findHeroCard(cards: readonly ISharedCard[]): ISharedCard | undefined {
   return cards.find((card) => card.slot === 'hero');
 }
 
-export function SharedDeckHeader({ deck }: ISharedDeckHeaderProps): React.ReactElement {
+export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const heroCard = findHeroCard(deck.cards);
   const art = useImageFallback(imageSources(heroCard?.imageUrl ?? null, 'large'));
@@ -45,9 +47,12 @@ export function SharedDeckHeader({ deck }: ISharedDeckHeaderProps): React.ReactE
             <span className={styles.chip}>{t('sharing.page.heroLine', { hero: deck.hero })}</span>
             <span className={styles.chip}>{t('sharing.page.cardCount', { count: deck.totalCards })}</span>
           </div>
-          <p className={styles.byline}>
-            {t('sharing.page.bylinePrefix')} <b>{deck.sharerName}</b> · {t('sharing.page.bylineSuffix')}
-          </p>
+          <div className={styles.bylineRow}>
+            <p className={styles.byline}>
+              {t('sharing.page.bylinePrefix')} <b>{deck.sharerName}</b> · {t('sharing.page.bylineSuffix')}
+            </p>
+            {contact}
+          </div>
         </div>
       </div>
     </section>

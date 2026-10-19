@@ -39,20 +39,20 @@ describe('DeckShareCard', () => {
 
   it('off: says only the owner sees the deck and shows no address or download', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: null, token: null, showContact: false }));
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
     expect(await screen.findByText('Só você vê este deck')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByTestId('deck-share-switch')).toHaveAttribute('aria-checked', 'false');
     expect(screen.queryByTestId('deck-share-address')).not.toBeInTheDocument();
     expect(screen.queryByTestId('deck-share-download')).not.toBeInTheDocument();
   });
 
   it('on: shows the address, the missing-view link, the sharer name and the image download', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
     expect(await screen.findByText('Link ativo')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('deck-share-switch')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('deck-share-address')).toHaveValue(URL);
     expect(screen.getByTestId('deck-share-missing-link')).toHaveAttribute('href', `${URL}?view=missing`);
     expect(screen.getByTestId('deck-share-download')).toHaveAttribute(
@@ -66,7 +66,7 @@ describe('DeckShareCard', () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
     const user = userEvent.setup();
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
     await user.click(await screen.findByRole('button', { name: 'Copiar' }));
 
@@ -77,9 +77,9 @@ describe('DeckShareCard', () => {
   it('turning it on posts to the share route and shows the new address', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: null, token: null, showContact: false }));
     api.handlers.set('POST /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
-    await userEvent.click(await screen.findByRole('switch'));
+    await userEvent.click(await screen.findByTestId('deck-share-switch'));
 
     expect(await screen.findByTestId('deck-share-address')).toHaveValue(URL);
   });
@@ -97,12 +97,12 @@ describe('DeckShareCard', () => {
     }));
     const setDisplayName = vi.fn();
     const user = userEvent.setup();
-    renderWithProviders(<DeckShareCard deckId={7} />, makeAuth({ user: { ...makeAuth().user!, displayName: null }, setDisplayName }));
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />, makeAuth({ user: { ...makeAuth().user!, displayName: null }, setDisplayName }));
 
-    await user.click(await screen.findByRole('switch'));
+    await user.click(await screen.findByTestId('deck-share-switch'));
 
     expect(await screen.findByText('Antes de ativar, como você quer aparecer?')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('deck-share-switch')).toHaveAttribute('aria-checked', 'true');
 
     const activate = screen.getByRole('button', { name: 'Ativar link' });
     expect(activate).toHaveAttribute('aria-disabled', 'true');
@@ -127,22 +127,22 @@ describe('DeckShareCard', () => {
       throw apiError(409, 'DISPLAY_NAME_REQUIRED');
     });
     const user = userEvent.setup();
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
-    await user.click(await screen.findByRole('switch'));
+    await user.click(await screen.findByTestId('deck-share-switch'));
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
 
     await waitFor(() => expect(screen.queryByLabelText('Nome de exibição')).not.toBeInTheDocument());
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByTestId('deck-share-switch')).toHaveAttribute('aria-checked', 'false');
   });
 
   it('turning it off asks for confirmation first, then deletes the share', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
     api.handlers.set('DELETE /decks/7/share', () => undefined);
     const user = userEvent.setup();
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
-    await user.click(await screen.findByRole('switch'));
+    await user.click(await screen.findByTestId('deck-share-switch'));
     const confirm = screen.getByRole('group', { name: 'Desativar o link?' });
     expect(api.calls.map((call) => call.key)).not.toContain('DELETE /decks/7/share');
     await user.click(within(confirm).getByRole('button', { name: 'Desativar link' }));
@@ -154,9 +154,9 @@ describe('DeckShareCard', () => {
   it('keeping the link on dismisses the confirmation without calling the API', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
     const user = userEvent.setup();
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
-    await user.click(await screen.findByRole('switch'));
+    await user.click(await screen.findByTestId('deck-share-switch'));
     await user.click(screen.getByRole('button', { name: 'Manter ativo' }));
 
     expect(screen.getByTestId('deck-share-address')).toBeInTheDocument();
@@ -168,10 +168,93 @@ describe('DeckShareCard', () => {
     api.handlers.set('POST /decks/7/share', () => {
       throw apiError(500, null);
     });
-    renderWithProviders(<DeckShareCard deckId={7} />);
+    renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
 
-    await userEvent.click(await screen.findByRole('switch'));
+    await userEvent.click(await screen.findByTestId('deck-share-switch'));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível ativar o link');
+  });
+
+  describe('WhatsApp contact', () => {
+    const withNumber = makeAuth({ user: { ...makeAuth().user!, whatsappNumber: '5553999990000' } });
+
+    it('number saved and switch on: shows the number and a preview with the ready message', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: true }));
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />, withNumber);
+
+      const row = await screen.findByTestId('deck-share-contact');
+      expect(within(row).getByTestId('deck-share-contact-switch')).toHaveAttribute('aria-checked', 'true');
+      expect(within(row).getByText('Número +55 53 99999-0000')).toBeInTheDocument();
+      expect(within(row).getByText(/Oi! Vi seu deck Rhinar Rampage no Rathe Arsenal\./)).toBeInTheDocument();
+      expect(within(row).getByText('Chamar Dudu_Pelotas no WhatsApp')).toBeInTheDocument();
+    });
+
+    it('turning the switch off patches showContact and says the link shows nothing', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: true }));
+      api.handlers.set('PATCH /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />, withNumber);
+
+      await userEvent.click(await screen.findByTestId('deck-share-contact-switch'));
+
+      expect(await screen.findByText('Desligado. O link não mostra seu número nem o botão.')).toBeInTheDocument();
+      expect(api.calls.find((call) => call.key === 'PATCH /decks/7/share')?.body).toEqual({ showContact: false });
+    });
+
+    it('no number: the switch is disabled and the inline field is offered', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: true }));
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
+
+      const row = await screen.findByTestId('deck-share-contact');
+      expect(within(row).getByTestId('deck-share-contact-switch')).toHaveAttribute('aria-checked', 'false');
+      expect(within(row).getByTestId('deck-share-contact-switch')).toHaveAttribute('aria-disabled', 'true');
+      expect(within(row).getByText('Adicione um número para ligar.')).toBeInTheDocument();
+      expect(within(row).getByLabelText('Número do WhatsApp (opcional)')).toBeInTheDocument();
+    });
+
+    it('no number: saves it, mirrors it into the user and turns the link switch on', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
+      api.handlers.set('PATCH /users/me/contact', () => ({ whatsappNumber: '5553999990000' }));
+      api.handlers.set('PATCH /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: true }));
+      const setWhatsappNumber = vi.fn();
+      const user = userEvent.setup();
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />, makeAuth({ setWhatsappNumber }));
+
+      await user.type(await screen.findByLabelText('Número do WhatsApp (opcional)'), '53 99999-0000');
+      await user.click(screen.getByRole('button', { name: 'Salvar e mostrar' }));
+
+      await waitFor(() => expect(setWhatsappNumber).toHaveBeenCalledWith('5553999990000'));
+      expect(api.calls.find((call) => call.key === 'PATCH /users/me/contact')?.body).toEqual({
+        whatsappNumber: '53 99999-0000',
+      });
+      await waitFor(() =>
+        expect(api.calls.find((call) => call.key === 'PATCH /decks/7/share')?.body).toEqual({ showContact: true }),
+      );
+    });
+
+    it('no number: an incomplete number shows the hint without calling the API', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
+      const user = userEvent.setup();
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
+
+      await user.type(await screen.findByLabelText('Número do WhatsApp (opcional)'), '53 9999');
+      await user.click(screen.getByRole('button', { name: 'Salvar e mostrar' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Número incompleto');
+      expect(api.calls.some((call) => call.key === 'PATCH /users/me/contact')).toBe(false);
+    });
+
+    it('no number: shows the hint when the API answers 400', async () => {
+      api.handlers.set('GET /decks/7/share', () => ({ url: URL, token: TOKEN, showContact: false }));
+      api.handlers.set('PATCH /users/me/contact', () => {
+        throw apiError(400, null);
+      });
+      const user = userEvent.setup();
+      renderWithProviders(<DeckShareCard deckId={7} deckName="Rhinar Rampage" />);
+
+      await user.type(await screen.findByLabelText('Número do WhatsApp (opcional)'), '53 99999-0000');
+      await user.click(screen.getByRole('button', { name: 'Salvar e mostrar' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Número incompleto');
+    });
   });
 });

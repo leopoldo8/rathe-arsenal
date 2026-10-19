@@ -12,6 +12,7 @@ import {
 } from '../../api/shared-decks';
 import { useAuth } from '../../auth/useAuth';
 import { AuthFetchError } from '../../lib/auth-fetch';
+import { DeckShareContact } from './DeckShareContact';
 import { DisplayNameForm } from './DisplayNameForm';
 import styles from './DeckShareCard.module.css';
 
@@ -21,6 +22,7 @@ type TPhase = 'idle' | 'prompt' | 'confirmOff';
 
 interface IDeckShareCardProps {
   readonly deckId: number;
+  readonly deckName: string;
 }
 
 /**
@@ -29,7 +31,7 @@ interface IDeckShareCardProps {
  * sharing is on). First time sharing, the API answers DISPLAY_NAME_REQUIRED
  * and the card asks for the name before retrying.
  */
-export function DeckShareCard({ deckId }: IDeckShareCardProps): React.ReactElement {
+export function DeckShareCard({ deckId, deckName }: IDeckShareCardProps): React.ReactElement {
   const { t } = useTranslation();
   const { token: authToken, user, setDisplayName } = useAuth();
   const shareQuery = useDeckShareQuery(deckId);
@@ -207,6 +209,7 @@ export function DeckShareCard({ deckId }: IDeckShareCardProps): React.ReactEleme
           >
             {t('sharing.card.missingLink')}
           </a>
+          <DeckShareContact deckId={deckId} deckName={deckName} showContact={state?.showContact ?? false} />
           <p className={styles.label}>{t('sharing.card.imageLabel')}</p>
           <img
             className={styles.preview}

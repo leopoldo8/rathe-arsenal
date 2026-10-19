@@ -59,3 +59,14 @@
     align-items: stretch;
   }
 }
+
+/* Room for the fixed WhatsApp bar so it never covers the footer on phones. */
+.withBar {
+  padding-block-end: 96px;
+}
+
+@media (min-width: 720px) {
+  .withBar {
+    padding-block-end: 0;
+  }
+}

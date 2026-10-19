@@ -46,8 +46,40 @@ export const sharing = {
   },
   // The owner opening their own link
   owner: {
+    manage: 'Manage sharing',
     title: 'This is your link',
     body: 'You are seeing the deck the way anyone does. The comparison and the copy button show only for others.',
+  },
+  // WhatsApp contact (shared page, share card, Settings)
+  contact: {
+    chatButton: 'Message {{name}} on WhatsApp',
+    pill: 'WhatsApp',
+    barNote: 'Have this card or want to trade? Opens a chat with a ready message.',
+    message: 'Hi! I saw your deck {{deck}} on Rathe Arsenal.',
+    switchLabel: 'Show my WhatsApp',
+    needNumber: 'Add a number to turn this on.',
+    numberLine: 'Number {{number}}',
+    previewLabel: 'How it looks on the link',
+    previewMessage: 'Ready message: "{{message}}"',
+    off: 'Off. The link shows neither your number nor the button.',
+    fieldLabel: 'WhatsApp number (optional)',
+    countryPrefix: '+55',
+    saveAndShow: 'Save and show',
+    savedNote: 'Saved to your profile and used by all your links. You can change it in Settings.',
+    toggleFailed: 'Could not change WhatsApp for this link. Please try again.',
+    invalid: 'Number incomplete. Enter the area code and number, for example 53 99999-0000.',
+    saveFailed: 'Could not save the number. Please try again.',
+    settingsTitle: 'Contact',
+    settingsBody: 'Optional. Leave a way for people to reach you.',
+    settingsLabel: 'WhatsApp (optional)',
+    settingsHint:
+      'The number only shows on links where you turn on "Show my WhatsApp". Whoever opens the link talks to you on WhatsApp without seeing your email.',
+    save: 'Save number',
+    saving: 'Saving',
+    remove: 'Remove number',
+    saved: 'Number saved.',
+    removed: 'Number removed.',
+    previewFallbackName: 'you',
   },
   // Compact card list
   list: {

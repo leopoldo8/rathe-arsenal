@@ -40,8 +40,10 @@ export interface ISharedDeckResponse {
   /** The owner's not-owned cards, grouped by (cardIdentifier, slot). */
   readonly missing: readonly ISharedCard[];
   readonly missingCount: number;
-  /** Owner's WhatsApp number when they chose to show it; no UI reads it yet. */
+  /** Digits with country code; set only when the owner saved a number and left the link's switch on. */
   readonly contactWhatsapp: string | null;
+  /** The deck's id, only for the owner (to link back to the sharing card); null for everyone else. */
+  readonly deckId: number | null;
 }
 
 export interface ISharedDeckCoverage {
@@ -53,7 +55,7 @@ export interface ISharedDeckCoverage {
 export interface IDeckShareState {
   readonly url: string | null;
   readonly token: string | null;
-  /** Whether the owner shows a contact on the shared page; no UI reads it yet. */
+  /** Whether this link shows the owner's WhatsApp button. */
   readonly showContact: boolean;
 }
 
@@ -117,6 +119,30 @@ export function enableDeckShare(deckId: number | string, authToken: string | nul
 
 export function disableDeckShare(deckId: number | string, authToken: string | null): Promise<void> {
   return authFetch<void>(`/decks/${deckId}/share`, { method: 'DELETE' }, authToken);
+}
+
+export function setDeckShareContact(
+  deckId: number | string,
+  showContact: boolean,
+  authToken: string | null,
+): Promise<IDeckShareState> {
+  return authFetch<IDeckShareState>(
+    `/decks/${deckId}/share`,
+    { method: 'PATCH', body: JSON.stringify({ showContact }) },
+    authToken,
+  );
+}
+
+/** Saves (or, with null, removes) the sharer's WhatsApp number. 400 on an invalid number. */
+export function patchContact(
+  whatsappNumber: string | null,
+  authToken: string | null,
+): Promise<{ whatsappNumber: string | null }> {
+  return authFetch<{ whatsappNumber: string | null }>(
+    '/users/me/contact',
+    { method: 'PATCH', body: JSON.stringify({ whatsappNumber }) },
+    authToken,
+  );
 }
 
 export function patchDisplayName(displayName: string, authToken: string | null): Promise<{ displayName: string }> {
@@ -198,6 +224,17 @@ export function useEnableDeckShareMutation(deckId: number | string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => enableDeckShare(deckId, authToken),
+    onSuccess: (state) => {
+      queryClient.setQueryData(deckShareQueryKey(deckId), state);
+    },
+  });
+}
+
+export function useSetDeckShareContactMutation(deckId: number | string) {
+  const { token: authToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (showContact: boolean) => setDeckShareContact(deckId, showContact, authToken),
     onSuccess: (state) => {
       queryClient.setQueryData(deckShareQueryKey(deckId), state);
     },
