@@ -15,6 +15,7 @@
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "share-images:purge": "tsx scripts/share-images-purge.ts",
     "purge:deleted-users": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/purge-deleted-users.ts",
     "share:report": "tsx scripts/share-report.ts",
     "gold:sample": "node node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs scripts/gold-set/sample-decks.ts",

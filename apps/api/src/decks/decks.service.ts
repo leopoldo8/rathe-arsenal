@@ -1137,5 +1137,10 @@ export class DecksService {
   async untrack(userId: string, deckId: number): Promise<void> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
     await this.trackedDeckRepo.delete({ id: deckId, userId });
+    // share_image has no foreign key to the deck, so its row would otherwise outlive it.
+    await this.dataSource.query(
+      `DELETE FROM share_image WHERE "targetKind" = 'deck' AND "targetId" = $1`,
+      [deckId],
+    );
   }
 }
