@@ -20,6 +20,7 @@ export interface ISharedDeckResponse {
   name: string;
   hero: string;
   heroIdentifier: string | null;
+  heroCard: ISharedCard | null;
   format: string;
   sharerName: string;
   contactWhatsapp: string | null;

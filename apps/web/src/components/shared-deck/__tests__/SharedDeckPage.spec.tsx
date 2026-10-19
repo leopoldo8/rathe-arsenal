@@ -78,6 +78,7 @@ const DECK: ISharedDeckResponse = {
   name: 'Rhinar Rampage',
   hero: 'Rhinar, Reckless Rampage',
   heroIdentifier: 'rhinar-reckless-rampage',
+  heroCard: null,
   format: 'Classic Constructed',
   sharerName: 'Dudu_Pelotas',
   isOwner: false,

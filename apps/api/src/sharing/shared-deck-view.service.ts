@@ -12,6 +12,7 @@ import { buildDeckShareUrl } from './share-url';
 import { SharedDeckLookup } from './shared-deck-lookup';
 import { shareLinkUnavailable } from './sharing-errors';
 import {
+  resolveHeroCard,
   sumQuantities,
   toSharedCardFromBreakdown,
   toSharedCardFromRow,
@@ -63,6 +64,7 @@ export class SharedDeckViewService {
       name: deck.name,
       hero: deck.hero,
       heroIdentifier: deck.heroIdentifier,
+      heroCard: resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard),
       format: deck.format,
       sharerName: owner.displayName ?? '',
       contactWhatsapp: deck.shareShowsContact ? owner.whatsappNumber : null,

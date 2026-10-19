@@ -30,6 +30,8 @@ export interface ISharedDeckResponse {
   readonly name: string;
   readonly hero: string;
   readonly heroIdentifier: string | null;
+  /** The hero's card, from the deck or, for scratch decks, from the catalog. */
+  readonly heroCard: ISharedCard | null;
   readonly format: string;
   readonly sharerName: string;
   /** True when the optional visitor is the owner. */

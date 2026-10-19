@@ -17,7 +17,7 @@ function findHeroCard(cards: readonly ISharedCard[]): ISharedCard | undefined {
 
 export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): React.ReactElement {
   const { t } = useTranslation();
-  const heroCard = findHeroCard(deck.cards);
+  const heroCard = deck.heroCard ?? findHeroCard(deck.cards);
   const art = useImageFallback(imageSources(heroCard?.imageUrl ?? null, 'large'));
 
   return (

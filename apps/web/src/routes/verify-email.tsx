@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { clearShareReturn, readShareReturn } from '../lib/share-return';
 import { localizeAuthError } from '../auth/localize-auth-error';
@@ -23,6 +23,8 @@ function VerifyEmailPage(): React.ReactElement {
   const router = useRouter();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [errorMsg, setErrorMsg] = useState('');
+  // Read once at mount: StrictMode runs the effect twice and the first run clears the stored return.
+  const shareReturnRef = useRef(readShareReturn());
 
   useEffect(() => {
     if (!token) { setStatus('error'); setErrorMsg(t('auth.verifyNoToken')); return; }
@@ -31,7 +33,7 @@ function VerifyEmailPage(): React.ReactElement {
         setStatus('success');
         // A3: verified users land on /onboarding per R43, unless they signed up from a
         // shared page: then they go back to it (SD-10), including across the email round trip.
-        const shareReturn = readShareReturn();
+        const shareReturn = shareReturnRef.current;
         clearShareReturn();
         setTimeout(() => {
           if (shareReturn) router.history.push(shareReturn.returnTo);
