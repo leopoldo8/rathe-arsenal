@@ -52,15 +52,23 @@ const HEAD_TAGS_REPLACED_BY_SHARE_META = [
   /<meta\b[^>]*\b(?:name|property)=["'](?:description|robots|referrer|twitter:[^"']*|og:[^"']*)["'][^>]*>\s*/gi,
 ];
 
-/** Drops the SPA's own title and description tags first, so the page never carries two of them. */
+const CHARSET_META = /<meta\b[^>]*\bcharset=[^>]*>/i;
+const HEAD_OPEN = /<head\b[^>]*>/i;
+
+/**
+ * Drops the SPA's own title and description tags first, so the page never carries two of them.
+ * The share tags go at the top of the head: Meta's crawler stops reading head meta tags once it
+ * meets a `<noscript>`, and the SPA's head has one for its fonts.
+ */
 export function injectShareMeta(html: string, meta: IShareMeta): string {
   const stripped = HEAD_TAGS_REPLACED_BY_SHARE_META.reduce(
     (current, pattern) => current.replace(pattern, ''),
     html,
   );
   const tags = buildShareMetaTags(meta);
-  if (!/<\/head>/i.test(stripped)) return `${tags}\n${stripped}`;
-  return stripped.replace(/<\/head>/i, () => `    ${tags}\n  </head>`);
+  const anchor = CHARSET_META.test(stripped) ? CHARSET_META : HEAD_OPEN.test(stripped) ? HEAD_OPEN : null;
+  if (!anchor) return `${tags}\n${stripped}`;
+  return stripped.replace(anchor, (match) => `${match}\n    ${tags}`);
 }
 
 /** Used only when the web app has not been built (local API without a web build). */

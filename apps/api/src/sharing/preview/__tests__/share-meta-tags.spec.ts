@@ -63,4 +63,18 @@ describe('share meta tags', () => {
     expect(html).toContain('<title>Rathe Arsenal</title>');
     expect(html).toContain('<div id="root">');
   });
+
+  it('puts the share tags before any noscript or script, where Meta stops reading meta tags', () => {
+    const spaWithNoscript = `<!doctype html><html><head><meta charset="UTF-8" />
+<script>window.theme = 'dark';</script>
+<noscript><link rel="stylesheet" href="/fonts.css" /></noscript>
+<title>Rathe Arsenal</title></head><body></body></html>`;
+
+    const html = injectShareMeta(spaWithNoscript, buildDeckShareMeta(DECK, 'tok', 'https://ra.example'));
+
+    const ogTitleAt = html.indexOf('og:title');
+    expect(ogTitleAt).toBeGreaterThan(html.indexOf('charset'));
+    expect(ogTitleAt).toBeLessThan(html.indexOf('<script>'));
+    expect(ogTitleAt).toBeLessThan(html.indexOf('<noscript>'));
+  });
 });
