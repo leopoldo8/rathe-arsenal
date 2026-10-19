@@ -1,10 +1,15 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
+export type TReferredVia = 'deck' | 'want' | 'sell';
 
 /**
  * Authorization role. `admin` unlocks owner/operator surfaces (e.g. the manual
@@ -25,6 +30,7 @@ export enum EUserRole {
  * Token columns hold sha256 hashes of the raw tokens — the raw token is
  * sent in the email link only, never stored.
  */
+@Check('CHK_user_referred_via_valid', `"referredVia" IN ('deck', 'want', 'sell')`)
 @Entity({ name: 'user' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -84,6 +90,22 @@ export class UserEntity {
    */
   @Column({ type: 'jsonb', nullable: true })
   preferences!: { theme: 'dark' | 'light' } | null;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  displayName!: string | null;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  whatsappNumber!: string | null;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'referredByUserId', foreignKeyConstraintName: 'FK_user_referredByUserId' })
+  referredBy?: UserEntity | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  referredByUserId!: string | null;
+
+  @Column({ type: 'varchar', length: 8, nullable: true })
+  referredVia!: TReferredVia | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

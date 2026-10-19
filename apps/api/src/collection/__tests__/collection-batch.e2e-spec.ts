@@ -6,8 +6,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { CatalogService } from '../../catalog/catalog.service';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
-import { createValidationPipe } from '../../common/validation/create-validation-pipe';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const PASSWORD = 'collection-batch-e2e-password-123';
 const CARD_A = 'nimblism-red';
@@ -77,9 +76,7 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(createValidationPipe());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
     catalogService = moduleRef.get(CatalogService);

@@ -64,7 +64,7 @@ import { ChatModule } from './chat/chat.module';
       // __dirname at runtime = /app/apps/api/dist
       // 3x .. = /app → apps/web/dist = /app/apps/web/dist
       rootPath: join(__dirname, '..', '..', '..', 'apps', 'web', 'dist'),
-      exclude: ['/api/{*path}'],
+      exclude: ['/api/{*path}', '/d/{*path}', '/l/{*path}'],
       serveStaticOptions: { fallthrough: true },
     }),
   ],

@@ -4,8 +4,7 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
-import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
-import { createValidationPipe } from '../common/validation/create-validation-pipe';
+import { configureHttpApp } from '../http/configure-http-app';
 
 const GLOBAL_LIMIT_PER_MINUTE = 120;
 
@@ -29,9 +28,7 @@ describe('card scanner routes under the global throttler (E2E)', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(createValidationPipe());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
 

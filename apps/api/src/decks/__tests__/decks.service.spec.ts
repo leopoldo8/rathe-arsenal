@@ -36,6 +36,8 @@ function buildTrackedDeck(
     format: 'Classic Constructed',
     status: 'building',
     notes: null,
+    shareToken: null,
+    shareShowsContact: true,
     trackedAt: new Date('2025-01-15T10:00:00Z'),
     updatedAt: new Date('2025-01-15T10:00:00Z'),
     user: {} as TrackedDeckEntity['user'],

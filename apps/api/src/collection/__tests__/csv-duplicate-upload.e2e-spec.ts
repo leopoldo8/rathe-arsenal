@@ -5,8 +5,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
-import { createValidationPipe } from '../../common/validation/create-validation-pipe';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const CONTENT_HASH_INDEX = 'IDX_csv_source_user_content_hash_uq';
 const CONCURRENT_UPLOADS = 6;
@@ -35,9 +34,7 @@ describe('duplicate CSV uploads (E2E)', () => {
     jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(createValidationPipe());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
     // The app only synchronizes the schema when it boots as the dev server does; align this database with

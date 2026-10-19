@@ -79,6 +79,13 @@ export class TrackedDeckEntity {
   @Column({ type: 'varchar', length: 16, default: 'building' })
   status!: 'idea' | 'building' | 'ready' | 'active' | 'retired';
 
+  @Index('IDX_tracked_deck_shareToken', { unique: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  shareToken!: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  shareShowsContact!: boolean;
+
   /** Free-text deck notes (EDIT-02). NULL and empty both mean "no notes". */
   @Column({ type: 'text', nullable: true })
   notes!: string | null;

@@ -5,8 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { createValidationPipe } from './common/validation/create-validation-pipe';
+import { configureHttpApp } from './http/configure-http-app';
 import { initApiSentry } from './observability/sentry';
 
 async function bootstrap(): Promise<void> {
@@ -32,9 +31,7 @@ async function bootstrap(): Promise<void> {
   // fallback behavior for validators that don't actually need injection.
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
-  app.setGlobalPrefix('api', { exclude: [] });
-  app.useGlobalPipes(createValidationPipe());
-  app.useGlobalFilters(new HttpExceptionFilter());
+  configureHttpApp(app);
 
   // CORS only needed in dev (production is same-origin: API serves SPA)
   if (process.env.NODE_ENV !== 'production') {

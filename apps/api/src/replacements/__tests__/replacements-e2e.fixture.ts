@@ -10,10 +10,9 @@ import { createMock } from '@golevelup/ts-jest';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
-import { createValidationPipe } from '../../common/validation/create-validation-pipe';
 import { IDeckCardEntry, IDeckImportDto } from '../../fabrary/dtos/deck-import.dto';
 import { FabraryService } from '../../fabrary/fabrary.service';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 export const KATSU = 'katsu-the-wanderer';
 export const TALISHAR = 'talishar-the-lost-prince';
@@ -100,9 +99,7 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
     .useValue(fabrary)
     .compile();
   const app = moduleRef.createNestApplication();
-  app.setGlobalPrefix('api');
-  app.useGlobalPipes(createValidationPipe());
-  app.useGlobalFilters(new HttpExceptionFilter());
+  configureHttpApp(app);
   // Listening once on loopback, as the scanner throttle spec does, keeps supertest from opening and
   // closing a server per request: over the 600 requests of a throttle run that showed ECONNRESET.
   await app.listen(0, '127.0.0.1');

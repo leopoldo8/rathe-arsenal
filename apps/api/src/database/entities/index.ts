@@ -27,3 +27,4 @@ export { ChatUsageEntity } from './chat-usage.entity';
 export { TournamentDeckEntity } from './tournament-deck.entity';
 export { TournamentDeckCardEntity } from './tournament-deck-card.entity';
 export { RulesEntryEntity } from './rules-entry.entity';
+export { ShareEventEntity } from './share-event.entity';
