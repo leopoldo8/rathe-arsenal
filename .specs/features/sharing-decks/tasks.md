@@ -52,5 +52,5 @@ F and W start together. A and B start when F is merged. W merges last, after A, 
 - [ ] W2 Route `d.$token.tsx` and `components/shared-deck/` per `shared-deck-b` mockups: deck, missing view (`?view=missing`, side panel / bottom sheet), copy-as-text, unavailable page, owner view (no comparison, no copy), anonymous invitation, logged-in coverage + copy → navigate to the new deck. Disclaimer and copyright line. Query with refetch off.
 - [ ] W3 Share card on the deck detail per `share-control-b` mockups: switch, address + copy, missing-view link, download image while on, display-name prompt on `DISPLAY_NAME_REQUIRED`.
 - [ ] W4 Settings display-name field.
-- [ ] W6 (after its mockups are picked) WhatsApp button on the shared page, "show my WhatsApp" switch in the share card, number field in Settings (SD-11).
+- [ ] W6 (alternative B of `.design/mockups/sharing/contact/`, picked 2026-10-18) WhatsApp button on the shared page, "show my WhatsApp" switch in the share card, number field in Settings (SD-11).
 - [ ] W5 Return after auth: `ra.shareReturn` in `localStorage`; sign-up sends `shareToken`; sign-in navigates to a guarded `returnTo` (`/d/` or `/l/` only); unit tests for the guard.
