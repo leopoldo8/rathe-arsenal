@@ -1,0 +1,135 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../auth/useAuth';
+import { authFetch } from '../lib/auth-fetch';
+import { isShareLinkUnavailable } from './shared-decks';
+import { listsQueryKey, type IListCardImage, type TCondition, type TListKind } from './lists';
+
+// Mirrors the shared-list contract of the API (.specs/features/shared-lists/contract.md).
+
+export interface ISharedListLine {
+  readonly id: number;
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: 1 | 2 | 3 | null;
+  readonly type: string;
+  readonly imageUrl: IListCardImage | null;
+  readonly quantity: number;
+  readonly printingLabel: string | null;
+  readonly condition: TCondition | null;
+  readonly priceCents: number | null;
+  readonly sold: boolean;
+}
+
+export interface ISharedListResponse {
+  readonly kind: TListKind;
+  readonly token: string;
+  readonly url: string;
+  readonly name: string;
+  readonly notes: string | null;
+  readonly sharerName: string;
+  /** Digits with country code; set only when the owner saved a number and left the link's switch on. */
+  readonly contactWhatsapp: string | null;
+  readonly isOwner: boolean;
+  /** Only for the owner, to link back to the editor. */
+  readonly listId: number | null;
+  readonly totalPriceCents: number | null;
+  readonly updatedAt: string;
+  readonly lines: readonly ISharedListLine[];
+}
+
+export interface ISharedListMatches {
+  readonly lines: readonly {
+    readonly lineId: number;
+    readonly owned: number;
+    readonly missingInDecks: number;
+  }[];
+}
+
+export interface IListLinkState {
+  readonly intent: TListKind;
+  readonly url: string;
+  readonly token: string;
+  readonly showContact: boolean;
+}
+
+export function sharedListImageDownloadPath(token: string): string {
+  return `/api/shared/lists/${encodeURIComponent(token)}/image?download=1`;
+}
+
+export const listShareQueryKey = (listId: number | string) => ['list-share', String(listId)] as const;
+export const sharedListQueryKey = (token: string, visitorId: string | null) =>
+  ['shared-list', token, visitorId ?? 'anonymous'] as const;
+
+/** The owner's own link of this list; null while sharing is off. */
+export function useListShareQuery(listId: number | string) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: listShareQueryKey(listId),
+    queryFn: () => authFetch<IListLinkState | null>(`/lists/${listId}/share`, {}, token),
+    staleTime: Infinity,
+  });
+}
+
+/** Turning a link on or off changes the "Compartilhada" badge of the index. */
+function useLinkWrite<TVariables>(
+  listId: number | string,
+  request: (variables: TVariables, token: string | null) => Promise<IListLinkState | null>,
+) {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: TVariables) => request(variables, token),
+    onSuccess: (link) => {
+      queryClient.setQueryData<IListLinkState | null>(listShareQueryKey(listId), link);
+      void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
+    },
+  });
+}
+
+export function useEnableListShareMutation(listId: number | string) {
+  return useLinkWrite<void>(listId, (_unused, token) =>
+    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'POST', body: JSON.stringify({}) }, token),
+  );
+}
+
+export function useSetListShareContactMutation(listId: number | string) {
+  return useLinkWrite<boolean>(listId, (showContact, token) =>
+    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'PATCH', body: JSON.stringify({ showContact }) }, token),
+  );
+}
+
+export function useDisableListShareMutation(listId: number | string) {
+  return useLinkWrite<void>(listId, async (_unused, token) => {
+    await authFetch<void>(`/lists/${listId}/share`, { method: 'DELETE' }, token);
+    return null;
+  });
+}
+
+/**
+ * Loads the public shared list. Every successful load records an "open" on
+ * the server, so it never refetches on its own and a dead link is not retried.
+ * The key carries the visitor, so signing in on the page refetches once.
+ */
+export function useSharedListQuery(token: string) {
+  const { token: authToken, user, isLoading } = useAuth();
+  return useQuery({
+    queryKey: sharedListQueryKey(token, user?.id ?? null),
+    queryFn: () => authFetch<ISharedListResponse>(`/shared/lists/${encodeURIComponent(token)}`, {}, authToken),
+    enabled: !isLoading,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: (failureCount, error) => !isShareLinkUnavailable(error) && failureCount < 1,
+  });
+}
+
+/** What the logged-in visitor already has, per line. Not for the owner or anonymous visitors. */
+export function useSharedListMatchesQuery(token: string, enabled: boolean) {
+  const { token: authToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['shared-list-matches', token, user?.id ?? 'anonymous'] as const,
+    queryFn: () => authFetch<ISharedListMatches>(`/shared/lists/${encodeURIComponent(token)}/matches`, {}, authToken),
+    enabled: enabled && authToken !== null,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}

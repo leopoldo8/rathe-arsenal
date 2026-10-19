@@ -60,10 +60,11 @@ export function readShareReturn(): IShareReturn | null {
   }
 }
 
-export function writeShareReturn(shareToken: string): void {
+/** `page` is the route the token belongs to: `d` for a shared deck, `l` for a shared list. */
+export function writeShareReturn(shareToken: string, page: 'd' | 'l' = 'd'): void {
   if (!TOKEN_SHAPE.test(shareToken)) return;
   try {
-    const value: IStoredShareReturn = { returnTo: `/d/${shareToken}`, shareToken, savedAt: Date.now() };
+    const value: IStoredShareReturn = { returnTo: `/${page}/${shareToken}`, shareToken, savedAt: Date.now() };
     localStorage.setItem(SHARE_RETURN_STORAGE_KEY, JSON.stringify(value));
   } catch {
     // Private mode or storage blocked: the visitor just lands on the default page after auth.

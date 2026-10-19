@@ -1,18 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   sharedDeckImageDownloadPath,
   useDisableDeckShareMutation,
   useOwnSharedDeckQuery,
+  useSetDeckShareContactMutation,
   type ILinkState,
 } from "../../api/shared-decks";
-import { buildWhatsappShareUrl } from "../../lib/whatsapp";
-import { WhatsappGlyph } from "../contact/WhatsappGlyph";
+import { ShareAddressRow } from "../share/ShareAddressRow";
+import { ShareContactRow } from "../share/ShareContactRow";
+import { ShareLinkFooter } from "../share/ShareLinkFooter";
+import { ShareWhatsappButton } from "../share/ShareWhatsappButton";
 import { buildMissingMessage } from "../shared-deck/sharedDeckModel";
-import { DeckShareContact } from "./DeckShareContact";
-import styles from "./ShareFlow.module.css";
-
-const COPIED_FEEDBACK_MS = 2000;
 
 interface IShareLinkStepProps {
   readonly deckId: number;
@@ -31,18 +30,7 @@ export function ShareLinkStep({
 }: IShareLinkStepProps): React.ReactElement {
   const { t } = useTranslation();
   const disable = useDisableDeckShareMutation(deckId);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
-    "idle",
-  );
-  const [confirmingOff, setConfirmingOff] = useState(false);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-    },
-    [],
-  );
+  const setContact = useSetDeckShareContactMutation(deckId);
 
   const isMissing = link.intent === "missing";
   const ownView = useOwnSharedDeckQuery(link.token, isMissing);
@@ -56,124 +44,25 @@ export function ShareLinkStep({
       : `${t("sharing.dialog.messageDeck", { deck: deckName })}\n${link.url}`;
   const whatsappReady = !isMissing || ownView.data !== undefined;
 
-  async function handleCopy(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(link.url);
-      setCopyState("copied");
-    } catch {
-      setCopyState("failed");
-    }
-    if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(
-      () => setCopyState("idle"),
-      COPIED_FEEDBACK_MS,
-    );
-  }
-
-  function handleTurnOff(): void {
-    disable.mutate(link.intent, { onSuccess: onTurnedOff });
-  }
-
   return (
     <>
-      <div className={styles.addressRow}>
-        <input
-          className={styles.address}
-          type="text"
-          readOnly
-          value={link.url}
-          aria-label={t("sharing.dialog.addressLabel")}
-          onFocus={(event) => event.currentTarget.select()}
-          data-testid="share-address"
-        />
-        <button
-          type="button"
-          className={styles.secondaryBtn}
-          onClick={() => void handleCopy()}
-        >
-          {copyState === "copied"
-            ? t("sharing.dialog.copied")
-            : t("sharing.dialog.copy")}
-        </button>
-      </div>
-      <p className={styles.status} role="status">
-        {copyState === "failed" ? t("sharing.dialog.copyFailed") : ""}
-      </p>
-
-      <a
-        className={styles.whatsappBtn}
-        href={whatsappReady ? buildWhatsappShareUrl(message) : undefined}
-        aria-disabled={whatsappReady ? undefined : true}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-testid="share-whatsapp"
-      >
-        <WhatsappGlyph />
-        {t("sharing.dialog.sendWhatsapp")}
-      </a>
-
-      <DeckShareContact
-        deckId={deckId}
-        intent={link.intent}
+      <ShareAddressRow url={link.url} />
+      <ShareWhatsappButton message={whatsappReady ? message : null} />
+      <ShareContactRow
+        testId="deck-share-contact"
         showContact={link.showContact}
+        updating={setContact.isPending}
+        onToggle={(next, onFailed) =>
+          setContact.mutate({ intent: link.intent, showContact: next }, { onError: onFailed })
+        }
       />
-
-      {disable.isError && (
-        <p className={styles.error} role="alert">
-          {t("sharing.dialog.turnOffFailed")}
-        </p>
-      )}
-
-      <div className={styles.footer}>
-        {confirmingOff ? (
-          <>
-            <span className={styles.confirmText}>
-              {t("sharing.dialog.turnOffConfirm")}
-            </span>
-            <span className={styles.confirmActions}>
-              <button
-                type="button"
-                className={`${styles.textBtn} ${styles.danger}`}
-                onClick={handleTurnOff}
-                aria-disabled={disable.isPending || undefined}
-                data-testid="share-turn-off-confirm"
-              >
-                {t("sharing.dialog.turnOffYes")}
-              </button>
-              <button
-                type="button"
-                className={styles.textBtn}
-                onClick={() => setConfirmingOff(false)}
-              >
-                {t("sharing.dialog.turnOffNo")}
-              </button>
-            </span>
-          </>
-        ) : (
-          <>
-            <a
-              className={styles.textBtn}
-              href={sharedDeckImageDownloadPath(link.token)}
-              download
-              data-testid="share-download"
-            >
-              {t(
-                isMissing
-                  ? "sharing.dialog.downloadMissing"
-                  : "sharing.dialog.downloadDeck",
-              )}
-            </a>
-            <button
-              type="button"
-              className={styles.textBtn}
-              onClick={() => setConfirmingOff(true)}
-              data-testid="share-turn-off"
-            >
-              {t("sharing.dialog.turnOff")}
-            </button>
-          </>
-        )}
-      </div>
+      <ShareLinkFooter
+        downloadHref={sharedDeckImageDownloadPath(link.token)}
+        downloadLabel={t(isMissing ? "sharing.dialog.downloadMissing" : "sharing.dialog.downloadDeck")}
+        turningOff={disable.isPending}
+        turnOffFailed={disable.isError}
+        onTurnOff={() => disable.mutate(link.intent, { onSuccess: onTurnedOff })}
+      />
     </>
   );
 }

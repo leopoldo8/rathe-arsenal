@@ -28,6 +28,10 @@ interface ICardGalleryCellProps {
   readonly testId?: string;
   readonly quantityTestId?: string;
   readonly dataMissing?: boolean | undefined;
+  /** Drawn over the art (a stamp, a ribbon); it must not capture clicks. */
+  readonly overlay?: React.ReactNode;
+  /** Fades the art and strikes the name through, for a card that is no longer available. */
+  readonly dimmed?: boolean | undefined;
 }
 
 /** One card of a gallery: art (click opens the lightbox), quantity badge and name. */
@@ -46,12 +50,16 @@ export function CardGalleryCell({
   testId,
   quantityTestId,
   dataMissing,
+  overlay,
+  dimmed,
 }: ICardGalleryCellProps): React.ReactElement {
-  const cellClass = [styles.cell, dataMissing === true ? styles.cellMissing : ''].filter(Boolean).join(' ');
+  const cellClass = [styles.cell, dataMissing === true ? styles.cellMissing : '', dimmed === true ? styles.cellDimmed : '']
+    .filter(Boolean)
+    .join(' ');
   const thumbClass = variant === 'full' ? `${styles.thumb} ${styles.thumbFull}` : styles.thumb;
 
   return (
-    <li className={cellClass} data-testid={testId} data-missing={dataMissing}>
+    <li className={cellClass} data-testid={testId} data-missing={dataMissing} data-dimmed={dimmed || undefined}>
       <div className={thumbClass}>
         <CardArt
           name={name}
@@ -68,6 +76,7 @@ export function CardGalleryCell({
               : undefined
           }
         />
+        {overlay}
         {quantityLabel !== undefined && (
           <span className={styles.qtyBadge} data-testid={quantityTestId}>
             {quantityLabel}

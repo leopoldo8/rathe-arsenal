@@ -47,6 +47,20 @@ function serve(lists: ReturnType<typeof makeSummary>[]): void {
 }
 
 describe('ListsIndex', () => {
+  it('marks only the lists with a live link as shared', async () => {
+    serve([
+      makeSummary({ id: 1, kind: 'want', name: 'Faltam pro Oscilio', shared: true }),
+      makeSummary({ id: 2, kind: 'sell', name: 'Oscilio completo', shared: false }),
+    ]);
+    renderWithProviders(<ListsIndex />);
+
+    const badges = await screen.findAllByTestId('list-shared-badge');
+    expect(badges).toHaveLength(1);
+    expect(badges[0]).toHaveTextContent('Compartilhada');
+    expect(within(await screen.findByTestId('lists-want')).getByTestId('list-shared-badge')).toBeInTheDocument();
+    expect(within(screen.getByTestId('lists-sell')).queryByTestId('list-shared-badge')).not.toBeInTheDocument();
+  });
+
   it('groups lists into Procuro and Vendo with counts and the sale total', async () => {
     serve([
       makeSummary({ id: 1, kind: 'want', name: 'Faltam pro Oscilio', copyCount: 15 }),

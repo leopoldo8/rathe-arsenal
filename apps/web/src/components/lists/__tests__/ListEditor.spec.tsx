@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ICardList, IListLine } from '../../../api/lists';
 import { apiError, createFakeApi, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
@@ -64,6 +64,7 @@ beforeEach(() => {
   apiRef.current = api;
   navigateMock.mockReset();
   searchRef.results = [];
+  api.handlers.set('GET /lists/7/share', () => null);
 });
 
 const SELL_LINES = [
@@ -270,6 +271,43 @@ describe('ListEditor', () => {
       '2x Pummel (Vermelho) · NM · R$ 6,00 cada\n1x Snatch (Vermelho)\n\nTotal: R$ 420,00',
     );
     expect(await screen.findByText('Copiado')).toBeInTheDocument();
+  });
+
+  it('ends the copied text with the address when the list is shared', async () => {
+    serve(makeList({ kind: 'want', lines: [makeLine({ id: 1, quantity: 2 })] }));
+    api.handlers.set('GET /lists/7/share', () => ({
+      intent: 'want',
+      url: 'https://rathearsenal.app/l/aB3dE5gH7jK9mN',
+      token: 'aB3dE5gH7jK9mN',
+      showContact: true,
+    }));
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+    renderWithProviders(<ListEditor listId="7" />);
+
+    const copy = await screen.findByRole('button', { name: 'Copiar texto' });
+    await waitFor(() => expect(api.calls.some((call) => call.key === 'GET /lists/7/share')).toBe(true));
+    await act(async () => undefined);
+    await user.click(copy);
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith('2x Pummel (Vermelho)\n\nhttps://rathearsenal.app/l/aB3dE5gH7jK9mN');
+  });
+
+  it('opens the share dialog from the bottom bar', async () => {
+    serve(makeList({ kind: 'want', lines: [makeLine({ id: 1 })] }));
+    api.handlers.set('POST /lists/7/share', () => ({
+      intent: 'want',
+      url: 'https://rathearsenal.app/l/aB3dE5gH7jK9mN',
+      token: 'aB3dE5gH7jK9mN',
+      showContact: true,
+    }));
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    await user.click(await screen.findByTestId('list-share-open'));
+
+    expect(await screen.findByTestId('share-address')).toHaveValue('https://rathearsenal.app/l/aB3dE5gH7jK9mN');
   });
 
   it('renames the list and deletes it after confirming', async () => {

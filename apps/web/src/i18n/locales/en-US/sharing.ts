@@ -55,6 +55,28 @@ export const sharing = {
     empty: 'No cards are missing.',
     textLine: '{{count}}x {{name}}',
   },
+  // Shared list page (/l/:token)
+  sharedList: {
+    whoWant: 'is looking for these cards',
+    whoSell: 'is selling these cards',
+    notesCap: 'Note from {{name}}',
+    allForPrefix: 'All for',
+    sold: 'Sold',
+    empty: 'This list is empty.',
+    manage: 'Manage list',
+    contactMessage: 'Hi! I saw your list {{list}} on Rathe Arsenal.',
+    inviteWant: 'See what you already have from this list',
+    inviteSell: 'See what on this list your decks are missing',
+    youHave: 'You have {{count}}',
+    missingInDecks_one: '{{count}} missing in your decks',
+    missingInDecks_other: '{{count}} missing in your decks',
+    summaryWant_one: 'You have {{owned}} of {{count}} card on this list.',
+    summaryWant_other: 'You have {{owned}} of {{count}} cards on this list.',
+    summaryWantNone: 'None of the cards on this list are in your collection.',
+    summarySell_one: '{{count}} card on this list is missing in your decks.',
+    summarySell_other: '{{count}} cards on this list are missing in your decks.',
+    summarySellNone: 'None of the cards on this list are missing in your decks.',
+  },
   // WhatsApp contact
   contact: {
     chatButton: 'Message {{name}} on WhatsApp',

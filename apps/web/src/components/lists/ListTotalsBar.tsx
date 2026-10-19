@@ -9,7 +9,22 @@ const COPIED_FEEDBACK_MS = 2000;
 
 interface IListTotalsBarProps {
   readonly list: ICardList;
+  /** The list's live address; the copied text ends with it. Null while sharing is off. */
+  readonly shareUrl: string | null;
   readonly onSaveTotal: (cents: number | null) => void;
+  readonly onShare: () => void;
+}
+
+function ShareIcon(): React.ReactElement {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+      <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+    </svg>
+  );
 }
 
 function CopyIcon({ done }: { readonly done: boolean }): React.ReactElement {
@@ -28,7 +43,7 @@ function CopyIcon({ done }: { readonly done: boolean }): React.ReactElement {
   );
 }
 
-export function ListTotalsBar({ list, onSaveTotal }: IListTotalsBarProps): React.ReactElement {
+export function ListTotalsBar({ list, shareUrl, onSaveTotal, onShare }: IListTotalsBarProps): React.ReactElement {
   const { t } = useTranslation();
   const totals = listTotals(list.lines);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -45,7 +60,7 @@ export function ListTotalsBar({ list, onSaveTotal }: IListTotalsBarProps): React
 
   async function copyText(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(buildListText(list, makeTranslate(t)));
+      await navigator.clipboard.writeText(buildListText(list, makeTranslate(t), shareUrl));
       setCopyState('copied');
     } catch {
       setCopyState('failed');
@@ -106,6 +121,16 @@ export function ListTotalsBar({ list, onSaveTotal }: IListTotalsBarProps): React
         </label>
       )}
       <div className={styles.barActions}>
+        <Button
+          variant="secondary"
+          className={styles.copyBtn}
+          aria-label={t('lists.bar.share')}
+          leftIcon={<ShareIcon />}
+          onClick={onShare}
+          data-testid="list-share-open"
+        >
+          <span className={styles.copyLabel}>{t('lists.bar.share')}</span>
+        </Button>
         <Button
           variant="secondary"
           className={styles.copyBtn}
