@@ -2,6 +2,8 @@ import { catalog, findAlternatives, ICatalogCard, TAlternativeGroup, TSupportedF
 import { IDeckRow, mainboardByCost } from './deck-facts';
 
 const CANDIDATES_PER_GROUP = 6;
+const CANDIDATE_TEXT_MAX = 200;
+const PLAYED_THIS_TURN = /(?:you've|you have) played an? ([A-Z][A-Za-z'\- ]+?) this turn/;
 
 interface IDeckCardRow {
   readonly cardIdentifier: string;
@@ -23,6 +25,7 @@ export interface ISwapComparison {
   readonly original: ISwapCardFacts;
   readonly replacement: ISwapCardFacts;
   readonly sameRole: boolean;
+  readonly unmetRequirement: string | null;
   readonly costDelta: number | null;
   readonly pitchDelta: number | null;
   readonly powerDelta: number | null;
@@ -41,7 +44,9 @@ export interface ISwapCandidate {
   readonly power: number | null;
   readonly defense: number | null;
   readonly sameRole: boolean;
+  readonly unmetRequirement: string | null;
   readonly freeCopies: number;
+  readonly text: string;
 }
 
 export interface ISwapCandidates {
@@ -69,6 +74,18 @@ export function hasSameRole(a: ICatalogCard, b: ICatalogCard): boolean {
   return sameValues(a.types, b.types) && sameValues(a.subtypes, b.subtypes);
 }
 
+export function unmetRequirement(card: ICatalogCard, otherCards: readonly IDeckCardRow[]): string | null {
+  const needed = PLAYED_THIS_TURN.exec(card.functionalText ?? '')?.[1];
+  if (needed === undefined) return null;
+  const kind = needed.endsWith(' card') ? needed.slice(0, -' card'.length) : null;
+  const provides = (row: IDeckCardRow): boolean => {
+    const other = catalog.getCard(row.cardIdentifier);
+    if (kind === null) return other.name === needed;
+    return [...other.classes, ...other.talents, ...other.types, ...other.subtypes].some((value) => String(value) === kind);
+  };
+  return otherCards.some((row) => row.quantity > 0 && row.cardIdentifier !== card.cardIdentifier && provides(row)) ? null : needed;
+}
+
 export function compareSwap(input: {
   readonly original: ICatalogCard;
   readonly replacement: ICatalogCard;
@@ -86,6 +103,7 @@ export function compareSwap(input: {
     original: facts(original),
     replacement: facts(replacement),
     sameRole: hasSameRole(original, replacement),
+    unmetRequirement: unmetRequirement(replacement, removed),
     costDelta: delta(original.cost, replacement.cost),
     pitchDelta: delta(original.pitch, replacement.pitch),
     powerDelta: delta(original.power, replacement.power),
@@ -126,7 +144,9 @@ export function swapCandidates(input: {
         power: card.power,
         defense: card.defense,
         sameRole: hasSameRole(original, card),
+        unmetRequirement: unmetRequirement(card, deckCards.filter((row) => row.cardIdentifier !== original.cardIdentifier)),
         freeCopies,
+        text: (card.functionalText ?? '').slice(0, CANDIDATE_TEXT_MAX),
       })),
     })),
   };

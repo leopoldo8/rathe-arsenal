@@ -154,7 +154,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_swap_candidates',
     description:
-      "Cards that could take the place of one card in one of the user's decks, ranked by the site's alternatives search from the closest group (very_close) to the loosest. Each candidate has its type line, cost and cost change, pitch, power, defense, whether it keeps the card's role (same types and subtypes) and the user's free copies. Only legal cards the deck can still hold. Use it before proposing a swap that keeps the card's role.",
+      "Cards that could take the place of one card in one of the user's decks, ranked by the site's alternatives search from the closest group (very_close) to the loosest. Each candidate has its type line, cost and cost change, pitch, power, defense, whether it keeps the card's role (same types and subtypes), what it needs played that turn that the deck lacks (unmetRequirement), its text and the user's free copies. Only legal cards the deck can still hold. Use it before proposing a swap that keeps the card's role.",
     parametersJsonSchema: object(
       {
         deckId: integer('Deck id.'),
@@ -167,7 +167,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'propose_swap',
     description:
-      "Propose replacing every copy of one card in one of the user's decks with another card. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, the changes, and the mainboard cost curve before and after.",
+      "Propose replacing every copy of one card in one of the user's decks with another card. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, what the new card needs that the deck lacks, the changes, and the mainboard cost curve before and after.",
     parametersJsonSchema: object(
       {
         deckId: integer('Deck id.'),

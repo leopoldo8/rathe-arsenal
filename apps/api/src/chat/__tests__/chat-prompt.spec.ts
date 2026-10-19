@@ -44,6 +44,7 @@ describe('chat system instruction', () => {
     expect(text).toContain('When a swap changes the role, say so');
     expect(text).toContain('When the new card costs more, say how much more and quote the mainboard cost curve before and after');
     expect(text).toContain('Do not propose a card that only works with a card or condition the deck lacks');
+    expect(text).toContain('unmetRequirement in a candidate or a comparison names what the deck lacks');
     expect(text).toContain('Use a card from get_recommendations only for the cut it names');
     expect(text).toContain('Never say the user owns or already has a card unless a tool said so in this answer');
     expect(text).toContain('the format limits copies per card (formatRules.maxCopies in get_deck)');

@@ -52,6 +52,7 @@ describe('compareSwap', () => {
       original: { name: 'Lace with Bloodrot', typeLine: 'Ranger Action Non-Attack', cost: 0, pitch: 1, power: null, defense: 2 },
       replacement: { name: 'Widowmaker', typeLine: 'Ranger Action Arrow Attack', cost: 1, pitch: 2, power: 3, defense: 3 },
       sameRole: false,
+      unmetRequirement: null,
       costDelta: 1,
       pitchDelta: 1,
       powerDelta: null,
@@ -85,6 +86,28 @@ describe('compareSwap', () => {
 
     expect([comparison.sameRole, comparison.costDelta, comparison.defenseDelta]).toEqual([true, null, -1]);
     expect(comparison.mainboardByCostAfter).toEqual(comparison.mainboardByCostBefore);
+  });
+
+  it('names a card the replacement needs played that turn when the deck has none, and stays quiet when it has one', () => {
+    const swap = (deckCards: typeof AZALEA_DECK) =>
+      compareSwap({ original: card('boltn-boots'), replacement: card('quick-clicks'), slot: 'equipment', quantity: 1, deckCards });
+
+    expect(swap(AZALEA_DECK).unmetRequirement).toBe('Nimblism');
+    expect(swap([...AZALEA_DECK, { cardIdentifier: 'nimblism-red', slot: 'mainboard', quantity: 2 }]).unmetRequirement).toBeNull();
+    expect(
+      compareSwap({ original: card('lace-with-bloodrot-red'), replacement: card('toxicity-red'), slot: 'mainboard', quantity: 2, deckCards: AZALEA_DECK })
+        .unmetRequirement,
+    ).toBeNull();
+  });
+
+  it('reads a requirement for a kind of card against the kinds the deck plays', () => {
+    const lightning = card('photon-rush-red');
+    const deck = (cardIdentifier: string) => [{ cardIdentifier, slot: 'mainboard', quantity: 2 }];
+    const swap = (deckCards: ReturnType<typeof deck>) =>
+      compareSwap({ original: card(deckCards[0]!.cardIdentifier), replacement: lightning, slot: 'mainboard', quantity: 1, deckCards });
+
+    expect(swap(deck('flex-red')).unmetRequirement).toBe('Lightning card');
+    expect(swap(deck('lightning-press-red')).unmetRequirement).toBeNull();
   });
 
   it('moves only the copies the swap moves', () => {
@@ -129,7 +152,9 @@ describe('swapCandidates', () => {
       power: null,
       defense: 2,
       sameRole: true,
+      unmetRequirement: null,
       freeCopies: 0,
+      text: expect.stringContaining('arrow'),
     });
   });
 
