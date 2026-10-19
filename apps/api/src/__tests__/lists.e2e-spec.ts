@@ -143,7 +143,7 @@ describe('Card lists (E2E)', () => {
     const res = await request(server).get('/api/lists').set(...auth(owner)).expect(200);
     expect(res.body.map((list: { id: number }) => list.id)).toEqual([second, first]);
     const summary = res.body[1];
-    expect(summary).toMatchObject({ lineCount: 2, copyCount: 5, soldCount: 1, shared: false, totalPriceCents: null });
+    expect(summary).toMatchObject({ lineCount: 2, copyCount: 5, soldCount: 3, shared: false, totalPriceCents: null });
     expect(summary.previewImages).toHaveLength(2);
     expect(summary.previewImages[0]).toEqual({
       small: CARD_A.imageUrl?.small,

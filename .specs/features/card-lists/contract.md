@@ -28,7 +28,7 @@ interface ICardListSummary {
   id: number; kind: TListKind; name: string;
   lineCount: number;      // lines, sold included
   copyCount: number;      // sum of quantities, sold included
-  soldCount: number;      // lines with soldAt
+  soldCount: number;      // copies on sold lines
   totalPriceCents: number | null;
   previewImages: ICardImage[]; // first 3 lines' card images (same image shape the deck/library endpoints use)
   shared: boolean;        // always false until the Shared list slice

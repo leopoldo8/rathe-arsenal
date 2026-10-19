@@ -44,7 +44,7 @@ export class ListsService {
       `SELECT l."id", l."kind", l."name", l."totalPriceCents", l."updatedAt",
               COUNT(x."id")::int AS "lineCount",
               COALESCE(SUM(x."quantity"), 0)::int AS "copyCount",
-              COUNT(x."soldAt")::int AS "soldCount"
+              COALESCE(SUM(x."quantity") FILTER (WHERE x."soldAt" IS NOT NULL), 0)::int AS "soldCount"
          FROM "card_list" l
          LEFT JOIN "card_list_line" x ON x."listId" = l."id"
         WHERE l."userId" = $1
