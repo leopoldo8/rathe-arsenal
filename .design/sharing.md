@@ -158,7 +158,7 @@ Alternatives considered: missing cards visible only on a separate token - wins i
 1. Display name asked at the first share, editable in Settings - default, the owner did not answer this one.
 2. The owner's missing cards are visible to anyone holding the deck address, through its missing view - default.
 
-The WhatsApp button on the shared page, the switch in the sharing card and the number field in Settings are not in the picked mockups; they get their own mockups before they are built.
+Contact, picked by Rodrigo on 2026-10-18: alternative B of `.design/mockups/sharing/contact/` (a WhatsApp action in a fixed bottom bar on phone and a pill beside the sharer's name on desktop; an inline number field in the sharing card when no number is saved; a "Contato" panel in Settings). The same placement applies to shared lists.
 
 Screens, picked by Rodrigo on 2026-10-18: alternative B of `.design/mockups/sharing/deck/shared-deck-b-{phone,desktop}` (comparison and invitation at the top, compact card list, missing view in a side panel or bottom sheet) and of `.design/mockups/sharing/deck/share-control-b-{phone,desktop}` (an always-visible sharing card with a switch on the deck detail).
 
