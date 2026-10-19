@@ -7,6 +7,7 @@ const INPUT = {
   kind: 'opened',
   targetKind: 'deck',
   targetId: 3,
+  intent: 'deck',
   ownerUserId: 'owner-1',
   actorUserId: null,
 } as const;

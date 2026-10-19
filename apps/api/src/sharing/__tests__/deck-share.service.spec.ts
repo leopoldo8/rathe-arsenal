@@ -1,97 +1,107 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
+import { ShareLinkEntity } from '../../database/entities/share-link.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { UserEntity } from '../../database/entities/user.entity';
 import { DeckShareService } from '../deck-share.service';
-import { SharePreviewStore } from '../preview/share-preview.store';
 import { ShareEventsService } from '../share-events.service';
 
-function build(options: { displayName: string | null; affected: number; token?: string | null }) {
-  const execute = jest.fn().mockResolvedValue({ affected: options.affected });
-  const queryBuilder = {
-    update: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    execute,
-  };
+interface IBuildOptions {
+  displayName?: string | null;
+  inserted?: boolean;
+  existing?: Partial<ShareLinkEntity> | null;
+  rows?: Partial<ShareLinkEntity>[];
+  affected?: number;
+}
+
+function build(options: IBuildOptions = {}) {
   const decks = createMock<Repository<TrackedDeckEntity>>();
-  decks.createQueryBuilder.mockReturnValue(queryBuilder as never);
-  decks.findOneByOrFail.mockResolvedValue({
-    shareToken: options.token ?? null,
-    shareShowsContact: true,
-  } as TrackedDeckEntity);
+  decks.findOneByOrFail.mockResolvedValue({ id: 5 } as TrackedDeckEntity);
   const users = createMock<Repository<UserEntity>>();
-  users.findOneByOrFail.mockResolvedValue({ displayName: options.displayName } as UserEntity);
+  users.findOneByOrFail.mockResolvedValue({ displayName: options.displayName === undefined ? 'Rodrigo' : options.displayName } as UserEntity);
+  const links = createMock<Repository<ShareLinkEntity>>();
+  links.query.mockResolvedValue(options.inserted === false ? [] : [{ token: 'issued-token', showsContact: true }]);
+  links.findOneByOrFail.mockResolvedValue((options.existing ?? { token: 'existing-token', showsContact: false }) as ShareLinkEntity);
+  links.find.mockResolvedValue((options.rows ?? []) as ShareLinkEntity[]);
+  links.update.mockResolvedValue({ affected: options.affected ?? 1 } as never);
   const events = createMock<ShareEventsService>();
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
-  const previewImages = createMock<SharePreviewStore>();
-  return {
-    service: new DeckShareService(decks, users, events, config, previewImages),
-    events,
-    queryBuilder,
-    previewImages,
-  };
+  return { service: new DeckShareService(decks, users, links, events, config), events, links };
 }
 
 describe('DeckShareService.enable', () => {
   it('refuses when the owner has no display name', async () => {
-    const { service, events } = build({ displayName: null, affected: 1 });
+    const { service, events } = build({ displayName: null });
 
-    await expect(service.enable('user-1', 5)).rejects.toMatchObject({ status: 409 });
+    await expect(service.enable('user-1', 5, 'deck')).rejects.toMatchObject({ status: 409 });
     expect(events.record).not.toHaveBeenCalled();
   });
 
-  it('issues a token and records created exactly once', async () => {
-    const { service, events } = build({ displayName: 'Rodrigo', affected: 1 });
+  it('issues a link and records created with its intent exactly once', async () => {
+    const { service, events } = build();
 
-    const result = await service.enable('user-1', 5);
+    const result = await service.enable('user-1', 5, 'missing');
 
-    expect(result.url).toBe(`https://app.example/d/${result.token}`);
+    expect(result).toEqual({
+      intent: 'missing',
+      url: 'https://app.example/d/issued-token',
+      token: 'issued-token',
+      showContact: true,
+    });
     expect(events.record).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'created', targetId: 5, ownerUserId: 'user-1' }),
+      expect.objectContaining({ kind: 'created', targetId: 5, intent: 'missing', ownerUserId: 'user-1' }),
     );
   });
 
-  it('returns the existing token without recording when sharing is already on', async () => {
-    const { service, events } = build({ displayName: 'Rodrigo', affected: 0, token: 'existing-token' });
+  it('returns the existing token without recording when the link is already on', async () => {
+    const { service, events } = build({ inserted: false });
 
-    const result = await service.enable('user-1', 5);
+    const result = await service.enable('user-1', 5, 'deck');
 
-    expect(result.token).toBe('existing-token');
+    expect(result).toMatchObject({ token: 'existing-token', showContact: false });
     expect(events.record).not.toHaveBeenCalled();
   });
 });
 
 describe('DeckShareService state', () => {
-  it('reports off as null url and token', async () => {
-    const { service } = build({ displayName: 'Rodrigo', affected: 1 });
+  it('reports both intents off as null', async () => {
+    const { service } = build();
 
-    expect(await service.getState('user-1', 5)).toEqual({ url: null, token: null, showContact: true });
+    expect(await service.getState('user-1', 5)).toEqual({ deck: null, missing: null });
   });
 
-  it('clears the token on disable', async () => {
-    const { service, queryBuilder } = build({ displayName: 'Rodrigo', affected: 1 });
+  it('reports each intent with its own token', async () => {
+    const { service } = build({
+      rows: [
+        { intent: 'deck', token: 'deck-token', showsContact: true },
+        { intent: 'missing', token: 'missing-token', showsContact: false },
+      ],
+    });
 
-    await service.disable('user-1', 5);
+    const state = await service.getState('user-1', 5);
 
-    expect(queryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ shareToken: null }));
+    expect(state.deck).toMatchObject({ token: 'deck-token', showContact: true });
+    expect(state.missing).toMatchObject({ token: 'missing-token', showContact: false });
   });
 
-  it('deletes the stored preview image when the owner turns sharing off', async () => {
-    const { service, previewImages } = build({ displayName: 'Rodrigo', affected: 1 });
+  it('deletes only the link of that intent that the caller owns', async () => {
+    const { service, links } = build();
 
-    await service.disable('user-1', 5);
+    await service.disable('user-1', 5, 'missing');
 
-    expect(previewImages.deleteFor).toHaveBeenCalledWith('deck', 5);
+    expect(links.delete).toHaveBeenCalledWith({
+      targetKind: 'deck',
+      targetId: 5,
+      ownerUserId: 'user-1',
+      intent: 'missing',
+    });
   });
 
-  it('leaves the preview image alone when the deck is not the caller\'s', async () => {
-    const { service, previewImages } = build({ displayName: 'Rodrigo', affected: 0 });
+  it('answers 404 when the contact switch is changed on a link that is off', async () => {
+    const { service } = build({ affected: 0 });
 
-    await service.disable('someone-else', 5);
-
-    expect(previewImages.deleteFor).not.toHaveBeenCalled();
+    await expect(service.setShowContact('user-1', 5, 'deck', false)).rejects.toMatchObject({ status: 404 });
   });
 });

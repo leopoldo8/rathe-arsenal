@@ -1,11 +1,13 @@
 import { computeShareImageHash, type IShareImageHashInput } from '../share-image-hash';
 
 const BASE: IShareImageHashInput = {
+  intent: 'deck',
   name: 'Blades',
   hero: 'Dorinthea',
   format: 'CC',
   sharerName: 'Rodrigo',
   totalCards: 60,
+  missingCount: 0,
   drawnCardIdentifiers: ['a', 'b'],
   blockedCardIdentifiers: [],
   shareUrl: 'https://ra.example/d/tok',
@@ -17,6 +19,8 @@ describe('computeShareImageHash', () => {
   });
 
   it.each<[string, Partial<IShareImageHashInput>]>([
+    ['intent', { intent: 'missing' }],
+    ['missing count', { missingCount: 3 }],
     ['display name', { sharerName: 'Rodrigo H.' }],
     ['deck name', { name: 'Blades 2' }],
     ['card count', { totalCards: 61 }],

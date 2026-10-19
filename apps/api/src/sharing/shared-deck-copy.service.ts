@@ -22,7 +22,7 @@ export class SharedDeckCopyService {
 
   /** The owner's replacements, swaps and tags are deliberately not copied: only the deck itself is. */
   async copy(token: string, visitorId: string): Promise<{ deckId: number }> {
-    const live = await this.lookup.findLive(token);
+    const live = await this.lookup.findLive(token, 'deck');
     if (!live) throw shareLinkUnavailable();
     const { deck } = live;
 
@@ -38,7 +38,6 @@ export class SharedDeckCopyService {
           heroIdentifier: deck.heroIdentifier,
           format: deck.format,
           status: 'idea',
-          shareToken: null,
         }),
       );
       if (sourceRows.length > 0) {

@@ -1,4 +1,4 @@
-import { buildDeckShareMeta, buildGenericShareMeta } from '../share-copy';
+import { buildDeckShareMeta, buildGenericShareMeta, buildMissingShareMeta } from '../share-copy';
 import { escapeHtml, injectShareMeta, FALLBACK_SPA_HTML } from '../share-meta-tags';
 
 const SPA = `<!doctype html><html><head><meta charset="utf-8">
@@ -78,3 +78,36 @@ describe('share meta tags', () => {
     expect(ogTitleAt).toBeLessThan(html.indexOf('<noscript>'));
   });
 });
+
+describe('buildMissingShareMeta', () => {
+  const lines = [
+    { name: 'Pack Hunt', quantity: 3 },
+    { name: 'Pummel', quantity: 2 },
+    { name: 'Dawnblade', quantity: 1 },
+    { name: 'Hit and Run', quantity: 1 },
+    { name: 'Warrior\'s Valor', quantity: 1 },
+    { name: 'Razor Reflex', quantity: 1 },
+  ];
+
+  it('asks for the missing cards, lists the first four lines and counts the rest', () => {
+    const meta = buildMissingShareMeta({ name: 'Blades', sharerName: 'Rodrigo', missingCount: 9, lines }, 'tok', 'https://ra.example/');
+
+    expect(meta.title).toBe('Procuro cartas para Blades');
+    expect(meta.description).toBe('Rodrigo procura 9 cartas: 3x Pack Hunt, 2x Pummel, 1x Dawnblade, 1x Hit and Run e mais 2');
+    expect(meta.imageUrl).toBe('https://ra.example/api/shared/decks/tok/image');
+    expect(meta.pageUrl).toBe('https://ra.example/d/tok');
+  });
+
+  it('lists every line without a tail when there are four or fewer', () => {
+    const meta = buildMissingShareMeta({ name: 'Blades', sharerName: 'Rodrigo', missingCount: 1, lines: lines.slice(0, 1) }, 'tok', 'https://ra.example');
+
+    expect(meta.description).toBe('Rodrigo procura 1 carta: 3x Pack Hunt');
+  });
+
+  it('does not ask for cards when none are missing', () => {
+    const meta = buildMissingShareMeta({ name: 'Blades', sharerName: 'Rodrigo', missingCount: 0, lines: [] }, 'tok', 'https://ra.example');
+
+    expect(meta.description).toBe('Rodrigo já tem todas as cartas deste deck');
+  });
+});
+

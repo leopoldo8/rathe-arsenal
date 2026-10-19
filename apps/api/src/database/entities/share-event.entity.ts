@@ -8,6 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import type { TShareIntent } from './share-link.entity';
 import { UserEntity } from './user.entity';
 
 export type TShareEventKind = 'created' | 'opened' | 'signed_up';
@@ -15,6 +16,7 @@ export type TShareTargetKind = 'deck' | 'list';
 
 @Check('CHK_share_event_kind_valid', `"kind" IN ('created', 'opened', 'signed_up')`)
 @Check('CHK_share_event_target_kind_valid', `"targetKind" IN ('deck', 'list')`)
+@Check('CHK_share_event_intent_valid', `"intent" IS NULL OR "intent" IN ('deck', 'missing', 'want', 'sell')`)
 @Index('IDX_share_event_kind_occurredAt', ['kind', 'occurredAt'])
 @Entity({ name: 'share_event' })
 export class ShareEventEntity {
@@ -30,6 +32,10 @@ export class ShareEventEntity {
   // No foreign key: events must outlive the deck or list they measured.
   @Column({ type: 'int' })
   targetId!: number;
+
+  // Null on events recorded before links had an intent.
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  intent!: TShareIntent | null;
 
   @Column({ type: 'uuid' })
   ownerUserId!: string;

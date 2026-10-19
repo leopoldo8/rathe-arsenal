@@ -1,6 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
+import { ShareLinkEntity } from '../../database/entities/share-link.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { UserEntity } from '../../database/entities/user.entity';
 import { SubstitutionService } from '../../substitution/substitution.service';
@@ -13,12 +14,15 @@ const DECK = {
   hero: 'Some Hero',
   heroIdentifier: 'some-hero',
   format: 'cc',
-  shareToken: 'live',
 } as TrackedDeckEntity;
 
 function build(options: { live: boolean; readinessFails?: boolean }) {
   const lookup = createMock<SharedDeckLookup>();
-  lookup.findLive.mockResolvedValue(options.live ? { deck: DECK, owner: { id: 'owner-1' } as UserEntity } : null);
+  lookup.findLive.mockImplementation(async (_token, intent) =>
+    options.live && intent === 'deck'
+      ? { link: { intent: 'deck' } as ShareLinkEntity & { intent: 'deck' }, deck: DECK, owner: { id: 'owner-1' } as UserEntity }
+      : null,
+  );
   const substitution = createMock<SubstitutionService>();
   if (options.readinessFails) substitution.computeAndStoreReadiness.mockRejectedValue(new Error('boom'));
   const manager = createMock<EntityManager>();
@@ -44,7 +48,7 @@ describe('SharedDeckCopyService.copy', () => {
     expect(result).toEqual({ deckId: 99 });
     expect(manager.create).toHaveBeenCalledWith(
       TrackedDeckEntity,
-      expect.objectContaining({ userId: 'visitor-1', status: 'idea', shareToken: null, fabraryUlid: null, name: 'My deck' }),
+      expect.objectContaining({ userId: 'visitor-1', status: 'idea', fabraryUlid: null, name: 'My deck' }),
     );
     expect(manager.insert).toHaveBeenCalledWith(DeckCardEntity, [
       { trackedDeckId: 99, cardIdentifier: 'card-a', quantity: 3, slot: 'mainboard' },

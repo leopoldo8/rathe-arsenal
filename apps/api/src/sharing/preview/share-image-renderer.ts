@@ -32,6 +32,8 @@ export interface IShareImageFaces {
   // Hero first; null where a face failed to load or must not be drawn.
   readonly faces: readonly (Buffer | null)[];
   readonly backdrop: Buffer | null;
+  // False when the first face is not the deck's hero (the missing-cards image), so it gets no gold frame.
+  readonly emphasizeFirst?: boolean;
 }
 
 interface ILayer {
@@ -222,7 +224,7 @@ export async function renderShareImage(
   const layers: ILayer[] = [
     ...(await backdropLayer(artwork.backdrop)),
     ...(await wordmarkLayers()),
-    ...(await buildFanLayers(slots, facesInSlotOrder)),
+    ...(await buildFanLayers(slots, facesInSlotOrder, artwork.emphasizeFirst ?? true)),
     { input: BOTTOM_FADE, left: 0, top: 0 },
     ...(await infoLayers(input)),
   ];
