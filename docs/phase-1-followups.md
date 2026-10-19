@@ -400,6 +400,36 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 
 ---
 
+## Sharing decks (2026-10-18, PRs #156 to #161)
+
+Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped from `.specs/features/sharing-decks/`. Known gaps, none blocking:
+
+### SH1. Not yet checked in a real WhatsApp chat
+**Posture:** the preview tags and the 1200x630 JPEG are covered by e2e tests and a local walkthrough, and the image's text rendered with only the bundled fonts in a bare `node:22-slim` container. Staging has no public domain, so no request has reached the deployed image route, and no link has been pasted into WhatsApp or Meta's sharing debugger.
+**Trigger:** the first deploy to production. **Work:** share a deck there, paste the link into a WhatsApp chat and into https://developers.facebook.com/tools/debug/, and confirm the card shows the title, description and image.
+
+### SH2. `scripts/delete-user.ts` share-image cleanup never ran against data
+**Posture:** it deletes the user's `share_image` rows before their decks through the shared helper in `apps/api/src/sharing/preview/share-image-cleanup.ts`; the helper is covered by e2e, the script itself has no test (it had none before).
+**Trigger:** the next time the script is used. **Work:** run it once against a throwaway database seeded with a shared deck and its image.
+
+### SH3. GIN index on `share_image.cardIdentifiers` exists only in the migration
+**Posture:** TypeORM 0.3 cannot declare it on the entity, so dev databases built by `synchronize` lack it. Production runs migrations, so it exists there.
+**Trigger:** none unless purges get slow.
+
+### SH4. Signing in on a shared page records a second open
+**Posture:** the web query for a shared deck includes the visitor id, so the page refetches once after sign-in and the API records another `opened`. The success review counts opens and distinct openers; read distinct openers when they differ.
+**Trigger:** if open counts are used for anything finer than the 30-day review. **Work:** drop the visitor id from the query key and fetch the owner check separately.
+
+### SH5. A non-Brazilian WhatsApp number shows a "+55" prefix in the field
+**Posture:** the field has a fixed "+55" prefix; a stored number of another country shows its digits after it. Saving again keeps the number unchanged and the public page shows it correctly.
+**Trigger:** the first user with a non-Brazilian number.
+
+### SH6. Visual baselines are stale for the deck detail and Settings
+**Posture:** the deck detail gained the sharing card and Settings gained the display name and contact panels; the local Playwright visual suite (not run in CI) will report those screens as changed.
+**Trigger:** the next run of the visual suite. **Work:** review the diffs and update the baselines on purpose, as PR #151 did.
+
+---
+
 ## How to use this file
 
 When starting Phase 1:

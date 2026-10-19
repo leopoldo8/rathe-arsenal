@@ -41,7 +41,9 @@ this order before doing non-trivial work.
 - **Recently shipped** (spec-driven, `.specs/features/`): i18n (pt-BR /
   en-US), uxui-remediation (a11y + design-token discipline), and
   pre-launch-hardening (LSS fan-content disclaimer surface + opt-in
-  Sentry error monitoring — PR #109, merged 2026-07-01). See
+  Sentry error monitoring — PR #109, merged 2026-07-01), and
+  sharing-decks (shared deck links, WhatsApp contact, link-preview
+  images, share attribution — PRs #156 to #161, 2026-10-18). See
   `.specs/STATE.md` for the current handoff snapshot.
 - **Retired ceremonies** (do not propose): Gate 2 presencial
   walkthrough, A17 tier-2 external labeler session, 3-5 tester
