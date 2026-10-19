@@ -50,6 +50,7 @@ describe('chat system instruction', () => {
     expect(text).toContain('Never say the user owns or already has a card unless a tool said so in this answer');
     expect(text).toContain('the format limits copies per card (formatRules.maxCopies in get_deck)');
     expect(text).not.toContain('at most 3 times');
+    expect(text).toContain('use get_draw_odds and quote its chance as a percentage with the hand size it assumed; never estimate odds yourself');
     expect(text).toContain("give the user's numbers, the other decks' average and their lowest and highest (mainboardRange of get_community_decks)");
     expect(text).toContain('never call them similar without those numbers');
     expect(text).toContain('To say how a user\'s list differs card by card from regular decks, pass compareDeckId to get_community_decks.');

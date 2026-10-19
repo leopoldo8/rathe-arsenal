@@ -23,6 +23,7 @@ import {
 import { describeDeck } from './deck-facts';
 import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 import { compareWithCommunity } from './community-comparison';
+import { drawOdds } from './draw-odds';
 import { compareSwap, swapCandidates } from './swap-analysis';
 
 const CARD_TEXT_MAX = 300;
@@ -31,6 +32,8 @@ const META_HEROES_MAX = 60;
 const COLLECTION_ROWS_MAX = 150;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECK_NOT_FOUND: TToolResult = { error: 'DECK_NOT_FOUND' };
+const DRAW_ODDS_MAX_AT_LEAST = 10;
+const DRAW_ODDS_MAX_EXTRA_DRAWS = 30;
 
 export interface IToolScope {
   readonly userId: string;
@@ -90,6 +93,7 @@ export class ChatToolsService {
         proposals.push({ kind: 'deck', payload: check.payload, reason: check.reason, trackedDeckId: null });
         return { ok: true };
       },
+      get_draw_odds: (args) => this.drawOdds(scope, args),
       get_swap_candidates: (args) =>
         this.swapCandidates(scope, readInteger(args, 'deckId', { min: 1 })!, readString(args, 'cardIdentifier')!, readString(args, 'slot')!),
       propose_swap: async (args) => {
@@ -140,6 +144,31 @@ export class ChatToolsService {
       ...deck,
       ...facts,
       cards: (facts['cards'] as Array<{ cardIdentifier: string }>).map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 })),
+    };
+  }
+
+  private async drawOdds(scope: IToolScope, args: Record<string, unknown>): Promise<TToolResult> {
+    const deckId = readInteger(args, 'deckId', { min: 1 })!;
+    const cardIdentifiers = args['cardIdentifiers'] === undefined ? undefined : readList(args, 'cardIdentifiers').map(String);
+    const filter = {
+      cardIdentifiers,
+      pitch: readInteger(args, 'pitch', { min: 1, max: 3, optional: true }),
+      cost: readInteger(args, 'cost', { max: 20, optional: true }),
+      cardType: readString(args, 'cardType', { optional: true, max: 40 }),
+    };
+    if (Object.values(filter).every((value) => value === undefined)) throw new InvalidToolArguments('give cardIdentifiers, pitch, cost or cardType');
+    const deck = await this.swapDeck(scope.userId, deckId);
+    if (!deck) return DECK_NOT_FOUND;
+    const hero = deck.heroIdentifier ? findCard(deck.heroIdentifier) : null;
+    if (!hero || hero.intellect === undefined) return { error: 'HERO_INTELLECT_UNKNOWN' };
+    return {
+      ...drawOdds({
+        hero,
+        rows: deck.cards,
+        filter,
+        atLeast: readInteger(args, 'atLeast', { min: 1, max: DRAW_ODDS_MAX_AT_LEAST, optional: true }) ?? 1,
+        extraDraws: readInteger(args, 'extraDraws', { max: DRAW_ODDS_MAX_EXTRA_DRAWS, optional: true }) ?? 0,
+      }),
     };
   }
 

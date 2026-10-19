@@ -153,6 +153,23 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_draw_odds',
+    description:
+      "The chance of drawing at least atLeast of the matching cards in the opening hand of one of the user's decks (as many cards as the hero's intellect), or after extraDraws more cards. Matching cards are the mainboard copies that fit every filter given: cardIdentifiers, pitch, cost, cardType (a card type or subtype such as Arrow, Attack, Non-Attack or Defense Reaction).",
+    parametersJsonSchema: object(
+      {
+        deckId: integer('Deck id.'),
+        cardIdentifiers: { type: 'array', items: { type: 'string' }, description: 'Optional: only these cards.' },
+        pitch: integer('Optional pitch, 1 to 3.'),
+        cost: integer('Optional resource cost.'),
+        cardType: string('Optional card type or subtype, for example "Arrow".'),
+        atLeast: integer('How many of them; default 1, at most 10.'),
+        extraDraws: integer('Cards drawn after the opening hand; default 0.'),
+      },
+      ['deckId'],
+    ),
+  },
+  {
     name: 'get_swap_candidates',
     description:
       "Cards that could take the place of one card in one of the user's decks, ranked by the site's alternatives search from the closest group (very_close) to the loosest. Each candidate has its type line, cost and cost change, pitch, power, defense, whether it keeps the card's role (same types and subtypes), what it needs played that turn that the deck lacks (unmetRequirement), its text and the user's free copies. Only legal cards the deck can still hold. Use it before proposing a swap that keeps the card's role.",

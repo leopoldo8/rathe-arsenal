@@ -203,6 +203,33 @@ describe('chat tools (E2E)', () => {
     });
   });
 
+  it("get_draw_odds opens with the deck hero's intellect and counts the mainboard copies that match", async () => {
+    const owner = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(owner);
+    const rows = (await fixture.dataSource.query(`SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1`, [owner.deckId])) as Array<{
+      cardIdentifier: string;
+      slot: string;
+      quantity: number;
+    }>;
+    const mainboard = rows.filter((row) => row.slot === 'mainboard');
+    const red = mainboard.filter((row) => catalog.getCard(row.cardIdentifier).pitch === 1).reduce((sum, row) => sum + row.quantity, 0);
+
+    const odds = await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId, pitch: 1 });
+
+    expect(odds).toEqual(
+      expect.objectContaining({
+        heroIntellect: catalog.getCard(KATSU).intellect,
+        deckSize: mainboard.reduce((sum, row) => sum + row.quantity, 0),
+        matchingCopies: red,
+        cardsSeen: catalog.getCard(KATSU).intellect,
+        atLeast: 1,
+      }),
+    );
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: other.deckId, pitch: 1 })).toEqual({ error: 'DECK_NOT_FOUND' });
+  });
+
   it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {
     const user = await fixture.chatUser();
     const toolbox = toolboxFor(user);

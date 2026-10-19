@@ -245,7 +245,7 @@ describe('catalog rules text', () => {
       'cardIdentifier', 'name', 'classes', 'talents', 'types', 'pitch', 'power', 'defense',
       'cost', 'keywords', 'subtypes', 'legalHeroes', 'legalFormats', 'rarity', 'young', 'sets', 'imageUrl',
     ];
-    const optional = ['hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations', 'functionalText'];
+    const optional = ['hero', 'bannedFormats', 'restrictedFormats', 'legalOverrides', 'specializations', 'functionalText', 'intellect', 'life'];
     const allowed = new Set([...alwaysPresent, ...optional]);
 
     for (const card of catalog.cards) {
@@ -253,5 +253,21 @@ describe('catalog rules text', () => {
       expect(keys.filter((k) => !allowed.has(k))).toEqual([]);
       expect(alwaysPresent.filter((k) => !keys.includes(k))).toEqual([]);
     }
+  });
+});
+
+describe('catalog hero stats', () => {
+  it('gives every hero its intellect and life from the package', () => {
+    expect([catalog.getCard('azalea').intellect, catalog.getCard('azalea').life]).toEqual([4, 20]);
+    expect([catalog.getCard('katsu-the-wanderer').intellect, catalog.getCard('katsu-the-wanderer').life]).toEqual([4, 40]);
+    const heroes = catalog.cards.filter((card) => card.types.map(String).includes('Hero'));
+    expect(heroes).toHaveLength(154);
+    expect(heroes.filter((hero) => hero.intellect === undefined)).toEqual([]);
+  });
+
+  it('leaves intellect and life absent on a card the package gives none', () => {
+    const flex = catalog.getCard('flex-red');
+    expect(Object.prototype.hasOwnProperty.call(flex, 'intellect')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(flex, 'life')).toBe(false);
   });
 });
