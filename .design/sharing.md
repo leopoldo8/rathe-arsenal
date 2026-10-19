@@ -29,7 +29,7 @@ Unmeasured: the site has no analytics beyond error reporting, so how often these
 In: an owner-revocable share link for a deck, showing the whole deck or only what the owner still misses; card lists of two kinds, `want` and `sell`, independent of decks, each shareable; comparing a shared deck or list with the logged-in visitor's own collection; copying a shared deck into one's decks; copy-as-text for any list; a link preview when the address is pasted in WhatsApp, and the same image downloadable to send as a picture; attribution of sign-ups to the link that brought them; suggested sell prices from TCGplayer market prices.
 
 Out: a referral programme with rewards - one 47-person group sees the release message directly, there is nothing to give, and `ip-posture.md` forbids gating features behind rewards or payment.
-Out: in-site negotiation - messages, offers, reservations, payment; contact stays in WhatsApp.
+Out: in-site negotiation - messages, offers, reservations, payment; contact stays in WhatsApp, reached from a shared page through the sharer's optional WhatsApp button.
 Out: public profiles, a feed, featured or searchable decks - they turn links someone chose to send into a public catalogue of people's decks and lists, which nobody asked for.
 Out: a landing page at `/` - the shared page is the first impression for anyone arriving from the group.
 Out: selling that changes the collection - marking a line sold never touches `collection_card`.
@@ -56,7 +56,7 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 2. **Share addresses are unguessable, `noindex` and listed nowhere, and the owner turns them off at will.** This protects users' decks and lists, which they chose to send to someone, from being found by anyone else; it is a privacy decision, not an IP one.
 3. **A share address is permanent: `/d/<token>` for a deck and `/l/<token>` for a card list, and a dead address stays dead.** Turning sharing off or deleting the deck or list makes the address answer "no longer available", indistinguishable from an address that never existed; turning sharing on again issues a new address, so old posts never come back to life.
 4. **Shared pages show the current state, never a snapshot.** An edited deck, a line marked sold, a changed price are what the next visitor sees on the same address.
-5. **Public pages name the sharer by a display name the sharer chose, never by email.** `user.displayName` is the only identity a shared page reveals.
+5. **Public pages name the sharer by a display name the sharer chose, never by email.** `user.displayName` is the only identity a shared page reveals, plus the sharer's WhatsApp number only where the sharer saved one and left that link's "show my WhatsApp" switch on (decided by Rodrigo, 2026-10-18).
 6. **A card list is independent of decks and of the collection.** Creating one from a deck copies that moment's lines; afterwards the list and the deck never sync, and selling a line never changes `collection_card`. Lines and every comparison key on the card-level `cardIdentifier` (name and pitch); printing and condition exist only on sell lines and never take part in matching.
 7. **Every comparison a visitor sees is raw exact coverage against the visitor's own collection, computed on request and never stored or shown to the sharer.** "Missing" means a copy the collection does not cover exactly, the same count the deck's missing panel starts from; engine stand-ins never count. The existing readiness path asserts deck ownership, so this is a new read path over the pure engine, not a reuse of the owner's readiness.
 8. **Sharing is measured in our own table, and neither the preview crawler nor the preview image is ever counted.** An open is recorded when the page asks for its data, not when the address returns HTML; a sign-up records the link's owner as referrer at sign-up time, not at email verification, without changing the sign-up response.
@@ -77,7 +77,7 @@ The heavier alternative is a separate share-link table pointing at decks and lis
 Order: LSS disclaimer (first, so old and new wording are never live together) → Shared deck with Share attribution (they ship together, or the first links go uncounted) and Share Preview for decks → Copy Deck → Card list → Shared list, with Share Preview for lists.
 Price suggestion ships with Card list: sell lists can be priced by hand from day one, and the suggestion needs only the daily price job.
 
-Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens, returning to the shared page afterwards; a recipient who already has an account → the existing sign-in.
+Already handled by existing code: an anonymous visitor who chooses to sign up → the existing sign-up, verification and sign-in screens; a recipient who already has an account → the existing sign-in. Returning to the shared page afterwards is new work (sign-in always went to `/`), planned in `.specs/features/sharing-decks/design.md`.
 
 Derivable from the repository, left to the plan: error envelope codes and their client `apiErrors` entries, rate limits on public routes, pt-BR and en-US copy, card naming and images on cards - all as the deck detail and the recommendations rail do them; the length and alphabet of tokens, as long as they are unguessable.
 
@@ -107,13 +107,16 @@ The current specs assert the old sentence verbatim (the footer, `/about` and the
 | Anyone opens the deck address | Deck name, hero, format, the sharer's display name and the full card list with images; disclaimer and copyright line (Key decision 1); `noindex` | `200` |
 | Anyone opens the missing view of the address | Only the cards the owner still misses, with quantities, as the owner's deck missing panel counts them; a copy-as-text action | `200` |
 | The deck changed since the link was posted | The current deck | `200` |
-| Address turned off, deck deleted, owner deleted, or never existed | No deck data | `404` `share_link_unavailable`, page reads "this link is no longer available" |
+| Address turned off, deck deleted, owner deleted, or never existed | No deck data | `404` `SHARE_LINK_UNAVAILABLE`, page reads "this link is no longer available" |
 | Address pasted in WhatsApp | The first HTML response already carries the deck's title, description and [Share Preview](#share-preview) image, without running script | link preview |
+| The sharer saved a WhatsApp number and the link's "show my WhatsApp" switch is on (the default) | A button opening a WhatsApp chat with the sharer | `200` with `contactWhatsapp` |
+| No number saved, or the switch is off | No contact button | `200` with `contactWhatsapp: null` |
 | Anonymous visitor wants to compare or copy | Offered sign-up or sign-in, then returned to the same address | the auth screens |
 
 `POST /api/decks/:deckId/share` `{}` → `200` `{ url }`
 `DELETE /api/decks/:deckId/share` → `204`
-`GET /api/shared/decks/:token` (public) → `200` `{ name, hero, heroIdentifier, format, sharerName, cards: [{ cardIdentifier, quantity, slot }], missing: [{ cardIdentifier, quantity }] }`
+`GET /api/shared/decks/:token` (public) → `200` `{ name, hero, heroIdentifier, format, sharerName, contactWhatsapp, cards: [{ cardIdentifier, quantity, slot }], missing: [{ cardIdentifier, quantity }] }`
+`PATCH /api/decks/:deckId/share` `{ showContact }` → `200`
 
 Tables `tracked_deck` and `user` change; no new table.
 
@@ -121,6 +124,8 @@ Tables `tracked_deck` and `user` change; no new table.
 |---|---|---|---|---|
 | `tracked_deck.shareToken` | varchar | yes | | unique; null means not shared |
 | `user.displayName` | varchar(40) | yes | | set the first time the user shares anything |
+| `user.whatsappNumber` | varchar(16) | yes | | digits with country code; saved in the profile, optional |
+| `tracked_deck.shareShowsContact` | boolean | no | | default true; the link's "show my WhatsApp" switch |
 
 ```mermaid
 sequenceDiagram
@@ -139,7 +144,7 @@ sequenceDiagram
   W->>A: GET /api/shared/decks/<token>
   A->>DB: read deck, its cards and the owner's collection
   alt no deck for this token
-    A-->>W: 404 share_link_unavailable
+    A-->>W: 404 SHARE_LINK_UNAVAILABLE
   else
     A->>DB: record opened (Share attribution)
     A-->>W: 200 deck, missing
@@ -152,6 +157,8 @@ Alternatives considered: missing cards visible only on a separate token - wins i
 
 1. Display name asked at the first share, editable in Settings - default, the owner did not answer this one.
 2. The owner's missing cards are visible to anyone holding the deck address, through its missing view - default.
+
+The WhatsApp button on the shared page, the switch in the sharing card and the number field in Settings are not in the picked mockups; they get their own mockups before they are built.
 
 Screens, picked by Rodrigo on 2026-10-18: alternative B of `.design/mockups/sharing/deck/shared-deck-b-{phone,desktop}` (comparison and invitation at the top, compact card list, missing view in a side panel or bottom sheet) and of `.design/mockups/sharing/deck/share-control-b-{phone,desktop}` (an always-visible sharing card with a switch on the deck detail).
 
@@ -227,7 +234,7 @@ Image, picked by Rodrigo on 2026-10-18: alternative B, "Leque" - a fan of large 
 | The sharer opens their own shared deck | No comparison and no copy | the page without them |
 | Visitor copies the deck | A new deck of theirs with the same cards, name, hero and format, status `idea`, no Fabrary origin; readiness computed as for any new deck | `201`, then their new deck's detail |
 | Visitor copies the same deck twice | A second deck | `201` |
-| Link turned off between loading and copying | Nothing created | `404` `share_link_unavailable` |
+| Link turned off between loading and copying | Nothing created | `404` `SHARE_LINK_UNAVAILABLE` |
 
 `GET /api/shared/decks/:token/coverage` → `200` `{ ownedCopies, totalCopies, percent }`
 `POST /api/shared/decks/:token/copy` `{}` → `201` `{ deckId }`
@@ -276,6 +283,7 @@ Tables `card_list` and `card_list_line`; no existing table changes.
 | `card_list.notes` | text | yes | | shown on the shared page |
 | `card_list.totalPriceCents` | int | yes | | BRL; `sell` only |
 | `card_list.shareToken` | varchar | yes | | unique; set in [Shared list](#shared-list) |
+| `card_list.shareShowsContact` | boolean | no | | default true; set in [Shared list](#shared-list) |
 | `card_list.createdAt`, `updatedAt` | timestamptz | no | | |
 | `card_list_line.id` | serial | no | | |
 | `card_list_line.listId` | int | no | `card_list.id` | on delete cascade |
@@ -310,11 +318,12 @@ Screens, picked by Rodrigo on 2026-10-18: alternative A of `.design/mockups/shar
 | Owner turns sharing on, on, off, on again | As in [Shared deck](#shared-deck), on the list | `200` address, `204` |
 | Anyone opens a `want` list address | Sharer's display name, "looking for", lines with images and quantities, notes, copy as text; disclaimer and copyright line (Key decision 1); `noindex` | `200` |
 | Anyone opens a `sell` list address | Sharer's display name, "selling", lines with printing, condition and price where filled, sold lines marked sold, total price if set, notes, copy as text; disclaimer and copyright line (Key decision 1); `noindex` | `200` |
+| The sharer saved a WhatsApp number and the list's "show my WhatsApp" switch is on | A button opening a WhatsApp chat with the sharer, as on a shared deck | `200` with `contactWhatsapp` |
 | Logged-in visitor on a `want` list | Each line they own at least one copy of is marked with how many they have | marks per line |
 | Logged-in visitor on a `sell` list | Each available line whose card is missing in any of their non-retired decks is marked (Key decision 7) | marks per line |
 | The sharer opens their own list | No matches | the page without them |
 | A line sold or a price changed since posting | The current list (Key decision 4) | |
-| Address dead or unknown | As in [Shared deck](#shared-deck) | `404` `share_link_unavailable` |
+| Address dead or unknown | As in [Shared deck](#shared-deck) | `404` `SHARE_LINK_UNAVAILABLE` |
 | Address pasted in WhatsApp | The first HTML response already carries the list's title, description and [Share Preview](#share-preview) image | link preview |
 
 `POST /api/lists/:listId/share` `{}` → `200` `{ url }`
