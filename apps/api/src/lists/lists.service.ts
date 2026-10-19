@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { DELETE_SHARE_LINKS_FOR_LIST_SQL } from '../sharing/preview/share-link-cleanup';
 import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CardListEntity } from '../database/entities/card-list.entity';
 import { lookupCardInfo } from './card-lookup';
@@ -23,6 +24,7 @@ interface ISummaryRow {
   lineCount: number;
   copyCount: number;
   soldCount: number;
+  shared: boolean;
 }
 
 interface IPreviewRow {
@@ -44,7 +46,8 @@ export class ListsService {
       `SELECT l."id", l."kind", l."name", l."totalPriceCents", l."updatedAt",
               COUNT(x."id")::int AS "lineCount",
               COALESCE(SUM(x."quantity"), 0)::int AS "copyCount",
-              COALESCE(SUM(x."quantity") FILTER (WHERE x."soldAt" IS NOT NULL), 0)::int AS "soldCount"
+              COALESCE(SUM(x."quantity") FILTER (WHERE x."soldAt" IS NOT NULL), 0)::int AS "soldCount",
+              EXISTS (SELECT 1 FROM "share_link" s WHERE s."targetKind" = 'list' AND s."targetId" = l."id") AS "shared"
          FROM "card_list" l
          LEFT JOIN "card_list_line" x ON x."listId" = l."id"
         WHERE l."userId" = $1
@@ -74,7 +77,7 @@ export class ListsService {
       previewImages: previews
         .filter((preview) => preview.listId === row.id)
         .flatMap((preview) => lookupCardInfo(preview.cardIdentifier).imageUrl ?? []),
-      shared: false,
+      shared: row.shared,
       updatedAt: row.updatedAt.toISOString(),
     }));
   }
@@ -131,7 +134,11 @@ export class ListsService {
   }
 
   async remove(userId: string, listId: number): Promise<void> {
-    const result = await this.dataSource.getRepository(CardListEntity).delete({ id: listId, userId });
-    if (result.affected !== 1) throw cardListNotFound();
+    await this.dataSource.transaction(async (manager) => {
+      const result = await manager.delete(CardListEntity, { id: listId, userId });
+      if (result.affected !== 1) throw cardListNotFound();
+      // share_link has no foreign key to the list, so its rows (and their images) would otherwise outlive it.
+      await manager.query(DELETE_SHARE_LINKS_FOR_LIST_SQL, [listId]);
+    });
   }
 }

@@ -31,7 +31,7 @@ export class ListViewService {
 
 }
 
-function printingLabelOf(line: CardListLineEntity): string | null {
+export function printingLabelOf(line: CardListLineEntity): string | null {
   if (line.printing === null) return null;
   const known = printingsOfCard(line.cardIdentifier)?.find((printing) => printing.key === line.printing);
   return known?.label ?? line.printing;

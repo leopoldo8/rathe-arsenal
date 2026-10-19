@@ -3,10 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Public } from '../../auth/decorators/public.decorator';
+import { CardListLineEntity } from '../../database/entities/card-list-line.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { SharedDeckLookup, type ILiveSharedDeck } from '../shared-deck-lookup';
 import { SharedDeckMissingService } from '../shared-deck-missing.service';
-import { buildDeckShareMeta, buildGenericShareMeta, buildMissingShareMeta } from './share-copy';
+import { SharedListLookup, type ILiveSharedList } from '../shared-list-lookup';
+import { buildDeckShareMeta, buildGenericShareMeta, buildListShareMeta, buildMissingShareMeta } from './share-copy';
+import { countListCopies, listMetaLines } from './preview-list';
 import { missingLinesByName } from './preview-missing';
 import type { IShareMeta } from './share-meta-tags';
 import { injectShareMeta } from './share-meta-tags';
@@ -19,10 +22,13 @@ export class ShareHtmlController {
 
   constructor(
     private readonly lookup: SharedDeckLookup,
+    private readonly listLookup: SharedListLookup,
     private readonly spaIndex: SpaIndexHtml,
     private readonly missingCards: SharedDeckMissingService,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
+    @InjectRepository(CardListLineEntity)
+    private readonly listLines: Repository<CardListLineEntity>,
     config: ConfigService,
   ) {
     this.baseUrl = config.get<string>('APP_BASE_URL') ?? 'http://localhost:5173';
@@ -37,6 +43,33 @@ export class ShareHtmlController {
     const [html, live] = await Promise.all([this.spaIndex.read(), this.lookup.findLive(token)]);
     const meta = live ? await this.metaFor(token, live) : buildGenericShareMeta(this.baseUrl);
     return injectShareMeta(html, meta);
+  }
+
+  @Get('l/:token')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @Header('Cache-Control', 'no-cache')
+  @Header('X-Robots-Tag', 'noindex, nofollow')
+  async listPage(@Param('token') token: string): Promise<string> {
+    const [html, live] = await Promise.all([this.spaIndex.read(), this.listLookup.findLive(token)]);
+    const meta = live ? await this.listMetaFor(token, live) : buildGenericShareMeta(this.baseUrl);
+    return injectShareMeta(html, meta);
+  }
+
+  private async listMetaFor(token: string, live: ILiveSharedList): Promise<IShareMeta> {
+    const rows = await this.listLines.find({ where: { listId: live.list.id }, order: { createdAt: 'ASC', id: 'ASC' } });
+    const lines = rows.map((row) => ({ ...row, sold: row.soldAt !== null }));
+    return buildListShareMeta(
+      {
+        kind: live.list.kind,
+        name: live.list.name,
+        sharerName: live.owner.displayName ?? '',
+        copyCount: countListCopies(lines),
+        totalPriceCents: live.list.totalPriceCents,
+        lines: listMetaLines(live.list.kind, lines),
+      },
+      token,
+      this.baseUrl,
+    );
   }
 
   private async metaFor(token: string, live: ILiveSharedDeck): Promise<IShareMeta> {
