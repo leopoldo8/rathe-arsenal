@@ -1,5 +1,6 @@
 import { catalog, findAlternatives, ICatalogCard, TAlternativeGroup, TSupportedFormat } from '@rathe-arsenal/engine';
-import { IDeckRow, mainboardByCost } from './deck-facts';
+import { mainboardByCost } from './deck-facts';
+import { IDeckRow, typeLine } from './deck-rows';
 
 const CANDIDATES_PER_GROUP = 6;
 const CANDIDATE_TEXT_MAX = 200;
@@ -52,10 +53,6 @@ export interface ISwapCandidate {
 export interface ISwapCandidates {
   readonly copies: number;
   readonly groups: readonly { readonly group: TAlternativeGroup; readonly cards: readonly ISwapCandidate[] }[];
-}
-
-function typeLine(card: ICatalogCard): string {
-  return [...card.classes, ...card.talents, ...card.types, ...card.subtypes].join(' ');
 }
 
 function facts(card: ICatalogCard): ISwapCardFacts {

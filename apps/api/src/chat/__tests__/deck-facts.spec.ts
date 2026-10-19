@@ -10,7 +10,7 @@ const KATSU_ROWS = [
 ];
 
 describe('deck facts', () => {
-  it('counts slots, pitch, cost, card types and the card pool, and flags cards the hero cannot play', () => {
+  it('counts slots, pitch, cost, card types, defense, attacks, equipment, resources and the card pool, and flags cards the hero cannot play', () => {
     const facts = describeDeck({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed', rows: KATSU_ROWS });
 
     expect(facts['totals']).toEqual({
@@ -20,6 +20,15 @@ describe('deck facts', () => {
       mainboardByType: { 'Action Attack': 6, 'Action Non-Attack': 3 },
       cardPool: 10,
       illegalCards: ['consuming-volition-red'],
+      mainboardByDefense: { '2': 6, '3': 3 },
+      defenseReactions: 0,
+      attacks: { cards: 6, withGoAgain: 2, averagePower: 3.3 },
+      equipment: { slots: [], missingSlots: ['Head', 'Chest', 'Arms', 'Legs'], defense: 0 },
+      resources: {
+        averagePitch: 1.9,
+        averageCost: 0.1,
+        abilityCosts: [{ cardIdentifier: 'talishar-the-lost-prince', name: 'Talishar, the Lost Prince', kind: 'activation', resources: 2 }],
+      },
     });
     expect(facts['formatRules']).toEqual({ minMainboard: 60, exactMainboard: null, maxCardPool: 80, maxCopies: 3 });
   });

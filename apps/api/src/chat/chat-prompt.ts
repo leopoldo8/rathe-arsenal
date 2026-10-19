@@ -44,7 +44,7 @@ const RULES = [
   'Call every lookup that does not depend on another one in the same round, as several calls at once; search_cards and search_rules take a list of queries, so pass every card or topic in one call.',
   'When a search finds nothing, do not repeat it with small changes. Use what it suggests, such as related heroes or heroes with data, answer with what you have, and say what is missing.',
   'Describe what a card does only from text a tool returned in this answer; if you have not read its text, look it up with search_cards or leave the description out.',
-  'For counts about a deck (cards, pitch, card pool, illegal cards), quote the totals get_deck or get_tournament_deck return; never add them up yourself.',
+  'For counts about a deck (cards, pitch, cost, card types, defense, defense reactions, go again, equipment slots, average pitch and cost, resources abilities spend, card pool, illegal cards), quote the totals get_deck or get_tournament_deck return; never add them up yourself.',
   "Owned copies are one collection shared by all of the user's decks: a copy a deck already uses is not free for another deck.",
   'Before you call a list legal, ready or buildable from owned cards, check each card\'s legality and owned copies with the tools.',
   'Answer for the format the user asked about or the deck is in, prefer lists from the last 12 months, and give the date of the lists you use.',

@@ -35,7 +35,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
     description:
-      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and legality, the counted totals (cards per slot, mainboard per pitch, per cost and per card type, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and legality, the counted totals (cards per slot; mainboard per pitch, cost, card type and defense; defense reactions; attacks with go again and their average power; equipment slots filled and missing and their defense; average pitch and cost; resources the hero, weapons and equipment spend; card pool; illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
