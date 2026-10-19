@@ -7,6 +7,8 @@ import { EUserRole, UserEntity } from '../database/entities/user.entity';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { EmailService } from '../email/email.service';
 import { EmailDeliveryError } from '../email/errors';
+import { ShareEventsService } from '../sharing/share-events.service';
+import { ShareReferralService } from '../sharing/share-referral.service';
 import { PasswordHasherService } from './services/password-hasher.service';
 import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthError, EAuthErrorCode } from './errors';
@@ -35,12 +37,19 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
+    private readonly shareReferral: ShareReferralService,
+    private readonly shareEvents: ShareEventsService,
   ) {
     this.baseUrl = this.config.get<string>('APP_BASE_URL') ?? 'http://localhost:5173';
     this.isDev = this.config.get<string>('NODE_ENV') !== 'production';
   }
 
-  async signUp(email: string, password: string, locale: TLocale = 'pt-BR'): Promise<IGenericAuthAcceptedResponse> {
+  async signUp(
+    email: string,
+    password: string,
+    locale: TLocale = 'pt-BR',
+    shareToken?: string,
+  ): Promise<IGenericAuthAcceptedResponse> {
     // A4: always return the same generic 202 response whether the email exists
     // or not. Short-circuit for existing emails so we never attempt to save a
     // new row (which would trigger a unique-constraint violation that leaks
@@ -56,14 +65,29 @@ export class AuthService {
     const tokenHash = this.tokenGenerator.hashToken(rawToken);
     const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
+    // Resolved only on this new-user path, and a dead token is silently ignored,
+    // so the response never reveals whether the token or the email was known.
+    const referral = shareToken ? await this.shareReferral.resolve(shareToken) : null;
+
     const user = this.users.create({
       email,
       passwordHash,
       emailVerifiedAt: null,
       verificationTokenHash: tokenHash,
       verificationTokenExpiresAt: expiresAt,
+      ...(referral ? { referredByUserId: referral.ownerUserId, referredVia: referral.via } : {}),
     });
     const saved = await this.users.save(user);
+
+    if (referral) {
+      await this.shareEvents.record({
+        kind: 'signed_up',
+        targetKind: referral.targetKind,
+        targetId: referral.targetId,
+        ownerUserId: referral.ownerUserId,
+        actorUserId: saved.id,
+      });
+    }
 
     const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
 
@@ -222,7 +246,15 @@ export class AuthService {
 
   async getMe(
     currentUser: ICurrentUser,
-  ): Promise<{ id: string; email: string; role: EUserRole; chatAccess: boolean; settings: IAuthSettings }> {
+  ): Promise<{
+    id: string;
+    email: string;
+    role: EUserRole;
+    chatAccess: boolean;
+    displayName: string | null;
+    whatsappNumber: string | null;
+    settings: IAuthSettings;
+  }> {
     // JwtStrategy.validate() already rejected soft-deleted users, so the NULL
     // path here is only reachable on a narrow race (concurrent hard-delete, or
     // the row vanished mid-request). Fail loudly instead of returning synthetic
@@ -236,6 +268,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       chatAccess: user.chatAccess,
+      displayName: user.displayName,
+      whatsappNumber: user.whatsappNumber,
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }

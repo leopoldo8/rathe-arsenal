@@ -2,6 +2,8 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/comm
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
+import { UpdateContactDto } from './dtos/update-contact.dto';
+import { UpdateDisplayNameDto } from './dtos/update-display-name.dto';
 import { PatchThemeDto } from './dtos/user-settings.dto';
 import { UsersService, IUserSettings } from './users.service';
 
@@ -49,5 +51,25 @@ export class UsersController {
     @Body() dto: PatchThemeDto,
   ): Promise<IUserSettings> {
     return this.usersService.patchSettings(currentUser.userId, dto.theme);
+  }
+
+  @Patch('me/display-name')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchDisplayName(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateDisplayNameDto,
+  ): Promise<{ displayName: string }> {
+    return this.usersService.updateDisplayName(currentUser.userId, dto.displayName);
+  }
+
+  @Patch('me/contact')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchContact(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateContactDto,
+  ): Promise<{ whatsappNumber: string | null }> {
+    return this.usersService.updateContact(currentUser.userId, dto.whatsappNumber);
   }
 }

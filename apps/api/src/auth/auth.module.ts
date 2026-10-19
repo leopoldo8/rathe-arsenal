@@ -15,9 +15,11 @@ import { AuthService } from './auth.service';
 import { AuthzService } from './authz.service';
 import { AuthController } from './auth.controller';
 import { OwnsTrackedDeckGuard } from './guards/owns-tracked-deck.guard';
+import { SharingCoreModule } from '../sharing/sharing-core.module';
 
 @Module({
   imports: [
+    SharingCoreModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

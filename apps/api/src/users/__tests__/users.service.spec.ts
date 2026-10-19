@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository, UpdateResult } from 'typeorm';
 import { UserEntity } from '../../database/entities/user.entity';
@@ -96,5 +96,47 @@ describe('UsersService.patchSettings', () => {
     await service.patchSettings('user-1', 'light');
     const [, partial] = updateMock.mock.calls[0] as [unknown, { preferences: Record<string, unknown> }];
     expect(Object.keys(partial.preferences)).toEqual(['theme']);
+  });
+});
+
+describe('UsersService profile updates', () => {
+  it('stores the display name', async () => {
+    const { service, repo } = buildService();
+
+    const result = await service.updateDisplayName('user-1', 'Rodrigo');
+
+    expect(result).toEqual({ displayName: 'Rodrigo' });
+    expect(repo.update).toHaveBeenCalledWith({ id: 'user-1' }, { displayName: 'Rodrigo' });
+  });
+
+  it('stores the normalized WhatsApp number', async () => {
+    const { service, repo } = buildService();
+
+    const result = await service.updateContact('user-1', '(51) 99999-0000');
+
+    expect(result).toEqual({ whatsappNumber: '5551999990000' });
+    expect(repo.update).toHaveBeenCalledWith({ id: 'user-1' }, { whatsappNumber: '5551999990000' });
+  });
+
+  it('clears the number on null', async () => {
+    const { service, repo } = buildService();
+
+    const result = await service.updateContact('user-1', null);
+
+    expect(result).toEqual({ whatsappNumber: null });
+    expect(repo.update).toHaveBeenCalledWith({ id: 'user-1' }, { whatsappNumber: null });
+  });
+
+  it('rejects a number that cannot be a phone number without writing', async () => {
+    const { service, repo } = buildService();
+
+    await expect(service.updateContact('user-1', '123')).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('throws NotFound when the user row is gone', async () => {
+    const { service } = buildService({ update: jest.fn().mockResolvedValue({ affected: 0, raw: [] }) });
+
+    await expect(service.updateDisplayName('user-1', 'Rodrigo')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../database/entities/user.entity';
+import { normalizeWhatsappNumber } from './normalize-whatsapp';
 
 export interface IUserSettings {
   theme: 'dark' | 'light';
@@ -49,5 +50,32 @@ export class UsersService {
 
     this.logger.log({ event: 'users.settings.patched', userId, theme });
     return { theme };
+  }
+
+  async updateDisplayName(userId: string, displayName: string): Promise<{ displayName: string }> {
+    await this.updateProfileColumn(userId, { displayName });
+    return { displayName };
+  }
+
+  async updateContact(
+    userId: string,
+    whatsappNumber: string | null,
+  ): Promise<{ whatsappNumber: string | null }> {
+    const normalized = whatsappNumber === null ? null : normalizeWhatsappNumber(whatsappNumber);
+    if (whatsappNumber !== null && normalized === null) {
+      throw new BadRequestException('WhatsApp number must have 10 to 15 digits');
+    }
+    await this.updateProfileColumn(userId, { whatsappNumber: normalized });
+    return { whatsappNumber: normalized };
+  }
+
+  private async updateProfileColumn(
+    userId: string,
+    column: Partial<Pick<UserEntity, 'displayName' | 'whatsappNumber'>>,
+  ): Promise<void> {
+    const result = await this.users.update({ id: userId }, column);
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found');
+    }
   }
 }

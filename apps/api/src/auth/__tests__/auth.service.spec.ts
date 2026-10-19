@@ -2,6 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
+import { ShareEventsService } from '../../sharing/share-events.service';
+import { IShareReferral, ShareReferralService } from '../../sharing/share-referral.service';
 import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { EmailService } from '../../email/email.service';
 import { EmailDeliveryError, EEmailErrorCode } from '../../email/errors';
@@ -16,6 +18,7 @@ function buildService(overrides: {
   create?: jest.Mock;
   sendVerification?: jest.Mock;
   sendReset?: jest.Mock;
+  resolveReferral?: jest.Mock;
 } = {}) {
   const repo = createMock<Repository<UserEntity>>();
   repo.findOne = overrides.findOne ?? jest.fn().mockResolvedValue(null);
@@ -38,6 +41,11 @@ function buildService(overrides: {
     return undefined;
   });
 
+  const referral = createMock<ShareReferralService>();
+  referral.resolve = overrides.resolveReferral ?? jest.fn().mockResolvedValue(null);
+  const shareEvents = createMock<ShareEventsService>();
+  shareEvents.record = jest.fn().mockResolvedValue(undefined);
+
   const service = new AuthService(
     repo as unknown as Repository<UserEntity>,
     hasher,
@@ -45,9 +53,11 @@ function buildService(overrides: {
     jwt,
     email,
     config,
+    referral as unknown as ShareReferralService,
+    shareEvents as unknown as ShareEventsService,
   );
 
-  return { service, repo, hasher, tokens, jwt, email };
+  return { service, repo, hasher, tokens, jwt, email, referral, shareEvents };
 }
 
 describe('AuthService.signUp', () => {
@@ -360,6 +370,61 @@ describe('AuthService.resetPassword', () => {
   });
 });
 
+describe('AuthService.signUp share attribution', () => {
+  const REFERRAL: IShareReferral = {
+    ownerUserId: 'owner-1',
+    targetKind: 'deck',
+    targetId: 7,
+    via: 'deck',
+  };
+
+  it('saves the referral on the new user and records signed_up', async () => {
+    const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
+    const { service, shareEvents } = buildService({
+      create,
+      resolveReferral: jest.fn().mockResolvedValue(REFERRAL),
+    });
+
+    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ referredByUserId: 'owner-1', referredVia: 'deck' }),
+    );
+    expect(shareEvents.record).toHaveBeenCalledWith({
+      kind: 'signed_up',
+      targetKind: 'deck',
+      targetId: 7,
+      ownerUserId: 'owner-1',
+      actorUserId: 'new-id',
+    });
+  });
+
+  it('ignores a dead token: no referral columns, no event, same response', async () => {
+    const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
+    const { service, shareEvents } = buildService({ create });
+    const withoutToken = await buildService().service.signUp('a@b.com', 'longenoughpassword');
+
+    const result = await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'dead-token');
+
+    expect(create.mock.calls[0][0]).not.toHaveProperty('referredByUserId');
+    expect(shareEvents.record).not.toHaveBeenCalled();
+    expect(Object.keys(result)).toEqual(Object.keys(withoutToken));
+  });
+
+  it('does not resolve the token when the email already exists', async () => {
+    const resolveReferral = jest.fn();
+    const { service, shareEvents } = buildService({
+      findOne: jest.fn().mockResolvedValue({ id: 'x' } as Partial<UserEntity>),
+      resolveReferral,
+    });
+
+    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+
+    expect(resolveReferral).not.toHaveBeenCalled();
+    expect(shareEvents.record).not.toHaveBeenCalled();
+  });
+});
+
 describe('AuthService.getMe', () => {
   function makeCurrentUser(overrides: Partial<{ userId: string; email: string; role: EUserRole }> = {}) {
     return { userId: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User, chatAccess: false, ...overrides };
@@ -369,7 +434,14 @@ describe('AuthService.getMe', () => {
     const user: Partial<UserEntity> = { id: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User };
     const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
     const result = await service.getMe(makeCurrentUser());
-    expect(result).toEqual({ id: 'user-1', email: 'hero@rathe.gg', role: 'user', settings: { theme: 'dark' } });
+    expect(result).toEqual({
+      id: 'user-1',
+      email: 'hero@rathe.gg',
+      role: 'user',
+      displayName: undefined,
+      whatsappNumber: undefined,
+      settings: { theme: 'dark' },
+    });
   });
 
   it('returns role=admin for an admin user', async () => {
@@ -519,5 +591,22 @@ describe('AuthService chat access in auth responses', () => {
     }
 
     expect(results).toEqual([true, true, true, false, false, false]);
+  });
+});
+
+describe('AuthService.getMe sharing profile', () => {
+  it('returns displayName and whatsappNumber', async () => {
+    const user: Partial<UserEntity> = {
+      id: 'user-1',
+      email: 'hero@rathe.gg',
+      displayName: 'Rodrigo',
+      whatsappNumber: '5551999990000',
+    };
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+
+    const result = await service.getMe({ userId: 'user-1', email: 'hero@rathe.gg', role: EUserRole.User, chatAccess: false });
+
+    expect(result.displayName).toBe('Rodrigo');
+    expect(result.whatsappNumber).toBe('5551999990000');
   });
 });
