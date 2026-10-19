@@ -131,3 +131,11 @@ describe('buildListText', () => {
     expect(buildListText(list, t)).toBe('2x Pummel (Vermelho) · R$ 6,00 cada');
   });
 });
+
+describe('card count wording', () => {
+  it('says "0 cartas" for an empty list, where pt-BR plural rules would pick the singular', () => {
+    expect(i18n.t('lists.bar.cards', { count: 0 })).toBe('0 cartas');
+    expect(i18n.t('lists.cardCount', { count: 0 })).toBe('0 cartas');
+    expect(i18n.t('lists.bar.cards', { count: 1 })).toBe('1 carta');
+  });
+});

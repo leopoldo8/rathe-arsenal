@@ -5,6 +5,7 @@ export const lists = {
   kind: { want: 'Wanted', sell: 'For sale' },
   sectionWantHint: 'cards you want to buy',
   sectionSellHint: 'cards you want to sell',
+  cardCount_zero: '0 cards',
   cardCount_one: '{{count}} card',
   cardCount_other: '{{count}} cards',
   soldCount_one: '{{count}} sold',
@@ -81,6 +82,7 @@ export const lists = {
     saveFailed: 'Could not save.',
   },
   bar: {
+    cards_zero: '0 cards',
     cards_one: '{{count}} card',
     cards_other: '{{count}} cards',
     sold_one: '{{count}} sold',
