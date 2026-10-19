@@ -27,8 +27,10 @@ import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/librar
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
 import { Route as AuthAddCardsRouteImport } from './routes/_auth/add-cards'
+import { Route as AuthListsIndexRouteImport } from './routes/_auth/lists.index'
 import { Route as AuthChatIndexRouteImport } from './routes/_auth/chat.index'
 import { Route as AuthAddCardsIndexRouteImport } from './routes/_auth/add-cards.index'
+import { Route as AuthListsListIdRouteImport } from './routes/_auth/lists.$listId'
 import { Route as AuthDecksNewRouteImport } from './routes/_auth/decks.new'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
 import { Route as AuthChatConversationIdRouteImport } from './routes/_auth/chat.$conversationId'
@@ -127,6 +129,11 @@ const AuthAddCardsRoute = AuthAddCardsRouteImport.update({
   path: '/add-cards',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthListsIndexRoute = AuthListsIndexRouteImport.update({
+  id: '/lists/',
+  path: '/lists/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthChatIndexRoute = AuthChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
@@ -136,6 +143,11 @@ const AuthAddCardsIndexRoute = AuthAddCardsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthAddCardsRoute,
+} as any)
+const AuthListsListIdRoute = AuthListsListIdRouteImport.update({
+  id: '/lists/$listId',
+  path: '/lists/$listId',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthDecksNewRoute = AuthDecksNewRouteImport.update({
   id: '/decks/new',
@@ -203,8 +215,10 @@ export interface FileRoutesByFullPath {
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/new': typeof AuthDecksNewRoute
+  '/lists/$listId': typeof AuthListsListIdRoute
   '/add-cards/': typeof AuthAddCardsIndexRoute
   '/chat/': typeof AuthChatIndexRoute
+  '/lists/': typeof AuthListsIndexRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -231,8 +245,10 @@ export interface FileRoutesByTo {
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/new': typeof AuthDecksNewRoute
+  '/lists/$listId': typeof AuthListsListIdRoute
   '/add-cards': typeof AuthAddCardsIndexRoute
   '/chat': typeof AuthChatIndexRoute
+  '/lists': typeof AuthListsIndexRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRoutesById {
@@ -262,8 +278,10 @@ export interface FileRoutesById {
   '/_auth/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/_auth/decks/new': typeof AuthDecksNewRoute
+  '/_auth/lists/$listId': typeof AuthListsListIdRoute
   '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
   '/_auth/chat/': typeof AuthChatIndexRoute
+  '/_auth/lists/': typeof AuthListsIndexRoute
   '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
 }
 export interface FileRouteTypes {
@@ -293,8 +311,10 @@ export interface FileRouteTypes {
     | '/chat/$conversationId'
     | '/decks/$deckId'
     | '/decks/new'
+    | '/lists/$listId'
     | '/add-cards/'
     | '/chat/'
+    | '/lists/'
     | '/decks/$deckId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -321,8 +341,10 @@ export interface FileRouteTypes {
     | '/chat/$conversationId'
     | '/decks/$deckId'
     | '/decks/new'
+    | '/lists/$listId'
     | '/add-cards'
     | '/chat'
+    | '/lists'
     | '/decks/$deckId/edit'
   id:
     | '__root__'
@@ -351,8 +373,10 @@ export interface FileRouteTypes {
     | '/_auth/chat/$conversationId'
     | '/_auth/decks/$deckId'
     | '/_auth/decks/new'
+    | '/_auth/lists/$listId'
     | '/_auth/add-cards/'
     | '/_auth/chat/'
+    | '/_auth/lists/'
     | '/_auth/decks/$deckId_/edit'
   fileRoutesById: FileRoutesById
 }
@@ -497,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/lists/': {
+      id: '/_auth/lists/'
+      path: '/lists'
+      fullPath: '/lists/'
+      preLoaderRoute: typeof AuthListsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/chat/': {
       id: '/_auth/chat/'
       path: '/chat'
@@ -510,6 +541,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/add-cards/'
       preLoaderRoute: typeof AuthAddCardsIndexRouteImport
       parentRoute: typeof AuthAddCardsRoute
+    }
+    '/_auth/lists/$listId': {
+      id: '/_auth/lists/$listId'
+      path: '/lists/$listId'
+      fullPath: '/lists/$listId'
+      preLoaderRoute: typeof AuthListsListIdRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/decks/new': {
       id: '/_auth/decks/new'
@@ -601,7 +639,9 @@ interface AuthRouteChildren {
   AuthChatConversationIdRoute: typeof AuthChatConversationIdRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
   AuthDecksNewRoute: typeof AuthDecksNewRoute
+  AuthListsListIdRoute: typeof AuthListsListIdRoute
   AuthChatIndexRoute: typeof AuthChatIndexRoute
+  AuthListsIndexRoute: typeof AuthListsIndexRoute
   AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
 }
 
@@ -618,7 +658,9 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthChatConversationIdRoute: AuthChatConversationIdRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
   AuthDecksNewRoute: AuthDecksNewRoute,
+  AuthListsListIdRoute: AuthListsListIdRoute,
   AuthChatIndexRoute: AuthChatIndexRoute,
+  AuthListsIndexRoute: AuthListsIndexRoute,
   AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,
 }
 

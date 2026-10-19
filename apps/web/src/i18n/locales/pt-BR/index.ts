@@ -19,6 +19,7 @@ import { alternatives } from './alternatives';
 import { recommendations } from './recommendations';
 import { chat } from './chat';
 import { sharing } from './sharing';
+import { lists } from './lists';
 
 export const ptBR = {
   common,
@@ -42,6 +43,7 @@ export const ptBR = {
   recommendations,
   chat,
   sharing,
+  lists,
 } as const;
 
 /**

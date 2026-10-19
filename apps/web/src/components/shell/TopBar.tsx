@@ -38,6 +38,7 @@ export function TopBar(): React.ReactElement {
   // accepts an empty object and applies defaults.
   const otherNavItems: readonly INavItem[] = [
     { to: '/library', label: t('shell.navLibrary'), key: 'library' },
+    { to: '/lists', label: t('shell.navLists'), key: 'lists' },
     ...(user?.chatAccess ? [{ to: '/chat', label: t('shell.navTutor'), key: 'chat' as const }] : []),
   ];
 

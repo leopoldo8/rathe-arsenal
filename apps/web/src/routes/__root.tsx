@@ -13,6 +13,7 @@ const AUTH_SHELL_PREFIXES = [
   '/home',
   '/library',
   '/library-csv-sources',
+  '/lists',
   '/add-cards',
   '/settings',
   '/decks',

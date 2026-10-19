@@ -32,6 +32,19 @@ function LibraryIcon(): React.ReactElement {
   );
 }
 
+function ListsIcon(): React.ReactElement {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  );
+}
+
 /**
  * BottomTabBar — fixed bottom navigation, visible only <960px.
  * Equal-width items with icon + short label.
@@ -48,6 +61,7 @@ export function BottomTabBar(): React.ReactElement {
   // its route-specific search params here — its validateSearch accepts empty.
   const otherTabItems: readonly ITabItem[] = [
     { to: '/library', label: t('shell.navLibrary'), icon: <LibraryIcon />, key: 'library' },
+    { to: '/lists', label: t('shell.navLists'), icon: <ListsIcon />, key: 'lists' },
     ...(user?.chatAccess ? [{ to: '/chat', label: t('shell.navTutor'), icon: <TutorMark />, key: 'chat' as const }] : []),
   ];
 
