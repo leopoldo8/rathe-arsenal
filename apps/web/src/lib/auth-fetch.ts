@@ -51,5 +51,7 @@ export async function authFetch<T>(
     const code = typeof body.code === 'string' ? body.code : null;
     throw new AuthFetchError(message, res.status, retryAfter, code);
   }
+  // 204 (e.g. DELETE) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

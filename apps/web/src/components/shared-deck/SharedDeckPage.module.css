@@ -1,0 +1,72 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100vh;
+  background: var(--ra-bg-canvas);
+  color: var(--ra-fg-primary);
+}
+
+.main {
+  flex: 1;
+  inline-size: 100%;
+  max-inline-size: var(--ra-page-max-inline);
+  margin-inline: auto;
+  padding: var(--ra-space-4) var(--ra-space-4) var(--ra-space-8);
+  box-sizing: border-box;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-8);
+}
+
+.top {
+  display: grid;
+  gap: var(--ra-space-4);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-8) 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+}
+
+.retry {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-accent);
+  border-radius: var(--ra-radius-sm);
+  background: transparent;
+  color: var(--ra-accent);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .main {
+    padding: var(--ra-space-6) var(--ra-space-8) var(--ra-space-12);
+  }
+
+  .top {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: stretch;
+  }
+}
+
+/* Room for the fixed WhatsApp bar so it never covers the footer on phones. */
+.withBar {
+  padding-block-end: 96px;
+}
+
+@media (min-width: 720px) {
+  .withBar {
+    padding-block-end: 0;
+  }
+}

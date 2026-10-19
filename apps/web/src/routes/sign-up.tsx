@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { readShareReturn } from '../lib/share-return';
 import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './auth-form.module.css';
@@ -26,7 +27,8 @@ function SignUpPage(): React.ReactElement {
     if (!email || !password) { setError(t('auth.allFieldsRequired')); return; }
     setLoading(true);
     try {
-      await signUp(email, password);
+      // A visitor who came from a shared page credits that link; the API ignores a dead token.
+      await signUp(email, password, readShareReturn()?.shareToken);
       void navigate({ to: '/check-your-email' });
     } catch (err) {
       setError(localizeAuthError(err, t));

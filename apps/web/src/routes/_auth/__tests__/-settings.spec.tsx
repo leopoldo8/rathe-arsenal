@@ -74,6 +74,11 @@ vi.mock('../../../api/store-admin', () => ({
   useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
 }));
 
+// Display-name PATCH (sharing) — stubbed so the field is tested without a network.
+const { patchDisplayNameMock } = vi.hoisted(() => ({ patchDisplayNameMock: vi.fn() }));
+const { patchContactMock } = vi.hoisted(() => ({ patchContactMock: vi.fn() }));
+vi.mock('../../../api/shared-decks', () => ({ patchDisplayName: patchDisplayNameMock, patchContact: patchContactMock }));
+
 // DeleteAccountModal — smoke-stub so settings tests focus on the page layout
 vi.mock('../../../components/delete-account-modal', () => ({
   DeleteAccountModal: ({
@@ -126,6 +131,8 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: noopAsync,
+    setDisplayName: () => undefined,
+    setWhatsappNumber: () => undefined,
     ...overrides,
   };
 }
@@ -184,9 +191,9 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     expect(labels.some((t) => t.includes('excluir conta'))).toBe(true);
   });
 
-  it('renders exactly 4 <h2> section headings', () => {
+  it('renders exactly 5 <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(5);
   });
 
   it('wraps the panels in the capped, centred page column', () => {
@@ -197,7 +204,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
   it('draws each of the four panels with the section class and no eyebrow above its heading', () => {
     renderSettings();
     const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
-    expect(panels).toHaveLength(4);
+    expect(panels).toHaveLength(5);
     for (const panel of panels) {
       expect(panel).toHaveClass(cls(settingsStyles.section));
       expect(panel?.querySelector('span[class*="eyebrow"]')).toBeNull();
@@ -222,16 +229,91 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
 });
 
 describe('SettingsPage — Profile section', () => {
+  beforeEach(() => patchDisplayNameMock.mockReset());
+
   it('displays the authenticated user email', () => {
     renderSettings(makeAuthContext({ user: { id: 'u1', email: 'archer@rathe.gg', role: 'user', chatAccess: false } }));
     expect(screen.getByText('archer@rathe.gg')).toBeInTheDocument();
   });
 
-  it('does NOT render a display-name input (out of v1 scope)', () => {
+  it('renders the display-name field inside the profile panel, prefilled from the user', () => {
+    renderSettings(
+      makeAuthContext({
+        user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu_Pelotas' },
+      }),
+    );
+    const input = screen.getByRole('textbox', { name: /nome de exibição/i });
+    expect(input).toHaveValue('Dudu_Pelotas');
+    expect(input.closest('section')).toBe(screen.getByRole('heading', { level: 2, name: /perfil/i }).closest('section'));
+  });
+
+  it('saves the trimmed display name with PATCH and mirrors it into the auth context', async () => {
+    patchDisplayNameMock.mockResolvedValueOnce({ displayName: 'Dudu' });
+    const setDisplayName = vi.fn();
+    renderSettings(makeAuthContext({ setDisplayName }));
+    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), '  Dudu  ');
+    await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
+    expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu', 'jwt');
+    expect(setDisplayName).toHaveBeenCalledWith('Dudu');
+    expect(await screen.findByText(/nome salvo/i)).toBeInTheDocument();
+  });
+
+  it('does not send a name shorter than 2 characters', async () => {
     renderSettings();
-    // There must be no text input or field labeled "display name" or "name"
-    const inputs = screen.queryAllByRole('textbox');
-    expect(inputs).toHaveLength(0);
+    await userEvent.type(screen.getByRole('textbox', { name: /nome de exibição/i }), 'D');
+    await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
+    expect(patchDisplayNameMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('SettingsPage — Contact panel (WhatsApp)', () => {
+  beforeEach(() => patchContactMock.mockReset());
+
+  const saved = makeAuthContext({
+    user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false, displayName: 'Dudu', whatsappNumber: '5553999990000' },
+  });
+
+  it('shows the saved number without the country code, a preview and "Remover número"', () => {
+    renderSettings(saved);
+    const panel = screen.getByRole('heading', { level: 2, name: /contato/i }).closest('section')!;
+    expect(panel.querySelector('input[type="tel"]')).toHaveValue('53 99999-0000');
+    expect(panel).toHaveTextContent('Chamar Dudu no WhatsApp');
+    expect(screen.getByRole('button', { name: 'Remover número' })).toBeInTheDocument();
+  });
+
+  it('has no preview and no remove button while no number is saved', () => {
+    renderSettings();
+    expect(screen.queryByTestId('whatsapp-preview')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remover número' })).not.toBeInTheDocument();
+  });
+
+  it('saves a number with PATCH and mirrors it into the auth context', async () => {
+    patchContactMock.mockResolvedValueOnce({ whatsappNumber: '5553999990000' });
+    const setWhatsappNumber = vi.fn();
+    renderSettings(makeAuthContext({ setWhatsappNumber }));
+    await userEvent.type(screen.getByLabelText('WhatsApp (opcional)'), '53 99999-0000');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar número' }));
+    expect(patchContactMock).toHaveBeenCalledWith('53 99999-0000', 'jwt');
+    expect(setWhatsappNumber).toHaveBeenCalledWith('5553999990000');
+    expect(await screen.findByText('Número salvo.')).toBeInTheDocument();
+  });
+
+  it('shows the hint for an incomplete number without calling the API', async () => {
+    renderSettings();
+    await userEvent.type(screen.getByLabelText('WhatsApp (opcional)'), '53 9999');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar número' }));
+    expect(await screen.findByText(/Número incompleto/)).toBeInTheDocument();
+    expect(patchContactMock).not.toHaveBeenCalled();
+  });
+
+  it('removes the number by sending null', async () => {
+    patchContactMock.mockResolvedValueOnce({ whatsappNumber: null });
+    const setWhatsappNumber = vi.fn();
+    renderSettings({ ...saved, setWhatsappNumber });
+    await userEvent.click(screen.getByRole('button', { name: 'Remover número' }));
+    expect(patchContactMock).toHaveBeenCalledWith(null, 'jwt');
+    expect(setWhatsappNumber).toHaveBeenCalledWith(null);
+    expect(await screen.findByText('Número removido.')).toBeInTheDocument();
   });
 });
 
@@ -300,7 +382,7 @@ describe('SettingsPage — A11y: heading levels', () => {
 
   it('has exactly four <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(5);
   });
 
   it('does not use <h3> or deeper for section headings', () => {

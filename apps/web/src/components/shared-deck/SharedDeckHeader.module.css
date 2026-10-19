@@ -1,0 +1,149 @@
+/* Identity block of the shared deck: hero art backdrop, title, chips, byline. */
+
+.header {
+  /* The art stays dark in both themes, so the text on top reads the dark values. */
+  --ra-fg-primary: #e8e6e1;
+  --ra-fg-secondary: #c8cad2;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0a0b0e;
+  border-radius: var(--ra-radius-xl);
+  color: var(--ra-fg-primary);
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.backdropImg {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: -12%;
+  inline-size: 150%;
+  max-inline-size: none;
+  block-size: auto;
+  opacity: 0.5;
+  filter: blur(2px);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(11, 12, 15, 0.35), rgba(11, 12, 15, 0.8) 70%, rgba(11, 12, 15, 0.96)),
+    linear-gradient(0deg, rgba(11, 12, 15, 0.96), transparent 60%);
+}
+
+.content {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ra-space-5);
+  padding: var(--ra-space-5);
+}
+
+.heroCard {
+  flex: 0 0 auto;
+  inline-size: 104px;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: var(--ra-shadow-md);
+}
+
+.identity {
+  min-inline-size: 0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75);
+}
+
+.eyebrow {
+  margin: 0 0 var(--ra-space-1);
+  color: var(--ra-accent);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-spaced);
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: 1.75rem;
+  font-weight: var(--ra-weight-medium);
+  line-height: var(--ra-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  color: var(--ra-fg-primary);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2);
+  margin-block: var(--ra-space-3);
+}
+
+.chip,
+.chipAccent {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
+  padding: 2px 9px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-xs);
+  background: rgba(26, 28, 34, 0.8);
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+}
+
+.chipAccent {
+  border-color: var(--ra-accent-soft-bd);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent);
+}
+
+.bylineRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-3);
+}
+
+.byline {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.byline b {
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-semibold);
+}
+
+@media (min-width: 720px) {
+  .content {
+    gap: var(--ra-space-6);
+    padding: var(--ra-space-6);
+  }
+
+  .heroCard {
+    inline-size: 150px;
+  }
+
+  .title {
+    font-size: 2.25rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .heroCard {
+    inline-size: 76px;
+  }
+}

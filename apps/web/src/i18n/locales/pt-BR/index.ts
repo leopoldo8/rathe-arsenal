@@ -18,6 +18,7 @@ import { scanner } from './scanner';
 import { alternatives } from './alternatives';
 import { recommendations } from './recommendations';
 import { chat } from './chat';
+import { sharing } from './sharing';
 
 export const ptBR = {
   common,
@@ -40,6 +41,7 @@ export const ptBR = {
   alternatives,
   recommendations,
   chat,
+  sharing,
 } as const;
 
 /**

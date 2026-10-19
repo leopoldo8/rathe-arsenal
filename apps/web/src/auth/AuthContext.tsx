@@ -7,6 +7,10 @@ export interface IAuthUser {
   email: string;
   role: TUserRole;
   chatAccess: boolean;
+  /** Name shown on shared pages; null until the user picks one (sharing asks for it first). */
+  displayName?: string | null;
+  /** Digits with country code; null until the user saves one. */
+  whatsappNumber?: string | null;
 }
 
 export interface IAuthSettings {
@@ -24,7 +28,12 @@ export interface IAuthContext {
    */
   settings?: IAuthSettings;
   setSettings: (next: IAuthSettings) => void;
-  signUp: (email: string, password: string) => Promise<{ _devVerificationLink?: string | undefined }>;
+  /** `shareToken` credits the shared page the visitor came from; the API ignores it when dead. */
+  signUp: (
+    email: string,
+    password: string,
+    shareToken?: string,
+  ) => Promise<{ _devVerificationLink?: string | undefined }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   verifyEmail: (token: string) => Promise<void>;
@@ -38,6 +47,10 @@ export interface IAuthContext {
    * caller can render inline feedback.
    */
   deleteAccount: (password: string) => Promise<void>;
+  /** Mirrors a saved display name into the signed-in user without refetching /auth/me. */
+  setDisplayName: (displayName: string) => void;
+  /** Mirrors a saved (or removed, with null) WhatsApp number into the signed-in user. */
+  setWhatsappNumber: (whatsappNumber: string | null) => void;
 }
 
 export const AuthContext = createContext<IAuthContext | null>(null);

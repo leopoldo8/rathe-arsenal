@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { FormEvent, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { AuthFetchError } from '../auth/AuthProvider';
+import { clearShareReturn, readShareReturn } from '../lib/share-return';
 import { localizeAuthError } from '../auth/localize-auth-error';
 import { AuthLayout } from '../components/auth-layout/AuthLayout';
 import styles from './sign-in.module.css';
@@ -16,6 +17,7 @@ function SignInPage(): React.ReactElement {
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +31,11 @@ function SignInPage(): React.ReactElement {
     setLoading(true);
     try {
       await signIn(email, password);
-      void navigate({ to: '/' });
+      // Back to the shared page the visitor came from; the guard only accepts /d/ and /l/ paths.
+      const shareReturn = readShareReturn();
+      clearShareReturn();
+      if (shareReturn) router.history.push(shareReturn.returnTo);
+      else void navigate({ to: '/' });
     } catch (err) {
       setError(localizeAuthError(err, t));
       // Focus password field for quick retry on a non-rate-limit error.

@@ -50,3 +50,17 @@ export function toSharedCardFromRow(row: IDeckCardRow, lookup: TCatalogLookup): 
       : null,
   };
 }
+
+const HERO_SLOT = 'hero';
+
+/** Imported decks keep the hero as a deck_card row; scratch decks only carry `heroIdentifier`. */
+export function resolveHeroCard(
+  rows: readonly IDeckCardRow[],
+  heroIdentifier: string | null,
+  lookup: TCatalogLookup,
+): ISharedCard | null {
+  const heroRow = rows.find((row) => row.slot === HERO_SLOT);
+  if (heroRow) return toSharedCardFromRow(heroRow, lookup);
+  if (!heroIdentifier || !lookup(heroIdentifier)) return null;
+  return toSharedCardFromRow({ cardIdentifier: heroIdentifier, quantity: 1, slot: HERO_SLOT }, lookup);
+}

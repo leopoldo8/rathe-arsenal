@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { ContactSetting } from '../../components/settings/ContactSetting';
+import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
 import { useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
@@ -72,7 +74,7 @@ export const Route = createFileRoute('/_auth/settings')({
  * Unit 7 (Onda 3) — Settings page restyled with 3-section layout.
  *
  * Sections:
- *  1. Profile  — email displayed read-only (display-name is out of v1 scope)
+ *  1. Profile  — email displayed read-only, plus the display name shown on shared decks
  *  2. Theme    — ThemeToggle (client-side; backend persistence wires in Unit 12)
  *  3. Account  — change-password link + delete-account trigger
  *
@@ -97,7 +99,11 @@ export function SettingsPage() {
           <span className={styles.emailLabel}>{t('settings.emailAddress')}</span>
           <span className={styles.emailValue}>{user?.email ?? '—'}</span>
         </div>
+        <DisplayNameSetting />
       </section>
+
+      {/* ---- Section: Contact (optional WhatsApp number shown on shared links) ---- */}
+      <ContactSetting className={styles.section} />
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">

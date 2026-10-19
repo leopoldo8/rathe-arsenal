@@ -52,6 +52,8 @@ function renderModal(opts: IRenderOpts) {
     forgotPassword: noopAsync,
     resetPassword: noopAsync,
     deleteAccount: opts.deleteAccount,
+    setDisplayName: () => undefined,
+    setWhatsappNumber: () => undefined,
     setSettings: () => {
       /* test stub */
     },

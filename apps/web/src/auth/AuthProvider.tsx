@@ -33,6 +33,8 @@ interface IAuthMeResponse {
   email: string;
   role: TUserRole;
   chatAccess?: boolean;
+  displayName?: string | null;
+  whatsappNumber?: string | null;
   settings: IAuthSettings;
 }
 
@@ -68,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         // Default to 'user' if an older server response omits role (fail-safe:
         // never grant admin UI on a missing field).
-        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true });
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null });
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
         if (res.settings?.theme) {
@@ -94,9 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTheme(next.theme);
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, shareToken?: string) => {
     const res = await apiFetch<{ message: string; _devVerificationLink?: string }>(
-      '/auth/sign-up', { method: 'POST', body: JSON.stringify({ email, password }) },
+      '/auth/sign-up',
+      {
+        method: 'POST',
+        body: JSON.stringify(shareToken ? { email, password, shareToken } : { email, password }),
+      },
     );
     return { _devVerificationLink: res._devVerificationLink };
   }, []);
@@ -127,6 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Reset DOM to the product default so the anonymous session doesn't
     // carry the ex-user's theme between signOut and the next auth bootstrap.
     applyTheme('dark');
+  }, []);
+
+  const setDisplayName = useCallback((displayName: string) => {
+    setUser((prev) => (prev === null ? prev : { ...prev, displayName }));
+  }, []);
+
+  const setWhatsappNumber = useCallback((whatsappNumber: string | null) => {
+    setUser((prev) => (prev === null ? prev : { ...prev, whatsappNumber }));
   }, []);
 
   const verifyEmail = useCallback(async (tkn: string) => {
@@ -174,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // assigning `undefined` to an optional field is a type error.
     ...(settings !== undefined ? { settings } : {}),
     setSettings,
-    signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount,
-  }), [user, token, isLoading, settings, setSettings, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
+    signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount, setDisplayName, setWhatsappNumber,
+  }), [user, token, isLoading, settings, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
