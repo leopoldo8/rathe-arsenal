@@ -405,8 +405,8 @@ See the Phase 0 plan's "Scope Boundaries" section for the full rationale on each
 Shared deck links, share attribution, generated link-preview images and copying a shared deck shipped from `.specs/features/sharing-decks/`. Known gaps, none blocking:
 
 ### SH1. Not yet checked in a real WhatsApp chat
-**Posture:** the preview tags and the 1200x630 JPEG are covered by e2e tests and a local walkthrough, and the image's text rendered with only the bundled fonts in a bare `node:22-slim` container. Staging has no public domain, so no request has reached the deployed image route, and no link has been pasted into WhatsApp or Meta's sharing debugger.
-**Trigger:** the first deploy to production. **Work:** share a deck there, paste the link into a WhatsApp chat and into https://developers.facebook.com/tools/debug/, and confirm the card shows the title, description and image.
+**Posture:** the preview tags and the 1200x630 JPEG are covered by e2e tests and a local walkthrough. On staging (https://rathe-arsenal-staging.up.railway.app, 2026-10-18) the HTML for an unknown token carries the generic `og:*` tags and `noindex`, and the generic image renders its text with the bundled fonts inside the real Railway container. No live deck link has been pasted into WhatsApp or Meta's sharing debugger yet.
+**Trigger:** the first deck shared on staging or production. **Work:** paste its link into a WhatsApp chat and into https://developers.facebook.com/tools/debug/, and confirm the card shows the title, description and image.
 
 ### SH2. `scripts/delete-user.ts` share-image cleanup never ran against data
 **Posture:** it deletes the user's `share_image` rows before their decks through the shared helper in `apps/api/src/sharing/preview/share-image-cleanup.ts`; the helper is covered by e2e, the script itself has no test (it had none before).
