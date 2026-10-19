@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, useApiClient } from '../lib/api-client';
 import { DECKS_QUERY_KEY } from './decks';
+import type { IAlternativeImageUrl } from './replacements';
 
 export const CHAT_TURN_FAILURE_CODES = [
   'BUDGET_EXHAUSTED',
@@ -44,9 +45,11 @@ export interface IDeckProposalDisplay {
   readonly cards: readonly (IChatCardLabel & { readonly quantity: number; readonly slot: string; readonly ownedQuantity: number })[];
 }
 
+type TSwapCardLabel = IChatCardLabel & { readonly imageUrl: IAlternativeImageUrl | null };
+
 export interface ISwapProposalDisplay {
-  readonly original: IChatCardLabel & { readonly copiesInDeck: number };
-  readonly replacement: IChatCardLabel & { readonly freeCopies: number };
+  readonly original: TSwapCardLabel & { readonly copiesInDeck: number };
+  readonly replacement: TSwapCardLabel & { readonly freeCopies: number };
 }
 
 interface IProposalBase {

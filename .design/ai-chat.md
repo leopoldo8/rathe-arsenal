@@ -273,6 +273,7 @@ sequenceDiagram
 
 - Design: conversation list, thread and composer, on phone and desktop; must answer for the states empty, waiting for an answer (the polled wait, which decides whether streaming becomes worth it), failed with retry, budget reached with reset date, a deck proposal card (counts of owned and missing cards, apply, dismiss, applied, stale), a swap proposal card, and a bound conversation's deck chip.
 - Picked 2026-10-11: alternative B (thread first, one reading column, conversations in a bottom sheet or side panel). The screen shows no money amount: no spend line, and the budget-reached state names only the reset date. `GET /api/chat/usage` stays, so the composer can be disabled before the user types. The assistant is named Tutor, with the card-fan mark (see Out).
+- Picked 2026-10-19: the swap proposal card shows both card images side by side, the card going out dimmed, each opening the large card (`.design/mockups/ai-chat/swap-images-a-*`). Rejected: the incoming card large with the outgoing one tucked at its corner (B), because the outgoing card is too small to read, and thumbnails inside the current boxes (C), because the image is not the main element. Players recognise cards by their art, not by name.
 
 ### Deck chat entry
 

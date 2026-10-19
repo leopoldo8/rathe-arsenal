@@ -12,6 +12,7 @@ import type {
   TChatMessageStatus,
 } from '../../../api/chat';
 import type { ITrackedDeckListItem } from '../../../api/decks';
+import type { IAlternativeImageUrl } from '../../../api/replacements';
 
 export { mockApiFetch, mockNavigate, routerMock, navigatedTo } from './chat-test-mocks';
 import { mockApiFetch } from './chat-test-mocks';
@@ -111,6 +112,12 @@ export function deckProposal(overrides: Partial<IDeckProposal> = {}): IDeckPropo
   };
 }
 
+function cardImage(code: string): IAlternativeImageUrl {
+  const small = `https://cards.example/small/${code}.webp`;
+  const large = `https://cards.example/large/${code}.webp`;
+  return { small, large, sources: [{ small, large }] };
+}
+
 export function swapProposal(overrides: Partial<ISwapProposal> = {}): ISwapProposal {
   return {
     id: 'p-2',
@@ -124,8 +131,8 @@ export function swapProposal(overrides: Partial<ISwapProposal> = {}): ISwapPropo
     replacementStatus: null,
     payload: { trackedDeckId: 7, slot: 'mainboard' },
     display: {
-      original: { cardIdentifier: 'flex-red', name: 'Flex', pitch: 1, copiesInDeck: 2 },
-      replacement: { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', pitch: 3, freeCopies: 3 },
+      original: { cardIdentifier: 'flex-red', name: 'Flex', pitch: 1, imageUrl: cardImage('FLEX'), copiesInDeck: 2 },
+      replacement: { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', pitch: 3, imageUrl: cardImage('EMISSARY'), freeCopies: 3 },
     },
     ...overrides,
   };

@@ -68,6 +68,33 @@ describe('ProposalCard', () => {
     expect(screen.getByText('você não tem cópias livres')).toBeInTheDocument();
   });
 
+  it('a swap proposal shows both card images and opens each one large', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({ matches: false, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+    renderCard(swapProposal());
+    const out = screen.getByTestId('swap-out');
+    const into = screen.getByTestId('swap-in');
+
+    expect(within(out).getByRole('img', { name: 'Flex' })).toHaveAttribute('src', 'https://cards.example/large/FLEX.webp');
+    expect(within(into).getByRole('img', { name: 'Emissary of Tides' })).toHaveAttribute('src', 'https://cards.example/large/EMISSARY.webp');
+    await userEvent.click(within(into).getByRole('button', { name: 'Ver Emissary of Tides' }));
+    const lightbox = await screen.findByRole('dialog');
+    expect(within(lightbox).getByRole('img', { name: 'Emissary of Tides' })).toHaveAttribute('src', 'https://cards.example/large/EMISSARY.webp');
+  });
+
+  it('a swap card with no image shows its name in place of the art and opens nothing', () => {
+    const display = swapProposal().display;
+    renderCard(swapProposal({ display: { ...display, original: { ...display.original, imageUrl: null } } }));
+    const out = screen.getByTestId('swap-out');
+
+    expect(within(out).queryByRole('img')).toBeNull();
+    expect(within(out).queryByRole('button')).toBeNull();
+    expect(within(out).getByTestId('swap-art-fallback')).toHaveTextContent('Flex');
+  });
+
   it('each status shows its badge and actions', () => {
     const badges: Record<TProposalStatus, string> = { pending: 'Pendente', applied: 'Aplicada', dismissed: 'Dispensada', stale: 'Desatualizada' };
     const statuses: TProposalStatus[] = ['pending', 'applied', 'dismissed', 'stale'];
