@@ -31,7 +31,7 @@ export class AuthController {
   @HttpCode(HttpStatus.ACCEPTED)
   async signUp(@Body() dto: SignUpDto, @AcceptLanguage() locale: TLocale) {
     try {
-      return await this.authService.signUp(dto.email, dto.password, locale);
+      return await this.authService.signUp(dto.email, dto.password, locale, dto.shareToken);
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;

@@ -276,7 +276,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .set('Accept-Language', 'en-US')
         .set('X-Forwarded-For', '203.0.113.50')
         .send({ email: 'locale@b.com', password: 'longenoughpassword' });
-      expect(authService.signUp).toHaveBeenCalledWith('locale@b.com', 'longenoughpassword', 'en-US');
+      expect(authService.signUp).toHaveBeenCalledWith('locale@b.com', 'longenoughpassword', 'en-US', undefined);
     });
 
     it('passes pt-BR to authService.signUp when Accept-Language header is absent', async () => {
@@ -284,7 +284,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .post('/auth/sign-up')
         .set('X-Forwarded-For', '203.0.113.51')
         .send({ email: 'nolocale@b.com', password: 'longenoughpassword' });
-      expect(authService.signUp).toHaveBeenCalledWith('nolocale@b.com', 'longenoughpassword', 'pt-BR');
+      expect(authService.signUp).toHaveBeenCalledWith('nolocale@b.com', 'longenoughpassword', 'pt-BR', undefined);
     });
 
     it('passes en-US to authService.resendVerification when Accept-Language: en-US', async () => {
