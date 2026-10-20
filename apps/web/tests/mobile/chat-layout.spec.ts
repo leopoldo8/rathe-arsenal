@@ -16,16 +16,16 @@ async function openChat(page: Page, path: string): Promise<void> {
 }
 
 test.describe('Tutor chat on a phone', () => {
-  test('three tabs and the composer fit a phone', async ({ page }) => {
+  test('four tabs and the composer fit a phone', async ({ page }) => {
     await openChat(page, `/chat/${CONVERSATION_ID}`);
     await expect(page.getByText('Como o pessoal está montando o Katsu nos torneios?')).toBeVisible();
     const viewport = page.viewportSize()!;
 
     const tabBar = page.getByRole('navigation', { name: 'Navegação principal' });
     const tabs = tabBar.getByRole('link');
-    await expect(tabs).toHaveCount(3);
-    await expect(tabs.nth(2)).toHaveText('Tutor');
-    for (let index = 0; index < 3; index++) {
+    await expect(tabs).toHaveCount(4);
+    await expect(tabs.nth(3)).toHaveText('Tutor');
+    for (let index = 0; index < 4; index++) {
       const box = (await tabs.nth(index).boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(-SUBPIXEL_PX);
       expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + SUBPIXEL_PX);
@@ -38,6 +38,11 @@ test.describe('Tutor chat on a phone', () => {
     expect(composer.x + composer.width).toBeLessThanOrEqual(viewport.width + SUBPIXEL_PX);
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewport.width);
+    const pageScroll = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(pageScroll).toBeLessThanOrEqual(SUBPIXEL_PX);
+    const disclaimer = (await page.getByText(/não tem nenhuma afiliação com a Legend Story Studios/).boundingBox())!;
+    expect(disclaimer.y).toBeGreaterThanOrEqual(composer.y + composer.height - SUBPIXEL_PX);
+    expect(disclaimer.y + disclaimer.height).toBeLessThanOrEqual(bar.y + SUBPIXEL_PX);
   });
 
   test('the list is a bottom sheet on a phone', async ({ page }) => {
