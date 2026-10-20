@@ -85,8 +85,8 @@ Every write returns the whole list so the web replaces its cache with one respon
 ## Price job
 
 - tcgcsv only, as `.specs/features/price-spike/result.md` describes (category 62, `/tcgplayer/62/groups`, `/tcgplayer/62/<groupId>/prices`, `last-updated.txt`). Identify the app with a descriptive `User-Agent` and space requests at least one second apart.
-- Which groups: only sets that hold a printing of some card on a sell list (any user). The catalog has no tcgcsv groupId: map set to group from the group list (read at most once per UTC day), matching on the set abbreviation/name; log and skip a set that does not map.
-- When: in process, a check every hour (add `@nestjs/schedule` or a plain interval started in `onApplicationBootstrap`, whichever fits the codebase; must be disabled in tests and when `PRICE_SYNC_ENABLED=false`). It reads a group only if `card_price_group_sync.fetchedAt` is missing or older than tcgcsv's `last-updated.txt` time, and never twice in the same UTC day. So a new sell list gets suggestions within the hour, and the user-facing request never calls tcgcsv.
+- Which groups: every group of category 62, from the group list (read at most once per UTC day). Changed on 2026-10-20 from "only sets that hold a printing of some card on a sell list": that left a card from a set nobody sold before without a suggestion for up to an hour. See the appendix.
+- When: in process, a check every hour (add `@nestjs/schedule` or a plain interval started in `onApplicationBootstrap`, whichever fits the codebase; must be disabled in tests and when `PRICE_SYNC_ENABLED=false`). It reads a group only if `card_price_group_sync.fetchedAt` is missing or older than tcgcsv's `last-updated.txt` time, and never twice in the same UTC day. So any card already has a price when it is put on a sell list, and the user-facing request never calls tcgcsv.
 - Enabled only when `PRICE_SYNC_ENABLED=true` (default off; tests and local runs never call tcgcsv). The owner's staging and production each set it.
 - Also a script `pnpm prices:sync` (scripts/) that runs one pass by hand.
 - Failure: log, keep the previous rows, retry on the next hourly check. No user-facing error.
@@ -144,9 +144,12 @@ A printing is valid for a card when its key is one of the keys built from that c
 
 ### Price job (Prices PR)
 
-- Needed sets: the set of the line's own printing, or every set of the card's printings when the line has none, for every line of every sell list. Set to group: the set name against the group name (ignoring case and punctuation), then the set code against the group abbreviation; a set that matches neither is logged and skipped. Many deck products (Blitz, Silver Age, Armory) are named differently by tcgcsv and do not map yet.
+- Groups: every group tcgcsv lists for category 62 (109 when the spike read them, about 17,000 price rows in all), read in groupId order, one second apart. A full pass is about 110 requests a day, against tcgcsv's ceiling of 10,000. The set-to-group mapping is gone: a price row is found by the printing's product id, whatever group it came from, so deck products (Blitz, Silver Age, Armory) are priced when tcgcsv carries them.
+- A pass stops after 3 groups fail in a row and leaves the rest to the next hourly check, so an outage costs a few requests an hour instead of the whole list.
+- One pass at a time across processes: a Postgres advisory lock (`pg_try_advisory_lock`) taken for the pass; a process that cannot take it (a deploy overlapping the old container, `prices:sync` by hand) skips the pass.
+- A pass that read or failed a group logs `prices.sync.pass` with the counts; a pass with nothing to read logs nothing.
 - Sub type: Normal, Rainbow Foil, Cold Foil, Gold Foil, prefixed `1st Edition ` or `Unlimited Edition ` by the edition. Alpha printings and unknown finishes have no sub type and never get a suggestion.
-- The group list is read at most once per UTC day while the process runs (kept in memory; a restart reads it again). `last-updated.txt` is read only when some needed group was not read today.
+- The group list is read at most once per UTC day while the process runs (kept in memory; a restart reads it again). `last-updated.txt` is read only when some group was not read today.
 - A suggestion is never below R$ 1,00 (a card worth a few cents would otherwise suggest R$ 0).
 - `pnpm prices:sync` builds the API and runs one pass with the same rules. `PRICE_SYNC_ENABLED=true` turns on the hourly check.
 - `apply-suggestions` on a want list changes nothing (it has no suggestions) and answers 200.

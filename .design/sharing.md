@@ -362,7 +362,8 @@ Decided by the owner: each `sell` list has a multiplier (typically 4x to 8x, def
 Settled by the price spike (`.specs/features/price-spike/result.md`): the source is tcgcsv.com, a free daily public mirror of TCGplayer prices keyed by the TCGplayer product id the catalog already carries per printing; it covered all 82 cards of the owner's three decks.
 The owner asked for TCGplayer's last sale; no allowed source provides it (TCGplayer's terms forbid scraping its sites, and tcgcsv carries no last-sale field), so the suggestion is built on `marketPrice`, which TCGplayer computes from recent sales, and is worded as market price, never as last sale.
 The owner asked for Star City Games as a second source; its terms forbid automated reading of prices, so the list's source is TCGplayer only and the source choice disappears from the screen until an allowed second source exists.
-Prices are read by a server job, at most once a day per set and only for sets that have a card on some sell list, as tcgcsv's guidelines ask (no calls from user-facing requests, one sync per day); one shared snapshot serves every list, so nothing is stored per user.
+Prices are read by a server job that reads every Flesh and Blood set once a day, as tcgcsv's guidelines ask (no calls from user-facing requests, one sync per day); one shared snapshot serves every list, so nothing is stored per user, and a card already has a price when it is put on a list.
+Changed on 2026-10-20 after the owner's first sell list on staging: the job first read only sets with a card on some sell list, so the first list of a set waited up to an hour for its suggestions with the button dead; reading all 109 sets is about 110 requests a day and some 17,000 rows.
 
 | State | What should happen | Caller sees |
 |---|---|---|
