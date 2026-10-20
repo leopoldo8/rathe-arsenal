@@ -152,27 +152,25 @@ export class ChatToolsService {
 
   private async drawOdds(scope: IToolScope, args: Record<string, unknown>): Promise<TToolResult> {
     const deckId = readInteger(args, 'deckId', { min: 1 })!;
-    const cardIdentifiers = args['cardIdentifiers'] === undefined ? undefined : readList(args, 'cardIdentifiers').map(String);
+    const listed = args['cardIdentifiers'] === undefined || args['cardIdentifiers'] === null ? [] : readList(args, 'cardIdentifiers').map(String);
     const filter = {
-      cardIdentifiers,
+      cardIdentifiers: listed.length === 0 ? undefined : listed,
       pitch: readInteger(args, 'pitch', { min: 1, max: 3, optional: true }),
-      cost: readInteger(args, 'cost', { max: 20, optional: true }),
       cardType: readString(args, 'cardType', { optional: true, max: 40 }),
     };
-    if (Object.values(filter).every((value) => value === undefined)) throw new InvalidToolArguments('give cardIdentifiers, pitch, cost or cardType');
+    if (Object.values(filter).every((value) => value === undefined)) throw new InvalidToolArguments('give cardIdentifiers, pitch or cardType');
     const deck = await this.swapDeck(scope.userId, deckId);
     if (!deck) return DECK_NOT_FOUND;
     const hero = deck.heroIdentifier ? findCard(deck.heroIdentifier) : null;
     if (!hero || hero.intellect === undefined) return { error: 'HERO_INTELLECT_UNKNOWN' };
-    return {
-      ...drawOdds({
+    const odds = drawOdds({
         hero,
         rows: deck.cards,
         filter,
         atLeast: readInteger(args, 'atLeast', { min: 1, max: DRAW_ODDS_MAX_AT_LEAST, optional: true }) ?? 1,
         extraDraws: readInteger(args, 'extraDraws', { max: DRAW_ODDS_MAX_EXTRA_DRAWS, optional: true }) ?? 0,
-      }),
-    };
+    });
+    return odds.matchingCopies === 0 ? { ...odds, note: 'No mainboard card matches every filter given; drop any filter the question did not ask for.' } : { ...odds };
   }
 
   private async swapCandidates(scope: IToolScope, deckId: number, cardIdentifier: string, slot: string): Promise<TToolResult> {

@@ -71,6 +71,7 @@ describe('chat eval checks', () => {
 
     expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; a média é 19,2 flechas.' }))).not.toBeNull();
     expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; a média é 19,2 flechas, de 17 a 22 entre as listas.' }))).toBeNull();
+    expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; média 19,2, faixa 18–22.' }))).toBeNull();
   });
 
   it('a card-by-card comparison passes the user deck to the regular decks lookup', () => {

@@ -33,6 +33,7 @@ describe('drawOdds', () => {
       cardsSeen: 4,
       atLeast: 1,
       chance: 0.192,
+      filters: { pitch: 3 },
     });
     expect(drawOdds({ hero: catalog.getCard('azalea'), rows: AZALEA_MAINBOARD, filter: { cardType: 'arrow', pitch: 1 }, atLeast: 1, extraDraws: 4 })).toEqual(
       expect.objectContaining({ matchingCopies: 2, cardsSeen: 8, chance: 0.364 }),

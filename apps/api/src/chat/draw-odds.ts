@@ -4,7 +4,6 @@ import { IDeckRow, mainboardCards } from './deck-rows';
 export interface IDrawFilter {
   readonly cardIdentifiers?: readonly string[] | undefined;
   readonly pitch?: number | undefined;
-  readonly cost?: number | undefined;
   readonly cardType?: string | undefined;
 }
 
@@ -15,6 +14,7 @@ export interface IDrawOdds {
   readonly cardsSeen: number;
   readonly atLeast: number;
   readonly chance: number;
+  readonly filters: IDrawFilter;
 }
 
 function choose(n: number, k: number): number {
@@ -40,7 +40,6 @@ function matches(card: ICatalogCard, filter: IDrawFilter): boolean {
   return (
     (filter.cardIdentifiers === undefined || filter.cardIdentifiers.includes(card.cardIdentifier)) &&
     (filter.pitch === undefined || card.pitch === filter.pitch) &&
-    (filter.cost === undefined || card.cost === filter.cost) &&
     (kind === undefined || [...card.types, ...card.subtypes].some((value) => String(value).toLowerCase() === kind))
   );
 }
@@ -58,5 +57,6 @@ export function drawOdds(input: {
   const heroIntellect = input.hero.intellect ?? 0;
   const cardsSeen = heroIntellect + input.extraDraws;
   const chance = chanceOfAtLeast({ deckSize, matching: matchingCopies, drawn: cardsSeen, atLeast: input.atLeast });
-  return { heroIntellect, deckSize, matchingCopies, cardsSeen, atLeast: input.atLeast, chance: Math.round(chance * 1000) / 1000 };
+  const filters = Object.fromEntries(Object.entries(input.filter).filter(([, value]) => value !== undefined)) as IDrawFilter;
+  return { heroIntellect, deckSize, matchingCopies, cardsSeen, atLeast: input.atLeast, chance: Math.round(chance * 1000) / 1000, filters };
 }

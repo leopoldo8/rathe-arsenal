@@ -228,6 +228,9 @@ describe('chat tools (E2E)', () => {
         atLeast: 1,
       }),
     );
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId, cardIdentifiers: [], pitch: 1, cardType: '', atLeast: 1, extraDraws: 0 })).toEqual(
+      expect.objectContaining({ matchingCopies: red, filters: { pitch: 1 } }),
+    );
     expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
     expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: other.deckId, pitch: 1 })).toEqual({ error: 'DECK_NOT_FOUND' });
   });

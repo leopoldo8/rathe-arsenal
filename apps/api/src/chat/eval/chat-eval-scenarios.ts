@@ -136,7 +136,7 @@ export const EVAL_SCENARIOS: readonly IEvalScenario[] = [
     deck: 'azalea',
     question: 'Minha proporção de flechas e buffs está dentro do que os outros decks de Azalea jogam? Me dê a faixa.',
     locale: 'pt-BR',
-    check: allOf(makeupWithNumbers, textMatches(/m[ií]nimo|m[aá]ximo|menor|maior|de \d+ a \d+|entre \d+ e \d+/i, 'gives no lowest or highest of the other decks')),
+    check: allOf(makeupWithNumbers, textMatches(/m[ií]nimo|m[aá]ximo|menor|maior|limite|de \d+ a \d+|entre \d+ e \d+|\d+\s?[–-]\s?\d+/i, 'gives no lowest or highest of the other decks')),
   },
   {
     id: 'compare-cards-azalea',
