@@ -11,6 +11,9 @@ export interface ITcgcsvClient {
 export const PRICE_SYNC_USER_AGENT = 'rathe-arsenal-price-sync/1.0 (+https://github.com/leopoldo8/rathe-arsenal)';
 export const MIN_REQUEST_INTERVAL_MS = 1000;
 const REQUEST_TIMEOUT_MS = 30_000;
+const HTTP_NOT_FOUND = 404;
+
+class TcgcsvNotFoundError extends Error {}
 
 export interface IHttpTcgcsvClientOptions {
   readonly fetchFn?: typeof fetch;
@@ -47,8 +50,16 @@ export class HttpTcgcsvClient implements ITcgcsvClient {
     return parseGroups(JSON.parse(await this.getText(groupsUrl())));
   }
 
+  /** A group listed before its prices file exists answers 404: it has no rows yet, which is not a failure to retry. */
   async fetchPrices(groupId: number): Promise<ITcgcsvPriceRow[]> {
-    return parsePriceRows(JSON.parse(await this.getText(pricesUrl(groupId))));
+    let text: string;
+    try {
+      text = await this.getText(pricesUrl(groupId));
+    } catch (error) {
+      if (error instanceof TcgcsvNotFoundError) return [];
+      throw error;
+    }
+    return text.trim() === '' ? [] : parsePriceRows(JSON.parse(text));
   }
 
   private getText(url: string): Promise<string> {
@@ -67,6 +78,7 @@ export class HttpTcgcsvClient implements ITcgcsvClient {
       headers: { 'User-Agent': PRICE_SYNC_USER_AGENT },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+    if (response.status === HTTP_NOT_FOUND) throw new TcgcsvNotFoundError(`tcgcsv answered 404 for ${url}`);
     if (!response.ok) throw new Error(`tcgcsv answered ${response.status} for ${url}`);
     return response.text();
   }

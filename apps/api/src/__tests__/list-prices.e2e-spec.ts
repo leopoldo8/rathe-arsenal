@@ -356,6 +356,19 @@ describe('Card list prices (E2E)', () => {
       expect(retry.groupsRead).toBe(groupIds.length);
     });
 
+    it('records a group without prices as read, so it is not fetched again that day and the pass goes on', async () => {
+      const groupIds = [910301, 910302, 910303];
+      await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = ANY($1)`, [groupIds]);
+      const first = fakeClientWithGroups(groupIds);
+
+      const report = await new PriceSyncService(dataSource, first).runOnce(new Date('2026-10-24T21:00:00Z'));
+      expect(report.groupsRead).toBe(groupIds.length);
+
+      const later = fakeClientWithGroups(groupIds);
+      await new PriceSyncService(dataSource, later).runOnce(new Date('2026-10-24T23:00:00Z'));
+      expect(later.calls.filter((call) => call.startsWith('prices'))).toEqual([]);
+    });
+
     it('skips the pass while another process holds the sync lock', async () => {
       const groupIds = [910201];
       await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = ANY($1)`, [groupIds]);
