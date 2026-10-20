@@ -124,6 +124,7 @@ When fetching happens:
 
 - A server-side job, never the browser and never per user request, because tcgcsv forbids calls from user-facing applications and asks for one sync per day after `last-updated.txt` changes.
 - On demand and limited to what matters: when a sell list line needs a price whose set (group) file has not been read in the last 24 hours, fetch that group's price file once and store every row; groups of sets nobody sells are never read.
+  Superseded on 2026-10-20: the job reads every group once a day (`.specs/features/card-lists/contract.md`, Price job), so a card has a price before it is put on a list.
   The catalog does not carry the tcgcsv `groupId`, so the first slice needs a one-time mapping from set to group (the group list has the set name and abbreviation), or reads the group list once per day.
 
 Caching:

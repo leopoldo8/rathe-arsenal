@@ -2,27 +2,21 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { CardPriceGroupSyncEntity } from '../database/entities/card-price-group-sync.entity';
-import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
-import { mapSetToGroup } from './group-mapping';
 import { ITcgcsvClient, TCGCSV_CLIENT } from './tcgcsv-client';
 import { ITcgcsvGroup, ITcgcsvPriceRow } from './tcgcsv-parse';
 import { sameUtcDay, shouldReadGroup } from './sync-rules';
 
 const UPSERT_CHUNK_SIZE = 2000;
-const SET_CODE_LENGTH = 3;
+export const MAX_CONSECUTIVE_GROUP_FAILURES = 3;
+export const PRICE_SYNC_LOCK_KEY = 7_316_201;
 
 export interface ISyncReport {
   readonly groupsRead: number;
+  readonly groupsFailed: number;
   readonly groupsSkipped: number;
-  readonly setsUnmapped: readonly string[];
 }
 
-const EMPTY_REPORT: ISyncReport = { groupsRead: 0, groupsSkipped: 0, setsUnmapped: [] };
-
-interface INeededSet {
-  readonly name: string;
-  readonly code: string;
-}
+const EMPTY_REPORT: ISyncReport = { groupsRead: 0, groupsFailed: 0, groupsSkipped: 0 };
 
 @Injectable()
 export class PriceSyncService {
@@ -40,7 +34,7 @@ export class PriceSyncService {
     if (this.running) return EMPTY_REPORT;
     this.running = true;
     try {
-      return await this.pass(now);
+      return await this.withSyncLock(() => this.pass(now));
     } catch (error) {
       this.logger.error({ event: 'prices.sync.failed', error: error instanceof Error ? error.message : 'unknown' });
       return EMPTY_REPORT;
@@ -49,36 +43,59 @@ export class PriceSyncService {
     }
   }
 
-  private async pass(now: Date): Promise<ISyncReport> {
-    const needed = await this.neededSets();
-    if (needed.length === 0) return EMPTY_REPORT;
-
-    const groups = await this.groupList(now);
-    const groupIds = new Set<number>();
-    const unmapped: string[] = [];
-    for (const set of needed) {
-      const groupId = mapSetToGroup(set, groups);
-      if (groupId === null) unmapped.push(set.name);
-      else groupIds.add(groupId);
+  /** A second process (a deploy overlapping the old container, or `prices:sync` by hand) skips instead of reading tcgcsv twice. */
+  private async withSyncLock(work: () => Promise<ISyncReport>): Promise<ISyncReport> {
+    const runner = this.dataSource.createQueryRunner();
+    await runner.connect();
+    try {
+      const rows = (await runner.query('SELECT pg_try_advisory_lock($1) AS "locked"', [PRICE_SYNC_LOCK_KEY])) as { locked: boolean }[];
+      if (rows[0]?.locked !== true) return EMPTY_REPORT;
+      try {
+        return await work();
+      } finally {
+        await runner.query('SELECT pg_advisory_unlock($1)', [PRICE_SYNC_LOCK_KEY]);
+      }
+    } finally {
+      await runner.release();
     }
-    if (unmapped.length > 0) this.logger.warn({ event: 'prices.sync.sets_unmapped', sets: unmapped });
-    if (groupIds.size === 0) return { ...EMPTY_REPORT, setsUnmapped: unmapped };
+  }
+
+  private async pass(now: Date): Promise<ISyncReport> {
+    const groups = await this.groupList(now);
+    if (groups.length === 0) return EMPTY_REPORT;
 
     const syncRows = await this.dataSource.getRepository(CardPriceGroupSyncEntity).find();
     const lastFetched = new Map(syncRows.map((row) => [row.groupId, row.fetchedAt]));
-    const stale = [...groupIds].sort((a, b) => a - b).filter((groupId) => {
-      const fetchedAt = lastFetched.get(groupId) ?? null;
-      return fetchedAt === null || !sameUtcDay(fetchedAt, now);
-    });
-    if (stale.length === 0) return { groupsRead: 0, groupsSkipped: groupIds.size, setsUnmapped: unmapped };
+    const stale = groups
+      .map((group) => group.groupId)
+      .sort((a, b) => a - b)
+      .filter((groupId) => {
+        const fetchedAt = lastFetched.get(groupId) ?? null;
+        return fetchedAt === null || !sameUtcDay(fetchedAt, now);
+      });
+    if (stale.length === 0) return { ...EMPTY_REPORT, groupsSkipped: groups.length };
 
     const lastUpdated = await this.client.fetchLastUpdated();
     let groupsRead = 0;
+    let groupsFailed = 0;
+    let consecutiveFailures = 0;
     for (const groupId of stale) {
       if (!shouldReadGroup(lastFetched.get(groupId) ?? null, lastUpdated, now)) continue;
-      if (await this.readGroup(groupId, now)) groupsRead += 1;
+      if (await this.readGroup(groupId, now)) {
+        groupsRead += 1;
+        consecutiveFailures = 0;
+        continue;
+      }
+      groupsFailed += 1;
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= MAX_CONSECUTIVE_GROUP_FAILURES) {
+        this.logger.warn({ event: 'prices.sync.stopped_after_failures', failures: consecutiveFailures });
+        break;
+      }
     }
-    return { groupsRead, groupsSkipped: groupIds.size - groupsRead, setsUnmapped: unmapped };
+    const report = { groupsRead, groupsFailed, groupsSkipped: groups.length - groupsRead - groupsFailed };
+    if (groupsRead + groupsFailed > 0) this.logger.log({ event: 'prices.sync.pass', ...report });
+    return report;
   }
 
   private async readGroup(groupId: number, now: Date): Promise<boolean> {
@@ -98,26 +115,6 @@ export class PriceSyncService {
     const groups = await this.client.fetchGroups();
     this.groupsCache = { day: now, groups };
     return groups;
-  }
-
-  /** The sets that hold a printing of a card on any sell list: the line's own printing, or every printing of its card. */
-  private async neededSets(): Promise<INeededSet[]> {
-    const rows = (await this.dataSource.query(
-      `SELECT DISTINCT x."cardIdentifier", x."printing"
-         FROM "card_list_line" x JOIN "card_list" l ON l."id" = x."listId"
-        WHERE l."kind" = 'sell'`,
-    )) as { cardIdentifier: string; printing: string | null }[];
-
-    const sets = new Map<string, INeededSet>();
-    for (const row of rows) {
-      const printings: readonly ICardPrinting[] = printingsOfCard(row.cardIdentifier) ?? [];
-      for (const printing of printings) {
-        if (row.printing !== null && printing.key !== row.printing) continue;
-        if (printing.set === null || sets.has(printing.set)) continue;
-        sets.set(printing.set, { name: printing.set, code: printing.identifier.slice(0, SET_CODE_LENGTH) });
-      }
-    }
-    return [...sets.values()];
   }
 
   private async storeGroup(groupId: number, rows: readonly ITcgcsvPriceRow[], fetchedAt: Date): Promise<void> {

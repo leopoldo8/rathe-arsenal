@@ -71,4 +71,22 @@ describe('HttpTcgcsvClient', () => {
     await expect(client.fetchGroups()).rejects.toThrow('503');
     await expect(client.fetchGroups()).resolves.toEqual([]);
   });
+
+  it('reads a group without a prices file, or with an empty one, as no rows', async () => {
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce(new Response('missing', { status: 404 }))
+      .mockResolvedValueOnce(new Response('', { status: 200 })) as unknown as typeof fetch;
+    const client = new HttpTcgcsvClient({ fetchFn, sleep: async () => undefined, now: () => 0 });
+
+    await expect(client.fetchPrices(5)).resolves.toEqual([]);
+    await expect(client.fetchPrices(6)).resolves.toEqual([]);
+  });
+
+  it('still fails a missing group list', async () => {
+    const fetchFn = jest.fn().mockResolvedValueOnce(new Response('missing', { status: 404 })) as unknown as typeof fetch;
+    const client = new HttpTcgcsvClient({ fetchFn, sleep: async () => undefined, now: () => 0 });
+
+    await expect(client.fetchGroups()).rejects.toThrow('404');
+  });
 });

@@ -15,7 +15,7 @@ import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
 import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
 import { priceKeysOf } from '../prices/price-suggestion';
-import { PriceSyncService } from '../prices/price-sync.service';
+import { MAX_CONSECUTIVE_GROUP_FAILURES, PRICE_SYNC_LOCK_KEY, PriceSyncService } from '../prices/price-sync.service';
 import { printingSubType } from '../prices/price-sub-type';
 import { ITcgcsvClient } from '../prices/tcgcsv-client';
 
@@ -252,6 +252,26 @@ describe('Card list prices (E2E)', () => {
       };
     }
 
+    function fakeClientWithGroups(groupIds: readonly number[], options: { failing?: boolean } = {}): ITcgcsvClient & { calls: string[] } {
+      const calls: string[] = [];
+      return {
+        calls,
+        fetchLastUpdated: async () => {
+          calls.push('lastUpdated');
+          return new Date('2026-10-01T20:05:00Z');
+        },
+        fetchGroups: async () => {
+          calls.push('groups');
+          return groupIds.map((groupId) => ({ groupId, name: `Group ${groupId}`, abbreviation: null }));
+        },
+        fetchPrices: async (groupId) => {
+          calls.push(`prices:${groupId}`);
+          if (options.failing) throw new Error('tcgcsv is down');
+          return [];
+        },
+      };
+    }
+
     async function marketCents(): Promise<number | null> {
       const rows = (await dataSource.query(
         `SELECT "marketPriceCents" FROM card_price WHERE "productId" = $1 AND "subType" = $2`,
@@ -260,7 +280,7 @@ describe('Card list prices (E2E)', () => {
       return rows[0]?.marketPriceCents ?? null;
     }
 
-    it('reads a set that has a sell line once per UTC day and only after tcgcsv rebuilt', async () => {
+    it('reads every group once per UTC day and only after tcgcsv rebuilt', async () => {
       const jwt = await createSession('sync');
       const listId = await sellList(jwt);
       await dataSource.query(`DELETE FROM card_price WHERE "productId" = $1`, [NORMAL.productId]);
@@ -309,21 +329,65 @@ describe('Card list prices (E2E)', () => {
 
       const report = await new PriceSyncService(dataSource, failing).runOnce(new Date('2026-10-20T21:00:00Z'));
 
-      expect(report.groupsRead).toBe(0);
+      expect(report).toEqual({ groupsRead: 0, groupsFailed: 1, groupsSkipped: 0 });
       expect(await marketCents()).toBe(before);
       expect(await dataSource.query(`SELECT 1 FROM card_price_group_sync WHERE "groupId" = $1`, [GROUP_ID])).toHaveLength(0);
     });
 
-    it('logs and skips a set that does not map to a group', async () => {
-      const noGroups: ITcgcsvClient & { calls: string[] } = {
-        calls: [],
-        fetchLastUpdated: async () => new Date(),
-        fetchGroups: async () => [],
-        fetchPrices: async () => [],
-      };
+    it('makes no other call when tcgcsv lists no group', async () => {
+      const noGroups = fakeClientWithGroups([]);
       const report = await new PriceSyncService(dataSource, noGroups).runOnce(new Date('2026-10-21T21:00:00Z'));
-      expect(report.groupsRead).toBe(0);
-      expect(report.setsUnmapped).toContain(SET_NAME);
+      expect(report).toEqual({ groupsRead: 0, groupsFailed: 0, groupsSkipped: 0 });
+      expect(noGroups.calls).toEqual(['groups']);
+    });
+
+    it(`stops the pass after ${MAX_CONSECUTIVE_GROUP_FAILURES} groups fail in a row and reads the rest next time`, async () => {
+      const groupIds = [910101, 910102, 910103, 910104, 910105];
+      await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = ANY($1)`, [groupIds]);
+      const down = fakeClientWithGroups(groupIds, { failing: true });
+
+      const report = await new PriceSyncService(dataSource, down).runOnce(new Date('2026-10-22T21:00:00Z'));
+
+      expect(report.groupsFailed).toBe(MAX_CONSECUTIVE_GROUP_FAILURES);
+      expect(down.calls.filter((call) => call.startsWith('prices'))).toHaveLength(MAX_CONSECUTIVE_GROUP_FAILURES);
+
+      const back = fakeClientWithGroups(groupIds);
+      const retry = await new PriceSyncService(dataSource, back).runOnce(new Date('2026-10-22T22:00:00Z'));
+      expect(retry.groupsRead).toBe(groupIds.length);
+    });
+
+    it('records a group without prices as read, so it is not fetched again that day and the pass goes on', async () => {
+      const groupIds = [910301, 910302, 910303];
+      await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = ANY($1)`, [groupIds]);
+      const first = fakeClientWithGroups(groupIds);
+
+      const report = await new PriceSyncService(dataSource, first).runOnce(new Date('2026-10-24T21:00:00Z'));
+      expect(report.groupsRead).toBe(groupIds.length);
+
+      const later = fakeClientWithGroups(groupIds);
+      await new PriceSyncService(dataSource, later).runOnce(new Date('2026-10-24T23:00:00Z'));
+      expect(later.calls.filter((call) => call.startsWith('prices'))).toEqual([]);
+    });
+
+    it('skips the pass while another process holds the sync lock', async () => {
+      const groupIds = [910201];
+      await dataSource.query(`DELETE FROM card_price_group_sync WHERE "groupId" = ANY($1)`, [groupIds]);
+      const holder = dataSource.createQueryRunner();
+      await holder.connect();
+      await holder.query('SELECT pg_advisory_lock($1)', [PRICE_SYNC_LOCK_KEY]);
+      try {
+        const blocked = fakeClientWithGroups(groupIds);
+        const report = await new PriceSyncService(dataSource, blocked).runOnce(new Date('2026-10-23T21:00:00Z'));
+        expect(report).toEqual({ groupsRead: 0, groupsFailed: 0, groupsSkipped: 0 });
+        expect(blocked.calls).toEqual([]);
+      } finally {
+        await holder.query('SELECT pg_advisory_unlock($1)', [PRICE_SYNC_LOCK_KEY]);
+        await holder.release();
+      }
+
+      const free = fakeClientWithGroups(groupIds);
+      const report = await new PriceSyncService(dataSource, free).runOnce(new Date('2026-10-23T21:00:00Z'));
+      expect(report.groupsRead).toBe(1);
     });
   });
 });

@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   try {
     const report = await new PriceSyncService(AppDataSource, new HttpTcgcsvClient()).runOnce();
     process.stdout.write(
-      `groups read: ${report.groupsRead}, skipped: ${report.groupsSkipped}, sets without a group: ${report.setsUnmapped.length}\n`,
+      `groups read: ${report.groupsRead}, failed: ${report.groupsFailed}, skipped: ${report.groupsSkipped}\n`,
     );
   } finally {
     await AppDataSource.destroy();
