@@ -153,6 +153,18 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_prices',
+    description:
+      "Prices of cards, or of what one of the user's decks still misses (the missing cards on its deck page): the store price in reais with stock and product link from the store the site tracks, and the TCGplayer price in US dollars, each with the date it was fetched, plus totals. Give either cardIdentifiers (at most 20) or deckId.",
+    parametersJsonSchema: object(
+      {
+        cardIdentifiers: { type: 'array', items: { type: 'string' }, description: 'Catalog card identifiers, at most 20.' },
+        deckId: integer("One of the user's decks: price the cards it still misses."),
+      },
+      [],
+    ),
+  },
+  {
     name: 'get_draw_odds',
     description:
       "The chance of drawing at least atLeast of the matching cards in the opening hand of one of the user's decks (as many cards as the hero's intellect), or after extraDraws more cards. Matching cards are the mainboard copies that fit every filter given: cardIdentifiers, pitch, cost, cardType (a card type or subtype such as Arrow, Attack, Non-Attack or Defense Reaction).",

@@ -54,16 +54,18 @@ function buildSuggestion(entry: IPricedPrinting, usdCents: number, multiplier: n
   };
 }
 
+export interface IPickedPrice {
+  readonly printing: ICardPrinting;
+  readonly snapshot: IPriceSnapshot;
+  readonly usdCents: number;
+  readonly approximate: boolean;
+}
+
 /**
  * With a chosen printing, only that printing is priced. Without one, the cheapest non-foil printing that has a
  * market price, else the cheapest printing of any finish; mid price counts only when no printing has a market price.
  */
-export function suggestPrice(
-  printings: readonly ICardPrinting[],
-  chosenKey: string | null,
-  prices: TPriceIndex,
-  multiplier: number,
-): IPriceSuggestion | null {
+export function pickPrice(printings: readonly ICardPrinting[], chosenKey: string | null, prices: TPriceIndex): IPickedPrice | null {
   const priced = printings
     .filter((printing) => chosenKey === null || printing.key === chosenKey)
     .flatMap((printing) => {
@@ -75,10 +77,20 @@ export function suggestPrice(
   const withMarket = priced.filter((entry) => entry.snapshot.marketPriceCents !== null);
   if (withMarket.length > 0) {
     const best = cheapest(preferNonFoil(withMarket), 'marketPriceCents');
-    return best ? buildSuggestion(best, best.snapshot.marketPriceCents ?? 0, multiplier, false) : null;
+    return best ? { ...best, usdCents: best.snapshot.marketPriceCents ?? 0, approximate: false } : null;
   }
 
   const withMid = priced.filter((entry) => entry.snapshot.midPriceCents !== null);
   const best = cheapest(preferNonFoil(withMid), 'midPriceCents');
-  return best ? buildSuggestion(best, best.snapshot.midPriceCents ?? 0, multiplier, true) : null;
+  return best ? { ...best, usdCents: best.snapshot.midPriceCents ?? 0, approximate: true } : null;
+}
+
+export function suggestPrice(
+  printings: readonly ICardPrinting[],
+  chosenKey: string | null,
+  prices: TPriceIndex,
+  multiplier: number,
+): IPriceSuggestion | null {
+  const picked = pickPrice(printings, chosenKey, prices);
+  return picked ? buildSuggestion(picked, picked.usdCents, multiplier, picked.approximate) : null;
 }

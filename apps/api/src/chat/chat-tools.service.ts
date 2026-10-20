@@ -24,6 +24,7 @@ import { describeDeck } from './deck-facts';
 import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 import { compareWithCommunity } from './community-comparison';
 import { drawOdds } from './draw-odds';
+import { ChatPricesService } from './chat-prices.service';
 import { compareSwap, swapCandidates } from './swap-analysis';
 
 const CARD_TEXT_MAX = 300;
@@ -71,6 +72,7 @@ export class ChatToolsService {
     private readonly recommendations: RecommendationsService,
     private readonly rules: RulesImportService,
     private readonly community: CommunityDecksService,
+    private readonly prices: ChatPricesService,
   ) {}
 
   /** A fresh toolbox per turn; accepted proposals are collected and stored only with the finished answer. */
@@ -94,6 +96,7 @@ export class ChatToolsService {
         return { ok: true };
       },
       get_draw_odds: (args) => this.drawOdds(scope, args),
+      get_prices: (args) => this.prices.prices(scope.userId, args),
       get_swap_candidates: (args) =>
         this.swapCandidates(scope, readInteger(args, 'deckId', { min: 1 })!, readString(args, 'cardIdentifier')!, readString(args, 'slot')!),
       propose_swap: async (args) => {

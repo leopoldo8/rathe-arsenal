@@ -4,6 +4,8 @@ import { ChatToolsService } from '../chat-tools.service';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { FabraryIndexClient, IIndexRequest, IIndexResult } from '../../reference/fabrary-index';
 import { slotOf } from '../proposal-validation';
+import { printingsOfCard } from '../../lists/printing-key';
+import { priceKeysOf } from '../../prices/price-suggestion';
 import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
 
 const RUNEBLADE_EMISSARY = 'aurora-emissary-of-lightning';
@@ -228,6 +230,58 @@ describe('chat tools (E2E)', () => {
     );
     expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
     expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: other.deckId, pitch: 1 })).toEqual({ error: 'DECK_NOT_FOUND' });
+  });
+
+  it("get_prices gives the store price in reais and the TCGplayer price in dollars, for listed cards or a deck's missing cards", async () => {
+    const owner = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(owner);
+    await fixture.dataSource.query(
+      `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
+       VALUES ('cupula-dt', 'Cúpula DT', 'https://www.cupuladt.com.br', '/?view=ecom/itens&tcg=8', 1500, true)
+       ON CONFLICT (slug) DO NOTHING`,
+    );
+    await fixture.dataSource.query(
+      `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt")
+       VALUES ((SELECT id FROM store WHERE slug = 'cupula-dt'), $1, 300, 5, 'https://www.cupuladt.com.br/produto/flex', 'Flex (Red)', '2026-10-18T10:00:00Z')
+       ON CONFLICT ("storeId", "cardIdentifier") DO UPDATE SET "priceCents" = 300, quantity = 5, "productUrl" = EXCLUDED."productUrl", "lastFetchedAt" = EXCLUDED."lastFetchedAt"`,
+      [FLEX],
+    );
+    await fixture.dataSource.query(`DELETE FROM store_stock WHERE "cardIdentifier" = $1`, [COAX]);
+    const regular = (printingsOfCard(FLEX) ?? []).find((printing) => printing.foiling === null && priceKeysOf(printing) !== null)!;
+    const [productId, subType] = priceKeysOf(regular)!.split(':');
+    await fixture.dataSource.query(
+      `INSERT INTO card_price ("productId", "subType", "marketPriceCents", "midPriceCents", "fetchedAt") VALUES ($1, $2, 25, 30, '2026-10-17T00:00:00Z')
+       ON CONFLICT ("productId", "subType") DO UPDATE SET "marketPriceCents" = 25, "midPriceCents" = 30, "fetchedAt" = EXCLUDED."fetchedAt"`,
+      [productId, subType],
+    );
+
+    const listed = await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [FLEX, COAX] });
+
+    expect(listed['store']).toEqual(expect.objectContaining({ name: 'Cúpula DT', currency: 'BRL' }));
+    const [flex, coax] = listed['cards'] as Array<Record<string, unknown>>;
+    expect(flex).toEqual(
+      expect.objectContaining({
+        cardIdentifier: FLEX,
+        quantity: 1,
+        store: { unitPriceCents: 300, available: 1, lineCents: 300, productUrl: 'https://www.cupuladt.com.br/produto/flex' },
+        tcgplayer: expect.objectContaining({ unitPriceCents: 25, lineCents: 25, approximate: false, fetchedAt: '2026-10-17T00:00:00.000Z' }),
+      }),
+    );
+    expect(coax).toEqual(expect.objectContaining({ cardIdentifier: COAX, store: null }));
+
+    await fixture.dataSource.query(
+      `INSERT INTO deck_readiness_snapshot ("trackedDeckId", "rawPercent", "effectivePercent", breakdown, substitutions) VALUES ($1, 50, 50, $2, '{}')`,
+      [owner.deckId, JSON.stringify({ exact: [], substituted: [], notOwned: [], missing: [{ cardIdentifier: FLEX, name: 'Flex', quantity: 2, slot: 'mainboard', pitch: 1, cost: 0, type: 'Action', imageUrl: null }] })],
+    );
+    const deck = await runChatTool(toolbox, 'get_prices', { deckId: owner.deckId });
+
+    expect(deck['cards']).toEqual([
+      expect.objectContaining({ cardIdentifier: FLEX, quantity: 2, store: expect.objectContaining({ available: 2, lineCents: 600 }), tcgplayer: expect.objectContaining({ lineCents: 50 }) }),
+    ]);
+    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0 }));
+    expect(await runChatTool(toolbox, 'get_prices', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
+    expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
   });
 
   it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {

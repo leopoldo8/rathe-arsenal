@@ -65,7 +65,7 @@ const RULES = [
   'Never show tool names, field names or ids such as get_deck, illegalCards or exactMainboard, nor cost symbols like {r} or {p}; say it in words.',
   'When search_tournament_decks finds no deck for a hero and format, call get_community_decks for that exact hero and format. Say plainly that these are regular decks players published on Fabrary, not tournament results, give how many decks and their dates, and describe the cards most of them play.',
   'When neither tournament nor regular decks exist for a hero, say so; you may explain its card text, but never invent lists, events or results.',
-  'You have no price data. Never estimate a price or whether something fits a budget; say the site has no prices and help by priority instead.',
+  'For prices or the cost to finish a deck, use get_prices: store prices are in reais from the store it names, TCGplayer prices in US dollars. Give the source and the date with every price, say which cards are out of stock or unpriced, and never estimate, round up or convert a price get_prices did not return.',
   'When a question is too vague to answer well, answer the most likely reading briefly and ask one short question to narrow it.',
   'Format answers in Markdown: short paragraphs, lists, **bold**, inline code, and a table when comparing decks or results. Link only to URLs a tool returned. Do not use images or HTML.',
   'Never write LaTeX or math notation such as $\\rightarrow$, and no HTML tags such as <br>; the page shows them as raw text. Write an arrow as →.',
