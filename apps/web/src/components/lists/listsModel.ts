@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { MULTIPLIER_MAX, type ICardList, type IListLine, type IListSummary, type TListKind } from '../../api/lists';
+import { MULTIPLIER_MAX, type IListLine, type IListSummary, type TListKind } from '../../api/lists';
 import { withPitch } from '../deck-detail/recommendations/card-naming';
 
 export type TTranslate = (key: string, options?: Record<string, unknown>) => string;
@@ -116,7 +116,16 @@ export function updatedLabel(updatedAt: string, t: TTranslate, now: number = Dat
   return t('lists.updatedMonthsAgo', { count: Math.floor(days / DAYS_IN_MONTH) });
 }
 
-function lineText(line: IListLine, kind: TListKind, t: TTranslate): string {
+/** What the text builders need of a list: the owner's list and the public shared list both fit. */
+export interface ITextList {
+  readonly kind: TListKind;
+  readonly totalPriceCents: number | null;
+  readonly lines: readonly Pick<IListLine, 'quantity' | 'name' | 'pitch' | 'condition' | 'priceCents' | 'sold'>[];
+}
+
+type TTextLine = ITextList['lines'][number];
+
+function lineText(line: TTextLine, kind: TListKind, t: TTranslate): string {
   const head = t('lists.text.line', {
     count: line.quantity,
     name: withPitch(line.name, line.pitch, (key) => t(key)),
@@ -129,13 +138,25 @@ function lineText(line: IListLine, kind: TListKind, t: TTranslate): string {
   return [head, ...extras].join(' · ');
 }
 
-/** The list as plain text for a chat: sold cards left out, blank fields left out, the total last. */
-export function buildListText(list: ICardList, t: TTranslate): string {
-  const lines = list.lines.filter((line) => !line.sold).map((line) => lineText(line, list.kind, t));
-  if (list.kind === 'sell' && list.totalPriceCents !== null) {
-    return [...lines, '', t('lists.text.total', { price: formatBrl(list.totalPriceCents) })].join('\n');
-  }
-  return lines.join('\n');
+/** One text line per card still available: sold cards and blank fields are left out. */
+export function availableLineTexts(list: ITextList, t: TTranslate): readonly string[] {
+  return list.lines.filter((line) => !line.sold).map((line) => lineText(line, list.kind, t));
+}
+
+/** The set price of a sell list, or null when it has none. */
+export function totalText(list: ITextList, t: TTranslate): string | null {
+  if (list.kind !== 'sell' || list.totalPriceCents === null) return null;
+  return t('lists.text.total', { price: formatBrl(list.totalPriceCents) });
+}
+
+/**
+ * The list as plain text for a chat: sold cards left out, blank fields left
+ * out, the total last. With an address, the pasted text leads back to the page.
+ */
+export function buildListText(list: ITextList, t: TTranslate, url: string | null = null): string {
+  const total = totalText(list, t);
+  const body = total === null ? availableLineTexts(list, t) : [...availableLineTexts(list, t), '', total];
+  return (url === null ? body : [...body, '', url]).join('\n');
 }
 
 export function defaultListName(

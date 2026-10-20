@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IDeckShareState, TShareIntent } from '../../api/shared-decks';
-import styles from './ShareFlow.module.css';
+import styles from '../share/ShareSteps.module.css';
 
 interface IShareIntentStepProps {
   readonly links: IDeckShareState | undefined;

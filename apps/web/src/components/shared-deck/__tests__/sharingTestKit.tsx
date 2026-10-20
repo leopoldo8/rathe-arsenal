@@ -64,9 +64,10 @@ export function makeAuth(overrides: Partial<IAuthContext> = {}): IAuthContext {
 
 export function renderWithProviders(ui: React.ReactElement, auth: IAuthContext = makeAuth()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
-  return render(
+  const rendered = render(
     <AuthContext.Provider value={auth}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
     </AuthContext.Provider>,
   );
+  return { ...rendered, queryClient };
 }

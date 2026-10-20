@@ -100,3 +100,14 @@
 .thumbFull svg {
   border-radius: var(--ra-radius-sm);
 }
+
+/* A card that is no longer available (sold): the art fades, the name is struck through. */
+.cellDimmed .thumb > div,
+.cellDimmed .thumb > button {
+  opacity: 0.5;
+}
+
+.cellDimmed .name {
+  color: var(--ra-fg-tertiary);
+  text-decoration: line-through;
+}

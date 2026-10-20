@@ -24,6 +24,11 @@ export function ListCard({ list }: { readonly list: IListSummary }): React.React
         <span className={styles.cardText}>
           <span className={styles.cardName}>{list.name}</span>
           <span className={styles.cardMeta}>{listMeta(list, makeTranslate(t))}</span>
+          {list.shared && (
+            <span className={styles.sharedBadge} data-testid="list-shared-badge">
+              {t('lists.sharedBadge')}
+            </span>
+          )}
           {list.kind === 'sell' && list.totalPriceCents !== null && (
             <span className={styles.cardTotal}>{t('lists.allFor', { price: formatBrl(list.totalPriceCents) })}</span>
           )}

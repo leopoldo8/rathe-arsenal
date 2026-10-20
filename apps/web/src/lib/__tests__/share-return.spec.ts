@@ -49,6 +49,12 @@ describe('share return storage', () => {
     expect(readShareReturn()).toEqual({ returnTo: `/d/${TOKEN}`, shareToken: TOKEN });
   });
 
+  it('remembers a shared list as its own page', () => {
+    writeShareReturn('aB3dE5gH7jK9mN', 'l');
+
+    expect(readShareReturn()).toEqual({ returnTo: '/l/aB3dE5gH7jK9mN', shareToken: 'aB3dE5gH7jK9mN' });
+  });
+
   it('stores the documented key and shape', () => {
     writeShareReturn(TOKEN);
     expect(JSON.parse(localStorage.getItem(SHARE_RETURN_STORAGE_KEY) ?? 'null')).toEqual({

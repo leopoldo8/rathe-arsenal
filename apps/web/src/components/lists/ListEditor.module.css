@@ -497,6 +497,8 @@
 }
 
 .barActions {
+  display: flex;
+  gap: var(--ra-space-2);
   margin-inline-start: auto;
 }
 

@@ -8,6 +8,8 @@ interface ISharedTopBarProps {
   /** Share token of the page; remembered so sign-in and sign-up come back here. Null on a dead link. */
   readonly shareToken: string | null;
   readonly isSignedIn: boolean;
+  /** Route family of the page: `d` (deck, the default) or `l` (list). */
+  readonly page?: 'd' | 'l';
 }
 
 /**
@@ -15,10 +17,10 @@ interface ISharedTopBarProps {
  * (anonymous) or the way back to the app (signed in). The full app shell is
  * not used because these pages must read well without an account.
  */
-export function SharedTopBar({ shareToken, isSignedIn }: ISharedTopBarProps): React.ReactElement {
+export function SharedTopBar({ shareToken, isSignedIn, page = 'd' }: ISharedTopBarProps): React.ReactElement {
   const { t } = useTranslation();
   const remember = (): void => {
-    if (shareToken !== null) writeShareReturn(shareToken);
+    if (shareToken !== null) writeShareReturn(shareToken, page);
   };
 
   return (

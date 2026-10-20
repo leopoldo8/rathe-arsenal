@@ -225,3 +225,15 @@
   background: var(--ra-accent-soft-bg);
   color: var(--ra-accent-body);
 }
+
+.sharedBadge {
+  align-self: flex-start;
+  padding: 1px var(--ra-space-2);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+}

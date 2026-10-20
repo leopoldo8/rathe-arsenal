@@ -9,6 +9,7 @@ import {
   usePatchListMutation,
   type ICardList,
 } from '../../api/lists';
+import { useListShareQuery } from '../../api/shared-lists';
 import { AuthFetchError } from '../../lib/auth-fetch';
 import { Button } from '../ui/Button/Button';
 import { AddCardDialog } from './AddCardDialog';
@@ -16,6 +17,7 @@ import { InlineText } from './InlineText';
 import { LineEditPanel } from './LineEditPanel';
 import { LineTile } from './LineTile';
 import { ListPricing } from './ListPricing';
+import { ListShareDialog } from './ListShareDialog';
 import { ListTotalsBar } from './ListTotalsBar';
 import styles from './ListEditor.module.css';
 
@@ -58,6 +60,8 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
   const remove = useDeleteListMutation(list.id);
   const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const shareLink = useListShareQuery(list.id);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const selected = list.lines.find((line) => line.id === selectedLineId) ?? null;
 
@@ -135,9 +139,15 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
         </ul>
       )}
 
-      <ListTotalsBar list={list} onSaveTotal={(cents) => patch.mutate({ totalPriceCents: cents })} />
+      <ListTotalsBar
+        list={list}
+        shareUrl={shareLink.data?.url ?? null}
+        onSaveTotal={(cents) => patch.mutate({ totalPriceCents: cents })}
+        onShare={() => setSharing(true)}
+      />
 
       {selected !== null && <LineEditPanel key={selected.id} list={list} line={selected} onClose={() => setSelectedLineId(null)} />}
+      <ListShareDialog list={list} open={sharing} onOpenChange={setSharing} />
       {adding && <AddCardDialog list={list} onClose={() => setAdding(false)} />}
 
       <AlertDialog.Root open={confirmingDelete} onOpenChange={setConfirmingDelete}>

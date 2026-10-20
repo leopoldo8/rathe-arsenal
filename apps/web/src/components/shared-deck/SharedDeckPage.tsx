@@ -42,7 +42,13 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
   const contactWhatsapp = deck?.contactWhatsapp ?? null;
   const contactProps =
     deck !== undefined && contactWhatsapp !== null
-      ? { whatsapp: contactWhatsapp, sharerName: deck.sharerName, deckName: deck.name, intent: deck.intent }
+      ? {
+          whatsapp: contactWhatsapp,
+          sharerName: deck.sharerName,
+          message: t(deck.intent === 'missing' ? 'sharing.contact.messageMissing' : 'sharing.contact.message', {
+            deck: deck.name,
+          }),
+        }
       : null;
 
   return (
