@@ -28,8 +28,16 @@ describe('computeShareImageHash', () => {
     ['card order', { drawnCardIdentifiers: ['b', 'a'] }],
     ['blocked set', { blockedCardIdentifiers: ['b'] }],
     ['share url', { shareUrl: 'https://ra.example/d/other' }],
+    ['list total price', { intent: 'sell', totalPriceCents: 42000 }],
   ])('changes when the %s changes', (_label, change) => {
     expect(computeShareImageHash({ ...BASE, ...change })).not.toBe(computeShareImageHash(BASE));
+  });
+
+  it('changes when a sell list total changes or is cleared', () => {
+    const priced = computeShareImageHash({ ...BASE, intent: 'sell', totalPriceCents: 42000 });
+
+    expect(computeShareImageHash({ ...BASE, intent: 'sell', totalPriceCents: 43000 })).not.toBe(priced);
+    expect(computeShareImageHash({ ...BASE, intent: 'sell', totalPriceCents: null })).not.toBe(priced);
   });
 
   it('ignores the order in which blocked cards are listed', () => {

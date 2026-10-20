@@ -1,7 +1,7 @@
-import { TDeckShareIntent } from '../../database/entities/share-link.entity';
+import { TShareIntent } from '../../database/entities/share-link.entity';
 
 export interface ILinkState {
-  intent: TDeckShareIntent;
+  intent: TShareIntent;
   url: string;
   token: string;
   showContact: boolean;

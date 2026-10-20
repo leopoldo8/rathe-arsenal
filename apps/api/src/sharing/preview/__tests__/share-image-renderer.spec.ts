@@ -19,6 +19,9 @@ async function fakeFace(color: string): Promise<Buffer> {
     .toBuffer();
 }
 
+// The first render loads the fonts, which can outlast the default timeout while other suites hog the CPU.
+const COLD_RENDER_TIMEOUT_MS = 30_000;
+
 describe('renderShareImage', () => {
   it('draws a 1200x630 JPEG under the size limit, with placeholders for every missing face', async () => {
     const jpeg = await renderShareImage(INPUT, { faces: [null, null, null, null, null], backdrop: null });
@@ -26,7 +29,7 @@ describe('renderShareImage', () => {
 
     expect(meta).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
     expect(jpeg.length).toBeLessThan(MAX_JPEG_BYTES);
-  });
+  }, COLD_RENDER_TIMEOUT_MS);
 
   it('draws the text itself: a different title changes the pixels of the title area', async () => {
     const artwork = { faces: [], backdrop: null };

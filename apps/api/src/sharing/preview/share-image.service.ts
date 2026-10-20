@@ -2,11 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CardListLineEntity } from '../../database/entities/card-list-line.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { SharedDeckLookup, type ILiveSharedDeck } from '../shared-deck-lookup';
 import { SharedDeckMissingService } from '../shared-deck-missing.service';
+import { SharedListLookup, type ILiveSharedList } from '../shared-list-lookup';
 import { computeShareImageHash, type IShareImageHashInput } from './share-image-hash';
 import { buildPreviewDeck, type IPreviewFace } from './preview-deck';
+import { buildPreviewList, describeCopyCount } from './preview-list';
+import { formatBrl } from './format-brl';
 import { buildPreviewMissing, describeMissingCount } from './preview-missing';
 import { CardFaceFetcher } from './card-face-fetcher';
 import { renderShareImage, type IShareImageInput } from './share-image-renderer';
@@ -57,11 +61,14 @@ export class ShareImageService {
 
   constructor(
     private readonly lookup: SharedDeckLookup,
+    private readonly listLookup: SharedListLookup,
     private readonly store: SharePreviewStore,
     private readonly faceFetcher: CardFaceFetcher,
     private readonly missingCards: SharedDeckMissingService,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
+    @InjectRepository(CardListLineEntity)
+    private readonly listLines: Repository<CardListLineEntity>,
     config: ConfigService,
   ) {
     this.baseUrl = trimTrailingSlash(config.get<string>('APP_BASE_URL') ?? 'http://localhost:5173');
@@ -70,7 +77,13 @@ export class ShareImageService {
   async imageForToken(token: string): Promise<IServedShareImage> {
     const live = await this.lookup.findLive(token);
     if (!live) return { jpeg: await this.generic(), fileSlug: GENERIC_FILE_SLUG, complete: true };
-    return this.imageForDeck(token, live);
+    return this.serve(live.link.id, () => this.plan(token, live));
+  }
+
+  async imageForListToken(token: string): Promise<IServedShareImage> {
+    const live = await this.listLookup.findLive(token);
+    if (!live) return { jpeg: await this.generic(), fileSlug: GENERIC_FILE_SLUG, complete: true };
+    return this.serve(live.link.id, () => this.planList(token, live));
   }
 
   private generic(): Promise<Buffer> {
@@ -97,11 +110,11 @@ export class ShareImageService {
     );
   }
 
-  private imageForDeck(token: string, live: ILiveSharedDeck): Promise<IServedShareImage> {
-    const key = `${live.link.id}`;
+  private serve(shareLinkId: number, makePlan: () => Promise<IImagePlan>): Promise<IServedShareImage> {
+    const key = `${shareLinkId}`;
     const running = this.inFlight.get(key);
     if (running) return running;
-    const started = this.produce(token, live).finally(() => this.inFlight.delete(key));
+    const started = this.produce(shareLinkId, makePlan).finally(() => this.inFlight.delete(key));
     this.inFlight.set(key, started);
     return started;
   }
@@ -168,9 +181,43 @@ export class ShareImageService {
     };
   }
 
-  private async produce(token: string, live: ILiveSharedDeck): Promise<IServedShareImage> {
-    const plan = await this.plan(token, live);
-    const shareLinkId = live.link.id;
+  private async planList(token: string, live: ILiveSharedList): Promise<IImagePlan> {
+    const { link, list, owner } = live;
+    const lines = await this.listLines.find({ where: { listId: list.id }, order: { createdAt: 'ASC', id: 'ASC' } });
+    const preview = buildPreviewList(lines.map((line) => ({ ...line, sold: line.soldAt !== null })));
+    const shareUrl = `${this.baseUrl}/l/${token}`;
+    const sharerName = owner.displayName ?? '';
+    const totalPriceCents = list.kind === 'sell' ? list.totalPriceCents : null;
+    return {
+      faces: preview.faces,
+      emphasizeFirst: false,
+      fileSlug: toFileSlug(list.name),
+      hashInput: {
+        intent: link.intent,
+        name: list.name,
+        hero: '',
+        format: '',
+        sharerName,
+        totalCards: preview.copyCount,
+        missingCount: 0,
+        shareUrl,
+        totalPriceCents,
+      },
+      image: {
+        kindLabel: list.kind === 'want' ? 'Procuro' : 'Vendo',
+        sharerName,
+        title: list.name,
+        heroName: describeCopyCount(preview.copyCount),
+        detail: totalPriceCents === null ? '' : `Tudo por ${formatBrl(totalPriceCents)}`,
+        shareAddress: addressWithoutScheme(shareUrl),
+        legalLine: LEGAL_LINE,
+        byLabel: 'por',
+      },
+    };
+  }
+
+  private async produce(shareLinkId: number, makePlan: () => Promise<IImagePlan>): Promise<IServedShareImage> {
+    const plan = await makePlan();
     const drawn = plan.faces.map((face) => face.cardIdentifier);
     const blocked = await this.store.blockedAmong(drawn);
     const contentHash = computeShareImageHash({

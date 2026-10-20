@@ -3,6 +3,7 @@ import { TReferredVia } from '../database/entities/user.entity';
 import { TShareTargetKind } from '../database/entities/share-event.entity';
 import { TShareIntent } from '../database/entities/share-link.entity';
 import { SharedDeckLookup } from './shared-deck-lookup';
+import { SharedListLookup } from './shared-list-lookup';
 
 export interface IShareReferral {
   readonly ownerUserId: string;
@@ -16,13 +17,16 @@ export interface IShareReferral {
 export class ShareReferralService {
   private readonly logger = new Logger(ShareReferralService.name);
 
-  constructor(private readonly lookup: SharedDeckLookup) {}
+  constructor(
+    private readonly lookup: SharedDeckLookup,
+    private readonly listLookup: SharedListLookup,
+  ) {}
 
-  /** Null for any token that is not a live deck link; sign-up must behave the same either way. */
+  /** Null for any token that is not a live deck or list link; sign-up must behave the same either way. */
   async resolve(token: unknown): Promise<IShareReferral | null> {
     try {
       const live = await this.lookup.findLive(token);
-      if (!live) return null;
+      if (!live) return await this.resolveList(token);
       return {
         ownerUserId: live.owner.id,
         targetKind: 'deck',
@@ -37,5 +41,17 @@ export class ShareReferralService {
       });
       return null;
     }
+  }
+
+  private async resolveList(token: unknown): Promise<IShareReferral | null> {
+    const live = await this.listLookup.findLive(token);
+    if (!live) return null;
+    return {
+      ownerUserId: live.owner.id,
+      targetKind: 'list',
+      targetId: live.list.id,
+      intent: live.link.intent,
+      via: live.link.intent,
+    };
   }
 }
