@@ -167,6 +167,14 @@ describe('AppShell — A11y landmarks', () => {
     expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
   });
 
+  it('fits the page to the viewport only when asked, so only the page content scrolls', () => {
+    const { container, rerender } = render(<AppShell><div /></AppShell>);
+    expect(container.firstElementChild?.getAttribute('data-fit-viewport')).toBeNull();
+
+    rerender(<AppShell fitViewport><div /></AppShell>);
+    expect(container.firstElementChild?.getAttribute('data-fit-viewport')).toBe('true');
+  });
+
   it('main content has role=main', () => {
     render(<AppShell><div /></AppShell>);
     expect(screen.getByRole('main')).toBeInTheDocument();

@@ -789,12 +789,16 @@ describe('Footer layout', () => {
     path.join(SRC_ROOT, 'components/shell/Footer.module.css'),
     'utf8',
   );
-  it('spans the shared page width with the links pushed to the right edge', () => {
+  it('spans the shared page width with the link kept beside the disclaimer at the right edge', () => {
     const inner = ruleBody(squash(footerCss), '.inner');
     expect(inner).toContain('max-inline-size: var(--ra-page-max-inline)');
     expect(inner).toContain('margin-inline: auto');
     expect(inner).toContain('justify-content: space-between');
-    expect(inner).toContain('flex-wrap: wrap');
+    expect(inner).toContain('flex-wrap: nowrap');
+  });
+
+  it('keeps the disclaimer in the smallest body size so it takes little height on every page', () => {
+    expect(ruleBody(squash(footerCss), '.disclaimer')).toContain('font-size: var(--ra-text-2xs)');
   });
 });
 

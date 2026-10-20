@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +17,12 @@ import {
 } from '../../api/chat';
 import { useDecksQuery } from '../../api/decks';
 import { ApiError } from '../../lib/api-client';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { ChatThread } from './ChatThread';
 import { Composer } from './Composer';
 import { ConversationList } from './ConversationList';
+import { ConversationSidebar } from './ConversationSidebar';
 import { DeckChip } from './DeckChip';
 import { failureOutcome } from './chat-failure';
 import { keepComposerDraft, takeComposerDraft } from './composer-drafts';
@@ -28,6 +30,7 @@ import { TutorMark } from './TutorMark';
 import styles from './ChatScreen.module.css';
 
 const NOT_FOUND_STATUSES = new Set([400, 404]);
+const WIDE_SCREEN_QUERY = '(min-width: 960px)';
 
 interface IChatScreenProps {
   readonly conversationId: string | null;
@@ -78,6 +81,8 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
   const [error, setError] = useState<string | null>(handedOver?.error || null);
   const [refusedUntil, setRefusedUntil] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const wide = useMediaQuery(WIDE_SCREEN_QUERY);
+  const scroller = useRef<HTMLDivElement>(null);
 
   const deckList = useMemo(() => decks.data?.trackedDecks ?? [], [decks.data]);
   const deckNames = useMemo(() => new Map(deckList.map((deck) => [deck.id, deck.name])), [deckList]);
@@ -96,6 +101,11 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
   const readError = thread.error;
   const notFound = readError instanceof ApiError && NOT_FOUND_STATUSES.has(readError.status);
   const showEmpty = conversationId === null || (conversation !== undefined && conversation.messages.length === 0);
+  const lastMessage = conversation?.messages[conversation.messages.length - 1];
+
+  useEffect(() => {
+    if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
+  }, [conversation?.messages.length, lastMessage?.status]);
 
   const readyQuestions = [
     ...(latestHero !== null ? [t('chat.readyHero', { hero: latestHero })] : []),
@@ -155,96 +165,112 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
   const resetDate = limitResetsAt === null ? '' : new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(limitResetsAt));
 
   return (
-    <div className={styles.screen}>
-      <header className={styles.header} data-testid="chat-header">
-        <h1 className={styles.title}>{conversation?.title ?? t('chat.newTitle')}</h1>
-        {boundDeckId !== null && boundDeckName !== undefined && (
-          <span className={styles.headerChip}>
-            <DeckChip deckId={boundDeckId} name={boundDeckName} />
-          </span>
-        )}
-        <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.listButton}
-            aria-label={t('chat.conversationsAria', { count: conversations.data?.length ?? 0 })}
-            onClick={() => setListOpen(true)}
-          >
-            <ListIcon />
-            <span className={styles.listLabel}>{t('chat.conversations')}</span>
-            <span className={styles.count} data-testid="conversation-count">
-              {conversations.data?.length ?? 0}
-            </span>
-          </button>
-          <Link to="/chat" className={styles.newButton}>
-            <PlusIcon />
-            <span>{t('chat.newConversation')}</span>
-          </Link>
-        </div>
-      </header>
-
-      <div className={styles.column} data-testid="chat-column">
-        {conversationId !== null && thread.isPending && (
-          <div className={styles.skeleton} data-testid="chat-thread-skeleton" aria-hidden="true">
-            <span className={styles.skeletonBubble} />
-            <span className={styles.skeletonLine} />
-            <span className={styles.skeletonLine} />
-          </div>
-        )}
-
-        {notFound && (
-          <div className={styles.notice} role="alert">
-            <p>{t('chat.notFound')}</p>
-            <Link to="/chat" className={styles.noticeAction}>
-              {t('chat.startNew')}
-            </Link>
-          </div>
-        )}
-
-        {readError !== null && !notFound && (
-          <div className={styles.notice} role="alert">
-            <p>{t('chat.loadError')}</p>
-            <button type="button" className={styles.noticeAction} onClick={() => void thread.refetch()}>
-              {t('chat.retry')}
-            </button>
-          </div>
-        )}
-
-        {showEmpty && !notFound && readError === null && (
-          <section className={styles.empty}>
-            <span className={styles.emptyMark}>
-              <TutorMark size={32} />
-            </span>
-            <h2 className={styles.emptyHeading}>{t('chat.emptyHeading')}</h2>
-            <p className={styles.emptyIntro}>{t('chat.emptyIntro')}</p>
-            <ul className={styles.ready} aria-label={t('chat.readyAria')}>
-              {readyQuestions.map((question) => (
-                <li key={question}>
-                  <button type="button" className={styles.readyButton} disabled={busy || limitResetsAt !== null} onClick={() => handleSend(question)} data-testid="ready-question">
-                    <span>{question}</span>
-                    <ArrowIcon />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {conversation !== undefined && conversationId !== null && conversation.messages.length > 0 && (
-          <ChatThread conversationId={conversationId} messages={conversation.messages} onRetry={handleRetry} retrying={retry.isPending} />
-        )}
-
-        {limitResetsAt !== null && (
-          <div className={styles.limit} role="status" data-testid="chat-limit">
-            <p className={styles.limitTitle}>{t('chat.limitTitle')}</p>
-            <p className={styles.limitBody}>{t('chat.limitBody', { date: resetDate })}</p>
-            {turnRefused && !usageAtCap && refusedUntil === null && lastAnswer !== null && (
-              <button type="button" className={styles.noticeAction} onClick={() => handleRetry(lastAnswer.id)} disabled={retry.isPending}>
-                {t('chat.retry')}
-              </button>
+    <div className={styles.screen} data-wide={wide ? 'true' : undefined}>
+      {wide && (
+        <ConversationSidebar
+          conversations={conversations.data ?? []}
+          conversation={conversation}
+          currentId={conversationId}
+          deckNames={deckNames}
+          boundDeckId={boundDeckId}
+        />
+      )}
+      <div className={styles.main}>
+        {!wide && (
+          <header className={styles.header} data-testid="chat-header">
+            <h1 className={styles.title}>{conversation?.title ?? t('chat.newTitle')}</h1>
+            {boundDeckId !== null && boundDeckName !== undefined && (
+              <span className={styles.headerChip}>
+                <DeckChip deckId={boundDeckId} name={boundDeckName} />
+              </span>
             )}
-          </div>
+            <div className={styles.headerActions}>
+              <button
+                type="button"
+                className={styles.listButton}
+                aria-label={t('chat.conversationsAria', { count: conversations.data?.length ?? 0 })}
+                onClick={() => setListOpen(true)}
+              >
+                <ListIcon />
+                <span className={styles.listLabel}>{t('chat.conversations')}</span>
+                <span className={styles.count} data-testid="conversation-count">
+                  {conversations.data?.length ?? 0}
+                </span>
+              </button>
+              <Link to="/chat" className={styles.newButton}>
+                <PlusIcon />
+                <span>{t('chat.newConversation')}</span>
+              </Link>
+            </div>
+          </header>
         )}
+
+        <div className={styles.scroller} ref={scroller} data-testid="chat-scroller">
+          <div className={styles.column} data-testid="chat-column">
+            {conversationId !== null && thread.isPending && (
+              <div className={styles.skeleton} data-testid="chat-thread-skeleton" aria-hidden="true">
+                <span className={styles.skeletonBubble} />
+                <span className={styles.skeletonLine} />
+                <span className={styles.skeletonLine} />
+              </div>
+            )}
+
+            {notFound && (
+              <div className={styles.notice} role="alert">
+                <p>{t('chat.notFound')}</p>
+                <Link to="/chat" className={styles.noticeAction}>
+                  {t('chat.startNew')}
+                </Link>
+              </div>
+            )}
+
+            {readError !== null && !notFound && (
+              <div className={styles.notice} role="alert">
+                <p>{t('chat.loadError')}</p>
+                <button type="button" className={styles.noticeAction} onClick={() => void thread.refetch()}>
+                  {t('chat.retry')}
+                </button>
+              </div>
+            )}
+
+            {showEmpty && !notFound && readError === null && (
+              <section className={styles.empty}>
+                <span className={styles.emptyMark}>
+                  <TutorMark size={32} />
+                </span>
+                <h2 className={styles.emptyHeading}>{t('chat.emptyHeading')}</h2>
+                <p className={styles.emptyIntro}>{t('chat.emptyIntro')}</p>
+                <ul className={styles.ready} aria-label={t('chat.readyAria')}>
+                  {readyQuestions.map((question) => (
+                    <li key={question}>
+                      <button type="button" className={styles.readyButton} disabled={busy || limitResetsAt !== null} onClick={() => handleSend(question)} data-testid="ready-question">
+                        <span>{question}</span>
+                        <ArrowIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {conversation !== undefined && conversationId !== null && conversation.messages.length > 0 && (
+              <ChatThread conversationId={conversationId} messages={conversation.messages} onRetry={handleRetry} retrying={retry.isPending} />
+            )}
+
+            {limitResetsAt !== null && (
+              <div className={styles.limit} role="status" data-testid="chat-limit">
+                <p className={styles.limitTitle}>{t('chat.limitTitle')}</p>
+                <p className={styles.limitBody}>{t('chat.limitBody', { date: resetDate })}</p>
+                {turnRefused && !usageAtCap && refusedUntil === null && lastAnswer !== null && (
+                  <button type="button" className={styles.noticeAction} onClick={() => handleRetry(lastAnswer.id)} disabled={retry.isPending}>
+                    {t('chat.retry')}
+                  </button>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
 
         <div className={styles.composer}>
           <Composer
@@ -258,13 +284,15 @@ export function ChatScreen({ conversationId, draftDeckId }: IChatScreenProps): R
         </div>
       </div>
 
-      <ConversationList
-        open={listOpen}
-        onOpenChange={setListOpen}
-        conversations={conversations.data ?? []}
-        currentId={conversationId}
-        deckNames={deckNames}
-      />
+      {!wide && (
+        <ConversationList
+          open={listOpen}
+          onOpenChange={setListOpen}
+          conversations={conversations.data ?? []}
+          currentId={conversationId}
+          deckNames={deckNames}
+        />
+      )}
     </div>
   );
 }

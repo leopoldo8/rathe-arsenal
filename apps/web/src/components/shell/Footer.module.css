@@ -1,16 +1,16 @@
 /* Footer — persistent fan-content disclaimer (DISC-01) */
 
 .footer {
-  padding: var(--ra-space-4) var(--ra-space-6);
+  padding: var(--ra-space-1) var(--ra-space-6);
   border-top: 1px solid var(--ra-border-subtle);
 }
 
 .inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ra-space-3) var(--ra-space-6);
+  gap: var(--ra-space-3);
   inline-size: 100%;
   max-inline-size: var(--ra-page-max-inline);
   margin-inline: auto;
@@ -19,18 +19,18 @@
 .disclaimer {
   margin: 0;
   flex: 1 1 auto;
-  min-inline-size: min(100%, 240px);
-  max-inline-size: 760px;
+  min-inline-size: 0;
+  max-inline-size: 1100px;
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
-  color: var(--ra-fg-secondary);
-  line-height: var(--ra-leading-normal);
+  font-size: var(--ra-text-2xs);
+  color: var(--ra-fg-tertiary);
+  line-height: var(--ra-leading-snug);
 }
 
 .link {
   flex-shrink: 0;
   font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-small);
+  font-size: var(--ra-text-xs);
   color: var(--ra-fg-secondary);
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -50,9 +50,15 @@
   border-radius: var(--ra-radius-sm);
 }
 
+@media (pointer: fine) {
+  .link {
+    min-block-size: 32px;
+  }
+}
+
 /* Keep the footer clear of the fixed BottomTabBar (<960px, 60px tall). */
 @media (max-width: 959px) {
   .footer {
-    padding-block-end: calc(var(--ra-space-4) + 60px + env(safe-area-inset-bottom, 0px));
+    padding-block-end: calc(var(--ra-space-1) + 60px + env(safe-area-inset-bottom, 0px));
   }
 }

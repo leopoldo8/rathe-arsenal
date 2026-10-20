@@ -6,6 +6,7 @@ import styles from './AppShell.module.css';
 
 interface IAppShellProps {
   readonly children: React.ReactNode;
+  readonly fitViewport?: boolean;
 }
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 959px)';
@@ -23,7 +24,7 @@ const MOBILE_BREAKPOINT_QUERY = '(max-width: 959px)';
  * rendered in JS based on a matchMedia check to avoid rendering the mobile nav
  * on wide viewports.
  */
-export function AppShell({ children }: IAppShellProps): React.ReactElement {
+export function AppShell({ children, fitViewport = false }: IAppShellProps): React.ReactElement {
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia(MOBILE_BREAKPOINT_QUERY).matches;
@@ -42,7 +43,7 @@ export function AppShell({ children }: IAppShellProps): React.ReactElement {
   }, []);
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-fit-viewport={fitViewport ? 'true' : undefined}>
       <TopBar />
       <main className={styles.main}>{children}</main>
       <Footer />

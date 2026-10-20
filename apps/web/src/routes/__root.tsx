@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router';
 import { AppShell } from '../components/shell/AppShell';
 import { NotFoundState } from '../components/shell/NotFoundState';
+import { fitsViewport } from '../components/shell/viewport-fit';
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -42,7 +43,7 @@ function RootLayout(): React.ReactElement {
   // Authenticated _auth routes: wrap in AppShell
   if (isAuthShell) {
     return (
-      <AppShell>
+      <AppShell fitViewport={fitsViewport(pathname)}>
         <Outlet />
       </AppShell>
     );
