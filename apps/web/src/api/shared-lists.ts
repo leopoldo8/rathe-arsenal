@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/useAuth';
 import { authFetch } from '../lib/auth-fetch';
 import { isShareLinkUnavailable } from './shared-decks';
-import { listsQueryKey, type IListCardImage, type TCondition, type TListKind } from './lists';
+import { listsQueryKey, type IListCardImage, type IListSummary, type TCondition, type TListKind } from './lists';
 
 // Mirrors the shared-list contract of the API (.specs/features/shared-lists/contract.md).
 
@@ -81,6 +81,9 @@ function useLinkWrite<TVariables>(
     mutationFn: (variables: TVariables) => request(variables, token),
     onSuccess: (link) => {
       queryClient.setQueryData<IListLinkState | null>(listShareQueryKey(listId), link);
+      queryClient.setQueryData<IListSummary[]>(listsQueryKey, (lists) =>
+        lists?.map((list) => (String(list.id) === String(listId) ? { ...list, shared: link !== null } : list)),
+      );
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
     },
   });

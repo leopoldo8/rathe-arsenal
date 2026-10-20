@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ICardList } from '../../../api/lists';
+import { listsQueryKey, type ICardList, type IListSummary } from '../../../api/lists';
 import type { IListLinkState } from '../../../api/shared-lists';
 import {
   apiError,
@@ -12,7 +12,7 @@ import {
   SIGNED_IN_USER,
   type IFakeApi,
 } from '../../shared-deck/__tests__/sharingTestKit';
-import { makeLine, makeList } from './listsTestKit';
+import { makeLine, makeList, makeSummary } from './listsTestKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
 
@@ -186,7 +186,8 @@ describe('ListShareDialog', () => {
     api.handlers.set('GET /lists/7/share', () => link('want'));
     api.handlers.set('DELETE /lists/7/share', () => undefined);
     const onOpenChange = vi.fn();
-    renderWithProviders(<ListShareDialog list={WANT} open onOpenChange={onOpenChange} />);
+    const { queryClient } = renderWithProviders(<ListShareDialog list={WANT} open onOpenChange={onOpenChange} />);
+    queryClient.setQueryData(listsQueryKey, [makeSummary({ id: 7, shared: true }), makeSummary({ id: 8, shared: true })]);
 
     await userEvent.click(await screen.findByTestId('share-turn-off'));
     expect(screen.getByText('Desativar? Quem tem o link não vai mais conseguir abrir.')).toBeInTheDocument();
@@ -195,6 +196,8 @@ describe('ListShareDialog', () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(api.calls.some((call) => call.key === 'DELETE /lists/7/share')).toBe(true);
+    const summaries = queryClient.getQueryData<IListSummary[]>(listsQueryKey);
+    expect(summaries?.map((summary) => summary.shared)).toEqual([false, true]);
   });
 
   it('keeps the link when the owner changes their mind at the confirm', async () => {
