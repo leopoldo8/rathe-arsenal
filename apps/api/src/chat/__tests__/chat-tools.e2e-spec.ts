@@ -4,9 +4,12 @@ import { ChatToolsService } from '../chat-tools.service';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { FabraryIndexClient, IIndexRequest, IIndexResult } from '../../reference/fabrary-index';
 import { slotOf } from '../proposal-validation';
+import { printingsOfCard } from '../../lists/printing-key';
+import { priceKeysOf } from '../../prices/price-suggestion';
 import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
 
 const RUNEBLADE_EMISSARY = 'aurora-emissary-of-lightning';
+const EMISSARY_OF_WIND = 'emissary-of-wind-red';
 
 describe('chat tools (E2E)', () => {
   let fixture: IChatFixture;
@@ -139,10 +142,149 @@ describe('chat tools (E2E)', () => {
     const deck = await runChatTool(toolbox, 'get_deck', { deckId: user.deckId });
     const tournament = await runChatTool(toolbox, 'get_tournament_deck', { id });
 
-    expect(deck['totals']).toEqual(expect.objectContaining({ bySlot: expect.any(Object), mainboardByPitch: expect.any(Object), cardPool: expect.any(Number) }));
-    expect(deck['cards']).toEqual(expect.arrayContaining([expect.objectContaining({ cardIdentifier: FLEX, text: expect.any(String), owned: expect.any(Number) })]));
+    expect(deck['totals']).toEqual(
+      expect.objectContaining({ bySlot: expect.any(Object), mainboardByPitch: expect.any(Object), mainboardByCost: expect.any(Object), cardPool: expect.any(Number) }),
+    );
+    expect(deck['cards']).toEqual(
+      expect.arrayContaining([expect.objectContaining({ cardIdentifier: FLEX, text: expect.any(String), owned: expect.any(Number), cost: 0, power: 4, defense: 2 })]),
+    );
     expect(tournament).toEqual(expect.objectContaining({ source: 'player-named', format: 'Blitz' }));
     expect(tournament['totals']).toEqual(expect.objectContaining({ bySlot: { weapon: 1, mainboard: 2 }, cardPool: 3 }));
+  });
+
+  it('propose_swap answers with how the swap changes role, cost, pitch, stats and the cost curve', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+
+    const answer = await runChatTool(toolbox, 'propose_swap', {
+      deckId: user.deckId,
+      originalCardIdentifier: FLEX,
+      slot: 'mainboard',
+      replacementCardIdentifier: COAX,
+      reason: 'same body',
+    });
+
+    expect(answer).toEqual({
+      ok: true,
+      comparison: expect.objectContaining({
+        copies: 2,
+        sameRole: true,
+        costDelta: 0,
+        pitchDelta: 0,
+        powerDelta: 0,
+        defenseDelta: 0,
+        original: expect.objectContaining({ name: 'Flex', cost: 0 }),
+        replacement: expect.objectContaining({ name: 'Coax a Commotion', cost: 0 }),
+      }),
+    });
+    const comparison = answer['comparison'] as { mainboardByCostBefore: unknown; mainboardByCostAfter: unknown };
+    expect(comparison.mainboardByCostAfter).toEqual(comparison.mainboardByCostBefore);
+  });
+
+  it("get_swap_candidates ranks cards for one of the deck's cards with cost, role and free copies", async () => {
+    const owner = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY_OF_WIND, quantity: 1 }]);
+    const toolbox = toolboxFor(owner);
+
+    const found = await runChatTool(toolbox, 'get_swap_candidates', { deckId: owner.deckId, cardIdentifier: FLEX, slot: 'mainboard' });
+
+    expect(found['copies']).toBe(2);
+    const cards = (found['groups'] as Array<{ group: string; cards: Array<Record<string, unknown>> }>).flatMap((group) => group.cards);
+    expect(cards.length).toBeGreaterThan(0);
+    expect((found['groups'] as Array<{ group: string }>)[0]!.group).toBe('very_close');
+    expect(cards.find((card) => card['cardIdentifier'] === EMISSARY_OF_WIND)).toEqual(
+      expect.objectContaining({ cost: 0, costDelta: 0, sameRole: true, freeCopies: 1 }),
+    );
+    expect(cards.map((card) => card['cardIdentifier'])).not.toContain(FLEX);
+    expect(await runChatTool(toolbox, 'get_swap_candidates', { deckId: owner.deckId, cardIdentifier: COAX, slot: 'mainboard' })).toEqual({
+      error: 'CARD_NOT_IN_DECK',
+    });
+    expect(await runChatTool(toolbox, 'get_swap_candidates', { deckId: other.deckId, cardIdentifier: FLEX, slot: 'mainboard' })).toEqual({
+      error: 'DECK_NOT_FOUND',
+    });
+  });
+
+  it("get_draw_odds opens with the deck hero's intellect and counts the mainboard copies that match", async () => {
+    const owner = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(owner);
+    const rows = (await fixture.dataSource.query(`SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1`, [owner.deckId])) as Array<{
+      cardIdentifier: string;
+      slot: string;
+      quantity: number;
+    }>;
+    const mainboard = rows.filter((row) => row.slot === 'mainboard');
+    const red = mainboard.filter((row) => catalog.getCard(row.cardIdentifier).pitch === 1).reduce((sum, row) => sum + row.quantity, 0);
+
+    const odds = await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId, pitch: 1 });
+
+    expect(odds).toEqual(
+      expect.objectContaining({
+        heroIntellect: catalog.getCard(KATSU).intellect,
+        deckSize: mainboard.reduce((sum, row) => sum + row.quantity, 0),
+        matchingCopies: red,
+        cardsSeen: catalog.getCard(KATSU).intellect,
+        atLeast: 1,
+      }),
+    );
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId, cardIdentifiers: [], pitch: 1, cardType: '', atLeast: 1, extraDraws: 0 })).toEqual(
+      expect.objectContaining({ matchingCopies: red, filters: { pitch: 1 } }),
+    );
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: owner.deckId })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+    expect(await runChatTool(toolbox, 'get_draw_odds', { deckId: other.deckId, pitch: 1 })).toEqual({ error: 'DECK_NOT_FOUND' });
+  });
+
+  it("get_prices gives the store price in reais and the TCGplayer price in dollars, for listed cards or a deck's missing cards", async () => {
+    const owner = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(owner);
+    await fixture.dataSource.query(
+      `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
+       VALUES ('cupula-dt', 'Cúpula DT', 'https://www.cupuladt.com.br', '/?view=ecom/itens&tcg=8', 1500, true)
+       ON CONFLICT (slug) DO NOTHING`,
+    );
+    await fixture.dataSource.query(
+      `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt")
+       VALUES ((SELECT id FROM store WHERE slug = 'cupula-dt'), $1, 300, 5, 'https://www.cupuladt.com.br/produto/flex', 'Flex (Red)', '2026-10-18T10:00:00Z')
+       ON CONFLICT ("storeId", "cardIdentifier") DO UPDATE SET "priceCents" = 300, quantity = 5, "productUrl" = EXCLUDED."productUrl", "lastFetchedAt" = EXCLUDED."lastFetchedAt"`,
+      [FLEX],
+    );
+    await fixture.dataSource.query(`DELETE FROM store_stock WHERE "cardIdentifier" = $1`, [COAX]);
+    const regular = (printingsOfCard(FLEX) ?? []).find((printing) => printing.foiling === null && priceKeysOf(printing) !== null)!;
+    const [productId, subType] = priceKeysOf(regular)!.split(':');
+    await fixture.dataSource.query(
+      `INSERT INTO card_price ("productId", "subType", "marketPriceCents", "midPriceCents", "fetchedAt") VALUES ($1, $2, 25, 30, '2026-10-17T00:00:00Z')
+       ON CONFLICT ("productId", "subType") DO UPDATE SET "marketPriceCents" = 25, "midPriceCents" = 30, "fetchedAt" = EXCLUDED."fetchedAt"`,
+      [productId, subType],
+    );
+
+    const listed = await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [FLEX, COAX] });
+
+    expect(listed['store']).toEqual(expect.objectContaining({ name: 'Cúpula DT', currency: 'BRL' }));
+    const [flex, coax] = listed['cards'] as Array<Record<string, unknown>>;
+    expect(flex).toEqual(
+      expect.objectContaining({
+        cardIdentifier: FLEX,
+        quantity: 1,
+        store: { unitPriceCents: 300, available: 1, lineCents: 300, productUrl: 'https://www.cupuladt.com.br/produto/flex' },
+        tcgplayer: expect.objectContaining({ unitPriceCents: 25, lineCents: 25, approximate: false, fetchedAt: '2026-10-17T00:00:00.000Z' }),
+      }),
+    );
+    expect(coax).toEqual(expect.objectContaining({ cardIdentifier: COAX, store: null }));
+
+    await fixture.dataSource.query(
+      `INSERT INTO deck_readiness_snapshot ("trackedDeckId", "rawPercent", "effectivePercent", breakdown, substitutions) VALUES ($1, 50, 50, $2, '{}')`,
+      [owner.deckId, JSON.stringify({ exact: [], substituted: [], notOwned: [], missing: [{ cardIdentifier: FLEX, name: 'Flex', quantity: 2, slot: 'mainboard', pitch: 1, cost: 0, type: 'Action', imageUrl: null }] })],
+    );
+    const deck = await runChatTool(toolbox, 'get_prices', { deckId: owner.deckId });
+
+    expect(deck['cards']).toEqual([
+      expect.objectContaining({ cardIdentifier: FLEX, quantity: 2, store: expect.objectContaining({ available: 2, lineCents: 600 }), tcgplayer: expect.objectContaining({ lineCents: 50 }) }),
+    ]);
+    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0 }));
+    expect(await runChatTool(toolbox, 'get_prices', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
+    expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
   });
 
   it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {
@@ -180,7 +322,7 @@ describe('chat tools (E2E)', () => {
 
     const rows = forKatsu['cards'] as Array<Record<string, unknown>>;
     expect(rows.find((row) => row['cardIdentifier'] === FLEX)).toEqual(
-      expect.objectContaining({ owned: 3, spare: 1, usedByDecks: [{ deckId: user.deckId, quantity: 2 }] }),
+      expect.objectContaining({ owned: 3, spare: 1, cost: 0, usedByDecks: [{ deckId: user.deckId, quantity: 2 }] }),
     );
     expect(rows.find((row) => row['cardIdentifier'] === EMISSARY)).toEqual(expect.objectContaining({ owned: 2, spare: 0 }));
     expect(rows.find((row) => row['cardIdentifier'] === COAX)).toEqual(expect.objectContaining({ owned: 1, spare: 1, usedByDecks: [] }));
@@ -252,7 +394,9 @@ describe('chat tools (E2E)', () => {
   });
 
   it('get_community_decks sums the complete legal regular decks of that exact hero and format and says they are not tournament results', async () => {
-    const toolbox = toolboxFor(await fixture.chatUser());
+    const user = await fixture.chatUser();
+    const other = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
     const hero = catalog.getCard('azalea');
     const mainboard = catalog.cards
       .filter((card) => slotOf(card) === 'mainboard' && findCardLegalityViolation(card, hero, 'Silver Age') === null)
@@ -291,8 +435,39 @@ describe('chat tools (E2E)', () => {
     expect(result['decksUsed']).toBe(1);
     expect(result['decksChecked']).toBe(2);
     expect(result['decks']).toEqual([
-      { name: 'Azalea SAGE', updatedAt: recent.slice(0, 10), hasResults: true, matchupPlans: 3, inventoryCards: 0, url: 'https://fabrary.net/decks/01COMMUNITY00000000000001' },
+      {
+        name: 'Azalea SAGE',
+        updatedAt: recent.slice(0, 10),
+        hasResults: true,
+        matchupPlans: 3,
+        inventoryCards: 0,
+        url: 'https://fabrary.net/decks/01COMMUNITY00000000000001',
+        mainboardByType: expect.any(Object),
+        mainboardByPitch: expect.any(Object),
+        mainboardByCost: expect.any(Object),
+      },
     ]);
+    const [only] = result['decks'] as Array<{ mainboardByType: Record<string, number> }>;
+    const byType = (result['mainboardRange'] as { byType: Record<string, { average: number; min: number; max: number }> }).byType;
+    expect(Object.fromEntries(Object.entries(byType).map(([kind, range]) => [kind, [range.average, range.min, range.max]]))).toEqual(
+      Object.fromEntries(Object.entries(only!.mainboardByType).map(([kind, count]) => [kind, [count, count, count]])),
+    );
+    expect(result['comparison']).toBeUndefined();
+
+    const compared = await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Silver Age', compareDeckId: user.deckId });
+    const yourRows = (await fixture.dataSource.query(`SELECT "cardIdentifier", slot FROM deck_card WHERE "trackedDeckId" = $1`, [user.deckId])) as Array<{
+      cardIdentifier: string;
+      slot: string;
+    }>;
+    const yourCards = new Set(yourRows.filter((row) => row.slot !== 'hero').map((row) => row.cardIdentifier));
+    const reference = new Set(mainboard.map((row) => row.cardIdentifier));
+    const comparison = compared['comparison'] as { yourCards: Array<{ cardIdentifier: string; referenceDecks: number }>; commonCardsYouLack: Array<{ cardIdentifier: string }> };
+    expect(new Set(comparison.yourCards.map((card) => card.cardIdentifier))).toEqual(yourCards);
+    expect(comparison.yourCards.every((card) => card.referenceDecks === (reference.has(card.cardIdentifier) ? 1 : 0))).toBe(true);
+    expect(new Set(comparison.commonCardsYouLack.map((card) => card.cardIdentifier))).toEqual(new Set([...reference].filter((id) => !yourCards.has(id))));
+    expect(await runChatTool(toolbox, 'get_community_decks', { heroIdentifier: 'azalea', format: 'Silver Age', compareDeckId: other.deckId })).toEqual({
+      error: 'DECK_NOT_FOUND',
+    });
     expect((result['cards'] as Array<{ decks: number; averageCopies: number }>)[0]).toEqual(expect.objectContaining({ decks: 1, averageCopies: 2 }));
     expect(badFormat).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
   });

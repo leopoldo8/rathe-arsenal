@@ -35,7 +35,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
     description:
-      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, text and legality, the counted totals (cards per slot, mainboard per pitch, card pool, illegal cards) and the format's limits. Quote these totals; never count by hand.",
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and legality, the counted totals (cards per slot; mainboard per pitch, cost, card type and defense; defense reactions; attacks with go again and their average power; equipment slots filled and missing and their defense; average pitch and cost; resources the hero, weapons and equipment spend; card pool; illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
@@ -83,11 +83,12 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_community_decks',
     description:
-      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them. Use it only after search_tournament_decks found no deck for that hero and format.',
+      'Regular decks players published on Fabrary for one hero and format, not tournament results: the most complete legal decks of the last 12 months (recorded results, matchup sideboard plans, inventory), with each card counted across them, every deck\'s mainboard by card type, pitch and cost, and their average, lowest and highest. Use it only after search_tournament_decks found no deck for that hero and format.',
     parametersJsonSchema: object(
       {
         heroIdentifier: string('Hero card identifier, exactly as in the user\'s deck list; a young hero and its adult version are different heroes.'),
         format: string('Format, for example "Silver Age".'),
+        compareDeckId: integer("Optional id of one of the user's decks: then each of its cards says in how many of these decks it appears, and the cards most of these decks play that it lacks are listed."),
       },
       ['heroIdentifier', 'format'],
     ),
@@ -152,8 +153,50 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
     ),
   },
   {
+    name: 'get_prices',
+    description:
+      "Prices of cards, or of what one of the user's decks still misses (the missing cards on its deck page): the store price in reais with stock and product link from the store the site tracks, and the TCGplayer price in US dollars, each with the date it was fetched, plus totals. Give either cardIdentifiers (at most 20) or deckId.",
+    parametersJsonSchema: object(
+      {
+        cardIdentifiers: { type: 'array', items: { type: 'string' }, description: 'Catalog card identifiers, at most 20.' },
+        deckId: integer("One of the user's decks: price the cards it still misses."),
+      },
+      [],
+    ),
+  },
+  {
+    name: 'get_draw_odds',
+    description:
+      "The chance of drawing at least atLeast of the matching cards in the opening hand of one of the user's decks (as many cards as the hero's intellect), or after extraDraws more cards. Matching cards are the mainboard copies that fit every filter given: cardIdentifiers, pitch, cardType (a card type or subtype such as Arrow, Attack, Non-Attack or Defense Reaction). Leave out every filter the question does not ask for.",
+    parametersJsonSchema: object(
+      {
+        deckId: integer('Deck id.'),
+        cardIdentifiers: { type: 'array', items: { type: 'string' }, description: 'Optional: only these cards.' },
+        pitch: integer('Optional pitch, 1 to 3.'),
+        cardType: string('Optional card type or subtype, for example "Arrow".'),
+        atLeast: integer('How many of them; default 1, at most 10.'),
+        extraDraws: integer('Cards drawn after the opening hand; default 0.'),
+      },
+      ['deckId'],
+    ),
+  },
+  {
+    name: 'get_swap_candidates',
+    description:
+      "Cards that could take the place of one card in one of the user's decks, ranked by the site's alternatives search from the closest group (very_close) to the loosest. Each candidate has its type line, cost and cost change, pitch, power, defense, whether it keeps the card's role (same types and subtypes), what it needs played that turn that the deck lacks (unmetRequirement), its text and the user's free copies. Only legal cards the deck can still hold. Use it before proposing a swap that keeps the card's role.",
+    parametersJsonSchema: object(
+      {
+        deckId: integer('Deck id.'),
+        cardIdentifier: string('The card in the deck to replace.'),
+        slot: { type: 'string', enum: ['mainboard', 'equipment'] },
+      },
+      ['deckId', 'cardIdentifier', 'slot'],
+    ),
+  },
+  {
     name: 'propose_swap',
-    description: "Propose replacing every copy of one card in one of the user's decks with another card.",
+    description:
+      "Propose replacing every copy of one card in one of the user's decks with another card. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, what the new card needs that the deck lacks, the changes, and the mainboard cost curve before and after.",
     parametersJsonSchema: object(
       {
         deckId: integer('Deck id.'),

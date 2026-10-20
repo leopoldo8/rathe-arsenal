@@ -37,13 +37,17 @@ export type TProposalCheck<T> =
   | { readonly ok: true; readonly payload: T; readonly reason: string }
   | { readonly ok: false; readonly error: TProposalError; readonly detail: string };
 
+export type TSwapProposalCheck =
+  | (Extract<TProposalCheck<ISwapProposalPayload>, { ok: true }> & { readonly copies: number })
+  | Extract<TProposalCheck<ISwapProposalPayload>, { ok: false }>;
+
 export interface ISwapDeck {
   readonly heroIdentifier: string | null;
   readonly format: string;
   readonly cards: readonly { readonly cardIdentifier: string; readonly slot: string; readonly quantity: number }[];
 }
 
-function refuse<T>(error: TProposalError, detail: string): TProposalCheck<T> {
+function refuse(error: TProposalError, detail: string): Extract<TProposalCheck<never>, { ok: false }> {
   return { ok: false, error, detail };
 }
 
@@ -146,7 +150,7 @@ export function validateSwapProposal(
   swap: Omit<ISwapProposalPayload, never> & { readonly reason: string },
   deck: ISwapDeck | null,
   catalog: ICatalog,
-): TProposalCheck<ISwapProposalPayload> {
+): TSwapProposalCheck {
   if (!deck) return refuse('DECK_NOT_FOUND', `deck ${swap.trackedDeckId} is not one of the user's decks`);
   const original = findCard(catalog, swap.originalCardIdentifier);
   const replacement = findCard(catalog, swap.replacementCardIdentifier);
@@ -164,6 +168,7 @@ export function validateSwapProposal(
   return {
     ok: true,
     reason: swap.reason,
+    copies: decision.quantity,
     payload: {
       trackedDeckId: swap.trackedDeckId,
       originalCardIdentifier: original.cardIdentifier,

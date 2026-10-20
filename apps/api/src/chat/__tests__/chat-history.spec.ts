@@ -12,7 +12,7 @@ function toolTurn(question: string): IGeminiContent[] {
 }
 
 describe('chat history', () => {
-  it('keeps the previous exchange verbatim, only the text of older ones, and trims whole exchanges', () => {
+  it('keeps only the text of earlier exchanges, so a follow-up re-reads data with the tools, and trims whole exchanges', () => {
     const messages: IHistoryMessage[] = [
       { role: 'user', status: 'done', text: 'first', modelContent: null },
       { role: 'assistant', status: 'done', text: 'answer to first', modelContent: toolTurn('first') },
@@ -33,8 +33,12 @@ describe('chat history', () => {
       { role: 'user', parts: [{ text: 'third' }, { text: 'now' }] },
     ]);
     const followUp = buildHistory([...messages.slice(0, 2), { role: 'user', status: 'done', text: 'and then?', modelContent: null }]);
-    expect(followUp).toEqual([{ role: 'user', parts: [{ text: 'first' }] }, ...toolTurn('first'), { role: 'user', parts: [{ text: 'and then?' }] }]);
-    expect(JSON.stringify(followUp)).toContain(SIGNATURE);
+    expect(followUp).toEqual([
+      { role: 'user', parts: [{ text: 'first' }] },
+      { role: 'model', parts: [{ text: 'answer to first' }] },
+      { role: 'user', parts: [{ text: 'and then?' }] },
+    ]);
+    expect(JSON.stringify(followUp)).not.toContain(SIGNATURE);
 
     const bulky: IHistoryMessage[] = [
       { role: 'user', status: 'done', text: 'x'.repeat(160_000), modelContent: null },

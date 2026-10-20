@@ -72,5 +72,6 @@ describe('proposal validation', () => {
     expect(code(swap({ originalCardIdentifier: 'coax-a-commotion-red' }))).toBe('NOTHING_TO_REPLACE');
     expect(code(swap({ originalCardIdentifier: 'talishar-the-lost-prince', slot: 'weapon' }))).toBe('REPLACEMENT_ILLEGAL');
     expect(code(swap({}), null)).toBe('DECK_NOT_FOUND');
+    expect(validateSwapProposal(swap({}) as never, katsuDeck, catalog)).toEqual(expect.objectContaining({ ok: true, copies: 2 }));
   });
 });

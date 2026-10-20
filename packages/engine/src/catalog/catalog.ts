@@ -37,6 +37,8 @@ interface IRawCard {
   legalOverrides?: readonly { format: string; heroes: string[] }[];
   rarity?: string;
   functionalText?: string;
+  intellect?: number;
+  life?: number;
   young?: boolean;
   specializations?: string[];
   defaultImage?: string;
@@ -170,6 +172,12 @@ function normalizeCard(raw: IRawCard): ICatalogCard {
   }
   if (raw.functionalText != null) {
     card['functionalText'] = raw.functionalText;
+  }
+  if (raw.intellect != null) {
+    card['intellect'] = raw.intellect;
+  }
+  if (raw.life != null) {
+    card['life'] = raw.life;
   }
   if (raw.bannedFormats != null) {
     card['bannedFormats'] = Object.freeze(raw.bannedFormats as Format[]);

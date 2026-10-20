@@ -6,7 +6,14 @@ import { CardListEntity } from '../database/entities/card-list.entity';
 import { CardPriceEntity } from '../database/entities/card-price.entity';
 import { IPriceSuggestion } from '../lists/dtos/card-list.dto';
 import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
-import { TPriceIndex, priceIndexKey, priceKeysOf, suggestPrice } from './price-suggestion';
+import { pickPrice, TPriceIndex, priceIndexKey, priceKeysOf, suggestPrice } from './price-suggestion';
+
+export interface IMarketPrice {
+  readonly usdCents: number;
+  readonly approximate: boolean;
+  readonly printing: string;
+  readonly fetchedAt: string;
+}
 
 @Injectable()
 export class PriceSuggestionService {
@@ -45,6 +52,25 @@ export class PriceSuggestionService {
     for (const printing of printings) {
       const suggestion = suggestPrice(printings, printing.key, index, multiplier);
       if (suggestion) result.set(printing.key, suggestion);
+    }
+    return result;
+  }
+
+  /** The TCGplayer price in USD cents of each card's cheapest non-foil printing, as the sell-list suggestion picks it, before any multiplier. */
+  async marketPrices(cardIdentifiers: readonly string[]): Promise<Map<string, IMarketPrice>> {
+    const printingsByCard = new Map(cardIdentifiers.map((cardIdentifier) => [cardIdentifier, printingsOfCard(cardIdentifier) ?? []] as const));
+    const index = await this.loadIndex([...printingsByCard.values()].flat());
+    const result = new Map<string, IMarketPrice>();
+    for (const [cardIdentifier, printings] of printingsByCard) {
+      const picked = pickPrice(printings, null, index);
+      if (picked) {
+        result.set(cardIdentifier, {
+          usdCents: picked.usdCents,
+          approximate: picked.approximate,
+          printing: picked.printing.label,
+          fetchedAt: picked.snapshot.fetchedAt.toISOString(),
+        });
+      }
     }
     return result;
   }

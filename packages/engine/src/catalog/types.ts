@@ -52,6 +52,8 @@ export interface ICatalogCard {
    * Optional — absent (never an empty string) when the package holds none.
    */
   readonly functionalText?: string;
+  readonly intellect?: number;
+  readonly life?: number;
   /**
    * True for hero cards that are designated "young hero" versions.
    * Used for Blitz / Silver Age hero requirement checks.

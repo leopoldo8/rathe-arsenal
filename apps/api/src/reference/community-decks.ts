@@ -1,4 +1,5 @@
 import { catalog, computeDeckLegality, ICatalogCard, TSupportedFormat } from '@rathe-arsenal/engine';
+import { countByCost, countByPitch, countByType, ICountedCard, IRange, rangeAcross } from '../common/deck-counts';
 import { ICommunityDeckImport, IDeckImportDto } from '../fabrary/dtos/deck-import.dto';
 import { IIndexDeck, INDEX_HIT_CAP, quoted, TIndexQuery } from './fabrary-index';
 
@@ -28,12 +29,16 @@ export interface ICommunityDeckSummary {
   readonly matchupPlans: number;
   readonly inventoryCards: number;
   readonly url: string;
+  readonly mainboardByType: Record<string, number>;
+  readonly mainboardByPitch: Record<string, number>;
+  readonly mainboardByCost: Record<string, number>;
 }
 
 export interface ICommunityCard {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;
+  readonly type: string | null;
   readonly slot: string;
   readonly decks: number;
   readonly averageCopies: number;
@@ -42,8 +47,16 @@ export interface ICommunityCard {
 export interface ICommunityDecks {
   readonly inspected: number;
   readonly decks: readonly ICommunityDeckSummary[];
+  readonly mainboardRange: {
+    readonly byType: Record<string, IRange>;
+    readonly byPitch: Record<string, IRange>;
+    readonly byCost: Record<string, IRange>;
+  };
   readonly cards: readonly ICommunityCard[];
+  readonly deckCount: Readonly<Record<string, number>>;
 }
+
+const EMPTY_RANGE: ICommunityDecks['mainboardRange'] = { byType: {}, byPitch: {}, byCost: {} };
 
 function careSignals(hit: IIndexDeck): number {
   return Number(hit.hasResults === true) + Number(hit.hasMatchups === true) + Number(hit.hasNotes === true);
@@ -96,6 +109,36 @@ function findCard(cardIdentifier: string): ICatalogCard | null {
   }
 }
 
+function typeOf(card: ICatalogCard | null): string | null {
+  return card ? [...card.types, ...card.subtypes].join(' ') : null;
+}
+
+function mainboardOf(deck: IDeckImportDto): ICountedCard[] {
+  return deck.mainboard.flatMap((row) => {
+    const card = findCard(row.cardIdentifier);
+    return card ? [{ card, quantity: row.quantity }] : [];
+  });
+}
+
+function makeup(deck: IDeckImportDto): Pick<ICommunityDeckSummary, 'mainboardByType' | 'mainboardByPitch' | 'mainboardByCost'> {
+  const mainboard = mainboardOf(deck);
+  return { mainboardByType: countByType(mainboard), mainboardByPitch: countByPitch(mainboard), mainboardByCost: countByCost(mainboard) };
+}
+
+function deckCount(decks: readonly IDeckImportDto[]): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const deck of decks) for (const cardIdentifier of new Set(deckRows(deck).map((row) => row.cardIdentifier))) counts.set(cardIdentifier, (counts.get(cardIdentifier) ?? 0) + 1);
+  return Object.fromEntries(counts);
+}
+
+function rangesOf(makeups: readonly ReturnType<typeof makeup>[]): ICommunityDecks['mainboardRange'] {
+  return {
+    byType: rangeAcross(makeups.map((entry) => entry.mainboardByType)),
+    byPitch: rangeAcross(makeups.map((entry) => entry.mainboardByPitch)),
+    byCost: rangeAcross(makeups.map((entry) => entry.mainboardByCost)),
+  };
+}
+
 function cardTotals(decks: readonly IDeckImportDto[]): ICommunityCard[] {
   const totals = new Map<string, { slot: string; decks: number; copies: number }>();
   for (const deck of decks) {
@@ -109,6 +152,7 @@ function cardTotals(decks: readonly IDeckImportDto[]): ICommunityCard[] {
       cardIdentifier,
       name: findCard(cardIdentifier)?.name ?? cardIdentifier,
       pitch: findCard(cardIdentifier)?.pitch ?? null,
+      type: typeOf(findCard(cardIdentifier)),
       slot: total.slot,
       decks: total.decks,
       averageCopies: Math.round((total.copies / total.decks) * 10) / 10,
@@ -124,7 +168,7 @@ export async function loadCommunityDecks(source: ICommunityDeckSource, request: 
     hitsPerPage: INDEX_HIT_CAP,
   });
   const picked = candidates(result.hits, request);
-  if (picked.length === 0) return { inspected: 0, decks: [], cards: [] };
+  if (picked.length === 0) return { inspected: 0, decks: [], mainboardRange: EMPTY_RANGE, cards: [], deckCount: {} };
 
   const fetched = await fetchAll(source, picked);
   if (fetched.every((deck) => deck === null)) throw new Error('No community deck could be fetched from Fabrary');
@@ -143,7 +187,10 @@ export async function loadCommunityDecks(source: ICommunityDeckSource, request: 
       matchupPlans: deck.matchupPlans,
       inventoryCards: inventoryCards(deck),
       url: `https://fabrary.net/decks/${hit.deckId}`,
+      ...makeup(deck),
     })),
+    mainboardRange: kept.length === 0 ? EMPTY_RANGE : rangesOf(kept.map(({ deck }) => makeup(deck))),
     cards: cardTotals(kept.map(({ deck }) => deck)),
+    deckCount: deckCount(kept.map(({ deck }) => deck)),
   };
 }
