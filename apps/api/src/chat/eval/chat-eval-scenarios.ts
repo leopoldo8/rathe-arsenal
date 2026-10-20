@@ -69,6 +69,14 @@ const makeupWithNumbers: TEvalCheck = ({ text }) => {
   return missing.length === 0 ? null : "does not compare the deck's 22 arrows and 16 buffs with the other decks' average";
 };
 
+function textMatches(pattern: RegExp, failure: string): TEvalCheck {
+  return ({ text }) => (pattern.test(text) ? null : failure);
+}
+
+function calledWith(tool: string, argument: RegExp | null, failure: string): TEvalCheck {
+  return ({ toolCalls }) => (toolCalls.some((call) => call.startsWith(`${tool}(`) && (argument === null || argument.test(call))) ? null : failure);
+}
+
 function allOf(...checks: readonly TEvalCheck[]): TEvalCheck {
   return (outcome) => checks.map((check) => check(outcome)).find((failure) => failure !== null) ?? null;
 }
@@ -122,6 +130,51 @@ export const EVAL_SCENARIOS: readonly IEvalScenario[] = [
     question: 'Como está a proporção de buffs vs flechas no meu deck? Está parecida com a maioria dos outros decks de Azalea?',
     locale: 'pt-BR',
     check: makeupWithNumbers,
+  },
+  {
+    id: 'makeup-range-azalea',
+    deck: 'azalea',
+    question: 'Minha proporção de flechas e buffs está dentro do que os outros decks de Azalea jogam? Me dê a faixa.',
+    locale: 'pt-BR',
+    check: allOf(makeupWithNumbers, textMatches(/m[ií]nimo|m[aá]ximo|menor|maior|de \d+ a \d+|entre \d+ e \d+/i, 'gives no lowest or highest of the other decks')),
+  },
+  {
+    id: 'compare-cards-azalea',
+    deck: 'azalea',
+    question: 'Que cartas a maioria das listas de Azalea joga e eu não jogo?',
+    locale: 'pt-BR',
+    check: calledWith('get_community_decks', /compareDeckId/, 'did not compare the deck with the regular decks card by card'),
+  },
+  {
+    id: 'defense-profile-azalea',
+    deck: 'azalea',
+    question: 'Meu deck defende bem? Quantas reações de defesa ele tem?',
+    locale: 'pt-BR',
+    check: textMatches(/nenhuma rea[cç][aã]o|\b0 rea[cç]|zero rea[cç]|n[aã]o tem (nenhuma )?rea[cç]|sem rea[cç][oõ]es de defesa/i, 'does not say the deck has no defense reactions'),
+  },
+  {
+    id: 'resources-azalea',
+    deck: 'azalea',
+    question: 'Meu deck é caro demais? Quanto ele gasta de recursos?',
+    locale: 'pt-BR',
+    check: allOf(
+      textMatches(/0[,.]2\b/, 'does not quote the average cost of 0.2'),
+      textMatches(/Death Dealer|Crow.s Nest|Bolt.n Boots/i, 'does not name what the weapon or equipment spend'),
+    ),
+  },
+  {
+    id: 'draw-odds-azalea',
+    deck: 'azalea',
+    question: 'Qual a chance de eu abrir com pelo menos uma carta azul na mão inicial?',
+    locale: 'pt-BR',
+    check: allOf(calledWith('get_draw_odds', null, 'did not use the draw odds tool'), textMatches(/19[,.]?\d?\s?%/, 'does not give the 19% chance')),
+  },
+  {
+    id: 'prices-azalea',
+    deck: 'azalea',
+    question: 'Quanto custa comprar o que ainda falta para este deck?',
+    locale: 'pt-BR',
+    check: calledWith('get_prices', null, 'did not look the prices up'),
   },
   { id: 'swap-dead-card-azalea', deck: 'azalea', question: "O que usar no lugar do Bolt'n Boots?", locale: 'pt-BR', check: neverProposes('quick-clicks') },
 ];

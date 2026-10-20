@@ -66,6 +66,49 @@ describe('chat eval checks', () => {
     expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; a média das 5 listas é 19,2 flechas e 18,8 buffs.' }))).toBeNull();
   });
 
+  it('the makeup comparison also gives the lowest and highest of the other decks', () => {
+    const check = scenario('makeup-range-azalea').check!;
+
+    expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; a média é 19,2 flechas.' }))).not.toBeNull();
+    expect(check(outcome({ text: 'Você tem 22 flechas e 16 buffs; a média é 19,2 flechas, de 17 a 22 entre as listas.' }))).toBeNull();
+  });
+
+  it('a card-by-card comparison passes the user deck to the regular decks lookup', () => {
+    const check = scenario('compare-cards-azalea').check!;
+
+    expect(check(outcome({ toolCalls: ['get_community_decks({"heroIdentifier":"azalea","format":"Silver Age"})'] }))).not.toBeNull();
+    expect(check(outcome({ toolCalls: ['get_community_decks({"heroIdentifier":"azalea","format":"Silver Age","compareDeckId":1})'] }))).toBeNull();
+  });
+
+  it('the defense question says the deck has no defense reactions', () => {
+    const check = scenario('defense-profile-azalea').check!;
+
+    expect(check(outcome({ text: 'Seu deck defende razoavelmente.' }))).not.toBeNull();
+    expect(check(outcome({ text: 'Ele não tem nenhuma reação de defesa; 22 cartas defendem 3.' }))).toBeNull();
+    expect(check(outcome({ text: 'São 0 reações de defesa.' }))).toBeNull();
+  });
+
+  it('the resource question quotes the average cost and names what the equipment and weapon spend', () => {
+    const check = scenario('resources-azalea').check!;
+
+    expect(check(outcome({ text: 'Seu deck é barato.' }))).not.toBeNull();
+    expect(check(outcome({ text: 'O custo médio é 0,2 e Death Dealer gasta 1 recurso.' }))).toBeNull();
+  });
+
+  it('the opening-hand question uses the draw odds tool and gives 19%', () => {
+    const check = scenario('draw-odds-azalea').check!;
+
+    expect(check(outcome({ text: 'Cerca de 20%.' }))).not.toBeNull();
+    expect(check(outcome({ text: 'A chance é de 19,2% com 4 cartas.', toolCalls: ['get_draw_odds({"deckId":1,"pitch":3})'] }))).toBeNull();
+  });
+
+  it('the price question looks prices up and never states a price without the lookup', () => {
+    const check = scenario('prices-azalea').check!;
+
+    expect(check(outcome({ text: 'Deve custar uns R$ 50.' }))).not.toBeNull();
+    expect(check(outcome({ text: 'Você já tem tudo.', toolCalls: ['get_prices({"deckId":1})'] }))).toBeNull();
+  });
+
   it('saying the user already has cards needs a collection or deck lookup in that answer', () => {
     const check = scenario('tile-tournaments-azalea').check!;
 
