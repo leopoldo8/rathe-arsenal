@@ -1,19 +1,20 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IListLine, TListKind } from '../../api/lists';
+import { useApplySuggestionsMutation, type IListLine, type TListKind } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
 import { withPitch } from '../deck-detail/recommendations/card-naming';
 import { formatBrl } from './listsModel';
 import styles from './ListEditor.module.css';
 
 interface ILineTileProps {
+  readonly listId: number;
   readonly line: IListLine;
   readonly kind: TListKind;
   readonly selected: boolean;
   readonly onSelect: (lineId: number) => void;
 }
 
-export function LineTile({ line, kind, selected, onSelect }: ILineTileProps): React.ReactElement {
+export function LineTile({ listId, line, kind, selected, onSelect }: ILineTileProps): React.ReactElement {
   const { t } = useTranslation();
   const displayName = withPitch(line.name, line.pitch, (key) => t(key));
 
@@ -49,14 +50,62 @@ export function LineTile({ line, kind, selected, onSelect }: ILineTileProps): Re
             ) : (
               <span className={styles.blank}>{t('lists.editor.noCondition')}</span>
             )}
-            {line.priceCents !== null ? (
-              <span className={styles.price}>{formatBrl(line.priceCents)}</span>
-            ) : (
-              <span className={styles.blank}>{t('lists.editor.noPrice')}</span>
-            )}
+            <LinePrice listId={listId} line={line} name={displayName} />
           </span>
+          {!line.sold && <TcgplayerNote listId={listId} line={line} name={displayName} />}
         </div>
       )}
     </li>
+  );
+}
+
+interface ILinePriceProps {
+  readonly listId: number;
+  readonly line: IListLine;
+  readonly name: string;
+}
+
+function LinePrice({ listId, line, name }: ILinePriceProps): React.ReactElement {
+  const { t } = useTranslation();
+  const apply = useApplySuggestionsMutation(listId);
+  if (line.priceCents !== null) return <span className={styles.price}>{formatBrl(line.priceCents)}</span>;
+  if (line.sold || line.suggestion === null) return <span className={styles.blank}>{t('lists.editor.noPrice')}</span>;
+  const price = formatBrl(line.suggestion.cents);
+  return (
+    <button
+      type="button"
+      className={styles.suggested}
+      aria-label={t('lists.pricing.useSuggestedFor', { price, name })}
+      disabled={apply.isPending}
+      onClick={() => apply.mutate([line.id])}
+    >
+      <span aria-hidden="true">+</span>
+      <span className={styles.suggestedPrice}>{price}</span>
+      {t('lists.pricing.suggested')}
+    </button>
+  );
+}
+
+function TcgplayerNote({ listId, line, name }: ILinePriceProps): React.ReactElement | null {
+  const { t } = useTranslation();
+  const apply = useApplySuggestionsMutation(listId);
+  if (line.suggestion === null) {
+    return line.priceCents === null ? <span className={styles.tcgNone}>{t('lists.pricing.noTcgPrice')}</span> : null;
+  }
+  if (line.priceCents === null || line.priceCents === line.suggestion.cents) return null;
+  const price = formatBrl(line.suggestion.cents);
+  return (
+    <span className={styles.tcgRow}>
+      <span className={styles.tcgLabel}>{t('lists.pricing.tcgPrice', { price })}</span>
+      <button
+        type="button"
+        className={styles.tcgUse}
+        aria-label={t('lists.pricing.useTcgFor', { price, name })}
+        disabled={apply.isPending}
+        onClick={() => apply.mutate([line.id])}
+      >
+        {t('lists.pricing.use')}
+      </button>
+    </span>
   );
 }

@@ -66,7 +66,7 @@ describe('list prices', () => {
 
     let panel = await openPanel(user, /Editar Pummel/);
     expect(within(panel).getByText('Sugestão R$ 14')).toBeInTheDocument();
-    expect(within(panel).getByText('mercado TCGplayer de 18/10')).toBeInTheDocument();
+    expect(within(panel).getByText('mercado TCGPlayer de 18/10')).toBeInTheDocument();
     await user.keyboard('{Escape}');
 
     panel = await openPanel(user, /Editar Snatch/);
@@ -104,25 +104,77 @@ describe('list prices', () => {
     expect(within(panel).getByRole('option', { name: 'WTR206 · Rainbow Foil · sem sugestão' })).toBeInTheDocument();
   });
 
-  it('uses every suggestion at list level and leaves the button off when there is none', async () => {
-    serve(makeList({ lines: [makeLine({ id: 1, suggestion: SUGGESTION }), makeLine({ id: 2, name: 'Snatch', suggestion: null })] }));
+  it('fills every card without a price from the bar, counting only those cards', async () => {
+    serve(
+      makeList({
+        lines: [
+          makeLine({ id: 1, suggestion: SUGGESTION }),
+          makeLine({ id: 2, name: 'Snatch', suggestion: null }),
+          makeLine({ id: 3, name: 'Pack Hunt', suggestion: SUGGESTION, priceCents: 900 }),
+          makeLine({ id: 4, name: 'Remembrance', suggestion: SUGGESTION, sold: true }),
+        ],
+      }),
+    );
     api.handlers.set('POST /lists/7/apply-suggestions', ({ body }) => {
       expect(body).toEqual({});
-      current = { ...current, lines: current.lines.map((line) => (line.suggestion ? { ...line, priceCents: 1400 } : line)) };
+      current = { ...current, lines: current.lines.map((line) => (line.id === 1 ? { ...line, priceCents: 1400 } : line)) };
       return current;
     });
     const user = userEvent.setup();
     renderWithProviders(<ListEditor listId="7" />);
 
-    await user.click(await screen.findByRole('button', { name: 'Usar sugestões em todas' }));
+    await user.click(await screen.findByRole('button', { name: 'Preencher 1 carta sem preço' }));
     await waitFor(() => expect(api.calls.some((call) => call.key === 'POST /lists/7/apply-suggestions')).toBe(true));
-    await waitFor(() => expect(screen.getByText('R$ 14,00')).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Preencher/ })).toBeNull());
+    expect(screen.getByText('R$ 14,00')).toBeInTheDocument();
   });
 
-  it('disables use-all when no card has a suggestion', async () => {
-    serve(makeList({ lines: [makeLine({ id: 1, suggestion: null })] }));
+  it('shows no fill button when no card without a price has a suggestion', async () => {
+    serve(makeList({ lines: [makeLine({ id: 1, suggestion: null }), makeLine({ id: 2, suggestion: SUGGESTION, priceCents: 500 })] }));
     renderWithProviders(<ListEditor listId="7" />);
-    expect(await screen.findByRole('button', { name: 'Usar sugestões em todas' })).toBeDisabled();
+    expect(await screen.findByLabelText('Cotação TCGPlayer')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Preencher/ })).toBeNull();
+  });
+
+  it('uses the dashed suggestion of a card without a price with one tap', async () => {
+    serve(makeList({ lines: [makeLine({ id: 1, suggestion: SUGGESTION })] }));
+    api.handlers.set('POST /lists/7/apply-suggestions', ({ body }) => {
+      expect(body).toEqual({ lineIds: [1] });
+      current = { ...current, lines: [makeLine({ id: 1, suggestion: SUGGESTION, priceCents: 1400 })] };
+      return current;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    const suggested = await screen.findByRole('button', { name: /^Usar R\$ 14,00 sugerido em Pummel/ });
+    expect(suggested).toHaveTextContent('+R$ 14,00sugerido');
+    await user.click(suggested);
+    await waitFor(() => expect(screen.getByText('R$ 14,00')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /sugerido em/ })).toBeNull();
+  });
+
+  it('offers the TCGPlayer price under a typed price that differs, and notes a card TCGPlayer has no price for', async () => {
+    serve(
+      makeList({
+        lines: [
+          makeLine({ id: 1, suggestion: SUGGESTION, priceCents: 900 }),
+          makeLine({ id: 2, name: 'Snatch', suggestion: SUGGESTION, priceCents: 1400 }),
+          makeLine({ id: 3, name: 'Remembrance', suggestion: null }),
+        ],
+      }),
+    );
+    api.handlers.set('POST /lists/7/apply-suggestions', ({ body }) => {
+      expect(body).toEqual({ lineIds: [1] });
+      current = { ...current, lines: current.lines.map((line) => (line.id === 1 ? { ...line, priceCents: 1400 } : line)) };
+      return current;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    expect(await screen.findAllByText('TCGPlayer R$ 14,00')).toHaveLength(1);
+    expect(screen.getByText('sem preço no TCGPlayer')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Usar TCGPlayer R\$ 14,00 em Pummel/ }));
+    await waitFor(() => expect(screen.queryByText('TCGPlayer R$ 14,00')).toBeNull());
   });
 
   it('edits the multiplier and clears it when emptied', async () => {
@@ -134,13 +186,13 @@ describe('list prices', () => {
     const user = userEvent.setup();
     renderWithProviders(<ListEditor listId="7" />);
 
-    const field = await screen.findByLabelText('Multiplicador');
+    const field = await screen.findByLabelText('Cotação TCGPlayer');
     expect(field).toHaveValue('7');
     await user.clear(field);
     await user.type(field, '6,5');
     await user.tab();
-    await waitFor(() => expect(screen.getByLabelText('Multiplicador')).toHaveValue('6.5'));
-    await user.clear(screen.getByLabelText('Multiplicador'));
+    await waitFor(() => expect(screen.getByLabelText('Cotação TCGPlayer')).toHaveValue('6.5'));
+    await user.clear(screen.getByLabelText('Cotação TCGPlayer'));
     await user.tab();
     await waitFor(() =>
       expect(api.calls.filter((call) => call.key === 'PATCH /lists/7').map((call) => call.body)).toEqual([
@@ -155,7 +207,7 @@ describe('list prices', () => {
     const user = userEvent.setup();
     renderWithProviders(<ListEditor listId="7" />);
 
-    const field = await screen.findByLabelText('Multiplicador');
+    const field = await screen.findByLabelText('Cotação TCGPlayer');
     await user.clear(field);
     await user.type(field, '80');
     await user.tab();
@@ -169,8 +221,8 @@ describe('list prices', () => {
     renderWithProviders(<ListEditor listId="7" />);
 
     const panel = await openPanel(user, /Editar Pummel/);
-    expect(screen.queryByLabelText('Multiplicador')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Usar sugestões em todas' })).toBeNull();
+    expect(screen.queryByLabelText('Cotação TCGPlayer')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Preencher/ })).toBeNull();
     expect(within(panel).queryByTestId('suggestion-none')).toBeNull();
   });
 });

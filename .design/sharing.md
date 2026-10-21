@@ -367,12 +367,18 @@ Changed on 2026-10-20 after the owner's first sell list on staging: the job firs
 
 | State | What should happen | Caller sees |
 |---|---|---|
-| Line whose printing has a market price | Suggested price = market price × multiplier | "R$ 14 (mercado TCGplayer de <date>)" |
+| Line whose printing has a market price | Suggested price = market price × multiplier | in the edit panel, "R$ 14 (mercado TCGPlayer de <date>)"; on the card, see the rows below |
+| Available card without a price, with a suggestion | The suggestion sits dashed where the price goes; one tap writes it | "+ R$ 14,00 sugerido" |
+| Available card whose typed price differs from the suggestion | The suggestion shows under the price with a one-tap replace | "TCGPlayer R$ 14,00 usar" |
+| Available card without a price and without a suggestion | The seller types it | "sem preço" and "sem preço no TCGPlayer" |
+| The sale total ("Tudo por") is empty | The field suggests the sum of the available cards' prices × quantities; focusing it starts from that sum, and it is saved only when the seller types or presses Enter; clearing it brings the suggestion back | the sum as placeholder |
 | Market price is null but mid price exists | Mid price × multiplier, marked approximate | the suggestion with an "aproximado" mark |
 | No price row for the printing (88 of 440 printings in the spike) | No suggestion; the price field stays for the seller to fill | "sem sugestão" |
-| Seller applies the suggestion to a line or to the whole list | The suggested value is written as the line's price | the new prices |
+| Seller applies the suggestion to a line, or fills the list | One line: the suggestion replaces its price. The whole list ("Preencher N cartas sem preço" in the bottom bar, beside "Cotação TCGPlayer x7"): only available lines without a price, so a typed price is never erased | the new prices |
 | Prices refresh or the seller changes the multiplier | The suggestion shown next to each line updates; prices already written stay until the seller applies again | the new suggestion beside the unchanged price |
 | tcgcsv is down or a fetch fails | The previous snapshot keeps serving, with its date | the last known suggestion and its date |
+
+Screen picked by the owner on 2026-10-20: alternative B of `.design/mockups/sharing/pricing/` (suggestion inside each card, rate and fill button in the bottom bar), with the rate labelled "Cotação TCGPlayer x7" because the buy-and-sell group calls a price "TCGPlayer x7". The owner added the sale-total suggestion the same day.
 
 Table `card_price` (shared, written only by the price job); `card_list` gains `priceMultiplier` (numeric, null means no suggestion) and no `card_list_line` column changes.
 

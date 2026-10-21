@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ICardList } from '../../api/lists';
 import { Button } from '../ui/Button/Button';
-import { buildListText, formatMoneyInput, listTotals, makeTranslate, parseMoney } from './listsModel';
+import { ListPricing } from './ListPricing';
+import { buildListText, formatBrl, formatMoneyInput, listTotals, makeTranslate, parseMoney, pricedSumCents } from './listsModel';
 import styles from './ListEditor.module.css';
 
 const COPIED_FEEDBACK_MS = 2000;
@@ -49,7 +50,12 @@ export function ListTotalsBar({ list, shareUrl, onSaveTotal, onShare }: IListTot
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [totalDraft, setTotalDraft] = useState<string | null>(null);
   const [totalInvalid, setTotalInvalid] = useState(false);
+  const [totalEdited, setTotalEdited] = useState(false);
+  const acceptTotal = useRef(false);
+  const totalInput = useRef<HTMLInputElement | null>(null);
+  const selectTotal = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sumCents = pricedSumCents(list.lines);
 
   useEffect(
     () => () => {
@@ -69,8 +75,28 @@ export function ListTotalsBar({ list, shareUrl, onSaveTotal, onShare }: IListTot
     timer.current = setTimeout(() => setCopyState('idle'), COPIED_FEEDBACK_MS);
   }
 
+  useLayoutEffect(() => {
+    if (!selectTotal.current) return;
+    selectTotal.current = false;
+    totalInput.current?.select();
+  }, [totalDraft]);
+
+  function startTotal(): void {
+    const start = list.totalPriceCents ?? (sumCents > 0 ? sumCents : null);
+    selectTotal.current = true;
+    setTotalDraft(formatMoneyInput(start));
+    setTotalEdited(false);
+    acceptTotal.current = false;
+  }
+
   function commitTotal(): void {
     if (totalDraft === null) return;
+    const accepted = acceptTotal.current;
+    acceptTotal.current = false;
+    if (list.totalPriceCents === null && !totalEdited && !accepted) {
+      setTotalDraft(null);
+      return;
+    }
     const parsed = parseMoney(totalDraft);
     if (!parsed.valid) {
       setTotalInvalid(true);
@@ -98,20 +124,25 @@ export function ListTotalsBar({ list, shareUrl, onSaveTotal, onShare }: IListTot
         <label className={styles.barTotal}>
           <span className={styles.barSmall}>{t('lists.bar.totalLabel')}</span>
           <input
+            ref={totalInput}
             className={styles.totalInput}
             type="text"
             inputMode="decimal"
             aria-invalid={totalInvalid || undefined}
-            placeholder={t('lists.bar.totalPlaceholder')}
+            placeholder={sumCents > 0 ? formatBrl(sumCents) : t('lists.bar.totalPlaceholder')}
             value={totalDraft ?? (list.totalPriceCents === null ? '' : `R$ ${formatMoneyInput(list.totalPriceCents)}`)}
-            onFocus={() => setTotalDraft(formatMoneyInput(list.totalPriceCents))}
+            onFocus={startTotal}
             onChange={(event) => {
               setTotalInvalid(false);
+              setTotalEdited(true);
               setTotalDraft(event.currentTarget.value);
             }}
             onBlur={commitTotal}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
+              if (event.key === 'Enter') {
+                acceptTotal.current = true;
+                event.currentTarget.blur();
+              }
               if (event.key === 'Escape') {
                 setTotalDraft(null);
                 setTotalInvalid(false);
@@ -120,6 +151,7 @@ export function ListTotalsBar({ list, shareUrl, onSaveTotal, onShare }: IListTot
           />
         </label>
       )}
+      {list.kind === 'sell' && <ListPricing list={list} />}
       <div className={styles.barActions}>
         <Button
           variant="secondary"

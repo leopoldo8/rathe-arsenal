@@ -247,6 +247,8 @@ describe('ListEditor', () => {
 
     const total = await screen.findByRole('textbox', { name: /Tudo por/ });
     await user.click(total);
+    expect(total).toHaveValue('12,00');
+    await user.clear(total);
     await user.type(total, '420');
     await user.tab();
     await waitFor(() => expect(screen.getByRole('textbox', { name: /Tudo por/ })).toHaveValue('R$ 420,00'));
@@ -257,6 +259,29 @@ describe('ListEditor', () => {
       { totalPriceCents: 42000 },
       { totalPriceCents: null },
     ]));
+  });
+
+  it('suggests the sum of the priced cards for the total, and saves it only when accepted', async () => {
+    serve(makeList({ lines: SELL_LINES }));
+    api.handlers.set('PATCH /lists/7', ({ body }) => {
+      current = { ...current, totalPriceCents: (body as { totalPriceCents: number | null }).totalPriceCents };
+      return current;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    const total = await screen.findByRole('textbox', { name: /Tudo por/ });
+    expect(total).toHaveValue('');
+    expect(total).toHaveAttribute('placeholder', 'R$ 12,00');
+    await user.click(total);
+    await user.tab();
+    expect(api.calls.some((call) => call.key === 'PATCH /lists/7')).toBe(false);
+    expect(screen.getByRole('textbox', { name: /Tudo por/ })).toHaveValue('');
+
+    await user.click(screen.getByRole('textbox', { name: /Tudo por/ }));
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /Tudo por/ })).toHaveValue('R$ 12,00'));
+    expect(api.calls.filter((call) => call.key === 'PATCH /lists/7').map((call) => call.body)).toEqual([{ totalPriceCents: 1200 }]);
   });
 
   it('copies the list as text', async () => {
