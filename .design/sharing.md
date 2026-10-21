@@ -243,6 +243,8 @@ Alternatives considered: the hero's card face straight from the LSS bucket as th
 
 Image, picked by Rodrigo on 2026-10-18: alternative B, "Leque" - a fan of large card faces over a blurred backdrop, with a bottom bar for kind, sharer, title, count and price (`.design/mockups/sharing/preview/*-b.png`, in a chat in `whatsapp-b.png`). It exceeds 600 KB as PNG for most cases and stays near 40 to 120 KB as JPEG at quality 85, so the image is served as JPEG. The download action sits in the sharing card of `share-control-b`.
 
+Changed on 2026-10-21 after the owner resent an edited sell list and WhatsApp showed the old preview: WhatsApp keeps the preview of an address it has already shown, so the address the app hands out (the "Copiar" address, the WhatsApp message, the list's "Copiar texto") carries `?v=` computed from what the preview shows (list name, cards, prices, total; for a missing-cards link, the missing cards), and `og:image` carries `?v=` from the content the image draws. The page ignores the query, so old addresses keep working.
+
 ### Copy Deck
 
 **Delivers** to a logged-in visitor of a shared deck how much of it their collection covers, and a copy of it in their own decks. **Status: clear.**

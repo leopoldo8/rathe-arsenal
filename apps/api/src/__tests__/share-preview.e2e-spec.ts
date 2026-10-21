@@ -170,7 +170,7 @@ describe('Share preview (E2E)', () => {
       expect(res.text).toContain(
         'og:title" content="Blades &lt;script&gt;alert(1)&lt;/script&gt; &quot;quoted&quot;"',
       );
-      expect(res.text).toContain(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image"`);
+      expect(res.text).toMatch(new RegExp(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image\\?v=[\\w-]{10}"`));
       expect(res.text).toContain('content="Deck de Rodrigo H. no Rathe Arsenal: Dorinthea Ironsong, Classic Constructed, 10 cartas"');
       expect(res.text).toContain('name="robots" content="noindex,nofollow"');
       expect(res.text.match(/<title>/g)).toHaveLength(1);
@@ -184,7 +184,7 @@ describe('Share preview (E2E)', () => {
 
       expect(res.text).toContain('og:title" content="Procuro cartas para Blades"');
       expect(res.text).toMatch(/og:description" content="Rodrigo H\. procura \d+ cartas: \d+x /);
-      expect(res.text).toContain(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image"`);
+      expect(res.text).toMatch(new RegExp(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image\\?v=[\\w-]{10}"`));
       expect(res.text.match(/<title>/g)).toHaveLength(1);
     });
 

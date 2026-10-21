@@ -433,7 +433,15 @@ describe('Shared lists (E2E)', () => {
       expect(res.headers['x-robots-tag']).toBe('noindex, nofollow');
       expect(res.text).toContain('<div id="root">');
       expect(res.text).toContain('og:title" content="Procuro: Para o &lt;Calling&gt; &quot;X&quot;"');
-      expect(res.text).toContain(`og:image" content="http://localhost:5173/api/shared/lists/${token}/image"`);
+      const image = res.text.match(/og:image" content="([^"]+)"/)?.[1];
+      expect(image).toMatch(new RegExp(`^http://localhost:5173/api/shared/lists/${token}/image\\?v=[\\w-]{10}$`));
+
+      const withVersion = await request(server).get(`/l/${token}?v=abc123`).expect(200);
+      expect(withVersion.text).toContain('og:title" content="Procuro: Para o &lt;Calling&gt; &quot;X&quot;"');
+
+      await addLine(owner, listId, CARD_A, 1);
+      const changed = await request(server).get(`/l/${token}`).expect(200);
+      expect(changed.text.match(/og:image" content="([^"]+)"/)?.[1]).not.toBe(image);
       expect(res.text).toContain(`og:url" content="http://localhost:5173/l/${token}"`);
       expect(res.text).toContain('Rodrigo procura 5 cartas:');
       expect(res.text).toContain('name="robots" content="noindex,nofollow"');

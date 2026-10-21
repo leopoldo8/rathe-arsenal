@@ -26,6 +26,14 @@ import type { TShareIntent } from '../../../api/shared-decks';
 
 const DECK_URL = 'https://rathearsenal.app/d/k7QxN2mTp9aV4wLcAbCdEf';
 const MISSING_URL = 'https://rathearsenal.app/d/mQ8rZ3nUp2bX5yKdFgHjLs';
+
+function versioned(text: string): RegExp {
+  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=[0-9a-z]+$`);
+}
+
+function whatsappText(element: HTMLElement): string {
+  return decodeURIComponent((element.getAttribute('href') ?? '').replace('https://wa.me/?text=', ''));
+}
 const link = (intent: TShareIntent, showContact = false) => ({
   intent,
   url: intent === 'deck' ? DECK_URL : MISSING_URL,
@@ -105,17 +113,16 @@ describe('ShareDialog', () => {
 
     await userEvent.click(await screen.findByTestId('share-intent-missing'));
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(MISSING_URL);
+    await screen.findByTestId('share-address');
     expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'missing' });
     const whatsapp = screen.getByTestId('share-whatsapp');
     expect(whatsapp).toHaveTextContent('Enviar no WhatsApp');
     await waitFor(() =>
-      expect(whatsapp.getAttribute('href')).toBe(
-        `https://wa.me/?text=${encodeURIComponent(
-          `Comprando essas cartas para meu deck de Rhinar:\n1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\n${MISSING_URL}`,
-        )}`,
+      expect(whatsappText(whatsapp)).toMatch(
+        versioned(`Comprando essas cartas para meu deck de Rhinar:\n1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\n${MISSING_URL}`),
       ),
     );
+    expect(((screen.getByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(MISSING_URL));
     const download = screen.getByTestId('share-download');
     expect(download).toHaveTextContent('Baixar imagem das cartas');
     expect(download).toHaveAttribute('href', '/api/shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs/image?download=1');

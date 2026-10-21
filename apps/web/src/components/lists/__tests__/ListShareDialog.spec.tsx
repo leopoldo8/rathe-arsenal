@@ -25,6 +25,14 @@ import { ListShareDialog } from '../ListShareDialog';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
 const URL = `https://rathearsenal.app/l/${TOKEN}`;
+function versioned(text: string): RegExp {
+  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=[0-9a-z]+$`);
+}
+
+function whatsappText(element: HTMLElement): string {
+  return decodeURIComponent((element.getAttribute('href') ?? '').replace('https://wa.me/?text=', ''));
+}
+
 const link = (intent: 'want' | 'sell', showContact = false): IListLinkState => ({ intent, url: URL, token: TOKEN, showContact });
 
 const WANT = makeList({
@@ -60,7 +68,7 @@ describe('ListShareDialog', () => {
     api.handlers.set('POST /lists/7/share', () => link('want'));
     renderDialog(WANT);
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(URL);
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(URL));
     expect(api.calls.find((call) => call.key === 'POST /lists/7/share')?.body).toEqual({});
     expect(screen.getByRole('heading', { name: 'Compartilhar lista' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copiar' })).toBeInTheDocument();
@@ -79,9 +87,7 @@ describe('ListShareDialog', () => {
 
     const whatsapp = await screen.findByTestId('share-whatsapp');
 
-    expect(whatsapp.getAttribute('href')).toBe(
-      `https://wa.me/?text=${encodeURIComponent(`Comprando essas cartas:\n3x Pummel (Vermelho)\n2x Snatch (Vermelho)\n\n${URL}`)}`,
-    );
+    expect(whatsappText(whatsapp)).toMatch(versioned(`Comprando essas cartas:\n3x Pummel (Vermelho)\n2x Snatch (Vermelho)\n\n${URL}`));
   });
 
   it('sends a sell list with condition, price and set price, leaving the sold card out', async () => {
@@ -90,10 +96,8 @@ describe('ListShareDialog', () => {
 
     const whatsapp = await screen.findByTestId('share-whatsapp');
 
-    expect(whatsapp.getAttribute('href')).toBe(
-      `https://wa.me/?text=${encodeURIComponent(
-        `Vendendo essas cartas:\n1x Pummel (Vermelho) · NM · R$ 6,00 cada\n2x Snatch (Vermelho)\n\nTudo por R$ 420,00\n\n${URL}`,
-      )}`,
+    expect(whatsappText(whatsapp)).toMatch(
+      versioned(`Vendendo essas cartas:\n1x Pummel (Vermelho) · NM · R$ 6,00 cada\n2x Snatch (Vermelho)\n\nTudo por R$ 420,00\n\n${URL}`),
     );
   });
 
@@ -101,7 +105,7 @@ describe('ListShareDialog', () => {
     api.handlers.set('GET /lists/7/share', () => link('want'));
     renderDialog(WANT);
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(URL);
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(URL));
     expect(api.calls.some((call) => call.key === 'POST /lists/7/share')).toBe(false);
   });
 
@@ -117,7 +121,7 @@ describe('ListShareDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(setDisplayName).toHaveBeenCalledWith('Dudu');
-    expect(await screen.findByTestId('share-address')).toHaveValue(URL);
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(URL));
   });
 
   it('falls back to the name step when the API answers DISPLAY_NAME_REQUIRED, then makes the link', async () => {
@@ -135,7 +139,7 @@ describe('ListShareDialog', () => {
     await userEvent.type(screen.getByLabelText('Seu nome'), 'Dudu');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(URL);
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(URL));
   });
 
   it('offers a retry when the link cannot be made', async () => {
@@ -149,7 +153,7 @@ describe('ListShareDialog', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }));
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(URL);
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(URL));
   });
 
   it('copies the address', async () => {
@@ -160,7 +164,7 @@ describe('ListShareDialog', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Copiar' }));
 
-    expect(writeText).toHaveBeenCalledWith(URL);
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(versioned(URL)));
     expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
   });
 

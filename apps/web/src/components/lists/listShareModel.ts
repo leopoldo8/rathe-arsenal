@@ -1,3 +1,4 @@
+import { versionShareUrl } from '../share/shareUrlVersion';
 import { availableLineTexts, formatBrl, type ITextList, type TTranslate } from './listsModel';
 
 const MESSAGE_MAX_LINES = 30;
@@ -17,4 +18,9 @@ export function buildListShareMessage(list: ITextList, url: string, t: TTranslat
       ? ['', t('lists.allFor', { price: formatBrl(list.totalPriceCents) })]
       : [];
   return [t(`lists.share.message.${list.kind}`), ...shown, ...more, ...total, '', url].join('\n');
+}
+
+/** The list's address with a version that changes whenever what its preview shows changes. */
+export function versionedListUrl(list: ITextList & { readonly name: string }, url: string, t: TTranslate): string {
+  return versionShareUrl(url, `${list.name}\n${buildListShareMessage(list, '', t)}`);
 }

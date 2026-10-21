@@ -19,7 +19,7 @@ import { ShareLinkFooter } from '../share/ShareLinkFooter';
 import { ShareWhatsappButton } from '../share/ShareWhatsappButton';
 import { useSaveDisplayName } from '../share/useSaveDisplayName';
 import shareStyles from '../share/ShareSteps.module.css';
-import { buildListShareMessage } from './listShareModel';
+import { buildListShareMessage, versionedListUrl } from './listShareModel';
 import { makeTranslate } from './listsModel';
 
 interface IListShareFlowProps {
@@ -114,10 +114,13 @@ function ListLinkStep({ list, link, onTurnedOff }: IListLinkStepProps): React.Re
   const disable = useDisableListShareMutation(list.id);
   const setContact = useSetListShareContactMutation(list.id);
 
+  const translate = makeTranslate(t);
+  const url = versionedListUrl(list, link.url, translate);
+
   return (
     <>
-      <ShareAddressRow url={link.url} />
-      <ShareWhatsappButton message={buildListShareMessage(list, link.url, makeTranslate(t))} />
+      <ShareAddressRow url={url} />
+      <ShareWhatsappButton message={buildListShareMessage(list, url, translate)} />
       <ShareContactRow
         testId="list-share-contact"
         showContact={link.showContact}

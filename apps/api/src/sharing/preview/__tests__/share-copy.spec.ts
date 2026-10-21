@@ -21,7 +21,15 @@ describe('buildListShareMeta', () => {
 
     expect(meta.title).toBe('Procuro: Para o Calling');
     expect(meta.pageUrl).toBe(`https://app.example/l/${TOKEN}`);
-    expect(meta.imageUrl).toBe(`https://app.example/api/shared/lists/${TOKEN}/image`);
+    expect(meta.imageUrl).toMatch(new RegExp(`^https://app\\.example/api/shared/lists/${TOKEN}/image\\?v=[\\w-]{10}$`));
+  });
+
+  it('changes the image address when what the image shows changes, and only then', () => {
+    const first = buildListShareMeta(want, TOKEN, BASE_URL).imageUrl;
+
+    expect(buildListShareMeta({ ...want }, TOKEN, BASE_URL).imageUrl).toBe(first);
+    expect(buildListShareMeta({ ...want, lines: [{ name: 'Pack Hunt', quantity: 2, priceCents: null }] }, TOKEN, BASE_URL).imageUrl).not.toBe(first);
+    expect(buildListShareMeta({ ...want, name: 'Outra' }, TOKEN, BASE_URL).imageUrl).not.toBe(first);
   });
 
   it('describes a want list with the first four lines and counts the rest', () => {

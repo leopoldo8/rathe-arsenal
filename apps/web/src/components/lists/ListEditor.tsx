@@ -18,6 +18,8 @@ import { LineEditPanel } from './LineEditPanel';
 import { LineTile } from './LineTile';
 import { ListShareDialog } from './ListShareDialog';
 import { ListTotalsBar } from './ListTotalsBar';
+import { versionedListUrl } from './listShareModel';
+import { makeTranslate } from './listsModel';
 import styles from './ListEditor.module.css';
 
 const NOTES_MAX = 1000;
@@ -138,7 +140,7 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
 
       <ListTotalsBar
         list={list}
-        shareUrl={shareLink.data?.url ?? null}
+        shareUrl={shareLink.data ? versionedListUrl(list, shareLink.data.url, makeTranslate(t)) : null}
         onSaveTotal={(cents) => patch.mutate({ totalPriceCents: cents })}
         onShare={() => setSharing(true)}
       />
