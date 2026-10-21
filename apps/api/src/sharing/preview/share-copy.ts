@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import type { TListKind } from '../../database/entities/card-list.entity';
 import { formatBrl, formatBrlShort } from './format-brl';
 import type { IListMetaLine } from './preview-list';
@@ -19,6 +20,14 @@ export function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
+const IMAGE_VERSION_LENGTH = 10;
+
+/** WhatsApp keeps a preview image by its address, so the address changes whenever what the image shows changes. */
+function versionedImageUrl(url: string, content: unknown): string {
+  const version = createHash('sha256').update(JSON.stringify(content)).digest('base64url').slice(0, IMAGE_VERSION_LENGTH);
+  return `${url}?v=${version}`;
+}
+
 export function buildDeckShareMeta(
   deck: ISharedDeckSummary,
   token: string,
@@ -28,7 +37,7 @@ export function buildDeckShareMeta(
   return {
     title: deck.name,
     description: `Deck de ${deck.sharerName} no Rathe Arsenal: ${deck.hero}, ${deck.format}, ${deck.totalCards} cartas`,
-    imageUrl: `${base}/api/shared/decks/${token}/image`,
+    imageUrl: versionedImageUrl(`${base}/api/shared/decks/${token}/image`, deck),
     pageUrl: `${base}/d/${token}`,
   };
 }
@@ -60,7 +69,7 @@ export function buildMissingShareMeta(
   return {
     title: `Procuro cartas para ${summary.name}`,
     description: missingDescription(summary),
-    imageUrl: `${base}/api/shared/decks/${token}/image`,
+    imageUrl: versionedImageUrl(`${base}/api/shared/decks/${token}/image`, summary),
     pageUrl: `${base}/d/${token}`,
   };
 }
@@ -96,7 +105,7 @@ export function buildListShareMeta(summary: ISharedListSummary, token: string, b
   return {
     title: `${summary.kind === 'want' ? 'Procuro' : 'Vendo'}: ${summary.name}`,
     description: listDescription(summary),
-    imageUrl: `${base}/api/shared/lists/${token}/image`,
+    imageUrl: versionedImageUrl(`${base}/api/shared/lists/${token}/image`, summary),
     pageUrl: `${base}/l/${token}`,
   };
 }

@@ -73,6 +73,10 @@ const SELL_LINES = [
   makeLine({ id: 3, cardIdentifier: 'remembrance', name: 'Remembrance', pitch: null, quantity: 1, sold: true, priceCents: 5500 }),
 ];
 
+function versioned(text: string): RegExp {
+  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=[0-9a-z]+$`);
+}
+
 describe('ListEditor', () => {
   it('shows a sell list with condition, price, blanks and the sold card marked', async () => {
     serve(makeList({ lines: SELL_LINES, totalPriceCents: 42000 }));
@@ -316,7 +320,7 @@ describe('ListEditor', () => {
     await user.click(copy);
 
     await waitFor(() => expect(writeText).toHaveBeenCalled());
-    expect(writeText).toHaveBeenCalledWith('2x Pummel (Vermelho)\n\nhttps://rathearsenal.app/l/aB3dE5gH7jK9mN');
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(versioned('2x Pummel (Vermelho)\n\nhttps://rathearsenal.app/l/aB3dE5gH7jK9mN')));
   });
 
   it('opens the share dialog from the bottom bar', async () => {
@@ -332,7 +336,7 @@ describe('ListEditor', () => {
 
     await user.click(await screen.findByTestId('list-share-open'));
 
-    expect(await screen.findByTestId('share-address')).toHaveValue('https://rathearsenal.app/l/aB3dE5gH7jK9mN');
+    expect(((await screen.findByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned('https://rathearsenal.app/l/aB3dE5gH7jK9mN'));
   });
 
   it('renames the list and deletes it after confirming', async () => {

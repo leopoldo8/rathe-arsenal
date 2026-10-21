@@ -32,7 +32,7 @@ describe('share meta tags', () => {
   it('builds absolute urls from the base url, tolerating a trailing slash', () => {
     const meta = buildDeckShareMeta(DECK, 'tok', 'https://ra.example/');
 
-    expect(meta.imageUrl).toBe('https://ra.example/api/shared/decks/tok/image');
+    expect(meta.imageUrl).toMatch(/^https:\/\/ra\.example\/api\/shared\/decks\/tok\/image\?v=[\w-]{10}$/);
     expect(meta.pageUrl).toBe('https://ra.example/d/tok');
   });
 
@@ -94,7 +94,7 @@ describe('buildMissingShareMeta', () => {
 
     expect(meta.title).toBe('Procuro cartas para Blades');
     expect(meta.description).toBe('Rodrigo procura 9 cartas: 3x Pack Hunt, 2x Pummel, 1x Dawnblade, 1x Hit and Run e mais 2');
-    expect(meta.imageUrl).toBe('https://ra.example/api/shared/decks/tok/image');
+    expect(meta.imageUrl).toMatch(/^https:\/\/ra\.example\/api\/shared\/decks\/tok\/image\?v=[\w-]{10}$/);
     expect(meta.pageUrl).toBe('https://ra.example/d/tok');
   });
 

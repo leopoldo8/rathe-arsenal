@@ -12,6 +12,7 @@ import { ShareContactRow } from "../share/ShareContactRow";
 import { ShareLinkFooter } from "../share/ShareLinkFooter";
 import { ShareWhatsappButton } from "../share/ShareWhatsappButton";
 import { buildMissingMessage } from "../shared-deck/sharedDeckModel";
+import { versionShareUrl } from "../share/shareUrlVersion";
 
 interface IShareLinkStepProps {
   readonly deckId: number;
@@ -34,19 +35,21 @@ export function ShareLinkStep({
 
   const isMissing = link.intent === "missing";
   const ownView = useOwnSharedDeckQuery(link.token, isMissing);
+  const translate = (key: string, options?: Record<string, unknown>): string =>
+    (options === undefined ? t(key) : t(key, options)) as string;
+  const missingUrl =
+    isMissing && ownView.data !== undefined
+      ? versionShareUrl(link.url, buildMissingMessage({ ...ownView.data, url: "" }, translate))
+      : link.url;
   const message =
     isMissing && ownView.data !== undefined
-      ? buildMissingMessage(
-          ownView.data,
-          (key, options) =>
-            (options === undefined ? t(key) : t(key, options)) as string,
-        )
+      ? buildMissingMessage({ ...ownView.data, url: missingUrl }, translate)
       : `${t("sharing.dialog.messageDeck", { deck: deckName })}\n${link.url}`;
   const whatsappReady = !isMissing || ownView.data !== undefined;
 
   return (
     <>
-      <ShareAddressRow url={link.url} />
+      <ShareAddressRow url={missingUrl} />
       <ShareWhatsappButton message={whatsappReady ? message : null} />
       <ShareContactRow
         testId="deck-share-contact"
