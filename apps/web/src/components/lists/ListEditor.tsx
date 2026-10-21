@@ -16,7 +16,6 @@ import { AddCardDialog } from './AddCardDialog';
 import { InlineText } from './InlineText';
 import { LineEditPanel } from './LineEditPanel';
 import { LineTile } from './LineTile';
-import { ListPricing } from './ListPricing';
 import { ListShareDialog } from './ListShareDialog';
 import { ListTotalsBar } from './ListTotalsBar';
 import styles from './ListEditor.module.css';
@@ -66,7 +65,7 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
   const selected = list.lines.find((line) => line.id === selectedLineId) ?? null;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-kind={list.kind}>
       <nav className={styles.crumb} aria-label={t('lists.editor.breadcrumb')}>
         <Link to="/lists" className={styles.crumbLink}>{t('lists.editor.breadcrumb')}</Link>
       </nav>
@@ -95,8 +94,6 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
           {t('lists.editor.deleteList')}
         </button>
       </div>
-
-      {list.kind === 'sell' && <ListPricing list={list} />}
 
       <div className={styles.notes}>
         <InlineText
@@ -134,7 +131,7 @@ function ListEditorBody({ list }: { readonly list: ICardList }): React.ReactElem
       ) : (
         <ul className={styles.grid}>
           {list.lines.map((line) => (
-            <LineTile key={line.id} line={line} kind={list.kind} selected={line.id === selectedLineId} onSelect={setSelectedLineId} />
+            <LineTile key={line.id} listId={list.id} line={line} kind={list.kind} selected={line.id === selectedLineId} onSelect={setSelectedLineId} />
           ))}
         </ul>
       )}

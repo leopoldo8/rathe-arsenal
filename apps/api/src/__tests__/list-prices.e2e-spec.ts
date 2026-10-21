@@ -153,7 +153,7 @@ describe('Card list prices (E2E)', () => {
     expect(res.body.lines[0].suggestion).toBeNull();
   });
 
-  it('applies suggestions to every available line, to chosen lines, and leaves lines without one alone', async () => {
+  it('fills every available line without a price, overwrites chosen lines, and leaves lines without a suggestion alone', async () => {
     const jwt = await createSession('apply');
     const listId = await sellList(jwt);
     await seedPrice(NORMAL, 200, 220);
@@ -181,8 +181,9 @@ describe('Card list prices (E2E)', () => {
       .expect(200);
     expect(subset.body.lines.map((line: { priceCents: number | null }) => line.priceCents)).toEqual([null, 700, 900, null]);
 
+    await request(server).patch(`/api/lists/${listId}/lines/${(second as { id: number }).id}`).set(...auth(jwt)).send({ priceCents: 1234 }).expect(200);
     const all = await request(server).post(`/api/lists/${listId}/apply-suggestions`).set(...auth(jwt)).send({}).expect(200);
-    expect(all.body.lines.map((line: { priceCents: number | null }) => line.priceCents)).toEqual([1400, 700, 900, null]);
+    expect(all.body.lines.map((line: { priceCents: number | null }) => line.priceCents)).toEqual([1400, 1234, 900, null]);
     expect((first as { id: number }).id).toBeDefined();
     expect((third as { id: number }).id).toBeDefined();
 

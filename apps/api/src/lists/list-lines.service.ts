@@ -121,7 +121,9 @@ export class ListLinesService {
   async applySuggestions(userId: string, listId: number, lineIds: readonly number[] | undefined): Promise<ICardList> {
     const { list } = await this.access.write(userId, listId, async ({ manager, list: current }) => {
       const lines = await manager.find(CardListLineEntity, { where: { listId: current.id } });
-      const targets = lines.filter((line) => (lineIds === undefined ? line.soldAt === null : lineIds.includes(line.id)));
+      const targets = lines.filter((line) =>
+        lineIds === undefined ? line.soldAt === null && line.priceCents === null : lineIds.includes(line.id),
+      );
       const suggestions = await this.prices.forLines(current, targets);
       for (const [lineId, suggestion] of suggestions) {
         await manager.update(CardListLineEntity, { id: lineId }, { priceCents: suggestion.cents });

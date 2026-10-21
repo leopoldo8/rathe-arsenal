@@ -92,6 +92,16 @@ export interface IListTotals {
   readonly available: number;
 }
 
+/** Available cards with a suggestion and no price yet: what "Preencher" writes, matching the API's apply-suggestions with no line ids. */
+export function linesToFill(lines: readonly IListLine[]): readonly IListLine[] {
+  return lines.filter((line) => !line.sold && line.priceCents === null && line.suggestion !== null);
+}
+
+/** What the available cards add up to at their own prices; the suggestion for "Tudo por". */
+export function pricedSumCents(lines: readonly IListLine[]): number {
+  return lines.reduce((sum, line) => (line.sold || line.priceCents === null ? sum : sum + line.priceCents * line.quantity), 0);
+}
+
 export function listTotals(lines: readonly IListLine[]): IListTotals {
   const cards = lines.reduce((sum, line) => sum + line.quantity, 0);
   const sold = lines.filter((line) => line.sold).reduce((sum, line) => sum + line.quantity, 0);

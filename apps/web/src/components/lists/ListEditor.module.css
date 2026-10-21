@@ -348,7 +348,7 @@
   text-decoration: line-through;
 }
 
-.tile[data-sold] .dot[data-pitch='1'] {
+.dot[data-pitch='1'] {
   background: var(--ra-pitch-red);
 }
 
@@ -360,7 +360,7 @@
   background: var(--ra-pitch-blue);
 }
 
-.tileMeta {
+.tile[data-sold] .tileMeta {
   opacity: 0.55;
 }
 
@@ -800,7 +800,81 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--ra-space-3);
-  margin-block-end: var(--ra-space-3);
+}
+
+@media (max-width: 959px) {
+  .page[data-kind='sell'] {
+    padding-block-end: 220px;
+  }
+
+  .pricing {
+    flex-basis: 100%;
+    gap: var(--ra-space-2);
+  }
+}
+
+.suggested {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-block-size: 28px;
+  padding: 0 8px;
+  border: 1px dashed var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-xs);
+  background: transparent;
+  color: var(--ra-fg-tertiary);
+  font-family: var(--ra-font-ui);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.suggested:hover:not(:disabled) {
+  background: var(--ra-accent-soft-bg);
+}
+
+.suggested:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.suggestedPrice {
+  color: var(--ra-accent-body);
+  font-weight: var(--ra-weight-bold);
+}
+
+.tcgRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tcgLabel {
+  color: var(--ra-fg-tertiary);
+  font-size: 11.5px;
+}
+
+.tcgUse {
+  min-block-size: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-xs);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: 11px;
+  font-weight: var(--ra-weight-bold);
+  cursor: pointer;
+}
+
+.tcgUse:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.tcgNone {
+  color: var(--ra-fg-muted);
+  font-size: 11.5px;
+  font-style: italic;
 }
 
 .multiplier {
@@ -829,14 +903,14 @@
 }
 
 .multiplierInput {
-  inline-size: 3ch;
+  inline-size: 3.5ch;
   min-inline-size: 0;
-  padding: 0;
+  padding: 0 0 0 1px;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
-  text-align: end;
+  text-align: start;
 }
 
 .multiplierInput:focus-visible {
