@@ -129,4 +129,34 @@ describe('Sign-in codes (E2E, S31)', () => {
     expect(afterFive.status).toBe(401);
     expect(sessionCookieOf(afterFive)).toBeNull();
   });
+
+  it('concurrent wrong tries cannot pass the cap of 5', async () => {
+    const email = await accountWithCodeFor('code-race');
+    const real = await requestCode(email);
+    const bad = real.code === '000000' ? '111111' : '000000';
+
+    const burst = await Promise.all(
+      Array.from({ length: 30 }, () => request(server()).post('/api/auth/codes/verify').send({ email, code: bad })),
+    );
+    const afterBurst = await request(server()).post('/api/auth/codes/verify').send({ email, code: real.code });
+
+    expect(burst.every((res) => res.status === 401)).toBe(true);
+    const rows = await ctx.dataSource.query(`SELECT "attempts" FROM "sign_in_code" WHERE "email" = $1`, [email]);
+    expect(rows[0].attempts).toBeLessThanOrEqual(5);
+    expect(afterBurst.status).toBe(401);
+    expect(sessionCookieOf(afterBurst)).toBeNull();
+  });
+
+  it('a right code racing wrong ones signs in at most once and never past 5 tries', async () => {
+    const email = await accountWithCodeFor('code-race-right');
+    const real = await requestCode(email);
+    const bad = real.code === '000000' ? '111111' : '000000';
+    const codes = [...Array.from({ length: 30 }, () => bad), real.code];
+
+    const burst = await Promise.all(codes.map((code) => request(server()).post('/api/auth/codes/verify').send({ email, code })));
+
+    expect(burst.filter((res) => res.status === 200).length).toBeLessThanOrEqual(1);
+    const rows = await ctx.dataSource.query(`SELECT "attempts" FROM "sign_in_code" WHERE "email" = $1`, [email]);
+    expect(rows[0].attempts).toBeLessThanOrEqual(5);
+  });
 });

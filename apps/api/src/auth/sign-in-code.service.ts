@@ -83,14 +83,23 @@ export class SignInCodeService {
   /** Checks the six digits against the address's live code and spends it. Returns the address to sign in. */
   async verify(email: string, code: string): Promise<string> {
     const live = await this.codes.findOne({ where: { email, consumedAt: IsNull() } });
-    if (!live || live.attempts >= SIGN_IN_CODE_MAX_ATTEMPTS) {
+    if (!live) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
     if (live.expiresAt.getTime() <= Date.now()) {
       throw new AuthError(EAuthErrorCode.TokenExpired, 'This code has expired');
     }
+    // The try is counted before the digits are compared, in one conditional statement, so
+    // concurrent guesses cannot all slip past a cap that is only read from the row.
+    const attempts = await this.takeTry(live.id);
+    if (attempts === null) {
+      throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
+    }
     if (!this.matches(live.codeHash, this.hashCode(email, code))) {
-      await this.recordWrongTry(live.id);
+      // The last allowed try is spent: the code stops working even for the right digits.
+      if (attempts >= SIGN_IN_CODE_MAX_ATTEMPTS) {
+        await this.codes.update({ id: live.id }, { consumedAt: new Date() });
+      }
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
     await this.spend(live.id);
@@ -131,19 +140,16 @@ export class SignInCodeService {
     }
   }
 
-  private async recordWrongTry(id: string): Promise<void> {
+  /** Counts one try on a live code that still has tries left; null when none is left. */
+  private async takeTry(id: string): Promise<number | null> {
     const { raw } = await this.codes
       .createQueryBuilder()
       .update(SignInCodeEntity)
       .set({ attempts: () => '"attempts" + 1' })
-      .where('"id" = :id AND "consumedAt" IS NULL', { id })
+      .where('"id" = :id AND "consumedAt" IS NULL AND "attempts" < :max', { id, max: SIGN_IN_CODE_MAX_ATTEMPTS })
       .returning('"attempts"')
       .execute();
-    const attempts = (raw as { attempts: number }[])[0]?.attempts ?? 0;
-    // The last allowed try is spent: the code stops working even for the right digits.
-    if (attempts >= SIGN_IN_CODE_MAX_ATTEMPTS) {
-      await this.codes.update({ id }, { consumedAt: new Date() });
-    }
+    return (raw as { attempts: number }[])[0]?.attempts ?? null;
   }
 
   /** Marks the code consumed in one statement; a second caller finds nothing to spend. */
