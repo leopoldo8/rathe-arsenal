@@ -2118,4 +2118,6 @@ Proposed batches, whole slices, each under 150k with the reading above, run one 
 
 A check whose proof needs code from a later slice was moved into that slice before numbering: the group-ask and quote split to S19, the missing-list and shopping-list split to S17, the 30-day deck purge to S38, and the spare reader of a deleted deck to S20. A scan of every proof file against the files each slice creates found no other case.
 
+- Feature base: `f7ec475` (the commit of the plan and these checks); the Verifier runs over `f7ec475..HEAD` with every check
+- Deviations: every builder appends its deviations from the plan to `.specs/features/persona-rethink/implementation-notes.md` under `## Deviations`, in the commit of the slice that deviates
 - Mechanism: handoff - chosen by the owner on 2026-10-24: the 19 batches above run one after the other, each by a fresh sub-agent builder, and a batch is handed on only when every proof in it is green; the main session only dispatches builders, checks each result and dispatches the Verifier after the last batch
