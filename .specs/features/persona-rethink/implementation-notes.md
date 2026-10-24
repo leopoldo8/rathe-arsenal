@@ -175,6 +175,11 @@
   (g) A session carried by a request is not ended when the same browser signs in again (a new token is always issued, never reused or taken from the request, so classic session fixation does not apply: tokens only come from server-created rows).
   Ending the carried session on sign-in is hardening only; not done.
   (h) `verifyEmail` still keeps a password someone else set and still ends no session: this is item (a) above, waiting for the owner.
+- Lockout by a stranger (security review of `205a634`, found by the orchestrator's check of the per-address limit; the numbers are C404's, so nothing was changed).
+  Someone who only knows an address can ask for its five codes in an hour, and can spend the live code's five tries with wrong guesses, so the owner gets `429` on "Reenviar" and cannot sign in by code for up to an hour (the oldest of the five codes must age out).
+  A stranger cannot block the password sign-in (its limit is per IP, not per address), a code-only owner's other devices already signed in, or any other address; the web offers "Entre com um código por e-mail" and "Entre com a sua senha" next to the limit message, so a password account keeps a way in.
+  An account with no password has no other way in during that hour, and each stranger request also e-mails the owner a code they did not ask for.
+  A gentler variant would count only codes that were asked and never tried, or let the e-mail button of the newest code sign in after the limit; both change what C404 counts, so the owner decides.
 - Resolved in S32: items (b) and (d) of the security review above. (b): a code sign-in that drops an unproven password revokes every other session of the account. (d): the origin check on writes is mounted for the cookie.
 - The session-ended sign-in sheet (C382, AC 239) is not drawn by any mockup in `.design/mockups/account/`; the document only says "a sign-in sheet over the page, after it the same page, the draft kept".
   It was built from the existing start steps inside a bottom sheet and shows no copy of its own, so check how it looks and whether it needs a mockup round.

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac, randomInt, timingSafeEqual } from 'crypto';
-import { IsNull, MoreThan, QueryFailedError, Repository } from 'typeorm';
+import { EntityManager, IsNull, MoreThan, QueryFailedError, Repository } from 'typeorm';
 import { SignInCodeEntity } from '../database/entities/sign-in-code.entity';
 import { UserEntity } from '../database/entities/user.entity';
 import { TLocale } from '../common/i18n/resolve-locale';
@@ -63,8 +63,6 @@ export class SignInCodeService {
       return result;
     }
 
-    await this.assertUnderAddressLimit(email, now);
-
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
     const buttonToken = this.tokenGenerator.generateRawToken();
     await this.replaceLiveCode({
@@ -123,9 +121,15 @@ export class SignInCodeService {
     return row.email;
   }
 
-  /** Counts the address's codes of the last hour, replaced ones included, so a new code never resets the tries. */
-  private async assertUnderAddressLimit(email: string, now: number): Promise<void> {
-    const recent = await this.codes.find({
+  /**
+   * Counts the address's codes of the last hour, replaced ones included, so a new code never resets the
+   * tries. The count and the insert share one transaction behind a per-address lock, so parallel requests
+   * cannot all pass a count that none of them has written to yet.
+   */
+  private async assertUnderAddressLimit(manager: EntityManager, email: string): Promise<void> {
+    await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`sign_in_code:${email}`]);
+    const now = Date.now();
+    const recent = await manager.find(SignInCodeEntity, {
       where: { email, createdAt: MoreThan(new Date(now - HOUR_MS)) },
       order: { createdAt: 'ASC' },
       select: { createdAt: true },
@@ -140,6 +144,7 @@ export class SignInCodeService {
   private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
     try {
       await this.codes.manager.transaction(async (manager) => {
+        await this.assertUnderAddressLimit(manager, fresh.email);
         await manager
           .createQueryBuilder()
           .update(SignInCodeEntity)

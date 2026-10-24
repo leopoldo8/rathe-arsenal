@@ -53,6 +53,17 @@ describe('Auth limits (E2E, S34)', () => {
     expect(signUps[20]).toBe(429);
   });
 
+  it('parallel code requests cannot pass the five-per-address limit together', async () => {
+    const email = ctx.emailFor('parallel-codes');
+    await from('198.51.100.70', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+
+    const answers = await Promise.all(Array.from({ length: 12 }, () => from('198.51.100.71', '/api/auth/codes').send({ email })));
+
+    expect(answers.filter((answer) => answer.status === 202)).toHaveLength(5);
+    expect(answers.filter((answer) => answer.status === 429)).toHaveLength(7);
+    expect(await countOf('sign_in_code', email)).toBe(5);
+  });
+
   it('asking for a new code does not give a guesser more than five tries per code', async () => {
     const email = ctx.emailFor('fresh-tries');
     await from('198.51.100.40', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
