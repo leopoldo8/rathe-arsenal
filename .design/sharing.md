@@ -397,6 +397,14 @@ Decided by Rodrigo on 2026-10-18: build on tcgcsv, accepting that it republishes
 2. Applying a suggestion writes the price into the line; prices do not move under a posted list until the seller applies the suggestion again - default.
 3. Suggested prices are rounded to whole reais - default.
 
+## Changed by a later journey
+
+From journey 1 of the 2026-10-21 persona audit (`.design/account.md`, approved by the owner on 2026-10-22):
+
+- The sign-up response is no longer generic: a single e-mail field starts both sign-up and sign-in, and what comes next shows whether the address has an account (owner decision). Share attribution at sign-up is unchanged.
+- A new account works before its e-mail is confirmed, but cannot create share links until it is.
+- A visitor who signs up from a shared page returns to it on any device: the page is stored with the account at sign-up, not only in the browser's `ra.shareReturn`.
+
 ## Sources
 
 - `.specs/features/price-spike/result.md` - tcgcsv as the price source, its guidelines, coverage of the owner's decks, and Star City Games ruled out by its terms.

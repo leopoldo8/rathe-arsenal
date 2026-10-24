@@ -64,13 +64,15 @@
 - **Trade-off**: `CollectionService.addCard` keeps its read-then-update until someone migrates it; two increment styles coexist meanwhile.
 - **Scope**: `apps/api` collection writes.
 - **Date**: 2026-10-04
-- **Status**: active
+- **Status**: superseded by AD-016
 
 ### AD-009
 - **Decision**: Picking an alternative for a missing card is a deck change: the pick moves the original's missing copies to the chosen card in `deck_card`, and a separate `card_replacement` row (status `active` | `kept` | `reverted` | `removed`, never deleted) remembers the original. While a replacement is active, readiness gives its copies no engine stand-in on every recompute path.
 - **Reason**: Owner chose it in the card-alternatives discovery (`.design/card-alternatives.md`, Key decisions 1, 2 and 4) knowing the deck stops matching its imported decklist at pick time; the record lives outside `deck_card` because every composition save deletes and reinserts those rows.
 - **Trade-off**: Turning picks back into pinned stand-ins later needs a pinned-substitute engine input and user-created rows in swap reconciliation.
 - **Scope**: `packages/engine` (optional protected-copies input to `computeEffectiveReadiness`), `apps/api` (new table, replacement routes, `SubstitutionService.runReadiness`, `DecksService.updateComposition`), `apps/web` (deck detail).
+- **Date**: 2026-10-06
+- **Status**: partly superseded by AD-017 (how many copies a pick moves, and from which side); the rest is active
 
 ### AD-010
 - **Decision**: Synergy between a card and a deck is judged by a language model, Gemini 3.8 Flash, given the deck list, the hero and each candidate's rules text, returning a ranked top list. Claude Opus 5.5 is the equal-quality alternative. A keyword and subtype heuristic does not judge synergy well enough.
@@ -119,6 +121,94 @@
 - **Scope**: `apps/api` (`sharing`, `sharing/preview`, auth sign-up, users), `apps/web` (`/d/$token`, deck detail share card, Settings, auth return).
 - **Date**: 2026-10-18
 - **Status**: active
+
+### AD-016
+- **Decision**: A copy's version is four optional fields, `printingCode`, `edition`, `finish`, `condition`, on `collection_card` and `card_list_line`, each `varchar not null default ''` with `''` meaning unknown; `collection_card` is unique on `("userId","cardIdentifier","sourceId","printingCode","edition","finish","condition")` and every increment uses `INSERT ... ON CONFLICT` on that key with `LEAST(..., 20)`. Supersedes AD-008.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 1) from `.design/collection-in.md` and `.design/sell-and-trade.md`; a sentinel works on any Postgres version, while nullable columns would make `ON CONFLICT` never fire.
+- **Trade-off**: Readers that sum per card must sum across versions; `''` has to be translated to "Não sei" at every display.
+- **Scope**: `apps/api` collection, lists, scanner, readiness load; `apps/web` collection and lists.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-017
+- **Decision**: A pick or a swap moves the quantity the caller gives (1 to the copies still needed, or the copies over the limit) from the side it names, `card_replacement.side` in `('deck', 'inventory')`; omitted, `decideAdoption` keeps today's behaviour. Supersedes AD-009's "moves the original's missing copies".
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 2) from `.design/close-the-deck.md` Key decision 7 and `.design/tutor.md`.
+- **Trade-off**: The alternatives sheet, the recommendations rail and the Tutor share the path, so each passes its own quantity.
+- **Scope**: `apps/api` replacements, chat; `apps/web` missing list, chat proposals.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-018
+- **Decision**: A deck line carries an inventory quantity next to its deck quantity (`deck_card.inventoryQuantity`); legality counts copies per card across deck, inventory, weapons and equipment; readiness, the missing list, spare copies and the Tutor count the inventory, always said apart from the deck.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 3) from `.design/deck-building.md`.
+- **Trade-off**: Every reader of `deck_card` decides once whether it counts the inventory; old Fabrary imports have none.
+- **Scope**: `packages/engine`, `apps/api` decks, readiness, sharing, lists, chat; `apps/web` editor.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-019
+- **Decision**: Decks are soft-deleted (`tracked_deck.deletedAt`) and kept 30 days; every deck read skips deleted decks, `SharedDeckLookup.findLive` included (extends AD-015); the housekeeping step deletes them for good with today's cascades.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 4) from `.design/deck-building.md` "Delete safety".
+- **Trade-off**: Every new deck query must filter `"deletedAt" IS NULL`.
+- **Scope**: `apps/api` decks, sharing, readiness, chat, recommendations, worker.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-020
+- **Decision**: Scheduled work runs as steps of the worker's `runWorkerLoops` (`stores/variant-queue-worker.ts`), each claiming its work with a lock; the API runs no new timers.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 5): an API `setInterval` runs once per instance, and a dashboard cron is not in the repository, which is how the user purge stayed unscheduled.
+- **Trade-off**: The worker process carries one more loop; a worker crash stops housekeeping until it restarts.
+- **Scope**: `apps/api` worker, `scripts/purge-deleted-users.ts` logic.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-021
+- **Decision**: Accounts: one e-mail field starts sign-up and sign-in and may reveal that an address has an account; e-mails are stored lowercased; a password is optional; six-digit sign-in codes (15 minutes, 5 tries, one live per address) with a button token; an unconfirmed account can do everything except create share links; the sign-up return page is stored on the user; Cloudflare Turnstile guards sign-up and code requests; the session lasts until sign-out and is held on the server, in an httpOnly cookie `ra_session` (`SameSite=Lax`, `Path=/api`), with writes from another origin refused (`403` `ORIGIN_REJECTED`); no response body carries the token (owner's pick, 2026-10-23).
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing doors 14 to 17) from `.design/account.md`, owner decisions of 2026-10-22; reverses `.design/sharing.md:37` for sign-in and sign-up.
+- **Trade-off**: Every signed-in player signs in once more at deploy; reset links already sent stop working; mail delivery becomes the way in for code-only accounts.
+- **Scope**: `apps/api` auth, users, email, guards; `apps/web` auth pages, `AuthProvider`, the HTTP wrappers of AD-004, `api/shared-decks.ts`; the Playwright storage state, `scripts/fixture/fixture-seed.ts`, the API e2e tests and `docs/dev-fixtures.md`, which send the cookie instead of a Bearer token.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-022
+- **Decision**: Each needed card has one stored store state (`priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price`); prices stay valid `STORE_PRICE_VALID_DAYS`, availability comes from a pass every `STORE_AVAILABILITY_PASS_DAYS`; lookups are per card (`variant_fetch_job.cardIdentifier`, one pending per card) and every Firecrawl call is counted in `firecrawl_usage` against `FIRECRAWL_MONTHLY_CREDIT_BUDGET`, with the pass taking priority.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 10) from `.design/close-the-deck.md`; AD-011 and AD-013 are the precedents.
+- **Trade-off**: Pending per-deck jobs are dropped at deploy; the free plan cannot price the release, so the owner moves to a paid plan when needed.
+- **Scope**: `apps/api` stores, decks, worker; `apps/web` missing list, admin settings.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-023
+- **Decision**: Deck share links gain the `quote` intent, which resolves only to the quote page and carries no store data; `share_event.kind` gains `offer`, `quote_sent` and `buy`; `referredVia` gains `quote`. Extends AD-015.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 11) from `.design/close-the-deck.md` and `.design/sell-and-trade.md`.
+- **Trade-off**: A `quote` address handed out must keep resolving as a quote or answer 404.
+- **Scope**: `apps/api` sharing, auth sign-up; `apps/web` share sheet, quote page.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-024
+- **Decision**: Spare copies are computed on request by one function from the collection, the decks at stage `building`, `ready` or `active`, and `user.spareRule` (`within_format`, `any_deck`, `per_deck`, null until asked), holding foil copies before regular ones; nothing stores a spare count.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 12) from `.design/sell-and-trade.md` Key decisions 1 to 3 and 10.
+- **Trade-off**: Every surface that shows spare copies calls the same function; the Tutor's old deck-usage SQL goes.
+- **Scope**: `apps/api` collection, lists, sharing, chat.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-025
+- **Decision**: A rule date is printed only from a curated `RULE_CHANGES` entry in `packages/engine/src/legality/rules.ts` (format, effective date, summary key, official source URL).
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, Landing door 9) from `.design/deck-building.md`; card data holds no dates.
+- **Trade-off**: A rule change with no entry shows no date.
+- **Scope**: `packages/engine`, `apps/web` deck page, the Tutor.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
+
+### AD-026
+- **Decision**: Wherever the same card name exists in another pitch, the name is written through one helper with the pitch as a word, in visible text and aria-labels; game words are explained from one i18n namespace shown by a "?" sheet and the public `/termos` page; a CI test fails on dashes and banned words in pt-BR values, and an axe scan in the Playwright run fails on serious and critical issues.
+- **Reason**: persona-rethink (`.specs/features/persona-rethink/plan.md`, S1, S2, S37) from `.design/copy-and-access.md`.
+- **Trade-off**: A new screen that names a card or a game word must use the helper and the namespace; `@axe-core/playwright` is a new dev dependency.
+- **Scope**: `apps/web` every card-naming component, i18n, Playwright.
+- **Date**: 2026-10-23
+- **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
 
 ## Handoff
 
