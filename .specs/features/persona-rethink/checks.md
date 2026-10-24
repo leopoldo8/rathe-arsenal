@@ -2124,3 +2124,6 @@ A check whose proof needs code from a later slice was moved into that slice befo
 - Batch 1 boundary: 04294eb - S1, S2 (C1 to C17)
 - Batch 1 settled mid-build: none
 - Batch 1 abandoned: none
+- Batch 2 boundary: dc65387 - S30, S31 (C345 to C351, C353 to C370)
+- Batch 2 settled mid-build: the session cookie `ra_session` carries today's JWT until S32 (Bearer is tried first, then the cookie; "Sair" does not clear the cookie, so C378 must, and batch 2 must not ship without S32); C352 stays unmarked until journey 2's first-run screen exists, so the S15 builder repoints `FIRST_STEPS_PATH` in `apps/web/src/components/auth/NewAccountStep.tsx` and marks C352; the S32 builder extends the existing test "the staying-in line is said once, for a phone or a computer" in `NewAccountStep.spec.tsx` with the "Você continua conectada" scan for C384 instead of writing a second test of that name; C354's list proof "a new account lands back on the list with its toast" runs from `NewAccountStep.spec.tsx`, so the named `SharedListPage.spec.tsx -t` command matches no test; unconfirmed accounts can create share links until S33; `GET /api/shared/decks/:token/coverage` gained `collectionEmpty` (Surface row added); `/entrar` and the sign-in and sign-up redirects are in Surface
+- Batch 2 abandoned: none
