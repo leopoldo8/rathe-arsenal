@@ -11,6 +11,23 @@ import {
 const DATABASE_URL = process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal_chat';
 const SCHEMA = 'chat_entities_test';
 
+// CHAT_COLUMNS describes the schema right after AddAiChat; later migrations
+// (AddChatUsageCachedTokens, AddTournamentDeckSource) added these columns.
+const COLUMNS_ADDED_LATER: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  chat_usage: { cachedInputTokens: 'integer NOT NULL DEFAULT 0' },
+  tournament_deck: { source: "character varying(20) NOT NULL DEFAULT 'tournament'::character varying" },
+};
+
+function withLaterColumns(
+  base: Readonly<Record<string, Readonly<Record<string, string>>>>,
+): Record<string, Record<string, string>> {
+  const merged: Record<string, Record<string, string>> = {};
+  for (const [table, columns] of Object.entries(base)) {
+    merged[table] = { ...columns, ...(COLUMNS_ADDED_LATER[table] ?? {}) };
+  }
+  return merged;
+}
+
 describe('chat entities', () => {
   let dataSource: DataSource;
 
@@ -38,7 +55,7 @@ describe('chat entities', () => {
   });
 
   it('synchronize builds the same columns as the migration', async () => {
-    expect(await readChatColumns(dataSource, SCHEMA)).toEqual(CHAT_COLUMNS);
+    expect(await readChatColumns(dataSource, SCHEMA)).toEqual(withLaterColumns(CHAT_COLUMNS));
     expect(await readChatAccessColumn(dataSource, SCHEMA)).toBe(CHAT_ACCESS_COLUMN);
   });
 });
