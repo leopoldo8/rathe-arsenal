@@ -348,6 +348,26 @@ describe('AuthService.verifyEmail', () => {
   });
 });
 
+describe('AuthService.verifyEmail on a deleted account', () => {
+  it('answers INVALID_TOKEN like sign-in and the codes do, and opens no session', async () => {
+    const tokens = new TokenGeneratorService();
+    const raw = tokens.generateRawToken();
+    const user: Partial<UserEntity> = {
+      id: 'user-1',
+      email: 'a@b.com',
+      emailVerifiedAt: null,
+      deletedAt: new Date(),
+      verificationTokenHash: tokens.hashToken(raw),
+      verificationTokenExpiresAt: new Date(Date.now() + 60_000),
+    };
+    const { service, sessions } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+
+    await expect(service.verifyEmail(raw)).rejects.toMatchObject({ code: EAuthErrorCode.InvalidToken });
+    expect(sessions.create).not.toHaveBeenCalled();
+    expect(user.emailVerifiedAt).toBeNull();
+  });
+});
+
 describe('AuthService code sign-in on an unconfirmed account', () => {
   function unconfirmed(passwordHash: string | null): Partial<UserEntity> {
     return { id: 'user-1', email: 'a@b.com', emailVerifiedAt: null, deletedAt: null, passwordHash };

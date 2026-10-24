@@ -191,7 +191,8 @@ export class AuthService {
     const user = await this.users.findOne({
       where: { verificationTokenHash: hash },
     });
-    if (!user || !user.verificationTokenExpiresAt || user.verificationTokenExpiresAt < new Date()) {
+    // A deleted account is refused here as it is at sign-in and by the codes.
+    if (!user || user.deletedAt || !user.verificationTokenExpiresAt || user.verificationTokenExpiresAt < new Date()) {
       throw new AuthError(EAuthErrorCode.InvalidToken, 'This verification link is invalid or has expired');
     }
 
