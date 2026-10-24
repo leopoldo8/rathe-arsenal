@@ -2121,3 +2121,6 @@ A check whose proof needs code from a later slice was moved into that slice befo
 - Feature base: `f7ec475` (the commit of the plan and these checks); the Verifier runs over `f7ec475..HEAD` with every check
 - Deviations: every builder appends its deviations from the plan to `.specs/features/persona-rethink/implementation-notes.md` under `## Deviations`, in the commit of the slice that deviates
 - Mechanism: handoff - chosen by the owner on 2026-10-24: the 19 batches above run one after the other, each by a fresh sub-agent builder, and a batch is handed on only when every proof in it is green; the main session only dispatches builders, checks each result and dispatches the Verifier after the last batch
+- Batch 1 boundary: 04294eb - S1, S2 (C1 to C17)
+- Batch 1 settled mid-build: none
+- Batch 1 abandoned: none
