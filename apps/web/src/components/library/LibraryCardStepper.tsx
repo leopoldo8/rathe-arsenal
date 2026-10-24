@@ -159,7 +159,9 @@ export function LibraryCardStepper({
                   }}
                 >
                   <span className={styles.pickerLabel}>
-                    {contribution.sourceLabel}
+                    {contribution.kind === 'manual'
+                      ? t('csvSources.manualSourceLabel')
+                      : contribution.sourceLabel}
                   </span>
                   <span className={styles.pickerCount} aria-hidden="true">
                     ×{contribution.quantity}

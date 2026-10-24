@@ -44,32 +44,32 @@ Grouped by the plan's slices; numbering runs across the whole feature.
 
 ### S1 - Locale and accessibility gates in CI · 19 files · 132 KB · ~41k
 
-**C1** - The locale rule function returns a violation for a pt-BR value containing U+2014 ("x — y") and for one containing U+2013 ("x – y"), and none for "x - y"; the test walks every leaf string of the pt-BR catalog exported by `i18n/locales/pt-BR/index.ts` and fails listing `namespace.key` for each value with either dash (AC 1, AC 5)
+**C1** - The locale rule function returns a violation for a pt-BR value containing U+2014 ("x — y") and for one containing U+2013 ("x – y"), and none for "x - y"; the test walks every leaf string of the pt-BR catalog exported by `i18n/locales/pt-BR/index.ts` and fails listing `namespace.key` for each value with either dash (AC 1, AC 5) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "flags an em dash and an en dash in a value"`
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "no pt-BR value contains an em or en dash"`
 
-**C2** - The rule function flags `troca`, `trocas` and `trocar` (whole word, any case) in values of the `home`, `auth` and `onboarding` namespaces and does not flag them in `deckDetail` or `alternatives`; it flags the literals "Manual entries" and "Attack Actions" in a value of any pt-BR namespace (AC 2)
+**C2** - The rule function flags `troca`, `trocas` and `trocar` (whole word, any case) in values of the `home`, `auth` and `onboarding` namespaces and does not flag them in `deckDetail` or `alternatives`; it flags the literals "Manual entries" and "Attack Actions" in a value of any pt-BR namespace (AC 2) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "flags troca outside a deck and the leaked English literals"`
 
-**C3** - The current pt-BR catalog passes both rules after S1: `home.emptyLead`, `home.step2Body`, `auth.decorationCopy`, `onboarding.step2BodySingle`, `onboarding.step2BodyMultiple` and `onboarding.congratsBody` contain no `troca`/`trocas`/`trocar`; `deckDetail.groupAttack` and `deckDetail.groupNonAttack` are not English; `decks.partialUpdateMsg`, `lists` `totalPlaceholder` and `price` contain no em dash, so "R$ —" is gone (AC 4, AC 5)
+**C3** - The current pt-BR catalog passes both rules after S1: `home.emptyLead`, `home.step2Body`, `auth.decorationCopy`, `onboarding.step2BodySingle`, `onboarding.step2BodyMultiple` and `onboarding.congratsBody` contain no `troca`/`trocas`/`trocar`; `deckDetail.groupAttack` and `deckDetail.groupNonAttack` are not English; `decks.partialUpdateMsg`, `lists` `totalPlaceholder` and `price` contain no em dash, so "R$ —" is gone (AC 4, AC 5) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "the pt-BR catalog passes every copy rule"`
 
-**C4** - With `kind: 'manual'` the Library shows the pt-BR label of the manual source and the text "Manual entries" appears nowhere on the page in pt-BR, although the API still sends `label: 'Manual entries'` (AC 2, AC 4)
+**C4** - With `kind: 'manual'` the Library shows the pt-BR label of the manual source and the text "Manual entries" appears nowhere on the page in pt-BR, although the API still sends `label: 'Manual entries'` (AC 2, AC 4) · done
 Proof: `web unit src/components/library/__tests__/LibraryGrid.test.tsx -t "the manual source reads in Portuguese"`
 
-**C5** - The automatic deck name joins hero and format with " - " (U+002D): hero display name "Dorinthea Ironsong" and format "Classic Constructed" give "Dorinthea Ironsong - Classic Constructed", "Rhinar" and "Blitz" give "Rhinar - Blitz", and the saved name contains no U+2014 (AC 5)
+**C5** - The automatic deck name joins hero and format with " - " (U+002D): hero display name "Dorinthea Ironsong" and format "Classic Constructed" give "Dorinthea Ironsong - Classic Constructed", "Rhinar" and "Blitz" give "Rhinar - Blitz", and the saved name contains no U+2014 (AC 5) · done
 Proof: `api unit src/decks/__tests__/decks.service.create-scratch.spec.ts -t "composes name as \"{heroDisplayName} - {format}\""`
 
-**C6** - The axe filter keeps a violation of impact `serious` and one of `critical` and drops `minor` and `moderate` (AC 3)
+**C6** - The axe filter keeps a violation of impact `serious` and one of `critical` and drops `minor` and `moderate` (AC 3) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "the axe filter keeps serious and critical issues only"`
 
-**C7** - The scan list exported by `tests/support/axe.ts` starts with exactly these five pages: home, deck page (the fixture deck), Library, shared deck page (`/d/<fixture token>`), sign-in (`/sign-in`, signed out); for each page `new AxeBuilder({ page }).analyze()` returns zero violations of impact `serious` or `critical`, and a failing page names the axe rule id and the selector (AC 3, AC 4; door 18)
+**C7** - The scan list exported by `tests/support/axe.ts` starts with exactly these five pages: home, deck page (the fixture deck), Library, shared deck page (`/d/<fixture token>`), sign-in (`/sign-in`, signed out); for each page `new AxeBuilder({ page }).analyze()` returns zero violations of impact `serious` or `critical`, and a failing page names the axe rule id and the selector (AC 3, AC 4; door 18) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "no serious or critical axe issue on"`
 
-**C8** - `apps/web/package.json` lists `@axe-core/playwright` under `devDependencies` and not under `dependencies` (door 18)
+**C8** - `apps/web/package.json` lists `@axe-core/playwright` under `devDependencies` and not under `dependencies` (door 18) · done
 Proof: `web unit src/__tests__/ci-workflow.spec.ts -t "axe is a dev dependency of the web app"`
 
-**C9** - `.github/workflows/ci.yml` has a job `web-e2e` whose block contains a service with `image: postgres:16`, a step running `playwright install --with-deps chromium`, a step running `playwright test --project=e2e-chromium`, the API e2e job's `APP_BASE_URL: http://localhost:5173`, and no `continue-on-error: true` (AC 3; door 19)
+**C9** - `.github/workflows/ci.yml` has a job `web-e2e` whose block contains a service with `image: postgres:16`, a step running `playwright install --with-deps chromium`, a step running `playwright test --project=e2e-chromium`, the API e2e job's `APP_BASE_URL: http://localhost:5173`, and no `continue-on-error: true` (AC 3; door 19) · done
 Proof: `web unit src/__tests__/ci-workflow.spec.ts -t "the web-e2e job runs Playwright against Postgres 16"`
 
 ### S2 - Every card is told apart by name · 30 files · 184 KB · ~60k

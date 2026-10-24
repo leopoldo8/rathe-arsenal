@@ -28,6 +28,7 @@ export function DeckboxFrontDeck({
       className={`${styles.face} ${styles.front}`}
       data-status={status}
       data-testid="deckbox-front-deck"
+      aria-hidden="true"
     >
       {art.src ? (
         <img

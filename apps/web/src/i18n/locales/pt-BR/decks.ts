@@ -134,7 +134,7 @@ export const decks = {
   deckTagsAria: 'Tags do deck',
   heroYoungTag: 'jovem',
   removeTagAria: 'Remover tag {{name}}',
-  addTagAria: 'Adicionar uma tag a este deck',
+  addTagAria: 'Adicionar tag a este deck',
   addTagLabel: 'adicionar tag',
   // DeckCardSearchAutocomplete
   searchCardsLabel: 'Buscar cartas',
@@ -253,7 +253,7 @@ export const decks = {
   getExactPrices: 'Obter preços exatos',
   failedToStart: 'Não foi possível começar. Tente de novo.',
   checkingCard: 'Verificando carta {{current}} de {{total}}…',
-  partialUpdateMsg: '{{updated}} de {{total}} atualizadas — {{failed}} falharam.',
+  partialUpdateMsg: '{{updated}} de {{total}} atualizadas, {{failed}} falharam.',
   retryingBtn: 'Tentando de novo…',
   retryFailedBtn: 'Tentar de novo as que falharam',
   // ShoppingLineVariantBreakdown.tsx

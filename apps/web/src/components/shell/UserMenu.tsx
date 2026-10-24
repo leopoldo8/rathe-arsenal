@@ -58,10 +58,11 @@ export function UserMenu(): React.ReactElement {
 
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className={styles.trigger} aria-label={t('shell.userMenuAriaLabel')} type="button">
+      <DropdownMenu.Trigger className={styles.trigger} type="button">
         <span className={styles.avatar} aria-hidden="true">
           {user?.email?.charAt(0).toUpperCase() ?? 'U'}
         </span>
+        <span className="sr-only">{t('shell.userMenuAriaLabel')}</span>
         <span className={styles.email}>{user?.email}</span>
         <svg
           width="12"

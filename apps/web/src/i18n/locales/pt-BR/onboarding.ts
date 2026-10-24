@@ -30,8 +30,8 @@ export const onboarding = {
   // Step 2 — Confirm Library
   step2Eyebrow: 'Passo 2 de 3',
   step2Heading: 'Confira o deck',
-  step2BodySingle: 'Encontramos seu deck. Confira se está certo antes de calcularmos as trocas.',
-  step2BodyMultiple: 'Encontramos {{count}} decks. Confira se estão certos antes de calcularmos as trocas.',
+  step2BodySingle: 'Encontramos seu deck. Confira se está certo antes de calcularmos as substituições.',
+  step2BodyMultiple: 'Encontramos {{count}} decks. Confira se estão certos antes de calcularmos as substituições.',
   importedDecksLabel: 'Decks importados',
   backButton: 'Voltar',
   readinessPercent: '{{percent}}% pronto',
@@ -58,6 +58,6 @@ export const onboarding = {
   // CongratsAllPlayable
   congratsEyebrow: 'Passo 3 de 3',
   congratsHeading: 'Seu deck está completo!',
-  congratsBody: 'Sua coleção já cobre todas as cartas do deck, sem nenhuma troca. Veja o resumo no seu arsenal.',
+  congratsBody: 'Sua coleção já cobre todas as cartas do deck, sem nenhuma substituição. Veja o resumo no seu arsenal.',
   goToMyDecks: 'Ir para meus decks',
 } as const;

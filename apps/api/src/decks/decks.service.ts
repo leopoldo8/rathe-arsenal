@@ -647,7 +647,7 @@ export class DecksService {
    * Creates an empty scratch deck for the user.
    *
    * The deck starts with `status='idea'` and `fabraryUlid=NULL`.
-   * The name is composed as `'{heroDisplayName} — {format}'`.
+   * The name is composed as `'{heroDisplayName} - {format}'`.
    * No deck_card rows are inserted — the deck has 0 cards.
    *
    * Returns the standard detail payload shape including `legality`, which will
@@ -661,7 +661,7 @@ export class DecksService {
     // Look up the hero display name from the catalog.
     const heroCard = this.catalogService.getCard(dto.heroIdentifier);
     const heroDisplayName = heroCard.name;
-    const name = `${heroDisplayName} — ${dto.format}`;
+    const name = `${heroDisplayName} - ${dto.format}`;
 
     // Persist the deck row inside a transaction (no deck_card rows on creation).
     const saved = await this.dataSource.transaction(async (manager) => {

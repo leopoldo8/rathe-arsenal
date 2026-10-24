@@ -134,7 +134,7 @@ export const decks = {
   deckTagsAria: 'Deck tags',
   heroYoungTag: 'young',
   removeTagAria: 'Remove tag {{name}}',
-  addTagAria: 'Add a tag to this deck',
+  addTagAria: 'Add tag to this deck',
   addTagLabel: 'add tag',
   // DeckCardSearchAutocomplete
   searchCardsLabel: 'Search cards',

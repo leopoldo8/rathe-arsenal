@@ -52,7 +52,7 @@ export const deckDetail = {
   decklistTitle: 'Decklist',
   viewToggleAria: 'View mode',
   editCards: 'Edit cards',
-  editCardsAria: 'Edit the deck cards',
+  editCardsAria: 'Edit cards of the deck',
   viewByType: 'By type',
   viewByCost: 'By cost',
   viewList: 'List',

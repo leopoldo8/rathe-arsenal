@@ -1,7 +1,7 @@
 export const auth = {
   // --- AuthLayout decoration panel (default copy) ---
   decorationDefaultTagline: 'Seus decks, sua coleção.',
-  decorationCopy: 'Importe seus decks de Flesh and Blood e veja quais cartas você já tem, quais trocas resolvem o que falta e quanto custa completar.',
+  decorationCopy: 'Importe seus decks de Flesh and Blood e veja quais cartas você já tem, quais cartas podem substituir as que faltam e quanto custa completar.',
 
   // --- Shared ---
   emailLabel: 'E-mail',

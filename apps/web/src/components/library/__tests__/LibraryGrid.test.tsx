@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { LibraryGrid } from '../LibraryGrid';
 import type { ILibraryCard } from '../../../api/library';
@@ -16,9 +17,20 @@ vi.mock('../../card-art/CardArt', () => ({
 }));
 
 // LibraryCardStepper depends on the auth-aware api client. Stub it to a
-// noop so LibraryGrid's grouping/cell tests stay focused on layout.
-vi.mock('../LibraryCardStepper', () => ({
-  LibraryCardStepper: () => null,
+// noop so LibraryGrid's grouping/cell tests stay focused on layout; a test
+// that needs the real stepper flips `stepper.real` (its mutations are mocked below).
+const stepper = vi.hoisted(() => ({ real: false }));
+vi.mock('../LibraryCardStepper', async () => {
+  const react = await import('react');
+  const actual = await vi.importActual<typeof import('../LibraryCardStepper')>('../LibraryCardStepper');
+  return {
+    LibraryCardStepper: (props: React.ComponentProps<typeof actual.LibraryCardStepper>) =>
+      stepper.real ? react.createElement(actual.LibraryCardStepper, props) : null,
+  };
+});
+vi.mock('../../../api/collection', () => ({
+  useAddCardMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useDecrementCardMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -289,5 +301,30 @@ describe('LibraryGrid — stable in-group sort', () => {
     items = screen.getAllByRole('listitem');
     expect(items[0]?.getAttribute('aria-label')).toBe('Alpha, na coleção: 1');
     expect(items[1]?.getAttribute('aria-label')).toBe('Bravo, na coleção: 2');
+  });
+});
+
+describe('LibraryGrid: the manual source label', () => {
+  it('the manual source reads in Portuguese', async () => {
+    stepper.real = true;
+    try {
+      const card = makeCard({
+        name: 'Hammer of Sol',
+        ownedQuantity: 3,
+        contributions: [
+          { sourceId: 's-manual', sourceLabel: 'Manual entries', kind: 'manual', quantity: 1 },
+          { sourceId: 's-csv', sourceLabel: 'Meu deck', kind: 'csv', quantity: 2 },
+        ],
+      });
+      const { container } = render(<LibraryGrid cards={[card]} group="flat" />);
+
+      await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
+
+      expect(screen.getByRole('menuitem', { name: /Entradas manuais/ })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /Meu deck/ })).toBeInTheDocument();
+      expect(container.textContent).not.toContain('Manual entries');
+    } finally {
+      stepper.real = false;
+    }
   });
 });

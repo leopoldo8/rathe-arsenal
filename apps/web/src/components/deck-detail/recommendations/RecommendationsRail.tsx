@@ -177,7 +177,6 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
           type="button"
           className={styles.generate}
           disabled={isGenerating || generate.isPending}
-          aria-label={t('recommendations.generateAria')}
           onClick={handleGenerate}
           data-testid="recommendations-generate"
         >

@@ -1,7 +1,7 @@
 export const home = {
   // EducationalEmptyState
   welcomeHeading: 'Comece por um deck',
-  emptyLead: 'Importe um deck e veja quanto dele a sua coleção já cobre, quais trocas resolvem o resto e o que falta comprar.',
+  emptyLead: 'Importe um deck e veja quanto dele a sua coleção já cobre, quais cartas podem substituir as que faltam e o que falta comprar.',
   collectionHintPrefix: 'Você já tem',
   collectionHintCard: 'carta',
   collectionHintCards: 'cartas',
@@ -10,7 +10,7 @@ export const home = {
   step1Title: 'Importe um deck',
   step1Body: 'Cole o link de um deck do Fabrary.',
   step2Title: 'Veja o que falta',
-  step2Body: 'Cruzamos o deck com a sua coleção: o que você tem, o que dá para trocar e o que falta.',
+  step2Body: 'Cruzamos o deck com a sua coleção: o que você tem, o que dá para substituir e o que falta.',
   step3Title: 'Use a sua coleção',
   step3Body: 'Use a carta da sua coleção sugerida para cada uma que falta e veja onde comprar o resto.',
   trackFirstDeckCta: 'Importar meu primeiro deck',

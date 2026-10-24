@@ -122,7 +122,7 @@ describe('LibraryCardStepper — multi-source picker', () => {
     expect(decrementMutate).not.toHaveBeenCalled();
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(
-      screen.getByRole('menuitem', { name: /Manual entries/i }),
+      screen.getByRole('menuitem', { name: /Entradas manuais/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('menuitem', { name: /Fabrary: Kayo Brute Bash/i }),

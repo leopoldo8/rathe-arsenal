@@ -45,7 +45,8 @@ export function TopBar(): React.ReactElement {
   return (
     <header className={styles.header}>
       {/* Brand */}
-      <Link to="/home" search={DEFAULT_HOME_SEARCH} className={styles.brand} aria-label={t('shell.brandAriaLabel')}>
+      <Link to="/home" search={DEFAULT_HOME_SEARCH} className={styles.brand}>
+        <span className="sr-only">{t('shell.brandAriaLabel')}</span>
         <LogoMark className={styles.logoMark} aria-hidden="true" />
         <span className={styles.wordmark} aria-hidden="true">
           <span className={styles.brandRathe}>Rathe</span>

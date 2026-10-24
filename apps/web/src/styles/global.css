@@ -147,3 +147,17 @@ code,
   font-feature-settings: "tnum" 1;
   letter-spacing: 0;
 }
+
+/* Text for assistive technology only. Used where an aria-label would not
+   contain the visible text (WCAG 2.5.3, axe label-content-name-mismatch). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -88,7 +88,7 @@
 
 .footerLink {
   color: var(--ra-accent-body);
-  text-decoration: none;
+  text-decoration: underline;
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
 }
