@@ -65,6 +65,6 @@ describe('deck facts', () => {
     });
 
     expect((facts['totals'] as { bySlot: unknown }).bySlot).toEqual({ weapon: 1, mainboard: 2 });
-    expect(facts['formatRules']).toEqual(expect.objectContaining({ exactMainboard: 40, maxCopies: 2 }));
+    expect(facts['formatRules']).toEqual(expect.objectContaining({ exactMainboard: 40, maxCopies: 1 }));
   });
 });

@@ -7,9 +7,9 @@ const t = i18n.t.bind(i18n);
 
 describe('formatLegalityReason', () => {
   it('phrases a short mainboard in pt-BR from the params', () => {
-    const detail = { code: 'mainboard_too_small', params: { total: 42, required: 60, format: 'Classic Constructed' } };
+    const detail = { code: 'mainboard_too_small', params: { card: null, count: 42, limit: 60, format: 'Classic Constructed' } };
     expect(formatLegalityReason(detail, 'fallback', t)).toBe(
-      'O mainboard tem 42 cartas, e Classic Constructed exige pelo menos 60.',
+      'O deck tem 42 cartas, e Classic Constructed exige pelo menos 60.',
     );
   });
 
@@ -17,9 +17,18 @@ describe('formatLegalityReason', () => {
     await setTestLocale('en-US');
     const detail = {
       code: 'too_many_copies',
-      params: { card: 'Amethyst Amulet', count: 2, max: 1, format: 'Classic Constructed', legendary: true },
+      params: { card: 'Amethyst Amulet', count: 2, limit: 1, format: 'Classic Constructed', legendary: true, restricted: false },
     };
     expect(formatLegalityReason(detail, 'fallback', t)).toBe('Amethyst Amulet is Legendary: only 1 copy is allowed.');
+  });
+
+  it('uses the restricted wording when the copy limit is the Living Legend restricted one', async () => {
+    await setTestLocale('en-US');
+    const detail = {
+      code: 'too_many_copies',
+      params: { card: 'Awakening', count: 2, limit: 1, format: 'Living Legend', legendary: false, restricted: true },
+    };
+    expect(formatLegalityReason(detail, 'fallback', t)).toBe('Awakening is restricted in Living Legend: only 1 copy is allowed.');
   });
 
   it('falls back to the server sentence for a code the client does not know', () => {

@@ -159,6 +159,27 @@
   A related surprise for the owner: a password created in Settings on an account whose address is still unconfirmed is dropped by the next sign-in by code (`dropPasswordSetBeforeAddressWasProven`, items (a) and (h)), because the account cannot tell that password from one an attacker chose at sign-up.
 - New copy: "Nova senha", "Salvar senha", "Cancelar", and the panel's heading "Conta" (the other strings are quoted by C408).
 
+### S3 (batch 5)
+
+- Detail params were renamed to the vocabulary of C19, C23 and C27: size and pool problems carry `{ card: null, count, limit, format }` (they carried `total` and `required` or `max`), copy problems carry `{ card, cardIdentifier, pitch, count, limit, format, legendary, restricted }`, the hero problem carries `allowedFormats` (the hero's `legalFormats` within the four, in the engine's format order), and every card problem carries `cardIdentifier` so the editor can focus the row.
+  The web's `reasons` catalog (pt-BR and en-US), `format-reasons.ts` and `LegalityBadge` were changed with them; the pt-BR size lines now say "O deck tem N cartas" instead of "O mainboard tem", and the pool line says "Você leva N cartas".
+  `too_many_copies_restricted` is a new line for the Living Legend restricted list; `rarity_not_allowed` is gone with the rarity check.
+- The engine's order of problems is hero, pool, copies, per card, and the deck size last, so the first reason (the badge subtitle) is never the size when a rule is broken.
+  A hero outside the format returns that one hero problem (the young or adult check runs only when the hero is legal in the format), and every other check still runs: a deck of another hero's cards also lists the cards that hero cannot use.
+- `findCardScopeViolation` and `findCardRarityViolation` left the engine's exports; `findCardLegalityViolation` now holds ban, format and hero scope, and `getCopyLimit` takes any format string and returns no limit for a format with no rules (replacements, alternatives and the Tutor reach it with the stored format of an unchecked deck).
+- `computeDeckLegality` reads cards through `ILegalityCatalog` (only `indices.byIdentifier`) and `ILegalityCard`, the twelve card fields the rules read, so the browser can run it with the fields a deck page already holds (S4).
+  `ILegalityDeckCard.inventoryQuantity` is optional and engine-only until S5 stores it.
+- Existing tests converted to the new rules, none deleted for being inconvenient:
+  `rules.spec.ts` (Blitz 1, Silver Age 55, no `allowedRarities` tests);
+  `card-legality.spec.ts` (the two Silver Age rarity rows and the rarity-whitelist test became "not legal in Silver Age"; Blitz limit 1);
+  `compute.spec.ts` (size and copy params, and the two copy tests whose fixture repeated Adrenaline Rush in two rows, which per-row counting hid and per-card counting reports as 7 copies);
+  `alternatives.spec.ts` (the Silver Age rarity row, and Blitz "0 held + 2 needed" is no longer listable under the limit of 1);
+  `adoption-rules.spec.ts` (Blitz held 0 moves 1, held 1 refuses);
+  `deck-facts.spec.ts` (Blitz `maxCopies` 1);
+  `decks.service.spec.ts` (a deck list row with no hero now also lists the size problem);
+  `LegalityBadge.spec.tsx` and `format-reasons.spec.ts` (new params).
+- C29's proof also reads `GET /api/decks` (the home list) for the `Draft` deck, since the list path computes the same verdict.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

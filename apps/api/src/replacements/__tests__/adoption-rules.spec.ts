@@ -32,8 +32,8 @@ describe('decideAdoption', () => {
       decideAdoption(input({ deckCards: [...DECK, { cardIdentifier: 'adrenaline-rush-red', slot: 'equipment', quantity: 2 }] })),
     ).toEqual({ kind: 'move', quantity: 1 });
     const blitzHeld = (quantity: number) => [...DECK, { cardIdentifier: 'adrenaline-rush-red', slot: 'mainboard', quantity }];
-    expect(decideAdoption(input({ format: 'Blitz', deckCards: blitzHeld(1) }))).toEqual({ kind: 'move', quantity: 1 });
-    expect(decideAdoption(input({ format: 'Blitz', deckCards: blitzHeld(2) }))).toEqual({ kind: 'refuse', code: 'REPLACEMENT_ILLEGAL' });
+    expect(decideAdoption(input({ format: 'Blitz', deckCards: blitzHeld(0) }))).toEqual({ kind: 'move', quantity: 1 });
+    expect(decideAdoption(input({ format: 'Blitz', deckCards: blitzHeld(1) }))).toEqual({ kind: 'refuse', code: 'REPLACEMENT_ILLEGAL' });
   });
 
   it('refuses each illegal adoption and an empty cut', () => {

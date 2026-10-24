@@ -83,6 +83,8 @@ export type {
   TLegalityCategory,
   IFormatRules,
   IDeckLegalityResult,
+  ILegalityCard,
+  ILegalityCatalog,
   ILegalityDeck,
   ILegalityDeckCard,
   TLegalityReasonDetail,
@@ -91,8 +93,7 @@ export type { ICardLegalityViolation } from './legality';
 export {
   FORMAT_RULES,
   computeDeckLegality,
-  findCardScopeViolation,
-  findCardRarityViolation,
+  isSizeProblem,
   findCardLegalityViolation,
   getCopyLimit,
 } from './legality';

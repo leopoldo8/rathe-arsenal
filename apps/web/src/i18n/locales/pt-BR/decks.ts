@@ -85,6 +85,7 @@ export const decks = {
   incomplete: 'Incompleto',
   incompleteWithCount: 'Incompleto · {{count}}/{{total}} cartas',
   illegal: 'Ilegal',
+  formatUnchecked: 'Formato não conferido',
   // LegalityReasonsPopover / CardRowLegalityWarning
   deckIncompleteHeading: 'Deck incompleto',
   deckIllegalHeading: 'Deck fora do formato',

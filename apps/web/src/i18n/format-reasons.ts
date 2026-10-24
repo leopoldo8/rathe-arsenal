@@ -8,14 +8,18 @@ const PITCH_KEYS: Readonly<Record<string, string>> = {
   blue: 'reasons.rationale.pitchBlue',
 };
 
+function copiesCode(detail: ILegalityReasonDetail): string {
+  if (detail.params.legendary === true) return 'too_many_copies_legendary';
+  return detail.params.restricted === true ? 'too_many_copies_restricted' : 'too_many_copies';
+}
+
 export function formatLegalityReason(
   detail: ILegalityReasonDetail | undefined,
   fallback: string,
   t: TFunction,
 ): string {
   if (!detail) return fallback;
-  const code =
-    detail.code === 'too_many_copies' && detail.params.legendary === true ? 'too_many_copies_legendary' : detail.code;
+  const code = detail.code === 'too_many_copies' ? copiesCode(detail) : detail.code;
   const key = `reasons.legality.${code}`;
   if (!t(key, { defaultValue: '' })) return fallback;
   return t(key, { ...detail.params });

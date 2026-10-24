@@ -20,11 +20,12 @@ export type TDeckStatus = 'idea' | 'building' | 'ready' | 'active' | 'retired';
  * - `incomplete`: deck passes structural rules but is missing cards the engine
  *   cannot yet fully evaluate (e.g. hero not set).
  * - `illegal`: one or more format violations detected.
+ * - `unchecked`: the deck's format is outside the four the engine has rules for.
  *
  * `reasons` is non-empty when `category` is `illegal` or `incomplete`.
  */
 export interface IDeckLegality {
-  readonly category: 'legal' | 'incomplete' | 'illegal';
+  readonly category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
   readonly reasons: readonly string[];
   /** One code plus params per `reasons` entry, for localized display. */
   readonly details?: readonly ILegalityReasonDetail[];
@@ -32,7 +33,7 @@ export interface IDeckLegality {
 
 export interface ILegalityReasonDetail {
   readonly code: string;
-  readonly params: Readonly<Record<string, string | number | boolean>>;
+  readonly params: Readonly<Record<string, string | number | boolean | null | readonly string[]>>;
 }
 
 // ---------------------------------------------------------------------------

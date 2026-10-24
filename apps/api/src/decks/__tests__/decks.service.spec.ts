@@ -218,8 +218,14 @@ describe('DecksService', () => {
         updatedAt: deck.updatedAt.toISOString(),
         legality: {
           category: 'illegal',
-          reasons: ['Hero not recognized — please re-select in Edit mode'],
-          details: [{ code: 'hero_unrecognized', params: {} }],
+          reasons: [
+            'Hero not recognized — please re-select in Edit mode',
+            'Deck has 0 mainboard cards but Classic Constructed requires at least 60.',
+          ],
+          details: [
+            { code: 'hero_unrecognized', params: {} },
+            { code: 'mainboard_too_small', params: { card: null, count: 0, limit: 60, format: 'Classic Constructed' } },
+          ],
         },
         trackedAt: deck.trackedAt.toISOString(),
         latestSnapshot: {

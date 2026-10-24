@@ -108,46 +108,46 @@ Proof: `web unit src/lib/__tests__/card-name.spec.ts -t "the pitch words live in
 
 ### S3 - The rules engine knows the current rules and returns every problem · 14 files · 122 KB · ~33k
 
-**C18** - `FORMAT_RULES` holds `maxCopies` 3, 3, 1, 2 and `maxCardPool` 80, 80, 52, 55 for Classic Constructed, Living Legend, Blitz and Silver Age, and no `allowedRarities` field remains (AC 10, AC 12, AC 14)
+**C18** - `FORMAT_RULES` holds `maxCopies` 3, 3, 1, 2 and `maxCardPool` 80, 80, 52, 55 for Classic Constructed, Living Legend, Blitz and Silver Age, and no `allowedRarities` field remains (AC 10, AC 12, AC 14) · done
 Proof: `engine unit __tests__/legality/rules.spec.ts -t "copy and pool limits per format"`
 
-**C19** - For each of the four formats, a card at the limit gives no copy problem and one copy over gives one problem with `count` and `limit`, where the copies are split across `mainboard`, inventory, `weapon` and `equipment` (3 deck + 1 inventory in Classic Constructed and Living Legend gives count 4, limit 3; Silver Age limit 2; Blitz limit 1); table-driven over 4 formats x 2 rows (AC 10)
+**C19** - For each of the four formats, a card at the limit gives no copy problem and one copy over gives one problem with `count` and `limit`, where the copies are split across `mainboard`, inventory, `weapon` and `equipment` (3 deck + 1 inventory in Classic Constructed and Living Legend gives count 4, limit 3; Silver Age limit 2; Blitz limit 1); table-driven over 4 formats x 2 rows (AC 10) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "copy limit counts deck, inventory, weapons and equipment in every format"`
 
-**C20** - Copies are keyed by name and pitch: in Blitz, Pack Hunt (Red) x1 plus Pack Hunt (Yellow) x1 gives no copy problem; Pack Hunt (Red) x2 gives one problem for that card only (AC 10)
+**C20** - Copies are keyed by name and pitch: in Blitz, Pack Hunt (Red) x1 plus Pack Hunt (Yellow) x1 gives no copy problem; Pack Hunt (Red) x2 gives one problem for that card only (AC 10) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "copies are counted per name and pitch"`
 
-**C21** - A Legendary card at 2 gives a copy problem with limit 1 in each of the four formats; a card restricted in Living Legend at 2 gives limit 1 in Living Legend and no problem in Classic Constructed (AC 11)
+**C21** - A Legendary card at 2 gives a copy problem with limit 1 in each of the four formats; a card restricted in Living Legend at 2 gives limit 1 in Living Legend and no problem in Classic Constructed (AC 11) · done
 Proof: `engine unit __tests__/legality/card-legality.spec.ts -t "legendary and living legend restricted copy limits"`
 
-**C22** - The pool counts deck + inventory + weapons + equipment and never the hero: 80 passes and 81 fails in Classic Constructed and Living Legend, 52 passes and 53 fails in Blitz, 55 passes and 56 fails in Silver Age; table-driven over 8 rows (AC 12)
+**C22** - The pool counts deck + inventory + weapons + equipment and never the hero: 80 passes and 81 fails in Classic Constructed and Living Legend, 52 passes and 53 fails in Blitz, 55 passes and 56 fails in Silver Age; table-driven over 8 rows (AC 12) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "card pool limit per format without the hero"`
 
-**C23** - A Blitz deck at 31 of 40 with Pack Hunt (Red) x2 returns both problems in one call, the size problem and the copy problem, each detail carrying its card (null for size), count and limit, with `category` `illegal` (AC 13)
+**C23** - A Blitz deck at 31 of 40 with Pack Hunt (Red) x2 returns both problems in one call, the size problem and the copy problem, each detail carrying its card (null for size), count and limit, with `category` `illegal` (AC 13) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "every check runs and every problem is returned"`
 
-**C24** - `category` follows the table: no problem gives `legal`; only the size problem gives `incomplete`; any rule problem gives `illegal`, both with the size full and with the size short; table-driven over 4 rows (AC 13)
+**C24** - `category` follows the table: no problem gives `legal`; only the size problem gives `incomplete`; any rule problem gives `illegal`, both with the size full and with the size short; table-driven over 4 rows (AC 13) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "category from the set of problems"`
 
-**C25** - Ban, format and hero-scope checks run on every slot: a banned card in `equipment`, a format-illegal card in `weapon` and another hero's specialization in the inventory each give their own problem (AC 14)
+**C25** - Ban, format and hero-scope checks run on every slot: a banned card in `equipment`, a format-illegal card in `weapon` and another hero's specialization in the inventory each give their own problem (AC 14) · done
 Proof: `engine unit __tests__/legality/card-legality.spec.ts -t "per-card checks run on every slot"`
 
-**C26** - Silver Age legality comes from the catalog's `legalFormats`: Blade Dance gives no problem in Silver Age, and a card whose `legalFormats` lacks Silver Age gives a format problem (AC 14)
+**C26** - Silver Age legality comes from the catalog's `legalFormats`: Blade Dance gives no problem in Silver Age, and a card whose `legalFormats` lacks Silver Age gives a format problem (AC 14) · done
 Proof: `engine unit __tests__/legality/card-legality.spec.ts -t "silver age legality comes from legalFormats"`
 
-**C27** - A hero outside the deck's format gives one hero problem whose params carry `allowedFormats` equal to that hero's `legalFormats` within the four, and the detail has no date and no history field (AC 15)
+**C27** - A hero outside the deck's format gives one hero problem whose params carry `allowedFormats` equal to that hero's `legalFormats` within the four, and the detail has no date and no history field (AC 15) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "a hero outside the format names where it is allowed"`
 
-**C28** - A deck whose format is outside the four returns `category` `unchecked` with an empty problem list and does not throw (AC 16)
+**C28** - A deck whose format is outside the four returns `category` `unchecked` with an empty problem list and does not throw (AC 16) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "an unknown format is unchecked"`
 
-**C29** - A deck stored with format `Draft` keeps that format, and `GET /api/decks/:deckId` answers `200` with `legality.category` `unchecked` (AC 16)
+**C29** - A deck stored with format `Draft` keeps that format, and `GET /api/decks/:deckId` answers `200` with `legality.category` `unchecked` (AC 16) · done
 Proof: `api e2e src/decks/__tests__/deck-legality-read.e2e-spec.ts -t "a format outside the four is stored and read as unchecked"`
 
-**C30** - `LegalityBadge` with `category` `unchecked` renders the grey chip "Formato não conferido" (AC 16)
+**C30** - `LegalityBadge` with `category` `unchecked` renders the grey chip "Formato não conferido" (AC 16) · done
 Proof: `web unit src/components/deck-detail/__tests__/LegalityBadge.spec.tsx -t "an unchecked deck reads Formato não conferido"`
 
-**C31** - A Blitz deck saved with Pack Hunt (Red) x2 before the rule change (inserted straight into `deck_card`) reads back from `GET /api/decks/:deckId` with `legality.category` `illegal` and a copy detail for that card with count 2 and limit 1 (AC 17)
+**C31** - A Blitz deck saved with Pack Hunt (Red) x2 before the rule change (inserted straight into `deck_card`) reads back from `GET /api/decks/:deckId` with `legality.category` `illegal` and a copy detail for that card with count 2 and limit 1 (AC 17) · done
 Proof: `api e2e src/decks/__tests__/deck-legality-read.e2e-spec.ts -t "a saved blitz 2-of is illegal on the next read"`
 
 ### S4 - The editor shows the draft's verdict and the whole checklist · 17 files · 149 KB · ~43k

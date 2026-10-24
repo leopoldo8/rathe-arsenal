@@ -10,7 +10,6 @@
  * runtime — not hardcoded here.
  */
 
-import { Rarity } from '../catalog/types';
 import type { IFormatRules, TSupportedFormat } from './types';
 
 /**
@@ -26,16 +25,14 @@ export const FORMAT_RULES: Readonly<Record<TSupportedFormat, IFormatRules>> = Ob
     maxCardPool: 80,
     maxCopies: 3,
     requiresYoungHero: false,
-    allowedRarities: null,
     source: 'https://fabtcg.com/gameplay-formats/classic-constructed/',
   }),
   Blitz: Object.freeze<IFormatRules>({
     minMainboard: 40,
     exactMainboard: 40,
     maxCardPool: 52,
-    maxCopies: 2,
+    maxCopies: 1,
     requiresYoungHero: true,
-    allowedRarities: null,
     source: 'https://fabtcg.com/articles/official-blitz-update/',
   }),
   'Living Legend': Object.freeze<IFormatRules>({
@@ -44,18 +41,14 @@ export const FORMAT_RULES: Readonly<Record<TSupportedFormat, IFormatRules>> = Ob
     maxCardPool: 80,
     maxCopies: 3,
     requiresYoungHero: false,
-    allowedRarities: null,
     source: 'https://fabtcg.com/living-legend/',
   }),
   'Silver Age': Object.freeze<IFormatRules>({
     minMainboard: 40,
     exactMainboard: 40,
-    maxCardPool: 52,
+    maxCardPool: 55,
     maxCopies: 2,
     requiresYoungHero: true,
-    allowedRarities: Object.freeze(
-      new Set<string>([Rarity.Common, Rarity.Rare, Rarity.Basic, Rarity.Token]),
-    ),
     source: 'https://fabtcg.com/gameplay-formats/silver-age/',
   }),
 } satisfies Record<TSupportedFormat, IFormatRules>);
