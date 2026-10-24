@@ -16,6 +16,8 @@ import { ANON_STORAGE_STATE, BASE_URL, loadFixture, resetFixture } from '../supp
 
 const SETTLE_MS = 1000;
 const MIN_TAP_TARGET_PX = 44;
+// Home, library and lists; the tutor tab only shows for users with chat access.
+const EXPECTED_TAB_COUNT = 3;
 const SUBPIXEL_PX = 1;
 
 interface IRoute {
@@ -163,7 +165,7 @@ test.describe('mobile layout', () => {
           expect(report.tabBar!.top).toBeGreaterThanOrEqual(0);
           expect(report.tabBar!.bottom).toBeLessThanOrEqual(report.viewportHeight + SUBPIXEL_PX);
           expect(report.tabBar!.right).toBeLessThanOrEqual(report.innerWidth + SUBPIXEL_PX);
-          expect(report.tabHeights.length).toBe(2);
+          expect(report.tabHeights.length).toBe(EXPECTED_TAB_COUNT);
           for (const height of report.tabHeights) {
             expect(height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
           }
