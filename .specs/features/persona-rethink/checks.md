@@ -1303,91 +1303,91 @@ Proof: `api unit src/config/__tests__/env.dto.spec.ts -t "GEMINI_CHAT_THINKING_L
 
 ### S30 - One field to start · 26 files · 96 KB · ~44k
 
-**C345** - Signed out, `/` and `/entrar` render, top to bottom: the logo "Rathe Arsenal"; the headline "Monte seus decks de Flesh and Blood, veja quais cartas você já tem e quanto custa o que falta."; the three lines "Confere se o deck pode jogar no torneio", "Lista o que falta, com o preço na loja", "Manda a lista pronta no WhatsApp"; the field labelled "Seu e-mail", empty unless this device remembers an address; the button "Continuar"; the line "Se for sua primeira vez, a conta é criada na hora. Se você já tem conta, pedimos a senha ou mandamos um código."; then the LSS notice verbatim from `pt-BR/about.ts` with the link "Sobre" (screen `r3-arrive-phone`; copy rules 6 and 7) (AC 219, AC 227)
+**C345** - Signed out, `/` and `/entrar` render, top to bottom: the logo "Rathe Arsenal"; the headline "Monte seus decks de Flesh and Blood, veja quais cartas você já tem e quanto custa o que falta."; the three lines "Confere se o deck pode jogar no torneio", "Lista o que falta, com o preço na loja", "Manda a lista pronta no WhatsApp"; the field labelled "Seu e-mail", empty unless this device remembers an address; the button "Continuar"; the line "Se for sua primeira vez, a conta é criada na hora. Se você já tem conta, pedimos a senha ou mandamos um código."; then the LSS notice verbatim from `pt-BR/about.ts` with the link "Sobre" (screen `r3-arrive-phone`; copy rules 6 and 7) (AC 219, AC 227) · done
 Proof: `web unit src/routes/__tests__/Entrar.spec.tsx -t "the start page shows the pitch, one field and what comes next"`
 
-**C346** - At 390 x 844 and at 1440 x 900 the headline, the three pitch lines and "Seu e-mail" are all visible on the start page; today's side panel hidden below 720 px no longer hides the pitch (AC 219)
+**C346** - At 390 x 844 and at 1440 x 900 the headline, the three pitch lines and "Seu e-mail" are all visible on the start page; today's side panel hidden below 720 px no longer hides the pitch (AC 219) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/account-start.spec.ts -g "the pitch is visible on a phone"`
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the pitch is visible on a computer"`
 
-**C347** - Submitting "bia@gmail" shows "Falta o final do e-mail, por exemplo bia@gmail.com" under the field, moves focus to the field, shows "Nada foi enviado ainda." under the button, and `fetch` is called 0 times (screen `r2-typo-phone`) (AC 220, AC 227, AC 253)
+**C347** - Submitting "bia@gmail" shows "Falta o final do e-mail, por exemplo bia@gmail.com" under the field, moves focus to the field, shows "Nada foi enviado ainda." under the button, and `fetch` is called 0 times (screen `r2-typo-phone`) (AC 220, AC 227, AC 253) · done
 Proof: `web unit src/routes/__tests__/Entrar.spec.tsx -t "a malformed address is caught on the page and nothing is sent"`
 Proof: `web e2e --project=mobile-390 tests/mobile/account-start.spec.ts -g "a typo sends no request"` (asserts no request to `/api/auth/*` with `page.on('request')`)
 
-**C348** - Arriving from a shared deck link of "Rhinar - Blitz" by Bia, the start page shows no pitch, the card "Rhinar - Blitz · por Bia", the reason "Crie a conta para comparar o deck da Bia com as suas cartas.", "Seu e-mail", "Continuar" and "Depois, você volta para o deck da Bia."; from a missing-cards link the reason is "Crie a conta para ver quais destas cartas você já tem." (screen `r2-share-renata-phone`) (AC 221)
+**C348** - Arriving from a shared deck link of "Rhinar - Blitz" by Bia, the start page shows no pitch, the card "Rhinar - Blitz · por Bia", the reason "Crie a conta para comparar o deck da Bia com as suas cartas.", "Seu e-mail", "Continuar" and "Depois, você volta para o deck da Bia."; from a missing-cards link the reason is "Crie a conta para ver quais destas cartas você já tem." (screen `r2-share-renata-phone`) (AC 221) · done
 Proof: `web unit src/routes/__tests__/Entrar.spec.tsx -t "from a shared page the card and the reason replace the pitch"`
 
-**C349** - `POST /api/auth/start` answers `200` with `next: "new"` for an address with no account, `next: "password"` for an account with a `passwordHash`, and `next: "code"` for an account without one; "BIA@Gmail.com " finds the account stored as "bia@gmail.com"; a body with `email: "bia@gmail"` answers `400` with a `code`; no response body carries a session token (AC 222, AC 226, AC 228)
+**C349** - `POST /api/auth/start` answers `200` with `next: "new"` for an address with no account, `next: "password"` for an account with a `passwordHash`, and `next: "code"` for an account without one; "BIA@Gmail.com " finds the account stored as "bia@gmail.com"; a body with `email: "bia@gmail"` answers `400` with a `code`; no response body carries a session token (AC 222, AC 226, AC 228) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "start says what comes next for each kind of address"`
 
-**C350** - `POST /api/auth/start` answers `429` with a `Retry-After` header once one IP passes the route's per-IP limit, and the limit is the constant the controller declares for the route (AC 257)
+**C350** - `POST /api/auth/start` answers `429` with a `Retry-After` header once one IP passes the route's per-IP limit, and the limit is the constant the controller declares for the route (AC 257) · done
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "start is throttled per IP"`
 
-**C351** - With `next: "new"` for "bia.souza@gmail.com" the page shows, in this order: the heading "Criar sua conta"; "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; the one button "Criar conta e entrar"; the link "Prefiro criar uma senha"; and the staying-in line of C384; "Errei o e-mail" returns to the field with the address in it (screen `r3-new-account-phone`) (AC 222, AC 227)
+**C351** - With `next: "new"` for "bia.souza@gmail.com" the page shows, in this order: the heading "Criar sua conta"; "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; the one button "Criar conta e entrar"; the link "Prefiro criar uma senha"; and the staying-in line of C384; "Errei o e-mail" returns to the field with the address in it (screen `r3-new-account-phone`) (AC 222, AC 227) · done
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "a new address offers one button and the password link"`
 
 **C352** - "Criar conta e entrar" calls `POST /api/auth/sign-up` with no `password`; the API answers `201` with `user` and a `Set-Cookie` for `ra_session`, stores the user with `passwordHash` null and `emailVerifiedAt` null, and `GET /api/auth/me` with that cookie answers `200`; with no shared page the web then shows journey 2's "Como você quer começar?" and the toast "Conta criada. Toque no botão do e-mail que mandamos para bia.souza@gmail.com para confirmar." (screen `r3-home-unconfirmed-phone`) (AC 223)
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "sign-up without a password creates a signed-in account"`
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "creating the account signs in and opens the first-steps page"`
 
-**C353** - "Prefiro criar uma senha" opens, in place: an empty, focused field "Senha"; "Pelo menos 10 caracteres."; "Com senha, você entra sem abrir o e-mail."; the button "Criar conta com senha e entrar"; and "Criar sem senha", which closes it; no rule message shows before a submit; submitting 9 characters marks the field `aria-invalid="true"` with a message under it and calls `fetch` 0 times; submitting 10 characters calls sign-up with that `password` (screen `r3-new-account-password-phone`) (AC 224, AC 227, AC 253)
+**C353** - "Prefiro criar uma senha" opens, in place: an empty, focused field "Senha"; "Pelo menos 10 caracteres."; "Com senha, você entra sem abrir o e-mail."; the button "Criar conta com senha e entrar"; and "Criar sem senha", which closes it; no rule message shows before a submit; submitting 9 characters marks the field `aria-invalid="true"` with a message under it and calls `fetch` 0 times; submitting 10 characters calls sign-up with that `password` (screen `r3-new-account-password-phone`) (AC 224, AC 227, AC 253) · done
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "the password field opens in place and checks the rule only on submit"`
 
-**C354** - Signing up from `/d/<token>` stores `signupReturnPath = "/d/<token>"`, and the web lands back on `/d/<token>` signed in with the toast "Conta criada. Você voltou para o deck da Bia."; from `/l/<token>` of Pedro's want list it lands on `/l/<token>` with "Conta criada. Você voltou para a lista do Pedro."; on the deck page with an empty collection it shows "Você ainda não tem cartas no Rathe Arsenal. Para comparar, coloque as suas cartas:" with "Colar uma lista" and "Enviar uma planilha (.csv)" (screens `r3-back-to-deck-phone`, `r3-back-to-list-phone`) (AC 225, AC 227)
+**C354** - Signing up from `/d/<token>` stores `signupReturnPath = "/d/<token>"`, and the web lands back on `/d/<token>` signed in with the toast "Conta criada. Você voltou para o deck da Bia."; from `/l/<token>` of Pedro's want list it lands on `/l/<token>` with "Conta criada. Você voltou para a lista do Pedro."; on the deck page with an empty collection it shows "Você ainda não tem cartas no Rathe Arsenal. Para comparar, coloque as suas cartas:" with "Colar uma lista" and "Enviar uma planilha (.csv)" (screens `r3-back-to-deck-phone`, `r3-back-to-list-phone`) (AC 225, AC 227) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "an account made from a shared deck comes back to it"`
 Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t "a new account lands back on the list with its toast"`
 
-**C355** - `returnPath` is stored only when it is a path inside the app: "/d/abc" and "/decks/12" are stored; "https://evil.example/x", "//evil.example" and a 201-character path are stored as null and sign-up still answers `201` (door 14)
+**C355** - `returnPath` is stored only when it is a path inside the app: "/d/abc" and "/decks/12" are stored; "https://evil.example/x", "//evil.example" and a 201-character path are stored as null and sign-up still answers `201` (door 14) · done
 Proof: `api unit src/auth/__tests__/auth.service.spec.ts -t "only an in-app return path is stored"`
 
-**C356** - Sign-up with "Bia@Gmail.com " stores "bia@gmail.com"; a second sign-up with "bia@gmail.com" answers `409`; sign-in, start and code requests with "BIA@GMAIL.COM" reach the same user (AC 226)
+**C356** - Sign-up with "Bia@Gmail.com " stores "bia@gmail.com"; a second sign-up with "bia@gmail.com" answers `409`; sign-in, start and code requests with "BIA@GMAIL.COM" reach the same user (AC 226) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "addresses are trimmed and lowercased on every auth route"`
 
-**C357** - Schema: inserting a user with `passwordHash` null succeeds; inserting "ANA@x.com" when "ana@x.com" exists fails on the unique index over the lowercased address; `signupReturnPath` accepts 200 characters and rejects 201 (door 14; Relations `user.email`)
+**C357** - Schema: inserting a user with `passwordHash` null succeeds; inserting "ANA@x.com" when "ana@x.com" exists fails on the unique index over the lowercased address; `signupReturnPath` accepts 200 characters and rejects 201 (door 14; Relations `user.email`) · done
 Proof: `api e2e src/auth/__tests__/accounts-schema.e2e-spec.ts -t "user columns enforce the account doors"`
 
-**C358** - The lowercase migration, run on rows "Ana@x.com" and "ana@x.com", throws an error whose message lists both user ids and leaves both rows unchanged; run on "Bia@Gmail.com" alone it stores "bia@gmail.com" (door 14; assumption "a collision when e-mails are lowercased")
+**C358** - The lowercase migration, run on rows "Ana@x.com" and "ana@x.com", throws an error whose message lists both user ids and leaves both rows unchanged; run on "Bia@Gmail.com" alone it stores "bia@gmail.com" (door 14; assumption "a collision when e-mails are lowercased") · done
 Proof: `api e2e src/auth/__tests__/accounts-schema.e2e-spec.ts -t "the lowercase migration aborts on a collision and lists the ids"`
 
-**C359** - On a phone, a visitor types "Bia@Gmail.com ", creates the account, taps "Sair", types "bia@gmail.com", and the page offers the code screen for that account (S30 independent test) (AC 223, AC 226)
+**C359** - On a phone, a visitor types "Bia@Gmail.com ", creates the account, taps "Sair", types "bia@gmail.com", and the page offers the code screen for that account (S30 independent test) (AC 223, AC 226) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/account-start.spec.ts -g "an address typed two ways is one account"`
 
 ### S31 - Signing back in with a code or a password · 27 files · 87 KB · ~44k
 
-**C360** - With `next: "password"` for "lucas.prado@hotmail.com" the page shows, in this order: the heading "Entrar"; "E-mail" with the address and "Não é você? Trocar"; "Da última vez você entrou com senha neste celular." only when this device stored a password sign-in for the address; "Senha"; the button "Entrar"; "Entrar com um código por e-mail"; and "Esqueceu a senha? Entre com um código e troque a senha em Configurações." (screen `r2-return-password-phone`) (AC 228, AC 235)
+**C360** - With `next: "password"` for "lucas.prado@hotmail.com" the page shows, in this order: the heading "Entrar"; "E-mail" with the address and "Não é você? Trocar"; "Da última vez você entrou com senha neste celular." only when this device stored a password sign-in for the address; "Senha"; the button "Entrar"; "Entrar com um código por e-mail"; and "Esqueceu a senha? Entre com um código e troque a senha em Configurações." (screen `r2-return-password-phone`) (AC 228, AC 235) · done
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "an account with a password offers the password and the code"`
 
-**C361** - `POST /api/auth/codes` for a known address answers `202` with `expiresAt` 15 minutes after the request and `resendAfter`; it stores one `sign_in_code` row whose `codeHash` and `buttonTokenHash` differ from the code and the token, and sends one e-mail whose code matches `^\d{6}$` (AC 229; door 15)
+**C361** - `POST /api/auth/codes` for a known address answers `202` with `expiresAt` 15 minutes after the request and `resendAfter`; it stores one `sign_in_code` row whose `codeHash` and `buttonTokenHash` differ from the code and the token, and sends one e-mail whose code matches `^\d{6}$` (AC 229; door 15) · done
 Proof: `api e2e src/auth/__tests__/sign-in-codes.e2e-spec.ts -t "a code request stores a hashed code and sends one e-mail"`
 
-**C362** - The code e-mail for code "482913" has the subject "482 913 é o seu código do Rathe Arsenal", shows "Seu código" and "482 913", a button "Entrar no Rathe Arsenal" whose link is under `APP_BASE_URL` and carries the button token, and the line "O código e o botão valem por 15 minutos. Se não foi você, ignore este e-mail."; the en-US version follows `Accept-Language` (screen `b4-email-phone`) (AC 229, AC 235)
+**C362** - The code e-mail for code "482913" has the subject "482 913 é o seu código do Rathe Arsenal", shows "Seu código" and "482 913", a button "Entrar no Rathe Arsenal" whose link is under `APP_BASE_URL` and carries the button token, and the line "O código e o botão valem por 15 minutos. Se não foi você, ignore este e-mail."; the en-US version follows `Accept-Language` (screen `b4-email-phone`) (AC 229, AC 235) · done
 Proof: `api unit src/email/__tests__/sign-in-code-email.template.spec.ts -t "the code e-mail carries the code, the button and the 15 minutes"`
 
-**C363** - `POST /api/auth/codes/verify` with the right code answers `200` with `user`, `returnPath` and a `ra_session` cookie, and sets `consumedAt`; `POST /api/auth/codes/redeem` with the button token of a live code answers `200` the same way; redeeming the same token again answers `401`; redeeming after 15 minutes answers `410` with code `TOKEN_EXPIRED` (AC 229; Surface)
+**C363** - `POST /api/auth/codes/verify` with the right code answers `200` with `user`, `returnPath` and a `ra_session` cookie, and sets `consumedAt`; `POST /api/auth/codes/redeem` with the button token of a live code answers `200` the same way; redeeming the same token again answers `401`; redeeming after 15 minutes answers `410` with code `TOKEN_EXPIRED` (AC 229; Surface) · done
 Proof: `api e2e src/auth/__tests__/sign-in-codes.e2e-spec.ts -t "the code and the button each sign in once"`
 
-**C364** - After a second code request for the same address, verifying the first code answers `401` and verifying the second answers `200`; at every moment the table holds at most one row with `consumedAt` null for the address, and a direct insert of a second live row fails on the partial unique index (AC 230; door 15; Relations `sign_in_code`)
+**C364** - After a second code request for the same address, verifying the first code answers `401` and verifying the second answers `200`; at every moment the table holds at most one row with `consumedAt` null for the address, and a direct insert of a second live row fails on the partial unique index (AC 230; door 15; Relations `sign_in_code`) · done
 Proof: `api e2e src/auth/__tests__/sign-in-codes.e2e-spec.ts -t "a new code replaces the live one"`
 Proof: `api e2e src/auth/__tests__/accounts-schema.e2e-spec.ts -t "one live sign-in code per address"`
 
-**C365** - A wrong code answers `401`; a code that is not six digits answers `400`; a code past `expiresAt` answers `410` `TOKEN_EXPIRED`; after 5 wrong tries the right code answers `401` and creates no session (AC 231, AC 232; door 15)
+**C365** - A wrong code answers `401`; a code that is not six digits answers `400`; a code past `expiresAt` answers `410` `TOKEN_EXPIRED`; after 5 wrong tries the right code answers `401` and creates no session (AC 231, AC 232; door 15) · done
 Proof: `api e2e src/auth/__tests__/sign-in-codes.e2e-spec.ts -t "wrong, malformed, expired and exhausted codes are refused"`
 
-**C366** - The code screen for "renata@cupuladt.com.br" shows "Digite o código", "Mandamos para renata@cupuladt.com.br. Ele vale 15 minutos.", six one-digit inputs, "No e-mail também tem um botão Entrar.", "Reenviar em 45 s" counting down, "Entrar com outro e-mail" and "Olhe também o spam."; for a Gmail address the last line is "Olhe também o spam e a aba Promoções." (screen `r2-return-code-phone`; copy rules 2 and 3) (AC 235)
+**C366** - The code screen for "renata@cupuladt.com.br" shows "Digite o código", "Mandamos para renata@cupuladt.com.br. Ele vale 15 minutos.", six one-digit inputs, "No e-mail também tem um botão Entrar.", "Reenviar em 45 s" counting down, "Entrar com outro e-mail" and "Olhe também o spam."; for a Gmail address the last line is "Olhe também o spam e a aba Promoções." (screen `r2-return-code-phone`; copy rules 2 and 3) (AC 235) · done
 Proof: `web unit src/components/auth/__tests__/CodeStep.spec.tsx -t "the code screen shows the address, six boxes and the spam line"`
 
-**C367** - On a `401` the code screen shows "Este código não confere. Confira no e-mail."; on a `410` it shows "Este código venceu. Ele vale 15 minutos.", clears the six boxes and offers "Mandar um código novo", which requests a code for the same address (screen `r2-code-expired-phone`) (AC 231, AC 232, AC 235)
+**C367** - On a `401` the code screen shows "Este código não confere. Confira no e-mail."; on a `410` it shows "Este código venceu. Ele vale 15 minutos.", clears the six boxes and offers "Mandar um código novo", which requests a code for the same address (screen `r2-code-expired-phone`) (AC 231, AC 232, AC 235) · done
 Proof: `web unit src/components/auth/__tests__/CodeStep.spec.tsx -t "a wrong code and an expired code say what to do"`
 
-**C368** - `POST /api/auth/sign-in` answers `401` with code `INVALID_CREDENTIALS` and the same body for a wrong password, for an account with no password and for an account with `deletedAt` set, and sets no cookie; the password screen then shows "Senha incorreta." with "Entrar com um código" next to it (AC 233)
+**C368** - `POST /api/auth/sign-in` answers `401` with code `INVALID_CREDENTIALS` and the same body for a wrong password, for an account with no password and for an account with `deletedAt` set, and sets no cookie; the password screen then shows "Senha incorreta." with "Entrar com um código" next to it (AC 233) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "sign-in refuses wrong, missing and deleted alike"`
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "a wrong password offers the code"`
 
-**C369** - `POST /api/auth/forgot-password` and `POST /api/auth/reset-password` answer `404`; the web route tree has no `/forgot-password` and no `/reset-password`, and opening them renders the not-found page; `password-reset-email.template.ts` no longer exists (AC 234; Surface)
+**C369** - `POST /api/auth/forgot-password` and `POST /api/auth/reset-password` answer `404`; the web route tree has no `/forgot-password` and no `/reset-password`, and opening them renders the not-found page; `password-reset-email.template.ts` no longer exists (AC 234; Surface) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "the reset routes are gone"`
 Proof: `web unit src/routes/__tests__/Entrar.spec.tsx -t "the reset pages are not routes"`
 
-**C370** - Requesting a code, requesting another, then entering the first shows "Este código não confere. Confira no e-mail." and entering the second signs in (S31 independent test, codes read from the stubbed API) (AC 230)
+**C370** - Requesting a code, requesting another, then entering the first shows "Este código não confere. Confira no e-mail." and entering the second signs in (S31 independent test, codes read from the stubbed API) (AC 230) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the second code works and the first does not"`
 
 ### S32 - Staying in until "Sair" · 56 files · 316 KB · ~109k

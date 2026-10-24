@@ -1,0 +1,74 @@
+// Journey 1 (.design/account.md): the one-field start, a new account, and getting back in.
+// Its own namespace on purpose: "Não é você? Trocar" is the approved copy, and the locale test
+// bans "trocar" in the `auth` namespace (the plan's open point for the owner).
+export const account = {
+  // --- Start: one field ---
+  brandName: 'Rathe Arsenal',
+  headline: 'Monte seus decks de Flesh and Blood, veja quais cartas você já tem e quanto custa o que falta.',
+  pitchLine1: 'Confere se o deck pode jogar no torneio',
+  pitchLine2: 'Lista o que falta, com o preço na loja',
+  pitchLine3: 'Manda a lista pronta no WhatsApp',
+  emailLabel: 'Seu e-mail',
+  continueBtn: 'Continuar',
+  continuing: 'Continuando…',
+  startNote: 'Se for sua primeira vez, a conta é criada na hora. Se você já tem conta, pedimos a senha ou mandamos um código.',
+  emailTypo: 'Falta o final do e-mail, por exemplo bia@gmail.com',
+  nothingSent: 'Nada foi enviado ainda.',
+
+  // --- Start: arriving from a shared page ---
+  sharedCardBy: '{{name}} · por {{owner}}',
+  sharedReasonDeck: 'Crie a conta para comparar o deck {{ofOwner}} com as suas cartas.',
+  sharedReasonCards: 'Crie a conta para ver quais destas cartas você já tem.',
+  sharedBackDeck: 'Depois, você volta para o deck {{ofOwner}}.',
+  sharedBackList: 'Depois, você volta para a lista {{ofOwner}}.',
+  ofOwnerFeminine: 'da {{owner}}',
+  ofOwnerMasculine: 'do {{owner}}',
+
+  // --- A new address ---
+  newTitle: 'Criar sua conta',
+  newFirstTime: 'Primeira vez aqui? Vamos criar sua conta com',
+  wrongEmail: 'Errei o e-mail',
+  createAndEnter: 'Criar conta e entrar',
+  creating: 'Criando…',
+  preferPassword: 'Prefiro criar uma senha',
+  passwordLabel: 'Senha',
+  passwordRule: 'Pelo menos 10 caracteres.',
+  passwordBenefit: 'Com senha, você entra sem abrir o e-mail.',
+  passwordTooShort: 'A senha precisa ter pelo menos 10 caracteres.',
+  createWithPassword: 'Criar conta com senha e entrar',
+  createWithoutPassword: 'Criar sem senha',
+  stayingIn: 'A conta fica aberta {{device}} até você tocar em Sair. Sem senha, mandamos um código só quando você entrar de novo.',
+  deviceThisPhone: 'neste celular',
+  deviceThisComputer: 'neste computador',
+  toastCreatedConfirm: 'Conta criada. Toque no botão do e-mail que mandamos para {{email}} para confirmar.',
+  toastCreatedBackDeck: 'Conta criada. Você voltou para o deck {{ofOwner}}.',
+  toastCreatedBackList: 'Conta criada. Você voltou para a lista {{ofOwner}}.',
+
+  // --- An address with an account ---
+  signInTitle: 'Entrar',
+  emailFieldLabel: 'E-mail',
+  notYou: 'Não é você? Trocar',
+  lastTimePassword: 'Da última vez você entrou com senha neste celular.',
+  signInBtn: 'Entrar',
+  signingIn: 'Entrando…',
+  useCode: 'Entrar com um código por e-mail',
+  useCodeShort: 'Entrar com um código',
+  forgotPassword: 'Esqueceu a senha? Entre com um código e troque a senha em Configurações.',
+  wrongPassword: 'Senha incorreta.',
+
+  // --- The code screen ---
+  codeTitle: 'Digite o código',
+  codeSentTo: 'Mandamos para {{email}}.',
+  codeValid: 'Ele vale 15 minutos.',
+  codeDigit: 'Dígito {{position}} de 6',
+  codeButtonHint: 'No e-mail também tem um botão Entrar.',
+  resendIn: 'Reenviar em {{seconds}} s',
+  resendNow: 'Reenviar',
+  otherEmail: 'Entrar com outro e-mail',
+  spam: 'Olhe também o spam.',
+  spamPromotions: 'Olhe também o spam e a aba Promoções.',
+  codeWrong: 'Este código não confere. Confira no e-mail.',
+  codeExpired: 'Este código venceu. Ele vale 15 minutos.',
+  sendNewCode: 'Mandar um código novo',
+  buttonSigningIn: 'Entrando…',
+} as const;

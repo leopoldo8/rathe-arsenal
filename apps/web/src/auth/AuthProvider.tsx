@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AuthContext, IAuthSettings, IAuthUser, TUserRole } from './AuthContext';
+import { AuthContext, IAuthSettings, IAuthUser, ICodeSignIn, ISignUpInput, TUserRole } from './AuthContext';
 import { THEME_STORAGE_KEY } from '../styles/theme-init';
 import { authFetch as apiFetch, AuthFetchError } from '../lib/auth-fetch';
 
@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
   });
   const [isLoading, setIsLoading] = useState(!!token);
+  const [restored, setRestored] = useState(() => token !== null);
 
   // persist() sets the token and seeds user+settings atomically from the auth
   // response payload — the bootstrap effect below would otherwise re-fetch
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persist = useCallback((jwt: string, u: IAuthSignResponse['user'], s: IAuthSettings) => {
     localStorage.setItem(STORAGE_KEY, jwt);
     justPersistedRef.current = true;
+    setRestored(false);
     setToken(jwt);
     setUser({ ...u, chatAccess: u.chatAccess === true });
     setSettingsState(s);
@@ -96,16 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTheme(next.theme);
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, shareToken?: string) => {
-    const res = await apiFetch<{ message: string; _devVerificationLink?: string }>(
+  const signUp = useCallback(async (input: ISignUpInput) => {
+    const res = await apiFetch<IAuthSignResponse>(
       '/auth/sign-up',
-      {
-        method: 'POST',
-        body: JSON.stringify(shareToken ? { email, password, shareToken } : { email, password }),
-      },
+      { method: 'POST', body: JSON.stringify(input) },
     );
-    return { _devVerificationLink: res._devVerificationLink };
-  }, []);
+    persist(res.jwt, res.user, res.settings);
+  }, [persist]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const res = await apiFetch<IAuthSignResponse>(
@@ -115,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persist]);
 
   const signOut = useCallback(() => {
+    setRestored(false);
     localStorage.removeItem(STORAGE_KEY);
     // Also clear the theme hint — without this, a shared device can leak the
     // previous user's theme to the next sign-in via the pre-hydration script.
@@ -150,15 +150,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(res.jwt, res.user, res.settings);
   }, [persist]);
 
-  const forgotPassword = useCallback(async (email: string) => {
-    await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
-  }, []);
-
-  const resetPassword = useCallback(async (tkn: string, newPassword: string) => {
-    const res = await apiFetch<IAuthSignResponse>(
-      '/auth/reset-password', { method: 'POST', body: JSON.stringify({ token: tkn, newPassword }) },
+  const verifyCode = useCallback(async (email: string, code: string): Promise<ICodeSignIn> => {
+    const res = await apiFetch<IAuthSignResponse & ICodeSignIn>(
+      '/auth/codes/verify', { method: 'POST', body: JSON.stringify({ email, code }) },
     );
     persist(res.jwt, res.user, res.settings);
+    return { returnPath: res.returnPath };
+  }, [persist]);
+
+  const redeemCode = useCallback(async (token: string): Promise<ICodeSignIn> => {
+    const res = await apiFetch<IAuthSignResponse & ICodeSignIn>(
+      '/auth/codes/redeem', { method: 'POST', body: JSON.stringify({ token }) },
+    );
+    persist(res.jwt, res.user, res.settings);
+    return { returnPath: res.returnPath };
   }, [persist]);
 
   const deleteAccount = useCallback(async (password: string) => {
@@ -167,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { method: 'DELETE', body: JSON.stringify({ password }) },
       token,
     );
+    setRestored(false);
     localStorage.removeItem(STORAGE_KEY);
     try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* private mode */ }
     // Clear all composition draft keys (ra-deck-draft-*) so a deleted account's
@@ -184,12 +190,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     user, token, isLoading,
+    ...(restored ? { restoredSession: true } : {}),
     // exactOptionalPropertyTypes: only attach the settings key when defined;
     // assigning `undefined` to an optional field is a type error.
     ...(settings !== undefined ? { settings } : {}),
     setSettings,
-    signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount, setDisplayName, setWhatsappNumber,
-  }), [user, token, isLoading, settings, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, forgotPassword, resetPassword, deleteAccount]);
+    signUp, signIn, signOut, verifyEmail, verifyCode, redeemCode, deleteAccount, setDisplayName, setWhatsappNumber,
+  }), [user, token, isLoading, settings, restored, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, verifyCode, redeemCode, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

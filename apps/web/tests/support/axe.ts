@@ -23,6 +23,7 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'library', path: () => '/library' },
   { name: 'shared deck page', path: ({ shareToken }) => `/d/${shareToken}` },
   { name: 'sign-in', path: () => '/sign-in', signedOut: true },
+  { name: 'start', path: () => '/entrar', signedOut: true },
 ];
 
 const BLOCKING_IMPACTS: ReadonlySet<string> = new Set(['serious', 'critical']);

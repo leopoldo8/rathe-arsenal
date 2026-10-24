@@ -1,0 +1,251 @@
+/* Shared styling of the account steps: the field, the buttons, the pitch, the shared-page card, the code boxes. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-3);
+}
+
+.lead {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-normal);
+}
+
+.pitch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pitchLine {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+}
+
+.check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 20px;
+  block-size: 20px;
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: 50%;
+  background-color: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+  font-size: var(--ra-text-caption);
+}
+
+.label {
+  display: block;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-secondary);
+}
+
+.input {
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: 16px;
+  min-block-size: 44px;
+}
+
+:global([data-theme='light']) .input {
+  background-color: var(--ra-bg-sunken);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--ra-ready-low);
+}
+
+.fieldError {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-ready-low);
+  line-height: var(--ra-leading-normal);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-secondary);
+  line-height: var(--ra-leading-normal);
+}
+
+.primaryBtn,
+.secondaryBtn {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 14px var(--ra-space-5);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.primaryBtn {
+  border: 1px solid var(--ra-accent);
+  background-color: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  font-weight: var(--ra-weight-bold);
+}
+
+.primaryBtn:hover:not([aria-disabled='true']) {
+  background-color: var(--ra-accent-hover);
+  border-color: var(--ra-accent-hover);
+}
+
+.secondaryBtn {
+  border: 1px solid var(--ra-border);
+  background: transparent;
+  color: var(--ra-fg-primary);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.secondaryBtn:hover:not([aria-disabled='true']) {
+  border-color: var(--ra-accent-soft-bd);
+  background-color: var(--ra-bg-raised);
+}
+
+.primaryBtn[aria-disabled='true'],
+.secondaryBtn[aria-disabled='true'] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.primaryBtn:focus-visible,
+.secondaryBtn:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+/* A text button that reads as a link: "Errei o e-mail", "Prefiro criar uma senha", "Trocar". */
+.linkBtn {
+  align-self: flex-start;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.linkBtnCentered {
+  align-self: center;
+}
+
+.emailBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ra-space-1);
+  padding: var(--ra-space-4);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-bg-raised);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  color: var(--ra-fg-primary);
+  line-height: var(--ra-leading-normal);
+}
+
+.emailText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sharedCard {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3);
+  border: 1px solid var(--ra-border-subtle);
+  border-radius: var(--ra-radius-md);
+  background-color: var(--ra-bg-raised);
+}
+
+.sharedArt {
+  flex-shrink: 0;
+  inline-size: 40px;
+  block-size: 56px;
+  border-radius: var(--ra-radius-sm);
+  object-fit: cover;
+}
+
+.sharedName {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+}
+
+.codeRow {
+  display: flex;
+  gap: var(--ra-space-2);
+}
+
+.codeBox {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  box-sizing: border-box;
+  padding: 0;
+  min-block-size: 56px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-h2);
+  text-align: center;
+}
+
+:global([data-theme='light']) .codeBox {
+  background-color: var(--ra-bg-sunken);
+}
+
+.codeBox:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.codeBox[aria-invalid='true'] {
+  border-color: var(--ra-ready-low);
+}
+
+.inlineRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ra-space-3);
+}

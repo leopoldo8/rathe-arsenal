@@ -35,3 +35,4 @@ export { CardListEntity } from './card-list.entity';
 export { CardListLineEntity } from './card-list-line.entity';
 export { CardPriceEntity } from './card-price.entity';
 export { CardPriceGroupSyncEntity } from './card-price-group-sync.entity';
+export { SignInCodeEntity } from './sign-in-code.entity';

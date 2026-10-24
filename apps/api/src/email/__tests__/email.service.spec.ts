@@ -38,7 +38,7 @@ describe('EmailService', () => {
       // The resend client is null in dev
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `resend` field to verify null state; no public getter exposed
       expect((service as any).resend).toBeNull();
-      await service.sendPasswordResetEmail('a@b.com', 'https://example.com/reset');
+      await service.sendSignInCodeEmail('a@b.com', '123456', 'https://example.com/entrar?token=abc');
       // No throw = success
     });
   });

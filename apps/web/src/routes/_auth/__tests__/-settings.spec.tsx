@@ -122,14 +122,14 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     token: 'jwt',
     isLoading: false,
     setSettings: vi.fn(),
-    signUp: async () => ({}),
+    signUp: async () => undefined,
     signIn: noopAsync,
     signOut: () => {
       /* test stub */
     },
     verifyEmail: noopAsync,
-    forgotPassword: noopAsync,
-    resetPassword: noopAsync,
+    verifyCode: async () => ({ returnPath: null }),
+    redeemCode: async () => ({ returnPath: null }),
     deleteAccount: noopAsync,
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,

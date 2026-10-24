@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { EEmailErrorCode, EmailDeliveryError } from './errors';
 import { renderVerificationEmail } from './templates/verification-email.template';
-import { renderPasswordResetEmail } from './templates/password-reset-email.template';
+import { renderSignInCodeEmail } from './templates/sign-in-code-email.template';
 
 const APP_NAME = 'Rathe Arsenal';
 
@@ -30,8 +30,8 @@ export class EmailService {
     await this.send(to, rendered.subject, rendered.html, rendered.text, link);
   }
 
-  async sendPasswordResetEmail(to: string, link: string, locale: TLocale = 'pt-BR'): Promise<void> {
-    const rendered = renderPasswordResetEmail({ link, appName: APP_NAME, locale });
+  async sendSignInCodeEmail(to: string, code: string, link: string, locale: TLocale = 'pt-BR'): Promise<void> {
+    const rendered = renderSignInCodeEmail({ code, link, appName: APP_NAME, locale });
     await this.send(to, rendered.subject, rendered.html, rendered.text, link);
   }
 

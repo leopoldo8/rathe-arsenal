@@ -17,7 +17,9 @@ export class PasswordHasherService {
     return bcrypt.hash(plain, PasswordHasherService.COST_FACTOR);
   }
 
-  verify(plain: string, hash: string): Promise<boolean> {
+  /** An account with no password (`hash` null) never matches. */
+  verify(plain: string, hash: string | null): Promise<boolean> {
+    if (hash === null) return Promise.resolve(false);
     return bcrypt.compare(plain, hash);
   }
 }

@@ -36,14 +36,14 @@ const stubAuthContext: IAuthContext = {
   setSettings: () => {
     /* test stub */
   },
-  signUp: async () => ({}),
+  signUp: async () => undefined,
   signIn: noopAsync,
   signOut: () => {
     /* test stub */
   },
   verifyEmail: noopAsync,
-  forgotPassword: noopAsync,
-  resetPassword: noopAsync,
+  verifyCode: async () => ({ returnPath: null }),
+  redeemCode: async () => ({ returnPath: null }),
   deleteAccount: noopAsync,
   setDisplayName: () => undefined,
   setWhatsappNumber: () => undefined,

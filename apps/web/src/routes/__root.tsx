@@ -26,7 +26,7 @@ const AUTH_SHELL_PREFIXES = [
 const FULL_SCREEN_PATHS = ['/add-cards/scan'];
 
 // Auth routes render their own full-page layout (AuthLayout per-route)
-const AUTH_PAGE_PREFIXES = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email', '/check-your-email'];
+const AUTH_PAGE_PREFIXES = ['/entrar', '/sign-in', '/sign-up', '/verify-email', '/check-your-email'];
 
 function RootLayout(): React.ReactElement {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

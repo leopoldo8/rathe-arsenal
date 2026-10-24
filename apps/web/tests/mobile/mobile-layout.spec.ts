@@ -27,9 +27,7 @@ interface IRoute {
 }
 
 const ROUTES: readonly IRoute[] = [
-  { name: 'sign-in', url: '/sign-in', shell: false, anonymous: true },
-  { name: 'sign-up', url: '/sign-up', shell: false, anonymous: true },
-  { name: 'forgot-password', url: '/forgot-password', shell: false, anonymous: true },
+  { name: 'start', url: '/entrar', shell: false, anonymous: true },
   { name: 'about', url: '/about', shell: false, anonymous: true },
   { name: 'home', url: '/home', shell: true },
   { name: 'deck-detail', url: '/decks/:deckId', shell: true },

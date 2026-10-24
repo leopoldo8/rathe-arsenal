@@ -56,7 +56,7 @@ describe('Shared lists (E2E)', () => {
   }
 
   async function createSession(label: string): Promise<ISession> {
-    const signUp = await signUpRaw(emailFor(label)).expect(202);
+    const signUp = await signUpRaw(emailFor(label)).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     return { userId: verified.body.user.id as string, jwt: verified.body.jwt as string };
@@ -573,7 +573,7 @@ describe('Shared lists (E2E)', () => {
       const listId = await createList(owner, kind);
       const token = await startSharing(owner, listId);
 
-      await signUpRaw(emailFor(`via-${kind}`), token).expect(202);
+      await signUpRaw(emailFor(`via-${kind}`), token).expect(201);
 
       const [row] = (await dataSource.query(
         `SELECT "referredByUserId", "referredVia" FROM "user" WHERE email = $1`,
@@ -593,8 +593,8 @@ describe('Shared lists (E2E)', () => {
       const token = await startSharing(owner, listId);
       await request(server).delete(`/api/lists/${listId}/share`).set(...auth(owner)).expect(204);
 
-      const dead = await signUpRaw(emailFor('via-dead'), token).expect(202);
-      const plain = await signUpRaw(emailFor('via-none')).expect(202);
+      const dead = await signUpRaw(emailFor('via-dead'), token).expect(201);
+      const plain = await signUpRaw(emailFor('via-none')).expect(201);
 
       expect(Object.keys(dead.body).sort()).toEqual(Object.keys(plain.body).sort());
       const [row] = (await dataSource.query(`SELECT "referredByUserId" FROM "user" WHERE email = $1`, [emailFor('via-dead')])) as {

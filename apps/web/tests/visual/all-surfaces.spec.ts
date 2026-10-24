@@ -15,10 +15,7 @@ import { ANON_STORAGE_STATE, BASE_URL, loadFixture, resetFixture } from '../supp
 const SETTLE_MS = 1500;
 
 const ANON_SURFACES = [
-  { name: 'sign-in', url: '/sign-in' },
-  { name: 'sign-up', url: '/sign-up' },
-  { name: 'forgot-password', url: '/forgot-password' },
-  { name: 'reset-password', url: '/reset-password' },
+  { name: 'start', url: '/entrar' },
   { name: 'check-your-email', url: '/check-your-email' },
   { name: 'verify-email', url: '/verify-email' },
 ] as const;

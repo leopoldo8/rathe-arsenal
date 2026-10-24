@@ -42,7 +42,7 @@ describe('Sharing (E2E)', () => {
 
   async function createSession(label: string): Promise<ISession> {
     const email = emailFor(label);
-    const signUp = await signUpRaw(email).expect(202);
+    const signUp = await signUpRaw(email).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     return { userId: verified.body.user.id as string, jwt: verified.body.jwt as string };
@@ -316,12 +316,12 @@ describe('Sharing (E2E)', () => {
 
     await request(server).get(`/api/shared/decks/${token}/coverage`).expect(401);
     const empty = await request(server).get(`/api/shared/decks/${token}/coverage`).set(...auth(visitor)).expect(200);
-    expect(empty.body).toEqual({ ownedCopies: 0, totalCopies: 4, percent: 0 });
+    expect(empty.body).toEqual({ ownedCopies: 0, totalCopies: 4, percent: 0, collectionEmpty: true });
 
     await ownCopies(visitor, CARD_A.cardIdentifier, 2);
 
     const partial = await request(server).get(`/api/shared/decks/${token}/coverage`).set(...auth(visitor)).expect(200);
-    expect(partial.body).toEqual({ ownedCopies: 2, totalCopies: 4, percent: 50 });
+    expect(partial.body).toEqual({ ownedCopies: 2, totalCopies: 4, percent: 50, collectionEmpty: false });
 
     await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).expect(204);
     const dead = await request(server).get(`/api/shared/decks/${token}/coverage`).set(...auth(visitor)).expect(404);
@@ -360,10 +360,10 @@ describe('Sharing (E2E)', () => {
       const deckId = await createDeck(owner);
       const token = await startSharing(owner, deckId);
 
-      const plain = await signUpRaw(emailFor('plain')).expect(202);
-      const viaLive = await signUpRaw(emailFor('via-live'), token).expect(202);
-      const viaDead = await signUpRaw(emailFor('via-dead'), 'AAAAAAAAAAAAAAAAAAAAAA').expect(202);
-      const viaJunk = await signUpRaw(emailFor('via-junk'), '../../etc').expect(202);
+      const plain = await signUpRaw(emailFor('plain')).expect(201);
+      const viaLive = await signUpRaw(emailFor('via-live'), token).expect(201);
+      const viaDead = await signUpRaw(emailFor('via-dead'), 'AAAAAAAAAAAAAAAAAAAAAA').expect(201);
+      const viaJunk = await signUpRaw(emailFor('via-junk'), '../../etc').expect(201);
 
       expect(normalize(viaLive.body)).toEqual(normalize(plain.body));
       expect(normalize(viaDead.body)).toEqual(normalize(plain.body));
@@ -386,7 +386,7 @@ describe('Sharing (E2E)', () => {
       const deckId = await createDeck(owner);
       const token = await startSharing(owner, deckId, 'missing');
 
-      await signUpRaw(emailFor('via-want'), token).expect(202);
+      await signUpRaw(emailFor('via-want'), token).expect(201);
 
       const [row] = (await dataSource.query(
         `SELECT "referredByUserId", "referredVia" FROM "user" WHERE email = $1`,
@@ -406,7 +406,7 @@ describe('Sharing (E2E)', () => {
       const deckId = await createDeck(owner);
       const token = await startSharing(owner, deckId);
 
-      await signUpRaw(emailFor('referral-existing'), token).expect(202);
+      await signUpRaw(emailFor('referral-existing'), token).expect(409);
 
       expect(await countEvents('signed_up', owner.userId)).toBe(0);
       const [row] = (await dataSource.query(`SELECT "referredByUserId" FROM "user" WHERE id = $1`, [existing.userId])) as {

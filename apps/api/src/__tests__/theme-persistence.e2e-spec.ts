@@ -109,7 +109,7 @@ describe('Theme persistence (E2E, U8)', () => {
       const signUpRes = await request(server)
         .post('/api/auth/sign-up')
         .send({ email: TEST_EMAIL, password: TEST_PASSWORD })
-        .expect(202);
+        .expect(201);
 
       expect(typeof signUpRes.body._devVerificationLink).toBe('string');
       const verificationToken = extractVerificationToken(

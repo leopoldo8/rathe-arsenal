@@ -45,7 +45,7 @@ describe('AuthProvider chat access', () => {
     expect(signedIn.current!.user?.chatAccess).toBe(true);
     first.unmount();
 
-    // verify-email and reset-password responses
+    // verify-email and code sign-in responses
     localStorage.clear();
     const viaToken = capture();
     const tokenView = render(<AuthProvider><viaToken.Probe /></AuthProvider>);
@@ -54,9 +54,9 @@ describe('AuthProvider chat access', () => {
       await viaToken.current!.verifyEmail('t'.repeat(64));
     });
     const afterVerify = viaToken.current!.user?.chatAccess;
-    mockAuthFetch.mockResolvedValueOnce({ jwt: 'jwt-r', user: { id: 'u4', email: 'g@h.com', role: 'user', chatAccess: false }, settings: { theme: 'dark' } });
+    mockAuthFetch.mockResolvedValueOnce({ jwt: 'jwt-r', returnPath: null, user: { id: 'u4', email: 'g@h.com', role: 'user', chatAccess: false }, settings: { theme: 'dark' } });
     await act(async () => {
-      await viaToken.current!.resetPassword('t'.repeat(64), 'newpasswordlongenough');
+      await viaToken.current!.verifyCode('g@h.com', '123456');
     });
     expect([afterVerify, viaToken.current!.user?.chatAccess]).toEqual([true, false]);
     tokenView.unmount();

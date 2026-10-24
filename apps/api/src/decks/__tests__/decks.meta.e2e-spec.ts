@@ -59,7 +59,7 @@ describe('PATCH /api/decks/:deckId notes, format and status (E2E)', () => {
     const signUp = await request(server)
       .post('/api/auth/sign-up')
       .send({ email, password: PASSWORD })
-      .expect(202);
+      .expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server)

@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../database/entities/user.entity';
+import { SignInCodeEntity } from '../database/entities/sign-in-code.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
@@ -12,6 +13,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PasswordHasherService } from './services/password-hasher.service';
 import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthService } from './auth.service';
+import { SignInCodeService } from './sign-in-code.service';
 import { AuthzService } from './authz.service';
 import { AuthController } from './auth.controller';
 import { OwnsTrackedDeckGuard } from './guards/owns-tracked-deck.guard';
@@ -34,7 +36,7 @@ import { SharingCoreModule } from '../sharing/sharing-core.module';
     // DeckTagEntity is registered here (not in TagsModule) so that AuthzService
     // can use @InjectRepository(DeckTagEntity) without creating a circular
     // dependency: AuthModule ← TagsModule ← AuthModule.
-    TypeOrmModule.forFeature([UserEntity, TrackedDeckEntity, CollectionCardEntity, DeckTagEntity]),
+    TypeOrmModule.forFeature([UserEntity, SignInCodeEntity, TrackedDeckEntity, CollectionCardEntity, DeckTagEntity]),
   ],
   controllers: [AuthController],
   providers: [
@@ -43,6 +45,7 @@ import { SharingCoreModule } from '../sharing/sharing-core.module';
     JwtStrategy,
     JwtAuthGuard,
     AuthService,
+    SignInCodeService,
     AuthzService,
     OwnsTrackedDeckGuard,
   ],

@@ -54,7 +54,7 @@ describe('Card list prices (E2E)', () => {
   const auth = (jwt: string): [string, string] => ['Authorization', `Bearer ${jwt}`];
 
   async function createSession(label: string): Promise<string> {
-    const signUp = await request(server).post('/api/auth/sign-up').send({ email: emailFor(label), password: PASSWORD }).expect(202);
+    const signUp = await request(server).post('/api/auth/sign-up').send({ email: emailFor(label), password: PASSWORD }).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     return verified.body.jwt as string;

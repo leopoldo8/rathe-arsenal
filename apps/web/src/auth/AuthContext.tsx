@@ -17,10 +17,23 @@ export interface IAuthSettings {
   theme: 'dark' | 'light';
 }
 
+export interface ISignUpInput {
+  readonly email: string;
+  readonly password?: string;
+  readonly shareToken?: string;
+  readonly returnPath?: string;
+}
+
+export interface ICodeSignIn {
+  readonly returnPath: string | null;
+}
+
 export interface IAuthContext {
   user: IAuthUser | null;
   token: string | null;
   isLoading: boolean;
+  /** True while the signed-in user is the one this device's stored session restored on page load, not a sign-in made since. */
+  restoredSession?: boolean;
   /**
    * U12 — server-persisted user preferences mirrored into context for first-paint
    * theme correctness. Optional to avoid breaking every existing `useAuth()`
@@ -28,17 +41,19 @@ export interface IAuthContext {
    */
   settings?: IAuthSettings;
   setSettings: (next: IAuthSettings) => void;
-  /** `shareToken` credits the shared page the visitor came from; the API ignores it when dead. */
-  signUp: (
-    email: string,
-    password: string,
-    shareToken?: string,
-  ) => Promise<{ _devVerificationLink?: string | undefined }>;
+  /**
+   * Creates an account and signs it in at once. `password` is optional (an account with none signs in
+   * with an e-mailed code); `shareToken` credits the shared page the visitor came from and the API
+   * ignores it when dead; `returnPath` is the in-app page to come back to after confirming the e-mail.
+   */
+  signUp: (input: ISignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   verifyEmail: (token: string) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  /** Signs in with the six digits e-mailed to `email`; resolves with the page the account was made from, if any. */
+  verifyCode: (email: string, code: string) => Promise<ICodeSignIn>;
+  /** Signs in with the single-use token of the e-mail's button. */
+  redeemCode: (token: string) => Promise<ICodeSignIn>;
   /**
    * Phase 1a Unit 2 (A8) — soft-deletes the authenticated user's account
    * after password re-entry. Clears the local JWT and user on success so

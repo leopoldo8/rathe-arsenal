@@ -113,7 +113,7 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
   const signUp = async (label: string): Promise<{ jwt: string; email: string }> => {
     const email = `repl-${label}-${suffix}-${emails.length}@test.local`;
     emails.push(email);
-    const created = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(202);
+    const created = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
     const token = new URL(created.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);

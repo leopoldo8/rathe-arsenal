@@ -31,8 +31,23 @@ export interface IAuthResponse {
   settings: IAuthSettings;
 }
 
+/** What an address takes next, from `POST /api/auth/start`. */
+export interface IStartResponse {
+  next: 'new' | 'password' | 'code';
+}
+
+/** Sign-up answers like a sign-in; the dev link only exists in development. */
+export interface ISignUpResponse extends IAuthResponse {
+  _devVerificationLink?: string;
+}
+
+/** A sign-in by code or button also names the page the account was made from, when it kept one. */
+export interface ICodeSignInResponse extends IAuthResponse {
+  returnPath: string | null;
+}
+
 /**
- * Sign-up and resend-verification endpoints return the same generic response
+ * Resend-verification returns the same generic response
  * regardless of whether the email already exists / is already verified. This
  * prevents account-existence enumeration (A4/A6). The `_devVerificationLink`
  * field is only populated in development to ease local testing.

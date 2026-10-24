@@ -33,7 +33,7 @@ describe('card scanner routes under the global throttler (E2E)', () => {
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
 
     const server = app.getHttpServer();
-    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(202);
+    const signUp = await request(server).post('/api/auth/sign-up').send({ email, password }).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password }).expect(200);

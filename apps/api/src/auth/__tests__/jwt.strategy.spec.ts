@@ -2,7 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
-import { UserEntity } from '../../database/entities/user.entity';
+import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 
 describe('JwtStrategy.validate', () => {
@@ -34,21 +34,18 @@ describe('JwtStrategy.validate', () => {
     await expect(strategy.validate({ sub: 'missing' })).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('throws Unauthorized when the user exists but is not email-verified', async () => {
+  it('accepts a user whose e-mail is not confirmed yet: only share links wait for it (door 14)', async () => {
     const strategy = build(
       jest.fn().mockResolvedValue({
         id: 'user-1',
         email: 'a@b.com',
         emailVerifiedAt: null,
         deletedAt: null,
+        role: EUserRole.User,
+        chatAccess: false,
       } as Partial<UserEntity>),
     );
-    const err = await strategy
-      .validate({ sub: 'user-1' })
-      .catch((e) => e as UnauthorizedException);
-    expect(err).toBeInstanceOf(UnauthorizedException);
-    // No internal-detail leakage in the message
-    expect((err as Error).message.toLowerCase()).not.toContain('verified');
+    await expect(strategy.validate({ sub: 'user-1' })).resolves.toMatchObject({ userId: 'user-1' });
   });
 
   // A8 / Phase 1a Unit 2: soft-deleted users must be rejected on the same

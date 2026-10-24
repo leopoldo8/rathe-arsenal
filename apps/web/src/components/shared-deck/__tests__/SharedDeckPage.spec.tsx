@@ -225,6 +225,23 @@ describe('SharedDeckPage', () => {
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
     });
 
+    it('tells a visitor with no cards how to put them in, instead of showing 0%', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({
+        ownedCopies: 0,
+        totalCopies: 8,
+        percent: 0,
+        collectionEmpty: true,
+      }));
+      renderPage(undefined, makeAuth());
+
+      const panel = await screen.findByTestId('shared-coverage-empty');
+
+      expect(within(panel).getByText('Você ainda não tem cartas no Rathe Arsenal. Para comparar, coloque as suas cartas:')).toBeInTheDocument();
+      expect(within(panel).getByRole('link', { name: 'Colar uma lista' })).toHaveAttribute('href', '/add-cards');
+      expect(within(panel).getByRole('link', { name: 'Enviar uma planilha (.csv)' })).toHaveAttribute('href', '/add-cards/csv');
+      expect(screen.queryByTestId('shared-coverage')).not.toBeInTheDocument();
+    });
+
     it('copies the deck and opens the new one', async () => {
       api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
       renderPage(undefined, makeAuth());

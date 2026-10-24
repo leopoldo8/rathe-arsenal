@@ -149,6 +149,7 @@ describe('SharedDeckViewService.coverage', () => {
       ownedCopies: 2,
       totalCopies: 4,
       percent: 50,
+      collectionEmpty: false,
     });
   });
 
@@ -164,7 +165,7 @@ describe('SharedDeckViewService.coverage', () => {
   });
 
   it('is zero for an empty collection', async () => {
-    expect(await build({}, { intent: 'deck' }).service.coverage('live', 'visitor-1')).toMatchObject({ ownedCopies: 0, percent: 0 });
+    expect(await build({}, { intent: 'deck' }).service.coverage('live', 'visitor-1')).toMatchObject({ ownedCopies: 0, percent: 0, collectionEmpty: true });
   });
 
   it('answers 404 for a dead token', async () => {

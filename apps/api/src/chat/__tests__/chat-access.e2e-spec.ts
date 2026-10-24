@@ -48,7 +48,7 @@ describe('chat access (E2E)', () => {
     expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(true);
   });
 
-  it('sign-in, verify-email and reset-password return chatAccess over HTTP', async () => {
+  it('sign-in and verify-email return chatAccess over HTTP', async () => {
     const tokens = new TokenGeneratorService();
     const user = await fixture.chatUser({ access: false });
     const server = fixture.app.getHttpServer();
@@ -66,15 +66,7 @@ describe('chat access (E2E)', () => {
     );
     const verified = (await request(server).post('/api/auth/verify-email').send({ token: verifyToken }).expect(200)).body.user.chatAccess as boolean;
 
-    const resetToken = tokens.generateRawToken();
-    await fixture.dataSource.query(
-      `UPDATE "user" SET "passwordResetTokenHash" = $2, "passwordResetTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
-      [user.email, tokens.hashToken(resetToken)],
-    );
-    const reset = (await request(server).post('/api/auth/reset-password').send({ token: resetToken, newPassword: 'another-password-123' }).expect(200)).body.user
-      .chatAccess as boolean;
-
-    expect([refused, granted, verified, reset]).toEqual([false, true, true, true]);
+    expect([refused, granted, verified]).toEqual([false, true, true]);
   });
 
   it('every chat route refuses a user without access', async () => {

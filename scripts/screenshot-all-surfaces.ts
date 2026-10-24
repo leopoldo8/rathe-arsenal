@@ -83,13 +83,8 @@ type TSurface = {
 };
 
 const ANON_SURFACES: TSurface[] = [
-  { name: 'sign-in', url: '/sign-in', auth: false },
-  { name: 'sign-up', url: '/sign-up', auth: false },
-  { name: 'forgot-password', url: '/forgot-password', auth: false },
-  // reset-password and check-your-email require a token query param — we
-  // navigate to the base URL which renders the form in a "no-token" loading
-  // state; sufficient for light-theme audit.
-  { name: 'reset-password-no-token', url: '/reset-password', auth: false },
+  // One field at /entrar replaces the sign-in, sign-up, forgot and reset pages.
+  { name: 'start', url: '/entrar', auth: false },
   { name: 'check-your-email', url: '/check-your-email', auth: false },
   // verify-email requires an active token: skip to avoid hanging on a real
   // verification round-trip.

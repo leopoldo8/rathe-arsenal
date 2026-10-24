@@ -31,6 +31,9 @@ export enum EUserRole {
  * sent in the email link only, never stored.
  */
 @Check('CHK_user_referred_via_valid', `"referredVia" IN ('deck', 'want', 'sell')`)
+// Unique on the lowercased address (door 14), `IDX_user_email_lower`. TypeORM cannot declare an
+// expression index: the migration creates it in production and `DatabaseModule` creates it where
+// the schema is synchronized (the schema sync does not read expression indexes, so it leaves it be).
 @Entity({ name: 'user' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -48,8 +51,9 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 255 })
   email!: string;
 
-  @Column({ type: 'varchar', length: 60 })
-  passwordHash!: string;
+  /** Null for an account that signs in with an e-mailed code only (door 14). */
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  passwordHash!: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   emailVerifiedAt!: Date | null;
@@ -106,6 +110,10 @@ export class UserEntity {
 
   @Column({ type: 'varchar', length: 8, nullable: true })
   referredVia!: TReferredVia | null;
+
+  /** The in-app page the visitor signed up from, so confirming the e-mail can send them back to it on any device. */
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  signupReturnPath!: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

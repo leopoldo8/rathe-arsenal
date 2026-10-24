@@ -225,9 +225,9 @@ describe('Plan B full flow (E2E, U11)', () => {
       const signUpRes = await request(server)
         .post('/api/auth/sign-up')
         .send({ email: TEST_EMAIL, password: TEST_PASSWORD })
-        .expect(202);
+        .expect(201);
 
-      expect(signUpRes.body.message).toContain('verification link');
+      expect(signUpRes.body.user.email).toBe(TEST_EMAIL);
 
       // In NODE_ENV=development, AuthService appends _devVerificationLink so
       // tests can verify emails without a real email delivery service.

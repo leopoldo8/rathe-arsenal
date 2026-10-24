@@ -1,5 +1,7 @@
 import {
+  ConflictException,
   ForbiddenException,
+  GoneException,
   HttpException,
   InternalServerErrorException,
   BadRequestException,
@@ -12,9 +14,11 @@ const STATUS_MAP: Record<EAuthErrorCode, new (response: string | object) => Http
   [EAuthErrorCode.InvalidCredentials]: UnauthorizedException,
   [EAuthErrorCode.EmailNotVerified]: ForbiddenException,
   [EAuthErrorCode.InvalidToken]: BadRequestException,
-  [EAuthErrorCode.TokenExpired]: BadRequestException,
+  [EAuthErrorCode.TokenExpired]: GoneException,
   [EAuthErrorCode.EmailDeliveryFailed]: InternalServerErrorException,
   [EAuthErrorCode.UserNotFound]: NotFoundException,
+  [EAuthErrorCode.EmailTaken]: ConflictException,
+  [EAuthErrorCode.InvalidCode]: UnauthorizedException,
 };
 
 export function mapAuthError(err: AuthError): HttpException {

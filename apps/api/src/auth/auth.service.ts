@@ -2,26 +2,33 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { EUserRole, UserEntity } from '../database/entities/user.entity';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { EmailService } from '../email/email.service';
-import { EmailDeliveryError } from '../email/errors';
 import { ShareEventsService } from '../sharing/share-events.service';
 import { ShareReferralService } from '../sharing/share-referral.service';
 import { PasswordHasherService } from './services/password-hasher.service';
 import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthError, EAuthErrorCode } from './errors';
-import { IAuthResponse, IAuthSettings, IGenericAuthAcceptedResponse } from './dtos/auth-response.dto';
+import {
+  IAuthResponse,
+  IAuthSettings,
+  ICodeSignInResponse,
+  IGenericAuthAcceptedResponse,
+  ISignUpResponse,
+  IStartResponse,
+} from './dtos/auth-response.dto';
+import { sanitizeReturnPath } from './return-path';
+import { ICodeRequestResult, SignInCodeService } from './sign-in-code.service';
+import { SignUpDto } from './dtos/sign-up.dto';
 import { ICurrentUser } from './dtos/current-user.dto';
 
-const GENERIC_SIGN_UP_MESSAGE =
-  'If this email is not already registered, you will receive a verification link shortly.';
 const GENERIC_RESEND_MESSAGE =
   'If this email is registered and unverified, you will receive a verification link shortly.';
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const RESET_TTL_MS = 60 * 60 * 1000;             // 1 hour
+const UNIQUE_VIOLATION = '23505';
 
 @Injectable()
 export class AuthService {
@@ -39,34 +46,38 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly shareReferral: ShareReferralService,
     private readonly shareEvents: ShareEventsService,
+    private readonly signInCodes: SignInCodeService,
   ) {
     this.baseUrl = this.config.get<string>('APP_BASE_URL') ?? 'http://localhost:5173';
     this.isDev = this.config.get<string>('NODE_ENV') !== 'production';
   }
 
-  async signUp(
-    email: string,
-    password: string,
-    locale: TLocale = 'pt-BR',
-    shareToken?: string,
-  ): Promise<IGenericAuthAcceptedResponse> {
-    // A4: always return the same generic 202 response whether the email exists
-    // or not. Short-circuit for existing emails so we never attempt to save a
-    // new row (which would trigger a unique-constraint violation that leaks
-    // existence via a 500 response).
+  /** Says what an address takes next, so the page can show the right step. Reveals existence on purpose (journey 1). */
+  async start(email: string): Promise<IStartResponse> {
+    const user = await this.users.findOne({ where: { email } });
+    if (!user) return { next: 'new' };
+    return { next: user.passwordHash === null ? 'code' : 'password' };
+  }
+
+  /**
+   * Creates an account and signs it in at once. The password is optional (door 14) and the e-mail
+   * is confirmed later; an account that exists answers 409 instead of the old generic 202, because
+   * the start step already says whether an address has an account.
+   */
+  async signUp(dto: SignUpDto, locale: TLocale = 'pt-BR'): Promise<ISignUpResponse> {
+    const { email, password, shareToken } = dto;
     const existing = await this.users.findOne({ where: { email } });
     if (existing) {
-      this.logger.log({ event: 'auth.sign_up.existing_email_ignored', userId: existing.id });
-      return { message: GENERIC_SIGN_UP_MESSAGE };
+      this.logger.log({ event: 'auth.sign_up.existing_email', userId: existing.id });
+      throw new AuthError(EAuthErrorCode.EmailTaken, 'An account with this e-mail already exists');
     }
 
-    const passwordHash = await this.passwordHasher.hash(password);
+    const passwordHash = password === undefined ? null : await this.passwordHasher.hash(password);
     const rawToken = this.tokenGenerator.generateRawToken();
     const tokenHash = this.tokenGenerator.hashToken(rawToken);
     const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
-    // Resolved only on this new-user path, and a dead token is silently ignored,
-    // so the response never reveals whether the token or the email was known.
+    // Resolved only on this new-user path, and a dead token is silently ignored.
     const referral = shareToken ? await this.shareReferral.resolve(shareToken) : null;
 
     const user = this.users.create({
@@ -75,9 +86,10 @@ export class AuthService {
       emailVerifiedAt: null,
       verificationTokenHash: tokenHash,
       verificationTokenExpiresAt: expiresAt,
+      signupReturnPath: sanitizeReturnPath(dto.returnPath),
       ...(referral ? { referredByUserId: referral.ownerUserId, referredVia: referral.via } : {}),
     });
-    const saved = await this.users.save(user);
+    const saved = await this.saveNewUser(user);
 
     if (referral) {
       await this.shareEvents.record({
@@ -91,24 +103,31 @@ export class AuthService {
     }
 
     const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
-
     try {
       await this.emailService.sendVerificationEmail(email, link, locale);
-    } catch (err) {
+    } catch {
+      // The account exists and works; "Reenviar" sends the confirmation again.
       this.logger.error({ event: 'auth.sign_up.email_failed', userId: saved.id });
-      if (err instanceof EmailDeliveryError) {
-        throw new AuthError(EAuthErrorCode.EmailDeliveryFailed, 'Could not send verification email. Please try again later.');
-      }
-      throw err;
     }
 
     this.logger.log({ event: 'auth.sign_up.success', userId: saved.id });
-
-    const response: IGenericAuthAcceptedResponse = { message: GENERIC_SIGN_UP_MESSAGE };
+    const response: ISignUpResponse = await this.authResponse(saved);
     if (this.isDev) {
       response._devVerificationLink = link;
     }
     return response;
+  }
+
+  async requestCode(email: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult> {
+    return this.signInCodes.request(email, locale);
+  }
+
+  async verifyCode(email: string, code: string): Promise<ICodeSignInResponse> {
+    return this.signInWithCodeOf(await this.signInCodes.verify(email, code));
+  }
+
+  async redeemCode(token: string): Promise<ICodeSignInResponse> {
+    return this.signInWithCodeOf(await this.signInCodes.redeem(token));
   }
 
   /**
@@ -152,27 +171,15 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<IAuthResponse> {
     const user = await this.users.findOne({ where: { email } });
-    if (!user) {
+    // A wrong password, an account with no password and a deleted account all answer alike.
+    const valid = user !== null && !user.deletedAt && (await this.passwordHasher.verify(password, user.passwordHash));
+    if (!user || !valid) {
+      if (user) this.logger.warn({ event: 'auth.sign_in.refused', userId: user.id });
       throw new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password');
-    }
-    const valid = await this.passwordHasher.verify(password, user.passwordHash);
-    if (!valid) {
-      this.logger.warn({ event: 'auth.sign_in.wrong_password', userId: user.id });
-      throw new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password');
-    }
-    if (user.emailVerifiedAt === null) {
-      throw new AuthError(EAuthErrorCode.EmailNotVerified, 'Please verify your email before signing in');
     }
 
-    const jwt = await this.issueJwt(user.id);
     this.logger.log({ event: 'auth.sign_in.success', userId: user.id });
-    return {
-      jwt,
-      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
-      // U12: include settings for first-paint theme correctness. Nullish fallback
-      // guards against NULL preferences on rows created before migration 1776621087000.
-      settings: { theme: user.preferences?.theme ?? 'dark' },
-    };
+    return this.authResponse(user);
   }
 
   async verifyEmail(rawToken: string): Promise<IAuthResponse> {
@@ -189,60 +196,8 @@ export class AuthService {
     user.verificationTokenExpiresAt = null;
     await this.users.save(user);
 
-    const jwt = await this.issueJwt(user.id);
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
-    return {
-      jwt,
-      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
-      settings: { theme: user.preferences?.theme ?? 'dark' },
-    };
-  }
-
-  async requestPasswordReset(email: string, locale: TLocale = 'pt-BR'): Promise<void> {
-    const user = await this.users.findOne({ where: { email } });
-    if (!user) {
-      // Do not leak account existence on this endpoint
-      return;
-    }
-
-    const rawToken = this.tokenGenerator.generateRawToken();
-    user.passwordResetTokenHash = this.tokenGenerator.hashToken(rawToken);
-    user.passwordResetTokenExpiresAt = new Date(Date.now() + RESET_TTL_MS);
-    await this.users.save(user);
-
-    const link = `${this.baseUrl}/reset-password?token=${rawToken}`;
-    try {
-      await this.emailService.sendPasswordResetEmail(email, link, locale);
-    } catch (_err) {
-      this.logger.error({ event: 'auth.password_reset.email_failed', userId: user.id });
-      // Swallow — the user sees generic success either way
-    }
-
-    this.logger.log({ event: 'auth.password_reset.requested', userId: user.id });
-  }
-
-  async resetPassword(rawToken: string, newPassword: string): Promise<IAuthResponse> {
-    const hash = this.tokenGenerator.hashToken(rawToken);
-    const user = await this.users.findOne({
-      where: { passwordResetTokenHash: hash },
-    });
-    if (!user || !user.passwordResetTokenExpiresAt || user.passwordResetTokenExpiresAt < new Date()) {
-      throw new AuthError(EAuthErrorCode.InvalidToken, 'This reset link is invalid or has expired');
-    }
-
-    user.passwordHash = await this.passwordHasher.hash(newPassword);
-    user.passwordResetTokenHash = null;
-    user.passwordResetTokenExpiresAt = null;
-    // emailVerifiedAt is NOT cleared — verified users stay verified
-    await this.users.save(user);
-
-    const jwt = await this.issueJwt(user.id);
-    this.logger.log({ event: 'auth.reset_password.success', userId: user.id });
-    return {
-      jwt,
-      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
-      settings: { theme: user.preferences?.theme ?? 'dark' },
-    };
+    return this.authResponse(user);
   }
 
   async getMe(
@@ -313,7 +268,34 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async issueJwt(userId: string): Promise<string> {
-    return this.jwtService.signAsync({ sub: userId });
+  private async signInWithCodeOf(email: string): Promise<ICodeSignInResponse> {
+    const user = await this.users.findOne({ where: { email } });
+    if (!user || user.deletedAt !== null) {
+      throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
+    }
+    this.logger.log({ event: 'auth.sign_in.code', userId: user.id });
+    return { ...(await this.authResponse(user)), returnPath: user.signupReturnPath };
+  }
+
+  private async saveNewUser(user: UserEntity): Promise<UserEntity> {
+    try {
+      return await this.users.save(user);
+    } catch (err) {
+      // Two sign-ups for one address raced past the lookup; the unique index kept one.
+      if (err instanceof QueryFailedError && (err as QueryFailedError & { code?: string }).code === UNIQUE_VIOLATION) {
+        throw new AuthError(EAuthErrorCode.EmailTaken, 'An account with this e-mail already exists');
+      }
+      throw err;
+    }
+  }
+
+  private async authResponse(user: UserEntity): Promise<IAuthResponse> {
+    return {
+      jwt: await this.jwtService.signAsync({ sub: user.id }),
+      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
+      // U12: include settings for first-paint theme correctness. Nullish fallback
+      // guards against NULL preferences on rows created before migration 1776621087000.
+      settings: { theme: user.preferences?.theme ?? 'dark' },
+    };
   }
 }

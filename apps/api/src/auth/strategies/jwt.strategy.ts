@@ -2,10 +2,12 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
+import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../../database/entities/user.entity';
 import { ICurrentUser } from '../dtos/current-user.dto';
+import { readCookie, SESSION_COOKIE_NAME } from '../session-cookie';
 
 export interface IJwtPayload {
   sub: string;
@@ -14,10 +16,11 @@ export interface IJwtPayload {
 }
 
 /**
- * Verifies the `Authorization: Bearer <jwt>` header against `JWT_SECRET`,
- * loads the user from the DB by `payload.sub`, and asserts the user is
- * email-verified before returning the user object that NestJS attaches to
- * `request.user`.
+ * Verifies the `Authorization: Bearer <jwt>` header (interim: S32 removes it), or the
+ * `ra_session` cookie, against `JWT_SECRET`, loads the user from
+ * the DB by `payload.sub` and returns the user object that NestJS attaches to
+ * `request.user`. An unconfirmed e-mail does not block a session (door 14);
+ * it only blocks creating share links.
  *
  * The DB hit on every authenticated request is a deliberate Phase 0 trade-off:
  * it costs one query per request but guarantees that admin actions
@@ -36,7 +39,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new Error('JWT_SECRET is not configured');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // The header goes first on purpose: the extractors do not fall back when the first token fails
+      // verification, and a stale `ra_session` cookie must not beat a fresh Bearer token (verify-email
+      // hands out a JWT without setting the cookie). S32 drops the header.
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: Request) => readCookie(req.headers.cookie, SESSION_COOKIE_NAME),
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret,
     });
@@ -51,9 +60,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // lookup. This is a field check on the already-loaded entity, not a
     // second query — the A13 trade-off from Phase 0 is preserved.
     if (user.deletedAt !== null) {
-      throw new UnauthorizedException();
-    }
-    if (user.emailVerifiedAt === null) {
       throw new UnauthorizedException();
     }
     return { userId: user.id, email: user.email ?? '', role: user.role, chatAccess: user.chatAccess };

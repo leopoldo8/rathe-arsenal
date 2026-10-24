@@ -43,14 +43,14 @@ function renderModal(opts: IRenderOpts) {
     user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false },
     token: 'jwt-token',
     isLoading: false,
-    signUp: async () => ({}),
+    signUp: async () => undefined,
     signIn: noopAsync,
     signOut: () => {
       /* test stub */
     },
     verifyEmail: noopAsync,
-    forgotPassword: noopAsync,
-    resetPassword: noopAsync,
+    verifyCode: async () => ({ returnPath: null }),
+    redeemCode: async () => ({ returnPath: null }),
     deleteAccount: opts.deleteAccount,
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,

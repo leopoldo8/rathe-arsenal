@@ -8,6 +8,7 @@ import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { EmailService } from '../../email/email.service';
 import { EmailDeliveryError, EEmailErrorCode } from '../../email/errors';
 import { AuthService } from '../auth.service';
+import { SignInCodeService } from '../sign-in-code.service';
 import { PasswordHasherService } from '../services/password-hasher.service';
 import { TokenGeneratorService } from '../services/token-generator.service';
 import { EAuthErrorCode } from '../errors';
@@ -17,7 +18,6 @@ function buildService(overrides: {
   save?: jest.Mock;
   create?: jest.Mock;
   sendVerification?: jest.Mock;
-  sendReset?: jest.Mock;
   resolveReferral?: jest.Mock;
 } = {}) {
   const repo = createMock<Repository<UserEntity>>();
@@ -32,7 +32,6 @@ function buildService(overrides: {
 
   const email = createMock<EmailService>();
   email.sendVerificationEmail = overrides.sendVerification ?? jest.fn().mockResolvedValue(undefined);
-  email.sendPasswordResetEmail = overrides.sendReset ?? jest.fn().mockResolvedValue(undefined);
 
   const config = createMock<ConfigService>();
   config.get.mockImplementation((key: string) => {
@@ -55,21 +54,30 @@ function buildService(overrides: {
     config,
     referral as unknown as ShareReferralService,
     shareEvents as unknown as ShareEventsService,
+    createMock<SignInCodeService>(),
   );
 
   return { service, repo, hasher, tokens, jwt, email, referral, shareEvents };
 }
 
 describe('AuthService.signUp', () => {
-  it('creates a user, sends verification email, and returns dev link (happy path)', async () => {
+  it('creates a signed-in user, sends the verification email and returns the dev link (happy path)', async () => {
     const { service, email } = buildService();
-    const result = await service.signUp('a@b.com', 'longenoughpassword');
-    expect(result.message).toContain('verification link');
+    const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
+    expect(result.jwt).toBe('jwt-token');
+    expect(result.user.email).toBe('a@b.com');
     expect(result._devVerificationLink).toContain('/verify-email?token=');
     expect(email.sendVerificationEmail).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'pt-BR');
   });
 
-  it('A4: returns the same generic message when the email already exists (no leak)', async () => {
+  it('stores a null passwordHash when no password is given', async () => {
+    const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
+    const { service } = buildService({ create });
+    await service.signUp({ email: 'a@b.com' });
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ passwordHash: null, emailVerifiedAt: null }));
+  });
+
+  it('answers EMAIL_TAKEN when the address already has an account, writing and sending nothing', async () => {
     const save = jest.fn();
     const sendVerification = jest.fn().mockResolvedValue(undefined);
     const { service } = buildService({
@@ -77,34 +85,57 @@ describe('AuthService.signUp', () => {
       save,
       sendVerification,
     });
-    const result = await service.signUp('a@b.com', 'longenoughpassword');
-    // Generic message identical to the happy-path one.
-    expect(result.message).toContain('verification link');
-    // Critically: no new row written, no email sent, no _devVerificationLink
-    // leaked (which would reveal that we took the "new user" branch).
+    await expect(service.signUp({ email: 'a@b.com', password: 'longenoughpassword' })).rejects.toMatchObject({
+      code: EAuthErrorCode.EmailTaken,
+    });
     expect(save).not.toHaveBeenCalled();
     expect(sendVerification).not.toHaveBeenCalled();
-    expect(result._devVerificationLink).toBeUndefined();
   });
 
-  it('throws EMAIL_DELIVERY_FAILED when the email service fails', async () => {
+  it('keeps the account when the verification email fails to send', async () => {
     const { service } = buildService({
       sendVerification: jest.fn().mockRejectedValue(new EmailDeliveryError(EEmailErrorCode.Network, 'fail')),
     });
-    await expect(service.signUp('a@b.com', 'longenoughpassword')).rejects.toMatchObject({
-      code: EAuthErrorCode.EmailDeliveryFailed,
-    });
+    const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
+    expect(result.jwt).toBe('jwt-token');
   });
 
   it('forwards the locale to sendVerificationEmail (T17)', async () => {
     const sendVerification = jest.fn().mockResolvedValue(undefined);
     const { service } = buildService({ sendVerification });
-    await service.signUp('a@b.com', 'longenoughpassword', 'en-US');
+    await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' }, 'en-US');
     expect(sendVerification).toHaveBeenCalledWith(
       'a@b.com',
       expect.stringContaining('/verify-email?token='),
       'en-US',
     );
+  });
+
+  it('only an in-app return path is stored', async () => {
+    const storedPathFor = async (returnPath: string): Promise<string | null | undefined> => {
+      const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
+      const { service } = buildService({ create });
+      await service.signUp({ email: 'a@b.com', returnPath });
+      return (create.mock.calls[0][0] as Partial<UserEntity>).signupReturnPath;
+    };
+
+    expect(await storedPathFor('/d/abc')).toBe('/d/abc');
+    expect(await storedPathFor('/decks/12')).toBe('/decks/12');
+    expect(await storedPathFor('https://evil.example/x')).toBeNull();
+    expect(await storedPathFor('//evil.example')).toBeNull();
+    expect(await storedPathFor(`/${'a'.repeat(200)}`)).toBeNull();
+  });
+});
+
+describe('AuthService.start', () => {
+  it('says new, password or code by what the address has', async () => {
+    const none = buildService();
+    const withPassword = buildService({ findOne: jest.fn().mockResolvedValue({ id: 'u', passwordHash: 'h' }) });
+    const codeOnly = buildService({ findOne: jest.fn().mockResolvedValue({ id: 'u', passwordHash: null }) });
+
+    expect(await none.service.start('a@b.com')).toEqual({ next: 'new' });
+    expect(await withPassword.service.start('a@b.com')).toEqual({ next: 'password' });
+    expect(await codeOnly.service.start('a@b.com')).toEqual({ next: 'code' });
   });
 });
 
@@ -244,15 +275,27 @@ describe('AuthService.signIn', () => {
     });
   });
 
-  it('throws EMAIL_NOT_VERIFIED for unverified user with correct password', async () => {
+  it('signs an unconfirmed account in: only share links wait for the confirmation (door 14)', async () => {
     const { service, hasher } = buildService();
     const user = await makeVerifiedUser(hasher);
     user.emailVerifiedAt = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
-    await expect(service.signIn('a@b.com', 'longenoughpassword')).rejects.toMatchObject({
-      code: EAuthErrorCode.EmailNotVerified,
-    });
+    const result = await service.signIn('a@b.com', 'longenoughpassword');
+    expect(result.jwt).toBe('jwt-token');
+  });
+
+  it('refuses an account with no password and a deleted account like a wrong password', async () => {
+    const { service, hasher } = buildService();
+    const noPassword = { ...(await makeVerifiedUser(hasher)), passwordHash: null };
+    const deleted = { ...(await makeVerifiedUser(hasher)), deletedAt: new Date() };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
+    (service as any).users.findOne = jest.fn().mockResolvedValue(noPassword);
+    await expect(service.signIn('a@b.com', 'longenoughpassword')).rejects.toMatchObject({ code: EAuthErrorCode.InvalidCredentials });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
+    (service as any).users.findOne = jest.fn().mockResolvedValue(deleted);
+    await expect(service.signIn('a@b.com', 'longenoughpassword')).rejects.toMatchObject({ code: EAuthErrorCode.InvalidCredentials });
   });
 });
 
@@ -304,72 +347,6 @@ describe('AuthService.verifyEmail', () => {
   });
 });
 
-describe('AuthService.requestPasswordReset', () => {
-  it('sends a reset email for a known user (happy path)', async () => {
-    const user: Partial<UserEntity> = { id: 'u1', email: 'a@b.com' };
-    const sendReset = jest.fn().mockResolvedValue(undefined);
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      sendReset,
-    });
-    await service.requestPasswordReset('a@b.com');
-    expect(sendReset).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/reset-password?token='), 'pt-BR');
-  });
-
-  it('returns silently for an unknown email (no leak)', async () => {
-    const sendReset = jest.fn();
-    const { service } = buildService({ sendReset });
-    await service.requestPasswordReset('unknown@b.com');
-    expect(sendReset).not.toHaveBeenCalled();
-  });
-
-  it('forwards the locale to sendPasswordResetEmail (T17)', async () => {
-    const user: Partial<UserEntity> = { id: 'u1', email: 'a@b.com' };
-    const sendReset = jest.fn().mockResolvedValue(undefined);
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      sendReset,
-    });
-    await service.requestPasswordReset('a@b.com', 'en-US');
-    expect(sendReset).toHaveBeenCalledWith(
-      'a@b.com',
-      expect.stringContaining('/reset-password?token='),
-      'en-US',
-    );
-  });
-});
-
-describe('AuthService.resetPassword', () => {
-  it('sets new password, clears token, returns JWT (happy path)', async () => {
-    const tokens = new TokenGeneratorService();
-    const raw = tokens.generateRawToken();
-    const user: Partial<UserEntity> = {
-      id: 'u1',
-      email: 'a@b.com',
-      passwordResetTokenHash: tokens.hashToken(raw),
-      passwordResetTokenExpiresAt: new Date(Date.now() + 60_000),
-      emailVerifiedAt: new Date(), // stays verified
-      passwordHash: 'old-hash',
-    };
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-    const result = await service.resetPassword(raw, 'newpasswordlongenough');
-    expect(result.jwt).toBe('jwt-token');
-    expect(result.settings).toEqual({ theme: 'dark' });
-    expect(user.passwordHash).not.toBe('old-hash');
-    expect(user.passwordResetTokenHash).toBeNull();
-    expect(user.emailVerifiedAt).not.toBeNull(); // preserved
-  });
-
-  it('throws INVALID_TOKEN for a wrong token', async () => {
-    const { service } = buildService();
-    await expect(service.resetPassword('a'.repeat(64), 'newpasswordlongenough')).rejects.toMatchObject({
-      code: EAuthErrorCode.InvalidToken,
-    });
-  });
-});
-
 describe('AuthService.signUp share attribution', () => {
   const REFERRAL: IShareReferral = {
     ownerUserId: 'owner-1',
@@ -386,7 +363,7 @@ describe('AuthService.signUp share attribution', () => {
       resolveReferral: jest.fn().mockResolvedValue(REFERRAL),
     });
 
-    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+    await service.signUp({ email: 'a@b.com', password: 'longenoughpassword', shareToken: 'live-token' });
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ referredByUserId: 'owner-1', referredVia: 'deck' }),
@@ -408,7 +385,7 @@ describe('AuthService.signUp share attribution', () => {
       resolveReferral: jest.fn().mockResolvedValue({ ...REFERRAL, intent: 'missing', via: 'want' }),
     });
 
-    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+    await service.signUp({ email: 'a@b.com', password: 'longenoughpassword', shareToken: 'live-token' });
 
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ referredVia: 'want' }));
     expect(shareEvents.record).toHaveBeenCalledWith(expect.objectContaining({ intent: 'missing' }));
@@ -417,9 +394,9 @@ describe('AuthService.signUp share attribution', () => {
   it('ignores a dead token: no referral columns, no event, same response', async () => {
     const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
     const { service, shareEvents } = buildService({ create });
-    const withoutToken = await buildService().service.signUp('a@b.com', 'longenoughpassword');
+    const withoutToken = await buildService().service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
 
-    const result = await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'dead-token');
+    const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword', shareToken: 'dead-token' });
 
     expect(create.mock.calls[0][0]).not.toHaveProperty('referredByUserId');
     expect(shareEvents.record).not.toHaveBeenCalled();
@@ -433,7 +410,9 @@ describe('AuthService.signUp share attribution', () => {
       resolveReferral,
     });
 
-    await service.signUp('a@b.com', 'longenoughpassword', 'pt-BR', 'live-token');
+    await expect(
+      service.signUp({ email: 'a@b.com', password: 'longenoughpassword', shareToken: 'live-token' }),
+    ).rejects.toMatchObject({ code: EAuthErrorCode.EmailTaken });
 
     expect(resolveReferral).not.toHaveBeenCalled();
     expect(shareEvents.record).not.toHaveBeenCalled();
@@ -578,7 +557,6 @@ describe('AuthService chat access in auth responses', () => {
 
     for (const chatAccess of [true, false]) {
       const verifyRaw = tokens.generateRawToken();
-      const resetRaw = tokens.generateRawToken();
       const signInUser: Partial<UserEntity> = { id: 'u1', email: 'a@b.com', passwordHash, emailVerifiedAt: new Date(), chatAccess };
       const verifyUser: Partial<UserEntity> = {
         id: 'u1',
@@ -588,24 +566,13 @@ describe('AuthService chat access in auth responses', () => {
         verificationTokenExpiresAt: new Date(Date.now() + 60_000),
         chatAccess,
       };
-      const resetUser: Partial<UserEntity> = {
-        id: 'u1',
-        email: 'a@b.com',
-        emailVerifiedAt: new Date(),
-        passwordResetTokenHash: tokens.hashToken(resetRaw),
-        passwordResetTokenExpiresAt: new Date(Date.now() + 60_000),
-        passwordHash: 'old-hash',
-        chatAccess,
-      };
-
       const signIn = await buildService({ findOne: jest.fn().mockResolvedValue(signInUser) }).service.signIn('a@b.com', 'longenoughpassword');
       const verify = await buildService({ findOne: jest.fn().mockResolvedValue(verifyUser) }).service.verifyEmail(verifyRaw);
-      const reset = await buildService({ findOne: jest.fn().mockResolvedValue(resetUser) }).service.resetPassword(resetRaw, 'newpasswordlongenough');
 
-      results.push(signIn.user.chatAccess, verify.user.chatAccess, reset.user.chatAccess);
+      results.push(signIn.user.chatAccess, verify.user.chatAccess);
     }
 
-    expect(results).toEqual([true, true, true, false, false, false]);
+    expect(results).toEqual([true, true, false, false]);
   });
 });
 

@@ -2,6 +2,7 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import {
   UserEntity,
   CsvSourceEntity,
@@ -37,6 +38,7 @@ import {
   CardListLineEntity,
   CardPriceEntity,
   CardPriceGroupSyncEntity,
+  SignInCodeEntity,
 } from './entities';
 
 /**
@@ -92,6 +94,7 @@ import {
             CardListLineEntity,
             CardPriceEntity,
             CardPriceGroupSyncEntity,
+            SignInCodeEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.
@@ -100,6 +103,17 @@ import {
           synchronize: isDev,
           logging: false,
         };
+      },
+      // The lowercased-address unique index (door 14) is an expression index, which entity
+      // decorators cannot declare; where the schema is synchronized instead of migrated, create it here.
+      dataSourceFactory: async (options?: DataSourceOptions) => {
+        const dataSource = await new DataSource(options as DataSourceOptions).initialize();
+        if ((options as { synchronize?: boolean }).synchronize === true) {
+          await dataSource.query(
+            `CREATE UNIQUE INDEX IF NOT EXISTS "IDX_user_email_lower" ON "user" (lower("email"))`,
+          );
+        }
+        return dataSource;
       },
     }),
   ],

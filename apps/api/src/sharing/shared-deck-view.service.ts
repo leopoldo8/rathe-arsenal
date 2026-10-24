@@ -92,7 +92,7 @@ export class SharedDeckViewService {
     const ownedCopies = sumQuantities(breakdown.exact);
     const totalCopies = sumQuantities(rows);
     const percent = totalCopies === 0 ? 0 : Math.round((ownedCopies / totalCopies) * 100);
-    return { ownedCopies, totalCopies, percent };
+    return { ownedCopies, totalCopies, percent, collectionEmpty: visitorInventory.size === 0 };
   }
 
   /** What the visitor owns of each missing card, zero included, so the page can mark the ones they could lend. */

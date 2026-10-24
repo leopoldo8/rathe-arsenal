@@ -3,6 +3,7 @@ import { shell } from './shell';
 import { home } from './home';
 import { onboarding } from './onboarding';
 import { auth } from './auth';
+import { account } from './account';
 import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
@@ -27,6 +28,7 @@ export const ptBR = {
   home,
   onboarding,
   auth,
+  account,
   apiErrors,
   library,
   csvSources,

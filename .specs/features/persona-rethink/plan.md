@@ -197,7 +197,9 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `GET /api/admin/stores/:slug/credits` | nothing | the month's credits used, budget, `lookupsStopped` | `200`, `403` |
 | `GET /api/chat/conversations/:id` | as today | swap proposals add `quantity`, `side`, `missingBefore`, `missingAfter` | `200`, `400`, `404` |
 | `/termos` (public web page) | `q?`, `#word` | the glossary | `200` |
+| `/entrar` (public web page) | `token?` (the e-mail button's single-use token, signs in on arrival) | the one-field start; `/` renders the same page for a signed-out visitor; `/sign-in` and `/sign-up` redirect to it, `/forgot-password` and `/reset-password` are removed | `200` |
 | `GET /api/decks/:deckId` (and the `PUT` that returns the deck) | as today | each replacement gains `originalPitch` (1 to 3, or null) so the web can name the original with its pitch | `200`, `404` |
+| `GET /api/shared/decks/:token/coverage` | nothing | as today, plus `collectionEmpty` (true when the visitor owns no copy at all) so a new account on a shared deck is told how to put cards in (AC 225); the web asking the Library list instead was rejected, it loads every card to answer one yes or no | `200`, `401`, `404` |
 
 ## Landing
 

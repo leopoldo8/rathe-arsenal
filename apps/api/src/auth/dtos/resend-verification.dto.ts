@@ -1,6 +1,6 @@
-import { IsEmail } from 'class-validator';
+import { NormalizedEmail } from './normalized-email.decorator';
 
 export class ResendVerificationDto {
-  @IsEmail()
+  @NormalizedEmail()
   email!: string;
 }

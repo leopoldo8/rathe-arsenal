@@ -43,6 +43,8 @@ export interface ISharedDeckCoverage {
   ownedCopies: number;
   totalCopies: number;
   percent: number;
+  /** True when the visitor owns no copy at all, so the page says how to put cards in instead of showing 0%. */
+  collectionEmpty: boolean;
 }
 
 export interface ISharedDeckMatches {

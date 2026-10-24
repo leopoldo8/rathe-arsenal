@@ -60,7 +60,7 @@ async function signUpAndGetJwt(
   const signUpRes = await request(server as Parameters<typeof request>[0])
     .post('/api/auth/sign-up')
     .send({ email, password })
-    .expect(202);
+    .expect(201);
 
   const token = extractVerificationToken(signUpRes.body._devVerificationLink as string);
 

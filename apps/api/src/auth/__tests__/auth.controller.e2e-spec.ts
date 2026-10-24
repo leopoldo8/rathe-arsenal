@@ -2,12 +2,14 @@ import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { AuthError, EAuthErrorCode } from '../errors';
+import { AUTH_THROTTLE } from '../auth-throttle';
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
 import { ICurrentUser } from '../dtos/current-user.dto';
 import { EUserRole } from '../../database/entities/user.entity';
@@ -37,18 +39,16 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
       settings: { theme: 'dark' },
     });
-    authService.resetPassword.mockResolvedValue({
+    authService.signUp.mockResolvedValue({
       jwt: 'jwt-token',
       user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
       settings: { theme: 'dark' },
     });
-    authService.signUp.mockResolvedValue({
-      message: 'If this email is not already registered, you will receive a verification link shortly.',
-    });
+    authService.start.mockResolvedValue({ next: 'new' });
+    authService.requestCode.mockResolvedValue({ expiresAt: new Date(), resendAfter: new Date() });
     authService.resendVerification.mockResolvedValue({
       message: 'If this email is registered and unverified, you will receive a verification link shortly.',
     });
-    authService.requestPasswordReset.mockResolvedValue(undefined);
     authService.deleteAccount.mockResolvedValue({ ok: true });
 
     const moduleRef = await Test.createTestingModule({
@@ -58,6 +58,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: authService },
+        { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile();
@@ -146,43 +147,53 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
   });
 
-  describe('verify-email (10/hour) and reset-password (5/hour)', () => {
-    it('verify-email and reset-password are throttled per hour', async () => {
+  describe('verify-email (10/hour)', () => {
+    it('verify-email is throttled per hour', async () => {
       const server = app.getHttpServer();
       const token = 'a'.repeat(64);
-      const statusesOf = async (path: string, body: object, times: number, ip: string): Promise<number[]> => {
-        const statuses: number[] = [];
-        for (let i = 0; i < times; i++) {
-          statuses.push((await request(server).post(path).set('X-Forwarded-For', ip).send(body)).status);
-        }
-        return statuses;
-      };
+      const statuses: number[] = [];
+      for (let i = 0; i < 11; i++) {
+        statuses.push((await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.20').send({ token })).status);
+      }
 
-      const verify = await statusesOf('/auth/verify-email', { token }, 11, '203.0.113.20');
-      const reset = await statusesOf('/auth/reset-password', { token, newPassword: 'newpasswordlongenough' }, 6, '203.0.113.21');
-
-      expect(verify).toEqual([...Array(10).fill(200), 429]);
-      expect(reset).toEqual([...Array(5).fill(200), 429]);
+      expect(statuses).toEqual([...Array(10).fill(200), 429]);
     });
   });
 
-  describe('sign-up (3/hour per IP, generic 202)', () => {
-    it('returns 202 for the first 3 requests and 429 on the 4th', async () => {
+  describe('start', () => {
+    it('start is throttled per IP', async () => {
+      const server = app.getHttpServer();
+      const { limit } = AUTH_THROTTLE.start;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await request(server).post('/auth/start').set('X-Forwarded-For', '203.0.113.90').send({ email: 'a@b.com' });
+        statuses.push(last.status);
+      }
+
+      expect(statuses).toEqual([...Array(limit).fill(200), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
+    });
+  });
+
+  describe('sign-up (20/hour per IP)', () => {
+    it('returns 201 for the first 20 requests and 429 on the 21st', async () => {
       const server = app.getHttpServer();
       const body = { email: 'new@b.com', password: 'longenoughpassword' };
-      for (let i = 0; i < 3; i++) {
+      const { limit } = AUTH_THROTTLE.signUp;
+      for (let i = 0; i < limit; i++) {
         const res = await request(server)
           .post('/auth/sign-up')
-          .set('X-Forwarded-For', '203.0.113.20')
+          .set('X-Forwarded-For', '203.0.113.22')
           .send(body);
-        expect(res.status).toBe(202);
-        expect(res.body.message).toContain('verification link');
+        expect(res.status).toBe(201);
+        expect(res.headers['set-cookie']?.[0]).toContain('ra_session=');
       }
-      const fourth = await request(server)
+      const extra = await request(server)
         .post('/auth/sign-up')
-        .set('X-Forwarded-For', '203.0.113.20')
+        .set('X-Forwarded-For', '203.0.113.22')
         .send(body);
-      expect(fourth.status).toBe(429);
+      expect(extra.status).toBe(429);
     });
   });
 
@@ -221,23 +232,21 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   });
 
   describe('auth errors keep their statuses over HTTP', () => {
-    it('sign-in, verify-email and reset-password map their errors to 401, 403 and 400', async () => {
+    it('sign-in and verify-email map their errors to 401, 403 and 400', async () => {
       const server = app.getHttpServer();
       const token = 'b'.repeat(64);
       authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password'));
       authService.signIn.mockRejectedValueOnce(new AuthError(EAuthErrorCode.EmailNotVerified, 'Email not verified'));
       authService.verifyEmail.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
-      authService.resetPassword.mockRejectedValueOnce(new AuthError(EAuthErrorCode.InvalidToken, 'Invalid token'));
       const body = { email: 'a@b.com', password: 'longenoughpassword' };
 
       const statuses = [
         (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
         (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
         (await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.71').send({ token })).status,
-        (await request(server).post('/auth/reset-password').set('X-Forwarded-For', '203.0.113.72').send({ token, newPassword: 'newpasswordlongenough' })).status,
       ];
 
-      expect(statuses).toEqual([401, 403, 400, 400]);
+      expect(statuses).toEqual([401, 403, 400]);
     });
   });
 
@@ -276,7 +285,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .set('Accept-Language', 'en-US')
         .set('X-Forwarded-For', '203.0.113.50')
         .send({ email: 'locale@b.com', password: 'longenoughpassword' });
-      expect(authService.signUp).toHaveBeenCalledWith('locale@b.com', 'longenoughpassword', 'en-US', undefined);
+      expect(authService.signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'locale@b.com' }), 'en-US');
     });
 
     it('passes pt-BR to authService.signUp when Accept-Language header is absent', async () => {
@@ -284,7 +293,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .post('/auth/sign-up')
         .set('X-Forwarded-For', '203.0.113.51')
         .send({ email: 'nolocale@b.com', password: 'longenoughpassword' });
-      expect(authService.signUp).toHaveBeenCalledWith('nolocale@b.com', 'longenoughpassword', 'pt-BR', undefined);
+      expect(authService.signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'nolocale@b.com' }), 'pt-BR');
     });
 
     it('passes en-US to authService.resendVerification when Accept-Language: en-US', async () => {
@@ -296,12 +305,12 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       expect(authService.resendVerification).toHaveBeenCalledWith('locale@b.com', 'en-US');
     });
 
-    it('passes pt-BR to authService.requestPasswordReset when Accept-Language header is absent', async () => {
+    it('passes pt-BR to authService.requestCode when Accept-Language header is absent', async () => {
       await request(app.getHttpServer())
-        .post('/auth/forgot-password')
+        .post('/auth/codes')
         .set('X-Forwarded-For', '203.0.113.53')
         .send({ email: 'nolocale@b.com' });
-      expect(authService.requestPasswordReset).toHaveBeenCalledWith('nolocale@b.com', 'pt-BR');
+      expect(authService.requestCode).toHaveBeenCalledWith('nolocale@b.com', 'pt-BR');
     });
   });
 

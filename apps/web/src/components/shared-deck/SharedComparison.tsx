@@ -75,6 +75,27 @@ function Invitation({ token }: { readonly token: string }): React.ReactElement {
   );
 }
 
+/** A new account on a shared deck owns nothing yet: say how to put cards in (journey 2's entries) instead of 0%. */
+function EmptyCollectionPanel(): React.ReactElement {
+  const { t } = useTranslation();
+  return (
+    <aside className={`${styles.panel} ${styles.brass}`} aria-labelledby="shared-coverage-title" data-testid="shared-coverage-empty">
+      <p id="shared-coverage-title" className={styles.eyebrow}>
+        {t('sharing.coverage.eyebrow')}
+      </p>
+      <p className={styles.copy}>{t('sharing.coverage.emptyCollection')}</p>
+      <div className={styles.actions}>
+        <Link to="/add-cards" className={styles.primaryLink}>
+          {t('sharing.coverage.pasteList')}
+        </Link>
+        <Link to="/add-cards/csv" className={styles.secondaryLink}>
+          {t('sharing.coverage.uploadSheet')}
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
 function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -90,6 +111,7 @@ function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.
   }
 
   const data = coverage.data;
+  if (data?.collectionEmpty === true) return <EmptyCollectionPanel />;
   const missingCopies = data === undefined ? 0 : Math.max(0, data.totalCopies - data.ownedCopies);
 
   return (

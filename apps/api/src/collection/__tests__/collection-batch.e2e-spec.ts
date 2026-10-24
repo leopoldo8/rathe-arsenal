@@ -33,7 +33,7 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     const server = app.getHttpServer();
     const email = `batch-${label}-${suffix}@test.local`;
     emails.push(email);
-    const signUpRes = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(202);
+    const signUpRes = await request(server).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
     const token = new URL(signUpRes.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);
