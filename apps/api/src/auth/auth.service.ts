@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { EUserRole, UserEntity } from '../database/entities/user.entity';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { EmailService } from '../email/email.service';
@@ -273,8 +273,20 @@ export class AuthService {
     if (!user || user.deletedAt !== null) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
+    await this.dropPasswordSetBeforeAddressWasProven(user);
     this.logger.log({ event: 'auth.sign_in.code', userId: user.id });
     return { ...(await this.authResponse(user)), returnPath: user.signupReturnPath };
+  }
+
+  /**
+   * Sign-up takes an address on trust (door 14), so whoever registered it first chose the password.
+   * A code that reached the inbox proves the real owner, so a password still on an unconfirmed
+   * account is not theirs: it is removed, and the owner can set their own in Settings.
+   */
+  private async dropPasswordSetBeforeAddressWasProven(user: UserEntity): Promise<void> {
+    if (user.emailVerifiedAt !== null || user.passwordHash === null) return;
+    await this.users.update({ id: user.id, emailVerifiedAt: IsNull() }, { passwordHash: null });
+    this.logger.warn({ event: 'auth.sign_in.code.dropped_unproven_password', userId: user.id });
   }
 
   private async saveNewUser(user: UserEntity): Promise<UserEntity> {

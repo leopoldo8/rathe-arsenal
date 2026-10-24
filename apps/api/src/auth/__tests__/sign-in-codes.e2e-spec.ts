@@ -159,4 +159,29 @@ describe('Sign-in codes (E2E, S31)', () => {
     const rows = await ctx.dataSource.query(`SELECT "attempts" FROM "sign_in_code" WHERE "email" = $1`, [email]);
     expect(rows[0].attempts).toBeLessThanOrEqual(5);
   });
+
+  it('a password set before the address was proven dies when the address signs in by code', async () => {
+    const email = ctx.emailFor('pre-hijack');
+    const attackerPassword = 'attacker-chosen-password-1';
+    await request(server()).post('/api/auth/sign-up').send({ email, password: attackerPassword }).expect(201);
+    const beforeCode = await request(server()).post('/api/auth/sign-in').send({ email, password: attackerPassword });
+    const { code } = await requestCode(email);
+
+    await request(server()).post('/api/auth/codes/verify').send({ email, code }).expect(200);
+    const afterCode = await request(server()).post('/api/auth/sign-in').send({ email, password: attackerPassword });
+
+    expect(beforeCode.status).toBe(200);
+    expect(afterCode.status).toBe(401);
+    expect(afterCode.body.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('a confirmed account keeps its password after a code sign-in', async () => {
+    const email = await accountWithCodeFor('confirmed-keeps');
+    await ctx.dataSource.query(`UPDATE "user" SET "emailVerifiedAt" = now() WHERE "email" = $1`, [email]);
+    const { code } = await requestCode(email);
+
+    await request(server()).post('/api/auth/codes/verify').send({ email, code }).expect(200);
+
+    await request(server()).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);
+  });
 });

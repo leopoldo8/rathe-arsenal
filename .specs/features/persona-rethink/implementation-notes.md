@@ -89,3 +89,12 @@
 - An e-mailed button that is used twice, or after 15 minutes, now drops the visitor on the plain start page with no word on why. No mockup draws that state; it needs a screen or a line of copy.
 - The start step reveals whether an address has an account, and a deleted account (its row kept 30 days) answers like a live one: `password` or `code`, then a refusal that offers a code that is never sent.
   No check covers a deleted account at the start step.
+- Security review of `dc65387` (findings parked, each belongs to S32 or S33).
+  (a) Pre-hijacking through the confirmation link: someone signs up with a victim's address and a password of their own; if the victim clicks the confirmation e-mail instead of signing in by code, `verifyEmail` marks the address confirmed and leaves the attacker's password in place.
+  `verifyEmail` cannot tell that apart from a legitimate owner who chose their own password, so clearing the password there would wipe every honest sign-up.
+  Proposed fix (S33): confirming from a browser that is not signed in as that account keeps the password only if the confirmation request proves the password (or ends every other session and asks the owner to set a new password); at the least S32's revocation must end every session of the account when the address is confirmed.
+  The code sign-in path is fixed: a code that reached the inbox drops a password still on an unconfirmed account.
+  (b) The attacker's own session survives the owner taking over: the JWT (and the interim `ra_session` cookie) issued at sign-up stays valid until it expires. S32 must revoke every `user_session` of an account when a code sign-in drops an unproven password.
+  (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33.
+  (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32.
+  (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range).
