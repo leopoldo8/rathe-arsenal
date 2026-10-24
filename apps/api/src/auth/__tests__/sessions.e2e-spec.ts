@@ -201,6 +201,16 @@ describe('Sessions (E2E, S32)', () => {
     await request(server()).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(401);
   });
 
+  it('a code sign-in ends the sessions of an unconfirmed account that has no password', async () => {
+    const { email, response: attackerSignUp } = await signUp('hijack-no-password', '');
+    const { code } = await codeFor(email);
+
+    const owner = await request(server()).post('/api/auth/codes/verify').send({ email, code }).expect(200);
+
+    await meWith(sessionTokenOf(attackerSignUp)).expect(401);
+    await meWith(sessionTokenOf(owner)).expect(200);
+  });
+
   describe('the origin check', () => {
     const EVIL = 'https://evil.example';
     const OWN = 'http://localhost:5173';

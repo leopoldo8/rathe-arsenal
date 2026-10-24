@@ -45,6 +45,7 @@ function buildService(overrides: {
   const shareEvents = createMock<ShareEventsService>();
   shareEvents.record = jest.fn().mockResolvedValue(undefined);
 
+  const signInCodes = createMock<SignInCodeService>();
   const service = new AuthService(
     repo as unknown as Repository<UserEntity>,
     hasher,
@@ -54,10 +55,10 @@ function buildService(overrides: {
     config,
     referral as unknown as ShareReferralService,
     shareEvents as unknown as ShareEventsService,
-    createMock<SignInCodeService>(),
+    signInCodes,
   );
 
-  return { service, repo, hasher, tokens, sessions, email, referral, shareEvents };
+  return { service, repo, hasher, tokens, sessions, email, referral, shareEvents, signInCodes };
 }
 
 describe('AuthService.signUp', () => {
@@ -344,6 +345,42 @@ describe('AuthService.verifyEmail', () => {
     await expect(service.verifyEmail(raw)).rejects.toMatchObject({
       code: EAuthErrorCode.InvalidToken,
     });
+  });
+});
+
+describe('AuthService code sign-in on an unconfirmed account', () => {
+  function unconfirmed(passwordHash: string | null): Partial<UserEntity> {
+    return { id: 'user-1', email: 'a@b.com', emailVerifiedAt: null, deletedAt: null, passwordHash };
+  }
+
+  it.each([['no password', null], ['a password', 'hash']])(
+    'ends every session opened before the code, with %s, before it opens its own',
+    async (_label, passwordHash) => {
+      const { service, sessions, signInCodes } = buildService({ findOne: jest.fn().mockResolvedValue(unconfirmed(passwordHash)) });
+      signInCodes.verify.mockResolvedValue('a@b.com');
+      const order: string[] = [];
+      sessions.revokeAllOf.mockImplementation(async () => void order.push('revoke'));
+      sessions.create.mockImplementation(async () => {
+        order.push('create');
+        return 'session-token';
+      });
+
+      const result = await service.verifyCode('a@b.com', '123456');
+
+      expect(sessions.revokeAllOf).toHaveBeenCalledWith('user-1');
+      expect(order).toEqual(['revoke', 'create']);
+      expect(result.sessionToken).toBe('session-token');
+    },
+  );
+
+  it('keeps the other sessions of a confirmed account', async () => {
+    const user = { ...unconfirmed(null), emailVerifiedAt: new Date() };
+    const { service, sessions, signInCodes } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    signInCodes.verify.mockResolvedValue('a@b.com');
+
+    await service.verifyCode('a@b.com', '123456');
+
+    expect(sessions.revokeAllOf).not.toHaveBeenCalled();
   });
 });
 

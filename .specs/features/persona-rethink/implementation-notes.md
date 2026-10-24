@@ -126,6 +126,13 @@
   (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33.
   (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32. RESOLVED in S32 (batch 3).
   (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range).
+- Security review of `94b56ce` (second pass).
+  (f) Changing or creating a password needs only a signed-in session (`PUT /api/users/me/password`, C409 says no current-password input), so whoever holds one live session of the account can take it over by setting a password of their own.
+  Every other session is ended by the change (C380) and the account can still be recovered by a code sign-in, but the holder of the stolen session keeps access.
+  A guard that fits C409 (for example a session opened in the last few minutes, or a code asked at that moment) needs a screen no mockup draws, so it is parked: pick between a fresh-sign-in rule with a re-sign-in sheet, or accepting the risk.
+  (g) A session carried by a request is not ended when the same browser signs in again (a new token is always issued, never reused or taken from the request, so classic session fixation does not apply: tokens only come from server-created rows).
+  Ending the carried session on sign-in is hardening only; not done.
+  (h) `verifyEmail` still keeps a password someone else set and still ends no session: this is item (a) above, waiting for the owner.
 - Resolved in S32: items (b) and (d) of the security review above. (b): a code sign-in that drops an unproven password revokes every other session of the account. (d): the origin check on writes is mounted for the cookie.
 - The session-ended sign-in sheet (C382, AC 239) is not drawn by any mockup in `.design/mockups/account/`; the document only says "a sign-in sheet over the page, after it the same page, the draft kept".
   It was built from the existing start steps inside a bottom sheet and shows no copy of its own, so check how it looks and whether it needs a mockup round.

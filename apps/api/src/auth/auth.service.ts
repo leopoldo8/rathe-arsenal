@@ -286,9 +286,10 @@ export class AuthService {
     if (!user || user.deletedAt !== null) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
-    const droppedPassword = await this.dropPasswordSetBeforeAddressWasProven(user);
-    // The session that sign-up opened belongs to whoever chose that password, so it ends with it.
-    if (droppedPassword) await this.sessions.revokeAllOf(user.id);
+    await this.dropPasswordSetBeforeAddressWasProven(user);
+    // Sign-up takes an address on trust, so every session opened on an unconfirmed account (with a
+    // password or without one) belongs to whoever registered it first, not to the inbox's owner.
+    if (user.emailVerifiedAt === null) await this.sessions.revokeAllOf(user.id);
     this.logger.log({ event: 'auth.sign_in.code', userId: user.id });
     const grant = await this.authResponse(user);
     return { body: { ...grant.body, returnPath: user.signupReturnPath }, sessionToken: grant.sessionToken };
@@ -299,11 +300,10 @@ export class AuthService {
    * A code that reached the inbox proves the real owner, so a password still on an unconfirmed
    * account is not theirs: it is removed, and the owner can set their own in Settings.
    */
-  private async dropPasswordSetBeforeAddressWasProven(user: UserEntity): Promise<boolean> {
-    if (user.emailVerifiedAt !== null || user.passwordHash === null) return false;
+  private async dropPasswordSetBeforeAddressWasProven(user: UserEntity): Promise<void> {
+    if (user.emailVerifiedAt !== null || user.passwordHash === null) return;
     await this.users.update({ id: user.id, emailVerifiedAt: IsNull() }, { passwordHash: null });
     this.logger.warn({ event: 'auth.sign_in.code.dropped_unproven_password', userId: user.id });
-    return true;
   }
 
   private async saveNewUser(user: UserEntity): Promise<UserEntity> {
