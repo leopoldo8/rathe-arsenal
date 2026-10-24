@@ -5,6 +5,7 @@ import {
   useDecrementCardMutation,
 } from '../../api/collection';
 import type { ILibraryCard, ILibraryCardContribution } from '../../api/library';
+import { cardName } from '../../lib/card-name';
 import styles from './LibraryCardStepper.module.css';
 
 interface ILibraryCardStepperProps {
@@ -32,6 +33,7 @@ export function LibraryCardStepper({
   maxQuantity = 20,
 }: ILibraryCardStepperProps): React.ReactElement {
   const { t } = useTranslation();
+  const displayName = cardName(card.name, card.pitch, t);
   const addMutation = useAddCardMutation();
   const decrementMutation = useDecrementCardMutation();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -110,7 +112,7 @@ export function LibraryCardStepper({
           handleDecrementClick();
         }}
         disabled={!canDecrement || isPending}
-        aria-label={t('library.removeOneCard', { name: card.name })}
+        aria-label={t('library.removeOneCard', { name: displayName })}
         aria-haspopup={
           removableContributions.length > 1 ? 'menu' : undefined
         }
@@ -131,7 +133,7 @@ export function LibraryCardStepper({
           handleAdd();
         }}
         disabled={!canAdd || isPending}
-        aria-label={t('library.addOneCard', { name: card.name })}
+        aria-label={t('library.addOneCard', { name: displayName })}
       >
         +
       </button>
@@ -141,7 +143,7 @@ export function LibraryCardStepper({
           id={popoverId}
           role="menu"
           className={styles.picker}
-          aria-label={t('library.removeFromSourceQuestion', { name: card.name })}
+          aria-label={t('library.removeFromSourceQuestion', { name: displayName })}
         >
           <p className={styles.pickerHeading}>
             {t('library.removeOneFrom')}

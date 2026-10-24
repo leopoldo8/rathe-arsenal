@@ -348,6 +348,16 @@ describe('SharedDeckPage', () => {
       expect(screen.queryByText('Reckless Swing')).not.toBeInTheDocument();
     });
 
+    it('the missing tiles name the pitch', async () => {
+      renderPage(undefined, undefined, MISSING_TOKEN);
+
+      const tiles = await screen.findAllByTestId('shared-card');
+
+      expect(within(tiles[0]!).getByRole('img', { name: 'Goliath Gauntlet' })).toBeInTheDocument();
+      expect(within(tiles[1]!).getByRole('img', { name: 'Pack Hunt (Vermelho)' })).toBeInTheDocument();
+      expect(within(tiles[1]!).getAllByText('Pack Hunt (Vermelho)').length).toBeGreaterThan(0);
+    });
+
     it('copies the list as text with the address', async () => {
       const user = userEvent.setup();
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);

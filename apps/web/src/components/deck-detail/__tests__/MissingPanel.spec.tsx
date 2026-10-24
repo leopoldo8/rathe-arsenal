@@ -28,6 +28,7 @@ function line(overrides: Partial<IShoppingLineLine>): IShoppingLineLine {
   return {
     cardIdentifier: 'card-a',
     cardName: 'Card A',
+    pitch: null,
     quantityNeeded: 3,
     quantityAvailable: 3,
     unitPriceCents: 790,
@@ -244,7 +245,7 @@ describe('MissingPanel — preserved store behaviors', () => {
     const onMarkOwned = vi.fn();
     renderPanel(populated(), { onMarkOwned });
 
-    const button = within(rowOf('Card B')).getByRole('button', { name: 'Já tenho' });
+    const button = within(rowOf('Card B')).getByRole('button', { name: 'Já tenho Card B (Vermelho)' });
     expect(button).toHaveClass(markOwnedStyles.btn!);
     fireEvent.click(button);
     expect(onMarkOwned).toHaveBeenCalledWith('card-b');
@@ -265,7 +266,7 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('renders one quiet Buy link per available row, with an external-link arrow', () => {
     renderPanel(populated());
 
-    const link = within(rowOf('Card A')).getByRole('link', { name: 'Comprar Card A na loja' });
+    const link = within(rowOf('Card A')).getByRole('link', { name: 'Comprar Card A (Vermelho) na loja' });
     expect(link).toHaveClass(styles.buy!);
     expect(link.parentElement).toHaveClass(styles.action!);
     expect(link).toHaveTextContent('Comprar↗');
@@ -286,7 +287,7 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('Mark owned is an icon button named for screen readers, with no visible label', () => {
     renderPanel(populated());
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
     expect(button).toHaveAttribute('title', 'Já tenho');
     expect(button).toHaveTextContent('');
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
@@ -296,7 +297,7 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
   it('the pending card keeps its name and says it is saving in the tooltip', () => {
     renderPanel(populated(), { isMarkingOwned: true, pendingCard: 'card-a' });
 
-    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho' });
+    const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
     expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button).toHaveAttribute('title', 'Salvando…');
     expect(button).toBeDisabled();
@@ -351,6 +352,7 @@ describe('MissingPanel — alternatives and replacements (card-alternatives)', (
     slot: 'mainboard',
     originalCardIdentifier: 'emissary-of-tides-red',
     originalName: 'Emissary of Tides',
+    originalPitch: null,
     replacementCardIdentifier: 'coax-a-commotion-red',
     quantity: 2,
     originalOwned: false,
@@ -477,8 +479,8 @@ describe('MissingPanel — suggestions from the collection', () => {
     const row = rowOf('Card A');
     expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('Erase Face (Vermelho)');
     expect(within(row).getByTestId('missing-row-suggestion')).toHaveTextContent('da sua coleção');
-    expect(within(row).getByRole('button', { name: /^Usar Erase Face \(Vermelho\) da sua coleção no lugar de Card A$/ })).toHaveTextContent('Usar');
-    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card A' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /^Usar Erase Face \(Vermelho\) da sua coleção no lugar de Card A \(Vermelho\)$/ })).toHaveTextContent('Usar');
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card A (Vermelho)' })).toBeInTheDocument();
   });
 
   it('a row without a suggestion offers only the alternatives', async () => {
@@ -486,7 +488,7 @@ describe('MissingPanel — suggestions from the collection', () => {
     renderWithSuggestion();
 
     const row = rowOf('Card B');
-    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card B' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Ver alternativas para Card B (Vermelho)' })).toBeInTheDocument();
     expect(within(row).queryByRole('button', { name: /^Usar / })).toBeNull();
     expect(within(row).queryByTestId('missing-row-suggestion')).toBeNull();
     expect(row).not.toHaveTextContent('da sua coleção');
@@ -550,5 +552,41 @@ describe('MissingPanel — share call to action', () => {
   it('is absent when nothing is missing', () => {
     renderPanel(populated(), { onShareMissing: vi.fn(), entries: [] });
     expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+  });
+});
+
+describe('MissingPanel: card names carry the pitch', () => {
+  const PACK_HUNT_RED = entry({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', quantity: 1, pitch: 1 });
+  const PACK_HUNT_BLUE = entry({ cardIdentifier: 'pack-hunt-blue', name: 'Pack Hunt', quantity: 1, pitch: 3 });
+
+  it('two pitches of one name read differently', () => {
+    renderPanel(
+      populated({
+        lines: [
+          line({ cardIdentifier: 'pack-hunt-red', cardName: 'Pack Hunt', pitch: 1, quantityNeeded: 1, quantityAvailable: 1 }),
+          line({ cardIdentifier: 'pack-hunt-blue', cardName: 'Pack Hunt', pitch: 3, quantityNeeded: 1, quantityAvailable: 1 }),
+        ],
+      }),
+      { entries: [PACK_HUNT_RED, PACK_HUNT_BLUE] },
+    );
+
+    const names = screen.getAllByTestId('missing-row').map((row) => row.querySelector(`.${styles.name}`)?.textContent);
+    expect(names).toEqual(['Pack Hunt (Vermelho)', 'Pack Hunt (Azul)']);
+    expect(screen.getByRole('link', { name: 'Comprar Pack Hunt (Vermelho) na loja' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Comprar Pack Hunt (Azul) na loja' })).toBeInTheDocument();
+  });
+
+  it('a card with no pitch is named alone', () => {
+    renderPanel(
+      populated({
+        lines: [line({ cardIdentifier: 'dawnblade', cardName: 'Dawnblade', pitch: null, quantityNeeded: 1, quantityAvailable: 1 })],
+      }),
+      { entries: [entry({ cardIdentifier: 'dawnblade', name: 'Dawnblade', quantity: 1, slot: 'weapon', pitch: null })] },
+    );
+
+    const row = screen.getByTestId('missing-row');
+    expect(row.querySelector(`.${styles.name}`)?.textContent).toBe('Dawnblade');
+    expect(within(row).getByRole('link', { name: 'Comprar Dawnblade na loja' })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Já tenho Dawnblade' })).toBeInTheDocument();
   });
 });

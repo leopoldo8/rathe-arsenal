@@ -78,6 +78,14 @@ export class DecksService {
     }
   }
 
+  private cardPitchOf(cardIdentifier: string): number | null {
+    try {
+      return this.catalogService.getCard(cardIdentifier).pitch ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   // Legacy snapshots persisted before B1 do not carry an entry-level `name`.
   // Enrich on read from the catalog so UI surfaces always render a human
   // name without forcing a DB migration. Fallback to the identifier so the
@@ -639,7 +647,7 @@ export class DecksService {
       latestSnapshot: snapshotDto,
       shoppingLine,
       legality,
-      replacements: buildReplacementViews(activeReplacements, ownedOriginals, deckCards, (id) => this.cardNameOf(id)),
+      replacements: buildReplacementViews(activeReplacements, ownedOriginals, deckCards, (id) => this.cardNameOf(id), (id) => this.cardPitchOf(id)),
     };
   }
 
@@ -1016,7 +1024,7 @@ export class DecksService {
           tagRows: tagRowsInTx ?? [],
           readinessInsideTransaction: transactionReadiness,
           resolvedHeroIdentifier: heroIdentifier,
-          replacements: buildReplacementViews(stillActive, inventory, freshCards, (id) => this.cardNameOf(id)),
+          replacements: buildReplacementViews(stillActive, inventory, freshCards, (id) => this.cardNameOf(id), (id) => this.cardPitchOf(id)),
         };
       });
 

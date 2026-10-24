@@ -14,6 +14,7 @@ export function buildReplacementViews(
   owned: ReadonlyMap<string, number>,
   deckCards: readonly { readonly cardIdentifier: string; readonly quantity: number }[],
   resolveName: (cardIdentifier: string) => string,
+  resolvePitch: (cardIdentifier: string) => number | null = () => null,
 ): readonly IDeckReplacement[] {
   const copiesInDeck = new Map<string, number>();
   for (const card of deckCards) {
@@ -29,6 +30,7 @@ export function buildReplacementViews(
       slot: replacement.slot,
       originalCardIdentifier: replacement.originalCardIdentifier,
       originalName: resolveName(replacement.originalCardIdentifier),
+      originalPitch: resolvePitch(replacement.originalCardIdentifier),
       replacementCardIdentifier: replacement.replacementCardIdentifier,
       quantity: replacement.quantity,
       // An adoption or a chat swap cut a card the deck held, so its "original returned" prompt never applies.

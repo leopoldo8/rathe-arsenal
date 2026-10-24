@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardArt, type ICardArtProps } from '../card-art/CardArt';
+import { cardName } from '../../lib/card-name';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import styles from './CardGallery.module.css';
 
@@ -53,6 +55,8 @@ export function CardGalleryCell({
   overlay,
   dimmed,
 }: ICardGalleryCellProps): React.ReactElement {
+  const { t } = useTranslation();
+  const displayName = cardName(name, pitch, t);
   const cellClass = [styles.cell, dataMissing === true ? styles.cellMissing : '', dimmed === true ? styles.cellDimmed : '']
     .filter(Boolean)
     .join(' ');
@@ -62,7 +66,7 @@ export function CardGalleryCell({
     <li className={cellClass} data-testid={testId} data-missing={dataMissing} data-dimmed={dimmed || undefined}>
       <div className={thumbClass}>
         <CardArt
-          name={name}
+          name={displayName}
           pitch={pitch}
           cost={cost}
           type={type}
@@ -72,7 +76,7 @@ export function CardGalleryCell({
           imageUrl={imageUrl}
           onClick={
             imageUrl
-              ? () => onOpen({ imageUrl: imageUrl.large, sources: lightboxSourcesFor(imageUrl), name })
+              ? () => onOpen({ imageUrl: imageUrl.large, sources: lightboxSourcesFor(imageUrl), name: displayName })
               : undefined
           }
         />
@@ -83,8 +87,8 @@ export function CardGalleryCell({
           </span>
         )}
       </div>
-      <span className={styles.name} title={name}>
-        {name}
+      <span className={styles.name} title={displayName}>
+        {displayName}
       </span>
       {footer}
     </li>

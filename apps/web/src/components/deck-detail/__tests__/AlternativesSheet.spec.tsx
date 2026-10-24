@@ -9,12 +9,14 @@ import type { IAlternativeCard, IAlternativeGroup, IAlternativesResponse } from 
 import { setTestLocale } from '../../../test/i18n-test-utils';
 
 const mockApiFetch = vi.fn();
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
   return { ...actual, useApiClient: () => mockApiFetch };
 });
 
 import { AlternativesSheet } from '../AlternativesSheet';
+import { ReplacementControls } from '../ReplacementMark';
 
 const DECK_ID = 7;
 const TARGET = { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', slot: 'mainboard' };
@@ -218,11 +220,11 @@ describe('AlternativesSheet', () => {
       renderSheet();
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Ver Coax a Commotion antes de escolher' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Coax a Commotion (Vermelho) antes de escolher' }));
 
       const view = screen.getByTestId('alternative-preview-view');
-      expect(within(view).getByRole('img', { name: 'Coax a Commotion' })).toHaveAttribute('src', 'https://img.test/coax-l.webp');
-      expect(view).toHaveTextContent('Coax a Commotion');
+      expect(within(view).getByRole('img', { name: 'Coax a Commotion (Vermelho)' })).toHaveAttribute('src', 'https://img.test/coax-l.webp');
+      expect(view).toHaveTextContent('Coax a Commotion (Vermelho)');
       expect(screen.queryByTestId('alternatives-group-very_close')).toBeNull();
       expect(mockApiFetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toBe(false);
       expect(onClose).not.toHaveBeenCalled();
@@ -241,7 +243,7 @@ describe('AlternativesSheet', () => {
       renderSheet();
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Ver Brandish antes de escolher' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Ver Brandish (Azul) antes de escolher' }));
       await userEvent.click(screen.getByTestId('alternative-preview-pick'));
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -264,7 +266,7 @@ describe('AlternativesSheet', () => {
       const invalidate = vi.spyOn(client, 'invalidateQueries');
       await screen.findByTestId('alternatives-group-other_pitch');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Brandish no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Brandish (Azul) no lugar' }));
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
       const post = mockApiFetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST')!;
@@ -281,7 +283,7 @@ describe('AlternativesSheet', () => {
       onClose.mockReset();
       await userEvent.type(screen.getByRole('searchbox'), 'si');
       await screen.findByTestId('alternatives-group-search');
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Sink Below no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Sink Below (Vermelho) no lugar' }));
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
       const searchPost = mockApiFetch.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')[1]!;
       expect(JSON.parse((searchPost[1] as RequestInit).body as string).pickedFrom).toBe('search');
@@ -300,13 +302,37 @@ describe('AlternativesSheet', () => {
       const invalidate = vi.spyOn(client, 'invalidateQueries');
       await screen.findByTestId('alternatives-group-very_close');
 
-      await userEvent.click(screen.getByRole('button', { name: 'Usar Coax a Commotion no lugar' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Usar Coax a Commotion (Vermelho) no lugar' }));
 
       expect(await screen.findByTestId('alternatives-pick-error')).toHaveTextContent(message);
       expect(onClose).not.toHaveBeenCalled();
       const keys = invalidate.mock.calls.map(([filters]) => JSON.stringify(filters?.queryKey));
       expect(keys).toContain(JSON.stringify(['deck-detail', String(DECK_ID)]));
     });
+  });
+
+  it('the swap toast names the pitch', () => {
+    client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <ReplacementControls
+          deckId={DECK_ID}
+          replacement={{
+            id: 'r1',
+            slot: 'mainboard',
+            originalCardIdentifier: 'pack-hunt-red',
+            originalName: 'Pack Hunt',
+            originalPitch: 1,
+            replacementCardIdentifier: 'coax-a-commotion-red',
+            quantity: 1,
+            originalOwned: false,
+          }}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Desfazer a troca de Pack Hunt (Vermelho)' })).toBeInTheDocument();
+    expect(screen.getByTestId('replacement-mark')).toHaveTextContent('no lugar de Pack Hunt (Vermelho)');
   });
 
   it('has copy for every new key in both locales', () => {

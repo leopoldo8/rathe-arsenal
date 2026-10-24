@@ -13,6 +13,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TDraftSlot } from '../../hooks/useCompositionDraft';
 import { CardArt } from '../card-art/CardArt';
+import { cardName } from '../../lib/card-name';
 import { CardRowLegalityWarning } from './CardRowLegalityWarning';
 import styles from './EditableCardRow.module.css';
 
@@ -25,6 +26,8 @@ export interface IEditableCardRowProps {
   readonly cardIdentifier: string;
   /** Human-readable card name. */
   readonly name: string;
+  /** The card's pitch (1 to 3), null for a card with no pitch. */
+  readonly pitch: number | null;
   /** Current quantity in the draft. */
   readonly quantity: number;
   /** The deck slot this card occupies. */
@@ -73,7 +76,8 @@ export interface IEditableCardRowProps {
 
 export function EditableCardRow({
   cardIdentifier,
-  name,
+  name: rawName,
+  pitch,
   quantity,
   slot,
   type,
@@ -85,6 +89,7 @@ export function EditableCardRow({
   format,
 }: IEditableCardRowProps): React.ReactElement {
   const { t } = useTranslation();
+  const name = cardName(rawName, pitch, t);
   const isIllegal = illegalCardIds !== undefined && illegalCardIds.has(cardIdentifier);
 
   function handleDecrement(): void {

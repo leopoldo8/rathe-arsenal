@@ -405,6 +405,7 @@ describe('card replacements (E2E)', () => {
         slot: 'mainboard',
         originalCardIdentifier: EMISSARY,
         originalName: 'Emissary of Tides',
+        originalPitch: 1,
         replacementCardIdentifier: COAX,
         quantity: 2,
         originalOwned: false,

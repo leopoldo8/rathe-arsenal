@@ -74,23 +74,23 @@ Proof: `web unit src/__tests__/ci-workflow.spec.ts -t "the web-e2e job runs Play
 
 ### S2 - Every card is told apart by name · 30 files · 184 KB · ~60k
 
-**C10** - `cardName(name, pitch, t)` in `src/lib/card-name.ts` returns, in pt-BR, "Pack Hunt (Vermelho)" for pitch 1, "Pack Hunt (Amarelo)" for 2, "Pack Hunt (Azul)" for 3, and "Pack Hunt" for `null` and for 0; in en-US "Pack Hunt (Red)", "(Yellow)", "(Blue)" (AC 6, AC 7)
+**C10** - `cardName(name, pitch, t)` in `src/lib/card-name.ts` returns, in pt-BR, "Pack Hunt (Vermelho)" for pitch 1, "Pack Hunt (Amarelo)" for 2, "Pack Hunt (Azul)" for 3, and "Pack Hunt" for `null` and for 0; in en-US "Pack Hunt (Red)", "(Yellow)", "(Blue)" (AC 6, AC 7) · done
 Proof: `web unit src/lib/__tests__/card-name.spec.ts -t "names the pitch as a word"`
 
-**C11** - A weapon, an equipment and a hero (pitch `null`) render by their name alone on the deck page decklist tile and in the missing list (AC 7)
+**C11** - A weapon, an equipment and a hero (pitch `null`) render by their name alone on the deck page decklist tile and in the missing list (AC 7) · done
 Proof: `web unit src/lib/__tests__/card-name.spec.ts -t "a card with no pitch keeps its name"`
 Proof: `web unit src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "a card with no pitch is named alone"`
 
-**C12** - With "Pack Hunt" missing at pitch 1 and pitch 3, the missing list shows the visible names "Pack Hunt (Vermelho)" and "Pack Hunt (Azul)", and the buy link's aria-label reads "Comprar Pack Hunt (Vermelho) na loja" and "Comprar Pack Hunt (Azul) na loja" (AC 6)
+**C12** - With "Pack Hunt" missing at pitch 1 and pitch 3, the missing list shows the visible names "Pack Hunt (Vermelho)" and "Pack Hunt (Azul)", and the buy link's aria-label reads "Comprar Pack Hunt (Vermelho) na loja" and "Comprar Pack Hunt (Azul) na loja" (AC 6) · done
 Proof: `web unit src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "two pitches of one name read differently"`
 
-**C13** - "Já tenho" has the aria-label "Já tenho Pack Hunt (Vermelho)" for the pitch-1 line and "Já tenho Pack Hunt (Azul)" for the pitch-3 line (AC 8)
+**C13** - "Já tenho" has the aria-label "Já tenho Pack Hunt (Vermelho)" for the pitch-1 line and "Já tenho Pack Hunt (Azul)" for the pitch-3 line (AC 8) · done
 Proof: `web unit src/components/deck-detail/__tests__/MarkOwnedButton.spec.tsx -t "names the card it marks"`
 
-**C14** - The shopping row keeps the API's `pitch` (`api/shopping-line.ts` no longer drops it) and renders "Pack Hunt (Vermelho)" in its text and in every aria-label of the row (AC 6)
+**C14** - The shopping row keeps the API's `pitch` (`api/shopping-line.ts` no longer drops it) and renders "Pack Hunt (Vermelho)" in its text and in every aria-label of the row (AC 6) · done
 Proof: `web unit src/components/__tests__/ShoppingLine.spec.tsx -t "the row names the pitch"`
 
-**C15** - The deck page tile (`CardGalleryCell`), the editor row (`EditableCardRow`), the Library tile (`LibraryGrid`), the shared deck tile (`SharedGallery`), the shared missing tile (`SharedMissingGallery`), the shared list tile (`SharedListGallery`), the list line (`LineTile`) and the Tutor's swap proposal (`ProposalCard`) each render "Pack Hunt (Vermelho)" in visible text and in the tile's aria-label for a pitch-1 Pack Hunt (AC 6)
+**C15** - The deck page tile (`CardGalleryCell`), the editor row (`EditableCardRow`), the Library tile (`LibraryGrid`), the shared deck tile (`SharedGallery`), the shared missing tile (`SharedMissingGallery`), the shared list tile (`SharedListGallery`), the list line (`LineTile`) and the Tutor's swap proposal (`ProposalCard`) each render "Pack Hunt (Vermelho)" in visible text and in the tile's aria-label for a pitch-1 Pack Hunt (AC 6) · done
 Proof: `web unit src/components/card-gallery/__tests__/CardGalleryCell.spec.tsx -t "names the pitch"`
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.spec.tsx -t "names the pitch"`
 Proof: `web unit src/components/library/__tests__/LibraryGrid.test.tsx -t "names the pitch"`
@@ -100,10 +100,10 @@ Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t
 Proof: `web unit src/components/lists/__tests__/LineTile.spec.tsx -t "names the pitch"`
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "both cards of a swap name the pitch"`
 
-**C16** - The toast after a swap and its undo action read with the pitch: "Desfazer a troca de Pack Hunt (Vermelho)" for a pitch-1 Pack Hunt (AC 6)
+**C16** - The toast after a swap and its undo action read with the pitch: "Desfazer a troca de Pack Hunt (Vermelho)" for a pitch-1 Pack Hunt (AC 6) · done
 Proof: `web unit src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "the swap toast names the pitch"`
 
-**C17** - Outside `src/lib/card-name.ts` and the locale files, no source file under `apps/web/src` (tests excluded) contains a pitch-number map: none contains `'library.pitchRedLabel'`, `'deckDetail.pitchRed'` or `'reasons.rationale.pitchRed'` next to the number 1, so `CardFace.tsx`, `AlternativesSheet.tsx`, `DeckAnalysisRow.tsx` and `card-naming.ts` import the module instead (AC 9)
+**C17** - Outside `src/lib/card-name.ts` and the locale files, no source file under `apps/web/src` (tests excluded) contains a pitch-number map: none contains `'library.pitchRedLabel'`, `'deckDetail.pitchRed'` or `'reasons.rationale.pitchRed'` next to the number 1, so `CardFace.tsx`, `AlternativesSheet.tsx`, `DeckAnalysisRow.tsx` and `card-naming.ts` import the module instead (AC 9) · done
 Proof: `web unit src/lib/__tests__/card-name.spec.ts -t "the pitch words live in one module"`
 
 ### S3 - The rules engine knows the current rules and returns every problem · 14 files · 122 KB · ~33k

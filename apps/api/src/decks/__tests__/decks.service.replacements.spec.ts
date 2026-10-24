@@ -92,7 +92,7 @@ describe('DecksService.getDetail replacements', () => {
     catalogService.getCard.mockImplementation(((id: string) => {
       const names: Record<string, string> = { [ORIGINAL]: 'Emissary of Tides', 'a-moments-peace-blue': "A Moment's Peace" };
       if (!(id in names)) throw new Error('not in catalog');
-      return { name: names[id] };
+      return { name: names[id], pitch: id === ORIGINAL ? 1 : null };
     }) as never);
 
     ownedRows = [];
@@ -187,6 +187,7 @@ describe('DecksService.getDetail replacements', () => {
         slot: 'mainboard',
         originalCardIdentifier: ORIGINAL,
         originalName: 'Emissary of Tides',
+        originalPitch: 1,
         replacementCardIdentifier: REPLACEMENT,
         quantity: 2,
         originalOwned: false,

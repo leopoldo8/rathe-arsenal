@@ -14,7 +14,7 @@ import {
   type IPatchLineBody,
 } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { MoneyInput } from './MoneyInput';
 import { SuggestionBlock } from './SuggestionBlock';
 import { formatBrlWhole } from './listsModel';
@@ -56,7 +56,7 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                 <CardArt name={line.name} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
               </div>
               <div className={styles.panelTopText}>
-                <p className={styles.panelName}>{withPitch(line.name, line.pitch, (key) => t(key))}</p>
+                <p className={styles.panelName}>{cardName(line.name, line.pitch, (key) => t(key))}</p>
                 <span className={styles.panelLabel} id="line-qty-label">{t('lists.panel.quantity')}</span>
                 <div className={styles.stepper} role="group" aria-labelledby="line-qty-label">
                   <button

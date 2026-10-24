@@ -9,6 +9,7 @@ function heldBy(cardIdentifier: string, quantity: number): IDeckReplacement {
     slot: 'mainboard',
     originalCardIdentifier: 'original',
     originalName: 'Original',
+    originalPitch: null,
     replacementCardIdentifier: cardIdentifier,
     quantity,
     originalOwned: false,

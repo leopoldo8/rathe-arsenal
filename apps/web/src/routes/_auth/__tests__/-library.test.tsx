@@ -241,7 +241,7 @@ describe('LibraryPage — populated: 20 cards', () => {
     // pattern that LibraryGrid attaches to every card cell.
     await waitFor(() => {
       const cells = screen.getAllByRole('listitem', {
-        name: /Card \d+, na coleção: 1/,
+        name: /Card \d+ \(Vermelho\), na coleção: 1/,
       });
       expect(cells).toHaveLength(20);
     });
@@ -530,7 +530,7 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('adds one copy from the cell', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Adicionar uma cópia de Multi Card' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar uma cópia de Multi Card (Vermelho)' }));
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ cardIdentifier: 'M1', quantity: 1 }),
     );
@@ -538,7 +538,7 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
 
   it('opens the source picker on remove when copies come from more than one source', async () => {
     renderLibraryPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card (Vermelho)' }));
     expect(screen.getByRole('menu', { name: /De qual fonte remover 1 cópia de/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Planilha/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Entradas manuais/ })).toBeInTheDocument();

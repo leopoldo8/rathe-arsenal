@@ -38,6 +38,8 @@ export interface IDeckReplacement {
   readonly originalCardIdentifier: string;
   /** The catalog name of the original, as the server sends it. */
   readonly originalName: string;
+  /** The original's pitch (1 to 3), null for a card with no pitch. */
+  readonly originalPitch: number | null;
   readonly replacementCardIdentifier: string;
   readonly quantity: number;
   readonly originalOwned: boolean;

@@ -7,6 +7,7 @@ import {
 } from '../api/shopping-line';
 import { formatBrl } from '../utils/format-brl';
 import { formatRelativeTime, isStale, isVeryStale } from '../utils/format-relative-time';
+import { cardName as namedCard } from '../lib/card-name';
 import { useVariantFetchPolling } from './useVariantFetchPolling';
 import { StoreProductLink } from './StoreProductLink';
 import { VariantBreakdownTable } from './ShoppingLineVariantBreakdown';
@@ -417,7 +418,8 @@ function LineItem({
 }: ILineItemProps) {
   const { t } = useTranslation();
   const {
-    cardName,
+    cardName: catalogName,
+    pitch,
     quantityNeeded,
     quantityAvailable,
     unitPriceCents,
@@ -426,6 +428,8 @@ function LineItem({
     variants,
     verificationStatus,
   } = line;
+
+  const cardName = namedCard(catalogName, pitch, t);
 
   // Determine if this is a partially available line:
   // variant data exists, some copies in stock, but fewer than needed.

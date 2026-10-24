@@ -1,8 +1,12 @@
 import { useTranslation } from 'react-i18next';
+import { cardName } from '../../lib/card-name';
 import styles from './MarkOwnedButton.module.css';
 
 interface IMarkOwnedButtonProps {
   readonly cardIdentifier: string;
+  /** The card's own name and pitch; the button's label names the card it marks. */
+  readonly name: string;
+  readonly pitch: number | null;
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isPending: boolean;
   readonly pendingCard: string | null;
@@ -14,6 +18,8 @@ interface IMarkOwnedButtonProps {
  */
 export function MarkOwnedButton({
   cardIdentifier,
+  name,
+  pitch,
   onMarkOwned,
   isPending,
   pendingCard,
@@ -39,7 +45,7 @@ export function MarkOwnedButton({
       onClick={handleClick}
       disabled={isPending}
       aria-busy={isThisCardPending}
-      aria-label={t('decks.markOwned')}
+      aria-label={`${t('decks.markOwned')} ${cardName(name, pitch, t)}`}
       title={isThisCardPending ? t('decks.markOwnedSaving') : t('decks.markOwned')}
     >
       <svg

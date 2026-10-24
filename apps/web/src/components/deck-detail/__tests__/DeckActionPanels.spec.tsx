@@ -12,6 +12,7 @@ const replacement: IDeckReplacement = {
   slot: 'mainboard',
   originalCardIdentifier: 'emissary-of-tides-red',
   originalName: 'Emissary of Tides',
+  originalPitch: null,
   replacementCardIdentifier: 'coax-a-commotion-red',
   quantity: 2,
   originalOwned: false,

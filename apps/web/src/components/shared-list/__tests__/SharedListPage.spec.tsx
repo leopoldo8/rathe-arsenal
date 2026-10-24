@@ -138,6 +138,16 @@ describe('SharedListPage', () => {
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
+    it('the list tiles name the pitch', async () => {
+      renderPage();
+
+      const tiles = await screen.findAllByTestId('shared-card');
+
+      expect(within(tiles[0]!).getByRole('img', { name: 'Pummel (Vermelho)' })).toBeInTheDocument();
+      expect(within(tiles[2]!).getByRole('img', { name: 'Sink Below (Azul)' })).toBeInTheDocument();
+      expect(within(tiles[2]!).getAllByText('Sink Below (Azul)').length).toBeGreaterThan(0);
+    });
+
     it('loads without a Bearer token and asks for no matches', async () => {
       renderPage();
       await screen.findByRole('heading', { level: 1 });

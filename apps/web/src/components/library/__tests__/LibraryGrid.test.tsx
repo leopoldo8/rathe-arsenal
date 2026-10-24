@@ -328,3 +328,17 @@ describe('LibraryGrid: the manual source label', () => {
     }
   });
 });
+
+describe('LibraryGrid: card names carry the pitch', () => {
+  it('names the pitch', () => {
+    const cards = [
+      makeCard({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, ownedQuantity: 2 }),
+      makeCard({ cardIdentifier: 'dawnblade', name: 'Dawnblade', pitch: null, ownedQuantity: 1 }),
+    ];
+    render(<LibraryGrid cards={cards} group="flat" />);
+
+    const red = screen.getByRole('listitem', { name: /Pack Hunt \(Vermelho\).*na coleção: 2/ });
+    expect(within(red).getAllByText('Pack Hunt (Vermelho)').length).toBeGreaterThan(0);
+    expect(screen.getByRole('listitem', { name: 'Dawnblade, na coleção: 1' })).toBeInTheDocument();
+  });
+});

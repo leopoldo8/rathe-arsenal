@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { IRecommendationCard } from '../../../api/recommendations';
 import { useImageFallback } from '../../../hooks/useImageFallback';
 import { formatBrl } from '../../../utils/format-brl';
-import { imageSources, withPitch, type IRecommendationDeckCard } from './card-naming';
+import { imageSources, type IRecommendationDeckCard } from './card-naming';
+import { cardName } from '../../../lib/card-name';
 import styles from './SwapCard.module.css';
 
 /** `hidden` holds the card's place while it is being dealt; `reveal` plays its entrance once it has landed. */
@@ -92,7 +93,7 @@ export function SwapCard({
   const selectId = useId();
   const [cut, setCut] = useState(recommendation.cutCardIdentifier ?? '');
   const isClear = recommendation.strength === 'clear_upgrade';
-  const name = withPitch(recommendation.name, recommendation.pitch, t);
+  const name = cardName(recommendation.name, recommendation.pitch, t);
   const chosenCut = cutOptions.find((option) => option.cardIdentifier === cut) ?? null;
   const cutCost = cut !== '' && cut === recommendation.cutCardIdentifier ? recommendation.cutCost : (chosenCut?.cost ?? null);
   const disabled = busy || dimmed;
@@ -126,7 +127,7 @@ export function SwapCard({
         {chosenCut !== null && (
           <>
             <div className={styles.tucked} data-testid="recommendation-cut-art">
-              <ArtImage sources={imageSources(chosenCut.imageUrl, 'small')} alt={withPitch(chosenCut.name, chosenCut.pitch, t)} />
+              <ArtImage sources={imageSources(chosenCut.imageUrl, 'small')} alt={cardName(chosenCut.name, chosenCut.pitch, t)} />
             </div>
             <span className={styles.outLabel}>{t('recommendations.outLabel')}</span>
           </>
@@ -162,7 +163,7 @@ export function SwapCard({
           <option value="">{t('recommendations.cutNone')}</option>
           {cutOptions.map((option) => (
             <option key={option.cardIdentifier} value={option.cardIdentifier}>
-              {withPitch(option.name, option.pitch, t)}
+              {cardName(option.name, option.pitch, t)}
             </option>
           ))}
         </select>

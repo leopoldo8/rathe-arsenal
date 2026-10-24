@@ -560,6 +560,7 @@ describe('DecksService.updateComposition', () => {
           slot: 'mainboard',
           originalCardIdentifier: 'emissary-of-tides-red',
           originalName: 'Emissary of Tides',
+          originalPitch: null,
           replacementCardIdentifier: COAX,
           quantity: 2,
           originalOwned: false,

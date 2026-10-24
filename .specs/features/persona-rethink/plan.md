@@ -79,7 +79,7 @@ Housekeeping:
 
 Words and access:
 
-1. every card name where the same name exists in another pitch -> the one pitch-name helper (`withPitch`, exists, made the only one by S2)
+1. every card name where the same name exists in another pitch -> the one pitch-name helper (`cardName` in `apps/web/src/lib/card-name.ts`, new in S2; it replaces `withPitch` and the four pitch-word maps)
 2. game words -> a new i18n namespace of explanations (new, no door - placement per conventions) -> the "?" sheet and the public `/termos` page
 3. out: the locale test and the axe scan in CI (doors 18 and 19) fail the build on a dash, a banned word or a serious accessibility issue
 
@@ -197,6 +197,7 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `GET /api/admin/stores/:slug/credits` | nothing | the month's credits used, budget, `lookupsStopped` | `200`, `403` |
 | `GET /api/chat/conversations/:id` | as today | swap proposals add `quantity`, `side`, `missingBefore`, `missingAfter` | `200`, `400`, `404` |
 | `/termos` (public web page) | `q?`, `#word` | the glossary | `200` |
+| `GET /api/decks/:deckId` (and the `PUT` that returns the deck) | as today | each replacement gains `originalPitch` (1 to 3, or null) so the web can name the original with its pitch | `200`, `404` |
 
 ## Landing
 

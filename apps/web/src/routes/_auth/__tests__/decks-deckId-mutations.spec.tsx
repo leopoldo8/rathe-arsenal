@@ -750,6 +750,7 @@ describe('DeckDetailPage — missing panel (DECK-05)', () => {
             {
               cardIdentifier: 'gap-1',
               cardName: 'Gap One',
+              pitch: null,
               quantityNeeded: 3,
               quantityAvailable: 3,
               unitPriceCents: 333,
@@ -762,7 +763,7 @@ describe('DeckDetailPage — missing panel (DECK-05)', () => {
     );
     renderPage();
 
-    expect(screen.getByRole('link', { name: 'Comprar Gap One na loja' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Comprar Gap One (Vermelho) na loja' })).toHaveAttribute(
       'href',
       'https://loja.example/gap-one',
     );
@@ -821,10 +822,10 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     populate(partialDeck());
     renderPage();
 
-    const partialCall = mockCardArt.mock.calls.map(([props]) => props).find((p) => p.name === 'Partial');
+    const partialCall = mockCardArt.mock.calls.map(([props]) => props).find((p) => p.name === 'Partial (Vermelho)');
     expect(partialCall).toMatchObject({ missingCount: 2, missing: false });
     expect(mockCardArt.mock.calls.map(([props]) => props.name)).toEqual(
-      expect.arrayContaining(['Partial', 'Full Set']),
+      expect.arrayContaining(['Partial (Vermelho)', 'Full Set (Vermelho)']),
     );
   });
 
@@ -862,7 +863,7 @@ describe('DeckDetailPage — mutation Toast routing', () => {
     renderPage();
 
     await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho' }),
+      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho Gap One (Vermelho)' }),
     );
 
     expect(mockMarkOwnedMutate).toHaveBeenCalledWith('gap-1', expect.any(Object));
@@ -878,7 +879,7 @@ describe('DeckDetailPage — mutation Toast routing', () => {
 
     renderPage();
     await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho' }),
+      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho Gap One (Vermelho)' }),
     );
 
     expect(mockShowToast).toHaveBeenCalledWith(

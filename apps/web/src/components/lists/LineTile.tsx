@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApplySuggestionsMutation, type IListLine, type TListKind } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { formatBrl } from './listsModel';
 import styles from './ListEditor.module.css';
 
@@ -16,7 +16,7 @@ interface ILineTileProps {
 
 export function LineTile({ listId, line, kind, selected, onSelect }: ILineTileProps): React.ReactElement {
   const { t } = useTranslation();
-  const displayName = withPitch(line.name, line.pitch, (key) => t(key));
+  const displayName = cardName(line.name, line.pitch, (key) => t(key));
 
   return (
     <li className={styles.tile} data-sold={line.sold || undefined} data-selected={selected || undefined} data-testid="list-line">
@@ -28,7 +28,7 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
         onClick={() => onSelect(line.id)}
       >
         <span className={styles.art}>
-          <CardArt name={line.name} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
+          <CardArt name={displayName} pitch={line.pitch} cost={null} type={line.type} missing={false} size="lg" imageUrl={line.imageUrl} />
           <span className={styles.qty}>{t('lists.editor.quantityBadge', { count: line.quantity })}</span>
           {line.sold && (
             <span className={styles.soldVeil} data-testid="sold-stamp">
@@ -38,7 +38,7 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
         </span>
         <span className={styles.tileName}>
           {line.pitch !== null && <span className={styles.dot} data-pitch={line.pitch} aria-hidden="true" />}
-          <span className={styles.tileNameText}>{line.name}</span>
+          <span className={styles.tileNameText}>{displayName}</span>
         </span>
       </button>
       {kind === 'sell' && (

@@ -5,7 +5,7 @@ import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacemen
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { useVariantFetchPolling } from '../useVariantFetchPolling';
-import { withPitch } from './recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { MissingRowBuy, MissingRowStoreMeta, MissingRowVariants } from './MissingRowStore';
 import { MissingStoreSummary } from './MissingStoreSummary';
@@ -118,6 +118,7 @@ export function MissingPanel({
         <ul className={styles.list}>
           {entries.map((entry) => {
             const store = resolveRowStore(shoppingData, entry.cardIdentifier);
+            const displayName = cardName(entry.name, entry.pitch, t);
             const held = replacements.filter(
               (replacement) =>
                 replacement.replacementCardIdentifier === entry.cardIdentifier && replacement.slot === entry.slot,
@@ -132,12 +133,12 @@ export function MissingPanel({
               <li key={entryKey(entry)} className={styles.row} data-testid="missing-row">
                 <span className={`${styles.pitchBar} ${pitchClass(entry.pitch)}`} aria-hidden="true" />
                 <div className={styles.body}>
-                  <span className={styles.name}>{entry.name}</span>
+                  <span className={styles.name}>{displayName}</span>
                   {held[0] !== undefined && <ReplacementMark replacement={held[0]} />}
                   {suggestion !== undefined && (
                     <span className={styles.suggestion} data-testid="missing-row-suggestion">
                       <span className={styles.suggestionName}>
-                        {withPitch(suggestion.match.substitute.name, suggestion.match.substitute.pitch, t)}
+                        {cardName(suggestion.match.substitute.name, suggestion.match.substitute.pitch, t)}
                       </span>
                       <span>{t('deckDetail.suggestionFrom')}</span>
                     </span>
@@ -150,14 +151,14 @@ export function MissingPanel({
                     <MissingRowStoreMeta
                       store={store}
                       storeName={populated?.storeName ?? ''}
-                      cardName={entry.name}
+                      cardName={displayName}
                       fetchStatus={cardStatus?.[entry.cardIdentifier]}
                     />
                   </span>
                 </div>
                 <span className={styles.qty}>{t('deckDetail.missingCopies', { count: entry.quantity })}</span>
                 <span className={styles.action}>
-                  <MissingRowBuy store={store} cardName={entry.name} />
+                  <MissingRowBuy store={store} cardName={displayName} />
                   {suggestion !== undefined && (
                     <SuggestionUseButton deckId={deckId} entry={entry} suggestion={suggestion} />
                   )}
@@ -165,7 +166,7 @@ export function MissingPanel({
                     <button
                       type="button"
                       className={styles.alternatives}
-                      aria-label={t('alternatives.openAria', { name: entry.name })}
+                      aria-label={t('alternatives.openAria', { name: displayName })}
                       onClick={() =>
                         onOpenAlternatives({ cardIdentifier: entry.cardIdentifier, name: entry.name, slot: entry.slot })
                       }
@@ -177,6 +178,8 @@ export function MissingPanel({
                 <span className={styles.owned}>
                   <MarkOwnedButton
                     cardIdentifier={entry.cardIdentifier}
+                    name={entry.name}
+                    pitch={entry.pitch}
                     onMarkOwned={onMarkOwned}
                     isPending={isMarkingOwned}
                     pendingCard={pendingCard}

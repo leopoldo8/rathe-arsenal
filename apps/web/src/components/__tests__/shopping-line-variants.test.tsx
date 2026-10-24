@@ -44,6 +44,7 @@ afterEach(() => {
 const BASE_LINE = {
   cardIdentifier: 'rhinar-brute-of-brokenbone',
   cardName: 'Rhinar, Brute of Brokenbone',
+  pitch: null,
   quantityNeeded: 2,
   quantityAvailable: 2,
   unitPriceCents: 4990,
@@ -55,6 +56,7 @@ const BASE_LINE = {
 const SECOND_LINE = {
   cardIdentifier: 'pummel',
   cardName: 'Pummel',
+  pitch: null,
   quantityNeeded: 1,
   quantityAvailable: 0,
   unitPriceCents: null,

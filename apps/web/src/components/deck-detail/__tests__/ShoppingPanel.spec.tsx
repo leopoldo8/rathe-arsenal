@@ -32,6 +32,7 @@ const POPULATED_DATA: IShoppingLineResponse = {
     {
       cardIdentifier: 'pummel',
       cardName: 'Pummel',
+      pitch: null,
       quantityNeeded: 3,
       quantityAvailable: 3,
       unitPriceCents: 1663,

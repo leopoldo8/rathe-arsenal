@@ -12,7 +12,7 @@ import {
 } from '../../api/lists';
 import { useSearchCardsQuery, type ISearchCardResult } from '../../api/catalog';
 import { CardArt } from '../card-art/CardArt';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { MoneyInput } from './MoneyInput';
 import { formatBrlWhole } from './listsModel';
 import dialog from './ListDialog.module.css';
@@ -65,7 +65,7 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
 
   function submit(): void {
     if (picked === null) return;
-    const name = withPitch(picked.name, picked.pitch, (key) => t(key));
+    const name = cardName(picked.name, picked.pitch, (key) => t(key));
     add.mutate(
       {
         cardIdentifier: picked.cardIdentifier,
@@ -125,13 +125,13 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
                       type="button"
                       className={styles.result}
                       data-selected={picked?.cardIdentifier === card.cardIdentifier || undefined}
-                      aria-label={t('lists.add.pick', { name: withPitch(card.name, card.pitch, (key) => t(key)) })}
+                      aria-label={t('lists.add.pick', { name: cardName(card.name, card.pitch, (key) => t(key)) })}
                       onClick={() => pick(card)}
                     >
                       <span className={styles.resultArt}>
                         <CardArt name={card.name} pitch={toPitch(card.pitch)} cost={null} type={card.types[0] ?? ''} missing={false} size="lg" imageUrl={card.imageUrl} />
                       </span>
-                      <span className={styles.resultName}>{withPitch(card.name, card.pitch, (key) => t(key))}</span>
+                      <span className={styles.resultName}>{cardName(card.name, card.pitch, (key) => t(key))}</span>
                     </button>
                   </li>
                 ))}
@@ -147,7 +147,7 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
           {picked !== null && (
             <div className={styles.picked} data-testid="add-card-picked">
               <div className={styles.pickedHead}>
-                <span className={styles.pickedName}>{withPitch(picked.name, picked.pitch, (key) => t(key))}</span>
+                <span className={styles.pickedName}>{cardName(picked.name, picked.pitch, (key) => t(key))}</span>
                 <span className={styles.pickedOwned}>{t('lists.add.inCollection', { count: picked.ownedQuantity })}</span>
               </div>
               <div className={styles.pickedFields}>

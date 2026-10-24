@@ -1,5 +1,5 @@
 import type { ISharedCard, ISharedDeckResponse } from '../../api/shared-decks';
-import { withPitch } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 
 export type TSharedGroupId = 'hero' | 'weapon' | 'equipment' | 'actions' | 'reactions' | 'other';
 
@@ -44,7 +44,7 @@ function missingLines(missing: readonly ISharedCard[], t: TTranslate): string[] 
   return missing.map((card) =>
     t('sharing.wanted.textLine', {
       count: card.quantity,
-      name: withPitch(card.name, card.pitch, (key) => t(key)),
+      name: cardName(card.name, card.pitch, (key) => t(key)),
     }),
   );
 }

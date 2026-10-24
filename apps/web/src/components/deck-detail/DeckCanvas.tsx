@@ -226,6 +226,7 @@ function EditBody({
                       key={`${card.cardIdentifier}-${card.slot}`}
                       cardIdentifier={card.cardIdentifier}
                       name={card.name}
+                      pitch={card.pitch}
                       quantity={card.quantity}
                       slot={card.slot}
                       type={card.type}

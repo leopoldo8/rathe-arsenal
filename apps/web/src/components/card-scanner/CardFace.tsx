@@ -1,18 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IScannedCard } from './collector-code';
+import { pitchWord } from '../../lib/card-name';
 import styles from './CardScanner.module.css';
 
 const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
   1: styles.pitchRed,
   2: styles.pitchYellow,
   3: styles.pitchBlue,
-};
-
-const PITCH_LABEL_KEY: Readonly<Record<number, string>> = {
-  1: 'library.pitchRedLabel',
-  2: 'library.pitchYellowLabel',
-  3: 'library.pitchBlueLabel',
 };
 
 export function CardThumb({ card }: { readonly card: IScannedCard }): React.ReactElement {
@@ -32,7 +27,7 @@ export function CardName({ card }: { readonly card: IScannedCard }): React.React
         <span
           className={`${styles.pitchDot} ${pitchClass}`}
           role="img"
-          aria-label={t('decks.pitchAria', { pitch: t(PITCH_LABEL_KEY[card.pitch!]!) })}
+          aria-label={t('decks.pitchAria', { pitch: pitchWord(card.pitch, t) ?? '' })}
           data-pitch={card.pitch}
         />
       )}

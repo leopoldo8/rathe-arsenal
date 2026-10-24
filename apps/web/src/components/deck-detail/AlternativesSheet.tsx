@@ -15,6 +15,7 @@ import { formatSwapRationale } from '../../i18n/format-reasons';
 import { formatBrl } from '../../utils/format-brl';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { CardArt } from '../card-art/CardArt';
+import { cardName, pitchWord } from '../../lib/card-name';
 import styles from './AlternativesSheet.module.css';
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -25,12 +26,6 @@ const GROUP_LABEL_KEY: Readonly<Record<TAlternativeGroup, string>> = {
   other_pitch: 'alternatives.groupOtherPitch',
   generic: 'alternatives.groupGeneric',
   search: 'alternatives.groupSearch',
-};
-
-const PITCH_LABEL_KEY: Readonly<Record<number, string>> = {
-  1: 'library.pitchRedLabel',
-  2: 'library.pitchYellowLabel',
-  3: 'library.pitchBlueLabel',
 };
 
 const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
@@ -88,7 +83,7 @@ function PriceMark({ card, needed }: { readonly card: IAlternativeCard; readonly
       rel="noopener noreferrer"
       referrerPolicy="no-referrer"
       className={styles.price}
-      aria-label={`${t('alternatives.buyAria', { name: card.name })} ${formatBrl(card.priceCents)}`}
+      aria-label={`${t('alternatives.buyAria', { name: cardName(card.name, card.pitch, t) })} ${formatBrl(card.priceCents)}`}
     >
       {formatBrl(card.priceCents)}
     </a>
@@ -101,18 +96,19 @@ function PriceMark({ card, needed }: { readonly card: IAlternativeCard; readonly
 
 function CardOption({ card, needed, disabled, onPick, onPreview }: ICardOptionProps): React.ReactElement {
   const { t } = useTranslation();
+  const displayName = cardName(card.name, card.pitch, t);
 
   return (
     <li className={styles.option} data-testid="alternative-card" data-card={card.cardIdentifier}>
       <button
         type="button"
         className={styles.previewButton}
-        aria-label={t('alternatives.previewAria', { name: card.name })}
+        aria-label={t('alternatives.previewAria', { name: displayName })}
         data-testid="alternative-preview"
         onClick={onPreview}
       >
         <CardArt
-          name={card.name}
+          name={displayName}
           pitch={toPitch(card.pitch)}
           cost={null}
           type="Action"
@@ -125,7 +121,7 @@ function CardOption({ card, needed, disabled, onPick, onPreview }: ICardOptionPr
         type="button"
         className={styles.pick}
         disabled={disabled}
-        aria-label={t('alternatives.pickAria', { name: card.name })}
+        aria-label={t('alternatives.pickAria', { name: displayName })}
         onClick={onPick}
       >
         <span className={styles.text}>
@@ -134,11 +130,11 @@ function CardOption({ card, needed, disabled, onPick, onPreview }: ICardOptionPr
               <span
                 className={`${styles.pitchDot} ${PITCH_CLASS[card.pitch]}`}
                 role="img"
-                aria-label={t('decks.pitchAria', { pitch: t(PITCH_LABEL_KEY[card.pitch]!) })}
+                aria-label={t('decks.pitchAria', { pitch: pitchWord(card.pitch, t) ?? '' })}
                 data-pitch={card.pitch}
               />
             )}
-            {card.name}
+            {displayName}
           </span>
           <span className={styles.rationale} data-testid="alternative-rationale">
             {describeRationale(card, t)}
@@ -161,24 +157,25 @@ interface ICardPreviewProps {
 
 function CardPreview({ card, needed, disabled, onBack, onPick }: ICardPreviewProps): React.ReactElement {
   const { t } = useTranslation();
+  const displayName = cardName(card.name, card.pitch, t);
   const sources = card.imageUrl ? [card.imageUrl.large, ...card.imageUrl.sources.map((source) => source.large)] : [];
   const [sourceIndex, setSourceIndex] = useState(0);
   const src = sources[sourceIndex];
 
   return (
-    <section className={styles.preview} data-testid="alternative-preview-view" aria-label={card.name}>
+    <section className={styles.preview} data-testid="alternative-preview-view" aria-label={displayName}>
       {src !== undefined ? (
         <img
           className={styles.previewImage}
           src={src}
-          alt={card.name}
+          alt={displayName}
           referrerPolicy="no-referrer"
           onError={() => setSourceIndex((index) => index + 1)}
         />
       ) : (
-        <CardArt name={card.name} pitch={toPitch(card.pitch)} cost={null} type="Action" missing={false} size="md" imageUrl={null} />
+        <CardArt name={displayName} pitch={toPitch(card.pitch)} cost={null} type="Action" missing={false} size="md" imageUrl={null} />
       )}
-      <p className={styles.name}>{card.name}</p>
+      <p className={styles.name}>{displayName}</p>
       <p className={styles.rationale}>{describeRationale(card, t)}</p>
       <p className={styles.previewMarks}>
         <OwnershipMark card={card} needed={needed} />
@@ -192,7 +189,7 @@ function CardPreview({ card, needed, disabled, onBack, onPick }: ICardPreviewPro
           type="button"
           className={styles.usePick}
           disabled={disabled}
-          aria-label={t('alternatives.pickAria', { name: card.name })}
+          aria-label={t('alternatives.pickAria', { name: displayName })}
           onClick={onPick}
           data-testid="alternative-preview-pick"
         >

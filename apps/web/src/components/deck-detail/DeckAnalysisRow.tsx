@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { pitchWord } from '../../lib/card-name';
 import { VarFill } from './VarFill';
 import {
   buildCostBars,
@@ -13,12 +14,6 @@ import styles from './DeckAnalysisRow.module.css';
 interface IDeckAnalysisRowProps {
   readonly items: readonly IDeckListItem[];
 }
-
-const PITCH_LABEL_KEY = {
-  1: 'deckDetail.pitchRed',
-  2: 'deckDetail.pitchYellow',
-  3: 'deckDetail.pitchBlue',
-} as const;
 
 const PITCH_SEGMENT_CLASS = {
   1: styles.pitchRed ?? '',
@@ -51,7 +46,7 @@ function PitchCard({ slices }: { readonly slices: readonly IPitchSlice[] }): Rea
               <li key={slice.pitch} className={styles.legendItem} data-testid={`pitch-legend-${slice.pitch}`}>
                 <span className={`${styles.dot} ${PITCH_SEGMENT_CLASS[slice.pitch]}`} aria-hidden="true" />
                 {t('deckDetail.pitchLegendItem', {
-                  label: t(PITCH_LABEL_KEY[slice.pitch]),
+                  label: pitchWord(slice.pitch, t) ?? '',
                   count: slice.count,
                 })}
               </li>

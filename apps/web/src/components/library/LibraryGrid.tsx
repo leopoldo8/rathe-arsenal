@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardArt } from '../card-art/CardArt';
+import { cardName } from '../../lib/card-name';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { LibraryCardStepper } from './LibraryCardStepper';
@@ -186,16 +187,17 @@ function LibraryCardCell({
 }: ILibraryCardCellProps): React.ReactElement {
   const { t } = useTranslation();
   const typeStr = primaryType(card.types, card.subtypes);
+  const displayName = cardName(card.name, card.pitch, t);
   const handleClick = card.imageUrl ? () => onOpenLightbox(card) : undefined;
   return (
     <li
       className={styles.cell}
-      aria-label={t('library.cardCellAriaLabel', { name: card.name, qty: card.ownedQuantity })}
+      aria-label={t('library.cardCellAriaLabel', { name: displayName, qty: card.ownedQuantity })}
     >
       <LibraryCardStepper card={card} />
       <div className={styles.art}>
         <CardArt
-          name={card.name}
+          name={displayName}
           pitch={pitchValue(card.pitch)}
           cost={null}
           type={typeStr}
@@ -207,7 +209,7 @@ function LibraryCardCell({
         />
       </div>
       <div className={styles.meta}>
-        <span className={styles.name}>{card.name}</span>
+        <span className={styles.name}>{displayName}</span>
         <span className={styles.qtyBadge} aria-label={t('library.ownedAriaLabel', { qty: card.ownedQuantity })}>
           ×{card.ownedQuantity}
         </span>
@@ -271,7 +273,7 @@ export function LibraryGrid({
     setLightbox({
       imageUrl: card.imageUrl.large,
       sources: lightboxSourcesFor(card.imageUrl),
-      name: card.name,
+      name: cardName(card.name, card.pitch, t),
     });
   }
 

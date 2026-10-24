@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { IBreakdownEntry, ISubstitutedEntry } from '../../api/deck-detail';
 import { usePickReplacement } from '../../api/replacements';
 import { localizeApiError } from '../card-scanner/localize-api-error';
-import { withPitch } from './recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import styles from './MissingPanel.module.css';
 
 interface ISuggestionUseButtonProps {
@@ -38,8 +38,8 @@ export function SuggestionUseButton({ deckId, entry, suggestion }: ISuggestionUs
         type="button"
         className={styles.use}
         aria-label={t('deckDetail.useSuggestionAria', {
-          substitute: withPitch(substitute.name, substitute.pitch, t),
-          name: entry.name,
+          substitute: cardName(substitute.name, substitute.pitch, t),
+          name: cardName(entry.name, entry.pitch, t),
         })}
         disabled={pick.isPending}
         onClick={handleUse}

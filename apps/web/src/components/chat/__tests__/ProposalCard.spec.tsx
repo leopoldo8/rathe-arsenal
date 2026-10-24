@@ -41,10 +41,10 @@ describe('ProposalCard', () => {
     expect(within(card).getByText('19 faltam')).toBeInTheDocument();
     const rows = within(card).getAllByTestId('proposal-card-row');
     expect(rows.map((row) => row.textContent)).toEqual([
-      '3xEmissary of Tidestem',
-      '3xFlextem',
-      '2xLunging Pressfalta 1',
-      '3xSpringboard Somersaultfalta 3',
+      '3xEmissary of Tides (Azul)tem',
+      '3xFlex (Vermelho)tem',
+      '2xLunging Press (Amarelo)falta 1',
+      '3xSpringboard Somersault (Azul)falta 3',
     ]);
     expect(within(card).getByText('e mais 1 carta')).toBeInTheDocument();
     expect(within(card).getByRole('img', { name: '41 de 60 cartas na sua coleção' })).toBeInTheDocument();
@@ -59,13 +59,25 @@ describe('ProposalCard', () => {
     expect(await within(card).findByRole('link', { name: 'Oscilio Azul Tempo' })).toHaveAttribute('href', '/decks/7');
     const out = within(card).getByTestId('swap-out');
     const into = within(card).getByTestId('swap-in');
-    expect([within(out).getByText('Sai'), within(out).getByText('Flex'), within(out).getByText('2 cópias no deck')]).toHaveLength(3);
-    expect([within(into).getByText('Entra'), within(into).getByText('Emissary of Tides'), within(into).getByText('você tem 3')]).toHaveLength(3);
+    expect([within(out).getByText('Sai'), within(out).getByText('Flex (Vermelho)'), within(out).getByText('2 cópias no deck')]).toHaveLength(3);
+    expect([within(into).getByText('Entra'), within(into).getByText('Emissary of Tides (Azul)'), within(into).getByText('você tem 3')]).toHaveLength(3);
     expect([out.querySelector('[data-pitch]')?.getAttribute('data-pitch'), into.querySelector('[data-pitch]')?.getAttribute('data-pitch')]).toEqual(['1', '3']);
     pending.unmount();
 
     renderCard(swapProposal({ display: { ...swapProposal().display, replacement: { ...swapProposal().display.replacement, freeCopies: 0 } } }));
     expect(screen.getByText('você não tem cópias livres')).toBeInTheDocument();
+  });
+
+  it('both cards of a swap name the pitch', () => {
+    renderCard(swapProposal());
+
+    const out = screen.getByTestId('swap-out');
+    const into = screen.getByTestId('swap-in');
+    expect(within(out).getAllByText('Flex (Vermelho)').length).toBeGreaterThan(0);
+    expect(within(into).getAllByText('Emissary of Tides (Azul)').length).toBeGreaterThan(0);
+    expect(within(out).getByRole('button', { name: /Flex \(Vermelho\)/ })).toBeInTheDocument();
+    expect(within(into).getByRole('button', { name: /Emissary of Tides \(Azul\)/ })).toBeInTheDocument();
+    expect(within(out).queryByText('Flex')).toBeNull();
   });
 
   it('a swap proposal shows both card images and opens each one large', async () => {
@@ -78,9 +90,9 @@ describe('ProposalCard', () => {
     const out = screen.getByTestId('swap-out');
     const into = screen.getByTestId('swap-in');
 
-    expect(within(out).getByRole('img', { name: 'Flex' })).toHaveAttribute('src', 'https://cards.example/large/FLEX.webp');
-    expect(within(into).getByRole('img', { name: 'Emissary of Tides' })).toHaveAttribute('src', 'https://cards.example/large/EMISSARY.webp');
-    await userEvent.click(within(into).getByRole('button', { name: 'Ver Emissary of Tides' }));
+    expect(within(out).getByRole('img', { name: 'Flex (Vermelho)' })).toHaveAttribute('src', 'https://cards.example/large/FLEX.webp');
+    expect(within(into).getByRole('img', { name: 'Emissary of Tides (Azul)' })).toHaveAttribute('src', 'https://cards.example/large/EMISSARY.webp');
+    await userEvent.click(within(into).getByRole('button', { name: 'Ver Emissary of Tides (Azul)' }));
     const lightbox = await screen.findByRole('dialog');
     expect(within(lightbox).getByRole('img', { name: 'Emissary of Tides' })).toHaveAttribute('src', 'https://cards.example/large/EMISSARY.webp');
   });
@@ -92,7 +104,7 @@ describe('ProposalCard', () => {
 
     expect(within(out).queryByRole('img')).toBeNull();
     expect(within(out).queryByRole('button')).toBeNull();
-    expect(within(out).getByTestId('swap-art-fallback')).toHaveTextContent('Flex');
+    expect(within(out).getByTestId('swap-art-fallback')).toHaveTextContent('Flex (Vermelho)');
   });
 
   it('each status shows its badge and actions', () => {

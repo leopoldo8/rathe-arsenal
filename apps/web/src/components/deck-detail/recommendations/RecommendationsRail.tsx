@@ -18,7 +18,8 @@ import { useToast } from '../../ui/Toast/useToast';
 import { useAuth } from '../../../auth/useAuth';
 import { DeckTutorTile } from './DeckTutorTile';
 import { CandidatePile } from './CandidatePile';
-import { imageSources, withPitch, type IRecommendationDeckCard } from './card-naming';
+import { imageSources, type IRecommendationDeckCard } from './card-naming';
+import { cardName } from '../../../lib/card-name';
 import { GenerationStatus } from './GenerationStatus';
 import { SwapCard, type TSwapCardEntrance } from './SwapCard';
 import { useDeal } from './useDeal';
@@ -257,7 +258,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
         <CardLightbox
           imageUrl={preview.imageUrl.large}
           sources={[preview.imageUrl.large, ...preview.imageUrl.sources.map((source) => source.large)]}
-          name={withPitch(preview.name, preview.pitch, t)}
+          name={cardName(preview.name, preview.pitch, t)}
           onClose={() => setPreview(null)}
         />
       )}

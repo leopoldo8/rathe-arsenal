@@ -9,6 +9,7 @@ import { VarFill } from '../deck-detail/VarFill';
 import { DeckChip } from './DeckChip';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { imageSources } from '../deck-detail/recommendations/card-naming';
+import { cardName } from '../../lib/card-name';
 import { useImageFallback } from '../../hooks/useImageFallback';
 import styles from './ProposalCard.module.css';
 
@@ -55,7 +56,7 @@ function DeckBody({ proposal }: { readonly proposal: IDeckProposal }): React.Rea
             <li key={`${card.cardIdentifier}@${card.slot}`} className={styles.cardRow} data-testid="proposal-card-row">
               <span className={styles.quantity}>{`${card.quantity}x`}</span>
               <PitchDot pitch={card.pitch} />
-              <span className={styles.cardName}>{card.name}</span>
+              <span className={styles.cardName}>{cardName(card.name, card.pitch, t)}</span>
               <span className={short === 0 ? styles.has : styles.lacks}>
                 {short === 0 ? t('chat.proposal.cardOwned') : t('chat.proposal.cardMissing', { count: short })}
               </span>
@@ -87,21 +88,22 @@ function SwapSide({
 }): React.ReactElement {
   const { t } = useTranslation();
   const { src, onError } = useImageFallback(imageSources(card.imageUrl, 'large'));
+  const displayName = cardName(card.name, card.pitch, t);
   return (
     <div className={`${styles.side} ${className}`} data-testid={testId}>
       <span className={styles.sideLabel}>{label}</span>
       {src === null ? (
         <span className={`${styles.art} ${styles.artFallback}`} data-testid="swap-art-fallback">
-          {card.name}
+          {displayName}
         </span>
       ) : (
-        <button type="button" className={styles.art} aria-label={t('chat.proposal.previewAria', { name: card.name })} onClick={onPreview}>
-          <img className={styles.artImage} src={src} alt={card.name} onError={onError} draggable={false} />
+        <button type="button" className={styles.art} aria-label={t('chat.proposal.previewAria', { name: displayName })} onClick={onPreview}>
+          <img className={styles.artImage} src={src} alt={displayName} onError={onError} draggable={false} />
         </button>
       )}
       <span className={styles.sideCard}>
         <PitchDot pitch={card.pitch} />
-        <span>{card.name}</span>
+        <span>{displayName}</span>
       </span>
       {note}
     </div>
