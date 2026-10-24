@@ -26,7 +26,6 @@ import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
 import { TLocale } from '../common/i18n/resolve-locale';
 
 @Controller('auth')
-@ThrottleValidRequestsOnly()
 export class AuthController {
   private readonly isProduction: boolean;
 
@@ -49,6 +48,7 @@ export class AuthController {
 
   @Public()
   @Throttle({ default: AUTH_THROTTLE.signUp })
+  @ThrottleValidRequestsOnly()
   @Post('sign-up')
   @HttpCode(HttpStatus.CREATED)
   async signUp(
@@ -81,6 +81,7 @@ export class AuthController {
 
   @Public()
   @Throttle({ default: AUTH_THROTTLE.codes })
+  @ThrottleValidRequestsOnly()
   @Post('codes')
   @HttpCode(HttpStatus.ACCEPTED)
   async requestCode(

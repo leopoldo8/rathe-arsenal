@@ -255,6 +255,17 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       expect((await post('/api/auth/codes', '203.0.113.82', { email: 'bia@gmail.com' })).status).toBe(202);
     });
 
+    it('sign-in and code verification count every request, malformed or not', async () => {
+      const { limit } = AUTH_THROTTLE.signIn;
+      const signIn: number[] = [];
+      for (let i = 0; i < limit + 1; i++) signIn.push((await post('/api/auth/sign-in', '203.0.113.84', { email: 'bia@gmail', password: 'x' })).status);
+      expect(signIn).toEqual([...Array(limit).fill(400), 429]);
+
+      const verify: number[] = [];
+      for (let i = 0; i < AUTH_THROTTLE.codesVerify.limit + 1; i++) verify.push((await post('/api/auth/codes/verify', '203.0.113.85', { email: 'a@b.com', code: '12' })).status);
+      expect(verify.slice(-1)).toEqual([429]);
+    });
+
     it('code verification is throttled per IP', async () => {
       const { limit } = AUTH_THROTTLE.codesVerify;
       const statuses: number[] = [];

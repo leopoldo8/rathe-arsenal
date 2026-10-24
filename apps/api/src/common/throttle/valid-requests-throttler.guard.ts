@@ -1,9 +1,8 @@
-import { ExecutionContext, Injectable, SetMetadata } from '@nestjs/common';
+import { BadRequestException, ExecutionContext, Injectable, SetMetadata } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import { createValidationPipe } from '../validation/create-validation-pipe';
 
 export const THROTTLE_VALID_REQUESTS_ONLY = 'throttle:valid-requests-only';
 
@@ -13,10 +12,14 @@ type TBodyClass = new () => object;
 
 /**
  * The throttler runs before the validation pipe, so a request that fails validation would still use up
- * the limit (AC 255). On routes marked with `ThrottleValidRequestsOnly`, a body the route's DTO refuses is not counted.
+ * the limit (AC 255). On routes marked with `ThrottleValidRequestsOnly`, a body the global validation pipe refuses is not counted.
+ * The guard runs a pipe built by the same factory as the global one, so the two cannot drift apart: a body the guard
+ * lets through to the count is one the pipe would accept, and anything unexpected counts.
  */
 @Injectable()
 export class ValidRequestsThrottlerGuard extends ThrottlerGuard {
+  private readonly validationPipe = createValidationPipe();
+
   protected override async shouldSkip(context: ExecutionContext): Promise<boolean> {
     const marked = this.reflector.getAllAndOverride<boolean | undefined>(THROTTLE_VALID_REQUESTS_ONLY, [
       context.getHandler(),
@@ -26,11 +29,12 @@ export class ValidRequestsThrottlerGuard extends ThrottlerGuard {
     const bodyClass = bodyClassOf(context);
     if (bodyClass === null) return false;
     const body: unknown = context.switchToHttp().getRequest<{ body?: unknown }>().body ?? {};
-    const errors = await validate(plainToInstance(bodyClass, body, { enableImplicitConversion: true }), {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-    return errors.length > 0;
+    try {
+      await this.validationPipe.transform(body, { type: 'body', metatype: bodyClass });
+      return false;
+    } catch (error) {
+      return error instanceof BadRequestException;
+    }
   }
 }
 
