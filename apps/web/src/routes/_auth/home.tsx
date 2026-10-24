@@ -9,6 +9,7 @@ import { applySearchFilter, applyTagFilter } from '../../components/home/homeGro
 import { EducationalEmptyState } from '../../components/home/EducationalEmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Button } from '../../components/ui/Button/Button';
+import { UnconfirmedEmailLine } from '../../components/confirmation/UnconfirmedEmailLine';
 import { validateHomeSearch } from './-home.helpers';
 import styles from './home.module.css';
 
@@ -114,7 +115,12 @@ export function HomePage(): React.ReactElement {
   const collectionCardCount = data?.collectionCardCount ?? 0;
 
   if (trackedDecks.length === 0) {
-    return <EducationalEmptyState collectionCardCount={collectionCardCount} />;
+    return (
+      <>
+        <UnconfirmedEmailLine />
+        <EducationalEmptyState collectionCardCount={collectionCardCount} />
+      </>
+    );
   }
 
   const totalCardsMissing = data?.totalCardsMissing ?? null;
@@ -124,6 +130,7 @@ export function HomePage(): React.ReactElement {
 
   return (
     <section className={styles.populated}>
+      <UnconfirmedEmailLine />
       <ArmoryHeader
         decks={trackedDecks}
         totalCardsMissing={totalCardsMissing}

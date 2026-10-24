@@ -1,4 +1,5 @@
 import { createContext } from 'react';
+import type { IEmailConfirmation } from '../lib/account-api';
 
 export type TUserRole = 'user' | 'admin';
 
@@ -7,6 +8,8 @@ export interface IAuthUser {
   email: string;
   role: TUserRole;
   chatAccess: boolean;
+  /** False until the address is confirmed; only creating share links waits for it. */
+  emailConfirmed?: boolean;
   /** Name shown on shared pages; null until the user picks one (sharing asks for it first). */
   displayName?: string | null;
   /** Digits with country code; null until the user saves one. */
@@ -51,7 +54,10 @@ export interface IAuthContext {
   signIn: (email: string, password: string) => Promise<void>;
   /** Ends the session on the server and clears this device's state. */
   signOut: () => void;
-  verifyEmail: (token: string) => Promise<void>;
+  /** Confirms the address behind an e-mailed link. It signs nobody in; a signed-in owner of that address is marked confirmed. */
+  verifyEmail: (token: string) => Promise<IEmailConfirmation>;
+  /** Moves the unconfirmed account to a corrected address; the new confirmation e-mail goes out. */
+  changeEmail: (email: string) => Promise<void>;
   /** Signs in with the six digits e-mailed to `email`; resolves with the page the account was made from, if any. */
   verifyCode: (email: string, code: string) => Promise<ICodeSignIn>;
   /** Signs in with the single-use token of the e-mail's button. */

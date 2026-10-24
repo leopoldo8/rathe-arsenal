@@ -71,4 +71,16 @@ export const account = {
   codeExpired: 'Este código venceu. Ele vale 15 minutos.',
   sendNewCode: 'Mandar um código novo',
   buttonSigningIn: 'Entrando…',
+
+  // --- Confirming the e-mail (S33) ---
+  unconfirmedLine: 'Confirme {{email}} para criar links de compartilhar ·',
+  confirmSheetTitle: 'Falta confirmar o seu e-mail',
+  confirmSheetBody: 'Para criar um link, confirme o e-mail que mandamos para {{email}}. O link vale 7 dias.',
+  resendLink: 'Mandar o link de novo',
+  notNow: 'Agora não',
+  confirmationSent: 'Mandamos o e-mail de confirmação para {{email}}.',
+  confirmedToast: 'E-mail confirmado. Agora você pode criar links de compartilhar.',
+  confirmedSignedOut: 'E-mail confirmado.',
+  linkExpired: 'Este link venceu.',
+  sendNewOne: 'Mandar um novo',
 } as const;

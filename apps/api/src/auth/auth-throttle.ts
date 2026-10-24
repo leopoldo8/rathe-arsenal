@@ -11,5 +11,6 @@ export const AUTH_THROTTLE = {
   codesRedeem: { limit: 10, ttl: MINUTE_MS },
   verifyEmail: { limit: 10, ttl: HOUR_MS },
   resendVerification: { limit: 3, ttl: HOUR_MS },
+  changeEmail: { limit: 10, ttl: HOUR_MS },
   deleteAccount: { limit: 5, ttl: HOUR_MS },
 } as const;

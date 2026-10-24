@@ -1455,37 +1455,37 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the fi
 
 ### S33 - Confirming the e-mail, and what an unconfirmed account can do · 30 files · 119 KB · ~42k
 
-**C389** - For a user with `emailVerifiedAt` null: sign-in answers `200`; `GET /api/decks` answers `200`; `POST /api/decks` answers `201`; `POST /api/decks/:deckId/share` and `POST /api/lists/:listId/share` answer `403` with code `EMAIL_NOT_CONFIRMED` and create no `share_link`; after `emailVerifiedAt` is set the same two answer `201` (AC 244, AC 245)
+**C389** - For a user with `emailVerifiedAt` null: sign-in answers `200`; `GET /api/decks` answers `200`; `POST /api/decks` answers `201`; `POST /api/decks/:deckId/share` and `POST /api/lists/:listId/share` answer `403` with code `EMAIL_NOT_CONFIRMED` and create no `share_link`; after `emailVerifiedAt` is set the same two answer `201` (AC 244, AC 245) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "an unconfirmed account can do everything but create a share link"`
 
 **C390** - For a confirmed owner, `POST /api/decks/:deckId/share` answers `201` for each intent including `quote`; an unknown intent answers `400`; a list share with `intent: "quote"` answers `400`; a deck or list of another user answers `404` (Surface)
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "share creation answers 201, 400 and 404 by intent and owner"`
 
-**C391** - On `403` `EMAIL_NOT_CONFIRMED` from either share dialog, the sheet "Falta confirmar o seu e-mail" opens with "Para criar um link, confirme o e-mail que mandamos para bia.souza@gmail.com. O link vale 7 dias.", "Olhe também o spam e a aba Promoções.", "Mandar o link de novo", "Errei o e-mail" and "Agora não"; "Mandar o link de novo" calls `POST /api/auth/resend-verification`, and "Agora não" closes the sheet (screen `r2-share-blocked-phone`) (AC 245, AC 252)
+**C391** - On `403` `EMAIL_NOT_CONFIRMED` from either share dialog, the sheet "Falta confirmar o seu e-mail" opens with "Para criar um link, confirme o e-mail que mandamos para bia.souza@gmail.com. O link vale 7 dias.", "Olhe também o spam e a aba Promoções.", "Mandar o link de novo", "Errei o e-mail" and "Agora não"; "Mandar o link de novo" calls `POST /api/auth/resend-verification`, and "Agora não" closes the sheet (screen `r2-share-blocked-phone`) (AC 245, AC 252) · done
 Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "an unconfirmed owner gets the confirm sheet"`
 Proof: `web unit src/components/lists/__tests__/ListShareDialog.spec.tsx -t "an unconfirmed owner gets the confirm sheet"`
 
-**C392** - While `emailVerifiedAt` is null the home shows "Confirme bia.souza@gmail.com para criar links de compartilhar · Reenviar · Errei o e-mail" with "Reenviar" and "Errei o e-mail" as buttons; with it set, the line is absent (screen `r3-home-unconfirmed-phone`) (AC 246, AC 252)
+**C392** - While `emailVerifiedAt` is null the home shows "Confirme bia.souza@gmail.com para criar links de compartilhar · Reenviar · Errei o e-mail" with "Reenviar" and "Errei o e-mail" as buttons; with it set, the line is absent (screen `r3-home-unconfirmed-phone`) (AC 246, AC 252) · done
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "an unconfirmed account sees the confirm line"`
 
-**C393** - A confirmation token issued at sign-up expires 7 days (604800 seconds) after issue: `POST /api/auth/verify-email` answers `200` with `verified: true` at 6 days and 23 hours, and `410` `TOKEN_EXPIRED` at 7 days and 1 second, with the user row and its decks still present (AC 247, AC 251; Surface)
+**C393** - A confirmation token issued at sign-up expires 7 days (604800 seconds) after issue: `POST /api/auth/verify-email` answers `200` with `verified: true` at 6 days and 23 hours, and `410` `TOKEN_EXPIRED` at 7 days and 1 second, with the user row and its decks still present (AC 247, AC 251; Surface) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "the confirmation lasts 7 days and an old one deletes nothing"`
 
-**C394** - `POST /api/auth/verify-email` answers with `returnPath` equal to the account's `signupReturnPath` ("/d/<token>"), whichever device sends it; signed in, the web goes to that path with the toast "E-mail confirmado. Agora você pode criar links de compartilhar."; signed out, it shows "E-mail confirmado." and an "Entrar" that opens the code sign-in for the account's address and lands on `returnPath` after it (screen `r2-confirmed-phone`) (AC 248, AC 252)
+**C394** - `POST /api/auth/verify-email` answers with `returnPath` equal to the account's `signupReturnPath` ("/d/<token>"), whichever device sends it; signed in, the web goes to that path with the toast "E-mail confirmado. Agora você pode criar links de compartilhar."; signed out, it shows "E-mail confirmado." and an "Entrar" that opens the code sign-in for the account's address and lands on `returnPath` after it (screen `r2-confirmed-phone`) (AC 248, AC 252) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "confirming returns the page stored at sign-up"`
 Proof: `web unit src/routes/__tests__/VerifyEmail.spec.tsx -t "a confirmation goes to the stored page, signed in or not"`
 
-**C395** - `PATCH /api/auth/me/email` on an unconfirmed account with "Bia.Nova@gmail.com" answers `200` with `user.email` "bia.nova@gmail.com", keeps the account's deck and collection counts, sends one confirmation to the new address and makes the old confirmation token answer `410`; on a confirmed account it answers `400`; with an address of another account `409`; malformed `400`; with no cookie `401` (AC 249; Surface)
+**C395** - `PATCH /api/auth/me/email` on an unconfirmed account with "Bia.Nova@gmail.com" answers `200` with `user.email` "bia.nova@gmail.com", keeps the account's deck and collection counts, sends one confirmation to the new address and makes the old confirmation token answer `410`; on a confirmed account it answers `400`; with an address of another account `409`; malformed `400`; with no cookie `401` (AC 249; Surface) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "fixing the address keeps the account and sends a new confirmation"`
 
-**C396** - When `EmailService` throws at sign-up, the API still answers `201` with the cookie and the user exists; `POST /api/auth/resend-verification` with that cookie then answers `202` and sends one confirmation; without a cookie it answers `401`; past the route's limit it answers `429` (AC 250; Surface)
+**C396** - When `EmailService` throws at sign-up, the API still answers `201` with the cookie and the user exists; `POST /api/auth/resend-verification` with that cookie then answers `202` and sends one confirmation; without a cookie it answers `401`; past the route's limit it answers `429` (AC 250; Surface) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "a failed confirmation e-mail does not block the account"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "resend-verification is throttled per IP"`
 
-**C397** - The verify page for a `410` shows "Este link venceu." and, for the signed-in owner, "Mandar um novo", which calls resend; signed out it shows no "Mandar um novo"; it never shows "Criar conta de novo" (AC 251)
+**C397** - The verify page for a `410` shows "Este link venceu." and, for the signed-in owner, "Mandar um novo", which calls resend; signed out it shows no "Mandar um novo"; it never shows "Criar conta de novo" (AC 251) · done
 Proof: `web unit src/routes/__tests__/VerifyEmail.spec.tsx -t "an expired confirmation offers a new one to the owner"`
 
-**C398** - Sign up, try to share and see the sheet, confirm with the captured token in a second browser context, then share and get a link (S33 independent test) (AC 245, AC 248)
+**C398** - Sign up, try to share and see the sheet, confirm with the captured token in a second browser context, then share and get a link (S33 independent test) (AC 245, AC 248) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "share waits for the confirmation and works after it"`
 
 ### S34 - Auth forms say what is wrong, and the limits are fair · 20 files · 65 KB · ~30k

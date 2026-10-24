@@ -189,3 +189,44 @@ test('the fixture session is a cookie', async ({ request: api }) => {
   const me = await api.get(`${BASE_URL}/api/auth/me`, { headers: { Cookie: `ra_session=${cookie?.value}` } });
   expect(me.status()).toBe(200);
 });
+
+// ---------------------------------------------------------------------------
+// S33: only share links wait for the e-mail confirmation.
+// ---------------------------------------------------------------------------
+
+test('share waits for the confirmation and works after it', async ({ page, browser }) => {
+  const email = `bia.${Date.now().toString(36)}@gmail.com`;
+  await page.goto('/entrar');
+  await page.getByLabel('Seu e-mail').fill(email);
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  const signedUp = page.waitForResponse('**/api/auth/sign-up');
+  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  const link = ((await (await signedUp).json()) as { _devVerificationLink: string })._devVerificationLink;
+
+  expect((await page.request.patch('/api/users/me/display-name', { data: { displayName: 'Bia' } })).status()).toBe(200);
+  const created = await page.request.post('/api/decks', { data: { heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' } });
+  expect(created.status()).toBe(201);
+  const deckId = ((await created.json()) as { id: number }).id;
+
+  await page.goto(`/decks/${deckId}`);
+  await page.getByTestId('deck-detail-share-btn').click();
+  await page.getByTestId('share-intent-deck').click();
+  await expect(page.getByRole('heading', { name: 'Falta confirmar o seu e-mail' })).toBeVisible();
+  await expect(
+    page.getByText(`Para criar um link, confirme o e-mail que mandamos para ${email}. O link vale 7 dias.`),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Agora não' }).click();
+
+  const otherDevice = await browser.newContext({ storageState: ANON_STORAGE_STATE, baseURL: BASE_URL });
+  await otherDevice.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
+  const confirmation = await otherDevice.newPage();
+  const { pathname, search } = new URL(link);
+  await confirmation.goto(`${pathname}${search}`);
+  await expect(confirmation.getByRole('status')).toHaveText('E-mail confirmado.');
+  await expect(confirmation.getByRole('button', { name: 'Entrar' })).toBeVisible();
+  await otherDevice.close();
+
+  await page.getByTestId('deck-detail-share-btn').click();
+  await page.getByTestId('share-intent-deck').click();
+  await expect(page.getByTestId('share-address')).toBeVisible();
+});

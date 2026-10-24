@@ -1,6 +1,10 @@
 export enum EAuthErrorCode {
   InvalidCredentials = 'INVALID_CREDENTIALS',
   EmailNotVerified = 'EMAIL_NOT_VERIFIED',
+  /** Creating a share link before the account's e-mail is confirmed. */
+  EmailNotConfirmed = 'EMAIL_NOT_CONFIRMED',
+  /** Changing the address of an account whose address is already confirmed. */
+  EmailAlreadyConfirmed = 'EMAIL_ALREADY_CONFIRMED',
   InvalidToken = 'INVALID_TOKEN',
   TokenExpired = 'TOKEN_EXPIRED',
   EmailDeliveryFailed = 'EMAIL_DELIVERY_FAILED',

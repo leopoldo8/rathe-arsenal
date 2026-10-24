@@ -141,82 +141,85 @@ describe('AuthService.start', () => {
 });
 
 describe('AuthService.resendVerification', () => {
-  it('sends a new verification email for an unverified user (happy path)', async () => {
-    const tokens = new TokenGeneratorService();
-    const user: Partial<UserEntity> = {
+  function unconfirmedUser(tokens: TokenGeneratorService): Partial<UserEntity> {
+    return {
       id: 'u1',
       email: 'a@b.com',
       emailVerifiedAt: null,
+      deletedAt: null,
       verificationTokenHash: tokens.hashToken('old'),
       verificationTokenExpiresAt: new Date(Date.now() - 1000),
     };
+  }
+
+  it('sends a new confirmation with 7 fresh days for an unconfirmed account (happy path)', async () => {
+    const tokens = new TokenGeneratorService();
+    const user = unconfirmedUser(tokens);
     const save = jest.fn().mockResolvedValue(user);
     const sendVerification = jest.fn().mockResolvedValue(undefined);
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-      save,
-      sendVerification,
-    });
-    const result = await service.resendVerification('a@b.com');
-    expect(result.message).toContain('verification link');
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user), save, sendVerification });
+
+    await service.resendVerification('u1');
+
     expect(sendVerification).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'pt-BR');
     expect(save).toHaveBeenCalled();
-    // Token hash was rotated (not the stale one)
     expect(user.verificationTokenHash).not.toBe(tokens.hashToken('old'));
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    expect(user.verificationTokenExpiresAt!.getTime() - Date.now()).toBeGreaterThan(sevenDaysMs - 5000);
   });
 
-  it('returns generic response for an already-verified user without sending email', async () => {
-    const user: Partial<UserEntity> = {
-      id: 'u1',
-      email: 'a@b.com',
-      emailVerifiedAt: new Date(),
-    };
+  it('sends nothing for a confirmed account', async () => {
+    const user: Partial<UserEntity> = { id: 'u1', email: 'a@b.com', emailVerifiedAt: new Date(), deletedAt: null };
     const sendVerification = jest.fn();
     const save = jest.fn();
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user), save, sendVerification });
+
+    await service.resendVerification('u1');
+
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('sends nothing for an unknown or deleted account', async () => {
+    const sendVerification = jest.fn();
+    const save = jest.fn();
+    const unknown = buildService({ save, sendVerification });
+    const deleted = buildService({
       save,
       sendVerification,
+      findOne: jest.fn().mockResolvedValue({ id: 'u1', email: 'a@b.com', emailVerifiedAt: null, deletedAt: new Date() }),
     });
-    const result = await service.resendVerification('a@b.com');
-    expect(result.message).toContain('verification link');
-    expect(sendVerification).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
-    expect(result._devVerificationLink).toBeUndefined();
-  });
 
-  it('returns generic response for an unknown email without sending email (no leak)', async () => {
-    const sendVerification = jest.fn();
-    const save = jest.fn();
-    const { service } = buildService({ save, sendVerification });
-    const result = await service.resendVerification('unknown@b.com');
-    expect(result.message).toContain('verification link');
+    await unknown.service.resendVerification('missing');
+    await deleted.service.resendVerification('u1');
+
     expect(sendVerification).not.toHaveBeenCalled();
     expect(save).not.toHaveBeenCalled();
-    expect(result._devVerificationLink).toBeUndefined();
   });
 
   it('forwards the locale to sendVerificationEmail (T17)', async () => {
-    const tokens = new TokenGeneratorService();
-    const user: Partial<UserEntity> = {
-      id: 'u1',
-      email: 'a@b.com',
-      emailVerifiedAt: null,
-      verificationTokenHash: tokens.hashToken('old'),
-      verificationTokenExpiresAt: new Date(Date.now() - 1000),
-    };
+    const user = unconfirmedUser(new TokenGeneratorService());
     const sendVerification = jest.fn().mockResolvedValue(undefined);
     const { service } = buildService({
       findOne: jest.fn().mockResolvedValue(user),
       save: jest.fn().mockResolvedValue(user),
       sendVerification,
     });
-    await service.resendVerification('a@b.com', 'en-US');
-    expect(sendVerification).toHaveBeenCalledWith(
-      'a@b.com',
-      expect.stringContaining('/verify-email?token='),
-      'en-US',
-    );
+
+    await service.resendVerification('u1', 'en-US');
+
+    expect(sendVerification).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'en-US');
+  });
+
+  it('swallows a mail provider failure: the account keeps working', async () => {
+    const user = unconfirmedUser(new TokenGeneratorService());
+    const { service } = buildService({
+      findOne: jest.fn().mockResolvedValue(user),
+      save: jest.fn().mockResolvedValue(user),
+      sendVerification: jest.fn().mockRejectedValue(new Error('down')),
+    });
+
+    await expect(service.resendVerification('u1')).resolves.toBeUndefined();
   });
 });
 
@@ -301,68 +304,50 @@ describe('AuthService.signIn', () => {
 });
 
 describe('AuthService.verifyEmail', () => {
-  it('marks user as verified, clears token, and returns JWT (happy path)', async () => {
-    const tokens = new TokenGeneratorService();
-    const raw = tokens.generateRawToken();
-    const hash = tokens.hashToken(raw);
-    const user: Partial<UserEntity> = {
+  function pendingUser(raw: string, overrides: Partial<UserEntity> = {}): Partial<UserEntity> {
+    return {
       id: 'user-1',
       email: 'a@b.com',
       emailVerifiedAt: null,
-      verificationTokenHash: hash,
+      signupReturnPath: '/d/aB3dE5gH7jK9mN',
+      verificationTokenHash: new TokenGeneratorService().hashToken(raw),
       verificationTokenExpiresAt: new Date(Date.now() + 60_000),
+      ...overrides,
     };
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-    // U12: verifyEmail response should include settings for first-paint correctness
+  }
+
+  it('marks the user as confirmed, clears the token and opens no session (happy path)', async () => {
+    const raw = new TokenGeneratorService().generateRawToken();
+    const user = pendingUser(raw);
+    const { service, sessions } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+
     const result = await service.verifyEmail(raw);
-    expect(result.sessionToken).toBe('session-token');
-    expect(result.body.settings).toEqual({ theme: 'dark' });
+
+    expect(result).toEqual({ verified: true, returnPath: '/d/aB3dE5gH7jK9mN', email: 'a@b.com' });
+    expect(sessions.create).not.toHaveBeenCalled();
     expect(user.emailVerifiedAt).not.toBeNull();
     expect(user.verificationTokenHash).toBeNull();
   });
 
-  it('throws INVALID_TOKEN for a wrong token', async () => {
-    const { service } = buildService(); // findOne returns null
-    await expect(service.verifyEmail('a'.repeat(64))).rejects.toMatchObject({
-      code: EAuthErrorCode.InvalidToken,
-    });
+  it('answers TOKEN_EXPIRED for an unknown token', async () => {
+    const { service } = buildService();
+    await expect(service.verifyEmail('a'.repeat(64))).rejects.toMatchObject({ code: EAuthErrorCode.TokenExpired });
   });
 
-  it('throws INVALID_TOKEN for an expired token', async () => {
-    const tokens = new TokenGeneratorService();
-    const raw = tokens.generateRawToken();
-    const user: Partial<UserEntity> = {
-      id: 'user-1',
-      email: 'a@b.com',
-      verificationTokenHash: tokens.hashToken(raw),
-      verificationTokenExpiresAt: new Date(Date.now() - 1000), // expired
-    };
-    const { service } = buildService({
-      findOne: jest.fn().mockResolvedValue(user),
-    });
-    await expect(service.verifyEmail(raw)).rejects.toMatchObject({
-      code: EAuthErrorCode.InvalidToken,
-    });
-  });
-});
+  it('answers TOKEN_EXPIRED for an expired token', async () => {
+    const raw = new TokenGeneratorService().generateRawToken();
+    const user = pendingUser(raw, { verificationTokenExpiresAt: new Date(Date.now() - 1000) });
+    const { service } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
 
-describe('AuthService.verifyEmail on a deleted account', () => {
-  it('answers INVALID_TOKEN like sign-in and the codes do, and opens no session', async () => {
-    const tokens = new TokenGeneratorService();
-    const raw = tokens.generateRawToken();
-    const user: Partial<UserEntity> = {
-      id: 'user-1',
-      email: 'a@b.com',
-      emailVerifiedAt: null,
-      deletedAt: new Date(),
-      verificationTokenHash: tokens.hashToken(raw),
-      verificationTokenExpiresAt: new Date(Date.now() + 60_000),
-    };
+    await expect(service.verifyEmail(raw)).rejects.toMatchObject({ code: EAuthErrorCode.TokenExpired });
+  });
+
+  it('answers TOKEN_EXPIRED for a deleted account and confirms nothing', async () => {
+    const raw = new TokenGeneratorService().generateRawToken();
+    const user = pendingUser(raw, { deletedAt: new Date() });
     const { service, sessions } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
 
-    await expect(service.verifyEmail(raw)).rejects.toMatchObject({ code: EAuthErrorCode.InvalidToken });
+    await expect(service.verifyEmail(raw)).rejects.toMatchObject({ code: EAuthErrorCode.TokenExpired });
     expect(sessions.create).not.toHaveBeenCalled();
     expect(user.emailVerifiedAt).toBeNull();
   });
@@ -489,10 +474,19 @@ describe('AuthService.getMe', () => {
       id: 'user-1',
       email: 'hero@rathe.gg',
       role: 'user',
+      emailConfirmed: false,
       displayName: undefined,
       whatsappNumber: undefined,
       settings: { theme: 'dark' },
     });
+  });
+
+  it('says whether the e-mail is confirmed', async () => {
+    const confirmed = buildService({ findOne: jest.fn().mockResolvedValue({ id: 'user-1', emailVerifiedAt: new Date() }) });
+    const pending = buildService({ findOne: jest.fn().mockResolvedValue({ id: 'user-1', emailVerifiedAt: null }) });
+
+    expect((await confirmed.service.getMe(makeCurrentUser())).emailConfirmed).toBe(true);
+    expect((await pending.service.getMe(makeCurrentUser())).emailConfirmed).toBe(false);
   });
 
   it('returns role=admin for an admin user', async () => {
@@ -606,30 +600,18 @@ describe('AuthService.deleteAccount', () => {
 });
 
 describe('AuthService chat access in auth responses', () => {
-  it('every auth response carries chatAccess', async () => {
-    const tokens = new TokenGeneratorService();
+  it('every sign-in answer carries chatAccess', async () => {
     const hasher = new PasswordHasherService();
     const passwordHash = await hasher.hash('longenoughpassword');
     const results: boolean[] = [];
 
     for (const chatAccess of [true, false]) {
-      const verifyRaw = tokens.generateRawToken();
       const signInUser: Partial<UserEntity> = { id: 'u1', email: 'a@b.com', passwordHash, emailVerifiedAt: new Date(), chatAccess };
-      const verifyUser: Partial<UserEntity> = {
-        id: 'u1',
-        email: 'a@b.com',
-        emailVerifiedAt: null,
-        verificationTokenHash: tokens.hashToken(verifyRaw),
-        verificationTokenExpiresAt: new Date(Date.now() + 60_000),
-        chatAccess,
-      };
       const signIn = await buildService({ findOne: jest.fn().mockResolvedValue(signInUser) }).service.signIn('a@b.com', 'longenoughpassword');
-      const verify = await buildService({ findOne: jest.fn().mockResolvedValue(verifyUser) }).service.verifyEmail(verifyRaw);
-
-      results.push(signIn.body.user.chatAccess, verify.body.user.chatAccess);
+      results.push(signIn.body.user.chatAccess);
     }
 
-    expect(results).toEqual([true, true, false, false]);
+    expect(results).toEqual([true, false]);
   });
 });
 

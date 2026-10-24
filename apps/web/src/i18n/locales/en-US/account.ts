@@ -68,4 +68,16 @@ export const account = {
   codeExpired: 'This code has expired. It is valid for 15 minutes.',
   sendNewCode: 'Send a new code',
   buttonSigningIn: 'Signing in…',
+
+  // --- Confirming the e-mail (S33) ---
+  unconfirmedLine: 'Confirm {{email}} to create share links ·',
+  confirmSheetTitle: 'Your email is not confirmed yet',
+  confirmSheetBody: 'To create a link, confirm the email we sent to {{email}}. The link is valid for 7 days.',
+  resendLink: 'Send the link again',
+  notNow: 'Not now',
+  confirmationSent: 'We sent the confirmation email to {{email}}.',
+  confirmedToast: 'Email confirmed. You can now create share links.',
+  confirmedSignedOut: 'Email confirmed.',
+  linkExpired: 'This link has expired.',
+  sendNewOne: 'Send a new one',
 } as const;

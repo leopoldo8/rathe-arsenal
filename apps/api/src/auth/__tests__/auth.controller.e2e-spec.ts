@@ -33,29 +33,21 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService.signIn.mockResolvedValue({
       sessionToken: 'session-token',
       body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
         settings: { theme: 'dark' },
       },
     });
-    authService.verifyEmail.mockResolvedValue({
-      sessionToken: 'session-token',
-      body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
-        settings: { theme: 'dark' },
-      },
-    });
+    authService.verifyEmail.mockResolvedValue({ verified: true, returnPath: null, email: 'a@b.com' });
     authService.signUp.mockResolvedValue({
       sessionToken: 'session-token',
       body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
         settings: { theme: 'dark' },
       },
     });
     authService.start.mockResolvedValue({ next: 'new' });
     authService.requestCode.mockResolvedValue({ expiresAt: new Date(), resendAfter: new Date() });
-    authService.resendVerification.mockResolvedValue({
-      message: 'If this email is registered and unverified, you will receive a verification link shortly.',
-    });
+    authService.resendVerification.mockResolvedValue(undefined);
     authService.deleteAccount.mockResolvedValue({ ok: true });
 
     const moduleRef = await Test.createTestingModule({
@@ -202,31 +194,25 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
   });
 
-  describe('resend-verification (3/hour per IP, generic 202)', () => {
-    it('returns 202 for the first 3 requests and 429 on the 4th', async () => {
+  describe('resend-verification (3/hour per IP)', () => {
+    it('resend-verification is throttled per IP', async () => {
       const server = app.getHttpServer();
-      const body = { email: 'pending@b.com' };
-      for (let i = 0; i < 3; i++) {
-        const res = await request(server)
-          .post('/api/auth/resend-verification')
-          .set('X-Forwarded-For', '203.0.113.30')
-          .send(body);
-        expect(res.status).toBe(202);
-        expect(res.body.message).toContain('verification link');
+      const { limit } = AUTH_THROTTLE.resendVerification;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await request(server).post('/api/auth/resend-verification').set('X-Forwarded-For', '203.0.113.30').set('x-test-user-id', 'u1');
+        statuses.push(last.status);
       }
-      const fourth = await request(server)
-        .post('/api/auth/resend-verification')
-        .set('X-Forwarded-For', '203.0.113.30')
-        .send(body);
-      expect(fourth.status).toBe(429);
+
+      expect(statuses).toEqual([...Array(limit).fill(202), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
     });
 
-    it('validates the email field', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/auth/resend-verification')
-        .set('X-Forwarded-For', '203.0.113.31')
-        .send({ email: 'not-an-email' });
-      expect(res.status).toBe(400);
+    it('resends for the signed-in account, whatever the body says', async () => {
+      await request(app.getHttpServer()).post('/api/auth/resend-verification').set('X-Forwarded-For', '203.0.113.31').set('x-test-user-id', 'u7').expect(202);
+
+      expect(authService.resendVerification).toHaveBeenCalledWith('u7', expect.any(String));
     });
   });
 
@@ -306,8 +292,8 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         .post('/api/auth/resend-verification')
         .set('Accept-Language', 'en-US')
         .set('X-Forwarded-For', '203.0.113.52')
-        .send({ email: 'locale@b.com' });
-      expect(authService.resendVerification).toHaveBeenCalledWith('locale@b.com', 'en-US');
+        .set('x-test-user-id', 'u8');
+      expect(authService.resendVerification).toHaveBeenCalledWith('u8', 'en-US');
     });
 
     it('passes pt-BR to authService.requestCode when Accept-Language header is absent', async () => {

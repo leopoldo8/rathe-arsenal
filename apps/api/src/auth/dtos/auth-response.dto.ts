@@ -5,6 +5,8 @@ export interface IAuthUser {
   email: string;
   role: EUserRole;
   chatAccess: boolean;
+  /** True once the address is confirmed; until then the account cannot create share links. */
+  emailConfirmed: boolean;
 }
 
 /**
@@ -45,13 +47,9 @@ export interface ICodeSignInResponse extends IAuthResponse {
   returnPath: string | null;
 }
 
-/**
- * Resend-verification returns the same generic response
- * regardless of whether the email already exists / is already verified. This
- * prevents account-existence enumeration (A4/A6). The `_devVerificationLink`
- * field is only populated in development to ease local testing.
- */
-export interface IGenericAuthAcceptedResponse {
-  message: string;
-  _devVerificationLink?: string;
+/** What confirming an address answers; `email` lets a visitor who is not signed in be offered the code sign-in for it. */
+export interface IVerifyEmailResponse {
+  verified: true;
+  returnPath: string | null;
+  email: string;
 }

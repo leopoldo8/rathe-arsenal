@@ -106,6 +106,32 @@
 - `scripts/screenshot-all-surfaces.ts` signs in with the browser context's request client (the cookie lands in the context) instead of seeding `localStorage`; it is a manual tool and no suite runs it.
 - `docs/phase-1-followups.md` A1 and A3 and `docs/research/phase-0-security-notes.md` carry a "resolved by door 17" note; `docs/dev-fixtures.md` shows a cookie jar instead of a Bearer header.
 
+### S33 (batch 4)
+
+- C390 stays unmarked.
+  Its claim says every intent "including `quote`", and `quote` does not exist: `DECK_SHARE_INTENTS` is `['deck', 'missing']` and door 11 (the migration that adds `quote` to the share link and event constraints, C238) belongs to S19.
+  The statuses are built and proven under another name, `sharing.e2e-spec.ts` "share creation answers 201, 400 and 404 for the intents that exist today" (every intent in `DECK_SHARE_INTENTS` answers `201`, an unknown intent `400`, a list share with `intent: "quote"` `400`, another user's deck or list `404`).
+  The S19 builder adds `quote` to `DECK_SHARE_INTENTS`, writes the proof named in C390 (`-t "share creation answers 201, 400 and 404 by intent and owner"`, which must include `quote`) and marks the check.
+- `POST /api/auth/verify-email` no longer opens a session (Surface row added): a confirmation made on another device would have signed that device in, and C394's signed-out branch could not exist.
+  It answers `{ verified, returnPath, email }`, and every dead token (unknown, expired, used, replaced by "Errei o e-mail") answers `410` `TOKEN_EXPIRED` instead of `400`.
+  `AuthService.verifyEmail` keeps its other behaviour on purpose (it still leaves a password someone else set, and ends no session): items (a) and (h) wait for the owner.
+  Every API e2e helper that took its session from the verify response now takes it from the sign-up response (`lists`, `shared-lists`, `sharing`, `list-prices`); the chat-access test lost its verify-email half, and `AuthProvider.chat-access.spec.tsx` its verify-email half.
+- `POST /api/decks/:deckId/share` and `POST /api/lists/:listId/share` answer `201` (they answered `200`), behind a new guard (`EmailConfirmedGuard`) that answers `403` `EMAIL_NOT_CONFIRMED`; the sharing e2e specs and the web mocks that expected `200` changed.
+  The list route gained a body DTO (`intent` optional, `want` or `sell`) so that `intent: "quote"` answers `400`.
+- `POST /api/auth/resend-verification` now reads the session cookie and no body (the Surface row); it answers `202` for an unconfirmed account and for a confirmed or unknown one alike, and sends nothing for the last two.
+  `PATCH /api/auth/me/email` is new; its confirmation limit is 10 per hour per IP (`AUTH_THROTTLE.changeEmail`).
+- The auth responses' `user` and `GET /api/auth/me` carry `emailConfirmed` (Surface row added).
+  The web mirrors it: `IAuthUser.emailConfirmed`, and `AuthContext` gained `changeEmail`; `verifyEmail` now resolves with the confirmation instead of signing in, and marks a signed-in owner of that address confirmed.
+- The confirmation e-mail's text says "7 dias" now (it said 24 hours), in both languages.
+- Specified but not drawn, built from existing parts (the owner may want a mockup round):
+  the "Errei o e-mail" field (a bottom sheet from the home line and an inline step inside the share sheet) reuses the start field, its typo message and "Continuar";
+  the expired-link page for a signed-out visitor offers "Entrar" next to "Este link venceu." (the document draws nothing for that page);
+  a confirmation with no stored page opens `/home` (open question 8 of the derivation notes).
+- Copy beyond the checks' quotes: `account.confirmationSent` ("Mandamos o e-mail de confirmação para {{email}}.") as the toast and the sheet's status after "Reenviar", "Mandar o link de novo" or fixing the address.
+- `/entrar` gained `?email=` (Surface row added) so "Entrar" on the confirmed page opens the code sign-in for the account's address and lands on `next`.
+- The auth page copy `auth.signUpAgainLink`, `auth.verifySuccess*`, `auth.continueToOnboarding` and the `check-your-email` strings are unused now and were left in place.
+- Security review item (c) of `dc65387` is closed here: an unconfirmed account can no longer create share links.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -123,7 +149,7 @@
   Proposed fix (S33): confirming from a browser that is not signed in as that account keeps the password only if the confirmation request proves the password (or ends every other session and asks the owner to set a new password); at the least S32's revocation must end every session of the account when the address is confirmed.
   The code sign-in path is fixed: a code that reached the inbox drops a password still on an unconfirmed account.
   (b) The attacker's own session survives the owner taking over: the JWT (and the interim `ra_session` cookie) issued at sign-up stays valid until it expires. S32 must revoke every `user_session` of an account when a code sign-in drops an unproven password. RESOLVED in S32 (batch 3).
-  (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33.
+  (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33. RESOLVED in S33 (batch 4).
   (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32. RESOLVED in S32 (batch 3).
   (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range).
 - Security review of `94b56ce` (second pass).

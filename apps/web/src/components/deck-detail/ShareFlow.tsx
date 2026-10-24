@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DISPLAY_NAME_REQUIRED,
+  EMAIL_NOT_CONFIRMED,
   isShareErrorCode,
   useDeckShareQuery,
   useEnableDeckShareMutation,
   type TShareIntent,
 } from '../../api/shared-decks';
 import { useAuth } from '../../auth/useAuth';
+import { ConfirmEmailPanel } from '../confirmation/ConfirmEmailPanel';
 import { ShareDialogHeader } from '../share/ShareDialogHeader';
 import { useSaveDisplayName } from '../share/useSaveDisplayName';
 import { DisplayNameForm } from './DisplayNameForm';
@@ -18,6 +20,7 @@ import styles from '../share/ShareSteps.module.css';
 type TStep =
   | { readonly kind: 'name'; readonly then: TShareIntent | null }
   | { readonly kind: 'intent' }
+  | { readonly kind: 'unconfirmed' }
   | { readonly kind: 'link'; readonly intent: TShareIntent };
 
 interface IShareFlowProps {
@@ -50,6 +53,7 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
     enable.mutate(intent, {
       onError: (error) => {
         if (isShareErrorCode(error, DISPLAY_NAME_REQUIRED)) setStep({ kind: 'name', then: intent });
+        if (isShareErrorCode(error, EMAIL_NOT_CONFIRMED)) setStep({ kind: 'unconfirmed' });
       },
     });
   }
@@ -67,6 +71,8 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
     if (step.kind === 'name' && step.then !== null) activate(step.then);
     else setStep({ kind: 'intent' });
   }
+
+  if (step.kind === 'unconfirmed') return <ConfirmEmailPanel onClose={onClose} />;
 
   const title =
     step.kind === 'name'

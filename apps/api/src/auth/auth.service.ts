@@ -13,10 +13,11 @@ import { AuthError, EAuthErrorCode } from './errors';
 import {
   IAuthResponse,
   IAuthSettings,
+  IAuthUser,
   ICodeSignInResponse,
-  IGenericAuthAcceptedResponse,
   ISignUpResponse,
   IStartResponse,
+  IVerifyEmailResponse,
 } from './dtos/auth-response.dto';
 import { sanitizeReturnPath } from './return-path';
 import { SessionService } from './session.service';
@@ -24,11 +25,18 @@ import { ICodeRequestResult, SignInCodeService } from './sign-in-code.service';
 import { SignUpDto } from './dtos/sign-up.dto';
 import { ICurrentUser } from './dtos/current-user.dto';
 
-const GENERIC_RESEND_MESSAGE =
-  'If this email is registered and unverified, you will receive a verification link shortly.';
-
-const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const VERIFICATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const UNIQUE_VIOLATION = '23505';
+
+export function toAuthUser(user: UserEntity): IAuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    chatAccess: user.chatAccess,
+    emailConfirmed: Boolean(user.emailVerifiedAt),
+  };
+}
 
 /** A response body, and the session token the controller puts in the cookie (never in the body). */
 export interface ISessionGrant<T> {
@@ -108,11 +116,8 @@ export class AuthService {
       });
     }
 
-    const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
-    try {
-      await this.emailService.sendVerificationEmail(email, link, locale);
-    } catch {
-      // The account exists and works; "Reenviar" sends the confirmation again.
+    const link = this.confirmationLink(rawToken);
+    if (!(await this.sendConfirmation(email, link, locale))) {
       this.logger.error({ event: 'auth.sign_up.email_failed', userId: saved.id });
     }
 
@@ -135,42 +140,42 @@ export class AuthService {
   }
 
   /**
-   * A6: Resend verification email. Returns a generic 202 regardless of whether
-   * the email exists or is already verified. Only actually sends when the user
-   * exists and is still unverified. Mirrors the email-enumeration-safe pattern
-   * used by requestPasswordReset().
+   * Sends the account's confirmation again with a fresh 7 days. An account that is already confirmed
+   * gets nothing, and the answer is the same, so the button can be pressed without checking.
    */
-  async resendVerification(email: string, locale: TLocale = 'pt-BR'): Promise<IGenericAuthAcceptedResponse> {
-    const user = await this.users.findOne({ where: { email } });
-    if (!user) {
-      this.logger.log({ event: 'auth.resend_verification.unknown_email' });
-      return { message: GENERIC_RESEND_MESSAGE };
-    }
-    if (user.emailVerifiedAt !== null) {
-      this.logger.log({ event: 'auth.resend_verification.already_verified', userId: user.id });
-      return { message: GENERIC_RESEND_MESSAGE };
-    }
+  async resendVerification(userId: string, locale: TLocale = 'pt-BR'): Promise<void> {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user || user.deletedAt !== null || user.emailVerifiedAt !== null) return;
 
-    const rawToken = this.tokenGenerator.generateRawToken();
-    user.verificationTokenHash = this.tokenGenerator.hashToken(rawToken);
-    user.verificationTokenExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
-    await this.users.save(user);
-
-    const link = `${this.baseUrl}/verify-email?token=${rawToken}`;
-    try {
-      await this.emailService.sendVerificationEmail(email, link, locale);
-    } catch (_err) {
+    const link = await this.issueConfirmation(user);
+    if (!(await this.sendConfirmation(user.email, link, locale))) {
       this.logger.error({ event: 'auth.resend_verification.email_failed', userId: user.id });
-      // Swallow — the user sees a generic 202 either way to avoid leaking existence.
+      return;
     }
-
     this.logger.log({ event: 'auth.resend_verification.success', userId: user.id });
+  }
 
-    const response: IGenericAuthAcceptedResponse = { message: GENERIC_RESEND_MESSAGE };
-    if (this.isDev) {
-      response._devVerificationLink = link;
+  /**
+   * "Errei o e-mail": moves an unconfirmed account to the corrected address, keeping its decks and
+   * cards, and sends the confirmation there. The link sent to the old address stops working.
+   */
+  async changeEmail(userId: string, email: string, locale: TLocale = 'pt-BR'): Promise<{ user: IAuthUser }> {
+    const user = await this.users.findOneByOrFail({ id: userId });
+    if (user.emailVerifiedAt !== null) {
+      throw new AuthError(EAuthErrorCode.EmailAlreadyConfirmed, 'A confirmed address cannot be changed here');
     }
-    return response;
+    const taken = await this.users.findOne({ where: { email } });
+    if (taken && taken.id !== user.id) {
+      throw new AuthError(EAuthErrorCode.EmailTaken, 'An account with this e-mail already exists');
+    }
+
+    user.email = email;
+    const link = await this.issueConfirmation(user, () => this.saveNewUser(user));
+    if (!(await this.sendConfirmation(email, link, locale))) {
+      this.logger.error({ event: 'auth.change_email.email_failed', userId });
+    }
+    this.logger.log({ event: 'auth.change_email.success', userId });
+    return { user: toAuthUser(user) };
   }
 
   async signIn(email: string, password: string): Promise<ISessionGrant<IAuthResponse>> {
@@ -186,14 +191,15 @@ export class AuthService {
     return this.authResponse(user);
   }
 
-  async verifyEmail(rawToken: string): Promise<ISessionGrant<IAuthResponse>> {
+  /**
+   * Confirms the address behind a link. It opens no session: the page that asked either already has
+   * one or offers the code sign-in. A link that is unknown, expired, used or replaced all answer alike.
+   */
+  async verifyEmail(rawToken: string): Promise<IVerifyEmailResponse> {
     const hash = this.tokenGenerator.hashToken(rawToken);
-    const user = await this.users.findOne({
-      where: { verificationTokenHash: hash },
-    });
-    // A deleted account is refused here as it is at sign-in and by the codes.
+    const user = await this.users.findOne({ where: { verificationTokenHash: hash } });
     if (!user || user.deletedAt || !user.verificationTokenExpiresAt || user.verificationTokenExpiresAt < new Date()) {
-      throw new AuthError(EAuthErrorCode.InvalidToken, 'This verification link is invalid or has expired');
+      throw new AuthError(EAuthErrorCode.TokenExpired, 'This confirmation link has expired');
     }
 
     user.emailVerifiedAt = new Date();
@@ -202,7 +208,7 @@ export class AuthService {
     await this.users.save(user);
 
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
-    return this.authResponse(user);
+    return { verified: true, returnPath: user.signupReturnPath, email: user.email };
   }
 
   async getMe(
@@ -212,6 +218,7 @@ export class AuthService {
     email: string;
     role: EUserRole;
     chatAccess: boolean;
+    emailConfirmed: boolean;
     displayName: string | null;
     whatsappNumber: string | null;
     settings: IAuthSettings;
@@ -229,6 +236,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       chatAccess: user.chatAccess,
+      emailConfirmed: Boolean(user.emailVerifiedAt),
       displayName: user.displayName,
       whatsappNumber: user.whatsappNumber,
       settings: { theme: user.preferences?.theme ?? 'dark' },
@@ -307,6 +315,29 @@ export class AuthService {
     this.logger.warn({ event: 'auth.sign_in.code.dropped_unproven_password', userId: user.id });
   }
 
+  private confirmationLink(rawToken: string): string {
+    return `${this.baseUrl}/verify-email?token=${rawToken}`;
+  }
+
+  /** Gives the account a new confirmation token valid for 7 days and returns the link that carries it. */
+  private async issueConfirmation(user: UserEntity, save: () => Promise<unknown> = () => this.users.save(user)): Promise<string> {
+    const rawToken = this.tokenGenerator.generateRawToken();
+    user.verificationTokenHash = this.tokenGenerator.hashToken(rawToken);
+    user.verificationTokenExpiresAt = new Date(Date.now() + VERIFICATION_TTL_MS);
+    await save();
+    return this.confirmationLink(rawToken);
+  }
+
+  /** The account works without the e-mail, so a provider failure is logged by the caller and never thrown. */
+  private async sendConfirmation(to: string, link: string, locale: TLocale): Promise<boolean> {
+    try {
+      await this.emailService.sendVerificationEmail(to, link, locale);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async saveNewUser(user: UserEntity): Promise<UserEntity> {
     try {
       return await this.users.save(user);
@@ -323,7 +354,7 @@ export class AuthService {
     return {
       sessionToken: await this.sessions.create(user.id),
       body: {
-        user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
+        user: toAuthUser(user),
         // U12: include settings for first-paint theme correctness. Nullish fallback
         // guards against NULL preferences on rows created before migration 1776621087000.
         settings: { theme: user.preferences?.theme ?? 'dark' },

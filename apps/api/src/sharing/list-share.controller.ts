@@ -9,14 +9,16 @@ import {
   Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { EmailConfirmedGuard } from '../auth/guards/email-confirmed.guard';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { ParseInt32IdPipe } from '../lists/parse-int32-id.pipe';
 import { ILinkState } from './dtos/share-state.dto';
-import { UpdateShareDto } from './dtos/update-share.dto';
+import { EnableListShareDto, UpdateShareDto } from './dtos/update-share.dto';
 import { ListShareService } from './list-share.service';
 
 const MINUTE_MS = 60 * 1000;
@@ -38,10 +40,12 @@ export class ListShareController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(EmailConfirmedGuard)
   @Throttle({ default: { limit: SHARE_TOGGLE_LIMIT, ttl: MINUTE_MS } })
   async enable(
     @Param('listId', ParseInt32IdPipe) listId: number,
+    @Body() _dto: EnableListShareDto,
     @CurrentUser() user: ICurrentUser,
   ): Promise<ILinkState> {
     return this.shares.enable(user.userId, listId);

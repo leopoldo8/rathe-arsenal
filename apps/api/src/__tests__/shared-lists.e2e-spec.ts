@@ -59,8 +59,8 @@ describe('Shared lists (E2E)', () => {
   async function createSession(label: string): Promise<ISession> {
     const signUp = await signUpRaw(emailFor(label)).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
-    const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
+    await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
+    return { userId: signUp.body.user.id as string, sessionToken: sessionTokenOf(signUp) };
   }
 
   async function createList(
@@ -90,7 +90,7 @@ describe('Shared lists (E2E)', () => {
 
   async function startSharing(session: ISession, listId: number): Promise<string> {
     await request(server).patch('/api/users/me/display-name').set(...auth(session)).send({ displayName: 'Rodrigo' }).expect(200);
-    const res = await request(server).post(`/api/lists/${listId}/share`).set(...auth(session)).send({}).expect(200);
+    const res = await request(server).post(`/api/lists/${listId}/share`).set(...auth(session)).send({}).expect(201);
     return res.body.token as string;
   }
 
@@ -188,7 +188,7 @@ describe('Shared lists (E2E)', () => {
       expect(blocked.body.code).toBe('DISPLAY_NAME_REQUIRED');
 
       const first = await startSharing(owner, listId);
-      const again = await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(200);
+      const again = await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(201);
       expect(again.body).toEqual({ intent: 'want', url: `http://localhost:5173/l/${first}`, token: first, showContact: true });
       expect(await countEvents('created', owner.userId)).toBe(1);
 
@@ -201,7 +201,7 @@ describe('Shared lists (E2E)', () => {
       expect(dead.body.code).toBe('SHARE_LINK_UNAVAILABLE');
       expect((await request(server).get(`/api/lists/${listId}/share`).set(...auth(owner)).expect(200)).body).toBeNull();
 
-      const second = await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(200);
+      const second = await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(201);
       expect(second.body.token).not.toBe(first);
       await request(server).get(`/api/shared/lists/${first}`).expect(404);
       await request(server).get(`/api/shared/lists/${second.body.token}`).expect(200);
@@ -345,7 +345,7 @@ describe('Shared lists (E2E)', () => {
         `INSERT INTO tracked_deck ("userId", name, hero, format, status) VALUES ($1, 'D', 'H', 'cc', 'building') RETURNING id`,
         [owner.userId],
       )) as [{ id: number }];
-      const deckLink = await request(server).post(`/api/decks/${deck.id}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(200);
+      const deckLink = await request(server).post(`/api/decks/${deck.id}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(201);
 
       for (const dead of ['x', 'A'.repeat(22), deckLink.body.token]) {
         const res = await request(server).get(`/api/shared/lists/${dead}`).expect(404);

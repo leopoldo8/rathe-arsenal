@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import type { ITrackedDeckListItem, TDeckStatus } from '../../../api/decks';
 import { ToastProvider } from '../../../components/ui/Toast/ToastProvider';
+import { AuthContext } from '../../../auth/AuthContext';
+import { makeAuth } from '../../../components/auth/__tests__/accountTestKit';
 
 const mockNavigate = vi.fn();
 let mockSearch: { tag: string[] } = { tag: [] };
@@ -303,5 +305,45 @@ describe('Home route', () => {
     expect(
       firstGroup.compareDocumentPosition(callout) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
+  });
+});
+
+describe('Home route, unconfirmed e-mail', () => {
+  const CONFIRM_LINE = 'Confirme bia.souza@gmail.com para criar links de compartilhar';
+
+  function renderHomeAs(emailConfirmed: boolean): void {
+    const user = { id: 'u1', email: 'bia.souza@gmail.com', role: 'user' as const, chatAccess: false, emailConfirmed };
+    render(
+      <AuthContext.Provider value={makeAuth({ user })}>
+        <ToastProvider>
+          <HomePage />
+        </ToastProvider>
+      </AuthContext.Provider>,
+    );
+  }
+
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    seed(ALL_STATUSES);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('an unconfirmed account sees the confirm line', () => {
+    renderHomeAs(false);
+
+    const line = screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === `${CONFIRM_LINE} · Reenviar · Errei o e-mail`);
+    expect(within(line).getByRole('button', { name: 'Reenviar' })).toBeInTheDocument();
+    expect(within(line).getByRole('button', { name: 'Errei o e-mail' })).toBeInTheDocument();
+  });
+
+  it('shows no confirm line once the e-mail is confirmed', () => {
+    renderHomeAs(true);
+
+    expect(screen.queryByText(new RegExp(CONFIRM_LINE))).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reenviar' })).not.toBeInTheDocument();
   });
 });

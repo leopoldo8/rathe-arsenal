@@ -52,22 +52,17 @@ describe('AuthProvider chat access', () => {
     expect(signedIn.current!.user?.chatAccess).toBe(true);
     first.unmount();
 
-    // verify-email and code sign-in responses
-    const viaToken = capture();
-    const tokenView = render(<AuthProvider><viaToken.Probe /></AuthProvider>);
+    // code sign-in response
+    const viaCode = capture();
+    const codeView = render(<AuthProvider><viaCode.Probe /></AuthProvider>);
     answer({
-      '/auth/verify-email': { user: { id: 'u4', email: 'g@h.com', role: 'user', chatAccess: true }, settings: { theme: 'dark' } },
       '/auth/codes/verify': { returnPath: null, user: { id: 'u4', email: 'g@h.com', role: 'user', chatAccess: false }, settings: { theme: 'dark' } },
     });
     await act(async () => {
-      await viaToken.current!.verifyEmail('t'.repeat(64));
+      await viaCode.current!.verifyCode('g@h.com', '123456');
     });
-    const afterVerify = viaToken.current!.user?.chatAccess;
-    await act(async () => {
-      await viaToken.current!.verifyCode('g@h.com', '123456');
-    });
-    expect([afterVerify, viaToken.current!.user?.chatAccess]).toEqual([true, false]);
-    tokenView.unmount();
+    expect(viaCode.current!.user?.chatAccess).toBe(false);
+    codeView.unmount();
 
     // /auth/me with chatAccess: true
     answer({ '/auth/me': { id: 'u2', email: 'c@d.com', role: 'user', chatAccess: true, settings: { theme: 'dark' } } });

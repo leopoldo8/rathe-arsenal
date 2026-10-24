@@ -84,6 +84,7 @@ export interface IDeckShareState {
 
 export const SHARE_LINK_UNAVAILABLE = 'SHARE_LINK_UNAVAILABLE';
 export const DISPLAY_NAME_REQUIRED = 'DISPLAY_NAME_REQUIRED';
+export const EMAIL_NOT_CONFIRMED = 'EMAIL_NOT_CONFIRMED';
 
 export function isShareErrorCode(error: unknown, code: string): boolean {
   return error instanceof AuthFetchError && error.code === code;

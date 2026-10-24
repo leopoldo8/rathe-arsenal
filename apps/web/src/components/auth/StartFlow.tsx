@@ -23,6 +23,8 @@ interface IStartFlowProps {
   readonly buttonToken?: string | undefined;
   /** A page of the app the visitor asked for while signed out; a sign-in goes back to it (AC 240). */
   readonly next?: string | undefined;
+  /** An address to sign in with a code at once, skipping the one-field start. */
+  readonly codeEmail?: string | undefined;
 }
 
 /**
@@ -30,7 +32,7 @@ interface IStartFlowProps {
  * a password, or an e-mailed code). Signing in sends the visitor back to the shared page they came
  * from, or to the app.
  */
-export function StartFlow({ buttonToken, next: nextPage }: IStartFlowProps): React.ReactElement {
+export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlowProps): React.ReactElement {
   const { t } = useTranslation();
   const { redeemCode } = useAuth();
   const navigate = useNavigate();
@@ -38,7 +40,9 @@ export function StartFlow({ buttonToken, next: nextPage }: IStartFlowProps): Rea
   // Read once: the first sign-in step clears the stored return.
   const shareReturn = useMemo(() => readShareReturn(), []);
   const origin = useShareOrigin(shareReturn);
-  const [step, setStep] = useState<TStep>(() => ({ kind: 'email', email: readRememberedEmail() }));
+  const [step, setStep] = useState<TStep>(() =>
+    codeEmail !== undefined ? { kind: 'code', email: codeEmail } : { kind: 'email', email: readRememberedEmail() },
+  );
   const [redeeming, setRedeeming] = useState(buttonToken !== undefined);
   const redeemed = useRef(false);
 
@@ -139,11 +143,11 @@ function ReplaceWith({ path }: { readonly path: string }): null {
  * made on this page is the flow's own to finish (it goes back to a shared page, or to the first
  * steps), so it never redirects over it.
  */
-export function StartGate({ buttonToken, next }: IStartFlowProps): React.ReactElement | null {
+export function StartGate({ buttonToken, next, codeEmail }: IStartFlowProps): React.ReactElement | null {
   const { user, isLoading, restoredSession } = useAuth();
   if (isLoading) return null;
   if (user !== null && restoredSession === true) {
     return next === undefined ? <Navigate to="/home" search={{ tag: [] }} replace /> : <ReplaceWith path={next} />;
   }
-  return <StartFlow buttonToken={buttonToken} next={next} />;
+  return <StartFlow buttonToken={buttonToken} next={next} codeEmail={codeEmail} />;
 }

@@ -20,3 +20,28 @@ export async function startAccount(email: string): Promise<TStartNext> {
 export function requestSignInCode(email: string): Promise<ICodeRequest> {
   return authFetch<ICodeRequest>('/auth/codes', { ...JSON_POST, body: JSON.stringify({ email }) });
 }
+
+export interface IEmailConfirmation {
+  /** The page the account was made from, when it kept one. */
+  readonly returnPath: string | null;
+  /** The address that was confirmed, so a visitor who is not signed in can be offered the code sign-in for it. */
+  readonly email: string;
+}
+
+export async function confirmEmail(token: string): Promise<IEmailConfirmation> {
+  const res = await authFetch<IEmailConfirmation & { verified: true }>('/auth/verify-email', {
+    ...JSON_POST,
+    body: JSON.stringify({ token }),
+  });
+  return { returnPath: res.returnPath, email: res.email };
+}
+
+/** Sends the signed-in account's confirmation e-mail again. */
+export function resendConfirmation(): Promise<void> {
+  return authFetch<void>('/auth/resend-verification', JSON_POST);
+}
+
+/** Moves an unconfirmed account to a corrected address and sends the confirmation there. */
+export function changeAccountEmail(email: string): Promise<{ user: { email: string } }> {
+  return authFetch<{ user: { email: string } }>('/auth/me/email', { method: 'PATCH', body: JSON.stringify({ email }) });
+}

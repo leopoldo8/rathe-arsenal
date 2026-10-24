@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -12,7 +12,7 @@ import { StartDto } from './dtos/start.dto';
 import { RequestCodeDto } from './dtos/request-code.dto';
 import { VerifyCodeDto } from './dtos/verify-code.dto';
 import { RedeemCodeDto } from './dtos/redeem-code.dto';
-import { ResendVerificationDto } from './dtos/resend-verification.dto';
+import { ChangeEmailDto } from './dtos/change-email.dto';
 import { DeleteAccountDto } from './dtos/delete-account.dto';
 import { AuthService, ISessionGrant } from './auth.service';
 import { SessionService } from './session.service';
@@ -116,24 +116,28 @@ export class AuthController {
   @Throttle({ default: AUTH_THROTTLE.verifyEmail })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body() dto: VerifyEmailDto, @Res({ passthrough: true }) res: Response) {
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
     try {
-      return this.withSession(res, await this.authService.verifyEmail(dto.token));
+      return await this.authService.verifyEmail(dto.token);
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
     }
   }
 
-  // A6: resend-verification endpoint. Always returns a generic 202 regardless
-  // of whether the email exists or is already verified.
-  @Public()
   @Throttle({ default: AUTH_THROTTLE.resendVerification })
   @Post('resend-verification')
   @HttpCode(HttpStatus.ACCEPTED)
-  async resendVerification(@Body() dto: ResendVerificationDto, @AcceptLanguage() locale: TLocale) {
+  async resendVerification(@CurrentUser() user: ICurrentUser, @AcceptLanguage() locale: TLocale): Promise<void> {
+    await this.authService.resendVerification(user.userId, locale);
+  }
+
+  @Throttle({ default: AUTH_THROTTLE.changeEmail })
+  @Patch('me/email')
+  @HttpCode(HttpStatus.OK)
+  async changeEmail(@CurrentUser() user: ICurrentUser, @Body() dto: ChangeEmailDto, @AcceptLanguage() locale: TLocale) {
     try {
-      return await this.authService.resendVerification(dto.email, locale);
+      return await this.authService.changeEmail(user.userId, dto.email, locale);
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;

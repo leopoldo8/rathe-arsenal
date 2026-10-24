@@ -211,4 +211,31 @@ describe('ShareDialog', () => {
     expect(await screen.findByTestId('share-intent-deck')).toBeInTheDocument();
     expect(api.calls.some((call) => call.key === 'DELETE /decks/7/share/deck')).toBe(true);
   });
+  it('an unconfirmed owner gets the confirm sheet', async () => {
+    api.handlers.set('POST /decks/7/share', () => {
+      throw apiError(403, 'EMAIL_NOT_CONFIRMED');
+    });
+    api.handlers.set('POST /auth/resend-verification', () => undefined);
+    const onOpenChange = vi.fn();
+    const auth = makeAuth({ user: { ...SIGNED_IN_USER, email: 'bia.souza@gmail.com', emailConfirmed: false } });
+    renderWithProviders(
+      <ShareDialog deckId={7} deckName="Rhinar Rampage" missingCount={11} open initialIntent={null} onOpenChange={onOpenChange} />,
+      auth,
+    );
+
+    await userEvent.click(await screen.findByTestId('share-intent-deck'));
+
+    expect(await screen.findByRole('heading', { name: 'Falta confirmar o seu e-mail' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Para criar um link, confirme o e-mail que mandamos para bia.souza@gmail.com. O link vale 7 dias.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Olhe também o spam e a aba Promoções.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Errei o e-mail' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mandar o link de novo' }));
+    await waitFor(() => expect(api.calls.some((call) => call.key === 'POST /auth/resend-verification')).toBe(true));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Agora não' }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
 });

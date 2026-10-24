@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { setChatAccess } from '../chat-grant';
-import { TokenGeneratorService } from '../../auth/services/token-generator.service';
 import { PASSWORD } from '../../replacements/__tests__/replacements-e2e.fixture';
 import { bootChatFixture, IChatFixture } from './chat-e2e.fixture';
 import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
@@ -49,8 +48,7 @@ describe('chat access (E2E)', () => {
     expect((await fixture.get('/api/auth/me', user.sessionToken).expect(200)).body.chatAccess).toBe(true);
   });
 
-  it('sign-in and verify-email return chatAccess over HTTP', async () => {
-    const tokens = new TokenGeneratorService();
+  it('sign-in returns chatAccess over HTTP', async () => {
     const user = await fixture.chatUser({ access: false });
     const server = fixture.app.getHttpServer();
     const signIn = async (password: string) =>
@@ -60,14 +58,7 @@ describe('chat access (E2E)', () => {
     await fixture.grant(user.email);
     const granted = await signIn(PASSWORD);
 
-    const verifyToken = tokens.generateRawToken();
-    await fixture.dataSource.query(
-      `UPDATE "user" SET "verificationTokenHash" = $2, "verificationTokenExpiresAt" = now() + interval '1 hour' WHERE email = $1`,
-      [user.email, tokens.hashToken(verifyToken)],
-    );
-    const verified = (await request(server).post('/api/auth/verify-email').send({ token: verifyToken }).expect(200)).body.user.chatAccess as boolean;
-
-    expect([refused, granted, verified]).toEqual([false, true, true]);
+    expect([refused, granted]).toEqual([false, true]);
   });
 
   it('every chat route refuses a user without access', async () => {

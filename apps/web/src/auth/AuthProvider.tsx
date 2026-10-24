@@ -3,6 +3,7 @@ import { AuthContext, IAuthSettings, IAuthUser, ICodeSignIn, ISignUpInput, TUser
 import { THEME_STORAGE_KEY } from '../styles/theme-init';
 import { authFetch as apiFetch, AuthFetchError } from '../lib/auth-fetch';
 import { onUnauthorized } from '../lib/session-events';
+import { changeAccountEmail, confirmEmail, type IEmailConfirmation } from '../lib/account-api';
 
 // Re-export so existing consumers that imported AuthFetchError from this module
 // continue to compile without an import rewrite.
@@ -35,6 +36,7 @@ interface IAuthMeResponse {
   email: string;
   role: TUserRole;
   chatAccess?: boolean;
+  emailConfirmed?: boolean;
   displayName?: string | null;
   whatsappNumber?: string | null;
   settings: IAuthSettings;
@@ -67,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signedInRef.current = true;
         // Default to 'user' if an older server response omits role (fail-safe:
         // never grant admin UI on a missing field).
-        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null });
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, emailConfirmed: res.emailConfirmed === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null });
         setRestored(true);
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
@@ -156,12 +158,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev === null ? prev : { ...prev, whatsappNumber }));
   }, []);
 
-  const verifyEmail = useCallback(async (tkn: string) => {
-    const res = await apiFetch<IAuthSignResponse>(
-      '/auth/verify-email', { method: 'POST', body: JSON.stringify({ token: tkn }) },
-    );
-    persist(res.user, res.settings);
-  }, [persist]);
+  const verifyEmail = useCallback(async (tkn: string): Promise<IEmailConfirmation> => {
+    const confirmation = await confirmEmail(tkn);
+    setUser((prev) => (prev !== null && prev.email === confirmation.email ? { ...prev, emailConfirmed: true } : prev));
+    return confirmation;
+  }, []);
+
+  const changeEmail = useCallback(async (email: string) => {
+    const res = await changeAccountEmail(email);
+    setUser((prev) => (prev === null ? prev : { ...prev, email: res.user.email }));
+  }, []);
 
   const verifyCode = useCallback(async (email: string, code: string): Promise<ICodeSignIn> => {
     const res = await apiFetch<IAuthSignResponse & ICodeSignIn>(
@@ -192,8 +198,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // assigning `undefined` to an optional field is a type error.
     ...(settings !== undefined ? { settings } : {}),
     setSettings,
-    signUp, signIn, signOut, verifyEmail, verifyCode, redeemCode, deleteAccount, setDisplayName, setWhatsappNumber,
-  }), [user, isLoading, settings, restored, sessionEnded, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, verifyCode, redeemCode, deleteAccount]);
+    signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount, setDisplayName, setWhatsappNumber,
+  }), [user, isLoading, settings, restored, sessionEnded, setSettings, setDisplayName, setWhatsappNumber, signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

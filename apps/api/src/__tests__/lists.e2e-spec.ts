@@ -45,8 +45,8 @@ describe('Card lists (E2E)', () => {
       .send({ email: emailFor(label), password: PASSWORD })
       .expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
-    const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
+    await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
+    return { userId: signUp.body.user.id as string, sessionToken: sessionTokenOf(signUp) };
   }
 
   async function createList(session: ISession, kind: 'want' | 'sell', name = 'My list'): Promise<number> {

@@ -16,11 +16,20 @@ export interface ISentCode {
   readonly locale: string | undefined;
 }
 
+export interface ISentConfirmation {
+  readonly to: string;
+  readonly link: string;
+}
+
 export interface IAccountsApp {
   readonly app: INestApplication;
   readonly dataSource: DataSource;
   /** Every sign-in code e-mail sent since the app booted, oldest first. */
   readonly sentCodes: ISentCode[];
+  /** Every confirmation e-mail sent since the app booted, oldest first. */
+  readonly sentConfirmations: ISentConfirmation[];
+  /** While true, sending a confirmation e-mail throws, as when the mail provider is down. */
+  failConfirmations: boolean;
   readonly suffix: string;
   emailFor(label: string): string;
   close(): Promise<void>;
@@ -41,8 +50,14 @@ export async function bootAccountsApp(): Promise<IAccountsApp> {
   process.env['PORT'] = '0';
 
   const sentCodes: ISentCode[] = [];
+  const sentConfirmations: ISentConfirmation[] = [];
+  // Read by the stub below, which the app calls after `bootAccountsApp` returned.
+  const state = { failConfirmations: false };
   const emailStub = {
-    sendVerificationEmail: async (): Promise<void> => undefined,
+    sendVerificationEmail: async (to: string, link: string): Promise<void> => {
+      if (state.failConfirmations) throw new Error('the mail provider is down');
+      sentConfirmations.push({ to, link });
+    },
     sendSignInCodeEmail: async (to: string, code: string, link: string, locale?: string): Promise<void> => {
       sentCodes.push({ to, code, link, locale });
     },
@@ -66,6 +81,13 @@ export async function bootAccountsApp(): Promise<IAccountsApp> {
     app,
     dataSource,
     sentCodes,
+    sentConfirmations,
+    get failConfirmations(): boolean {
+      return state.failConfirmations;
+    },
+    set failConfirmations(value: boolean) {
+      state.failConfirmations = value;
+    },
     suffix,
     emailFor: (label: string): string => `acct-${label}-${suffix}@test.local`,
     close: async (): Promise<void> => {

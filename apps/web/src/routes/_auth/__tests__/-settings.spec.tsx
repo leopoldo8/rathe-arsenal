@@ -126,7 +126,8 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     signOut: () => {
       /* test stub */
     },
-    verifyEmail: noopAsync,
+    verifyEmail: async () => ({ returnPath: null, email: '' }),
+    changeEmail: async () => undefined,
     verifyCode: async () => ({ returnPath: null }),
     redeemCode: async () => ({ returnPath: null }),
     deleteAccount: noopAsync,

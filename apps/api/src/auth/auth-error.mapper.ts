@@ -13,6 +13,8 @@ import { AuthError, EAuthErrorCode } from './errors';
 const STATUS_MAP: Record<EAuthErrorCode, new (response: string | object) => HttpException> = {
   [EAuthErrorCode.InvalidCredentials]: UnauthorizedException,
   [EAuthErrorCode.EmailNotVerified]: ForbiddenException,
+  [EAuthErrorCode.EmailNotConfirmed]: ForbiddenException,
+  [EAuthErrorCode.EmailAlreadyConfirmed]: BadRequestException,
   [EAuthErrorCode.InvalidToken]: BadRequestException,
   [EAuthErrorCode.TokenExpired]: GoneException,
   [EAuthErrorCode.EmailDeliveryFailed]: InternalServerErrorException,

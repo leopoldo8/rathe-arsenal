@@ -14,6 +14,7 @@ import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
 import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
+import { DECK_SHARE_INTENTS } from '../database/entities/share-link.entity';
 
 const PASSWORD = 'sharing-test-password-123';
 const SUFFIX = Date.now().toString(36);
@@ -45,8 +46,8 @@ describe('Sharing (E2E)', () => {
     const email = emailFor(label);
     const signUp = await signUpRaw(email).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
-    const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
+    await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
+    return { userId: signUp.body.user.id as string, sessionToken: sessionTokenOf(signUp) };
   }
 
   async function createDeck(session: ISession): Promise<number> {
@@ -84,7 +85,7 @@ describe('Sharing (E2E)', () => {
 
   async function startSharing(session: ISession, deckId: number, intent: 'deck' | 'missing' = 'deck'): Promise<string> {
     await request(server).patch('/api/users/me/display-name').set(...auth(session)).send({ displayName: 'Rodrigo' }).expect(200);
-    const res = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(session)).send({ intent }).expect(200);
+    const res = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(session)).send({ intent }).expect(201);
     return res.body.token as string;
   }
 
@@ -127,7 +128,7 @@ describe('Sharing (E2E)', () => {
     await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'want' }).expect(400);
 
     const first = await startSharing(owner, deckId);
-    const again = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(200);
+    const again = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(201);
     expect(again.body).toEqual({ intent: 'deck', url: `http://localhost:5173/d/${first}`, token: first, showContact: true });
     expect(await countEvents('created', owner.userId)).toBe(1);
 
@@ -140,7 +141,7 @@ describe('Sharing (E2E)', () => {
     const off = await request(server).get(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(200);
     expect(off.body).toEqual({ deck: null, missing: null });
 
-    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(200);
+    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'deck' }).expect(201);
     expect(second.body.token).not.toBe(first);
     await request(server).get(`/api/shared/decks/${first}`).expect(404);
     await request(server).get(`/api/shared/decks/${second.body.token}`).expect(200);
@@ -227,6 +228,23 @@ describe('Sharing (E2E)', () => {
         { cardIdentifier: CARD_B.cardIdentifier, owned: 0 },
       ]),
     );
+  });
+
+  it('share creation answers 201, 400 and 404 for the intents that exist today', async () => {
+    const owner = await createSession('creation-statuses');
+    const stranger = await createSession('creation-stranger');
+    const deckId = await createDeck(owner);
+    const listId = (await request(server).post('/api/lists').set(...auth(owner)).send({ kind: 'want', name: 'Wants' }).expect(201)).body.id as number;
+    await request(server).patch('/api/users/me/display-name').set(...auth(owner)).send({ displayName: 'Rodrigo' }).expect(200);
+
+    for (const intent of DECK_SHARE_INTENTS) {
+      await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent }).expect(201);
+    }
+    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'bogus' }).expect(400);
+    await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({ intent: 'quote' }).expect(400);
+    await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(201);
+    await request(server).post(`/api/decks/${deckId}/share`).set(...auth(stranger)).send({ intent: 'deck' }).expect(404);
+    await request(server).post(`/api/lists/${listId}/share`).set(...auth(stranger)).send({}).expect(404);
   });
 
   it('keeps sharing controls to the deck owner', async () => {

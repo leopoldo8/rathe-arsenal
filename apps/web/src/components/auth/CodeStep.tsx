@@ -4,12 +4,12 @@ import { AuthFetchError } from '../../lib/auth-fetch';
 import { useAuth } from '../../auth/useAuth';
 import { localizeAuthError } from '../../auth/localize-auth-error';
 import { requestSignInCode } from '../../lib/account-api';
+import { isGmailAddress } from '../../lib/is-gmail-address';
 import { rememberSignIn } from '../../lib/remembered-account';
 import styles from './AccountSteps.module.css';
 
 const DIGITS = 6;
 const DEFAULT_RESEND_SECONDS = 45;
-const GMAIL_DOMAINS: readonly string[] = ['gmail.com', 'googlemail.com'];
 
 type TProblem = 'wrong' | 'expired' | null;
 
@@ -17,10 +17,6 @@ interface ICodeStepProps {
   readonly email: string;
   readonly onChangeEmail: () => void;
   readonly onSignedIn: (returnPath: string | null) => void;
-}
-
-function isGmail(email: string): boolean {
-  return GMAIL_DOMAINS.includes(email.split('@')[1]?.toLowerCase() ?? '');
 }
 
 function secondsUntil(isoTime: string): number {
@@ -175,7 +171,7 @@ export function CodeStep({ email, onChangeEmail, onSignedIn }: ICodeStepProps): 
       <button type="button" className={styles.secondaryBtn} onClick={onChangeEmail}>
         {t('account.otherEmail')}
       </button>
-      <p className={styles.note}>{t(isGmail(email) ? 'account.spamPromotions' : 'account.spam')}</p>
+      <p className={styles.note}>{t(isGmailAddress(email) ? 'account.spamPromotions' : 'account.spam')}</p>
     </div>
   );
 }
