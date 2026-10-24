@@ -10,6 +10,8 @@ export interface IAuthUser {
   chatAccess: boolean;
   /** False until the address is confirmed; only creating share links waits for it. */
   emailConfirmed?: boolean;
+  /** False for an account that signs in with an e-mailed code only. */
+  hasPassword?: boolean;
   /** Name shown on shared pages; null until the user picks one (sharing asks for it first). */
   displayName?: string | null;
   /** Digits with country code; null until the user saves one. */
@@ -76,6 +78,8 @@ export interface IAuthContext {
   setDisplayName: (displayName: string) => void;
   /** Mirrors a saved (or removed, with null) WhatsApp number into the signed-in user. */
   setWhatsappNumber: (whatsappNumber: string | null) => void;
+  /** Mirrors a password created or changed in Settings into the signed-in user. */
+  setHasPassword: (hasPassword: boolean) => void;
 }
 
 export const AuthContext = createContext<IAuthContext | null>(null);

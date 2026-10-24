@@ -148,6 +148,17 @@
 - The catalog's `INVALID_EMAIL` lost its final period ("E-mail inválido"), so it reads as C400 quotes it; `PASSWORD_TOO_SHORT` has none either.
 - `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` are in `.env.example`; the web widget loads Cloudflare's script only when the site key exists, and asks for a new token after each request.
 
+### S35 (batch 4)
+
+- C399, C409 and C412 are built, and every proof is green, but they stay unmarked (C382's precedent): the opened password form ("Mudar a senha" and "Criar uma senha" open it) is marked "not drawn" in `.design/account.md`, and C399 and C412 run through it and through the address-fix and code-error states that nothing draws.
+  The form is one field, "Nova senha", with the rule line ("Pelo menos 10 caracteres."), "Salvar senha" and "Cancelar", built from the Settings panel's existing parts; the owner marks the three checks ` · done` if the forms are accepted as built.
+  C399's single test (`auth-form-validation.spec.tsx`) covers the start field, the new-account password, the sign-in password, the six boxes, the Settings password and the address fix.
+- The Settings page gained the "Conta" panel first, with the address moved there from "Perfil" and the password row after it; it has six `<h2>` now, so three assertions of `-settings.spec.tsx` that counted five changed to six.
+- `hasPassword` is on `GET /api/auth/me` and on the `user` of every auth answer (the Surface row of S33 named it); the web mirrors it (`AuthContext.setHasPassword`).
+- Item (f) is followed as C409 is written: no current password is asked, so a holder of one live session can set a password (the other sessions end).
+  A related surprise for the owner: a password created in Settings on an account whose address is still unconfirmed is dropped by the next sign-in by code (`dropPasswordSetBeforeAddressWasProven`, items (a) and (h)), because the account cannot tell that password from one an attacker chose at sign-up.
+- New copy: "Nova senha", "Salvar senha", "Cancelar", and the panel's heading "Conta" (the other strings are quoted by C408).
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

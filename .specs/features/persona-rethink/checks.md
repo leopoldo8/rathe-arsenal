@@ -1525,16 +1525,16 @@ Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "an unreachable
 
 ### S35 - Settings: create or change a password · 12 files · 45 KB · ~19k
 
-**C408** - `GET /api/auth/me` carries `hasPassword`; the Settings page's "Conta" section shows "E-mail" with the address, then "Senha: você tem uma senha" with "Mudar a senha" when `hasPassword` is true or "Senha: nenhuma" with "Criar uma senha" when false, then "Você também pode entrar com um código por e-mail, sem senha." (screen `r2-settings-password-phone`) (AC 259, AC 262)
+**C408** - `GET /api/auth/me` carries `hasPassword`; the Settings page's "Conta" section shows "E-mail" with the address, then "Senha: você tem uma senha" with "Mudar a senha" when `hasPassword` is true or "Senha: nenhuma" with "Criar uma senha" when false, then "Você também pode entrar com um código por e-mail, sem senha." (screen `r2-settings-password-phone`) (AC 259, AC 262) · done
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the password row follows hasPassword"`
 
 **C409** - "Mudar a senha" and "Criar uma senha" each open a form with exactly one password input and no current-password input; submitting 10 characters calls `PUT /api/users/me/password` with `{ password }` and shows the row as "Senha: você tem uma senha" (AC 260)
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "a new password asks only the new password"`
 
-**C410** - `PUT /api/users/me/password` answers `204` and sign-in with the new password then answers `200`; a 9-character or empty password answers `400`; no cookie answers `401` (AC 260, AC 261; Surface)
+**C410** - `PUT /api/users/me/password` answers `204` and sign-in with the new password then answers `200`; a 9-character or empty password answers `400`; no cookie answers `401` (AC 260, AC 261; Surface) · done
 Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "setting a password answers 204, 400 and 401"`
 
-**C411** - The Settings page has no control whose name matches `/remover|apagar|tirar/i` next to the password row, and the API has no route that sets `passwordHash` back to null (AC 261)
+**C411** - The Settings page has no control whose name matches `/remover|apagar|tirar/i` next to the password row, and the API has no route that sets `passwordHash` back to null (AC 261) · done
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "a password cannot be removed"`
 Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "no route clears a password"`
 

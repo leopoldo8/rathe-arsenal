@@ -58,6 +58,7 @@ export function makeAuth(overrides: Partial<IAuthContext> = {}): IAuthContext {
     deleteAccount: noop,
     setDisplayName: vi.fn(),
     setWhatsappNumber: vi.fn(),
+    setHasPassword: vi.fn(),
     ...overrides,
   };
 }

@@ -54,6 +54,7 @@ function renderModal(opts: IRenderOpts) {
     deleteAccount: opts.deleteAccount,
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,
+    setHasPassword: () => undefined,
     setSettings: () => {
       /* test stub */
     },

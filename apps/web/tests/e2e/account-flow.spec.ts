@@ -230,3 +230,34 @@ test('share waits for the confirmation and works after it', async ({ page, brows
   await page.getByTestId('share-intent-deck').click();
   await expect(page.getByTestId('share-address')).toBeVisible();
 });
+
+// ---------------------------------------------------------------------------
+// S35: a code-only account creates a password in Settings.
+// ---------------------------------------------------------------------------
+
+test('a code-only account creates a password and signs in with it', async ({ page, context }) => {
+  const email = `lucas.${Date.now().toString(36)}@hotmail.com`;
+  const password = 'a-fresh-password-123';
+  await page.goto('/entrar');
+  await page.getByLabel('Seu e-mail').fill(email);
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('button', { name: 'Criar conta e entrar' }).click();
+  await expect(page).toHaveURL(/\/onboarding/);
+
+  await page.goto('/settings');
+  await expect(page.getByText('Senha: nenhuma')).toBeVisible();
+  await page.getByRole('button', { name: 'Criar uma senha' }).click();
+  await page.getByLabel('Nova senha').fill(password);
+  await page.getByRole('button', { name: 'Salvar senha' }).click();
+  await expect(page.getByText('Senha: você tem uma senha')).toBeVisible();
+
+  expect((await page.request.post('/api/auth/sign-out')).status()).toBe(204);
+  await context.clearCookies();
+  await page.goto('/entrar');
+  await page.getByLabel('Seu e-mail').fill(email);
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByLabel('Senha').fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/home/);
+});

@@ -44,6 +44,11 @@ export function resendConfirmation(): Promise<void> {
   return authFetch<void>('/auth/resend-verification', JSON_POST);
 }
 
+/** Creates the account's password, or replaces it. Every other session of the account ends. */
+export function setAccountPassword(password: string): Promise<void> {
+  return authFetch<void>('/users/me/password', { method: 'PUT', body: JSON.stringify({ password }) });
+}
+
 /** Moves an unconfirmed account to a corrected address and sends the confirmation there. */
 export function changeAccountEmail(email: string): Promise<{ user: { email: string } }> {
   return authFetch<{ user: { email: string } }>('/auth/me/email', { method: 'PATCH', body: JSON.stringify({ email }) });

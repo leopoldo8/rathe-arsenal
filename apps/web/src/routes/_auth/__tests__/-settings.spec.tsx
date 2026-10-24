@@ -11,10 +11,10 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ReactNode } from 'react';
-import { AuthContext, IAuthContext } from '../../../auth/AuthContext';
+import { ReactNode, useState } from 'react';
+import { AuthContext, IAuthContext, type IAuthUser } from '../../../auth/AuthContext';
 
 // ----- Mocks -----
 
@@ -79,6 +79,10 @@ const { patchDisplayNameMock } = vi.hoisted(() => ({ patchDisplayNameMock: vi.fn
 const { patchContactMock } = vi.hoisted(() => ({ patchContactMock: vi.fn() }));
 vi.mock('../../../api/shared-decks', () => ({ patchDisplayName: patchDisplayNameMock, patchContact: patchContactMock }));
 
+// Password PUT — stubbed so the form is tested without a network.
+const { setAccountPasswordMock } = vi.hoisted(() => ({ setAccountPasswordMock: vi.fn() }));
+vi.mock('../../../lib/account-api', () => ({ setAccountPassword: setAccountPasswordMock }));
+
 // DeleteAccountModal — smoke-stub so settings tests focus on the page layout
 vi.mock('../../../components/delete-account-modal', () => ({
   DeleteAccountModal: ({
@@ -133,6 +137,7 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     deleteAccount: noopAsync,
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,
+    setHasPassword: () => undefined,
     ...overrides,
   };
 }
@@ -191,9 +196,9 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
     expect(labels.some((t) => t.includes('excluir conta'))).toBe(true);
   });
 
-  it('renders exactly 5 <h2> section headings', () => {
+  it('renders exactly 6 <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(5);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
   });
 
   it('wraps the panels in the capped, centred page column', () => {
@@ -204,7 +209,7 @@ describe('SettingsPage — happy path: 4 sections rendered', () => {
   it('draws each of the four panels with the section class and no eyebrow above its heading', () => {
     renderSettings();
     const panels = screen.getAllByRole('heading', { level: 2 }).map((h) => h.closest('section'));
-    expect(panels).toHaveLength(5);
+    expect(panels).toHaveLength(6);
     for (const panel of panels) {
       expect(panel).toHaveClass(cls(settingsStyles.section));
       expect(panel?.querySelector('span[class*="eyebrow"]')).toBeNull();
@@ -378,9 +383,9 @@ describe('SettingsPage — A11y: heading levels', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
-  it('has exactly four <h2> section headings', () => {
+  it('has exactly six <h2> section headings', () => {
     renderSettings();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(5);
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
   });
 
   it('does not use <h3> or deeper for section headings', () => {
@@ -432,5 +437,82 @@ describe('SettingsPage — admin store-sync section', () => {
   it('shows no failure when the last sync succeeded', () => {
     renderSettings(admin);
     expect(screen.queryByTestId('store-sync-failure')).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage, Conta section: the password', () => {
+  const account = (hasPassword: boolean): IAuthUser => ({
+    id: 'u1',
+    email: 'lucas.prado@hotmail.com',
+    role: 'user',
+    chatAccess: false,
+    hasPassword,
+  });
+
+  function contaSection(): HTMLElement {
+    return screen.getByRole('heading', { level: 2, name: 'Conta' }).closest('section')!;
+  }
+
+  function renderWithState(initial: IAuthUser) {
+    function Harness(): React.ReactElement {
+      const [user, setUser] = useState(initial);
+      const ctx = makeAuthContext({ user, setHasPassword: (hasPassword) => setUser((prev) => ({ ...prev, hasPassword })) });
+      return (
+        <AuthContext.Provider value={ctx}>
+          <SettingsPage />
+        </AuthContext.Provider>
+      );
+    }
+    return render(<Harness />);
+  }
+
+  beforeEach(() => setAccountPasswordMock.mockReset().mockResolvedValue(undefined));
+
+  it('the password row follows hasPassword', () => {
+    const withPassword = renderSettings(makeAuthContext({ user: account(true) }));
+    let section = within(contaSection());
+    const order = [
+      section.getByText('E-mail'),
+      section.getByText('lucas.prado@hotmail.com'),
+      section.getByText('Senha: você tem uma senha'),
+      section.getByRole('button', { name: 'Mudar a senha' }),
+      section.getByText('Você também pode entrar com um código por e-mail, sem senha.'),
+    ];
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(section.queryByRole('button', { name: 'Criar uma senha' })).not.toBeInTheDocument();
+    withPassword.unmount();
+
+    renderSettings(makeAuthContext({ user: account(false) }));
+    section = within(contaSection());
+    expect(section.getByText('Senha: nenhuma')).toBeInTheDocument();
+    expect(section.getByRole('button', { name: 'Criar uma senha' })).toBeInTheDocument();
+    expect(section.queryByRole('button', { name: 'Mudar a senha' })).not.toBeInTheDocument();
+  });
+
+  it('a new password asks only the new password', async () => {
+    renderWithState(account(false));
+
+    await userEvent.click(within(contaSection()).getByRole('button', { name: 'Criar uma senha' }));
+    const form = contaSection().querySelector('form')!;
+    expect(form.querySelectorAll('input[type="password"]')).toHaveLength(1);
+    expect(form.querySelector('input[autocomplete="current-password"]')).toBeNull();
+
+    await userEvent.type(within(form).getByLabelText('Nova senha'), '0123456789');
+    await userEvent.click(within(form).getByRole('button', { name: 'Salvar senha' }));
+
+    expect(setAccountPasswordMock).toHaveBeenCalledWith('0123456789');
+    expect(await within(contaSection()).findByText('Senha: você tem uma senha')).toBeInTheDocument();
+    expect(contaSection().querySelector('form')).toBeNull();
+  });
+
+  it('a password cannot be removed', () => {
+    for (const hasPassword of [true, false]) {
+      const view = renderSettings(makeAuthContext({ user: account(hasPassword) }));
+      const buttons = within(contaSection()).getAllByRole('button');
+      expect(buttons.filter((button) => /remover|apagar|tirar/i.test(button.textContent ?? ''))).toHaveLength(0);
+      view.unmount();
+    }
   });
 });

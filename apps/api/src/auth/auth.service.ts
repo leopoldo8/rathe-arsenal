@@ -35,6 +35,7 @@ export function toAuthUser(user: UserEntity): IAuthUser {
     role: user.role,
     chatAccess: user.chatAccess,
     emailConfirmed: Boolean(user.emailVerifiedAt),
+    hasPassword: Boolean(user.passwordHash),
   };
 }
 
@@ -228,6 +229,7 @@ export class AuthService {
     role: EUserRole;
     chatAccess: boolean;
     emailConfirmed: boolean;
+    hasPassword: boolean;
     displayName: string | null;
     whatsappNumber: string | null;
     settings: IAuthSettings;
@@ -246,6 +248,7 @@ export class AuthService {
       role: user.role,
       chatAccess: user.chatAccess,
       emailConfirmed: Boolean(user.emailVerifiedAt),
+      hasPassword: Boolean(user.passwordHash),
       displayName: user.displayName,
       whatsappNumber: user.whatsappNumber,
       settings: { theme: user.preferences?.theme ?? 'dark' },

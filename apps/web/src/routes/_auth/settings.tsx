@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { DeleteAccountModal } from '../../components/delete-account-modal';
 import { ThemeToggle } from '../../components/shell/ThemeToggle';
+import { AccountSetting } from '../../components/settings/AccountSetting';
 import { ContactSetting } from '../../components/settings/ContactSetting';
 import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
@@ -90,15 +91,14 @@ export function SettingsPage() {
     <div className={styles.page}>
       <h1 className={styles.pageHeading}>{t('settings.accountSettings')}</h1>
 
+      {/* ---- Section: Account (e-mail and password) ---- */}
+      <AccountSetting className={styles.section} />
+
       {/* ---- Section 1: Profile ---- */}
       <section className={styles.section} aria-labelledby="section-profile">
         <h2 id="section-profile" className={styles.sectionHeading}>
           {t('settings.yourProfile')}
         </h2>
-        <div className={styles.emailRow}>
-          <span className={styles.emailLabel}>{t('settings.emailAddress')}</span>
-          <span className={styles.emailValue}>{user?.email ?? '—'}</span>
-        </div>
         <DisplayNameSetting />
       </section>
 

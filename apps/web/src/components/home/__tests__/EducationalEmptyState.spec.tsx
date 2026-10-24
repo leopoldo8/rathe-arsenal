@@ -47,6 +47,7 @@ const stubAuthContext: IAuthContext = {
   deleteAccount: noopAsync,
   setDisplayName: () => undefined,
   setWhatsappNumber: () => undefined,
+  setHasPassword: () => undefined,
 };
 
 function createTestQueryClient(): QueryClient {

@@ -75,6 +75,7 @@ function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
     deleteAccount: async () => {},
     setDisplayName: () => undefined,
     setWhatsappNumber: () => undefined,
+    setHasPassword: () => undefined,
     ...overrides,
   };
 }

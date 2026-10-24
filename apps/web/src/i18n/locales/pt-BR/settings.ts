@@ -6,6 +6,16 @@ export const settings = {
   // Profile section
   yourProfile: 'Perfil',
   emailAddress: 'E-mail',
+  // Account panel: e-mail and password
+  accountHeading: 'Conta',
+  passwordHave: 'Senha: você tem uma senha',
+  passwordNone: 'Senha: nenhuma',
+  changePassword: 'Mudar a senha',
+  createPassword: 'Criar uma senha',
+  newPasswordLabel: 'Nova senha',
+  savePassword: 'Salvar senha',
+  passwordCancel: 'Cancelar',
+  passwordCodeNote: 'Você também pode entrar com um código por e-mail, sem senha.',
   // Appearance section
   theme: 'Aparência',
   // Account section

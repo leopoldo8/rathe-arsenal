@@ -6,6 +6,16 @@ export const settings = {
   // Profile section
   yourProfile: 'Profile',
   emailAddress: 'Email address',
+  // Account panel: e-mail and password
+  accountHeading: 'Account',
+  passwordHave: 'Password: you have a password',
+  passwordNone: 'Password: none',
+  changePassword: 'Change password',
+  createPassword: 'Create a password',
+  newPasswordLabel: 'New password',
+  savePassword: 'Save password',
+  passwordCancel: 'Cancel',
+  passwordCodeNote: 'You can also sign in with a code by email, no password needed.',
   // Appearance section
   theme: 'Appearance',
   // Account section

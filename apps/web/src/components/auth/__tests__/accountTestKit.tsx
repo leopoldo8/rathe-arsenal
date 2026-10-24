@@ -19,6 +19,7 @@ export function makeAuth(overrides: Partial<IAuthContext> = {}): IAuthContext {
     deleteAccount: vi.fn().mockResolvedValue(undefined),
     setDisplayName: vi.fn(),
     setWhatsappNumber: vi.fn(),
+    setHasPassword: vi.fn(),
     ...overrides,
   };
 }

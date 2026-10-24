@@ -478,6 +478,7 @@ describe('AuthService.getMe', () => {
       email: 'hero@rathe.gg',
       role: 'user',
       emailConfirmed: false,
+      hasPassword: false,
       displayName: undefined,
       whatsappNumber: undefined,
       settings: { theme: 'dark' },

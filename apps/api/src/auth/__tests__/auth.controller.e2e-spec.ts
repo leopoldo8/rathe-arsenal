@@ -35,7 +35,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService.signIn.mockResolvedValue({
       sessionToken: 'session-token',
       body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false, hasPassword: true },
         settings: { theme: 'dark' },
       },
     });
@@ -43,14 +43,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     authService.signUp.mockResolvedValue({
       sessionToken: 'session-token',
       body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false, hasPassword: true },
         settings: { theme: 'dark' },
       },
     });
     authService.verifyCode.mockResolvedValue({
       sessionToken: 'session-token',
       body: {
-        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false, hasPassword: true },
         settings: { theme: 'dark' },
         returnPath: null,
       },

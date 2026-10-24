@@ -7,6 +7,8 @@ export interface IAuthUser {
   chatAccess: boolean;
   /** True once the address is confirmed; until then the account cannot create share links. */
   emailConfirmed: boolean;
+  /** False for an account that signs in with an e-mailed code only. */
+  hasPassword: boolean;
 }
 
 /**
