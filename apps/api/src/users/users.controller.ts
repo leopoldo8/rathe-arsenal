@@ -1,7 +1,11 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthService } from '../auth/auth.service';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
+import { SetPasswordDto } from '../auth/dtos/set-password.dto';
+import { readSessionToken } from '../auth/session-cookie';
 import { UpdateContactDto } from './dtos/update-contact.dto';
 import { UpdateDisplayNameDto } from './dtos/update-display-name.dto';
 import { PatchThemeDto } from './dtos/user-settings.dto';
@@ -19,7 +23,10 @@ const MINUTE_MS = 60 * 1000;
  */
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+  ) {}
 
   /**
    * GET /api/users/me/settings
@@ -71,5 +78,17 @@ export class UsersController {
     @Body() dto: UpdateContactDto,
   ): Promise<{ whatsappNumber: string | null }> {
     return this.usersService.updateContact(currentUser.userId, dto.whatsappNumber);
+  }
+
+  /** Sets or replaces the password and signs every other device out; this one stays signed in. */
+  @Put('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async putPassword(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: SetPasswordDto,
+    @Req() req: Request,
+  ): Promise<void> {
+    await this.authService.setPassword(currentUser.userId, dto.password, readSessionToken(req));
   }
 }

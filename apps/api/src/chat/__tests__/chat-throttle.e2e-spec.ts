@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { bootChatFixture, IChatFixture } from './chat-e2e.fixture';
+import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
 
 const SOME_UUID = '3f1d2c3b-4a5b-4c6d-8e7f-001122334455';
 
@@ -22,8 +23,8 @@ describe('chat throttle (E2E)', () => {
   it('send and retry allow 20 a minute', async () => {
     const user = await fixture.chatUser();
     const conversationId = await conversationOf(user.userId);
-    const send = () => fixture.post(`/api/chat/conversations/${conversationId}/messages`, user.jwt).send({ text: 'hi' });
-    const retry = () => fixture.post(`/api/chat/conversations/${conversationId}/messages/${SOME_UUID}/retry`, user.jwt);
+    const send = () => fixture.post(`/api/chat/conversations/${conversationId}/messages`, user.sessionToken).send({ text: 'hi' });
+    const retry = () => fixture.post(`/api/chat/conversations/${conversationId}/messages/${SOME_UUID}/retry`, user.sessionToken);
 
     const sends: number[] = [];
     for (let i = 0; i < 21; i += 1) sends.push((await send()).status);
@@ -50,7 +51,7 @@ describe('chat throttle (E2E)', () => {
       ['post', `/api/chat/proposals/${SOME_UUID}/dismiss`],
     ];
     const hit = (method: string, path: string) =>
-      (method === 'get' ? server.get(path) : method === 'delete' ? server.delete(path) : server.post(path)).set('Authorization', `Bearer ${user.jwt}`);
+      (method === 'get' ? server.get(path) : method === 'delete' ? server.delete(path) : server.post(path)).set('Cookie', sessionCookieHeader(user.sessionToken));
 
     const last: number[] = [];
     const earlyLimits: string[] = [];

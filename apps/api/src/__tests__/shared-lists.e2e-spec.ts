@@ -20,6 +20,7 @@ import { FetchGuardService } from '../common/fetch-guard/fetch-guard.service';
 import { configureHttpApp } from '../http/configure-http-app';
 import { SPA_INDEX_HTML } from '../sharing/preview/spa-index-html';
 import { DELETE_SHARE_LINKS_FOR_USERS_SQL } from '../sharing/preview/share-link-cleanup';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'shared-lists-test-password-123';
 const SUFFIX = Date.now().toString(36);
@@ -36,7 +37,7 @@ const [CARD_A, CARD_B, CARD_C] = catalog.cards
 
 interface ISession {
   readonly userId: string;
-  readonly jwt: string;
+  readonly sessionToken: string;
 }
 
 describe('Shared lists (E2E)', () => {
@@ -47,7 +48,7 @@ describe('Shared lists (E2E)', () => {
     guardedFetch: jest.fn<Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>, [string]>(),
   };
 
-  const auth = (session: ISession): [string, string] => ['Authorization', `Bearer ${session.jwt}`];
+  const auth = (session: ISession): [string, string] => ['Cookie', sessionCookieHeader(session.sessionToken)];
 
   function signUpRaw(email: string, shareToken?: string): request.Test {
     return request(server)
@@ -59,7 +60,7 @@ describe('Shared lists (E2E)', () => {
     const signUp = await signUpRaw(emailFor(label)).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, jwt: verified.body.jwt as string };
+    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
   }
 
   async function createList(

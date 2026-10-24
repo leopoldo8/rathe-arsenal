@@ -1,0 +1,43 @@
+/* The sign-in sheet that opens over a page when the session ended (AC 239); same sheet metrics as the list dialogs. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgb(0 0 0 / 0.6);
+}
+
+.panel {
+  position: fixed;
+  z-index: 901;
+  inset-inline: 0;
+  inset-block-end: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+  max-block-size: 92vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--ra-space-5);
+  border: 1px solid var(--ra-border-strong);
+  border-block-end: 0;
+  border-start-start-radius: var(--ra-radius-xl);
+  border-start-end-radius: var(--ra-radius-xl);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-primary);
+}
+
+@media (min-width: 720px) {
+  .panel {
+    inset-inline: 0;
+    margin-inline: auto;
+    inline-size: min(440px, 100%);
+  }
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h3);
+  font-weight: var(--ra-weight-medium);
+}

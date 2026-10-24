@@ -32,14 +32,15 @@ process.env['EMAIL_FROM'] = 'Test <noreply@test.local>';
 process.env['APP_BASE_URL'] = 'http://localhost:5173';
 process.env['PORT'] = '3000';
 
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
+import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,7 +53,7 @@ function extractVerificationToken(link: string): string {
   return token;
 }
 
-async function signUpAndGetJwt(
+async function signUpAndGetSessionToken(
   server: unknown,
   email: string,
   password: string,
@@ -74,7 +75,7 @@ async function signUpAndGetJwt(
     .send({ email, password })
     .expect(200);
 
-  return signInRes.body.jwt as string;
+  return sessionTokenOf(signInRes);
 }
 
 // ---------------------------------------------------------------------------
@@ -90,8 +91,8 @@ describe('Tags CRUD (integration, U3)', () => {
   const OTHER_EMAIL = `tags-int-other-${uniqueSuffix}@test.local`;
   const PASSWORD = 'tags-test-password-123';
 
-  let jwt: string;
-  let otherJwt: string;
+  let sessionToken: string;
+  let otherSessionToken: string;
 
   beforeAll(async () => {
     // APP_GUARD instantiates ThrottlerGuard via useClass, which
@@ -102,23 +103,14 @@ describe('Tags CRUD (integration, U3)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
 
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
 
     const server = app.getHttpServer();
-    jwt = await signUpAndGetJwt(server, USER_EMAIL, PASSWORD);
-    otherJwt = await signUpAndGetJwt(server, OTHER_EMAIL, PASSWORD);
+    sessionToken = await signUpAndGetSessionToken(server, USER_EMAIL, PASSWORD);
+    otherSessionToken = await signUpAndGetSessionToken(server, OTHER_EMAIL, PASSWORD);
   }, 60_000);
 
   afterAll(async () => {
@@ -138,7 +130,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('GET /api/tags returns empty array for a new user', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(200);
 
     expect(res.body).toEqual({ tags: [] });
@@ -147,7 +139,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('POST /api/tags { name: "liga local" } → 201 with { id, name, createdAt }', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: 'liga local' })
       .expect(201);
 
@@ -160,14 +152,14 @@ describe('Tags CRUD (integration, U3)', () => {
     // Create a tag for the other user
     await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${otherJwt}`)
+      .set('Cookie', sessionCookieHeader(otherSessionToken))
       .send({ name: 'other user tag' })
       .expect(201);
 
     // Fetch tags for the primary user — should not include the other user's tag
     const res = await request(app.getHttpServer())
       .get('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(200);
 
     const names = (res.body.tags as Array<{ name: string }>).map((t) => t.name);
@@ -178,7 +170,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('POST /api/tags with accented name ("café") → 201', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: 'café' })
       .expect(201);
 
@@ -189,7 +181,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // Create a tag to delete
     const createRes = await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: 'to-be-deleted' })
       .expect(201);
 
@@ -198,13 +190,13 @@ describe('Tags CRUD (integration, U3)', () => {
     // Delete it
     await request(app.getHttpServer())
       .delete(`/api/tags/${tagId}`)
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(204);
 
     // Confirm it's gone
     const listRes = await request(app.getHttpServer())
       .get('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(200);
 
     const ids = (listRes.body.tags as Array<{ id: number }>).map((t) => t.id);
@@ -218,7 +210,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('POST /api/tags with name = 25 chars → 400 (@MaxLength(24) rejects)', async () => {
     await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: 'a'.repeat(25) })
       .expect(400);
   });
@@ -226,7 +218,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('POST /api/tags with <script> payload → 400 (regex rejects < char)', async () => {
     await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: '<script>xss</script>' })
       .expect(400);
   });
@@ -234,7 +226,7 @@ describe('Tags CRUD (integration, U3)', () => {
   it('POST /api/tags with no name field → 400', async () => {
     await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({})
       .expect(400);
   });
@@ -247,7 +239,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // "liga local" was created in the happy-path test above
     await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: 'Liga Local' })
       .expect(409);
   });
@@ -256,7 +248,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // Determine how many tags the test user currently has
     const listRes = await request(app.getHttpServer())
       .get('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(200);
 
     const currentCount: number = (listRes.body.tags as unknown[]).length;
@@ -266,7 +258,7 @@ describe('Tags CRUD (integration, U3)', () => {
     for (let i = 0; i < tagsToCreate; i++) {
       await request(app.getHttpServer())
         .post('/api/tags')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ name: `fill-${i}-${uniqueSuffix}`.slice(0, 24) })
         .expect(201);
     }
@@ -274,7 +266,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // The 201st tag should be rejected
     const overflowRes = await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ name: `overflow-${uniqueSuffix}`.slice(0, 24) })
       .expect(422);
 
@@ -290,7 +282,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // Create a tag as the other user
     const createRes = await request(app.getHttpServer())
       .post('/api/tags')
-      .set('Authorization', `Bearer ${otherJwt}`)
+      .set('Cookie', sessionCookieHeader(otherSessionToken))
       .send({ name: 'other-private' })
       .expect(201);
 
@@ -299,7 +291,7 @@ describe('Tags CRUD (integration, U3)', () => {
     // Try to delete as the primary user — must get 404, not 403
     await request(app.getHttpServer())
       .delete(`/api/tags/${otherTagId}`)
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .expect(404);
   });
 });

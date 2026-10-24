@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthFetchError } from '../../../lib/auth-fetch';
+import { enUS } from '../../../i18n/locales/en-US';
+import { ptBR } from '../../../i18n/locales/pt-BR';
 import { makeAuth, renderWithAuth, stubViewport } from './accountTestKit';
 
 const navigateMock = vi.hoisted(() => vi.fn());
@@ -18,6 +20,12 @@ vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: showMock })
 import { NewAccountStep } from '../NewAccountStep';
 
 const EMAIL = 'bia.souza@gmail.com';
+
+function leafStrings(node: unknown): string[] {
+  if (typeof node === 'string') return [node];
+  if (node !== null && typeof node === 'object') return Object.values(node).flatMap(leafStrings);
+  return [];
+}
 const STAYING_IN_PHONE =
   'A conta fica aberta neste celular até você tocar em Sair. Sem senha, mandamos um código só quando você entrar de novo.';
 
@@ -120,6 +128,8 @@ describe('NewAccountStep', () => {
     expect(screen.getAllByText(/A conta fica aberta/)).toHaveLength(1);
     expect(screen.getByText(STAYING_IN_PHONE.replace('neste celular', 'neste computador'))).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('Você continua conectada');
+    expect(leafStrings(ptBR).filter((value) => value.includes('Você continua conectada'))).toEqual([]);
+    expect(leafStrings(enUS).filter((value) => value.includes('Você continua conectada'))).toEqual([]);
   });
 
   it('an account made from a shared deck sends the page and the token, then goes back to it', async () => {

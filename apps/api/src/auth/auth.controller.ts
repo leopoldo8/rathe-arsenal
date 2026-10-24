@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ICurrentUser } from './dtos/current-user.dto';
@@ -14,9 +14,10 @@ import { VerifyCodeDto } from './dtos/verify-code.dto';
 import { RedeemCodeDto } from './dtos/redeem-code.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { DeleteAccountDto } from './dtos/delete-account.dto';
-import { AuthService } from './auth.service';
+import { AuthService, ISessionGrant } from './auth.service';
+import { SessionService } from './session.service';
 import { AUTH_THROTTLE } from './auth-throttle';
-import { setSessionCookie } from './session-cookie';
+import { clearSessionCookie, readSessionToken, setSessionCookie } from './session-cookie';
 import { AuthError } from './errors';
 import { mapAuthError } from './auth-error.mapper';
 import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
@@ -28,6 +29,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly sessions: SessionService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -114,9 +116,9 @@ export class AuthController {
   @Throttle({ default: AUTH_THROTTLE.verifyEmail })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
+  async verifyEmail(@Body() dto: VerifyEmailDto, @Res({ passthrough: true }) res: Response) {
     try {
-      return await this.authService.verifyEmail(dto.token);
+      return this.withSession(res, await this.authService.verifyEmail(dto.token));
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
@@ -138,6 +140,15 @@ export class AuthController {
     }
   }
 
+  /** Ends this browser's session on the server and clears its cookie; other devices stay signed in. */
+  @Post('sign-out')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async signOut(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    const token = readSessionToken(req);
+    if (token) await this.sessions.revoke(token);
+    clearSessionCookie(res, this.isProduction);
+  }
+
   @Get('me')
   async getMe(@CurrentUser() user: ICurrentUser) {
     return this.authService.getMe(user);
@@ -155,18 +166,21 @@ export class AuthController {
   async deleteAccount(
     @CurrentUser() user: ICurrentUser,
     @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
-      return await this.authService.deleteAccount(user.userId, dto.password);
+      const result = await this.authService.deleteAccount(user.userId, dto.password);
+      clearSessionCookie(res, this.isProduction);
+      return result;
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
     }
   }
 
-  /** Sets the session cookie for a response that signs the caller in, and passes the body on. */
-  private withSession<T extends { jwt: string }>(res: Response, body: T): T {
-    setSessionCookie(res, body.jwt, this.isProduction);
-    return body;
+  /** Sets the session cookie for a response that signs the caller in; the body never carries the token. */
+  private withSession<T>(res: Response, grant: ISessionGrant<T>): T {
+    setSessionCookie(res, grant.sessionToken, this.isProduction);
+    return grant.body;
   }
 }

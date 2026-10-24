@@ -3,6 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ISharedCard, ISharedDeckResponse } from '../../../api/shared-decks';
+import {
+  copySharedDeck,
+  disableDeckShare,
+  enableDeckShare,
+  getCoverage,
+  getDeckShare,
+  getMatches,
+  getSharedDeck,
+  patchContact,
+  patchDisplayName,
+  setDeckShareContact,
+} from '../../../api/shared-decks';
 import { SHARE_RETURN_STORAGE_KEY } from '../../../lib/share-return';
 import {
   apiError,
@@ -19,7 +31,9 @@ vi.mock('../../../lib/auth-fetch', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/auth-fetch')>();
   return {
     ...actual,
-    authFetch: (...args: Parameters<IFakeApi['authFetch']>) => apiRef.current!.authFetch(...args),
+    // With no fake API installed the real function runs, so a test can watch the requests it sends.
+    authFetch: (...args: Parameters<IFakeApi['authFetch']>) =>
+      apiRef.current === null ? actual.authFetch(...args) : apiRef.current.authFetch(...args),
   };
 });
 
@@ -108,7 +122,7 @@ const WANTED: ISharedDeckResponse = {
   missingCount: 3,
 };
 
-function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null, token: null }), token = TOKEN) {
+function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null }), token = TOKEN) {
   renderWithProviders(<SharedDeckPage token={token} />, auth);
 }
 
@@ -151,17 +165,43 @@ describe('SharedDeckPage', () => {
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
-    it('loads the deck without a Bearer token when anonymous', async () => {
+    it('loads the deck with one request when anonymous', async () => {
       renderPage();
       await screen.findByRole('heading', { level: 1 });
-      expect(api.calls).toEqual([{ key: `GET /shared/decks/${TOKEN}`, body: undefined, authToken: null }]);
+      expect(api.calls).toEqual([{ key: `GET /shared/decks/${TOKEN}`, body: undefined }]);
     });
 
-    it('sends the Bearer token when the visitor is logged in', async () => {
+    it('loads the deck with the same request when the visitor is logged in', async () => {
       api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({ ownedCopies: 1, totalCopies: 8, percent: 13 }));
       renderPage(undefined, makeAuth());
       await screen.findByRole('heading', { level: 1 });
-      expect(api.calls[0]).toEqual({ key: `GET /shared/decks/${TOKEN}`, body: undefined, authToken: 'jwt' });
+      expect(api.calls[0]).toEqual({ key: `GET /shared/decks/${TOKEN}`, body: undefined });
+    });
+
+    it('shared requests carry no Authorization header', async () => {
+      apiRef.current = null;
+      const fetchMock = vi.fn().mockImplementation(
+        async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await getSharedDeck(TOKEN);
+      await getCoverage(TOKEN);
+      await copySharedDeck(TOKEN);
+      await getMatches(TOKEN);
+      await getDeckShare(7);
+      await enableDeckShare(7, 'deck');
+      await setDeckShareContact(7, 'deck', true);
+      await disableDeckShare(7, 'deck');
+      await patchContact(null);
+      await patchDisplayName('Dudu_Pelotas');
+
+      expect(fetchMock).toHaveBeenCalledTimes(10);
+      for (const call of fetchMock.mock.calls) {
+        const init = call[1] as RequestInit | undefined;
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+      }
+      vi.unstubAllGlobals();
     });
 
     it('records one open only: focusing the window does not reload the deck', async () => {
@@ -255,7 +295,7 @@ describe('SharedDeckPage', () => {
           search: { edit: undefined },
         }),
       );
-      expect(api.calls.find((call) => call.key.startsWith('POST'))?.authToken).toBe('jwt');
+      expect(api.calls.some((call) => call.key.startsWith('POST'))).toBe(true);
     });
 
     it('shows the localized error when the link died before copying', async () => {

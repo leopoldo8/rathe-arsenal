@@ -13,7 +13,7 @@ type TStatus = 'idle' | 'saving' | 'saved' | 'removed' | 'failed';
 /** "Contato" panel of Settings: the optional WhatsApp number shown on shared links (PATCH /users/me/contact). */
 export function ContactSetting({ className }: { readonly className?: string | undefined }): React.ReactElement {
   const { t } = useTranslation();
-  const { token, user, setWhatsappNumber } = useAuth();
+  const { user, setWhatsappNumber } = useAuth();
   const saved = user?.whatsappNumber ?? null;
   const [value, setValue] = useState(formatNumberForField(saved));
   const [status, setStatus] = useState<TStatus>('idle');
@@ -23,7 +23,7 @@ export function ContactSetting({ className }: { readonly className?: string | un
     setStatus('saving');
     setFieldError(null);
     try {
-      const result = await patchContact(next, token);
+      const result = await patchContact(next);
       setWhatsappNumber(result.whatsappNumber);
       setValue(formatNumberForField(result.whatsappNumber));
       setStatus(next === null ? 'removed' : 'saved');

@@ -24,7 +24,6 @@ const noopAsync = async (): Promise<void> => {
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
     user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false },
-    token: 'jwt',
     isLoading: false,
     setSettings: () => { /* stub */ },
     signUp: async () => undefined,
@@ -50,7 +49,7 @@ function renderAuthenticated() {
 
 function renderAnonymous() {
   return render(
-    <AuthContext.Provider value={makeAuthContext({ user: null, token: null })}>
+    <AuthContext.Provider value={makeAuthContext({ user: null })}>
       <NotFoundState />
     </AuthContext.Provider>,
   );

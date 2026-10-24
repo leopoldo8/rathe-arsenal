@@ -102,7 +102,7 @@ const SELL: ISharedListResponse = {
   ],
 };
 
-function renderPage(auth = makeAuth({ user: null, token: null })) {
+function renderPage(auth = makeAuth({ user: null })) {
   renderWithProviders(<SharedListPage token={TOKEN} />, auth);
 }
 
@@ -148,10 +148,10 @@ describe('SharedListPage', () => {
       expect(within(tiles[2]!).getAllByText('Sink Below (Azul)').length).toBeGreaterThan(0);
     });
 
-    it('loads without a Bearer token and asks for no matches', async () => {
+    it('loads with one request and asks for no matches', async () => {
       renderPage();
       await screen.findByRole('heading', { level: 1 });
-      expect(api.calls).toEqual([{ key: `GET /shared/lists/${TOKEN}`, body: undefined, authToken: null }]);
+      expect(api.calls).toEqual([{ key: `GET /shared/lists/${TOKEN}`, body: undefined }]);
     });
 
     it('is invited to sign up, and the page is remembered for the way back', async () => {
@@ -249,7 +249,7 @@ describe('SharedListPage', () => {
       expect(owned.map((node) => node.textContent)).toEqual(['Você tem 1', 'Você tem 2']);
       expect(await screen.findByTestId('shared-list-summary')).toHaveTextContent('Você tem 2 de 3 cartas desta lista.');
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
-      expect(api.calls.find((call) => call.key === `GET /shared/lists/${TOKEN}/matches`)?.authToken).toBe('jwt');
+      expect(api.calls.some((call) => call.key === `GET /shared/lists/${TOKEN}/matches`)).toBe(true);
     });
 
     it('marks the cards missing in their decks on a sell list, leaving sold cards unmarked', async () => {

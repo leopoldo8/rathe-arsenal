@@ -98,7 +98,9 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ## Auth & security trade-offs (from Clerk → DIY swap, 2026-04-09)
 
-### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.)
+### A1. No CSRF middleware (`csurf`, double-submit cookie, etc.) — RESOLVED (door 17, persona-rethink S32)
+
+**Resolution:** the session became the httpOnly `ra_session` cookie (`SameSite=Lax`), and the same change added the protection this entry asked for: every `POST`, `PUT`, `PATCH` and `DELETE` whose `Origin` header differs from the origin of `APP_BASE_URL` answers `403` `ORIGIN_REJECTED` (`apps/api/src/http/origin-check.middleware.ts`, mounted in `configureHttpApp`). A write with no `Origin` header is judged by its session alone. The text below is the Phase 0 record.
 
 **Phase 0 posture:** none. The app uses Bearer tokens in the `Authorization` header, not cookies, for authentication. Traditional CSRF attacks (browser auto-attaching cookies cross-origin) do not apply when there is no cookie-based session.
 
@@ -131,7 +133,9 @@ There is also no explicit assertion that `reject-substitute` writes exactly **on
 
 ---
 
-### A3. JWT stored in `localStorage` (not httpOnly cookie)
+### A3. JWT stored in `localStorage` (not httpOnly cookie) — RESOLVED (door 17, persona-rethink S32)
+
+**Resolution:** no JWT exists any more. The session is an opaque token in the httpOnly `ra_session` cookie, stored hashed in `user_session`; the web removes the old `rathe-arsenal:jwt` key on load and sends no `Authorization` header. The text below is the Phase 0 record.
 
 **Phase 0 posture:** the frontend stores the JWT under `rathe-arsenal:jwt` in `localStorage`. Reads it on mount, attaches it to every API request via `Authorization: Bearer`.
 

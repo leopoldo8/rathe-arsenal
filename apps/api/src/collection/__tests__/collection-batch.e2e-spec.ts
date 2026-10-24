@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { CatalogService } from '../../catalog/catalog.service';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'collection-batch-e2e-password-123';
 const CARD_A = 'nimblism-red';
@@ -16,7 +17,7 @@ const CARD_D = 'knife-through-butter-yellow';
 
 interface ITestUser {
   readonly id: string;
-  readonly jwt: string;
+  readonly sessionToken: string;
 }
 
 describe('POST /api/collection/cards/batch (E2E)', () => {
@@ -38,12 +39,12 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password: PASSWORD }).expect(200);
     const [row] = await dataSource.query(`SELECT id FROM "user" WHERE email = $1`, [email]);
-    return { id: row.id as string, jwt: signIn.body.jwt as string };
+    return { id: row.id as string, sessionToken: sessionTokenOf(signIn) };
   }
 
   function batch(user: ITestUser | null, items: unknown): request.Test {
     const req = request(app.getHttpServer()).post('/api/collection/cards/batch');
-    return (user ? req.set('Authorization', `Bearer ${user.jwt}`) : req).send({ items });
+    return (user ? req.set('Cookie', sessionCookieHeader(user.sessionToken)) : req).send({ items });
   }
 
   async function quantityOf(user: ITestUser, cardIdentifier: string): Promise<number> {
@@ -233,13 +234,13 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     const deckWith = async (cardIdentifiers: readonly string[]): Promise<number> => {
       const created = await request(server)
         .post('/api/decks')
-        .set('Authorization', `Bearer ${owner.jwt}`)
+        .set('Cookie', sessionCookieHeader(owner.sessionToken))
         .send({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' })
         .expect(201);
       const deckId = created.body.id as number;
       await request(server)
         .put(`/api/decks/${deckId}`)
-        .set('Authorization', `Bearer ${owner.jwt}`)
+        .set('Cookie', sessionCookieHeader(owner.sessionToken))
         .send({
           heroIdentifier: 'katsu-the-wanderer',
           format: 'Classic Constructed',

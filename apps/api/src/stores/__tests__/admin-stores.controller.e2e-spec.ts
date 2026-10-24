@@ -1,4 +1,4 @@
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -9,6 +9,8 @@ import { AdminApiKeyGuard } from '../admin/admin-api-key.guard';
 import { StoreIngestionService } from '../store-ingestion.service';
 import type { IScrapeRunSummary } from '../store-ingestion.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { SessionService } from '../../auth/session.service';
+import { configureHttpApp } from '../../http/configure-http-app';
 import { Reflector } from '@nestjs/core';
 
 /**
@@ -16,9 +18,8 @@ import { Reflector } from '@nestjs/core';
  *
  * Mounts AdminStoresController with a stubbed StoreIngestionService and the
  * real ThrottlerGuard + ThrottlerModule. The global JwtAuthGuard is replaced
- * with a minimal pass-through that honours @Public() (same shape as production
- * but no Passport dependency), so requests without a JWT token still reach the
- * AdminApiKeyGuard.
+ * with a session lookup that finds nobody, so @Public() routes still reach the
+ * AdminApiKeyGuard without a session cookie.
  *
  * Verifies:
  * - No admin key → 401
@@ -62,23 +63,10 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
       providers: [
         { provide: StoreIngestionService, useValue: ingestionService },
         AdminApiKeyGuard,
-        // Replace JwtAuthGuard with a minimal pass-through that honours @Public().
+        // The real global guard with a session lookup that finds nobody: @Public() routes still pass.
         {
           provide: APP_GUARD,
-          useFactory: (reflector: Reflector) => {
-            const guard = new JwtAuthGuard(reflector);
-            // Override canActivate to always return true when @Public() is set.
-            const original = guard.canActivate.bind(guard);
-            guard.canActivate = (ctx) => {
-              const isPublic = reflector.getAllAndOverride<boolean>('isPublic', [
-                ctx.getHandler(),
-                ctx.getClass(),
-              ]);
-              if (isPublic) return true;
-              return original(ctx);
-            };
-            return guard;
-          },
+          useFactory: (reflector: Reflector) => new JwtAuthGuard(reflector, createMock<SessionService>()),
           inject: [Reflector],
         },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -86,9 +74,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }),
-    );
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
   });
 
@@ -105,7 +91,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('returns 401 when x-admin-api-key header is missing', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .expect(401);
   });
 
@@ -115,7 +101,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('returns 401 when x-admin-api-key is incorrect', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', WRONG_KEY)
       .expect(401);
   });
@@ -126,21 +112,21 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('returns 401 (not 500) when key is empty string', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', '')
       .expect(401);
   });
 
   it('returns 401 (not 500) when key is a single character', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', 'x')
       .expect(401);
   });
 
   it('returns 401 (not 500) when key is much longer than the stored key', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', 'a'.repeat(200))
       .expect(401);
   });
@@ -151,7 +137,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('returns 200 with valid x-admin-api-key and no JWT', async () => {
     const res = await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', VALID_KEY)
       .expect(200);
 
@@ -173,7 +159,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('forwards force=true query param to StoreIngestionService', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape?force=true')
+      .post('/api/admin/stores/cupula-dt/scrape?force=true')
       .set('x-admin-api-key', VALID_KEY)
       .expect(200);
 
@@ -182,7 +168,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
 
   it('calls runScrape with force=false when force param is omitted', async () => {
     await request(app.getHttpServer())
-      .post('/admin/stores/cupula-dt/scrape')
+      .post('/api/admin/stores/cupula-dt/scrape')
       .set('x-admin-api-key', VALID_KEY)
       .expect(200);
 
@@ -201,7 +187,7 @@ describe('AdminStoresController (e2e) — admin endpoint auth', () => {
     const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     try {
       await request(app.getHttpServer())
-        .post('/admin/stores/cupula-dt/scrape')
+        .post('/api/admin/stores/cupula-dt/scrape')
         .set('x-admin-api-key', VALID_KEY)
         .expect(401);
     } finally {

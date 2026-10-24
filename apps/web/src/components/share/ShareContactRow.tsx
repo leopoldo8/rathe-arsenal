@@ -24,7 +24,7 @@ interface IShareContactRowProps {
  */
 export function ShareContactRow({ showContact, updating, onToggle, testId }: IShareContactRowProps): React.ReactElement {
   const { t } = useTranslation();
-  const { token, user, setWhatsappNumber } = useAuth();
+  const { user, setWhatsappNumber } = useAuth();
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function ShareContactRow({ showContact, updating, onToggle, testId }: ISh
     setSaving(true);
     setFieldError(null);
     try {
-      const saved = await patchContact(draft, token);
+      const saved = await patchContact(draft);
       setWhatsappNumber(saved.whatsappNumber);
       setDraft('');
       toggle(true);

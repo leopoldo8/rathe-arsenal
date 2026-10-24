@@ -54,7 +54,7 @@ describe('chat schema (E2E)', () => {
     );
     await fixture.dataSource.query(`UPDATE chat_proposal SET "cardReplacementId" = $2 WHERE id = $1`, [proposalId, replacementId]);
 
-    await fixture.del(`/api/decks/${user.deckId}`, user.jwt).expect((response) => expect(response.status).toBeLessThan(300));
+    await fixture.del(`/api/decks/${user.deckId}`, user.sessionToken).expect((response) => expect(response.status).toBeLessThan(300));
     const [proposal] = (await fixture.dataSource.query(`SELECT "trackedDeckId", "cardReplacementId" FROM chat_proposal WHERE id = $1`, [proposalId])) as Array<Record<string, unknown>>;
     expect(proposal).toEqual({ trackedDeckId: null, cardReplacementId: null });
     expect(((await fixture.dataSource.query(`SELECT "trackedDeckId" FROM chat_conversation WHERE id = $1`, [conversationId])) as Array<Record<string, unknown>>)[0]).toEqual({

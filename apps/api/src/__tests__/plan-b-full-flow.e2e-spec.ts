@@ -31,7 +31,7 @@
  * - This produces 2 entries in breakdown.substituted → one suggestion for that card.
  */
 
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -41,7 +41,9 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { FabraryService } from '../fabrary/fabrary.service';
 import { IDeckImportDto } from '../fabrary/dtos/deck-import.dto';
-import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
+
+import { configureHttpApp } from '../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -186,16 +188,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
 
     dataSource = moduleRef.get<DataSource>(getDataSourceToken());
@@ -236,7 +229,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       const verificationToken = extractVerificationToken(devLink as string);
 
       // -----------------------------------------------------------------------
-      // Step 2: Verify email → sign in → capture JWT
+      // Step 2: Verify email → sign in → capture the session token
       // -----------------------------------------------------------------------
       await request(server)
         .post('/api/auth/verify-email')
@@ -248,16 +241,15 @@ describe('Plan B full flow (E2E, U11)', () => {
         .send({ email: TEST_EMAIL, password: TEST_PASSWORD })
         .expect(200);
 
-      const jwt: unknown = signInRes.body.jwt;
-      expect(typeof jwt).toBe('string');
-      const bearerJwt = jwt as string;
+      const sessionToken = sessionTokenOf(signInRes);
+      expect(typeof sessionToken).toBe('string');
 
       // -----------------------------------------------------------------------
       // Step 3: Upload fixture CSV
       // -----------------------------------------------------------------------
       const csvRes = await request(server)
         .post('/api/collection/csv')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .attach('file', FIXTURE_CSV_BUFFER, {
           filename: 'fixture-collection.csv',
           contentType: 'text/csv',
@@ -277,7 +269,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const importRes = await request(server)
         .post('/api/decks/import')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ urls: [FIXTURE_FABRARY_URL], seedInventory: false })
         .expect(201);
 
@@ -296,7 +288,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const detailRes = await request(server)
         .get(`/api/decks/${deckId}`)
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
       const substituted = detailRes.body.latestSnapshot.breakdown.substituted as Array<{
         original: { cardIdentifier: string };
@@ -310,7 +302,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const decksBeforeRes = await request(server)
         .get('/api/decks')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
 
       const decksBeforeList: unknown = decksBeforeRes.body.trackedDecks;
@@ -329,7 +321,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const useRes = await request(server)
         .post(`/api/decks/${deckId}/replacements/suggested`)
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(201);
 
       expect(useRes.body.skipped).toBe(0);
@@ -339,11 +331,11 @@ describe('Plan B full flow (E2E, U11)', () => {
       // global guards and prefix, not just in an isolated controller.
       await request(server)
         .get('/api/reviews')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(410);
       await request(server)
         .get(`/api/decks/${deckId}/decisions`)
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(410);
 
       // -----------------------------------------------------------------------
@@ -352,7 +344,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const decksAfterApproveRes = await request(server)
         .get('/api/decks')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
 
       const decksAfterList: unknown = decksAfterApproveRes.body.trackedDecks;
@@ -374,7 +366,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       await request(server)
         .patch(`/api/collection/sources/${csvSourceId}`)
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ active: false })
         .expect(200);
 
@@ -389,7 +381,7 @@ describe('Plan B full flow (E2E, U11)', () => {
       // -----------------------------------------------------------------------
       const decksAfterToggleRes = await request(server)
         .get('/api/decks')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
 
       const decksAfterToggleList: unknown = decksAfterToggleRes.body.trackedDecks;
@@ -418,7 +410,7 @@ describe('Plan B full flow (E2E, U11)', () => {
 
       const sourcesBeforeManual = await request(server)
         .get('/api/collection/sources')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
       const rowsBeforeManual = sourcesBeforeManual.body as TSourceRow[];
       expect(rowsBeforeManual.map((r) => r.kind)).toEqual(['csv']);
@@ -426,13 +418,13 @@ describe('Plan B full flow (E2E, U11)', () => {
 
       await request(server)
         .post('/api/collection/cards')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .send({ cardIdentifier: 'coax-a-commotion-red', quantity: 2 })
         .expect(201);
 
       const sourcesAfterManual = await request(server)
         .get('/api/collection/sources')
-        .set('Authorization', `Bearer ${bearerJwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .expect(200);
       const rowsAfterManual = sourcesAfterManual.body as TSourceRow[];
       expect(rowsAfterManual.map((r) => r.kind).sort()).toEqual(['csv', 'manual']);

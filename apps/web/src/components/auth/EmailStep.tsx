@@ -14,9 +14,11 @@ interface IEmailStepProps {
   /** The shared page, once looked up; the reason and the way back name it. */
   readonly origin: IShareOrigin | null;
   readonly onResolved: (email: string, next: TStartNext) => void;
+  /** Only the field and its button: no pitch, no shared page, no note. For the sheet that opens over a page. */
+  readonly compact?: boolean;
 }
 
-export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved }: IEmailStepProps): React.ReactElement {
+export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved, compact = false }: IEmailStepProps): React.ReactElement {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState(initialEmail);
@@ -50,7 +52,7 @@ export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved }: 
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
-      {fromSharedPage ? (
+      {compact ? null : fromSharedPage ? (
         origin !== null && (
           <>
             <div className={styles.sharedCard}>
@@ -115,6 +117,7 @@ export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved }: 
         {submitting ? t('account.continuing') : t('account.continueBtn')}
       </button>
 
+      {!compact && (
       <p className={styles.note}>
         {typo
           ? t('account.nothingSent')
@@ -123,6 +126,7 @@ export function EmailStep({ initialEmail, fromSharedPage, origin, onResolved }: 
               t(origin.kind === 'list' ? 'account.sharedBackList' : 'account.sharedBackDeck', { ofOwner: owner })
             : t('account.startNote')}
       </p>
+      )}
     </form>
   );
 }

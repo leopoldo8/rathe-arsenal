@@ -150,40 +150,20 @@ async function setTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
 }
 
 /**
- * Attempt to sign in through the UI and return the JWT from localStorage.
- * Falls back to the API route if the UI sign-in is unavailable.
+ * Signs in through the API with the context's own request client, so the `ra_session` cookie the API
+ * sets lands in the browser context and every page opened from it is signed in. Returns whether it worked.
  */
-async function seedAuth(context: BrowserContext, email: string, pass: string): Promise<string | null> {
-  const page = await context.newPage();
+async function seedAuth(context: BrowserContext, email: string, pass: string): Promise<boolean> {
   try {
-    // Use the API directly — faster than UI sign-in and avoids animation waits.
-    const response = await page.evaluate(
-      async ([url, e, p]) => {
-        const res = await fetch(`${url}/api/auth/sign-in`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: e, password: p }),
-        });
-        if (!res.ok) return { ok: false, jwt: null };
-        const body = await res.json() as { jwt: string };
-        return { ok: true, jwt: body.jwt };
-      },
-      [BASE_URL, email, pass] as [string, string, string],
-    );
-    if (!response.ok || !response.jwt) {
+    const response = await context.request.post(`${BASE_URL}/api/auth/sign-in`, { data: { email, password: pass } });
+    if (!response.ok()) {
       log(`  WARN  Could not sign in as ${email} — authenticated surfaces will be skipped.`);
-      return null;
+      return false;
     }
-    // Seed the JWT and a default theme into this browser context's storage.
-    await page.evaluate(([jwt]) => {
-      localStorage.setItem('rathe-arsenal:jwt', jwt);
-    }, [response.jwt] as [string]);
-    return response.jwt;
+    return true;
   } catch (err) {
     log(`  WARN  Sign-in request failed: ${(err as Error).message}`);
-    return null;
-  } finally {
-    await page.close();
+    return false;
   }
 }
 
@@ -210,12 +190,12 @@ async function capture(
   surface: TSurface,
   theme: 'dark' | 'light',
   viewport: { name: string; width: number; height: number },
-  jwtAvailable: boolean,
+  signedIn: boolean,
   deckDetailUrl: string | null,
 ): Promise<void> {
-  // Skip auth surfaces when no JWT is available.
-  if (surface.auth !== false && !jwtAvailable) {
-    log(`  SKIP  [${theme}/${viewport.name}] ${surface.name} — no JWT`);
+  // Skip auth surfaces when the sign-in did not work.
+  if (surface.auth !== false && !signedIn) {
+    log(`  SKIP  [${theme}/${viewport.name}] ${surface.name} — not signed in`);
     return;
   }
 
@@ -296,8 +276,7 @@ async function main(): Promise<void> {
     await seedPage.close();
 
     // Authenticate.
-    const jwt = await seedAuth(context, FIXTURE_EMAIL, FIXTURE_PASS);
-    const isAuthed = !!jwt;
+    const isAuthed = await seedAuth(context, FIXTURE_EMAIL, FIXTURE_PASS);
 
     // Walk each theme × viewport.
     for (const theme of THEMES) {
@@ -306,14 +285,6 @@ async function main(): Promise<void> {
 
         const page = await context.newPage();
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
-
-        // Seed JWT into this page's localStorage.
-        if (isAuthed && jwt) {
-          await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 15000 });
-          await page.evaluate(([t]) => {
-            localStorage.setItem('rathe-arsenal:jwt', t);
-          }, [jwt] as [string]);
-        }
 
         // Resolve deck-detail URL once per theme/viewport combo.
         let deckDetailUrl: string | null = null;

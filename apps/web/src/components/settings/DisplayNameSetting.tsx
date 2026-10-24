@@ -11,7 +11,7 @@ type TStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'failed';
 /** Settings field for the name shown on shared decks (PATCH /users/me/display-name). */
 export function DisplayNameSetting(): React.ReactElement {
   const { t } = useTranslation();
-  const { token, user, setDisplayName } = useAuth();
+  const { user, setDisplayName } = useAuth();
   const [name, setName] = useState(user?.displayName ?? '');
   const [status, setStatus] = useState<TStatus>('idle');
   const inputId = useId();
@@ -22,7 +22,7 @@ export function DisplayNameSetting(): React.ReactElement {
     if (!valid || status === 'saving') return;
     setStatus('saving');
     try {
-      const saved = await patchDisplayName(name.trim(), token);
+      const saved = await patchDisplayName(name.trim());
       setDisplayName(saved.displayName);
       setName(saved.displayName);
       setStatus('saved');

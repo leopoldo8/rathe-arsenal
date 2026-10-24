@@ -59,18 +59,18 @@ describe('chat proposals (E2E)', () => {
 
   it('proposals carry live owned and missing counts', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [
+    await fixture.own(user.sessionToken, [
       { cardIdentifier: EMISSARY, quantity: 4 },
       { cardIdentifier: FLEX, quantity: 3 },
       { cardIdentifier: COAX, quantity: 1 },
     ]);
     const { conversationId, messageId } = await answeredMessage(user);
     await seed(messageId, { kind: 'deck', payload: deckPayload([[EMISSARY, 2], [ADRENALINE, 3], [TALISHAR, 1]]) });
-    await fixture.own(user.jwt, [{ cardIdentifier: ADRENALINE, quantity: 1 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: ADRENALINE, quantity: 1 }]);
     await seed(messageId, { kind: 'swap', payload: swapPayload(user, COAX), trackedDeckId: user.deckId });
     await seed(messageId, { kind: 'swap', payload: swapPayload(user, 'brutal-assault-red'), trackedDeckId: user.deckId });
 
-    const read = (await fixture.get(`/api/chat/conversations/${conversationId}`, user.jwt).expect(200)).body;
+    const read = (await fixture.get(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(200)).body;
     const proposals = read.messages[1].proposals as Array<{ kind: string; ownedCount: number; missingCount: number }>;
 
     expect(proposals.map((proposal) => [proposal.kind, proposal.ownedCount, proposal.missingCount])).toEqual([
@@ -82,12 +82,12 @@ describe('chat proposals (E2E)', () => {
 
   it('proposals carry display fields and their deck', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: EMISSARY, quantity: 4 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 4 }]);
     const { conversationId, messageId } = await answeredMessage(user);
     const deckProposal = await seed(messageId, { kind: 'deck', payload: deckPayload([[EMISSARY, 3], [FLEX, 1]]) });
     await seed(messageId, { kind: 'swap', payload: swapPayload(user, EMISSARY), trackedDeckId: user.deckId });
     const read = async () =>
-      (await fixture.get(`/api/chat/conversations/${conversationId}`, user.jwt).expect(200)).body.messages[1].proposals as Array<Record<string, unknown>>;
+      (await fixture.get(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(200)).body.messages[1].proposals as Array<Record<string, unknown>>;
 
     const [deck, swap] = await read();
 
@@ -109,24 +109,24 @@ describe('chat proposals (E2E)', () => {
       },
     ]);
 
-    const applied = await fixture.post(`/api/chat/proposals/${deckProposal}/apply`, user.jwt).expect(201);
+    const applied = await fixture.post(`/api/chat/proposals/${deckProposal}/apply`, user.sessionToken).expect(201);
     expect((await read())[0]!['trackedDeckId']).toBe(applied.body.trackedDeckId);
   });
 
   it('an applied swap carries its replacement and its status', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: COAX, quantity: 3 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: COAX, quantity: 3 }]);
     const { conversationId, messageId } = await answeredMessage(user);
     const id = await seed(messageId, { kind: 'swap', payload: swapPayload(user, COAX), trackedDeckId: user.deckId });
     const read = async () => {
-      const [proposal] = (await fixture.get(`/api/chat/conversations/${conversationId}`, user.jwt).expect(200)).body.messages[1].proposals as Array<Record<string, unknown>>;
+      const [proposal] = (await fixture.get(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(200)).body.messages[1].proposals as Array<Record<string, unknown>>;
       return [proposal!['cardReplacementId'], proposal!['replacementStatus']];
     };
 
     const before = await read();
-    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt).expect(201);
+    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken).expect(201);
     const active = await read();
-    await fixture.post(`/api/replacements/${applied.body.replacementId}/revert`, user.jwt).expect(200);
+    await fixture.post(`/api/replacements/${applied.body.replacementId}/revert`, user.sessionToken).expect(200);
     const reverted = await read();
 
     expect([before, active, reverted]).toEqual([
@@ -141,7 +141,7 @@ describe('chat proposals (E2E)', () => {
     const { messageId } = await answeredMessage(user);
     const id = await seed(messageId, { kind: 'deck', payload: deckPayload([[EMISSARY, 2], [FLEX, 3]], 'Chat Katsu tempo') });
 
-    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt).expect(201);
+    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken).expect(201);
 
     const deckId = applied.body.trackedDeckId as number;
     const [deck] = (await fixture.dataSource.query(`SELECT name, "heroIdentifier", format, status, "fabraryUlid", "userId" FROM tracked_deck WHERE id = $1`, [deckId])) as Array<Record<string, unknown>>;
@@ -160,7 +160,7 @@ describe('chat proposals (E2E)', () => {
     const snapshotsBefore = await fixture.snapshotCount(user.deckId);
     await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE "trackedDeckId" = $1`, [user.deckId]);
 
-    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt).expect(201);
+    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken).expect(201);
 
     const cards = await fixture.deckCards(user.deckId);
     expect(cards[`${FLEX}@mainboard`]).toBeUndefined();
@@ -181,7 +181,7 @@ describe('chat proposals (E2E)', () => {
     );
     const [decks, replacements] = [await decksOf(user), await replacementsOf(user)];
 
-    const responses = await Promise.all(ids.map((id) => fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt)));
+    const responses = await Promise.all(ids.map((id) => fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken)));
 
     expect(responses.map((response) => [response.status, response.body.code])).toEqual(ids.map(() => [409, 'PROPOSAL_NOT_PENDING']));
     expect([await decksOf(user), await replacementsOf(user)]).toEqual([decks, replacements]);
@@ -192,14 +192,14 @@ describe('chat proposals (E2E)', () => {
     const cutMessage = await answeredMessage(cutGone);
     const cutId = await seed(cutMessage.messageId, { kind: 'swap', payload: swapPayload(cutGone), trackedDeckId: cutGone.deckId });
     await fixture
-      .put(`/api/decks/${cutGone.deckId}`, cutGone.jwt)
+      .put(`/api/decks/${cutGone.deckId}`, cutGone.sessionToken)
       .send({ heroIdentifier: KATSU, format: CC, cards: [{ cardIdentifier: EMISSARY, quantity: 2, slot: 'mainboard' }, { cardIdentifier: TALISHAR, quantity: 1, slot: 'weapon' }] })
       .expect(200);
 
     const deckGone = await fixture.chatUser();
     const goneMessage = await answeredMessage(deckGone);
     const goneId = await seed(goneMessage.messageId, { kind: 'swap', payload: swapPayload(deckGone), trackedDeckId: deckGone.deckId });
-    await fixture.del(`/api/decks/${deckGone.deckId}`, deckGone.jwt).expect((response) => expect(response.status).toBeLessThan(300));
+    await fixture.del(`/api/decks/${deckGone.deckId}`, deckGone.sessionToken).expect((response) => expect(response.status).toBeLessThan(300));
 
     const invalid = await fixture.chatUser();
     const invalidMessage = await answeredMessage(invalid);
@@ -207,9 +207,9 @@ describe('chat proposals (E2E)', () => {
     const before = await Promise.all([cutGone, deckGone, invalid].map(async (user) => [await decksOf(user), await replacementsOf(user)]));
 
     const responses = await Promise.all([
-      fixture.post(`/api/chat/proposals/${cutId}/apply`, cutGone.jwt),
-      fixture.post(`/api/chat/proposals/${goneId}/apply`, deckGone.jwt),
-      fixture.post(`/api/chat/proposals/${invalidId}/apply`, invalid.jwt),
+      fixture.post(`/api/chat/proposals/${cutId}/apply`, cutGone.sessionToken),
+      fixture.post(`/api/chat/proposals/${goneId}/apply`, deckGone.sessionToken),
+      fixture.post(`/api/chat/proposals/${invalidId}/apply`, invalid.sessionToken),
     ]);
 
     expect(responses.map((response) => [response.status, response.body.code])).toEqual([
@@ -228,8 +228,8 @@ describe('chat proposals (E2E)', () => {
     const swapId = await seed(messageId, { kind: 'swap', payload: swapPayload(user), trackedDeckId: user.deckId });
     const decksBefore = await decksOf(user);
 
-    const deckRace = await Promise.all([1, 2].map(() => fixture.post(`/api/chat/proposals/${deckId}/apply`, user.jwt)));
-    const swapRace = await Promise.all([1, 2].map(() => fixture.post(`/api/chat/proposals/${swapId}/apply`, user.jwt)));
+    const deckRace = await Promise.all([1, 2].map(() => fixture.post(`/api/chat/proposals/${deckId}/apply`, user.sessionToken)));
+    const swapRace = await Promise.all([1, 2].map(() => fixture.post(`/api/chat/proposals/${swapId}/apply`, user.sessionToken)));
 
     expect(deckRace.map((response) => response.status).sort()).toEqual([201, 409]);
     expect(swapRace.map((response) => response.status).sort()).toEqual([201, 409]);
@@ -242,8 +242,8 @@ describe('chat proposals (E2E)', () => {
     const { messageId } = await answeredMessage(user);
     const id = await seed(messageId, { kind: 'deck', payload: deckPayload([[FLEX, 2]]) });
 
-    const dismissed = await fixture.post(`/api/chat/proposals/${id}/dismiss`, user.jwt).expect(200);
-    const again = await fixture.post(`/api/chat/proposals/${id}/dismiss`, user.jwt).expect(409);
+    const dismissed = await fixture.post(`/api/chat/proposals/${id}/dismiss`, user.sessionToken).expect(200);
+    const again = await fixture.post(`/api/chat/proposals/${id}/dismiss`, user.sessionToken).expect(409);
 
     expect(dismissed.body).toEqual({ id, status: 'dismissed' });
     expect((await proposalRow(id))!['decidedAt']).toBeInstanceOf(Date);
@@ -257,9 +257,9 @@ describe('chat proposals (E2E)', () => {
     const id = await seed(messageId, { kind: 'deck', payload: deckPayload([[FLEX, 2]]) });
 
     for (const action of ['apply', 'dismiss']) {
-      await fixture.post(`/api/chat/proposals/${id}/${action}`, other.jwt).expect(404);
-      await fixture.post(`/api/chat/proposals/${UNKNOWN_UUID}/${action}`, owner.jwt).expect(404);
-      await fixture.post(`/api/chat/proposals/not-a-uuid/${action}`, owner.jwt).expect(400);
+      await fixture.post(`/api/chat/proposals/${id}/${action}`, other.sessionToken).expect(404);
+      await fixture.post(`/api/chat/proposals/${UNKNOWN_UUID}/${action}`, owner.sessionToken).expect(404);
+      await fixture.post(`/api/chat/proposals/not-a-uuid/${action}`, owner.sessionToken).expect(400);
     }
     expect((await proposalRow(id))!['status']).toBe('pending');
   });
@@ -268,10 +268,10 @@ describe('chat proposals (E2E)', () => {
     const user = await fixture.chatUser();
     const { messageId } = await answeredMessage(user);
     const id = await seed(messageId, { kind: 'swap', payload: swapPayload(user), trackedDeckId: user.deckId });
-    await fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt).expect(201);
-    await fixture.own(user.jwt, [{ cardIdentifier: FLEX, quantity: 4 }]);
+    await fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken).expect(201);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: FLEX, quantity: 4 }]);
 
-    const detail = (await fixture.get(`/api/decks/${user.deckId}`, user.jwt).expect(200)).body;
+    const detail = (await fixture.get(`/api/decks/${user.deckId}`, user.sessionToken).expect(200)).body;
 
     expect(detail.replacements.map((replacement: { originalCardIdentifier: string; originalOwned: boolean }) => [replacement.originalCardIdentifier, replacement.originalOwned])).toEqual([
       [FLEX, false],
@@ -282,14 +282,14 @@ describe('chat proposals (E2E)', () => {
     const user = await fixture.chatUser();
     const { messageId } = await answeredMessage(user);
     const id = await seed(messageId, { kind: 'swap', payload: swapPayload(user), trackedDeckId: user.deckId });
-    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.jwt).expect(201);
+    const applied = await fixture.post(`/api/chat/proposals/${id}/apply`, user.sessionToken).expect(201);
 
-    await fixture.post(`/api/replacements/${applied.body.replacementId}/revert`, user.jwt).expect(200);
+    await fixture.post(`/api/replacements/${applied.body.replacementId}/revert`, user.sessionToken).expect(200);
 
     const cards = await fixture.deckCards(user.deckId);
     expect([cards[`${FLEX}@mainboard`], cards[`${COAX}@mainboard`]]).toEqual([2, undefined]);
     await fixture
-      .post(`/api/decks/${user.deckId}/replacements`, user.jwt)
+      .post(`/api/decks/${user.deckId}/replacements`, user.sessionToken)
       .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: COAX, pickedFrom: 'chat' })
       .expect(400);
   });
@@ -303,9 +303,9 @@ describe('chat proposals (E2E)', () => {
     const dismissId = await seed(messageId, { kind: 'deck', payload: deckPayload([[FLEX, 2]]) });
     const staleId = await seed(messageId, { kind: 'swap', payload: swapPayload(user), trackedDeckId: null });
 
-    await fixture.post(`/api/chat/proposals/${applyId}/apply`, user.jwt).expect(201);
-    await fixture.post(`/api/chat/proposals/${dismissId}/dismiss`, user.jwt).expect(200);
-    await fixture.post(`/api/chat/proposals/${staleId}/apply`, user.jwt).expect(409);
+    await fixture.post(`/api/chat/proposals/${applyId}/apply`, user.sessionToken).expect(201);
+    await fixture.post(`/api/chat/proposals/${dismissId}/dismiss`, user.sessionToken).expect(200);
+    await fixture.post(`/api/chat/proposals/${staleId}/apply`, user.sessionToken).expect(409);
 
     expect(log).toHaveBeenCalledWith(expect.objectContaining({ event: 'chat.proposal.applied', proposalId: applyId, kind: 'deck', userId: user.userId }));
     expect(log).toHaveBeenCalledWith(expect.objectContaining({ event: 'chat.proposal.dismissed', proposalId: dismissId, kind: 'deck', userId: user.userId }));
@@ -323,10 +323,10 @@ describe('chat proposals (E2E)', () => {
     );
     const deckProposal = await seed(messageId, { kind: 'deck', payload: deckPayload([[FLEX, 2]], 'Kept deck') });
     const swapProposal = await seed(messageId, { kind: 'swap', payload: swapPayload(user), trackedDeckId: user.deckId });
-    const createdDeck = (await fixture.post(`/api/chat/proposals/${deckProposal}/apply`, user.jwt).expect(201)).body.trackedDeckId as number;
-    const replacementId = (await fixture.post(`/api/chat/proposals/${swapProposal}/apply`, user.jwt).expect(201)).body.replacementId as string;
+    const createdDeck = (await fixture.post(`/api/chat/proposals/${deckProposal}/apply`, user.sessionToken).expect(201)).body.trackedDeckId as number;
+    const replacementId = (await fixture.post(`/api/chat/proposals/${swapProposal}/apply`, user.sessionToken).expect(201)).body.replacementId as string;
 
-    await fixture.del(`/api/chat/conversations/${conversationId}`, user.jwt).expect(204);
+    await fixture.del(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(204);
 
     expect(await count(`SELECT count(*)::int AS count FROM chat_conversation WHERE id = $1`, [conversationId])).toBe(0);
     expect(await count(`SELECT count(*)::int AS count FROM chat_message WHERE "conversationId" = $1`, [conversationId])).toBe(0);

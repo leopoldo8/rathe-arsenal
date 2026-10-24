@@ -30,10 +30,11 @@ export interface ICodeSignIn {
 
 export interface IAuthContext {
   user: IAuthUser | null;
-  token: string | null;
   isLoading: boolean;
-  /** True while the signed-in user is the one this device's stored session restored on page load, not a sign-in made since. */
+  /** True while the signed-in user is the one this device's session restored on page load, not a sign-in made since. */
   restoredSession?: boolean;
+  /** True when the server ended the session while the player was on a page: the sign-in sheet is open over it. */
+  sessionEnded?: boolean;
   /**
    * U12 — server-persisted user preferences mirrored into context for first-paint
    * theme correctness. Optional to avoid breaking every existing `useAuth()`
@@ -48,6 +49,7 @@ export interface IAuthContext {
    */
   signUp: (input: ISignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Ends the session on the server and clears this device's state. */
   signOut: () => void;
   verifyEmail: (token: string) => Promise<void>;
   /** Signs in with the six digits e-mailed to `email`; resolves with the page the account was made from, if any. */
@@ -56,7 +58,7 @@ export interface IAuthContext {
   redeemCode: (token: string) => Promise<ICodeSignIn>;
   /**
    * Phase 1a Unit 2 (A8) — soft-deletes the authenticated user's account
-   * after password re-entry. Clears the local JWT and user on success so
+   * after password re-entry. Clears the local user on success (the server ends every session) so
    * the app falls back to the landing page. Rejects with `AuthFetchError`
    * on 401 (wrong password) / 429 (rate limit) / other HTTP errors so the
    * caller can render inline feedback.

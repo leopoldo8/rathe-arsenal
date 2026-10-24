@@ -1392,40 +1392,40 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the se
 
 ### S32 - Staying in until "Sair" · 56 files · 316 KB · ~109k
 
-**C371** - Every sign-in (sign-up, sign-in, codes verify, codes redeem) answers with exactly one `Set-Cookie` of `ra_session=<43-character base64url value>; Max-Age=34560000; Path=/api; HttpOnly; SameSite=Lax`, without `Secure` when `NODE_ENV` is not `production`; it stores a `user_session` row whose `tokenHash` is the SHA-256 of the token, not the token, with `revokedAt` null (AC 236; door 17)
+**C371** - Every sign-in (sign-up, sign-in, codes verify, codes redeem) answers with exactly one `Set-Cookie` of `ra_session=<43-character base64url value>; Max-Age=34560000; Path=/api; HttpOnly; SameSite=Lax`, without `Secure` when `NODE_ENV` is not `production`; it stores a `user_session` row whose `tokenHash` is the SHA-256 of the token, not the token, with `revokedAt` null (AC 236; door 17) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "each way in sets the session cookie and stores only its hash"`
 
-**C372** - The cookie options built for `NODE_ENV=production` include `Secure`; for `development` and `test` they do not; both carry `httpOnly: true`, `sameSite: 'lax'`, `path: '/api'`, `maxAge` 34560000 seconds (AC 236; door 17)
+**C372** - The cookie options built for `NODE_ENV=production` include `Secure`; for `development` and `test` they do not; both carry `httpOnly: true`, `sameSite: 'lax'`, `path: '/api'`, `maxAge` 34560000 seconds (AC 236; door 17) · done
 Proof: `api unit src/auth/__tests__/session-cookie.spec.ts -t "the cookie is Secure only in production"`
 
-**C373** - A session created 30 days ago and last seen yesterday still answers `200` on `GET /api/auth/me`; a request whose session was last seen more than one day ago gets the cookie again with `Max-Age=34560000` and `lastSeenAt` updated; a request whose session was seen less than one day ago gets no `Set-Cookie` (AC 236; door 17)
+**C373** - A session created 30 days ago and last seen yesterday still answers `200` on `GET /api/auth/me`; a request whose session was last seen more than one day ago gets the cookie again with `Max-Age=34560000` and `lastSeenAt` updated; a request whose session was seen less than one day ago gets no `Set-Cookie` (AC 236; door 17) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "a session has no fixed expiry and is renewed once a day"`
 
-**C374** - No response body of sign-up, sign-in, codes verify, codes redeem or `GET /api/auth/me` contains the cookie's token value, or a field named `jwt`, `token` or `session` (AC 242; door 17)
+**C374** - No response body of sign-up, sign-in, codes verify, codes redeem or `GET /api/auth/me` contains the cookie's token value, or a field named `jwt`, `token` or `session` (AC 242; door 17) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "no response body carries the session token"`
 
-**C375** - After a password sign-in in the browser, `document.cookie` does not contain `ra_session`, `localStorage` has no `rathe-arsenal:jwt` key, and the home loads its decks (AC 242; door 17)
+**C375** - After a password sign-in in the browser, `document.cookie` does not contain `ra_session`, `localStorage` has no `rathe-arsenal:jwt` key, and the home loads its decks (AC 242; door 17) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the session is invisible to page scripts"`
 
-**C376** - `authFetch`, `useApiClient` and the request functions of `api/shared-decks.ts` send no `Authorization` header; `AuthProvider` removes a leftover `rathe-arsenal:jwt` key on load and reads the signed-in user from `GET /api/auth/me`, treating `401` as signed out (door 17)
+**C376** - `authFetch`, `useApiClient` and the request functions of `api/shared-decks.ts` send no `Authorization` header; `AuthProvider` removes a leftover `rathe-arsenal:jwt` key on load and reads the signed-in user from `GET /api/auth/me`, treating `401` as signed out (door 17) · done
 Proof: `web unit src/lib/__tests__/auth-fetch.spec.ts -t "requests carry no Authorization header"`
 Proof: `web unit src/lib/__tests__/api-client.spec.ts -t "requests carry no Authorization header"`
 Proof: `web unit src/components/shared-deck/__tests__/SharedDeckPage.spec.tsx -t "shared requests carry no Authorization header"`
 Proof: `web unit src/auth/__tests__/AuthProvider.session.spec.tsx -t "the provider drops the old key and asks me who is signed in"`
 
-**C377** - A protected route called with a valid old-style `Authorization: Bearer <JWT>` and no cookie answers `401` (door 17; Impact "existing JWTs")
+**C377** - A protected route called with a valid old-style `Authorization: Bearer <JWT>` and no cookie answers `401` (door 17; Impact "existing JWTs") · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "an old JWT is refused"`
 
-**C378** - `POST /api/auth/sign-out` with a valid cookie answers `204`, sets `revokedAt`, and its `Set-Cookie` clears `ra_session` (`Max-Age=0`, `Path=/api`); `GET /api/auth/me` with the old token then answers `401`; `POST /api/auth/sign-out` with no cookie answers `401` (AC 237; Surface)
+**C378** - `POST /api/auth/sign-out` with a valid cookie answers `204`, sets `revokedAt`, and its `Set-Cookie` clears `ra_session` (`Max-Age=0`, `Path=/api`); `GET /api/auth/me` with the old token then answers `401`; `POST /api/auth/sign-out` with no cookie answers `401` (AC 237; Surface) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "sign-out ends the session on the server and clears the cookie"`
 
-**C379** - With two sessions of one account, signing out one leaves `GET /api/auth/me` with the other at `200` (S32 independent test) (AC 237)
+**C379** - With two sessions of one account, signing out one leaves `GET /api/auth/me` with the other at `200` (S32 independent test) (AC 237) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "signing out one device keeps the other"`
 
-**C380** - Deleting the account answers as today and every session of that account then answers `401`; `PUT /api/users/me/password` answers `204`, every other session of that account then answers `401` and the session that sent it still answers `200` (AC 238, AC 260)
+**C380** - Deleting the account answers as today and every session of that account then answers `401`; `PUT /api/users/me/password` answers `204`, every other session of that account then answers `401` and the session that sent it still answers `200` (AC 238, AC 260) · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "deleting the account ends every session and a new password ends the others"`
 
-**C381** - `JwtAuthGuard` puts the user on the request for a cookie whose hash matches a live row, and answers `401` for no cookie, an unknown token, a revoked row and a user with `deletedAt` set; `OptionalJwtAuthGuard` puts the user on the request for a live session and leaves the request anonymous, with no error, in the other four cases (door 17)
+**C381** - `JwtAuthGuard` puts the user on the request for a cookie whose hash matches a live row, and answers `401` for no cookie, an unknown token, a revoked row and a user with `deletedAt` set; `OptionalJwtAuthGuard` puts the user on the request for a live session and leaves the request anonymous, with no error, in the other four cases (door 17) · done
 Proof: `api unit src/auth/__tests__/jwt-auth.guard.spec.ts -t "the guard looks the session hash up"`
 Proof: `api unit src/auth/guards/__tests__/optional-jwt-auth.guard.spec.ts -t "an unusable session leaves the visitor anonymous"`
 
@@ -1433,24 +1433,24 @@ Proof: `api unit src/auth/guards/__tests__/optional-jwt-auth.guard.spec.ts -t "a
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "a session that ends mid-edit keeps the page and the draft"`
 Proof: `web unit src/components/auth/__tests__/SignInSheet.spec.tsx -t "a 401 opens the sheet and a sign-in closes it on the same page"`
 
-**C383** - Opening `/decks/<id>` signed out shows the start page; after signing in there the player lands on `/decks/<id>` (AC 240)
+**C383** - Opening `/decks/<id>` signed out shows the start page; after signing in there the player lands on `/decks/<id>` (AC 240) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "a protected page opened signed out comes back after sign-in"`
 
-**C384** - The new-account screens show, once, "A conta fica aberta neste celular até você tocar em Sair. Sem senha, mandamos um código só quando você entrar de novo." below 720 px wide and the same line with "neste computador" at 720 px and wider; no pt-BR or en-US locale value contains "Você continua conectada" (copy rule 5) (AC 241)
+**C384** - The new-account screens show, once, "A conta fica aberta neste celular até você tocar em Sair. Sem senha, mandamos um código só quando você entrar de novo." below 720 px wide and the same line with "neste computador" at 720 px and wider; no pt-BR or en-US locale value contains "Você continua conectada" (copy rule 5) (AC 241) · done
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "the staying-in line is said once, for a phone or a computer"`
 
-**C385** - Schema: a second `user_session` row with the same `tokenHash` fails; deleting a user deletes its sessions (door 17; Relations `user_session`)
+**C385** - Schema: a second `user_session` row with the same `tokenHash` fails; deleting a user deletes its sessions (door 17; Relations `user_session`) · done
 Proof: `api e2e src/auth/__tests__/accounts-schema.e2e-spec.ts -t "session token hashes are unique"`
 
-**C386** - A `POST`, `PUT`, `PATCH` and `DELETE` to owner routes with a valid cookie and `Origin: https://evil.example` each answer `403` with code `ORIGIN_REJECTED`, change no row, and log the rejected origin; the same four with `Origin` equal to the origin of `APP_BASE_URL` succeed; the same four with no `Origin` header and a valid cookie succeed, and with no cookie answer `401`; a `GET` with `Origin: https://evil.example` answers `200` (AC 243; door 17; assumption "the address the origin check accepts")
+**C386** - A `POST`, `PUT`, `PATCH` and `DELETE` to owner routes with a valid cookie and `Origin: https://evil.example` each answer `403` with code `ORIGIN_REJECTED`, change no row, and log the rejected origin; the same four with `Origin` equal to the origin of `APP_BASE_URL` succeed; the same four with no `Origin` header and a valid cookie succeed, and with no cookie answer `401`; a `GET` with `Origin: https://evil.example` answers `200` (AC 243; door 17; assumption "the address the origin check accepts") · done
 Proof: `api e2e src/auth/__tests__/sessions.e2e-spec.ts -t "writes from another origin are refused and change nothing"`
 Proof: `api unit src/http/__tests__/origin-check.middleware.spec.ts -t "the origin check decides by method and Origin header"`
 
-**C387** - `configureHttpApp` mounts `cookie-parser` and the origin check: an app built only through it reads `ra_session` from a `Cookie` header and refuses a foreign-origin `POST` with `403`; every `*.e2e-spec.ts`, `*.int-spec.ts` and e2e fixture under `apps/api/src` that calls `createNestApplication` also calls `configureHttpApp` or boots through `bootFixture` (door 17; startup config)
+**C387** - `configureHttpApp` mounts `cookie-parser` and the origin check: an app built only through it reads `ra_session` from a `Cookie` header and refuses a foreign-origin `POST` with `403`; every `*.e2e-spec.ts`, `*.int-spec.ts` and e2e fixture under `apps/api/src` that calls `createNestApplication` also calls `configureHttpApp` or boots through `bootFixture` (door 17; startup config) · done
 Proof: `api unit src/http/__tests__/configure-http-app.spec.ts -t "the shared setup parses the session cookie and checks the origin"`
 Proof: `api unit src/http/__tests__/bootstraps-share-http-setup.spec.ts -t "every test bootstrap goes through configureHttpApp"`
 
-**C388** - The Playwright global setup writes a storage state whose `cookies` hold `ra_session` for the base URL with `httpOnly: true`, and whose `localStorage` holds no `rathe-arsenal:jwt`; `scripts/fixture/fixture-seed.ts` sends the session as a `Cookie` header and never as `Authorization` (door 17)
+**C388** - The Playwright global setup writes a storage state whose `cookies` hold `ra_session` for the base URL with `httpOnly: true`, and whose `localStorage` holds no `rathe-arsenal:jwt`; `scripts/fixture/fixture-seed.ts` sends the session as a `Cookie` header and never as `Authorization` (door 17) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the fixture session is a cookie"`
 
 ### S33 - Confirming the e-mail, and what an unconfirmed account can do · 30 files · 119 KB · ~42k

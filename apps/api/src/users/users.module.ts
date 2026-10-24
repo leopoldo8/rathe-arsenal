@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module';
 import { UserEntity } from '../database/entities/user.entity';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -11,7 +12,7 @@ import { UsersService } from './users.service';
  * JSONB column (added by migration 1776621087000).
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity])],
+  imports: [AuthModule, TypeOrmModule.forFeature([UserEntity])],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

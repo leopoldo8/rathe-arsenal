@@ -1,47 +1,57 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createMock } from '@golevelup/ts-jest';
+import type { Repository } from 'typeorm';
+import { EUserRole, UserEntity } from '../../../database/entities/user.entity';
+import { UserSessionEntity } from '../../../database/entities/user-session.entity';
+import { SessionService } from '../../session.service';
+import { TokenGeneratorService } from '../../services/token-generator.service';
 import { OptionalJwtAuthGuard } from '../optional-jwt-auth.guard';
+
+const TOKEN = 'b'.repeat(43);
 
 function contextWith(request: Record<string, unknown>): ExecutionContext {
   return {
-    switchToHttp: () => ({ getRequest: () => request, getResponse: () => ({}) }),
+    switchToHttp: () => ({ getRequest: () => request, getResponse: () => ({ cookie: jest.fn() }) }),
     getHandler: () => ({}),
     getClass: () => ({}),
   } as unknown as ExecutionContext;
 }
 
-function passportCanActivate(guard: OptionalJwtAuthGuard): jest.SpyInstance {
-  return jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), 'canActivate');
+function user(overrides: Partial<UserEntity> = {}): UserEntity {
+  return { id: 'visitor-1', email: 'v@b.com', role: EUserRole.User, chatAccess: false, deletedAt: null, ...overrides } as UserEntity;
 }
 
+function guardFor(findOne: jest.Mock): OptionalJwtAuthGuard {
+  const repo = { findOne, update: jest.fn() } as unknown as Repository<UserSessionEntity>;
+  return new OptionalJwtAuthGuard(new SessionService(repo, new TokenGeneratorService(), createMock<ConfigService>()));
+}
+
+const live = (overrides: Partial<UserSessionEntity> = {}): UserSessionEntity =>
+  ({ id: 's-1', lastSeenAt: new Date(), revokedAt: null, user: user(), ...overrides }) as UserSessionEntity;
+
 describe('OptionalJwtAuthGuard', () => {
-  afterEach(() => jest.restoreAllMocks());
+  it('lets a visitor with a live session through with the user on the request', async () => {
+    const request: Record<string, unknown> = { cookies: { ra_session: TOKEN } };
 
-  it('lets a visitor with a valid token through with the user on the request', async () => {
-    const guard = new OptionalJwtAuthGuard();
-    const request: Record<string, unknown> = {};
-    passportCanActivate(guard).mockImplementation(async () => {
-      request.user = { userId: 'visitor-1' };
-      return true;
-    });
+    await expect(guardFor(jest.fn().mockResolvedValue(live())).canActivate(contextWith(request))).resolves.toBe(true);
 
-    await expect(guard.canActivate(contextWith(request))).resolves.toBe(true);
-    expect(request.user).toEqual({ userId: 'visitor-1' });
+    expect(request['user']).toMatchObject({ userId: 'visitor-1', email: 'v@b.com' });
   });
 
-  it('lets a visitor whose token is invalid or belongs to a deleted user through anonymously', async () => {
-    const guard = new OptionalJwtAuthGuard();
-    const request: Record<string, unknown> = { user: { userId: 'stale' } };
-    passportCanActivate(guard).mockRejectedValue(new UnauthorizedException());
+  it('an unusable session leaves the visitor anonymous', async () => {
+    const unusable: Array<[string, Record<string, unknown>, jest.Mock]> = [
+      ['no cookie', { cookies: {} }, jest.fn().mockResolvedValue(live())],
+      ['an unknown token', { cookies: { ra_session: TOKEN } }, jest.fn().mockResolvedValue(null)],
+      ['a revoked row', { cookies: { ra_session: TOKEN } }, jest.fn().mockResolvedValue(live({ revokedAt: new Date() }))],
+      ['a deleted user', { cookies: { ra_session: TOKEN } }, jest.fn().mockResolvedValue(live({ user: user({ deletedAt: new Date() }) }))],
+      ['a failing lookup', { cookies: { ra_session: TOKEN } }, jest.fn().mockRejectedValue(new Error('database down'))],
+    ];
 
-    await expect(guard.canActivate(contextWith(request))).resolves.toBe(true);
-    expect(request.user).toBeUndefined();
-  });
-
-  it('turns a missing token into an anonymous request instead of an error', () => {
-    const guard = new OptionalJwtAuthGuard();
-
-    expect(guard.handleRequest(null, false)).toBeUndefined();
-    expect(guard.handleRequest(new UnauthorizedException(), false)).toBeUndefined();
-    expect(guard.handleRequest(null, { userId: 'visitor-1' })).toEqual({ userId: 'visitor-1' });
+    for (const [label, cookies, findOne] of unusable) {
+      const request: Record<string, unknown> = { ...cookies, user: { userId: 'stale' } };
+      await expect(guardFor(findOne).canActivate(contextWith(request))).resolves.toBe(true);
+      expect({ label, user: request['user'] }).toEqual({ label, user: undefined });
+    }
   });
 });

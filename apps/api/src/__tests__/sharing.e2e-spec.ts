@@ -13,6 +13,7 @@ import { DataSource } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'sharing-test-password-123';
 const SUFFIX = Date.now().toString(36);
@@ -24,7 +25,7 @@ const [CARD_A, CARD_B] = catalog.cards
 
 interface ISession {
   readonly userId: string;
-  readonly jwt: string;
+  readonly sessionToken: string;
 }
 
 describe('Sharing (E2E)', () => {
@@ -32,7 +33,7 @@ describe('Sharing (E2E)', () => {
   let dataSource: DataSource;
   let server: ReturnType<INestApplication['getHttpServer']>;
 
-  const auth = (session: ISession): [string, string] => ['Authorization', `Bearer ${session.jwt}`];
+  const auth = (session: ISession): [string, string] => ['Cookie', sessionCookieHeader(session.sessionToken)];
 
   function signUpRaw(email: string, shareToken?: string): request.Test {
     return request(server)
@@ -45,7 +46,7 @@ describe('Sharing (E2E)', () => {
     const signUp = await signUpRaw(email).expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, jwt: verified.body.jwt as string };
+    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
   }
 
   async function createDeck(session: ISession): Promise<number> {
@@ -293,7 +294,7 @@ describe('Sharing (E2E)', () => {
 
     await request(server).get(`/api/shared/decks/${token}`).set(...auth(visitor)).expect(200);
     await request(server).get(`/api/shared/decks/${token}`).expect(200);
-    await request(server).get(`/api/shared/decks/${token}`).set('Authorization', 'Bearer garbage').expect(200);
+    await request(server).get(`/api/shared/decks/${token}`).set('Cookie', 'ra_session=garbage').expect(200);
     expect(await countEvents('opened', owner.userId)).toBe(3);
 
     const actors = (await dataSource.query(

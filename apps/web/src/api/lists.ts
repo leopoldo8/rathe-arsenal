@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../auth/useAuth';
 import { authFetch } from '../lib/auth-fetch';
 
 export type TListKind = 'want' | 'sell';
@@ -107,39 +106,35 @@ export const listPrintingsQueryKey = (listId: number | string, cardIdentifier: s
 const json = (body: unknown): RequestInit => ({ body: JSON.stringify(body) });
 
 export function useListsQuery() {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listsQueryKey,
-    queryFn: () => authFetch<IListSummary[]>('/lists', {}, token),
+    queryFn: () => authFetch<IListSummary[]>('/lists'),
   });
 }
 
 export function useListQuery(listId: number | string) {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listQueryKey(listId),
-    queryFn: () => authFetch<ICardList>(`/lists/${listId}`, {}, token),
+    queryFn: () => authFetch<ICardList>(`/lists/${listId}`),
     retry: false,
   });
 }
 
 export function useListPrintingsQuery(listId: number | string, cardIdentifier: string | null) {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listPrintingsQueryKey(listId, cardIdentifier ?? ''),
     queryFn: () =>
-      authFetch<IListPrinting[]>(`/lists/${listId}/printings/${encodeURIComponent(cardIdentifier ?? '')}`, {}, token),
+      authFetch<IListPrinting[]>(`/lists/${listId}/printings/${encodeURIComponent(cardIdentifier ?? '')}`),
     enabled: cardIdentifier !== null,
     staleTime: 60_000,
   });
 }
 
 export function useCreateListMutation() {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: ICreateListBody) =>
-      authFetch<ICardList>('/lists', { method: 'POST', ...json(body) }, token),
+      authFetch<ICardList>('/lists', { method: 'POST', ...json(body) }),
     onSuccess: (list) => {
       queryClient.setQueryData<ICardList>(listQueryKey(list.id), list);
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -148,10 +143,9 @@ export function useCreateListMutation() {
 }
 
 export function useDeleteListMutation(listId: number | string) {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => authFetch<void>(`/lists/${listId}`, { method: 'DELETE' }, token),
+    mutationFn: () => authFetch<void>(`/lists/${listId}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: listQueryKey(listId) });
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -162,12 +156,11 @@ export function useDeleteListMutation(listId: number | string) {
 /** Every list write answers with the whole list, so one response replaces the cache. */
 function useListWrite<TVariables>(
   listId: number | string,
-  request: (variables: TVariables, token: string | null) => Promise<ICardList>,
+  request: (variables: TVariables) => Promise<ICardList>,
 ) {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (variables: TVariables) => request(variables, token),
+    mutationFn: (variables: TVariables) => request(variables),
     onSuccess: (list) => {
       queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
       void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
@@ -176,35 +169,34 @@ function useListWrite<TVariables>(
 }
 
 export function usePatchListMutation(listId: number | string) {
-  return useListWrite<IPatchListBody>(listId, (body, token) =>
-    authFetch<ICardList>(`/lists/${listId}`, { method: 'PATCH', ...json(body) }, token),
+  return useListWrite<IPatchListBody>(listId, (body) =>
+    authFetch<ICardList>(`/lists/${listId}`, { method: 'PATCH', ...json(body) }),
   );
 }
 
 export function useAddLineMutation(listId: number | string) {
-  return useListWrite<IAddLineBody>(listId, (body, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines`, { method: 'POST', ...json(body) }, token),
+  return useListWrite<IAddLineBody>(listId, (body) =>
+    authFetch<ICardList>(`/lists/${listId}/lines`, { method: 'POST', ...json(body) }),
   );
 }
 
 export function usePatchLineMutation(listId: number | string) {
-  return useListWrite<{ readonly lineId: number; readonly body: IPatchLineBody }>(listId, ({ lineId, body }, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'PATCH', ...json(body) }, token),
+  return useListWrite<{ readonly lineId: number; readonly body: IPatchLineBody }>(listId, ({ lineId, body }) =>
+    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'PATCH', ...json(body) }),
   );
 }
 
 export function useApplySuggestionsMutation(listId: number | string) {
-  return useListWrite<readonly number[] | undefined>(listId, (lineIds, token) =>
+  return useListWrite<readonly number[] | undefined>(listId, (lineIds) =>
     authFetch<ICardList>(
       `/lists/${listId}/apply-suggestions`,
       { method: 'POST', ...json(lineIds === undefined ? {} : { lineIds }) },
-      token,
     ),
   );
 }
 
 export function useRemoveLineMutation(listId: number | string) {
-  return useListWrite<number>(listId, (lineId, token) =>
-    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'DELETE' }, token),
+  return useListWrite<number>(listId, (lineId) =>
+    authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'DELETE' }),
   );
 }

@@ -21,6 +21,8 @@ type TStep =
 interface IStartFlowProps {
   /** The single-use token an e-mailed "Entrar" button carries; it signs in on arrival. */
   readonly buttonToken?: string | undefined;
+  /** A page of the app the visitor asked for while signed out; a sign-in goes back to it (AC 240). */
+  readonly next?: string | undefined;
 }
 
 /**
@@ -28,7 +30,7 @@ interface IStartFlowProps {
  * a password, or an e-mailed code). Signing in sends the visitor back to the shared page they came
  * from, or to the app.
  */
-export function StartFlow({ buttonToken }: IStartFlowProps): React.ReactElement {
+export function StartFlow({ buttonToken, next: nextPage }: IStartFlowProps): React.ReactElement {
   const { t } = useTranslation();
   const { redeemCode } = useAuth();
   const navigate = useNavigate();
@@ -44,6 +46,10 @@ export function StartFlow({ buttonToken }: IStartFlowProps): React.ReactElement 
     if (shareReturn !== null) {
       clearShareReturn();
       router.history.push(shareReturn.returnTo);
+      return;
+    }
+    if (nextPage !== undefined) {
+      router.history.push(nextPage);
       return;
     }
     void navigate({ to: '/home', search: { tag: [] } });
@@ -119,14 +125,25 @@ export function StartFlow({ buttonToken }: IStartFlowProps): React.ReactElement 
   }
 }
 
+/** Replaces the current history entry with a page address that may carry a query string. */
+function ReplaceWith({ path }: { readonly path: string }): null {
+  const router = useRouter();
+  useEffect(() => {
+    router.history.replace(path);
+  }, [router, path]);
+  return null;
+}
+
 /**
  * Sends a visitor whose session this device restored on page load straight to the app. A sign-in
  * made on this page is the flow's own to finish (it goes back to a shared page, or to the first
  * steps), so it never redirects over it.
  */
-export function StartGate({ buttonToken }: IStartFlowProps): React.ReactElement | null {
+export function StartGate({ buttonToken, next }: IStartFlowProps): React.ReactElement | null {
   const { user, isLoading, restoredSession } = useAuth();
   if (isLoading) return null;
-  if (user !== null && restoredSession === true) return <Navigate to="/home" search={{ tag: [] }} replace />;
-  return <StartFlow buttonToken={buttonToken} />;
+  if (user !== null && restoredSession === true) {
+    return next === undefined ? <Navigate to="/home" search={{ tag: [] }} replace /> : <ReplaceWith path={next} />;
+  }
+  return <StartFlow buttonToken={buttonToken} next={next} />;
 }

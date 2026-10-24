@@ -3,6 +3,7 @@ import { setChatAccess } from '../chat-grant';
 import { TokenGeneratorService } from '../../auth/services/token-generator.service';
 import { PASSWORD } from '../../replacements/__tests__/replacements-e2e.fixture';
 import { bootChatFixture, IChatFixture } from './chat-e2e.fixture';
+import { sessionCookieHeader } from '../../auth/__tests__/session-test-helpers';
 
 const SOME_UUID = '3f1d2c3b-4a5b-4c6d-8e7f-001122334455';
 
@@ -31,21 +32,21 @@ describe('chat access (E2E)', () => {
     await fixture.close();
   });
 
-  function call(method: string, path: string, jwt: string): request.Test {
+  function call(method: string, path: string, sessionToken: string): request.Test {
     const server = request(fixture.app.getHttpServer());
     const test = method === 'get' ? server.get(path) : method === 'delete' ? server.delete(path) : server.post(path);
-    return test.set('Authorization', `Bearer ${jwt}`);
+    return test.set('Cookie', sessionCookieHeader(sessionToken));
   }
 
   it('auth me reports the flag and a grant takes effect at once', async () => {
     const user = await fixture.chatUser({ access: false });
     const [row] = (await fixture.dataSource.query(`SELECT "chatAccess" FROM "user" WHERE email = $1`, [user.email])) as Array<{ chatAccess: boolean }>;
     expect(row!.chatAccess).toBe(false);
-    expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(false);
+    expect((await fixture.get('/api/auth/me', user.sessionToken).expect(200)).body.chatAccess).toBe(false);
 
     await fixture.grant(user.email);
 
-    expect((await fixture.get('/api/auth/me', user.jwt).expect(200)).body.chatAccess).toBe(true);
+    expect((await fixture.get('/api/auth/me', user.sessionToken).expect(200)).body.chatAccess).toBe(true);
   });
 
   it('sign-in and verify-email return chatAccess over HTTP', async () => {
@@ -75,7 +76,7 @@ describe('chat access (E2E)', () => {
     const outsider = await fixture.chatUser({ access: false });
 
     const responses = await Promise.all(
-      routes(conversationId).map(([method, path]) => call(method, path, outsider.jwt).send({ text: 'hello' })),
+      routes(conversationId).map(([method, path]) => call(method, path, outsider.sessionToken).send({ text: 'hello' })),
     );
 
     expect(responses.map((response) => [response.status, response.body.code])).toEqual(
@@ -105,11 +106,11 @@ describe('chat access (E2E)', () => {
 
   it('a revoke takes effect on the next request', async () => {
     const user = await fixture.chatUser();
-    await fixture.get('/api/chat/conversations', user.jwt).expect(200);
+    await fixture.get('/api/chat/conversations', user.sessionToken).expect(200);
 
     await fixture.grant(user.email, false);
 
-    const refused = await fixture.get('/api/chat/conversations', user.jwt).expect(403);
+    const refused = await fixture.get('/api/chat/conversations', user.sessionToken).expect(403);
     expect(refused.body.code).toBe('CHAT_ACCESS_DENIED');
   });
 

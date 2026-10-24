@@ -82,6 +82,30 @@
 - `shared-deck-view.service.spec.ts` ("counts only exact copies from the visitor collection", "is zero for an empty collection") gained `collectionEmpty`.
 - Pre-existing and noticed: `DELETE /api/auth/me` still asks for a password, so a code-only account cannot delete itself (plan open question 7, left alone).
 
+### S32 (batch 3)
+
+- The session is a server-side row in `user_session` and an opaque 32-byte base64url token in the `ra_session` cookie; only the token's sha256 is stored.
+  `JwtAuthGuard` and `OptionalJwtAuthGuard` keep their names (the plan names them) but look the hash up in `SessionService`; `JwtStrategy`, passport and `@nestjs/jwt` are gone, and so are `passport`, `passport-jwt`, `@nestjs/passport`, `@nestjs/jwt` and `@types/passport-jwt` from `apps/api/package.json`.
+  `JWT_EXPIRES_IN` is still in the environment schema and now read by nothing; `JWT_SECRET` still keys the sign-in code HMAC.
+- `AuthService` sign-in methods return `{ body, sessionToken }` and the controller puts the token in the cookie, so no body can carry it (C374).
+- `PUT /api/users/me/password` is built here because C380 needs it (it answers `204`, revokes every other session of the account and keeps the caller's).
+  It validates only the 10-character minimum; S35 owns the rest of the password screens and the `hasPassword` field.
+- `POST /api/auth/verify-email` still opens a session, now as a cookie: the confirmation page signs the player in today and S33 reworks that route (security review item (a)); the service method `verifyEmail` is untouched.
+- Item (b) of the security review is closed: a code sign-in that drops a password still on an unconfirmed account revokes every session of that account first, then opens the new one (`sessions.e2e-spec.ts`, "a code sign-in that drops an unproven password ends the sessions opened with it").
+- Item (d) is closed by the origin check (C386, C387): `origin-check.middleware.ts` is mounted by `configureHttpApp` after `cookie-parser`.
+  It reads `APP_BASE_URL` from `process.env` per request (the shared setup has no `ConfigService` in the minimal test apps), and logs the rejected `Origin` with `Logger.warn`.
+- Ten API test bootstraps now call `configureHttpApp` (the two the checks list besides these, `auth.controller.e2e-spec.ts` and `admin-stores.controller.e2e-spec.ts`, too, plus `manual-source-concurrency`); their request paths gained the `/api` prefix the shared setup adds.
+  The new hygiene spec `bootstraps-share-http-setup.spec.ts` fails if one of them stops doing so.
+- Existing tests changed for reversed behaviour: every API e2e and int spec signs in with the cookie (`session-test-helpers.ts` reads it from `Set-Cookie`; the `jwt` fields of the fixtures became `sessionToken`); `jwt.strategy.spec.ts` is replaced by `jwt-auth.guard.spec.ts` (deleted user, unconfirmed account, revoked row, unknown token); "a stale session cookie does not beat a fresh Bearer token" in `accounts.e2e-spec.ts` now asserts the new contract (an unknown cookie plus an old Bearer JWT answers `401`); the "error response without a code" case in `auth.controller.e2e-spec.ts` now sends a missing password, because the shared pipe gives a malformed e-mail the `INVALID_EMAIL` code (batch 2).
+  Web: `AuthProvider.chat-access.spec.tsx` answers the bootstrap `/auth/me` first; the ThemeToggle, Settings and sharing specs drop the token argument; `SharedDeckPage.spec.tsx` and `SharedListPage.spec.tsx` no longer expect a Bearer token; `api-client.test.tsx` was renamed `api-client.spec.ts` so C376's proof command finds it.
+- Web: `AuthContext` lost `token` (the page cannot read the cookie); signed-in state is `user !== null`, restored by asking `GET /api/auth/me` on load, and every query that waited for a token waits for `user` instead.
+  `authFetch` and `useApiClient` tell the provider when the API answers `401` with no error `code` (the guard's refusal); a `401` with a code (wrong password, wrong sign-in code) is a form error and never opens the sheet.
+- C382 is built and both its proofs are green, but it stays unmarked: the sign-in sheet over a page is new visible UI that no mockup draws, built from existing parts only: a bottom sheet around the one-field start (`EmailStep` in a `compact` form, `PasswordStep`, `CodeStep`, `NewAccountStep`), titled with the existing "Entrar", prefilled with the account's address, with no new copy. See `## Needs the owner`.
+- A protected page opened signed out goes to `/entrar?next=<page>` (Surface row added to `plan.md`); signing out by hand leaves `next` off, so the next person on a shared device starts at the home.
+- `tests/mobile/account-start.spec.ts` "a typo sends no request" attaches its request listener after the page's own load-time `GET /api/auth/me` settled (C376); the assertion still covers every `/api/auth/*` request the typo step sends.
+- `scripts/screenshot-all-surfaces.ts` signs in with the browser context's request client (the cookie lands in the context) instead of seeding `localStorage`; it is a manual tool and no suite runs it.
+- `docs/phase-1-followups.md` A1 and A3 and `docs/research/phase-0-security-notes.md` carry a "resolved by door 17" note; `docs/dev-fixtures.md` shows a cookie jar instead of a Bearer header.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -98,7 +122,14 @@
   `verifyEmail` cannot tell that apart from a legitimate owner who chose their own password, so clearing the password there would wipe every honest sign-up.
   Proposed fix (S33): confirming from a browser that is not signed in as that account keeps the password only if the confirmation request proves the password (or ends every other session and asks the owner to set a new password); at the least S32's revocation must end every session of the account when the address is confirmed.
   The code sign-in path is fixed: a code that reached the inbox drops a password still on an unconfirmed account.
-  (b) The attacker's own session survives the owner taking over: the JWT (and the interim `ra_session` cookie) issued at sign-up stays valid until it expires. S32 must revoke every `user_session` of an account when a code sign-in drops an unproven password.
+  (b) The attacker's own session survives the owner taking over: the JWT (and the interim `ra_session` cookie) issued at sign-up stays valid until it expires. S32 must revoke every `user_session` of an account when a code sign-in drops an unproven password. RESOLVED in S32 (batch 3).
   (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33.
-  (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32.
+  (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32. RESOLVED in S32 (batch 3).
   (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range).
+- Resolved in S32: items (b) and (d) of the security review above. (b): a code sign-in that drops an unproven password revokes every other session of the account. (d): the origin check on writes is mounted for the cookie.
+- The session-ended sign-in sheet (C382, AC 239) is not drawn by any mockup in `.design/mockups/account/`; the document only says "a sign-in sheet over the page, after it the same page, the draft kept".
+  It was built from the existing start steps inside a bottom sheet and shows no copy of its own, so check how it looks and whether it needs a mockup round.
+  C382 stays unmarked until the owner picks a design (mark it ` · done` if the sheet is accepted as built); the code and both proofs (`SignInSheet.spec.tsx`, the Playwright test "a session that ends mid-edit keeps the page and the draft") are green.
+- Production's `APP_BASE_URL` must be the exact origin the app is served from: a write from any other origin (for example the Railway domain next to a custom one) now answers `403` `ORIGIN_REJECTED`.
+- Every JWT issued before this deploy stops working, so each signed-in player signs in once more (Impact row "existing JWTs"); the migration `1778533604000-AddUserSession` runs on boot outside development.
+

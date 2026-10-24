@@ -1,4 +1,4 @@
-import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import { INestApplication, UnauthorizedException } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -8,9 +8,10 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
+import { SessionService } from '../session.service';
 import { AuthError, EAuthErrorCode } from '../errors';
 import { AUTH_THROTTLE } from '../auth-throttle';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
+import { configureHttpApp } from '../../http/configure-http-app';
 import { ICurrentUser } from '../dtos/current-user.dto';
 import { EUserRole } from '../../database/entities/user.entity';
 
@@ -30,19 +31,25 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   beforeEach(async () => {
     authService = createMock<AuthService>();
     authService.signIn.mockResolvedValue({
-      jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
-      settings: { theme: 'dark' },
+      sessionToken: 'session-token',
+      body: {
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+        settings: { theme: 'dark' },
+      },
     });
     authService.verifyEmail.mockResolvedValue({
-      jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
-      settings: { theme: 'dark' },
+      sessionToken: 'session-token',
+      body: {
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+        settings: { theme: 'dark' },
+      },
     });
     authService.signUp.mockResolvedValue({
-      jwt: 'jwt-token',
-      user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
-      settings: { theme: 'dark' },
+      sessionToken: 'session-token',
+      body: {
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false },
+        settings: { theme: 'dark' },
+      },
     });
     authService.start.mockResolvedValue({ next: 'new' });
     authService.requestCode.mockResolvedValue({ expiresAt: new Date(), resendAfter: new Date() });
@@ -58,16 +65,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: authService },
+        { provide: SessionService, useValue: createMock<SessionService>() },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
-    );
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     // Mirror main.ts: trust the first forwarded hop so req.ip reflects the
     // real client IP from X-Forwarded-For (what the throttler uses for per-IP
     // attribution).
@@ -110,13 +115,13 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const body = { email: 'a@b.com', password: 'longenoughpassword' };
       for (let i = 0; i < 5; i++) {
         const res = await request(server)
-          .post('/auth/sign-in')
+          .post('/api/auth/sign-in')
           .set('X-Forwarded-For', '203.0.113.10')
           .send(body);
         expect(res.status).toBe(200);
       }
       const sixth = await request(server)
-        .post('/auth/sign-in')
+        .post('/api/auth/sign-in')
         .set('X-Forwarded-For', '203.0.113.10')
         .send(body);
       expect(sixth.status).toBe(429);
@@ -128,19 +133,19 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       // Exhaust client A's quota.
       for (let i = 0; i < 5; i++) {
         await request(server)
-          .post('/auth/sign-in')
+          .post('/api/auth/sign-in')
           .set('X-Forwarded-For', '203.0.113.1')
           .send(body);
       }
       const aSixth = await request(server)
-        .post('/auth/sign-in')
+        .post('/api/auth/sign-in')
         .set('X-Forwarded-For', '203.0.113.1')
         .send(body);
       expect(aSixth.status).toBe(429);
 
       // Client B (different forwarded IP) should still get through.
       const bFirst = await request(server)
-        .post('/auth/sign-in')
+        .post('/api/auth/sign-in')
         .set('X-Forwarded-For', '203.0.113.2')
         .send(body);
       expect(bFirst.status).toBe(200);
@@ -153,7 +158,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const token = 'a'.repeat(64);
       const statuses: number[] = [];
       for (let i = 0; i < 11; i++) {
-        statuses.push((await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.20').send({ token })).status);
+        statuses.push((await request(server).post('/api/auth/verify-email').set('X-Forwarded-For', '203.0.113.20').send({ token })).status);
       }
 
       expect(statuses).toEqual([...Array(10).fill(200), 429]);
@@ -167,7 +172,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const statuses: number[] = [];
       let last: request.Response | undefined;
       for (let i = 0; i < limit + 1; i++) {
-        last = await request(server).post('/auth/start').set('X-Forwarded-For', '203.0.113.90').send({ email: 'a@b.com' });
+        last = await request(server).post('/api/auth/start').set('X-Forwarded-For', '203.0.113.90').send({ email: 'a@b.com' });
         statuses.push(last.status);
       }
 
@@ -183,14 +188,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const { limit } = AUTH_THROTTLE.signUp;
       for (let i = 0; i < limit; i++) {
         const res = await request(server)
-          .post('/auth/sign-up')
+          .post('/api/auth/sign-up')
           .set('X-Forwarded-For', '203.0.113.22')
           .send(body);
         expect(res.status).toBe(201);
         expect(res.headers['set-cookie']?.[0]).toContain('ra_session=');
       }
       const extra = await request(server)
-        .post('/auth/sign-up')
+        .post('/api/auth/sign-up')
         .set('X-Forwarded-For', '203.0.113.22')
         .send(body);
       expect(extra.status).toBe(429);
@@ -203,14 +208,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const body = { email: 'pending@b.com' };
       for (let i = 0; i < 3; i++) {
         const res = await request(server)
-          .post('/auth/resend-verification')
+          .post('/api/auth/resend-verification')
           .set('X-Forwarded-For', '203.0.113.30')
           .send(body);
         expect(res.status).toBe(202);
         expect(res.body.message).toContain('verification link');
       }
       const fourth = await request(server)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
         .set('X-Forwarded-For', '203.0.113.30')
         .send(body);
       expect(fourth.status).toBe(429);
@@ -218,7 +223,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
 
     it('validates the email field', async () => {
       const res = await request(app.getHttpServer())
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
         .set('X-Forwarded-For', '203.0.113.31')
         .send({ email: 'not-an-email' });
       expect(res.status).toBe(400);
@@ -241,9 +246,9 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const body = { email: 'a@b.com', password: 'longenoughpassword' };
 
       const statuses = [
-        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
-        (await request(server).post('/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
-        (await request(server).post('/auth/verify-email').set('X-Forwarded-For', '203.0.113.71').send({ token })).status,
+        (await request(server).post('/api/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/api/auth/sign-in').set('X-Forwarded-For', '203.0.113.70').send(body)).status,
+        (await request(server).post('/api/auth/verify-email').set('X-Forwarded-For', '203.0.113.71').send({ token })).status,
       ];
 
       expect(statuses).toEqual([401, 403, 400]);
@@ -256,7 +261,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid email or password'),
       );
       const res = await request(app.getHttpServer())
-        .post('/auth/sign-in')
+        .post('/api/auth/sign-in')
         .set('X-Forwarded-For', '203.0.113.60')
         .send({ email: 'a@b.com', password: 'wrongpass1' });
 
@@ -267,11 +272,11 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
     });
 
     it('error response without a code does not include code field in the envelope', async () => {
-      // ValidationPipe throws a BadRequestException without a code field
+      // The shared pipe answers a malformed e-mail with INVALID_EMAIL; any other failure carries no code.
       const res = await request(app.getHttpServer())
-        .post('/auth/sign-in')
+        .post('/api/auth/sign-in')
         .set('X-Forwarded-For', '203.0.113.61')
-        .send({ email: 'not-an-email', password: 'longenoughpassword' });
+        .send({ email: 'a@b.com' });
 
       expect(res.status).toBe(400);
       expect(res.body.code).toBeUndefined();
@@ -281,7 +286,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   describe('locale threading — Accept-Language → service call (T17)', () => {
     it('passes en-US to authService.signUp when Accept-Language: en-US is sent', async () => {
       await request(app.getHttpServer())
-        .post('/auth/sign-up')
+        .post('/api/auth/sign-up')
         .set('Accept-Language', 'en-US')
         .set('X-Forwarded-For', '203.0.113.50')
         .send({ email: 'locale@b.com', password: 'longenoughpassword' });
@@ -290,7 +295,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
 
     it('passes pt-BR to authService.signUp when Accept-Language header is absent', async () => {
       await request(app.getHttpServer())
-        .post('/auth/sign-up')
+        .post('/api/auth/sign-up')
         .set('X-Forwarded-For', '203.0.113.51')
         .send({ email: 'nolocale@b.com', password: 'longenoughpassword' });
       expect(authService.signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'nolocale@b.com' }), 'pt-BR');
@@ -298,7 +303,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
 
     it('passes en-US to authService.resendVerification when Accept-Language: en-US', async () => {
       await request(app.getHttpServer())
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
         .set('Accept-Language', 'en-US')
         .set('X-Forwarded-For', '203.0.113.52')
         .send({ email: 'locale@b.com' });
@@ -307,7 +312,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
 
     it('passes pt-BR to authService.requestCode when Accept-Language header is absent', async () => {
       await request(app.getHttpServer())
-        .post('/auth/codes')
+        .post('/api/auth/codes')
         .set('X-Forwarded-For', '203.0.113.53')
         .send({ email: 'nolocale@b.com' });
       expect(authService.requestCode).toHaveBeenCalledWith('nolocale@b.com', 'pt-BR');
@@ -317,7 +322,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
   describe('delete-account (A8 / Unit 2, 5/hour per IP)', () => {
     it('returns 200 and calls deleteAccount(userId, password) on happy path', async () => {
       const res = await request(app.getHttpServer())
-        .delete('/auth/me')
+        .delete('/api/auth/me')
         .set('x-test-user-id', 'user-1')
         .set('X-Forwarded-For', '203.0.113.40')
         .send({ password: 'longenoughpassword' });
@@ -332,7 +337,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid password'),
       );
       const res = await request(app.getHttpServer())
-        .delete('/auth/me')
+        .delete('/api/auth/me')
         .set('x-test-user-id', 'user-1')
         .set('X-Forwarded-For', '203.0.113.41')
         .send({ password: 'wrongpassword!' });
@@ -342,7 +347,7 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
 
     it('returns 400 when the DTO is missing the password field', async () => {
       const res = await request(app.getHttpServer())
-        .delete('/auth/me')
+        .delete('/api/auth/me')
         .set('x-test-user-id', 'user-1')
         .set('X-Forwarded-For', '203.0.113.42')
         .send({});
@@ -355,14 +360,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       const body = { password: 'longenoughpassword' };
       for (let i = 0; i < 5; i++) {
         const res = await request(server)
-          .delete('/auth/me')
+          .delete('/api/auth/me')
           .set('x-test-user-id', 'user-1')
           .set('X-Forwarded-For', '203.0.113.43')
           .send(body);
         expect(res.status).toBe(200);
       }
       const sixth = await request(server)
-        .delete('/auth/me')
+        .delete('/api/auth/me')
         .set('x-test-user-id', 'user-1')
         .set('X-Forwarded-For', '203.0.113.43')
         .send(body);

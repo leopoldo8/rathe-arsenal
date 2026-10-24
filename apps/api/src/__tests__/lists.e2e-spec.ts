@@ -14,6 +14,7 @@ import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
 import { printingsOfCard } from '../lists/printing-key';
+import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'lists-test-password-123';
 const SUFFIX = Date.now().toString(36);
@@ -28,7 +29,7 @@ const [PRINTING_A1] = PRINTINGS_A;
 
 interface ISession {
   readonly userId: string;
-  readonly jwt: string;
+  readonly sessionToken: string;
 }
 
 describe('Card lists (E2E)', () => {
@@ -36,7 +37,7 @@ describe('Card lists (E2E)', () => {
   let dataSource: DataSource;
   let server: ReturnType<INestApplication['getHttpServer']>;
 
-  const auth = (session: ISession): [string, string] => ['Authorization', `Bearer ${session.jwt}`];
+  const auth = (session: ISession): [string, string] => ['Cookie', sessionCookieHeader(session.sessionToken)];
 
   async function createSession(label: string): Promise<ISession> {
     const signUp = await request(server)
@@ -45,7 +46,7 @@ describe('Card lists (E2E)', () => {
       .expect(201);
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     const verified = await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
-    return { userId: verified.body.user.id as string, jwt: verified.body.jwt as string };
+    return { userId: verified.body.user.id as string, sessionToken: sessionTokenOf(verified) };
   }
 
   async function createList(session: ISession, kind: 'want' | 'sell', name = 'My list'): Promise<number> {

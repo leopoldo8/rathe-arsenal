@@ -7,7 +7,6 @@ import { AuthContext, type IAuthContext } from '../../../auth/AuthContext';
 export function makeAuth(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
     user: null,
-    token: null,
     isLoading: false,
     setSettings: vi.fn(),
     signUp: vi.fn().mockResolvedValue(undefined),

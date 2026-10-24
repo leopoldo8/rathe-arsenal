@@ -39,6 +39,7 @@ import {
   CardPriceEntity,
   CardPriceGroupSyncEntity,
   SignInCodeEntity,
+  UserSessionEntity,
 } from './entities';
 
 /**
@@ -95,6 +96,7 @@ import {
             CardPriceEntity,
             CardPriceGroupSyncEntity,
             SignInCodeEntity,
+            UserSessionEntity,
           ],
           // Pending migrations run on app boot in non-dev environments. Dev
           // still relies on `synchronize: true` for fast iteration.

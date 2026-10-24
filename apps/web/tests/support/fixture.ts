@@ -11,7 +11,8 @@ export const ANON_STORAGE_STATE = { cookies: [], origins: [] };
 const HANDLES_PATH = `${AUTH_DIR}/fixture.json`;
 
 export interface IFixtureFile {
-  readonly jwt: string;
+  /** The fixture user's `ra_session` cookie value. */
+  readonly sessionToken: string;
   readonly swapDeckId: number;
   readonly readyDeckId: number;
 }
@@ -29,5 +30,5 @@ export function loadFixture(): IFixtureFile {
 }
 
 export async function resetFixture(): Promise<void> {
-  await resetFixtureState(fixtureCredentials(), loadFixture().jwt);
+  await resetFixtureState(fixtureCredentials(), loadFixture().sessionToken);
 }

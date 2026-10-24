@@ -21,30 +21,30 @@ describe('recommendations read (e2e)', () => {
     await fixture.close();
   });
 
-  async function freshDeck(): Promise<{ jwt: string; deckId: number }> {
+  async function freshDeck(): Promise<{ sessionToken: string; deckId: number }> {
     const scenario = await fixture.scenario();
     await fixture.clearRuns(scenario.deckId);
     return scenario;
   }
 
-  async function read(deckId: number, jwt: string) {
-    return (await fixture.get(`/api/decks/${deckId}/recommendations`, jwt).expect(200)).body;
+  async function read(deckId: number, sessionToken: string) {
+    return (await fixture.get(`/api/decks/${deckId}/recommendations`, sessionToken).expect(200)).body;
   }
 
   it('reports run, pending and failure for each history', async () => {
     const none = await freshDeck();
-    expect(await read(none.deckId, none.jwt)).toEqual({ run: null, pending: false, failure: null, generation: null, recommendations: [] });
+    expect(await read(none.deckId, none.sessionToken)).toEqual({ run: null, pending: false, failure: null, generation: null, recommendations: [] });
 
     const pendingOnly = await freshDeck();
     await fixture.seedRun(pendingOnly.deckId, 'pending');
-    expect(await read(pendingOnly.deckId, pendingOnly.jwt)).toEqual(
+    expect(await read(pendingOnly.deckId, pendingOnly.sessionToken)).toEqual(
       expect.objectContaining({ run: null, pending: true, failure: null }),
     );
 
     const donePending = await freshDeck();
     const done = await fixture.seedDoneRun(donePending.deckId, [{ card: A }]);
     await fixture.seedRun(donePending.deckId, 'running', { claimedMinutesAgo: 0 });
-    const donePendingBody = await read(donePending.deckId, donePending.jwt);
+    const donePendingBody = await read(donePending.deckId, donePending.sessionToken);
     expect(donePendingBody.run).toEqual({ id: done.runId, status: 'done', trigger: 'manual', finishedAt: expect.any(String), stale: false });
     expect(donePendingBody.pending).toBe(true);
     expect(donePendingBody.recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
@@ -52,7 +52,7 @@ describe('recommendations read (e2e)', () => {
     const doneFailed = await freshDeck();
     const earlier = await fixture.seedDoneRun(doneFailed.deckId, [{ card: A }], { finishedAt: '2026-10-01T10:00:00Z' });
     await fixture.seedRun(doneFailed.deckId, 'failed', { error: 'MODEL_REFUSED', finishedAt: '2026-10-02T10:00:00Z' });
-    const doneFailedBody = await read(doneFailed.deckId, doneFailed.jwt);
+    const doneFailedBody = await read(doneFailed.deckId, doneFailed.sessionToken);
     expect(doneFailedBody.run.id).toBe(earlier.runId);
     expect(doneFailedBody.failure).toEqual({ code: 'MODEL_REFUSED', finishedAt: '2026-10-02T10:00:00.000Z' });
     expect(doneFailedBody.pending).toBe(false);
@@ -60,16 +60,16 @@ describe('recommendations read (e2e)', () => {
     const failedDone = await freshDeck();
     await fixture.seedRun(failedDone.deckId, 'failed', { error: 'RATE_LIMITED', finishedAt: '2026-10-01T10:00:00Z' });
     await fixture.seedDoneRun(failedDone.deckId, [{ card: A }], { finishedAt: '2026-10-02T10:00:00Z' });
-    expect((await read(failedDone.deckId, failedDone.jwt)).failure).toBeNull();
+    expect((await read(failedDone.deckId, failedDone.sessionToken)).failure).toBeNull();
   });
 
   it('stale follows the deck fingerprint', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [{ card: A }]);
-    expect((await read(deckId, jwt)).run.stale).toBe(false);
+    expect((await read(deckId, sessionToken)).run.stale).toBe(false);
 
     await fixture
-      .put(`/api/decks/${deckId}`, jwt)
+      .put(`/api/decks/${deckId}`, sessionToken)
       .send({
         heroIdentifier: KATSU,
         format: 'Classic Constructed',
@@ -82,11 +82,11 @@ describe('recommendations read (e2e)', () => {
       })
       .expect(200);
 
-    expect((await read(deckId, jwt)).run.stale).toBe(true);
+    expect((await read(deckId, sessionToken)).run.stale).toBe(true);
   });
 
   it('lists clear upgrades first and hides dismissed and deck cards', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [
       { card: A, strength: 'consider' },
       { card: B, strength: 'clear_upgrade' },
@@ -94,20 +94,20 @@ describe('recommendations read (e2e)', () => {
       { card: D, strength: 'clear_upgrade' },
       { card: E, strength: 'consider' },
     ]);
-    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, jwt).send({ cardIdentifier: C }).expect(201);
+    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, sessionToken).send({ cardIdentifier: C }).expect(201);
     await fixture.dataSource.query(
       `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, slot) VALUES ($1, $2, 1, 'mainboard')`,
       [deckId, E],
     );
 
-    const body = await read(deckId, jwt);
+    const body = await read(deckId, sessionToken);
 
     expect(body.recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([B, D, A]);
     expect(body.recommendations.map((row: { strength: string }) => row.strength)).toEqual(['clear_upgrade', 'clear_upgrade', 'consider']);
   });
 
   it('joins ownership and store price live', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     // A database built by synchronize (CI) has no store row; the seed migration's row is what production has.
     await fixture.dataSource.query(
       `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
@@ -121,10 +121,10 @@ describe('recommendations read (e2e)', () => {
       [PRICED],
     );
     await fixture.dataSource.query(`DELETE FROM store_stock WHERE "cardIdentifier" = ANY($1)`, [[UNSTOCKED, A]]);
-    await fixture.own(jwt, [{ cardIdentifier: A, quantity: 2 }]);
+    await fixture.own(sessionToken, [{ cardIdentifier: A, quantity: 2 }]);
     await fixture.seedDoneRun(deckId, [{ card: A }, { card: PRICED }, { card: UNSTOCKED }]);
 
-    const rows: Array<Record<string, unknown>> = (await read(deckId, jwt)).recommendations;
+    const rows: Array<Record<string, unknown>> = (await read(deckId, sessionToken)).recommendations;
     const byCard = Object.fromEntries(rows.map((row) => [row.cardIdentifier, row]));
 
     expect(byCard[A]).toEqual(expect.objectContaining({ freeCopies: 2, name: 'Ancestral Harmony', slot: 'mainboard' }));
@@ -141,28 +141,28 @@ describe('recommendations read (e2e)', () => {
   });
 
   it('drops a cut that left the deck', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [{ card: A, cut: FLEX, cutSlot: 'mainboard' }]);
-    expect((await read(deckId, jwt)).recommendations[0]).toEqual(
+    expect((await read(deckId, sessionToken)).recommendations[0]).toEqual(
       expect.objectContaining({ cutCardIdentifier: FLEX, cutName: 'Flex', cutSlot: 'mainboard', cutPitch: 1, cutCost: 0, pitch: 3, cost: 0 }),
     );
 
     await fixture.dataSource.query(`DELETE FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [deckId, FLEX]);
 
-    expect((await read(deckId, jwt)).recommendations[0]).toEqual(
+    expect((await read(deckId, sessionToken)).recommendations[0]).toEqual(
       expect.objectContaining({ cutCardIdentifier: null, cutName: null, cutSlot: null, cutPitch: null, cutCost: null }),
     );
   });
 
   it('sends the reason in the language the request asks for', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [{ card: A }]);
     await fixture.dataSource.query(
       `INSERT INTO recommendation ("runId", "cardIdentifier", rank, strength, reason) SELECT "runId", $1, 2, 'consider', 'English only' FROM recommendation WHERE "cardIdentifier" = $2 AND "runId" IN (SELECT id FROM recommendation_run WHERE "trackedDeckId" = $3)`,
       [B, A, deckId],
     );
     const reasons = async (language: string) =>
-      (await fixture.get(`/api/decks/${deckId}/recommendations`, jwt).set('Accept-Language', language).expect(200)).body.recommendations.map(
+      (await fixture.get(`/api/decks/${deckId}/recommendations`, sessionToken).set('Accept-Language', language).expect(200)).body.recommendations.map(
         (row: { reason: string }) => row.reason,
       );
 
@@ -171,10 +171,10 @@ describe('recommendations read (e2e)', () => {
   });
 
   it('hides a card the deck replaced through an alternative', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     await fixture.seedDoneRun(deckId, [{ card: EMISSARY }, { card: A }]);
     await fixture.dataSource.query(`DELETE FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [deckId, EMISSARY]);
-    expect((await read(deckId, jwt)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([EMISSARY, A]);
+    expect((await read(deckId, sessionToken)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([EMISSARY, A]);
     const [{ userId }] = await fixture.dataSource.query(`SELECT "userId" FROM tracked_deck WHERE id = $1`, [deckId]);
     await fixture.dataSource.query(
       `INSERT INTO card_replacement ("userId", "trackedDeckId", slot, "originalCardIdentifier", "replacementCardIdentifier", quantity, "pickedFrom", status)
@@ -182,11 +182,11 @@ describe('recommendations read (e2e)', () => {
       [userId, deckId, EMISSARY],
     );
 
-    expect((await read(deckId, jwt)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
+    expect((await read(deckId, sessionToken)).recommendations.map((row: { cardIdentifier: string }) => row.cardIdentifier)).toEqual([A]);
   });
 
   it('reports a run in progress as generation', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const runId = await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
     await fixture.dataSource.query(`UPDATE recommendation_run SET "startedAt" = clock_timestamp() - interval '30 seconds' WHERE id = $1`, [runId]);
     const cards = await fixture.dataSource.query(`SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1`, [deckId]);
@@ -197,7 +197,7 @@ describe('recommendations read (e2e)', () => {
       catalog,
     );
 
-    const running = (await read(deckId, jwt)).generation;
+    const running = (await read(deckId, sessionToken)).generation;
 
     expect(running.status).toBe('running');
     expect(running.elapsedMs).toBeGreaterThanOrEqual(30_000);
@@ -213,7 +213,7 @@ describe('recommendations read (e2e)', () => {
 
     await fixture.clearRuns(deckId);
     await fixture.seedRun(deckId, 'pending');
-    expect((await read(deckId, jwt)).generation.status).toBe('queued');
+    expect((await read(deckId, sessionToken)).generation.status).toBe('queued');
 
     await fixture.clearRuns(deckId);
     await fixture.seedRun(deckId, 'pending', { trigger: 'auto' });
@@ -221,14 +221,14 @@ describe('recommendations read (e2e)', () => {
       `UPDATE recommendation_run SET "runAfter" = clock_timestamp() + interval '5 minutes' WHERE "trackedDeckId" = $1`,
       [deckId],
     );
-    expect(await read(deckId, jwt)).toEqual(expect.objectContaining({ generation: null, pending: true }));
+    expect(await read(deckId, sessionToken)).toEqual(expect.objectContaining({ generation: null, pending: true }));
 
     await fixture.clearRuns(deckId);
-    expect(await read(deckId, jwt)).toEqual(expect.objectContaining({ generation: null, pending: false }));
+    expect(await read(deckId, sessionToken)).toEqual(expect.objectContaining({ generation: null, pending: false }));
   });
 
   it('typical duration comes from recent done runs', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const others = [await freshDeck(), await freshDeck(), await freshDeck()];
     await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE status = 'done' AND "startedAt" IS NOT NULL`);
     const seedFinished = async (otherDeckId: number, status: 'done' | 'failed', seconds: number, finishedAt: string): Promise<void> => {
@@ -242,11 +242,11 @@ describe('recommendations read (e2e)', () => {
 
     await seedFinished(others[0]!.deckId, 'done', 60, '2099-01-01T10:00:00Z');
     await seedFinished(others[1]!.deckId, 'done', 90, '2099-01-01T10:01:00Z');
-    expect((await read(deckId, jwt)).generation.typicalMs).toBeNull();
+    expect((await read(deckId, sessionToken)).generation.typicalMs).toBeNull();
 
     await seedFinished(others[2]!.deckId, 'done', 300, '2099-01-01T10:02:00Z');
     await seedFinished(others[2]!.deckId, 'failed', 10, '2099-01-01T10:03:00Z');
-    expect((await read(deckId, jwt)).generation.typicalMs).toBe(90_000);
+    expect((await read(deckId, sessionToken)).generation.typicalMs).toBe(90_000);
 
     await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE status = 'done' AND "startedAt" IS NOT NULL`);
     for (let minute = 0; minute < 21; minute += 1) {
@@ -255,7 +255,7 @@ describe('recommendations read (e2e)', () => {
     for (let minute = 0; minute < 20; minute += 1) {
       await seedFinished(others[minute % 3]!.deckId, 'done', 100, `2099-02-01T01:${String(minute).padStart(2, '0')}:00Z`);
     }
-    expect((await read(deckId, jwt)).generation.typicalMs).toBe(100_000);
+    expect((await read(deckId, sessionToken)).generation.typicalMs).toBe(100_000);
   });
 
   it('refuses foreign, malformed and anonymous reads', async () => {
@@ -264,15 +264,15 @@ describe('recommendations read (e2e)', () => {
 
     await fixture.seedRun(deckId, 'running', { claimedMinutesAgo: 0 });
 
-    const foreign = await fixture.get(`/api/decks/${deckId}/recommendations`, stranger.jwt).expect(404);
-    const unknown = await fixture.get(`/api/decks/999999999/recommendations`, stranger.jwt).expect(404);
-    await fixture.get(`/api/decks/abc/recommendations`, stranger.jwt).expect(400);
+    const foreign = await fixture.get(`/api/decks/${deckId}/recommendations`, stranger.sessionToken).expect(404);
+    const unknown = await fixture.get(`/api/decks/999999999/recommendations`, stranger.sessionToken).expect(404);
+    await fixture.get(`/api/decks/abc/recommendations`, stranger.sessionToken).expect(400);
     const anonymous = await fixture.get(`/api/decks/${deckId}/recommendations`, '').expect(401);
     for (const body of [foreign.body, unknown.body, anonymous.body]) expect(body).not.toHaveProperty('generation');
   });
 
   it('clearUpgradeCount counts what the panel would show', async () => {
-    const { jwt, deckId } = await freshDeck();
+    const { sessionToken, deckId } = await freshDeck();
     const { ids } = await fixture.seedDoneRun(deckId, [
       { card: D, strength: 'clear_upgrade', cut: FLEX, cutSlot: 'mainboard' },
       { card: B, strength: 'clear_upgrade' },
@@ -280,7 +280,7 @@ describe('recommendations read (e2e)', () => {
     ]);
     const retired = await freshDeck();
     await fixture.seedDoneRun(retired.deckId, [{ card: D, strength: 'clear_upgrade' }]);
-    await fixture.patch(`/api/decks/${retired.deckId}`, retired.jwt).send({ status: 'retired' }).expect(200);
+    await fixture.patch(`/api/decks/${retired.deckId}`, retired.sessionToken).send({ status: 'retired' }).expect(200);
     const empty = await freshDeck();
 
     const countFor = async (id: number, token: string): Promise<number> => {
@@ -288,16 +288,16 @@ describe('recommendations read (e2e)', () => {
       return response.body.trackedDecks.find((deck: { id: number }) => deck.id === id).clearUpgradeCount;
     };
 
-    expect(await countFor(deckId, jwt)).toBe(2);
-    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, jwt).send({ cardIdentifier: B }).expect(201);
-    expect(await countFor(deckId, jwt)).toBe(1);
+    expect(await countFor(deckId, sessionToken)).toBe(2);
+    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, sessionToken).send({ cardIdentifier: B }).expect(201);
+    expect(await countFor(deckId, sessionToken)).toBe(1);
     await fixture
-      .post(`/api/decks/${deckId}/recommendations/${ids[0]}/adopt`, jwt)
+      .post(`/api/decks/${deckId}/recommendations/${ids[0]}/adopt`, sessionToken)
       .send({ cutCardIdentifier: FLEX, cutSlot: 'mainboard' })
       .expect(201);
-    expect(await countFor(deckId, jwt)).toBe(0);
-    expect(await countFor(retired.deckId, retired.jwt)).toBe(0);
-    expect(await countFor(empty.deckId, empty.jwt)).toBe(0);
+    expect(await countFor(deckId, sessionToken)).toBe(0);
+    expect(await countFor(retired.deckId, retired.sessionToken)).toBe(0);
+    expect(await countFor(empty.deckId, empty.sessionToken)).toBe(0);
     await fixture.get('/api/decks', '').expect(401);
   });
 });

@@ -119,7 +119,6 @@ const noopAsync = async () => {
 function makeAuthContext(overrides: Partial<IAuthContext> = {}): IAuthContext {
   return {
     user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false },
-    token: 'jwt',
     isLoading: false,
     setSettings: vi.fn(),
     signUp: async () => undefined,
@@ -253,7 +252,7 @@ describe('SettingsPage — Profile section', () => {
     renderSettings(makeAuthContext({ setDisplayName }));
     await userEvent.type(screen.getByRole('textbox', { name: /seu nome para outros jogadores/i }), '  Dudu  ');
     await userEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
-    expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu', 'jwt');
+    expect(patchDisplayNameMock).toHaveBeenCalledWith('Dudu');
     expect(setDisplayName).toHaveBeenCalledWith('Dudu');
     expect(await screen.findByText(/nome salvo/i)).toBeInTheDocument();
   });
@@ -291,7 +290,7 @@ describe('SettingsPage — Contact panel (WhatsApp)', () => {
     renderSettings(makeAuthContext({ setWhatsappNumber }));
     await userEvent.type(screen.getByLabelText('WhatsApp (opcional)'), '53 99999-0000');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar número' }));
-    expect(patchContactMock).toHaveBeenCalledWith('53 99999-0000', 'jwt');
+    expect(patchContactMock).toHaveBeenCalledWith('53 99999-0000');
     expect(setWhatsappNumber).toHaveBeenCalledWith('5553999990000');
     expect(await screen.findByText('Número salvo.')).toBeInTheDocument();
   });
@@ -309,7 +308,7 @@ describe('SettingsPage — Contact panel (WhatsApp)', () => {
     const setWhatsappNumber = vi.fn();
     renderSettings({ ...saved, setWhatsappNumber });
     await userEvent.click(screen.getByRole('button', { name: 'Remover número' }));
-    expect(patchContactMock).toHaveBeenCalledWith(null, 'jwt');
+    expect(patchContactMock).toHaveBeenCalledWith(null);
     expect(setWhatsappNumber).toHaveBeenCalledWith(null);
     expect(await screen.findByText('Número removido.')).toBeInTheDocument();
   });

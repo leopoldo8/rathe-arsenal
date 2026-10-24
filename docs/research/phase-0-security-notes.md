@@ -32,6 +32,7 @@ Handled by `AuthService` + `JwtAuthGuard` + `JwtStrategy` (DIY, not a managed Id
   7-day lifetime. No refresh tokens. See A2 in phase-1-followups.md.
 - **Frontend session:** JWT stored in `localStorage` under the namespaced key
   `rathe-arsenal:jwt`. See A3 in phase-1-followups.md for the XSS trade-off.
+  (Superseded by door 17: the session is the httpOnly `ra_session` cookie.)
 - **Global guard:** `JwtAuthGuard` is registered as `APP_GUARD` in `app.module.ts`.
   Only routes decorated with `@Public()` bypass it (currently `/api/health` and
   all `/api/auth/*` endpoints).
@@ -78,6 +79,8 @@ redirects throw `FetchGuardError(REDIRECT_DENIED)`. Bodies are read as a stream
 and aborted past `maxBytes`. `AbortController` enforces `timeoutMs`.
 
 ## S7 — CSRF posture (intentional: no `csurf` middleware)
+
+> Superseded by door 17 (persona-rethink S32): the session is now the httpOnly `ra_session` cookie, and CSRF is covered by `SameSite=Lax` plus the origin check on writes (`apps/api/src/http/origin-check.middleware.ts`). The text below describes the Phase 0 bearer-token design.
 
 The app uses **bearer tokens in `Authorization` headers**, not cookies, for
 authentication. JWTs are stored in `localStorage` and manually attached by the

@@ -30,11 +30,13 @@ test('the pitch is visible on a phone', async ({ page }) => {
 });
 
 test('a typo sends no request', async ({ page }) => {
+  await page.goto('/entrar');
+  // The page asks `/api/auth/me` who is signed in as it loads; the typo is judged after that settles.
+  await page.waitForLoadState('networkidle');
   const authRequests: string[] = [];
   page.on('request', (request) => {
     if (new URL(request.url()).pathname.startsWith('/api/auth/')) authRequests.push(request.url());
   });
-  await page.goto('/entrar');
 
   await page.getByLabel('Seu e-mail').fill('bia@gmail');
   await page.getByRole('button', { name: 'Continuar' }).click();

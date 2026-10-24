@@ -2,8 +2,10 @@
  * Journey 1 end to end, signed out: the pitch on a computer, an account made from a shared deck
  * that comes back to it, and the code sign-in where a newer code replaces the older one.
  */
-import { test, expect } from '@playwright/test';
-import { ANON_STORAGE_STATE, BASE_URL, loadFixture } from '../support/fixture';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { test, expect, request, type Page } from '@playwright/test';
+import { ANON_STORAGE_STATE, BASE_URL, STORAGE_STATE_PATH, fixtureCredentials, loadFixture } from '../support/fixture';
 import { stubCodeSignIn, STUB_EMAIL } from '../support/account-stubs';
 
 test.use({ storageState: ANON_STORAGE_STATE });
@@ -12,8 +14,8 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
 });
 
-async function enableDeckShare(deckId: number, jwt: string): Promise<{ token: string; deckName: string }> {
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` };
+async function enableDeckShare(deckId: number, sessionToken: string): Promise<{ token: string; deckName: string }> {
+  const headers = { 'Content-Type': 'application/json', Cookie: `ra_session=${sessionToken}` };
   await fetch(`${BASE_URL}/api/users/me/display-name`, {
     method: 'PATCH',
     headers,
@@ -50,8 +52,8 @@ test('the pitch is visible on a computer', async ({ page }) => {
 });
 
 test('an account made from a shared deck comes back to it', async ({ page }) => {
-  const { jwt, readyDeckId } = loadFixture();
-  const { token, deckName } = await enableDeckShare(readyDeckId, jwt);
+  const { sessionToken, readyDeckId } = loadFixture();
+  const { token, deckName } = await enableDeckShare(readyDeckId, sessionToken);
   const email = `renata.${Date.now().toString(36)}@cupuladt.com.br`;
 
   await page.goto(`/d/${token}`);
@@ -75,8 +77,8 @@ test('an account made from a shared deck comes back to it', async ({ page }) => 
 });
 
 test('the second code works and the first does not', async ({ page }) => {
-  const { jwt } = loadFixture();
-  const { issued } = await stubCodeSignIn(page, { jwt, email: STUB_EMAIL });
+  const { sessionToken } = loadFixture();
+  const { issued } = await stubCodeSignIn(page, { sessionToken, email: STUB_EMAIL });
   await page.goto('/entrar');
 
   await page.getByLabel('Seu e-mail').fill(STUB_EMAIL);
@@ -94,4 +96,96 @@ test('the second code works and the first does not', async ({ page }) => {
   await page.keyboard.type(second);
 
   await expect(page).toHaveURL(/\/home/);
+});
+
+// ---------------------------------------------------------------------------
+// S32: the session is the httpOnly `ra_session` cookie (door 17).
+// ---------------------------------------------------------------------------
+
+async function signInThroughTheStartPage(page: Page): Promise<void> {
+  const { email, password } = fixtureCredentials();
+  await page.getByLabel('Seu e-mail').fill(email);
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByLabel('Senha').fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+}
+
+test('the session is invisible to page scripts', async ({ page }) => {
+  await page.goto('/entrar');
+  await signInThroughTheStartPage(page);
+
+  await expect(page).toHaveURL(/\/home/);
+  await expect(page.getByText('Rhinar Swap Test').first()).toBeVisible();
+  expect(await page.evaluate(() => document.cookie)).not.toContain('ra_session');
+  expect(await page.evaluate(() => localStorage.getItem('rathe-arsenal:jwt'))).toBeNull();
+  const cookies = await page.context().cookies();
+  expect(cookies.find((cookie) => cookie.name === 'ra_session')).toMatchObject({ httpOnly: true, path: '/api' });
+});
+
+test('a protected page opened signed out comes back after sign-in', async ({ page }) => {
+  const { readyDeckId } = loadFixture();
+
+  await page.goto(`/decks/${readyDeckId}`);
+
+  await expect(page.getByLabel('Seu e-mail')).toBeVisible();
+  await expect(page).toHaveURL(/\/entrar/);
+  await signInThroughTheStartPage(page);
+  await expect(page).toHaveURL(new RegExp(`/decks/${readyDeckId}$`));
+  await expect(page.getByTestId('deck-detail-view')).toBeVisible();
+});
+
+test('a session that ends mid-edit keeps the page and the draft', async ({ browser }) => {
+  const { readyDeckId } = loadFixture();
+  const { email, password } = fixtureCredentials();
+  const context = await browser.newContext({ storageState: ANON_STORAGE_STATE, baseURL: BASE_URL });
+  await context.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
+  const signedIn = await context.request.post('/api/auth/sign-in', { data: { email, password } });
+  expect(signedIn.status()).toBe(200);
+  const page = await context.newPage();
+  await page.goto(`/decks/${readyDeckId}?edit=1`);
+  await expect(page.getByTestId('deck-canvas-edit')).toBeVisible();
+  const row = page.locator('[data-testid^="editable-card-row-"]').first();
+  const quantity = row.locator('[aria-live="polite"]');
+  const before = Number(await quantity.textContent());
+  await row.locator('[data-testid^="increment-"]').click();
+  await expect(quantity).toHaveText(String(before + 1));
+
+  // Another device signs this session out.
+  const token = (await context.cookies()).find((cookie) => cookie.name === 'ra_session')?.value ?? '';
+  const elsewhere = await request.newContext({ baseURL: BASE_URL, extraHTTPHeaders: { Cookie: `ra_session=${token}` } });
+  expect((await elsewhere.post('/api/auth/sign-out')).status()).toBe(204);
+  await elsewhere.dispose();
+  await page.getByTestId('deck-detail-save-btn').click();
+
+  const sheet = page.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByLabel('Seu e-mail')).toBeVisible();
+  await sheet.getByRole('button', { name: 'Continuar' }).click();
+  await sheet.getByLabel('Senha').fill(password);
+  await sheet.getByRole('button', { name: 'Entrar', exact: true }).click();
+
+  await expect(sheet).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/decks/${readyDeckId}\\?edit=`));
+  await expect(page.locator('[data-testid^="editable-card-row-"]').first().locator('[aria-live="polite"]')).toHaveText(
+    String(before + 1),
+  );
+  await context.close();
+});
+
+test('the fixture session is a cookie', async ({ request: api }) => {
+  const state = JSON.parse(readFileSync(STORAGE_STATE_PATH, 'utf8')) as {
+    cookies: { name: string; httpOnly: boolean; domain: string; value: string }[];
+    origins: { localStorage: { name: string }[] }[];
+  };
+  const cookie = state.cookies.find((entry) => entry.name === 'ra_session');
+  expect(cookie).toMatchObject({ httpOnly: true, domain: new URL(BASE_URL).hostname });
+  for (const origin of state.origins) {
+    expect(origin.localStorage.map((entry) => entry.name)).not.toContain('rathe-arsenal:jwt');
+  }
+
+  const seed = readFileSync(fileURLToPath(new URL('../../../../scripts/fixture/fixture-seed.ts', import.meta.url)), 'utf8');
+  expect(seed).toMatch(/Cookie/);
+  expect(seed).not.toMatch(/Authorization/);
+  const me = await api.get(`${BASE_URL}/api/auth/me`, { headers: { Cookie: `ra_session=${cookie?.value}` } });
+  expect(me.status()).toBe(200);
 });

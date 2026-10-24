@@ -6,6 +6,7 @@ import { CatalogController } from '../catalog.controller';
 import { CatalogService } from '../catalog.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { ICollectorCodesResponse } from '../dtos/collector-codes.dto';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 interface IRawPrinting {
   readonly identifier?: string;
@@ -60,6 +61,7 @@ describe('CatalogController - GET /catalog/collector-codes (card scanner)', () =
 
     controller = module.get<CatalogController>(CatalogController);
     app = module.createNestApplication();
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
   });
 
@@ -72,7 +74,7 @@ describe('CatalogController - GET /catalog/collector-codes (card scanner)', () =
     const expected = expectedPairs();
 
     // Act
-    const response = await request(app.getHttpServer()).get('/catalog/collector-codes');
+    const response = await request(app.getHttpServer()).get('/api/catalog/collector-codes');
     const pairs = actualPairs(response.body as ICollectorCodesResponse);
 
     // Assert

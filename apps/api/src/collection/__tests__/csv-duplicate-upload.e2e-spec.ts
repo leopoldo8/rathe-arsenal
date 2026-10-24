@@ -6,6 +6,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 const CONTENT_HASH_INDEX = 'IDX_csv_source_user_content_hash_uq';
 const CONCURRENT_UPLOADS = 6;
@@ -15,7 +16,7 @@ const OTHER_CSV = Buffer.from(['Name,Quantity', 'Crane Dance,1', 'Blessing of Qi
 describe('duplicate CSV uploads (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
-  let jwt: string;
+  let sessionToken: string;
   let userId: string;
   const email = `csv-duplicate-${Date.now().toString(36)}@test.local`;
   const password = 'csv-duplicate-password-123';
@@ -46,7 +47,7 @@ describe('duplicate CSV uploads (E2E)', () => {
     const token = new URL(signUp.body._devVerificationLink as string).searchParams.get('token');
     await request(server).post('/api/auth/verify-email').send({ token }).expect(200);
     const signIn = await request(server).post('/api/auth/sign-in').send({ email, password }).expect(200);
-    jwt = signIn.body.jwt as string;
+    sessionToken = sessionTokenOf(signIn);
     const [row] = await dataSource.query(`SELECT id FROM "user" WHERE email = $1`, [email]);
     userId = row.id as string;
   }, 60_000);
@@ -74,7 +75,7 @@ describe('duplicate CSV uploads (E2E)', () => {
       request(app.getHttpServer())
         .post('/api/collection/csv')
         .field('action', 'separate')
-        .set('Authorization', `Bearer ${jwt}`)
+        .set('Cookie', sessionCookieHeader(sessionToken))
         .attach('file', CSV, { filename: 'again.csv', contentType: 'text/csv' });
 
     const first = await upload().expect(201);
@@ -91,7 +92,7 @@ describe('duplicate CSV uploads (E2E)', () => {
       Array.from({ length: CONCURRENT_UPLOADS }, () =>
         request(app.getHttpServer())
           .post('/api/collection/csv')
-          .set('Authorization', `Bearer ${jwt}`)
+          .set('Cookie', sessionCookieHeader(sessionToken))
           .attach('file', OTHER_CSV, { filename: 'same.csv', contentType: 'text/csv' }),
       ),
     );

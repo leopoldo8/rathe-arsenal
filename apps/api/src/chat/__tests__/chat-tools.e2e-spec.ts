@@ -33,8 +33,8 @@ describe('chat tools (E2E)', () => {
   it("tools only see the message owner's data", async () => {
     const owner = await fixture.chatUser();
     const other = await fixture.chatUser();
-    await fixture.own(owner.jwt, [{ cardIdentifier: FLEX, quantity: 3 }]);
-    await fixture.own(other.jwt, [{ cardIdentifier: FLEX, quantity: 1 }]);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: FLEX, quantity: 3 }]);
+    await fixture.own(other.sessionToken, [{ cardIdentifier: FLEX, quantity: 1 }]);
     const toolbox = toolboxFor(owner);
 
     expect(await runChatTool(toolbox, 'get_deck', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
@@ -53,7 +53,7 @@ describe('chat tools (E2E)', () => {
 
   it('each read tool answers from the database', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: EMISSARY, quantity: 1 }]);
     const toolbox = toolboxFor(user);
     const [{ id: runId }] = (await fixture.dataSource.query(
       `INSERT INTO recommendation_run ("trackedDeckId", "trigger", status, "runAfter", "deckFingerprint", "finishedAt") VALUES ($1, 'manual', 'done', now(), 'x', now()) RETURNING id`,
@@ -184,7 +184,7 @@ describe('chat tools (E2E)', () => {
   it("get_swap_candidates ranks cards for one of the deck's cards with cost, role and free copies", async () => {
     const owner = await fixture.chatUser();
     const other = await fixture.chatUser();
-    await fixture.own(owner.jwt, [{ cardIdentifier: EMISSARY_OF_WIND, quantity: 1 }]);
+    await fixture.own(owner.sessionToken, [{ cardIdentifier: EMISSARY_OF_WIND, quantity: 1 }]);
     const toolbox = toolboxFor(owner);
 
     const found = await runChatTool(toolbox, 'get_swap_candidates', { deckId: owner.deckId, cardIdentifier: FLEX, slot: 'mainboard' });
@@ -309,7 +309,7 @@ describe('chat tools (E2E)', () => {
 
   it('get_collection lists owned copies, what each deck already uses and the spare copies', async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [
+    await fixture.own(user.sessionToken, [
       { cardIdentifier: FLEX, quantity: 3 },
       { cardIdentifier: EMISSARY, quantity: 2 },
       { cardIdentifier: COAX, quantity: 1 },
@@ -332,7 +332,7 @@ describe('chat tools (E2E)', () => {
 
   it("get_tournament_deck compared with one of the user's decks marks each card's legality there, owned copies and copies in that deck", async () => {
     const user = await fixture.chatUser();
-    await fixture.own(user.jwt, [{ cardIdentifier: FLEX, quantity: 3 }]);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: FLEX, quantity: 3 }]);
     const toolbox = toolboxFor(user);
     const [{ id }] = (await fixture.dataSource.query(
       `INSERT INTO tournament_deck ("fabraryUlid", name, "eventName", placement, "heroIdentifier", format, "deckCreatedAt", "syncedAt", source)

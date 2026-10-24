@@ -26,7 +26,6 @@ export interface IAuthSettings {
  * or malformed rows). This prevents a 500 from leaking internally.
  */
 export interface IAuthResponse {
-  jwt: string;
   user: IAuthUser;
   settings: IAuthSettings;
 }

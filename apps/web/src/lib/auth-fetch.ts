@@ -3,11 +3,13 @@
  *
  * Extracted from AuthProvider to avoid divergent re-implementations across
  * `api/user-settings.ts` and other modules. Every consumer gets identical
- * Authorization injection, Content-Type defaulting, error envelope, and
- * Retry-After parsing so a 429 response carries `retryAfterSeconds` end-to-end.
+ * Content-Type defaulting, error envelope, and Retry-After parsing so a 429 response carries
+ * `retryAfterSeconds` end-to-end. The session travels in the httpOnly `ra_session` cookie, which the
+ * browser sends by itself; no request carries an Authorization header (door 17).
  */
 
 import i18n from '../i18n';
+import { notifyUnauthorized } from './session-events';
 
 export class AuthFetchError extends Error {
   constructor(
@@ -34,13 +36,8 @@ export function parseRetryAfter(header: string | null): number | null {
   return null;
 }
 
-export async function authFetch<T>(
-  path: string,
-  init: RequestInit = {},
-  token?: string | null,
-): Promise<T> {
+export async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (token) headers.set('Authorization', `Bearer ${token}`);
   if (!headers.has('Accept-Language')) headers.set('Accept-Language', i18n.language);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const res = await fetch(`/api${path}`, { ...init, headers });
@@ -49,6 +46,7 @@ export async function authFetch<T>(
     const message = body.error ?? body.message ?? res.statusText;
     const retryAfter = parseRetryAfter(res.headers.get('Retry-After'));
     const code = typeof body.code === 'string' ? body.code : null;
+    if (res.status === 401 && code === null) notifyUnauthorized();
     throw new AuthFetchError(message, res.status, retryAfter, code);
   }
   // 204 (e.g. DELETE) has no body to parse.

@@ -4,6 +4,7 @@
  */
 import { DataSource, QueryRunner } from 'typeorm';
 import { LowercaseUserEmails1778533602000 } from '../../database/migrations/1778533602000-LowercaseUserEmails';
+import { AddUserSession1778533604000 } from '../../database/migrations/1778533604000-AddUserSession';
 import { bootAccountsApp, IAccountsApp } from './accounts-e2e.fixture';
 
 describe('Accounts schema (E2E, S30 and S31)', () => {
@@ -43,6 +44,21 @@ describe('Accounts schema (E2E, S30 and S31)', () => {
     await expect(insert(false, 'b')).rejects.toThrow(/IDX_sign_in_code_one_live/);
     await expect(insert(true, 'c')).resolves.toBeDefined();
     await expect(insert(true, 'd')).resolves.toBeDefined();
+  });
+
+  it('session token hashes are unique', async () => {
+    const email = ctx.emailFor('schema-session');
+    const [user] = await ctx.dataSource.query(`INSERT INTO "user" ("email", "passwordHash") VALUES ($1, NULL) RETURNING "id"`, [email]);
+    const insert = (hash: string): Promise<unknown> =>
+      ctx.dataSource.query(`INSERT INTO "user_session" ("userId", "tokenHash") VALUES ($1, $2)`, [user.id, hash.repeat(64).slice(0, 64)]);
+
+    await expect(insert('a')).resolves.toBeDefined();
+    await expect(insert('a')).rejects.toThrow(/IDX_user_session_token_hash/);
+    await expect(insert('b')).resolves.toBeDefined();
+
+    await ctx.dataSource.query(`DELETE FROM "user" WHERE "id" = $1`, [user.id]);
+    const [left] = await ctx.dataSource.query(`SELECT count(*)::int AS n FROM "user_session" WHERE "userId" = $1`, [user.id]);
+    expect(left.n).toBe(0);
   });
 
   describe('lowercase migration', () => {
@@ -91,6 +107,53 @@ describe('Accounts schema (E2E, S30 and S31)', () => {
       await new LowercaseUserEmails1778533602000().up(runner);
       const [bia] = await runner.query(`SELECT "email" FROM "user" WHERE "id" = $1`, [BIA]);
       expect(bia.email).toBe('bia@gmail.com');
+    });
+  });
+
+  describe('user_session migration', () => {
+    const SCHEMA = `user_session_${Date.now().toString(36)}`;
+    const OWNER = '44444444-4444-4444-4444-444444444444';
+    let dataSource: DataSource;
+    let runner: QueryRunner;
+
+    beforeAll(async () => {
+      dataSource = new DataSource({
+        type: 'postgres',
+        url: process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal',
+      });
+      await dataSource.initialize();
+      runner = dataSource.createQueryRunner();
+      await runner.query(`CREATE SCHEMA "${SCHEMA}"`);
+      // `public` stays on the path for `uuid_generate_v4()`; the new schema comes first so the tables land in it.
+      await runner.query(`SET search_path TO "${SCHEMA}", public`);
+      await runner.query(`CREATE TABLE "user" ("id" uuid PRIMARY KEY)`);
+      await runner.query(`INSERT INTO "user" ("id") VALUES ($1)`, [OWNER]);
+    });
+
+    afterAll(async () => {
+      await runner?.query(`DROP SCHEMA IF EXISTS "${SCHEMA}" CASCADE`);
+      await runner?.release();
+      await dataSource?.destroy();
+    });
+
+    it('creates the table the entity expects, can run twice, and goes away on down', async () => {
+      await new AddUserSession1778533604000().up(runner);
+      await new AddUserSession1778533604000().up(runner);
+
+      await runner.query(`INSERT INTO "user_session" ("userId", "tokenHash") VALUES ($1, $2)`, [OWNER, 'a'.repeat(64)]);
+      await expect(
+        runner.query(`INSERT INTO "user_session" ("userId", "tokenHash") VALUES ($1, $2)`, [OWNER, 'a'.repeat(64)]),
+      ).rejects.toThrow(/IDX_user_session_token_hash/);
+      const [row] = await runner.query(`SELECT "lastSeenAt", "revokedAt" FROM "user_session"`);
+      expect(row.lastSeenAt).toBeInstanceOf(Date);
+      expect(row.revokedAt).toBeNull();
+      await runner.query(`DELETE FROM "user" WHERE "id" = $1`, [OWNER]);
+      expect(await runner.query(`SELECT 1 FROM "user_session"`)).toEqual([]);
+
+      await new AddUserSession1778533604000().down(runner);
+      // Qualified: the real `public.user_session` of this database is still on the search path.
+      const [after] = await runner.query(`SELECT to_regclass('"${SCHEMA}"."user_session"') AS "name"`);
+      expect(after.name).toBeNull();
     });
   });
 });

@@ -1,5 +1,4 @@
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { createMock } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
 import { ShareEventsService } from '../../sharing/share-events.service';
@@ -8,6 +7,7 @@ import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { EmailService } from '../../email/email.service';
 import { EmailDeliveryError, EEmailErrorCode } from '../../email/errors';
 import { AuthService } from '../auth.service';
+import { SessionService } from '../session.service';
 import { SignInCodeService } from '../sign-in-code.service';
 import { PasswordHasherService } from '../services/password-hasher.service';
 import { TokenGeneratorService } from '../services/token-generator.service';
@@ -27,8 +27,8 @@ function buildService(overrides: {
 
   const hasher = new PasswordHasherService();
   const tokens = new TokenGeneratorService();
-  const jwt = createMock<JwtService>();
-  jwt.signAsync.mockResolvedValue('jwt-token');
+  const sessions = createMock<SessionService>();
+  sessions.create.mockResolvedValue('session-token');
 
   const email = createMock<EmailService>();
   email.sendVerificationEmail = overrides.sendVerification ?? jest.fn().mockResolvedValue(undefined);
@@ -49,7 +49,7 @@ function buildService(overrides: {
     repo as unknown as Repository<UserEntity>,
     hasher,
     tokens,
-    jwt,
+    sessions,
     email,
     config,
     referral as unknown as ShareReferralService,
@@ -57,16 +57,16 @@ function buildService(overrides: {
     createMock<SignInCodeService>(),
   );
 
-  return { service, repo, hasher, tokens, jwt, email, referral, shareEvents };
+  return { service, repo, hasher, tokens, sessions, email, referral, shareEvents };
 }
 
 describe('AuthService.signUp', () => {
   it('creates a signed-in user, sends the verification email and returns the dev link (happy path)', async () => {
     const { service, email } = buildService();
     const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
-    expect(result.jwt).toBe('jwt-token');
-    expect(result.user.email).toBe('a@b.com');
-    expect(result._devVerificationLink).toContain('/verify-email?token=');
+    expect(result.sessionToken).toBe('session-token');
+    expect(result.body.user.email).toBe('a@b.com');
+    expect(result.body._devVerificationLink).toContain('/verify-email?token=');
     expect(email.sendVerificationEmail).toHaveBeenCalledWith('a@b.com', expect.stringContaining('/verify-email?token='), 'pt-BR');
   });
 
@@ -97,7 +97,7 @@ describe('AuthService.signUp', () => {
       sendVerification: jest.fn().mockRejectedValue(new EmailDeliveryError(EEmailErrorCode.Network, 'fail')),
     });
     const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
-    expect(result.jwt).toBe('jwt-token');
+    expect(result.sessionToken).toBe('session-token');
   });
 
   it('forwards the locale to sendVerificationEmail (T17)', async () => {
@@ -235,8 +235,8 @@ describe('AuthService.signIn', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
-    expect(result.jwt).toBe('jwt-token');
-    expect(result.user.id).toBe('user-1');
+    expect(result.sessionToken).toBe('session-token');
+    expect(result.body.user.id).toBe('user-1');
   });
 
   it('returns settings with default theme=dark when user has no preferences', async () => {
@@ -245,7 +245,7 @@ describe('AuthService.signIn', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
-    expect(result.settings).toEqual({ theme: 'dark' });
+    expect(result.body.settings).toEqual({ theme: 'dark' });
   });
 
   it('returns settings.theme=light when user has preferences.theme=light', async () => {
@@ -255,7 +255,7 @@ describe('AuthService.signIn', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
-    expect(result.settings).toEqual({ theme: 'light' });
+    expect(result.body.settings).toEqual({ theme: 'light' });
   });
 
   it('throws INVALID_CREDENTIALS for wrong password', async () => {
@@ -282,7 +282,7 @@ describe('AuthService.signIn', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private `users` Repository to override findOne without restructuring the service
     (service as any).users.findOne = jest.fn().mockResolvedValue(user);
     const result = await service.signIn('a@b.com', 'longenoughpassword');
-    expect(result.jwt).toBe('jwt-token');
+    expect(result.sessionToken).toBe('session-token');
   });
 
   it('refuses an account with no password and a deleted account like a wrong password', async () => {
@@ -316,8 +316,8 @@ describe('AuthService.verifyEmail', () => {
     });
     // U12: verifyEmail response should include settings for first-paint correctness
     const result = await service.verifyEmail(raw);
-    expect(result.jwt).toBe('jwt-token');
-    expect(result.settings).toEqual({ theme: 'dark' });
+    expect(result.sessionToken).toBe('session-token');
+    expect(result.body.settings).toEqual({ theme: 'dark' });
     expect(user.emailVerifiedAt).not.toBeNull();
     expect(user.verificationTokenHash).toBeNull();
   });
@@ -569,7 +569,7 @@ describe('AuthService chat access in auth responses', () => {
       const signIn = await buildService({ findOne: jest.fn().mockResolvedValue(signInUser) }).service.signIn('a@b.com', 'longenoughpassword');
       const verify = await buildService({ findOne: jest.fn().mockResolvedValue(verifyUser) }).service.verifyEmail(verifyRaw);
 
-      results.push(signIn.user.chatAccess, verify.user.chatAccess);
+      results.push(signIn.body.user.chatAccess, verify.body.user.chatAccess);
     }
 
     expect(results).toEqual([true, true, false, false]);

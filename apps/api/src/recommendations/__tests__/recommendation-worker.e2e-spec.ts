@@ -43,7 +43,7 @@ describe('recommendation worker (e2e)', () => {
     await fixture.close();
   });
 
-  async function deckWithManualRun(): Promise<{ jwt: string; deckId: number; runId: string }> {
+  async function deckWithManualRun(): Promise<{ sessionToken: string; deckId: number; runId: string }> {
     const scenario = await fixture.scenario();
     await fixture.clearRuns(scenario.deckId);
     const runId = await fixture.seedRun(scenario.deckId, 'pending', { trigger: 'manual' });
@@ -119,8 +119,8 @@ describe('recommendation worker (e2e)', () => {
   });
 
   it('the request leaves out dismissed and deck cards', async () => {
-    const { jwt, deckId } = await deckWithManualRun();
-    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, jwt).send({ cardIdentifier: POOL[3] }).expect(201);
+    const { sessionToken, deckId } = await deckWithManualRun();
+    await fixture.post(`/api/decks/${deckId}/recommendations/dismissals`, sessionToken).send({ cardIdentifier: POOL[3] }).expect(201);
     const stub = stubFetch(200, geminiBody([{ card: POOL[0] }]));
 
     await fixture.drain(stub.fetch);
@@ -134,9 +134,9 @@ describe('recommendation worker (e2e)', () => {
   });
 
   it('the request leaves out a card the deck replaced through an alternative', async () => {
-    const { jwt, deckId } = await deckWithManualRun();
+    const { sessionToken, deckId } = await deckWithManualRun();
     await fixture
-      .post(`/api/decks/${deckId}/replacements`, jwt)
+      .post(`/api/decks/${deckId}/replacements`, sessionToken)
       .send({ originalCardIdentifier: EMISSARY, slot: 'mainboard', replacementCardIdentifier: 'coax-a-commotion-red', pickedFrom: 'close' })
       .expect(201);
     await fixture.dataSource.query(`DELETE FROM recommendation_run WHERE "trackedDeckId" = $1 AND status = 'pending' AND "trigger" = 'auto'`, [deckId]);

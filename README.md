@@ -21,7 +21,7 @@ Plans:
 
 ## Stack
 
-- **Backend**: NestJS 11 + TypeORM + PostgreSQL + DIY auth (passport-jwt + bcrypt + Resend)
+- **Backend**: NestJS 11 + TypeORM + PostgreSQL + DIY auth (httpOnly session cookie + bcrypt + Resend)
 - **Frontend**: React 19 + Vite + TanStack Router + TanStack Query + i18next (pt-BR / en-US)
 - **Engine**: Pure TypeScript package (`packages/engine`), zero framework imports
 - **Observability**: Sentry (opt-in — web + api; a complete no-op unless `SENTRY_DSN` / `VITE_SENTRY_DSN` are set)

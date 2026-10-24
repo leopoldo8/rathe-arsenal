@@ -7,6 +7,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import request from 'supertest';
 import { bootAccountsApp, IAccountsApp, PASSWORD, sessionCookieOf } from './accounts-e2e.fixture';
+import { legacyJwtFor } from './session-test-helpers';
 
 describe('Accounts (E2E, S30 and S31)', () => {
   let ctx: IAccountsApp;
@@ -63,17 +64,16 @@ describe('Accounts (E2E, S30 and S31)', () => {
     expect(me.body.email).toBe(email);
   });
 
-  it('a stale session cookie does not beat a fresh Bearer token', async () => {
+  it('a stale session cookie does not turn an old Bearer token into a session', async () => {
     const email = ctx.emailFor('stale-cookie');
     const signedUp = await request(server()).post('/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
 
-    const me = await request(server())
+    const refused = await request(server())
       .get('/api/auth/me')
       .set('Cookie', 'ra_session=not-a-valid-token')
-      .set('Authorization', `Bearer ${signedUp.body.jwt}`)
-      .expect(200);
+      .set('Authorization', `Bearer ${legacyJwtFor(signedUp.body.user.id as string)}`);
 
-    expect(me.body.email).toBe(email);
+    expect(refused.status).toBe(401);
   });
 
   it('sign-up keeps the in-app page it was made from and drops any other', async () => {

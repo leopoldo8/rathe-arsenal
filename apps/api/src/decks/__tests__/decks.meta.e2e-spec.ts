@@ -1,29 +1,30 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { AppModule } from '../../app.module';
-import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
+import { configureHttpApp } from '../../http/configure-http-app';
+import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'deck-meta-e2e-password-123';
 
 describe('PATCH /api/decks/:deckId notes, format and status (E2E)', () => {
   let app: INestApplication;
-  let jwt: string;
+  let sessionToken: string;
   let deckId: number;
   const suffix = Date.now().toString(36);
 
   function patch(body: object): request.Test {
     return request(app.getHttpServer())
       .patch(`/api/decks/${deckId}`)
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send(body);
   }
 
   function detail(): request.Test {
     return request(app.getHttpServer())
       .get(`/api/decks/${deckId}`)
-      .set('Authorization', `Bearer ${jwt}`);
+      .set('Cookie', sessionCookieHeader(sessionToken));
   }
 
   beforeAll(async () => {
@@ -42,16 +43,7 @@ describe('PATCH /api/decks/:deckId notes, format and status (E2E)', () => {
     jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new HttpExceptionFilter());
+    configureHttpApp(app);
     await app.listen(0, '127.0.0.1');
 
     const server = app.getHttpServer();
@@ -66,11 +58,11 @@ describe('PATCH /api/decks/:deckId notes, format and status (E2E)', () => {
       .post('/api/auth/sign-in')
       .send({ email, password: PASSWORD })
       .expect(200);
-    jwt = signIn.body.jwt as string;
+    sessionToken = sessionTokenOf(signIn);
 
     const created = await request(server)
       .post('/api/decks')
-      .set('Authorization', `Bearer ${jwt}`)
+      .set('Cookie', sessionCookieHeader(sessionToken))
       .send({ heroIdentifier: 'katsu-the-wanderer', format: 'Classic Constructed' })
       .expect(201);
     deckId = created.body.id as number;

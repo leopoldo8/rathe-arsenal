@@ -20,8 +20,8 @@ test.describe('axe filter', () => {
   });
 });
 
-async function deckShareToken(deckId: number, jwt: string): Promise<string> {
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` };
+async function deckShareToken(deckId: number, sessionToken: string): Promise<string> {
+  const headers = { 'Content-Type': 'application/json', Cookie: `ra_session=${sessionToken}` };
   const url = `${BASE_URL}/api/decks/${deckId}/share`;
   const current = await fetch(url, { headers });
   const state = (await current.json()) as { deck: { token: string } | null };
@@ -42,8 +42,8 @@ test.describe('accessibility scan', () => {
   let context: IScanContext;
 
   test.beforeAll(async () => {
-    const { jwt, readyDeckId } = loadFixture();
-    context = { readyDeckId, shareToken: await deckShareToken(readyDeckId, jwt) };
+    const { sessionToken, readyDeckId } = loadFixture();
+    context = { readyDeckId, shareToken: await deckShareToken(readyDeckId, sessionToken) };
   });
 
   for (const scanPage of SCAN_PAGES) {

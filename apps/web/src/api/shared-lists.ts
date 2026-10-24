@@ -62,10 +62,9 @@ export const sharedListQueryKey = (token: string, visitorId: string | null) =>
 
 /** The owner's own link of this list; null while sharing is off. */
 export function useListShareQuery(listId: number | string) {
-  const { token } = useAuth();
   return useQuery({
     queryKey: listShareQueryKey(listId),
-    queryFn: () => authFetch<IListLinkState | null>(`/lists/${listId}/share`, {}, token),
+    queryFn: () => authFetch<IListLinkState | null>(`/lists/${listId}/share`),
     staleTime: Infinity,
   });
 }
@@ -73,12 +72,11 @@ export function useListShareQuery(listId: number | string) {
 /** Turning a link on or off changes the "Compartilhada" badge of the index. */
 function useLinkWrite<TVariables>(
   listId: number | string,
-  request: (variables: TVariables, token: string | null) => Promise<IListLinkState | null>,
+  request: (variables: TVariables) => Promise<IListLinkState | null>,
 ) {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (variables: TVariables) => request(variables, token),
+    mutationFn: (variables: TVariables) => request(variables),
     onSuccess: (link) => {
       queryClient.setQueryData<IListLinkState | null>(listShareQueryKey(listId), link);
       queryClient.setQueryData<IListSummary[]>(listsQueryKey, (lists) =>
@@ -90,20 +88,20 @@ function useLinkWrite<TVariables>(
 }
 
 export function useEnableListShareMutation(listId: number | string) {
-  return useLinkWrite<void>(listId, (_unused, token) =>
-    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'POST', body: JSON.stringify({}) }, token),
+  return useLinkWrite<void>(listId, () =>
+    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'POST', body: JSON.stringify({}) }),
   );
 }
 
 export function useSetListShareContactMutation(listId: number | string) {
-  return useLinkWrite<boolean>(listId, (showContact, token) =>
-    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'PATCH', body: JSON.stringify({ showContact }) }, token),
+  return useLinkWrite<boolean>(listId, (showContact) =>
+    authFetch<IListLinkState>(`/lists/${listId}/share`, { method: 'PATCH', body: JSON.stringify({ showContact }) }),
   );
 }
 
 export function useDisableListShareMutation(listId: number | string) {
-  return useLinkWrite<void>(listId, async (_unused, token) => {
-    await authFetch<void>(`/lists/${listId}/share`, { method: 'DELETE' }, token);
+  return useLinkWrite<void>(listId, async () => {
+    await authFetch<void>(`/lists/${listId}/share`, { method: 'DELETE' });
     return null;
   });
 }
@@ -114,10 +112,10 @@ export function useDisableListShareMutation(listId: number | string) {
  * The key carries the visitor, so signing in on the page refetches once.
  */
 export function useSharedListQuery(token: string) {
-  const { token: authToken, user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   return useQuery({
     queryKey: sharedListQueryKey(token, user?.id ?? null),
-    queryFn: () => authFetch<ISharedListResponse>(`/shared/lists/${encodeURIComponent(token)}`, {}, authToken),
+    queryFn: () => authFetch<ISharedListResponse>(`/shared/lists/${encodeURIComponent(token)}`),
     enabled: !isLoading,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -127,11 +125,11 @@ export function useSharedListQuery(token: string) {
 
 /** What the logged-in visitor already has, per line. Not for the owner or anonymous visitors. */
 export function useSharedListMatchesQuery(token: string, enabled: boolean) {
-  const { token: authToken, user } = useAuth();
+  const { user } = useAuth();
   return useQuery({
     queryKey: ['shared-list-matches', token, user?.id ?? 'anonymous'] as const,
-    queryFn: () => authFetch<ISharedListMatches>(`/shared/lists/${encodeURIComponent(token)}/matches`, {}, authToken),
-    enabled: enabled && authToken !== null,
+    queryFn: () => authFetch<ISharedListMatches>(`/shared/lists/${encodeURIComponent(token)}/matches`),
+    enabled: enabled && user !== null,
     refetchOnWindowFocus: false,
     retry: false,
   });

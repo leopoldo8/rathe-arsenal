@@ -2,7 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { configureHttpApp } from '../../http/configure-http-app';
@@ -79,9 +78,4 @@ export async function bootAccountsApp(): Promise<IAccountsApp> {
   };
 }
 
-/** The `ra_session` pair of a `Set-Cookie` header list, as a `Cookie` request header value. */
-export function sessionCookieOf(response: request.Response): string | null {
-  const setCookie = response.headers['set-cookie'] as unknown as string[] | undefined;
-  const header = setCookie?.find((cookie) => cookie.startsWith('ra_session='));
-  return header ? (header.split(';')[0] ?? null) : null;
-}
+export { sessionCookieOf } from './session-test-helpers';

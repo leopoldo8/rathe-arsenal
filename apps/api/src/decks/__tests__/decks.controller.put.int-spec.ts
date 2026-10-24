@@ -13,7 +13,6 @@ import {
   HttpStatus,
   INestApplication,
   NotFoundException,
-  ValidationPipe,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
@@ -24,6 +23,7 @@ import { DecksService } from '../decks.service';
 import { OwnsTrackedDeckGuard } from '../../auth/guards/owns-tracked-deck.guard';
 import { HeroIdentifierExistsInCatalog } from '../validators/hero-identifier-exists.validator';
 import { ITrackedDeckDetailResponse } from '../dtos/tracked-deck-detail.response.dto';
+import { configureHttpApp } from '../../http/configure-http-app';
 
 const USER_ID = 'user-uuid-put-int';
 const DECK_ID = 77;
@@ -83,14 +83,7 @@ async function buildApp(opts: {
     next();
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  configureHttpApp(app);
 
   await app.listen(0, '127.0.0.1');
   return app;
@@ -143,7 +136,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody())
         .expect(HttpStatus.OK);
 
@@ -171,7 +164,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ cards: [] }))
         .expect(HttpStatus.OK);
 
@@ -196,7 +189,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act & Assert
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ cards }))
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -211,7 +204,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act & Assert
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ cards }))
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -226,7 +219,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act & Assert
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ cards }))
         .expect(HttpStatus.BAD_REQUEST);
     });
@@ -239,7 +232,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act & Assert
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ cards }))
         .expect(HttpStatus.BAD_REQUEST);
     });
@@ -250,7 +243,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
       // The HeroIdentifierExistsInCatalog validator uses the real static catalog.
       // 'not-a-real-hero' is not in the catalog so it will fail validation.
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ heroIdentifier: 'not-a-real-hero' }))
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -261,7 +254,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
   describe('error path — format=Clash triggers 400', () => {
     it('returns 400 when format is not in the supported list', async () => {
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ format: 'Clash' }))
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -279,7 +272,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
       };
 
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(bodyWithoutHero)
         .expect(HttpStatus.OK);
 
@@ -311,7 +304,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act & Assert
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody())
         .expect(HttpStatus.NOT_FOUND);
     });
@@ -331,7 +324,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody())
         .expect(HttpStatus.OK);
 
@@ -354,7 +347,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act
       const res = await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody())
         .expect(HttpStatus.OK);
 
@@ -381,7 +374,7 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
 
       // Act
       await request(app.getHttpServer())
-        .put(`/decks/${DECK_ID}`)
+        .put(`/api/decks/${DECK_ID}`)
         .send(validBody({ format }))
         .expect(HttpStatus.OK);
 

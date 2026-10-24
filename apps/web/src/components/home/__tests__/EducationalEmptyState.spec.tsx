@@ -31,7 +31,6 @@ const noopAsync = async (): Promise<void> => {
 
 const stubAuthContext: IAuthContext = {
   user: null,
-  token: null,
   isLoading: false,
   setSettings: () => {
     /* test stub */

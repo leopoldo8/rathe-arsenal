@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { EUserRole, UserEntity } from '../database/entities/user.entity';
@@ -20,6 +19,7 @@ import {
   IStartResponse,
 } from './dtos/auth-response.dto';
 import { sanitizeReturnPath } from './return-path';
+import { SessionService } from './session.service';
 import { ICodeRequestResult, SignInCodeService } from './sign-in-code.service';
 import { SignUpDto } from './dtos/sign-up.dto';
 import { ICurrentUser } from './dtos/current-user.dto';
@@ -29,6 +29,12 @@ const GENERIC_RESEND_MESSAGE =
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const UNIQUE_VIOLATION = '23505';
+
+/** A response body, and the session token the controller puts in the cookie (never in the body). */
+export interface ISessionGrant<T> {
+  readonly body: T;
+  readonly sessionToken: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -41,7 +47,7 @@ export class AuthService {
     private readonly users: Repository<UserEntity>,
     private readonly passwordHasher: PasswordHasherService,
     private readonly tokenGenerator: TokenGeneratorService,
-    private readonly jwtService: JwtService,
+    private readonly sessions: SessionService,
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
     private readonly shareReferral: ShareReferralService,
@@ -64,7 +70,7 @@ export class AuthService {
    * is confirmed later; an account that exists answers 409 instead of the old generic 202, because
    * the start step already says whether an address has an account.
    */
-  async signUp(dto: SignUpDto, locale: TLocale = 'pt-BR'): Promise<ISignUpResponse> {
+  async signUp(dto: SignUpDto, locale: TLocale = 'pt-BR'): Promise<ISessionGrant<ISignUpResponse>> {
     const { email, password, shareToken } = dto;
     const existing = await this.users.findOne({ where: { email } });
     if (existing) {
@@ -111,22 +117,20 @@ export class AuthService {
     }
 
     this.logger.log({ event: 'auth.sign_up.success', userId: saved.id });
-    const response: ISignUpResponse = await this.authResponse(saved);
-    if (this.isDev) {
-      response._devVerificationLink = link;
-    }
-    return response;
+    const grant = await this.authResponse(saved);
+    const response: ISignUpResponse = this.isDev ? { ...grant.body, _devVerificationLink: link } : grant.body;
+    return { body: response, sessionToken: grant.sessionToken };
   }
 
   async requestCode(email: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult> {
     return this.signInCodes.request(email, locale);
   }
 
-  async verifyCode(email: string, code: string): Promise<ICodeSignInResponse> {
+  async verifyCode(email: string, code: string): Promise<ISessionGrant<ICodeSignInResponse>> {
     return this.signInWithCodeOf(await this.signInCodes.verify(email, code));
   }
 
-  async redeemCode(token: string): Promise<ICodeSignInResponse> {
+  async redeemCode(token: string): Promise<ISessionGrant<ICodeSignInResponse>> {
     return this.signInWithCodeOf(await this.signInCodes.redeem(token));
   }
 
@@ -169,7 +173,7 @@ export class AuthService {
     return response;
   }
 
-  async signIn(email: string, password: string): Promise<IAuthResponse> {
+  async signIn(email: string, password: string): Promise<ISessionGrant<IAuthResponse>> {
     const user = await this.users.findOne({ where: { email } });
     // A wrong password, an account with no password and a deleted account all answer alike.
     const valid = user !== null && !user.deletedAt && (await this.passwordHasher.verify(password, user.passwordHash));
@@ -182,7 +186,7 @@ export class AuthService {
     return this.authResponse(user);
   }
 
-  async verifyEmail(rawToken: string): Promise<IAuthResponse> {
+  async verifyEmail(rawToken: string): Promise<ISessionGrant<IAuthResponse>> {
     const hash = this.tokenGenerator.hashToken(rawToken);
     const user = await this.users.findOne({
       where: { verificationTokenHash: hash },
@@ -211,10 +215,10 @@ export class AuthService {
     whatsappNumber: string | null;
     settings: IAuthSettings;
   }> {
-    // JwtStrategy.validate() already rejected soft-deleted users, so the NULL
+    // The session guard already rejected soft-deleted users, so the NULL
     // path here is only reachable on a narrow race (concurrent hard-delete, or
     // the row vanished mid-request). Fail loudly instead of returning synthetic
-    // data derived from the stale JWT payload.
+    // data derived from a stale session.
     const user = await this.users.findOne({ where: { id: currentUser.userId } });
     if (!user) {
       throw new AuthError(EAuthErrorCode.UserNotFound, 'User not found');
@@ -232,24 +236,21 @@ export class AuthService {
 
   /**
    * Phase 1a Unit 2 (A8) — soft-deletes the authenticated user's account
-   * after verifying the re-entered password. Subsequent requests using the
-   * same JWT are rejected by `JwtStrategy.validate()` via the `deletedAt`
-   * check on the already-loaded entity. The 30-day purge script
+   * after verifying the re-entered password. Every session of the account is
+   * revoked, and the session guard also checks `deletedAt`. The 30-day purge script
    * (`scripts/purge-deleted-users.ts`) permanently removes rows whose
    * `deletedAt < now() - 30 days`, cascading through every user-linked
    * table.
    *
-   * Idempotency: callers rarely reach this method twice because the JWT is
-   * cleared client-side on success and any follow-up request is rejected by
-   * `JwtStrategy.validate()`. If a second request does arrive while the
-   * JWT is still locally cached, the strategy has already short-circuited
-   * it before the service runs. We therefore do not branch on
-   * already-deleted state here.
+   * Idempotency: callers rarely reach this method twice because the session
+   * is revoked on success and any follow-up request is rejected by the guard
+   * before the service runs. We therefore do not branch on already-deleted
+   * state here.
    */
   async deleteAccount(userId: string, password: string): Promise<{ ok: true }> {
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user || user.deletedAt !== null) {
-      // Defensive: the JwtStrategy should have rejected this already, but we
+      // Defensive: the session guard should have rejected this already, but we
       // treat the missing/deleted case as unauthorized rather than leaking
       // "user not found" as a 404 on an authenticated endpoint.
       throw new AuthError(EAuthErrorCode.InvalidCredentials, 'Invalid password');
@@ -263,19 +264,34 @@ export class AuthService {
 
     user.deletedAt = new Date();
     await this.users.save(user);
+    await this.sessions.revokeAllOf(userId);
 
     this.logger.log({ event: 'auth.delete_account.success', userId });
     return { ok: true };
   }
 
-  private async signInWithCodeOf(email: string): Promise<ICodeSignInResponse> {
+  /**
+   * Sets the account's password (a first one or a replacement) and ends every other session: whoever
+   * held the old password, or an old session, is signed out. The session that asked stays.
+   */
+  async setPassword(userId: string, password: string, currentSessionToken: string | null): Promise<void> {
+    const passwordHash = await this.passwordHasher.hash(password);
+    await this.users.update({ id: userId }, { passwordHash });
+    await this.sessions.revokeAllOf(userId, currentSessionToken ?? undefined);
+    this.logger.log({ event: 'auth.password.set', userId });
+  }
+
+  private async signInWithCodeOf(email: string): Promise<ISessionGrant<ICodeSignInResponse>> {
     const user = await this.users.findOne({ where: { email } });
     if (!user || user.deletedAt !== null) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
-    await this.dropPasswordSetBeforeAddressWasProven(user);
+    const droppedPassword = await this.dropPasswordSetBeforeAddressWasProven(user);
+    // The session that sign-up opened belongs to whoever chose that password, so it ends with it.
+    if (droppedPassword) await this.sessions.revokeAllOf(user.id);
     this.logger.log({ event: 'auth.sign_in.code', userId: user.id });
-    return { ...(await this.authResponse(user)), returnPath: user.signupReturnPath };
+    const grant = await this.authResponse(user);
+    return { body: { ...grant.body, returnPath: user.signupReturnPath }, sessionToken: grant.sessionToken };
   }
 
   /**
@@ -283,10 +299,11 @@ export class AuthService {
    * A code that reached the inbox proves the real owner, so a password still on an unconfirmed
    * account is not theirs: it is removed, and the owner can set their own in Settings.
    */
-  private async dropPasswordSetBeforeAddressWasProven(user: UserEntity): Promise<void> {
-    if (user.emailVerifiedAt !== null || user.passwordHash === null) return;
+  private async dropPasswordSetBeforeAddressWasProven(user: UserEntity): Promise<boolean> {
+    if (user.emailVerifiedAt !== null || user.passwordHash === null) return false;
     await this.users.update({ id: user.id, emailVerifiedAt: IsNull() }, { passwordHash: null });
     this.logger.warn({ event: 'auth.sign_in.code.dropped_unproven_password', userId: user.id });
+    return true;
   }
 
   private async saveNewUser(user: UserEntity): Promise<UserEntity> {
@@ -301,13 +318,15 @@ export class AuthService {
     }
   }
 
-  private async authResponse(user: UserEntity): Promise<IAuthResponse> {
+  private async authResponse(user: UserEntity): Promise<ISessionGrant<IAuthResponse>> {
     return {
-      jwt: await this.jwtService.signAsync({ sub: user.id }),
-      user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
-      // U12: include settings for first-paint theme correctness. Nullish fallback
-      // guards against NULL preferences on rows created before migration 1776621087000.
-      settings: { theme: user.preferences?.theme ?? 'dark' },
+      sessionToken: await this.sessions.create(user.id),
+      body: {
+        user: { id: user.id, email: user.email, role: user.role, chatAccess: user.chatAccess },
+        // U12: include settings for first-paint theme correctness. Nullish fallback
+        // guards against NULL preferences on rows created before migration 1776621087000.
+        settings: { theme: user.preferences?.theme ?? 'dark' },
+      },
     };
   }
 }

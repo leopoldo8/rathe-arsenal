@@ -41,7 +41,6 @@ function renderModal(opts: IRenderOpts) {
   };
   const stubAuthContext: IAuthContext = {
     user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false },
-    token: 'jwt-token',
     isLoading: false,
     signUp: async () => undefined,
     signIn: noopAsync,

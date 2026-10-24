@@ -1,13 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useApiClient } from '../api-client';
+import { onUnauthorized } from '../session-events';
 import i18n from '../../i18n';
-
-// useApiClient calls useAuth() internally; mock the hook so the test does not
-// have to mount the AuthProvider.
-vi.mock('../../auth/useAuth', () => ({
-  useAuth: () => ({ token: 'fake-jwt' }),
-}));
 
 describe('useApiClient — Content-Type handling', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -65,5 +60,34 @@ describe('useApiClient — Content-Type handling', () => {
     const { result } = renderHook(() => useApiClient());
     await result.current('/test');
     expect(getRequestHeaders().get('Accept-Language')).toBe(i18n.language);
+  });
+
+  it('requests carry no Authorization header', async () => {
+    fetchMock.mockImplementation(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+    const { result } = renderHook(() => useApiClient());
+    await result.current('/test');
+    await result.current('/test', { method: 'POST', body: '{"a":1}' });
+    for (const call of fetchMock.mock.calls) {
+      const init = call[1] as RequestInit | undefined;
+      expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+    }
+  });
+
+  it('tells the auth provider when the guard refuses a request with 401, but not an auth route', async () => {
+    const heard = vi.fn();
+    const stop = onUnauthorized(heard);
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Invalid', code: 'INVALID_CREDENTIALS' }), { status: 401 }),
+    );
+    const { result } = renderHook(() => useApiClient());
+
+    await result.current('/decks').catch(() => undefined);
+    expect(heard).toHaveBeenCalledTimes(1);
+    await result.current('/auth/sign-in').catch(() => undefined);
+    expect(heard).toHaveBeenCalledTimes(1);
+    stop();
   });
 });
