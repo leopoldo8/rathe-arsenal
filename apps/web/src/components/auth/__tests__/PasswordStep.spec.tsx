@@ -90,4 +90,15 @@ describe('PasswordStep', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Aguarde 2 minutos');
   });
+  it('too many tries says the wait and the other way in', async () => {
+    const signIn = vi.fn().mockRejectedValue(new AuthFetchError('Too many', 429, 300, null));
+    const { props } = renderStep(makeAuth({ signIn }));
+
+    await userEvent.type(screen.getByLabelText('Senha'), 'a-long-enough-password');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByText('Muitas tentativas. Aguarde 5 minutos e tente novamente.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Entre com um código por e-mail' }));
+    expect(props.onUseCode).toHaveBeenCalledTimes(1);
+  });
 });

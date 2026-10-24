@@ -39,7 +39,7 @@ export interface IAccountsApp {
  * Boots the whole API against the local Postgres with the same HTTP setup as `main.ts`, the
  * throttler switched off and the e-mail service replaced by a recorder.
  */
-export async function bootAccountsApp(): Promise<IAccountsApp> {
+export async function bootAccountsApp(options: { readonly throttle?: boolean } = {}): Promise<IAccountsApp> {
   process.env['NODE_ENV'] = 'development';
   process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal';
   process.env['JWT_SECRET'] = process.env['JWT_SECRET'] ?? 'test-jwt-secret-that-is-at-least-32-chars-long';
@@ -64,7 +64,7 @@ export async function bootAccountsApp(): Promise<IAccountsApp> {
   };
 
   // The throttler is a global guard, so it is switched off on the class, as the other full-app suites do.
-  jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
+  if (options.throttle !== true) jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(EmailService)
@@ -73,6 +73,7 @@ export async function bootAccountsApp(): Promise<IAccountsApp> {
 
   const app = moduleRef.createNestApplication();
   configureHttpApp(app);
+  (app.getHttpAdapter().getInstance() as { set: (key: string, value: unknown) => void }).set('trust proxy', 1);
   await app.listen(0, '127.0.0.1');
   const dataSource = moduleRef.get<DataSource>(getDataSourceToken());
   const suffix = Date.now().toString(36);

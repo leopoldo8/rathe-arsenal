@@ -8,6 +8,7 @@ import { rememberSignIn } from '../../lib/remembered-account';
 import { useToast } from '../ui/Toast/useToast';
 import { ofOwner } from './owner-phrase';
 import type { IShareOrigin } from './ShareOrigin';
+import { TurnstileWidget } from './TurnstileWidget';
 import { useIsPhone } from './useIsPhone';
 import styles from './AccountSteps.module.css';
 
@@ -37,6 +38,8 @@ export function NewAccountStep({ email, shareReturn, origin, onWrongEmail }: INe
   const [passwordError, setPasswordError] = useState(false);
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [widgetKey, setWidgetKey] = useState(0);
 
   useEffect(() => {
     if (withPassword) passwordRef.current?.focus();
@@ -58,12 +61,15 @@ export function NewAccountStep({ email, shareReturn, origin, onWrongEmail }: INe
         email,
         ...(withPassword ? { password } : {}),
         ...(shareReturn !== null ? { shareToken: shareReturn.shareToken, returnPath: shareReturn.returnTo } : {}),
+        ...(turnstileToken !== null ? { turnstileToken } : {}),
       });
       rememberSignIn(email, withPassword ? 'password' : 'code');
       finish();
     } catch (err) {
       setServerError(localizeAuthError(err, t));
       setSubmitting(false);
+      setTurnstileToken(null);
+      setWidgetKey((key) => key + 1);
     }
   }
 
@@ -127,6 +133,7 @@ export function NewAccountStep({ email, shareReturn, origin, onWrongEmail }: INe
           {serverError}
         </p>
       )}
+      <TurnstileWidget key={widgetKey} onToken={setTurnstileToken} />
 
       <button
         type="submit"

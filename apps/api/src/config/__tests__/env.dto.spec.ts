@@ -17,6 +17,13 @@ describe('validateEnv', () => {
     FABRARY_ALLOW_HOSTS: 'fabrary.net',
   };
 
+  it('the Turnstile secret is optional', () => {
+    expect(validateEnv(valid).TURNSTILE_SECRET_KEY).toBeUndefined();
+    expect(validateEnv({ ...valid, TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA' }).TURNSTILE_SECRET_KEY).toBe(
+      '1x0000000000000000000000000000000AA',
+    );
+  });
+
   it('GEMINI_API_KEY is optional', () => {
     expect(validateEnv(valid).GEMINI_API_KEY).toBeUndefined();
     expect(validateEnv({ ...valid, GEMINI_API_KEY: 'AIza-test' }).GEMINI_API_KEY).toBe('AIza-test');

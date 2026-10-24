@@ -27,6 +27,15 @@ describe('localizeAuthError', () => {
     expect(localizeAuthError(err, tEn)).toBe('Invalid email or password.');
   });
 
+  it('field codes have their own message', () => {
+    const email = new AuthFetchError('x', 400, null, 'INVALID_EMAIL');
+    const password = new AuthFetchError('x', 400, null, 'PASSWORD_TOO_SHORT');
+
+    expect(localizeAuthError(email, t)).toBe('E-mail inválido');
+    expect(localizeAuthError(password, t)).toBe('A senha precisa ter pelo menos 10 caracteres');
+    for (const err of [email, password]) expect(localizeAuthError(err, t)).not.toBe('Algo deu errado. Tente novamente.');
+  });
+
   it('falls back to generic when code is absent', () => {
     const err = new AuthFetchError('boom', 500, null, null);
     expect(localizeAuthError(err, t)).toBe('Algo deu errado. Tente novamente.');

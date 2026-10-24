@@ -68,6 +68,11 @@ export class EnvDto {
   APP_BASE_URL!: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  TURNSTILE_SECRET_KEY?: string;
+
+  @IsOptional()
   @IsUrl({ require_tld: false, require_protocol: true })
   AWS_APPSYNC_ENDPOINT: string =
     'https://42xrd23ihbd47fjvsrt27ufpfe.appsync-api.us-east-2.amazonaws.com/graphql';

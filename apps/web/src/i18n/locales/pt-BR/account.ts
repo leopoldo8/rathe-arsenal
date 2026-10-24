@@ -83,4 +83,9 @@ export const account = {
   confirmedSignedOut: 'E-mail confirmado.',
   linkExpired: 'Este link venceu.',
   sendNewOne: 'Mandar um novo',
+
+  // --- Limits and field checks (S34) ---
+  tooManyUseCode: 'Entre com um código por e-mail',
+  tooManyUsePassword: 'Entre com a sua senha',
+  codeTooShort: 'Faltam números. O código tem 6 dígitos.',
 } as const;

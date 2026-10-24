@@ -1493,34 +1493,34 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "share 
 **C399** - Each auth form with client checks - the start field, the new-account password, the sign-in password, the six code boxes, the settings password and the address fix - refuses its invalid input ("bia@gmail", a 9-character password, a 5-digit code) under the field with `aria-invalid="true"` and calls `fetch` 0 times (AC 253)
 Proof: `web unit src/components/auth/__tests__/auth-form-validation.spec.tsx -t "every auth form stops a bad field before the server"`
 
-**C400** - A sign-up body with `email: "bia@gmail"` and one with a 9-character password each answer `400` with a non-empty `code`; the web localizes the e-mail code as "E-mail inválido" and the password code as "A senha precisa ter pelo menos 10 caracteres", and `localizeAuthError` returns "Algo deu errado. Tente novamente." for neither (AC 254)
+**C400** - A sign-up body with `email: "bia@gmail"` and one with a 9-character password each answer `400` with a non-empty `code`; the web localizes the e-mail code as "E-mail inválido" and the password code as "A senha precisa ter pelo menos 10 caracteres", and `localizeAuthError` returns "Algo deu errado. Tente novamente." for neither (AC 254) · done
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "field errors carry a code"`
 Proof: `web unit src/auth/__tests__/localize-auth-error.spec.ts -t "field codes have their own message"`
 
-**C401** - From one IP, 25 sign-up requests that fail validation answer `400` each, and the next valid one answers `201`, not `429`; the same holds for code requests (AC 255)
+**C401** - From one IP, 25 sign-up requests that fail validation answer `400` each, and the next valid one answers `201`, not `429`; the same holds for code requests (AC 255) · done
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "invalid requests do not use up the limit"`
 
-**C402** - With `TURNSTILE_SECRET_KEY` set and siteverify stubbed to `success: false`, sign-up and code requests answer `400` `CAPTCHA_FAILED`, create no user and no `sign_in_code`; stubbed to `success: true` they answer `201` and `202`; the stub received a `POST` to `https://challenges.cloudflare.com/turnstile/v0/siteverify` with the secret and the request's token (AC 256; door 16)
+**C402** - With `TURNSTILE_SECRET_KEY` set and siteverify stubbed to `success: false`, sign-up and code requests answer `400` `CAPTCHA_FAILED`, create no user and no `sign_in_code`; stubbed to `success: true` they answer `201` and `202`; the stub received a `POST` to `https://challenges.cloudflare.com/turnstile/v0/siteverify` with the secret and the request's token (AC 256; door 16) · done
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "Turnstile decides sign-up and code requests when the secret is set"`
 Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "siteverify is called with the secret and the token"`
 
-**C403** - With `TURNSTILE_SECRET_KEY` absent the environment validates, sign-up answers `201` without calling siteverify, and one warning is logged per hour however many requests arrive; with `VITE_TURNSTILE_SITE_KEY` absent the web renders no widget and sends no `turnstileToken` (door 16; assumption "Turnstile when the secret is absent")
+**C403** - With `TURNSTILE_SECRET_KEY` absent the environment validates, sign-up answers `201` without calling siteverify, and one warning is logged per hour however many requests arrive; with `VITE_TURNSTILE_SITE_KEY` absent the web renders no widget and sends no `turnstileToken` (door 16; assumption "Turnstile when the secret is absent") · done
 Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "an absent secret skips the check and warns once an hour"`
 Proof: `api unit src/config/__tests__/env.dto.spec.ts -t "the Turnstile secret is optional"`
 Proof: `web unit src/components/auth/__tests__/TurnstileWidget.spec.tsx -t "no site key, no widget"`
 
-**C404** - The 6th code request for one address within an hour answers `429` with `Retry-After` and adds no row, counted from that address's `sign_in_code` rows of the last hour, while another address from the same IP still answers `202`; the 21st sign-up from one IP within an hour answers `429`, the 20th `201` (AC 257; assumption "the per-address code limit")
+**C404** - The 6th code request for one address within an hour answers `429` with `Retry-After` and adds no row, counted from that address's `sign_in_code` rows of the last hour, while another address from the same IP still answers `202`; the 21st sign-up from one IP within an hour answers `429`, the 20th `201` (AC 257; assumption "the per-address code limit") · done
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "five codes per address and twenty sign-ups per IP per hour"`
 
-**C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface)
+**C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "too many tries says the wait and the other way in"`
 Proof: `web unit src/components/auth/__tests__/CodeStep.spec.tsx -t "too many tries says the wait and the other way in"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "returns 200 for the first 5 requests and 429 on the 6th"`
 
-**C406** - `POST /api/auth/codes/verify` answers `429` once one IP passes the route's per-IP limit, the constant the controller declares (Surface)
+**C406** - `POST /api/auth/codes/verify` answers `429` once one IP passes the route's per-IP limit, the constant the controller declares (Surface) · done
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "code verification is throttled per IP"`
 
-**C407** - WHERE `TURNSTILE_SECRET_KEY` is set and the siteverify call fails with a network error or a timeout, the Turnstile check lets the request through, as when the secret is absent, and logs one warning naming the failure (plan Assumptions, siteverify unreachable; door 16)
+**C407** - WHERE `TURNSTILE_SECRET_KEY` is set and the siteverify call fails with a network error or a timeout, the Turnstile check lets the request through, as when the secret is absent, and logs one warning naming the failure (plan Assumptions, siteverify unreachable; door 16) · done
 Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "an unreachable siteverify lets the request through and warns"`
 
 ### S35 - Settings: create or change a password · 12 files · 45 KB · ~19k

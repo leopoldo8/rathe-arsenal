@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Ip, Patch, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -14,7 +14,9 @@ import { VerifyCodeDto } from './dtos/verify-code.dto';
 import { RedeemCodeDto } from './dtos/redeem-code.dto';
 import { ChangeEmailDto } from './dtos/change-email.dto';
 import { DeleteAccountDto } from './dtos/delete-account.dto';
+import { ThrottleValidRequestsOnly } from '../common/throttle/valid-requests-throttler.guard';
 import { AuthService, ISessionGrant } from './auth.service';
+import { TurnstileService } from './turnstile.service';
 import { SessionService } from './session.service';
 import { AUTH_THROTTLE } from './auth-throttle';
 import { clearSessionCookie, readSessionToken, setSessionCookie } from './session-cookie';
@@ -24,12 +26,14 @@ import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
 import { TLocale } from '../common/i18n/resolve-locale';
 
 @Controller('auth')
+@ThrottleValidRequestsOnly()
 export class AuthController {
   private readonly isProduction: boolean;
 
   constructor(
     private readonly authService: AuthService,
     private readonly sessions: SessionService,
+    private readonly turnstile: TurnstileService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -50,9 +54,11 @@ export class AuthController {
   async signUp(
     @Body() dto: SignUpDto,
     @AcceptLanguage() locale: TLocale,
+    @Ip() ip: string,
     @Res({ passthrough: true }) res: Response,
   ) {
     try {
+      await this.turnstile.assertHuman(dto.turnstileToken, ip);
       return this.withSession(res, await this.authService.signUp(dto, locale));
     } catch (err) {
       if (err instanceof AuthError) throw mapAuthError(err);
@@ -77,10 +83,17 @@ export class AuthController {
   @Throttle({ default: AUTH_THROTTLE.codes })
   @Post('codes')
   @HttpCode(HttpStatus.ACCEPTED)
-  async requestCode(@Body() dto: RequestCodeDto, @AcceptLanguage() locale: TLocale) {
+  async requestCode(
+    @Body() dto: RequestCodeDto,
+    @AcceptLanguage() locale: TLocale,
+    @Ip() ip: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
+      await this.turnstile.assertHuman(dto.turnstileToken, ip);
       return await this.authService.requestCode(dto.email, locale);
     } catch (err) {
+      if (err instanceof AuthError && err.retryAfterSeconds !== undefined) res.setHeader('Retry-After', String(err.retryAfterSeconds));
       if (err instanceof AuthError) throw mapAuthError(err);
       throw err;
     }

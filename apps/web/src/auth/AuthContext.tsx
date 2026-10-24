@@ -25,6 +25,8 @@ export interface ISignUpInput {
   readonly password?: string;
   readonly shareToken?: string;
   readonly returnPath?: string;
+  /** The Turnstile token of this visit; absent when the deployment has no site key. */
+  readonly turnstileToken?: string;
 }
 
 export interface ICodeSignIn {

@@ -16,7 +16,7 @@ type TStep =
   | { readonly kind: 'email'; readonly email: string }
   | { readonly kind: 'new'; readonly email: string }
   | { readonly kind: 'password'; readonly email: string }
-  | { readonly kind: 'code'; readonly email: string };
+  | { readonly kind: 'code'; readonly email: string; readonly hasPassword: boolean };
 
 interface IStartFlowProps {
   /** The single-use token an e-mailed "Entrar" button carries; it signs in on arrival. */
@@ -41,7 +41,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
   const shareReturn = useMemo(() => readShareReturn(), []);
   const origin = useShareOrigin(shareReturn);
   const [step, setStep] = useState<TStep>(() =>
-    codeEmail !== undefined ? { kind: 'code', email: codeEmail } : { kind: 'email', email: readRememberedEmail() },
+    codeEmail !== undefined ? { kind: 'code', email: codeEmail, hasPassword: false } : { kind: 'email', email: readRememberedEmail() },
   );
   const [redeeming, setRedeeming] = useState(buttonToken !== undefined);
   const redeemed = useRef(false);
@@ -75,7 +75,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
   }
 
   function resolved(email: string, next: TStartNext): void {
-    setStep({ kind: next === 'new' ? 'new' : next === 'password' ? 'password' : 'code', email });
+    setStep(next === 'code' ? { kind: 'code', email, hasPassword: false } : { kind: next, email });
   }
 
   if (redeeming) {
@@ -104,7 +104,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
           <PasswordStep
             email={step.email}
             onChangeEmail={() => backToEmail(step.email)}
-            onUseCode={() => setStep({ kind: 'code', email: step.email })}
+            onUseCode={() => setStep({ kind: 'code', email: step.email, hasPassword: true })}
             onSignedIn={finish}
           />
         </AccountLayout>
@@ -112,7 +112,12 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
     case 'code':
       return (
         <AccountLayout title={t('account.codeTitle')}>
-          <CodeStep email={step.email} onChangeEmail={() => backToEmail(step.email)} onSignedIn={finish} />
+          <CodeStep
+            email={step.email}
+            onChangeEmail={() => backToEmail(step.email)}
+            onSignedIn={finish}
+            onUsePassword={step.hasPassword ? () => setStep({ kind: 'password', email: step.email }) : undefined}
+          />
         </AccountLayout>
       );
     case 'email':

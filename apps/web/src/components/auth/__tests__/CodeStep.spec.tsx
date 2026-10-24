@@ -118,4 +118,20 @@ describe('CodeStep', () => {
 
     expect(props.onChangeEmail).toHaveBeenCalledTimes(1);
   });
+  it('too many tries says the wait and the other way in', async () => {
+    fetchMock.mockImplementation(async () => jsonResponse({ error: 'Too many' }, 429, { 'Retry-After': '300' }));
+    const onUsePassword = vi.fn();
+    const withPassword = renderWithAuth(
+      <CodeStep email="lucas.prado@hotmail.com" onChangeEmail={vi.fn()} onSignedIn={vi.fn()} onUsePassword={onUsePassword} />,
+    );
+
+    expect(await screen.findByText('Muitas tentativas. Aguarde 5 minutos e tente novamente.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Entre com a sua senha' }));
+    expect(onUsePassword).toHaveBeenCalledTimes(1);
+    withPassword.unmount();
+
+    renderStep('renata@cupuladt.com.br');
+    expect(await screen.findByText('Muitas tentativas. Aguarde 5 minutos e tente novamente.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entre com a sua senha' })).not.toBeInTheDocument();
+  });
 });

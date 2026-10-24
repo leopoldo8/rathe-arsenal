@@ -12,6 +12,7 @@ import { TokenGeneratorService } from './services/token-generator.service';
 import { AuthService } from './auth.service';
 import { SessionService } from './session.service';
 import { SignInCodeService } from './sign-in-code.service';
+import { TurnstileService } from './turnstile.service';
 import { AuthzService } from './authz.service';
 import { AuthController } from './auth.controller';
 import { EmailConfirmedGuard } from './guards/email-confirmed.guard';
@@ -34,6 +35,7 @@ import { SharingCoreModule } from '../sharing/sharing-core.module';
     JwtAuthGuard,
     AuthService,
     SignInCodeService,
+    TurnstileService,
     AuthzService,
     OwnsTrackedDeckGuard,
     EmailConfirmedGuard,

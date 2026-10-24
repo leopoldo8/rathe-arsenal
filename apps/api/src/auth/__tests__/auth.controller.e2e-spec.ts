@@ -1,7 +1,9 @@
 import { INestApplication, UnauthorizedException } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ValidRequestsThrottlerGuard } from '../../common/throttle/valid-requests-throttler.guard';
+import { TurnstileService } from '../turnstile.service';
 import { ConfigService } from '@nestjs/config';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import type { NextFunction, Request, Response } from 'express';
@@ -45,6 +47,14 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         settings: { theme: 'dark' },
       },
     });
+    authService.verifyCode.mockResolvedValue({
+      sessionToken: 'session-token',
+      body: {
+        user: { id: 'u1', email: 'a@b.com', role: EUserRole.User, chatAccess: false, emailConfirmed: false },
+        settings: { theme: 'dark' },
+        returnPath: null,
+      },
+    });
     authService.start.mockResolvedValue({ next: 'new' });
     authService.requestCode.mockResolvedValue({ expiresAt: new Date(), resendAfter: new Date() });
     authService.resendVerification.mockResolvedValue(undefined);
@@ -59,7 +69,8 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
         { provide: AuthService, useValue: authService },
         { provide: SessionService, useValue: createMock<SessionService>() },
         { provide: ConfigService, useValue: { get: () => undefined } },
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: TurnstileService, useValue: { assertHuman: jest.fn().mockResolvedValue(undefined) } },
+        { provide: APP_GUARD, useClass: ValidRequestsThrottlerGuard },
       ],
     }).compile();
 
@@ -213,6 +224,48 @@ describe('AuthController (e2e) — Unit 1 rate limiting', () => {
       await request(app.getHttpServer()).post('/api/auth/resend-verification').set('X-Forwarded-For', '203.0.113.31').set('x-test-user-id', 'u7').expect(202);
 
       expect(authService.resendVerification).toHaveBeenCalledWith('u7', expect.any(String));
+    });
+  });
+
+  describe('validation and limits (S34)', () => {
+    const post = (path: string, ip: string, body: object) =>
+      request(app.getHttpServer()).post(path).set('X-Forwarded-For', ip).send(body);
+
+    it('field errors carry a code', async () => {
+      const badEmail = await post('/api/auth/sign-up', '203.0.113.80', { email: 'bia@gmail', password: 'longenoughpassword' });
+      const shortPassword = await post('/api/auth/sign-up', '203.0.113.80', { email: 'bia@gmail.com', password: '123456789' });
+
+      expect(badEmail.status).toBe(400);
+      expect(badEmail.body.code).toBe('INVALID_EMAIL');
+      expect(shortPassword.status).toBe(400);
+      expect(shortPassword.body.code).toBe('PASSWORD_TOO_SHORT');
+    });
+
+    it('invalid requests do not use up the limit', async () => {
+      for (let i = 0; i < 25; i++) {
+        const res = await post('/api/auth/sign-up', '203.0.113.81', { email: 'bia@gmail', password: 'longenoughpassword' });
+        expect(res.status).toBe(400);
+      }
+      const validSignUp = await post('/api/auth/sign-up', '203.0.113.81', { email: 'bia@gmail.com', password: 'longenoughpassword' });
+      expect(validSignUp.status).toBe(201);
+
+      for (let i = 0; i < 25; i++) {
+        expect((await post('/api/auth/codes', '203.0.113.82', { email: 'bia@gmail' })).status).toBe(400);
+      }
+      expect((await post('/api/auth/codes', '203.0.113.82', { email: 'bia@gmail.com' })).status).toBe(202);
+    });
+
+    it('code verification is throttled per IP', async () => {
+      const { limit } = AUTH_THROTTLE.codesVerify;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await post('/api/auth/codes/verify', '203.0.113.83', { email: 'a@b.com', code: '123456' });
+        statuses.push(last.status);
+      }
+
+      expect(statuses).toEqual([...Array(limit).fill(200), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
     });
   });
 

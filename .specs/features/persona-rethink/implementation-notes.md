@@ -132,6 +132,22 @@
 - The auth page copy `auth.signUpAgainLink`, `auth.verifySuccess*`, `auth.continueToOnboarding` and the `check-your-email` strings are unused now and were left in place.
 - Security review item (c) of `dc65387` is closed here: an unconfirmed account can no longer create share links.
 
+### S34 (batch 4)
+
+- C399 is not marked here: its single proof also covers the Settings password form, which S35 builds, so the test and the mark land with S35.
+  The field checks it needs on the start field, the new-account password, the address fix, the sign-in password (under 10 characters) and the six boxes (Enter with fewer than six digits) are built in this slice.
+- Requests that fail validation do not use up a limit (AC 255): `ValidRequestsThrottlerGuard` replaces `ThrottlerGuard` as the global guard.
+  It validates the route's body DTO itself (found through the controller's route metadata) and skips counting when that fails, only on controllers marked `@ThrottleValidRequestsOnly()` (`AuthController`).
+  It extends the stock guard and overrides only `shouldSkip`, so the specs that switch the throttler off by spying on `ThrottlerGuard.prototype.canActivate` still work; `auth.controller.e2e-spec.ts` mounts it in place of the stock guard.
+- `SignInDto.password` uses `@IsNotEmpty()` instead of `@MinLength(1)`, so that the `PASSWORD_TOO_SHORT` code (a `minLength` failure on `password`) belongs to sign-up and the Settings password only.
+- Item (e) of the security review is closed: five codes per address per hour, counted from `sign_in_code` rows (replaced and consumed rows included), so asking for a new code can no longer give more than 25 tries an hour (`auth-limits.e2e-spec.ts`, "asking for a new code does not give a guesser more than five tries per code").
+  The S38 builder must keep `sign_in_code` rows for at least an hour when the housekeeping step purges expired codes: a code expires after 15 minutes, and purging it that early would empty the window this limit counts.
+- The limit's `429` carries `Retry-After` and `TOO_MANY_CODES`; the web shows the wait through the existing rate-limit copy (`Retry-After` 300 gives "Aguarde 5 minutos").
+- `ConfigService` keeps the first value it read from the environment, so the Turnstile test runs last in `auth-limits.e2e-spec.ts`.
+- Copy beyond the checks' quotes: "Entre com a sua senha" (the code screen's way in after a limit, for an account with a password), "Faltam números. O código tem 6 dígitos." (Enter on a code with missing digits), and "Não conseguimos confirmar que você é uma pessoa. Tente de novo." for `CAPTCHA_FAILED`.
+- The catalog's `INVALID_EMAIL` lost its final period ("E-mail inválido"), so it reads as C400 quotes it; `PASSWORD_TOO_SHORT` has none either.
+- `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` are in `.env.example`; the web widget loads Cloudflare's script only when the site key exists, and asks for a new token after each request.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -151,7 +167,7 @@
   (b) The attacker's own session survives the owner taking over: the JWT (and the interim `ra_session` cookie) issued at sign-up stays valid until it expires. S32 must revoke every `user_session` of an account when a code sign-in drops an unproven password. RESOLVED in S32 (batch 3).
   (c) Share links for unconfirmed accounts: `JwtStrategy` no longer gates on `emailVerifiedAt` (door 14), and `POST /api/decks/:deckId/share` is open to an unconfirmed account until S33's `403 EMAIL_NOT_CONFIRMED` (C389). Not a flaw in the strategy; batch 2 must not ship without S33. RESOLVED in S33 (batch 4).
   (d) The interim cookie is accepted on writes without the origin check of C386/C387 (S32). Until then only `SameSite=Lax` protects it, which does not stop a request from a sibling subdomain; batch 2 must not ship without S32. RESOLVED in S32 (batch 3).
-  (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range).
+  (e) Per-address code limits: asking for a new code resets the 5 tries, so only the per-IP windows slow a guesser until S34's per-address count (C404 range). RESOLVED in S34 (batch 4).
 - Security review of `94b56ce` (second pass).
   (f) Changing or creating a password needs only a signed-in session (`PUT /api/users/me/password`, C409 says no current-password input), so whoever holds one live session of the account can take it over by setting a password of their own.
   Every other session is ended by the change (C380) and the account can still be recovered by a code sign-in, but the holder of the stolen session keeps access.

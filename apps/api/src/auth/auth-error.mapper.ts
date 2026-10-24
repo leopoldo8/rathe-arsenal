@@ -3,12 +3,19 @@ import {
   ForbiddenException,
   GoneException,
   HttpException,
+  HttpStatus,
   InternalServerErrorException,
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthError, EAuthErrorCode } from './errors';
+
+class TooManyRequestsException extends HttpException {
+  constructor(response: string | object) {
+    super(response, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
 
 const STATUS_MAP: Record<EAuthErrorCode, new (response: string | object) => HttpException> = {
   [EAuthErrorCode.InvalidCredentials]: UnauthorizedException,
@@ -21,6 +28,8 @@ const STATUS_MAP: Record<EAuthErrorCode, new (response: string | object) => Http
   [EAuthErrorCode.UserNotFound]: NotFoundException,
   [EAuthErrorCode.EmailTaken]: ConflictException,
   [EAuthErrorCode.InvalidCode]: UnauthorizedException,
+  [EAuthErrorCode.CaptchaFailed]: BadRequestException,
+  [EAuthErrorCode.TooManyCodes]: TooManyRequestsException,
 };
 
 export function mapAuthError(err: AuthError): HttpException {

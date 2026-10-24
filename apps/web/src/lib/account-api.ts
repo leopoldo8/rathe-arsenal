@@ -17,8 +17,11 @@ export async function startAccount(email: string): Promise<TStartNext> {
   return res.next;
 }
 
-export function requestSignInCode(email: string): Promise<ICodeRequest> {
-  return authFetch<ICodeRequest>('/auth/codes', { ...JSON_POST, body: JSON.stringify({ email }) });
+export function requestSignInCode(email: string, turnstileToken?: string): Promise<ICodeRequest> {
+  return authFetch<ICodeRequest>('/auth/codes', {
+    ...JSON_POST,
+    body: JSON.stringify({ email, ...(turnstileToken !== undefined ? { turnstileToken } : {}) }),
+  });
 }
 
 export interface IEmailConfirmation {

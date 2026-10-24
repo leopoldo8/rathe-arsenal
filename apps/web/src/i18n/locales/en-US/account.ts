@@ -80,4 +80,9 @@ export const account = {
   confirmedSignedOut: 'Email confirmed.',
   linkExpired: 'This link has expired.',
   sendNewOne: 'Send a new one',
+
+  // --- Limits and field checks (S34) ---
+  tooManyUseCode: 'Sign in with a code by email',
+  tooManyUsePassword: 'Sign in with your password',
+  codeTooShort: 'Some digits are missing. The code has 6 digits.',
 } as const;

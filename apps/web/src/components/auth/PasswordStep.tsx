@@ -6,6 +6,8 @@ import { localizeAuthError } from '../../auth/localize-auth-error';
 import { lastSignInUsedPassword, rememberSignIn } from '../../lib/remembered-account';
 import styles from './AccountSteps.module.css';
 
+const MIN_PASSWORD_LENGTH = 10;
+
 interface IPasswordStepProps {
   readonly email: string;
   readonly onChangeEmail: () => void;
@@ -20,6 +22,8 @@ export function PasswordStep({ email, onChangeEmail, onUseCode, onSignedIn }: IP
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [wrongPassword, setWrongPassword] = useState(false);
+  const [tooShort, setTooShort] = useState(false);
+  const [tooManyTries, setTooManyTries] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -27,6 +31,13 @@ export function PasswordStep({ email, onChangeEmail, onUseCode, onSignedIn }: IP
     if (submitting || password === '') return;
     setError('');
     setWrongPassword(false);
+    setTooManyTries(false);
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setTooShort(true);
+      inputRef.current?.focus();
+      return;
+    }
+    setTooShort(false);
     setSubmitting(true);
     try {
       await signIn(email, password);
@@ -34,7 +45,10 @@ export function PasswordStep({ email, onChangeEmail, onUseCode, onSignedIn }: IP
       onSignedIn();
     } catch (err) {
       if (err instanceof AuthFetchError && err.status === 401) setWrongPassword(true);
-      else setError(localizeAuthError(err, t));
+      else {
+        setError(localizeAuthError(err, t));
+        setTooManyTries(err instanceof AuthFetchError && err.status === 429);
+      }
       setSubmitting(false);
       inputRef.current?.focus();
     }
@@ -62,8 +76,14 @@ export function PasswordStep({ email, onChangeEmail, onUseCode, onSignedIn }: IP
         autoComplete="current-password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        aria-invalid={wrongPassword ? 'true' : undefined}
+        aria-invalid={wrongPassword || tooShort ? 'true' : undefined}
+        aria-describedby={tooShort ? 'sign-in-password-error' : undefined}
       />
+      {tooShort && (
+        <p id="sign-in-password-error" className={styles.fieldError}>
+          {t('apiErrors.PASSWORD_TOO_SHORT')}
+        </p>
+      )}
       {wrongPassword && (
         <div className={styles.inlineRow} role="alert">
           <p className={styles.fieldError}>{t('account.wrongPassword')}</p>
@@ -73,9 +93,14 @@ export function PasswordStep({ email, onChangeEmail, onUseCode, onSignedIn }: IP
         </div>
       )}
       {error !== '' && (
-        <p className={styles.fieldError} role="alert">
-          {error}
-        </p>
+        <div className={styles.inlineRow} role="alert">
+          <p className={styles.fieldError}>{error}</p>
+          {tooManyTries && (
+            <button type="button" className={styles.linkBtn} onClick={onUseCode}>
+              {t('account.tooManyUseCode')}
+            </button>
+          )}
+        </div>
       )}
 
       <button
