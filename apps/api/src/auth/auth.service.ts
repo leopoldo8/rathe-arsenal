@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, QueryFailedError, Repository } from 'typeorm';
+import { IsNull, MoreThan, QueryFailedError, Repository } from 'typeorm';
 import { EUserRole, UserEntity } from '../database/entities/user.entity';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { EmailService } from '../email/email.service';
@@ -202,10 +202,19 @@ export class AuthService {
       throw new AuthError(EAuthErrorCode.TokenExpired, 'This confirmation link has expired');
     }
 
-    user.emailVerifiedAt = new Date();
-    user.verificationTokenHash = null;
-    user.verificationTokenExpiresAt = null;
-    await this.users.save(user);
+    // One conditional statement spends the token: a parallel use, or "Errei o e-mail" swapping the
+    // address between the read above and this write, finds nothing left to confirm.
+    const claimed = await this.users.update(
+      {
+        id: user.id,
+        verificationTokenHash: hash,
+        emailVerifiedAt: IsNull(),
+        deletedAt: IsNull(),
+        verificationTokenExpiresAt: MoreThan(new Date()),
+      },
+      { emailVerifiedAt: new Date(), verificationTokenHash: null, verificationTokenExpiresAt: null },
+    );
+    if (claimed.affected !== 1) throw new AuthError(EAuthErrorCode.TokenExpired, 'This confirmation link has expired');
 
     this.logger.log({ event: 'auth.verify_email.success', userId: user.id });
     return { verified: true, returnPath: user.signupReturnPath, email: user.email };

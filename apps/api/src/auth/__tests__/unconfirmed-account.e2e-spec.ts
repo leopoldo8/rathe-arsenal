@@ -197,4 +197,30 @@ describe('An account that has not confirmed its e-mail (E2E, S33)', () => {
     const noCookie = await request(server()).post('/api/auth/resend-verification');
     expect(noCookie.status).toBe(401);
   });
+  it('a confirmation token is spent once even when used in parallel', async () => {
+    const account = await signUp('parallel-token');
+
+    const answers = await Promise.all(
+      Array.from({ length: 6 }, () => request(server()).post('/api/auth/verify-email').send({ token: account.confirmationToken })),
+    );
+
+    expect(answers.map((answer) => answer.status).sort()).toEqual([200, 410, 410, 410, 410, 410]);
+  });
+
+  it('an old token cannot confirm the address that "Errei o e-mail" just moved to', async () => {
+    for (let round = 0; round < 8; round++) {
+      const account = await signUp(`token-vs-fix-${round}`);
+      const newEmail = ctx.emailFor(`token-vs-fix-new-${round}`);
+
+      await Promise.all([
+        request(server()).post('/api/auth/verify-email').send({ token: account.confirmationToken }),
+        request(server()).patch('/api/auth/me/email').set(...as(account.token)).send({ email: newEmail }),
+      ]);
+
+      const [row] = (await ctx.dataSource.query(`SELECT email, "emailVerifiedAt" FROM "user" WHERE id = $1`, [account.userId])) as [
+        { email: string; emailVerifiedAt: Date | null },
+      ];
+      expect(row.email === newEmail && row.emailVerifiedAt !== null).toBe(false);
+    }
+  });
 });

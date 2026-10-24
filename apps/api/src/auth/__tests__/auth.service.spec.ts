@@ -319,14 +319,17 @@ describe('AuthService.verifyEmail', () => {
   it('marks the user as confirmed, clears the token and opens no session (happy path)', async () => {
     const raw = new TokenGeneratorService().generateRawToken();
     const user = pendingUser(raw);
-    const { service, sessions } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    const { service, sessions, repo } = buildService({ findOne: jest.fn().mockResolvedValue(user) });
+    repo.update = jest.fn().mockResolvedValue({ affected: 1 });
 
     const result = await service.verifyEmail(raw);
 
     expect(result).toEqual({ verified: true, returnPath: '/d/aB3dE5gH7jK9mN', email: 'a@b.com' });
     expect(sessions.create).not.toHaveBeenCalled();
-    expect(user.emailVerifiedAt).not.toBeNull();
-    expect(user.verificationTokenHash).toBeNull();
+    expect(repo.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-1' }),
+      expect.objectContaining({ emailVerifiedAt: expect.any(Date), verificationTokenHash: null, verificationTokenExpiresAt: null }),
+    );
   });
 
   it('answers TOKEN_EXPIRED for an unknown token', async () => {
