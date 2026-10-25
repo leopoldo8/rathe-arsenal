@@ -12,6 +12,8 @@ import { ListShareService } from './list-share.service';
 import { SharePreviewModule } from './preview/share-preview.module';
 import { noIndexMiddleware } from './no-index.middleware';
 import { SharedDeckCopyService } from './shared-deck-copy.service';
+import { SharedDeckReplacements } from './shared-deck-replacements';
+import { CardReplacementEntity } from '../database/entities/card-replacement.entity';
 import { SharedDeckViewService } from './shared-deck-view.service';
 import { SharedDecksController } from './shared-decks.controller';
 import { SharedListViewService } from './shared-list-view.service';
@@ -26,13 +28,14 @@ import { VisitorDecksMissingService } from './visitor-decks-missing.service';
     AuthModule,
     CollectionModule,
     SubstitutionModule,
-    TypeOrmModule.forFeature([DeckCardEntity, CardListLineEntity]),
+    TypeOrmModule.forFeature([DeckCardEntity, CardListLineEntity, CardReplacementEntity]),
   ],
   controllers: [DeckShareController, SharedDecksController, ListShareController, SharedListsController],
   providers: [
     DeckShareService,
     SharedDeckViewService,
     SharedDeckCopyService,
+    SharedDeckReplacements,
     ListShareService,
     SharedListViewService,
     VisitorDecksMissingService,

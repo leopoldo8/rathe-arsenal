@@ -50,6 +50,16 @@ export const sharing = {
     signUp: 'Create account',
     signIn: 'I have an account',
   },
+  // Saving a deck that has substitutions: which list
+  saveChoice: {
+    title: 'Which list do you want to save?',
+    original: 'The list before {{name}}\'s swaps (with {{cards}})',
+    asBuilt: 'As {{name}} built it (with {{cards}})',
+    save: 'Save',
+    close: 'Close',
+    failed: 'Could not save the deck. Try again.',
+    replacedBy: 'in place of {{name}}',
+  },
   // Logged-in visitor on a deck link: coverage and copy
   coverage: {
     eyebrow: 'In your collection',

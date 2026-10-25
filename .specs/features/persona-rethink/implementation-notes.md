@@ -2,6 +2,13 @@
 
 ## Deviations
 
+### S24 (batch 16)
+
+- A deck with an active substitution asks for `variant` on `POST /api/shared/decks/:token/copy` (`400` `COPY_VARIANT_REQUIRED` without one, nothing written). `original` gives each active pick's copies back to the original on the side the pick took them from, and only the copies the deck still holds, so a deck edited after the pick never gains a card.
+- The shared deck page keeps its gallery of card images: a replaced card's tile says "no lugar de <original>" under the name, with the original's pitch only when it has the same name as the card standing in. `r3-saved-deck-phone` draws rows with a section per card type; the gallery was not rebuilt (no check asks for it).
+- The choice sheet names the cards as the checks quote them ("A lista antes das trocas do Caio (com Swing Big)", "Como o Caio montou (com Runner Runner)"), without the pitch word, and with "do" and "o" in front of the name (the plan says "de <sharer>"); with several picks the names are joined with ", ". Copy of mine: "Não foi possível salvar o deck. Tente de novo." when the save fails.
+- `SharedDeckViewService` gained a constructor argument (`SharedDeckReplacements`), so the two specs that build it (`shared-deck-view.service.spec.ts`, `spare-consumers.spec.ts`) pass one more mock; no assertion changed.
+
 ### S25 (batch 16)
 
 - The "Você tem N na coleção" note on a sell line (C308) reads a new `owned` field on each line of a sell list (the copies of the card in the collection, whatever the version; null on a want list), computed by the list view from `CollectionReadService.loadOwned`, so the tile needs no read of the whole Library. The note sits on the line tile, where the audit finding is, and the "na coleção: N" hint of the add dialog stays.

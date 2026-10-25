@@ -50,6 +50,16 @@ export const sharing = {
     signUp: 'Criar conta',
     signIn: 'Já tenho conta',
   },
+  // Saving a deck that has substitutions: which list
+  saveChoice: {
+    title: 'Qual lista você quer salvar?',
+    original: 'A lista antes das trocas do {{name}} (com {{cards}})',
+    asBuilt: 'Como o {{name}} montou (com {{cards}})',
+    save: 'Salvar',
+    close: 'Fechar',
+    failed: 'Não foi possível salvar o deck. Tente de novo.',
+    replacedBy: 'no lugar de {{name}}',
+  },
   // Logged-in visitor on a deck link: coverage and copy
   coverage: {
     eyebrow: 'Na sua coleção',

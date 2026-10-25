@@ -17,6 +17,8 @@ export interface ISharedCard {
   /** Copies carried in the inventory beside `quantity` (door 3); 0 when none. */
   inventoryQuantity: number;
   imageUrl: ISharedCardImage | null;
+  /** Deck intent: the card this row stands in for, when one of the sharer's active picks covers it; absent or null otherwise. */
+  replaces?: { cardIdentifier: string; name: string; pitch: 1 | 2 | 3 | null } | null;
 }
 
 export interface ISharedFormatVerdict {

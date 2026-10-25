@@ -12,6 +12,7 @@ import { EUserRole, UserEntity } from '../../database/entities/user.entity';
 import { ShareEventsService } from '../share-events.service';
 import { SharedDeckLookup } from '../shared-deck-lookup';
 import { SharedDeckMissingService } from '../shared-deck-missing.service';
+import { SharedDeckReplacements, TActiveReplacement } from '../shared-deck-replacements';
 import { SharedDeckViewService } from '../shared-deck-view.service';
 import { SharedGroupAskService } from '../shared-group-ask.service';
 
@@ -43,7 +44,13 @@ const visitor = (userId: string): ICurrentUser => ({
 
 function build(
   inventories: Record<string, Map<string, number>> = {},
-  options: { intent?: TDeckShareIntent; showsContact?: boolean; deck?: TrackedDeckEntity; rows?: DeckCardEntity[] } = {},
+  options: {
+    intent?: TDeckShareIntent;
+    showsContact?: boolean;
+    deck?: TrackedDeckEntity;
+    rows?: DeckCardEntity[];
+    replacements?: TActiveReplacement[];
+  } = {},
 ) {
   const link = {
     id: 1,
@@ -84,7 +91,9 @@ function build(
   }));
   const spareCopies = createMock<SpareCopiesService>();
   spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map() });
-  const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk, spareCopies);
+  const replacements = createMock<SharedDeckReplacements>();
+  replacements.active.mockResolvedValue(options.replacements ?? []);
+  const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk, spareCopies, replacements);
   return { service, events };
 }
 
@@ -258,5 +267,33 @@ describe('SharedDeckViewService.matches', () => {
 
   it('answers 404 for a deck-intent link', async () => {
     await expect(build({}, { intent: 'deck' }).service.matches('live', 'visitor-1')).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('SharedDeckViewService.view replaced rows', () => {
+  const pick: TActiveReplacement = {
+    slot: 'mainboard',
+    originalCardIdentifier: CARD_A.cardIdentifier,
+    replacementCardIdentifier: CARD_B.cardIdentifier,
+    quantity: 1,
+    side: 'deck',
+  };
+
+  it('carries the original of each active replacement', async () => {
+    const { service } = build({}, { intent: 'deck', replacements: [pick] });
+
+    const page = await service.view('live', null);
+
+    const replaced = page.cards.find((card) => card.cardIdentifier === CARD_B.cardIdentifier);
+    expect(replaced?.replaces).toEqual({ cardIdentifier: CARD_A.cardIdentifier, name: CARD_A.name, pitch: 1 });
+    expect(page.cards.find((card) => card.cardIdentifier === CARD_A.cardIdentifier)?.replaces).toBeNull();
+  });
+
+  it('marks nothing on a deck with no active replacement', async () => {
+    const { service } = build({}, { intent: 'deck' });
+
+    const page = await service.view('live', null);
+
+    expect(page.cards.every((card) => card.replaces === null)).toBe(true);
   });
 });

@@ -24,6 +24,8 @@ export interface ISharedCard {
   /** Copies carried outside the starting deck (door 3); absent on answers that predate it. */
   readonly inventoryQuantity?: number;
   readonly imageUrl: ISharedCardImage | null;
+  /** Deck intent: the card this row stands in for when one of the sharer's active picks covers it. */
+  readonly replaces?: { readonly cardIdentifier: string; readonly name: string; readonly pitch: 1 | 2 | 3 | null } | null;
   /**
    * The store's stored answer for a card of a `missing` link, with the priced facts. Absent on answers that predate them,
    * which read as "the store does not list it".
@@ -186,10 +188,13 @@ export function getCoverage(token: string): Promise<ISharedDeckCoverage> {
   return authFetch<ISharedDeckCoverage>(`/shared/decks/${encodeURIComponent(token)}/coverage`);
 }
 
-export function copySharedDeck(token: string): Promise<{ deckId: number }> {
+/** The list a visitor saves from a deck with substitutions: the sharer's list before them, or the deck as built. */
+export type TCopyVariant = 'original' | 'as_built';
+
+export function copySharedDeck(token: string, variant?: TCopyVariant): Promise<{ deckId: number }> {
   return authFetch<{ deckId: number }>(`/shared/decks/${encodeURIComponent(token)}/copy`, {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify(variant === undefined ? {} : { variant }),
   });
 }
 
@@ -315,7 +320,7 @@ export function useSharedCoverageQuery(token: string, enabled: boolean) {
 export function useCopySharedDeckMutation(token: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => copySharedDeck(token),
+    mutationFn: (variant?: TCopyVariant) => copySharedDeck(token, variant),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['decks'] });
     },

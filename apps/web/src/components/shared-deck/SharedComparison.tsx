@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { localizeAuthError } from '../../auth/localize-auth-error';
@@ -7,9 +7,11 @@ import {
   useCopySharedDeckMutation,
   useSharedCoverageQuery,
   type ISharedDeckResponse,
+  type TCopyVariant,
 } from '../../api/shared-decks';
 import { VarFill } from '../deck-detail/VarFill';
 import { Button } from '../ui/Button/Button';
+import { SaveDeckChoice } from './SaveDeckChoice';
 import { writeShareReturn } from '../../lib/share-return';
 import styles from './SharedComparison.module.css';
 
@@ -96,18 +98,31 @@ function EmptyCollectionPanel(): React.ReactElement {
   );
 }
 
+function uniqueNames(names: readonly string[]): string[] {
+  return [...new Set(names)];
+}
+
 function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const coverage = useSharedCoverageQuery(deck.token, true);
   const copy = useCopySharedDeckMutation(deck.token);
 
-  function handleCopy(): void {
-    copy.mutate(undefined, {
+  const [choosing, setChoosing] = useState(false);
+  const replaced = deck.cards.flatMap((card) => (card.replaces ? [{ card, original: card.replaces }] : []));
+
+  function save(variant?: TCopyVariant): void {
+    copy.mutate(variant, {
       onSuccess: ({ deckId }) => {
         void navigate({ to: '/decks/$deckId', params: { deckId: String(deckId) }, search: { edit: undefined } });
       },
     });
+  }
+
+  // A deck with swaps asks which list first; one with none saves at once.
+  function handleCopy(): void {
+    if (replaced.length > 0) return setChoosing(true);
+    save();
   }
 
   const data = coverage.data;
@@ -162,10 +177,21 @@ function CoveragePanel({ deck }: { readonly deck: ISharedDeckResponse }): React.
           {t('sharing.coverage.copy')}
         </Button>
       </div>
-      {copy.isError && (
+      {copy.isError && !choosing && (
         <p className={styles.error} role="alert">
           {localizeAuthError(copy.error, t)}
         </p>
+      )}
+      {choosing && (
+        <SaveDeckChoice
+          sharerName={deck.sharerName}
+          originals={uniqueNames(replaced.map((entry) => entry.original.name))}
+          replacements={uniqueNames(replaced.map((entry) => entry.card.name))}
+          pending={copy.isPending}
+          failed={copy.isError}
+          onSave={save}
+          onClose={() => setChoosing(false)}
+        />
       )}
     </aside>
   );

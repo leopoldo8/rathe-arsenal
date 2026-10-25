@@ -14,6 +14,7 @@ import { CollectionReadService } from '../collection/collection-read.service';
 import { SpareCopiesService } from '../collection/spare/spare-copies.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import {
+  ISharedCard,
   ISharedDeckCoverage,
   ISharedDeckLegality,
   ISharedDeckMatches,
@@ -26,6 +27,7 @@ import { buildDeckShareUrl } from './share-url';
 import { ILiveSharedDeck, SharedDeckLookup } from './shared-deck-lookup';
 import { SharedDeckMissingService } from './shared-deck-missing.service';
 import { SharedGroupAskService } from './shared-group-ask.service';
+import { SharedDeckReplacements, TActiveReplacement } from './shared-deck-replacements';
 import { shareLinkUnavailable } from './sharing-errors';
 import {
   resolveHeroCard,
@@ -56,6 +58,22 @@ function legalityOf(format: string, deck: ILegalityDeck): ISharedDeckLegality {
   };
 }
 
+/** A row covered by one of the sharer's active picks says which card it stands in for. */
+function withOriginal(card: ISharedCard, row: { readonly cardIdentifier: string; readonly slot: string }, picks: readonly TActiveReplacement[]): ISharedCard {
+  const pick = picks.find((entry) => entry.replacementCardIdentifier === row.cardIdentifier && entry.slot === row.slot);
+  if (pick === undefined) return { ...card, replaces: null };
+  const original = lookupCatalogCard(pick.originalCardIdentifier);
+  const pitch = original?.pitch;
+  return {
+    ...card,
+    replaces: {
+      cardIdentifier: pick.originalCardIdentifier,
+      name: original?.name ?? pick.originalCardIdentifier,
+      pitch: pitch === 1 || pitch === 2 || pitch === 3 ? pitch : null,
+    },
+  };
+}
+
 @Injectable()
 export class SharedDeckViewService {
   constructor(
@@ -68,6 +86,7 @@ export class SharedDeckViewService {
     private readonly deckCards: Repository<DeckCardEntity>,
     private readonly groupAsk: SharedGroupAskService,
     private readonly spareCopies: SpareCopiesService,
+    private readonly replacements: SharedDeckReplacements,
   ) {}
 
   /** What a deck address answers: the deck or the missing cards for people, the needed cards alone for a store's quote. */
@@ -118,6 +137,7 @@ export class SharedDeckViewService {
     const visitorCounts = groupAsk === null ? null : await this.withVisitorCounts(groupAsk.cards, isOwner ? null : visitor);
     const missing = visitorCounts?.cards ?? [];
     const heroCard = resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard);
+    const picks = showsMissing ? [] : await this.replacements.active(deck.id);
 
     await this.recordOpen(live, visitor);
 
@@ -136,7 +156,7 @@ export class SharedDeckViewService {
       deckId: isOwner ? deck.id : null,
       updatedAt: deck.updatedAt.toISOString(),
       totalCards: sumQuantities(rows),
-      cards: showsMissing ? [] : rows.map((row) => toSharedCardFromRow(row, lookupCatalogCard)),
+      cards: showsMissing ? [] : rows.map((row) => withOriginal(toSharedCardFromRow(row, lookupCatalogCard), row, picks)),
       missing,
       missingCount: sumQuantities(missing),
       storeSummary: groupAsk?.storeSummary ?? null,

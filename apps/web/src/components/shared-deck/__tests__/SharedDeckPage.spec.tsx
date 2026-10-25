@@ -546,4 +546,54 @@ describe('SharedDeckPage', () => {
     // The query retries a non-404 failure once (about a second later) before giving up.
     expect(await screen.findByRole('button', { name: 'Tentar de novo' }, { timeout: 4000 })).toBeInTheDocument();
   });
+
+  describe('a deck with substitutions', () => {
+    const REPLACED: ISharedDeckResponse = {
+      ...DECK,
+      cards: [
+        ...DECK.cards,
+        card({
+          cardIdentifier: 'runner-runner-red',
+          name: 'Runner Runner',
+          pitch: 1,
+          quantity: 3,
+          replaces: { cardIdentifier: 'swing-big-red', name: 'Swing Big', pitch: 1 },
+        }),
+      ],
+    };
+
+    it('a replaced row names the card it replaces', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => REPLACED);
+      renderPage();
+
+      const cards = await screen.findAllByTestId('shared-card');
+      const replaced = cards.find((cell) => within(cell).queryByText('no lugar de Swing Big') !== null);
+      expect(replaced).toBeDefined();
+      expect(within(replaced!).getAllByText('Runner Runner (Vermelho)').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/no lugar de/)).toHaveLength(1);
+    });
+
+    it('a deck with none marks nothing', async () => {
+      renderPage();
+
+      await screen.findAllByTestId('shared-card');
+      expect(screen.queryByText(/no lugar de/)).not.toBeInTheDocument();
+    });
+
+    it('asks which list before saving, then sends the pick', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => REPLACED);
+      api.handlers.set(`GET /shared/decks/${TOKEN}/coverage`, () => ({ ownedCopies: 6, totalCopies: 8, percent: 75, collectionEmpty: false }));
+      api.handlers.set(`POST /shared/decks/${TOKEN}/copy`, () => ({ deckId: 42 }));
+      renderPage(undefined, makeAuth());
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Salvar nos meus decks' }));
+      expect(await screen.findByRole('heading', { name: 'Qual lista você quer salvar?' })).toBeInTheDocument();
+      expect(api.calls.some((call) => call.key.startsWith('POST'))).toBe(false);
+      await userEvent.click(screen.getByRole('radio', { name: /Como o Dudu_Pelotas montou \(com Runner Runner\)/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+      await waitFor(() => expect(navigateMock).toHaveBeenCalled());
+      expect(api.calls.find((call) => call.key.startsWith('POST'))?.body).toEqual({ variant: 'as_built' });
+    });
+  });
 });

@@ -7,6 +7,7 @@ import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ISharedDeckCoverage, ISharedDeckMatches, ISharedDeckResponse } from './dtos/shared-deck.dto';
 import { ISharedQuoteResponse } from './dtos/shared-missing.dto';
+import { CopyDeckDto } from './dtos/copy-deck.dto';
 import { VisitorEventDto } from './dtos/share-event.dto';
 import { SharedDeckCopyService } from './shared-deck-copy.service';
 import { SharedDeckViewService } from './shared-deck-view.service';
@@ -70,8 +71,9 @@ export class SharedDecksController {
   @Throttle({ default: { limit: COPY_LIMIT, ttl: MINUTE_MS } })
   async copy(
     @Param('token') token: string,
+    @Body() dto: CopyDeckDto,
     @CurrentUser() visitor: ICurrentUser,
   ): Promise<{ deckId: number }> {
-    return this.copyService.copy(token, visitor.userId);
+    return this.copyService.copy(token, visitor.userId, dto.variant);
   }
 }

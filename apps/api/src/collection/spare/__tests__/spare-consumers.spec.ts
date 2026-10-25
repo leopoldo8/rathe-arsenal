@@ -25,6 +25,7 @@ import { SharedGroupAskService } from '../../../sharing/shared-group-ask.service
 import { SharedListLookup } from '../../../sharing/shared-list-lookup';
 import { SharedListViewService } from '../../../sharing/shared-list-view.service';
 import { VisitorDecksMissingService } from '../../../sharing/visitor-decks-missing.service';
+import { SharedDeckReplacements } from '../../../sharing/shared-deck-replacements';
 import { SpareCopiesService } from '../spare-copies.service';
 import { SpareViewService } from '../spare-view.service';
 
@@ -109,7 +110,7 @@ async function groupPageReader(spare: SpareCopiesService): Promise<number | null
     ],
     storeSummary: { copies: 0, cents: 0 },
   });
-  const service = new SharedDeckViewService(lookup, createMock<ShareEventsService>(), createMock<SharedDeckMissingService>(), collection, config(), deckCards, groupAsk, spare);
+  const service = new SharedDeckViewService(lookup, createMock<ShareEventsService>(), createMock<SharedDeckMissingService>(), collection, config(), deckCards, groupAsk, spare, createMock<SharedDeckReplacements>());
   const page = await service.view('live', visitor(DUDA));
   return page.missing[0]?.spare ?? null;
 }

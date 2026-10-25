@@ -653,6 +653,41 @@ describe('Sharing (E2E)', () => {
     await request(server).post(`/api/shared/decks/${token}/copy`).set(...auth(visitor)).send({}).expect(404);
   });
 
+  it('copy asks for a variant when the deck has active replacements', async () => {
+    const owner = await createSession('variant');
+    const visitor = await createSession('variant-visitor');
+    const deckId = await createDeck(owner);
+    // The owner swapped their single copy of B for A: the list before the pick held A 3, B 1 plus one A more.
+    await dataSource.query(
+      `INSERT INTO card_replacement ("userId", "trackedDeckId", slot, "originalCardIdentifier", "replacementCardIdentifier", quantity, side, "pickedFrom", status)
+       VALUES ($1, $2, 'mainboard', $3, $4, 1, 'deck', 'search', 'active')`,
+      [owner.userId, deckId, CARD_A.cardIdentifier, CARD_B.cardIdentifier],
+    );
+    const token = await startSharing(owner, deckId);
+    const copy = (body: Record<string, unknown>): request.Test =>
+      request(server).post(`/api/shared/decks/${token}/copy`).set(...auth(visitor)).send(body);
+    const decksOf = async (): Promise<number> =>
+      ((await dataSource.query(`SELECT COUNT(*)::int AS n FROM tracked_deck WHERE "userId" = $1`, [visitor.userId])) as { n: number }[])[0]!.n;
+    const cardsOf = async (id: number): Promise<Record<string, number>> => {
+      const res = await request(server).get(`/api/decks/${id}`).set(...auth(visitor)).expect(200);
+      return Object.fromEntries((res.body.cards as { cardIdentifier: string; quantity: number }[]).map((card) => [card.cardIdentifier, card.quantity]));
+    };
+
+    const missing = await copy({}).expect(400);
+    expect(missing.body.code).toBe('COPY_VARIANT_REQUIRED');
+    await copy({ variant: 'other' }).expect(400);
+    expect(await decksOf()).toBe(0);
+
+    const original = await copy({ variant: 'original' }).expect(201);
+    expect(await cardsOf(original.body.deckId as number)).toEqual({ [CARD_A.cardIdentifier]: 4 });
+    const built = await copy({ variant: 'as_built' }).expect(201);
+    expect(await cardsOf(built.body.deckId as number)).toEqual({ [CARD_A.cardIdentifier]: 3, [CARD_B.cardIdentifier]: 1 });
+    expect(await decksOf()).toBe(2);
+
+    await dataSource.query(`UPDATE card_replacement SET status = 'kept' WHERE "trackedDeckId" = $1`, [deckId]);
+    await copy({}).expect(201);
+  });
+
   describe('sign-up attribution', () => {
     const normalize = (body: { message: string; _devVerificationLink: string }) => ({
       message: body.message,

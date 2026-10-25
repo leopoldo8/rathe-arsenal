@@ -1035,17 +1035,17 @@ Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t
 
 ### S24 - Saving a friend's deck with substitutions · 9 files · 25 KB · ~10k
 
-**C303** - The shared deck view marks each row covered by an active `card_replacement` as "<card> · no lugar de <original>" ("Runner Runner (Vermelho)" with "no lugar de Swing Big" in `r3-saved-deck-phone`), and a deck with none marks nothing (AC 187)
+**C303** - The shared deck view marks each row covered by an active `card_replacement` as "<card> · no lugar de <original>" ("Runner Runner (Vermelho)" with "no lugar de Swing Big" in `r3-saved-deck-phone`), and a deck with none marks nothing (AC 187) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedDeckPage.spec.tsx -t "a replaced row names the card it replaces"`
 Proof: `api unit src/sharing/__tests__/shared-deck-view.service.spec.ts -t "carries the original of each active replacement"`
 
-**C304** - "Salvar nos meus decks" on such a deck asks "Qual lista você quer salvar?" with "A lista antes das trocas do Caio (com Swing Big)" and "Como o Caio montou (com Runner Runner)", none selected, "Salvar" disabled until one is picked; a pick sends `variant` `original` or `as_built`; a deck with no active replacement saves with no question, as today (AC 188, AC 191)
+**C304** - "Salvar nos meus decks" on such a deck asks "Qual lista você quer salvar?" with "A lista antes das trocas do Caio (com Swing Big)" and "Como o Caio montou (com Runner Runner)", none selected, "Salvar" disabled until one is picked; a pick sends `variant` `original` or `as_built`; a deck with no active replacement saves with no question, as today (AC 188, AC 191) · done
 Proof: `web unit src/components/shared-deck/__tests__/SaveDeckChoice.spec.tsx -t "asks which list, nothing selected, Salvar disabled until a pick"`
 
-**C305** - With `variant: original` the copy holds the sharer's original cards rebuilt from their active `card_replacement` rows with their quantities and sides: a replacement of 2 of 3 Swing Big in the deck gives the copy 3 Swing Big and no Runner Runner from that pick; a replacement on the `inventory` side restores the inventory quantity; with `as_built` the copy equals today's copy (AC 189)
+**C305** - With `variant: original` the copy holds the sharer's original cards rebuilt from their active `card_replacement` rows with their quantities and sides: a replacement of 2 of 3 Swing Big in the deck gives the copy 3 Swing Big and no Runner Runner from that pick; a replacement on the `inventory` side restores the inventory quantity; with `as_built` the copy equals today's copy (AC 189) · done
 Proof: `api unit src/sharing/__tests__/shared-deck-copy.service.spec.ts -t "the original variant rebuilds the cards before the replacements"`
 
-**C306** - `POST /api/shared/decks/:token/copy` answers `201` with `deckId` for `variant` `original` or `as_built`; `400` with no `variant` on a deck with active replacements and with `variant: "other"`; `201` with no `variant` on a deck with none; `404` for a dead or unknown token, writing nothing (AC 190)
+**C306** - `POST /api/shared/decks/:token/copy` answers `201` with `deckId` for `variant` `original` or `as_built`; `400` with no `variant` on a deck with active replacements and with `variant: "other"`; `201` with no `variant` on a deck with none; `404` for a dead or unknown token, writing nothing (AC 190) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "copy asks for a variant when the deck has active replacements"`
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "answers coverage and copy only for the deck intent"`
 
