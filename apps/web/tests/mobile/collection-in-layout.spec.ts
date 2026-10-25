@@ -52,3 +52,61 @@ test('the remove picker opens inside the screen', async ({ page, context }) => {
 
   await api.dispose();
 });
+
+test('the page behind "Resolver" fits a phone with no control over another', async ({ page, context }) => {
+  const api = await playwrightRequest.newContext({ baseURL: BASE_URL });
+  const email = `resolve-${Date.now().toString(36)}@test.local`;
+  const signUp = await api.post('/api/auth/sign-up', { data: { email, password: PASSWORD } });
+  expect(signUp.status()).toBe(201);
+  const session = (signUp.headers()['set-cookie'] ?? '').match(/ra_session=([^;]+)/)?.[1];
+  expect(session, 'the sign-up set the session cookie').toBeTruthy();
+
+  const created = await api.post('/api/collection/imports', {
+    data: {
+      kind: 'csv',
+      name: 'colecao-com-um-nome-muito-comprido-para-conferir-a-quebra.csv',
+      ready: [{ cardIdentifier: 'snatch-red', quantity: 1 }],
+      pending: [
+        { lineNumber: 12, originalText: 'Snach,2,Vermelho', reason: 'suggestion', suggestedCardIdentifier: 'snatch-red' },
+        { lineNumber: 31, originalText: 'Mistery Card,1,', reason: 'not_found' },
+        { lineNumber: 141, originalText: 'Savage Beatdown,três,Vermelho', reason: 'bad_quantity', suggestedCardIdentifier: 'savage-beatdown-red' },
+      ],
+    },
+  });
+  expect(created.status()).toBe(201);
+
+  await context.addCookies([
+    { name: 'ra_session', value: session!, domain: new URL(BASE_URL).hostname, path: '/api', httpOnly: true, secure: false, sameSite: 'Lax' },
+  ]);
+  await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
+  await page.goto('/library-pending');
+
+  const viewport = page.viewportSize()!;
+  const steps = [/^Adicionar 2 Snatch/, /^Adicionar$/, /^Adicionar 3 Savage/];
+  for (const [index, addName] of steps.entries()) {
+    const add = page.getByRole('button', { name: addName });
+    await add.waitFor();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `step ${index + 1}: no horizontal scroll`).toBeLessThanOrEqual(0);
+
+    const boxes = await page.locator('main').locator('a, button, input').evaluateAll((elements) =>
+      elements
+        .map((element) => ({ name: element.textContent?.trim() || element.getAttribute('aria-label') || element.tagName, rect: element.getBoundingClientRect() }))
+        .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+        .map(({ name, rect }) => ({ name, x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom })),
+    );
+    for (const box of boxes) {
+      expect(box.x, `${box.name}: left edge`).toBeGreaterThanOrEqual(0);
+      expect(box.right, `${box.name}: right edge`).toBeLessThanOrEqual(viewport.width);
+    }
+    for (const [i, a] of boxes.entries()) {
+      for (const b of boxes.slice(i + 1)) {
+        const overlaps = a.x < b.right - 0.5 && b.x < a.right - 0.5 && a.y < b.bottom - 0.5 && b.y < a.bottom - 0.5;
+        expect(overlaps, `step ${index + 1}: "${a.name}" overlaps "${b.name}"`).toBe(false);
+      }
+    }
+    await page.getByRole('button', { name: 'Pular' }).click();
+  }
+
+  await api.dispose();
+});

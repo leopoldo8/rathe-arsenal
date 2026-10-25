@@ -2,6 +2,12 @@
 
 ## Deviations
 
+### Resolver page, one line at a time (batch 11, before S14)
+
+- `/library-pending` is rebuilt as `r4-resolve-b-phone` (owner's pick, 2026-10-25). The old list arrangement is gone; no existing test asserted it (`PendingBanner.spec.tsx` and the C150 banner test only read the banner), so no test changed. New tests: `PendingResolver.spec.tsx` and the Playwright test "the page behind "Resolver" fits a phone with no control over another" in `tests/mobile/collection-in-layout.spec.ts`. The page has no visual baseline.
+- Dropped as the mockup leaves them out: the page heading "Para resolver", the per-line "Excluir" link, the "Procurar" button (the search runs 350 ms after typing stops), and the grouped list. Their locale keys (`pendingTitle`, `pendingDelete`, `pendingDeleteAria`, `pendingFound`) were removed.
+- "Pular" and the "já resolvidas" count live in the page; a deleted line counts as resolved. A skipped line goes to the end of the page's queue. The last resolved or deleted line returns to the collection.
+
 ### S1 (batch 1)
 
 - C3 and C4 forced edits to three existing tests that asserted the old copy: `LibraryCardStepper.test.tsx` and `-library.test.tsx` now expect the menu item "Entradas manuais" instead of the API's "Manual entries"; `TagChipRow.spec.tsx` expects "Adicionar tag a este deck".
@@ -417,6 +423,14 @@
   - Errors: `apiErrors.IMPORT_UNREADABLE` ("Não conseguimos ler esse arquivo. Confira se é um arquivo de texto (.csv), com uma carta por linha, e se tem até 2 MB.") and `IMPORT_TOO_MANY_ROWS`, both in en-US too.
   - The page behind "Resolver" (`/library-pending`) is drawn by no mockup: it reuses the lines of the report (the same colors, near names, quantity field and search) and adds a "Excluir" link per line, a heading "Para resolver", the empty line "Nada para resolver." and two error lines. Each line is added to its import as soon as it is answered.
   - The link "Colar uma lista" on `/add-cards/csv` is the only way to the pasted-list page until S15 builds the entry.
+- Resolver page (`r4-resolve-b-phone`), what the mockup does not draw:
+  - A line that asks a color (`asks_color`) has no step in the mockup; it shows "Qual cor?" with the three color buttons inside the card, "Adicionar" stays off until one is chosen.
+  - The quantity stepper is also drawn on the near-name step with the suggestion's own quantity; the line's hint (`quantityHint`) fills it, 1 when there is none.
+  - The quantity message reads the second comma cell of the line (`"três" não é um número. Quantas cópias?`); a pasted line with no comma shows "Esta linha não tem quantidade. Quantas cópias?".
+  - Copy of mine: "Menos uma cópia" and "Mais uma cópia" (stepper labels), "Buscar a carta pelo nome" (the field's label), "Linhas resolvidas" (the bar's label), and the en-US versions of every new line. The "Pular deixa a linha na lista..." note shows under every step, the mockup draws it under the first only.
+  - The header leaves out "depois desta" on the last line and "já resolvidas" while none is resolved.
+  - A search shows one result, the card the reader reads (or its near name), not a list: the mockup draws only the empty answer.
+
 - S13, copy of mine, no check or mockup gives it:
   - Search: "Nenhum deck encontrado.", "Não foi possível carregar os decks. Tente de novo.", "Não achamos esse deck." (an address with a key no file has), the label "Buscar o deck pelo nome do produto ou do herói" of the search field.
   - Confirm: "Adicionando…", "Não foi possível adicionar. Tente de novo.", and the button "Adicionar outra caixa" that confirms the repeated box (C164 gives only the question).
