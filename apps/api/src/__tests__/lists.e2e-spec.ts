@@ -532,6 +532,15 @@ describe('Card lists (E2E)', () => {
 
     const again = await markSold(owner, listId, rest.id, { quantity: 1, removeFromCollection: false }).expect(409);
     expect(again.body.code).toBe('LINE_ALREADY_SOLD');
+
+    // A line of 3 sold whole: 0 and 4 are refused, 3 marks the one line sold with nothing left on sale.
+    const fresh = await soldFixture('sold-whole', 3);
+    await markSold(fresh.owner, fresh.listId, fresh.lineId, { quantity: 0, removeFromCollection: false }).expect(400);
+    await markSold(fresh.owner, fresh.listId, fresh.lineId, { quantity: 4, removeFromCollection: false }).expect(400);
+    const wholeSale = await markSold(fresh.owner, fresh.listId, fresh.lineId, { quantity: 3, removeFromCollection: false }).expect(200);
+    expect(wholeSale.body.lines).toHaveLength(1);
+    expect(wholeSale.body.lines[0]).toMatchObject({ id: fresh.lineId, quantity: 3, sold: true });
+    expect(wholeSale.body.soldLineId).toBe(fresh.lineId);
   });
 
   it('a sale with removal takes the copies out of the collection', async () => {

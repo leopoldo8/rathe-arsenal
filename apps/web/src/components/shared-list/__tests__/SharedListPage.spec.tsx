@@ -48,7 +48,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { SharedListPage } from '../SharedListPage';
-import { DUDA, DUDA_MATCHES, MARCOS } from './visitorKit';
+import { DUDA, DUDA_MATCHES, expectInOrder, MARCOS } from './visitorKit';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
 const URL = `https://rathearsenal.app/l/${TOKEN}`;
@@ -377,12 +377,11 @@ describe('SharedListPage', () => {
     it('a buyer sees version, price, deck hint and a stepper at 0', async () => {
       renderPage(makeAuth());
 
-      const view = await screen.findByTestId('shared-list-buyer');
-      const order = Array.from(view.querySelectorAll('p[class*="eyebrow"], h1, p[class*="summary"], li')).map((node) => node.textContent);
-      expect(order[0]).toBe('Lista de venda');
-      expect(screen.getByRole('heading', { level: 1, name: 'Duda vende estas cartas' })).toBeInTheDocument();
-      expect(await screen.findByText('3 cartas desta lista servem nos seus decks')).toBeInTheDocument();
+      await screen.findByTestId('shared-list-buyer');
+      const heading = screen.getByRole('heading', { level: 1, name: 'Duda vende estas cartas' });
+      const summary = await screen.findByText('3 cartas desta lista servem nos seus decks');
       const rows = screen.getAllByTestId('buyer-row');
+      expectInOrder(screen.getByText('Lista de venda'), heading, summary, ...rows);
       expect(rows).toHaveLength(3);
       expect(within(rows[0]!).getByText('Command and Conquer (Vermelho)')).toBeInTheDocument();
       expect(within(rows[0]!).getByText('History Pack 1 · NM · R$ 45')).toBeInTheDocument();
@@ -390,6 +389,13 @@ describe('SharedListPage', () => {
       expect(within(rows[1]!).getByText('sem foil · R$ 6 cada')).toBeInTheDocument();
       expect(within(rows[1]!).getByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
       for (const row of rows) expect(row.querySelector('output')).toHaveTextContent('0');
+      // Inside a row: name, then version and price, then the deck hint, then the stepper.
+      expectInOrder(
+        within(rows[0]!).getByText('Command and Conquer (Vermelho)'),
+        within(rows[0]!).getByText('History Pack 1 · NM · R$ 45'),
+        within(rows[0]!).getByText('Falta 1 no seu Rhinar CC'),
+        rows[0]!.querySelector('output') as HTMLElement,
+      );
       expect(screen.queryByTestId('buyer-bar')).not.toBeInTheDocument();
     });
 

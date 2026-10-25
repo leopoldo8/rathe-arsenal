@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createFakeApi, makeAuth, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
-import { MARCOS, TOKEN } from './visitorKit';
+import { expectInOrder, MARCOS, TOKEN } from './visitorKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
 
@@ -80,6 +80,22 @@ describe('the trade view', () => {
     expect(within(view).getByText('Procuro - Rhinar (3 cópias)')).toBeInTheDocument();
     for (const row of rows.slice(0, 2)) expect(row.querySelector('output')).toHaveTextContent('0');
     expect(screen.getByRole('button', { name: 'Ver mensagem' })).toBeDisabled();
+    // Top to bottom: list name, heading, summary, the rows, the collapsed line, the switch, the button.
+    expectInOrder(
+      within(view).getByText('Procuro - Kayo'),
+      within(view).getByRole('heading', { level: 1 }),
+      within(view).getByText('Você tem sobrando 4 cópias de 2 cartas que Marcos procura.'),
+      ...rows,
+      within(view).getByText('2 cartas que você não tem: Pack Hunt (Azul), Bloodrush Bellow (Amarelo)'),
+      mine,
+      screen.getByRole('button', { name: 'Ver mensagem' }),
+    );
+    expectInOrder(
+      within(rows[0]!).getByText('Pummel (Vermelho)'),
+      within(rows[0]!).getByText('Marcos procura 3 · sugerido R$ 4'),
+      within(rows[0]!).getByText('Você tem 4 · 3 sobrando'),
+      rows[0]!.querySelector('output') as HTMLElement,
+    );
   });
 
   it('asks the rule question before any spare number when it is owed', async () => {
@@ -135,6 +151,14 @@ describe('the trade view', () => {
     expect(screen.getByRole('textbox', { name: 'Mensagem' })).toHaveValue(OFFER_WITH_MINE);
     expect(screen.getByRole('button', { name: 'Enviar no WhatsApp' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copiar texto' })).toBeInTheDocument();
+    expectInOrder(
+      screen.getByRole('button', { name: '‹ Lista do Marcos' }),
+      screen.getByRole('heading', { name: 'Mensagem para o WhatsApp' }),
+      screen.getByText('Você pode editar antes de enviar.'),
+      screen.getByRole('textbox', { name: 'Mensagem' }),
+      screen.getByRole('button', { name: 'Enviar no WhatsApp' }),
+      screen.getByRole('button', { name: 'Copiar texto' }),
+    );
 
     await user.click(screen.getByRole('button', { name: '‹ Lista do Marcos' }));
     await user.click(screen.getByRole('switch', { name: /Incluir minha lista/ }));

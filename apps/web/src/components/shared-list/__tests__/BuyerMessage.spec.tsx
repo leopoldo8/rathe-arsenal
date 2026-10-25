@@ -1,9 +1,9 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createFakeApi, makeAuth, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
-import { DUDA, DUDA_MATCHES, TOKEN } from './visitorKit';
+import { DUDA, DUDA_MATCHES, expectInOrder, MARCOS, TOKEN } from './visitorKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
 
@@ -25,6 +25,9 @@ import { SharedListPage } from '../SharedListPage';
 
 const MESSAGE =
   'Oi Duda, vi sua lista no Rathe Arsenal. Quero: 1x Command and Conquer (Vermelho) · History Pack 1 · NM · R$ 45, 2x Snatch (Vermelho) · sem foil · R$ 6 cada. Total R$ 57.';
+
+const OFFER =
+  'Oi Marcos, vi sua lista no Rathe Arsenal. Tenho sobrando para você: 3x Pummel (Vermelho) · sem foil, 1x Command and Conquer (Vermelho).';
 
 let api: IFakeApi;
 
@@ -67,6 +70,14 @@ describe('the buy message', () => {
     expect(text).toHaveValue(MESSAGE);
     expect(screen.getByRole('button', { name: 'Enviar no WhatsApp' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copiar texto' })).toBeInTheDocument();
+    expectInOrder(
+      screen.getByRole('button', { name: '‹ Lista de Duda' }),
+      screen.getByRole('heading', { name: 'Mensagem para o WhatsApp' }),
+      screen.getByText('Você pode editar antes de enviar.'),
+      text,
+      screen.getByRole('button', { name: 'Enviar no WhatsApp' }),
+      screen.getByRole('button', { name: 'Copiar texto' }),
+    );
 
     await user.type(text, ' Retiro no sábado.');
     expect(text).toHaveValue(`${MESSAGE} Retiro no sábado.`);
@@ -94,6 +105,23 @@ describe('the buy message', () => {
     await user.click(screen.getByRole('button', { name: 'Enviar no WhatsApp' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(MESSAGE));
+    expect(await screen.findByText('Texto copiado. Cole no grupo onde você viu a lista.')).toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
+
+    // The same on the offer message of a want list whose sharer shows no number.
+    cleanup();
+    writeText.mockClear();
+    api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...MARCOS, contactWhatsapp: null }));
+    renderWithProviders(<SharedListPage token={TOKEN} />, makeAuth());
+    await screen.findByTestId('shared-list-trade');
+    for (let copy = 0; copy < 3; copy += 1) {
+      await user.click(await screen.findByRole('button', { name: 'Mais uma cópia de Pummel (Vermelho)' }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Mais uma cópia de Command and Conquer (Vermelho)' }));
+    await user.click(screen.getByRole('button', { name: 'Ver mensagem' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar no WhatsApp' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(OFFER));
     expect(await screen.findByText('Texto copiado. Cole no grupo onde você viu a lista.')).toBeInTheDocument();
     expect(open).not.toHaveBeenCalled();
   });

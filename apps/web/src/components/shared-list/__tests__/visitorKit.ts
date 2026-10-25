@@ -1,4 +1,14 @@
+import { expect } from 'vitest';
 import type { ISharedListLine, ISharedListResponse } from '../../../api/shared-lists';
+
+/** The blocks of a screen read top to bottom: each node comes after the one before it in the document. */
+export function expectInOrder(...nodes: readonly HTMLElement[]): void {
+  for (let index = 1; index < nodes.length; index += 1) {
+    const before = nodes[index - 1]!;
+    const after = nodes[index]!;
+    expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING, `${before.textContent?.slice(0, 40)} then ${after.textContent?.slice(0, 40)}`).toBeTruthy();
+  }
+}
 
 /** The two lists of the sell-and-trade screens: Duda's sell list, and Marcos's want list "Procuro - Kayo". */
 

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ICardList } from '../../../api/lists';
 import { createFakeApi, renderWithProviders, type IFakeApi } from '../../shared-deck/__tests__/sharingTestKit';
 import { makeLine, makeList } from './listsTestKit';
+import { expectInOrder } from '../../shared-list/__tests__/visitorKit';
 
 const apiRef = vi.hoisted(() => ({ current: null as IFakeApi | null }));
 
@@ -66,6 +67,16 @@ describe('SoldSheet', () => {
     expect(screen.getByRole('button', { name: 'Sim, tirar 2 da coleção' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Não, só marcar como vendida' })).toBeInTheDocument();
     expect(screen.getByText('Escolha "Não" se essas cópias não estavam no app.')).toBeInTheDocument();
+    expectInOrder(
+      screen.getByRole('heading', { name: 'Quantas você vendeu?' }),
+      screen.getByText('Command and Conquer (Vermelho) · History Pack 1 · NM'),
+      screen.getByRole('group', { name: 'Quantas você vendeu?' }),
+      screen.getByRole('heading', { name: 'Tirar da sua coleção também?' }),
+      screen.getByText('Você tem 4; ficam 2, as que o Kayo CC usa.'),
+      screen.getByRole('button', { name: 'Sim, tirar 2 da coleção' }),
+      screen.getByRole('button', { name: 'Não, só marcar como vendida' }),
+      screen.getByText('Escolha "Não" se essas cópias não estavam no app.'),
+    );
 
     await user.click(screen.getByRole('button', { name: '1' }));
     expect(screen.getByText('Você tem 4; ficam 3.')).toBeInTheDocument();
