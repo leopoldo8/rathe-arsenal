@@ -22,6 +22,7 @@ function summary(overrides: Partial<IDeckSummary>): IDeckSummary {
   return {
     kind: 'incomplete',
     missingCards: 4,
+    missingInventory: 0,
     suggestionCount: 0,
     openMissing: [],
     ...overrides,

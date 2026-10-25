@@ -30,6 +30,11 @@ const LOADOUT_TYPE_PATTERN = /hero|weapon|equipment/i;
 const DEFENSE_TYPE_PATTERN = /defense|reaction/i;
 const MAX_NAMED_COST = 3;
 
+/** Copies of an entry that belong to the starting deck; the inventory's share is not part of the deck list. */
+function deckCopies(entry: IBreakdownEntry): number {
+  return entry.quantity - (entry.inventoryQuantity ?? 0);
+}
+
 function sumQuantity(items: readonly { readonly quantity: number }[]): number {
   return items.reduce((sum, item) => sum + item.quantity, 0);
 }
@@ -45,7 +50,7 @@ export function buildDeckList(
   const notOwned = breakdown.notOwned ?? breakdown.missing;
   const missingByKey = new Map<string, number>();
   for (const entry of openMissing) {
-    missingByKey.set(entryKey(entry), (missingByKey.get(entryKey(entry)) ?? 0) + entry.quantity);
+    missingByKey.set(entryKey(entry), (missingByKey.get(entryKey(entry)) ?? 0) + deckCopies(entry));
   }
 
   const quantityByKey = new Map<string, number>();
@@ -53,15 +58,15 @@ export function buildDeckList(
   for (const entry of [...breakdown.exact, ...notOwned]) {
     const key = entryKey(entry);
     if (!entryByKey.has(key)) entryByKey.set(key, entry);
-    quantityByKey.set(key, (quantityByKey.get(key) ?? 0) + entry.quantity);
+    quantityByKey.set(key, (quantityByKey.get(key) ?? 0) + deckCopies(entry));
   }
 
   return Array.from(entryByKey, ([key, entry]) => ({
     key,
     entry,
-    quantity: quantityByKey.get(key) ?? entry.quantity,
+    quantity: quantityByKey.get(key) ?? deckCopies(entry),
     missing: missingByKey.get(key) ?? 0,
-  }));
+  })).filter((item) => item.quantity > 0);
 }
 
 /**

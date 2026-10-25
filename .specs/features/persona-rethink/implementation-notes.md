@@ -202,6 +202,21 @@
 - Two web e2e proofs changed with the new rows: `account-flow` "a session that ends mid-edit" lowers the first row's quantity instead of raising it (that row sits at the Classic Constructed limit, so its "+" is disabled), and the `deck-detail-edit` visual baseline was regenerated.
 - Noticed, not touched: `CardRowLegalityWarning` and the `illegalCardIds` props of `EditableCardRow` are unused; `GET /api/decks/:id` still reads the stored `hero` display name for the automatic name.
 
+### S5 (batch 6)
+
+- C33's fifth row is added to the table, kept beside the "Classic Constructed card at 3" row batch 5 had put there (the check's own fourth row is a card at 2 in the deck and 1 in the inventory); it asserts both "+" are disabled and the reason that names the inventory.
+- C55: the proof for another player's deck is built (`put answers 404 for a deck the player cannot edit`, against Postgres). The deleted-deck half needs `tracked_deck.deletedAt`, which is S8's door 4, so C55 stays unmarked and the S8 builder adds the deleted-deck case to that test.
+- The `decks.controller.put.int-spec.ts` proofs of C52, C53, C54 and C68 run in a second `describe` that boots the real app on Postgres (the slim app of the first one mocks the service and could not show what is stored). The 400s come from the DTO (`DeckLineHoldsACopy`, `DeckLinesAreUnique`); a `quantity` of 0 is now valid when the line holds inventory copies.
+- Readiness counts the deck and the inventory together in each entry's `quantity` and tells them apart with `inventoryQuantity`, the inventory's share (absent when 0); owned copies cover the deck copies first. The engine's result gains `missingCopies` `{total, deck, inventory}` (C61). The Surface rows in plan.md record the shape. The pitch curves and `rawPercent` count the inventory copies too.
+- The deck page's card list (`buildDeckList`) shows deck copies only and leaves out a card that is only in the inventory; the inventory's own list is S7's "Inventário" group. The status strip, the share dialog's count and the home count include the inventory's missing copies.
+- Not yet counting the inventory (they read `quantity` only, later slices own them): the Tutor's tools and `deck-facts`, `list-from-deck`, spare copies, the missing and shopping panels (S17), the group ask and the quote (S18, S19). Two places were guarded so no inventory is lost or breaks the new check: copying a shared deck copies `inventoryQuantity`, and a replacement that takes the last deck copy off a row keeps the row when it still has inventory copies.
+- Existing proofs adapted to the two steppers: `account-flow.spec.ts` "a session that ends mid-edit" reads `quantity-deck` and the deck "-" (the row now holds two `aria-live` quantities and two "-"), and the `deck-detail-edit` visual baseline was regenerated (new header, column heads, inventory stepper).
+- C57's proof is `tests/mobile/deck-edit-inventory.spec.ts` (the `mobile-*` projects only match `tests/mobile`), same test name.
+- Weapons and equipment can carry inventory copies (Fabrary imports them), and those copies count in the pool and the verdict, but the editor's loadout rows (hero, weapon, equipment) show no inventory stepper; only the deck rows do.
+- C59: the mockup draws the move menu but no control that opens it. The quantity number of each side is the button that opens it ("Mover cartas do deck de X", "Mover cartas do inventário de X" as accessible names); see Needs the owner.
+- C62's "Ver o que falta" links to the missing panel on the page (`#deck-missing-panel`), the same target "Ver lista de compras" has; S17 builds `/decks/:deckId/missing` and repoints it.
+- The editor always draws two steppers per row, the header "Deck N · Inventário M · Card pool P de L" and the two plain lines (AC 30), also for a deck with no inventory, which `r3-editor-phone` draws with one stepper and no header; C48 still passes because it only reads the order of the texts.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -241,3 +256,5 @@
 - Production's `APP_BASE_URL` must be the exact origin the app is served from: a write from any other origin (for example the Railway domain next to a custom one) now answers `403` `ORIGIN_REJECTED`.
 - Every JWT issued before this deploy stops working, so each signed-in player signs in once more (Impact row "existing JWTs"); the migration `1778533604000-AddUserSession` runs on boot outside development.
 
+- C59: no mockup draws what opens the "Mover 1 para o inventário" menu. It is built as a tap on the quantity number, with no extra element; confirm that or pick another opener.
+- C55 (deleted deck half) waits for S8, see Deviations, S5.

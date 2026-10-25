@@ -129,6 +129,65 @@
   color: var(--ra-fg-muted);
 }
 
+.inventorySummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-block-end: 1px solid var(--ra-border-subtle);
+}
+
+.inventoryCounts {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-fg-primary);
+}
+
+.plainLine {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}
+
+/* The two column heads sit over the two steppers on a computer; on a phone the steppers stack and
+   each carries its own label. */
+.columnHeads {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .columnHeads {
+    display: flex;
+    align-items: center;
+    gap: var(--ra-space-2);
+    padding: var(--ra-space-2) var(--ra-space-4);
+    border-block-end: 1px solid var(--ra-border-subtle);
+    font-family: var(--ra-font-ui);
+    font-size: var(--ra-text-caption);
+    letter-spacing: var(--ra-track-caps);
+    text-transform: uppercase;
+    color: var(--ra-fg-muted);
+  }
+
+  .headCard {
+    flex: 1;
+  }
+
+  .headSide {
+    inline-size: var(--ra-stepper-column, 160px);
+    text-align: center;
+  }
+
+  /* The width of the remove button that closes each row. */
+  .columnHeads::after {
+    content: '';
+    inline-size: 28px;
+  }
+}
+
 .deckList {
   list-style: none;
   padding: 0;

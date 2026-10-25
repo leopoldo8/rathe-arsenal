@@ -5,6 +5,7 @@ import { FabraryService } from '../../../fabrary/fabrary.service';
 import { SubstitutionService } from '../../../substitution/substitution.service';
 import { SourcesService } from '../../../collection/sources/sources.service';
 import { TrackedDeckEntity } from '../../../database/entities/tracked-deck.entity';
+import { DeckCardEntity } from '../../../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../../../database/entities/deck-readiness-snapshot.entity';
 import { IDeckImportDto } from '../../../fabrary/dtos/deck-import.dto';
 import { FabraryImportError, EFabraryErrorCode } from '../../../fabrary/errors';
@@ -164,6 +165,45 @@ describe('DecksImportService', () => {
     expect(trackedDeckCreateCall![1]).toMatchObject({
       heroIdentifier: 'hero-001',
     });
+  });
+
+  it('sideboardQuantity is stored as the inventory quantity', async () => {
+    // Arrange
+    const dto: ImportDecksRequestDto = { urls: [FABRARY_URL_1] };
+    // Fabrary's "Inventory" arrives as separate entries: a card at 2 in the deck and 1 in the
+    // inventory, and a card with no deck copy and 3 in the inventory.
+    const deckFixture: IDeckImportDto = {
+      ...buildDeckFixture(ULID_1, 'Deck with inventory'),
+      mainboard: [{ cardIdentifier: 'snatch-red', quantity: 2, slot: 'mainboard' }],
+      equipment: [],
+      weapons: [],
+      inventory: [
+        { cardIdentifier: 'snatch-red', quantity: 1, slot: 'mainboard' },
+        { cardIdentifier: 'sink-below', quantity: 3, slot: 'mainboard' },
+      ],
+    };
+    (fabraryService.fetchDeck as jest.Mock).mockResolvedValue(deckFixture);
+    (substitutionService.computeAndStoreReadiness as jest.Mock).mockResolvedValue({
+      rawPercent: 0,
+      effectivePercent: 0,
+    });
+
+    // Act
+    await service.run(dto, { userId: USER_ID });
+
+    // Assert
+    const createCalls = (mockManager.create as jest.Mock).mock.calls as unknown[][];
+    const lines = createCalls
+      .filter((call) => call[0] === DeckCardEntity)
+      .map((call) => call[1] as { cardIdentifier: string; slot: string; quantity: number; inventoryQuantity: number });
+    expect(lines).toHaveLength(3);
+    expect(lines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ cardIdentifier: 'snatch-red', slot: 'mainboard', quantity: 2, inventoryQuantity: 1 }),
+        expect.objectContaining({ cardIdentifier: 'sink-below', slot: 'mainboard', quantity: 0, inventoryQuantity: 3 }),
+        expect.objectContaining({ cardIdentifier: 'hero-001', slot: 'hero', quantity: 1, inventoryQuantity: 0 }),
+      ]),
+    );
   });
 
   it('recomputes the other decks with the inputs a deck read uses', async () => {

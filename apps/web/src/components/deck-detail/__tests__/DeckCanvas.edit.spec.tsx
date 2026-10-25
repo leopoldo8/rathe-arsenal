@@ -549,6 +549,13 @@ describe('DeckCanvas Edit mode — the rules of the draft', () => {
         quantity: 3,
         reason: 'Máximo 3 no Classic Constructed',
       },
+      {
+        label: 'a Classic Constructed card at 2 in the deck and 1 in the inventory',
+        format: 'Classic Constructed',
+        facts: { legalFormats: ['Classic Constructed'], inventoryQuantity: 1 },
+        quantity: 2,
+        reason: 'Máximo 3 no Classic Constructed, contando o inventário',
+      },
     ];
 
     for (const { label, format, facts, quantity, reason } of cases) {
@@ -558,6 +565,9 @@ describe('DeckCanvas Edit mode — the rules of the draft', () => {
       const plus = screen.getByTestId('increment-subject');
       expect(plus, label).toBeDisabled();
       expect(plus, label).toHaveAccessibleDescription(reason);
+      if (facts.inventoryQuantity !== undefined) {
+        expect(screen.getByTestId('increment-inventory-subject'), label).toBeDisabled();
+      }
       unmount();
     }
   });

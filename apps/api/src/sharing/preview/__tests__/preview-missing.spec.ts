@@ -13,6 +13,7 @@ const card = (cardIdentifier: string, name: string, quantity: number, slot = 'ma
   type: 'Action',
   slot,
   quantity,
+  inventoryQuantity: 0,
   imageUrl: null,
 });
 

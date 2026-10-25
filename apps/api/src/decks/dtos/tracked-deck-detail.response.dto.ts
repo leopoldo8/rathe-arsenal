@@ -129,6 +129,17 @@ export interface IDeckReplacement {
   readonly originalOwned: boolean;
 }
 
+/**
+ * One saved line of the deck: the copies in the starting deck and the copies carried in the
+ * inventory next to them (door 3). A line with no deck copy and some inventory copies is valid.
+ */
+export interface IDeckCompositionRow {
+  readonly cardIdentifier: string;
+  readonly slot: string;
+  readonly quantity: number;
+  readonly inventoryQuantity: number;
+}
+
 export interface ITrackedDeckDetailResponse {
   readonly id: number;
   /** Null for scratch decks created without a Fabrary URL (D8). */
@@ -162,6 +173,8 @@ export interface ITrackedDeckDetailResponse {
    */
   readonly updatedAt: string;
   readonly totalCards: number;
+  /** The saved lines in the order they were stored, each with its inventory quantity. */
+  readonly cards: readonly IDeckCompositionRow[];
   readonly latestSnapshot: ITrackedDeckDetailSnapshot | null;
   /**
    * Shopping line derived at read time from the latest snapshot's breakdown.

@@ -90,7 +90,7 @@ export class SharedDeckViewService {
     const { breakdown } = computeEffectiveReadiness({ cards: rows }, visitorInventory, catalog);
 
     const ownedCopies = sumQuantities(breakdown.exact);
-    const totalCopies = sumQuantities(rows);
+    const totalCopies = sumQuantities(rows) + rows.reduce((total, row) => total + row.inventoryQuantity, 0);
     const percent = totalCopies === 0 ? 0 : Math.round((ownedCopies / totalCopies) * 100);
     return { ownedCopies, totalCopies, percent, collectionEmpty: visitorInventory.size === 0 };
   }

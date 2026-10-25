@@ -833,6 +833,7 @@ const trackedDeck = result.trackedDecks[0]!;
           trackedDeckId: 1,
           cardIdentifier: 'card-a',
           quantity: 2,
+          inventoryQuantity: 0,
           slot: 'main',
           trackedDeck: {} as DeckCardEntity['trackedDeck'],
         },

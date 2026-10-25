@@ -155,7 +155,7 @@ Proof: `api e2e src/decks/__tests__/deck-legality-read.e2e-spec.ts -t "a saved b
 **C32** - In edit mode on a saved legal Blitz deck, raising Pack Hunt (Vermelho) from 1 to 2 changes the header chip to "Não vale no Blitz" before any save, and no `PUT /decks/:deckId` is called (AC 18) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "the verdict follows the draft before saving"`
 
-**C33** - The "+" of a card at its limit is disabled with one reason shown: "Máximo 1 no Blitz" (Blitz, 1 copy), "Máximo 1: carta lendária" (Legendary card at 1), "Máximo 1 em Living Legend: carta restrita" (restricted card at 1 in Living Legend); in Classic Constructed a card at 2 in the deck and 1 in the inventory has its "+" disabled; table-driven over 4 rows (AC 19)
+**C33** - The "+" of a card at its limit is disabled with one reason shown: "Máximo 1 no Blitz" (Blitz, 1 copy), "Máximo 1: carta lendária" (Legendary card at 1), "Máximo 1 em Living Legend: carta restrita" (restricted card at 1 in Living Legend); in Classic Constructed a card at 2 in the deck and 1 in the inventory has its "+" disabled; table-driven over 4 rows (AC 19) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "the plus button is disabled at the limit with its reason"`
 
 **C34** - A Blitz row at 2 copies shows "2 cópias · o Blitz permite 1 · tire 1" (AC 20) · done
@@ -209,49 +209,49 @@ Proof: `web unit src/i18n/__tests__/catalog-parity.spec.ts -t "replacements are 
 
 ### S5 - The inventory · 20 files · 205 KB · ~57k
 
-**C50** - After the migration, `deck_card."inventoryQuantity"` is `integer`, `NOT NULL`, default `0`; every existing row reads 0; and the check `quantity >= 0 AND "inventoryQuantity" >= 0 AND quantity + "inventoryQuantity" > 0` exists (AC 30; door 3)
+**C50** - After the migration, `deck_card."inventoryQuantity"` is `integer`, `NOT NULL`, default `0`; every existing row reads 0; and the check `quantity >= 0 AND "inventoryQuantity" >= 0 AND quantity + "inventoryQuantity" > 0` exists (AC 30; door 3) · done
 Proof: `api int src/database/migrations/__tests__/deck-card-inventory.migration.int-spec.ts -t "adds inventoryQuantity with its check"`
 
-**C51** - The check rejects `(quantity -1, inventory 0)`, `(0, -1)` and `(0, 0)`, and accepts `(0, 1)`, `(1, 0)` and `(3, 2)`; table-driven over 6 rows (door 3)
+**C51** - The check rejects `(quantity -1, inventory 0)`, `(0, -1)` and `(0, 0)`, and accepts `(0, 1)`, `(1, 0)` and `(3, 2)`; table-driven over 6 rows (door 3) · done
 Proof: `api int src/database/migrations/__tests__/deck-card-inventory.migration.int-spec.ts -t "the deck_card check accepts and rejects"`
 
-**C52** - `PUT /api/decks/:deckId` with rows carrying `inventoryQuantity` answers `200`, stores them, and the response and `GET /api/decks/:deckId` return each row's `inventoryQuantity` (AC 30)
+**C52** - `PUT /api/decks/:deckId` with rows carrying `inventoryQuantity` answers `200`, stores them, and the response and `GET /api/decks/:deckId` return each row's `inventoryQuantity` (AC 30) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "composition rows carry inventoryQuantity"`
 
-**C53** - `PUT /api/decks/:deckId` answers `400` and writes nothing for `inventoryQuantity` -1, for `inventoryQuantity` 1.5, and for a row with both quantities 0 (AC 30)
+**C53** - `PUT /api/decks/:deckId` answers `400` and writes nothing for `inventoryQuantity` -1, for `inventoryQuantity` 1.5, and for a row with both quantities 0 (AC 30) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "invalid inventory quantities are rejected"`
 
-**C54** - `PUT /api/decks/:deckId` answers `400` and writes nothing when two rows repeat the same card and slot (Relations: one row per deck, card and slot)
+**C54** - `PUT /api/decks/:deckId` answers `400` and writes nothing when two rows repeat the same card and slot (Relations: one row per deck, card and slot) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "a repeated card and slot is rejected"`
 
 **C55** - `PUT /api/decks/:deckId` answers `404` for another player's deck and for a deleted deck, and writes nothing (AC 30, AC 55)
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "put answers 404 for a deck the player cannot edit"`
 
-**C56** - For `r3-inventory-desktop`'s deck the editor header reads "Deck 60 · Inventário 15 · Card pool 80 de 80", followed once by "Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas." and "Card pool: deck, inventário, arma e equipamentos; o herói não conta."; the table heads are "Carta", "No deck", "No inventário"; each row has two steppers (AC 30, AC 35)
+**C56** - For `r3-inventory-desktop`'s deck the editor header reads "Deck 60 · Inventário 15 · Card pool 80 de 80", followed once by "Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas." and "Card pool: deck, inventário, arma e equipamentos; o herói não conta."; the table heads are "Carta", "No deck", "No inventário"; each row has two steppers (AC 30, AC 35) · done
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.inventory.spec.tsx -t "matches r3-inventory-desktop"`
 
-**C57** - On a 390 px phone each row's two steppers sit under the card name, the deck stepper above the inventory stepper (AC 30)
+**C57** - On a 390 px phone each row's two steppers sit under the card name, the deck stepper above the inventory stepper (AC 30) · done
 Proof: `web e2e --project=mobile-390 tests/e2e/deck-edit-flow.spec.ts -g "the inventory steppers stack on the phone"`
 
-**C58** - In Classic Constructed, Pack Hunt (Vermelho) at 3 in the deck and 1 in the inventory shows "3 no deck e 1 no inventário, 4 no total. O Classic Constructed permite 3 · tire 1", and both "+" are disabled with "Máximo 3 no Classic Constructed, contando o inventário" (AC 31)
+**C58** - In Classic Constructed, Pack Hunt (Vermelho) at 3 in the deck and 1 in the inventory shows "3 no deck e 1 no inventário, 4 no total. O Classic Constructed permite 3 · tire 1", and both "+" are disabled with "Máximo 3 no Classic Constructed, contando o inventário" (AC 31) · done
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.inventory.spec.tsx -t "over the limit across deck and inventory"`
 
-**C59** - The row menu of a card at 3 in the deck offers "Mover 1 para o inventário" and "Mover todas (3) para o inventário"; "Mover 1" leaves 2 and 1 in the draft; a card with inventory copies offers "Mover 1 para o deck" and "Mover todas (N) para o deck" (AC 32)
+**C59** - The row menu of a card at 3 in the deck offers "Mover 1 para o inventário" and "Mover todas (3) para o inventário"; "Mover 1" leaves 2 and 1 in the draft; a card with inventory copies offers "Mover 1 para o deck" and "Mover todas (N) para o deck" (AC 32) · done
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.inventory.spec.tsx -t "the row menu moves copies between deck and inventory"`
 
-**C60** - A Fabrary deck whose card has `quantity` 2 and `sideboardQuantity` 1 is imported as one `deck_card` row with `quantity` 2 and `inventoryQuantity` 1; a card with `quantity` 0 and `sideboardQuantity` 3 becomes one row with `quantity` 0 and `inventoryQuantity` 3 (AC 33; door 3)
+**C60** - A Fabrary deck whose card has `quantity` 2 and `sideboardQuantity` 1 is imported as one `deck_card` row with `quantity` 2 and `inventoryQuantity` 1; a card with `quantity` 0 and `sideboardQuantity` 3 becomes one row with `quantity` 0 and `inventoryQuantity` 3 (AC 33; door 3) · done
 Proof: `api unit src/decks/import/__tests__/decks-import.service.spec.ts -t "sideboardQuantity is stored as the inventory quantity"`
 
-**C61** - Readiness counts inventory copies: 4 missing deck copies and 3 missing inventory copies give `missing` 7 with a deck part 4 and an inventory part 3 (AC 34)
+**C61** - Readiness counts inventory copies: 4 missing deck copies and 3 missing inventory copies give `missing` 7 with a deck part 4 and an inventory part 3 (AC 34) · done
 Proof: `engine unit __tests__/readiness.spec.ts -t "missing copies include the inventory and keep the split"`
 
-**C62** - The deck page shows "Faltam 7 cópias (4 do deck, 3 do inventário) · Ver o que falta" for that deck (AC 34)
+**C62** - The deck page shows "Faltam 7 cópias (4 do deck, 3 do inventário) · Ver o que falta" for that deck (AC 34) · done
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.inventory.spec.tsx -t "the missing line splits deck and inventory"`
 
-**C63** - The missing panel's inventory line is copy rule 6's, never the round-2 "jogo 1" line: no pt-BR value contains "jogo 1" (AC 35)
+**C63** - The missing panel's inventory line is copy rule 6's, never the round-2 "jogo 1" line: no pt-BR value contains "jogo 1" (AC 35) · done
 Proof: `web unit src/i18n/__tests__/catalog-parity.spec.ts -t "the inventory line is the one of copy rule 6"`
 
-**C64** - `GET /api/shared/decks/:token` for a `deck` link answers `200` with each card line's `inventoryQuantity` beside its quantity, and still hides what is private and marks the page noindex (Surface `GET /api/shared/decks/:token`; door 3)
+**C64** - `GET /api/shared/decks/:token` for a `deck` link answers `200` with each card line's `inventoryQuantity` beside its quantity, and still hides what is private and marks the page noindex (Surface `GET /api/shared/decks/:token`; door 3) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "returns the enriched deck, hides what is private and marks noindex"`
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the deck intent carries each line's inventory"`
 

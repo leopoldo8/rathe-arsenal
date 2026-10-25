@@ -5,8 +5,10 @@ export type TStripKind = 'complete' | 'suggestions' | 'incomplete';
 
 export interface IDeckSummary {
   readonly kind: TStripKind;
-  /** Copies the collection does not cover exactly. */
+  /** Copies the collection does not cover exactly, the inventory's included. */
   readonly missingCards: number;
+  /** Of `missingCards`, the copies that belong to the deck's inventory. */
+  readonly missingInventory: number;
   /** Missing rows whose card the collection can stand in for. */
   readonly suggestionCount: number;
   readonly openMissing: readonly IBreakdownEntry[];
@@ -55,6 +57,7 @@ export function summariseDeck({ pct, breakdown, replacements }: ISummaryInput): 
   return {
     kind,
     missingCards: openMissing.reduce((sum, entry) => sum + entry.quantity, 0),
+    missingInventory: openMissing.reduce((sum, entry) => sum + (entry.inventoryQuantity ?? 0), 0),
     suggestionCount,
     openMissing,
   };

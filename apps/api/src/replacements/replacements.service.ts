@@ -431,7 +431,8 @@ export class ReplacementsService {
       if (toTake <= 0) break;
       const taken = Math.min(row.quantity, toTake);
       toTake -= taken;
-      if (row.quantity - taken > 0) {
+      // A row that still carries inventory copies stays, with no deck copy left.
+      if (row.quantity - taken > 0 || row.inventoryQuantity > 0) {
         await manager.update(DeckCardEntity, { id: row.id }, { quantity: row.quantity - taken });
       } else {
         await manager.delete(DeckCardEntity, { id: row.id });

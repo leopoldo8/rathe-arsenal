@@ -293,11 +293,38 @@ describe('Sharing (E2E)', () => {
       totalCards: 4,
     });
     expect(res.body.cards).toHaveLength(2);
+    expect(res.body.cards[0]).toMatchObject({ cardIdentifier: CARD_A.cardIdentifier, quantity: 3, inventoryQuantity: 0 });
     expect(JSON.stringify(res.body)).not.toContain(owner.userId);
 
     await request(server).patch(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).send({ showContact: false }).expect(200);
     const hidden = await request(server).get(`/api/shared/decks/${token}`).expect(200);
     expect(hidden.body.contactWhatsapp).toBeNull();
+  });
+
+  it("the deck intent carries each line's inventory", async () => {
+    const owner = await createSession('inventory');
+    const deckId = await createDeck(owner);
+    await dataSource.query(`UPDATE deck_card SET "inventoryQuantity" = 2 WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [
+      deckId,
+      CARD_B.cardIdentifier,
+    ]);
+    await dataSource.query(
+      `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, "inventoryQuantity", slot) VALUES ($1, 'snatch-red', 0, 3, 'mainboard')`,
+      [deckId],
+    );
+    const token = await startSharing(owner, deckId);
+
+    const res = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+    const lines = (res.body.cards as Array<{ cardIdentifier: string; quantity: number; inventoryQuantity: number }>).map(
+      ({ cardIdentifier, quantity, inventoryQuantity }) => ({ cardIdentifier, quantity, inventoryQuantity }),
+    );
+    expect(lines).toEqual([
+      { cardIdentifier: CARD_A.cardIdentifier, quantity: 3, inventoryQuantity: 0 },
+      { cardIdentifier: CARD_B.cardIdentifier, quantity: 1, inventoryQuantity: 2 },
+      { cardIdentifier: 'snatch-red', quantity: 0, inventoryQuantity: 3 },
+    ]);
+    expect(res.body.totalCards).toBe(4);
   });
 
   it('records opens for visitors but not for the owner, and gives the deck id only to the owner', async () => {

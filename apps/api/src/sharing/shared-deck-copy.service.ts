@@ -47,6 +47,7 @@ export class SharedDeckCopyService {
             trackedDeckId: created.id,
             cardIdentifier: row.cardIdentifier,
             quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
             slot: row.slot,
           })),
         );

@@ -85,6 +85,49 @@
   gap: var(--ra-space-2);
 }
 
+.stepperCell {
+  display: flex;
+  justify-content: center;
+}
+
+/* On a phone the row wraps: the art and the name on top, the two steppers stacked under the name. */
+@media (max-width: 719px) {
+  .tile {
+    flex-wrap: wrap;
+  }
+
+  .text {
+    flex-basis: calc(100% - 52px - var(--ra-space-3));
+  }
+
+  .controls {
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline-start: calc(52px + var(--ra-space-3));
+  }
+
+  .stepperCell {
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--ra-space-2);
+  }
+
+  .stepperCell::before {
+    content: attr(data-label);
+    min-inline-size: 9ch;
+    font-family: var(--ra-font-ui);
+    font-size: var(--ra-text-xs);
+    color: var(--ra-fg-secondary);
+  }
+}
+
+@media (min-width: 720px) {
+  .stepperCell {
+    inline-size: var(--ra-stepper-column, 160px);
+  }
+}
+
 .stepper {
   display: inline-flex;
   align-items: center;

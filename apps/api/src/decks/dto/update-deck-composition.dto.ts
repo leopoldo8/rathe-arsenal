@@ -12,6 +12,7 @@ import {
 import { Type } from 'class-transformer';
 import { TSupportedFormat } from '@rathe-arsenal/engine';
 import { HeroIdentifierExistsInCatalog } from '../validators/hero-identifier-exists.validator';
+import { DeckLinesAreUnique } from '../validators/deck-card-rows.validator';
 import { DeckCardInputDto } from './deck-card-input.dto';
 
 /**
@@ -29,6 +30,7 @@ export class UpdateDeckCompositionDto {
   @IsArray()
   @ValidateNested({ each: true })
   @ArrayMaxSize(150)
+  @Validate(DeckLinesAreUnique)
   @Type(() => DeckCardInputDto)
   cards!: DeckCardInputDto[];
 

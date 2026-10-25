@@ -96,6 +96,7 @@ function buildDeckCardEntity(overrides: Partial<DeckCardEntity> = {}): DeckCardE
     trackedDeckId: DECK_ID,
     cardIdentifier: 'snatch-red',
     quantity: 3,
+    inventoryQuantity: 0,
     slot: 'mainboard',
     trackedDeck: {} as DeckCardEntity['trackedDeck'],
     ...overrides,

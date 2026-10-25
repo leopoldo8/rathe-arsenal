@@ -26,7 +26,14 @@ function useStripMessage(summary: IDeckSummary, offFormat: string | null): strin
   if (summary.kind === 'complete') {
     return offFormat ? t('deckDetail.stripCompleteOffFormat', { format: offFormat }) : t('deckDetail.stripComplete');
   }
-  const gap = `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
+  const gap =
+    summary.missingInventory > 0
+      ? t('deckDetail.stripMissingCopies', {
+          count: summary.missingCards,
+          deck: summary.missingCards - summary.missingInventory,
+          inventory: summary.missingInventory,
+        })
+      : `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
   if (summary.kind === 'incomplete') return gap;
   return `${gap} ${t('deckDetail.stripCoverable', { count: summary.suggestionCount })}`;
 }
@@ -90,9 +97,12 @@ export function DeckStatusStrip({
         <div className={styles.actions}>
           {showUse && <UseSuggestionsButton deckId={deckId} count={summary.suggestionCount} />}
           {showShoppingLink && (
-            <a href={`#${MISSING_PANEL_ID}`} className={styles.action} data-testid="strip-view-shopping">
-              {t('deckDetail.seeShopping')}
-            </a>
+            <>
+              {summary.missingInventory > 0 && <span aria-hidden="true">{' · '}</span>}
+              <a href={`#${MISSING_PANEL_ID}`} className={styles.action} data-testid="strip-view-shopping">
+                {t(summary.missingInventory > 0 ? 'deckDetail.seeWhatIsMissing' : 'deckDetail.seeShopping')}
+              </a>
+            </>
           )}
           {showFabrary && (
             <a

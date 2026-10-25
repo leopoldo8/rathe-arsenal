@@ -1069,3 +1069,59 @@ describe('readiness counts the deck as it is (swaps merged into alternatives)', 
     ]);
   });
 });
+
+describe('computeEffectiveReadiness with an inventory', () => {
+  const deckCardOne = makeCard({ cardIdentifier: 'brute-deck-card-red', pitch: 1 });
+  const inventoryCard = makeCard({ cardIdentifier: 'brute-inventory-card-red', pitch: 1 });
+  const splitCard = makeCard({ cardIdentifier: 'brute-split-card-red', pitch: 1 });
+  const catalog = makeCatalog([deckCardOne, inventoryCard, splitCard]);
+
+  it('missing copies include the inventory and keep the split', () => {
+    // Four copies missing from the deck and three missing from the inventory, nothing owned.
+    const result = computeEffectiveReadiness(
+      {
+        cards: [
+          { cardIdentifier: 'brute-deck-card-red', quantity: 4, slot: 'mainboard' },
+          { cardIdentifier: 'brute-inventory-card-red', quantity: 0, inventoryQuantity: 3, slot: 'mainboard' },
+        ],
+      },
+      new Map(),
+      catalog,
+    );
+
+    expect(result.missingCopies).toEqual({ total: 7, deck: 4, inventory: 3 });
+    expect(result.breakdown.notOwned).toEqual([
+      expect.objectContaining({ cardIdentifier: 'brute-deck-card-red', quantity: 4 }),
+      expect.objectContaining({ cardIdentifier: 'brute-inventory-card-red', quantity: 3, inventoryQuantity: 3 }),
+    ]);
+    expect(result.breakdown.notOwned[0]).not.toHaveProperty('inventoryQuantity');
+  });
+
+  it('owned copies cover the deck before the inventory', () => {
+    // Two in the deck and two in the inventory, three owned: the deck is covered, one inventory copy is not.
+    const result = computeEffectiveReadiness(
+      { cards: [{ cardIdentifier: 'brute-split-card-red', quantity: 2, inventoryQuantity: 2, slot: 'mainboard' }] },
+      new Map([['brute-split-card-red', 3]]),
+      catalog,
+    );
+
+    expect(result.breakdown.exact).toEqual([
+      expect.objectContaining({ cardIdentifier: 'brute-split-card-red', quantity: 3, inventoryQuantity: 1 }),
+    ]);
+    expect(result.breakdown.missing).toEqual([
+      expect.objectContaining({ cardIdentifier: 'brute-split-card-red', quantity: 1, inventoryQuantity: 1 }),
+    ]);
+    expect(result.missingCopies).toEqual({ total: 1, deck: 0, inventory: 1 });
+  });
+
+  it('a deck with no inventory reads as before', () => {
+    const result = computeEffectiveReadiness(
+      { cards: [{ cardIdentifier: 'brute-deck-card-red', quantity: 3, slot: 'mainboard' }] },
+      new Map([['brute-deck-card-red', 1]]),
+      catalog,
+    );
+
+    expect(result.missingCopies).toEqual({ total: 2, deck: 2, inventory: 0 });
+    expect(result.breakdown.exact[0]).not.toHaveProperty('inventoryQuantity');
+  });
+});

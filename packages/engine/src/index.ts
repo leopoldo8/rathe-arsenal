@@ -68,6 +68,7 @@ export type {
   ISubstitutedEntry,
   IReadinessBreakdown,
   IEffectiveReadinessResult,
+  IMissingCopies,
   TPath,
 } from './readiness';
 export {

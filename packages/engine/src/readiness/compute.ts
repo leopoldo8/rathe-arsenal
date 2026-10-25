@@ -6,6 +6,7 @@ import { findSubstitution } from '../substitution/find-substitution';
 import {
   IBreakdownEntry,
   IEffectiveReadinessResult,
+  IMissingCopies,
   IReadinessBreakdown,
   ISubstitutedEntry,
 } from './types';
@@ -63,7 +64,29 @@ function deriveEntryMeta(
 interface IDeckCard {
   readonly cardIdentifier: string;
   readonly quantity: number;
+  /** Copies carried outside the starting deck; needed like the deck copies, and told apart in the entries. */
+  readonly inventoryQuantity?: number;
   readonly slot: string;
+}
+
+/** The field an entry carries for its inventory copies, only when there are some. */
+function inventoryPart(copies: number): { readonly inventoryQuantity?: number } {
+  return copies > 0 ? { inventoryQuantity: copies } : {};
+}
+
+/** The two entries of one card and slot as one: copies and their inventory part add up. */
+function mergeEntries(first: IBreakdownEntry, second: IBreakdownEntry): IBreakdownEntry {
+  return {
+    ...first,
+    quantity: first.quantity + second.quantity,
+    ...inventoryPart((first.inventoryQuantity ?? 0) + (second.inventoryQuantity ?? 0)),
+  };
+}
+
+function countMissingCopies(notOwned: readonly IBreakdownEntry[]): IMissingCopies {
+  const total = notOwned.reduce((sum, entry) => sum + entry.quantity, 0);
+  const inventory = notOwned.reduce((sum, entry) => sum + (entry.inventoryQuantity ?? 0), 0);
+  return { total, deck: total - inventory, inventory };
 }
 
 interface IDeck {
@@ -126,30 +149,38 @@ export function computeEffectiveReadiness(
     readonly entryMeta: ReturnType<typeof deriveEntryMeta>;
     readonly exactQty: number;
     readonly missingQty: number;
+    /** Of `missingQty`, the copies that belong to the inventory. */
+    readonly missingInventory: number;
   }
 
   const pass1Slots: IPass1Slot[] = [];
 
   for (const deckCard of deck.cards) {
-    totalCards += deckCard.quantity;
+    const inventoryNeed = deckCard.inventoryQuantity ?? 0;
+    const needed = deckCard.quantity + inventoryNeed;
+    totalCards += needed;
 
     const available = remainingInventory.get(deckCard.cardIdentifier) ?? 0;
     const catalogCard = catalog.indices.byIdentifier.get(deckCard.cardIdentifier);
     const cardPitch = catalogCard?.pitch ?? null;
 
     // Track original pitch.
-    originalPitchEntries.push({ pitch: cardPitch, quantity: deckCard.quantity });
+    originalPitchEntries.push({ pitch: cardPitch, quantity: needed });
 
     // Derive enriched metadata for this card once per deck card.
     const entryMeta = deriveEntryMeta(catalogCard, deckCard.cardIdentifier);
 
-    const exactQty = Math.min(available, deckCard.quantity);
-    const missingQty = deckCard.quantity - exactQty;
+    const exactQty = Math.min(available, needed);
+    const missingQty = needed - exactQty;
+    // Owned copies cover the deck copies first, so the inventory is what is left uncovered.
+    const exactInventory = Math.max(0, exactQty - deckCard.quantity);
+    const missingInventory = inventoryNeed - exactInventory;
 
     if (exactQty > 0) {
       exact.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
         quantity: exactQty,
+        ...inventoryPart(exactInventory),
         slot: deckCard.slot,
         ...entryMeta,
       }));
@@ -158,7 +189,7 @@ export function computeEffectiveReadiness(
       modifiedPitchEntries.push({ pitch: cardPitch, quantity: exactQty });
     }
 
-    pass1Slots.push({ deckCard, catalogCard, cardPitch, entryMeta, exactQty, missingQty });
+    pass1Slots.push({ deckCard, catalogCard, cardPitch, entryMeta, exactQty, missingQty, missingInventory });
   }
 
   // ---------------------------------------------------------------------------
@@ -174,7 +205,7 @@ export function computeEffectiveReadiness(
   const remainingProtected = new Map(protectedCopies);
 
   for (const slot of pass1Slots) {
-    const { deckCard, catalogCard, cardPitch, entryMeta, missingQty } = slot;
+    const { deckCard, catalogCard, cardPitch, entryMeta, missingQty, missingInventory } = slot;
 
     if (missingQty === 0) {
       // Fully covered by exact match in pass 1 — nothing left to substitute.
@@ -186,6 +217,7 @@ export function computeEffectiveReadiness(
       missing.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
         quantity: missingQty,
+        ...inventoryPart(missingInventory),
         slot: deckCard.slot,
         ...entryMeta,
       }));
@@ -198,6 +230,7 @@ export function computeEffectiveReadiness(
       missing.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
         quantity: missingQty,
+        ...inventoryPart(missingInventory),
         slot: deckCard.slot,
         ...entryMeta,
       }));
@@ -206,12 +239,16 @@ export function computeEffectiveReadiness(
     }
 
     let remainingMissing = missingQty;
+    let remainingMissingInventory = missingInventory;
 
     const protectedKey = buildProtectedKey(deckCard.cardIdentifier, deckCard.slot);
     const protectedHere = Math.min(remainingProtected.get(protectedKey) ?? 0, missingQty);
     if (protectedHere > 0) {
       remainingProtected.set(protectedKey, (remainingProtected.get(protectedKey) ?? 0) - protectedHere);
     }
+
+    // The deck copies come first among the missing ones, so the last copies are the inventory's.
+    const firstInventoryCopy = missingQty - missingInventory;
 
     for (let i = 0; i < missingQty; i++) {
       if (i < protectedHere) {
@@ -237,9 +274,11 @@ export function computeEffectiveReadiness(
         const delta = computePitchDelta(tentativeOriginal, tentativeModifiedCurve);
 
         if (isWithinTolerance(delta, tolerance)) {
+          const coversInventory = i >= firstInventoryCopy;
           const originalEntry: IBreakdownEntry = Object.freeze({
             cardIdentifier: deckCard.cardIdentifier,
             quantity: 1,
+            ...inventoryPart(coversInventory ? 1 : 0),
             slot: deckCard.slot,
             ...entryMeta,
           });
@@ -247,6 +286,7 @@ export function computeEffectiveReadiness(
           substituted.push(Object.freeze({ original: originalEntry, match }));
           substitutions.push(match);
           remainingMissing -= 1;
+          if (coversInventory) remainingMissingInventory -= 1;
 
           // Consume from inventory.
           const subAvailable = remainingInventory.get(match.substitute.cardIdentifier) ?? 0;
@@ -266,6 +306,7 @@ export function computeEffectiveReadiness(
       missing.push(Object.freeze({
         cardIdentifier: deckCard.cardIdentifier,
         quantity: remainingMissing,
+        ...inventoryPart(remainingMissingInventory),
         slot: deckCard.slot,
         ...entryMeta,
       }));
@@ -286,7 +327,7 @@ export function computeEffectiveReadiness(
     const key = `${entry.cardIdentifier}::${entry.slot}`;
     const existing = notOwnedMap.get(key);
     if (existing) {
-      notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.quantity });
+      notOwnedMap.set(key, mergeEntries(existing, entry));
     } else {
       notOwnedMap.set(key, { ...entry });
     }
@@ -295,7 +336,7 @@ export function computeEffectiveReadiness(
     const key = `${entry.original.cardIdentifier}::${entry.original.slot}`;
     const existing = notOwnedMap.get(key);
     if (existing) {
-      notOwnedMap.set(key, { ...existing, quantity: existing.quantity + entry.original.quantity });
+      notOwnedMap.set(key, mergeEntries(existing, entry.original));
     } else {
       notOwnedMap.set(key, { ...entry.original });
     }
@@ -315,6 +356,7 @@ export function computeEffectiveReadiness(
     path: computePath(breakdown),
     fidelityPercent: computeFidelity(breakdown, totalCards),
     breakdown,
+    missingCopies: Object.freeze(countMissingCopies(notOwned)),
     substitutions: Object.freeze(substitutions),
     pitchCurve: Object.freeze({
       original: originalCurve,

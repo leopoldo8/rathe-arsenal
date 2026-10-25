@@ -48,6 +48,7 @@ function buildDeckCard(
     trackedDeckId: DECK_ID,
     cardIdentifier: CARD_IDENTIFIER,
     quantity: 3,
+    inventoryQuantity: 0,
     slot: 'mainboard',
     trackedDeck: {} as DeckCardEntity['trackedDeck'],
     ...overrides,

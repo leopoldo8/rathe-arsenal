@@ -24,6 +24,7 @@ import { OwnsTrackedDeckGuard } from '../../auth/guards/owns-tracked-deck.guard'
 import { HeroIdentifierExistsInCatalog } from '../validators/hero-identifier-exists.validator';
 import { ITrackedDeckDetailResponse } from '../dtos/tracked-deck-detail.response.dto';
 import { configureHttpApp } from '../../http/configure-http-app';
+import { bootFixture, IFixture } from '../../replacements/__tests__/replacements-e2e.fixture';
 
 const USER_ID = 'user-uuid-put-int';
 const DECK_ID = 77;
@@ -44,6 +45,7 @@ function buildDetailResponse(
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T12:00:00.000Z',
     totalCards: 60,
+    cards: [],
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'legal', reasons: [], details: [] },
@@ -413,5 +415,123 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
         expect.objectContaining({ format }),
       );
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Against a real database: the inventory quantity of a composition row (door 3) and the stage
+// that no verdict writes. The slim app above mocks the service, so what is stored is checked here.
+// ---------------------------------------------------------------------------
+describe('DecksController PUT /decks/:deckId against Postgres (int-spec)', () => {
+  let fixture: IFixture;
+  let sessionToken: string;
+
+  beforeAll(async () => {
+    fixture = await bootFixture();
+    ({ sessionToken } = await fixture.signUp('put-inventory'));
+  });
+
+  afterAll(async () => {
+    await fixture.close();
+  });
+
+  async function createDeck(format = 'Classic Constructed', heroIdentifier = 'dorinthea-ironsong'): Promise<number> {
+    const created = await fixture.post('/api/decks', sessionToken).send({ heroIdentifier, format }).expect(201);
+    return created.body.id as number;
+  }
+
+  function put(deckId: number, cards: readonly object[], token = sessionToken) {
+    return fixture
+      .put(`/api/decks/${deckId}`, token)
+      .send({ heroIdentifier: 'dorinthea-ironsong', format: 'Classic Constructed', cards });
+  }
+
+  async function storedRows(deckId: number): Promise<Array<{ cardIdentifier: string; slot: string; quantity: number; inventoryQuantity: number }>> {
+    return fixture.dataSource.query(
+      `SELECT "cardIdentifier", slot, quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 ORDER BY "cardIdentifier", slot`,
+      [deckId],
+    );
+  }
+
+  const SAVED = [
+    { cardIdentifier: 'pack-hunt-red', quantity: 3, inventoryQuantity: 1, slot: 'mainboard' },
+    { cardIdentifier: 'snatch-red', quantity: 0, inventoryQuantity: 2, slot: 'mainboard' },
+    { cardIdentifier: 'dawnblade', quantity: 1, slot: 'weapon' },
+  ];
+
+  it('composition rows carry inventoryQuantity', async () => {
+    const deckId = await createDeck();
+
+    const saved = await put(deckId, SAVED).expect(200);
+
+    const expectedRows = [
+      { cardIdentifier: 'dawnblade', slot: 'weapon', quantity: 1, inventoryQuantity: 0 },
+      { cardIdentifier: 'pack-hunt-red', slot: 'mainboard', quantity: 3, inventoryQuantity: 1 },
+      { cardIdentifier: 'snatch-red', slot: 'mainboard', quantity: 0, inventoryQuantity: 2 },
+    ];
+    expect(await storedRows(deckId)).toEqual(expectedRows);
+    const byCard = (rows: Array<{ cardIdentifier: string }>) =>
+      [...rows].sort((a, b) => a.cardIdentifier.localeCompare(b.cardIdentifier));
+    expect(byCard(saved.body.cards)).toEqual(expectedRows);
+    const read = await fixture.get(`/api/decks/${deckId}`, sessionToken).expect(200);
+    expect(byCard(read.body.cards)).toEqual(expectedRows);
+  });
+
+  it('invalid inventory quantities are rejected', async () => {
+    const deckId = await createDeck();
+    await put(deckId, SAVED).expect(200);
+    const before = await storedRows(deckId);
+
+    const bodies: ReadonlyArray<[string, object]> = [
+      ['inventoryQuantity -1', { cardIdentifier: 'snatch-red', quantity: 1, inventoryQuantity: -1, slot: 'mainboard' }],
+      ['inventoryQuantity 1.5', { cardIdentifier: 'snatch-red', quantity: 1, inventoryQuantity: 1.5, slot: 'mainboard' }],
+      ['both quantities 0', { cardIdentifier: 'snatch-red', quantity: 0, inventoryQuantity: 0, slot: 'mainboard' }],
+      ['quantity 0 and no inventory field', { cardIdentifier: 'snatch-red', quantity: 0, slot: 'mainboard' }],
+    ];
+    for (const [label, row] of bodies) {
+      await put(deckId, [SAVED[0]!, row]).expect(400);
+      expect({ label, rows: await storedRows(deckId) }).toEqual({ label, rows: before });
+    }
+  });
+
+  it('a repeated card and slot is rejected', async () => {
+    const deckId = await createDeck();
+    await put(deckId, SAVED).expect(200);
+    const before = await storedRows(deckId);
+
+    await put(deckId, [
+      { cardIdentifier: 'snatch-red', quantity: 1, slot: 'mainboard' },
+      { cardIdentifier: 'snatch-red', quantity: 0, inventoryQuantity: 1, slot: 'mainboard' },
+    ]).expect(400);
+
+    expect(await storedRows(deckId)).toEqual(before);
+  });
+
+  it('put answers 404 for a deck the player cannot edit', async () => {
+    const deckId = await createDeck();
+    await put(deckId, SAVED).expect(200);
+    const before = await storedRows(deckId);
+    const { sessionToken: stranger } = await fixture.signUp('put-stranger');
+
+    await put(deckId, [{ cardIdentifier: 'snatch-red', quantity: 2, slot: 'mainboard' }], stranger).expect(404);
+
+    expect(await storedRows(deckId)).toEqual(before);
+  });
+
+  it('the verdict never writes the stage', async () => {
+    const deckId = await createDeck('Blitz', 'rhinar');
+    await fixture.dataSource.query(`UPDATE tracked_deck SET status = 'active' WHERE id = $1`, [deckId]);
+    const illegal = [{ cardIdentifier: 'pack-hunt-red', quantity: 2, slot: 'mainboard' }];
+
+    const saved = await fixture
+      .put(`/api/decks/${deckId}`, sessionToken)
+      .send({ heroIdentifier: 'rhinar', format: 'Blitz', cards: illegal })
+      .expect(200);
+    const read = await fixture.get(`/api/decks/${deckId}`, sessionToken).expect(200);
+
+    expect(saved.body.legality.category).toBe('illegal');
+    expect(saved.body.status).toBe('active');
+    expect(read.body.legality.category).toBe('illegal');
+    expect(read.body.status).toBe('active');
   });
 });

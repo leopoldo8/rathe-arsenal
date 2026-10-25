@@ -56,3 +56,13 @@ describe('deck copy', () => {
   });
 });
 
+describe('inventory copy', () => {
+  it('the inventory line is the one of copy rule 6', () => {
+    const copy = valuesOf(ptBR as Record<string, unknown>);
+
+    expect(copy.filter((value) => /jogo 1/i.test(value))).toEqual([]);
+    expect(ptBR.deckDetail.inventoryPlain).toBe(
+      'Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas.',
+    );
+  });
+});

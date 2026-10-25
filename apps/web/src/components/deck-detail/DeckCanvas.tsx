@@ -6,18 +6,18 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IDeckLegalityResult } from '@rathe-arsenal/engine/legality';
+import { FORMAT_RULES, type IDeckLegalityResult, type TSupportedFormat } from '@rathe-arsenal/engine/legality';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { EditableCardRow } from './EditableCardRow';
 import { LoadoutRow } from './LoadoutRow';
 import { RulesBar, RulesChecklistSheet } from './RulesChecklistSheet';
 import { focusCardRow } from './focusCardRow';
 import { buildRulesChecklist } from './rulesChecklistModel';
-import { copyInfoFor } from '../../lib/draft-legality';
+import { copyInfoFor, copySplitFor } from '../../lib/draft-legality';
 import { HeroDropdown } from './HeroDropdown';
 import { CascadeWarningPanelBanner } from './CascadeWarningPanel';
 import { DeckCardSearchAutocomplete } from '../deck-card-search/DeckCardSearchAutocomplete';
-import type { ICompositionDraft, IDraftCard, TDraftSlot } from '../../hooks/useCompositionDraft';
+import { inventoryOf, type ICompositionDraft, type IDraftCard, type TCopySide, type TDraftSlot } from '../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
 import type { ISearchCardResult } from '../../api/catalog';
 
@@ -74,6 +74,8 @@ interface IDeckCanvasProps {
   readonly heroName?: string | null;
   readonly onAddCard?: (card: ISearchCardResult) => void;
   readonly onUpdateQuantity?: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  readonly onUpdateInventoryQuantity?: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  readonly onMoveCopies?: (cardIdentifier: string, slot: TDraftSlot, from: TCopySide, count: number) => void;
   readonly onRemoveCard?: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
   readonly onSetHero?: (heroIdentifier: string | null) => void;
@@ -88,6 +90,8 @@ export function DeckCanvas(props: IDeckCanvasProps): React.ReactElement {
       heroName={props.heroName ?? null}
       onAddCard={props.onAddCard}
       onUpdateQuantity={props.onUpdateQuantity}
+      onUpdateInventoryQuantity={props.onUpdateInventoryQuantity}
+      onMoveCopies={props.onMoveCopies}
       onRemoveCard={props.onRemoveCard}
       onRemoveIllegalCards={props.onRemoveIllegalCards}
       onSetHero={props.onSetHero}
@@ -106,6 +110,8 @@ interface IEditBodyProps {
   readonly heroName: string | null;
   readonly onAddCard: ((card: ISearchCardResult) => void) | undefined;
   readonly onUpdateQuantity: ((cardIdentifier: string, slot: TDraftSlot, quantity: number) => void) | undefined;
+  readonly onUpdateInventoryQuantity: ((cardIdentifier: string, slot: TDraftSlot, quantity: number) => void) | undefined;
+  readonly onMoveCopies: ((cardIdentifier: string, slot: TDraftSlot, from: TCopySide, count: number) => void) | undefined;
   readonly onRemoveCard: ((cardIdentifier: string, slot: TDraftSlot) => void) | undefined;
   readonly onRemoveIllegalCards: ((ids: ReadonlySet<string>) => void) | undefined;
   readonly onSetHero: ((heroIdentifier: string | null) => void) | undefined;
@@ -127,6 +133,8 @@ function EditBody({
   heroName,
   onAddCard,
   onUpdateQuantity,
+  onUpdateInventoryQuantity,
+  onMoveCopies,
   onRemoveCard,
   onRemoveIllegalCards,
   onSetHero,
@@ -176,7 +184,8 @@ function EditBody({
     setTimeout(() => autocompleteRef.current?.focus(), 50);
   }
 
-  const totalCards = compositionDraft.cards.reduce((sum, c) => sum + c.quantity, 0);
+  const totalCards = compositionDraft.cards.reduce((sum, c) => sum + c.quantity + inventoryOf(c), 0);
+  const pool = poolOf(compositionDraft);
 
   return (
     <div className={styles.editCanvas} data-testid="deck-canvas-edit">
@@ -251,6 +260,25 @@ function EditBody({
                 <h2 className={styles.deckHeading}>{t('deckDetail.editorDeckHeading')}</h2>
                 {checklist !== null && <span className={styles.deckSize}>{checklist.deckSizeText}</span>}
               </div>
+              {pool !== null && (
+                <div className={styles.inventorySummary} data-testid="inventory-summary">
+                  <p className={styles.inventoryCounts}>
+                    {t('deckDetail.inventorySummary', {
+                      deck: pool.deck,
+                      inventory: pool.inventory,
+                      pool: pool.cards,
+                      limit: pool.limit,
+                    })}
+                  </p>
+                  <p className={styles.plainLine}>{t('deckDetail.inventoryPlain')}</p>
+                  <p className={styles.plainLine}>{t('deckDetail.cardPoolPlain')}</p>
+                </div>
+              )}
+              <div className={styles.columnHeads} aria-hidden="true">
+                <span className={styles.headCard}>{t('deckDetail.columnCard')}</span>
+                <span className={styles.headSide}>{t('deckDetail.columnDeck')}</span>
+                <span className={styles.headSide}>{t('deckDetail.columnInventory')}</span>
+              </div>
               <ul className={styles.deckList} aria-label={t('decks.slotGroupCardsAria', { group: 'mainboard' })}>
                 {deckRows.map((card) => (
                   <EditableCardRow
@@ -259,19 +287,23 @@ function EditBody({
                     name={card.name}
                     pitch={card.pitch}
                     quantity={card.quantity}
+                    inventoryQuantity={inventoryOf(card)}
                     slot={card.slot}
                     type={card.type}
                     cost={card.cost}
                     copies={copyInfoFor(compositionDraft, card)}
+                    copySplit={copySplitFor(compositionDraft, card)}
                     formatName={compositionDraft.format}
                     imageUrl={card.imageUrl}
                     onQuantityChange={(id, sl, qty) => {
-                      if (qty <= 0) {
+                      if (qty <= 0 && inventoryOf(card) === 0) {
                         onRemoveCard?.(id, sl);
                       } else {
                         onUpdateQuantity?.(id, sl, qty);
                       }
                     }}
+                    onInventoryQuantityChange={onUpdateInventoryQuantity}
+                    onMoveCopies={onMoveCopies}
                     onRemove={(id, sl) => onRemoveCard?.(id, sl)}
                     onOpenLightbox={setEditLightbox}
                   />
@@ -304,4 +336,27 @@ function EditBody({
       )}
     </div>
   );
+}
+
+interface IPool {
+  readonly deck: number;
+  readonly inventory: number;
+  /** Deck, inventory, weapons and equipment together; the hero does not count. */
+  readonly cards: number;
+  readonly limit: number;
+}
+
+/** The numbers of the inventory header, or null for a format the rules do not cover. */
+function poolOf(draft: ICompositionDraft): IPool | null {
+  if (!Object.prototype.hasOwnProperty.call(FORMAT_RULES, draft.format)) return null;
+  const sum = (cards: readonly IDraftCard[], count: (card: IDraftCard) => number): number =>
+    cards.reduce((total, card) => total + count(card), 0);
+  const deckRows = draft.cards.filter((card) => card.slot === 'mainboard' || card.slot === 'other');
+  const notHero = draft.cards.filter((card) => card.slot !== 'hero');
+  return {
+    deck: sum(deckRows, (card) => card.quantity),
+    inventory: sum(draft.cards, inventoryOf),
+    cards: sum(notHero, (card) => card.quantity + inventoryOf(card)),
+    limit: FORMAT_RULES[draft.format as TSupportedFormat].maxCardPool,
+  };
 }

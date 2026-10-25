@@ -13,6 +13,8 @@ export interface ISharedCard {
   type: string;
   slot: string;
   quantity: number;
+  /** Copies carried in the inventory beside `quantity` (door 3); 0 when none. */
+  inventoryQuantity: number;
   imageUrl: ISharedCardImage | null;
 }
 

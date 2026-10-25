@@ -44,6 +44,7 @@ import { RecommendationQueueService } from '../recommendations/recommendation-qu
 import { RecommendationsQueryService } from '../recommendations/recommendations-query.service';
 import { cardLegalityFacts, ICardLegalityFacts } from '../catalog/card-legality-facts';
 import { automaticDeckName, nameAfterFormatChange } from './automatic-deck-name';
+import { toCompositionRows } from './composition-rows';
 
 const NO_LEGALITY_FACTS: ICardLegalityFacts = {
   legalFormats: [],
@@ -257,6 +258,7 @@ export class DecksService {
           cards: cards.map((row) => ({
             cardIdentifier: row.cardIdentifier,
             quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
             slot: row.slot,
           })),
         },
@@ -604,6 +606,7 @@ export class DecksService {
         cards: deckCards.map((row) => ({
           cardIdentifier: row.cardIdentifier,
           quantity: row.quantity,
+          inventoryQuantity: row.inventoryQuantity,
           slot: row.slot,
         })),
       },
@@ -652,6 +655,7 @@ export class DecksService {
       trackedAt: deck.trackedAt.toISOString(),
       updatedAt: deck.updatedAt.toISOString(),
       totalCards,
+      cards: toCompositionRows(deckCards),
       latestSnapshot: snapshotDto,
       shoppingLine,
       legality,
@@ -721,6 +725,7 @@ export class DecksService {
       trackedAt: saved.trackedAt.toISOString(),
       updatedAt: saved.updatedAt.toISOString(),
       totalCards: 0,
+      cards: [],
       latestSnapshot: null,
       shoppingLine: null,
       legality,
@@ -957,6 +962,7 @@ export class DecksService {
               trackedDeckId: deckId,
               cardIdentifier: card.cardIdentifier,
               quantity: card.quantity,
+              inventoryQuantity: card.inventoryQuantity ?? 0,
               slot: card.slot,
             })),
           );
@@ -1010,6 +1016,7 @@ export class DecksService {
           cards: freshCards.map((row) => ({
             cardIdentifier: row.cardIdentifier,
             quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
             slot: row.slot,
           })),
         };
@@ -1059,6 +1066,7 @@ export class DecksService {
         cards: freshCards.map((row) => ({
           cardIdentifier: row.cardIdentifier,
           quantity: row.quantity,
+          inventoryQuantity: row.inventoryQuantity,
           slot: row.slot,
         })),
       };
@@ -1114,6 +1122,7 @@ export class DecksService {
       cards: freshCardsForLegality.map((row) => ({
         cardIdentifier: row.cardIdentifier,
         quantity: row.quantity,
+        inventoryQuantity: row.inventoryQuantity,
         slot: row.slot,
       })),
     };
@@ -1150,6 +1159,7 @@ export class DecksService {
       trackedAt: updatedDeck.trackedAt.toISOString(),
       updatedAt: updatedDeck.updatedAt.toISOString(),
       totalCards,
+      cards: toCompositionRows(freshCardsForLegality),
       latestSnapshot: null,
       shoppingLine: null,
       legality,

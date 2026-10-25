@@ -5,7 +5,7 @@ import {
   type IDeckLegalityResult,
   type ILegalityCard,
 } from '@rathe-arsenal/engine/legality';
-import type { ICompositionDraft, IDraftCard } from '../hooks/useCompositionDraft';
+import { inventoryOf, type ICompositionDraft, type IDraftCard } from '../hooks/useCompositionDraft';
 import type { IHeroListItem } from '../api/catalog';
 import type { IDeckLegality } from '../api/decks';
 import type { ICascadeCheckResult, TCascadeReason } from '../hooks/useCascadeCheck';
@@ -63,6 +63,7 @@ export function computeDraftLegality(
       cards: draft.cards.map((card) => ({
         cardIdentifier: card.cardIdentifier,
         quantity: card.quantity,
+        inventoryQuantity: inventoryOf(card),
         slot: card.slot === 'other' ? 'mainboard' : card.slot,
       })),
     },
@@ -74,9 +75,26 @@ export function computeDraftLegality(
 export type TCopyLimitKind = 'format' | 'legendary' | 'restricted';
 
 export interface ICopyInfo {
+  /** Copies in the deck and the inventory together. */
   readonly total: number;
   readonly limit: number;
   readonly kind: TCopyLimitKind;
+}
+
+export interface ICopySplit {
+  readonly deck: number;
+  readonly inventory: number;
+}
+
+/** The copies of a draft card (name and pitch) in the starting deck and in the inventory, across every row and slot but the hero's. */
+export function copySplitFor(draft: ICompositionDraft, card: IDraftCard): ICopySplit {
+  const sameCard = draft.cards.filter(
+    (entry) => entry.slot !== 'hero' && entry.name === card.name && entry.pitch === card.pitch,
+  );
+  return {
+    deck: sameCard.reduce((sum, entry) => sum + entry.quantity, 0),
+    inventory: sameCard.reduce((sum, entry) => sum + inventoryOf(entry), 0),
+  };
 }
 
 /**
@@ -86,9 +104,8 @@ export interface ICopyInfo {
 export function copyInfoFor(draft: ICompositionDraft, card: IDraftCard): ICopyInfo | null {
   if (!Object.prototype.hasOwnProperty.call(FORMAT_RULES, draft.format)) return null;
 
-  const total = draft.cards
-    .filter((entry) => entry.slot !== 'hero' && entry.name === card.name && entry.pitch === card.pitch)
-    .reduce((sum, entry) => sum + entry.quantity, 0);
+  const { deck, inventory } = copySplitFor(draft, card);
+  const total = deck + inventory;
   const restricted = card.restrictedFormats?.includes(draft.format) ?? false;
   const kind: TCopyLimitKind = card.legendary === true ? 'legendary' : restricted ? 'restricted' : 'format';
   return { total, limit: getCopyLimit(toLegalityCard(card, draft.format), draft.format), kind };

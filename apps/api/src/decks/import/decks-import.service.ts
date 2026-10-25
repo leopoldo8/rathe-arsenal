@@ -15,6 +15,7 @@ import {
   IImportedDeck,
   ISkippedUrl,
 } from './dtos/import-decks.response.dto';
+import { buildDeckLines } from './deck-lines';
 import { aggregateInventory } from './aggregate-inventory';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
 
@@ -123,24 +124,8 @@ export class DecksImportService {
           });
           const saved = await manager.save(TrackedDeckEntity, trackedDeck);
 
-          const allCardEntries = [
-            ...deck.mainboard,
-            ...deck.equipment,
-            ...deck.weapons,
-            {
-              cardIdentifier: deck.hero.cardIdentifier,
-              quantity: 1,
-              slot: 'hero' as const,
-            },
-          ];
-
-          const deckCards = allCardEntries.map((entry) =>
-            manager.create(DeckCardEntity, {
-              trackedDeckId: saved.id,
-              cardIdentifier: entry.cardIdentifier,
-              quantity: entry.quantity,
-              slot: entry.slot,
-            }),
+          const deckCards = buildDeckLines(deck).map((line) =>
+            manager.create(DeckCardEntity, { trackedDeckId: saved.id, ...line }),
           );
           await manager.save(DeckCardEntity, deckCards);
           await this.recommendationQueue.enqueueAuto(manager, saved.id);

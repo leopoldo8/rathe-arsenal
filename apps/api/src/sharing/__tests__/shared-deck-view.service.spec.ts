@@ -28,8 +28,8 @@ const DECK = {
 } as TrackedDeckEntity;
 
 const ROWS = [
-  { cardIdentifier: CARD_A.cardIdentifier, quantity: 3, slot: 'mainboard' },
-  { cardIdentifier: CARD_B.cardIdentifier, quantity: 1, slot: 'mainboard' },
+  { cardIdentifier: CARD_A.cardIdentifier, quantity: 3, inventoryQuantity: 0, slot: 'mainboard' },
+  { cardIdentifier: CARD_B.cardIdentifier, quantity: 1, inventoryQuantity: 0, slot: 'mainboard' },
 ] as DeckCardEntity[];
 
 const visitor = (userId: string): ICurrentUser => ({

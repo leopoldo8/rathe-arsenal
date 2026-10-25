@@ -38,6 +38,7 @@ function buildDetailResponse(
     trackedAt: '2026-05-17T10:00:00.000Z',
     updatedAt: '2026-05-17T10:00:00.000Z',
     totalCards: 0,
+    cards: [],
     latestSnapshot: null,
     shoppingLine: null,
     legality: { category: 'incomplete', reasons: ['Deck has 0 mainboard cards but Classic Constructed requires at least 60.'], details: [] },

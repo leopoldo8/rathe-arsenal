@@ -8,7 +8,7 @@ import {
 } from '@rathe-arsenal/engine/legality';
 import { formatLegalityReason } from '../../i18n/format-reasons';
 import { cardName } from '../../lib/card-name';
-import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
+import { inventoryOf, type ICompositionDraft } from '../../hooks/useCompositionDraft';
 
 export type TChecklistTone = 'ok' | 'problem' | 'neutral';
 
@@ -47,10 +47,15 @@ function cardIdentifierOf(detail: TLegalityReasonDetail): string | undefined {
   return params.cardIdentifier;
 }
 
-function sumQuantity(draft: ICompositionDraft, include: (slot: string) => boolean, cardIdentifier?: string): number {
+function sumQuantity(
+  draft: ICompositionDraft,
+  include: (slot: string) => boolean,
+  cardIdentifier?: string,
+  withInventory = false,
+): number {
   return draft.cards
     .filter((card) => include(card.slot) && (cardIdentifier === undefined || card.cardIdentifier === cardIdentifier))
-    .reduce((sum, card) => sum + card.quantity, 0);
+    .reduce((sum, card) => sum + card.quantity + (withInventory ? inventoryOf(card) : 0), 0);
 }
 
 export function buildRulesChecklist({ result, draft, heroName, t }: IChecklistInput): IRulesChecklist | null {
@@ -61,7 +66,7 @@ export function buildRulesChecklist({ result, draft, heroName, t }: IChecklistIn
   const target = rules.exactMainboard ?? rules.minMainboard;
   const exact = rules.exactMainboard !== null;
   const deckSize = sumQuantity(draft, (slot) => slot === 'mainboard');
-  const poolSize = sumQuantity(draft, (slot) => slot !== 'hero');
+  const poolSize = sumQuantity(draft, (slot) => slot !== 'hero', undefined, true);
 
   const named = (cardIdentifier: string | undefined, fallback: string): string => {
     const card = draft.cards.find((entry) => entry.cardIdentifier === cardIdentifier);

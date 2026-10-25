@@ -35,11 +35,15 @@ const IDENTIFIER_MAX_LENGTH = 64;
 // Draft card schema
 // ---------------------------------------------------------------------------
 
-export const draftCardSchema = z.object({
-  cardIdentifier: z.string().max(IDENTIFIER_MAX_LENGTH),
-  quantity: z.number().int().min(1).max(4),
-  slot: z.enum(DRAFT_SLOT_VALUES),
-});
+export const draftCardSchema = z
+  .object({
+    cardIdentifier: z.string().max(IDENTIFIER_MAX_LENGTH),
+    quantity: z.number().int().min(0).max(4),
+    // Copies carried outside the starting deck; a draft saved before the inventory existed has none.
+    inventoryQuantity: z.number().int().min(0).max(4).default(0),
+    slot: z.enum(DRAFT_SLOT_VALUES),
+  })
+  .refine((card) => card.quantity + card.inventoryQuantity > 0, { message: 'a row holds at least one copy' });
 
 // ---------------------------------------------------------------------------
 // Full draft payload schema

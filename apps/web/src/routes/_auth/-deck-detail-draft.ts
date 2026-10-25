@@ -20,7 +20,9 @@ export function buildDraftInitialPayload(
     cards: entries.map((entry) => ({
       cardIdentifier: entry.cardIdentifier,
       name: entry.name,
-      quantity: entry.quantity,
+      // The entry counts the deck and the inventory together; its `inventoryQuantity` is the inventory's share.
+      quantity: entry.quantity - (entry.inventoryQuantity ?? 0),
+      inventoryQuantity: entry.inventoryQuantity ?? 0,
       slot: entry.slot,
       pitch: entry.pitch,
       cost: entry.cost ?? null,

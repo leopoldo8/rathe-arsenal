@@ -14,6 +14,11 @@ export interface IBreakdownEntry {
    */
   readonly name: string;
   readonly quantity: number;
+  /**
+   * Of `quantity`, the copies that belong to the deck line's inventory (door 3), not to its starting
+   * deck. Absent when none do.
+   */
+  readonly inventoryQuantity?: number;
   readonly slot: string;
   /**
    * Card pitch (1 = red, 2 = yellow, 3 = blue).

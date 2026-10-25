@@ -21,7 +21,7 @@ import { DeckDetailSidebar } from '../../components/deck-detail/DeckDetailSideba
 import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
-import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
+import { inventoryOf, useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
 import { buildDraftInitialPayload, isJustCreatedState } from './-deck-detail-draft';
 import { cascadeFromLegality, computeDraftLegality, toDeckLegality } from '../../lib/draft-legality';
 import { summariseDeck } from '../../components/deck-detail/deckDetailModel';
@@ -362,6 +362,7 @@ function DeckDetailPageWithData({
           cardIdentifier: sc.cardIdentifier,
           name: initial?.name ?? sc.cardIdentifier,
           quantity: sc.quantity,
+          inventoryQuantity: sc.inventoryQuantity,
           slot: sc.slot,
           pitch: initial?.pitch ?? null,
           cost: initial?.cost ?? null,
@@ -423,6 +424,7 @@ function DeckDetailPageWithData({
     cards: compositionDraft.draft.cards.map((c) => ({
       cardIdentifier: c.cardIdentifier,
       quantity: c.quantity,
+      inventoryQuantity: inventoryOf(c),
       // `other` is a frontend-only fallback for unknown stored slot strings;
       // the backend enum allows only the four real deck slots.
       slot: (c.slot === 'other' ? 'mainboard' : c.slot) as
@@ -546,6 +548,8 @@ function DeckDetailPageWithData({
               heroName={draftHeroCard?.name ?? deck.hero}
               onAddCard={compositionDraft.addCard}
               onUpdateQuantity={compositionDraft.updateQuantity}
+              onUpdateInventoryQuantity={compositionDraft.updateInventoryQuantity}
+              onMoveCopies={compositionDraft.moveCopies}
               onRemoveCard={compositionDraft.removeCard}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}

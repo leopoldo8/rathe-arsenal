@@ -57,6 +57,8 @@ export interface IPutDeckBody {
   readonly cards: readonly {
     readonly cardIdentifier: string;
     readonly quantity: number;
+    /** Copies carried outside the starting deck; 0 when left out. */
+    readonly inventoryQuantity?: number;
     readonly slot: 'mainboard' | 'equipment' | 'weapon' | 'hero';
   }[];
   readonly heroIdentifier: string | null;

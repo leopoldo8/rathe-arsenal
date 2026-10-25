@@ -117,6 +117,7 @@ export class SubstitutionService {
       cards: deckCardRows.map((row) => ({
         cardIdentifier: row.cardIdentifier,
         quantity: row.quantity,
+        inventoryQuantity: row.inventoryQuantity,
         slot: row.slot,
       })),
     };
