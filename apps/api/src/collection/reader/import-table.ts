@@ -1,5 +1,5 @@
 import * as Papa from 'papaparse';
-import { LineReader } from './line-reader';
+import { LineReader, MAX_LINE_LENGTH } from './line-reader';
 import { IRawLine } from './line-reader.types';
 
 export const MAX_IMPORT_ROWS = 5_000;
@@ -27,6 +27,9 @@ const COLUMN_BY_HEADER: Readonly<Record<string, TColumnName>> = {
   set: 'set',
   'set code': 'set',
 };
+
+/** A card name has a comma or two; joining more cells than this is never what an unquoted name needs. */
+const MAX_NAME_JOINS = 4;
 
 const DELIMITERS: readonly string[] = [',', ';', '\t'];
 
@@ -74,7 +77,7 @@ function mergeNameComma(
   nameIndex: number,
   reader: LineReader,
 ): { fields: readonly string[]; merged: string | null } {
-  const extra = fields.length - headerLength;
+  const extra = Math.min(fields.length - headerLength, MAX_NAME_JOINS);
   for (let join = 1; join <= extra; join += 1) {
     const name = fields.slice(nameIndex, nameIndex + join + 1).join(',');
     if (reader.knowsName(name)) {
@@ -97,7 +100,7 @@ function readTable(text: string, reader: LineReader, table: NonNullable<ReturnTy
     const { fields, merged } = original.length > headerLength ? mergeNameComma(original, headerLength, nameIndex, reader) : { fields: original, merged: null };
     const raw: IRawLine = {
       lineNumber: index + 2,
-      originalText: original.join(table.delimiter),
+      originalText: original.join(table.delimiter).slice(0, MAX_LINE_LENGTH),
       text: (fields[nameIndex] ?? '').trim(),
       isTable: true,
       quantityCell: cell(fields, 'quantidade'),
@@ -118,7 +121,7 @@ function readFreeText(text: string, reader: LineReader): IReadImportResult {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line !== '')
-    .map((line, index) => reader.read({ lineNumber: index + 1, originalText: line, text: line }));
+    .map((line, index) => reader.read({ lineNumber: index + 1, originalText: line.slice(0, MAX_LINE_LENGTH), text: line }));
   return { lines, columns: [] };
 }
 

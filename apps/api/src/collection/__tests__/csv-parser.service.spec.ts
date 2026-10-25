@@ -721,4 +721,14 @@ describe('CsvParserService reader', () => {
       ['command-and-conquer', 2, 'LP'],
     ]);
   });
+
+  it('a row with thousands of cells is read within a small time bound', () => {
+    const hostile = `Rhinar${',a b'.repeat(30_000)}\n`;
+
+    const started = performance.now();
+    const result = service.readText(`name,quantity\n${hostile}`);
+
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(result.lines).toHaveLength(1);
+  });
 });
