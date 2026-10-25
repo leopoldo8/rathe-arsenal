@@ -33,6 +33,11 @@ export const settings = {
   neverSynced: 'Nunca sincronizado.',
   lastSyncFailed: 'A última sincronização falhou em {{when}}: {{reason}}',
   couldNotQueueSync: 'Não foi possível iniciar a sincronização. Tente de novo.',
+  creditsLabel: 'Créditos do Firecrawl este mês',
+  creditsOf: '{{used}} de {{budget}}',
+  creditsMeterLabel: '{{used}} de {{budget}} créditos usados',
+  lookupsStopped: 'As consultas automáticas de preço pararam.',
+  manualSyncStillWorks: 'A sincronização manual continua funcionando.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Excluir sua conta',
   deleteAccountModalDesc: 'Sua conta e tudo ligado a ela (coleção, decks e histórico de prontidão) serão excluídos de vez em 30 dias. Você sai na hora.',

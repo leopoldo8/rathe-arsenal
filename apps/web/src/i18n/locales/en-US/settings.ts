@@ -33,6 +33,11 @@ export const settings = {
   neverSynced: 'Never synced.',
   lastSyncFailed: 'The last sync failed at {{when}}: {{reason}}',
   couldNotQueueSync: 'Could not queue the sync. Try again.',
+  creditsLabel: 'Firecrawl credits this month',
+  creditsOf: '{{used}} of {{budget}}',
+  creditsMeterLabel: '{{used}} of {{budget}} credits used',
+  lookupsStopped: 'Automatic price lookups have stopped.',
+  manualSyncStillWorks: 'Manual sync still works.',
   // delete-account-modal.tsx
   deleteAccountModalTitle: 'Delete your account',
   deleteAccountModalDesc: 'Your account and everything linked to it (collection, decks, readiness history) will be permanently deleted after 30 days. You are signed out immediately.',

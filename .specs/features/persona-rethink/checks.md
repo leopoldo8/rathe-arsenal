@@ -693,7 +693,7 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a public page reads the st
 **C200** - `GET /api/admin/stores/:slug/credits` answers `200` `{ creditsUsed, budget, lookupsStopped }` for an admin (`120`, `1000`, `false` after 120 credits counted this month; `lookupsStopped: true` after 851) and `403` for a signed-in non-admin (AC 122) · done
 Proof: `api e2e src/stores/__tests__/store-admin-credits.e2e-spec.ts -t "shows the month's credits to an admin only"`
 
-**C201** - For an admin, Settings shows the credits used and the budget ("120" and "1000") inside the same section as the URL sync button, and, when `lookupsStopped` is true, a line saying lookups have stopped; a non-admin's Settings has neither (AC 122)
+**C201** - For an admin, Settings shows the credits used and the budget ("120" and "1000") inside the same section as the URL sync button, and, when `lookupsStopped` is true, a line saying lookups have stopped; a non-admin's Settings has neither (AC 122) · done
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the URL sync section shows the month's credits and when lookups stopped"`
 
 **C202** - `POST /api/decks/:deckId/fetch-variants` answers `404`, and the deck page renders no "Obter preços exatos" button and no variant queue drawer (AC 123) · done

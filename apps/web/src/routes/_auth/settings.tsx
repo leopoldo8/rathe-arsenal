@@ -8,8 +8,40 @@ import { ContactSetting } from '../../components/settings/ContactSetting';
 import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
-import { useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
+import { useCreditsQuery, useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
 import styles from './settings.module.css';
+
+function CreditsLine() {
+  const { t } = useTranslation();
+  const { data: credits } = useCreditsQuery();
+  if (!credits) return null;
+  const { creditsUsed, budget, lookupsStopped } = credits;
+  const percentUsed = budget > 0 ? Math.min(100, Math.round((creditsUsed / budget) * 100)) : 100;
+  const numbers = { used: creditsUsed, budget };
+  return (
+    <div className={styles.credits} data-testid="store-credits">
+      <div className={styles.creditsHead}>
+        <span>{t('settings.creditsLabel')}</span>
+        <b className={styles.creditsNumbers}>{t('settings.creditsOf', numbers)}</b>
+      </div>
+      <div
+        className={lookupsStopped ? `${styles.meter} ${styles.meterStopped}` : styles.meter}
+        role="img"
+        aria-label={t('settings.creditsMeterLabel', numbers)}
+      >
+        <svg className={styles.meterSvg} aria-hidden="true">
+          <rect className={styles.meterFill} width={`${percentUsed}%`} height="100%" />
+        </svg>
+      </div>
+      {lookupsStopped && (
+        <p className={styles.stopLine} data-testid="store-credits-stopped">
+          {t('settings.lookupsStopped')}
+          <span className={styles.stopLineNote}>{t('settings.manualSyncStillWorks')}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Admin-only control to trigger the store catalog URL-sync (productUrl + name
@@ -63,6 +95,7 @@ function StoreSyncAdminSection() {
       {trigger.isError && (
         <p className={styles.syncError}>{t('settings.couldNotQueueSync')}</p>
       )}
+      <CreditsLine />
     </section>
   );
 }

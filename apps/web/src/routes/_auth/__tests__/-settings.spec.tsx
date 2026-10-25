@@ -65,12 +65,18 @@ vi.mock('@radix-ui/react-toggle-group', () => ({
 
 // Store-admin API — stub the hooks so the admin section renders without a
 // QueryClientProvider. `triggerMutate` is captured to assert the click wiring.
-const { triggerMutate, syncStatus, IDLE_SYNC_STATUS } = vi.hoisted(() => {
+const { triggerMutate, syncStatus, IDLE_SYNC_STATUS, credits } = vi.hoisted(() => {
   const idle: Record<string, unknown> = { state: 'idle', lastUrlSyncAt: null, lastProductCount: null, lastError: null };
-  return { triggerMutate: vi.fn(), syncStatus: { current: idle }, IDLE_SYNC_STATUS: idle };
+  return {
+    triggerMutate: vi.fn(),
+    syncStatus: { current: idle },
+    IDLE_SYNC_STATUS: idle,
+    credits: { current: { creditsUsed: 120, budget: 1000, lookupsStopped: false } as Record<string, unknown> | undefined },
+  };
 });
 vi.mock('../../../api/store-admin', () => ({
   useUrlSyncStatusQuery: () => ({ data: syncStatus.current }),
+  useCreditsQuery: () => ({ data: credits.current }),
   useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
 }));
 
@@ -403,6 +409,7 @@ describe('SettingsPage — admin store-sync section', () => {
 
   beforeEach(() => {
     syncStatus.current = IDLE_SYNC_STATUS;
+    credits.current = { creditsUsed: 120, budget: 1000, lookupsStopped: false };
   });
 
   afterEach(() => vi.clearAllMocks());
@@ -437,6 +444,29 @@ describe('SettingsPage — admin store-sync section', () => {
   it('shows no failure when the last sync succeeded', () => {
     renderSettings(admin);
     expect(screen.queryByTestId('store-sync-failure')).not.toBeInTheDocument();
+  });
+
+  it("the URL sync section shows the month's credits and when lookups stopped", () => {
+    credits.current = { creditsUsed: 120, budget: 1000, lookupsStopped: false };
+    const { unmount } = renderSettings(admin);
+    const section = screen.getByTestId('store-sync-trigger').closest('section') as HTMLElement;
+    expect(within(section).getByText('Créditos do Firecrawl este mês')).toBeInTheDocument();
+    expect(within(section).getByText('120 de 1000')).toBeInTheDocument();
+    expect(within(section).getByRole('img', { name: '120 de 1000 créditos usados' })).toBeInTheDocument();
+    expect(within(section).queryByText('As consultas automáticas de preço pararam.')).not.toBeInTheDocument();
+    unmount();
+
+    credits.current = { creditsUsed: 880, budget: 1000, lookupsStopped: true };
+    const stopped = renderSettings(admin);
+    const stoppedSection = screen.getByTestId('store-sync-trigger').closest('section') as HTMLElement;
+    expect(within(stoppedSection).getByText('880 de 1000')).toBeInTheDocument();
+    expect(within(stoppedSection).getByText('As consultas automáticas de preço pararam.')).toBeInTheDocument();
+    expect(within(stoppedSection).getByText('A sincronização manual continua funcionando.')).toBeInTheDocument();
+    stopped.unmount();
+
+    renderSettings(makeAuthContext({ user: { id: 'u1', email: 'hero@rathe.gg', role: 'user', chatAccess: false } }));
+    expect(screen.queryByText('Créditos do Firecrawl este mês')).not.toBeInTheDocument();
+    expect(screen.queryByText('As consultas automáticas de preço pararam.')).not.toBeInTheDocument();
   });
 });
 
