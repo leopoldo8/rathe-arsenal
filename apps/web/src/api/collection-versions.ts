@@ -84,7 +84,7 @@ export function useSourceCopiesQuery(sourceId: string) {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: sourceCopiesKey(sourceId),
-    queryFn: () => apiFetch<ISourceCopiesResponse>(`/collection/sources/${sourceId}/copies`),
+    queryFn: () => apiFetch<ISourceCopiesResponse>(`/collection/sources/${encodeURIComponent(sourceId)}/copies`),
   });
 }
 
@@ -110,7 +110,7 @@ export function useMarkSourceVersionsMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ sourceId, ...body }: IMarkSourceVersionsVariables) =>
-      apiFetch<IMarkSourceVersionsResponse>(`/collection/sources/${sourceId}/versions`, {
+      apiFetch<IMarkSourceVersionsResponse>(`/collection/sources/${encodeURIComponent(sourceId)}/versions`, {
         method: 'PATCH',
         body: JSON.stringify(body),
       }),
