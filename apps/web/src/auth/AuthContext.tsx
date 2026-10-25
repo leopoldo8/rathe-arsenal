@@ -18,6 +18,8 @@ export interface IAuthUser {
   whatsappNumber?: string | null;
   /** The last closing line sent in a group ask, offered again next time; null until one was sent. */
   shareClosingLine?: string | null;
+  /** The last closing line of a sell message, offered again in the next draft; null until one was sent. */
+  sellClosingLine?: string | null;
 }
 
 export interface IAuthSettings {
@@ -82,6 +84,7 @@ export interface IAuthContext {
   setWhatsappNumber: (whatsappNumber: string | null) => void;
   /** Mirrors the closing line just sent into the signed-in user, so the next group ask offers it. */
   setShareClosingLine?: (text: string) => void;
+  setSellClosingLine?: (text: string) => void;
   /** Mirrors a password created or changed in Settings into the signed-in user. */
   setHasPassword: (hasPassword: boolean) => void;
 }

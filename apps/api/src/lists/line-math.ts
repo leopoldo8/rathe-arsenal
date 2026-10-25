@@ -18,21 +18,33 @@ export function groupByCard(entries: readonly IQuantityEntry[]): IQuantityEntry[
   return [...totals].map(([cardIdentifier, quantity]) => ({ cardIdentifier, quantity: capQuantity(quantity) }));
 }
 
-export interface IMergeCandidate {
+export interface IMergeVersion {
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string | null;
+}
+
+export interface IMergeCandidate extends IMergeVersion {
   readonly id: number;
   readonly cardIdentifier: string;
-  readonly printing: string | null;
-  readonly condition: string | null;
   readonly sold: boolean;
 }
 
-export interface IMergeTarget {
+export interface IMergeTarget extends IMergeVersion {
   readonly cardIdentifier: string;
-  readonly printing: string | null;
-  readonly condition: string | null;
 }
 
-/** Want lines merge by card; sell lines by card, printing and condition. A sold line is history, never a target. */
+function sameLineVersion(a: IMergeVersion, b: IMergeVersion): boolean {
+  return (
+    a.printingCode === b.printingCode &&
+    a.edition === b.edition &&
+    a.finish === b.finish &&
+    (a.condition ?? '') === (b.condition ?? '')
+  );
+}
+
+/** Want lines merge by card; sell lines by card and the four version fields. A sold line is history, never a target. */
 export function findMergeCandidate<T extends IMergeCandidate>(
   kind: 'want' | 'sell',
   lines: readonly T[],
@@ -42,6 +54,6 @@ export function findMergeCandidate<T extends IMergeCandidate>(
     (line) =>
       !line.sold &&
       line.cardIdentifier === target.cardIdentifier &&
-      (kind === 'want' || (line.printing === target.printing && line.condition === target.condition)),
+      (kind === 'want' || sameLineVersion(line, target)),
   );
 }

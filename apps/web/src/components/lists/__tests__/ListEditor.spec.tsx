@@ -54,8 +54,8 @@ function serveLineWrites(): void {
     return replaceLine(1, { ...(rest as Partial<IListLine>), ...(sold === undefined ? {} : { sold: sold as boolean }) });
   });
   api.handlers.set('GET /lists/7/printings/pummel-red', () => [
-    { printing: 'WTR206.R', label: 'WTR206 · Normal', suggestion: null },
-    { printing: 'WTR206.R.F', label: 'WTR206 · Rainbow Foil', suggestion: null },
+    { printing: 'WTR206.R', printingCode: 'WTR206', edition: '', finish: 'none', label: 'WTR206 · Normal', suggestion: null },
+    { printing: 'WTR206.R.F', printingCode: 'WTR206', edition: '', finish: 'rainbow', label: 'WTR206 · Rainbow Foil', suggestion: null },
   ]);
 }
 
@@ -68,7 +68,7 @@ beforeEach(() => {
 });
 
 const SELL_LINES = [
-  makeLine({ id: 1, quantity: 2, condition: 'NM', priceCents: 600, printing: 'WTR206.R', printingLabel: 'WTR206 · Normal' }),
+  makeLine({ id: 1, quantity: 2, condition: 'NM', priceCents: 600, printingCode: 'WTR206', finish: 'none', printing: 'WTR206.R', printingLabel: 'WTR206 · Normal' }),
   makeLine({ id: 2, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: 1 }),
   makeLine({ id: 3, cardIdentifier: 'remembrance', name: 'Remembrance', pitch: null, quantity: 1, sold: true, priceCents: 5500 }),
 ];
@@ -137,7 +137,7 @@ describe('ListEditor', () => {
         { quantity: 3 },
         { condition: 'LP' },
         { priceCents: 650 },
-        { printing: 'WTR206.R.F' },
+        { printingCode: 'WTR206', edition: '', finish: 'rainbow' },
       ]);
     });
     await waitFor(() => expect(within(panel).getByLabelText('Preço cada (opcional)')).toHaveValue('R$ 6,50'));

@@ -2,6 +2,19 @@
 
 ## Deviations
 
+### S21 (batch 15)
+
+- Sell lines moved onto the four version fields (C278): `AddLineDto` and `UpdateLineDto` take `printingCode`, `edition`, `finish` and `condition` and refuse the old `printing` field (the global pipe forbids unknown properties); a version the card has no printing for answers `400` `UNKNOWN_PRINTING` (the code the editor already maps); the merge rule compares the four fields, so two finishes of one card are two lines; price suggestions read the line's version (`printingsOfVersion` narrows the printings by each part the line names). The `printing` column stays (no check asks to drop it) and nothing writes it; answers still carry `printing` (derived key) and `printingLabel`, plus the four fields. The printings route also gives each option its three fields, which the add dialog and the line panel send.
+- Existing tests changed because the field they sent no longer exists, with the same intent: `lists.e2e-spec.ts`, `list-prices.e2e-spec.ts`, `line-math.spec.ts`, `list-lines.service.spec.ts`, `shared-list-view.service.spec.ts` (api) and `ListEditor.spec.tsx`, `listsTestKit.ts` (web). `SharedListPage.spec.tsx` only gained a case.
+- The visual baselines `auth: library` and `auth: settings` were regenerated: the collection banner and the settings panel of S20 changed those screens (the fixture user has spare copies).
+- The draft's send (`useSendSellList`) creates the list, adds one line per version, turns the share link on, saves the closing line, and remembers the steps already done, so a retry after a failed step never makes a second list. The line prices go as `priceCents`; a price left empty goes with none. WhatsApp opens (or the text is copied) only after all of it resolved, then the page opens the new list.
+- A sell line holds at most 20 copies, so a row's stepper stops at 20 even when more are spare.
+- "Foil" answered on a line whose card exists in one foil finish stores that finish and says its name in the message ("Rainbow Foil"); with more than one foil finish the line stores no finish and the message says "foil". "Não sei" and no answer store no finish and say "foil não conferido". "Sim, todas sem foil" answers every open question "Sem foil".
+- A line's price is approximate while its finish is unknown and its card exists in foil, which is every row `r3-sell-draft-phone` marks; a card that exists in no foil needs no question and is not approximate (Command and Conquer in the mockup).
+- The draft lists the chosen versions in the order the page showed them (by the sort the player picked); `r3-message-phone` lists them in another order, for which no rule is written anywhere.
+- `Ver na LigaFAB` links to `https://www.ligafab.com.br/?view=cards/search&card=<name>`: open question 5 says the format is unchecked and no address exists in the repository, so this is a guess kept in one constant (`apps/web/src/lib/ligafab-link.ts`).
+- The share link of a draft needs a display name and a confirmed e-mail like every other link: the draft shows the same name form and confirm panel the share sheets show, and the draft stays.
+
 ### S20 (batch 15)
 
 - C231 is closed here: `GET /api/shared/decks/:token` (missing intent) gives a signed-in visitor `spare` per card and `spareNeedsRule`; the group page shows "Você tem 3 · 1 sobrando" and, while the rule is owed, only the question (the counts and the offer buttons wait for the answer).
@@ -579,4 +592,8 @@
 - S20, the "Sobrando" notice names the card without its pitch ("Dash ideia usa 3 Head Jab."), as C267 and the mockup quote it, although the S2 rule writes the pitch after every pitched name.
 - S20, `r3-library-banner-phone` draws the Library as a list of rows under the banner; the banner is above the existing grid and filter rail.
 - S20, an unmarked copy reads "Versão não informada" only beside a marked copy of the same card (C267 quotes both forms); otherwise the line is "N sobrando".
+- S21, copy of mine, no check or mockup gives it: "Texto copiado. A lista ficou salva em Listas.", "Não foi possível copiar o texto. Tente de novo.", "Não foi possível criar a lista. Tente de novo.", "Enviando…", "Não foi possível mudar a etapa do deck. Tente de novo.", "Nenhuma carta nesta faixa de preço.", the closing line placeholder "Ex.: Aceito PIX · retirada na loja do centro", the preview's stand-in for the link before the list exists ("O link da lista aparece aqui quando você enviar."), and the aria labels of the steppers, the price fields and the foil groups. The English side is also mine.
+- S21, after "Enviar no WhatsApp" or "Copiar texto" the page opens the new list (`/lists/<id>`); no mockup draws where the player lands. Say if they should stay on the draft.
+- S21, the draft saves the closing line even when the field is empty (clearing it), so the next draft opens empty.
+- S21, `r3-lists-new-phone` (AC 171) is C309 of S25: the "Vender o que sobra na sua coleção" row is not built here, so "Sobrando" is reached from the collection banner only until S25.
 

@@ -5,12 +5,14 @@ import {
   CONDITIONS,
   LINE_QUANTITY_MAX,
   LINE_QUANTITY_MIN,
+  NO_LINE_VERSION,
   useApplySuggestionsMutation,
   useListPrintingsQuery,
   usePatchLineMutation,
   useRemoveLineMutation,
   type ICardList,
   type IListLine,
+  type IListPrinting,
   type IPatchLineBody,
 } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
@@ -24,6 +26,12 @@ interface ILineEditPanelProps {
   readonly list: ICardList;
   readonly line: IListLine;
   readonly onClose: () => void;
+}
+
+/** The version fields of the printing the player picked; the empty choice clears the version. */
+function versionOf(key: string, options: readonly IListPrinting[]): IPatchLineBody {
+  const option = options.find((candidate) => candidate.printing === key);
+  return option === undefined ? NO_LINE_VERSION : { printingCode: option.printingCode, edition: option.edition, finish: option.finish };
 }
 
 export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): React.ReactElement {
@@ -89,7 +97,7 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
                     className={styles.panelField}
                     value={line.printing ?? ''}
                     disabled={busy}
-                    onChange={(event) => update({ printing: event.currentTarget.value === '' ? null : event.currentTarget.value })}
+                    onChange={(event) => update(versionOf(event.currentTarget.value, printingOptions))}
                   >
                     <option value="">{t('lists.panel.noPrinting')}</option>
                     {!hasCurrent && line.printing !== null && (

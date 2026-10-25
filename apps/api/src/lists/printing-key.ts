@@ -1,4 +1,5 @@
 import { catalog } from '@rathe-arsenal/engine';
+import type { ICopyVersion } from '../collection/versions/copy-version';
 
 interface IRawPrinting {
   readonly identifier?: string;
@@ -93,4 +94,40 @@ export function printingsOfCard(cardIdentifier: string): readonly ICardPrinting[
   const printings = toCardPrintings(raw.printings ?? []);
   cache.set(cardIdentifier, printings);
   return printings;
+}
+
+/** The catalog's words for the versions a copy or a line can name (`first`, `rainbow`): the reverse of the maps below. */
+export const EDITION_NAMES: Readonly<Record<string, string>> = { first: 'First', unlimited: 'Unlimited', alpha: 'Alpha' };
+export const FOILING_NAMES: Readonly<Record<string, string>> = { rainbow: 'Rainbow', cold: 'Cold', gold: 'Gold' };
+
+export interface IVersionKeyParts {
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+}
+
+function nameOf(names: Readonly<Record<string, string>>, value: string | null): string {
+  if (value === null) return '';
+  return Object.entries(names).find(([, catalogName]) => catalogName === value)?.[0] ?? '';
+}
+
+type TVersionParts = Pick<ICopyVersion, 'printingCode' | 'edition' | 'finish'>;
+
+/** A catalog printing as the three version parts a line or a copy carries; a plain printing is `none`, "Sem foil". */
+export function printingVersion(printing: ICardPrinting): TVersionParts {
+  return {
+    printingCode: printing.identifier,
+    edition: nameOf(EDITION_NAMES, printing.edition) as TVersionParts['edition'],
+    finish: (printing.foiling === null ? 'none' : nameOf(FOILING_NAMES, printing.foiling)) as TVersionParts['finish'],
+  };
+}
+
+/** The printing key a version points at, or null while it names no printing code. */
+export function printingKeyOfVersion(version: IVersionKeyParts): string | null {
+  if (version.printingCode === '') return null;
+  return buildPrintingKey({
+    identifier: version.printingCode,
+    edition: EDITION_NAMES[version.edition] ?? null,
+    foiling: FOILING_NAMES[version.finish] ?? null,
+  });
 }

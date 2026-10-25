@@ -21,19 +21,27 @@ describe('line math', () => {
   });
 
   describe('findMergeCandidate', () => {
+    const none = { printingCode: '', edition: '', finish: '', condition: null };
     const lines = [
-      { id: 1, cardIdentifier: 'a', printing: null, condition: null, sold: true },
-      { id: 2, cardIdentifier: 'a', printing: 'A1', condition: 'NM', sold: false },
-      { id: 3, cardIdentifier: 'a', printing: null, condition: null, sold: false },
+      { id: 1, cardIdentifier: 'a', ...none, sold: true },
+      { id: 2, cardIdentifier: 'a', printingCode: 'A1', edition: '', finish: '', condition: 'NM', sold: false },
+      { id: 3, cardIdentifier: 'a', ...none, sold: false },
     ];
 
     it('merges want lines by card alone, skipping sold lines', () => {
-      expect(findMergeCandidate('want', lines, { cardIdentifier: 'a', printing: null, condition: null })?.id).toBe(2);
+      expect(findMergeCandidate('want', lines, { cardIdentifier: 'a', ...none })?.id).toBe(2);
     });
 
-    it('merges sell lines by card, printing and condition with nulls equal', () => {
-      expect(findMergeCandidate('sell', lines, { cardIdentifier: 'a', printing: null, condition: null })?.id).toBe(3);
-      expect(findMergeCandidate('sell', lines, { cardIdentifier: 'a', printing: 'A1', condition: 'LP' })).toBeUndefined();
+    it('merges sell lines by card and the four version fields with nulls equal', () => {
+      expect(findMergeCandidate('sell', lines, { cardIdentifier: 'a', ...none })?.id).toBe(3);
+      expect(findMergeCandidate('sell', lines, { cardIdentifier: 'a', printingCode: 'A1', edition: '', finish: '', condition: 'LP' })).toBeUndefined();
+    });
+
+    it('keeps two finishes of one card apart', () => {
+      const plain = [{ id: 4, cardIdentifier: 'a', printingCode: '', edition: '', finish: 'none', condition: null, sold: false }];
+
+      expect(findMergeCandidate('sell', plain, { cardIdentifier: 'a', ...none })).toBeUndefined();
+      expect(findMergeCandidate('sell', plain, { cardIdentifier: 'a', printingCode: '', edition: '', finish: 'none', condition: null })?.id).toBe(4);
     });
   });
 });

@@ -917,56 +917,56 @@ Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "a deleted deck holds 
 
 ### S21 - Selling spare copies · 24 files · 103 KB · ~42k
 
-**C267** - The "Sobrando" page (`r3-spare-page-empty-phone`), top to bottom: "‹ Coleção", "Sobrando · 20 cópias", "Sua regra: você passa cartas entre decks do mesmo formato" with "Mudar", the Ideia notice "Dash ideia usa 3 Head Jab. Decks Ideia não prendem cartas, então elas aparecem aqui." with "Marcar Dash ideia como Montando", "Ordenar: maior preço", "Mostrar: todas / acima de R$ 5 / acima de R$ 20", then one row per version with name, version line ("Rainbow Foil · NM · 1 sobrando", "Versão não informada · 1 sobrando", "2 sobrando"), "Sugerido R$ X", the store line where it applies, "Por que sobra?", "Ver na LigaFAB" and a stepper, every stepper at 0 and its "−" disabled, then the bar "Escolha o que vender" (AC 163, AC 171)
+**C267** - The "Sobrando" page (`r3-spare-page-empty-phone`), top to bottom: "‹ Coleção", "Sobrando · 20 cópias", "Sua regra: você passa cartas entre decks do mesmo formato" with "Mudar", the Ideia notice "Dash ideia usa 3 Head Jab. Decks Ideia não prendem cartas, então elas aparecem aqui." with "Marcar Dash ideia como Montando", "Ordenar: maior preço", "Mostrar: todas / acima de R$ 5 / acima de R$ 20", then one row per version with name, version line ("Rainbow Foil · NM · 1 sobrando", "Versão não informada · 1 sobrando", "2 sobrando"), "Sugerido R$ X", the store line where it applies, "Por que sobra?", "Ver na LigaFAB" and a stepper, every stepper at 0 and its "−" disabled, then the bar "Escolha o que vender" (AC 163, AC 171) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "shows the spare rows with steppers at 0 and the empty bar"`
 
-**C268** - Each stepper goes from 0 to that row's spare and no further ("+" disabled at the spare); after choosing 9 copies the bar reads "Você escolheu 9 cópias" and "9 cópias · R$ 186" with "Vender" (`r3-spare-page-phone`) (AC 163, AC 171)
+**C268** - Each stepper goes from 0 to that row's spare and no further ("+" disabled at the spare); after choosing 9 copies the bar reads "Você escolheu 9 cópias" and "9 cópias · R$ 186" with "Vender" (`r3-spare-page-phone`) (AC 163, AC 171) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "steppers stop at the spare and the bar sums the choice"`
 
-**C269** - Sort "maior preço" orders rows by suggested price descending, "nome" by name; "acima de R$ 5" hides rows suggested at R$ 5 or less, "acima de R$ 20" at R$ 20 or less, "todas" shows all (AC 163)
+**C269** - Sort "maior preço" orders rows by suggested price descending, "nome" by name; "acima de R$ 5" hides rows suggested at R$ 5 or less, "acima de R$ 20" at R$ 20 or less, "todas" shows all (AC 163) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "sorts by price or name and filters by price"`
 
-**C270** - "Marcar Dash ideia como Montando" sets the deck's stage to `building` and the next spare read no longer counts its copies as spare (AC 155, AC 163)
+**C270** - "Marcar Dash ideia como Montando" sets the deck's stage to `building` and the next spare read no longer counts its copies as spare (AC 155, AC 163) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "marking the Ideia deck as Montando updates the count"`
 
-**C271** - The sell draft after "Vender" (`r3-sell-draft-phone`), top to bottom: "‹ Sobrando", "Nome da lista" editable with "Vendo - 21/10" for 21 October, the finish block, the lines with editable prices, "Ver na LigaFAB" per line, the price helper once, "Sua linha final", "Incluir o total" switched on, "Mensagem" with the live preview, "Ao enviar, a lista Vendo - 21/10 fica salva em Listas, com o link.", "Enviar no WhatsApp", "Copiar texto"; editing a price or the closing line updates the preview at once (AC 164, AC 171)
+**C271** - The sell draft after "Vender" (`r3-sell-draft-phone`), top to bottom: "‹ Sobrando", "Nome da lista" editable with "Vendo - 21/10" for 21 October, the finish block, the lines with editable prices, "Ver na LigaFAB" per line, the price helper once, "Sua linha final", "Incluir o total" switched on, "Mensagem" with the live preview, "Ao enviar, a lista Vendo - 21/10 fica salva em Listas, com o link.", "Enviar no WhatsApp", "Copiar texto"; editing a price or the closing line updates the preview at once (AC 164, AC 171) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "the draft shows the name, prices, questions, closing line, total and the live message"`
 
-**C272** - Finish questions: for each line whose card exists in foil and whose `finish` is `''`, the block "3 linhas sem versão informada. Elas existem em foil, e foil vale mais:" lists the card with "Sem foil", "Foil", "Não sei", none selected, and "Sim, todas sem foil"; a line whose card exists in no foil, or whose finish is known, gets no question; "Sim, todas sem foil" answers every open line "Sem foil" (`r3-sell-draft-answered-phone`: the lines then read "sem foil · preço aproximado") (AC 165, AC 171)
+**C272** - Finish questions: for each line whose card exists in foil and whose `finish` is `''`, the block "3 linhas sem versão informada. Elas existem em foil, e foil vale mais:" lists the card with "Sem foil", "Foil", "Não sei", none selected, and "Sim, todas sem foil"; a line whose card exists in no foil, or whose finish is known, gets no question; "Sim, todas sem foil" answers every open line "Sem foil" (`r3-sell-draft-answered-phone`: the lines then read "sem foil · preço aproximado") (AC 165, AC 171) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "asks the finish only of lines with no finish of cards that exist in foil"`
 
-**C273** - Message line for each finish answer: "Sem foil" posts " · sem foil", "Não sei" and an unanswered question post " · foil não conferido", "Foil" posts the finish name; no line of a card that exists in foil leaves the draft with neither (AC 165)
+**C273** - Message line for each finish answer: "Sem foil" posts " · sem foil", "Não sei" and an unanswered question post " · foil não conferido", "Foil" posts the finish name; no line of a card that exists in foil leaves the draft with neither (AC 165) · done
 Proof: `web unit src/components/spare/__tests__/sellMessage.spec.ts -t "every finish answer has its words in the message"`
 
-**C274** - Closing line: with `user.sellClosingLine` null the field is empty with a grey placeholder example; with "Aceito PIX · retirada na loja do centro ou envio pelos Correios" stored, the field holds that text in full, editable, and the screen contains no "da última vez" (AC 166)
+**C274** - Closing line: with `user.sellClosingLine` null the field is empty with a grey placeholder example; with "Aceito PIX · retirada na loja do centro ou envio pelos Correios" stored, the field holds that text in full, editable, and the screen contains no "da última vez" (AC 166) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "the closing line is empty the first time, then the last one in full"`
 
-**C275** - The message for Duda's draft equals `r3-message-phone` line for line: "VENDO", "2x Command and Conquer (Vermelho) · History Pack 1 · NM · R$ 45 cada", "1x Enlightened Strike (Vermelho) · Rainbow Foil · NM · R$ 60", "1x Enlightened Strike (Vermelho) · sem foil · R$ 12", "2x Snatch (Vermelho) · sem foil · R$ 6 cada", "3x Pummel (Vermelho) · sem foil · R$ 4 cada", "Total: R$ 186 (9 cartas)", a blank line, "Aceito PIX · retirada na loja do centro ou envio pelos Correios", the link (AC 167)
+**C275** - The message for Duda's draft equals `r3-message-phone` line for line: "VENDO", "2x Command and Conquer (Vermelho) · History Pack 1 · NM · R$ 45 cada", "1x Enlightened Strike (Vermelho) · Rainbow Foil · NM · R$ 60", "1x Enlightened Strike (Vermelho) · sem foil · R$ 12", "2x Snatch (Vermelho) · sem foil · R$ 6 cada", "3x Pummel (Vermelho) · sem foil · R$ 4 cada", "Total: R$ 186 (9 cartas)", a blank line, "Aceito PIX · retirada na loja do centro ou envio pelos Correios", the link (AC 167) · done
 Proof: `web unit src/components/spare/__tests__/sellMessage.spec.ts -t "builds Duda's message exactly"`
 
-**C276** - Message limits: with 35 lines the message shows 30 then "e mais 5 cartas no link", and "Total: R$ X (N cartas)" counts all 35 lines; with "Incluir o total" off no "Total:" line appears; one copy reads " · R$ X", more than one " · R$ X cada" (AC 167)
+**C276** - Message limits: with 35 lines the message shows 30 then "e mais 5 cartas no link", and "Total: R$ X (N cartas)" counts all 35 lines; with "Incluir o total" off no "Total:" line appears; one copy reads " · R$ X", more than one " · R$ X cada" (AC 167) · done
 Proof: `web unit src/components/spare/__tests__/sellMessage.spec.ts -t "caps at 30 lines and the total counts every line"`
 
-**C277** - "Enviar no WhatsApp" or "Copiar texto" creates a sell list named as the draft, with one line per chosen row carrying `printingCode`, `edition`, `finish`, `condition`, quantity and price, turns its share link on, saves the closing line with `PATCH /users/me/sell-closing-line`, then opens WhatsApp with the text or copies it; on a failed create no WhatsApp opens and the draft stays (AC 168)
+**C277** - "Enviar no WhatsApp" or "Copiar texto" creates a sell list named as the draft, with one line per chosen row carrying `printingCode`, `edition`, `finish`, `condition`, quantity and price, turns its share link on, saves the closing line with `PATCH /users/me/sell-closing-line`, then opens WhatsApp with the text or copies it; on a failed create no WhatsApp opens and the draft stays (AC 168) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "sending creates the sell list, shares it and saves the closing line"`
 
-**C278** - `POST /api/lists/:listId/lines` takes the version as `printingCode`, `edition`, `finish`, `condition` and answers `201` with them; `400` on an unknown `finish` ("shiny"), an `edition` outside door 1's set, or the old `printing` field; `404` for another user's list (AC 168)
+**C278** - `POST /api/lists/:listId/lines` takes the version as `printingCode`, `edition`, `finish`, `condition` and answers `201` with them; `400` on an unknown `finish` ("shiny"), an `edition` outside door 1's set, or the old `printing` field; `404` for another user's list (AC 168) · done
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "sell lines take the version as four fields"`
 
-**C279** - `PATCH /api/users/me/sell-closing-line` with "Aceito PIX" answers `200` with the text and stores it; with 141 characters it answers `400` and keeps the old text (AC 168; door 12)
+**C279** - `PATCH /api/users/me/sell-closing-line` with "Aceito PIX" answers `200` with the text and stores it; with 141 characters it answers `400` and keeps the old text (AC 168; door 12) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "saves the sell closing line up to 140 characters"`
 
-**C280** - The store line "A Cúpula DT vende a versão mais barata por R$ 8,00" shows on a row with `finish` `''` or `none` and a Cúpula DT price, and never on a row with a foil finish or with no Cúpula DT price (AC 169)
+**C280** - The store line "A Cúpula DT vende a versão mais barata por R$ 8,00" shows on a row with `finish` `''` or `none` and a Cúpula DT price, and never on a row with a foil finish or with no Cúpula DT price (AC 169) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "the store reference shows only next to unknown or regular versions with a price"`
 
-**C281** - "Ver na LigaFAB" appears on the "Sobrando" rows and the draft lines, and the shared sell list page contains no "Ver na LigaFAB" (AC 169)
+**C281** - "Ver na LigaFAB" appears on the "Sobrando" rows and the draft lines, and the shared sell list page contains no "Ver na LigaFAB" (AC 169) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "Ver na LigaFAB is on the seller's screens"`
 Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t "a public sell list has no LigaFAB link"`
 
-**C282** - The draft's price helper reads exactly "Sugerido: TCGplayer em dólar × 7. O 7 cobre o dólar e o custo de trazer a carta; mude se você cobra diferente." once (AC 170)
+**C282** - The draft's price helper reads exactly "Sugerido: TCGplayer em dólar × 7. O 7 cobre o dólar e o custo de trazer a carta; mude se você cobra diferente." once (AC 170) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "the price helper explains the multiplier once"`
 
-**C283** - The draft's lines whose version is not fully known read "preço aproximado" ("versão não informada · preço aproximado" before an answer, "sem foil · preço aproximado" after "Sem foil"), and the message never carries "preço aproximado" (AC 164, AC 171)
+**C283** - The draft's lines whose version is not fully known read "preço aproximado" ("versão não informada · preço aproximado" before an answer, "sem foil · preço aproximado" after "Sem foil"), and the message never carries "preço aproximado" (AC 164, AC 171) · done
 Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "marks approximate prices on the seller's screen only"`
 
 ### S22 - Marking a line sold · 10 files · 44 KB · ~13k

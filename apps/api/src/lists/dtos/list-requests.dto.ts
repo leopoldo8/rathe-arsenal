@@ -17,6 +17,7 @@ import {
 } from 'class-validator';
 import { CONDITIONS, TCondition } from '../../database/entities/card-list-line.entity';
 import { LIST_KINDS, TListKind } from '../../database/entities/card-list.entity';
+import { EDITION_VALUES, FINISH_VALUES, ICopyVersion } from '../../collection/versions/copy-version';
 
 const MAX_INT32 = 2_147_483_647;
 const MAX_MULTIPLIER = 50;
@@ -77,10 +78,19 @@ export class AddLineDto {
   @Max(MAX_LINE_QUANTITY)
   quantity!: number;
 
+  // Door 1: the version of a sell line is four fields; `''` is "Não sei". The old single `printing` key is refused.
   @IsOptional()
   @IsString()
-  @Length(1, 64)
-  printing?: string | null;
+  @MaxLength(32)
+  printingCode?: string;
+
+  @IsOptional()
+  @IsIn(EDITION_VALUES)
+  edition?: ICopyVersion['edition'];
+
+  @IsOptional()
+  @IsIn(FINISH_VALUES)
+  finish?: ICopyVersion['finish'];
 
   @IsOptional()
   @IsIn(CONDITIONS)
@@ -102,8 +112,16 @@ export class UpdateLineDto {
 
   @IsOptional()
   @IsString()
-  @Length(1, 64)
-  printing?: string | null;
+  @MaxLength(32)
+  printingCode?: string;
+
+  @IsOptional()
+  @IsIn(EDITION_VALUES)
+  edition?: ICopyVersion['edition'];
+
+  @IsOptional()
+  @IsIn(FINISH_VALUES)
+  finish?: ICopyVersion['finish'];
 
   @IsOptional()
   @IsIn(CONDITIONS)

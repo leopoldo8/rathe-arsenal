@@ -13,7 +13,7 @@ import { DataSource } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
-import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
+import { ICardPrinting, printingsOfCard, printingVersion } from '../lists/printing-key';
 import { priceKeysOf } from '../prices/price-suggestion';
 import { MAX_CONSECUTIVE_GROUP_FAILURES, PRICE_SYNC_LOCK_KEY, PriceSyncService } from '../prices/price-sync.service';
 import { printingSubType } from '../prices/price-sub-type';
@@ -115,7 +115,7 @@ describe('Card list prices (E2E)', () => {
     const base = { cardIdentifier: CARD.cardIdentifier, quantity: 1 };
 
     await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send(base).expect(201);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, printing: FOIL.key }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, ...printingVersion(FOIL) }).expect(201);
     await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ cardIdentifier: NO_PRICE_CARD.cardIdentifier, quantity: 1 }).expect(201);
 
     const res = await request(server).get(`/api/lists/${listId}`).set(...auth(sessionToken)).expect(200);
@@ -161,7 +161,7 @@ describe('Card list prices (E2E)', () => {
     await seedPrice(FOIL, 100, 110);
     const base = { cardIdentifier: CARD.cardIdentifier, quantity: 1 };
     await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, condition: 'NM' }).expect(201);
-    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, printing: FOIL.key }).expect(201);
+    await request(server).post(`/api/lists/${listId}/lines`).set(...auth(sessionToken)).send({ ...base, ...printingVersion(FOIL) }).expect(201);
     await request(server)
       .post(`/api/lists/${listId}/lines`)
       .set(...auth(sessionToken))
@@ -290,7 +290,7 @@ describe('Card list prices (E2E)', () => {
       await request(server)
         .post(`/api/lists/${listId}/lines`)
         .set(...auth(sessionToken))
-        .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1, printing: NORMAL.key })
+        .send({ cardIdentifier: CARD.cardIdentifier, quantity: 1, ...printingVersion(NORMAL) })
         .expect(201);
 
       const day1 = new Date('2026-10-18T21:00:00Z');

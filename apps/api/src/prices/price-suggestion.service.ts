@@ -5,7 +5,7 @@ import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CardListEntity } from '../database/entities/card-list.entity';
 import { CardPriceEntity } from '../database/entities/card-price.entity';
 import { IPriceSuggestion } from '../lists/dtos/card-list.dto';
-import { ICardPrinting, printingsOfCard } from '../lists/printing-key';
+import { EDITION_NAMES, FOILING_NAMES, ICardPrinting, printingsOfCard } from '../lists/printing-key';
 import { pickPrice, TPriceIndex, priceIndexKey, priceKeysOf, suggestPrice } from './price-suggestion';
 
 export interface IVersionToPrice {
@@ -14,9 +14,6 @@ export interface IVersionToPrice {
   readonly edition: string;
   readonly finish: string;
 }
-
-const EDITION_NAMES: Readonly<Record<string, string>> = { first: 'First', unlimited: 'Unlimited', alpha: 'Alpha' };
-const FOILING_NAMES: Readonly<Record<string, string>> = { rainbow: 'Rainbow', cold: 'Cold', gold: 'Gold' };
 
 /** The printings a version can be: each part it names narrows the list; `none` is the printing with no foiling. */
 export function printingsOfVersion(version: IVersionToPrice, printings: readonly ICardPrinting[]): readonly ICardPrinting[] {
@@ -47,7 +44,7 @@ export class PriceSuggestionService {
   /** Computed on read from the shared snapshot and the list's multiplier; nothing is stored. Sell lists only. */
   async forLines(
     list: Pick<CardListEntity, 'kind' | 'priceMultiplier'>,
-    lines: readonly Pick<CardListLineEntity, 'id' | 'cardIdentifier' | 'printing'>[],
+    lines: readonly Pick<CardListLineEntity, 'id' | 'cardIdentifier' | 'printingCode' | 'edition' | 'finish'>[],
   ): Promise<Map<number, IPriceSuggestion>> {
     const result = new Map<number, IPriceSuggestion>();
     const multiplier = list.priceMultiplier;
@@ -58,7 +55,8 @@ export class PriceSuggestionService {
     );
     const index = await this.loadIndex([...printingsByCard.values()].flat());
     for (const line of lines) {
-      const suggestion = suggestPrice(printingsByCard.get(line.cardIdentifier) ?? [], line.printing, index, multiplier);
+      const pool = printingsOfVersion(line, printingsByCard.get(line.cardIdentifier) ?? []);
+      const suggestion = suggestPrice(pool, null, index, multiplier);
       if (suggestion) result.set(line.id, suggestion);
     }
     return result;

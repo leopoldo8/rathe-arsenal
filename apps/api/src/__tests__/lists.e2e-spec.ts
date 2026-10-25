@@ -13,7 +13,7 @@ import { DataSource } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { configureHttpApp } from '../http/configure-http-app';
-import { printingsOfCard } from '../lists/printing-key';
+import { printingsOfCard, printingVersion } from '../lists/printing-key';
 import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
 
 const PASSWORD = 'lists-test-password-123';
@@ -26,6 +26,7 @@ const [CARD_A, CARD_B, CARD_C] = catalog.cards
 
 const PRINTINGS_A = printingsOfCard(CARD_A.cardIdentifier) ?? [];
 const [PRINTING_A1] = PRINTINGS_A;
+const VERSION_A1 = printingVersion(PRINTING_A1!);
 
 interface ISession {
   readonly userId: string;
@@ -195,6 +196,9 @@ describe('Card lists (E2E)', () => {
       cardIdentifier: CARD_A.cardIdentifier,
       name: CARD_A.name,
       quantity: 12,
+      printingCode: '',
+      edition: '',
+      finish: '',
       printing: null,
       printingLabel: null,
       condition: null,
@@ -217,7 +221,7 @@ describe('Card lists (E2E)', () => {
     await addLine(owner, listId, base).expect(200);
     await addLine(owner, listId, { ...base, condition: 'NM' }).expect(201);
     await addLine(owner, listId, { ...base, condition: 'NM', priceCents: 600 }).expect(200);
-    const withPrinting = await addLine(owner, listId, { ...base, printing: PRINTING_A1?.key, condition: 'NM' }).expect(201);
+    const withPrinting = await addLine(owner, listId, { ...base, ...VERSION_A1, condition: 'NM' }).expect(201);
     expect(withPrinting.body.lines).toHaveLength(3);
     expect(withPrinting.body.lines.map((line: { quantity: number }) => line.quantity)).toEqual([2, 2, 1]);
     expect(withPrinting.body.lines[1].priceCents).toBe(600);
@@ -227,6 +231,27 @@ describe('Card lists (E2E)', () => {
     await request(server).patch(`/api/lists/${listId}/lines/${soldId}`).set(...auth(owner)).send({ sold: true }).expect(200);
     const afterSold = await addLine(owner, listId, base).expect(201);
     expect(afterSold.body.lines).toHaveLength(4);
+  });
+
+  it('sell lines take the version as four fields', async () => {
+    const owner = await createSession('fourfields');
+    const stranger = await createSession('fourfields-stranger');
+    const listId = await createList(owner, 'sell');
+    const base = { cardIdentifier: CARD_A.cardIdentifier, quantity: 2, condition: 'NM', priceCents: 4500 };
+
+    const created = await addLine(owner, listId, { ...base, ...VERSION_A1 }).expect(201);
+    expect(created.body.lines[0]).toMatchObject({ ...VERSION_A1, condition: 'NM', quantity: 2, priceCents: 4500 });
+
+    // Two finishes of one card are two lines, and the same four fields merge.
+    await addLine(owner, listId, { ...base, finish: 'none' }).expect(201);
+    const merged = await addLine(owner, listId, { ...base, ...VERSION_A1 }).expect(200);
+    expect(merged.body.lines).toHaveLength(2);
+    expect(merged.body.lines[0].quantity).toBe(4);
+
+    expect((await addLine(owner, listId, { ...base, finish: 'shiny' }).expect(400)).body).toBeDefined();
+    await addLine(owner, listId, { ...base, edition: 'second' }).expect(400);
+    await addLine(owner, listId, { ...base, printing: PRINTING_A1?.key }).expect(400);
+    await addLine(stranger, listId, { ...base, ...VERSION_A1 }).expect(404);
   });
 
   it('rejects unknown cards, foreign printings and sell-only fields on want lists', async () => {
@@ -239,11 +264,11 @@ describe('Card lists (E2E)', () => {
     const foreign = await addLine(owner, sell, {
       cardIdentifier: CARD_A.cardIdentifier,
       quantity: 1,
-      printing: 'NOPE999',
+      printingCode: 'NOPE999',
     }).expect(400);
     expect(foreign.body.code).toBe('UNKNOWN_PRINTING');
 
-    for (const field of [{ printing: PRINTING_A1?.key }, { condition: 'NM' }, { priceCents: 100 }]) {
+    for (const field of [VERSION_A1, { finish: 'none' }, { condition: 'NM' }, { priceCents: 100 }]) {
       const res = await addLine(owner, want, { cardIdentifier: CARD_A.cardIdentifier, quantity: 1, ...field }).expect(400);
       expect(res.body.code).toBe('SELL_ONLY_FIELD');
     }
@@ -303,19 +328,19 @@ describe('Card lists (E2E)', () => {
     const edited = await request(server)
       .patch(url)
       .set(...auth(owner))
-      .send({ quantity: 4, printing: PRINTING_A1?.key, condition: 'LP', priceCents: 1400 })
+      .send({ quantity: 4, ...VERSION_A1, condition: 'LP', priceCents: 1400 })
       .expect(200);
-    expect(edited.body.lines[0]).toMatchObject({ quantity: 4, printing: PRINTING_A1?.key, condition: 'LP', priceCents: 1400, sold: false });
+    expect(edited.body.lines[0]).toMatchObject({ quantity: 4, ...VERSION_A1, printing: PRINTING_A1?.key, condition: 'LP', priceCents: 1400, sold: false });
 
     const sold = await request(server).patch(url).set(...auth(owner)).send({ sold: true }).expect(200);
     expect(sold.body.lines[0].sold).toBe(true);
     const back = await request(server).patch(url).set(...auth(owner)).send({ sold: false }).expect(200);
     expect(back.body.lines[0].sold).toBe(false);
 
-    const cleared = await request(server).patch(url).set(...auth(owner)).send({ printing: null, condition: null, priceCents: null }).expect(200);
-    expect(cleared.body.lines[0]).toMatchObject({ printing: null, printingLabel: null, condition: null, priceCents: null });
+    const cleared = await request(server).patch(url).set(...auth(owner)).send({ printingCode: '', edition: '', finish: '', condition: null, priceCents: null }).expect(200);
+    expect(cleared.body.lines[0]).toMatchObject({ printingCode: '', edition: '', finish: '', printing: null, printingLabel: null, condition: null, priceCents: null });
 
-    const foreign = await request(server).patch(url).set(...auth(owner)).send({ printing: 'NOPE999' }).expect(400);
+    const foreign = await request(server).patch(url).set(...auth(owner)).send({ printingCode: 'NOPE999' }).expect(400);
     expect(foreign.body.code).toBe('UNKNOWN_PRINTING');
 
     const removed = await request(server).delete(url).set(...auth(owner)).expect(200);

@@ -65,6 +65,7 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
 
   function submit(): void {
     if (picked === null) return;
+    const chosenPrinting = printing === '' ? undefined : printings.data?.find((option) => option.printing === printing);
     const name = cardName(picked.name, picked.pitch, (key) => t(key));
     add.mutate(
       {
@@ -72,7 +73,7 @@ export function AddCardDialog({ list, onClose }: IAddCardDialogProps): React.Rea
         quantity,
         ...(isSell
           ? {
-              ...(printing !== '' ? { printing } : {}),
+              ...(chosenPrinting === undefined ? {} : { printingCode: chosenPrinting.printingCode, edition: chosenPrinting.edition, finish: chosenPrinting.finish }),
               ...(condition !== '' ? { condition } : {}),
               ...(priceCents !== null ? { priceCents } : {}),
             }

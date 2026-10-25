@@ -216,6 +216,14 @@ describe('SharedListPage', () => {
       expect(within(cards[0]!).queryByTestId('shared-line-sold')).not.toBeInTheDocument();
     });
 
+    it('a public sell list has no LigaFAB link', async () => {
+      renderPage();
+
+      await screen.findByRole('heading', { level: 1, name: 'Oscilio completo' });
+      expect(screen.queryByText(/LigaFAB/)).not.toBeInTheDocument();
+      expect(document.querySelector('a[href*="ligafab"]')).toBeNull();
+    });
+
     it('copies the list as text without the sold card, with the total and the address', async () => {
       const user = userEvent.setup();
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);

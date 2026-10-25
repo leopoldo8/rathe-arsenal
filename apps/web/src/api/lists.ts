@@ -44,6 +44,11 @@ export interface IListLine {
   readonly type: string;
   readonly imageUrl: IListCardImage | null;
   readonly quantity: number;
+  /** The version of a sell line (door 1); `''` is "Não sei". */
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  /** The catalog key the version points at; null while no printing code is named. */
   readonly printing: string | null;
   readonly printingLabel: string | null;
   readonly condition: TCondition | null;
@@ -65,6 +70,9 @@ export interface ICardList {
 
 export interface IListPrinting {
   readonly printing: string;
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
   readonly label: string;
   readonly suggestion: IPriceSuggestion | null;
 }
@@ -82,17 +90,24 @@ export interface IPatchListBody {
   readonly priceMultiplier?: number | null;
 }
 
-export interface IAddLineBody {
+/** The three parts of a version a line names besides its condition. */
+export interface ILineVersionBody {
+  readonly printingCode?: string;
+  readonly edition?: string;
+  readonly finish?: string;
+}
+
+export const NO_LINE_VERSION: Required<ILineVersionBody> = { printingCode: '', edition: '', finish: '' };
+
+export interface IAddLineBody extends ILineVersionBody {
   readonly cardIdentifier: string;
   readonly quantity: number;
-  readonly printing?: string | null;
   readonly condition?: TCondition | null;
   readonly priceCents?: number | null;
 }
 
-export interface IPatchLineBody {
+export interface IPatchLineBody extends ILineVersionBody {
   readonly quantity?: number;
-  readonly printing?: string | null;
   readonly condition?: TCondition | null;
   readonly priceCents?: number | null;
   readonly sold?: boolean;

@@ -110,6 +110,7 @@ export const spare = {
   copyText: 'Copiar texto',
   sending: 'Enviando…',
   copied: 'Texto copiado. A lista ficou salva em Listas.',
+  copyFailed: 'Não foi possível copiar o texto. Tente de novo.',
   sendFailed: 'Não foi possível criar a lista. Tente de novo.',
   linkPlaceholder: 'O link da lista aparece aqui quando você enviar.',
 
