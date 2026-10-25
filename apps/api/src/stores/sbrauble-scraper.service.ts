@@ -320,7 +320,7 @@ export class SbraubleScraperService {
       if (this.firecrawl.isEnabled()) {
         // Firecrawl clears the store's Cloudflare challenge (datacenter IPs
         // are otherwise served a stripped page) via residential proxies.
-        html = await this.firecrawl.scrapeHtml(url);
+        html = await this.firecrawl.scrapeHtml(url, 'listing');
       } else {
         const result = await this.fetchGuard.guardedFetch(url, {
           allowHosts: [context.baseHostname],

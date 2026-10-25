@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import {
@@ -6,39 +7,86 @@ import {
   IVariantJobCard,
   VariantFetchJobEntity,
 } from '../database/entities/variant-fetch-job.entity';
-import { IFetchCard } from './types/fetch-card';
+import { StoreEntity } from '../database/entities/store.entity';
+import { StoreStockEntity } from '../database/entities/store-stock.entity';
+import { CreditBudgetService } from './credit-budget.service';
+import { readStoreAnswersConfig } from './store-answers.config';
+import { classifyStoreRow, ILookupFacts, NO_LOOKUP, rowFactsOf } from './store-state';
 
-export const RATE_LIMIT_MS = 1500;
 export const ORPHAN_RECLAIM_MS = 5 * 60 * 1000;
+
+interface ILookupFactsRow {
+  readonly cardIdentifier: string;
+  readonly pending: boolean;
+  readonly lastDoneAt: Date | null;
+  readonly lastFailedAt: Date | null;
+}
 
 @Injectable()
 export class VariantFetchQueueService {
   constructor(
     @InjectRepository(VariantFetchJobEntity)
     private readonly jobRepo: Repository<VariantFetchJobEntity>,
+    @InjectRepository(StoreEntity)
+    private readonly storeRepo: Repository<StoreEntity>,
+    @InjectRepository(StoreStockEntity)
+    private readonly stockRepo: Repository<StoreStockEntity>,
+    private readonly budget: CreditBudgetService,
+    private readonly config: ConfigService,
   ) {}
 
-  async enqueue(
-    userId: string,
-    deckId: number,
-    storeId: number,
-    cards: readonly IFetchCard[],
-  ): Promise<VariantFetchJobEntity> {
-    const existing = await this.jobRepo.findOne({
-      where: { deckId, status: In([EVariantFetchJobStatus.Pending, EVariantFetchJobStatus.Running]) },
-    });
-    if (existing) return existing;
+  async lookupFacts(cardIdentifiers: readonly string[]): Promise<Map<string, ILookupFacts>> {
+    const facts = new Map<string, ILookupFacts>();
+    if (cardIdentifiers.length === 0) return facts;
+    const rows: ILookupFactsRow[] = await this.jobRepo.query(
+      `SELECT "cardIdentifier",
+              bool_or(status IN ('pending', 'running')) AS pending,
+              max("finishedAt") FILTER (WHERE status = 'done') AS "lastDoneAt",
+              max("finishedAt") FILTER (WHERE status = 'failed') AS "lastFailedAt"
+         FROM variant_fetch_job WHERE "cardIdentifier" = ANY($1) GROUP BY "cardIdentifier"`,
+      [[...cardIdentifiers]],
+    );
+    for (const row of rows) {
+      facts.set(row.cardIdentifier, { pending: row.pending, lastDoneAt: row.lastDoneAt, lastFailedAt: row.lastFailedAt });
+    }
+    return facts;
+  }
 
-    const cardRows: IVariantJobCard[] = cards.map((c) => ({ cardIdentifier: c.cardIdentifier, status: 'pending' as const }));
-    const job = this.jobRepo.create({
-      userId, deckId, storeId,
-      status: EVariantFetchJobStatus.Pending,
-      cards: cardRows,
-      total: cardRows.length,
-      completed: 0,
-      failed: 0,
-    });
-    return this.jobRepo.save(job);
+  async enqueueMissing(storeId: number, cardIdentifiers: readonly string[], now: Date = new Date()): Promise<string[]> {
+    const wanted = [...new Set(cardIdentifiers)];
+    if (wanted.length === 0) return [];
+    const [store, stockRows, facts] = await Promise.all([
+      this.storeRepo.findOne({ where: { id: storeId } }),
+      this.stockRepo.find({ where: { storeId, cardIdentifier: In(wanted) } }),
+      this.lookupFacts(wanted),
+    ]);
+    if (!store) return [];
+
+    const { priceValidDays } = readStoreAnswersConfig(this.config);
+    const due = stockRows
+      .filter(
+        (stock) =>
+          classifyStoreRow({
+            row: rowFactsOf(stock),
+            lastAvailabilityPassAt: store.lastAvailabilityPassAt,
+            lookup: facts.get(stock.cardIdentifier) ?? NO_LOOKUP,
+            priceValidDays,
+            budgetStopped: false,
+            now,
+          }).needsLookup,
+      )
+      .map((stock) => stock.cardIdentifier);
+    if (due.length === 0 || !(await this.budget.allowAutomaticLookups(now))) return [];
+
+    await this.jobRepo.query(
+      `INSERT INTO variant_fetch_job ("storeId", "cardIdentifier", status, cards, total)
+       SELECT $1, card, 'pending', jsonb_build_array(jsonb_build_object('cardIdentifier', card, 'status', 'pending')), 1
+         FROM unnest($2::text[]) AS card
+        WHERE NOT EXISTS (SELECT 1 FROM variant_fetch_job j WHERE j."cardIdentifier" = card AND j.status = 'running')
+       ON CONFLICT ("cardIdentifier") WHERE status = 'pending' DO NOTHING`,
+      [storeId, due],
+    );
+    return due;
   }
 
   async claimNext(workerId: string): Promise<VariantFetchJobEntity | null> {
@@ -46,7 +94,6 @@ export class VariantFetchQueueService {
       `UPDATE variant_fetch_job SET status = $1, "claimedAt" = now(), "claimedBy" = $2, "startedAt" = COALESCE("startedAt", now())
        WHERE id = (
          SELECT id FROM variant_fetch_job WHERE status = $3
-           AND EXISTS (SELECT 1 FROM tracked_deck d WHERE d.id = variant_fetch_job."deckId" AND d."deletedAt" IS NULL)
          ORDER BY "enqueuedAt" FOR UPDATE SKIP LOCKED LIMIT 1
        ) RETURNING *`,
       [EVariantFetchJobStatus.Running, workerId, EVariantFetchJobStatus.Pending],
@@ -83,25 +130,5 @@ export class VariantFetchQueueService {
       { id: jobId },
       { status: error ? EVariantFetchJobStatus.Failed : EVariantFetchJobStatus.Done, finishedAt: new Date(), error },
     );
-  }
-
-  async listForUser(userId: string): Promise<VariantFetchJobEntity[]> {
-    // QueryBuilder (not raw query) so counters hydrate as numbers — a raw
-    // pg query returns int columns as strings, which would corrupt the DTO
-    // mapping and computeEtaSeconds.
-    return this.jobRepo
-      .createQueryBuilder('j')
-      .where('j."userId" = :userId', { userId })
-      .andWhere(
-        `(j.status IN (:...active) OR j."finishedAt" > now() - interval '2 minutes')`,
-        { active: [EVariantFetchJobStatus.Pending, EVariantFetchJobStatus.Running] },
-      )
-      .orderBy('j."enqueuedAt"', 'DESC')
-      .getMany();
-  }
-
-  computeEtaSeconds(jobs: readonly VariantFetchJobEntity[]): number {
-    const remaining = jobs.reduce((sum, j) => sum + Math.max(0, j.total - j.completed - j.failed), 0);
-    return Math.ceil((remaining * RATE_LIMIT_MS) / 1000);
   }
 }

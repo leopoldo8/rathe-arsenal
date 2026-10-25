@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import type { IBreakdownEntry, ISubstitutedEntry } from '../../api/deck-detail';
 import type { IAlternativesTarget, IDeckReplacement } from '../../api/replacements';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
-import { useVariantFetchPolling } from '../useVariantFetchPolling';
 import { cardName } from '../../lib/card-name';
 import { MarkOwnedButton } from './MarkOwnedButton';
 import { MissingRowBuy, MissingRowStoreMeta, MissingRowVariants } from './MissingRowStore';
@@ -22,10 +20,6 @@ interface IMissingPanelProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
   /** Active replacements of the deck; a row for a replacement's own copies is marked and offers no alternatives. */
   readonly replacements?: readonly IDeckReplacement[];
@@ -56,10 +50,6 @@ export function MissingPanel({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
   onShoppingRetry,
   replacements = [],
   onOpenAlternatives,
@@ -69,8 +59,6 @@ export function MissingPanel({
 }: IMissingPanelProps): React.ReactElement {
   const { t } = useTranslation();
   const populated = shoppingData?.kind === 'populated' ? shoppingData : null;
-  const isFetching = useVariantFetchPolling(populated?.variantFetchProgress, onPollingChange);
-  const cardStatus = populated?.variantFetchProgress?.cards;
   // Same test the rows use, so the number matches the rows marked as not in the store.
   const unavailableCopies = entries.reduce(
     (sum, entry) => (resolveRowStore(shoppingData, entry.cardIdentifier).kind === 'unavailable' ? sum + entry.quantity : sum),
@@ -88,13 +76,7 @@ export function MissingPanel({
         {t('deckDetail.missingTitle')}
       </h2>
       {populated !== null && (
-        <MissingStoreSummary
-          data={populated}
-          isFetching={isFetching}
-          onFetchVariants={onFetchVariants}
-          fetchMutationStatus={fetchMutationStatus}
-          isCooldownActive={isCooldownActive}
-        />
+        <MissingStoreSummary data={populated} />
       )}
       {onShareMissing !== undefined && populated !== null && unavailableCopies > 0 && (
         <div className={styles.shareCallout} data-testid="missing-share-callout">
@@ -151,8 +133,6 @@ export function MissingPanel({
                     <MissingRowStoreMeta
                       store={store}
                       storeName={populated?.storeName ?? ''}
-                      cardName={displayName}
-                      fetchStatus={cardStatus?.[entry.cardIdentifier]}
                     />
                   </span>
                 </div>

@@ -185,14 +185,6 @@ describe('ShoppingLine: card names carry the pitch', () => {
   it('the row names the pitch', () => {
     const data: IShoppingLinePopulated = {
       ...PATH_B_DATA,
-      variantFetchProgress: {
-        fetchId: 'f1',
-        total: 1,
-        completed: 1,
-        failed: 1,
-        inProgress: false,
-        cards: { 'pack-hunt-red': 'failed' },
-      },
       lines: [
         {
           cardIdentifier: 'pack-hunt-red',
@@ -212,9 +204,6 @@ describe('ShoppingLine: card names carry the pitch', () => {
     expect(screen.getByText('Pack Hunt (Vermelho)', { exact: false })).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Abrir Pack Hunt (Vermelho) na Cupula DT em uma nova aba' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('status', { name: 'Não foi possível buscar as versões de Pack Hunt (Vermelho)' }),
     ).toBeInTheDocument();
   });
 });

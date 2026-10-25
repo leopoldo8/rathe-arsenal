@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { RecommendationQueueService } from '../../recommendations/recommendation-queue.service';
-import { VariantFetchQueueService } from '../../stores/variant-fetch-queue.service';
 import { ChatRunnerService } from '../../chat/chat-runner.service';
 import { ChatToolsService } from '../../chat/chat-tools.service';
 import { runChatTool } from '../../chat/chat-tools';
@@ -271,13 +270,11 @@ describe('deck lifecycle (E2E)', () => {
       };
       const gone = await make();
       const kept = await make();
-      const storeId = await anyStoreId();
       // The save above queued an automatic run; make it due now.
       await fixture.dataSource.query(
         `UPDATE recommendation_run SET "runAfter" = now() - interval '1 minute' WHERE "trackedDeckId" = $1 AND status = 'pending'`,
         [gone],
       );
-      await fixture.dataSource.query(`INSERT INTO variant_fetch_job ("userId", "deckId", "storeId", status, "enqueuedAt") VALUES ($1, $2, $3, 'pending', now() - interval '1 year')`, [userId, gone, storeId]);
       await fixture.delete(`/api/decks/${gone}`, owner.sessionToken).expect(200);
       const goneSnapshots = await fixture.snapshotCount(gone);
       const keptSnapshots = await fixture.snapshotCount(kept);
@@ -304,17 +301,8 @@ describe('deck lifecycle (E2E)', () => {
       const claimedRun = await queue.claimNext();
       if (claimedRun) await fixture.dataSource.query(`UPDATE recommendation_run SET status = 'pending', "claimedAt" = NULL WHERE id = $1`, [claimedRun.id]);
       expect(claimedRun?.trackedDeckId).not.toBe(gone);
-
-      const claimedJob = await fixture.app.get(VariantFetchQueueService).claimNext('lifecycle-test');
-      if (claimedJob) await fixture.dataSource.query(`UPDATE variant_fetch_job SET status = 'pending', "claimedAt" = NULL, "claimedBy" = NULL WHERE id = $1`, [claimedJob.id]);
-      expect(claimedJob?.deckId).not.toBe(gone);
     });
   });
-
-  async function anyStoreId(): Promise<number> {
-    const rows = await fixture.dataSource.query(`SELECT id FROM store ORDER BY id LIMIT 1`);
-    return rows[0]?.id ?? 1;
-  }
 
   function getShared(token: string) {
     return request(fixture.app.getHttpServer()).get(`/api/shared/decks/${token}`);

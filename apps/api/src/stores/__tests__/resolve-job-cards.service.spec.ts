@@ -18,6 +18,7 @@ function buildStockRow(
     quantity: 4,
     productUrl: `https://example.com/cards/${cardIdentifier}`,
     lastFetchedAt: new Date('2026-04-13T09:00:00Z'),
+    listedInStockAt: null,
     store: {} as StoreStockEntity['store'],
     ...overrides,
   };

@@ -14,7 +14,6 @@ import { fabraryImport } from './fabraryImport';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
 import { deckEdit } from './deckEdit';
-import { variantQueue } from './variantQueue';
 import { settings } from './settings';
 import { ui } from './ui';
 import { about } from './about';
@@ -43,7 +42,6 @@ export const ptBR = {
   decks,
   deckDetail,
   deckEdit,
-  variantQueue,
   settings,
   ui,
   about,

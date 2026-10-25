@@ -3,7 +3,6 @@ import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../api/deck-de
 import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { IAlternativesTarget } from '../../api/replacements';
 import type { ITagResponse } from '../../api/tags';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import { AlternativesSheet } from './AlternativesSheet';
 import { DeckActionPanels } from './DeckActionPanels';
 import { DeckAnalysisRow } from './DeckAnalysisRow';
@@ -39,10 +38,6 @@ interface IDeckDetailViewProps {
   readonly onMarkOwned: (cardIdentifier: string) => void;
   readonly isMarkingOwned: boolean;
   readonly pendingCard: string | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
 }
 
@@ -56,10 +51,6 @@ export function DeckDetailView({
   onMarkOwned,
   isMarkingOwned,
   pendingCard,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
   onShoppingRetry,
 }: IDeckDetailViewProps): React.ReactElement {
   const [copyListOpen, setCopyListOpen] = useState(false);
@@ -156,10 +147,6 @@ export function DeckDetailView({
           onMarkOwned={onMarkOwned}
           isMarkingOwned={isMarkingOwned}
           pendingCard={pendingCard}
-          onFetchVariants={onFetchVariants}
-          fetchMutationStatus={fetchMutationStatus}
-          isCooldownActive={isCooldownActive}
-          onPollingChange={onPollingChange}
           onShoppingRetry={onShoppingRetry}
           replacements={deck.replacements}
           onOpenAlternatives={setAlternativesTarget}

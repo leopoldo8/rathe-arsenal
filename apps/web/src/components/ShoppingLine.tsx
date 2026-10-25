@@ -3,27 +3,14 @@ import {
   IShoppingLinePopulated,
   IShoppingLineResponse,
   IShoppingLineLine,
-  TCardFetchStatus,
 } from '../api/shopping-line';
 import { formatBrl } from '../utils/format-brl';
 import { formatRelativeTime, isStale, isVeryStale } from '../utils/format-relative-time';
 import { cardName as namedCard } from '../lib/card-name';
-import { useVariantFetchPolling } from './useVariantFetchPolling';
 import { StoreProductLink } from './StoreProductLink';
 import { VariantBreakdownTable } from './ShoppingLineVariantBreakdown';
 import { formatVariantPrice } from './ShoppingLineVariantBreakdown.helpers';
-import {
-  VariantFetchCta,
-  VariantFetchProgress,
-  PartialFailureNotice,
-} from './ShoppingLineFetchControls';
 import styles from './ShoppingLine.module.css';
-
-/**
- * Status of the variant fetch mutation, passed from the parent component
- * which owns the `useVariantFetchMutation` hook.
- */
-export type TVariantFetchMutationStatus = 'idle' | 'pending' | 'success' | 'error';
 
 interface IShoppingLineProps {
   /**
@@ -35,28 +22,6 @@ interface IShoppingLineProps {
    *  { kind: 'populated', ... } = real stock data
    */
   readonly data: IShoppingLineResponse | null;
-  /**
-   * Called when the user clicks "Get exact prices" or "Retry failed".
-   * The parent owns the mutation hook and passes this callback down.
-   * When absent, the CTA is not rendered.
-   */
-  readonly onFetchVariants?: () => void;
-  /**
-   * Current status of the variant fetch mutation. Controls CTA state.
-   * Defaults to 'idle'.
-   */
-  readonly fetchMutationStatus?: TVariantFetchMutationStatus;
-  /**
-   * True when the last mutation resulted in 'already_fresh'. When true,
-   * the CTA is replaced with an "up to date" message.
-   */
-  readonly isCooldownActive?: boolean;
-  /**
-   * Callback invoked when the component transitions in or out of the
-   * active polling state. Called with epoch-ms when polling begins, or
-   * `undefined` when polling stops.
-   */
-  readonly onPollingChange?: (startedAt: number | undefined) => void;
   /**
    * Called when the user clicks "Retry" in the error state.
    * The host route owns error recovery (TanStack Query invalidation / refetch).
@@ -80,21 +45,11 @@ interface IShoppingLineProps {
  *
  * Variant-aware additions (Unit 6):
  *  - Estimated badge on headline when isEstimated === true
- *  - "Get exact prices" CTA when isEstimated === true and cards are missing
- *  - Progress indicator while variantFetchProgress.inProgress === true
- *  - Polling lifecycle managed via onPollingChange callback to parent
  *
  * The headline affordance is wrapped in aria-live="polite" so screen
  * readers announce updates after substitute rejection (D10).
  */
-export function ShoppingLine({
-  data,
-  onFetchVariants,
-  fetchMutationStatus = 'idle',
-  isCooldownActive = false,
-  onPollingChange,
-  onRetry,
-}: IShoppingLineProps) {
+export function ShoppingLine({ data, onRetry }: IShoppingLineProps) {
   // State 1: null = Path A, nothing missing
   if (data === null) {
     return <PathAEmptyState />;
@@ -111,15 +66,7 @@ export function ShoppingLine({
   }
 
   // States 4, 5, 6: populated
-  return (
-    <PopulatedShoppingLine
-      data={data}
-      {...(onFetchVariants !== undefined ? { onFetchVariants } : {})}
-      fetchMutationStatus={fetchMutationStatus}
-      isCooldownActive={isCooldownActive}
-      {...(onPollingChange !== undefined ? { onPollingChange } : {})}
-    />
-  );
+  return <PopulatedShoppingLine data={data} />;
 }
 
 // Empty state (Path A)
@@ -168,19 +115,9 @@ function ErrorState({ onRetry, message }: IErrorStateProps) {
 
 interface IPopulatedProps {
   readonly data: IShoppingLinePopulated;
-  readonly onFetchVariants?: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange?: (startedAt: number | undefined) => void;
 }
 
-function PopulatedShoppingLine({
-  data,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
-}: IPopulatedProps) {
+function PopulatedShoppingLine({ data }: IPopulatedProps) {
   const { t } = useTranslation();
   const {
     storeName,
@@ -191,7 +128,6 @@ function PopulatedShoppingLine({
     lines,
     lastFetchedAt,
     isEstimated,
-    variantFetchProgress,
   } = data;
 
   const totalMissing = availableCardCount + unavailableCardCount;
@@ -204,20 +140,6 @@ function PopulatedShoppingLine({
 
   const availableLines = lines.filter((l) => l.quantityAvailable > 0);
   const unavailableLines = lines.filter((l) => l.quantityAvailable === 0);
-
-  const isFetching = useVariantFetchPolling(variantFetchProgress, onPollingChange);
-
-  const isPending = fetchMutationStatus === 'pending';
-  const isMutationError = fetchMutationStatus === 'error';
-
-  const canShowCta = onFetchVariants !== undefined;
-  const showCta = Boolean(isEstimated) && !isFetching && totalMissing > 0 && canShowCta;
-  const showProgress = isFetching && variantFetchProgress !== undefined;
-  const showRetryFailed = Boolean(
-    variantFetchProgress &&
-      !variantFetchProgress.inProgress &&
-      variantFetchProgress.failed > 0,
-  ) && canShowCta;
 
   return (
     <section
@@ -285,35 +207,6 @@ function PopulatedShoppingLine({
             {t('decks.shoppingLastChecked', { when: relativeTime })}
           </p>
         )}
-
-        {/* Progress indicator: shown while fetch is in progress */}
-        {showProgress && variantFetchProgress !== undefined && (
-          <VariantFetchProgress progress={variantFetchProgress} />
-        )}
-
-        {/* Partial failure notice: shown after fetch completes with some failures */}
-        {showRetryFailed && variantFetchProgress !== undefined && (
-          <PartialFailureNotice
-            progress={variantFetchProgress}
-            onRetry={onFetchVariants!}
-            isPending={isPending}
-          />
-        )}
-
-        {/* "Get exact prices" CTA or cooldown message */}
-        {showCta && (
-          isCooldownActive ? (
-            <p className={styles.cooldownMsg}>
-              {t('decks.pricesUpToDate')}
-            </p>
-          ) : (
-            <VariantFetchCta
-              onGetExactPrices={onFetchVariants!}
-              isPending={isPending}
-              isError={isMutationError}
-            />
-          )
-        )}
       </div>
 
       {/* Card list */}
@@ -326,9 +219,6 @@ function PopulatedShoppingLine({
               storeHostname={storeHostname}
               storeName={storeName}
               muted={false}
-              {...(variantFetchProgress?.cards !== undefined
-                ? { cardFetchStatus: variantFetchProgress.cards }
-                : {})}
             />
           )}
 
@@ -339,9 +229,6 @@ function PopulatedShoppingLine({
               storeHostname={storeHostname}
               storeName={storeName}
               muted={true}
-              {...(variantFetchProgress?.cards !== undefined
-                ? { cardFetchStatus: variantFetchProgress.cards }
-                : {})}
             />
           )}
         </div>
@@ -358,7 +245,6 @@ interface ILineGroupProps {
   readonly storeHostname: string;
   readonly storeName: string;
   readonly muted: boolean;
-  readonly cardFetchStatus?: Readonly<Record<string, TCardFetchStatus>>;
 }
 
 function LineGroup({
@@ -367,7 +253,6 @@ function LineGroup({
   storeHostname,
   storeName,
   muted,
-  cardFetchStatus,
 }: ILineGroupProps) {
   return (
     <div className={styles.lineGroup}>
@@ -381,19 +266,15 @@ function LineGroup({
         className={styles.lineList}
         data-muted={String(muted)}
       >
-        {lines.map((line) => {
-          const status = cardFetchStatus?.[line.cardIdentifier];
-          return (
-            <LineItem
-              key={line.cardIdentifier}
-              line={line}
-              storeHostname={storeHostname}
-              storeName={storeName}
-              muted={muted}
-              {...(status !== undefined ? { fetchStatus: status } : {})}
-            />
-          );
-        })}
+        {lines.map((line) => (
+          <LineItem
+            key={line.cardIdentifier}
+            line={line}
+            storeHostname={storeHostname}
+            storeName={storeName}
+            muted={muted}
+          />
+        ))}
       </ul>
     </div>
   );
@@ -406,7 +287,6 @@ interface ILineItemProps {
   readonly storeHostname: string;
   readonly storeName: string;
   readonly muted: boolean;
-  readonly fetchStatus?: TCardFetchStatus;
 }
 
 function LineItem({
@@ -414,7 +294,6 @@ function LineItem({
   storeHostname,
   storeName,
   muted,
-  fetchStatus,
 }: ILineItemProps) {
   const { t } = useTranslation();
   const {
@@ -487,16 +366,6 @@ function LineItem({
       <div className={styles.lineItemRow}>
         <span className={styles.lineItemName}>
           {cardName}
-          {fetchStatus === 'failed' && (
-            <span
-              role="status"
-              aria-label={t('decks.failedToFetchVariants', { name: cardName })}
-              data-testid="line-item-fetch-failed"
-              className={styles.lineItemFailedBadge}
-            >
-              {t('deckDetail.storeFetchFailed')}
-            </span>
-          )}
         </span>
 
         <span

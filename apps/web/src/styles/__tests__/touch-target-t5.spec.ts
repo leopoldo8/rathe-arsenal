@@ -2,11 +2,11 @@
  * T5 — Touch-target ≥44px unit tests
  *
  * These fs-read tests verify that interactive controls in the
- * shell / home / library / variant-queue surfaces meet the ≥44×44px
+ * shell / home / library surfaces meet the ≥44×44px
  * hit-area floor required by UXUI-02.
  *
- * Two representative controls are asserted in depth per the Test Coverage
- * Matrix (stepper btn in LibraryCardStepper; variant pill button).
+ * One representative control is asserted in depth per the Test Coverage
+ * Matrix (stepper btn in LibraryCardStepper).
  * The full corpus is covered by the side-stripe + focus guards.
  *
  * Matching strategy: we look for `min-block-size: 44px` OR
@@ -100,21 +100,5 @@ describe('LibraryCardStepper — stepper .btn hit area ≥44px (T5 / UXUI-02)', 
 
   it('.btn has an inline-direction min-size of ≥44px', () => {
     expect(hasInlineSizeAtLeast44(css, 'btn')).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Representative 2: VariantQueuePill — .button
-// ---------------------------------------------------------------------------
-
-describe('VariantQueuePill — .button hit area ≥44px (T5 / UXUI-02)', () => {
-  const css = readCss('components/variant-queue/VariantQueuePill.module.css');
-
-  it('.button has a block-direction min-size of ≥44px', () => {
-    expect(hasBlockSizeAtLeast44(css, 'button')).toBe(true);
-  });
-
-  it('.button has an inline-direction min-size of ≥44px', () => {
-    expect(hasInlineSizeAtLeast44(css, 'button')).toBe(true);
   });
 });

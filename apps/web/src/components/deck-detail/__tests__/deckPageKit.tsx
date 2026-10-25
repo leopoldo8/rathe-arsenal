@@ -52,10 +52,6 @@ export function DeckPageHarness({ deckId }: { readonly deckId: number }): React.
       onMarkOwned={noop}
       isMarkingOwned={false}
       pendingCard={null}
-      onFetchVariants={noop}
-      fetchMutationStatus="idle"
-      isCooldownActive={false}
-      onPollingChange={noop}
       onShoppingRetry={noop}
     />
   );

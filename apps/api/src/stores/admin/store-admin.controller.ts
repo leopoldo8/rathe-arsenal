@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { StoreIngestionService, IUrlSyncStatus } from '../store-ingestion.service';
+import { CreditBudgetService, ICreditStatus } from '../credit-budget.service';
 
 /**
  * Admin-role store operations, gated by JWT (global guard) + AdminGuard
@@ -14,7 +15,10 @@ import { StoreIngestionService, IUrlSyncStatus } from '../store-ingestion.servic
 @Controller('admin/stores')
 @UseGuards(AdminGuard)
 export class StoreAdminController {
-  constructor(private readonly ingestion: StoreIngestionService) {}
+  constructor(
+    private readonly ingestion: StoreIngestionService,
+    private readonly credits: CreditBudgetService,
+  ) {}
 
   @Post(':slug/url-sync')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -26,5 +30,10 @@ export class StoreAdminController {
   @Get(':slug/url-sync-status')
   async getUrlSyncStatus(@Param('slug') slug: string): Promise<IUrlSyncStatus> {
     return this.ingestion.getUrlSyncStatus(slug);
+  }
+
+  @Get(':slug/credits')
+  async getCredits(): Promise<ICreditStatus> {
+    return this.credits.status();
   }
 }

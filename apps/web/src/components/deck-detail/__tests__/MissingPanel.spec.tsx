@@ -15,7 +15,6 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
 import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
 import styles from '../MissingPanel.module.css';
-import fetchStyles from '../../ShoppingLineFetchControls.module.css';
 import type { IAlternativesTarget, IDeckReplacement } from '../../../api/replacements';
 import { setTestLocale } from '../../../test/i18n-test-utils';
 
@@ -68,10 +67,6 @@ function renderPanel(
       onMarkOwned={vi.fn()}
       isMarkingOwned={false}
       pendingCard={null}
-      onFetchVariants={vi.fn()}
-      fetchMutationStatus="idle"
-      isCooldownActive={false}
-      onPollingChange={vi.fn()}
       onShoppingRetry={vi.fn()}
       {...extra}
     />,
@@ -181,35 +176,9 @@ describe('MissingPanel — store states per row', () => {
     expect(within(rowOf('Card A')).getByTestId('variant-breakdown-details')).toBeInTheDocument();
   });
 
-  it('flags a card whose exact-price fetch failed', () => {
-    renderPanel(
-      populated({
-        variantFetchProgress: {
-          fetchId: 'f', total: 1, completed: 0, failed: 1, inProgress: false,
-          cards: { 'card-a': 'failed' },
-        },
-      }),
-    );
-
-    expect(within(rowOf('Card A')).getByTestId('line-item-fetch-failed')).toBeInTheDocument();
-  });
 });
 
 describe('MissingPanel — preserved store behaviors', () => {
-  it('"Obter preços exatos" calls the fetch handler when estimated', () => {
-    const onFetchVariants = vi.fn();
-    renderPanel(populated({ isEstimated: true }), { onFetchVariants });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Obter preços exatos' }));
-    expect(onFetchVariants).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the up-to-date message instead of the button during cooldown', () => {
-    renderPanel(populated({ isEstimated: true }), { isCooldownActive: true });
-
-    expect(screen.queryByRole('button', { name: 'Obter preços exatos' })).toBeNull();
-  });
-
   it('warns about stale prices in the pt-BR UI without English leaking', () => {
     renderPanel(populated({ lastFetchedAt: OLD }));
 
@@ -217,20 +186,6 @@ describe('MissingPanel — preserved store behaviors', () => {
     expect(screen.getByTestId('missing-store-stale')).toBeInTheDocument();
     expect(summary).toHaveTextContent('atualizado há mais de uma semana');
     expect(summary.textContent).not.toMatch(/ago|over a week/i);
-  });
-
-  it('reports polling to the host while a fetch is in progress', () => {
-    const onPollingChange = vi.fn();
-    renderPanel(
-      populated({
-        isEstimated: true,
-        variantFetchProgress: { fetchId: 'f', total: 2, completed: 0, failed: 0, inProgress: true },
-      }),
-      { onPollingChange },
-    );
-
-    expect(onPollingChange).toHaveBeenLastCalledWith(expect.any(Number));
-    expect(screen.getByRole('status')).toHaveTextContent('Verificando carta 1 de 2');
   });
 
   it('shows the retry affordance when the store query errored', () => {
@@ -337,13 +292,6 @@ describe('MissingPanel — one quiet store line (owner feedback round 2)', () =>
     expect(screen.getByTestId('missing-store-summary')).not.toHaveTextContent('os preços podem ter mudado');
   });
 
-  it('"Obter preços exatos" is the quiet text button, not the brass slab', () => {
-    renderPanel(populated({ isEstimated: true }));
-
-    const button = screen.getByRole('button', { name: 'Obter preços exatos' });
-    expect(button).toHaveClass(fetchStyles.ctaQuiet!);
-    expect(button).not.toHaveClass(fetchStyles.ctaBtn!);
-  });
 });
 
 describe('MissingPanel — alternatives and replacements (card-alternatives)', () => {
@@ -459,10 +407,6 @@ describe('MissingPanel — suggestions from the collection', () => {
           onMarkOwned={vi.fn()}
           isMarkingOwned={false}
           pendingCard={null}
-          onFetchVariants={vi.fn()}
-          fetchMutationStatus="idle"
-          isCooldownActive={false}
-          onPollingChange={vi.fn()}
           onShoppingRetry={vi.fn()}
           onOpenAlternatives={vi.fn()}
           deckId={DECK_ID}

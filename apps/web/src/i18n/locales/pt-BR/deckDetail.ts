@@ -79,8 +79,6 @@ export const deckDetail = {
   storeCoverage_one: 'na {{storeName}} cobre {{available}} de {{count}} carta que falta',
   storeCoverage_other: 'na {{storeName}} cobre {{available}} de {{count}} cartas que faltam',
   storeAvailablePartial: '{{available}} de {{needed}} disponíveis',
-  storeFetchFailed: 'falhou',
-  storeExactPriceFailed: 'falha ao obter o preço exato',
 
   // Rules bar, checklist sheet and the editor rows (S4)
   rulesBarSize: '{{count}} de {{target}} cartas',

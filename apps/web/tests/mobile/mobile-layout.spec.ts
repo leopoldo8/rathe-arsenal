@@ -107,16 +107,6 @@ async function mockWorstCaseTopBar(page: Page): Promise<void> {
       body: JSON.stringify({ id: 'mobile-layout', email: LONG_EMAIL, role: 'user', settings: { theme: 'dark' } }),
     }),
   );
-  await page.route('**/api/variant-jobs', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        etaSeconds: 30,
-        jobs: [{ jobId: 'j1', deckId: 1, deckName: 'Deck', status: 'running', total: 10, completed: 3, failed: 0 }],
-      }),
-    }),
-  );
 }
 
 async function openRoute(page: Page, url: string, anonymous = false): Promise<void> {

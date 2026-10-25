@@ -63,10 +63,6 @@ const defaultProps = {
   legality: { category: 'legal', reasons: [] as string[] } satisfies IDeckLegality,
   fabraryUlid: 'abc123ulid' as string | null,
   shoppingData: null,
-  onFetchVariants: vi.fn(),
-  fetchMutationStatus: 'idle' as const,
-  isCooldownActive: false,
-  onPollingChange: vi.fn(),
   onShoppingRetry: vi.fn(),
 };
 

@@ -32,6 +32,15 @@ describe('drainOnce', () => {
     expect(processor.process).toHaveBeenCalledWith(claimed, expect.arrayContaining([expect.objectContaining({ cardIdentifier: 'a-red' })]));
   });
 
+  it('finishes a job with an error instead of a lookup when its card has no product page', async () => {
+    const claimed = { id: 'job-2', storeId: 1, cards: [{ cardIdentifier: 'a-red', status: 'pending' }] };
+    const queue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(claimed), finish: jest.fn() };
+    const processor = { process: jest.fn() };
+    await drainOnce({ queue, processor, resolveCards: jest.fn().mockResolvedValue([]), workerId: 'w1' } as never);
+    expect(queue.finish).toHaveBeenCalledWith('job-2', expect.stringContaining('no product page'));
+    expect(processor.process).not.toHaveBeenCalled();
+  });
+
   it('does nothing further when the queue is empty', async () => {
     const queue = { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(null) };
     const processor = { process: jest.fn() };

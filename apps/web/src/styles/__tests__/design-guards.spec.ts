@@ -1716,7 +1716,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
   const MARK_OWNED = readCss('components/deck-detail/MarkOwnedButton.module.css');
   const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
   const BANNER = readCss('components/deck-detail/DeckHeroBanner.module.css');
-  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
 
   it('the legality badge uses the UI face, not mono', () => {
     const body = ruleBody(LEGALITY, '.badge');
@@ -1765,13 +1764,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
     expect(ruleBody(MARK_OWNED, '.btn')).toContain('min-block-size: 44px');
   });
 
-  it('the exact-price button is the brass action, not the info blue', () => {
-    const body = ruleBody(FETCH_CONTROLS, '.ctaBtn');
-    expect(body).toContain('background: var(--ra-accent)');
-    expect(body).toContain('color: var(--ra-accent-ink-on)');
-    expect(body).not.toContain('--ra-info');
-  });
-
   it('the banner keeps its dark backdrop in both themes, since the art no longer covers the left side', () => {
     expect(ruleBody(BANNER, '.banner')).toContain('background: #0a0b0e');
   });
@@ -1811,7 +1803,6 @@ describe('Deck detail polish B — legality badge, buttons, banner art', () => {
 describe('Owner design feedback round 2 — calm missing panel, aggregate in the header', () => {
   const MISSING = readCss('components/deck-detail/MissingPanel.module.css');
   const SUMMARY = readCss('components/deck-detail/MissingStoreSummary.module.css');
-  const FETCH_CONTROLS = readCss('components/ShoppingLineFetchControls.module.css');
   const AGGREGATE = readCss('components/home/AggregateCallout.module.css');
 
   it('the store context is a plain line, not a nested bordered box', () => {
@@ -1825,14 +1816,6 @@ describe('Owner design feedback round 2 — calm missing panel, aggregate in the
     const body = ruleBody(SUMMARY, ".freshness[data-freshness='very-stale']");
     expect(body).toContain('color: var(--ra-ready-mid)');
     expect(SUMMARY).not.toContain('--ra-ready-low');
-  });
-
-  it('the exact-price action is a quiet text button in the brass body ink', () => {
-    const body = ruleBody(FETCH_CONTROLS, '.ctaQuiet');
-    expect(body).toContain('background: transparent');
-    expect(body).toContain('border: none');
-    expect(body).toContain('color: var(--ra-accent-body)');
-    expect(body).toContain('min-block-size: 44px');
   });
 
   it('rows share one column grid so quantity, Buy and Mark owned line up', () => {

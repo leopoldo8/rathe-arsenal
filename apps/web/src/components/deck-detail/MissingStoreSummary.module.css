@@ -44,8 +44,3 @@
 .freshness[data-freshness='very-stale'] {
   color: var(--ra-ready-mid);
 }
-
-.cooldown {
-  color: var(--ra-fg-secondary);
-  font-size: var(--ra-text-small);
-}

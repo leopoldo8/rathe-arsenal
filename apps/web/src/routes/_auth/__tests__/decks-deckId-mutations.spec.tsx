@@ -192,7 +192,6 @@ let mockQueryState: TQueryState = 'loading';
 let mockDeckData: IDeckDetailResponse | null | undefined;
 
 const mockMarkOwnedMutate = vi.fn();
-const mockVariantMutate = vi.fn();
 const mockRefetch = vi.fn();
 
 vi.mock('../../../api/deck-detail', async (importOriginal) => {
@@ -237,25 +236,6 @@ vi.mock('../../../api/recommendations', async (importOriginal) => {
     useAdoptRecommendation: () => idle,
   };
 });
-
-vi.mock('../../../api/variant-fetch', () => ({
-  useVariantFetchMutation: () => ({
-    mutate: mockVariantMutate,
-    status: 'idle',
-    isSuccess: false,
-    data: null,
-  }),
-}));
-
-vi.mock('../../../api/variant-jobs', () => ({
-  useVariantJobsQuery: () => ({
-    data: { jobs: [], etaSeconds: 0 },
-    isLoading: false,
-    isError: false,
-  }),
-  VARIANT_JOBS_QUERY_KEY: ['variant-jobs'],
-  hasActiveJobs: (data: { jobs: unknown[] }) => data.jobs.length > 0,
-}));
 
 // ---------------------------------------------------------------------------
 // The route component — imported after all mocks

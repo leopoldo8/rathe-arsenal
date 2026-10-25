@@ -369,6 +369,22 @@
 - Plan `Surface`: three rows added (the list answer with cards, the import route's extra statuses, the two pages).
 - "Comprei um deck pronto" on `/decks/new` now opens `/add-cards/product` (batch 8 obligation). S15 may point its first-run row there too.
 
+### S16 (batch 12)
+
+- Plan `Landing` got a row for door 10 (what a lookup job is and what counts as a lookup) and `Surface` got two rows (`GET /api/decks/:deckId/missing` lines, `GET /api/variant-jobs` removed), before the code, in this commit.
+- The migration deletes every `variant_fetch_job` row, not only the pending and running ones the plan's Impact names: a per-deck row has no per-card meaning, and the table is a queue no view shows after two minutes. It also drops `userId` and `deckId`, because a job is shared by every user.
+- `GET /api/decks/:deckId/missing` exists with `lines` only (`cardIdentifier`, `deckNeeded`, `inventoryNeeded`, `state`), because C189 needs it to open a list. `summary` and the price fields are S17 (C204). The needed copies come from `breakdown.notOwned` of the same `computeEffectiveReadiness` call the shared missing list uses, so the inventory is counted as S5 counts it.
+- C199 is unmarked: its `quote` address is built in S19 and the group page carries no store states until S18. The read-only path it needs already exists (`StoreAnswersService.read` queues nothing; only `openForOwner` does), and S18 writes the proof.
+- Tests removed because the behavior they asserted left with the per-deck lookup (AC 123, door 10):
+  - `variant-fetch.controller.spec.ts`, `variant-jobs.controller.spec.ts`, `variant-fetch.service.spec.ts` (api): the removed controller, the removed jobs list and the one-hour per-deck freshness check.
+  - Two cases of `variant-fetch-queue.service.spec.ts` (a job per deck is returned instead of duplicated; ETA from remaining cards); the file now holds the per-card proofs.
+  - The decks-lifecycle e2e lines that inserted a per-deck job and asserted the drain skips a deleted deck (the plan's Assumptions row says the job holds no deck now).
+  - Web: the `variant-queue` pill and drawer specs, `variant-jobs` api specs, the CTA, progress, partial failure, polling and per-card failure cases of `shopping-line-variants.test.tsx`, five `MissingPanel.spec.tsx` cases about "Obter preços exatos", cooldown, polling and the failed badge, the two `design-guards.spec.ts` cases about the exact-price button styles, the TopBar and AppShell pill cases, the pill's touch-target case, and the failed-badge assertion at the end of the S2 case in `ShoppingLine.spec.tsx` (the badge is gone with the button).
+- `ShoppingLine.spec`-era API types stay: `IVariantFetchProgress` and `variantFetchProgress` in the web and API shopping-line types, and `computeVariantFetchInterval` in `api/deck-detail.ts`, are now unused by any producer. They die with the old shopping panels in S17.
+- The queue of lookups is claimed per card; a job whose card lost its product page is finished with an error instead of a lookup.
+- Each of the six new environment variables is optional in `env.dto.ts`; the worker's availability step reads them from `process.env` (strings), the API from `ConfigService`; both go through `readStoreAnswersConfig`.
+- The availability step runs on the worker's 3-second poll, and checks the store row each time; it asks for a URL sync only when a pass is due, none is queued or running, the last failure is over an hour old, and the budget fits.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -474,3 +490,10 @@
   - Search: "Nenhum deck encontrado.", "Não foi possível carregar os decks. Tente de novo.", "Não achamos esse deck." (an address with a key no file has), the label "Buscar o deck pelo nome do produto ou do herói" of the search field.
   - Confirm: "Adicionando…", "Não foi possível adicionar. Tente de novo.", and the button "Adicionar outra caixa" that confirms the repeated box (C164 gives only the question).
 
+- S16, copy of mine, no check or mockup gives it:
+  - The tooltip on the estimated price tilde no longer points to "Obter preços exatos": it reads "Preço estimado pelo anúncio da loja."
+- S16: C201 is not built. It needs a visible line in the admin Settings page that no picked mockup draws, and the batch rule says not to draw it. `GET /api/admin/stores/:slug/credits` (C200) is built and answers the numbers; the line needs a mockup pick first.
+- S16: C199 stays unmarked until S18 (states on the group page) and S19 (the `quote` address) add what its proof reads.
+- S16 touched the proofs of two checks marked done in earlier batches; the owner decides whether they stand:
+  - C14 (`ShoppingLine.spec.tsx`, "the row names the pitch"): the last assertion named the pitch in the aria-label of the row's "failed to fetch" badge. The badge left with the fetch button (AC 123), so that label no longer exists; the link's aria-label and the row text are still asserted.
+  - C92 (`decks-lifecycle.e2e-spec.ts`, "a deleted deck is left out of every reader"): the case also checked that the variant job drain skipped a deleted deck. C92's claim does not list that reader, and a job holds no deck now (door 10), so the lines were removed.

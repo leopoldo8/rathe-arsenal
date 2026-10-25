@@ -196,6 +196,36 @@ export class EnvDto {
   @Min(1)
   FIRECRAWL_REQUESTS_PER_MINUTE?: number;
 
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  STORE_PRICE_VALID_DAYS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  STORE_AVAILABILITY_PASS_DAYS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  FIRECRAWL_MONTHLY_CREDIT_BUDGET?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_PASS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_DETAIL?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  FIRECRAWL_CREDITS_PER_LISTING_PAGE?: number;
+
   /**
    * Sentry DSN for api error reporting. Optional — when absent, initApiSentry
    * skips init entirely so local dev and CI never attempt to report errors.

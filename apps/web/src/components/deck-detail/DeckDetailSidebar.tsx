@@ -10,7 +10,6 @@ import { CardLightbox } from '../card-art/CardLightbox';
 import { useHeroesQuery } from '../../api/catalog';
 import type { IDeckLegality } from '../../api/decks';
 import type { IShoppingLineResponse } from '../../api/shopping-line';
-import type { TVariantFetchMutationStatus } from '../ShoppingLine';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
 import styles from './DeckDetailSidebar.module.css';
@@ -68,10 +67,6 @@ interface IDeckDetailSidebarProps {
    * Shopping panel data + controls — forwarded to ShoppingPanel.
    */
   readonly shoppingData: IShoppingLineResponse | null;
-  readonly onFetchVariants: () => void;
-  readonly fetchMutationStatus: TVariantFetchMutationStatus;
-  readonly isCooldownActive: boolean;
-  readonly onPollingChange: (startedAt: number | undefined) => void;
   readonly onShoppingRetry: () => void;
 
   // ---------------------------------------------------------------------------
@@ -126,10 +121,6 @@ export function DeckDetailSidebar({
   legality,
   fabraryUlid,
   shoppingData,
-  onFetchVariants,
-  fetchMutationStatus,
-  isCooldownActive,
-  onPollingChange,
   onShoppingRetry,
   mode = 'view',
   compositionDraft,
@@ -288,10 +279,6 @@ export function DeckDetailSidebar({
             </h3>
             <ShoppingPanel
               data={shoppingData}
-              onFetchVariants={onFetchVariants}
-              fetchMutationStatus={fetchMutationStatus}
-              isCooldownActive={isCooldownActive}
-              onPollingChange={onPollingChange}
               onRetry={onShoppingRetry}
             />
           </section>

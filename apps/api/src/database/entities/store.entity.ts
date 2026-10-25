@@ -98,6 +98,10 @@ export class StoreEntity {
   @Column({ type: 'timestamptz', nullable: true })
   urlSyncRunningAt!: Date | null;
 
+  /** Completion time of the last in-stock URL sync that finished; null until the first one. */
+  @Column({ type: 'timestamptz', nullable: true })
+  lastAvailabilityPassAt!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }

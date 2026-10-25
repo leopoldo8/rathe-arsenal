@@ -2,7 +2,7 @@
  * useFocusTrap — confine Tab/Shift+Tab within a container and restore focus
  * to the opener element on deactivation.
  *
- * Used by custom dialogs (CardLightbox, VariantQueueDrawer, LibraryFilterDrawer)
+ * Used by custom dialogs (CardLightbox, LibraryFilterDrawer)
  * that declare `aria-modal` but do not use a Radix primitive (which would trap
  * focus automatically). UXUI-03.
  *

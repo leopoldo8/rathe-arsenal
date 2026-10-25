@@ -648,55 +648,55 @@ Proof: `api int src/database/migrations/__tests__/import-kinds-and-pending.migra
 
 ### S16 - One honest store answer per card, under a monthly budget · 40 files · 254 KB · ~80k
 
-**C186** - `resolveStoreState` returns exactly one of `priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price` for each row of the document's Store answers table: listed in the latest pass with a stocked lookup → `priced`; a lookup newer than the pass with zero stock → `store_lacks`; not listed in the latest completed pass and no newer lookup with stock → `store_lacks`; a newer lookup with stock overrides an absent listing → `priced`; no `store_stock` row → `not_on_site`; a row with no product URL → `not_on_site`; listed with a pending lookup → `looking_up`; listed with the budget stopped → `no_price`; listed with the last lookup failed → `no_price` (AC 113, AC 114)
+**C186** - `resolveStoreState` returns exactly one of `priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price` for each row of the document's Store answers table: listed in the latest pass with a stocked lookup → `priced`; a lookup newer than the pass with zero stock → `store_lacks`; not listed in the latest completed pass and no newer lookup with stock → `store_lacks`; a newer lookup with stock overrides an absent listing → `priced`; no `store_stock` row → `not_on_site`; a row with no product URL → `not_on_site`; listed with a pending lookup → `looking_up`; listed with the budget stopped → `no_price`; listed with the last lookup failed → `no_price` (AC 113, AC 114) · done
 Proof: `api unit src/stores/__tests__/store-state.spec.ts -t "every input row gets exactly one store state"`
 
-**C187** - Before any availability pass has completed (`store.lastAvailabilityPassAt` null), a card with a product URL resolves to `looking_up`, `no_price` or `priced` and never to `store_lacks`, for every lookup outcome except a zero-stock lookup (AC 117)
+**C187** - Before any availability pass has completed (`store.lastAvailabilityPassAt` null), a card with a product URL resolves to `looking_up`, `no_price` or `priced` and never to `store_lacks`, for every lookup outcome except a zero-stock lookup (AC 117) · done
 Proof: `api unit src/stores/__tests__/store-state.spec.ts -t "before the first pass a listed card is never store_lacks"`
 
-**C188** - Opening the owner's missing list queues one `variant_fetch_job` per needed card that the store lists with no price or a price older than `STORE_PRICE_VALID_DAYS`: with the default 30, a price 29 days old queues nothing and one 31 days old queues a job; with `STORE_PRICE_VALID_DAYS=10`, a price 11 days old queues a job (AC 115)
+**C188** - Opening the owner's missing list queues one `variant_fetch_job` per needed card that the store lists with no price or a price older than `STORE_PRICE_VALID_DAYS`: with the default 30, a price 29 days old queues nothing and one 31 days old queues a job; with `STORE_PRICE_VALID_DAYS=10`, a price 11 days old queues a job (AC 115) · done
 Proof: `api unit src/stores/__tests__/variant-fetch-queue.service.spec.ts -t "queues a lookup only for a card with no price or a price past the validity window"`
 
-**C189** - Two users whose decks need the same card both open their missing lists: exactly one `pending` `variant_fetch_job` row exists for that `cardIdentifier`, and both lists show it as `looking_up` (AC 115; door 10)
+**C189** - Two users whose decks need the same card both open their missing lists: exactly one `pending` `variant_fetch_job` row exists for that `cardIdentifier`, and both lists show it as `looking_up` (AC 115; door 10) · done
 Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "two owners needing one card share a single pending lookup"`
 
-**C190** - Door 10, lookups: after the migration `variant_fetch_job` has `cardIdentifier` and no `deckId`; a second `pending` row for the same `cardIdentifier` fails with a unique violation on the partial index; a `pending` row next to a `done` row for that card inserts; `down()` restores the per-deck column (door 10)
+**C190** - Door 10, lookups: after the migration `variant_fetch_job` has `cardIdentifier` and no `deckId`; a second `pending` row for the same `cardIdentifier` fails with a unique violation on the partial index; a `pending` row next to a `done` row for that card inserts; `down()` restores the per-deck column (door 10) · done
 Proof: `api int src/database/migrations/__tests__/store-answers.migration.int-spec.ts -t "allows one pending lookup per card"`
 
-**C191** - Door 10, store columns: `store_stock."listedInStockAt"` and `store."lastAvailabilityPassAt"` exist as nullable `timestamptz` and read `null` on rows that existed before the migration (door 10)
+**C191** - Door 10, store columns: `store_stock."listedInStockAt"` and `store."lastAvailabilityPassAt"` exist as nullable `timestamptz` and read `null` on rows that existed before the migration (door 10) · done
 Proof: `api int src/database/migrations/__tests__/store-answers.migration.int-spec.ts -t "adds the nullable availability timestamps"`
 
-**C192** - Door 10, credits: `firecrawl_usage` has `month char(7)` as primary key and `credits int not null`; twenty concurrent increments of 5 for `2026-10` leave one row with `credits = 100` (door 10)
+**C192** - Door 10, credits: `firecrawl_usage` has `month char(7)` as primary key and `credits int not null`; twenty concurrent increments of 5 for `2026-10` leave one row with `credits = 100` (door 10) · done
 Proof: `api int src/database/migrations/__tests__/store-answers.migration.int-spec.ts -t "counts credits per month atomically"`
 
-**C193** - The worker's availability step runs the in-stock URL sync when `lastAvailabilityPassAt` is null or older than `STORE_AVAILABILITY_PASS_DAYS` (default 7: 6 days old does not run, 8 days old runs; `STORE_AVAILABILITY_PASS_DAYS=3` with 4 days old runs); on completion every `store_stock` row the pass listed has `listedInStockAt` equal to the pass time and `lastAvailabilityPassAt` is set to it (AC 116)
+**C193** - The worker's availability step runs the in-stock URL sync when `lastAvailabilityPassAt` is null or older than `STORE_AVAILABILITY_PASS_DAYS` (default 7: 6 days old does not run, 8 days old runs; `STORE_AVAILABILITY_PASS_DAYS=3` with 4 days old runs); on completion every `store_stock` row the pass listed has `listedInStockAt` equal to the pass time and `lastAvailabilityPassAt` is set to it (AC 116) · done
 Proof: `api unit src/stores/__tests__/availability-pass.spec.ts -t "runs the pass when the last one is past the interval and stamps every listed row"`
 
-**C194** - A pass that fails or stops partway stamps no row, leaves `lastAvailabilityPassAt` unchanged, and the next worker tick does not retry it until an hour has passed (59 minutes: no run; 61 minutes: runs) (AC 116)
+**C194** - A pass that fails or stops partway stamps no row, leaves `lastAvailabilityPassAt` unchanged, and the next worker tick does not retry it until an hour has passed (59 minutes: no run; 61 minutes: runs) (AC 116) · done
 Proof: `api unit src/stores/__tests__/availability-pass.spec.ts -t "a failed pass marks nothing and waits an hour"`
 
-**C195** - With `FIRECRAWL_MONTHLY_CREDIT_BUDGET=1000` and `FIRECRAWL_CREDITS_PER_PASS=150` (the defaults): 850 used leaves 150 and lookups are queued; 851 used leaves 149 and no automatic lookup is queued, the affected lines resolve to `no_price`, and one warning is logged; a second list open in the same month logs nothing more; the first open of the next month logs again (AC 118)
+**C195** - With `FIRECRAWL_MONTHLY_CREDIT_BUDGET=1000` and `FIRECRAWL_CREDITS_PER_PASS=150` (the defaults): 850 used leaves 150 and lookups are queued; 851 used leaves 149 and no automatic lookup is queued, the affected lines resolve to `no_price`, and one warning is logged; a second list open in the same month logs nothing more; the first open of the next month logs again (AC 118) · done
 Proof: `api unit src/stores/__tests__/credit-budget.service.spec.ts -t "stops automatic lookups when what is left would not pay for one pass"`
 
-**C196** - When what is left would not pay for the pass itself, the availability step does not start and availability keeps the last completed pass; the admin's manual URL sync runs whatever the budget and its credits are counted (AC 118, AC 119)
+**C196** - When what is left would not pay for the pass itself, the availability step does not start and availability keeps the last completed pass; the admin's manual URL sync runs whatever the budget and its credits are counted (AC 118, AC 119) · done
 Proof: `api unit src/stores/__tests__/availability-pass.spec.ts -t "the pass waits for the next month and the manual sync always runs"`
 
-**C197** - Each Firecrawl call adds to the current month's `firecrawl_usage` row: 5 per product page and 1 per listing page by default, `FIRECRAWL_CREDITS_PER_DETAIL=7` makes it 7; with `SCRAPER_FETCH_PROVIDER=direct` no row is written; a call on `2026-11-01` writes month `2026-11` (AC 119)
+**C197** - Each Firecrawl call adds to the current month's `firecrawl_usage` row: 5 per product page and 1 per listing page by default, `FIRECRAWL_CREDITS_PER_DETAIL=7` makes it 7; with `SCRAPER_FETCH_PROVIDER=direct` no row is written; a call on `2026-11-01` writes month `2026-11` (AC 119) · done
 Proof: `api unit src/stores/__tests__/firecrawl-client.service.spec.ts -t "counts credits per call kind and nothing for the direct provider"`
 
-**C198** - A failed lookup leaves the line `no_price`; a list open 59 minutes later queues no job for that card and one 61 minutes later queues one (AC 120)
+**C198** - A failed lookup leaves the line `no_price`; a list open 59 minutes later queues no job for that card and one 61 minutes later queues one (AC 120) · done
 Proof: `api unit src/stores/__tests__/variant-fetch-queue.service.spec.ts -t "a failed lookup is retried no sooner than an hour later"`
 
 **C199** - Opening a `missing` and a `quote` address returns the stored states and leaves the `variant_fetch_job` row count unchanged, even for a card whose price is past the validity window (AC 121)
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a public page reads the stored store states and queues no lookup"`
 
-**C200** - `GET /api/admin/stores/:slug/credits` answers `200` `{ creditsUsed, budget, lookupsStopped }` for an admin (`120`, `1000`, `false` after 120 credits counted this month; `lookupsStopped: true` after 851) and `403` for a signed-in non-admin (AC 122)
+**C200** - `GET /api/admin/stores/:slug/credits` answers `200` `{ creditsUsed, budget, lookupsStopped }` for an admin (`120`, `1000`, `false` after 120 credits counted this month; `lookupsStopped: true` after 851) and `403` for a signed-in non-admin (AC 122) · done
 Proof: `api e2e src/stores/__tests__/store-admin-credits.e2e-spec.ts -t "shows the month's credits to an admin only"`
 
 **C201** - For an admin, Settings shows the credits used and the budget ("120" and "1000") inside the same section as the URL sync button, and, when `lookupsStopped` is true, a line saying lookups have stopped; a non-admin's Settings has neither (AC 122)
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the URL sync section shows the month's credits and when lookups stopped"`
 
-**C202** - `POST /api/decks/:deckId/fetch-variants` answers `404`, and the deck page renders no "Obter preços exatos" button and no variant queue drawer (AC 123)
+**C202** - `POST /api/decks/:deckId/fetch-variants` answers `404`, and the deck page renders no "Obter preços exatos" button and no variant queue drawer (AC 123) · done
 Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "the fetch-variants route is gone"`
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spec.tsx -t "the deck page has no price fetch button or drawer"`
 

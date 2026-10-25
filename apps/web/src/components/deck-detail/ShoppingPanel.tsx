@@ -1,7 +1,7 @@
 import { useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
-import { ShoppingLine, TVariantFetchMutationStatus } from '../ShoppingLine';
+import { ShoppingLine } from '../ShoppingLine';
 import { IShoppingLineResponse } from '../../api/shopping-line';
 import { formatBrl } from '../../utils/format-brl';
 import styles from './ShoppingPanel.module.css';
@@ -11,10 +11,6 @@ interface IShoppingPanelProps {
    * Shopping line data from the API response. null = Path A (no missing cards).
    */
   readonly data: IShoppingLineResponse | null;
-  readonly onFetchVariants?: () => void;
-  readonly fetchMutationStatus?: TVariantFetchMutationStatus;
-  readonly isCooldownActive?: boolean;
-  readonly onPollingChange?: (startedAt: number | undefined) => void;
   /**
    * Called when the user clicks "Retry" in the ShoppingLine error state.
    * The host route owns recovery (TanStack Query invalidation / refetch).
@@ -38,10 +34,6 @@ interface IShoppingPanelProps {
  */
 export function ShoppingPanel({
   data,
-  onFetchVariants,
-  fetchMutationStatus = 'idle',
-  isCooldownActive = false,
-  onPollingChange,
   onRetry,
 }: IShoppingPanelProps): React.ReactElement {
   const { t } = useTranslation();
@@ -58,10 +50,6 @@ export function ShoppingPanel({
   const panelContent = (
     <ShoppingLine
       data={data}
-      {...(onFetchVariants !== undefined ? { onFetchVariants } : {})}
-      fetchMutationStatus={fetchMutationStatus}
-      isCooldownActive={isCooldownActive}
-      {...(onPollingChange !== undefined ? { onPollingChange } : {})}
       {...(onRetry !== undefined ? { onRetry } : {})}
     />
   );

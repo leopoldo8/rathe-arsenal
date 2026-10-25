@@ -391,7 +391,7 @@ describe('Scenario 6: failed-fetch card retains listing estimate without breakin
       },
     });
 
-    render(<ShoppingLine data={data} onFetchVariants={vi.fn()} />);
+    render(<ShoppingLine data={data} />);
 
     // Line should still be rendered, no crash
     expect(screen.getByText(/rhinar, brute of brokenbone/i)).toBeInTheDocument();

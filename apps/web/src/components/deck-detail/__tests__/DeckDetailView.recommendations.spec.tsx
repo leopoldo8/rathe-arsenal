@@ -69,10 +69,6 @@ function renderView(pct: number, missing: boolean): void {
       onMarkOwned={noop}
       isMarkingOwned={false}
       pendingCard={null}
-      onFetchVariants={noop}
-      fetchMutationStatus="idle"
-      isCooldownActive={false}
-      onPollingChange={noop}
       onShoppingRetry={noop}
     />,
   );

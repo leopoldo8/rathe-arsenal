@@ -68,6 +68,10 @@ export class StoreStockEntity {
   @Column({ type: 'timestamptz' })
   lastFetchedAt!: Date;
 
+  /** Time of the last completed availability pass that listed this card; null until the first pass. */
+  @Column({ type: 'timestamptz', nullable: true })
+  listedInStockAt!: Date | null;
+
   @ManyToOne(() => StoreEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'storeId' })
   store!: StoreEntity;
