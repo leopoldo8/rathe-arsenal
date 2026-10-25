@@ -807,7 +807,7 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     renderPage();
 
     const cell = cellFor('Partial');
-    expect(within(cell).getByTestId('deck-list-qty')).toHaveTextContent('×3');
+    expect(within(cell).getByTestId('deck-list-qty')).toHaveTextContent('3×');
     expect(within(cell).getByTestId('card-art-stub')).toHaveAttribute('data-missing-count', '2');
     expect(screen.getAllByTestId('deck-list-cell').filter((c) => c.textContent?.includes('Partial'))).toHaveLength(1);
   });
@@ -853,7 +853,7 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     expect(screen.getByTestId('deck-list-view-type')).toHaveAttribute('aria-pressed', 'false');
 
     await userEvent.click(screen.getByTestId('deck-list-view-list'));
-    expect(screen.getByTestId('deck-list-group-all')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-text-list')).toBeInTheDocument();
     expect(screen.queryByTestId('deck-list-group-2')).toBeNull();
 
     expect(mockRefetch).not.toHaveBeenCalled();

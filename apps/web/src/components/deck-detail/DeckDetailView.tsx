@@ -18,6 +18,8 @@ import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
 import { findSuggestions, summariseDeck } from './deckDetailModel';
 import { buildDeckList } from './deckListModel';
+import { buildListCards } from './deckListCards';
+import { CopyListSheet } from './CopyListSheet';
 import styles from './DeckDetailView.module.css';
 
 interface IDeckDetailViewProps {
@@ -53,6 +55,7 @@ export function DeckDetailView({
   onPollingChange,
   onShoppingRetry,
 }: IDeckDetailViewProps): React.ReactElement {
+  const [copyListOpen, setCopyListOpen] = useState(false);
   const [alternativesTarget, setAlternativesTarget] = useState<IAlternativesTarget | null>(null);
   const [share, setShare] = useState<{ readonly open: boolean; readonly intent: TShareIntent | null }>({
     open: false,
@@ -74,6 +77,10 @@ export function DeckDetailView({
   const items = useMemo(
     () => buildDeckList(snapshot.breakdown, summary.openMissing),
     [snapshot.breakdown, summary.openMissing],
+  );
+  const listCards = useMemo(
+    () => buildListCards(snapshot.breakdown, summary.openMissing, deck.hero),
+    [snapshot.breakdown, summary.openMissing, deck.hero],
   );
   const deckCards = useMemo((): IRecommendationDeckCard[] => {
     const seen = new Map<string, IRecommendationDeckCard>();
@@ -103,6 +110,7 @@ export function DeckDetailView({
         pct={snapshot.effectivePercent}
         onEdit={onEdit}
         onShare={() => setShare({ open: true, intent: null })}
+        onCopyList={() => setCopyListOpen(true)}
       />
       <div className={styles.tags}>
         <TagChipRow deckId={deck.id} tags={tags} />
@@ -135,7 +143,22 @@ export function DeckDetailView({
           onShareMissing={() => setShare({ open: true, intent: 'missing' })}
         />
       )}
-      <DeckList items={items} onEditCards={onEditCards} deckId={deck.id} replacements={deck.replacements} />
+      <DeckList
+        items={items}
+        onEditCards={onEditCards}
+        deckId={deck.id}
+        replacements={deck.replacements}
+        listCards={listCards}
+        legalityDetails={deck.legality.details}
+      />
+      <CopyListSheet
+        open={copyListOpen}
+        onOpenChange={setCopyListOpen}
+        deckName={deck.name}
+        format={deck.format}
+        cards={listCards}
+        legality={deck.legality}
+      />
       <ShareDialog
         deckId={deck.id}
         deckName={deck.name}

@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
+import { EntityManager, IsNull } from 'typeorm';
 import { AuthzService } from '../authz.service';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
@@ -68,7 +68,7 @@ describe('AuthzService', () => {
       ).resolves.toBeUndefined();
 
       expect(trackedDeckRepo.findOne).toHaveBeenCalledWith({
-        where: { id: trackedDeckId },
+        where: { id: trackedDeckId, deletedAt: IsNull() },
         select: ['id', 'userId'],
       });
     });

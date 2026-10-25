@@ -4,13 +4,18 @@ import type { IDeckReplacement } from '../../api/replacements';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { CardGalleryCell, type ICardGalleryLightbox } from '../card-gallery/CardGalleryCell';
 import { CardGalleryGrid } from '../card-gallery/CardGalleryGrid';
+import type { ILegalityReasonDetail } from '../../api/decks';
+import type { IListCard } from './deckListCards';
 import {
+  buildTextList,
   groupDeckList,
+  resolveTypeGroup,
   type IDeckListItem,
   type TDeckListGroupId,
   type TDeckListView,
 } from './deckListModel';
 import { ReplacementControls } from './ReplacementMark';
+import { DeckTextList } from './DeckTextList';
 import styles from './DeckList.module.css';
 
 interface IDeckListProps {
@@ -19,6 +24,9 @@ interface IDeckListProps {
   /** Needed to undo, keep or revert a replacement; the cells show no controls without it. */
   readonly deckId?: number | undefined;
   readonly replacements?: readonly IDeckReplacement[] | undefined;
+  /** The lines the "Lista" view prints as text, with the deck's rule problems to annotate them. */
+  readonly listCards?: readonly IListCard[] | undefined;
+  readonly legalityDetails?: readonly ILegalityReasonDetail[] | undefined;
 }
 
 const VIEWS: readonly { readonly id: TDeckListView; readonly labelKey: string }[] = [
@@ -78,18 +86,35 @@ function DeckListCell({
   );
 }
 
-export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDeckListProps): React.ReactElement {
+export function DeckList({
+  items,
+  onEditCards,
+  deckId,
+  replacements = [],
+  listCards,
+  legalityDetails = [],
+}: IDeckListProps): React.ReactElement {
   const { t } = useTranslation();
   const [view, setView] = useState<TDeckListView>('type');
   const [lightbox, setLightbox] = useState<ICardGalleryLightbox | null>(null);
-  const groups = groupDeckList(items, view);
+  const textView = view === 'list' && listCards !== undefined;
+  const groups = textView ? [] : groupDeckList(items, view);
+  const textGroups = textView ? buildTextList(listCards, legalityDetails, t) : [];
+  const deckSize = items
+    .filter((item) => resolveTypeGroup(item.entry) !== 'loadout')
+    .reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <section className={styles.section} aria-labelledby="deck-list-title" data-testid="deck-list">
       <div className={styles.header}>
-        <h2 id="deck-list-title" className={styles.title}>
-          {t('deckDetail.decklistTitle')}
-        </h2>
+        <div className={styles.titleRow}>
+          <h2 id="deck-list-title" className={styles.title}>
+            {t('deckDetail.decklistTitle')}
+          </h2>
+          <span className={styles.count} data-testid="deck-list-count">
+            {t('deckDetail.decklistCount', { count: deckSize })}
+          </span>
+        </div>
         <div className={styles.headerActions}>
           {onEditCards !== undefined && (
             <button
@@ -121,7 +146,8 @@ export function DeckList({ items, onEditCards, deckId, replacements = [] }: IDec
         </div>
       </div>
 
-      {groups.length === 0 && <p className={styles.empty}>{t('deckDetail.decklistEmpty')}</p>}
+      {textView && <DeckTextList groups={textGroups} />}
+      {!textView && groups.length === 0 && <p className={styles.empty}>{t('deckDetail.decklistEmpty')}</p>}
       {groups.map((group) => (
         <div key={group.id} className={styles.group} data-testid={`deck-list-group-${group.id}`}>
           <h3 className={styles.groupTitle}>

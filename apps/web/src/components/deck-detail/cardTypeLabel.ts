@@ -4,6 +4,7 @@ const TYPE_KEYS: Readonly<Record<string, string>> = {
   Action: 'deckDetail.cardTypeAction',
   'Attack Reaction': 'deckDetail.cardTypeAttackReaction',
   'Defense Reaction': 'deckDetail.cardTypeDefenseReaction',
+  Instant: 'deckDetail.cardTypeInstant',
   Weapon: 'deckDetail.cardTypeWeapon',
   Equipment: 'deckDetail.cardTypeEquipment',
   Hero: 'deckDetail.cardTypeHero',

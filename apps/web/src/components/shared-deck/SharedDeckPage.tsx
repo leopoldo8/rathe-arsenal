@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/useAuth';
 import { isShareLinkUnavailable, useSharedDeckQuery } from '../../api/shared-decks';
 import { SharedContactButton } from './SharedContactButton';
+import { SharedCopyList } from './SharedCopyList';
 import { SharedComparison } from './SharedComparison';
 import { SharedDeckFooter } from './SharedDeckFooter';
 import { SharedDeckGallery } from './SharedDeckGallery';
@@ -81,6 +82,7 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
               />
               {deck.intent === 'deck' && <SharedComparison deck={deck} />}
             </div>
+            {deck.intent === 'deck' && <SharedCopyList deck={deck} />}
             {deck.intent === 'deck' ? <SharedDeckGallery cards={deck.cards} /> : <SharedMissingGallery deck={deck} />}
           </div>
         )}

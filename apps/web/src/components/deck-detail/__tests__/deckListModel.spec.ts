@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import i18n from '../../../i18n';
 import {
   buildDeckList,
+  buildTextList,
   groupDeckList,
   resolveCostGroup,
   resolveTypeGroup,
 } from '../deckListModel';
 import { buildCostBars, buildPitchSlices } from '../deckAnalysisModel';
 import { breakdown, entry } from './deckDetailTestData';
+import { FIXTURE_CARDS, FIXTURE_ILLEGAL_LEGALITY } from './copyListFixture';
 
 describe('buildDeckList', () => {
   it('merges a partly owned card into one item with its missing share', () => {
@@ -138,5 +141,34 @@ describe('deck analysis aggregates', () => {
       ['3', 0],
       ['4plus', 3],
     ]);
+  });
+});
+
+describe('buildTextList', () => {
+  const t = i18n.t.bind(i18n);
+  const details = FIXTURE_ILLEGAL_LEGALITY.details;
+
+  it('the list view groups and annotates each line', () => {
+    const groups = buildTextList(FIXTURE_CARDS, details, t);
+
+    expect(groups.map((group) => group.id)).toEqual(['hero', 'weapon', 'equipment', 'deck', 'inventory']);
+    expect(groups.map((group) => group.total)).toEqual([1, 1, 4, 60, 15]);
+    const deck = groups.find((group) => group.id === 'deck')!;
+    expect(deck.lines[0]).toMatchObject({
+      text: '3x Pack Hunt (Vermelho) · custo 2 · Ação',
+      problem: '4 no total, o limite é 3, tire 1',
+      missing: null,
+    });
+    expect(deck.lines[1]).toMatchObject({ text: '3x Awakening Bellow (Azul) · custo 1 · Ação', problem: null, missing: 'faltam 3' });
+    expect(deck.lines[13]!.text).toBe('3x Razor Reflex (Azul) · custo 1 · Reação de ataque');
+    const inventory = groups.find((group) => group.id === 'inventory')!;
+    expect(inventory.lines[0]).toMatchObject({
+      text: '1x Pack Hunt (Vermelho) · custo 2 · Ação',
+      problem: '4 no total, o limite é 3, tire 1',
+    });
+    expect(inventory.lines[1]!.text).toBe('2x Bone Head Barrier (Amarelo) · custo 1 · Instantâneo');
+    expect(inventory.lines[2]).toMatchObject({ text: '2x Muscle Mutt (Amarelo) · custo 3 · Ação', missing: 'faltam 2' });
+    expect(groups.find((group) => group.id === 'hero')!.lines[0]!.text).toBe('1x Rhinar, Reckless Rampage · Herói');
+    expect(groups.find((group) => group.id === 'equipment')!.lines[3]!.text).toBe('1x Arcanite Skullcap · Equipamento');
   });
 });

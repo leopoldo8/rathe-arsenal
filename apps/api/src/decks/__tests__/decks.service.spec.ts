@@ -38,6 +38,7 @@ function buildTrackedDeck(
     notes: null,
     trackedAt: new Date('2025-01-15T10:00:00Z'),
     updatedAt: new Date('2025-01-15T10:00:00Z'),
+    deletedAt: null,
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };

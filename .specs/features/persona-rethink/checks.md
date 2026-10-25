@@ -283,40 +283,40 @@ Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "an unchecke
 
 ### S7 - Getting the list out · 15 files · 110 KB · ~38k
 
-**C73** - The deck page header shows "Copiar lista" with "texto para o grupo ou para o Fabrary" and "Duplicar" with "cria uma cópia para testar mudanças sem mexer neste" as visible buttons; "Excluir deck" is absent from the header and present inside "⋯" (AC 41)
+**C73** - The deck page header shows "Copiar lista" with "texto para o grupo ou para o Fabrary" and "Duplicar" with "cria uma cópia para testar mudanças sem mexer neste" as visible buttons; "Excluir deck" is absent from the header and present inside "⋯" (AC 41) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "copy list and duplicate are visible, delete only in the menu"`
 
-**C74** - "Copiar lista" opens a sheet with the tabs "Para o grupo" and "Para Fabrary ou Talishar", neither selected, no preview and "Copiar" disabled; tapping a tab shows its full text before "Copiar" is enabled; no text in the sheet contains "GEM" (AC 42, AC 44)
+**C74** - "Copiar lista" opens a sheet with the tabs "Para o grupo" and "Para Fabrary ou Talishar", neither selected, no preview and "Copiar" disabled; tapping a tab shows its full text before "Copiar" is enabled; no text in the sheet contains "GEM" (AC 42, AC 44) · done
 Proof: `web unit src/components/deck-detail/__tests__/CopyListSheet.spec.tsx -t "two tabs, none chosen, full preview before copying"`
 
-**C75** - "Copiar" writes exactly the previewed text to the clipboard and shows "Lista copiada" (AC 42)
+**C75** - "Copiar" writes exactly the previewed text to the clipboard and shows "Lista copiada" (AC 42) · done
 Proof: `web unit src/components/deck-detail/__tests__/CopyListSheet.spec.tsx -t "copy writes the previewed text"`
 
-**C76** - The group text for `r3-export-group-desktop`'s deck is, line by line: "Rhinar CC · Classic Constructed", "Herói", "1x Rhinar, Reckless Rampage", "Arma", "1x Romping Club", "Equipamentos", the four equipment lines, "Deck (60 cartas)", twenty lines from "3x Pack Hunt (Vermelho)" to "3x Springboard Somersault (Amarelo)", "Inventário (15 cartas, fora do deck)", and seven lines from "1x Pack Hunt (Vermelho)" to "2x Snatch (Vermelho)" (AC 43)
+**C76** - The group text for `r3-export-group-desktop`'s deck is, line by line: "Rhinar CC · Classic Constructed", "Herói", "1x Rhinar, Reckless Rampage", "Arma", "1x Romping Club", "Equipamentos", the four equipment lines, "Deck (60 cartas)", twenty lines from "3x Pack Hunt (Vermelho)" to "3x Springboard Somersault (Amarelo)", "Inventário (15 cartas, fora do deck)", and seven lines from "1x Pack Hunt (Vermelho)" to "2x Snatch (Vermelho)" (AC 43) · done
 Proof: `web unit src/components/deck-detail/__tests__/deckListText.spec.ts -t "the group text matches r3-export-group-desktop"`
 
-**C77** - The Fabrary-or-Talishar text uses English names with the pitch as "(Red)", "(Yellow)" or "(Blue)", one line per card as "3x Pack Hunt (Red)", under the headings Hero, Weapon, Equipment, Deck, Inventory in that order, with no card on a heading line (AC 44)
+**C77** - The Fabrary-or-Talishar text uses English names with the pitch as "(Red)", "(Yellow)" or "(Blue)", one line per card as "3x Pack Hunt (Red)", under the headings Hero, Weapon, Equipment, Deck, Inventory in that order, with no card on a heading line (AC 44) · done
 Proof: `web unit src/components/deck-detail/__tests__/deckListText.spec.ts -t "the fabrary text has one english line per card"`
 
-**C78** - For a pool over the limit the sheet shows, above the preview, "Esta lista não vale no Classic Constructed: Pack Hunt (Vermelho) aparece 4 vezes (3 no deck, 1 no inventário), o limite é 3. Dá para copiar mesmo assim." and "Copiar" stays enabled (AC 45)
+**C78** - For a pool over the limit the sheet shows, above the preview, "Esta lista não vale no Classic Constructed: Pack Hunt (Vermelho) aparece 4 vezes (3 no deck, 1 no inventário), o limite é 3. Dá para copiar mesmo assim." and "Copiar" stays enabled (AC 45) · done
 Proof: `web unit src/components/deck-detail/__tests__/CopyListSheet.spec.tsx -t "a rule warning does not block copying"`
 
-**C79** - `POST /api/decks/:deckId/duplicate` answers `201` with a new `deckId`; the new deck is named "Rhinar CC (cópia)", has `status` `idea`, and has the same `deck_card` rows with the same `quantity` and `inventoryQuantity`; the original is unchanged (AC 46)
+**C79** - `POST /api/decks/:deckId/duplicate` answers `201` with a new `deckId`; the new deck is named "Rhinar CC (cópia)", has `status` `idea`, and has the same `deck_card` rows with the same `quantity` and `inventoryQuantity`; the original is unchanged (AC 46) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "duplicate copies cards and inventory at stage idea"`
 
-**C80** - `POST /api/decks/:deckId/duplicate` answers `404` for another player's deck, a deleted deck and an unknown id, and creates nothing (AC 46)
+**C80** - `POST /api/decks/:deckId/duplicate` answers `404` for another player's deck, a deleted deck and an unknown id, and creates nothing (AC 46) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "duplicate answers 404 for a deck the player cannot see"`
 
-**C81** - "Duplicar" calls the duplicate route and navigates to `/decks/<new deckId>` (AC 46)
+**C81** - "Duplicar" calls the duplicate route and navigates to `/decks/<new deckId>` (AC 46) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "duplicate opens the new deck"`
 
-**C82** - The "Lista" view groups lines under Herói, Arma, Equipamentos, Deck, Inventário in that order; a line reads "3x Pack Hunt (Vermelho) · custo 2 · Ação" followed by its problem "4 no total, o limite é 3, tire 1", and a partly owned card's line ends with "faltam 3" (AC 47)
+**C82** - The "Lista" view groups lines under Herói, Arma, Equipamentos, Deck, Inventário in that order; a line reads "3x Pack Hunt (Vermelho) · custo 2 · Ação" followed by its problem "4 no total, o limite é 3, tire 1", and a partly owned card's line ends with "faltam 3" (AC 47) · done
 Proof: `web unit src/components/deck-detail/__tests__/deckListModel.spec.ts -t "the list view groups and annotates each line"`
 
-**C83** - The shared deck page, with no session, shows "Copiar lista" with "texto para o grupo ou para o Fabrary", and it opens the same two-tab sheet (AC 48)
+**C83** - The shared deck page, with no session, shows "Copiar lista" with "texto para o grupo ou para o Fabrary", and it opens the same two-tab sheet (AC 48) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedDeckPage.spec.tsx -t "a visitor can copy the list"`
 
-**C84** - The deck page for `r3-deck-actions-desktop`'s deck shows, top to bottom: "‹ Decks", "Rhinar CC", "Classic Constructed", "Não vale no Classic Constructed", "Etapa: Pronto", the actions "Copiar lista", "Duplicar", "⋯", then "Deck" with "60 cartas" and the card rows with "3×" (AC 49)
+**C84** - The deck page for `r3-deck-actions-desktop`'s deck shows, top to bottom: "‹ Decks", "Rhinar CC", "Classic Constructed", "Não vale no Classic Constructed", "Etapa: Pronto", the actions "Copiar lista", "Duplicar", "⋯", then "Deck" with "60 cartas" and the card rows with "3×" (AC 49) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "matches r3-deck-actions-desktop"`
 
 ### S8 - A deleted deck can come back for 30 days · 22 files · 186 KB · ~56k

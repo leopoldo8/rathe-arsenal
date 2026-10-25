@@ -65,6 +65,7 @@ export interface IFixture {
   get(path: string, sessionToken: string): request.Test;
   post(path: string, sessionToken: string): request.Test;
   put(path: string, sessionToken: string): request.Test;
+  delete(path: string, sessionToken: string): request.Test;
   own(sessionToken: string, items: readonly { cardIdentifier: string; quantity: number }[]): Promise<void>;
   deckCards(deckId: number): Promise<Record<string, number>>;
   replacementRows(deckId: number): Promise<Array<Record<string, unknown>>>;
@@ -128,6 +129,7 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
     get: (path, sessionToken) => request(server).get(path).set('Cookie', auth(sessionToken)),
     post: (path, sessionToken) => request(server).post(path).set('Cookie', auth(sessionToken)),
     put: (path, sessionToken) => request(server).put(path).set('Cookie', auth(sessionToken)),
+    delete: (path, sessionToken) => request(server).delete(path).set('Cookie', auth(sessionToken)),
     async scenario(extraMainboard = []) {
       const user = await signUp('owner');
       const ulid = newUlid();

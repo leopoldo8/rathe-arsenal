@@ -12,18 +12,43 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeckDetailLayout } from '../DeckDetailLayout';
 import { DeckHeroBanner } from '../DeckHeroBanner';
 import { DeckCauseLine } from '../DeckCauseLine';
+import { DeckList } from '../DeckList';
+import { buildDeckList } from '../deckListModel';
+import { breakdown, entry } from './deckDetailTestData';
+
+const spies = vi.hoisted(() => ({
+  realMenu: false,
+  apiFetch: vi.fn(),
+  navigate: vi.fn(),
+  show: vi.fn(),
+}));
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a href="/home">{children}</a>,
+  useNavigate: () => spies.navigate,
 }));
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => spies.apiFetch };
+});
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: spies.show }) }));
 vi.mock('../StatusDropdown', () => ({ StatusDropdown: () => null }));
 vi.mock('../DeckNameInline', () => ({ DeckNameInline: ({ name }: { name: string }) => <h1>{name}</h1> }));
-vi.mock('../DeckOverflowMenu', () => ({ DeckOverflowMenu: () => null }));
+// The real menu only where a test reads it; the other tests of this file never look at it.
+vi.mock('../DeckOverflowMenu', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../DeckOverflowMenu')>();
+  return {
+    DeckOverflowMenu: (props: { deckId: number; deckName: string }) =>
+      spies.realMenu ? <actual.DeckOverflowMenu {...props} /> : null,
+  };
+});
 vi.mock('../useDeckHero', () => ({ useDeckHero: () => ({ name: 'Rhinar', art: null, bannerSources: [] }) }));
 
 // ---------------------------------------------------------------------------
@@ -134,6 +159,18 @@ describe('DeckDetailLayout — mobile behavior', () => {
   });
 });
 
+function withClient(node: React.ReactElement): React.ReactElement {
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false }, queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{node}</QueryClientProvider>;
+}
+
+beforeEach(() => {
+  spies.realMenu = false;
+  spies.apiFetch.mockReset();
+  spies.navigate.mockReset();
+  spies.show.mockReset();
+});
+
 describe('DeckDetailLayout — the verdict and the stage', () => {
   const copyProblems = Array.from({ length: 8 }, (_, index) => ({
     code: 'too_many_copies',
@@ -143,24 +180,27 @@ describe('DeckDetailLayout — the verdict and the stage', () => {
 
   it('the header shows the verdict and the stage apart', () => {
     render(
-      <DeckDetailLayout
-        header={
-          <DeckHeroBanner
-            deckId={7}
-            deckName="Rhinar Blitz"
-            status="active"
-            format="Blitz"
-            legality={legality}
-            heroIdentifier="rhinar"
-            heroFallbackName="Rhinar"
-            pct={100}
-            onEdit={vi.fn()}
-            onShare={vi.fn()}
-          />
-        }
-        sidebar={null}
-        canvas={<DeckCauseLine legality={legality} />}
-      />,
+      withClient(
+        <DeckDetailLayout
+          header={
+            <DeckHeroBanner
+              deckId={7}
+              deckName="Rhinar Blitz"
+              status="active"
+              format="Blitz"
+              legality={legality}
+              heroIdentifier="rhinar"
+              heroFallbackName="Rhinar"
+              pct={100}
+              onEdit={vi.fn()}
+              onShare={vi.fn()}
+              onCopyList={vi.fn()}
+            />
+          }
+          sidebar={null}
+          canvas={<DeckCauseLine legality={legality} />}
+        />,
+      ),
     );
 
     const header = screen.getByRole('banner');
@@ -168,5 +208,128 @@ describe('DeckDetailLayout — the verdict and the stage', () => {
     expect(within(header).getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Jogando');
     expect(header).not.toHaveTextContent('8 cartas com 2 cópias');
     expect(within(screen.getByRole('main')).getByTestId('deck-cause')).toHaveTextContent('8 cartas com 2 cópias');
+  });
+});
+
+const illegalCc = {
+  category: 'illegal' as const,
+  reasons: ['x'],
+  details: [
+    {
+      code: 'too_many_copies',
+      params: { card: 'Pack Hunt', cardIdentifier: 'pack-hunt-red', pitch: 1, count: 4, limit: 3, format: 'Classic Constructed', legendary: false, restricted: false },
+    },
+  ],
+};
+
+function renderDeckPage(canvas: React.ReactNode = null, onCopyList = vi.fn()): void {
+  render(
+    withClient(
+      <DeckDetailLayout
+        header={
+          <DeckHeroBanner
+            deckId={7}
+            deckName="Rhinar CC"
+            status="ready"
+            format="Classic Constructed"
+            legality={illegalCc}
+            heroIdentifier="rhinar"
+            heroFallbackName="Rhinar"
+            pct={100}
+            onEdit={vi.fn()}
+            onShare={vi.fn()}
+            onCopyList={onCopyList}
+          />
+        }
+        sidebar={null}
+        canvas={canvas}
+      />,
+    ),
+  );
+}
+
+describe('DeckDetailLayout — getting the list out', () => {
+  it('copy list and duplicate are visible, delete only in the menu', async () => {
+    spies.realMenu = true;
+    const user = userEvent.setup();
+    renderDeckPage();
+    const header = screen.getByRole('banner');
+
+    expect(within(header).getByRole('button', { name: 'Copiar lista' })).toBeVisible();
+    expect(within(header).getByRole('button', { name: 'Duplicar' })).toBeVisible();
+    expect(within(header).getByText('Copiar lista: texto para o grupo ou para o Fabrary')).toBeInTheDocument();
+    expect(
+      within(header).getByText('Duplicar: cria uma cópia para testar mudanças sem mexer neste'),
+    ).toBeInTheDocument();
+    expect(within(header).queryByText('Excluir deck')).not.toBeInTheDocument();
+
+    await user.click(within(header).getByRole('button', { name: 'Mais ações do deck' }));
+
+    const menu = within(header).getByRole('menu');
+    expect(within(menu).getByText('Excluir deck')).toBeInTheDocument();
+    expect(within(menu).queryByText('Copiar lista')).not.toBeInTheDocument();
+    expect(within(menu).queryByText('Duplicar')).not.toBeInTheDocument();
+  });
+
+  it('duplicate opens the new deck', async () => {
+    spies.apiFetch.mockResolvedValue({ deckId: 42 });
+    const user = userEvent.setup();
+    renderDeckPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicar' }));
+
+    await waitFor(() => expect(spies.navigate).toHaveBeenCalledTimes(1));
+    expect(spies.apiFetch).toHaveBeenCalledWith('/decks/7/duplicate', { method: 'POST' });
+    expect(spies.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/decks/$deckId', params: { deckId: '42' } }),
+    );
+  });
+
+  it('says so when the copy could not be made, and stays on the deck', async () => {
+    spies.apiFetch.mockRejectedValue(new Error('boom'));
+    const user = userEvent.setup();
+    renderDeckPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não deu para duplicar o deck. Tente de novo.');
+    expect(spies.navigate).not.toHaveBeenCalled();
+  });
+
+  it('copy list asks the page to open the sheet', async () => {
+    const onCopyList = vi.fn();
+    const user = userEvent.setup();
+    renderDeckPage(null, onCopyList);
+
+    await user.click(screen.getByRole('button', { name: 'Copiar lista' }));
+
+    expect(onCopyList).toHaveBeenCalledTimes(1);
+  });
+
+  it('matches r3-deck-actions-desktop', () => {
+    spies.realMenu = true;
+    const rows = Array.from({ length: 20 }, (_, index) =>
+      entry({ cardIdentifier: `card-${index}`, name: `Card ${index}`, quantity: 3 }),
+    );
+    const items = buildDeckList(breakdown({ exact: rows }), []);
+    renderDeckPage(<DeckList items={items} />);
+
+    const ordered = [
+      screen.getByText('‹ Decks'),
+      screen.getByRole('heading', { name: 'Rhinar CC' }),
+      screen.getByText('Classic Constructed'),
+      screen.getByText('Não vale no Classic Constructed'),
+      screen.getByText('Etapa: Pronto'),
+      screen.getByRole('button', { name: 'Copiar lista' }),
+      screen.getByRole('button', { name: 'Duplicar' }),
+      screen.getByRole('button', { name: 'Mais ações do deck' }),
+      screen.getByRole('heading', { name: 'Deck' }),
+      screen.getByText('60 cartas'),
+      screen.getAllByTestId('deck-list-qty')[0]!,
+    ];
+    ordered.slice(1).forEach((node, index) => {
+      expect(ordered[index]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+    expect(screen.getAllByTestId('deck-list-qty')[0]).toHaveTextContent('3×');
   });
 });

@@ -63,6 +63,8 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+
 import { SharedDeckPage } from '../SharedDeckPage';
 
 const TOKEN = 'k7QxN2mTp9aV4wLcAbCdEf';
@@ -163,6 +165,26 @@ describe('SharedDeckPage', () => {
       const footer = screen.getByTestId('shared-deck-footer');
       expect(footer).toHaveTextContent('Legend Story Studios®');
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
+    });
+
+    it('a visitor can copy the list', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const copy = await screen.findByRole('button', { name: 'Copiar lista' });
+      expect(screen.getByText('Copiar lista: texto para o grupo ou para o Fabrary')).toBeInTheDocument();
+      await user.click(copy);
+
+      expect(screen.getByRole('tab', { name: 'Para o grupo' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Para Fabrary ou Talishar' })).toBeInTheDocument();
+      expect(screen.queryByTestId('copy-list-preview')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('tab', { name: 'Para o grupo' }));
+      const preview = screen.getByTestId('copy-list-preview').textContent ?? '';
+      expect(preview).toContain('Rhinar Rampage · Classic Constructed');
+      expect(preview).toContain('1x Rhinar, Reckless Rampage');
+      expect(preview).toContain('3x Reckless Swing (Vermelho)');
+      expect(preview).toContain('Deck (5 cartas)');
+      expect(api.calls.filter((call) => call.key.startsWith('POST'))).toEqual([]);
     });
 
     it('loads the deck with one request when anonymous', async () => {

@@ -1170,6 +1170,51 @@ export class DecksService {
     };
   }
 
+  /**
+   * A copy to test changes on: same hero, format, cards and inventory, at stage `idea`, named
+   * "<name> (cópia)". Replacements, tags and share links stay with the original.
+   */
+  async duplicate(userId: string, deckId: number): Promise<{ readonly deckId: number }> {
+    await this.authzService.assertOwnsTrackedDeck(userId, deckId);
+    const source = await this.trackedDeckRepo.findOne({ where: { id: deckId, userId } });
+    if (!source) throw new NotFoundException('Tracked deck not found');
+    const sourceRows = await this.deckCardRepo.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
+
+    const copyId = await this.dataSource.transaction(async (manager) => {
+      const created = await manager.save(
+        manager.create(TrackedDeckEntity, {
+          userId,
+          fabraryUlid: null,
+          name: `${source.name} (cópia)`,
+          hero: source.hero,
+          heroIdentifier: source.heroIdentifier,
+          format: source.format,
+          status: 'idea',
+        }),
+      );
+      if (sourceRows.length > 0) {
+        await manager.insert(
+          DeckCardEntity,
+          sourceRows.map((row) => ({
+            trackedDeckId: created.id,
+            cardIdentifier: row.cardIdentifier,
+            quantity: row.quantity,
+            inventoryQuantity: row.inventoryQuantity,
+            slot: row.slot,
+          })),
+        );
+      }
+      return created.id;
+    });
+
+    try {
+      await this.substitutionService.computeAndStoreReadiness(copyId, userId);
+    } catch (error) {
+      this.logger.warn({ msg: 'Failed to store readiness of a duplicated deck', deckId: copyId, error: (error as Error).message });
+    }
+    return { deckId: copyId };
+  }
+
   async untrack(userId: string, deckId: number): Promise<void> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
     await this.trackedDeckRepo.delete({ id: deckId, userId });

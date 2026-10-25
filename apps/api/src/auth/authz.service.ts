@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, IsNull, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { CollectionCardEntity } from '../database/entities/collection-card.entity';
 import { DeckTagEntity } from '../database/entities/deck-tag.entity';
@@ -27,8 +27,9 @@ export class AuthzService {
     userId: string,
     trackedDeckId: number,
   ): Promise<void> {
+    // A deleted deck (door 4) is answered like a missing one on every owner route.
     const deck = await this.trackedDecks.findOne({
-      where: { id: trackedDeckId },
+      where: { id: trackedDeckId, deletedAt: IsNull() },
       select: ['id', 'userId'],
     });
 

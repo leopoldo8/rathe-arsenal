@@ -84,6 +84,7 @@ function buildDeck(overrides: Partial<TrackedDeckEntity> = {}): TrackedDeckEntit
     notes: null,
     trackedAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
+    deletedAt: null,
     user: {} as TrackedDeckEntity['user'],
     ...overrides,
   };

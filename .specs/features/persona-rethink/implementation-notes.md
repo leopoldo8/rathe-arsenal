@@ -226,6 +226,22 @@
 - The deck page header shows the red chip and the grey "Etapa: Jogando" for a deck with a rule problem; "incomplete" and "unchecked" keep the existing badge there. The cause line sits in the body, under the status strip.
 - C68 and C69 hold already: the verdict is never an input of the stage, so the tests prove it; C68's test is in the S5 commit.
 
+### S7 (batch 7)
+
+- The deck page's "Lista" view was a gallery of every card; it is now the text view of AC 47 (`DeckTextList`), grouped Herói, Arma, Equipamentos, Deck, Inventário as C82 says (the screen draws Inventário before Deck, derivation note 5).
+  The toggle keeps its three buttons ("Por tipo", "Por custo", "Lista"); `r2-list-view-desktop` draws two ("Imagens", "Lista") and was not rebuilt.
+  `decks-deckId-mutations.spec.tsx` "regroups by cost and by list without refetching" asserted the old gallery group `deck-list-group-all`; it now asserts `deck-text-list`.
+- The line order of the copied text and of the "Lista" view is the order of the readiness result (owned entries, then missing ones), because the web deck response carries no `cards` list. The fixtures print the order the screens draw.
+- C84 forced two copy changes on the deck page list: the heading "Decklist" is "Deck" with "60 cartas" beside it (deck copies only, hero, weapon and equipment left out), and the quantity badge reads "3×" (was "×3"); `decks-deckId-mutations.spec.tsx` line "quantity badge" follows.
+- The deck header (`DeckHeroBanner`) is a grid now: breadcrumb, then title, format, verdict and stage, then the actions, so the reading order is the one C84 lists; from 720px up the actions sit at the top right as before.
+  The two lines under "Copiar lista" and "Duplicar" ("Copiar lista: texto para o grupo ou para o Fabrary", "Duplicar: cria uma cópia ...") are drawn from 720px up and are screen-reader-only on a phone, so the phone header does not grow by two lines.
+- "Copiar" closes the sheet and then shows the toast "Lista copiada"; a refused clipboard keeps the sheet open and shows "Não deu para copiar. Selecione o texto e copie à mão." (copy of mine, no mockup or check draws it). "Duplicar" failing shows "Não deu para duplicar o deck. Tente de novo." under the button (also mine).
+- The sheet's warning names one card over its limit with the deck and inventory split (C78). Any other mix of problems is told with the deck's cause line ("Esta lista não vale no X: <cause>. Dá para copiar mesmo assim."); no check or screen words that case.
+- The Fabrary-or-Talishar text has no title line, only the five headings of AC 44 and one line per card. The sheet shows the plain "Inventário: ..." line once, above the preview, when the deck has an inventory, as `r3-export-group-desktop` draws; the line "Você escolheu: ..." that screen draws is not built (the selected tab says it).
+- The shared deck page's sheet has no warning: the shared deck response carries no verdict.
+- `GET`, `PUT` and every owner route now answer `404` for a deleted deck through `AuthzService.assertOwnsTrackedDeck` (C80 needs it); `authz.service.spec.ts` asserts the new `where` (`deletedAt: IsNull()`). `tracked_deck.deletedAt` and its migration landed here so C80 can mark a deck deleted; S8 builds the rest of door 4.
+- "Duplicar" copies the cards and the inventory only; replacements, tags, notes and share links stay with the original.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

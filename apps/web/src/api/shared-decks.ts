@@ -21,6 +21,8 @@ export interface ISharedCard {
   /** 'hero' | 'weapon' | 'equipment' | 'mainboard' | ... */
   readonly slot: string;
   readonly quantity: number;
+  /** Copies carried outside the starting deck (door 3); absent on answers that predate it. */
+  readonly inventoryQuantity?: number;
   readonly imageUrl: ISharedCardImage | null;
 }
 

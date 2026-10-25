@@ -111,6 +111,17 @@ export class DecksController {
     return this.decksService.updateComposition(deckId, user.userId, dto);
   }
 
+  /** POST /api/decks/:deckId/duplicate: a copy at stage `idea`, named "<name> (cópia)". */
+  @Post(':deckId/duplicate')
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async duplicate(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<{ readonly deckId: number }> {
+    return this.decksService.duplicate(user.userId, deckId);
+  }
+
   @Delete(':deckId')
   @UseGuards(OwnsTrackedDeckGuard)
   async untrack(

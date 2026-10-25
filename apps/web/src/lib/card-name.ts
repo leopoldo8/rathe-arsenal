@@ -20,3 +20,14 @@ export function cardName(name: string, pitch: number | null, t: TTranslate): str
   const word = pitchWord(pitch, t);
   return word === null ? name : `${name} (${word})`;
 }
+
+const ENGLISH_PITCH_WORDS: Readonly<Record<number, string>> = { 1: 'Red', 2: 'Yellow', 3: 'Blue' };
+
+/**
+ * "Pack Hunt (Red)": the name the other deck apps read. It is fixed English whatever language the
+ * app runs in, because it is text to paste elsewhere and not copy of this app.
+ */
+export function englishCardName(name: string, pitch: number | null): string {
+  const word = pitch === null ? undefined : ENGLISH_PITCH_WORDS[pitch];
+  return word === undefined ? name : `${name} (${word})`;
+}

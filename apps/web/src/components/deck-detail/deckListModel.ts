@@ -1,5 +1,10 @@
+import type { TFunction } from 'i18next';
 import type { IBreakdown, IBreakdownEntry } from '../../api/deck-detail';
+import type { ILegalityReasonDetail } from '../../api/decks';
+import { cardName } from '../../lib/card-name';
+import { cardTypeLabel } from './cardTypeLabel';
 import { entryKey } from './deckDetailModel';
+import { buildSections, type IListCard, type TListSectionId } from './deckListCards';
 
 export interface IDeckListItem {
   readonly key: string;
@@ -119,4 +124,58 @@ export function groupDeckList(
   if (items.length === 0) return [];
   const sorted = [...items].sort(byName);
   return [{ id: 'all', items: sorted, total: sumQuantity(sorted) }];
+}
+
+export interface ITextListLine {
+  readonly key: string;
+  /** "3x Pack Hunt (Vermelho) · custo 2 · Ação". */
+  readonly text: string;
+  /** "4 no total, o limite é 3, tire 1" when the card is over its copy limit. */
+  readonly problem: string | null;
+  /** "faltam 3" when the collection does not cover the line. */
+  readonly missing: string | null;
+}
+
+export interface ITextListGroup {
+  readonly id: TListSectionId;
+  readonly total: number;
+  readonly lines: readonly ITextListLine[];
+}
+
+function copyProblemOf(card: IListCard, details: readonly ILegalityReasonDetail[], t: TFunction): string | null {
+  const found = details.find(
+    (detail) => detail.code === 'too_many_copies' && detail.params['cardIdentifier'] === card.cardIdentifier,
+  );
+  if (found === undefined) return null;
+  const total = Number(found.params['count']);
+  const limit = Number(found.params['limit']);
+  return t('deckDetail.listProblemCopies', { total, limit, extra: total - limit });
+}
+
+/**
+ * The "Lista" view: text grouped Herói, Arma, Equipamentos, Deck, Inventário, one line per card with
+ * its cost and type, then the rule problem and the copies still missing when there are any.
+ */
+export function buildTextList(
+  cards: readonly IListCard[],
+  details: readonly ILegalityReasonDetail[],
+  t: TFunction,
+): readonly ITextListGroup[] {
+  return buildSections(cards).map((section) => ({
+    id: section.id,
+    total: section.total,
+    lines: section.lines.map((line) => {
+      const parts = [
+        `${line.quantity}x ${cardName(line.card.name, line.card.pitch, t)}`,
+        ...(line.card.cost === null ? [] : [t('deckDetail.listCost', { cost: line.card.cost })]),
+        cardTypeLabel(line.card.type, t),
+      ];
+      return {
+        key: `${line.card.cardIdentifier}::${line.card.slot}::${section.id}`,
+        text: parts.join(' · '),
+        problem: copyProblemOf(line.card, details, t),
+        missing: line.missing > 0 ? t('deckDetail.missingCopies', { count: line.missing }) : null,
+      };
+    }),
+  }));
 }

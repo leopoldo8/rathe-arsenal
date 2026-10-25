@@ -296,6 +296,18 @@ export function useUntrackDeckMutation() {
   });
 }
 
+/** Copies a deck through POST /api/decks/:deckId/duplicate; the answer is the new deck's id. */
+export function useDuplicateDeckMutation(deckId: number) {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<{ readonly deckId: number }>(`/decks/${deckId}/duplicate`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
+    },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // v2 Mutations
 // ---------------------------------------------------------------------------

@@ -94,6 +94,13 @@ export class TrackedDeckEntity {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 
+  /**
+   * Soft delete (door 4): a deleted deck keeps its rows for 30 days so it can come back. Every deck
+   * read filters `"deletedAt" IS NULL`; the housekeeping step removes the row for good on day 30.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
+
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user!: UserEntity;
