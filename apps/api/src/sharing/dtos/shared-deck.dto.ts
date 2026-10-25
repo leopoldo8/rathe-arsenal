@@ -52,6 +52,8 @@ export interface ISharedDeckResponse {
   missingCount: number;
   /** What the store can supply of the missing cards, from stored answers; null outside the 'missing' intent. */
   storeSummary: IStoreSummary | null;
+  /** True when the signed-in visitor must answer the spare-rule question before any spare count is shown. */
+  spareNeedsRule: boolean;
   /** The deck's verdict in its own format and in the others, for the 'deck' intent; null for 'missing'. */
   legality: ISharedDeckLegality | null;
 }

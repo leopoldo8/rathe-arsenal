@@ -794,7 +794,7 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the missing page carries t
 **C230** - The `missing` page, signed out, shows in this order: "Cartas que Caio procura" and the deck name; "Cada cor é uma carta diferente: confira a cor no nome."; the section "Quem tiver, fala com Caio" with "16 cópias que a loja não tem ou que o app não achou no site." and each card with its copy count ("3 cópias", "1 cópia") and "Oferecer"; a collapsed section "O resto dá para comprar na Cúpula DT · 43 cópias · R$ 452,28 · envia para todo o Brasil" holding the `priced` rows with flags and "Comprar" and the `looking_up` and `no_price` rows as "a loja tem · preço no site" outside the total; "Copiar lista em texto"; the LSS disclaimer and copyright line (AC 139) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedMissingPage.spec.tsx -t "the group page puts what people can give first and the store second"`
 
-**C231** - A signed-in visitor sees on each row "Você tem 3 · 1 sobrando" from the spare function, the owned rows first in the first section, and one button "Oferecer as 2 cartas que você tem"; with `user.spareRule` null the spare-rule question is asked before the counts appear (AC 140)
+**C231** - A signed-in visitor sees on each row "Você tem 3 · 1 sobrando" from the spare function, the owned rows first in the first section, and one button "Oferecer as 2 cartas que você tem"; with `user.spareRule` null the spare-rule question is asked before the counts appear (AC 140) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedMissingPage.spec.tsx -t "a signed-in visitor sees what they have and what is spare"`
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the missing page gives a signed-in visitor owned and spare per card"`
 
@@ -863,56 +863,56 @@ Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -
 
 ### S20 - Spare copies, one number everywhere · 22 files · 101 KB · ~41k
 
-**C250** - With the shared scenario the spare count of Pack Hunt (Azul) is 1 under `within_format` (3 + 2 held), 3 under `any_deck` (3 held), and 0 under `per_deck` (7 held, never below 0) (AC 158)
+**C250** - With the shared scenario the spare count of Pack Hunt (Azul) is 1 under `within_format` (3 + 2 held), 3 under `any_deck` (3 held), and 0 under `per_deck` (7 held, never below 0) (AC 158) · done
 Proof: `api unit src/collection/spare/__tests__/spare-copies.spec.ts -t "held copies follow each of the three rules"`
 
-**C251** - Only decks at `building`, `ready` and `active` hold copies: with the shared scenario plus a `retired` deck using 4, the counts of C250 do not change, and moving `Dash ideia` to `building` makes the `any_deck` count 3 and the `within_format` count 1 (its format is Classic Constructed, max 3); one case per status, `idea`, `building`, `ready`, `active`, `retired` (AC 155)
+**C251** - Only decks at `building`, `ready` and `active` hold copies: with the shared scenario plus a `retired` deck using 4, the counts of C250 do not change, and moving `Dash ideia` to `building` makes the `any_deck` count 3 and the `within_format` count 1 (its format is Classic Constructed, max 3); one case per status, `idea`, `building`, `ready`, `active`, `retired` (AC 155) · done
 Proof: `api unit src/collection/spare/__tests__/spare-copies.spec.ts -t "only building, ready and active decks hold copies"`
 
-**C252** - A deck holds its deck and its inventory copies: `Rhinar CC` with 2 in the deck and 1 in the inventory holds 3, and the `per_deck` count of a card owned 6 and used only there is 3 (AC 155)
+**C252** - A deck holds its deck and its inventory copies: `Rhinar CC` with 2 in the deck and 1 in the inventory holds 3, and the `per_deck` count of a card owned 6 and used only there is 3 (AC 155) · done
 Proof: `api unit src/collection/spare/__tests__/spare-copies.spec.ts -t "a deck holds its inventory copies too"`
 
-**C253** - The function stores nothing: after `GET /api/collection/spare`, no table gains a row and no column changes (row counts of `collection_card`, `tracked_deck`, `deck_card`, `user` equal before and after); after a deck moves from `building` to `retired`, the next `GET` reflects it with no other write (AC 154)
+**C253** - The function stores nothing: after `GET /api/collection/spare`, no table gains a row and no column changes (row counts of `collection_card`, `tracked_deck`, `deck_card`, `user` equal before and after); after a deck moves from `building` to `retired`, the next `GET` reflects it with no other write (AC 154) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "spare copies are computed on each read and never stored"`
 
-**C254** - When the player owns 1 Cold Foil, 1 Rainbow Foil and 2 regular (`finish` `none`) copies of a card a holding deck uses 2 times, the deck holds the Cold and the Rainbow copy and the spare rows are the 2 regular copies; with the deck using 1, it holds the Cold copy and the spare rows are 1 Rainbow and 2 regular (AC 159)
+**C254** - When the player owns 1 Cold Foil, 1 Rainbow Foil and 2 regular (`finish` `none`) copies of a card a holding deck uses 2 times, the deck holds the Cold and the Rainbow copy and the spare rows are the 2 regular copies; with the deck using 1, it holds the Cold copy and the spare rows are 1 Rainbow and 2 regular (AC 159) · done
 Proof: `api unit src/collection/spare/__tests__/spare-copies.spec.ts -t "a deck holds the foil copies first, Cold before Rainbow"`
 
-**C255** - With two holding decks sharing a card and `user.spareRule` null, `GET /api/collection/spare` answers `200` with `needsRule: true` and the count per rule `{ within_format, any_deck, per_deck }` and no spare rows; with no two holding decks sharing a card and the rule null it answers `needsRule: false` with rows (AC 156, AC 157)
+**C255** - With two holding decks sharing a card and `user.spareRule` null, `GET /api/collection/spare` answers `200` with `needsRule: true` and the count per rule `{ within_format, any_deck, per_deck }` and no spare rows; with no two holding decks sharing a card and the rule null it answers `needsRule: false` with rows (AC 156, AC 157) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "asks for the rule only when two holding decks share a card"`
 
-**C256** - `GET /api/collection/spare` answers `401` without a session, and its rows are one per card and version (`cardIdentifier`, `printingCode`, `edition`, `finish`, `condition`, `spare`) (AC 154)
+**C256** - `GET /api/collection/spare` answers `401` without a session, and its rows are one per card and version (`cardIdentifier`, `printingCode`, `edition`, `finish`, `condition`, `spare`) (AC 154) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "answers 401 signed out and one row per card and version"`
 
-**C257** - `PUT /api/users/me/spare-rule` with `within_format`, `any_deck` or `per_deck` answers `200` with the rule and stores it; with `"sometimes"`, an empty body or `null` it answers `400` and the stored value does not change (AC 156; door 12)
+**C257** - `PUT /api/users/me/spare-rule` with `within_format`, `any_deck` or `per_deck` answers `200` with the rule and stores it; with `"sometimes"`, an empty body or `null` it answers `400` and the stored value does not change (AC 156; door 12) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "stores each of the three rules and refuses anything else"`
 
-**C258** - Door 12 shape: the migration adds `user."spareRule" varchar(16) null` with a check accepting only `within_format`, `any_deck`, `per_deck` and null, `user."sellClosingLine" varchar(140) null` and `user."shareClosingLine" varchar(140) null`; an insert with `spareRule = 'other'` is rejected, a 141-character closing line is rejected, existing users read null in all three, and down removes the three columns (door 12)
+**C258** - Door 12 shape: the migration adds `user."spareRule" varchar(16) null` with a check accepting only `within_format`, `any_deck`, `per_deck` and null, `user."sellClosingLine" varchar(140) null` and `user."shareClosingLine" varchar(140) null`; an insert with `spareRule = 'other'` is rejected, a 141-character closing line is rejected, existing users read null in all three, and down removes the three columns (door 12) · done
 Proof: `api e2e src/__tests__/spare-rule-migration.e2e-spec.ts -t "adds the spare rule and the two closing lines with their checks"`
 
-**C259** - The rule question (`r3-spare-rule-phone`), top to bottom: "Antes de contar o que sobra", "Você passa cartas de um deck para outro?", three options in this order with their example and count, "Sim, entre decks do mesmo formato" / "Ex.: o mesmo Snatch vai do Kayo CC para o Rhinar CC, mas não para o Silver Age" / "Sobram 20 cópias", "Sim, entre quaisquer decks" / "Ex.: o mesmo Snatch vai para qualquer deck" / "Sobram 24 cópias", "Não, cada deck tem as próprias cartas" / "Ex.: cada deck fica montado na caixa dele" / "Sobram 19 cópias", then "Dá para mudar depois em Por que sobra? e nas configurações.", then "Continuar"; no option is checked and "Continuar" is disabled until one is picked, and picking one then "Continuar" calls `PUT /users/me/spare-rule` with its value (AC 156, AC 162)
+**C259** - The rule question (`r3-spare-rule-phone`), top to bottom: "Antes de contar o que sobra", "Você passa cartas de um deck para outro?", three options in this order with their example and count, "Sim, entre decks do mesmo formato" / "Ex.: o mesmo Snatch vai do Kayo CC para o Rhinar CC, mas não para o Silver Age" / "Sobram 20 cópias", "Sim, entre quaisquer decks" / "Ex.: o mesmo Snatch vai para qualquer deck" / "Sobram 24 cópias", "Não, cada deck tem as próprias cartas" / "Ex.: cada deck fica montado na caixa dele" / "Sobram 19 cópias", then "Dá para mudar depois em Por que sobra? e nas configurações.", then "Continuar"; no option is checked and "Continuar" is disabled until one is picked, and picking one then "Continuar" calls `PUT /users/me/spare-rule` with its value (AC 156, AC 162) · done
 Proof: `web unit src/components/spare/__tests__/SpareRuleSheet.spec.tsx -t "asks the rule with each count, nothing selected, Continuar disabled until a pick"`
 
-**C260** - When `GET /collection/spare` answers `needsRule: false`, the "Sobrando" page renders rows and no rule question (AC 157)
+**C260** - When `GET /collection/spare` answers `needsRule: false`, the "Sobrando" page renders rows and no rule question (AC 157) · done
 Proof: `web unit src/components/spare/__tests__/SparePage.spec.tsx -t "shows no rule question when the count does not depend on it"`
 
-**C261** - The collection banner (`r3-library-banner-phone`) reads "Você tem cópias sobrando" with "Ver" linking to the "Sobrando" page, above the card grid, with no number, while the spare read answers `needsRule: true` or has at least one row; it is absent when there are no spare rows (AC 162)
+**C261** - The collection banner (`r3-library-banner-phone`) reads "Você tem cópias sobrando" with "Ver" linking to the "Sobrando" page, above the card grid, with no number, while the spare read answers `needsRule: true` or has at least one row; it is absent when there are no spare rows (AC 162) · done
 Proof: `web unit src/components/library/__tests__/SpareBanner.spec.tsx -t "the banner names spare copies with no number and opens Sobrando"`
 
-**C262** - "Por que sobra?" (`r3-why-spare-phone`) for the shared scenario under `within_format`, top to bottom: "Por que sobra?", "Pack Hunt (Azul)", "Você tem" 6, "Ficam nos decks Classic Constructed" with "o deck que mais usa: Kayo CC usa 3, Rhinar CC usa 2" 3, "Ficam no Rhinar SA (Silver Age)" 2, "Sobra" 1, "Dash ideia não conta: decks Ideia e Aposentado não prendem cartas.", "Sua regra: você passa cartas entre decks do mesmo formato" with "Mudar"; under `any_deck` one row with the deck that uses most; under `per_deck` one row per holding deck (AC 160, AC 162)
+**C262** - "Por que sobra?" (`r3-why-spare-phone`) for the shared scenario under `within_format`, top to bottom: "Por que sobra?", "Pack Hunt (Azul)", "Você tem" 6, "Ficam nos decks Classic Constructed" with "o deck que mais usa: Kayo CC usa 3, Rhinar CC usa 2" 3, "Ficam no Rhinar SA (Silver Age)" 2, "Sobra" 1, "Dash ideia não conta: decks Ideia e Aposentado não prendem cartas.", "Sua regra: você passa cartas entre decks do mesmo formato" with "Mudar"; under `any_deck` one row with the deck that uses most; under `per_deck` one row per holding deck (AC 160, AC 162) · done
 Proof: `web unit src/components/spare/__tests__/WhySpareSheet.spec.tsx -t "explains the count per format, per deck or once, by rule"`
 
-**C263** - When a holding deck holds inventory copies, its row in "Por que sobra?" reads "Rhinar CC usa 3 no deck e 1 no inventário" (journey 3 note in `.design/sell-and-trade.md`) (AC 162)
+**C263** - When a holding deck holds inventory copies, its row in "Por que sobra?" reads "Rhinar CC usa 3 no deck e 1 no inventário" (journey 3 note in `.design/sell-and-trade.md`) (AC 162) · done
 Proof: `web unit src/components/spare/__tests__/WhySpareSheet.spec.tsx -t "names the inventory copies a deck holds"`
 
-**C264** - "Mudar" in "Por que sobra?" opens the rule question with the stored rule checked, and the settings screen offers the same question (AC 160)
+**C264** - "Mudar" in "Por que sobra?" opens the rule question with the stored rule checked, and the settings screen offers the same question (AC 160) · done
 Proof: `web unit src/components/spare/__tests__/WhySpareSheet.spec.tsx -t "Mudar reopens the rule question"`
 Proof: `web unit src/routes/_auth/__tests__/settings.spare-rule.spec.tsx -t "settings change the spare rule"`
 
-**C265** - One function: the "Sobrando" read, the want-list trade view (`SharedListViewService`), the group page (`SharedDeckMissingService` or its journey 4 successor) and the Tutor's spare tool call the same spare service; for the shared scenario all four return 1 spare Pack Hunt (Azul) under `within_format` (AC 161)
+**C265** - One function: the "Sobrando" read, the want-list trade view (`SharedListViewService`), the group page (`SharedDeckMissingService` or its journey 4 successor) and the Tutor's spare tool call the same spare service; for the shared scenario all four return 1 spare Pack Hunt (Azul) under `within_format` (AC 161) · done
 Proof: `api unit src/collection/spare/__tests__/spare-consumers.spec.ts -t "every spare reader returns the same count from the one function"`
 
-**C266** - A deck in "Excluídos recentemente" holds no copies: with the shared scenario, after `Kayo CC` is soft-deleted `GET /api/collection/spare` answers, under each of the three rules, the same Pack Hunt (Azul) count as the shared scenario without `Kayo CC`, and after it is restored the counts of C250 (AC 55; door 4; this reader case moved here from S8, because the route is built in S20)
+**C266** - A deck in "Excluídos recentemente" holds no copies: with the shared scenario, after `Kayo CC` is soft-deleted `GET /api/collection/spare` answers, under each of the three rules, the same Pack Hunt (Azul) count as the shared scenario without `Kayo CC`, and after it is restored the counts of C250 (AC 55; door 4; this reader case moved here from S8, because the route is built in S20) · done
 Proof: `api e2e src/__tests__/spare-copies.e2e-spec.ts -t "a deleted deck holds no copies"`
 
 ### S21 - Selling spare copies · 24 files · 103 KB · ~42k

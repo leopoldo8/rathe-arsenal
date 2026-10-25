@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { ISharedCard, ISharedDeckResponse } from '../../api/shared-decks';
 import { cardName } from '../../lib/card-name';
 import { formatBrl } from '../../utils/format-brl';
+import { useSpareQuery } from '../../api/spare';
+import { SpareRuleSheet } from '../spare/SpareRuleSheet';
 import { OfferButton } from './OfferButton';
 import { giveRows, inventorySplit, storeRows, type IGiveRow } from './sharedMissingModel';
 import styles from './SharedMissingGallery.module.css';
@@ -43,7 +45,7 @@ function copiesText(row: IGiveRow, t: TTranslate): string {
   return split === null ? copies : `${copies} · ${t('sharing.missingPage.split', { deck: split.deck, inventory: split.inventory })}`;
 }
 
-function GiveRow({ row, deck }: { readonly row: IGiveRow; readonly deck: ISharedDeckResponse }): React.ReactElement {
+function GiveRow({ row, deck, askRule }: { readonly row: IGiveRow; readonly deck: ISharedDeckResponse; readonly askRule: boolean }): React.ReactElement {
   const { t } = useTranslation();
   const label = cardName(row.card.name, row.card.pitch, (key) => t(key));
   const offerCount = row.offerable > 0 ? row.offerable : row.copies;
@@ -53,18 +55,24 @@ function GiveRow({ row, deck }: { readonly row: IGiveRow; readonly deck: IShared
       <div className={styles.rowText}>
         <NameLine card={row.card} label={label} />
         <p className={styles.meta}>
-          {row.offerable > 0 && (
+          {row.offerable > 0 && !askRule && (
             <>
               <span className={styles.owned} data-testid="shared-owned">
                 {t('sharing.missingPage.youHave', { count: row.offerable })}
               </span>
+              {row.spare !== null && (
+                <>
+                  {' · '}
+                  <span data-testid="shared-spare">{t('sharing.missingPage.spareCount', { count: row.spare })}</span>
+                </>
+              )}
               {' · '}
             </>
           )}
           <span>{copiesText(row, t)}</span>
         </p>
       </div>
-      {!deck.isOwner && (
+      {!deck.isOwner && !askRule && (
         <OfferButton
           token={deck.token}
           sharerName={deck.sharerName}
@@ -77,6 +85,13 @@ function GiveRow({ row, deck }: { readonly row: IGiveRow; readonly deck: IShared
       )}
     </li>
   );
+}
+
+/** The visitor's rule question, asked before any spare count: the counts of the options come from their own collection. */
+function VisitorRuleQuestion(): React.ReactElement | null {
+  const query = useSpareQuery();
+  if (query.data === undefined) return null;
+  return <SpareRuleSheet counts={query.data.counts} initialRule={null} headingKey="spare.groupAsk" embedded />;
 }
 
 function flagsOf(card: ISharedCard, t: TTranslate): readonly string[] {
@@ -206,13 +221,15 @@ function StoreSection({ deck }: { readonly deck: ISharedDeckResponse }): React.R
 export function SharedMissingGallery({ deck }: ISharedMissingGalleryProps): React.ReactElement {
   const { t } = useTranslation();
   const rows = giveRows(deck.missing);
+  const askRule = !deck.isOwner && deck.spareNeedsRule === true;
   const owned = rows.filter((row) => row.offerable > 0);
-  const showVisitor = !deck.isOwner && owned.length > 0;
+  const showVisitor = !deck.isOwner && !askRule && owned.length > 0;
   const ownedCopies = owned.reduce((sum, row) => sum + row.offerable, 0);
   const giveCopies = rows.reduce((sum, row) => sum + row.copies, 0);
 
   return (
     <div className={styles.gallery} data-testid="shared-missing">
+      {askRule && <VisitorRuleQuestion />}
       {showVisitor && (
         <>
           <p className={styles.summary} data-testid="shared-owned-summary">
@@ -236,7 +253,7 @@ export function SharedMissingGallery({ deck }: ISharedMissingGalleryProps): Reac
           )}
           <ul className={styles.list}>
             {rows.map((row) => (
-              <GiveRow key={`${row.card.cardIdentifier}::${row.card.slot}`} row={row} deck={deck} />
+              <GiveRow key={`${row.card.cardIdentifier}::${row.card.slot}`} row={row} deck={deck} askRule={askRule} />
             ))}
           </ul>
         </section>

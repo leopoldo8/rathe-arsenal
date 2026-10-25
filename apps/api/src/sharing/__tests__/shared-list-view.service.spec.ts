@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { SpareCopiesService } from '../../collection/spare/spare-copies.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { CardListLineEntity } from '../../database/entities/card-list-line.entity';
 import { CardListEntity } from '../../database/entities/card-list.entity';
@@ -64,8 +65,10 @@ function build(options: { kind?: 'want' | 'sell'; showsContact?: boolean; lines?
   lines.find.mockResolvedValue(options.lines ?? [line(1, CARD_A.cardIdentifier), line(2, CARD_B.cardIdentifier, { soldAt: new Date() })]);
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
+  const spareCopies = createMock<SpareCopiesService>();
+  spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map() });
   return {
-    service: new SharedListViewService(lookup, events, collection, visitorDecks, config, lines),
+    service: new SharedListViewService(lookup, events, collection, visitorDecks, config, spareCopies, lines),
     events,
     visitorDecks,
   };

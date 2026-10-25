@@ -354,6 +354,33 @@ describe('Sharing (E2E)', () => {
         Object.fromEntries(body.missing.map((card) => [card.cardIdentifier, card.owned]));
       expect(owned(asVisitor.body)).toEqual({ [CARD_A.cardIdentifier]: 2, [CARD_B.cardIdentifier]: 0 });
       expect(owned(anonymous.body)).toEqual({ [CARD_A.cardIdentifier]: null, [CARD_B.cardIdentifier]: null });
+
+      const spare = (body: { missing: Array<{ cardIdentifier: string; spare: number | null }> }) =>
+        Object.fromEntries(body.missing.map((card) => [card.cardIdentifier, card.spare]));
+      // The visitor has no deck yet: both copies are spare, and no question is owed.
+      expect(spare(asVisitor.body)).toEqual({ [CARD_A.cardIdentifier]: 2, [CARD_B.cardIdentifier]: 0 });
+      expect(asVisitor.body.spareNeedsRule).toBe(false);
+      expect(spare(anonymous.body)).toEqual({ [CARD_A.cardIdentifier]: null, [CARD_B.cardIdentifier]: null });
+      expect(anonymous.body.spareNeedsRule).toBe(false);
+
+      // A deck of the visitor that uses 3 of the 2 copies owned leaves none spare.
+      await createDeck(visitor);
+      const withDeck = await request(server).get(`/api/shared/decks/${token}`).set(...auth(visitor)).expect(200);
+      expect(owned(withDeck.body)).toEqual({ [CARD_A.cardIdentifier]: 2, [CARD_B.cardIdentifier]: 0 });
+      expect(spare(withDeck.body)).toEqual({ [CARD_A.cardIdentifier]: 0, [CARD_B.cardIdentifier]: 0 });
+      expect(withDeck.body.spareNeedsRule).toBe(false);
+
+      // Two holding decks that use the same card: the visitor owes the rule question, and no spare is given before it.
+      await createDeck(visitor);
+      const asked = await request(server).get(`/api/shared/decks/${token}`).set(...auth(visitor)).expect(200);
+      expect(asked.body.spareNeedsRule).toBe(true);
+      expect(spare(asked.body)).toEqual({ [CARD_A.cardIdentifier]: null, [CARD_B.cardIdentifier]: null });
+      expect(owned(asked.body)).toEqual({ [CARD_A.cardIdentifier]: 2, [CARD_B.cardIdentifier]: 0 });
+
+      await request(server).put('/api/users/me/spare-rule').set(...auth(visitor)).send({ rule: 'any_deck' }).expect(200);
+      const answered = await request(server).get(`/api/shared/decks/${token}`).set(...auth(visitor)).expect(200);
+      expect(answered.body.spareNeedsRule).toBe(false);
+      expect(spare(answered.body)[CARD_A.cardIdentifier]).toBe(0);
     });
 
     it("the owner's own missing page carries no visitor counts", async () => {

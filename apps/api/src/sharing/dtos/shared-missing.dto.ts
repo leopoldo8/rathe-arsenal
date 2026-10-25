@@ -13,6 +13,8 @@ export interface ISharedMissingCard extends ISharedCard {
   readonly productUrl: string | null;
   /** What the signed-in visitor owns of the card; null for an anonymous visitor and for the owner. */
   readonly owned: number | null;
+  /** The signed-in visitor's spare copies of the card (the one spare function); null for anyone else, and while the visitor still owes the rule question. */
+  readonly spare: number | null;
 }
 
 export interface IStoreSummary {

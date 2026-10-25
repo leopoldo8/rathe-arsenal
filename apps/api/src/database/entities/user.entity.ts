@@ -9,6 +9,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+export type TSpareRule = 'within_format' | 'any_deck' | 'per_deck';
+
+export const SPARE_RULES: readonly TSpareRule[] = ['within_format', 'any_deck', 'per_deck'];
+
 export type TReferredVia = 'deck' | 'want' | 'sell' | 'quote';
 
 /**
@@ -31,6 +35,7 @@ export enum EUserRole {
  * sent in the email link only, never stored.
  */
 @Check('CHK_user_referred_via_valid', `"referredVia" IN ('deck', 'want', 'sell', 'quote')`)
+@Check('CHK_user_spare_rule_valid', `"spareRule" IS NULL OR "spareRule" IN ('within_format', 'any_deck', 'per_deck')`)
 // Unique on the lowercased address (door 14), `IDX_user_email_lower`. TypeORM cannot declare an
 // expression index: the migration creates it in production and `DatabaseModule` creates it where
 // the schema is synchronized (the schema sync does not read expression indexes, so it leaves it be).
@@ -114,6 +119,14 @@ export class UserEntity {
   /** The last closing line the owner sent in a group ask, offered again next time. */
   @Column({ type: 'varchar', length: 140, nullable: true })
   shareClosingLine!: string | null;
+
+  /** Door 12: how the player passes cards between decks; null until the player answers. */
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  spareRule!: TSpareRule | null;
+
+  /** The last closing line of a sell message, in full, offered again in the next draft. */
+  @Column({ type: 'varchar', length: 140, nullable: true })
+  sellClosingLine!: string | null;
 
   /** The in-app page the visitor signed up from, so confirming the e-mail can send them back to it on any device. */
   @Column({ type: 'varchar', length: 200, nullable: true })

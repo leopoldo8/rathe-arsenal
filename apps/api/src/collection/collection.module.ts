@@ -7,7 +7,9 @@ import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { ImportPendingLineEntity } from '../database/entities/import-pending-line.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
+import { UserEntity } from '../database/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
+import { PricesModule } from '../prices/prices.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
 import { FabraryModule } from '../fabrary/fabrary.module';
 import { CollectionController } from './collection.controller';
@@ -28,6 +30,9 @@ import { ImportsController } from './imports/imports.controller';
 import { ImportsService } from './imports/imports.service';
 import { ImportWriterService } from './imports/import-writer.service';
 import { PendingService } from './imports/pending.service';
+import { SpareController } from './spare/spare.controller';
+import { SpareCopiesService } from './spare/spare-copies.service';
+import { SpareViewService } from './spare/spare-view.service';
 
 @Module({
   imports: [
@@ -39,10 +44,12 @@ import { PendingService } from './imports/pending.service';
       TrackedDeckEntity,
       StoreStockEntity,
       ImportPendingLineEntity,
+      UserEntity,
     ]),
     AuthModule,
     SubstitutionModule,
     FabraryModule,
+    PricesModule,
   ],
   controllers: [
     CollectionController,
@@ -51,6 +58,7 @@ import { PendingService } from './imports/pending.service';
     SourcesController,
     CollectionVersionsController,
     ImportsController,
+    SpareController,
   ],
   providers: [
     CollectionService,
@@ -65,6 +73,8 @@ import { PendingService } from './imports/pending.service';
     ImportsService,
     ImportWriterService,
     PendingService,
+    SpareCopiesService,
+    SpareViewService,
   ],
   exports: [
     CollectionService,
@@ -74,6 +84,7 @@ import { PendingService } from './imports/pending.service';
     DuplicateDetectionService,
     CsvUploadService,
     ImportWriterService,
+    SpareCopiesService,
   ],
 })
 export class CollectionModule {}

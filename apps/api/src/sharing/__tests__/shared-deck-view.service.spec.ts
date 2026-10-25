@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
+import { SpareCopiesService } from '../../collection/spare/spare-copies.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -77,10 +78,13 @@ function build(
       promoOnly: false,
       productUrl: null,
       owned: null,
+      spare: null,
     })),
     storeSummary: { copies: 0, cents: 0 },
   }));
-  const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk);
+  const spareCopies = createMock<SpareCopiesService>();
+  spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map() });
+  const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk, spareCopies);
   return { service, events };
 }
 

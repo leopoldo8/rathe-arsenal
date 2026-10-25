@@ -97,6 +97,7 @@ describe('groupAskPreview', () => {
     availableCopies,
     foilOnly: false,
     promoOnly: false,
+    spare: null,
     productUrl: availableCopies === null ? null : 'https://store.example/item',
     owned: null,
   });

@@ -38,6 +38,8 @@ export interface ISharedCard {
   readonly productUrl?: string | null;
   /** What the signed-in visitor owns of the card; null for an anonymous visitor and for the owner. */
   readonly owned?: number | null;
+  /** The signed-in visitor's spare copies of the card; null for anyone else and while the rule question is owed. */
+  readonly spare?: number | null;
 }
 
 export type TStoreState = 'priced' | 'store_lacks' | 'not_on_site' | 'looking_up' | 'no_price';
@@ -82,6 +84,8 @@ export interface ISharedDeckResponse {
   readonly missingCount: number;
   /** Intent 'missing': what the store can supply of the missing cards, from its stored answers. Other intents: null. */
   readonly storeSummary?: IStoreSummary | null;
+  /** True when the signed-in visitor must answer the spare-rule question before any spare count is shown. */
+  readonly spareNeedsRule?: boolean;
   /** Digits with country code; set only when the owner saved a number and left the link's switch on. */
   readonly contactWhatsapp: string | null;
   /** The deck's id, only for the owner (to link back to the deck); null for everyone else. */

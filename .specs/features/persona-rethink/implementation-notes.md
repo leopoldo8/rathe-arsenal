@@ -2,6 +2,19 @@
 
 ## Deviations
 
+### S20 (batch 15)
+
+- C231 is closed here: `GET /api/shared/decks/:token` (missing intent) gives a signed-in visitor `spare` per card and `spareNeedsRule`; the group page shows "Você tem 3 · 1 sobrando" and, while the rule is owed, only the question (the counts and the offer buttons wait for the answer).
+- Migration `1778533612000-AddSpareRule` adds `spareRule`, `sellClosingLine` and, only where missing, `shareClosingLine` (journey 4 already added it in `1778533611000`); `down` removes all three, as C258 says. The check on `spareRule` is also on the entity so a synchronized database gets it.
+- The spare function is `collection/spare/spare-copies.ts` (pure) behind `SpareCopiesService` (reads active imports by version, live decks and the rule) and `SpareViewService` (the `GET /api/collection/spare` answer). Plan `Surface` rows were added before the code (the answer's shape, `sellClosingLine` on `/auth/me`, `spare` on the group page).
+- A deck's hero, weapon and equipment slots count as use, because readiness counts them as copies the deck needs; the Tutor's old sum left the hero out.
+- With no rule stored and no card shared between holding decks, every rule gives one count, so the readers use `per_deck` (it never overstates the spare). The Tutor reads the same function now: its `get_collection` and swap candidates stop counting retired and Ideia decks and count the hero, and they use that fallback while a player still owes the question. Its test (`chat-tools.e2e-spec.ts`, "get_collection lists owned copies...") passed unchanged.
+- Foil order a deck holds first is Cold, Rainbow, Gold, regular, unknown (the plan's assumption); inside one finish the order is printing code, edition, condition, only to be deterministic.
+- `GET /api/collection/spare` rows carry the six fields of C256 plus what the page draws (`name`, `pitch`, `imageUrl`, `setName`, `foilFinishes`, `suggestedCents`, `storeCents`); `why` is per card and `ideaDecks` names each Ideia deck with the card it uses most.
+- The want-list reader (`SharedListViewService.view`) now gives a signed-in visitor of a want list `owned` and `spare` per line and `spareNeedsRule`; `spareReason` and the trade screen are S23's.
+- Screens: the rule question and "Por que sobra?" are full pages inside the "Sobrando" route (the mockups draw a page with a back link, not a bottom sheet); on the group page the question sits under the page heading with no back link. The settings screen gets a "Cartas sobrando" panel that opens the same question (no mockup draws it, see Needs the owner).
+- Tests I changed because a constructor or a fixture shape moved, assertions untouched: `shared-deck-view.service.spec.ts`, `shared-list-view.service.spec.ts`, `preview-missing.spec.ts` (api), `-settings.spec.tsx` (stubs `useSpareQuery` so the page renders with no query client) and `SharedMissingPage.spec.tsx` (its api mock also answers `useApiClient`).
+
 ### Stand-in size fix (batch 14, commit before S18)
 
 - `planSuggestedUses` (what "Usar as N" posts) now sizes a use with `computeNeededOnSide(..., 'deck')`, the side `moveCopies` moves by default, so a use adds as many stand-in copies as it removes from the original on the deck side (design rule 7: a use covers only the copies it covers). Inventory copies still missing are not covered by "Usar as N". It fixes the bug S17 left open (see the S17 bullet below).
@@ -561,3 +574,9 @@
 - S19, copy of mine, no check or mockup gives it: the toast "Lista copiada" after "Copiar a lista para a sua planilha"; "Não deu para copiar o texto. Tente de novo."; "Nenhuma carta foi pedida." when a quote has no card; the field labels "Tenho 2 de <carta>", "Preço por unidade de <carta>" and "Observação de <carta> (edição, condição)" for assistive technology. The English side is also mine.
 - S19, the quote message leaves out a row marked 0 and a price field left empty (the line then has no "R$ ... cada"); the total adds only the rows that carry a price. Prices are read in reais: "120", "120,00" and "1.200,00" are accepted, anything else counts as no price.
 - C231 (S18) stays open until S20: it needs the spare count on the group page rows. C249 (S19) stays open: its quote half conflicts with C239's exact keys, see the S19 deviations.
+- S20, copy of mine, no check or mockup gives it: "Sobra 1 cópia" / "Sobram 0 cópias" (the option count, singular only for one), the title "Sobrando · N cópias", "Nenhuma cópia sobrando agora.", "Contando o que sobra…", "Não foi possível carregar o que sobra. Tente de novo.", "Salvando…", "Não foi possível salvar. Tente de novo.", "Antes de mostrar o que você tem" (the question's heading on the group page), "Cartas sobrando", "Você ainda não escolheu como contar o que sobra.", "Escolher", "‹ Configurações", the rows of "Por que sobra?" other than the one the check quotes ("Ficam no Kayo CC" under `any_deck` and `per_deck`, "o deck que mais usa: ..." under the rule that sets one number), "Dash ideia e Velho não contam: ..." (plural). The English side of every line is also mine.
+- S20, the settings panel "Cartas sobrando" (C264) is drawn by no mockup; it is a heading, the player's rule line and a "Mudar" or "Escolher" button that opens the same question. Say if it needs a drawing.
+- S20, the "Sobrando" notice names the card without its pitch ("Dash ideia usa 3 Head Jab."), as C267 and the mockup quote it, although the S2 rule writes the pitch after every pitched name.
+- S20, `r3-library-banner-phone` draws the Library as a list of rows under the banner; the banner is above the existing grid and filter rail.
+- S20, an unmarked copy reads "Versão não informada" only beside a marked copy of the same card (C267 quotes both forms); otherwise the line is "N sobrando".
+

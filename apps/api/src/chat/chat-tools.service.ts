@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { catalog, findCardLegalityViolation, ICatalogCard, TSupportedFormat } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SpareCopiesService } from '../collection/spare/spare-copies.service';
 import { TLocale } from '../common/i18n/resolve-locale';
 import { RecommendationsService } from '../recommendations/recommendations.service';
 import { CommunityDecksService } from '../reference/community-decks.service';
@@ -73,6 +74,7 @@ export class ChatToolsService {
     private readonly rules: RulesImportService,
     private readonly community: CommunityDecksService,
     private readonly prices: ChatPricesService,
+    private readonly spareCopies: SpareCopiesService,
   ) {}
 
   /** A fresh toolbox per turn; accepted proposals are collected and stored only with the finished answer. */
@@ -181,10 +183,7 @@ export class ChatToolsService {
     const format = (SUPPORTED_FORMATS as readonly string[]).includes(deck.format) ? (deck.format as TSupportedFormat) : null;
     if (!original || !deck.cards.some((card) => card.cardIdentifier === cardIdentifier && card.slot === slot)) return { error: 'CARD_NOT_IN_DECK' };
     if (!heroCard || !format) return { error: 'DECK_HAS_NO_HERO_OR_FORMAT' };
-    const [owned, usage] = await Promise.all([this.collection.loadOwned(scope.userId), this.deckUsage(scope.userId)]);
-    const spare = new Map(
-      [...owned.entries()].map(([id, copies]) => [id, Math.max(0, copies - (usage.get(id) ?? []).reduce((sum, used) => sum + used.quantity, 0))]),
-    );
+    const { spare } = await this.spareCopies.spareByCard(scope.userId);
     return { ...swapCandidates({ original, slot, heroCard, format, deckCards: deck.cards, spare }) };
   }
 
@@ -325,16 +324,15 @@ export class ChatToolsService {
     const hero = heroIdentifier ? findCard(heroIdentifier) : null;
     const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
     const owned = await this.collection.loadOwned(scope.userId);
-    const usage = await this.deckUsage(scope.userId);
+    const [usage, { spare }] = await Promise.all([this.deckUsage(scope.userId), this.spareCopies.spareByCard(scope.userId)]);
     const rows = [...owned.entries()].flatMap(([cardIdentifier, copies]) => {
       const card = findCard(cardIdentifier);
       if (!card) return [];
       if (hero && legalityFormat && findCardLegalityViolation(card, hero, legalityFormat) !== null) return [];
       if (query && !card.name.toLowerCase().includes(query) && !typeLine(card).toLowerCase().includes(query)) return [];
       const usedByDecks = usage.get(cardIdentifier) ?? [];
-      const used = usedByDecks.reduce((sum, deck) => sum + deck.quantity, 0);
       return [
-        { cardIdentifier, name: card.name, pitch: card.pitch, cost: card.cost, typeLine: typeLine(card), owned: copies, spare: Math.max(0, copies - used), usedByDecks },
+        { cardIdentifier, name: card.name, pitch: card.pitch, cost: card.cost, typeLine: typeLine(card), owned: copies, spare: spare.get(cardIdentifier) ?? 0, usedByDecks },
       ];
     });
     rows.sort((a, b) => a.name.localeCompare(b.name) || a.cardIdentifier.localeCompare(b.cardIdentifier));

@@ -7,9 +7,12 @@ import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { SetPasswordDto } from '../auth/dtos/set-password.dto';
 import { readSessionToken } from '../auth/session-cookie';
 import { UpdateContactDto } from './dtos/update-contact.dto';
+import { UpdateSellClosingLineDto } from './dtos/update-sell-closing-line.dto';
+import { UpdateSpareRuleDto } from './dtos/update-spare-rule.dto';
 import { UpdateShareClosingLineDto } from './dtos/update-share-closing-line.dto';
 import { UpdateDisplayNameDto } from './dtos/update-display-name.dto';
 import { PatchThemeDto } from './dtos/user-settings.dto';
+import type { TSpareRule } from '../database/entities/user.entity';
 import { UsersService, IUserSettings } from './users.service';
 
 // 30 PATCH requests per minute per user — tighter than the global 120/min
@@ -89,6 +92,26 @@ export class UsersController {
     @Body() dto: UpdateShareClosingLineDto,
   ): Promise<{ text: string }> {
     return this.usersService.updateShareClosingLine(currentUser.userId, dto.text);
+  }
+
+  @Patch('me/sell-closing-line')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchSellClosingLine(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateSellClosingLineDto,
+  ): Promise<{ text: string }> {
+    return this.usersService.updateSellClosingLine(currentUser.userId, dto.text);
+  }
+
+  @Put('me/spare-rule')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async putSpareRule(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateSpareRuleDto,
+  ): Promise<{ rule: TSpareRule }> {
+    return this.usersService.updateSpareRule(currentUser.userId, dto.rule);
   }
 
   /** Sets or replaces the password and signs every other device out; this one stays signed in. */

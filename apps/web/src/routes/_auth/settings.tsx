@@ -6,6 +6,7 @@ import { ThemeToggle } from '../../components/shell/ThemeToggle';
 import { AccountSetting } from '../../components/settings/AccountSetting';
 import { ContactSetting } from '../../components/settings/ContactSetting';
 import { DisplayNameSetting } from '../../components/settings/DisplayNameSetting';
+import { SpareRuleSetting } from '../../components/settings/SpareRuleSetting';
 import { LanguageToggle } from '../../components/shell/LanguageToggle';
 import { useTranslation } from 'react-i18next';
 import { useCreditsQuery, useTriggerUrlSyncMutation, useUrlSyncStatusQuery } from '../../api/store-admin';
@@ -137,6 +138,9 @@ export function SettingsPage() {
 
       {/* ---- Section: Contact (optional WhatsApp number shown on shared links) ---- */}
       <ContactSetting className={styles.section} />
+
+      {/* ---- Section: the rule for counting spare copies ---- */}
+      <SpareRuleSetting className={styles.section} />
 
       {/* ---- Section 2: Theme ---- */}
       <section className={styles.section} aria-labelledby="section-theme">

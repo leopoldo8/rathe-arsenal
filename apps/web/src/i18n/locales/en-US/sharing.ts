@@ -118,6 +118,7 @@ export const sharing = {
     offer: 'Offer',
     offerAria: 'Offer {{name}}',
     youHave: 'You have {{count}}',
+    spareCount: '{{count}} spare',
     summaryOwned_other: 'You have {{count}} copies of {{cards}} cards that {{name}} is looking for.',
     summaryOwned_one: 'You have {{count}} copy of {{cards}} card that {{name}} is looking for.',
     offerAll_one: 'Offer the card you have',

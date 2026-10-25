@@ -11,6 +11,10 @@ vi.mock('../../../lib/auth-fetch', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/auth-fetch')>();
   return { ...actual, authFetch: (...args: Parameters<IFakeApi['authFetch']>) => apiRef.current!.authFetch(...args) };
 });
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => (path: string, init?: RequestInit) => apiRef.current!.authFetch(path, init) };
+});
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, className }: { children: React.ReactNode; to: string; className?: string }) => (
@@ -148,6 +152,43 @@ describe('SharedMissingPage', () => {
     expect(within(rows[1]!).getByText('Você tem 1')).toBeInTheDocument();
     expect(within(rows[2]!).queryByText(/Você tem/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' })).toBeInTheDocument();
+  });
+
+  it('a signed-in visitor sees what they have and what is spare', () => {
+    const withSpare = MISSING.map((entry) =>
+      entry.cardIdentifier === 'reckless-swing-blue'
+        ? { ...entry, owned: 3, spare: 1 }
+        : entry.cardIdentifier === 'nullrune-hood'
+          ? { ...entry, owned: 1, spare: 0 }
+          : { ...entry, owned: 0, spare: 0 },
+    );
+    renderWithProviders(<SharedMissingPage deck={{ ...DECK, missing: withSpare, spareNeedsRule: false }} />, makeAuth({ user: { ...SIGNED_IN_USER, id: 'visitor' } }));
+
+    const rows = screen.getAllByTestId('shared-card');
+    expect(rows[0]).toHaveTextContent('Você tem 3 · 1 sobrando');
+    expect(rows[1]).toHaveTextContent('Você tem 1 · 0 sobrando');
+    expect(within(rows[2]!).queryByText(/Você tem/)).not.toBeInTheDocument();
+    // The cards come with the owned rows first, then one button for the cards the visitor has.
+    expect(screen.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' })).toBeInTheDocument();
+  });
+
+  it('asks the spare-rule question before any count appears', async () => {
+    const owedMissing = MISSING.map((entry) => ({ ...entry, owned: 3, spare: null }));
+    apiRef.current!.handlers.set('GET /collection/spare', () => ({
+      needsRule: true,
+      rule: null,
+      counts: { within_format: 20, any_deck: 24, per_deck: 19 },
+      totalSpare: 0,
+      rows: [],
+      why: {},
+      ideaDecks: [],
+    }));
+    renderWithProviders(<SharedMissingPage deck={{ ...DECK, missing: owedMissing, spareNeedsRule: true }} />, makeAuth({ user: { ...SIGNED_IN_USER, id: 'visitor' } }));
+
+    expect(await screen.findByText('Antes de mostrar o que você tem')).toBeInTheDocument();
+    expect(screen.getByText('Sobram 20 cópias')).toBeInTheDocument();
+    expect(screen.queryByText(/Você tem 3/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
   });
 
   it('the owner sees no offer on their own page', () => {

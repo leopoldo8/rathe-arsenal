@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SpareCopiesService } from '../collection/spare/spare-copies.service';
 import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CardListEntity } from '../database/entities/card-list.entity';
 import { lookupCardInfo } from '../lists/card-lookup';
@@ -31,6 +32,8 @@ export function toSharedListLine(list: Pick<CardListEntity, 'kind'>, line: CardL
     condition: sells ? line.condition : null,
     priceCents: sells ? line.priceCents : null,
     sold: sells && line.soldAt !== null,
+    owned: null,
+    spare: null,
   };
 }
 
@@ -42,6 +45,7 @@ export class SharedListViewService {
     private readonly collectionRead: CollectionReadService,
     private readonly visitorDecks: VisitorDecksMissingService,
     private readonly config: ConfigService,
+    private readonly spareCopies: SpareCopiesService,
     @InjectRepository(CardListLineEntity)
     private readonly lines: Repository<CardListLineEntity>,
   ) {}
@@ -65,6 +69,8 @@ export class SharedListViewService {
       });
     }
 
+    const visitorCounts = list.kind === 'want' && visitor !== null && !isOwner ? await this.visitorCounts(visitor.userId, rows) : null;
+
     return {
       kind: list.kind,
       token,
@@ -77,8 +83,27 @@ export class SharedListViewService {
       listId: isOwner ? list.id : null,
       totalPriceCents: list.kind === 'sell' ? list.totalPriceCents : null,
       updatedAt: list.updatedAt.toISOString(),
-      lines: rows.map((row) => toSharedListLine(list, row)),
+      spareNeedsRule: visitorCounts?.needsRule ?? false,
+      lines: rows.map((row) => {
+        const line = toSharedListLine(list, row);
+        if (visitorCounts === null) return line;
+        return {
+          ...line,
+          owned: visitorCounts.owned.get(row.cardIdentifier) ?? 0,
+          spare: visitorCounts.needsRule ? null : (visitorCounts.spare.get(row.cardIdentifier) ?? 0),
+        };
+      }),
     };
+  }
+
+  /** What a signed-in visitor owns and has spare of each card a friend looks for; the spare reads the one spare function. */
+  private async visitorCounts(
+    visitorId: string,
+    rows: readonly CardListLineEntity[],
+  ): Promise<{ owned: ReadonlyMap<string, number>; spare: ReadonlyMap<string, number>; needsRule: boolean }> {
+    const owned = await this.collectionRead.loadOwned(visitorId, [...new Set(rows.map((row) => row.cardIdentifier))]);
+    const { needsRule, spare } = await this.spareCopies.spareByCard(visitorId);
+    return { owned, spare, needsRule };
   }
 
   /** Raw exact coverage against the visitor's own collection, computed here and never stored. */

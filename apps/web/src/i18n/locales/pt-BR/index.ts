@@ -25,6 +25,7 @@ import { chat } from './chat';
 import { sharing } from './sharing';
 import { lists } from './lists';
 import { missingList } from './missingList';
+import { spare } from './spare';
 
 export const ptBR = {
   common,
@@ -54,6 +55,7 @@ export const ptBR = {
   sharing,
   lists,
   missingList,
+  spare,
 } as const;
 
 /**

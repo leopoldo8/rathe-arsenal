@@ -80,6 +80,12 @@ vi.mock('../../../api/store-admin', () => ({
   useTriggerUrlSyncMutation: () => ({ mutate: triggerMutate, isPending: false, isError: false }),
 }));
 
+// The spare-rule panel reads the spare count; with no data it renders nothing, so this page spec needs no QueryClientProvider.
+vi.mock('../../../api/spare', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../api/spare')>()),
+  useSpareQuery: () => ({ data: undefined }),
+}));
+
 // Display-name PATCH (sharing) — stubbed so the field is tested without a network.
 const { patchDisplayNameMock } = vi.hoisted(() => ({ patchDisplayNameMock: vi.fn() }));
 const { patchContactMock } = vi.hoisted(() => ({ patchContactMock: vi.fn() }));

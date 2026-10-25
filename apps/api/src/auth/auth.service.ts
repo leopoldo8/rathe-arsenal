@@ -233,6 +233,7 @@ export class AuthService {
     displayName: string | null;
     whatsappNumber: string | null;
     shareClosingLine: string | null;
+    sellClosingLine: string | null;
     settings: IAuthSettings;
   }> {
     // The session guard already rejected soft-deleted users, so the NULL
@@ -253,6 +254,7 @@ export class AuthService {
       displayName: user.displayName,
       whatsappNumber: user.whatsappNumber,
       shareClosingLine: user.shareClosingLine,
+      sellClosingLine: user.sellClosingLine,
       settings: { theme: user.preferences?.theme ?? 'dark' },
     };
   }

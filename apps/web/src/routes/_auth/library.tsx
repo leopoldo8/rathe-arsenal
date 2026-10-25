@@ -14,6 +14,7 @@ import { LibraryFilterDrawer } from '../../components/library/LibraryFilterDrawe
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { LibraryEmptyState } from '../../components/library/LibraryEmptyState';
 import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
+import { SpareBanner } from '../../components/library/SpareBanner';
 import { PendingBanner } from '../../components/collection-reader/PendingBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Button } from '../../components/ui/Button/Button';
@@ -174,6 +175,8 @@ export function LibraryPageInner({
           {t('collectionReader.cardsCount', { count: stats.uniqueCount })})
         </p>
       )}
+
+      <SpareBanner />
 
       <div className={styles.layout}>
         <div className={styles.railSlot}>

@@ -26,6 +26,7 @@ function toCard(line: IMissingLine): ISharedMissingCard {
     promoOnly: line.promoOnly,
     productUrl: line.productUrl,
     owned: null,
+    spare: null,
   };
 }
 

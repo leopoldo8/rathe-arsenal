@@ -6,6 +6,8 @@ export interface IGiveRow {
   readonly copies: number;
   /** What the signed-in visitor can offer: what they own, at most the copies asked; 0 when unknown. */
   readonly offerable: number;
+  /** Of what the visitor owns, the copies no deck of theirs needs; null when unknown. */
+  readonly spare: number | null;
 }
 
 export function stateOf(card: ISharedCard): TStoreState {
@@ -27,7 +29,7 @@ export function giveRows(cards: readonly ISharedCard[]): readonly IGiveRow[] {
   const rows = cards
     .map((card): IGiveRow => {
       const copies = unsuppliedCopies(card);
-      return { card, copies, offerable: Math.min(card.owned ?? 0, copies) };
+      return { card, copies, offerable: Math.min(card.owned ?? 0, copies), spare: card.spare ?? null };
     })
     .filter((row) => row.copies > 0);
   return [...rows.filter((row) => row.offerable > 0), ...rows.filter((row) => row.offerable === 0)];

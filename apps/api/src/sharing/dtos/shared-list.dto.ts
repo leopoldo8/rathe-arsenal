@@ -14,6 +14,10 @@ export interface ISharedListLine {
   condition: TCondition | null;
   priceCents: number | null;
   sold: boolean;
+  /** Want lists, signed-in visitor who is not the owner: what the visitor owns of the card; null otherwise. */
+  owned: number | null;
+  /** The visitor's spare copies from the one spare function; null for anyone else and while the rule question is owed. */
+  spare: number | null;
 }
 
 export interface ISharedListResponse {
@@ -30,6 +34,8 @@ export interface ISharedListResponse {
   /** Sell lists only. */
   totalPriceCents: number | null;
   updatedAt: string;
+  /** True when a signed-in visitor of a want list must answer the spare-rule question before any spare count is shown. */
+  spareNeedsRule: boolean;
   /** Every line, sold included, in the list's order. */
   lines: ISharedListLine[];
 }

@@ -11,6 +11,7 @@ import {
 } from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CollectionReadService } from '../collection/collection-read.service';
+import { SpareCopiesService } from '../collection/spare/spare-copies.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import {
   ISharedDeckCoverage,
@@ -66,6 +67,7 @@ export class SharedDeckViewService {
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
     private readonly groupAsk: SharedGroupAskService,
+    private readonly spareCopies: SpareCopiesService,
   ) {}
 
   /** What a deck address answers: the deck or the missing cards for people, the needed cards alone for a store's quote. */
@@ -113,7 +115,8 @@ export class SharedDeckViewService {
     const showsMissing = link.intent === 'missing';
     const isOwner = visitor?.userId === owner.id;
     const groupAsk = showsMissing ? await this.groupAsk.cardsFor(owner.id, deck.id) : null;
-    const missing = groupAsk === null ? [] : await this.withVisitorCounts(groupAsk.cards, isOwner ? null : visitor);
+    const visitorCounts = groupAsk === null ? null : await this.withVisitorCounts(groupAsk.cards, isOwner ? null : visitor);
+    const missing = visitorCounts?.cards ?? [];
     const heroCard = resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard);
 
     await this.recordOpen(live, visitor);
@@ -137,6 +140,7 @@ export class SharedDeckViewService {
       missing,
       missingCount: sumQuantities(missing),
       storeSummary: groupAsk?.storeSummary ?? null,
+      spareNeedsRule: visitorCounts?.spareNeedsRule ?? false,
       legality: showsMissing
         ? null
         : legalityOf(deck.format, {
@@ -166,14 +170,25 @@ export class SharedDeckViewService {
     });
   }
 
-  /** The visitor's own count per card, only for a signed-in visitor who is not the owner. */
+  /**
+   * The visitor's own count and spare count per card, only for a signed-in visitor who is not the owner. Spare comes
+   * from the one spare function; while the visitor owes the rule question no spare is given.
+   */
   private async withVisitorCounts(
     cards: readonly ISharedMissingCard[],
     visitor: ICurrentUser | null,
-  ): Promise<ISharedMissingCard[]> {
-    if (visitor === null) return [...cards];
+  ): Promise<{ cards: ISharedMissingCard[]; spareNeedsRule: boolean }> {
+    if (visitor === null) return { cards: [...cards], spareNeedsRule: false };
     const owned = await this.collectionRead.loadOwned(visitor.userId, [...new Set(cards.map((card) => card.cardIdentifier))]);
-    return cards.map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 }));
+    const { needsRule, spare } = await this.spareCopies.spareByCard(visitor.userId);
+    return {
+      spareNeedsRule: needsRule,
+      cards: cards.map((card) => ({
+        ...card,
+        owned: owned.get(card.cardIdentifier) ?? 0,
+        spare: needsRule ? null : (spare.get(card.cardIdentifier) ?? 0),
+      })),
+    };
   }
 
   /** Raw exact copies against the visitor's own collection: engine stand-ins never count. */

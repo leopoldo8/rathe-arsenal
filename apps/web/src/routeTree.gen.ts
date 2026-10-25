@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as AuthSwapsRouteImport } from './routes/_auth/swaps'
+import { Route as AuthSpareRouteImport } from './routes/_auth/spare'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
@@ -99,6 +100,11 @@ const DTokenRoute = DTokenRouteImport.update({
 const AuthSwapsRoute = AuthSwapsRouteImport.update({
   id: '/swaps',
   path: '/swaps',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSpareRoute = AuthSpareRouteImport.update({
+  id: '/spare',
+  path: '/spare',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthSettingsRoute = AuthSettingsRouteImport.update({
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/spare': typeof AuthSpareRoute
   '/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
@@ -287,6 +294,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
+  '/spare': typeof AuthSpareRoute
   '/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/spare': typeof AuthSpareRoute
   '/_auth/swaps': typeof AuthSwapsRoute
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/spare'
     | '/swaps'
     | '/d/$token'
     | '/l/$token'
@@ -404,6 +414,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reviews'
     | '/settings'
+    | '/spare'
     | '/swaps'
     | '/d/$token'
     | '/l/$token'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
+    | '/_auth/spare'
     | '/_auth/swaps'
     | '/d/$token'
     | '/l/$token'
@@ -556,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/swaps'
       fullPath: '/swaps'
       preLoaderRoute: typeof AuthSwapsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/spare': {
+      id: '/_auth/spare'
+      path: '/spare'
+      fullPath: '/spare'
+      preLoaderRoute: typeof AuthSpareRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/settings': {
@@ -779,6 +798,7 @@ interface AuthRouteChildren {
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthSpareRoute: typeof AuthSpareRoute
   AuthSwapsRoute: typeof AuthSwapsRoute
   AuthAddCardsListRoute: typeof AuthAddCardsListRoute
   AuthAddCardsProductRoute: typeof AuthAddCardsProductRouteWithChildren
@@ -805,6 +825,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
+  AuthSpareRoute: AuthSpareRoute,
   AuthSwapsRoute: AuthSwapsRoute,
   AuthAddCardsListRoute: AuthAddCardsListRoute,
   AuthAddCardsProductRoute: AuthAddCardsProductRouteWithChildren,
