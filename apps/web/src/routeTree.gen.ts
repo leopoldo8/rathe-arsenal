@@ -41,7 +41,6 @@ import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.
 import { Route as AuthAddCardsProductRouteImport } from './routes/_auth/add-cards_.product'
 import { Route as AuthAddCardsListRouteImport } from './routes/_auth/add-cards_.list'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
-import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
 import { Route as AuthLibraryCsvSourcesSourceIdVersionsRouteImport } from './routes/_auth/library-csv-sources_.$sourceId.versions'
 import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
@@ -206,11 +205,6 @@ const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
   path: '/manual',
   getParentRoute: () => AuthAddCardsRoute,
 } as any)
-const AuthAddCardsFabraryRoute = AuthAddCardsFabraryRouteImport.update({
-  id: '/fabrary',
-  path: '/fabrary',
-  getParentRoute: () => AuthAddCardsRoute,
-} as any)
 const AuthAddCardsCsvRoute = AuthAddCardsCsvRouteImport.update({
   id: '/csv',
   path: '/csv',
@@ -254,7 +248,6 @@ export interface FileRoutesByFullPath {
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/product': typeof AuthAddCardsProductRouteWithChildren
@@ -291,7 +284,6 @@ export interface FileRoutesByTo {
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/product': typeof AuthAddCardsProductRouteWithChildren
@@ -331,7 +323,6 @@ export interface FileRoutesById {
   '/d/$token': typeof DTokenRoute
   '/l/$token': typeof LTokenRoute
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
-  '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
   '/_auth/add-cards_/list': typeof AuthAddCardsListRoute
   '/_auth/add-cards_/product': typeof AuthAddCardsProductRouteWithChildren
@@ -371,7 +362,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/l/$token'
     | '/add-cards/csv'
-    | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/add-cards/list'
     | '/add-cards/product'
@@ -408,7 +398,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/l/$token'
     | '/add-cards/csv'
-    | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/add-cards/list'
     | '/add-cards/product'
@@ -447,7 +436,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/l/$token'
     | '/_auth/add-cards/csv'
-    | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
     | '/_auth/add-cards_/list'
     | '/_auth/add-cards_/product'
@@ -705,13 +693,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsManualRouteImport
       parentRoute: typeof AuthAddCardsRoute
     }
-    '/_auth/add-cards/fabrary': {
-      id: '/_auth/add-cards/fabrary'
-      path: '/fabrary'
-      fullPath: '/add-cards/fabrary'
-      preLoaderRoute: typeof AuthAddCardsFabraryRouteImport
-      parentRoute: typeof AuthAddCardsRoute
-    }
     '/_auth/add-cards/csv': {
       id: '/_auth/add-cards/csv'
       path: '/csv'
@@ -745,14 +726,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthAddCardsRouteChildren {
   AuthAddCardsCsvRoute: typeof AuthAddCardsCsvRoute
-  AuthAddCardsFabraryRoute: typeof AuthAddCardsFabraryRoute
   AuthAddCardsManualRoute: typeof AuthAddCardsManualRoute
   AuthAddCardsIndexRoute: typeof AuthAddCardsIndexRoute
 }
 
 const AuthAddCardsRouteChildren: AuthAddCardsRouteChildren = {
   AuthAddCardsCsvRoute: AuthAddCardsCsvRoute,
-  AuthAddCardsFabraryRoute: AuthAddCardsFabraryRoute,
   AuthAddCardsManualRoute: AuthAddCardsManualRoute,
   AuthAddCardsIndexRoute: AuthAddCardsIndexRoute,
 }

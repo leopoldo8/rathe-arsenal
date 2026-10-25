@@ -270,17 +270,12 @@ describe('Plan B full flow (E2E, U11)', () => {
       const importRes = await request(server)
         .post('/api/decks/import')
         .set('Cookie', sessionCookieHeader(sessionToken))
-        .send({ urls: [FIXTURE_FABRARY_URL], seedInventory: false })
+        .send({ text: FIXTURE_FABRARY_URL, ownsCards: false })
         .expect(201);
 
-      expect(importRes.body.imported).toHaveLength(1);
-      const trackedDeckId: unknown = importRes.body.imported[0]?.trackedDeckId;
+      const trackedDeckId: unknown = importRes.body.deckId;
       expect(typeof trackedDeckId).toBe('number');
       const deckId = trackedDeckId as number;
-
-      // Readiness snapshot is computed post-import; verify it is attached.
-      const snapshot = importRes.body.imported[0]?.readinessSnapshot;
-      expect(snapshot).not.toBeNull();
 
       // -----------------------------------------------------------------------
       // Step 5: the deck read suggests coax-a-commotion-red, the owned

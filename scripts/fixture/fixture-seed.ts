@@ -204,7 +204,9 @@ async function ensureOwnedCards(creds: IFixtureCredentials, sessionToken: string
 async function ensureFabraryDeck(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
   let decks = await listDecks(creds, sessionToken);
   if (!decks.some((deck) => deck.fabraryUlid !== null)) {
-    await authed(creds, sessionToken, 'POST', '/decks/import', { urls: FABRARY_DECK_URLS });
+    for (const url of FABRARY_DECK_URLS) {
+      await authed(creds, sessionToken, 'POST', '/decks/import', { text: url, ownsCards: true });
+    }
     decks = await listDecks(creds, sessionToken);
   }
   const ready = [...decks].filter((deck) => deck.fabraryUlid !== null).sort((a, b) => a.id - b.id)[0];

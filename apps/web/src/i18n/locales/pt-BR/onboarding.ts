@@ -20,10 +20,6 @@ export const onboarding = {
   step1Placeholder: 'https://fabrary.net/decks/…',
   step1FormatError: 'Esse não é um link de deck do Fabrary (ex.: https://fabrary.net/decks/…).',
   step1TimeoutError: 'O Fabrary demorou demais para responder. Tente de novo em instantes.',
-  step1PrivateDeckError: 'Esse deck é privado no Fabrary. Deixe ele público ou use outro link.',
-  step1NotFabError: 'Esse link não parece ser de um deck de Flesh and Blood.',
-  step1AlreadyTrackedError: 'Esse deck já está no seu arsenal: {{reason}}',
-  step1GenericError: 'Não foi possível importar o deck. Tente de novo.',
   skipForNow: 'Pular',
   continueButton: 'Continuar',
 

@@ -71,7 +71,7 @@ export function DeckDetailEmptyState({ kind }: IDeckDetailEmptyStateProps): Reac
           {t('decks.backToHome')}
         </Link>
 
-        <Link to="/add-cards/fabrary" className={styles.secondaryCta}>
+        <Link to="/decks/new" className={styles.secondaryCta}>
           {t('decks.trackFabraryDeck')}
         </Link>
       </div>

@@ -31,6 +31,7 @@ export interface INewImport {
   readonly label: string;
   readonly productKey?: string | null;
   readonly originalFilename?: string | null;
+  readonly sourceUrl?: string | null;
   readonly contentHash?: string | null;
   readonly copies: readonly IImportCopy[];
   readonly pending: readonly IPendingInput[];
@@ -94,7 +95,7 @@ export class ImportWriterService {
         kind: input.kind,
         label: input.label,
         originalFilename: input.originalFilename ?? null,
-        sourceUrl: null,
+        sourceUrl: input.sourceUrl ?? null,
         productKey: input.productKey ?? null,
         contentHash: input.contentHash ?? null,
         cardCount: input.copies.length,

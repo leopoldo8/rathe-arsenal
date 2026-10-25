@@ -30,7 +30,6 @@ const AUTH_SURFACES = [
   { name: 'add-cards', url: '/add-cards' },
   { name: 'add-cards-manual', url: '/add-cards/manual' },
   { name: 'add-cards-csv', url: '/add-cards/csv' },
-  { name: 'add-cards-fabrary', url: '/add-cards/fabrary' },
   { name: 'decks-new', url: '/decks/new' },
   { name: 'deck-detail-edit', url: '/decks/:deckId?edit=1' },
   { name: 'deck-edit', url: '/decks/:deckId/edit' },

@@ -137,9 +137,9 @@ export async function bootFixture(options: { readonly throttle?: boolean } = {})
       const imported = await request(server)
         .post('/api/decks/import')
         .set('Cookie', auth(user.sessionToken))
-        .send({ urls: [`https://fabrary.net/decks/${ulid}`], seedInventory: false })
+        .send({ text: `https://fabrary.net/decks/${ulid}`, ownsCards: false })
         .expect(201);
-      return { ...user, deckId: imported.body.imported[0].trackedDeckId as number };
+      return { ...user, deckId: imported.body.deckId as number };
     },
     async own(sessionToken, items) {
       await request(server)

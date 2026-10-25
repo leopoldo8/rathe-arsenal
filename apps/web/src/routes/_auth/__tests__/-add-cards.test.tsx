@@ -1,11 +1,10 @@
 /**
- * Tests for the /add-cards tab shell, its index redirect, and the Fabrary
- * subview's URL handling. The Manual + CSV subviews lean on already-tested
- * mutations (useAddCardMutation, useUploadCsvMutation).
+ * Tests for the /add-cards tab shell and its index page, the paste box. The Manual + CSV subviews
+ * lean on already-tested mutations (useAddCardMutation, useUploadCsvMutation).
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -51,20 +50,17 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Mocks for the Fabrary import API hook (so we don't hit the network)
+// Mocks for the Fabrary import API hooks (so we don't hit the network)
 // ---------------------------------------------------------------------------
 
-const fabraryMutate = vi.fn();
-const fabraryMutationState: {
-  isPending: boolean;
-  data: unknown;
-} = { isPending: false, data: null };
-
 vi.mock('../../../api/fabrary-import', () => ({
-  useFabraryLibraryImportMutation: () => ({
-    mutate: fabraryMutate,
-    isPending: fabraryMutationState.isPending,
+  useFabraryPreviewQuery: () => ({
+    isPending: false,
+    isError: false,
+    error: null,
+    data: { name: '[CC] Rhinar Brute', hero: 'Rhinar', format: 'Classic Constructed', totalCards: 66, ownedCards: 0 },
   }),
+  useImportFabraryDeckMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -72,9 +68,9 @@ vi.mock('../../../api/fabrary-import', () => ({
 // ---------------------------------------------------------------------------
 
 import { AddCardsLayout } from '../add-cards';
-import { Route as IndexRoute } from '../add-cards.index';
+import { AddCardsIndexPage } from '../add-cards.index';
 import styles from '../add-cards.module.css';
-import { AddCardsFabraryPage } from '../add-cards.fabrary';
+import { peekPastedList } from '../../../lib/pasted-list';
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -97,7 +93,7 @@ function renderInRouter(node: React.ReactNode): ReturnType<typeof render> {
 // /add-cards (tab shell)
 // ---------------------------------------------------------------------------
 
-const TAB_PATHS = ['/add-cards/manual', '/add-cards/csv', '/add-cards/fabrary', '/add-cards/scan'] as const;
+const TAB_PATHS = ['/add-cards/manual', '/add-cards/csv', '/add-cards/scan'] as const;
 
 describe('AddCardsLayout — tab shell (LIB-07)', () => {
   beforeEach(() => {
@@ -113,14 +109,13 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the four tabs through the router Link, in order', () => {
+  it('renders the three tabs through the router Link, in order', () => {
     renderInRouter(<AddCardsLayout />);
     const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
     const tabs = within(nav).getAllByRole('link');
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Manual',
       'Importar CSV',
-      'Deck do Fabrary',
       'Escanear',
     ]);
     expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([...TAB_PATHS]);
@@ -147,17 +142,13 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByText('Envie uma planilha exportada de outra ferramenta.')).toBeInTheDocument();
     expect(screen.queryByText(/Busque a carta e informe/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Importe as cartas de um deck público/)).not.toBeInTheDocument();
   });
 
-  it('shows the manual and fabrary sentences on their own tabs', () => {
+  it('shows the manual sentence on its own tab, and no Fabrary tab', () => {
     mockLocation.pathname = '/add-cards/manual';
-    const { unmount } = renderInRouter(<AddCardsLayout />);
-    expect(screen.getByText('Busque a carta e informe quantas você tem.')).toBeInTheDocument();
-    unmount();
-    mockLocation.pathname = '/add-cards/fabrary';
     renderInRouter(<AddCardsLayout />);
-    expect(screen.getByText('Importe as cartas de um deck público do Fabrary.')).toBeInTheDocument();
+    expect(screen.getByText('Busque a carta e informe quantas você tem.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Deck do Fabrary' })).not.toBeInTheDocument();
   });
 
   it('shows the Scan tab', async () => {
@@ -176,7 +167,7 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
     mockLocation.pathname = '/add-cards/csv';
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByRole('link', { name: 'Import CSV' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Fabrary deck' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fabrary deck' })).not.toBeInTheDocument();
     expect(screen.getByText('Upload a spreadsheet exported from another tool.')).toBeInTheDocument();
   });
 
@@ -209,83 +200,33 @@ describe('AddCardsLayout — tab shell (LIB-07)', () => {
   });
 });
 
-describe('/add-cards index route', () => {
-  it('redirects to the manual tab instead of rendering its own panel', () => {
-    const beforeLoad = (IndexRoute as unknown as { beforeLoad: () => void }).beforeLoad;
-    let thrown: unknown;
-    try {
-      beforeLoad();
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({ isRedirect: true, to: '/add-cards/manual' });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// /add-cards/fabrary (new endpoint consumer)
-// ---------------------------------------------------------------------------
-
-describe('AddCardsFabraryPage', () => {
+describe('/add-cards index page', () => {
   beforeEach(() => {
-    fabraryMutate.mockReset();
-    fabraryMutationState.isPending = false;
+    mockNavigate.mockClear();
   });
 
-  it('rejects an obviously invalid URL on submit', async () => {
-    renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /^Importar cartas$/i }));
-    expect(fabraryMutate).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(/Esse não é um link de deck do Fabrary/i),
-    ).toBeInTheDocument();
+  it('the paste box routes a link to the deck and a list to the reader', async () => {
+    const user = userEvent.setup();
+
+    const withLink = renderInRouter(<AddCardsIndexPage />);
+    await user.click(screen.getByRole('textbox'));
+    await user.paste('olha meu deck https://fabrary.net/decks/01J0Z8K4M2ABCDEFGHJKMNPQRS valeu');
+    expect(screen.getByText('Deck do Fabrary encontrado: [CC] Rhinar Brute · 66 cartas')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Sim, colocar na minha coleção' })).not.toBeChecked();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    withLink.unmount();
+
+    renderInRouter(<AddCardsIndexPage />);
+    await user.click(screen.getByRole('textbox'));
+    await user.paste('3x Snatch (Red)\n2 Command and Conquer vermelho');
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/add-cards/list' });
+    expect(peekPastedList()).toBe('3x Snatch (Red)\n2 Command and Conquer vermelho');
+    expect(screen.queryByText(/Deck do Fabrary encontrado/)).not.toBeInTheDocument();
   });
 
-  it('calls the import mutation when a valid URL is submitted', async () => {
-    renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    await userEvent.click(screen.getByRole('button', { name: /^Importar cartas$/i }));
-    expect(fabraryMutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://fabrary.net/decks/01HABCDEFG12345',
-      }),
-      expect.any(Object),
-    );
-  });
-
-  it('disables the submit button while submitting', () => {
-    fabraryMutationState.isPending = true;
-    renderInRouter(<AddCardsFabraryPage />);
-    fabraryMutationState.isPending = false; // restore for next test
-    const button = screen.getByRole('button', { name: /^Importar cartas$/i });
-    expect(button).toBeDisabled();
-  });
-
-  it('Enter on the input triggers submission when the URL is valid', async () => {
-    renderInRouter(<AddCardsFabraryPage />);
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() => expect(fabraryMutate).toHaveBeenCalled());
-  });
-
-  it('points to New deck for readiness tracking, through the router Link', () => {
-    linkSpy.mockClear();
-    renderInRouter(<AddCardsFabraryPage />);
-    expect(screen.getByText(/Para importar o deck em si, use/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Novo deck' })).toHaveAttribute('href', '/decks/new');
-    expect(linkSpy).toHaveBeenCalledWith(expect.objectContaining({ to: '/decks/new' }));
-  });
-
-  it('no longer renders its own page header (the shell owns it)', () => {
-    renderInRouter(<AddCardsFabraryPage />);
-    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+  it('shows the paste box with its hint before anything is pasted', () => {
+    renderInRouter(<AddCardsIndexPage />);
+    expect(screen.getByPlaceholderText('Cole aqui')).toBeInTheDocument();
+    expect(screen.getByText('Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas')).toBeInTheDocument();
   });
 });

@@ -161,12 +161,16 @@ export async function bootRecommendationsFixture(options: { readonly throttle?: 
     patch: (path, sessionToken) => request(server).patch(path).set('Cookie', sessionCookieHeader(sessionToken)),
     del: (path, sessionToken) => request(server).delete(path).set('Cookie', sessionCookieHeader(sessionToken)),
     importDecks: async (sessionToken, count) => {
-      const response = await request(server)
-        .post('/api/decks/import')
-        .set('Cookie', sessionCookieHeader(sessionToken))
-        .send({ urls: Array.from({ length: count }, () => `https://fabrary.net/decks/${newUlid()}`), seedInventory: false })
-        .expect(201);
-      return response.body.imported.map((deck: { trackedDeckId: number }) => deck.trackedDeckId);
+      const deckIds: number[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const response = await request(server)
+          .post('/api/decks/import')
+          .set('Cookie', sessionCookieHeader(sessionToken))
+          .send({ text: `https://fabrary.net/decks/${newUlid()}`, ownsCards: false })
+          .expect(201);
+        deckIds.push(response.body.deckId as number);
+      }
+      return deckIds;
     },
   };
 }

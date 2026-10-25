@@ -22,8 +22,17 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
+vi.mock('../../../api/fabrary-import', () => ({
+  useFabraryPreviewQuery: () => ({
+    isPending: false,
+    isError: false,
+    error: null,
+    data: { name: 'Deck', hero: 'Rhinar', format: 'Classic Constructed', totalCards: 40, ownedCards: 3 },
+  }),
+  useImportFabraryDeckMutation: () => ({ mutate: importMutate, isPending: false, isError: false, error: null }),
+}));
+
 vi.mock('../../../api/decks', () => ({
-  useImportDecksMutation: () => ({ mutate: importMutate, isPending: false }),
   useCreateScratchDeckMutation: () => ({ mutate: scratchMutateHolder.fn, isPending: scratchMutateHolder.isPending }),
 }));
 
@@ -253,27 +262,28 @@ describe('DecksNewPage', () => {
   });
 
   describe('the Fabrary link row', () => {
+    const LINK = 'https://fabrary.net/decks/01HABCDEFG12345ABCDEFGHJKM';
+
     async function openFabrary(): Promise<void> {
       await userEvent.click(screen.getByRole('button', { name: /Tenho um link do Fabrary/ }));
     }
 
-    it('imports a deck from a valid link and opens it', async () => {
+    function typeLink(value: string): void {
+      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), { target: { value } });
+    }
+
+    it('imports a deck from a valid link, after the answer, and opens it', async () => {
       importMutate.mockImplementation(
-        (_payload: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-          onSuccess({ imported: [{ trackedDeckId: 42 }], errors: [], skipped: [] }),
+        (_payload: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) => onSuccess({ deckId: 42 }),
       );
       renderPage();
       await openFabrary();
 
-      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
-        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-      });
-      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
+      typeLink(LINK);
+      await userEvent.click(screen.getByRole('radio', { name: /^Sim/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'Importar o deck' }));
 
-      expect(importMutate).toHaveBeenCalledWith(
-        expect.objectContaining({ urls: ['https://fabrary.net/decks/01HABCDEFG12345'] }),
-        expect.any(Object),
-      );
+      expect(importMutate).toHaveBeenCalledWith({ text: LINK, ownsCards: true }, expect.any(Object));
       expect(mockNavigate).toHaveBeenCalledWith(
         expect.objectContaining({ to: '/decks/$deckId', params: { deckId: '42' }, search: { edit: undefined } }),
       );
@@ -284,38 +294,19 @@ describe('DecksNewPage', () => {
       await openFabrary();
 
       await userEvent.type(screen.getByLabelText(/Link do deck no Fabrary/i), 'not-a-url');
-      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
 
       expect(importMutate).not.toHaveBeenCalled();
       expect(screen.getByText(/Esse não é um link de deck do Fabrary/i)).toBeInTheDocument();
     });
 
-    it('shows the error the import answers with', async () => {
-      importMutate.mockImplementation(
-        (_payload: unknown, { onError }: { onError: (error: Error) => void }) => onError(new Error('Server unavailable')),
-      );
+    it('does not import until the player says whose cards they are', async () => {
       renderPage();
       await openFabrary();
 
-      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
-        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-      });
-      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
+      typeLink(LINK);
 
-      expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
-    });
-
-    it('does not opt into inventory seeding', async () => {
-      renderPage();
-      await openFabrary();
-
-      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
-        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-      });
-      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-
-      const [payload] = importMutate.mock.calls[0] as [{ seedInventory?: boolean }];
-      expect(payload.seedInventory).not.toBe(true);
+      expect(screen.getByRole('button', { name: 'Importar o deck' })).toBeDisabled();
+      expect(importMutate).not.toHaveBeenCalled();
     });
   });
 });

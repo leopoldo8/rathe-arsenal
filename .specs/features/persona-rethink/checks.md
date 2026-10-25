@@ -589,34 +589,34 @@ Proof: `api int src/database/migrations/__tests__/import-kinds-and-pending.migra
 
 ### S14 - A Fabrary deck asks whose cards they are · 22 files · 123 KB · ~37k
 
-**C168** - The link finder returns the deck id from, table-driven over 8 inputs: `https://fabrary.net/decks/<id>`, `fabrary.net/decks/<id>`, `www.fabrary.net/decks/<id>/`, `http://www.fabrary.com/decks/<id>`, `fabrary.com/decks/<id>`, "olha esse deck www.fabrary.net/decks/<id>/ valeu", a WhatsApp text with two links (the first one's id), and a lower-case id; text with no Fabrary deck link returns nothing (AC 99)
+**C168** - The link finder returns the deck id from, table-driven over 8 inputs: `https://fabrary.net/decks/<id>`, `fabrary.net/decks/<id>`, `www.fabrary.net/decks/<id>/`, `http://www.fabrary.com/decks/<id>`, `fabrary.com/decks/<id>`, "olha esse deck www.fabrary.net/decks/<id>/ valeu", a WhatsApp text with two links (the first one's id), and a lower-case id; text with no Fabrary deck link returns nothing (AC 99) · done
 Proof: `api unit src/fabrary/__tests__/parse-url.spec.ts -t "finds the first Fabrary deck link inside any text"`
 
-**C169** - `POST /api/decks/import` with `text` holding a link and `ownsCards: true` answers `201` with `deckId` and a `source` named "Fabrary: <deck name>" of kind `fabrary` holding the deck's cards; with `ownsCards: false` it answers `201` with `deckId` only and the collection is unchanged (AC 99, AC 102)
+**C169** - `POST /api/decks/import` with `text` holding a link and `ownsCards: true` answers `201` with `deckId` and a `source` named "Fabrary: <deck name>" of kind `fabrary` holding the deck's cards; with `ownsCards: false` it answers `201` with `deckId` only and the collection is unchanged (AC 99, AC 102) · done
 Proof: `api e2e src/decks/import/__tests__/decks-import.e2e-spec.ts -t "the ownership answer decides whether the collection changes"`
 
-**C170** - `POST /api/decks/import` without `ownsCards`, or with `ownsCards: 'yes'`, answers `400` and creates no deck and no import; with text holding no Fabrary link it answers `400` (AC 101; Surface `400`)
+**C170** - `POST /api/decks/import` without `ownsCards`, or with `ownsCards: 'yes'`, answers `400` and creates no deck and no import; with text holding no Fabrary link it answers `400` (AC 101; Surface `400`) · done
 Proof: `api e2e src/decks/import/__tests__/decks-import.e2e-spec.ts -t "an import without an ownership answer is refused"`
 
-**C171** - With the Fabrary client answering "not found" or "private" the route answers `404`, and with it timing out or failing to connect the route answers `502`; neither writes anything (AC 103, AC 104; Surface `404`, `502`)
+**C171** - With the Fabrary client answering "not found" or "private" the route answers `404`, and with it timing out or failing to connect the route answers `502`; neither writes anything (AC 103, AC 104; Surface `404`, `502`) · done
 Proof: `api e2e src/decks/import/__tests__/decks-import.e2e-spec.ts -t "a missing deck answers 404 and an unreachable Fabrary 502"`
 
-**C172** - The import service has no default for the ownership answer: `DecksImportService.run` called without it throws before any write, and no caller in the repository passes `seedInventory` (AC 105)
+**C172** - The import service has no default for the ownership answer: `DecksImportService.run` called without it throws before any write, and no caller in the repository passes `seedInventory` (AC 105) · done
 Proof: `api unit src/decks/import/__tests__/decks-import.service.spec.ts -t "the ownership answer has no default"`
 
-**C173** - `r3-fabrary-found-phone` shows, in order: the heading "Adicionar cartas", the pasted text, "Deck do Fabrary encontrado: [CC] Rhinar Brute · 66 cartas", "Você tem 0 de 66 cartas deste deck", "Essas cartas são suas?" with "Sim, colocar na minha coleção" and "Não, só quero comparar com o que eu tenho", neither selected, "Importar o deck" disabled until one is picked, and "Colar a lista do que eu tenho" (AC 100, AC 106)
+**C173** - `r3-fabrary-found-phone` shows, in order: the heading "Adicionar cartas", the pasted text, "Deck do Fabrary encontrado: [CC] Rhinar Brute · 66 cartas", "Você tem 0 de 66 cartas deste deck", "Essas cartas são suas?" with "Sim, colocar na minha coleção" and "Não, só quero comparar com o que eu tenho", neither selected, "Importar o deck" disabled until one is picked, and "Colar a lista do que eu tenho" (AC 100, AC 106) · done
 Proof: `web unit src/components/fabrary-import/__tests__/FabraryFound.spec.tsx -t "matches r3-fabrary-found-phone and waits for an answer"`
 
-**C174** - After "Não" and "Importar o deck" the card offers "Colar a lista do que eu tenho", which opens the reader with an empty paste box; the request sent carried `ownsCards: false` (AC 102)
+**C174** - After "Não" and "Importar o deck" the card offers "Colar a lista do que eu tenho", which opens the reader with an empty paste box; the request sent carried `ownsCards: false` (AC 102) · done
 Proof: `web unit src/components/fabrary-import/__tests__/FabraryFound.spec.tsx -t "a no answer imports only the deck and offers to paste a list"`
 
-**C175** - A `404` shows "Esse deck não existe ou é privado no Fabrary." and a `502` shows "Não conseguimos falar com o Fabrary agora. Tente de novo em alguns minutos."; neither mentions the catalog (AC 103, AC 104)
+**C175** - A `404` shows "Esse deck não existe ou é privado no Fabrary." and a `502` shows "Não conseguimos falar com o Fabrary agora. Tente de novo em alguns minutos."; neither mentions the catalog (AC 103, AC 104) · done
 Proof: `web unit src/components/fabrary-import/__tests__/FabraryFound.spec.tsx -t "a missing deck and an unreachable Fabrary say so"`
 
-**C176** - The onboarding import shows the same question with no answer selected and cannot continue until it is answered; the request it sends carries the answer (AC 105)
+**C176** - The onboarding import shows the same question with no answer selected and cannot continue until it is answered; the request it sends carries the answer (AC 105) · done
 Proof: `web unit src/components/onboarding/__tests__/OnboardingWizard.spec.tsx -t "the onboarding Fabrary import asks whose cards they are"`
 
-**C177** - `r3-add-phone` paste box: pasting text with a Fabrary link switches the screen to the found deck (`r3-fabrary-found-phone`); pasting a card list opens the reader (`r3-list-phone`) (AC 99, AC 106)
+**C177** - `r3-add-phone` paste box: pasting text with a Fabrary link switches the screen to the found deck (`r3-fabrary-found-phone`); pasting a card list opens the reader (`r3-list-phone`) (AC 99, AC 106) · done
 Proof: `web unit src/routes/_auth/__tests__/-add-cards.test.tsx -t "the paste box routes a link to the deck and a list to the reader"`
 
 ### S15 - One way in, and the "Importações" list · 19 files · 51 KB · ~21k

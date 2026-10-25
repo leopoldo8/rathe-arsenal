@@ -8,6 +8,17 @@
 - Dropped as the mockup leaves them out: the page heading "Para resolver", the per-line "Excluir" link, the "Procurar" button (the search runs 350 ms after typing stops), and the grouped list. Their locale keys (`pendingTitle`, `pendingDelete`, `pendingDeleteAria`, `pendingFound`) were removed.
 - "Pular" and the "já resolvidas" count live in the page; a deleted line counts as resolved. A skipped line goes to the end of the page's queue. The last resolved or deleted line returns to the collection.
 
+### S14 (batch 11)
+
+- Plan `Surface`: two rows added (the changed `POST /api/decks/import`, and `POST /api/decks/import/preview`); `Flow` step 4 of "Getting cards in" names the preview. The preview exists because `r3-fabrary-found-phone` draws "Você tem 0 de 66 cartas deste deck" before any import, and no route answered that.
+- The import answers `201` with the existing deck's id and writes nothing when the player already tracks the deck (the old route answered `skipped`; the Surface has no `409` for it). An answer of "Sim" on a deck already tracked therefore adds no copies.
+- A Fabrary payload the service cannot read (`INVALID_PAYLOAD`, which also covers a deck with no hero) answers `404`, the same as a missing or private deck; every other Fabrary failure answers `502`.
+- `ownsCards` is read from the raw body (`@Transform`), because the global validation pipe converts types implicitly and would turn the text "yes" into `true`.
+- The old `/add-cards/fabrary` tab is removed: it called `POST /api/collection/sources/from-fabrary`, which fills the collection with no question. That API route and its tests are left in place, now unused by the web; the plan does not name it. Its locale keys were removed with the tab.
+- Tests that asserted the old import contract were changed to the new one, none weakened: `decks-import.service.spec.ts` (rewritten for one deck, the answer, the preview), `plan-b-full-flow`, `suggested-uses`, the replacements and recommendations fixtures (one request per deck), `chat-eval.cli.ts` (one call per deck, `ownsCards: true`), `ImportFabraryCard.spec.tsx`, `-decks.new.spec.tsx`, `OnboardingWizard.spec.tsx` (the helper picks "Não" before continuing; the 5 s timeout test is unchanged; the private-deck test now reads the preview's 404), `-add-cards.test.tsx` (three tabs, the index page replaces the redirect test). The visual surface `add-cards-fabrary` and its baseline, and the mobile-layout entry of the same name, were removed with the route; the `add-cards` baseline was regenerated (the index no longer redirects to Manual). `design-guards.spec.ts` now reads the gold primary button from `FabraryFound.module.css`.
+- `DeckDetailEmptyState` ("Importar um deck do Fabrary") now links to `/decks/new`, since `/add-cards/fabrary` is gone.
+- `scripts/fixture/fixture-seed.ts` and `docs/dev-fixtures.md` send one `{text, ownsCards: true}` request per deck (the old default seeded the collection). The seed was not run.
+
 ### S1 (batch 1)
 
 - C3 and C4 forced edits to three existing tests that asserted the old copy: `LibraryCardStepper.test.tsx` and `-library.test.tsx` now expect the menu item "Entradas manuais" instead of the API's "Manual entries"; `TagChipRow.spec.tsx` expects "Adicionar tag a este deck".
@@ -430,6 +441,13 @@
   - Copy of mine: "Menos uma cópia" and "Mais uma cópia" (stepper labels), "Buscar a carta pelo nome" (the field's label), "Linhas resolvidas" (the bar's label), and the en-US versions of every new line. The "Pular deixa a linha na lista..." note shows under every step, the mockup draws it under the first only.
   - The header leaves out "depois desta" on the last line and "já resolvidas" while none is resolved.
   - A search shows one result, the card the reader reads (or its near name), not a list: the mockup draws only the empty answer.
+
+- S14, copy of mine, no check or mockup gives it:
+  - "Procurando o deck…" while the preview loads.
+  - After a "Não" import the card says "Deck importado." with a link "Ver o deck" (the check only names "Colar a lista do que eu tenho"; a "Sim" import opens the deck at once, as the old card did).
+  - `apiErrors.INVALID_URL`: "Esse texto não tem um link de deck do Fabrary." (a `400` the paste box cannot normally reach).
+  - On `/decks/new` and in onboarding the found card is the same question; the onboarding step keeps its "Continuar" button as the import trigger, disabled until an answer is picked, and shows the found line and "Você tem X de Y" as one sentence.
+  - The paste box opens the list reader on paste, not while typing; typing a list by hand stays in the box.
 
 - S13, copy of mine, no check or mockup gives it:
   - Search: "Nenhum deck encontrado.", "Não foi possível carregar os decks. Tente de novo.", "Não achamos esse deck." (an address with a key no file has), the label "Buscar o deck pelo nome do produto ou do herói" of the search field.

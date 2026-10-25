@@ -1,0 +1,15 @@
+export const fabraryImport = {
+  looking: 'Procurando o deck…',
+  foundTitle_one: 'Deck do Fabrary encontrado: {{name}} · {{count}} carta',
+  foundTitle_other: 'Deck do Fabrary encontrado: {{name}} · {{count}} cartas',
+  youHave_one: 'Você tem {{owned}} de {{count}} carta deste deck',
+  youHave_other: 'Você tem {{owned}} de {{count}} cartas deste deck',
+  question: 'Essas cartas são suas?',
+  yes: 'Sim, colocar na minha coleção',
+  no: 'Não, só quero comparar com o que eu tenho',
+  importDeck: 'Importar o deck',
+  importing: 'Importando…',
+  pasteList: 'Colar a lista do que eu tenho',
+  imported: 'Deck importado.',
+  viewDeck: 'Ver o deck',
+} as const;

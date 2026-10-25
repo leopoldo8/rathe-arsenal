@@ -1369,7 +1369,7 @@ describe('Phase 7 — New deck (EDIT-01, handoff §4)', () => {
   });
 
   it('keeps the primary CTA gold', () => {
-    expect(ruleBody(IMPORT_CARD_CSS, '.submitBtn')).toContain('background: var(--ra-accent)');
+    expect(ruleBody(readCss('components/fabrary-import/FabraryFound.module.css'), '.primary')).toContain('background: var(--ra-accent)');
     expect(ruleBody(NEW_DECK_FORMAT_CSS, '.start:enabled')).toContain('background: var(--ra-accent)');
   });
 
@@ -1670,7 +1670,6 @@ describe('Phase 10 — app-wide polish sweep', () => {
     ['routes/_auth/library.module.css', '.eyebrow'],
     ['routes/_auth/library-csv-sources.module.css', '.subtitle'],
     ['routes/_auth/add-cards.csv.module.css', '.dropButton'],
-    ['routes/_auth/add-cards.fabrary.module.css', '.submitBtn'],
     ['components/deck-detail/DeckDetailHeader.module.css', '.cancelBtn'],
     ['components/deck-detail/DeckDetailHeader.module.css', '.saveBtn'],
     ['components/deck-detail/DeckDetailSidebar.module.css', '.blockTitle'],

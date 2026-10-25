@@ -40,7 +40,7 @@ Getting cards in:
 1. pasted text or a CSV file -> `CsvParserService` (exists, extended by S12) - one reader; each line becomes a card, a question, or a pending line
 2. `SourcesService` (exists) - creates one import (`csv_source`, kinds widened by door 6) with its copies in `collection_card` (door 1) and its unresolved lines in `import_pending_line` (door 7)
 3. a ready-made product -> the product decklists kept in the repository (new, no door - placement per conventions) -> the same import path, with each card's printing
-4. a Fabrary link anywhere in pasted text -> `DecksImportService` (exists) and `FabraryService` (exists) - the deck with its inventory (door 3); the cards enter the collection only on an explicit "Sim"
+4. a Fabrary link anywhere in pasted text -> `DecksImportService` (exists) and `FabraryService` (exists) - the deck with its inventory (door 3); the cards enter the collection only on an explicit "Sim"; `POST /api/decks/import/preview` reads the deck first, so the question can say how many of its cards the player already holds (added by S14)
 5. out: the Library, readiness and the "Importações" list read `collection_card` summed per card
 
 Closing the deck:
@@ -223,6 +223,8 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `GET /api/products` (shape added by S13) | `q?` | each product also carries its `cards` (identifier, name, pitch, quantity), so the confirm screen lists them without a second request; rejected: `GET /api/products/:key`, a route nothing else needs for a list of one or two products | `200` |
 | `POST /api/products/:productKey/import` (added by S13) | `addCards`, `createDeck` (both required booleans), `confirmRepeat?` | `400` `PRODUCT_NOTHING_SELECTED` when both are false; `409` `PRODUCT_ALREADY_IMPORTED` with `details.importedAt` only when `addCards` is true (a second deck of the same box needs no question); the import is named "<product> #2" for the second box | `201`, `400`, `404`, `409` |
 | `/add-cards/product`, `/add-cards/product/:productKey` (web pages behind sign-in, added by S13) | nothing | the search of the boxes (`r3-product-search-phone`) and the confirm screen (`r3-product-confirm-phone`); "Comprei um deck pronto" on `/decks/new` opens the first | `200` |
+| `POST /api/decks/import` (shape changed by S14) | `text` (any text holding a Fabrary link; the first link is the deck), `ownsCards` (a boolean, required: a missing or non-boolean value answers `400` `OWNERSHIP_ANSWER_REQUIRED`) | `deckId`, and `source` (kind `fabrary`, label "Fabrary: <deck name>", holding the deck and inventory copies) only when `ownsCards` is true; a text with no link answers `400` `INVALID_URL`; a deck Fabrary reports as missing or private answers `404` `FABRARY_DECK_NOT_FOUND`; any other failure of Fabrary answers `502` `FABRARY_UNREACHABLE`; a deck the player already tracks answers `201` with that deck's id and writes nothing; rejected: the old `urls` list with `seedInventory` defaulting to true, which filled the collection with cards the player may not own | `201`, `400`, `404`, `502` |
+| `POST /api/decks/import/preview` (added by S14) | `text` as above | `name`, `hero`, `format`, `totalCards` (deck, inventory and hero copies), `ownedCards` (of those, held by the active collection, per card at most the copies the deck needs); writes nothing; the same `400`, `404` and `502` as the import; rejected: counting the owned copies in the web, which does not hold the deck's cards before the import | `201`, `400`, `404`, `502` |
 
 ## Landing
 

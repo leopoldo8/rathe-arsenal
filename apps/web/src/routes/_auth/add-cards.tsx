@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_auth/add-cards')({
   component: AddCardsLayout,
 });
 
-type TTabPath = '/add-cards/manual' | '/add-cards/csv' | '/add-cards/fabrary' | '/add-cards/scan';
+type TTabPath = '/add-cards/manual' | '/add-cards/csv' | '/add-cards/scan';
 
 interface ITab {
   readonly to: TTabPath;
@@ -19,7 +19,6 @@ interface ITab {
 const ADD_CARDS_TABS: readonly ITab[] = [
   { to: '/add-cards/manual', labelKey: 'decks.addCardsTabManual', sentenceKey: 'decks.addCardsManualSentence' },
   { to: '/add-cards/csv', labelKey: 'decks.addCardsTabCsv', sentenceKey: 'decks.addCardsCsvSentence' },
-  { to: '/add-cards/fabrary', labelKey: 'decks.addCardsTabFabrary', sentenceKey: 'decks.addCardsFabrarySentence' },
   { to: '/add-cards/scan', labelKey: 'decks.addCardsTabScan', sentenceKey: 'decks.addCardsScanSentence' },
 ];
 

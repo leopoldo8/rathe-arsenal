@@ -41,7 +41,6 @@ const ROUTES: readonly IRoute[] = [
   { name: 'add-cards', url: '/add-cards', shell: true },
   { name: 'add-cards-manual', url: '/add-cards/manual', shell: true },
   { name: 'add-cards-csv', url: '/add-cards/csv', shell: true },
-  { name: 'add-cards-fabrary', url: '/add-cards/fabrary', shell: true },
   { name: 'add-cards-scan', url: '/add-cards/scan', shell: false },
 ];
 

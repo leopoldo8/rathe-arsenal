@@ -24,6 +24,7 @@ import {
 } from 'vitest';
 import { render, screen, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ApiError } from '../../../lib/api-client';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -45,12 +46,18 @@ const mockImportMutateAsync = vi.fn();
 
 vi.mock('../../../api/decks', () => ({
   useDecksQuery: () => mockUseDecksQuery(),
-  useImportDecksMutation: () => ({
+  useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+// API: Fabrary preview and import
+const mockPreview = vi.fn();
+vi.mock('../../../api/fabrary-import', () => ({
+  useFabraryPreviewQuery: (text: string) => mockPreview(text),
+  useImportFabraryDeckMutation: () => ({
     mutateAsync: mockImportMutateAsync,
     isPending: false,
     error: null,
   }),
-  useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 // API: deck-detail
@@ -106,24 +113,25 @@ function makeDecksQueryWithDecks(count = 1) {
   };
 }
 
-function makeImportResponse(overrides: Partial<{
-  imported: unknown[];
-  skipped: unknown[];
-  errors: unknown[];
-}> = {}) {
-  return {
-    imported: overrides.imported ?? [
-      {
-        trackedDeckId: 1,
-        name: 'Test Deck',
-        hero: 'Dorinthea',
-        format: 'CC',
-        readinessSnapshot: { rawPercent: 72, effectivePercent: 85 },
-      },
-    ],
-    skipped: overrides.skipped ?? [],
-    errors: overrides.errors ?? [],
-  };
+function makeImportResponse(): { deckId: number } {
+  return { deckId: 1 };
+}
+
+const FOUND_DECK = {
+  isPending: false,
+  isError: false,
+  error: null,
+  data: { name: 'Test Deck', hero: 'Dorinthea', format: 'CC', totalCards: 60, ownedCards: 12 },
+};
+
+const DECK_LINK = 'https://fabrary.net/decks/01J0Z8K4M2ABCDEFGHJKMNPQRS';
+
+/** Pastes a link, says the cards are not the player's and continues. */
+async function importInStep1(user: ReturnType<typeof userEvent.setup>, link: string = DECK_LINK): Promise<void> {
+  const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
+  await user.type(input, link);
+  await user.click(screen.getByRole('radio', { name: /^não, só quero comparar/i }));
+  await user.click(screen.getByRole('button', { name: /continuar/i }));
 }
 
 function makeDetailQueryWithSubs() {
@@ -218,6 +226,10 @@ function makeDetailQueryWith100Readiness() {
 function makeDetailQueryLoading() {
   return { isLoading: true, isError: false, data: undefined };
 }
+
+beforeEach(() => {
+  mockPreview.mockReturnValue(FOUND_DECK);
+});
 
 // ---------------------------------------------------------------------------
 // Render helpers
@@ -342,10 +354,7 @@ describe('OnboardingWizard — happy path: step 1 → step 2', () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => {
       expect(screen.getByRole('navigation', { name: /passo 2 de 3/i })).toBeInTheDocument();
@@ -358,9 +367,7 @@ describe('OnboardingWizard — happy path: step 1 → step 2', () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => {
       // The preview label is a <span> inside the deck preview card
@@ -391,9 +398,7 @@ describe('OnboardingWizard — happy path (skip): step 2 skip', () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => {
       expect(screen.getByText(/confira o deck/i)).toBeInTheDocument();
@@ -425,9 +430,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -441,9 +444,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -458,9 +459,7 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -474,44 +473,65 @@ describe('OnboardingWizard — happy path: step 3 with substitutions → /home',
   });
 });
 
-describe('OnboardingWizard — edge case: private deck error from backend', () => {
+describe('OnboardingWizard — edge case: missing or private deck', () => {
   beforeEach(() => {
-    mockUseDecksQuery.mockReturnValue(makeDecksQueryEmpty());
-    mockUseDeckDetailQuery.mockReturnValue(makeDetailQueryLoading());
-    mockImportMutateAsync.mockResolvedValue(
-      makeImportResponse({
-        imported: [],
-        errors: [{ url: 'https://fabrary.net/decks/PRIV', code: 'private_deck', message: 'Private deck' }],
-      }),
-    );
-    mockNavigate.mockReturnValue(Promise.resolve());
     vi.clearAllMocks();
     mockUseDecksQuery.mockReturnValue(makeDecksQueryEmpty());
     mockUseDeckDetailQuery.mockReturnValue(makeDetailQueryLoading());
-    mockImportMutateAsync.mockResolvedValue(
-      makeImportResponse({
-        imported: [],
-        errors: [{ url: 'https://fabrary.net/decks/PRIV', code: 'private_deck', message: 'Private deck' }],
-      }),
-    );
     mockNavigate.mockReturnValue(Promise.resolve());
+    mockPreview.mockReturnValue({
+      isPending: false,
+      isError: true,
+      data: undefined,
+      error: new ApiError(404, JSON.stringify({ code: 'FABRARY_DECK_NOT_FOUND' })),
+    });
   });
 
   afterEach(() => {
+    mockPreview.mockReturnValue(FOUND_DECK);
     vi.clearAllMocks();
   });
 
-  it('shows private-deck copy when backend returns private_deck error code', async () => {
+  it('shows the missing-or-private copy when the preview answers 404', async () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/PRIV');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await user.type(screen.getByRole('textbox', { name: /link do deck no fabrary/i }), DECK_LINK);
 
     await waitFor(() => {
       expect(screen.getByText(/é privado no fabrary/i)).toBeInTheDocument();
     });
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+  });
+});
+
+describe('OnboardingWizard — the Fabrary import asks whose cards they are', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseDecksQuery.mockReturnValue(makeDecksQueryEmpty());
+    mockUseDeckDetailQuery.mockReturnValue(makeDetailQueryLoading());
+    mockImportMutateAsync.mockResolvedValue(makeImportResponse());
+    mockNavigate.mockReturnValue(Promise.resolve());
+  });
+
+  it('the onboarding Fabrary import asks whose cards they are', async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await user.type(screen.getByRole('textbox', { name: /link do deck no fabrary/i }), DECK_LINK);
+
+    expect(screen.getByText('Essas cartas são suas?')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Sim, colocar na minha coleção' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Não, só quero comparar com o que eu tenho' })).not.toBeChecked();
+    const next = screen.getByRole('button', { name: /continuar/i });
+    expect(next).toHaveAttribute('aria-disabled', 'true');
+    await user.click(next);
+    expect(mockImportMutateAsync).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('radio', { name: 'Sim, colocar na minha coleção' }));
+    await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+    expect(mockImportMutateAsync).toHaveBeenCalledWith({ text: DECK_LINK, ownsCards: true });
   });
 });
 
@@ -556,9 +576,7 @@ describe('OnboardingWizard — edge case: 100% readiness', () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -573,9 +591,7 @@ describe('OnboardingWizard — edge case: 100% readiness', () => {
     const user = userEvent.setup();
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));
@@ -606,11 +622,7 @@ describe('OnboardingWizard — edge case: 10s computation timeout', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/VALID01');
-
-    // Resolve import immediately
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     await waitFor(() => expect(screen.getByText(/confira o deck/i)).toBeInTheDocument());
 
@@ -685,11 +697,7 @@ describe('OnboardingWizard — edge case: unreachable URL (timeout)', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWizard();
 
-    const input = screen.getByRole('textbox', { name: /link do deck no fabrary/i });
-    await user.type(input, 'https://fabrary.net/decks/SLOW01');
-
-    // Click Continue which starts the import + timeout
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
 
     // Advance 5s+ to trigger the unreachable timeout in Step1PasteUrl
     act(() => {
@@ -712,11 +720,7 @@ describe('OnboardingWizard — stepper navigation (AUTH-03)', () => {
   });
 
   async function advanceToStep2(user: ReturnType<typeof userEvent.setup>): Promise<void> {
-    await user.type(
-      screen.getByRole('textbox', { name: /link do deck no fabrary/i }),
-      'https://fabrary.net/decks/VALID01',
-    );
-    await user.click(screen.getByRole('button', { name: /continuar/i }));
+    await importInStep1(user);
     await waitFor(() => expect(screen.getByRole('navigation', { name: /passo 2 de 3/i })).toBeInTheDocument());
   }
 

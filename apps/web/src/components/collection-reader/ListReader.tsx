@@ -4,6 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useCreateImportMutation, useReadImportMutation } from '../../api/collection-imports';
 import { cardName } from '../../lib/card-name';
 import { DEFAULT_LIBRARY_SEARCH } from '../../routes/_auth/-library.helpers';
+import { clearPastedList, peekPastedList } from '../../lib/pasted-list';
 import { recordRecentlyAddedSource } from '../library/RecentlyAddedBanner.helpers';
 import { buildImportBody, cardOf, countItems, groupOf, isReady, readyCopies, type IReaderItem } from './readerState';
 import { lineMark, readyTitle } from './lineParts';
@@ -77,12 +78,14 @@ export function ListReader(): React.ReactElement {
   const read = useReadImportMutation();
   const create = useCreateImportMutation();
   const reader = useReaderItems(read);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(peekPastedList);
   const [version, setVersion] = useState<TVersionChoice>('unknown');
   const [failed, setFailed] = useState<'read' | 'add' | null>(null);
   const latest = useRef(0);
   const { load } = reader;
   const { mutate: readText } = read;
+
+  useEffect(() => clearPastedList, []);
 
   useEffect(() => {
     const turn = latest.current + 1;

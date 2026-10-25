@@ -3,7 +3,7 @@
  *
  * Test plan:
  *  - kind="not-found": heading, body, primary CTA link (→ /home),
- *    secondary CTA link (→ /add-cards/fabrary).
+ *    secondary CTA link (→ /decks/new).
  *  - kind="computing": heading, body text, no CTA links, inline skeleton present.
  *  - A11y: each variant has a labelled heading.
  */
@@ -54,11 +54,11 @@ describe('DeckDetailEmptyState — kind="not-found"', () => {
     expect(link).toHaveAttribute('href', '/home');
   });
 
-  it('renders the secondary CTA linking to /add-cards/fabrary', () => {
+  it('renders the secondary CTA linking to /decks/new', () => {
     render(<DeckDetailEmptyState kind="not-found" />);
     const link = screen.getByRole('link', { name: /importar um deck/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/add-cards/fabrary');
+    expect(link).toHaveAttribute('href', '/decks/new');
   });
 
   it('does NOT render a computing skeleton', () => {

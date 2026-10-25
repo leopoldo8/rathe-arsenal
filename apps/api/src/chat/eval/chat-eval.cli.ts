@@ -94,8 +94,9 @@ async function ensureEvalDecks(app: INestApplicationContext, dataSource: DataSou
   const known = await tracked();
   const toImport = EVAL_DECKS.filter((deck) => !known.has(ulidOf(deck.url))).map((deck) => deck.url);
   if (toImport.length > 0) {
-    const result = await app.get(DecksImportService).run({ urls: toImport, seedInventory: true }, { userId });
-    if (result.errors.length > 0) throw new Error(`eval deck import failed: ${JSON.stringify(result.errors)}`);
+    for (const url of toImport) {
+      await app.get(DecksImportService).run({ text: url, ownsCards: true }, { userId });
+    }
   }
   const byUlid = await tracked();
   return new Map(EVAL_DECKS.map((deck) => [deck.key, byUlid.get(ulidOf(deck.url))!]));

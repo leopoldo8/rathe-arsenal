@@ -25,6 +25,9 @@ export const apiErrors = {
   SHARE_LINK_UNAVAILABLE: 'This link is no longer available.',
   IMPORT_UNREADABLE: 'We could not read that file. Check that it is a text file (.csv) with one card per line, up to 2 MB.',
   IMPORT_TOO_MANY_ROWS: 'The file has too many lines. The limit is 5,000 lines.',
+  FABRARY_DECK_NOT_FOUND: 'That deck does not exist or is private on Fabrary.',
+  FABRARY_UNREACHABLE: 'We could not reach Fabrary right now. Try again in a few minutes.',
+  INVALID_URL: 'That text has no Fabrary deck link.',
   generic: 'Something went wrong. Please try again.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Too many attempts. Please wait a moment and try again.',

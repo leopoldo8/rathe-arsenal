@@ -1,43 +1,60 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
+import { findFabraryDeckId } from '../lib/fabrary-link';
 import { LIBRARY_QUERY_KEY } from './library';
 import { CSV_SOURCES_QUERY_KEY } from './csv-sources';
+import { DECKS_QUERY_KEY } from './decks';
 
-export interface IFabraryLibraryImportResponse {
-  readonly sourceId: string;
-  readonly cardCount: number;
-  readonly uniqueCardCount: number;
-  readonly deckName: string;
+// Mirrors apps/api/src/decks/import/dtos/import-decks.response.dto.ts.
+
+export interface IFabraryDeckPreview {
+  readonly name: string;
+  readonly hero: string;
   readonly format: string;
+  readonly totalCards: number;
+  readonly ownedCards: number;
 }
 
-export interface IFabraryLibraryImportVariables {
-  readonly url: string;
+export interface IImportFabraryDeckVariables {
+  /** Any text that holds a Fabrary deck link. */
+  readonly text: string;
+  /** Required, with no default: whether the deck's cards are the player's. */
+  readonly ownsCards: boolean;
 }
 
-/**
- * Imports a public Fabrary deck **as a library Source**, not as a tracked
- * deck. Used by `/add-cards/fabrary`. On success, invalidates the library
- * and CSV-sources queries so both views reflect the new source without
- * a manual refresh.
- */
-export function useFabraryLibraryImportMutation() {
+export interface IImportFabraryDeckResponse {
+  readonly deckId: number;
+  readonly source?: {
+    readonly id: string;
+    readonly kind: string;
+    readonly label: string;
+    readonly cardCount: number;
+    readonly copies: number;
+  };
+}
+
+/** The deck behind the first Fabrary link in the text, with how many of its cards the collection holds. */
+export function useFabraryPreviewQuery(text: string) {
+  const apiFetch = useApiClient();
+  const deckId = findFabraryDeckId(text);
+  return useQuery({
+    queryKey: ['fabrary-preview', deckId],
+    queryFn: () =>
+      apiFetch<IFabraryDeckPreview>('/decks/import/preview', { method: 'POST', body: JSON.stringify({ text }) }),
+    enabled: deckId !== null,
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+export function useImportFabraryDeckMutation() {
   const apiFetch = useApiClient();
   const queryClient = useQueryClient();
-  return useMutation<
-    IFabraryLibraryImportResponse,
-    Error,
-    IFabraryLibraryImportVariables
-  >({
-    mutationFn: ({ url }) =>
-      apiFetch<IFabraryLibraryImportResponse>(
-        '/collection/sources/from-fabrary',
-        {
-          method: 'POST',
-          body: JSON.stringify({ url }),
-        },
-      ),
+  return useMutation({
+    mutationFn: (variables: IImportFabraryDeckVariables) =>
+      apiFetch<IImportFabraryDeckResponse>('/decks/import', { method: 'POST', body: JSON.stringify(variables) }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LIBRARY_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: CSV_SOURCES_QUERY_KEY });
     },

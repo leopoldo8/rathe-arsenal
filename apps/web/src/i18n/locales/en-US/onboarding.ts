@@ -22,11 +22,6 @@ export const onboarding = {
   step1FormatError: 'Must be a valid Fabrary deck URL (e.g. https://fabrary.net/decks/…)',
   step1TimeoutError:
     'That URL took too long to respond — the deck may be unreachable or the server is unavailable.',
-  step1PrivateDeckError:
-    'That deck is set to private on Fabrary. Make it public or use a different URL.',
-  step1NotFabError: 'That URL does not appear to be a Flesh and Blood deck.',
-  step1AlreadyTrackedError: 'This deck is already in your arsenal: {{reason}}',
-  step1GenericError: 'Failed to import deck. Please try again.',
   skipForNow: 'Skip for now',
   continueButton: 'Continue',
 

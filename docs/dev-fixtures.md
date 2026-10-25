@@ -47,10 +47,10 @@ curl -s -c "$JAR" -X POST http://localhost:5173/api/auth/sign-in \
 curl -s -b "$JAR" -X POST http://localhost:5173/api/decks/import \
   -H 'Origin: http://localhost:5173' \
   -H 'Content-Type: application/json' \
-  -d '{"urls":[
-    "https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT",
-    "https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8"
-  ]}'
+  -d '{"text":"https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT","ownsCards":true}'
+
+# One deck per request; repeat with the second deck:
+#   https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8
 ```
 
 ## Screenshot session notes

@@ -1,15 +1,16 @@
 import React, { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
-import { useImportDecksMutation, IImportDecksResponse } from '../../api/decks';
+import { useFabraryPreviewQuery, useImportFabraryDeckMutation } from '../../api/fabrary-import';
+import { findFabraryDeckId } from '../../lib/fabrary-link';
+import { FabraryOwnership } from '../fabrary-import/FabraryOwnership';
+import { localizeApiError } from '../card-scanner/localize-api-error';
+import type { TImportedDeck } from './Step2ConfirmLibrary';
 import styles from './Step1PasteUrl.module.css';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-/** Regex for basic Fabrary deck URL shape. */
-const FABRARY_URL_REGEX = /^https?:\/\/(www\.)?fabrary\.net\/decks\/[A-Za-z0-9]+/;
 
 /** Timeout before showing the "unreachable" error, in milliseconds. */
 const UNREACHABLE_TIMEOUT_MS = 5_000;
@@ -19,7 +20,7 @@ const UNREACHABLE_TIMEOUT_MS = 5_000;
 // ---------------------------------------------------------------------------
 
 export interface IStep1Result {
-  readonly importedDecks: IImportDecksResponse['imported'];
+  readonly importedDecks: readonly TImportedDeck[];
   readonly urls: readonly string[];
 }
 
@@ -39,7 +40,7 @@ export interface IStep1PasteUrlProps {
 function isValidFabraryFormat(url: string): boolean {
   const trimmed = url.trim();
   if (!trimmed) return true;
-  return FABRARY_URL_REGEX.test(trimmed);
+  return findFabraryDeckId(trimmed) !== null;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,8 +53,8 @@ function isValidFabraryFormat(url: string): boolean {
  * Validation rules:
  *  - Invalid URL format: shown immediately on input.
  *  - Unreachable URL: shown after 5s timeout (AbortController).
- *  - Private deck: backend returns code='private_deck'.
- *  - Non-FaB deck: backend returns code='not_fab_deck'.
+ *  - Missing or private deck: the preview answers 404.
+ *  - Once the deck is found, the player says whether the cards are theirs before continuing.
  *
  * Skip always routes to /home (handled by parent wizard).
  */
@@ -66,12 +67,17 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
   const inputId = useId();
   const errorId = useId();
 
-  const importMutation = useImportDecksMutation();
+  const importMutation = useImportFabraryDeckMutation();
+  const [ownsCards, setOwnsCards] = useState<boolean | null>(null);
+  const ownershipName = useId();
 
   const urlIsValid = isValidFabraryFormat(url);
   const formatError = urlIsValid ? null : t('onboarding.step1FormatError');
   const hasUrl = url.trim().length > 0;
-  const canSubmit = hasUrl && urlIsValid && !importMutation.isPending;
+  const preview = useFabraryPreviewQuery(urlIsValid && hasUrl ? url.trim() : '');
+  const deck = preview.data;
+  const previewError = urlIsValid && hasUrl && preview.isError ? localizeApiError(preview.error, t) : null;
+  const canSubmit = hasUrl && urlIsValid && deck !== undefined && ownsCards !== null && !importMutation.isPending;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>): void {
     setUrl(e.target.value);
@@ -94,50 +100,36 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
     }, UNREACHABLE_TIMEOUT_MS);
 
     try {
-      const response = await importMutation.mutateAsync({ urls: [url.trim()] });
+      const response = await importMutation.mutateAsync({ text: url.trim(), ownsCards: ownsCards === true });
       clearTimeout(timeoutHandle);
 
       if (controller.signal.aborted) return;
 
-      // Check for backend errors on this URL
-      const urlError = response.errors[0];
-      if (urlError) {
-        const code = urlError.code;
-        if (code === 'private_deck') {
-          setSubmitError(t('onboarding.step1PrivateDeckError'));
-          return;
-        }
-        if (code === 'not_fab_deck') {
-          setSubmitError(t('onboarding.step1NotFabError'));
-          return;
-        }
-        setSubmitError(urlError.message);
-        return;
-      }
-
-      // Skipped: already tracked
-      const skipped = response.skipped[0];
-      if (skipped) {
-        setSubmitError(t('onboarding.step1AlreadyTrackedError', { reason: skipped.reason }));
-        return;
-      }
-
-      onComplete({ importedDecks: response.imported, urls: [url.trim()] });
+      onComplete({
+        importedDecks: [
+          {
+            trackedDeckId: response.deckId,
+            name: deck?.name ?? '',
+            hero: deck?.hero ?? '',
+            format: deck?.format ?? '',
+            readinessSnapshot: null,
+          },
+        ],
+        urls: [url.trim()],
+      });
     } catch (error) {
       clearTimeout(timeoutHandle);
       if (controller.signal.aborted) {
         // Timeout message already set above
         return;
       }
-      setSubmitError(
-        error instanceof Error ? error.message : t('onboarding.step1GenericError'),
-      );
+      setSubmitError(localizeApiError(error, t));
     } finally {
       abortRef.current = null;
     }
   }
 
-  const displayError = formatError ?? submitError;
+  const displayError = formatError ?? previewError ?? submitError;
   const hasError = displayError !== null;
 
   return (
@@ -169,6 +161,17 @@ export function Step1PasteUrl({ onComplete, onSkip }: IStep1PasteUrlProps): Reac
             </span>
           )}
         </div>
+
+        {deck !== undefined && (
+          <>
+            <p className={styles.body}>
+              {t('fabraryImport.foundTitle', { name: deck.name, count: deck.totalCards })}
+              {' · '}
+              {t('fabraryImport.youHave', { owned: deck.ownedCards, count: deck.totalCards })}
+            </p>
+            <FabraryOwnership value={ownsCards} onChange={setOwnsCards} name={ownershipName} />
+          </>
+        )}
 
         <div className={styles.actions}>
           <Button

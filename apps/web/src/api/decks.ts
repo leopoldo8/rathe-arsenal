@@ -229,28 +229,6 @@ export interface ITrackedDeckListResponse {
   } | null;
 }
 
-export interface IImportDecksResponse {
-  readonly imported: ReadonlyArray<{
-    readonly trackedDeckId: number;
-    readonly name: string;
-    readonly hero: string;
-    readonly format: string;
-    readonly readinessSnapshot: {
-      readonly rawPercent: number;
-      readonly effectivePercent: number;
-    } | null;
-  }>;
-  readonly skipped: ReadonlyArray<{
-    readonly url: string;
-    readonly reason: string;
-  }>;
-  readonly errors: ReadonlyArray<{
-    readonly url: string;
-    readonly code: string;
-    readonly message: string;
-  }>;
-}
-
 export const DECKS_QUERY_KEY = ['decks'] as const;
 
 export function useDecksQuery() {
@@ -258,29 +236,6 @@ export function useDecksQuery() {
   return useQuery({
     queryKey: DECKS_QUERY_KEY,
     queryFn: () => apiFetch<ITrackedDeckListResponse>('/decks'),
-  });
-}
-
-/**
- * Imports a Fabrary deck and starts tracking it.
- *
- * `seedInventory` defaults to `false`: tracking a deck does NOT assume the
- * user owns its cards. Callers that want to seed the user's collection
- * with the deck's cards (e.g. a Library "track + own" path) must opt in
- * explicitly with `seedInventory: true`.
- */
-export function useImportDecksMutation() {
-  const apiFetch = useApiClient();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ urls, seedInventory = false }: { urls: string[]; seedInventory?: boolean }) =>
-      apiFetch<IImportDecksResponse>('/decks/import', {
-        method: 'POST',
-        body: JSON.stringify({ urls, seedInventory }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
-    },
   });
 }
 

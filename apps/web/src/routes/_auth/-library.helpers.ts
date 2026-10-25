@@ -9,7 +9,7 @@
  *
  * Consumers:
  *  - `library.tsx` (route component)
- *  - `add-cards.index.tsx`, `add-cards.fabrary.tsx`, `library-csv-sources.tsx`
+ *  - `add-cards.index.tsx`, `library-csv-sources.tsx`
  *    (all import `DEFAULT_LIBRARY_SEARCH`)
  */
 

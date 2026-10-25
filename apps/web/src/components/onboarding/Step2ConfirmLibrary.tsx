@@ -2,14 +2,21 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button/Button';
 import { CardArt } from '../card-art/CardArt';
-import { IImportDecksResponse } from '../../api/decks';
 import styles from './Step2ConfirmLibrary.module.css';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type TImportedDeck = IImportDecksResponse['imported'][number];
+export interface IImportedDeck {
+  readonly trackedDeckId: number;
+  readonly name: string;
+  readonly hero: string;
+  readonly format: string;
+  readonly readinessSnapshot: { readonly rawPercent: number; readonly effectivePercent: number } | null;
+}
+
+export type TImportedDeck = IImportedDeck;
 
 export interface IStep2ConfirmLibraryProps {
   readonly importedDecks: ReadonlyArray<TImportedDeck>;

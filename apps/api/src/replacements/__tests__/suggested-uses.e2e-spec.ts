@@ -320,7 +320,7 @@ describe('suggestions from the collection (E2E)', () => {
     const snapshotsBeforeImport = await fixture.snapshotCount(owner.deckId);
     await fixture
       .post('/api/decks/import', owner.sessionToken)
-      .send({ urls: [`https://fabrary.net/decks/${newUlid()}`], seedInventory: true })
+      .send({ text: `https://fabrary.net/decks/${newUlid()}`, ownsCards: true })
       .expect(201);
     expect(await fixture.snapshotCount(owner.deckId)).toBe(snapshotsBeforeImport + 1);
 
