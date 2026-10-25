@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApplySuggestionsMutation, type IListLine, type TListKind } from '../../api/lists';
 import { CardArt } from '../card-art/CardArt';
 import { cardName } from '../../lib/card-name';
 import { formatBrl } from './listsModel';
+import { SoldSheetHost } from './SoldSheetHost';
 import styles from './ListEditor.module.css';
 
 interface ILineTileProps {
@@ -17,6 +18,7 @@ interface ILineTileProps {
 export function LineTile({ listId, line, kind, selected, onSelect }: ILineTileProps): React.ReactElement {
   const { t } = useTranslation();
   const displayName = cardName(line.name, line.pitch, (key) => t(key));
+  const [selling, setSelling] = useState(false);
 
   return (
     <li className={styles.tile} data-sold={line.sold || undefined} data-selected={selected || undefined} data-testid="list-line">
@@ -53,8 +55,19 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
             <LinePrice listId={listId} line={line} name={displayName} />
           </span>
           {!line.sold && <TcgplayerNote listId={listId} line={line} name={displayName} />}
+          {!line.sold && (
+            <button
+              type="button"
+              className={styles.soldButton}
+              aria-label={t('lists.sold.buttonFor', { name: displayName })}
+              onClick={() => setSelling(true)}
+            >
+              {t('lists.sold.button')}
+            </button>
+          )}
         </div>
       )}
+      {selling && <SoldSheetHost listId={listId} line={line} onClose={() => setSelling(false)} />}
     </li>
   );
 }

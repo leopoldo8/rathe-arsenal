@@ -3,6 +3,11 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 export type TListsErrorCode =
   | 'CARD_LIST_NOT_FOUND'
   | 'DECK_NOT_FOUND'
+  | 'LINE_ALREADY_SOLD'
+  | 'LINE_NOT_SOLD'
+  | 'SOURCE_NOT_FOUND'
+  | 'SOURCE_REQUIRED'
+  | 'SOLD_QUANTITY_TOO_HIGH'
   | 'SELL_ONLY_FIELD'
   | 'UNKNOWN_CARD'
   | 'UNKNOWN_PRINTING';
@@ -29,4 +34,24 @@ export function unknownCard(): HttpException {
 
 export function unknownPrinting(): HttpException {
   return listsError('UNKNOWN_PRINTING', 'That printing does not belong to this card', HttpStatus.BAD_REQUEST);
+}
+
+export function lineAlreadySold(): HttpException {
+  return listsError('LINE_ALREADY_SOLD', 'This line is already sold', HttpStatus.CONFLICT);
+}
+
+export function lineNotSold(): HttpException {
+  return listsError('LINE_NOT_SOLD', 'This line is not sold', HttpStatus.CONFLICT);
+}
+
+export function sourceNotFound(): HttpException {
+  return listsError('SOURCE_NOT_FOUND', 'Import not found', HttpStatus.NOT_FOUND);
+}
+
+export function sourceRequired(): HttpException {
+  return listsError('SOURCE_REQUIRED', 'The card sits in more than one import: name the import', HttpStatus.BAD_REQUEST);
+}
+
+export function soldQuantityTooHigh(): HttpException {
+  return listsError('SOLD_QUANTITY_TOO_HIGH', 'The line holds fewer copies than the sale names', HttpStatus.BAD_REQUEST);
 }

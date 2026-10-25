@@ -2,6 +2,15 @@
 
 ## Deviations
 
+### S22 (batch 16)
+
+- The sold route answers the whole list plus `soldLineId` and `removed`; the unmark with the collection put back is a second route, `POST /api/lists/:listId/lines/:lineId/unsold`, because no existing route can restore a copy to its own import and version (plan Surface rows added before the code). The `PATCH` that sets `sold` stays, as the old panel button and its test use it, and never touches the collection.
+- A sale takes copies only from active imports, and "the card sits in more than one import" counts the imports holding a copy the sale may touch (the same version, or no version), not the imports the plan would draw from, so two imports with the same version always ask. `GET /api/collection/spare` now also explains a card with no spare copy that a deck holds, so the sheet can say a sale leaves a deck short.
+- The sold sheet reads the Library (copies and imports) and the spare view (what decks keep, and the deck that keeps most). When the spare question is still unanswered no deck is named: the sheet then says "Você tem N; ficam M." only. The shortage line names the deck that keeps the most copies when several do.
+- "Vendida" is a button on each available line of a sell list, as the tile; the screen draws rows and the grid of tiles stays (list rebuild is not in a check). The old "Marcar como vendida" button in the line panel stays, because `ListEditor.spec.tsx` proves it; it marks without asking about the collection.
+- Copy of mine (no check gives it): after "Sim", the sheet says "Tirei N cópia(s) da coleção." (plus "Era só o que ela tinha." when fewer copies left than were sold) with "Desfazer" and "Fechar"; "De qual importação tirar?" with one button per import ("<import> (N)"); the errors "Não foi possível marcar como vendida. Tente de novo." and "Não foi possível desfazer. Tente de novo.".
+- Not drawn by `r3-sold-phone`: the quantity choices start with the whole line selected (the mockup highlights 2 of 2).
+
 ### S21 (batch 15)
 
 - Sell lines moved onto the four version fields (C278): `AddLineDto` and `UpdateLineDto` take `printingCode`, `edition`, `finish` and `condition` and refuse the old `printing` field (the global pipe forbids unknown properties); a version the card has no printing for answers `400` `UNKNOWN_PRINTING` (the code the editor already maps); the merge rule compares the four fields, so two finishes of one card are two lines; price suggestions read the line's version (`printingsOfVersion` narrows the printings by each part the line names). The `printing` column stays (no check asks to drop it) and nothing writes it; answers still carry `printing` (derived key) and `printingLabel`, plus the four fields. The printings route also gives each option its three fields, which the add dialog and the line panel send.
@@ -596,4 +605,4 @@
 - S21, after "Enviar no WhatsApp" or "Copiar texto" the page opens the new list (`/lists/<id>`); no mockup draws where the player lands. Say if they should stay on the draft.
 - S21, the draft saves the closing line even when the field is empty (clearing it), so the next draft opens empty.
 - S21, `r3-lists-new-phone` (AC 171) is C309 of S25: the "Vender o que sobra na sua coleção" row is not built here, so "Sobrando" is reached from the collection banner only until S25.
-
+- S22, differences from `r3-sold-phone`, and copy of mine: see Deviations, S22 (the tile button instead of rows, the panel button kept, "Tirei N cópias da coleção.", "De qual importação tirar?", the two error lines).

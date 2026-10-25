@@ -971,30 +971,30 @@ Proof: `web unit src/components/spare/__tests__/SellDraft.spec.tsx -t "marks app
 
 ### S22 - Marking a line sold · 10 files · 44 KB · ~13k
 
-**C284** - `POST /api/lists/:listId/lines/:lineId/sold` on a line of 3 with `quantity: 1, removeFromCollection: false` answers `200` with two lines, one sold of 1 and one available of 2, and the collection unchanged; with `quantity: 3` the line is marked sold whole; `quantity` 0 or 4 answers `400`; another user's line `404`; an already-sold line `409` (AC 172)
+**C284** - `POST /api/lists/:listId/lines/:lineId/sold` on a line of 3 with `quantity: 1, removeFromCollection: false` answers `200` with two lines, one sold of 1 and one available of 2, and the collection unchanged; with `quantity: 3` the line is marked sold whole; `quantity` 0 or 4 answers `400`; another user's line `404`; an already-sold line `409` (AC 172) · done
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "marks a line sold in part or whole"`
 
-**C285** - With `removeFromCollection: true` the collection drops by the copies sold: copies of the same version first, then copies with no version (`''` fields), and the response's `removed` names each copy taken (AC 174)
+**C285** - With `removeFromCollection: true` the collection drops by the copies sold: copies of the same version first, then copies with no version (`''` fields), and the response's `removed` names each copy taken (AC 174) · done
 Proof: `api unit src/lists/__tests__/sale-removal.spec.ts -t "takes the same version first, then copies with no version"`
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "a sale with removal takes the copies out of the collection"`
 
-**C286** - When the collection holds 1 copy and 2 were sold, the sale removes 1 and `removed` totals 1, and the sheet says how many it took out (AC 176)
+**C286** - When the collection holds 1 copy and 2 were sold, the sale removes 1 and `removed` totals 1, and the sheet says how many it took out (AC 176) · done
 Proof: `api unit src/lists/__tests__/sale-removal.spec.ts -t "removes only what the collection holds"`
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "says how many copies left the collection"`
 
-**C287** - When the card sits in two imports and no `sourceId` is sent with `removeFromCollection: true`, the API answers `400` and removes nothing; with `sourceId` it removes from that import only (AC 177)
+**C287** - When the card sits in two imports and no `sourceId` is sent with `removeFromCollection: true`, the API answers `400` and removes nothing; with `sourceId` it removes from that import only (AC 177) · done
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "asks which import when the card sits in more than one"`
 
-**C288** - The sold sheet (`r3-sold-phone`): every line of the owner's list shows "Vendida"; on a line of 2 it asks "Quantas você vendeu?" with the line's name and version and the choices 1 and 2; then "Tirar da sua coleção também?", "Você tem 4; ficam 2, as que o Kayo CC usa.", "Sim, tirar 2 da coleção", "Não, só marcar como vendida", "Escolha \"Não\" se essas cópias não estavam no app."; on a line of 1 it goes straight to the collection question (AC 172, AC 173, AC 178)
+**C288** - The sold sheet (`r3-sold-phone`): every line of the owner's list shows "Vendida"; on a line of 2 it asks "Quantas você vendeu?" with the line's name and version and the choices 1 and 2; then "Tirar da sua coleção também?", "Você tem 4; ficam 2, as que o Kayo CC usa.", "Sim, tirar 2 da coleção", "Não, só marcar como vendida", "Escolha \"Não\" se essas cópias não estavam no app."; on a line of 1 it goes straight to the collection question (AC 172, AC 173, AC 178) · done
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "asks how many, then about the collection"`
 
-**C289** - When the removal would leave a holding deck short, the question reads "O Kayo CC vai ficar faltando 2." instead of the "ficam N" line (AC 175)
+**C289** - When the removal would leave a holding deck short, the question reads "O Kayo CC vai ficar faltando 2." instead of the "ficam N" line (AC 175) · done
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "warns when the removal leaves a deck short"`
 
-**C290** - When the card sits in more than one import the sheet lists the imports to pick from inside the same sheet at 390 px wide, with no second dialog (AC 177)
+**C290** - When the card sits in more than one import the sheet lists the imports to pick from inside the same sheet at 390 px wide, with no second dialog (AC 177) · done
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "asks which import inside the sheet"`
 
-**C291** - "Desfazer" after "Sim, tirar N da coleção" puts back exactly the copies in `removed`, same versions and import, and the collection count returns to its value before the sale (AC 174)
+**C291** - "Desfazer" after "Sim, tirar N da coleção" puts back exactly the copies in `removed`, same versions and import, and the collection count returns to its value before the sale (AC 174) · done
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "Desfazer puts the copies back"`
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "undoing a sale restores the removed copies"`
 

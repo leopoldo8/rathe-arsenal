@@ -61,8 +61,10 @@ export class SpareViewService {
         storeCents: storePrices.get(row.cardIdentifier) ?? null,
       };
     });
+    // A card with no spare copy but held by a deck is explained too: the sold sheet needs it to say a sale leaves a deck short.
+    const heldIds = [...cards.values()].filter((card) => card.held > 0).map((card) => card.cardIdentifier);
     const why: Record<string, ISpareWhyView> = {};
-    for (const cardIdentifier of cardIds) {
+    for (const cardIdentifier of new Set([...cardIds, ...heldIds])) {
       const card = cards.get(cardIdentifier);
       if (card) why[cardIdentifier] = { owned: card.owned, held: card.held, spare: card.spare, holders: card.holders, notHolding: card.notHolding };
     }

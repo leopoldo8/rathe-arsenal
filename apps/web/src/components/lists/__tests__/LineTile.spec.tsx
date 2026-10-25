@@ -30,4 +30,18 @@ describe('LineTile', () => {
     expect(within(tile).getAllByText('Pack Hunt (Vermelho)').length).toBeGreaterThan(0);
     expect(within(tile).queryByText('Pack Hunt')).toBeNull();
   });
+
+  it('shows Vendida on a line still on sale and on no other', () => {
+    render(
+      <ul>
+        <LineTile listId={7} line={makeLine({ id: 1 })} kind="sell" selected={false} onSelect={vi.fn()} />
+        <LineTile listId={7} line={makeLine({ id: 2, sold: true })} kind="sell" selected={false} onSelect={vi.fn()} />
+        <LineTile listId={7} line={makeLine({ id: 3 })} kind="want" selected={false} onSelect={vi.fn()} />
+      </ul>,
+    );
+
+    const buttons = screen.getAllByRole('button', { name: /como vendida$/ });
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveTextContent('Vendida');
+  });
 });

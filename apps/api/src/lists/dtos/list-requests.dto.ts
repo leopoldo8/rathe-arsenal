@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
@@ -9,11 +9,13 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Max,
   MaxLength,
   Min,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import { CONDITIONS, TCondition } from '../../database/entities/card-list-line.entity';
 import { LIST_KINDS, TListKind } from '../../database/entities/card-list.entity';
@@ -148,4 +150,54 @@ export class ApplySuggestionsDto {
   @Min(1, { each: true })
   @Max(MAX_INT32, { each: true })
   lineIds?: number[];
+}
+
+/** A sale of `quantity` copies of a sell line; the collection is touched only when `removeFromCollection` is true. */
+export class MarkSoldDto {
+  @IsInt()
+  @Min(1)
+  @Max(MAX_LINE_QUANTITY)
+  quantity!: number;
+
+  @IsBoolean()
+  removeFromCollection!: boolean;
+
+  /** The import to take copies from; required when the card sits in more than one. */
+  @IsOptional()
+  @IsUUID()
+  sourceId?: string;
+}
+
+const MAX_RESTORE_ENTRIES = 50;
+
+export class RestoredCopyDto {
+  @IsUUID()
+  sourceId!: string;
+
+  @IsString()
+  @MaxLength(32)
+  printingCode!: string;
+
+  @IsIn(EDITION_VALUES)
+  edition!: ICopyVersion['edition'];
+
+  @IsIn(FINISH_VALUES)
+  finish!: ICopyVersion['finish'];
+
+  @IsIn(['', ...CONDITIONS])
+  condition!: ICopyVersion['condition'];
+
+  @IsInt()
+  @Min(1)
+  @Max(MAX_LINE_QUANTITY)
+  quantity!: number;
+}
+
+/** Undoes a sale: the line goes back on sale and the copies a removal took are put back. */
+export class UnsoldDto {
+  @IsArray()
+  @ArrayMaxSize(MAX_RESTORE_ENTRIES)
+  @ValidateNested({ each: true })
+  @Type(() => RestoredCopyDto)
+  restore!: RestoredCopyDto[];
 }

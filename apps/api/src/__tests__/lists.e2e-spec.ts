@@ -80,6 +80,53 @@ describe('Card lists (E2E)', () => {
     );
   }
 
+  interface IHeldRow {
+    readonly sourceId: string;
+    readonly printingCode?: string;
+    readonly edition?: string;
+    readonly finish?: string;
+    readonly condition?: string;
+    readonly quantity: number;
+  }
+
+  async function createImport(session: ISession): Promise<string> {
+    const [source] = (await dataSource.query(
+      `INSERT INTO csv_source ("userId", kind, active, "cardCount") VALUES ($1, 'csv', true, 0) RETURNING id`,
+      [session.userId],
+    )) as [{ id: string }];
+    return source.id;
+  }
+
+  async function hold(session: ISession, cardIdentifier: string, row: IHeldRow): Promise<void> {
+    await dataSource.query(
+      `INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition, quantity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [session.userId, cardIdentifier, row.sourceId, row.printingCode ?? '', row.edition ?? '', row.finish ?? '', row.condition ?? '', row.quantity],
+    );
+    await dataSource.query(`UPDATE csv_source SET "cardCount" = "cardCount" + 1 WHERE id = $1`, [row.sourceId]);
+  }
+
+  async function heldQuantities(session: ISession, cardIdentifier: string): Promise<Record<string, number>> {
+    const rows = (await dataSource.query(
+      `SELECT "sourceId", "printingCode", edition, finish, condition, quantity FROM collection_card
+       WHERE "userId" = $1 AND "cardIdentifier" = $2`,
+      [session.userId, cardIdentifier],
+    )) as { sourceId: string; printingCode: string; edition: string; finish: string; condition: string; quantity: number }[];
+    return Object.fromEntries(rows.map((row) => [[row.sourceId.slice(0, 4), row.printingCode, row.edition, row.finish, row.condition].join('|'), row.quantity]));
+  }
+
+  const markSold = (session: ISession, listId: number, lineId: number, body: Record<string, unknown>): request.Test =>
+    request(server).post(`/api/lists/${listId}/lines/${lineId}/sold`).set(...auth(session)).send(body);
+
+  async function soldFixture(label: string, quantity: number): Promise<{ owner: ISession; listId: number; lineId: number }> {
+    const owner = await createSession(label);
+    const listId = await createList(owner, 'sell');
+    const lineId = (
+      await addLine(owner, listId, { cardIdentifier: CARD_A.cardIdentifier, quantity, ...VERSION_A1, condition: 'NM' }).expect(201)
+    ).body.lines[0].id as number;
+    return { owner, listId, lineId };
+  }
+
   const addLine = (session: ISession, listId: number, body: Record<string, unknown>): request.Test =>
     request(server).post(`/api/lists/${listId}/lines`).set(...auth(session)).send(body);
 
@@ -439,5 +486,109 @@ describe('Card lists (E2E)', () => {
     const res = await request(server).get(`/api/lists/${listId}`).set(...auth(owner)).expect(200);
     expect(res.body.lines).toHaveLength(1);
     expect(res.body.lines[0].quantity).toBe(3);
+  });
+  it('marks a line sold in part or whole', async () => {
+    const { owner, listId, lineId } = await soldFixture('sold-part', 3);
+    const source = await createImport(owner);
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, ...VERSION_A1, condition: 'NM', quantity: 3 });
+    const before = await heldQuantities(owner, CARD_A.cardIdentifier);
+
+    const part = await markSold(owner, listId, lineId, { quantity: 1, removeFromCollection: false }).expect(200);
+    const lines = part.body.lines as { id: number; quantity: number; sold: boolean }[];
+    expect(lines).toHaveLength(2);
+    expect(lines.filter((line) => line.sold).map((line) => line.quantity)).toEqual([1]);
+    expect(lines.filter((line) => !line.sold).map((line) => line.quantity)).toEqual([2]);
+    expect(part.body.removed).toEqual([]);
+    expect(lines.find((line) => line.id === part.body.soldLineId)).toMatchObject({ sold: true, quantity: 1 });
+    expect(await heldQuantities(owner, CARD_A.cardIdentifier)).toEqual(before);
+
+    const rest = lines.find((line) => !line.sold)!;
+    await markSold(owner, listId, rest.id, { quantity: 0, removeFromCollection: false }).expect(400);
+    await markSold(owner, listId, rest.id, { quantity: 3, removeFromCollection: false }).expect(400);
+    await markSold(owner, listId, rest.id, { quantity: 1 }).expect(400);
+    await markSold(owner, listId, rest.id, { quantity: 1, removeFromCollection: false, extra: true }).expect(400);
+
+    const stranger = await createSession('sold-stranger');
+    await markSold(stranger, listId, rest.id, { quantity: 1, removeFromCollection: false }).expect(404);
+
+    const whole = await markSold(owner, listId, rest.id, { quantity: 2, removeFromCollection: false }).expect(200);
+    expect((whole.body.lines as { sold: boolean }[]).every((line) => line.sold)).toBe(true);
+    expect(whole.body.lines).toHaveLength(2);
+
+    const again = await markSold(owner, listId, rest.id, { quantity: 1, removeFromCollection: false }).expect(409);
+    expect(again.body.code).toBe('LINE_ALREADY_SOLD');
+  });
+
+  it('a sale with removal takes the copies out of the collection', async () => {
+    const { owner, listId, lineId } = await soldFixture('sold-removal', 3);
+    const source = await createImport(owner);
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, ...VERSION_A1, condition: 'NM', quantity: 1 });
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, quantity: 3 });
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, ...VERSION_A1, condition: 'LP', quantity: 4 });
+
+    const sold = await markSold(owner, listId, lineId, { quantity: 3, removeFromCollection: true }).expect(200);
+
+    expect(sold.body.removed).toEqual([
+      { sourceId: source, ...VERSION_A1, condition: 'NM', quantity: 1 },
+      { sourceId: source, printingCode: '', edition: '', finish: '', condition: '', quantity: 2 },
+    ]);
+    const key = (version: IHeldRow): string => [source.slice(0, 4), version.printingCode ?? '', version.edition ?? '', version.finish ?? '', version.condition ?? ''].join('|');
+    expect(await heldQuantities(owner, CARD_A.cardIdentifier)).toEqual({
+      [key({ sourceId: source, quantity: 0 })]: 1,
+      [key({ sourceId: source, ...VERSION_A1, condition: 'LP', quantity: 0 })]: 4,
+    });
+    const [{ cardCount }] = (await dataSource.query(`SELECT "cardCount" FROM csv_source WHERE id = $1`, [source])) as [{ cardCount: number }];
+    expect(cardCount).toBe(2);
+  });
+
+  it('asks which import when the card sits in more than one', async () => {
+    const { owner, listId, lineId } = await soldFixture('sold-imports', 2);
+    const first = await createImport(owner);
+    const second = await createImport(owner);
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: first, ...VERSION_A1, condition: 'NM', quantity: 2 });
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: second, ...VERSION_A1, condition: 'NM', quantity: 2 });
+    const before = await heldQuantities(owner, CARD_A.cardIdentifier);
+
+    const refused = await markSold(owner, listId, lineId, { quantity: 1, removeFromCollection: true }).expect(400);
+    expect(refused.body.code).toBe('SOURCE_REQUIRED');
+    expect(await heldQuantities(owner, CARD_A.cardIdentifier)).toEqual(before);
+    const untouched = await request(server).get(`/api/lists/${listId}`).set(...auth(owner)).expect(200);
+    expect(untouched.body.lines).toHaveLength(1);
+    expect(untouched.body.lines[0].sold).toBe(false);
+
+    const sold = await markSold(owner, listId, lineId, { quantity: 1, removeFromCollection: true, sourceId: second }).expect(200);
+    expect(sold.body.removed).toEqual([{ sourceId: second, ...VERSION_A1, condition: 'NM', quantity: 1 }]);
+    const after = await heldQuantities(owner, CARD_A.cardIdentifier);
+    expect(after[[first.slice(0, 4), VERSION_A1.printingCode, VERSION_A1.edition, VERSION_A1.finish, 'NM'].join('|')]).toBe(2);
+    expect(after[[second.slice(0, 4), VERSION_A1.printingCode, VERSION_A1.edition, VERSION_A1.finish, 'NM'].join('|')]).toBe(1);
+
+    const foreignSource = await createImport(await createSession('sold-foreign-source'));
+    const other = await soldFixture('sold-imports-2', 1);
+    await hold(other.owner, CARD_A.cardIdentifier, { sourceId: await createImport(other.owner), ...VERSION_A1, condition: 'NM', quantity: 1 });
+    await markSold(other.owner, other.listId, other.lineId, { quantity: 1, removeFromCollection: true, sourceId: foreignSource }).expect(404);
+  });
+
+  it('undoing a sale restores the removed copies', async () => {
+    const { owner, listId, lineId } = await soldFixture('sold-undo', 3);
+    const source = await createImport(owner);
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, ...VERSION_A1, condition: 'NM', quantity: 1 });
+    await hold(owner, CARD_A.cardIdentifier, { sourceId: source, quantity: 2 });
+    const before = await heldQuantities(owner, CARD_A.cardIdentifier);
+
+    const sold = await markSold(owner, listId, lineId, { quantity: 3, removeFromCollection: true }).expect(200);
+    expect(await heldQuantities(owner, CARD_A.cardIdentifier)).toEqual({});
+
+    const undo = await request(server)
+      .post(`/api/lists/${listId}/lines/${lineId}/unsold`)
+      .set(...auth(owner))
+      .send({ restore: sold.body.removed })
+      .expect(200);
+
+    expect(await heldQuantities(owner, CARD_A.cardIdentifier)).toEqual(before);
+    expect(undo.body.lines).toHaveLength(1);
+    expect(undo.body.lines[0]).toMatchObject({ quantity: 3, sold: false });
+    const [{ cardCount }] = (await dataSource.query(`SELECT "cardCount" FROM csv_source WHERE id = $1`, [source])) as [{ cardCount: number }];
+    expect(cardCount).toBe(2);
+    await request(server).post(`/api/lists/${listId}/lines/${lineId}/unsold`).set(...auth(owner)).send({ restore: [] }).expect(409);
   });
 });

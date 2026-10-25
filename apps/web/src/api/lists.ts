@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { authFetch } from '../lib/auth-fetch';
 
 export type TListKind = 'want' | 'sell';
@@ -113,6 +113,28 @@ export interface IPatchLineBody extends ILineVersionBody {
   readonly sold?: boolean;
 }
 
+/** One copy a sale took out of the collection, with the import and version it came from. */
+export interface ISoldRemovedCopy {
+  readonly sourceId: string;
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string;
+  readonly quantity: number;
+}
+
+export interface ISoldResult extends ICardList {
+  /** The line the sold copies sit in; "Desfazer" puts this one back on sale. */
+  readonly soldLineId: number;
+  readonly removed: readonly ISoldRemovedCopy[];
+}
+
+export interface IMarkSoldBody {
+  readonly quantity: number;
+  readonly removeFromCollection: boolean;
+  readonly sourceId?: string;
+}
+
 export const listsQueryKey = ['lists'] as const;
 export const listQueryKey = (listId: number | string) => ['lists', String(listId)] as const;
 export const listPrintingsQueryKey = (listId: number | string, cardIdentifier: string) =>
@@ -214,4 +236,38 @@ export function useRemoveLineMutation(listId: number | string) {
   return useListWrite<number>(listId, (lineId) =>
     authFetch<ICardList>(`/lists/${listId}/lines/${lineId}`, { method: 'DELETE' }),
   );
+}
+
+/** Marks copies of a sell line sold; the answer is the whole list plus the copies taken out of the collection. */
+export function useMarkSoldMutation(listId: number | string, lineId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: IMarkSoldBody) =>
+      authFetch<ISoldResult>(`/lists/${listId}/lines/${lineId}/sold`, { method: 'POST', ...json(body) }),
+    onSuccess: (result) => {
+      const { soldLineId: _soldLineId, removed: _removed, ...list } = result;
+      queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
+      void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
+      if (result.removed.length > 0) refreshCollectionReads(queryClient);
+    },
+  });
+}
+
+/** Undoes a sale: the sold line goes back on sale and the copies a removal took are put back. */
+export function useMarkUnsoldMutation(listId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ soldLineId, restore }: { readonly soldLineId: number; readonly restore: readonly ISoldRemovedCopy[] }) =>
+      authFetch<ICardList>(`/lists/${listId}/lines/${soldLineId}/unsold`, { method: 'POST', ...json({ restore }) }),
+    onSuccess: (list, { restore }) => {
+      queryClient.setQueryData<ICardList>(listQueryKey(listId), list);
+      void queryClient.invalidateQueries({ queryKey: listsQueryKey, exact: true });
+      if (restore.length > 0) refreshCollectionReads(queryClient);
+    },
+  });
+}
+
+function refreshCollectionReads(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: ['library'] });
+  void queryClient.invalidateQueries({ queryKey: ['spare'] });
 }

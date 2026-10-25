@@ -14,7 +14,8 @@ import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { ICardList, ICardListSummary, IListPrintingOption } from './dtos/card-list.dto';
-import { AddLineDto, ApplySuggestionsDto, CreateListDto, UpdateLineDto, UpdateListDto } from './dtos/list-requests.dto';
+import { AddLineDto, ApplySuggestionsDto, CreateListDto, MarkSoldDto, UnsoldDto, UpdateLineDto, UpdateListDto } from './dtos/list-requests.dto';
+import { ISoldResult, ListSaleService } from './list-sale.service';
 import { ListLinesService } from './list-lines.service';
 import { ListsService } from './lists.service';
 import { ParseInt32IdPipe } from './parse-int32-id.pipe';
@@ -24,6 +25,7 @@ export class ListsController {
   constructor(
     private readonly lists: ListsService,
     private readonly lines: ListLinesService,
+    private readonly sales: ListSaleService,
   ) {}
 
   @Get()
@@ -76,6 +78,28 @@ export class ListsController {
     @CurrentUser() user: ICurrentUser,
   ): Promise<ICardList> {
     return this.lines.update(user.userId, listId, lineId, dto);
+  }
+
+  @Post(':listId/lines/:lineId/sold')
+  @HttpCode(HttpStatus.OK)
+  markSold(
+    @Param('listId', ParseInt32IdPipe) listId: number,
+    @Param('lineId', ParseInt32IdPipe) lineId: number,
+    @Body() dto: MarkSoldDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ISoldResult> {
+    return this.sales.markSold(user.userId, listId, lineId, dto);
+  }
+
+  @Post(':listId/lines/:lineId/unsold')
+  @HttpCode(HttpStatus.OK)
+  markUnsold(
+    @Param('listId', ParseInt32IdPipe) listId: number,
+    @Param('lineId', ParseInt32IdPipe) lineId: number,
+    @Body() dto: UnsoldDto,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ICardList> {
+    return this.sales.markUnsold(user.userId, listId, lineId, dto);
   }
 
   @Delete(':listId/lines/:lineId')

@@ -393,6 +393,12 @@ export class CollectionService {
     }));
   }
 
+  /** Readiness of every deck that uses a card, after something outside the collection routes changed its copies. */
+  async recomputeReadinessForCard(userId: string, cardIdentifier: string, failureMessage: string): Promise<void> {
+    const affectedDeckIds = await this.findAffectedDeckIds(userId, cardIdentifier);
+    await this.recomputeDecks(userId, affectedDeckIds, { msg: failureMessage, cardIdentifier });
+  }
+
   private async recomputeDecks(
     userId: string,
     trackedDeckIds: readonly number[],
