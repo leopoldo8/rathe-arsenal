@@ -391,6 +391,8 @@
 - 2026-10-25, the page behind "Resolver" (`/library-pending`), built in batch 10 with no mockup: the owner asked for two mockup alternatives; the page stays as built until the owner picks one, and the pick is built afterwards.
   Picked the same day: B, one line at a time (`.design/mockups/collection-in/r4-resolve-b-phone.png`, brief `BRIEF-round-4.md`); A (`r4-resolve-a-phone.png`) was not picked.
 - 2026-10-25, the Armory Deck: Kayo decklist fetched once from the official page `https://fabtcg.com/decklists/kayo-armory-deck/` through `pnpm products:import`: accepted.
+- 2026-10-25, the admin credits line in Settings (C201), which no mockup drew when batch 12 built S16: the owner was shown two alternatives and picked B, a thin bar with "Créditos do Firecrawl este mês" and "120 de 1000", amber when lookups stop (`.design/mockups/close-the-deck/r5-credits-b-phone.png`, brief `BRIEF-round-5.md`); A (`r5-credits-a-phone.png`, one sentence) was not picked.
+  The stopped state shows "As consultas automáticas de preço pararam." and "A sincronização manual continua funcionando.".
 
 ## Needs the owner
 
