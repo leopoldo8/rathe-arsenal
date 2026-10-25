@@ -46,6 +46,8 @@ export interface ICardListLine {
   priceCents: number | null;
   sold: boolean;
   suggestion: IPriceSuggestion | null;
+  /** Sell lists: the copies of the card in the player's collection, whatever the version; null on a want list. */
+  owned: number | null;
 }
 
 export interface ICardList {

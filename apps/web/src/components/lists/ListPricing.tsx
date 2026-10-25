@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApplySuggestionsMutation, usePatchListMutation, type ICardList } from '../../api/lists';
-import { linesToFill, parseMultiplier } from './listsModel';
+import { formatMultiplier, linesToFill, parseMultiplier } from './listsModel';
 import styles from './ListEditor.module.css';
 
 /** The sell list's TCGPlayer rate ("x7") and the button that fills every card without a price from the suggestion. */
 export function ListPricing({ list }: { readonly list: ICardList }): React.ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const patch = usePatchListMutation(list.id);
   const fill = useApplySuggestionsMutation(list.id);
   const [draft, setDraft] = useState<string | null>(null);
   const [invalid, setInvalid] = useState(false);
   const toFill = linesToFill(list.lines).length;
+  const shown = list.priceMultiplier === null ? '' : formatMultiplier(list.priceMultiplier, i18n.language);
 
   function commit(): void {
     if (draft === null) return;
@@ -37,8 +38,8 @@ export function ListPricing({ list }: { readonly list: ICardList }): React.React
             inputMode="decimal"
             aria-label={t('lists.pricing.rateLabel')}
             aria-invalid={invalid || undefined}
-            value={draft ?? (list.priceMultiplier === null ? '' : String(list.priceMultiplier))}
-            onFocus={() => setDraft(list.priceMultiplier === null ? '' : String(list.priceMultiplier))}
+            value={draft ?? shown}
+            onFocus={() => setDraft(shown)}
             onChange={(event) => {
               setInvalid(false);
               setDraft(event.currentTarget.value);

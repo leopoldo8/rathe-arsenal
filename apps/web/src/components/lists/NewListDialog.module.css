@@ -59,3 +59,29 @@
   color: var(--ra-fg-tertiary);
   font-size: var(--ra-text-small);
 }
+
+.startRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  min-block-size: 44px;
+  box-sizing: border-box;
+  padding: var(--ra-space-3);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-surface-2);
+  color: var(--ra-fg-primary);
+  cursor: pointer;
+  font-family: var(--ra-font-ui);
+  text-align: start;
+}
+
+.startRow:hover {
+  border-color: var(--ra-accent);
+}
+
+.chevron {
+  color: var(--ra-fg-tertiary);
+  font-size: 22px;
+}

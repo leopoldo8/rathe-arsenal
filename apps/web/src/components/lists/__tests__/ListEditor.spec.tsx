@@ -219,6 +219,43 @@ describe('ListEditor', () => {
     await waitFor(() => expect(screen.getAllByTestId('list-line')).toHaveLength(1));
   });
 
+  it('a sell line over the collection says how many you have and is allowed', async () => {
+    serve(makeList({ lines: [] }));
+    searchRef.results = [
+      { cardIdentifier: 'snatch-red', name: 'Snatch', pitch: 1, classes: [], types: ['Attack Reaction'], ownedQuantity: 1, imageUrl: null, legalFormats: [], legalHeroes: [], bannedFormats: [] },
+    ];
+    api.handlers.set('POST /lists/7/lines', ({ body }) => {
+      current = { ...current, lines: [makeLine({ id: 9, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: (body as { quantity: number }).quantity, owned: 1 })] };
+      return current;
+    });
+    api.handlers.set('GET /lists/7/printings/snatch-red', () => []);
+    const user = userEvent.setup();
+    renderWithProviders(<ListEditor listId="7" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Adicionar carta do catálogo' }));
+    await user.type(await screen.findByLabelText('Buscar carta'), 'snatch');
+    await user.click(await screen.findByRole('button', { name: /Escolher Snatch/ }));
+    const picked = await screen.findByTestId('add-card-picked');
+    await user.click(within(picked).getByRole('button', { name: 'Aumentar quantidade' }));
+    await user.click(within(picked).getByRole('button', { name: 'Aumentar quantidade' }));
+    await user.click(within(picked).getByRole('button', { name: 'Adicionar' }));
+
+    // Three copies on the line against one in the collection: the line saves and says so, in the muted text style.
+    await waitFor(() => expect(api.calls.find((call) => call.key === 'POST /lists/7/lines')?.body).toEqual({ cardIdentifier: 'snatch-red', quantity: 3 }));
+    const note = await screen.findByTestId('line-owned-note');
+    expect(note).toHaveTextContent('Você tem 1 na coleção');
+    expect(note.className).toMatch(/ownedNote/);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says nothing about the collection when it holds as many copies as the line lists', async () => {
+    serve(makeList({ lines: [makeLine({ id: 1, quantity: 2, owned: 2 }), makeLine({ id: 2, cardIdentifier: 'snatch-red', name: 'Snatch', quantity: 1, owned: 0, sold: true })] }));
+    renderWithProviders(<ListEditor listId="7" />);
+
+    await screen.findAllByTestId('list-line');
+    expect(screen.queryByTestId('line-owned-note')).not.toBeInTheDocument();
+  });
+
   it('merges an existing card: the server answers with the summed line and the grid keeps one tile', async () => {
     serve(makeList({ kind: 'want', priceMultiplier: null, lines: [makeLine({ id: 1, quantity: 2 })] }));
     searchRef.results = [

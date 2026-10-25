@@ -1009,3 +1009,8 @@
 .soldButton:hover {
   border-color: var(--ra-accent);
 }
+
+.ownedNote {
+  color: var(--ra-fg-muted);
+  font-size: 11.5px;
+}

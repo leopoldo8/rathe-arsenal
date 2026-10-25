@@ -1051,14 +1051,14 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "answers coverage and copy 
 
 ### S25 - List and sharing fixes · 8 files · 31 KB · ~8k
 
-**C307** - The multiplier field shows 5.5 as "5,5" after a save and a reload in pt-BR and "5.5" in en-US; "5,5" typed is accepted as 5.5; the error text names the range the field and `list-requests.dto.ts` accept (from 0,01), and no pt-BR value reads "entre 1 e 50" (AC 192)
+**C307** - The multiplier field shows 5.5 as "5,5" after a save and a reload in pt-BR and "5.5" in en-US; "5,5" typed is accepted as 5.5; the error text names the range the field and `list-requests.dto.ts` accept (from 0,01), and no pt-BR value reads "entre 1 e 50" (AC 192) · done
 Proof: `web unit src/components/lists/__tests__/ListPrices.spec.tsx -t "shows the multiplier with the locale's decimal comma"`
 Proof: `web unit src/components/lists/__tests__/ListPrices.spec.tsx -t "the multiplier error text matches what the field accepts"`
 
-**C308** - A sell line of 3 copies of a card the collection holds 1 of shows "Você tem 1 na coleção" in the muted text style and the line saves (`201`) (AC 193)
+**C308** - A sell line of 3 copies of a card the collection holds 1 of shows "Você tem 1 na coleção" in the muted text style and the line saves (`201`) (AC 193) · done
 Proof: `web unit src/components/lists/__tests__/ListEditor.spec.tsx -t "a sell line over the collection says how many you have and is allowed"`
 
-**C309** - "Nova lista" with "Vendo" (`r3-lists-new-phone`) offers, in this order, "Vender o que sobra na sua coleção" (opens "Sobrando"), "De um deck", "Do zero" with "Para cartas que não estão no app" (AC 194)
+**C309** - "Nova lista" with "Vendo" (`r3-lists-new-phone`) offers, in this order, "Vender o que sobra na sua coleção" (opens "Sobrando"), "De um deck", "Do zero" with "Para cartas que não estão no app" (AC 194) · done
 Proof: `web unit src/components/lists/__tests__/ListsIndex.spec.tsx -t "a new sell list starts from spare copies first"`
 
 ### S26 - The Tutor answers rules, copies and prices right · 14 files · 136 KB · ~34k

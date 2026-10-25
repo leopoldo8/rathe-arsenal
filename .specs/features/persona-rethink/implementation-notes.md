@@ -2,6 +2,12 @@
 
 ## Deviations
 
+### S25 (batch 16)
+
+- The "Você tem N na coleção" note on a sell line (C308) reads a new `owned` field on each line of a sell list (the copies of the card in the collection, whatever the version; null on a want list), computed by the list view from `CollectionReadService.loadOwned`, so the tile needs no read of the whole Library. The note sits on the line tile, where the audit finding is, and the "na coleção: N" hint of the add dialog stays.
+- C307 changes two existing assertions of `ListPrices.spec.tsx`: after typing 6,5 the field now reads "6,5" (it read "6.5"), and the out-of-range text is "Use um número de 0,01 a 50." (it said "entre 1 e 50", which the field and the DTO never enforced).
+- C309: `NewListDialog` keeps its two radio groups, the name field and "Criar lista", and gains the first start, "Vender o que sobra na sua coleção", as a row that closes the dialog and opens `/spare` (it only shows for "Vendo"); "A partir de um deck" is now "De um deck" and "Do zero" says "Para cartas que não estão no app" on a sell list. `r3-lists-new-phone` draws three rows that act at once and no name field: the picks of the two existing groups and the name field are kept because three tests in `ListsIndex.spec.tsx` prove creating from a deck, from nothing and with a name; see Needs the owner.
+
 ### S22 (batch 16)
 
 - The sold route answers the whole list plus `soldLineId` and `removed`; the unmark with the collection put back is a second route, `POST /api/lists/:listId/lines/:lineId/unsold`, because no existing route can restore a copy to its own import and version (plan Surface rows added before the code). The `PATCH` that sets `sold` stays, as the old panel button and its test use it, and never touches the collection.

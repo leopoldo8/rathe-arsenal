@@ -54,6 +54,8 @@ export const lists = {
     fromDeckSellHint: 'The whole deck.',
     fromScratch: 'From scratch',
     fromScratchHint: 'Empty list.',
+    fromScratchSellHint: 'For cards that are not in the app',
+    fromSpare: 'Sell what is spare in your collection',
     deckLabel: 'Deck',
     deckOption: '{{name}} (missing {{missing}} of {{total}})',
     deckOptionPlain: '{{name}}',
@@ -90,6 +92,7 @@ export const lists = {
     deleteBody: 'The cards on it go with it.',
     deleteConfirm: 'Delete',
     deleteCancel: 'Cancel',
+    ownedFewer: 'You have {{count}} in your collection',
     saveFailed: 'Could not save.',
   },
   bar: {
@@ -160,7 +163,7 @@ export const lists = {
   },
   pricing: {
     rateLabel: 'TCGPlayer rate',
-    multiplierInvalid: 'Use a number between 1 and 50.',
+    multiplierInvalid: 'Use a number from 0.01 to 50.',
     fillEmpty_one: 'Fill {{count}} card without a price',
     fillEmpty_other: 'Fill {{count}} cards without a price',
     suggested: 'suggested',

@@ -55,6 +55,11 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
             <LinePrice listId={listId} line={line} name={displayName} />
           </span>
           {!line.sold && <TcgplayerNote listId={listId} line={line} name={displayName} />}
+          {!line.sold && line.owned !== undefined && line.owned !== null && line.quantity > line.owned && (
+            <span className={styles.ownedNote} data-testid="line-owned-note">
+              {t('lists.editor.ownedFewer', { count: line.owned })}
+            </span>
+          )}
           {!line.sold && (
             <button
               type="button"

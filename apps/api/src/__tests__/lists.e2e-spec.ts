@@ -487,6 +487,21 @@ describe('Card lists (E2E)', () => {
     expect(res.body.lines).toHaveLength(1);
     expect(res.body.lines[0].quantity).toBe(3);
   });
+  it('a sell line over the collection is allowed and says how many copies the collection holds', async () => {
+    const owner = await createSession('over-owned');
+    const sell = await createList(owner, 'sell');
+    const want = await createList(owner, 'want');
+    await ownCopies(owner, CARD_A.cardIdentifier, 1);
+
+    const added = await addLine(owner, sell, { cardIdentifier: CARD_A.cardIdentifier, quantity: 3 }).expect(201);
+    const missing = await addLine(owner, sell, { cardIdentifier: CARD_B.cardIdentifier, quantity: 1 }).expect(201);
+    const wanted = await addLine(owner, want, { cardIdentifier: CARD_A.cardIdentifier, quantity: 3 }).expect(201);
+
+    expect(added.body.lines[0]).toMatchObject({ quantity: 3, owned: 1 });
+    expect(missing.body.lines.find((line: { cardIdentifier: string }) => line.cardIdentifier === CARD_B.cardIdentifier)).toMatchObject({ quantity: 1, owned: 0 });
+    expect(wanted.body.lines[0].owned).toBeNull();
+  });
+
   it('marks a line sold in part or whole', async () => {
     const { owner, listId, lineId } = await soldFixture('sold-part', 3);
     const source = await createImport(owner);

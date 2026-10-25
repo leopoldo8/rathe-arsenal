@@ -55,6 +55,8 @@ export interface IListLine {
   readonly priceCents: number | null;
   readonly sold: boolean;
   readonly suggestion: IPriceSuggestion | null;
+  /** Sell lists: the copies of the card in the collection, whatever the version; null on a want list. */
+  readonly owned?: number | null;
 }
 
 export interface ICardList {

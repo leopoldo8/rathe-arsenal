@@ -55,6 +55,11 @@ export function parseMultiplier(raw: string): { readonly valid: true; readonly v
   return value > 0 && value <= MULTIPLIER_MAX ? { valid: true, value } : { valid: false };
 }
 
+/** "5,5" in pt-BR, "5.5" in en-US: the multiplier as the field shows it, with no grouping and at most two decimals. */
+export function formatMultiplier(value: number, language: string): string {
+  return new Intl.NumberFormat(language, { maximumFractionDigits: 2, useGrouping: false }).format(value);
+}
+
 /** Value for a money input: "6,50", no symbol. */
 export function formatMoneyInput(cents: number | null): string {
   return cents === null ? '' : BRL_NUMBER.format(cents / 100).replace(/\./g, '');
