@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { CollectionService } from '../collection/collection.service';
+import { assertVersionBelongsToCard } from '../collection/versions/collection-versions.service';
 import { ICopyVersion, isUnversioned, sameVersion } from '../collection/versions/copy-version';
 import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CsvSourceEntity } from '../database/entities/csv-source.entity';
@@ -12,6 +13,7 @@ import {
   cardListNotFound,
   lineAlreadySold,
   lineNotSold,
+  restoreNotFromSale,
   sellOnlyField,
   soldQuantityTooHigh,
   sourceNotFound,
@@ -29,6 +31,9 @@ export interface ISoldResult extends ICardList {
 interface IHeldRow extends ISaleHeldCopy {
   readonly id: number;
 }
+
+/** The most copies one collection row holds, as every other write to the collection caps it. */
+const MAX_COLLECTION_QUANTITY = 20;
 
 function versionOfLine(line: CardListLineEntity): ICopyVersion {
   return { printingCode: line.printingCode, edition: line.edition, finish: line.finish, condition: line.condition ?? '' };
@@ -177,13 +182,17 @@ export class ListSaleService {
     restore: readonly RestoredCopyDto[],
   ): Promise<void> {
     if (restore.reduce((sum, copy) => sum + copy.quantity, 0) > line.quantity) throw soldQuantityTooHigh();
+    const version = versionOfLine(line);
     for (const copy of restore) {
+      // A sale only ever takes the line's own version or copies with no version, so nothing else can come back.
+      assertVersionBelongsToCard(line.cardIdentifier, copy);
+      if (!sameVersion(copy, version) && !isUnversioned(copy)) throw restoreNotFromSale();
       await this.assertSourceIsTheirs(manager, userId, copy.sourceId);
       const inserted = (await manager.query(
         `INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition, quantity)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition)
-         DO UPDATE SET quantity = collection_card.quantity + EXCLUDED.quantity, "lastUpdated" = now()
+         DO UPDATE SET quantity = LEAST(collection_card.quantity + EXCLUDED.quantity, ${MAX_COLLECTION_QUANTITY}), "lastUpdated" = now()
          RETURNING (xmax = 0) AS "isNew"`,
         [userId, line.cardIdentifier, copy.sourceId, copy.printingCode, copy.edition, copy.finish, copy.condition, copy.quantity],
       )) as [{ isNew: boolean }];

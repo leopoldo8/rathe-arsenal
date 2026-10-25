@@ -5,6 +5,7 @@ export type TListsErrorCode =
   | 'DECK_NOT_FOUND'
   | 'LINE_ALREADY_SOLD'
   | 'LINE_NOT_SOLD'
+  | 'RESTORE_NOT_FROM_SALE'
   | 'SOURCE_NOT_FOUND'
   | 'SOURCE_REQUIRED'
   | 'SOLD_QUANTITY_TOO_HIGH'
@@ -54,4 +55,8 @@ export function sourceRequired(): HttpException {
 
 export function soldQuantityTooHigh(): HttpException {
   return listsError('SOLD_QUANTITY_TOO_HIGH', 'The line holds fewer copies than the sale names', HttpStatus.BAD_REQUEST);
+}
+
+export function restoreNotFromSale(): HttpException {
+  return listsError('RESTORE_NOT_FROM_SALE', 'Only copies of the version the line was sold at, or with no version, can be put back', HttpStatus.BAD_REQUEST);
 }

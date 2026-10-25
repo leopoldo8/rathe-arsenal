@@ -296,6 +296,20 @@ describe('collection versions (E2E)', () => {
       request(server).patch(`/api/collection/pending/${pendingId}`).send({ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', edition: 'first' }),
     ).expect(400);
 
+    // Undoing a sale puts copies back at a version: it cannot mint one the card lacks, nor one the sold line never held.
+    const sellList = (await as(owner, request(server).post('/api/lists').send({ kind: 'sell', name: 'Vendo' })).expect(201)).body.id as number;
+    const soldLine = (await as(owner, request(server).post(`/api/lists/${sellList}/lines`).send({ cardIdentifier: SNATCH, quantity: 1 })).expect(201)).body
+      .lines[0].id as number;
+    await as(owner, request(server).post(`/api/lists/${sellList}/lines/${soldLine}/sold`).send({ quantity: 1, removeFromCollection: false })).expect(200);
+    for (const bad of [{ printingCode: 'WTR023' }, { printingCode: 'WTR167', edition: 'first' }, { printingCode: 'WTR167' }]) {
+      await as(
+        owner,
+        request(server)
+          .post(`/api/lists/${sellList}/lines/${soldLine}/unsold`)
+          .send({ restore: [{ sourceId: list, ...{ printingCode: '', edition: '', finish: '', condition: '' }, ...bad, quantity: 1 }] }),
+      ).expect(400);
+    }
+
     const [{ stillPending }] = await dataSource.query(
       `SELECT count(*)::int AS "stillPending" FROM import_pending_line WHERE id = $1`,
       [pendingId],
