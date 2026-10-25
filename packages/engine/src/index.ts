@@ -91,9 +91,12 @@ export type {
   TLegalityReasonDetail,
 } from './legality';
 export type { ICardLegalityViolation } from './legality';
+export type { IRuleChange, IFormatVerdict } from './legality';
 export {
   FORMAT_RULES,
+  RULE_CHANGES,
   computeDeckLegality,
+  computeDeckLegalityInOtherFormats,
   isSizeProblem,
   findCardLegalityViolation,
   getCopyLimit,

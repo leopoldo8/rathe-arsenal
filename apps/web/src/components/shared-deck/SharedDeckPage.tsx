@@ -8,6 +8,7 @@ import { SharedComparison } from './SharedComparison';
 import { SharedDeckFooter } from './SharedDeckFooter';
 import { SharedDeckGallery } from './SharedDeckGallery';
 import { SharedDeckHeader } from './SharedDeckHeader';
+import { SharedLegalityBlock } from './SharedLegalityBlock';
 import { SharedDeckUnavailable } from './SharedDeckUnavailable';
 import { SharedMissingGallery } from './SharedMissingGallery';
 import { SharedTopBar } from './SharedTopBar';
@@ -82,6 +83,9 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
               />
               {deck.intent === 'deck' && <SharedComparison deck={deck} />}
             </div>
+            {deck.intent === 'deck' && deck.legality !== null && (
+              <SharedLegalityBlock format={deck.format} legality={deck.legality} />
+            )}
             {deck.intent === 'deck' && <SharedCopyList deck={deck} />}
             {deck.intent === 'deck' ? <SharedDeckGallery cards={deck.cards} /> : <SharedMissingGallery deck={deck} />}
           </div>

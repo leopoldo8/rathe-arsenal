@@ -69,6 +69,20 @@ export function computeDeckLegality(
   });
 }
 
+export interface IFormatVerdict extends IDeckLegalityResult {
+  readonly format: TSupportedFormat;
+}
+
+export function computeDeckLegalityInOtherFormats(
+  deck: ILegalityDeck,
+  catalog: ILegalityCatalog,
+  format: string,
+): readonly IFormatVerdict[] {
+  return FORMAT_ORDER.filter((other) => other !== format).map((other) =>
+    Object.freeze({ ...computeDeckLegality(deck, catalog, other), format: other as TSupportedFormat }),
+  );
+}
+
 export function isSizeProblem(detail: TLegalityReasonDetail): boolean {
   return SIZE_CODES.has(detail.code);
 }

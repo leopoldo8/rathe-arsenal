@@ -1,198 +1,108 @@
-/**
- * Tests for /decks/new (DecksNewPage) — U15 two-path landing.
- *
- * Covers:
- *  - Page renders heading "Add new deck" + two cards
- *  - Back-to-home link is present
- *  - ImportFabraryCard: valid URL → calls import mutation → navigates to detail
- *  - ImportFabraryCard: invalid URL → error, no mutation call
- *  - ImportFabraryCard: does not pass seedInventory:true
- *  - ImportFabraryCard: mutation error → inline error shown
- *  - StartScratchCard: "Start building" disabled until both fields set
- *  - StartScratchCard: hero + format → POST /decks → navigate to /decks/:id?edit=1
- *  - StartScratchCard: POST /decks 400 → inline error in card
- *  - StartScratchCard: hero combobox shows only hero-type cards (via useHeroesQuery)
- *  - StartScratchCard: format dropdown lists 4 supported formats
- */
-
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// ---------------------------------------------------------------------------
-// Hoisted mock state — must be declared before vi.mock factories
-// ---------------------------------------------------------------------------
-
-const { mockNavigate, importMutate, scratchMutateHolder } = vi.hoisted(() => {
-  const mockNavigate = vi.fn();
-  const importMutate = vi.fn();
-  // Use a holder object so the factory can always read the latest .fn value
-  const scratchMutateHolder = { fn: vi.fn(), isPending: false };
-  return { mockNavigate, importMutate, scratchMutateHolder };
-});
-
-// ---------------------------------------------------------------------------
-// Mocks for TanStack Router
-// ---------------------------------------------------------------------------
+const { mockNavigate, importMutate, scratchMutateHolder } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  importMutate: vi.fn(),
+  scratchMutateHolder: { fn: vi.fn(), isPending: false },
+}));
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (_config: unknown) => ({
     useSearch: () => ({}),
   }),
   useNavigate: () => mockNavigate,
-  Link: ({
-    children,
-    to,
-    className,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    className?: string;
-  }) => (
-    <a href={to} className={className}>
+  Link: ({ children, to, className, ...rest }: { children: React.ReactNode; to: string; className?: string }) => (
+    <a href={to} className={className} {...rest}>
       {children}
     </a>
   ),
 }));
 
-// ---------------------------------------------------------------------------
-// Mock decks API
-// ---------------------------------------------------------------------------
-
 vi.mock('../../../api/decks', () => ({
-  useImportDecksMutation: () => ({
-    mutate: importMutate,
-    isPending: false,
-  }),
-  useCreateScratchDeckMutation: () => ({
-    mutate: scratchMutateHolder.fn,
-    isPending: scratchMutateHolder.isPending,
-  }),
+  useImportDecksMutation: () => ({ mutate: importMutate, isPending: false }),
+  useCreateScratchDeckMutation: () => ({ mutate: scratchMutateHolder.fn, isPending: scratchMutateHolder.isPending }),
 }));
 
-// ---------------------------------------------------------------------------
-// Mock catalog API — StartScratchCard calls useHeroesQuery directly to gate
-// submission by hero/format legality. The hero used by these tests is
-// Classic-Constructed-legal so the gating never blocks the happy paths.
-// ---------------------------------------------------------------------------
+function art(name: string): { small: string; large: string; sources: [] } {
+  return { small: `/art/${name}-small.webp`, large: `/art/${name}-large.webp`, sources: [] };
+}
+
+const HEROES = [
+  {
+    cardIdentifier: 'rhinar',
+    name: 'Rhinar',
+    hero: 'Rhinar',
+    young: true,
+    legalFormats: ['Blitz', 'Draft', 'Open', 'Silver Age', 'Ultimate Pit Fight'],
+    imageUrl: art('rhinar'),
+  },
+  {
+    cardIdentifier: 'rhinar-reckless-rampage',
+    name: 'Rhinar, Reckless Rampage',
+    hero: 'Rhinar',
+    young: false,
+    legalFormats: ['Classic Constructed', 'Golden Age', 'Living Legend', 'Open'],
+    imageUrl: art('rhinar-adult'),
+  },
+  {
+    cardIdentifier: 'dorinthea-ironsong',
+    name: 'Dorinthea Ironsong',
+    hero: 'Dorinthea',
+    young: false,
+    legalFormats: ['Classic Constructed', 'Open'],
+    imageUrl: art('dorinthea'),
+  },
+  {
+    cardIdentifier: 'open-only-hero',
+    name: 'Rhinar Open Only',
+    hero: 'Rhinar',
+    young: false,
+    legalFormats: ['Open'],
+    imageUrl: null,
+  },
+];
 
 vi.mock('../../../api/catalog', () => ({
-  useHeroesQuery: () => ({
-    data: {
-      heroes: [
-        {
-          cardIdentifier: 'dorinthea-ironsong-wtr',
-          name: 'Dorinthea Ironsong',
-          young: false,
-          legalFormats: ['Classic Constructed', 'Blitz'],
-          imageUrl: null,
-        },
-      ],
-    },
-    isLoading: false,
-    isFetching: false,
-  }),
+  useHeroesQuery: () => ({ data: { heroes: HEROES }, isLoading: false, isFetching: false }),
   HEROES_QUERY_KEY: ['catalog-heroes'],
 }));
 
-// ---------------------------------------------------------------------------
-// Mock HeroDropdown (from deck-detail) — simple controlled input
-// ---------------------------------------------------------------------------
-
-vi.mock('../../../components/deck-detail/HeroDropdown', () => ({
-  HeroDropdown: ({
-    value,
-    onChange,
-  }: {
-    value: string | null;
-    onChange: (id: string | null) => void;
-  }) => (
-    <div data-testid="hero-dropdown-mock">
-      <input
-        data-testid="hero-dropdown-input-mock"
-        placeholder="Search hero..."
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-      />
-    </div>
-  ),
-}));
-
-// ---------------------------------------------------------------------------
-// Mock FormatDropdown (from deck-detail) — native select with 4 options
-// ---------------------------------------------------------------------------
-
-vi.mock('../../../components/deck-detail/FormatDropdown', () => ({
-  FormatDropdown: ({
-    value,
-    onChange,
-  }: {
-    value: string;
-    onChange: (f: string) => void;
-  }) => (
-    <div data-testid="format-dropdown-mock">
-      <select
-        data-testid="format-dropdown-select-mock"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">Select format</option>
-        <option value="Classic Constructed">Classic Constructed</option>
-        <option value="Blitz">Blitz</option>
-        <option value="Draft">Draft</option>
-        <option value="Sealed">Sealed</option>
-      </select>
-    </div>
-  ),
-  SUPPORTED_FORMATS: [
-    { value: 'Classic Constructed', label: 'Classic Constructed' },
-    { value: 'Blitz', label: 'Blitz' },
-    { value: 'Draft', label: 'Draft' },
-    { value: 'Sealed', label: 'Sealed' },
-  ],
-}));
-
-// ---------------------------------------------------------------------------
-// Import under test
-// ---------------------------------------------------------------------------
-
 import { DecksNewPage } from '../decks.new';
 
-function cls(name: string | undefined): string {
-  if (!name) throw new Error('css module class is missing');
-  return name;
-}
-
-import pageStyles from '../decks.new.module.css';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function createTestQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0, staleTime: 0 },
-      mutations: { retry: false },
-    },
-  });
-}
-
 function renderPage(): ReturnType<typeof render> {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 }, mutations: { retry: false } },
+  });
   return render(
-    <QueryClientProvider client={createTestQueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <DecksNewPage />
     </QueryClientProvider>,
   );
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+async function openScratch(): Promise<void> {
+  await userEvent.click(screen.getByRole('button', { name: /^Começar do zero/ }));
+}
 
-describe('DecksNewPage — /decks/new', () => {
+async function searchHero(query: string): Promise<void> {
+  await openScratch();
+  await userEvent.type(screen.getByRole('searchbox'), query);
+}
+
+async function pickHero(name: RegExp | string): Promise<void> {
+  await userEvent.click(screen.getByRole('button', { name }));
+}
+
+function orderOf(...texts: readonly string[]): readonly number[] {
+  const body = document.body.textContent ?? '';
+  return texts.map((text) => body.indexOf(text));
+}
+
+describe('DecksNewPage', () => {
   beforeEach(() => {
     importMutate.mockReset();
     mockNavigate.mockReset();
@@ -200,274 +110,206 @@ describe('DecksNewPage — /decks/new', () => {
     scratchMutateHolder.isPending = false;
   });
 
-  // -------------------------------------------------------------------------
-  // Page structure
-  // -------------------------------------------------------------------------
-
-  it('renders heading "Add new deck"', () => {
+  it('three ways to start a deck', () => {
     renderPage();
+
+    expect(screen.getByRole('heading', { name: 'Novo deck' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Comprei um deck pronto/ })).toBeInTheDocument();
+    const fabrary = screen.getByRole('button', { name: /Tenho um link do Fabrary/ });
+    const scratch = screen.getByRole('button', { name: /Começar do zero/ });
+    expect(fabrary).toHaveAttribute('aria-expanded', 'false');
+    expect(scratch).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Link do deck no Fabrary/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Voltar para os decks/ })).toHaveAttribute('href', '/home');
+  });
+
+  it('matches r2-new-deck-hero-phone', async () => {
+    renderPage();
+
+    await searchHero('rhinar');
+
+    const young = screen.getByRole('button', { name: /Rhinar · jovem/ });
+    const adult = screen.getByRole('button', { name: /Rhinar, Reckless Rampage/ });
+    expect(within(young).getByText('Blitz')).toBeInTheDocument();
+    expect(within(young).getByText('Silver Age')).toBeInTheDocument();
+    expect(within(young).queryByText('Open')).not.toBeInTheDocument();
+    expect(within(young).queryByText('Draft')).not.toBeInTheDocument();
+    expect(within(adult).getByText('Classic Constructed')).toBeInTheDocument();
+    expect(within(adult).getByText('Living Legend')).toBeInTheDocument();
+    expect(within(adult).queryByText('Golden Age')).not.toBeInTheDocument();
+    expect(young.querySelector('img')).toHaveAttribute('src', '/art/rhinar-small.webp');
+    expect(adult.querySelector('img')).toHaveAttribute('src', '/art/rhinar-adult-small.webp');
+    expect(document.querySelector('[aria-selected="true"], [aria-current], [data-active="true"]')).toBeNull();
+    expect(screen.getAllByText('Herói jovem: versão para Blitz e Silver Age, decks de 40 cartas.')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Dorinthea/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Open Only/ })).not.toBeInTheDocument();
+    expect(orderOf('Rhinar · jovem', 'Rhinar, Reckless Rampage').every((at) => at >= 0)).toBe(true);
+  });
+
+  it('matches r2-new-deck-format-phone', async () => {
+    renderPage();
+    await searchHero('rhinar');
+
+    await pickHero(/Rhinar · jovem/);
+
+    expect(screen.getByRole('button', { name: '‹ Escolher outro herói' })).toBeInTheDocument();
+    expect(screen.getByText('Você escolheu Rhinar')).toBeInTheDocument();
+    expect(screen.getByText('Herói jovem')).toBeInTheDocument();
+    expect(screen.getByText('Formato')).toBeInTheDocument();
+    expect(screen.getByText('Blitz: 40 cartas, 1 cópia de cada')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /^novo deck$/i }),
+      screen.getByText('Silver Age: 40 cartas, até 2 cópias, só cartas que já saíram como comum ou rara'),
+    ).toBeInTheDocument();
+    const formats = screen.getAllByRole('radio');
+    expect(formats.map((radio) => radio.getAttribute('value'))).toEqual(['Blitz', 'Silver Age']);
+    expect(formats.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
+    const start = screen.getByRole('button', { name: 'Começar a montar' });
+    expect(start).toBeDisabled();
+    expect(
+      orderOf('‹ Escolher outro herói', 'Você escolheu Rhinar', 'Herói jovem', 'Formato', 'Blitz: 40', 'Silver Age: 40').every(
+        (at, index, all) => at >= 0 && (index === 0 || at > all[index - 1]!),
+      ),
+    ).toBe(true);
+
+    await userEvent.click(formats[0]!);
+
+    expect(start).toBeEnabled();
+  });
+
+  it('a hero with one format shows it unchecked', async () => {
+    renderPage();
+    await searchHero('dorinthea');
+
+    await pickHero(/Dorinthea Ironsong/);
+
+    const formats = screen.getAllByRole('radio');
+    expect(formats).toHaveLength(1);
+    expect((formats[0] as HTMLInputElement).checked).toBe(false);
+    expect(screen.queryByText('Herói jovem')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Começar a montar' })).toBeDisabled();
+  });
+
+  it('derives the Classic Constructed and Living Legend lines from the rules table', async () => {
+    renderPage();
+    await searchHero('rhinar');
+
+    await pickHero(/Rhinar, Reckless Rampage/);
+
+    expect(screen.getByText('Classic Constructed: pelo menos 60 cartas, até 3 cópias de cada')).toBeInTheDocument();
+    expect(
+      screen.getByText('Living Legend: pelo menos 60 cartas, até 3 cópias de cada, e só 1 de uma carta restrita'),
     ).toBeInTheDocument();
   });
 
-  it('does NOT render old heading "Track a deck"', () => {
+  it('going back to the hero search keeps what was typed', async () => {
     renderPage();
-    expect(
-      screen.queryByRole('heading', { name: /track a deck/i }),
-    ).not.toBeInTheDocument();
+    await searchHero('rhinar');
+    await pickHero(/Rhinar · jovem/);
+
+    await userEvent.click(screen.getByRole('button', { name: '‹ Escolher outro herói' }));
+
+    expect(screen.getByRole('searchbox')).toHaveValue('rhinar');
   });
 
-  it('renders two cards', () => {
-    renderPage();
-    expect(screen.getByTestId('import-fabrary-card')).toBeInTheDocument();
-    expect(screen.getByTestId('start-scratch-card')).toBeInTheDocument();
-  });
-
-  it('puts both cards inside the two-column grid wrapper', () => {
-    const { container } = renderPage();
-    const grid = container.querySelector(`.${cls(pageStyles.cards)}`);
-    expect(grid).not.toBeNull();
-    expect(grid).toContainElement(screen.getByTestId('import-fabrary-card'));
-    expect(grid).toContainElement(screen.getByTestId('start-scratch-card'));
-    expect(container.firstElementChild).toHaveClass(cls(pageStyles.page));
-  });
-
-  it('renders plain card headings with no icon tile', () => {
-    renderPage();
-    expect(screen.getByTestId('import-fabrary-card').querySelector('svg')).toBeNull();
-    expect(screen.getByTestId('start-scratch-card').querySelector('svg')).toBeNull();
-  });
-
-  it('labels the CTAs with the handoff copy', () => {
-    renderPage();
-    expect(screen.getByRole('button', { name: 'Importar deck' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Começar a montar' })).toBeInTheDocument();
-  });
-
-  it('renders the back-to-home link', () => {
-    renderPage();
-    const back = screen.getByRole('link', { name: /início/i });
-    expect(back).toHaveAttribute('href', '/home');
-  });
-
-  // -------------------------------------------------------------------------
-  // ImportFabraryCard happy path
-  // -------------------------------------------------------------------------
-
-  it('ImportFabraryCard: renders the Fabrary URL input', () => {
-    renderPage();
-    expect(screen.getByLabelText(/Link do deck no Fabrary/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /importar deck/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('ImportFabraryCard: calls import mutation with correct payload on valid URL', async () => {
-    renderPage();
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-    expect(importMutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        urls: ['https://fabrary.net/decks/01HABCDEFG12345'],
-      }),
-      expect.any(Object),
-    );
-  });
-
-  it('ImportFabraryCard: on success navigates to deck detail in View mode', async () => {
-    importMutate.mockImplementation(
-      (_payload: unknown, { onSuccess }: { onSuccess: (r: unknown) => void }) => {
-        onSuccess({ imported: [{ trackedDeckId: 42 }] });
-      },
-    );
-    renderPage();
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: '/decks/$deckId',
-        params: { deckId: '42' },
-        search: { edit: undefined },
-      }),
-    );
-  });
-
-  it('ImportFabraryCard: rejects an invalid URL without calling the mutation', async () => {
-    renderPage();
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    await userEvent.type(input, 'not-a-url');
-    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-    expect(importMutate).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(/Esse não é um link de deck do Fabrary/i),
-    ).toBeInTheDocument();
-  });
-
-  it('ImportFabraryCard: mutation error shows inline error', async () => {
-    importMutate.mockImplementation(
-      (_payload: unknown, { onError }: { onError: (e: Error) => void }) => {
-        onError(new Error('Server unavailable'));
-      },
-    );
-    renderPage();
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-    expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
-  });
-
-  it('ImportFabraryCard: does not opt into inventory seeding', async () => {
-    renderPage();
-    const input = screen.getByLabelText(/Link do deck no Fabrary/i);
-    fireEvent.change(input, {
-      target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
-    });
-    await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
-    const [payload] = importMutate.mock.calls[0] as [
-      { seedInventory?: boolean },
-    ];
-    expect(payload.seedInventory).not.toBe(true);
-  });
-
-  // -------------------------------------------------------------------------
-  // StartScratchCard — disabled state
-  // -------------------------------------------------------------------------
-
-  it('StartScratchCard: "Start building" is disabled when no fields are set', () => {
-    renderPage();
-    const btn = screen.getByTestId('start-building-btn');
-    expect(btn).toBeDisabled();
-  });
-
-  it('StartScratchCard: "Start building" is disabled when only hero is set', () => {
-    renderPage();
-    const heroInput = screen.getByTestId('hero-dropdown-input-mock');
-    fireEvent.change(heroInput, {
-      target: { value: 'dorinthea-ironsong-wtr' },
-    });
-    const btn = screen.getByTestId('start-building-btn');
-    expect(btn).toBeDisabled();
-  });
-
-  it('StartScratchCard: "Start building" is disabled when only format is set', () => {
-    renderPage();
-    const formatSelect = screen.getByTestId('format-dropdown-select-mock');
-    fireEvent.change(formatSelect, { target: { value: 'Classic Constructed' } });
-    const btn = screen.getByTestId('start-building-btn');
-    expect(btn).toBeDisabled();
-  });
-
-  it('StartScratchCard: "Start building" is enabled when both fields are set', () => {
-    renderPage();
-    const heroInput = screen.getByTestId('hero-dropdown-input-mock');
-    fireEvent.change(heroInput, {
-      target: { value: 'dorinthea-ironsong-wtr' },
-    });
-    const formatSelect = screen.getByTestId('format-dropdown-select-mock');
-    fireEvent.change(formatSelect, { target: { value: 'Classic Constructed' } });
-    const btn = screen.getByTestId('start-building-btn');
-    expect(btn).not.toBeDisabled();
-  });
-
-  // -------------------------------------------------------------------------
-  // StartScratchCard — happy path submission
-  // -------------------------------------------------------------------------
-
-  it('StartScratchCard: submits with hero + format and navigates to edit mode', async () => {
+  it('creates the deck with the hero and the chosen format and opens the editor', async () => {
     scratchMutateHolder.fn.mockImplementation(
-      (
-        _payload: unknown,
-        { onSuccess }: { onSuccess: (r: { id: number }) => void },
-      ) => {
-        onSuccess({ id: 99 });
-      },
+      (_payload: unknown, { onSuccess }: { onSuccess: (result: { id: number }) => void }) => onSuccess({ id: 99 }),
     );
     renderPage();
+    await searchHero('rhinar');
+    await pickHero(/Rhinar · jovem/);
 
-    const heroInput = screen.getByTestId('hero-dropdown-input-mock');
-    fireEvent.change(heroInput, {
-      target: { value: 'dorinthea-ironsong-wtr' },
-    });
-    const formatSelect = screen.getByTestId('format-dropdown-select-mock');
-    fireEvent.change(formatSelect, { target: { value: 'Classic Constructed' } });
-
-    await userEvent.click(screen.getByTestId('start-building-btn'));
+    await userEvent.click(screen.getByRole('radio', { name: /^Silver Age/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Começar a montar' }));
 
     expect(scratchMutateHolder.fn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        heroIdentifier: 'dorinthea-ironsong-wtr',
-        format: 'Classic Constructed',
-      }),
+      expect.objectContaining({ heroIdentifier: 'rhinar', format: 'Silver Age' }),
       expect.any(Object),
     );
-
     expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: '/decks/$deckId',
-        params: { deckId: '99' },
-        search: { edit: 1 },
-      }),
+      expect.objectContaining({ to: '/decks/$deckId', params: { deckId: '99' }, search: { edit: 1 } }),
     );
   });
 
-  // -------------------------------------------------------------------------
-  // StartScratchCard — error path
-  // -------------------------------------------------------------------------
-
-  it('StartScratchCard: POST /decks 400 shows inline error in card', async () => {
+  it('shows the server error when the deck cannot be created', async () => {
     scratchMutateHolder.fn.mockImplementation(
-      (_payload: unknown, { onError }: { onError: (e: Error) => void }) => {
-        onError(new Error('Hero not found'));
-      },
+      (_payload: unknown, { onError }: { onError: (error: Error) => void }) => onError(new Error('Hero not found')),
     );
     renderPage();
+    await searchHero('rhinar');
+    await pickHero(/Rhinar · jovem/);
 
-    const heroInput = screen.getByTestId('hero-dropdown-input-mock');
-    fireEvent.change(heroInput, {
-      target: { value: 'dorinthea-ironsong-wtr' },
+    await userEvent.click(screen.getByRole('radio', { name: /^Blitz/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Começar a montar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Hero not found');
+  });
+
+  describe('the Fabrary link row', () => {
+    async function openFabrary(): Promise<void> {
+      await userEvent.click(screen.getByRole('button', { name: /Tenho um link do Fabrary/ }));
+    }
+
+    it('imports a deck from a valid link and opens it', async () => {
+      importMutate.mockImplementation(
+        (_payload: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
+          onSuccess({ imported: [{ trackedDeckId: 42 }], errors: [], skipped: [] }),
+      );
+      renderPage();
+      await openFabrary();
+
+      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
+        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
+      });
+      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
+
+      expect(importMutate).toHaveBeenCalledWith(
+        expect.objectContaining({ urls: ['https://fabrary.net/decks/01HABCDEFG12345'] }),
+        expect.any(Object),
+      );
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.objectContaining({ to: '/decks/$deckId', params: { deckId: '42' }, search: { edit: undefined } }),
+      );
     });
-    const formatSelect = screen.getByTestId('format-dropdown-select-mock');
-    fireEvent.change(formatSelect, { target: { value: 'Classic Constructed' } });
 
-    await userEvent.click(screen.getByTestId('start-building-btn'));
+    it('refuses a link that is not a Fabrary deck without calling the server', async () => {
+      renderPage();
+      await openFabrary();
 
-    expect(screen.getByTestId('scratch-error')).toBeInTheDocument();
-    expect(screen.getByText(/Hero not found/i)).toBeInTheDocument();
-  });
+      await userEvent.type(screen.getByLabelText(/Link do deck no Fabrary/i), 'not-a-url');
+      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
 
-  // -------------------------------------------------------------------------
-  // StartScratchCard — hero combobox backed by useHeroesQuery
-  // -------------------------------------------------------------------------
+      expect(importMutate).not.toHaveBeenCalled();
+      expect(screen.getByText(/Esse não é um link de deck do Fabrary/i)).toBeInTheDocument();
+    });
 
-  it('StartScratchCard: hero combobox is backed by useHeroesQuery (hero-type only)', () => {
-    // HeroDropdown is mocked — this verifies the slot renders correctly.
-    // The actual data source (useHeroesQuery returning only Type.Hero records)
-    // is tested in HeroDropdown.spec.tsx.
-    renderPage();
-    expect(screen.getByTestId('hero-dropdown-mock')).toBeInTheDocument();
-  });
+    it('shows the error the import answers with', async () => {
+      importMutate.mockImplementation(
+        (_payload: unknown, { onError }: { onError: (error: Error) => void }) => onError(new Error('Server unavailable')),
+      );
+      renderPage();
+      await openFabrary();
 
-  // -------------------------------------------------------------------------
-  // StartScratchCard — format dropdown has 4 supported formats
-  // -------------------------------------------------------------------------
+      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
+        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
+      });
+      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
 
-  it('StartScratchCard: format dropdown renders all 4 supported formats', () => {
-    renderPage();
-    const select = screen.getByTestId('format-dropdown-select-mock');
-    expect(
-      select.querySelectorAll('option[value="Classic Constructed"]'),
-    ).toHaveLength(1);
-    expect(select.querySelectorAll('option[value="Blitz"]')).toHaveLength(1);
-    expect(select.querySelectorAll('option[value="Draft"]')).toHaveLength(1);
-    expect(select.querySelectorAll('option[value="Sealed"]')).toHaveLength(1);
+      expect(screen.getByText(/Server unavailable/i)).toBeInTheDocument();
+    });
+
+    it('does not opt into inventory seeding', async () => {
+      renderPage();
+      await openFabrary();
+
+      fireEvent.change(screen.getByLabelText(/Link do deck no Fabrary/i), {
+        target: { value: 'https://fabrary.net/decks/01HABCDEFG12345' },
+      });
+      await userEvent.click(screen.getByRole('button', { name: /importar deck/i }));
+
+      const [payload] = importMutate.mock.calls[0] as [{ seedInventory?: boolean }];
+      expect(payload.seedInventory).not.toBe(true);
+    });
   });
 });

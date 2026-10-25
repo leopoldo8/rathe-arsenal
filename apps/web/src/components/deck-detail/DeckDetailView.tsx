@@ -20,6 +20,9 @@ import { findSuggestions, summariseDeck } from './deckDetailModel';
 import { buildDeckList } from './deckListModel';
 import { buildListCards } from './deckListCards';
 import { CopyListSheet } from './CopyListSheet';
+import { HeroOutsideFormatPanel } from './HeroOutsideFormatPanel';
+import { hasHeroOutsideFormat } from './heroOutsideFormatModel';
+import { useOtherFormatVerdicts } from './useOtherFormatVerdicts';
 import styles from './DeckDetailView.module.css';
 
 interface IDeckDetailViewProps {
@@ -82,6 +85,7 @@ export function DeckDetailView({
     () => buildListCards(snapshot.breakdown, summary.openMissing, deck.hero),
     [snapshot.breakdown, summary.openMissing, deck.hero],
   );
+  const otherFormats = useOtherFormatVerdicts(deck, snapshot);
   const deckCards = useMemo((): IRecommendationDeckCard[] => {
     const seen = new Map<string, IRecommendationDeckCard>();
     for (const { entry } of items) {
@@ -121,7 +125,13 @@ export function DeckDetailView({
         fabraryUlid={deck.fabraryUlid}
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
       />
-      <DeckCauseLine legality={deck.legality} />
+      <HeroOutsideFormatPanel
+        deckId={deck.id}
+        format={deck.format}
+        legality={deck.legality}
+        otherFormats={otherFormats}
+      />
+      {!hasHeroOutsideFormat(deck.legality.details) && <DeckCauseLine legality={deck.legality} />}
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (

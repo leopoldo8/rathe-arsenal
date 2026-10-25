@@ -18,6 +18,16 @@ export interface ISharedCard {
   imageUrl: ISharedCardImage | null;
 }
 
+export interface ISharedFormatVerdict {
+  category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
+  details: { code: string; params: Record<string, unknown> }[];
+}
+
+export interface ISharedDeckLegality extends ISharedFormatVerdict {
+  heroYoung: boolean | null;
+  otherFormats: (ISharedFormatVerdict & { format: string })[];
+}
+
 export interface ISharedDeckResponse {
   intent: TDeckShareIntent;
   token: string;
@@ -39,6 +49,8 @@ export interface ISharedDeckResponse {
   /** The owner's missing cards for the 'missing' intent; empty for 'deck', enforced here and not only in the UI. */
   missing: ISharedCard[];
   missingCount: number;
+  /** The deck's verdict in its own format and in the others, for the 'deck' intent; null for 'missing'. */
+  legality: ISharedDeckLegality | null;
 }
 
 export interface ISharedDeckCoverage {

@@ -28,6 +28,17 @@ export interface ISharedCard {
 
 export type TShareIntent = 'deck' | 'missing';
 
+export interface ISharedFormatVerdict {
+  readonly category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
+  readonly details: readonly { readonly code: string; readonly params: Readonly<Record<string, string | number | boolean | null | readonly string[]>> }[];
+}
+
+export interface ISharedDeckLegality extends ISharedFormatVerdict {
+  /** Null when the hero is not in the catalog. */
+  readonly heroYoung: boolean | null;
+  readonly otherFormats: readonly (ISharedFormatVerdict & { readonly format: string })[];
+}
+
 export interface ISharedDeckResponse {
   readonly intent: TShareIntent;
   readonly token: string;
@@ -52,6 +63,8 @@ export interface ISharedDeckResponse {
   readonly contactWhatsapp: string | null;
   /** The deck's id, only for the owner (to link back to the deck); null for everyone else. */
   readonly deckId: number | null;
+  /** Intent 'deck': the verdict in the deck's own format and in the others. Intent 'missing': null. */
+  readonly legality: ISharedDeckLegality | null;
 }
 
 export interface ISharedDeckCoverage {

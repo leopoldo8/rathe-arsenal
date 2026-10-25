@@ -111,6 +111,7 @@ const DECK: ISharedDeckResponse = {
   missingCount: 0,
   contactWhatsapp: null,
   deckId: null,
+  legality: null,
 };
 
 const MISSING_TOKEN = 'mQ8rZ3nUp2bX5yKdFgHjLs';
@@ -122,6 +123,7 @@ const WANTED: ISharedDeckResponse = {
   cards: [],
   missing: MISSING,
   missingCount: 3,
+  legality: null,
 };
 
 function renderPage(_unused: undefined = undefined, auth = makeAuth({ user: null }), token = TOKEN) {
@@ -165,6 +167,17 @@ describe('SharedDeckPage', () => {
       const footer = screen.getByTestId('shared-deck-footer');
       expect(footer).toHaveTextContent('Legend Story Studios®');
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
+    });
+
+    it('shows the verdict block the answer carries', async () => {
+      api.handlers.set(`GET /shared/decks/${TOKEN}`, () => ({
+        ...DECK,
+        format: 'Blitz',
+        legality: { category: 'legal', heroYoung: true, details: [], otherFormats: [] },
+      }));
+      renderPage();
+
+      expect(await screen.findByText('Blitz · pode jogar')).toBeInTheDocument();
     });
 
     it('a visitor can copy the list', async () => {

@@ -72,6 +72,23 @@ export function computeDraftLegality(
   );
 }
 
+export interface IOtherFormatResult extends IDeckLegalityResult {
+  readonly format: string;
+}
+
+/** The draft's verdict in each supported format but its own; empty while the draft's hero is loading. */
+export function computeDraftLegalityInOtherFormats(
+  draft: ICompositionDraft,
+  hero: IHeroListItem | null,
+): readonly IOtherFormatResult[] {
+  return Object.keys(FORMAT_RULES)
+    .filter((format) => format !== draft.format)
+    .flatMap((format) => {
+      const result = computeDraftLegality({ ...draft, format }, hero);
+      return result === null ? [] : [{ ...result, format }];
+    });
+}
+
 export type TCopyLimitKind = 'format' | 'legendary' | 'restricted';
 
 export interface ICopyInfo {

@@ -41,7 +41,7 @@ const visitor = (userId: string): ICurrentUser => ({
 
 function build(
   inventories: Record<string, Map<string, number>> = {},
-  options: { intent?: TDeckShareIntent; showsContact?: boolean } = {},
+  options: { intent?: TDeckShareIntent; showsContact?: boolean; deck?: TrackedDeckEntity; rows?: DeckCardEntity[] } = {},
 ) {
   const link = {
     id: 1,
@@ -50,7 +50,7 @@ function build(
   } as ShareLinkEntity & { intent: TDeckShareIntent };
   const lookup = createMock<SharedDeckLookup>();
   lookup.findLive.mockImplementation(async (token, intent) =>
-    token === 'live' && (!intent || intent === link.intent) ? { link, deck: DECK, owner: OWNER } : null,
+    token === 'live' && (!intent || intent === link.intent) ? { link, deck: options.deck ?? DECK, owner: OWNER } : null,
   );
   const events = createMock<ShareEventsService>();
   const collection = createMock<CollectionReadService>();
@@ -61,7 +61,7 @@ function build(
   const config = createMock<ConfigService>();
   config.get.mockReturnValue('https://app.example');
   const deckCards = createMock<Repository<DeckCardEntity>>();
-  deckCards.find.mockResolvedValue(ROWS);
+  deckCards.find.mockResolvedValue(options.rows ?? ROWS);
   const service = new SharedDeckViewService(
     lookup,
     events,
@@ -72,6 +72,55 @@ function build(
   );
   return { service, events };
 }
+
+describe('SharedDeckViewService.view legality', () => {
+  const rhinar = catalog.cards.find((card) => card.cardIdentifier === 'rhinar');
+  const blitzCards = catalog.cards
+    .filter((card) => card.legalFormats.includes('Blitz' as never) && card.legalHeroes.includes('Rhinar' as never))
+    .slice(0, 30);
+  const blitzDeck = { ...DECK, hero: 'Rhinar', heroIdentifier: 'rhinar', format: 'Blitz' } as TrackedDeckEntity;
+  const blitzRows = [
+    { cardIdentifier: blitzCards[0]!.cardIdentifier, quantity: 2, inventoryQuantity: 0, slot: 'mainboard' },
+    ...blitzCards.slice(1).map((card) => ({ cardIdentifier: card.cardIdentifier, quantity: 1, inventoryQuantity: 0, slot: 'mainboard' })),
+  ] as DeckCardEntity[];
+
+  it('returns the deck verdict in its own format and in each other format', async () => {
+    const { service } = build({}, { intent: 'deck', deck: blitzDeck, rows: blitzRows });
+
+    const result = await service.view('live', null);
+
+    expect(rhinar?.young).toBe(true);
+    expect(result.legality?.category).toBe('illegal');
+    expect(result.legality?.heroYoung).toBe(true);
+    expect(result.legality?.details.map((detail) => detail.code)).toEqual(
+      expect.arrayContaining(['too_many_copies', 'mainboard_not_exact']),
+    );
+    expect(result.legality?.otherFormats.map((other) => other.format)).toEqual([
+      'Classic Constructed',
+      'Living Legend',
+      'Silver Age',
+    ]);
+    const livingLegend = result.legality?.otherFormats.find((other) => other.format === 'Living Legend');
+    expect(livingLegend?.details.map((detail) => detail.code)).toContain('hero_not_legal');
+  });
+
+  it('answers no verdict for the missing intent', async () => {
+    const { service } = build({}, { intent: 'missing', deck: blitzDeck, rows: blitzRows });
+
+    const result = await service.view('live', null);
+
+    expect(result.legality).toBeNull();
+  });
+
+  it('calls a format outside the four unchecked', async () => {
+    const { service } = build({}, { intent: 'deck' });
+
+    const result = await service.view('live', null);
+
+    expect(result.legality?.category).toBe('unchecked');
+    expect(result.legality?.otherFormats).toHaveLength(4);
+  });
+});
 
 describe('SharedDeckViewService.view', () => {
   it('groups what the owner is missing and counts it for the missing intent', async () => {

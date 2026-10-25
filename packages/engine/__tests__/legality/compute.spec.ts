@@ -21,7 +21,7 @@
  *   blood-drop-red          — Common, legalHeroes: ['Cindra', 'Fai'] (NOT Dorinthea)
  */
 
-import { computeDeckLegality } from '../../src/legality/compute';
+import { computeDeckLegality, computeDeckLegalityInOtherFormats } from '../../src/legality/compute';
 import { catalog } from '../../src/catalog/catalog';
 import { Keyword, Type } from '../../src/catalog/types';
 import { findCardLegalityViolation } from '../../src/legality/card-legality';
@@ -742,5 +742,52 @@ describe('computeDeckLegality — hero and format edges', () => {
 
     expect(deck.cards.some((card) => card.slot === 'hero')).toBe(true);
     expect(result.category).toBe('legal');
+  });
+});
+
+describe('computeDeckLegalityInOtherFormats', () => {
+  function kayoLivingLegendCardIds(): string[] {
+    return [...catalog.indices.byIdentifier.values()]
+      .filter(
+        (card) =>
+          card.legalHeroes.includes('Kayo') &&
+          (card.legalFormats as readonly string[]).includes('Classic Constructed') &&
+          (card.legalFormats as readonly string[]).includes('Living Legend') &&
+          (card.bannedFormats ?? []).length === 0 &&
+          (card.restrictedFormats ?? []).length === 0 &&
+          !card.keywords.includes(Keyword.Legendary) &&
+          !card.types.some((type) => [Type.Hero, Type.Weapon, Type.Equipment].includes(type)),
+      )
+      .map((card) => card.cardIdentifier)
+      .sort()
+      .slice(0, 20);
+  }
+
+  function retiredHeroDeck(): ILegalityDeck {
+    return Object.freeze({
+      heroIdentifier: 'kayo-armed-and-dangerous',
+      cards: Object.freeze([
+        { cardIdentifier: 'kayo-armed-and-dangerous', quantity: 1, slot: 'hero' },
+        { cardIdentifier: 'mandible-claw', quantity: 2, slot: 'weapon' },
+        ...kayoLivingLegendCardIds().map((cardIdentifier) => ({ cardIdentifier, quantity: 3, slot: 'mainboard' })),
+      ]),
+    });
+  }
+
+  it('a deck is evaluated in every other format', () => {
+    const deck = retiredHeroDeck();
+
+    const verdicts = computeDeckLegalityInOtherFormats(deck, catalog, 'Classic Constructed');
+    const own = computeDeckLegality(deck, catalog, 'Classic Constructed');
+
+    expect(verdicts.map((verdict) => verdict.format)).toEqual(['Blitz', 'Living Legend', 'Silver Age']);
+    expect(own.category).toBe('illegal');
+    expect(own.details.map((detail) => detail.code)).toEqual(expect.arrayContaining(['hero_not_legal', 'card_banned']));
+    const livingLegend = verdicts.find((verdict) => verdict.format === 'Living Legend');
+    expect(livingLegend?.category).toBe('legal');
+    expect(livingLegend?.details).toEqual([]);
+    const blitz = verdicts.find((verdict) => verdict.format === 'Blitz');
+    expect(blitz?.category).toBe('illegal');
+    expect(blitz?.details.map((detail) => detail.code)).toContain('hero_not_legal');
   });
 });

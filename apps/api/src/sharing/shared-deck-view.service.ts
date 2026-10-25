@@ -2,11 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { catalog, computeEffectiveReadiness } from '@rathe-arsenal/engine';
+import {
+  catalog,
+  computeDeckLegality,
+  computeDeckLegalityInOtherFormats,
+  computeEffectiveReadiness,
+  ILegalityDeck,
+} from '@rathe-arsenal/engine';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
-import { ISharedDeckCoverage, ISharedDeckMatches, ISharedDeckResponse } from './dtos/shared-deck.dto';
+import {
+  ISharedDeckCoverage,
+  ISharedDeckLegality,
+  ISharedDeckMatches,
+  ISharedDeckResponse,
+} from './dtos/shared-deck.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildDeckShareUrl } from './share-url';
 import { SharedDeckLookup } from './shared-deck-lookup';
@@ -24,6 +35,21 @@ function lookupCatalogCard(cardIdentifier: string) {
   } catch {
     return undefined;
   }
+}
+
+function legalityOf(format: string, deck: ILegalityDeck): ISharedDeckLegality {
+  const own = computeDeckLegality(deck, catalog, format);
+  const heroCard = deck.heroIdentifier === null ? undefined : lookupCatalogCard(deck.heroIdentifier);
+  return {
+    category: own.category,
+    details: own.details.map((detail) => ({ code: detail.code, params: { ...detail.params } })),
+    heroYoung: heroCard === undefined ? null : heroCard.young,
+    otherFormats: computeDeckLegalityInOtherFormats(deck, catalog, format).map((other) => ({
+      format: other.format,
+      category: other.category,
+      details: other.details.map((detail) => ({ code: detail.code, params: { ...detail.params } })),
+    })),
+  };
 }
 
 @Injectable()
@@ -47,6 +73,7 @@ export class SharedDeckViewService {
     const showsMissing = link.intent === 'missing';
     const missing = showsMissing ? await this.missingCards.missingFor(owner.id, rows) : [];
     const isOwner = visitor?.userId === owner.id;
+    const heroCard = resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard);
 
     if (!isOwner) {
       await this.events.record({
@@ -66,7 +93,7 @@ export class SharedDeckViewService {
       name: deck.name,
       hero: deck.hero,
       heroIdentifier: deck.heroIdentifier,
-      heroCard: resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard),
+      heroCard,
       format: deck.format,
       sharerName: owner.displayName ?? '',
       contactWhatsapp: link.showsContact ? owner.whatsappNumber : null,
@@ -77,6 +104,17 @@ export class SharedDeckViewService {
       cards: showsMissing ? [] : rows.map((row) => toSharedCardFromRow(row, lookupCatalogCard)),
       missing,
       missingCount: sumQuantities(missing),
+      legality: showsMissing
+        ? null
+        : legalityOf(deck.format, {
+            heroIdentifier: heroCard?.cardIdentifier ?? deck.heroIdentifier,
+            cards: rows.map((row) => ({
+              cardIdentifier: row.cardIdentifier,
+              quantity: row.quantity,
+              inventoryQuantity: row.inventoryQuantity,
+              slot: row.slot,
+            })),
+          }),
     };
   }
 

@@ -5,7 +5,7 @@
  * LSS Tournament Rules and Policy as of @flesh-and-blood/types@^3.6.243.
  */
 
-import { FORMAT_RULES } from '../../src/legality/rules';
+import { FORMAT_RULES, RULE_CHANGES } from '../../src/legality/rules';
 
 describe('FORMAT_RULES', () => {
   describe('Classic Constructed', () => {
@@ -153,5 +153,20 @@ describe('FORMAT_RULES', () => {
     for (const rules of Object.values(FORMAT_RULES)) {
       expect(Object.isFrozen(rules)).toBe(true);
     }
+  });
+});
+
+describe('RULE_CHANGES', () => {
+  it('RULE_CHANGES shape and first entry', () => {
+    expect(Array.isArray(RULE_CHANGES)).toBe(true);
+    for (const entry of RULE_CHANGES) {
+      expect(Object.keys(entry).sort()).toEqual(['effectiveDate', 'format', 'sourceUrl', 'summaryKey']);
+      expect(entry.effectiveDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+
+    const [first] = RULE_CHANGES;
+    expect(first?.format).toBe('Blitz');
+    expect(first?.effectiveDate).toBe('2026-03-09');
+    expect(first?.sourceUrl).toBe('https://fabtcg.com/rules-and-policy-center/change-log-tournament-rules-and-policy/');
   });
 });

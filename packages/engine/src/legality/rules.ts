@@ -52,3 +52,20 @@ export const FORMAT_RULES: Readonly<Record<TSupportedFormat, IFormatRules>> = Ob
     source: 'https://fabtcg.com/gameplay-formats/silver-age/',
   }),
 } satisfies Record<TSupportedFormat, IFormatRules>);
+
+export interface IRuleChange {
+  readonly format: TSupportedFormat;
+  /** `YYYY-MM-DD` as a calendar date: never build a `Date` from it without `timeZone: 'UTC'`. */
+  readonly effectiveDate: string;
+  readonly summaryKey: string;
+  readonly sourceUrl: string;
+}
+
+export const RULE_CHANGES: readonly IRuleChange[] = Object.freeze([
+  Object.freeze<IRuleChange>({
+    format: 'Blitz',
+    effectiveDate: '2026-03-09',
+    summaryKey: 'blitz_one_copy_each',
+    sourceUrl: 'https://fabtcg.com/rules-and-policy-center/change-log-tournament-rules-and-policy/',
+  }),
+]);

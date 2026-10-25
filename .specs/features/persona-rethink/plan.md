@@ -29,8 +29,9 @@ Reuses the shared engine package for every legality and readiness answer (browse
 Deck rules and readiness:
 
 1. a deck's cards, inventory and format -> `computeDeckLegality` (exists, rewritten by S3) - every check runs, copies counted per card across deck, inventory, weapons and equipment, hero not in the pool; returns every problem with its card, count and limit
-2. `DecksService` (exists) - recomputes legality on every read as today; reads `RULE_CHANGES` (door 9) for the dated notice; skips soft-deleted decks (door 4)
+2. `DecksService` (exists) - recomputes legality on every read as today; skips soft-deleted decks (door 4)
 3. the deck editor (exists) - runs the same `computeDeckLegality` in the browser on the draft
+3b. the deck page (exists) - reads `RULE_CHANGES` (door 9) through the engine's browser entry to draw the dated notice from the verdict the server already sent, so the notice sends nothing; it also runs the engine in the browser on the saved deck for the other formats of a hero outside its format
 4. `computeEffectiveReadiness` (exists) - counts deck and inventory copies (door 3) against the whole collection, by name and pitch only; versions are ignored
 5. out: the deck page, the home card (stage and verdict), the Tutor's `get_deck`, and the shared deck page read the same result
 
@@ -209,6 +210,7 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `GET /api/decks/:deckId` (and the `PUT` that returns the deck), added by S5 | as today | `cards`: the saved lines as `{cardIdentifier, slot, quantity, inventoryQuantity}` in stored order, so the `PUT` answer and the `GET` both return each row's inventory (a `PUT` answers `latestSnapshot` null); rejected: the web reading the lines only from the readiness breakdown, which the `PUT` does not carry and which has no entry for a line with no deck copy and no owned copy | `200`, `404` |
 | `latestSnapshot.breakdown` of `GET /api/decks/:deckId` and `missingCopies` of the engine's readiness result, added by S5 | as today | each entry of `exact`, `substituted[].original`, `missing` and `notOwned` counts the deck and the inventory in `quantity` and carries `inventoryQuantity`, the inventory's share of it (absent when 0); owned copies cover the deck copies first; `missingCopies` is `{total, deck, inventory}` summed from `notOwned`; rejected: separate inventory entries or a slot value `inventory`, which door 3 already turned down because one card would appear in two rows for every reader | `200`, `404` |
 | `GET /api/decks`, added by S6 | as today | each deck gains `deckSize`, the copies in its main section (no inventory, hero, weapon or equipment), so the home card says "60 cartas" and "31 de 40 cartas"; rejected: reusing `cardCounts.total`, which counts the hero, the loadout and now the inventory | `200`, `401` |
+| `GET /api/shared/decks/:token`, added by S9 | nothing | for the `deck` intent, `legality`: `category`, `details` (the engine's reason codes and params for the deck's own format), `heroYoung`, and `otherFormats`, one `{format, category, details}` per supported format but the deck's own; `null` for the `missing` intent; the API runs the engine because it holds the whole catalog; rejected: the web running the engine, which would need every card's legality facts in a public answer | `200`, `404` |
 
 ## Landing
 

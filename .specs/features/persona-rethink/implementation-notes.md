@@ -257,6 +257,24 @@
 - The row "Excluídos recentemente (N) · ficam 30 dias" is also drawn under the empty-state of the home, so the last deck deleted can still be reached.
 - The day-30 purge is S38 (derivation note 9); nothing deletes a deck for good on a schedule yet.
 
+### S9 (batch 8)
+
+- `/decks/new` follows `r2-new-deck-hero-phone` and `r2-new-deck-format-phone`: three rows, the search under "Começar do zero", then a second step for the format.
+  The old page (two cards side by side, a hero dropdown plus a format dropdown) and `StartScratchCard` with its spec are gone.
+  `-decks.new.spec.tsx` was rewritten for the new screen; the old tests of the two-column grid, "no icon tile", the four-option format dropdown and the "← Início" link had nothing equivalent left (the mockup draws round icons, a "‹ Decks" link and the format as radio cards).
+  The "hero illegal in the chosen format" tests of `StartScratchCard.spec.tsx` cannot happen any more: only the hero's own formats are offered.
+  The Fabrary import tests are kept, after opening the row.
+  `design-guards.spec.ts` block "New deck" now checks the new classes; `tests/e2e/scratch-deck-flow.spec.ts` follows the new screen.
+- The search filters each hero's formats to the four the engine knows (Open, Draft and the others are not shown) and leaves out a hero that plays none of the four.
+- The panel for a hero outside the format (`HeroOutsideFormatPanel`) is always mounted by `DeckDetailView`, so its green "Este deck vale em X." block survives the refetch after the switch.
+  The browser evaluates the other formats with the engine on the saved deck (`useOtherFormatVerdicts`), not the API.
+  The cause line under the header is hidden while the panel shows, because the panel states the same problems.
+- The r2 header chip "Importado do Fabrary · 2 problemas" is not built: round 3 and S6's header win.
+  The mockups leave out the status strip, the medallion and the analysis row that the deck page still shows.
+- The shared deck page gets `legality` from the API (Surface row added to `plan.md`): the API runs the engine because the public answer does not carry every card's legality facts.
+  `SharedLegalityBlock` sits between the header and "Copiar lista" as `r3-shared-phone` draws; the line "Você tocou em X" is drawn by the mockup and is built.
+- `computeDeckLegalityInOtherFormats` (engine) is used by the API; `RULE_CHANGES` and `IRuleChange` are exported from the engine's barrel for S10.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -301,3 +319,10 @@
 - C71 conflicts with the home's grouping by stage, see Deviations, S6; decide whether the check or the grouping changes.
 
 - The edit screen's danger zone and its dialog say a deleted deck cannot be undone, but the delete is a soft delete now (S8); give the wording, or let it call the same delete with the toast of the deck page menu.
+
+- S9, "Comprei um deck pronto" links to `/add-cards`, which today opens the manual add and creates no deck; the ready-made decks are S13, whose builder repoints the row.
+  "Tenho um link do Fabrary" opens the existing import card under the row (no mockup draws the open row).
+- S9, copy of mine, no check or mockup gives it:
+  - `/decks/new`: "Nenhum herói encontrado." (a search with no result); "Classic Constructed: pelo menos 60 cartas, até 3 cópias de cada" and "Living Legend: pelo menos 60 cartas, até 3 cópias de cada, e só 1 de uma carta restrita" (from the rules table of `.design/deck-building.md`); a hero that is not young shows no line under "Você escolheu X".
+  - Deck page, hero outside the format: "Não foi possível mudar o formato. Tente de novo." (a refused switch or undo); "Em X" as the heading of each format when none is valid; the sentence of the red block for a card problem other than a ban uses the existing localized reasons.
+  - Shared deck page: "O deck tem N cartas; o mínimo no X é N.", "N é lendária e só pode ter 1 cópia; tem N.", "... é restrita no X ...", the steps "tirar N carta", "tirar carta", "escolher outro herói ou outro formato", "tirar N cartas do deck"; the answers of a tapped chip "Em X: vale.", "Em X: não vale. <primeiro motivo>", "Em X: ainda não vale. <tamanho>".

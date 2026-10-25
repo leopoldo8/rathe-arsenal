@@ -371,31 +371,31 @@ Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "matches r2-delete
 
 ### S9 - Starting a deck with the hero, and a hero outside the format · 15 files · 110 KB · ~36k
 
-**C101** - `/decks/new` offers "Comprei um deck pronto", "Tenho um link do Fabrary" and "Começar do zero", none selected (AC 58)
+**C101** - `/decks/new` offers "Comprei um deck pronto", "Tenho um link do Fabrary" and "Começar do zero", none selected (AC 58) · done
 Proof: `web unit src/routes/_auth/__tests__/-decks.new.spec.tsx -t "three ways to start a deck"`
 
-**C102** - Searching "rhinar" shows "Rhinar · jovem" with the chips "Blitz" and "Silver Age" and "Rhinar, Reckless Rampage" with "Classic Constructed" and "Living Legend", each with its art, no result highlighted, and "Herói jovem: versão para Blitz e Silver Age, decks de 40 cartas." exactly once (AC 59)
+**C102** - Searching "rhinar" shows "Rhinar · jovem" with the chips "Blitz" and "Silver Age" and "Rhinar, Reckless Rampage" with "Classic Constructed" and "Living Legend", each with its art, no result highlighted, and "Herói jovem: versão para Blitz e Silver Age, decks de 40 cartas." exactly once (AC 59) · done
 Proof: `web unit src/routes/_auth/__tests__/-decks.new.spec.tsx -t "matches r2-new-deck-hero-phone"`
 
-**C103** - After picking the young Rhinar the screen shows "‹ Escolher outro herói", "Você escolheu Rhinar", "Herói jovem", "Formato", then "Blitz" with "Blitz: 40 cartas, 1 cópia de cada" and "Silver Age" with "Silver Age: 40 cartas, até 2 cópias, só cartas que já saíram como comum ou rara", neither checked, and "Começar a montar" disabled until one is chosen; a hero with one format shows it unchecked (AC 60)
+**C103** - After picking the young Rhinar the screen shows "‹ Escolher outro herói", "Você escolheu Rhinar", "Herói jovem", "Formato", then "Blitz" with "Blitz: 40 cartas, 1 cópia de cada" and "Silver Age" with "Silver Age: 40 cartas, até 2 cópias, só cartas que já saíram como comum ou rara", neither checked, and "Começar a montar" disabled until one is chosen; a hero with one format shows it unchecked (AC 60) · done
 Proof: `web unit src/routes/_auth/__tests__/-decks.new.spec.tsx -t "matches r2-new-deck-format-phone"`
 
-**C104** - The engine evaluates a deck in each other supported format and returns, per format, its category and problems: the `r2-retired-hero-desktop` Kayo deck is `illegal` in Classic Constructed and `legal` in Living Legend (AC 61)
+**C104** - The engine evaluates a deck in each other supported format and returns, per format, its category and problems: the `r2-retired-hero-desktop` Kayo deck is `illegal` in Classic Constructed and `legal` in Living Legend (AC 61) · done
 Proof: `engine unit __tests__/legality/compute.spec.ts -t "a deck is evaluated in every other format"`
 
-**C105** - The deck page for `r2-retired-hero-desktop`'s deck shows, in order: "Este deck não vale no Classic Constructed", "Kayo, Armed and Dangerous não é permitido em Classic Constructed. É permitido em Living Legend.", "Mandible Claw está banida no Classic Constructed.", "Em Living Legend este deck é válido: o herói e a Mandible Claw são permitidos lá.", the button "Mudar para Living Legend" and "As cartas do deck não mudam, só o formato em que ele é conferido." (AC 61, AC 65)
+**C105** - The deck page for `r2-retired-hero-desktop`'s deck shows, in order: "Este deck não vale no Classic Constructed", "Kayo, Armed and Dangerous não é permitido em Classic Constructed. É permitido em Living Legend.", "Mandible Claw está banida no Classic Constructed.", "Em Living Legend este deck é válido: o herói e a Mandible Claw são permitidos lá.", the button "Mudar para Living Legend" and "As cartas do deck não mudam, só o formato em que ele é conferido." (AC 61, AC 65) · done
 Proof: `web unit src/components/deck-detail/__tests__/HeroOutsideFormatPanel.spec.tsx -t "matches r2-retired-hero-desktop"`
 
-**C106** - "Mudar para Living Legend" calls `PATCH /decks/:deckId` with `format` `Living Legend`; the chip reads "Living Legend", the block reads "Este deck vale em Living Legend.", the toast reads "Formato mudado para Living Legend" with "Desfazer", and "Desfazer" calls `PATCH` with the old format (AC 62, AC 65: `r3-retired-hero-switched-desktop`)
+**C106** - "Mudar para Living Legend" calls `PATCH /decks/:deckId` with `format` `Living Legend`; the chip reads "Living Legend", the block reads "Este deck vale em Living Legend.", the toast reads "Formato mudado para Living Legend" with "Desfazer", and "Desfazer" calls `PATCH` with the old format (AC 62, AC 65: `r3-retired-hero-switched-desktop`) · done
 Proof: `web unit src/components/deck-detail/__tests__/HeroOutsideFormatPanel.spec.tsx -t "the switch changes the format with undo"`
 
-**C107** - When no supported format makes the deck valid, the panel lists the problems under each format and shows no "Mudar para" button (AC 63)
+**C107** - When no supported format makes the deck valid, the panel lists the problems under each format and shows no "Mudar para" button (AC 63) · done
 Proof: `web unit src/components/deck-detail/__tests__/HeroOutsideFormatPanel.spec.tsx -t "no valid format offers no switch"`
 
-**C108** - The shared page for `r3-shared-phone`'s deck shows "Blitz · ainda não pode jogar", "O deck tem 31 de 40 cartas.", "Pack Hunt (Vermelho) tem 2 cópias; o Blitz permite 1.", "Para jogar no Blitz: tirar 1 Pack Hunt (Vermelho) e colocar mais 10 cartas.", then "Conferir em outro formato:" with the chips "Classic Constructed", "Living Legend", "Silver Age", none pressed (AC 64, AC 65)
+**C108** - The shared page for `r3-shared-phone`'s deck shows "Blitz · ainda não pode jogar", "O deck tem 31 de 40 cartas.", "Pack Hunt (Vermelho) tem 2 cópias; o Blitz permite 1.", "Para jogar no Blitz: tirar 1 Pack Hunt (Vermelho) e colocar mais 10 cartas.", then "Conferir em outro formato:" with the chips "Classic Constructed", "Living Legend", "Silver Age", none pressed (AC 64, AC 65) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedLegalityBlock.spec.tsx -t "matches r3-shared-phone"`
 
-**C109** - Tapping "Living Legend" shows "Em Living Legend: não vale. O Rhinar jovem joga só Blitz e Silver Age." under the chips, and the block above keeps its exact text; a legal Blitz deck's block reads "Blitz · pode jogar" (AC 64)
+**C109** - Tapping "Living Legend" shows "Em Living Legend: não vale. O Rhinar jovem joga só Blitz e Silver Age." under the chips, and the block above keeps its exact text; a legal Blitz deck's block reads "Blitz · pode jogar" (AC 64) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedLegalityBlock.spec.tsx -t "another format's result never changes the own-format block"`
 
 ### S10 - A rule changed under a saved deck · 8 files · 32 KB · ~14k
