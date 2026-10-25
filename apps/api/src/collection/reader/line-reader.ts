@@ -25,6 +25,9 @@ const VERSION_ANYWHERE = new RegExp(`(?<![\\p{L}\\d])(${VERSION_WORD_PATTERN})(?
 const LEADING_QUANTITY = /^(\d{1,4})\s*[x×]\s*(\S.*)$|^(\d{1,4})\s+(\S.*)$/i;
 const TRAILING_QUANTITY = /^(.+?)\s*[x×]\s*(\d{1,4})$/i;
 const MIN_TYPO_LENGTH = 4;
+/** A card line is a name, a quantity and a few words; anything longer is not read, only kept. */
+export const MAX_LINE_LENGTH = 2_000;
+const MAX_CELL_LENGTH = 200;
 
 export function normalizeName(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -127,7 +130,18 @@ export class LineReader {
 
   constructor(private readonly lookup: ICardLookup) {}
 
-  read(raw: IRawLine): IReadLine {
+  read(input: IRawLine): IReadLine {
+    // One space between words keeps every pattern below linear: none can match a run of blanks in many ways.
+    const raw: IRawLine = {
+      ...input,
+      text: input.text.replace(/\s+/g, ' ').trim(),
+      originalText: input.originalText.slice(0, MAX_LINE_LENGTH),
+      colorCell: input.colorCell?.slice(0, MAX_CELL_LENGTH),
+      versionCell: input.versionCell?.slice(0, MAX_CELL_LENGTH),
+      conditionCell: input.conditionCell?.slice(0, MAX_CELL_LENGTH),
+      setCell: input.setCell?.slice(0, MAX_CELL_LENGTH),
+    };
+    if (raw.text.length > MAX_LINE_LENGTH) return this.tooLong(raw);
     const notes = [...(raw.notes ?? [])];
     const located = this.locate(raw);
     const { decomposition, quantity } = located;
@@ -145,8 +159,28 @@ export class LineReader {
     return this.finish(raw, base, located.resolution, located.exact, decomposition, pitchRead);
   }
 
+  private tooLong(raw: IRawLine): IReadLine {
+    return {
+      lineNumber: raw.lineNumber,
+      originalText: raw.originalText,
+      outcome: 'not_found',
+      cardIdentifier: null,
+      name: null,
+      pitch: null,
+      imageUrl: null,
+      quantity: null,
+      quantityRaw: null,
+      suggestedQuantity: null,
+      options: null,
+      suggestion: null,
+      version: NO_VERSION,
+      versionNote: null,
+      notes: [...(raw.notes ?? [])],
+    };
+  }
+
   private variantsOf(raw: IRawLine): readonly IQuantityVariant[] {
-    return raw.isTable === true ? [{ quantity: null, rest: raw.text }] : quantityVariants(raw.text.trim());
+    return raw.isTable === true ? [{ quantity: null, rest: raw.text }] : quantityVariants(raw.text);
   }
 
   private quantityOf(raw: IRawLine, variant: IQuantityVariant): IQuantityRead {

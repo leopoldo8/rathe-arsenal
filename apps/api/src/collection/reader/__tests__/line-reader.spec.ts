@@ -110,3 +110,34 @@ describe('line reader', () => {
     expect(lines[2]!.versionNote).toMatch(/^foil · existe em \d+ versões foil: escolha$/);
   });
 });
+
+describe('line reader on hostile input', () => {
+  const within100ms = (text: string): number => {
+    const started = performance.now();
+    reader.read({ lineNumber: 1, originalText: text, text });
+    return performance.now() - started;
+  };
+
+  it('a crafted long line is read within a small time bound', () => {
+    const crafted = [
+      `1${' '.repeat(20_000)}x`,
+      `Snatch${' '.repeat(20_000)}(red`,
+      `${'x'.repeat(20_000)} 2x`,
+      'a '.repeat(10_000),
+      `${'3x '.repeat(5_000)}foil`,
+    ];
+
+    const slowest = Math.max(...crafted.map(within100ms));
+
+    expect(slowest).toBeLessThan(100);
+  });
+
+  it('a line over the length the reader looks at is kept as not found', () => {
+    const [line] = readText(`3x Snatch (Red)${' '.repeat(3_000)}`);
+    const [long] = readText(`3x Snatch (Red) ${'x'.repeat(5_000)}`);
+
+    expect(line!.outcome).toBe('ready');
+    expect(long!.outcome).toBe('not_found');
+    expect(long!.originalText.length).toBeLessThanOrEqual(2_000);
+  });
+});
