@@ -344,6 +344,9 @@
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
+- 2026-10-25, the page behind "Resolver" (`/library-pending`), built in batch 10 with no mockup: the owner asked for two mockup alternatives; the page stays as built until the owner picks one, and the pick is built afterwards.
+  Picked the same day: B, one line at a time (`.design/mockups/collection-in/r4-resolve-b-phone.png`, brief `BRIEF-round-4.md`); A (`r4-resolve-a-phone.png`) was not picked.
+- 2026-10-25, the Armory Deck: Kayo decklist fetched once from the official page `https://fabtcg.com/decklists/kayo-armory-deck/` through `pnpm products:import`: accepted.
 
 ## Needs the owner
 
