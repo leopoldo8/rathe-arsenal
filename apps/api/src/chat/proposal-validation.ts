@@ -44,7 +44,12 @@ export type TSwapProposalCheck =
 export interface ISwapDeck {
   readonly heroIdentifier: string | null;
   readonly format: string;
-  readonly cards: readonly { readonly cardIdentifier: string; readonly slot: string; readonly quantity: number }[];
+  readonly cards: readonly {
+    readonly cardIdentifier: string;
+    readonly slot: string;
+    readonly quantity: number;
+    readonly inventoryQuantity?: number;
+  }[];
 }
 
 function refuse(error: TProposalError, detail: string): Extract<TProposalCheck<never>, { ok: false }> {

@@ -1,3 +1,5 @@
+import { catalog } from '@rathe-arsenal/engine';
+import { findCardsMatching } from '../card-search';
 import {
   CHAT_TOOL_DECLARATIONS,
   readInteger,
@@ -65,5 +67,40 @@ describe('chat tools', () => {
     expect(await runChatTool(toolbox, 'search_cards', { query: 'flex' })).toEqual({ queries: ['flex'] });
     expect(await runChatTool(toolbox, 'search_cards', { queries: ['flex', 'coax'] })).toEqual({ queries: ['flex', 'coax'] });
     expect(TOOL_QUERIES_MAX).toBe(8);
+  });
+
+  it('search_cards matches type, class and talent as well as name and text', () => {
+    const names = (query: string): string[] => findCardsMatching(catalog.cards, query).map((card) => card.name);
+
+    expect(names('Brute weapon')).toContain('Romping Club');
+
+    // One card picked by each field's value, whose name does not contain the query.
+    const byField = [
+      ['type', (card: (typeof catalog.cards)[number]) => card.types[0]],
+      ['class', (card: (typeof catalog.cards)[number]) => card.classes[0]],
+      ['talent', (card: (typeof catalog.cards)[number]) => card.talents[0]],
+    ] as const;
+    for (const [field, valueOf] of byField) {
+      const picked = catalog.cards.find((card) => {
+        const value = valueOf(card);
+        return value !== undefined && !card.name.toLowerCase().includes(String(value).toLowerCase());
+      })!;
+      const value = String(valueOf(picked));
+      expect({ field, value, found: findCardsMatching(catalog.cards, value).some((card) => card.cardIdentifier === picked.cardIdentifier) }).toEqual({ field, value, found: true });
+    }
+  });
+
+  it('search_cards still ranks a name match before a rules text match', () => {
+    const found = findCardsMatching(catalog.cards, 'pummel');
+
+    expect(found[0]!.name.toLowerCase()).toContain('pummel');
+  });
+
+  it('get_swap_candidates declares an optional integer quantity', () => {
+    const declaration = CHAT_TOOL_DECLARATIONS.find((tool) => tool.name === 'get_swap_candidates')!;
+    const schema = declaration.parametersJsonSchema as { properties: Record<string, { type: string }>; required: string[] };
+
+    expect(schema.properties['quantity']?.type).toBe('integer');
+    expect(schema.required).not.toContain('quantity');
   });
 });

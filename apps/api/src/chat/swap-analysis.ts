@@ -1,4 +1,4 @@
-import { catalog, findAlternatives, ICatalogCard, TAlternativeGroup, TSupportedFormat } from '@rathe-arsenal/engine';
+import { catalog, findAlternatives, getCopyLimit, ICatalogCard, TAlternativeGroup, TSupportedFormat } from '@rathe-arsenal/engine';
 import { mainboardByCost } from './deck-facts';
 import { IDeckRow, typeLine } from './deck-rows';
 
@@ -10,6 +10,8 @@ interface IDeckCardRow {
   readonly cardIdentifier: string;
   readonly slot: string;
   readonly quantity: number;
+  /** Copies carried in the inventory; they count against the copy limit. */
+  readonly inventoryQuantity?: number;
 }
 
 export interface ISwapCardFacts {
@@ -51,7 +53,10 @@ export interface ISwapCandidate {
 }
 
 export interface ISwapCandidates {
+  /** Copies of the card in the slot. */
   readonly copies: number;
+  /** Copies the candidates were asked to replace: the quantity given, else the copies over the limit, else every copy. */
+  readonly needed: number;
   readonly groups: readonly { readonly group: TAlternativeGroup; readonly cards: readonly ISwapCandidate[] }[];
 }
 
@@ -110,6 +115,31 @@ export function compareSwap(input: {
   };
 }
 
+/**
+ * How many copies a search for stand-ins covers: the quantity asked for; with none, the copies over the card's limit (counted per
+ * name and pitch across the deck and the inventory, as the deck's legality does); with none over, every copy. Never more
+ * than the copies in the slot.
+ */
+export function neededCopies(input: {
+  readonly original: ICatalogCard;
+  readonly format: TSupportedFormat;
+  readonly deckCards: readonly IDeckCardRow[];
+  readonly copiesInSlot: number;
+  readonly quantity?: number | undefined;
+}): number {
+  const { original, format, deckCards, copiesInSlot, quantity } = input;
+  const all = Math.max(copiesInSlot, 1);
+  if (quantity !== undefined) return Math.min(Math.max(quantity, 1), all);
+  const total = deckCards
+    .filter((row) => {
+      const card = catalog.getCard(row.cardIdentifier);
+      return card.name === original.name && card.pitch === original.pitch;
+    })
+    .reduce((sum, row) => sum + row.quantity + (row.inventoryQuantity ?? 0), 0);
+  const over = total - getCopyLimit(original, format);
+  return over > 0 ? Math.min(over, all) : all;
+}
+
 /** `spare` is each card's owned copies that none of the user's decks use. */
 export function swapCandidates(input: {
   readonly original: ICatalogCard;
@@ -118,6 +148,8 @@ export function swapCandidates(input: {
   readonly format: TSupportedFormat;
   readonly deckCards: readonly IDeckCardRow[];
   readonly spare: ReadonlyMap<string, number>;
+  /** Copies to replace; see `neededCopies` for the default. */
+  readonly quantity?: number | undefined;
 }): ISwapCandidates {
   const { original, slot, heroCard, format, deckCards, spare } = input;
   const deckCopies = new Map<string, number>();
@@ -125,10 +157,12 @@ export function swapCandidates(input: {
   const copies = deckCards
     .filter((row) => row.cardIdentifier === original.cardIdentifier && row.slot === slot)
     .reduce((sum, row) => sum + row.quantity, 0);
+  const needed = neededCopies({ original, format, deckCards, copiesInSlot: copies, quantity: input.quantity });
   const owned = new Map([...spare.entries()].map(([cardIdentifier, free]) => [cardIdentifier, free + (deckCopies.get(cardIdentifier) ?? 0)]));
-  const groups = findAlternatives({ missing: original, needed: Math.max(copies, 1), heroCard, format, deckCopies, owned }, catalog);
+  const groups = findAlternatives({ missing: original, needed, heroCard, format, deckCopies, owned }, catalog);
   return {
     copies,
+    needed,
     groups: groups.map((group) => ({
       group: group.group,
       cards: group.cards.slice(0, CANDIDATES_PER_GROUP).map(({ card, freeCopies }) => ({

@@ -21,6 +21,7 @@ import {
   TChatToolbox,
   TToolResult,
 } from './chat-tools';
+import { findCardsMatching } from './card-search';
 import { describeDeck } from './deck-facts';
 import { ISwapDeck, readSwapArgs, SUPPORTED_FORMATS, validateDeckProposal, validateSwapProposal } from './proposal-validation';
 import { compareWithCommunity } from './community-comparison';
@@ -100,7 +101,13 @@ export class ChatToolsService {
       get_draw_odds: (args) => this.drawOdds(scope, args),
       get_prices: (args) => this.prices.prices(scope.userId, args),
       get_swap_candidates: (args) =>
-        this.swapCandidates(scope, readInteger(args, 'deckId', { min: 1 })!, readString(args, 'cardIdentifier')!, readString(args, 'slot')!),
+        this.swapCandidates(
+          scope,
+          readInteger(args, 'deckId', { min: 1 })!,
+          readString(args, 'cardIdentifier')!,
+          readString(args, 'slot')!,
+          readInteger(args, 'quantity', { min: 1, optional: true }),
+        ),
       propose_swap: async (args) => {
         const swap = readSwapArgs(args);
         const deck = await this.swapDeck(scope.userId, swap.trackedDeckId);
@@ -127,7 +134,7 @@ export class ChatToolsService {
     )) as Array<{ heroIdentifier: string | null; format: string }>;
     if (!deck) return null;
     const cards = (await this.dataSource.query(
-      `SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1`,
+      `SELECT "cardIdentifier", slot, quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1`,
       [trackedDeckId],
     )) as ISwapDeck['cards'];
     return { ...deck, cards };
@@ -140,9 +147,9 @@ export class ChatToolsService {
     )) as Array<Record<string, unknown>>;
     if (!deck) return DECK_NOT_FOUND;
     const cards = (await this.dataSource.query(
-      `SELECT "cardIdentifier", slot, quantity FROM deck_card WHERE "trackedDeckId" = $1 ORDER BY slot, "cardIdentifier"`,
+      `SELECT "cardIdentifier", slot, quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 ORDER BY slot, "cardIdentifier"`,
       [deckId],
-    )) as Array<{ cardIdentifier: string; slot: string; quantity: number }>;
+    )) as Array<{ cardIdentifier: string; slot: string; quantity: number; inventoryQuantity: number }>;
     const owned = await this.collection.loadOwned(scope.userId, cards.map((card) => card.cardIdentifier));
     const facts = describeDeck({ heroIdentifier: deck['heroIdentifier'] as string | null, format: deck['format'] as string, rows: cards });
     return {
@@ -175,7 +182,7 @@ export class ChatToolsService {
     return odds.matchingCopies === 0 ? { ...odds, note: 'No mainboard card matches every filter given; drop any filter the question did not ask for.' } : { ...odds };
   }
 
-  private async swapCandidates(scope: IToolScope, deckId: number, cardIdentifier: string, slot: string): Promise<TToolResult> {
+  private async swapCandidates(scope: IToolScope, deckId: number, cardIdentifier: string, slot: string, quantity: number | undefined): Promise<TToolResult> {
     const deck = await this.swapDeck(scope.userId, deckId);
     if (!deck) return DECK_NOT_FOUND;
     const original = findCard(cardIdentifier);
@@ -184,7 +191,7 @@ export class ChatToolsService {
     if (!original || !deck.cards.some((card) => card.cardIdentifier === cardIdentifier && card.slot === slot)) return { error: 'CARD_NOT_IN_DECK' };
     if (!heroCard || !format) return { error: 'DECK_HAS_NO_HERO_OR_FORMAT' };
     const { spare } = await this.spareCopies.spareByCard(scope.userId);
-    return { ...swapCandidates({ original, slot, heroCard, format, deckCards: deck.cards, spare }) };
+    return { ...swapCandidates({ original, slot, heroCard, format, deckCards: deck.cards, spare, quantity }) };
   }
 
   private async ownedCopies(scope: IToolScope, identifiers: readonly unknown[]): Promise<TToolResult> {
@@ -203,12 +210,7 @@ export class ChatToolsService {
     const hero = heroIdentifier ? findCard(heroIdentifier) : null;
     const legalityFormat = format && (SUPPORTED_FORMATS as readonly string[]).includes(format) ? (format as TSupportedFormat) : null;
     const find = (text: string, limit: number): TToolResult[] => {
-      const query = text.trim().toLowerCase();
-      const byName = catalog.cards.filter((card) => card.name.toLowerCase().includes(query));
-      const byText = catalog.cards.filter(
-        (card) => !card.name.toLowerCase().includes(query) && (card.functionalText ?? '').toLowerCase().includes(query),
-      );
-      return [...byName, ...byText].slice(0, limit).map((card) => ({
+      return findCardsMatching(catalog.cards, text).slice(0, limit).map((card) => ({
         cardIdentifier: card.cardIdentifier,
         name: card.name,
         typeLine: typeLine(card),

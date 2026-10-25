@@ -169,3 +169,38 @@ describe('swapCandidates', () => {
     expect(candidates.groups.every((group) => group.cards.length <= 6)).toBe(true);
   });
 });
+
+describe('swapCandidates needed', () => {
+  const rhinar = card('rhinar-reckless-rampage');
+  const deckWith = (quantity: number, inventoryQuantity = 0) => [
+    { cardIdentifier: 'rhinar-reckless-rampage', slot: 'hero', quantity: 1 },
+    { cardIdentifier: 'pack-hunt-red', slot: 'mainboard', quantity, inventoryQuantity },
+  ];
+  const ask = (deckCards: ReturnType<typeof deckWith>, quantity?: number) =>
+    swapCandidates({
+      original: card('pack-hunt-red'),
+      slot: 'mainboard',
+      heroCard: rhinar,
+      format: 'Classic Constructed',
+      deckCards,
+      spare: new Map(),
+      ...(quantity === undefined ? {} : { quantity }),
+    });
+
+  it('needed follows the quantity given, else the copies over the limit, else every copy', () => {
+    expect(ask(deckWith(3), 1).needed).toBe(1);
+    expect(ask(deckWith(4)).needed).toBe(1);
+    expect(ask(deckWith(3, 1)).needed).toBe(1);
+    expect(ask(deckWith(3)).needed).toBe(3);
+    expect(ask(deckWith(2)).needed).toBe(2);
+    expect(ask(deckWith(2), 5).needed).toBe(2);
+  });
+
+  it('finds candidates for a card over its limit, where every copy together left none', () => {
+    const over = ask(deckWith(4));
+
+    expect(over.copies).toBe(4);
+    expect(over.groups.length).toBeGreaterThan(0);
+    expect(over.groups.flatMap((group) => group.cards).length).toBeGreaterThan(0);
+  });
+});

@@ -1,4 +1,5 @@
-import { catalog, findCardLegalityViolation } from '@rathe-arsenal/engine';
+import { catalog, computeDeckLegality, findCardLegalityViolation, getCopyLimit } from '@rathe-arsenal/engine';
+import { SpareCopiesService } from '../../collection/spare/spare-copies.service';
 import { BATCH_CARD_LIMIT, BATCH_RULE_LIMIT, runChatTool } from '../chat-tools';
 import { ChatToolsService } from '../chat-tools.service';
 import { FabraryService } from '../../fabrary/fabrary.service';
@@ -29,6 +30,41 @@ describe('chat tools (E2E)', () => {
   function toolboxFor(user: IChatUser) {
     return tools.forTurn({ userId: user.userId, locale: 'en-US' }).toolbox;
   }
+
+  interface IDeckLine {
+    readonly cardIdentifier: string;
+    readonly slot: 'hero' | 'weapon' | 'mainboard';
+    readonly quantity: number;
+    readonly inventoryQuantity?: number;
+  }
+
+  const RHINAR = 'rhinar-reckless-rampage';
+  const PACK_HUNT_RED = 'pack-hunt-red';
+  const PACK_HUNT_YELLOW = 'pack-hunt-yellow';
+  const PACK_HUNT_BLUE = 'pack-hunt-blue';
+
+  /** A deck of the user's own, inserted straight into the tables so a test can pick the status, hero and every quantity. */
+  async function insertDeck(user: IChatUser, status: string, lines: readonly IDeckLine[], name = 'Rhinar CC'): Promise<number> {
+    const [{ id }] = (await fixture.dataSource.query(
+      `INSERT INTO tracked_deck ("userId", name, hero, "heroIdentifier", format, status)
+       VALUES ($1, $2, 'Rhinar, Reckless Rampage', $3, 'Classic Constructed', $4) RETURNING id`,
+      [user.userId, name, RHINAR, status],
+    )) as [{ id: number }];
+    for (const line of lines) {
+      await fixture.dataSource.query(
+        `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, "inventoryQuantity", slot) VALUES ($1, $2, $3, $4, $5)`,
+        [id, line.cardIdentifier, line.quantity, line.inventoryQuantity ?? 0, line.slot],
+      );
+    }
+    return id;
+  }
+
+  const PACK_HUNT_DECK: readonly IDeckLine[] = [
+    { cardIdentifier: RHINAR, slot: 'hero', quantity: 1 },
+    { cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3, inventoryQuantity: 1 },
+    { cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard', quantity: 3 },
+    { cardIdentifier: PACK_HUNT_BLUE, slot: 'mainboard', quantity: 3 },
+  ];
 
   it("tools only see the message owner's data", async () => {
     const owner = await fixture.chatUser();
@@ -285,6 +321,113 @@ describe('chat tools (E2E)', () => {
     expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0 }));
     expect(await runChatTool(toolbox, 'get_prices', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
     expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it("get_deck returns the engine's full legality and each card's copy limit", async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const deck = await runChatTool(toolbox, 'get_deck', { deckId });
+
+    const expected = computeDeckLegality(
+      {
+        heroIdentifier: RHINAR,
+        cards: PACK_HUNT_DECK.map((line) => ({ cardIdentifier: line.cardIdentifier, quantity: line.quantity, slot: line.slot, inventoryQuantity: line.inventoryQuantity ?? 0 })),
+      },
+      catalog,
+      'Classic Constructed',
+    );
+    expect(deck['legality']).toEqual(JSON.parse(JSON.stringify(expected)));
+    const legality = deck['legality'] as { category: string; details: Array<{ code: string; params: Record<string, unknown> }> };
+    expect(legality.category).toBe('illegal');
+    const copyProblems = legality.details.filter((detail) => detail.code === 'too_many_copies');
+    expect(copyProblems).toHaveLength(1);
+    expect(copyProblems[0]!.params).toMatchObject({ cardIdentifier: PACK_HUNT_RED, count: 4, limit: 3 });
+    const cards = deck['cards'] as Array<{ cardIdentifier: string; copyLimit: number }>;
+    expect(cards.find((card) => card.cardIdentifier === PACK_HUNT_RED)?.copyLimit).toBe(3);
+    for (const card of cards) expect(card.copyLimit).toBe(getCopyLimit(catalog.getCard(card.cardIdentifier), 'Classic Constructed'));
+  });
+
+  it('get_prices with a deck and an empty list answers as for the deck alone', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const alone = await runChatTool(toolbox, 'get_prices', { deckId });
+    const withEmptyList = await runChatTool(toolbox, 'get_prices', { deckId, cardIdentifiers: [] });
+
+    expect(withEmptyList['error']).toBeUndefined();
+    expect(withEmptyList).toEqual(alone);
+    expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+    expect(await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [] })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it('get_prices computes readiness for a deck with none stored', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    expect(await fixture.dataSource.query(`SELECT 1 FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1`, [deckId])).toHaveLength(0);
+    const toolbox = toolboxFor(user);
+
+    const prices = await runChatTool(toolbox, 'get_prices', { deckId });
+
+    expect(prices['error']).toBeUndefined();
+    const cards = prices['cards'] as Array<{ cardIdentifier: string; quantity: number }>;
+    expect(cards.map((card) => [card.cardIdentifier, card.quantity])).toEqual(
+      expect.arrayContaining([
+        [PACK_HUNT_RED, 4],
+        [PACK_HUNT_YELLOW, 3],
+        [PACK_HUNT_BLUE, 3],
+      ]),
+    );
+  });
+
+  it('search_cards finds Romping Club for Brute weapon', async () => {
+    const user = await fixture.chatUser();
+    const toolbox = toolboxFor(user);
+
+    const found = await runChatTool(toolbox, 'search_cards', { query: 'Brute weapon' });
+
+    expect((found['cards'] as Array<{ cardIdentifier: string }>).map((card) => card.cardIdentifier)).toContain('romping-club');
+  });
+
+  it('get_swap_candidates on a 4-copy Pack Hunt (Vermelho) returns candidates', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+
+    const found = await runChatTool(toolbox, 'get_swap_candidates', { deckId, cardIdentifier: PACK_HUNT_RED, slot: 'mainboard' });
+    const one = await runChatTool(toolbox, 'get_swap_candidates', { deckId, cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 1 });
+
+    expect(found['needed']).toBe(1);
+    expect((found['groups'] as unknown[]).length).toBeGreaterThan(0);
+    expect(one['needed']).toBe(1);
+    expect((one['groups'] as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it("the Tutor's spare copies come from the spare function: Ideia and Aposentado decks hold none", async () => {
+    const user = await fixture.chatUser();
+    await fixture.own(user.sessionToken, [{ cardIdentifier: PACK_HUNT_RED, quantity: 3 }]);
+    const building = await insertDeck(user, 'building', [
+      { cardIdentifier: RHINAR, slot: 'hero', quantity: 1 },
+      { cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 2 },
+      { cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard', quantity: 1 },
+    ]);
+    await insertDeck(user, 'idea', [{ cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3 }], 'Ideia');
+    await insertDeck(user, 'retired', [{ cardIdentifier: PACK_HUNT_RED, slot: 'mainboard', quantity: 3 }], 'Aposentado');
+    const toolbox = toolboxFor(user);
+    const { spare } = await fixture.app.get(SpareCopiesService).spareByCard(user.userId);
+
+    const collection = await runChatTool(toolbox, 'get_collection', { query: 'pack hunt' });
+    const candidates = await runChatTool(toolbox, 'get_swap_candidates', { deckId: building, cardIdentifier: PACK_HUNT_YELLOW, slot: 'mainboard' });
+
+    const row = (collection['cards'] as Array<{ cardIdentifier: string; spare: number }>).find((entry) => entry.cardIdentifier === PACK_HUNT_RED);
+    const candidate = (candidates['groups'] as Array<{ cards: Array<{ cardIdentifier: string; freeCopies: number }> }>)
+      .flatMap((group) => group.cards)
+      .find((entry) => entry.cardIdentifier === PACK_HUNT_RED);
+    expect(spare.get(PACK_HUNT_RED)).toBe(1);
+    expect(row?.spare).toBe(1);
+    expect(candidate?.freeCopies).toBe(1);
   });
 
   it('get_tournament_meta counts decks, top 8s and wins per hero for a format', async () => {

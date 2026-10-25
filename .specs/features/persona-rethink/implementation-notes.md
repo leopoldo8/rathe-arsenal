@@ -2,6 +2,17 @@
 
 ## Deviations
 
+### S26 (batch 16)
+
+- `get_deck` carries `legality` (the engine's `category`, `reasons` and `details`, so every problem comes with its card, count and limit) and each card's `copyLimit`; it reads the inventory quantity of each line, so a card at 3 in the deck and 1 in the inventory is a 4-copy card. `describeDeck` gives neither for a format the engine has no rules for. The deck's `cardPool` total still counts deck copies only (no check asks to change it).
+- `search_cards` ranks a name match first, then a card whose type line (class, talent, type, subtype) plus name holds every word, then a rules-text match (`card-search.ts`); "Brute weapon" finds Romping Club.
+- `swapCandidates` answers `needed` next to `copies`. With no `quantity` it is the copies over the card's limit, counted per name and pitch across the deck and the inventory, else every copy in the slot; a `quantity` above the copies in the slot is cut to them.
+- `get_prices` treats an empty `cardIdentifiers` as not given, so `{deckId, cardIdentifiers: []}` is the deck alone and `{cardIdentifiers: []}` with no deck is `INVALID_ARGUMENTS`; a deck with no stored snapshot is worked out through `SubstitutionService.computeReadiness` (nothing is stored) from its missing and not-owned entries. A stored snapshot is still preferred when one exists, as before.
+- `search_rules` falls back to an any-word `to_tsquery('english', ...)` ranked by `ts_rank` when the all-words query finds nothing; the words are letters and digits only, so punctuation or a question made only of stop words finds nothing and never errors. C312's audit queries are checked against seeded `tools-` entries only: against the real index other rules rank first for the same words, and the pt-BR question of the audit never matches an English index (derivation note 1 of the Tutor).
+- The prompt: the copy line no longer says "Legendary cards once"; new lines say a card is its name and pitch (Pack Hunt (Red) and (Blue)), that Cúpula DT is the store, to write rules searches in English and to try one more English query before saying a rule could not be confirmed, to give a reason that says why the card fits, and to take a format's numbers from `get_deck` and not the rules search.
+- The starter question's hero is the bound deck's (an open conversation's or a draft's), else the last updated deck's, and C316 needed no code: the Tutor's spare already came from the one spare function since S20.
+- `ChatPricesService` gained a constructor argument (`SubstitutionService`); no spec builds it by hand.
+
 ### S23 (batch 16)
 
 - A signed-in visitor of a list gets the buyer view (sell list) or the trade view (want list) only when the answer carries `spareNeedsRule`, which every current answer does. An answer without it (the fixtures of the four older tests under "logged-in visitor" in `SharedListPage.spec.tsx`) keeps the gallery with its ribbons and summary, so those tests still pass. Real traffic never reaches that gallery for a signed-in visitor now, so those four tests prove a path nobody takes; the owner decides whether to delete them (see Needs the owner).
@@ -632,3 +643,11 @@
 - S21, the draft saves the closing line even when the field is empty (clearing it), so the next draft opens empty.
 - S21, `r3-lists-new-phone` (AC 171) is C309 of S25: the "Vender o que sobra na sua coleção" row is not built here, so "Sobrando" is reached from the collection banner only until S25.
 - S22, differences from `r3-sold-phone`, and copy of mine: see Deviations, S22 (the tile button instead of rows, the panel button kept, "Tirei N cópias da coleção.", "De qual importação tirar?", the two error lines).
+
+- Batch 16 (S22 to S26), things for the owner:
+  - Four tests under "logged-in visitor" in `apps/web/src/components/shared-list/__tests__/SharedListPage.spec.tsx` (the cards a visitor owns on a want list, the cards missing in their decks on a sell list, the "nothing is missing" line, the page when the matches fail) prove the gallery with ribbons that `r3-buyer-phone` and `r3-trade-visitor-phone` replace for a signed-in visitor. They still pass only because their fixtures lack `spareNeedsRule`; delete them, or say how the gallery should live on.
+  - `r3-sold-phone`, `r3-buyer-phone`, `r3-trade-visitor-phone` and `r3-saved-deck-phone` draw rows; the list editor and the shared deck page keep their galleries of card images and the new controls sit on the tiles. `r3-lists-new-phone` draws three rows that act at once and no name field; the dialog keeps its radios, name field and "Criar lista" (see S25).
+  - The old "Marcar como vendida" button of the line panel stays (`ListEditor.spec.tsx` proves it) and marks a line sold without asking about the collection. Say whether it goes.
+  - `POST /api/lists/:listId/lines/:lineId/unsold` has no Coverage row in `checks.md` (the validator warns); the Verifier reads its proof as C291's.
+  - The events `buy` and `offer` of the buyer and trade views are not sent (no check proves them).
+  - Copy of mine, no check or mockup gives it: S22 (the "Tirei N cópias da coleção." result, "De qual importação tirar?", two error lines), S23 (see its Deviations), S24 ("Não foi possível salvar o deck. Tente de novo."), S25 (none), S26 (none).

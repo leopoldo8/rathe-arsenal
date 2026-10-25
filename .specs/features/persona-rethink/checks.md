@@ -1063,11 +1063,11 @@ Proof: `web unit src/components/lists/__tests__/ListsIndex.spec.tsx -t "a new se
 
 ### S26 - The Tutor answers rules, copies and prices right · 14 files · 136 KB · ~34k
 
-**C310** - `get_deck` on the fixture deck returns a `legality` equal to `computeDeckLegality` for that deck: category `illegal` and one copy problem for `pack-hunt-red` with count 4 and limit 3, and none for Pack Hunt (Amarelo) or (Azul). Each card row also carries `copyLimit`, which is 3 on the `pack-hunt-red` row and the engine's `getCopyLimit` on every other row (AC 195)
+**C310** - `get_deck` on the fixture deck returns a `legality` equal to `computeDeckLegality` for that deck: category `illegal` and one copy problem for `pack-hunt-red` with count 4 and limit 3, and none for Pack Hunt (Amarelo) or (Azul). Each card row also carries `copyLimit`, which is 3 on the `pack-hunt-red` row and the engine's `getCopyLimit` on every other row (AC 195) · done
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_deck returns the engine's full legality and each card's copy limit"`
 Proof: `api unit src/chat/__tests__/deck-facts.spec.ts -t "every card carries its copy limit from the engine"`
 
-**C311** - The system instruction:
+**C311** - The system instruction: · done
 - Says that a card is its name and its pitch, naming Pack Hunt (Red) and Pack Hunt (Blue) as two cards with a limit each.
 - Contains "Cúpula DT" as the store the prices come from.
 - Tells the model to write `search_rules` queries in English.
@@ -1077,7 +1077,7 @@ Proof: `api unit src/chat/__tests__/deck-facts.spec.ts -t "every card carries it
 All of this holds in both `pt-BR` and `en-US` (AC 196).
 Proof: `api unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction states the copy rule per name and pitch, names Cúpula DT, searches rules in English and asks why a card fits"`
 
-**C312** - `search_rules` falls back to an OR query ranked by relevance when the all-words match finds nothing. The tests seed `rules_entry` rows prefixed `tools-`, and the fixture has one entry whose text names the combat chain and the order of triggers.
+**C312** - `search_rules` falls back to an OR query ranked by relevance when the all-words match finds nothing. The tests seed `rules_entry` rows prefixed `tools-`, and the fixture has one entry whose text names the combat chain and the order of triggers. · done
 - `"order of triggers when attacking"` returns `found: true` with that entry first.
 - The audit's queries `"constructed deck maximum copies same name pitch"` and `"Classic Constructed deck equipment weapon requirements"` return `found: true`, ranked by relevance.
 - A query that matches every word in one entry still returns that entry first.
@@ -1086,21 +1086,21 @@ Proof: `api unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction stat
 Proof: `api e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "a natural question with no all-words match falls back to an OR query ranked by relevance"`
 Proof: `api e2e src/reference/__tests__/rules-import.e2e-spec.ts -t "search ranks an exact number first and caps the result"`
 
-**C313** - `get_prices` answers `{deckId, cardIdentifiers: []}` with the same result as `{deckId}`, and never with `INVALID_ARGUMENTS`.
+**C313** - `get_prices` answers `{deckId, cardIdentifiers: []}` with the same result as `{deckId}`, and never with `INVALID_ARGUMENTS`. · done
 - On a deck with no stored readiness snapshot, `{deckId}` returns the missing cards priced, computed as the deck page computes them, and never `READINESS_NOT_COMPUTED`.
 - `{}` and `{cardIdentifiers: []}` with no `deckId` still answer `INVALID_ARGUMENTS` (AC 198)
 
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_prices with a deck and an empty list answers as for the deck alone"`
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_prices computes readiness for a deck with none stored"`
 
-**C314** - `search_cards` matches the type line, class and talent as well as name and text:
+**C314** - `search_cards` matches the type line, class and talent as well as name and text: · done
 - `{query: "Brute weapon"}` returns Romping Club.
 - A table-driven case per field (type, class, talent) finds a catalog card picked in the test by that field's value, and that card's name does not contain the query (AC 199)
 
 Proof: `api unit src/chat/__tests__/chat-tools.spec.ts -t "search_cards matches type, class and talent as well as name and text"`
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "search_cards finds Romping Club for Brute weapon"`
 
-**C315** - `swapCandidates` computes `needed` from the call:
+**C315** - `swapCandidates` computes `needed` from the call: · done
 - `quantity: 1` gives `needed` 1.
 - No `quantity` on a card over its limit gives the copies over the limit: Pack Hunt (Vermelho) at 4 in Classic Constructed gives 1.
 - No `quantity` on a card within its limit gives every copy: 3 copies give 3.
@@ -1110,27 +1110,27 @@ Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "search_cards finds
 Proof: `api unit src/chat/__tests__/swap-analysis.spec.ts -t "needed follows the quantity given, else the copies over the limit, else every copy"`
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_swap_candidates on a 4-copy Pack Hunt (Vermelho) returns candidates"`
 
-**C316** - The fixture user owns 3 Pack Hunt (Vermelho) and has three decks: a `building` deck using 2, an `idea` deck using 3 and a `retired` deck using 3.
+**C316** - The fixture user owns 3 Pack Hunt (Vermelho) and has three decks: a `building` deck using 2, an `idea` deck using 3 and a `retired` deck using 3. · done
 - `get_collection` reports `spare` 1 for that card.
 - `get_swap_candidates` reports 1 free copy for it.
 - Both equal what the S20 spare function returns for that user and card (AC 201)
 
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "the Tutor's spare copies come from the spare function: Ideia and Aposentado decks hold none"`
 
-**C317** - The empty chat's first ready question uses the hero of the deck the conversation or draft is bound to.
+**C317** - The empty chat's first ready question uses the hero of the deck the conversation or draft is bound to. · done
 - With `?deck=7` (hero `Rhinar, Reckless Rampage`) and a more recently updated deck of another hero, it reads "Como outras pessoas montam o Rhinar, Reckless Rampage nos torneios?".
 - With no bound deck, it uses the most recently updated deck's hero, as today (AC 202)
 
 Proof: `web unit src/components/chat/__tests__/ChatScreen.new.spec.tsx -t "the hero question uses the bound deck's hero"`
 Proof: `web unit src/components/chat/__tests__/ChatScreen.new.spec.tsx -t "ready questions follow the latest deck"`
 
-**C318** - `get_prices` with `{cardIdentifiers}` still gives the store price in reais and the TCGplayer price in dollars for the listed cards (AC 198)
+**C318** - `get_prices` with `{cardIdentifiers}` still gives the store price in reais and the TCGplayer price in dollars for the listed cards (AC 198) · done
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_prices gives the store price in reais and the TCGplayer price in dollars, for listed cards or a deck's missing cards"`
 
-**C319** - `search_cards` still matches a card by its name and by its rules text (AC 199)
+**C319** - `search_cards` still matches a card by its name and by its rules text (AC 199) · done
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "each read tool answers from the database"`
 
-**C320** - When a rules search finds nothing at all, the instruction still tells the model what to do instead of answering from memory (AC 197)
+**C320** - When a rules search finds nothing at all, the instruction still tells the model what to do instead of answering from memory (AC 197) · done
 Proof: `api unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction explains tournament sources and what to do when a search finds nothing"`
 
 ### S27 - A swap proposal says what moves · 15 files · 148 KB · ~37k

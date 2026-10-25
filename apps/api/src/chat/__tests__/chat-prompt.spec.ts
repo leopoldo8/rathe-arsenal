@@ -59,6 +59,30 @@ describe('chat system instruction', () => {
     expect(text).toContain('To say how a user\'s list differs card by card from regular decks, pass compareDeckId to get_community_decks.');
   });
 
+  it('the instruction states the copy rule per name and pitch, names Cúpula DT, searches rules in English and asks why a card fits', () => {
+    const today = new Date('2026-10-11T00:00:00Z');
+
+    const texts = ['pt-BR', 'en-US'].map((locale) => buildSystemInstruction({ locale, decks: [], boundDeck: null, today }));
+
+    for (const text of texts) {
+      expect(text).toContain('A card is its name and its pitch');
+      expect(text).toContain('Pack Hunt (Red) and Pack Hunt (Blue) are two different cards, each with its own copy limit');
+      expect(text).toContain('Cúpula DT');
+      expect(text).toContain('the store whose prices get_prices returns is Cúpula DT');
+      expect(text).toContain('Write every search_rules query in English');
+      expect(text).toContain("Every proposal's reason must say why the card fits");
+      expect(text).toContain('not only that it is legal');
+      expect(text).not.toContain('Legendary cards once');
+    }
+  });
+
+  it('the instruction says what to do when a rules search finds nothing, before answering from memory', () => {
+    const text = buildSystemInstruction({ locale: 'en-US', decks: [], boundDeck: null, today: new Date('2026-10-11T00:00:00Z') });
+
+    expect(text).toContain('A search that finds nothing is not the end: try one more search_rules query in English');
+    expect(text).toContain('could not confirm the rule');
+  });
+
   it('the instruction names the assistant Tutor in every locale', () => {
     const today = new Date('2026-10-11T00:00:00Z');
 

@@ -94,6 +94,63 @@ describe('rules reference (E2E)', () => {
     expect(none).toEqual({ found: false, entries: [] });
   });
 
+  describe('a natural question', () => {
+    async function seed(entries: ReadonlyArray<{ number: string; text: string }>): Promise<void> {
+      for (const entry of entries) {
+        await fixture.dataSource.query(
+          `INSERT INTO rules_entry ("ruleNumber", "sectionNumber", "sectionTitle", text, url, "sourceHash", "fetchedAt")
+           VALUES ($1, 'tools', 'Tools section', $2, 'https://rules.fabtcg.com/en/tools', 'tools-hash', now())`,
+          [entry.number, entry.text],
+        );
+      }
+    }
+
+    afterEach(async () => {
+      await fixture.dataSource.query(`DELETE FROM rules_entry WHERE "ruleNumber" LIKE 'tools-%'`);
+    });
+
+    it('a natural question with no all-words match falls back to an OR query ranked by relevance', async () => {
+      // Only the seeded entries: the real index would add rules that rank for the same words and hide what this test pins.
+      await seed([
+        { number: 'tools-triggers', text: 'The combat chain keeps the order of triggers: triggered effects wait and the turn player picks their order.' },
+        { number: 'tools-copies', text: 'A Constructed deck holds at most 3 copies of cards that share the same name and pitch, whatever the hero.' },
+        { number: 'tools-equipment', text: 'A Classic Constructed deck has one weapon or two, and each equipment slot holds one piece of equipment.' },
+        { number: 'tools-other', text: 'A turn has an action phase and an end phase.' },
+      ]);
+
+      const triggers = await service.search('order of triggers when attacking');
+      const copies = await service.search('constructed deck maximum copies same name pitch');
+      const equipment = await service.search('Classic Constructed deck equipment weapon requirements');
+
+      expect(triggers.found).toBe(true);
+      expect(triggers.entries[0]!.ruleNumber).toBe('tools-triggers');
+      expect(copies.found).toBe(true);
+      expect(copies.entries[0]!.ruleNumber).toBe('tools-copies');
+      expect(equipment.found).toBe(true);
+      expect(equipment.entries[0]!.ruleNumber).toBe('tools-equipment');
+      expect(triggers.entries.length).toBeLessThanOrEqual(8);
+    });
+
+    it('a query that matches every word in one entry still returns that entry first', async () => {
+      await seed([
+        { number: 'tools-all', text: 'The combat chain keeps the order of triggers while attacking.' },
+        { number: 'tools-some', text: 'Triggers of an attack are put on the stack by the turn player, with the order of their choice and more words about triggers triggers triggers.' },
+      ]);
+
+      const found = await service.search('order of triggers while attacking');
+
+      expect(found.entries[0]!.ruleNumber).toBe('tools-all');
+    });
+
+    it('finds nothing when no word of the question is in any entry, and never fails on punctuation or only stop words', async () => {
+      await service.importIndex(async () => FIXTURE, T0);
+
+      expect(await service.search('zzqx wwvv')).toEqual({ found: false, entries: [] });
+      expect(await service.search('?! ...')).toEqual({ found: false, entries: [] });
+      expect(await service.search('the of and')).toEqual({ found: false, entries: [] });
+    });
+  });
+
   it('a section number with no rule of its own returns the first rules of that section', async () => {
     await service.importIndex(async () => FIXTURE, T0);
 

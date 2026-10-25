@@ -84,6 +84,26 @@ describe('ChatScreen on /chat', () => {
     );
   });
 
+  it("the hero question uses the bound deck's hero", async () => {
+    const rhinar = deck({ id: 7, name: 'Rhinar CC', hero: 'Rhinar, Reckless Rampage', updatedAt: '2026-08-01T00:00:00.000Z' });
+    serveNew({ 'GET /decks': () => decksResponse([rhinar, OSCILIO, KATSU]) });
+
+    // A draft bound to the older Rhinar deck: the more recently updated Katsu deck does not set the question.
+    const draft = renderWithClient(<ChatScreen conversationId={null} draftDeckId={7} />);
+    await waitFor(() => expect(screen.getAllByTestId('ready-question')).toHaveLength(3));
+    expect(screen.getAllByTestId('ready-question')[0]).toHaveTextContent('Como outras pessoas montam o Rhinar, Reckless Rampage nos torneios?');
+    draft.unmount();
+
+    // The same for an open conversation bound to that deck.
+    serveNew({
+      'GET /decks': () => decksResponse([rhinar, OSCILIO, KATSU]),
+      'GET /chat/conversations/c-9': () => conversation({ id: 'c-9', trackedDeckId: 7, messages: [] }),
+    });
+    renderWithClient(<ChatScreen conversationId="c-9" draftDeckId={null} />);
+    await waitFor(() => expect(screen.getAllByTestId('ready-question')).toHaveLength(3));
+    expect(screen.getAllByTestId('ready-question')[0]).toHaveTextContent('Como outras pessoas montam o Rhinar, Reckless Rampage nos torneios?');
+  });
+
   it('the first send creates the conversation then posts', async () => {
     const user = userEvent.setup();
     serveNew();

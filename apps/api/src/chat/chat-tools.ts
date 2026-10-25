@@ -35,7 +35,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_deck',
     description:
-      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and legality, the counted totals (cards per slot; mainboard per pitch, cost, card type and defense; defense reactions; attacks with go again and their average power; equipment slots filled and missing and their defense; average pitch and cost; resources the hero, weapons and equipment spend; card pool; illegal cards) and the format's limits. Quote these totals; never count by hand.",
+      "One of the user's decks: hero, format, status, every card with slot, quantity, owned copies, pitch, cost, power, defense, text and copy limit, the engine's full legality verdict for the deck (every problem at once, with the card, its count and its limit), the counted totals (cards per slot; mainboard per pitch, cost, card type and defense; defense reactions; attacks with go again and their average power; equipment slots filled and missing and their defense; average pitch and cost; resources the hero, weapons and equipment spend; card pool; illegal cards) and the format's limits. Quote these totals; never count by hand.",
     parametersJsonSchema: object({ deckId: integer('Deck id from the account summary.') }, ['deckId']),
   },
   {
@@ -49,10 +49,10 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'search_cards',
     description:
-      'Search the card catalog by name or rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format. To look up several cards, pass them all in queries in one call.',
+      'Search the card catalog by name, by class, talent or type ("Brute weapon", "Ninja instant") or by rules text. With heroIdentifier and format, each card says whether it is legal for that hero and format. To look up several cards, pass them all in queries in one call.',
     parametersJsonSchema: object(
       {
-        query: string('Words from the card name or rules text.'),
+        query: string('Words from the card name, its class, talent or type, or its rules text.'),
         queries: { type: 'array', items: { type: 'string' }, description: `Instead of query: up to ${TOOL_QUERIES_MAX} searches answered together, ${BATCH_CARD_LIMIT} cards each.` },
         heroIdentifier: string('Optional hero card identifier for legality.'),
         format: string('Optional format for legality.'),
@@ -155,7 +155,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'get_prices',
     description:
-      "Prices of cards, or of what one of the user's decks still misses (the missing cards on its deck page): the store price in reais with stock and product link from the store the site tracks, and the TCGplayer price in US dollars, each with the date it was fetched, plus totals. Give either cardIdentifiers (at most 20) or deckId.",
+      "Prices of cards, or of what one of the user's decks still misses (the missing cards on its deck page): the store price in reais with stock and product link from the store the site tracks, and the TCGplayer price in US dollars, each with the date it was fetched, plus totals. Give either cardIdentifiers (at most 20) or deckId; a deckId with an empty cardIdentifiers is the deck alone.",
     parametersJsonSchema: object(
       {
         cardIdentifiers: { type: 'array', items: { type: 'string' }, description: 'Catalog card identifiers, at most 20.' },
@@ -189,6 +189,7 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
         deckId: integer('Deck id.'),
         cardIdentifier: string('The card in the deck to replace.'),
         slot: { type: 'string', enum: ['mainboard', 'equipment'] },
+        quantity: integer('Optional: how many copies to replace. Leave it out to replace the copies over the limit when the card breaks it, else every copy.'),
       },
       ['deckId', 'cardIdentifier', 'slot'],
     ),
