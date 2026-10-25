@@ -171,7 +171,7 @@ export class AuthService {
     }
 
     user.email = email;
-    const link = await this.issueConfirmation(user, () => this.saveNewUser(user));
+    const link = await this.issueConfirmation(user, () => this.moveUnconfirmedAddress(user));
     if (!(await this.sendConfirmation(email, link, locale))) {
       this.logger.error({ event: 'auth.change_email.email_failed', userId });
     }
@@ -347,6 +347,32 @@ export class AuthService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Writes the corrected address only while the account is still unconfirmed. A plain save would
+   * keep a confirmation that landed after the read in `changeEmail` and leave the new address
+   * confirmed by a link that was sent to the old one.
+   */
+  private async moveUnconfirmedAddress(user: UserEntity): Promise<void> {
+    try {
+      const moved = await this.users.update(
+        { id: user.id, emailVerifiedAt: IsNull() },
+        {
+          email: user.email,
+          verificationTokenHash: user.verificationTokenHash,
+          verificationTokenExpiresAt: user.verificationTokenExpiresAt,
+        },
+      );
+      if (moved.affected !== 1) {
+        throw new AuthError(EAuthErrorCode.EmailAlreadyConfirmed, 'A confirmed address cannot be changed here');
+      }
+    } catch (err) {
+      if (err instanceof QueryFailedError && (err as QueryFailedError & { code?: string }).code === UNIQUE_VIOLATION) {
+        throw new AuthError(EAuthErrorCode.EmailTaken, 'An account with this e-mail already exists');
+      }
+      throw err;
     }
   }
 
