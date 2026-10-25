@@ -1,7 +1,8 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useDecksQuery, useUntrackDeckMutation } from '../../api/decks';
+import { useDecksQuery } from '../../api/decks';
+import { DeletedDecksRow } from '../../components/home/DeletedDecksRow';
 import { ArmoryHeader } from '../../components/home/ArmoryHeader';
 import { FilterBar } from '../../components/home/FilterBar';
 import { StatusGroups } from '../../components/home/StatusGroups';
@@ -36,7 +37,6 @@ export const Route = createFileRoute('/_auth/home')({
 export function HomePage(): React.ReactElement {
   const { t } = useTranslation();
   const decksQuery = useDecksQuery();
-  const untrackMutation = useUntrackDeckMutation();
   const { tag: activeFilterTags } = Route.useSearch();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -119,14 +119,12 @@ export function HomePage(): React.ReactElement {
       <>
         <UnconfirmedEmailLine />
         <EducationalEmptyState collectionCardCount={collectionCardCount} />
+        <DeletedDecksRow />
       </>
     );
   }
 
   const totalCardsMissing = data?.totalCardsMissing ?? null;
-
-  const untrackingDeckId =
-    untrackMutation.isPending ? (untrackMutation.variables ?? null) : null;
 
   return (
     <section className={styles.populated}>
@@ -148,11 +146,10 @@ export function HomePage(): React.ReactElement {
       ) : (
         <StatusGroups
           decks={visibleDecks}
-          onUntrack={(deckId) => untrackMutation.mutate(deckId)}
-          untrackingDeckId={untrackingDeckId}
           isAllRetired={trackedDecks.every((deck) => deck.status === 'retired')}
         />
       )}
+      <DeletedDecksRow />
     </section>
   );
 }

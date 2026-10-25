@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import {
   catalog,
   findAlternatives,
@@ -68,7 +68,7 @@ export class AlternativesService {
   ) {}
 
   async list({ userId, deckId, cardIdentifier, slot, query }: IAlternativesRequest): Promise<IAlternativesResponse> {
-    const deck = await this.trackedDecks.findOne({ where: { id: deckId, userId } });
+    const deck = await this.trackedDecks.findOne({ where: { id: deckId, userId, deletedAt: IsNull() } });
     const [deckCardRows, activeReplacements] = await Promise.all([
       this.deckCards.find({ where: { trackedDeckId: deckId } }),
       this.replacementsQueryService.loadActive(deckId),

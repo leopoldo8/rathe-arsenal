@@ -349,7 +349,7 @@ describe('Share preview (E2E)', () => {
       const { token, deckId, userId, linkId } = await createSharedDeck();
       await request(app.getHttpServer()).get(`/api/shared/decks/${token}/image`).expect(200);
 
-      await app.get(DecksService).untrack(userId, deckId);
+      await app.get(DecksService).permanentDelete(userId, deckId);
 
       expect(await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId])).toHaveLength(0);
       expect(await dataSource.query(`SELECT 1 FROM share_link WHERE id = $1`, [linkId])).toHaveLength(0);

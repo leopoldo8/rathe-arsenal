@@ -35,7 +35,7 @@ describe('SharedDeckLookup.findLive', () => {
 
     expect(links.findOne).toHaveBeenCalledWith({ where: { token: LIVE_TOKEN, targetKind: 'deck' } });
     expect(decks.findOne).toHaveBeenCalledWith({
-      where: { id: 7, user: { deletedAt: IsNull() } },
+      where: { id: 7, deletedAt: IsNull(), user: { deletedAt: IsNull() } },
       relations: { user: true },
     });
   });

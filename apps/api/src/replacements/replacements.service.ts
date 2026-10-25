@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, IsNull } from 'typeorm';
 import {
   catalog,
   findCardLegalityViolation,
@@ -286,7 +286,7 @@ export class ReplacementsService {
     swap: { readonly trackedDeckId: number; readonly originalCardIdentifier: string; readonly slot: string; readonly replacementCardIdentifier: string },
   ): Promise<{ readonly kind: 'applied'; readonly replacementId: string } | { readonly kind: 'stale'; readonly reason: string }> {
     const deck = await manager.findOne(TrackedDeckEntity, {
-      where: { id: swap.trackedDeckId, userId },
+      where: { id: swap.trackedDeckId, userId, deletedAt: IsNull() },
       lock: { mode: 'for_no_key_update' },
     });
     if (!deck) return { kind: 'stale', reason: 'DECK_GONE' };
@@ -383,7 +383,7 @@ export class ReplacementsService {
 
   private async lockDeck(manager: EntityManager, deckId: number, userId: string): Promise<TrackedDeckEntity> {
     const deck = await manager.findOne(TrackedDeckEntity, {
-      where: { id: deckId, userId },
+      where: { id: deckId, userId, deletedAt: IsNull() },
       lock: { mode: 'for_no_key_update' },
     });
     if (!deck) throw new NotFoundException('Tracked deck not found');

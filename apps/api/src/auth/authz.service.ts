@@ -43,6 +43,15 @@ export class AuthzService {
     }
   }
 
+  /** Ownership alone, a deleted deck included: restore and "Excluir de vez" act on decks `assertOwnsTrackedDeck` hides. */
+  async assertOwnsTrackedDeckInAnyState(userId: string, trackedDeckId: number): Promise<void> {
+    const deck = await this.trackedDecks.findOne({ where: { id: trackedDeckId }, select: ['id', 'userId'] });
+    if (!deck || deck.userId !== userId) {
+      this.logger.warn('AUTHZ_DENIED', { resource: 'TrackedDeck', resourceId: trackedDeckId, userId });
+      throw new NotFoundException('Tracked deck not found');
+    }
+  }
+
   async assertOwnsCollectionCard(
     userId: string,
     collectionCardId: number,

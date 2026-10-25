@@ -1,4 +1,5 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, Injectable, Optional, SetMetadata } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { AuthzService } from '../authz.service';
 import { ICurrentUser } from '../dtos/current-user.dto';
 
@@ -15,9 +16,17 @@ import { ICurrentUser } from '../dtos/current-user.dto';
 const MIN_DECK_ID = 1;
 const MAX_DECK_ID = 2_147_483_647;
 
+const INCLUDES_DELETED_DECK_KEY = 'includesDeletedDeck';
+
+/** Marks a route that acts on a deleted deck too (restore, permanent delete); every other owner route answers 404 for it. */
+export const IncludesDeletedDeck = (): MethodDecorator => SetMetadata(INCLUDES_DELETED_DECK_KEY, true);
+
 @Injectable()
 export class OwnsTrackedDeckGuard implements CanActivate {
-  constructor(private readonly authzService: AuthzService) {}
+  constructor(
+    private readonly authzService: AuthzService,
+    @Optional() private readonly reflector?: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -32,7 +41,13 @@ export class OwnsTrackedDeckGuard implements CanActivate {
       throw new BadRequestException('Deck id must be an integer between 1 and 2147483647');
     }
 
-    await this.authzService.assertOwnsTrackedDeck(user.userId, trackedDeckId);
+    const includesDeleted =
+      this.reflector?.getAllAndOverride<boolean>(INCLUDES_DELETED_DECK_KEY, [context.getHandler(), context.getClass()]) ?? false;
+    if (includesDeleted) {
+      await this.authzService.assertOwnsTrackedDeckInAnyState(user.userId, trackedDeckId);
+    } else {
+      await this.authzService.assertOwnsTrackedDeck(user.userId, trackedDeckId);
+    }
 
     return true;
   }

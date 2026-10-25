@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { catalog, computeEffectiveReadiness } from '@rathe-arsenal/engine';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
@@ -27,7 +27,7 @@ export class VisitorDecksMissingService {
     if (cardIdentifiers.size === 0) return totals;
 
     const decks = await this.decks.find({
-      where: { userId: visitorId, status: Not('retired') },
+      where: { userId: visitorId, status: Not('retired'), deletedAt: IsNull() },
       select: { id: true },
     });
     if (decks.length === 0) return totals;

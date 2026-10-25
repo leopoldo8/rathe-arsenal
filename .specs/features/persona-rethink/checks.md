@@ -224,7 +224,7 @@ Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "invalid
 **C54** - `PUT /api/decks/:deckId` answers `400` and writes nothing when two rows repeat the same card and slot (Relations: one row per deck, card and slot) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "a repeated card and slot is rejected"`
 
-**C55** - `PUT /api/decks/:deckId` answers `404` for another player's deck and for a deleted deck, and writes nothing (AC 30, AC 55)
+**C55** - `PUT /api/decks/:deckId` answers `404` for another player's deck and for a deleted deck, and writes nothing (AC 30, AC 55) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "put answers 404 for a deck the player cannot edit"`
 
 **C56** - For `r3-inventory-desktop`'s deck the editor header reads "Deck 60 · Inventário 15 · Card pool 80 de 80", followed once by "Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas." and "Card pool: deck, inventário, arma e equipamentos; o herói não conta."; the table heads are "Carta", "No deck", "No inventário"; each row has two steppers (AC 30, AC 35) · done
@@ -321,52 +321,52 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx 
 
 ### S8 - A deleted deck can come back for 30 days · 22 files · 186 KB · ~56k
 
-**C85** - After the migration, `tracked_deck."deletedAt"` is `timestamp with time zone`, nullable, and every existing row reads null (door 4)
+**C85** - After the migration, `tracked_deck."deletedAt"` is `timestamp with time zone`, nullable, and every existing row reads null (door 4) · done
 Proof: `api int src/database/migrations/__tests__/tracked-deck-soft-delete.migration.int-spec.ts -t "adds a nullable deletedAt"`
 
-**C86** - `DELETE /api/decks/:deckId` answers `200` with `deletedAt` set to now; the row, its `deck_card` rows and its share links stay; `GET /api/decks` no longer lists it and `GET /api/decks/:deckId` answers `404` (AC 50, AC 55)
+**C86** - `DELETE /api/decks/:deckId` answers `200` with `deletedAt` set to now; the row, its `deck_card` rows and its share links stay; `GET /api/decks` no longer lists it and `GET /api/decks/:deckId` answers `404` (AC 50, AC 55) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "delete sets deletedAt and hides the deck"`
 
-**C87** - `DELETE /api/decks/:deckId` answers `404` for another player's deck, an already deleted deck and an unknown id (AC 50)
+**C87** - `DELETE /api/decks/:deckId` answers `404` for another player's deck, an already deleted deck and an unknown id (AC 50) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "delete answers 404 for a deck the player cannot see"`
 
-**C88** - `GET /api/decks/deleted` answers `200` with only the caller's deleted decks, each with `deletedAt` and `purgeAt` equal to `deletedAt` plus 30 days; it is not shadowed by `GET /api/decks/:deckId` (no `400` from the integer pipe); without a session it answers `401` (AC 51)
+**C88** - `GET /api/decks/deleted` answers `200` with only the caller's deleted decks, each with `deletedAt` and `purgeAt` equal to `deletedAt` plus 30 days; it is not shadowed by `GET /api/decks/:deckId` (no `400` from the integer pipe); without a session it answers `401` (AC 51) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "deleted decks are listed with their purge date"`
 
-**C89** - `POST /api/decks/:deckId/restore` answers `200` with the deck; afterwards the deck is listed again with the same cards, inventory quantities, replacements and tags, and its share address answers `200` (AC 52)
+**C89** - `POST /api/decks/:deckId/restore` answers `200` with the deck; afterwards the deck is listed again with the same cards, inventory quantities, replacements and tags, and its share address answers `200` (AC 52) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "restore brings back cards, inventory, replacements, tags and links"`
 
-**C90** - `POST /api/decks/:deckId/restore` answers `404` for a deck that is not deleted, another player's deck and an unknown id (AC 52)
+**C90** - `POST /api/decks/:deckId/restore` answers `404` for a deck that is not deleted, another player's deck and an unknown id (AC 52) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "restore answers 404 for a deck that is not the player's deleted deck"`
 
-**C91** - `DELETE /api/decks/:deckId/permanent` answers `204`; the deck, its `deck_card`, `card_replacement` and tag rows are gone and its share links are deleted, as today's delete does; it answers `404` for another player's deck and an unknown id (AC 53)
+**C91** - `DELETE /api/decks/:deckId/permanent` answers `204`; the deck, its `deck_card`, `card_replacement` and tag rows are gone and its share links are deleted, as today's delete does; it answers `404` for another player's deck and an unknown id (AC 53) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "permanent delete removes the deck with today's cascades"`
 
-**C92** - While a deck is deleted it is left out of each reader, one case per reader: readiness recompute for a collection change, the home counts of `GET /api/decks`, the Tutor's deck list and `get_deck`, the recommendation queue's enqueue and drain, and the replacement re-solve drain (AC 55; door 4)
+**C92** - While a deck is deleted it is left out of each reader, one case per reader: readiness recompute for a collection change, the home counts of `GET /api/decks`, the Tutor's deck list and `get_deck`, the recommendation queue's enqueue and drain, and the replacement re-solve drain (AC 55; door 4) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "a deleted deck is left out of every reader"`
 
-**C93** - While a deck is deleted, its `deck` and `missing` addresses answer `404` with `code` `SHARE_LINK_UNAVAILABLE`; after restore both answer `200` (AC 55; door 4: `SharedDeckLookup.findLive`)
+**C93** - While a deck is deleted, its `deck` and `missing` addresses answer `404` with `code` `SHARE_LINK_UNAVAILABLE`; after restore both answer `200` (AC 55; door 4: `SharedDeckLookup.findLive`) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a deleted deck's links answer 404 until it is restored"`
 
-**C94** - Tapping the trash on a home card calls `DELETE /decks/:deckId` at once, removes the card from the list, and shows "Rhinar Blitz v2 foi para Excluídos recentemente" with "Desfazer"; with fake timers advanced 60 seconds the toast is still shown; the next action dismisses it; "Desfazer" calls `POST /decks/:deckId/restore` (AC 50)
+**C94** - Tapping the trash on a home card calls `DELETE /decks/:deckId` at once, removes the card from the list, and shows "Rhinar Blitz v2 foi para Excluídos recentemente" with "Desfazer"; with fake timers advanced 60 seconds the toast is still shown; the next action dismisses it; "Desfazer" calls `POST /decks/:deckId/restore` (AC 50) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "delete is recorded at once and the toast waits for the next action"`
 
-**C95** - "Excluir deck" inside "⋯" on the deck page makes the same `DELETE /decks/:deckId` call and shows the same toast on the home (AC 50)
+**C95** - "Excluir deck" inside "⋯" on the deck page makes the same `DELETE /decks/:deckId` call and shows the same toast on the home (AC 50) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "excluir deck soft-deletes and returns home with the toast"`
 
-**C96** - Unmounting the home while the toast is shown makes no further call, and the deck stays deleted (AC 56)
+**C96** - Unmounting the home while the toast is shown makes no further call, and the deck stays deleted (AC 56) · done
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "leaving the home keeps the recorded delete"`
 
-**C97** - The home shows "Excluídos recentemente (1) · ficam 30 dias" under the decks when one deck is deleted, and no such row when none is (AC 51)
+**C97** - The home shows "Excluídos recentemente (1) · ficam 30 dias" under the decks when one deck is deleted, and no such row when none is (AC 51) · done
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "the recently deleted row appears only with deleted decks"`
 
-**C98** - The deleted list for `r2-deleted-list-phone` shows "‹ Meus decks", "Excluídos recentemente", "Um deck excluído volta com as cartas, as substituições e o histórico.", then per deck "Rhinar Blitz v2", "Ideia · 12 cartas · excluído hoje · some de vez em 30 dias", the button "Restaurar" and the plain link "Excluir de vez" (AC 51, AC 57)
+**C98** - The deleted list for `r2-deleted-list-phone` shows "‹ Meus decks", "Excluídos recentemente", "Um deck excluído volta com as cartas, as substituições e o histórico.", then per deck "Rhinar Blitz v2", "Ideia · 12 cartas · excluído hoje · some de vez em 30 dias", the button "Restaurar" and the plain link "Excluir de vez" (AC 51, AC 57) · done
 Proof: `web unit src/routes/_auth/__tests__/-decks.deleted.spec.tsx -t "matches r2-deleted-list-phone"`
 
-**C99** - "Excluir de vez" asks once; confirming calls `DELETE /decks/:deckId/permanent` once; declining calls nothing (AC 53)
+**C99** - "Excluir de vez" asks once; confirming calls `DELETE /decks/:deckId/permanent` once; declining calls nothing (AC 53) · done
 Proof: `web unit src/routes/_auth/__tests__/-decks.deleted.spec.tsx -t "excluir de vez asks once"`
 
-**C100** - The home after a delete matches `r2-delete-toast-phone` for the order of its parts (the remaining deck cards, the row "Excluídos recentemente (1) · ficam 30 dias", the toast), with the card lines of the stage rule (S6) instead of round 2's "Jogando · não pode jogar no Blitz" (AC 57)
+**C100** - The home after a delete matches `r2-delete-toast-phone` for the order of its parts (the remaining deck cards, the row "Excluídos recentemente (1) · ficam 30 dias", the toast), with the card lines of the stage rule (S6) instead of round 2's "Jogando · não pode jogar no Blitz" (AC 57) · done
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "matches r2-delete-toast-phone with the stage rule"`
 
 ### S9 - Starting a deck with the hero, and a hero outside the format · 15 files · 110 KB · ~36k

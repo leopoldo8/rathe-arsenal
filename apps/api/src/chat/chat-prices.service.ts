@@ -45,7 +45,7 @@ export class ChatPricesService {
       const entries = cards.map((card) => breakdownEntry(card!, 1));
       return this.priceEntries(entries, { exact: [], substituted: [], missing: entries, notOwned: entries });
     }
-    const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [deckId, userId])) as unknown[];
+    const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [deckId, userId])) as unknown[];
     if (!deck) return { error: 'DECK_NOT_FOUND' };
     const [snapshot] = (await this.dataSource.query(
       `SELECT breakdown FROM deck_readiness_snapshot WHERE "trackedDeckId" = $1 ORDER BY "computedAt" DESC, id DESC LIMIT 1`,

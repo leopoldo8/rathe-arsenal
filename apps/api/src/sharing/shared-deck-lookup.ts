@@ -35,7 +35,7 @@ export class SharedDeckLookup {
     if (intent && link.intent !== intent) return null;
 
     const deck = await this.trackedDecks.findOne({
-      where: { id: link.targetId, user: { deletedAt: IsNull() } },
+      where: { id: link.targetId, deletedAt: IsNull(), user: { deletedAt: IsNull() } },
       relations: { user: true },
     });
     if (!deck) return null;

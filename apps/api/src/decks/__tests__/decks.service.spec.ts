@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, IsNull, Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -152,7 +152,7 @@ describe('DecksService', () => {
         aggregateShoppingLine: null,
       });
       expect(trackedDeckRepo.find).toHaveBeenCalledWith({
-        where: { userId: USER_ID },
+        where: { userId: USER_ID, deletedAt: IsNull() },
         order: { trackedAt: 'DESC' },
       });
     });
@@ -984,37 +984,29 @@ const trackedDeck = result.trackedDecks[0]!;
     });
   });
 
-  describe('untrack', () => {
-    it('should assert ownership and delete the deck', async () => {
+  describe('permanentDelete', () => {
+    it('should delete the deck of the caller', async () => {
       // Arrange
-      authzService.assertOwnsTrackedDeck.mockResolvedValue(undefined);
       trackedDeckRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       // Act
-      await service.untrack(USER_ID, 1);
+      await service.permanentDelete(USER_ID, 1);
 
       // Assert
-      expect(authzService.assertOwnsTrackedDeck).toHaveBeenCalledWith(
-        USER_ID,
-        1,
-      );
       expect(trackedDeckRepo.delete).toHaveBeenCalledWith({
         id: 1,
         userId: USER_ID,
       });
     });
 
-    it('should throw NotFoundException when user does not own the deck', async () => {
+    it('should throw NotFoundException when no deck of the caller was deleted', async () => {
       // Arrange
-      authzService.assertOwnsTrackedDeck.mockRejectedValue(
-        new NotFoundException('Tracked deck not found'),
-      );
+      trackedDeckRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
 
       // Act & Assert
-      await expect(service.untrack(OTHER_USER_ID, 1)).rejects.toThrow(
+      await expect(service.permanentDelete(OTHER_USER_ID, 1)).rejects.toThrow(
         NotFoundException,
       );
-      expect(trackedDeckRepo.delete).not.toHaveBeenCalled();
     });
   });
 });

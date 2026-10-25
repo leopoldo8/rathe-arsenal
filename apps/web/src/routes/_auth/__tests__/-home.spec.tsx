@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ITrackedDeckListItem, TDeckStatus } from '../../../api/decks';
 import { ToastProvider } from '../../../components/ui/Toast/ToastProvider';
 import { AuthContext } from '../../../auth/AuthContext';
@@ -42,8 +43,24 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
+const apiFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => apiFetch };
+});
+
+const mockUseDeletedDecks = vi.fn();
+vi.mock('../../../api/deleted-decks', () => ({
+  useDeletedDecksQuery: () => mockUseDeletedDecks(),
+}));
+
+function withClient(node: React.ReactElement): React.ReactElement {
+  return <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>{node}</QueryClientProvider>;
+}
+
 const mockUseDecksQuery = vi.fn();
 vi.mock('../../../api/decks', () => ({
+  DECKS_QUERY_KEY: ['decks'],
   useDecksQuery: () => mockUseDecksQuery(),
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false, variables: null }),
 }));
@@ -89,11 +106,13 @@ function seed(decks: readonly ITrackedDeckListItem[], totalCardsMissing: number 
   });
 }
 
-function renderHome(): void {
-  render(
-    <ToastProvider>
-      <HomePage />
-    </ToastProvider>,
+function renderHome() {
+  return render(
+    withClient(
+      <ToastProvider>
+        <HomePage />
+      </ToastProvider>,
+    ),
   );
 }
 
@@ -108,6 +127,12 @@ const ALL_STATUSES = [
   makeDeck(4, 'idea', 'Idea Deck', { latestSnapshot: null, cardCounts: null }),
   makeDeck(5, 'retired', 'Retired Deck'),
 ];
+
+beforeEach(() => {
+  apiFetch.mockReset();
+  apiFetch.mockResolvedValue({});
+  mockUseDeletedDecks.mockReturnValue({ data: { decks: [] } });
+});
 
 describe('Home route', () => {
   beforeEach(() => {
@@ -314,11 +339,13 @@ describe('Home route, unconfirmed e-mail', () => {
   function renderHomeAs(emailConfirmed: boolean): void {
     const user = { id: 'u1', email: 'bia.souza@gmail.com', role: 'user' as const, chatAccess: false, emailConfirmed };
     render(
-      <AuthContext.Provider value={makeAuth({ user })}>
-        <ToastProvider>
-          <HomePage />
-        </ToastProvider>
-      </AuthContext.Provider>,
+      withClient(
+        <AuthContext.Provider value={makeAuth({ user })}>
+          <ToastProvider>
+            <HomePage />
+          </ToastProvider>
+        </AuthContext.Provider>,
+      ),
     );
   }
 
@@ -398,5 +425,88 @@ describe('Home route, the stage and the verdict', () => {
         cursor = at;
       }
     }
+  });
+});
+
+describe('Home route, deleting a deck', () => {
+  const deleted = (id: number, name: string) => ({
+    id,
+    name,
+    status: 'idea',
+    format: 'Blitz',
+    totalCards: 12,
+    deletedAt: new Date().toISOString(),
+    purgeAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+  const flush = (): Promise<void> => act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('leaving the home keeps the recorded delete', async () => {
+    seed([makeDeck(1, 'building', 'Rhinar Blitz v2'), makeDeck(2, 'ready', 'Outro')]);
+    const view = renderHome();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir Rhinar Blitz v2' }));
+    await flush();
+    expect(screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente')).toBeInTheDocument();
+    view.unmount();
+    await flush();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 60)); });
+
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(apiFetch).toHaveBeenCalledWith('/decks/1', { method: 'DELETE' });
+  });
+
+  it('the recently deleted row appears only with deleted decks', () => {
+    seed(ALL_STATUSES);
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [deleted(9, 'Rhinar Blitz v2')] } });
+    const view = renderHome();
+
+    expect(screen.getByTestId('deleted-decks-row')).toHaveTextContent('Excluídos recentemente (1) · ficam 30 dias');
+    expect(screen.getByTestId('deleted-decks-row')).toHaveAttribute('href', '/decks/deleted');
+    view.unmount();
+
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [] } });
+    renderHome();
+    expect(screen.queryByTestId('deleted-decks-row')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Excluídos recentemente/)).not.toBeInTheDocument();
+  });
+
+  it('matches r2-delete-toast-phone with the stage rule', async () => {
+    const blitzProblem = {
+      category: 'illegal' as const,
+      reasons: ['x'],
+      details: Array.from({ length: 8 }, (_, index) => ({
+        code: 'too_many_copies',
+        params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: 2, limit: 1, format: 'Blitz', legendary: false, restricted: false },
+      })),
+    };
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: blitzProblem }),
+      makeDeck(2, 'idea', 'Rhinar Blitz v2', { format: 'Blitz', deckSize: 12, latestSnapshot: null, cardCounts: null }),
+    ]);
+    mockUseDeletedDecks.mockReturnValue({ data: { decks: [deleted(2, 'Rhinar Blitz v2')] } });
+    renderHome();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir Rhinar Blitz v2' }));
+    await flush();
+
+    const card = screen.getByLabelText('Rhinar Blitz');
+    expect(screen.queryByLabelText('Rhinar Blitz v2')).not.toBeInTheDocument();
+    expect(card).toHaveTextContent('Não vale no Blitz');
+    expect(card).toHaveTextContent('Etapa: Jogando · 40 cartas');
+    expect(card).not.toHaveTextContent('não pode jogar');
+    const row = screen.getByTestId('deleted-decks-row');
+    expect(row).toHaveTextContent('Excluídos recentemente (1) · ficam 30 dias');
+    const toast = screen.getByText('Rhinar Blitz v2 foi para Excluídos recentemente');
+    expect(card.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row.compareDocumentPosition(toast) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Desfazer' })).toBeInTheDocument();
   });
 });

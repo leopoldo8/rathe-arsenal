@@ -242,6 +242,21 @@
 - `GET`, `PUT` and every owner route now answer `404` for a deleted deck through `AuthzService.assertOwnsTrackedDeck` (C80 needs it); `authz.service.spec.ts` asserts the new `where` (`deletedAt: IsNull()`). `tracked_deck.deletedAt` and its migration landed here so C80 can mark a deck deleted; S8 builds the rest of door 4.
 - "Duplicar" copies the cards and the inventory only; replacements, tags, notes and share links stay with the original.
 
+### S8 (batch 7)
+
+- `DELETE /api/decks/:deckId` is the soft delete now and answers `200` with `{deletedAt}`; the old hard delete is `DecksService.permanentDelete` behind `DELETE /api/decks/:deckId/permanent` (`204`). Two unit and e2e tests that called `DecksService.untrack` call `permanentDelete`; the unit test asserts `404` when no row of the caller was deleted instead of the authz call, because ownership is the guard's job on that route.
+- Restore and permanent delete must reach a deleted deck, which `OwnsTrackedDeckGuard` hides everywhere else. The guard reads a route marker (`@IncludesDeletedDeck()`) through an optional `Reflector`, so the slim test apps that override the guard class keep booting.
+- C92: "the replacement re-solve drain" names no code path (the re-solve routes are `410` stubs); the filter is on the other job drains of the worker, the variant-fetch jobs' `claimNext` and the recommendation runs' `claimNext` and `enqueueAuto`. Readers filtered: readiness recompute after a collection change (collection service, sources, Fabrary and CSV imports), `GET /api/decks` and the aggregate shopping line, the Tutor's deck list, `get_deck`, `get_prices`, recommendations read, the swap tool, deck usage, chat creation bound to a deck, replacements and alternatives, want and sell lists from a deck, the visitor's missing-by-card count, and `SharedDeckLookup.findLive`. The test for C92 puts one drain claim on a shared database, and puts back whatever run or job it claims for another deck.
+- C43: with S8 built, `DELETE /api/decks/:id/permanent` removes a live deck with no cards (test "permanent delete drops a live deck with no cards" next to C91's, in `decks-lifecycle.e2e-spec.ts`).
+- C55: the deleted-deck case is in the same test as the other-player case (`put answers 404 for a deck the player cannot edit`, `decks.controller.put.int-spec.ts`).
+- The deck page's "Excluir deck" asks nothing now: the delete is undoable, so the confirmation dialog of that menu is gone and the home shows the toast. `decks-deckId-mutations.spec.tsx` "asks before deleting the deck from the overflow menu" asserted that dialog; it now asserts there is none and that the delete call is made. The edit screen's own danger zone (`DeckDangerZone`, `DeleteDeckDialog`) still asks and still says "Não dá para desfazer", although `DELETE /api/decks/:deckId` is a soft delete: no check covers it, see Needs the owner.
+- The toast got two options, `persistent` (no auto close) and `dismissOnNextAction` (closes at the next tap or key press outside it, armed one tick after it appears). "Next action" is my reading: any pointer-down or key press except Tab and the modifier keys.
+- The home card's trash no longer takes `onUntrack` and `isUntracking` props from `StatusGroups` and the route: `DeckTile` deletes through `useDeleteDeckWithUndo`, the same hook the deck page menu uses. `DeckTile.spec.tsx` lost the two tests of the old 4.8 second timer (their behaviour is the F57 bug) and has the C94 tests instead.
+- The toast on a refused delete ("Não foi possível excluir o deck. Tente de novo.") and on a refused undo ("Não foi possível desfazer. Abra Excluídos recentemente para restaurar o deck.") are copy of mine; so are "Nenhum deck excluído.", the question of "Excluir de vez" ("Excluir "X" de vez?" with "Manter" and "Excluir de vez") and the error line of the list. No mockup draws them.
+- The deleted list shows each deck's total deck copies (inventory left out) as "N cartas".
+- The row "Excluídos recentemente (N) · ficam 30 dias" is also drawn under the empty-state of the home, so the last deck deleted can still be reached.
+- The day-30 purge is S38 (derivation note 9); nothing deletes a deck for good on a schedule yet.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -282,6 +297,7 @@
 - Every JWT issued before this deploy stops working, so each signed-in player signs in once more (Impact row "existing JWTs"); the migration `1778533604000-AddUserSession` runs on boot outside development.
 
 - C59: no mockup draws what opens the "Mover 1 para o inventário" menu. It is built as a tap on the quantity number, with no extra element; confirm that or pick another opener.
-- C55 (deleted deck half) waits for S8, see Deviations, S5.
 - The cause line has no wording for a card-pool problem, a card the hero cannot use or an unknown card; give the three phrases if they should appear on the home card.
 - C71 conflicts with the home's grouping by stage, see Deviations, S6; decide whether the check or the grouping changes.
+
+- The edit screen's danger zone and its dialog say a deleted deck cannot be undone, but the delete is a soft delete now (S8); give the wording, or let it call the same delete with the toast of the deck page menu.

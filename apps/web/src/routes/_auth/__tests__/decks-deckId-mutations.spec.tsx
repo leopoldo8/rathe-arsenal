@@ -63,6 +63,8 @@ vi.mock('@tanstack/react-router', () => ({
 
 const mockPatchMutate = vi.fn();
 const mockUntrackMutate = vi.fn();
+const mockDeleteDeck = vi.fn().mockResolvedValue(false);
+vi.mock('../../../hooks/useDeleteDeckWithUndo', () => ({ useDeleteDeckWithUndo: () => mockDeleteDeck }));
 const mockTagList = vi.hoisted(() => ({
   tags: [] as { id: number; name: string; createdAt: string }[],
 }));
@@ -562,19 +564,15 @@ describe('DeckDetailPage — hero banner (DECK-01)', () => {
     expect(screen.getByTestId('deck-detail-untrack-btn')).toBeInTheDocument();
   });
 
-  it('asks before deleting the deck from the overflow menu', async () => {
-    mockUntrackMutate.mockClear();
+  it('deletes the deck from the overflow menu at once, with no question (the toast offers the way back)', async () => {
+    mockDeleteDeck.mockClear();
     renderPage();
 
     await userEvent.click(screen.getByTestId('deck-detail-overflow-btn'));
     await userEvent.click(screen.getByTestId('deck-detail-untrack-btn'));
 
-    expect(mockUntrackMutate).not.toHaveBeenCalled();
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('Excluir "Dorinthea Deck"?');
-
-    await userEvent.click(screen.getByTestId('deck-delete-confirm'));
-
-    expect(mockUntrackMutate).toHaveBeenCalledWith(expect.any(Number), expect.any(Object));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mockDeleteDeck).toHaveBeenCalledWith({ id: expect.any(Number), name: 'Dorinthea Deck' });
   });
 
   it('removes a tag by its real id, not by its position in the row', async () => {

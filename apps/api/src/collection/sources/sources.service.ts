@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -160,7 +160,7 @@ export class SourcesService {
 
     // Find all tracked decks for this user with their latest snapshot.
     const trackedDecks = await this.trackedDeckRepo.find({
-      where: { userId },
+      where: { userId, deletedAt: IsNull() },
     });
 
     const affectedDecks: IAffectedDeck[] = [];
@@ -329,7 +329,7 @@ export class SourcesService {
 
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after source deletion',
@@ -366,7 +366,7 @@ export class SourcesService {
   private async recomputeReadinessForUser(userId: string): Promise<void> {
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after source change',

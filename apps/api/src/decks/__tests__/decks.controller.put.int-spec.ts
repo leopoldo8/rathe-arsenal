@@ -516,6 +516,13 @@ describe('DecksController PUT /decks/:deckId against Postgres (int-spec)', () =>
     await put(deckId, [{ cardIdentifier: 'snatch-red', quantity: 2, slot: 'mainboard' }], stranger).expect(404);
 
     expect(await storedRows(deckId)).toEqual(before);
+
+    // A deleted deck cannot be edited either, by its own player: the deleted-deck half of C55.
+    await fixture.dataSource.query(`UPDATE tracked_deck SET "deletedAt" = now() WHERE id = $1`, [deckId]);
+
+    await put(deckId, [{ cardIdentifier: 'snatch-red', quantity: 2, slot: 'mainboard' }]).expect(404);
+
+    expect(await storedRows(deckId)).toEqual(before);
   });
 
   it('the verdict never writes the stage', async () => {

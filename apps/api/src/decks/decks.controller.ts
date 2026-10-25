@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
-import { OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
-import { DecksService } from './decks.service';
+import { IncludesDeletedDeck, OwnsTrackedDeckGuard } from '../auth/guards/owns-tracked-deck.guard';
+import { DecksService, IDeletedDeckItem } from './decks.service';
 import { ITrackedDeckListResponse } from './dtos/tracked-deck-list.response.dto';
 import { ITrackedDeckDetailResponse } from './dtos/tracked-deck-detail.response.dto';
 import { CreateScratchDeckDto } from './dto/create-scratch-deck.dto';
@@ -50,6 +50,12 @@ export class DecksController {
     @CurrentUser() user: ICurrentUser,
   ): Promise<ITrackedDeckListResponse> {
     return this.decksService.listForUser(user.userId);
+  }
+
+  /** Declared before `:deckId` so "deleted" is never read as a deck id. */
+  @Get('deleted')
+  async listDeleted(@CurrentUser() user: ICurrentUser): Promise<{ readonly decks: readonly IDeletedDeckItem[] }> {
+    return this.decksService.listDeleted(user.userId);
   }
 
   @Get(':deckId')
@@ -122,12 +128,35 @@ export class DecksController {
     return this.decksService.duplicate(user.userId, deckId);
   }
 
+  /** DELETE /api/decks/:deckId: soft delete; the deck is kept 30 days. */
   @Delete(':deckId')
   @UseGuards(OwnsTrackedDeckGuard)
-  async untrack(
+  async softDelete(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<{ readonly deletedAt: string }> {
+    return this.decksService.softDelete(user.userId, deckId);
+  }
+
+  @Post(':deckId/restore')
+  @IncludesDeletedDeck()
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.OK)
+  async restore(
+    @Param('deckId', ParseIntPipe) deckId: number,
+    @CurrentUser() user: ICurrentUser,
+  ): Promise<ITrackedDeckDetailResponse> {
+    return this.decksService.restore(user.userId, deckId);
+  }
+
+  @Delete(':deckId/permanent')
+  @IncludesDeletedDeck()
+  @UseGuards(OwnsTrackedDeckGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async permanentDelete(
     @Param('deckId', ParseIntPipe) deckId: number,
     @CurrentUser() user: ICurrentUser,
   ): Promise<void> {
-    await this.decksService.untrack(user.userId, deckId);
+    await this.decksService.permanentDelete(user.userId, deckId);
   }
 }

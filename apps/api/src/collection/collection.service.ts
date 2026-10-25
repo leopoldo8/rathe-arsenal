@@ -490,7 +490,7 @@ export class CollectionService {
       .innerJoin(
         TrackedDeckEntity,
         'td',
-        'td.id = dc.trackedDeckId AND td.userId = :userId',
+        'td.id = dc.trackedDeckId AND td.userId = :userId AND td.deletedAt IS NULL',
         { userId },
       )
       .where('dc.cardIdentifier = :cardIdentifier', { cardIdentifier })
@@ -509,7 +509,7 @@ export class CollectionService {
       .innerJoin(
         TrackedDeckEntity,
         'td',
-        'td.id = dc.trackedDeckId AND td.userId = :userId',
+        'td.id = dc.trackedDeckId AND td.userId = :userId AND td.deletedAt IS NULL',
         { userId },
       )
       .where('dc.cardIdentifier IN (:...cardIdentifiers)', { cardIdentifiers })

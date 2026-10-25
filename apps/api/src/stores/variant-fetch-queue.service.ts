@@ -46,6 +46,7 @@ export class VariantFetchQueueService {
       `UPDATE variant_fetch_job SET status = $1, "claimedAt" = now(), "claimedBy" = $2, "startedAt" = COALESCE("startedAt", now())
        WHERE id = (
          SELECT id FROM variant_fetch_job WHERE status = $3
+           AND EXISTS (SELECT 1 FROM tracked_deck d WHERE d.id = variant_fetch_job."deckId" AND d."deletedAt" IS NULL)
          ORDER BY "enqueuedAt" FOR UPDATE SKIP LOCKED LIMIT 1
        ) RETURNING *`,
       [EVariantFetchJobStatus.Running, workerId, EVariantFetchJobStatus.Pending],

@@ -108,7 +108,7 @@ export class ChatService {
 
   async create(userId: string, trackedDeckId: number | undefined): Promise<{ id: string }> {
     if (trackedDeckId !== undefined) {
-      const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [trackedDeckId, userId])) as unknown[];
+      const [deck] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [trackedDeckId, userId])) as unknown[];
       if (!deck) throw new NotFoundException('Tracked deck not found');
     }
     const saved = await this.dataSource

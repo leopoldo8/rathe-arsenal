@@ -120,7 +120,7 @@ export class ChatToolsService {
 
   async swapDeck(userId: string, trackedDeckId: number): Promise<ISwapDeck | null> {
     const [deck] = (await this.dataSource.query(
-      `SELECT "heroIdentifier", format FROM tracked_deck WHERE id = $1 AND "userId" = $2`,
+      `SELECT "heroIdentifier", format FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`,
       [trackedDeckId, userId],
     )) as Array<{ heroIdentifier: string | null; format: string }>;
     if (!deck) return null;
@@ -133,7 +133,7 @@ export class ChatToolsService {
 
   private async getDeck(scope: IToolScope, deckId: number): Promise<TToolResult> {
     const [deck] = (await this.dataSource.query(
-      `SELECT id, name, hero, "heroIdentifier", format, status FROM tracked_deck WHERE id = $1 AND "userId" = $2`,
+      `SELECT id, name, hero, "heroIdentifier", format, status FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`,
       [deckId, scope.userId],
     )) as Array<Record<string, unknown>>;
     if (!deck) return DECK_NOT_FOUND;
@@ -233,7 +233,7 @@ export class ChatToolsService {
   }
 
   private async latestRecommendations(scope: IToolScope, deckId: number): Promise<TToolResult> {
-    const [owned] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [
+    const [owned] = (await this.dataSource.query(`SELECT id FROM tracked_deck WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL`, [
       deckId,
       scope.userId,
     ])) as Array<{ id: number }>;
@@ -349,7 +349,7 @@ export class ChatToolsService {
     const rows = (await this.dataSource.query(
       `SELECT c."cardIdentifier", d.id AS "deckId", sum(c.quantity)::int AS quantity
          FROM deck_card c JOIN tracked_deck d ON d.id = c."trackedDeckId"
-        WHERE d."userId" = $1 AND c.slot <> 'hero'
+        WHERE d."userId" = $1 AND d."deletedAt" IS NULL AND c.slot <> 'hero'
         GROUP BY c."cardIdentifier", d.id ORDER BY d.id`,
       [userId],
     )) as Array<{ cardIdentifier: string; deckId: number; quantity: number }>;

@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
@@ -185,7 +185,7 @@ export class FabraryImportService {
   private async recomputeReadinessForUser(userId: string): Promise<void> {
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after Fabrary import',

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TListKind } from '../database/entities/card-list.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
@@ -24,7 +24,7 @@ export class ListFromDeckService {
    */
   async linesFor(userId: string, kind: TListKind, deckId: number): Promise<IQuantityEntry[]> {
     if (deckId > MAX_DECK_ID) throw deckNotFound();
-    const deck = await this.decks.findOne({ where: { id: deckId, userId }, select: ['id'] });
+    const deck = await this.decks.findOne({ where: { id: deckId, userId, deletedAt: IsNull() }, select: ['id'] });
     if (!deck) throw deckNotFound();
 
     const rows = await this.deckCards.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } });

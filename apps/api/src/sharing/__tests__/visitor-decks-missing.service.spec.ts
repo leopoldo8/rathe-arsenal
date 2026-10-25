@@ -1,5 +1,5 @@
 import { createMock } from '@golevelup/ts-jest';
-import { Not, Repository, In } from 'typeorm';
+import { IsNull, Not, Repository, In } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -26,7 +26,7 @@ describe('VisitorDecksMissingService.missingByCard', () => {
 
     await service.missingByCard('visitor-1', new Set([CARD_A.cardIdentifier]), new Map());
 
-    expect(deckRepo.find).toHaveBeenCalledWith({ where: { userId: 'visitor-1', status: Not('retired') }, select: { id: true } });
+    expect(deckRepo.find).toHaveBeenCalledWith({ where: { userId: 'visitor-1', status: Not('retired'), deletedAt: IsNull() }, select: { id: true } });
     expect(cardRepo.find).toHaveBeenCalledWith({ where: { trackedDeckId: In([1, 2]) } });
   });
 

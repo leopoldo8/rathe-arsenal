@@ -49,7 +49,7 @@ describe('recommendation schema (e2e)', () => {
     await insertReplacement('recommendation');
     await expect(insertReplacement('synergy')).rejects.toThrow(/CHK_card_replacement_picked_from_valid/);
 
-    await fixture.del(`/api/decks/${deckId}`, sessionToken).expect(200);
+    await fixture.del(`/api/decks/${deckId}/permanent`, sessionToken).expect(204);
     const counts = await query(
       `SELECT (SELECT count(*)::int FROM recommendation_run WHERE "trackedDeckId" = $1) AS runs,
               (SELECT count(*)::int FROM recommendation WHERE "runId" = $2) AS recommendations,

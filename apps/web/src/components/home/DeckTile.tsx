@@ -1,19 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ITrackedDeckListItem } from '../../api/decks';
 import { Deckbox } from '../deckbox/Deckbox';
-import { useToast } from '../ui/Toast/useToast';
+import { useDeleteDeckWithUndo } from '../../hooks/useDeleteDeckWithUndo';
 import { resolveDeckMeta, type TDeckMeta } from './homeGroups';
 import { UntrackPin } from './UntrackPin';
 import { DeckStageBlock } from './DeckStageBlock';
 import styles from './DeckTile.module.css';
 
-const UNTRACK_UNDO_WINDOW_MS = 4800;
-
 interface IDeckTileProps {
   readonly deck: ITrackedDeckListItem;
-  readonly onUntrack: (deckId: number) => void;
-  readonly isUntracking: boolean;
 }
 
 interface IDeckMetaProps {
@@ -46,46 +42,24 @@ function DeckMeta({ meta }: IDeckMetaProps): React.ReactElement {
   );
 }
 
-export function DeckTile({
-  deck,
-  onUntrack,
-  isUntracking,
-}: IDeckTileProps): React.ReactElement | null {
+export function DeckTile({ deck }: IDeckTileProps): React.ReactElement | null {
   const { t } = useTranslation();
-  const { show } = useToast();
-  const [isOptimisticallyRemoved, setIsOptimisticallyRemoved] = useState(false);
-  const untrackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deleteDeck = useDeleteDeckWithUndo();
+  const [isRemoved, setIsRemoved] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      if (untrackTimerRef.current !== null) clearTimeout(untrackTimerRef.current);
-    };
-  }, []);
-
+  // The delete is recorded at once and the toast stays until the player's next action: the deck
+  // leaves the list now and comes back only through "Desfazer" or "Excluídos recentemente".
   function handleUntrack(): void {
-    setIsOptimisticallyRemoved(true);
-    untrackTimerRef.current = setTimeout(() => {
-      untrackTimerRef.current = null;
-      onUntrack(deck.id);
-    }, UNTRACK_UNDO_WINDOW_MS);
-
-    show({
-      kind: 'info',
-      message: t('home.untrackToastMsg', { deckName: deck.name }),
-      action: {
-        label: t('home.undoUntrack'),
-        onClick: () => {
-          if (untrackTimerRef.current !== null) {
-            clearTimeout(untrackTimerRef.current);
-            untrackTimerRef.current = null;
-          }
-          setIsOptimisticallyRemoved(false);
-        },
-      },
+    setIsRemoved(true);
+    setIsDeleting(true);
+    void deleteDeck({ id: deck.id, name: deck.name }).then((deleted) => {
+      if (!deleted) setIsRemoved(false);
+      setIsDeleting(false);
     });
   }
 
-  if (isOptimisticallyRemoved) return null;
+  if (isRemoved) return null;
 
   const meta = resolveDeckMeta(deck);
   const readinessPct = meta.state === 'draft' ? null : (deck.latestSnapshot?.effectivePercent ?? null);
@@ -113,7 +87,7 @@ export function DeckTile({
           {t('home.upgradesSuggested', { count: deck.clearUpgradeCount })}
         </p>
       )}
-      <UntrackPin onClick={handleUntrack} disabled={isUntracking} deckName={deck.name} />
+      <UntrackPin onClick={handleUntrack} disabled={isDeleting} deckName={deck.name} />
     </article>
   );
 }

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { catalog } from '@rathe-arsenal/engine';
 import { StoreEntity } from '../database/entities/store.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
@@ -282,7 +282,7 @@ export class ShoppingLineService {
       }
 
       const decks = await this.trackedDeckRepo.find({
-        where: { userId },
+        where: { userId, deletedAt: IsNull() },
       });
 
       if (decks.length === 0) {

@@ -306,6 +306,41 @@ describe('DeckDetailLayout — getting the list out', () => {
     expect(onCopyList).toHaveBeenCalledTimes(1);
   });
 
+  it('excluir deck soft-deletes and returns home with the toast', async () => {
+    spies.realMenu = true;
+    spies.apiFetch.mockResolvedValue({ deletedAt: '2026-10-24T12:00:00.000Z' });
+    const user = userEvent.setup();
+    renderDeckPage();
+
+    await user.click(screen.getByRole('button', { name: 'Mais ações do deck' }));
+    await user.click(within(screen.getByRole('menu')).getByRole('menuitem'));
+
+    await waitFor(() => expect(spies.navigate).toHaveBeenCalledTimes(1));
+    expect(spies.apiFetch).toHaveBeenCalledTimes(1);
+    expect(spies.apiFetch).toHaveBeenCalledWith('/decks/7', { method: 'DELETE' });
+    expect(spies.navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/home' }));
+    expect(spies.show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Rhinar CC foi para Excluídos recentemente',
+        persistent: true,
+        action: expect.objectContaining({ label: 'Desfazer' }),
+      }),
+    );
+  });
+
+  it('stays on the deck and says so when the delete is refused', async () => {
+    spies.realMenu = true;
+    spies.apiFetch.mockRejectedValue(new Error('boom'));
+    const user = userEvent.setup();
+    renderDeckPage();
+
+    await user.click(screen.getByRole('button', { name: 'Mais ações do deck' }));
+    await user.click(within(screen.getByRole('menu')).getByRole('menuitem'));
+
+    await waitFor(() => expect(spies.show).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(spies.navigate).not.toHaveBeenCalled();
+  });
+
   it('matches r3-deck-actions-desktop', () => {
     spies.realMenu = true;
     const rows = Array.from({ length: 20 }, (_, index) =>

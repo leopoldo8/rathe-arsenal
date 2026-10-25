@@ -187,7 +187,7 @@ describe('chat conversations (E2E)', () => {
     const user = await fixture.chatUser();
     const conversationId = await fixture.conversation(user, { trackedDeckId: user.deckId });
 
-    await fixture.del(`/api/decks/${user.deckId}`, user.sessionToken).expect((response) => expect(response.status).toBeLessThan(300));
+    await fixture.del(`/api/decks/${user.deckId}/permanent`, user.sessionToken).expect((response) => expect(response.status).toBeLessThan(300));
 
     const read = (await fixture.get(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(200)).body;
     expect(read.trackedDeckId).toBeNull();

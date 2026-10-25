@@ -271,6 +271,27 @@ describe('Sharing (E2E)', () => {
     await request(server).get('/api/shared/decks/AAAAAAAAAAAAAAAAAAAAAA').expect(404);
   });
 
+  it("a deleted deck's links answer 404 until it is restored", async () => {
+    const owner = await createSession('deckdelete');
+    const deckId = await createDeck(owner);
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    const missingToken = await startSharing(owner, deckId, 'missing');
+    await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+
+    await request(server).delete(`/api/decks/${deckId}`).set(...auth(owner)).expect(200);
+
+    for (const token of [deckToken, missingToken]) {
+      const dead = await request(server).get(`/api/shared/decks/${token}`).expect(404);
+      expect(dead.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+    }
+
+    await request(server).post(`/api/decks/${deckId}/restore`).set(...auth(owner)).expect(200);
+
+    await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+  });
+
   it('returns the enriched deck, hides what is private and marks noindex', async () => {
     const owner = await createSession('view');
     const deckId = await createDeck(owner);

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
 import { CollectionCardEntity } from '../../database/entities/collection-card.entity';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -491,7 +491,7 @@ export class CsvUploadService {
   private async recomputeReadinessForUser(userId: string): Promise<void> {
     let decks: TrackedDeckEntity[];
     try {
-      decks = await this.trackedDeckRepo.find({ where: { userId } });
+      decks = await this.trackedDeckRepo.find({ where: { userId, deletedAt: IsNull() } });
     } catch (error) {
       this.logger.warn({
         msg: 'Failed to load decks for readiness recompute after CSV upload',

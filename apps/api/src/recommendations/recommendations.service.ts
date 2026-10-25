@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
@@ -111,7 +111,7 @@ export class RecommendationsService {
 
   async read(userId: string, trackedDeckId: number, locale: TLocale = 'en-US'): Promise<IRecommendationsResponse> {
     const [deck, deckCards, runs, excluded, latestFinished, active] = await Promise.all([
-      this.dataSource.getRepository(TrackedDeckEntity).findOneOrFail({ where: { id: trackedDeckId, userId } }),
+      this.dataSource.getRepository(TrackedDeckEntity).findOneOrFail({ where: { id: trackedDeckId, userId, deletedAt: IsNull() } }),
       this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId } }),
       this.query.latestDoneRuns([trackedDeckId]),
       this.query.excludedCards([trackedDeckId]),

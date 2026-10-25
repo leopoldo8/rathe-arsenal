@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DELETE_SHARE_LINKS_FOR_DECK_SQL } from '../sharing/preview/share-link-cleanup';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
@@ -45,6 +45,18 @@ import { RecommendationsQueryService } from '../recommendations/recommendations-
 import { cardLegalityFacts, ICardLegalityFacts } from '../catalog/card-legality-facts';
 import { automaticDeckName, nameAfterFormatChange } from './automatic-deck-name';
 import { toCompositionRows } from './composition-rows';
+
+const DELETED_DECK_KEPT_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface IDeletedDeckItem {
+  readonly id: number;
+  readonly name: string;
+  readonly status: string;
+  readonly format: string;
+  readonly totalCards: number;
+  readonly deletedAt: string;
+  readonly purgeAt: string;
+}
 
 const NO_LEGALITY_FACTS: ICardLegalityFacts = {
   legalFormats: [],
@@ -160,7 +172,7 @@ export class DecksService {
   async listForUser(userId: string): Promise<ITrackedDeckListResponse> {
     const [decks, collectionCardCount, aggregateShoppingLine] = await Promise.all([
       this.trackedDeckRepo.find({
-        where: { userId },
+        where: { userId, deletedAt: IsNull() },
         order: { trackedAt: 'DESC' },
       }),
       // countUniqueOwned sums across active sources so the home empty-state
@@ -1215,9 +1227,56 @@ export class DecksService {
     return { deckId: copyId };
   }
 
-  async untrack(userId: string, deckId: number): Promise<void> {
-    await this.authzService.assertOwnsTrackedDeck(userId, deckId);
-    await this.trackedDeckRepo.delete({ id: deckId, userId });
+  /** Soft delete (door 4): the deck leaves every read at once and is kept 30 days. A deleted or unknown deck answers 404. */
+  async softDelete(userId: string, deckId: number): Promise<{ readonly deletedAt: string }> {
+    const rows = (await this.dataSource.query(
+      `UPDATE tracked_deck SET "deletedAt" = now() WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL RETURNING "deletedAt"`,
+      [deckId, userId],
+    )) as unknown;
+    const updated = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows) as Array<{ deletedAt: Date }>;
+    const first = updated[0];
+    if (first === undefined) throw new NotFoundException('Tracked deck not found');
+    return { deletedAt: new Date(first.deletedAt).toISOString() };
+  }
+
+  async listDeleted(userId: string): Promise<{ readonly decks: readonly IDeletedDeckItem[] }> {
+    const rows = await this.dataSource.query<Array<{ id: number; name: string; status: string; format: string; deletedAt: Date; totalCards: number }>>(
+      `SELECT d.id, d.name, d.status, d.format, d."deletedAt",
+              COALESCE((SELECT sum(c.quantity) FROM deck_card c WHERE c."trackedDeckId" = d.id), 0)::int AS "totalCards"
+         FROM tracked_deck d WHERE d."userId" = $1 AND d."deletedAt" IS NOT NULL ORDER BY d."deletedAt" DESC, d.id DESC`,
+      [userId],
+    );
+    return {
+      decks: rows.map((row) => {
+        const deletedAt = new Date(row.deletedAt);
+        return {
+          id: row.id,
+          name: row.name,
+          status: row.status,
+          format: row.format,
+          totalCards: row.totalCards,
+          deletedAt: deletedAt.toISOString(),
+          purgeAt: new Date(deletedAt.getTime() + DELETED_DECK_KEPT_MS).toISOString(),
+        };
+      }),
+    };
+  }
+
+  /** Brings back a deleted deck; its rows never left, so cards, inventory, replacements, tags and share links return with it. */
+  async restore(userId: string, deckId: number): Promise<ITrackedDeckDetailResponse> {
+    const rows = (await this.dataSource.query(
+      `UPDATE tracked_deck SET "deletedAt" = NULL WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NOT NULL RETURNING id`,
+      [deckId, userId],
+    )) as unknown;
+    const restored = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows) as unknown[];
+    if (restored.length === 0) throw new NotFoundException('Tracked deck not found');
+    return this.getDetail(userId, deckId);
+  }
+
+  /** Deletes the deck for good with the cascades of the old hard delete; works on a live deck too (a deck dropped before it got a card). */
+  async permanentDelete(userId: string, deckId: number): Promise<void> {
+    const deleted = await this.trackedDeckRepo.delete({ id: deckId, userId });
+    if (!deleted.affected) throw new NotFoundException('Tracked deck not found');
     // share_link has no foreign key to the deck, so its rows (and their images) would otherwise outlive it.
     await this.dataSource.query(DELETE_SHARE_LINKS_FOR_DECK_SQL, [deckId]);
   }
