@@ -31,7 +31,9 @@ describe('AddDeckCardInventory1778533605000', () => {
   }
 
   async function createLegacyTable(): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS "deck_card"`);
+    // Qualified: with `public` second in the search path, an unqualified DROP would find the real
+    // table there on the first call and delete the data of the shared database.
+    await queryRunner.query(`DROP TABLE IF EXISTS "${SCHEMA}"."deck_card"`);
     await queryRunner.query(
       `CREATE TABLE "deck_card" (
          id serial PRIMARY KEY,
