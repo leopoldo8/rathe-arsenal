@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   catalog,
   IMAGE_CDN_BASE,
@@ -13,7 +13,9 @@ import {
   ISearchCardsResponse,
 } from './dtos/search-cards.dto';
 import { IHeroListItem, IHeroListResponse } from './dtos/hero-list-item.dto';
+import { TEdition, TFinish } from '../collection/versions/copy-version';
 import { cardLegalityFacts } from './card-legality-facts';
+import { buildVersionOptions, ICardVersionOptions } from './card-version-options';
 import {
   ICollectorCodeCard,
   ICollectorCodePrinting,
@@ -94,6 +96,18 @@ export class CatalogService {
     return { heroes };
   }
 
+  /** The printings of one card, with only the editions and finishes each one has. */
+  getVersionOptions(cardIdentifier: string): ICardVersionOptions {
+    const options = buildVersionOptions(cardIdentifier);
+    if (options === null) {
+      throw new BadRequestException({
+        code: 'INVALID_CARD_IDENTIFIER',
+        message: `Card "${cardIdentifier}" does not exist in the catalog`,
+      });
+    }
+    return options;
+  }
+
   listCollectorCodes(): ICollectorCodesResponse {
     this.collectorCodes ??= {
       imageSmallBase: `${IMAGE_CDN_BASE}small/`,
@@ -110,10 +124,17 @@ export class CatalogService {
       readonly printings?: readonly IRawPrinting[];
     };
     const printingsByCode = new Map<string, ICollectorCodePrinting>();
+    const optionsByCode = new Map(
+      (buildVersionOptions(card.cardIdentifier)?.printings ?? []).map((printing) => [printing.printingCode, printing]),
+    );
     for (const printing of raw.printings ?? []) {
       const code = printing.identifier;
       if (!code || printingsByCode.has(code)) continue;
-      printingsByCode.set(code, toCollectorCodePrinting(code, printing.image));
+      const options = optionsByCode.get(code);
+      printingsByCode.set(
+        code,
+        toCollectorCodePrinting(code, printing.image, options?.editions ?? [], options?.finishes ?? []),
+      );
     }
     return {
       cardIdentifier: card.cardIdentifier,
@@ -226,7 +247,15 @@ export class CatalogService {
 function toCollectorCodePrinting(
   code: string,
   image: string | undefined,
+  editions: readonly TEdition[],
+  finishes: readonly TFinish[],
 ): ICollectorCodePrinting {
-  if (image === code) return { code };
-  return { code, image: image ?? null };
+  const base = image === code ? { code } : { code, image: image ?? null };
+  // Only what the scanner may have to ask about: editions, and finishes beyond the plain one.
+  const askFinish = finishes.length > 1 || (finishes.length === 1 && finishes[0] !== 'none');
+  return {
+    ...base,
+    ...(editions.length > 0 ? { editions } : {}),
+    ...(askFinish ? { finishes } : {}),
+  };
 }

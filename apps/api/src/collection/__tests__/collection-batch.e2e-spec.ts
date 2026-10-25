@@ -143,6 +143,56 @@ describe('POST /api/collection/cards/batch (E2E)', () => {
     expect(await quantityOf(owner, CARD_C)).toBe(after);
   });
 
+  async function versionRows(
+    user: ITestUser,
+    cardIdentifier: string,
+  ): Promise<Array<{ printingCode: string; edition: string; finish: string; condition: string; quantity: number }>> {
+    return dataSource.query(
+      `SELECT "printingCode", edition, finish, condition, quantity FROM collection_card
+       WHERE "userId" = $1 AND "cardIdentifier" = $2 ORDER BY id`,
+      [user.id, cardIdentifier],
+    );
+  }
+
+  it('copies with no version increment one row and cap at 20', async () => {
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 2 }]).expect(201);
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 2 }]).expect(201);
+
+    expect(await versionRows(owner, CARD_A)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 4 },
+    ]);
+
+    await seed(owner, CARD_B, 19);
+    const response = await batch(owner, [{ cardIdentifier: CARD_B, quantity: 2 }]).expect(201);
+
+    expect(response.body.results).toEqual([{ cardIdentifier: CARD_B, newQuantity: 20, capped: true }]);
+    expect(await versionRows(owner, CARD_B)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 20 },
+    ]);
+  });
+
+  it("the batch records the scanned printing code", async () => {
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' }]).expect(201);
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' }]).expect(201);
+    await batch(owner, [{ cardIdentifier: 'snatch-red', quantity: 2 }]).expect(201);
+
+    expect(await versionRows(owner, 'snatch-red')).toEqual([
+      { printingCode: 'WTR167', edition: '', finish: '', condition: '', quantity: 2 },
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 2 },
+    ]);
+
+    await resetCollection(owner);
+    await batch(owner, [{ cardIdentifier: CARD_A, quantity: 1 }]).expect(201);
+    expect(await versionRows(owner, CARD_A)).toEqual([
+      { printingCode: '', edition: '', finish: '', condition: '', quantity: 1 },
+    ]);
+
+    const refused = await batch(owner, [{ cardIdentifier: CARD_A, quantity: 1, printingCode: 12 }]).expect(400);
+    // The body parser turns the number into the text "12", which no printing of the card carries.
+    expect(refused.body.code).toBe('VERSION_NOT_AVAILABLE');
+    expect(await versionRows(owner, CARD_A)).toHaveLength(1);
+  });
+
   it('sums duplicate identifiers', async () => {
     await batch(owner, [
       { cardIdentifier: CARD_A, quantity: 2 },

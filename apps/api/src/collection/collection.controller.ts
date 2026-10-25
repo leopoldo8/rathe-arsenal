@@ -67,6 +67,7 @@ export class CollectionController {
       dto.cardIdentifier,
       dto.sourceId,
       dto.quantity ?? 1,
+      { printingCode: dto.printingCode, edition: dto.edition, finish: dto.finish, condition: dto.condition },
     );
   }
 }

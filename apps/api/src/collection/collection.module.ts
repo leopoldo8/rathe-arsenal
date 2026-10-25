@@ -21,6 +21,8 @@ import { CsvController } from './csv/csv.controller';
 import { CsvUploadService } from './csv/csv-upload.service';
 import { LibraryController } from './library/library.controller';
 import { LibraryService } from './library/library.service';
+import { CollectionVersionsService } from './versions/collection-versions.service';
+import { CollectionVersionsController } from './versions/collection-versions.controller';
 
 @Module({
   imports: [
@@ -36,7 +38,13 @@ import { LibraryService } from './library/library.service';
     SubstitutionModule,
     FabraryModule,
   ],
-  controllers: [CollectionController, CsvController, LibraryController, SourcesController],
+  controllers: [
+    CollectionController,
+    CsvController,
+    LibraryController,
+    SourcesController,
+    CollectionVersionsController,
+  ],
   providers: [
     CollectionService,
     CollectionReadService,
@@ -46,6 +54,7 @@ import { LibraryService } from './library/library.service';
     CsvUploadService,
     LibraryService,
     FabraryImportService,
+    CollectionVersionsService,
   ],
   exports: [
     CollectionService,

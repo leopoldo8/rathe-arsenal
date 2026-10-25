@@ -27,6 +27,10 @@ function pitchBucket(pitch: number | null): TPitchBucket {
   return 'colorless';
 }
 
+function versionSortKey(entry: ILibraryCardContribution): string {
+  return [entry.printingCode, entry.edition, entry.finish, entry.condition].join('|');
+}
+
 /**
  * Computes a user's full library view — per-card owned quantities decorated
  * with catalog metadata, plus aggregate stats and estimated market value.
@@ -215,7 +219,7 @@ export class LibraryService {
 
     const rows = await this.collectionCardRepo.find({
       where: { userId, sourceId: In(activeSourceIds) },
-      select: ['cardIdentifier', 'sourceId', 'quantity'],
+      select: ['cardIdentifier', 'sourceId', 'quantity', 'printingCode', 'edition', 'finish', 'condition'],
     });
 
     for (const row of rows) {
@@ -228,6 +232,10 @@ export class LibraryService {
         sourceLabel:
           meta.kind === 'manual' ? 'Manual entries' : meta.label || 'Untitled source',
         kind: meta.kind,
+        printingCode: row.printingCode,
+        edition: row.edition,
+        finish: row.finish,
+        condition: row.condition,
         quantity: row.quantity,
       };
       if (list) {
@@ -243,7 +251,10 @@ export class LibraryService {
     for (const list of result.values()) {
       list.sort((a, b) => {
         if (a.kind !== b.kind) return a.kind === 'manual' ? -1 : 1;
-        return a.sourceLabel.localeCompare(b.sourceLabel);
+        return (
+          a.sourceLabel.localeCompare(b.sourceLabel) ||
+          versionSortKey(a).localeCompare(versionSortKey(b))
+        );
       });
     }
 

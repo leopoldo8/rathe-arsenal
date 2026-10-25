@@ -195,4 +195,61 @@ describe('CatalogService', () => {
       }
     });
   });
+  describe('getVersionOptions', () => {
+    interface IExpectedPrinting {
+      readonly printingCode: string;
+      readonly setName: string;
+      readonly editions: readonly string[];
+      readonly finishes: readonly string[];
+    }
+
+    it.each<[string, string, number, IExpectedPrinting]>([
+      [
+        'a card with a single printing',
+        'back-for-seconds-yellow',
+        1,
+        { printingCode: 'DDD011', setName: 'Dorinthea Demo Deck', editions: [], finishes: ['none'] },
+      ],
+      [
+        'a card whose printings name no edition',
+        '10000-year-reunion-red',
+        1,
+        { printingCode: 'MST131', setName: 'Part the Mistveil', editions: [], finishes: ['none', 'rainbow'] },
+      ],
+      [
+        'WTR167 on Snatch (Vermelho), in two editions and two finishes',
+        'snatch-red',
+        10,
+        {
+          printingCode: 'WTR167',
+          setName: 'Welcome to Rathe',
+          editions: ['unlimited', 'alpha'],
+          finishes: ['none', 'rainbow'],
+        },
+      ],
+    ])("version options come from the card's own printings: %s", (_label, cardIdentifier, printingCount, expected) => {
+      const options = service.getVersionOptions(cardIdentifier);
+
+      expect(options.cardIdentifier).toBe(cardIdentifier);
+      expect(options.printings).toHaveLength(printingCount);
+      const printing = options.printings.find((candidate) => candidate.printingCode === expected.printingCode);
+      expect(printing).toBeDefined();
+      expect(printing!.setName).toBe(expected.setName);
+      expect(printing!.imageUrl?.small).toMatch(/^https?:\/\/.+\.webp$/);
+      expect(printing!.editions).toEqual(expected.editions);
+      expect(printing!.finishes).toEqual(expected.finishes);
+      expect(new Set(options.printings.map((candidate) => candidate.printingCode)).size).toBe(printingCount);
+    });
+
+    it("version options come from the card's own printings: Snatch (Vermelho) lists no other card's code", () => {
+      const codes = service.getVersionOptions('snatch-red').printings.map((printing) => printing.printingCode);
+
+      expect(codes).toContain('WTR167');
+      expect(codes).not.toContain('WTR168');
+    });
+
+    it('refuses a card that is not in the catalog', () => {
+      expect(() => service.getVersionOptions('not-a-real-card')).toThrow(/does not exist/);
+    });
+  });
 });

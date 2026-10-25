@@ -69,6 +69,11 @@ export interface ILibraryCardContribution {
    */
   readonly sourceLabel: string;
   readonly kind: 'manual' | 'csv';
+  /** The version of these copies; `''` is "Não sei". An import holding two versions of a card appears twice. */
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string;
   readonly quantity: number;
 }
 

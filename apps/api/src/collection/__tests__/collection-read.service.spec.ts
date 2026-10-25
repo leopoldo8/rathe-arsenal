@@ -35,6 +35,10 @@ function buildCard(overrides: Partial<CollectionCardEntity> = {}): CollectionCar
     userId: USER_ID,
     cardIdentifier: 'WTR001',
     sourceId: MANUAL_SOURCE_ID,
+    printingCode: '',
+    edition: '',
+    finish: '',
+    condition: '',
     quantity: 1,
     lastUpdated: new Date('2025-01-15T10:00:00Z'),
     user: {} as CollectionCardEntity['user'],
@@ -96,6 +100,31 @@ describe('CollectionReadService', () => {
       // Assert
       expect(result.size).toBe(0);
       expect(collectionCardRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('owned copies sum every version and every active import', async () => {
+      csvSourceRepo.find.mockResolvedValue([
+        buildSource({ id: MANUAL_SOURCE_ID }),
+        buildSource({ id: CSV_SOURCE_ID_1, kind: 'csv', label: 'Lista colada' }),
+      ]);
+      collectionCardRepo.find.mockResolvedValue([
+        buildCard({ id: 1, sourceId: MANUAL_SOURCE_ID, cardIdentifier: 'snatch-red', quantity: 2 }),
+        buildCard({
+          id: 2,
+          sourceId: MANUAL_SOURCE_ID,
+          cardIdentifier: 'snatch-red',
+          quantity: 1,
+          printingCode: 'WTR167',
+          edition: 'unlimited',
+          finish: 'rainbow',
+          condition: 'NM',
+        }),
+        buildCard({ id: 3, sourceId: CSV_SOURCE_ID_1, cardIdentifier: 'snatch-red', quantity: 1 }),
+      ]);
+
+      const result = await service.loadOwned(USER_ID);
+
+      expect(result.get('snatch-red')).toBe(4);
     });
 
     it('sums quantities across multiple active sources for the same card', async () => {

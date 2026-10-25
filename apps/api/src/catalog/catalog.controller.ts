@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
@@ -9,6 +9,7 @@ import {
 } from './dtos/search-cards.dto';
 import { IHeroListResponse } from './dtos/hero-list-item.dto';
 import { ICollectorCodesResponse } from './dtos/collector-codes.dto';
+import { ICardVersionOptions } from './card-version-options';
 
 @Controller('catalog')
 export class CatalogController {
@@ -31,6 +32,11 @@ export class CatalogController {
   @Get('heroes')
   getHeroes(): IHeroListResponse {
     return this.catalogService.listHeroes();
+  }
+
+  @Get('cards/:cardIdentifier/versions')
+  getVersionOptions(@Param('cardIdentifier') cardIdentifier: string): ICardVersionOptions {
+    return this.catalogService.getVersionOptions(cardIdentifier);
   }
 
   @Get('collector-codes')
