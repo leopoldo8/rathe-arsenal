@@ -14,6 +14,14 @@ import {
   ISpareResult,
   TSpareCounts,
 } from './spare-copies';
+import { ICopyVersion, sameVersion } from '../versions/copy-version';
+
+export interface ISpareByCard {
+  readonly needsRule: boolean;
+  readonly spare: ReadonlyMap<string, number>;
+  readonly topHolder: ReadonlyMap<string, { readonly deckName: string; readonly copies: number }>;
+  readonly versions: ReadonlyMap<string, ICopyVersion>;
+}
 
 /** With no rule stored and no shared card every rule gives one count; this one never overstates it if that changes. */
 export const FALLBACK_SPARE_RULE: TSpareRule = 'per_deck';
@@ -63,12 +71,34 @@ export class SpareCopiesService {
     };
   }
 
-  /** Spare copies per card under the player's rule; `needsRule` is true when no count is settled yet. */
-  async spareByCard(userId: string): Promise<{ readonly needsRule: boolean; readonly spare: ReadonlyMap<string, number> }> {
+  /**
+   * Spare copies per card under the player's rule; `needsRule` is true when no count is settled yet. `topHolder` names the
+   * deck that keeps the most copies of a card, which is the reason none is spare; `versions` holds the one version that
+   * every spare copy of a card shares (a card whose spare copies differ has no entry).
+   */
+  async spareByCard(userId: string): Promise<ISpareByCard> {
     const snapshot = await this.snapshot(userId);
+    const cards = [...snapshot.result.cards];
+    const versionsByCard = new Map<string, ICopyVersion[]>();
+    for (const row of snapshot.result.rows) {
+      const { printingCode, edition, finish, condition } = row;
+      versionsByCard.set(row.cardIdentifier, [...(versionsByCard.get(row.cardIdentifier) ?? []), { printingCode, edition, finish, condition }]);
+    }
     return {
       needsRule: snapshot.needsRule,
-      spare: new Map([...snapshot.result.cards].map(([cardIdentifier, card]) => [cardIdentifier, card.spare] as const)),
+      spare: new Map(cards.map(([cardIdentifier, card]) => [cardIdentifier, card.spare] as const)),
+      topHolder: new Map(
+        cards.flatMap(([cardIdentifier, card]) => {
+          const [first] = card.holders;
+          return first === undefined ? [] : [[cardIdentifier, { deckName: first.deckName, copies: first.use }] as const];
+        }),
+      ),
+      versions: new Map(
+        [...versionsByCard].flatMap(([cardIdentifier, versions]) => {
+          const [first] = versions;
+          return first !== undefined && versions.every((version) => sameVersion(version, first)) ? [[cardIdentifier, first] as const] : [];
+        }),
+      ),
     };
   }
 

@@ -183,7 +183,42 @@ describe('ListShareDialog', () => {
     api.handlers.set('GET /lists/7/share', () => link('want'));
     renderDialog(WANT);
 
-    expect(await screen.findByLabelText('Número do WhatsApp')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Seu WhatsApp')).toBeInTheDocument();
+  });
+
+  it('warns before sharing with no WhatsApp saved', async () => {
+    api.handlers.set('GET /lists/7/share', () => link('sell'));
+    api.handlers.set('PATCH /users/me/contact', () => ({ whatsappNumber: '5553999990000' }));
+    renderDialog(SELL);
+
+    const field = await screen.findByLabelText('Seu WhatsApp');
+    expect(field).toHaveAttribute('placeholder', 'DDD e número');
+    expect(screen.getByText('+55')).toBeInTheDocument();
+    const warning = screen.getByText('Sem seu WhatsApp, quem abrir o link não tem como falar com você.');
+    const save = screen.getByRole('button', { name: 'Salvar e mostrar' });
+    const hint = screen.getByText('Seu número aparece para quem abrir o link.');
+    const skip = screen.getByRole('button', { name: 'Compartilhar sem contato' });
+    const inOrder = [field, warning, save, hint, skip];
+    for (let index = 1; index < inOrder.length; index += 1) {
+      expect(inOrder[index - 1]!.compareDocumentPosition(inOrder[index]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // The warning comes before the address and the send button.
+    expect(skip.compareDocumentPosition(screen.getByTestId('share-whatsapp')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await userEvent.click(skip);
+    expect(screen.queryByText('Sem seu WhatsApp, quem abrir o link não tem como falar com você.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Compartilhar sem contato' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('share-whatsapp')).toBeInTheDocument();
+  });
+
+  it('shows no warning when a WhatsApp number is saved', async () => {
+    api.handlers.set('GET /lists/7/share', () => link('sell', true));
+    renderDialog(SELL, makeAuth({ user: { ...SIGNED_IN_USER, whatsappNumber: '5553999990000' } }));
+
+    await screen.findByTestId('share-whatsapp');
+    expect(screen.queryByText('Sem seu WhatsApp, quem abrir o link não tem como falar com você.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Compartilhar sem contato' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Seu WhatsApp')).not.toBeInTheDocument();
   });
 
   it('turns the link off after one inline confirm and refreshes the index', async () => {

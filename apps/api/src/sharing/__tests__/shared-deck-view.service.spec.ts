@@ -90,7 +90,7 @@ function build(
     storeSummary: { copies: 0, cents: 0 },
   }));
   const spareCopies = createMock<SpareCopiesService>();
-  spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map() });
+  spareCopies.spareByCard.mockResolvedValue({ needsRule: false, spare: new Map(), topHolder: new Map(), versions: new Map() });
   const replacements = createMock<SharedDeckReplacements>();
   replacements.active.mockResolvedValue(options.replacements ?? []);
   const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk, spareCopies, replacements);

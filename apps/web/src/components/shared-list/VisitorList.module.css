@@ -1,0 +1,226 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-4);
+  inline-size: 100%;
+  max-inline-size: var(--ra-page-form-inline);
+  margin-inline: auto;
+  min-inline-size: 0;
+  padding-block-end: 120px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-bold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-medium);
+}
+
+.summary {
+  margin: 0;
+  padding: var(--ra-space-4);
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-bold);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-block-start: 1px solid var(--ra-border);
+}
+
+.row:first-child {
+  border-block-start: 0;
+}
+
+.check {
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  accent-color: var(--ra-accent);
+}
+
+.thumb,
+.thumbPlaceholder {
+  display: block;
+  inline-size: 40px;
+  block-size: 56px;
+  flex: none;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--ra-bg-muted);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.name {
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.good {
+  margin: 0;
+  color: var(--ra-ready-high);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-2);
+  flex: none;
+}
+
+.stepper button {
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-raised);
+  color: var(--ra-fg-primary);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-inline-size: 1.5ch;
+  text-align: center;
+  color: var(--ra-accent);
+  font-family: var(--ra-font-mono);
+  font-weight: var(--ra-weight-bold);
+}
+
+.lacking {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.mine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-bg-surface);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-bold);
+  cursor: pointer;
+}
+
+.mineText {
+  display: flex;
+  flex-direction: column;
+}
+
+.mineList {
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-regular, 400);
+}
+
+.mineSwitch {
+  flex: none;
+  inline-size: 44px;
+  block-size: 26px;
+  accent-color: var(--ra-accent);
+}
+
+.value {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.bar {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-3) var(--ra-space-4) var(--ra-space-4);
+  border-block-start: 1px solid var(--ra-border);
+  background: var(--ra-bg-surface);
+}
+
+.barTotal {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-bold);
+}
+
+.barButton {
+  inline-size: 100%;
+  max-inline-size: var(--ra-page-form-inline);
+  min-block-size: 48px;
+  border: 0;
+  border-radius: var(--ra-radius-md);
+  background: var(--ra-accent);
+  color: var(--ra-accent-ink-on);
+  font-family: var(--ra-font-ui);
+  font-weight: var(--ra-weight-bold);
+  cursor: pointer;
+}
+
+.barButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

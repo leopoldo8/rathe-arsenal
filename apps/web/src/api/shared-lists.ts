@@ -15,9 +15,44 @@ export interface ISharedListLine {
   readonly imageUrl: IListCardImage | null;
   readonly quantity: number;
   readonly printingLabel: string | null;
+  /** Sell lists: the version the seller named; `''` where they did not. Absent on answers that predate it. */
+  readonly printingCode?: string;
+  readonly edition?: string;
+  readonly finish?: string;
+  readonly setName?: string | null;
   readonly condition: TCondition | null;
   readonly priceCents: number | null;
   readonly sold: boolean;
+  /** Want list, signed-in visitor who is not the owner: what the visitor owns and can spare of the card. */
+  readonly owned?: number | null;
+  readonly spare?: number | null;
+  /** The holding deck that keeps the most copies, the reason none is spare. */
+  readonly spareReason?: { readonly deckName: string; readonly copies: number } | null;
+  /** The one version every spare copy of the card shares, when they agree. */
+  readonly spareVersion?: ISpareVersion | null;
+  /** TCGplayer in dollars times 7, as cents; null when no printing is priced. */
+  readonly suggestedCents?: number | null;
+}
+
+export interface ISpareVersion {
+  readonly printingCode: string;
+  readonly edition: string;
+  readonly finish: string;
+  readonly condition: string;
+  readonly setName: string | null;
+}
+
+/** The visitor's own shared want list, offered to the sharer in return. */
+export interface ISharedVisitorList {
+  readonly name: string;
+  readonly url: string;
+  readonly lines: readonly {
+    readonly cardIdentifier: string;
+    readonly name: string;
+    readonly pitch: 1 | 2 | 3 | null;
+    readonly quantity: number;
+    readonly suggestedCents: number | null;
+  }[];
 }
 
 export interface ISharedListResponse {
@@ -34,6 +69,9 @@ export interface ISharedListResponse {
   readonly listId: number | null;
   readonly totalPriceCents: number | null;
   readonly updatedAt: string;
+  /** True while a signed-in visitor of a want list owes the spare-rule question; absent on answers that predate the visitor views. */
+  readonly spareNeedsRule?: boolean;
+  readonly visitorList?: ISharedVisitorList | null;
   readonly lines: readonly ISharedListLine[];
 }
 
@@ -42,6 +80,8 @@ export interface ISharedListMatches {
     readonly lineId: number;
     readonly owned: number;
     readonly missingInDecks: number;
+    /** Each of the visitor's decks that misses the card, with its own count. */
+    readonly decks?: readonly { readonly deckId: number; readonly deckName: string; readonly missing: number }[];
   }[];
 }
 

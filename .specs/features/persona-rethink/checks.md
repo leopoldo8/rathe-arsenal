@@ -1000,37 +1000,37 @@ Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "undoing a sale restores the 
 
 ### S23 - Buying and offering from a shared list · 14 files · 75 KB · ~23k
 
-**C292** - A signed-in visitor on Duda's sell list (`r3-buyer-phone`), top to bottom: "Lista de venda", "Duda vende estas cartas", "3 cartas desta lista servem nos seus decks", rows with name, version and price ("History Pack 1 · NM · R$ 45", "sem foil · R$ 6 cada"), the deck hint ("Falta 1 no seu Rhinar CC", "Faltam 2 no seu Kayo CC") and a stepper at 0 (AC 179)
+**C292** - A signed-in visitor on Duda's sell list (`r3-buyer-phone`), top to bottom: "Lista de venda", "Duda vende estas cartas", "3 cartas desta lista servem nos seus decks", rows with name, version and price ("History Pack 1 · NM · R$ 45", "sem foil · R$ 6 cada"), the deck hint ("Falta 1 no seu Rhinar CC", "Faltam 2 no seu Kayo CC") and a stepper at 0 (AC 179) · done
 Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t "a buyer sees version, price, deck hint and a stepper at 0"`
 
-**C293** - The deck hint names one deck with that deck's own missing count: with `Kayo CC` missing 2 Snatch and `Rhinar CC` missing 1, the API's per-line match carries both decks with their counts, not the sum 3 (AC 179)
+**C293** - The deck hint names one deck with that deck's own missing count: with `Kayo CC` missing 2 Snatch and `Rhinar CC` missing 1, the API's per-line match carries both decks with their counts, not the sum 3 (AC 179) · done
 Proof: `api unit src/sharing/__tests__/visitor-decks-missing.service.spec.ts -t "missing copies per deck, not summed"`
 
-**C294** - Choosing copies shows the bar "Quero estas · R$ 57" with "Ver mensagem", which opens (`r3-buyer-message-phone`) "‹ Lista de Duda", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", an editable text equal to "Oi Duda, vi sua lista no Rathe Arsenal. Quero: 1x Command and Conquer (Vermelho) · History Pack 1 · NM · R$ 45, 2x Snatch (Vermelho) · sem foil · R$ 6 cada. Total R$ 57.", "Enviar no WhatsApp", "Copiar texto" (AC 180, AC 186)
+**C294** - Choosing copies shows the bar "Quero estas · R$ 57" with "Ver mensagem", which opens (`r3-buyer-message-phone`) "‹ Lista de Duda", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", an editable text equal to "Oi Duda, vi sua lista no Rathe Arsenal. Quero: 1x Command and Conquer (Vermelho) · History Pack 1 · NM · R$ 45, 2x Snatch (Vermelho) · sem foil · R$ 6 cada. Total R$ 57.", "Enviar no WhatsApp", "Copiar texto" (AC 180, AC 186) · done
 Proof: `web unit src/components/shared-list/__tests__/BuyerMessage.spec.tsx -t "Quero estas opens the editable buy message"`
 
-**C295** - `GET /api/shared/lists/:token` for a signed-in visitor on a want list adds per line `owned`, `spare` and `spareReason`; for an anonymous visitor and for the owner it adds none; with Marcos's list and Caio's collection, Pummel (Vermelho) reads `owned: 4, spare: 3` and Sink Below (Amarelo) `owned: 2, spare: 0, spareReason` naming "Rhinar SA" and 2 (AC 181)
+**C295** - `GET /api/shared/lists/:token` for a signed-in visitor on a want list adds per line `owned`, `spare` and `spareReason`; for an anonymous visitor and for the owner it adds none; with Marcos's list and Caio's collection, Pummel (Vermelho) reads `owned: 4, spare: 3` and Sink Below (Amarelo) `owned: 2, spare: 0, spareReason` naming "Rhinar SA" and 2 (AC 181) · done
 Proof: `api e2e src/__tests__/shared-lists.e2e-spec.ts -t "a want list shows a signed-in visitor what they own and can spare"`
 
-**C296** - `GET /api/shared/lists/:token` answers `200` for a live list and `404` for malformed, unknown, turned-off and deck tokens, as today (Surface)
+**C296** - `GET /api/shared/lists/:token` answers `200` for a live list and `404` for malformed, unknown, turned-off and deck tokens, as today (Surface) · done
 Proof: `api e2e src/__tests__/shared-lists.e2e-spec.ts -t "answers 404 for malformed, unknown and deck tokens and once the owner is soft-deleted"`
 
-**C297** - The trade view (`r3-trade-visitor-phone`), top to bottom: "Procuro - Kayo", "Cartas que Marcos procura", "Você tem sobrando 4 cópias de 2 cartas que Marcos procura.", rows "Marcos procura 3 · sugerido R$ 4" / "Você tem 4 · 3 sobrando" with a stepper, a row "Você tem 2 · nenhuma sobrando (o seu Rhinar SA usa as 2)" with no stepper, the collapsed line "2 cartas que você não tem: Pack Hunt (Azul), Bloodrush Bellow (Amarelo)", the switch "Incluir minha lista" off with "Procuro - Rhinar (3 cópias)", then "Ver mensagem"; nothing is selected; with no stored rule and two holding decks sharing a card the rule question comes first (AC 181, AC 156, AC 186)
+**C297** - The trade view (`r3-trade-visitor-phone`), top to bottom: "Procuro - Kayo", "Cartas que Marcos procura", "Você tem sobrando 4 cópias de 2 cartas que Marcos procura.", rows "Marcos procura 3 · sugerido R$ 4" / "Você tem 4 · 3 sobrando" with a stepper, a row "Você tem 2 · nenhuma sobrando (o seu Rhinar SA usa as 2)" with no stepper, the collapsed line "2 cartas que você não tem: Pack Hunt (Azul), Bloodrush Bellow (Amarelo)", the switch "Incluir minha lista" off with "Procuro - Rhinar (3 cópias)", then "Ver mensagem"; nothing is selected; with no stored rule and two holding decks sharing a card the rule question comes first (AC 181, AC 156, AC 186) · done
 Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "a friend sees what they can spare, with the reason when none"`
 
-**C298** - With "Incluir minha lista" on, the screen shows "Valor aproximado, pelo preço sugerido: você oferece R$ 57 · você procura R$ 21"; with it off the line is absent; in both cases the message contains no "R$" (AC 182)
+**C298** - With "Incluir minha lista" on, the screen shows "Valor aproximado, pelo preço sugerido: você oferece R$ 57 · você procura R$ 21"; with it off the line is absent; in both cases the message contains no "R$" (AC 182) · done
 Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "the value of each side shows on screen and never in the message"`
 
-**C299** - The offer message (`r3-offer-message-phone`) with the switch on equals "Oi Marcos, vi sua lista no Rathe Arsenal. Tenho sobrando para você: 3x Pummel (Vermelho) · sem foil, 1x Command and Conquer (Vermelho). Em troca procuro: 2x Wrecker Romp (Azul), 1x Savage Feast (Vermelho). Minha lista: <link>", with "‹ Lista do Marcos", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", "Enviar no WhatsApp", "Copiar texto"; with the switch off it ends after the offered lines (AC 180, AC 182, AC 186)
+**C299** - The offer message (`r3-offer-message-phone`) with the switch on equals "Oi Marcos, vi sua lista no Rathe Arsenal. Tenho sobrando para você: 3x Pummel (Vermelho) · sem foil, 1x Command and Conquer (Vermelho). Em troca procuro: 2x Wrecker Romp (Azul), 1x Savage Feast (Vermelho). Minha lista: <link>", with "‹ Lista do Marcos", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", "Enviar no WhatsApp", "Copiar texto"; with the switch off it ends after the offered lines (AC 180, AC 182, AC 186) · done
 Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "builds the offer message with and without the visitor's list"`
 
-**C300** - When the sharer shows no number, "Enviar no WhatsApp" copies the text and shows "Texto copiado. Cole no grupo onde você viu a lista.", on both the buy and the offer message (AC 183)
+**C300** - When the sharer shows no number, "Enviar no WhatsApp" copies the text and shows "Texto copiado. Cole no grupo onde você viu a lista.", on both the buy and the offer message (AC 183) · done
 Proof: `web unit src/components/shared-list/__tests__/BuyerMessage.spec.tsx -t "with no number the text is copied with the hint"`
 
-**C301** - Sharing a list with no WhatsApp saved (`r3-share-contact-phone`) shows "Seu WhatsApp" with "+55 DDD e número", "Sem seu WhatsApp, quem abrir o link não tem como falar com você.", "Salvar e mostrar" with "Seu número aparece para quem abrir o link.", and "Compartilhar sem contato" below; with a number saved the warning is absent (AC 184, AC 186)
+**C301** - Sharing a list with no WhatsApp saved (`r3-share-contact-phone`) shows "Seu WhatsApp" with "+55 DDD e número", "Sem seu WhatsApp, quem abrir o link não tem como falar com você.", "Salvar e mostrar" with "Seu número aparece para quem abrir o link.", and "Compartilhar sem contato" below; with a number saved the warning is absent (AC 184, AC 186) · done
 Proof: `web unit src/components/lists/__tests__/ListShareDialog.spec.tsx -t "warns before sharing with no WhatsApp saved"`
 
-**C302** - The owner opening their own sell or want list sees no stepper, no "Quero estas", no "Ver mensagem" and no "Oferecer" (AC 185)
+**C302** - The owner opening their own sell or want list sees no stepper, no "Quero estas", no "Ver mensagem" and no "Oferecer" (AC 185) · done
 Proof: `web unit src/components/shared-list/__tests__/SharedListPage.spec.tsx -t "the owner gets no selection and no offer"`
 
 ### S24 - Saving a friend's deck with substitutions · 9 files · 25 KB · ~10k

@@ -119,19 +119,27 @@ function ListLinkStep({ list, link, onTurnedOff }: IListLinkStepProps): React.Re
   const disable = useDisableListShareMutation(list.id);
   const setContact = useSetListShareContactMutation(list.id);
 
+  const { user } = useAuth();
   const translate = makeTranslate(t);
   const url = versionedListUrl(list, link.url, translate);
+  const contact = (
+    <ShareContactRow
+      testId="list-share-contact"
+      showContact={link.showContact}
+      updating={setContact.isPending}
+      warnWithoutNumber
+      onToggle={(next, onFailed) => setContact.mutate(next, { onError: onFailed })}
+    />
+  );
+  // Without a number the page cannot be answered: that warning leads, before the address and the send button.
+  const warnFirst = user?.whatsappNumber == null;
 
   return (
     <>
+      {warnFirst && contact}
       <ShareAddressRow url={url} />
       <ShareWhatsappButton message={buildListShareMessage(list, url, translate)} />
-      <ShareContactRow
-        testId="list-share-contact"
-        showContact={link.showContact}
-        updating={setContact.isPending}
-        onToggle={(next, onFailed) => setContact.mutate(next, { onError: onFailed })}
-      />
+      {!warnFirst && contact}
       <ShareLinkFooter
         downloadHref={sharedListImageDownloadPath(link.token)}
         downloadLabel={t('lists.share.downloadImage')}

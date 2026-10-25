@@ -18,6 +18,7 @@ import { catalog, ICatalogCard } from '@rathe-arsenal/engine';
 import { AppModule } from '../app.module';
 import { FetchGuardService } from '../common/fetch-guard/fetch-guard.service';
 import { configureHttpApp } from '../http/configure-http-app';
+import { printingsOfCard, printingVersion } from '../lists/printing-key';
 import { SPA_INDEX_HTML } from '../sharing/preview/spa-index-html';
 import { DELETE_SHARE_LINKS_FOR_USERS_SQL } from '../sharing/preview/share-link-cleanup';
 import { sessionCookieHeader, sessionTokenOf } from '../auth/__tests__/session-test-helpers';
@@ -30,6 +31,12 @@ const SPA_FIXTURE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>Rathe Arsenal</title><meta name="description" content="spa default">
 <noscript>needs js</noscript><script type="module" src="/assets/index.js"></script></head>
 <body><div id="root"></div></body></html>`;
+
+function cardNamed(name: string, pitch: number): ICatalogCard {
+  const card = catalog.cards.find((entry) => entry.name === name && entry.pitch === pitch);
+  if (!card) throw new Error(`No catalog card ${name} (${pitch})`);
+  return card;
+}
 
 const [CARD_A, CARD_B, CARD_C] = catalog.cards
   .filter((card) => card.pitch === 1 && card.types[0] !== 'Hero' && card.imageUrl)
@@ -95,21 +102,26 @@ describe('Shared lists (E2E)', () => {
   }
 
   async function ownCopies(session: ISession, card: ICatalogCard, quantity: number): Promise<void> {
-    const [source] = (await dataSource.query(
-      `INSERT INTO csv_source ("userId", kind, active) VALUES ($1, 'manual', true) RETURNING id`,
-      [session.userId],
-    )) as [{ id: string }];
+    await dataSource.query(`INSERT INTO csv_source ("userId", kind, active) VALUES ($1, 'manual', true) ON CONFLICT DO NOTHING`, [session.userId]);
+    const [source] = (await dataSource.query(`SELECT id FROM csv_source WHERE "userId" = $1 AND kind = 'manual'`, [session.userId])) as [{ id: string }];
     await dataSource.query(
       `INSERT INTO collection_card ("userId", "cardIdentifier", quantity, "sourceId") VALUES ($1, $2, $3, $4)`,
       [session.userId, card.cardIdentifier, quantity, source.id],
     );
   }
 
-  async function createDeck(session: ISession, status: string, card: ICatalogCard, quantity: number): Promise<number> {
+  async function createDeck(
+    session: ISession,
+    status: string,
+    card: ICatalogCard,
+    quantity: number,
+    name = 'Visitor deck',
+    format = 'cc',
+  ): Promise<number> {
     const [deck] = (await dataSource.query(
       `INSERT INTO tracked_deck ("userId", name, hero, "heroIdentifier", format, status)
-       VALUES ($1, 'Visitor deck', 'Some Hero', NULL, 'cc', $2) RETURNING id`,
-      [session.userId, status],
+       VALUES ($1, $3, 'Some Hero', NULL, $4, $2) RETURNING id`,
+      [session.userId, status, name, format],
     )) as [{ id: number }];
     await dataSource.query(
       `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, slot) VALUES ($1, $2, $3, 'mainboard')`,
@@ -306,6 +318,24 @@ describe('Shared lists (E2E)', () => {
       expect(JSON.stringify(res.body)).not.toContain(owner.userId);
     });
 
+    it('a sell line carries the version the seller named, and a want line carries none', async () => {
+      const owner = await createSession('version');
+      const [printing] = printingsOfCard(CARD_A.cardIdentifier) ?? [];
+      const version = printingVersion(printing!);
+      const sell = await createList(owner, 'sell', 'Sobras');
+      await addLine(owner, sell, CARD_A, 1, { ...version, condition: 'NM' });
+      await addLine(owner, sell, CARD_B, 1);
+      const want = await createList(owner, 'want', 'Procuro');
+      await addLine(owner, want, CARD_A, 1);
+
+      const sold = await request(server).get(`/api/shared/lists/${await startSharing(owner, sell)}`).expect(200);
+      const wanted = await request(server).get(`/api/shared/lists/${await startSharing(owner, want)}`).expect(200);
+
+      expect(sold.body.lines[0]).toMatchObject({ ...version, setName: expect.any(String) });
+      expect(sold.body.lines[1]).toMatchObject({ printingCode: '', edition: '', finish: '', setName: null });
+      expect(wanted.body.lines[0]).toMatchObject({ printingCode: '', edition: '', finish: '', setName: null });
+    });
+
     it('answers a want list without a total', async () => {
       const owner = await createSession('want-page');
       const listId = await createList(owner, 'want');
@@ -335,6 +365,69 @@ describe('Shared lists (E2E)', () => {
         [owner.userId],
       )) as { intent: string; actorUserId: string }[];
       expect(event).toEqual({ intent: 'want', actorUserId: visitor.userId });
+    });
+
+    it('a want list shows a signed-in visitor what they own and can spare', async () => {
+      const marcos = await createSession('trade-owner');
+      const caio = await createSession('trade-visitor');
+      const pummel = cardNamed('Pummel', 1);
+      const sinkBelow = cardNamed('Sink Below', 2);
+      const listId = await createList(marcos, 'want', 'Procuro - Kayo');
+      await addLine(marcos, listId, pummel, 3);
+      await addLine(marcos, listId, sinkBelow, 2);
+      const token = await startSharing(marcos, listId);
+      await ownCopies(caio, pummel, 4);
+      await ownCopies(caio, sinkBelow, 2);
+      await createDeck(caio, 'building', pummel, 1, 'Kayo CC');
+      await createDeck(caio, 'building', sinkBelow, 2, 'Rhinar SA', 'silver_age');
+
+      const asVisitor = await request(server).get(`/api/shared/lists/${token}`).set(...auth(caio)).expect(200);
+      const anonymous = await request(server).get(`/api/shared/lists/${token}`).expect(200);
+      const asOwner = await request(server).get(`/api/shared/lists/${token}`).set(...auth(marcos)).expect(200);
+
+      const byCard = (body: { lines: { cardIdentifier: string }[] }, card: ICatalogCard) =>
+        body.lines.find((line) => line.cardIdentifier === card.cardIdentifier)!;
+      expect(byCard(asVisitor.body, pummel)).toMatchObject({ owned: 4, spare: 3, spareReason: null });
+      expect(byCard(asVisitor.body, sinkBelow)).toMatchObject({
+        owned: 2,
+        spare: 0,
+        spareReason: { deckName: 'Rhinar SA', copies: 2 },
+      });
+      for (const body of [anonymous.body, asOwner.body]) {
+        for (const line of body.lines as { owned: unknown; spare: unknown; spareReason: unknown }[]) {
+          expect(line).toMatchObject({ owned: null, spare: null, spareReason: null });
+        }
+      }
+    });
+
+    it('a want list offers a signed-in visitor their own shared want list to ask for in return', async () => {
+      const marcos = await createSession('trade-owner-2');
+      const caio = await createSession('trade-visitor-2');
+      const pummel = cardNamed('Pummel', 1);
+      const wrecker = cardNamed('Wrecker Romp', 3);
+      const savage = cardNamed('Savage Feast', 1);
+      const listId = await createList(marcos, 'want');
+      await addLine(marcos, listId, pummel, 3);
+      const token = await startSharing(marcos, listId);
+      const own = await createList(caio, 'want', 'Procuro - Rhinar');
+      await addLine(caio, own, wrecker, 2);
+      await addLine(caio, own, savage, 1);
+
+      const before = await request(server).get(`/api/shared/lists/${token}`).set(...auth(caio)).expect(200);
+      expect(before.body.visitorList).toBeNull();
+
+      const ownToken = await startSharing(caio, own);
+      const after = await request(server).get(`/api/shared/lists/${token}`).set(...auth(caio)).expect(200);
+
+      expect(after.body.visitorList).toMatchObject({ name: 'Procuro - Rhinar', url: `http://localhost:5173/l/${ownToken}` });
+      expect(
+        (after.body.visitorList.lines as { cardIdentifier: string; quantity: number }[]).map((line) => [line.cardIdentifier, line.quantity]),
+      ).toEqual([
+        [wrecker.cardIdentifier, 2],
+        [savage.cardIdentifier, 1],
+      ]);
+      const anonymous = await request(server).get(`/api/shared/lists/${token}`).expect(200);
+      expect(anonymous.body.visitorList).toBeNull();
     });
 
     it('answers 404 for malformed, unknown and deck tokens and once the owner is soft-deleted', async () => {
@@ -373,8 +466,8 @@ describe('Shared lists (E2E)', () => {
       const res = await request(server).get(`/api/shared/lists/${token}/matches`).set(...auth(visitor)).expect(200);
 
       expect(res.body.lines).toEqual([
-        { lineId: lineA, owned: 2, missingInDecks: 0 },
-        { lineId: lineB, owned: 0, missingInDecks: 0 },
+        { lineId: lineA, owned: 2, missingInDecks: 0, decks: [] },
+        { lineId: lineB, owned: 0, missingInDecks: 0, decks: [] },
       ]);
     });
 
@@ -389,8 +482,8 @@ describe('Shared lists (E2E)', () => {
       const token = await startSharing(owner, listId);
 
       await ownCopies(visitor, CARD_A, 1);
-      await createDeck(visitor, 'building', CARD_A, 3);
-      await createDeck(visitor, 'active', CARD_A, 2);
+      const kayo = await createDeck(visitor, 'building', CARD_A, 3, 'Kayo CC');
+      const rhinar = await createDeck(visitor, 'active', CARD_A, 2, 'Rhinar CC');
       await createDeck(visitor, 'retired', CARD_B, 4);
       await createDeck(visitor, 'building', CARD_C, 2);
 
@@ -398,9 +491,17 @@ describe('Shared lists (E2E)', () => {
 
       // Deck 1 needs 3 of A and owns 1 (2 missing); deck 2 needs 2 and owns 1 (1 missing).
       expect(res.body.lines).toEqual([
-        { lineId: lineA, owned: 1, missingInDecks: 3 },
-        { lineId: lineB, owned: 0, missingInDecks: 0 },
-        { lineId: lineC, owned: 0, missingInDecks: 0 },
+        {
+          lineId: lineA,
+          owned: 1,
+          missingInDecks: 3,
+          decks: [
+            { deckId: kayo, deckName: 'Kayo CC', missing: 2 },
+            { deckId: rhinar, deckName: 'Rhinar CC', missing: 1 },
+          ],
+        },
+        { lineId: lineB, owned: 0, missingInDecks: 0, decks: [] },
+        { lineId: lineC, owned: 0, missingInDecks: 0, decks: [] },
       ]);
     });
 

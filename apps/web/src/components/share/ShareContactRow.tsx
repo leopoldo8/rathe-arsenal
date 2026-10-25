@@ -15,6 +15,8 @@ interface IShareContactRowProps {
   /** Asks the API to change the link's setting; `onFailed` runs if it could not. */
   readonly onToggle: (next: boolean, onFailed: () => void) => void;
   readonly testId: string;
+  /** Lists warn first: without a number the page cannot be answered, so the form leads with that and offers to go on without. */
+  readonly warnWithoutNumber?: boolean;
 }
 
 /**
@@ -22,13 +24,14 @@ interface IShareContactRowProps {
  * number lives in the profile, so without one the row asks for it inline and
  * turns the switch on once it is saved.
  */
-export function ShareContactRow({ showContact, updating, onToggle, testId }: IShareContactRowProps): React.ReactElement {
+export function ShareContactRow({ showContact, updating, onToggle, testId, warnWithoutNumber = false }: IShareContactRowProps): React.ReactElement {
   const { t } = useTranslation();
   const { user, setWhatsappNumber } = useAuth();
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [skipped, setSkipped] = useState(false);
 
   const savedNumber = user?.whatsappNumber ?? null;
   const hasNumber = savedNumber !== null;
@@ -93,20 +96,30 @@ export function ShareContactRow({ showContact, updating, onToggle, testId }: ISh
         </button>
       </div>
 
-      {!hasNumber && (
+      {!hasNumber && !(warnWithoutNumber && skipped) && (
         <form className={styles.form} noValidate onSubmit={(event) => void handleSaveAndShow(event)}>
           <WhatsappNumberField
-            label={t('sharing.contact.fieldLabel')}
+            label={t(warnWithoutNumber ? 'sharing.contact.warnLabel' : 'sharing.contact.fieldLabel')}
             value={draft}
             onChange={(value) => {
               setDraft(value);
               setFieldError(null);
             }}
             error={fieldError}
+            {...(warnWithoutNumber ? { placeholder: t('sharing.contact.warnPlaceholder') } : {})}
           />
+          {warnWithoutNumber && <p className={styles.warning}>{t('sharing.contact.warnNoNumber')}</p>}
           <button type="submit" className={styles.save} aria-busy={saving ? 'true' : undefined}>
             {saving ? t('sharing.contact.saving') : t('sharing.contact.saveAndShow')}
           </button>
+          {warnWithoutNumber && (
+            <>
+              <p className={styles.note}>{t('sharing.contact.warnSaveHint')}</p>
+              <button type="button" className={styles.skip} onClick={() => setSkipped(true)}>
+                {t('sharing.contact.shareWithoutContact')}
+              </button>
+            </>
+          )}
         </form>
       )}
 

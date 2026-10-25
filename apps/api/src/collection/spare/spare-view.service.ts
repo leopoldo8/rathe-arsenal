@@ -22,9 +22,14 @@ function foilFinishesOf(row: ISpareVersionRow): string[] {
   return [...new Set(considered.flatMap((printing) => printing.finishes.filter(isFoil)))];
 }
 
+/** The set a collector code belongs to ("History Pack 1"), or null when the code names none or the catalog does not know it. */
+export function setNameOfCode(cardIdentifier: string, printingCode: string): string | null {
+  if (printingCode === '') return null;
+  return buildVersionOptions(cardIdentifier)?.printings.find((printing) => printing.printingCode === printingCode)?.setName ?? null;
+}
+
 function setNameOf(row: ISpareVersionRow): string | null {
-  if (row.printingCode === '') return null;
-  return buildVersionOptions(row.cardIdentifier)?.printings.find((printing) => printing.printingCode === row.printingCode)?.setName ?? null;
+  return setNameOfCode(row.cardIdentifier, row.printingCode);
 }
 
 @Injectable()

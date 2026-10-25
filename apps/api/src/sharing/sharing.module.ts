@@ -20,6 +20,8 @@ import { SharedListViewService } from './shared-list-view.service';
 import { SharedListsController } from './shared-lists.controller';
 import { SharingCoreModule } from './sharing-core.module';
 import { VisitorDecksMissingService } from './visitor-decks-missing.service';
+import { VisitorWantListService } from './visitor-want-list.service';
+import { PricesModule } from '../prices/prices.module';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { VisitorDecksMissingService } from './visitor-decks-missing.service';
     AuthModule,
     CollectionModule,
     SubstitutionModule,
+    PricesModule,
     TypeOrmModule.forFeature([DeckCardEntity, CardListLineEntity, CardReplacementEntity]),
   ],
   controllers: [DeckShareController, SharedDecksController, ListShareController, SharedListsController],
@@ -39,6 +42,7 @@ import { VisitorDecksMissingService } from './visitor-decks-missing.service';
     ListShareService,
     SharedListViewService,
     VisitorDecksMissingService,
+    VisitorWantListService,
   ],
 })
 export class SharingModule implements NestModule {

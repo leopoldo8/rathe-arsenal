@@ -48,6 +48,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { SharedListPage } from '../SharedListPage';
+import { DUDA, DUDA_MATCHES, MARCOS } from './visitorKit';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
 const URL = `https://rathearsenal.app/l/${TOKEN}`;
@@ -365,5 +366,66 @@ describe('SharedListPage', () => {
 
     expect(await screen.findByText('Esta lista está vazia.')).toBeInTheDocument();
     expect(screen.getByTestId('shared-copy-list')).toBeDisabled();
+  });
+
+  describe('signed-in visitor on a sell list (buyer view)', () => {
+    beforeEach(() => {
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => DUDA);
+      api.handlers.set(`GET /shared/lists/${TOKEN}/matches`, () => DUDA_MATCHES);
+    });
+
+    it('a buyer sees version, price, deck hint and a stepper at 0', async () => {
+      renderPage(makeAuth());
+
+      const view = await screen.findByTestId('shared-list-buyer');
+      const order = Array.from(view.querySelectorAll('p[class*="eyebrow"], h1, p[class*="summary"], li')).map((node) => node.textContent);
+      expect(order[0]).toBe('Lista de venda');
+      expect(screen.getByRole('heading', { level: 1, name: 'Duda vende estas cartas' })).toBeInTheDocument();
+      expect(await screen.findByText('3 cartas desta lista servem nos seus decks')).toBeInTheDocument();
+      const rows = screen.getAllByTestId('buyer-row');
+      expect(rows).toHaveLength(3);
+      expect(within(rows[0]!).getByText('Command and Conquer (Vermelho)')).toBeInTheDocument();
+      expect(within(rows[0]!).getByText('History Pack 1 · NM · R$ 45')).toBeInTheDocument();
+      expect(within(rows[0]!).getByText('Falta 1 no seu Rhinar CC')).toBeInTheDocument();
+      expect(within(rows[1]!).getByText('sem foil · R$ 6 cada')).toBeInTheDocument();
+      expect(within(rows[1]!).getByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
+      for (const row of rows) expect(row.querySelector('output')).toHaveTextContent('0');
+      expect(screen.queryByTestId('buyer-bar')).not.toBeInTheDocument();
+    });
+
+    it('names the deck that misses the card most, with that deck own count', async () => {
+      api.handlers.set(`GET /shared/lists/${TOKEN}/matches`, () => ({
+        lines: [
+          {
+            lineId: 2,
+            owned: 0,
+            missingInDecks: 3,
+            decks: [
+              { deckId: 1, deckName: 'Rhinar CC', missing: 1 },
+              { deckId: 2, deckName: 'Kayo CC', missing: 2 },
+            ],
+          },
+        ],
+      }));
+      renderPage(makeAuth());
+
+      expect(await screen.findByText('Faltam 2 no seu Kayo CC')).toBeInTheDocument();
+      expect(screen.queryByText(/Rhinar CC/)).not.toBeInTheDocument();
+    });
+
+    it.each(['sell', 'want'] as const)('the owner gets no selection and no offer on a %s list', async (kind) => {
+      const own = kind === 'sell' ? DUDA : MARCOS;
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...own, isOwner: true, listId: 7, lines: own.lines.map((line) => ({ ...line, owned: null, spare: null })) }));
+      renderPage(makeAuth());
+
+      expect(await screen.findByRole('link', { name: 'Gerenciar lista' })).toBeInTheDocument();
+      expect(screen.queryByTestId('shared-list-buyer')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-list-trade')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Quero estas/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver mensagem' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Oferecer/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Mais uma cópia/ })).not.toBeInTheDocument();
+    });
   });
 });

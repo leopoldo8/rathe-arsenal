@@ -25,6 +25,7 @@ import { SharedGroupAskService } from '../../../sharing/shared-group-ask.service
 import { SharedListLookup } from '../../../sharing/shared-list-lookup';
 import { SharedListViewService } from '../../../sharing/shared-list-view.service';
 import { VisitorDecksMissingService } from '../../../sharing/visitor-decks-missing.service';
+import { VisitorWantListService } from '../../../sharing/visitor-want-list.service';
 import { SharedDeckReplacements } from '../../../sharing/shared-deck-replacements';
 import { SpareCopiesService } from '../spare-copies.service';
 import { SpareViewService } from '../spare-view.service';
@@ -86,7 +87,7 @@ async function wantListReader(spare: SpareCopiesService): Promise<number | null>
   collection.loadOwned.mockResolvedValue(new Map([[PACK_HUNT, 6]]));
   const lines = createMock<Repository<CardListLineEntity>>();
   lines.find.mockResolvedValue([{ id: 1, cardIdentifier: PACK_HUNT, quantity: 2, soldAt: null, condition: null, printing: null, priceCents: null }] as CardListLineEntity[]);
-  const service = new SharedListViewService(lookup, createMock<ShareEventsService>(), collection, createMock<VisitorDecksMissingService>(), config(), spare, lines);
+  const service = new SharedListViewService(lookup, createMock<ShareEventsService>(), collection, createMock<VisitorDecksMissingService>(), config(), spare, createMock<VisitorWantListService>(), lines);
   const page = await service.view('live', visitor(DUDA));
   return page.lines[0]?.spare ?? null;
 }
