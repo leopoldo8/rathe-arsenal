@@ -201,25 +201,7 @@ async function ensureOwnedCards(creds: IFixtureCredentials, sessionToken: string
   }
 }
 
-/**
- * A Fabrary deck whose saved lines are gone (the API suites that share this database rebuild its
- * tables) still lists and opens, but its rules verdict and card list no longer match the baselines.
- * The decks are removed together so the re-import keeps the original order and the first one stays
- * the ready deck.
- */
-async function dropHollowFabraryDecks(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
-  const fabraryDecks = (await listDecks(creds, sessionToken)).filter((deck) => deck.fabraryUlid !== null);
-  const details = await Promise.all(
-    fabraryDecks.map((deck) => authed<{ cards: readonly unknown[] }>(creds, sessionToken, 'GET', `/decks/${deck.id}`)),
-  );
-  if (details.every((detail) => detail.cards.length > 0)) return;
-  for (const deck of fabraryDecks) {
-    await authed(creds, sessionToken, 'DELETE', `/decks/${deck.id}/permanent`);
-  }
-}
-
 async function ensureFabraryDeck(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
-  await dropHollowFabraryDecks(creds, sessionToken);
   let decks = await listDecks(creds, sessionToken);
   if (!decks.some((deck) => deck.fabraryUlid !== null)) {
     await authed(creds, sessionToken, 'POST', '/decks/import', { urls: FABRARY_DECK_URLS });
