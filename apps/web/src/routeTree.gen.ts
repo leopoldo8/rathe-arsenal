@@ -38,12 +38,14 @@ import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckI
 import { Route as AuthChatConversationIdRouteImport } from './routes/_auth/chat.$conversationId'
 import { Route as AuthAddCardsSheetRouteImport } from './routes/_auth/add-cards_.sheet'
 import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.scan'
+import { Route as AuthAddCardsProductRouteImport } from './routes/_auth/add-cards_.product'
 import { Route as AuthAddCardsListRouteImport } from './routes/_auth/add-cards_.list'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
 import { Route as AuthLibraryCsvSourcesSourceIdVersionsRouteImport } from './routes/_auth/library-csv-sources_.$sourceId.versions'
 import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
+import { Route as AuthAddCardsProductProductKeyRouteImport } from './routes/_auth/add-cards_.product.$productKey'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -189,6 +191,11 @@ const AuthAddCardsScanRoute = AuthAddCardsScanRouteImport.update({
   path: '/add-cards/scan',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsProductRoute = AuthAddCardsProductRouteImport.update({
+  id: '/add-cards_/product',
+  path: '/add-cards/product',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthAddCardsListRoute = AuthAddCardsListRouteImport.update({
   id: '/add-cards_/list',
   path: '/add-cards/list',
@@ -220,6 +227,12 @@ const AuthDecksDeckIdEditRoute = AuthDecksDeckIdEditRouteImport.update({
   path: '/decks/$deckId/edit',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsProductProductKeyRoute =
+  AuthAddCardsProductProductKeyRouteImport.update({
+    id: '/$productKey',
+    path: '/$productKey',
+    getParentRoute: () => AuthAddCardsProductRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -244,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/add-cards/list': typeof AuthAddCardsListRoute
+  '/add-cards/product': typeof AuthAddCardsProductRouteWithChildren
   '/add-cards/scan': typeof AuthAddCardsScanRoute
   '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
@@ -254,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/add-cards/': typeof AuthAddCardsIndexRoute
   '/chat/': typeof AuthChatIndexRoute
   '/lists/': typeof AuthListsIndexRoute
+  '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
   '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
@@ -279,6 +294,7 @@ export interface FileRoutesByTo {
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
   '/add-cards/list': typeof AuthAddCardsListRoute
+  '/add-cards/product': typeof AuthAddCardsProductRouteWithChildren
   '/add-cards/scan': typeof AuthAddCardsScanRoute
   '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
@@ -289,6 +305,7 @@ export interface FileRoutesByTo {
   '/add-cards': typeof AuthAddCardsIndexRoute
   '/chat': typeof AuthChatIndexRoute
   '/lists': typeof AuthListsIndexRoute
+  '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
   '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
@@ -317,6 +334,7 @@ export interface FileRoutesById {
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
   '/_auth/add-cards_/list': typeof AuthAddCardsListRoute
+  '/_auth/add-cards_/product': typeof AuthAddCardsProductRouteWithChildren
   '/_auth/add-cards_/scan': typeof AuthAddCardsScanRoute
   '/_auth/add-cards_/sheet': typeof AuthAddCardsSheetRoute
   '/_auth/chat/$conversationId': typeof AuthChatConversationIdRoute
@@ -327,6 +345,7 @@ export interface FileRoutesById {
   '/_auth/add-cards/': typeof AuthAddCardsIndexRoute
   '/_auth/chat/': typeof AuthChatIndexRoute
   '/_auth/lists/': typeof AuthListsIndexRoute
+  '/_auth/add-cards_/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
   '/_auth/library-csv-sources_/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
@@ -355,6 +374,7 @@ export interface FileRouteTypes {
     | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/add-cards/list'
+    | '/add-cards/product'
     | '/add-cards/scan'
     | '/add-cards/sheet'
     | '/chat/$conversationId'
@@ -365,6 +385,7 @@ export interface FileRouteTypes {
     | '/add-cards/'
     | '/chat/'
     | '/lists/'
+    | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
     | '/library-csv-sources/$sourceId/versions'
   fileRoutesByTo: FileRoutesByTo
@@ -390,6 +411,7 @@ export interface FileRouteTypes {
     | '/add-cards/fabrary'
     | '/add-cards/manual'
     | '/add-cards/list'
+    | '/add-cards/product'
     | '/add-cards/scan'
     | '/add-cards/sheet'
     | '/chat/$conversationId'
@@ -400,6 +422,7 @@ export interface FileRouteTypes {
     | '/add-cards'
     | '/chat'
     | '/lists'
+    | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
     | '/library-csv-sources/$sourceId/versions'
   id:
@@ -427,6 +450,7 @@ export interface FileRouteTypes {
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
     | '/_auth/add-cards_/list'
+    | '/_auth/add-cards_/product'
     | '/_auth/add-cards_/scan'
     | '/_auth/add-cards_/sheet'
     | '/_auth/chat/$conversationId'
@@ -437,6 +461,7 @@ export interface FileRouteTypes {
     | '/_auth/add-cards/'
     | '/_auth/chat/'
     | '/_auth/lists/'
+    | '/_auth/add-cards_/product/$productKey'
     | '/_auth/decks/$deckId_/edit'
     | '/_auth/library-csv-sources_/$sourceId/versions'
   fileRoutesById: FileRoutesById
@@ -659,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsScanRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards_/product': {
+      id: '/_auth/add-cards_/product'
+      path: '/add-cards/product'
+      fullPath: '/add-cards/product'
+      preLoaderRoute: typeof AuthAddCardsProductRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/add-cards_/list': {
       id: '/_auth/add-cards_/list'
       path: '/add-cards/list'
@@ -701,6 +733,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDecksDeckIdEditRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards_/product/$productKey': {
+      id: '/_auth/add-cards_/product/$productKey'
+      path: '/$productKey'
+      fullPath: '/add-cards/product/$productKey'
+      preLoaderRoute: typeof AuthAddCardsProductProductKeyRouteImport
+      parentRoute: typeof AuthAddCardsProductRoute
+    }
   }
 }
 
@@ -722,6 +761,17 @@ const AuthAddCardsRouteWithChildren = AuthAddCardsRoute._addFileChildren(
   AuthAddCardsRouteChildren,
 )
 
+interface AuthAddCardsProductRouteChildren {
+  AuthAddCardsProductProductKeyRoute: typeof AuthAddCardsProductProductKeyRoute
+}
+
+const AuthAddCardsProductRouteChildren: AuthAddCardsProductRouteChildren = {
+  AuthAddCardsProductProductKeyRoute: AuthAddCardsProductProductKeyRoute,
+}
+
+const AuthAddCardsProductRouteWithChildren =
+  AuthAddCardsProductRoute._addFileChildren(AuthAddCardsProductRouteChildren)
+
 interface AuthRouteChildren {
   AuthAddCardsRoute: typeof AuthAddCardsRouteWithChildren
   AuthHomeRoute: typeof AuthHomeRoute
@@ -733,6 +783,7 @@ interface AuthRouteChildren {
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthSwapsRoute: typeof AuthSwapsRoute
   AuthAddCardsListRoute: typeof AuthAddCardsListRoute
+  AuthAddCardsProductRoute: typeof AuthAddCardsProductRouteWithChildren
   AuthAddCardsScanRoute: typeof AuthAddCardsScanRoute
   AuthAddCardsSheetRoute: typeof AuthAddCardsSheetRoute
   AuthChatConversationIdRoute: typeof AuthChatConversationIdRoute
@@ -757,6 +808,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsRoute: AuthSettingsRoute,
   AuthSwapsRoute: AuthSwapsRoute,
   AuthAddCardsListRoute: AuthAddCardsListRoute,
+  AuthAddCardsProductRoute: AuthAddCardsProductRouteWithChildren,
   AuthAddCardsScanRoute: AuthAddCardsScanRoute,
   AuthAddCardsSheetRoute: AuthAddCardsSheetRoute,
   AuthChatConversationIdRoute: AuthChatConversationIdRoute,

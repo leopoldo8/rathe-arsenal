@@ -16,6 +16,7 @@ import { FabraryModule } from './fabrary/fabrary.module';
 import { SubstitutionModule } from './substitution/substitution.module';
 import { DecksModule } from './decks/decks.module';
 import { CollectionModule } from './collection/collection.module';
+import { ProductsModule } from './products/products.module';
 import { StoresModule } from './stores/stores.module';
 import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
@@ -51,6 +52,7 @@ import { ListsModule } from './lists/lists.module';
     SubstitutionModule,
     DecksModule,
     CollectionModule,
+    ProductsModule,
     StoresModule,
     // U12: user settings (GET/PATCH /api/users/me/settings)
     UsersModule,

@@ -323,6 +323,24 @@
 - Existing tests touched: `-library.test.tsx` got a mock of the new pending query (the page mounts the banner); `csv-parser.service.spec.ts` got the card "Rhinar, Reckless Rampage" in its catalog fixture and new tests; `collection-versions.e2e-spec.ts` got the pending case of C133.
 - Notes the reader writes are pt-BR sentences from the API (`"(3)" lido como Azul`, `lemos "..." certo`), as C139 and C145 require; an English-language session shows them in Portuguese.
 
+### Security fixes on the reader (batch 10)
+
+- Both findings were real. The line reader ran trailing-word patterns that can match a run of blanks in many ways; a 20,000 character line took 1.5 s, and a line cannot be shorter than the 2 MB a file may hold. Blanks are collapsed before the patterns run, and a line over 2,000 characters is kept as not found without being matched.
+- A spreadsheet row with many cells made the unquoted-comma step join cells one by one, each join over the whole row (18 s for 30,000 cells). It joins at most five cells now; the text kept for a line is cut at 2,000 characters, which is what a pending line accepts.
+- The limits that already existed stay as they are (2 MB per file, 5,000 lines, refused with `400`); the 2,000 character cut is not shown to the player (a longer line reads as "Não achamos"), so no new copy.
+
+### S13 (batch 10)
+
+- Product files live in `apps/api/src/products/data/` (one JSON per product, copied to `dist` by the Nest asset setting) and `pnpm products:import <url>` writes into the source folder even when it runs from `dist`. The Armory Deck: Kayo file was written by that command from the official page (`https://fabtcg.com/decklists/kayo-armory-deck/`, fetched with a browser user agent as `docs/research/ip-posture.md` allows): 26 cards, 66 copies, no differences with the catalog. It is the only product, as plan Assumptions say.
+- The command names a product from the catalog: the product is the set of the hero's printings that matches the kind of the address (`Armory Deck: <hero>`, `<hero> Blitz Deck`, `<hero> Silver Age Deck`), the key is the kind and the hero's first word (`armory-kayo`), and the format follows the kind. The hero is read from the page title.
+- A copy from a box carries the printing code and, when the catalog has one row for that code in the product, its edition and finish (Hide Tanner comes in Rainbow Foil). Where the product has two rows for a code nothing more is recorded. This goes beyond C162, which only asks for the printing code.
+- `r3-product-search-phone` draws a "Deck pronto" chip and a kind chip on each row, and `r3-product-confirm-phone` draws the eyebrow "Deck pronto"; C160 says no row carries "Deck pronto" and C161 lists the confirm screen's blocks without it, so none of them is built.
+- The footnote of the confirm screen names Agility and Might as C161 quotes; a product with other tokens would still say those two (the file does not record which tokens it left out).
+- The confirm screen takes the product from the list answer (`cards` added to `GET /api/products`), so opening it directly by address reads the whole list once.
+- Created decks start at stage Montando (`building`), as Fabrary imports do.
+- Plan `Surface`: three rows added (the list answer with cards, the import route's extra statuses, the two pages).
+- "Comprei um deck pronto" on `/decks/new` now opens `/add-cards/product` (batch 8 obligation). S15 may point its first-run row there too.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -396,4 +414,7 @@
   - Errors: `apiErrors.IMPORT_UNREADABLE` ("Não conseguimos ler esse arquivo. Confira se é um arquivo de texto (.csv), com uma carta por linha, e se tem até 2 MB.") and `IMPORT_TOO_MANY_ROWS`, both in en-US too.
   - The page behind "Resolver" (`/library-pending`) is drawn by no mockup: it reuses the lines of the report (the same colors, near names, quantity field and search) and adds a "Excluir" link per line, a heading "Para resolver", the empty line "Nada para resolver." and two error lines. Each line is added to its import as soon as it is answered.
   - The link "Colar uma lista" on `/add-cards/csv` is the only way to the pasted-list page until S15 builds the entry.
+- S13, copy of mine, no check or mockup gives it:
+  - Search: "Nenhum deck encontrado.", "Não foi possível carregar os decks. Tente de novo.", "Não achamos esse deck." (an address with a key no file has), the label "Buscar o deck pelo nome do produto ou do herói" of the search field.
+  - Confirm: "Adicionando…", "Não foi possível adicionar. Tente de novo.", and the button "Adicionar outra caixa" that confirms the repeated box (C164 gives only the question).
 

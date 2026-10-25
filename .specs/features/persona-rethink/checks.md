@@ -557,34 +557,34 @@ Proof: `web unit src/routes/_auth/__tests__/-library.test.tsx -t "matches r3-pen
 
 ### S13 - Ready-made decks · 22 files · 33 KB · ~32k
 
-**C158** - Every file in the product folder parses as `{ key, name, kind, format, hero, cards: [{ cardIdentifier, printingCode, quantity }] }` with `kind` in `armory`, `blitz`, `silver_age`, every `cardIdentifier` and `printingCode` existing in the catalog with that printing, every `quantity` ≥ 1, and no card whose type is token; the Armory Deck: Kayo file has 26 distinct cards and no Agility or Might (AC 96, AC 97; door 8)
+**C158** - Every file in the product folder parses as `{ key, name, kind, format, hero, cards: [{ cardIdentifier, printingCode, quantity }] }` with `kind` in `armory`, `blitz`, `silver_age`, every `cardIdentifier` and `printingCode` existing in the catalog with that printing, every `quantity` ≥ 1, and no card whose type is token; the Armory Deck: Kayo file has 26 distinct cards and no Agility or Might (AC 96, AC 97; door 8) · done
 Proof: `api unit src/products/__tests__/product-files.spec.ts -t "every stored product file has the decklist shape and no tokens"`
 
-**C159** - `GET /api/products?q=kayo` answers `200` with only products that have a stored file, each with hero image, product name, one format label (Classic Constructed, Blitz or Silver Age) and card count; with a product file removed from the fixture folder that product is not returned; `q` matches the product name and the hero name (AC 92, AC 96; Surface `GET /api/products` `200`)
+**C159** - `GET /api/products?q=kayo` answers `200` with only products that have a stored file, each with hero image, product name, one format label (Classic Constructed, Blitz or Silver Age) and card count; with a product file removed from the fixture folder that product is not returned; `q` matches the product name and the hero name (AC 92, AC 96; Surface `GET /api/products` `200`) · done
 Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "searching products returns only stored decklists"`
 
-**C160** - `r3-product-search-phone` shows, in order: "‹ Adicionar cartas", "Qual deck você comprou?", "Armory Deck, Blitz Deck ou Silver Age.", the search field, and one row per result with hero image, product name and format label ("Armory Deck: Kayo" / "Classic Constructed"); no row carries a "Deck pronto" label (AC 92, AC 98)
+**C160** - `r3-product-search-phone` shows, in order: "‹ Adicionar cartas", "Qual deck você comprou?", "Armory Deck, Blitz Deck ou Silver Age.", the search field, and one row per result with hero image, product name and format label ("Armory Deck: Kayo" / "Classic Constructed"); no row carries a "Deck pronto" label (AC 92, AC 98) · done
 Proof: `web unit src/components/products/__tests__/ProductSearch.spec.tsx -t "matches r3-product-search-phone copy and order"`
 
-**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora.", and "Adicionar" (AC 93, AC 98)
+**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora.", and "Adicionar" (AC 93, AC 98) · done
 Proof: `web unit src/components/products/__tests__/ProductConfirm.spec.tsx -t "matches r3-product-confirm-phone copy and order"`
 
-**C162** - `POST /api/products/armory-kayo/import` with `addCards` and `createDeck` true answers `201` with a `source` of kind `product`, `productKey` `armory-kayo`, named "Armory Deck: Kayo", whose copies carry each card's `printingCode` from the file, and a `deckId` whose deck has the product's name, hero and format and the file's cards; with only `addCards` it returns no `deckId`, with only `createDeck` no `source` (AC 94)
+**C162** - `POST /api/products/armory-kayo/import` with `addCards` and `createDeck` true answers `201` with a `source` of kind `product`, `productKey` `armory-kayo`, named "Armory Deck: Kayo", whose copies carry each card's `printingCode` from the file, and a `deckId` whose deck has the product's name, hero and format and the file's cards; with only `addCards` it returns no `deckId`, with only `createDeck` no `source` (AC 94) · done
 Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "importing a product creates the import and the deck"`
 
-**C163** - A second import of the same product without `confirmRepeat` answers `409` with the first import's date and writes nothing; with `confirmRepeat: true` it answers `201` and names the import "Armory Deck: Kayo #2"; an unknown `productKey` answers `404` (AC 95; Surface `POST /api/products/:productKey/import` `201`, `404`, `409`)
+**C163** - A second import of the same product without `confirmRepeat` answers `409` with the first import's date and writes nothing; with `confirmRepeat: true` it answers `201` and names the import "Armory Deck: Kayo #2"; an unknown `productKey` answers `404` (AC 95; Surface `POST /api/products/:productKey/import` `201`, `404`, `409`) · done
 Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "a repeated product asks before a second box"`
 
-**C164** - On `409` the confirm screen asks "Você já adicionou Armory Deck: Kayo em <date>. Adicionar outra caixa?" with the date of the first import, and confirming resends with `confirmRepeat` (AC 95)
+**C164** - On `409` the confirm screen asks "Você já adicionou Armory Deck: Kayo em <date>. Adicionar outra caixa?" with the date of the first import, and confirming resends with `confirmRepeat` (AC 95) · done
 Proof: `web unit src/components/products/__tests__/ProductConfirm.spec.tsx -t "a repeated product asks before adding another box"`
 
-**C165** - The decklist reader, given a saved official decklist page (fixture HTML with "1x Kayo, Armed and Dangerous" and "3x Bare Fangs (red)"), returns each card with its quantity and pitch, maps each to the catalog's printing tagged with that product, leaves the token cards out, and returns every difference between the page and the catalog's printings for that product as a list (AC 97)
+**C165** - The decklist reader, given a saved official decklist page (fixture HTML with "1x Kayo, Armed and Dangerous" and "3x Bare Fangs (red)"), returns each card with its quantity and pitch, maps each to the catalog's printing tagged with that product, leaves the token cards out, and returns every difference between the page and the catalog's printings for that product as a list (AC 97) · done
 Proof: `api unit src/products/__tests__/official-decklist.parser.spec.ts -t "reads an official decklist, drops tokens and lists differences"`
 
-**C166** - The `products:import` command writes or replaces exactly one file named after the product key, prints each difference on its own line, and exits non-zero with the URL in its message when the fetch fails; root `package.json` has `products:import` and it builds the API then runs the API's CLI, as `prices:sync` does (AC 97; Observable `pnpm products:import`)
+**C166** - The `products:import` command writes or replaces exactly one file named after the product key, prints each difference on its own line, and exits non-zero with the URL in its message when the fetch fails; root `package.json` has `products:import` and it builds the API then runs the API's CLI, as `prices:sync` does (AC 97; Observable `pnpm products:import`) · done
 Proof: `api unit src/products/__tests__/products-import.cli.spec.ts -t "writes one product file, prints differences, and fails with the URL"`
 
-**C167** - `csv_source` has `productKey varchar NULL`, set only on imports of kind `product` (AC 94; door 6)
+**C167** - `csv_source` has `productKey varchar NULL`, set only on imports of kind `product` (AC 94; door 6) · done
 Proof: `api int src/database/migrations/__tests__/import-kinds-and-pending.migration.int-spec.ts -t "csv_source gains a nullable productKey"`
 
 ### S14 - A Fabrary deck asks whose cards they are · 22 files · 123 KB · ~37k

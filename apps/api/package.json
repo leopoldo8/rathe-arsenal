@@ -20,7 +20,8 @@
     "chat:grant": "node --enable-source-maps dist/chat/chat-grant.cli.js",
     "chat:probe": "node --enable-source-maps dist/chat/probe-chat.js",
     "chat:eval": "node --enable-source-maps dist/chat/eval/chat-eval.cli.js",
-    "prices:sync": "node --enable-source-maps dist/prices/price-sync.cli.js"
+    "prices:sync": "node --enable-source-maps dist/prices/price-sync.cli.js",
+    "products:import": "node --enable-source-maps dist/products/products-import.cli.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.1027.0",

@@ -57,7 +57,7 @@ function DecksNewPage(): React.ReactElement {
       </header>
 
       <div className={styles.options}>
-        <Link to="/add-cards" className={optionStyles.option}>
+        <Link to="/add-cards/product" className={optionStyles.option}>
           <OptionHead icon="box" title={t('decks.newDeckBuyReady')} />
           <span className={optionStyles.chevron} aria-hidden="true">
             ›

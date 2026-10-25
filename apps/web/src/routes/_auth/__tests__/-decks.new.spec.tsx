@@ -110,6 +110,12 @@ describe('DecksNewPage', () => {
     scratchMutateHolder.isPending = false;
   });
 
+  it('the ready-made row opens the search of the boxes', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: /Comprei um deck pronto/ })).toHaveAttribute('href', '/add-cards/product');
+  });
+
   it('three ways to start a deck', () => {
     renderPage();
 

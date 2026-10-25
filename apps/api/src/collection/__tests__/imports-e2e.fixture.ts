@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
@@ -26,7 +26,10 @@ export class ImportsFixture {
     private readonly label: string,
   ) {}
 
-  static async boot(label: string): Promise<ImportsFixture> {
+  static async boot(
+    label: string,
+    configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+  ): Promise<ImportsFixture> {
     process.env['NODE_ENV'] = 'development';
     process.env['DATABASE_URL'] =
       process.env['DATABASE_URL'] ?? 'postgresql://postgres:dev@localhost:5432/rathe_arsenal';
@@ -37,7 +40,7 @@ export class ImportsFixture {
     process.env['APP_BASE_URL'] = 'http://localhost:5173';
     process.env['PORT'] = '0';
     jest.spyOn(ThrottlerGuard.prototype, 'canActivate').mockResolvedValue(true);
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] })).compile();
     const app = moduleRef.createNestApplication();
     configureHttpApp(app);
     await app.listen(0, '127.0.0.1');

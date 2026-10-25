@@ -29,6 +29,7 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'versions of an import', path: ({ sourceId }) => `/library-csv-sources/${sourceId}/versions` },
   { name: 'pasted list', path: () => '/add-cards/list' },
   { name: 'spreadsheet', path: () => '/add-cards/sheet' },
+  { name: 'ready-made decks', path: () => '/add-cards/product' },
   { name: 'lines to resolve', path: () => '/library-pending' },
 ];
 
