@@ -180,6 +180,28 @@
   `LegalityBadge.spec.tsx` and `format-reasons.spec.ts` (new params).
 - C29's proof also reads `GET /api/decks` (the home list) for the `Draft` deck, since the list path computes the same verdict.
 
+### S4 (batch 5)
+
+- C33 stays unmarked: its fourth row (a Classic Constructed card at 2 in the deck and 1 in the inventory) needs the inventory, which S5 builds.
+  The first three rows and a card at 3 in Classic Constructed are proven in `DeckCanvas.edit.spec.tsx`; the S5 builder adds the inventory row and marks C33.
+- The browser runs the engine's own rules: `apps/web/engine-legality-alias.ts` maps `@rathe-arsenal/engine/legality` to the engine's legality source (vite, vitest and `tsconfig` paths), so only the rules are bundled and the 17 MB card package is not.
+  The browser holds the card facts the rules read: `restrictedFormats`, `legalOverrides`, `specializations` and `legendary` now come from `/catalog/search` and from the deck's breakdown entries (`cardLegalityFacts` in the API), so a card legal by an override or a specialization is not flagged in the browser while the server calls it legal.
+  A draft card whose facts did not load (a card added, then restored from `localStorage`) is assumed legal in the format, as the old client check did.
+- The editor's "Cartas ilegais" panel and the sidebar badge now read the engine's verdict on the draft (`cascadeFromLegality`, `toDeckLegality`); `useCascadeCheck` the hook is no longer used by any screen (its spec and `cascadeReasonLabel` stay).
+- The stage labels in pt-BR changed ("Construindo" to "Montando", "Ativo" to "Jogando") because C48 reads "Etapa: Montando"; `StatusDropdown.spec.tsx` followed. S6 owns the rest of the stage rule. The back link reads "‹ Decks".
+- The verdict row (format chip, "Compartilhar", the red chip, "Etapa: ...") sits in the editor header below the name and keeps "Cancelar", "Salvar" and the status control, which the mockup does not draw but the editor needs. Hero, weapon and equipment rows keep a small remove button; the deck rows hide theirs under 640 px (the "-" at 1 removes).
+- The draft is `null` until the player edits, so server data that changes under an untouched draft replaces it and nothing is written to `localStorage` (C41); a draft restored from `localStorage` counts as edited.
+  A partly owned card arrives as two entries and the hook sums them into one row (C42).
+- C43: "Cancelar" on a deck created in this visit (router state `justCreated`) with no cards calls `DELETE /api/decks/:id/permanent` and goes back in history, also when the call fails.
+  That route is S8's (C91): until it lands the call answers `404`, the empty deck stays, and the player still goes back.
+- C44: `automaticDeckName` is shared by deck creation, `PATCH` and `PUT`; a format change renames only a deck that still carries the automatic name, and a name sent in the same `PATCH` wins.
+- C36 and C40 live in `tests/mobile/deck-edit-rules-bar.spec.ts` (the `mobile-*` projects only match `tests/mobile`), same test names. C43's proof sits in `DeckCanvas.edit.spec.tsx` with the real header.
+- C45 is proven by the int-spec the check names (controller passes quantity 2 through) and by `deck-composition-save.e2e-spec.ts` against Postgres (stored quantity 2, verdict `illegal`).
+- C46 as specified passes only after `deckEdit.deleteConfirmDesc` said "apagados" instead of "serão removidos"; the real offender, the `decks` namespace's "Ao salvar, elas são removidas", was reworded and has its own test.
+- Existing tests changed with reversed behaviour: the Fabrary link tests (`fabrary.net`), `decks-deckId-mutations.spec.tsx` (router mock gained `useRouter` and `useRouterState`), `StatusDropdown.spec.tsx`, `decks.service.spec.ts` (breakdown mock card gained `keywords`), `decks.service.update-meta.spec.ts` (the format test gives the stored deck).
+- Two web e2e proofs changed with the new rows: `account-flow` "a session that ends mid-edit" lowers the first row's quantity instead of raising it (that row sits at the Classic Constructed limit, so its "+" is disabled), and the `deck-detail-edit` visual baseline was regenerated.
+- Noticed, not touched: `CardRowLegalityWarning` and the `illegalCardIds` props of `EditableCardRow` are unused; `GET /api/decks/:id` still reads the stored `hero` display name for the automatic name.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

@@ -96,7 +96,7 @@ export function DeckStatusStrip({
           )}
           {showFabrary && (
             <a
-              href={`https://fabrary.com/decks/${fabraryUlid}`}
+              href={`https://fabrary.net/decks/${fabraryUlid}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.fabrary}

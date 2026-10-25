@@ -1,6 +1,11 @@
 import type { IDeckDetailResponse } from '../../api/deck-detail';
 import type { ICompositionDraftInitialPayload } from '../../hooks/useCompositionDraft';
 
+/** True for the deck page opened right after the deck was created, with nothing in it yet. */
+export function isJustCreatedState(state: unknown): boolean {
+  return typeof state === 'object' && state !== null && (state as { justCreated?: unknown }).justCreated === true;
+}
+
 export function buildDraftInitialPayload(
   deck: Pick<IDeckDetailResponse, 'heroIdentifier' | 'format'>,
   snapshot: IDeckDetailResponse['latestSnapshot'],
@@ -26,6 +31,10 @@ export function buildDraftInitialPayload(
       legalFormats: entry.legalFormats ?? [],
       legalHeroes: entry.legalHeroes ?? [],
       bannedFormats: entry.bannedFormats ?? [],
+      ...(entry.restrictedFormats === undefined ? {} : { restrictedFormats: entry.restrictedFormats }),
+      ...(entry.legalOverrides === undefined ? {} : { legalOverrides: entry.legalOverrides }),
+      ...(entry.specializations === undefined ? {} : { specializations: entry.specializations }),
+      ...(entry.legendary === undefined ? {} : { legendary: entry.legendary }),
     })),
   };
 }

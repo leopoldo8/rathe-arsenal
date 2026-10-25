@@ -21,8 +21,8 @@ export const decks = {
   backToHome: 'Voltar ao início',
   trackFabraryDeck: 'Importar um deck do Fabrary',
   // DeckDetailHeader
-  backToDecksAria: 'Voltar ao início',
-  backToDecksLabel: '← Início',
+  backToDecksAria: 'Voltar para os decks',
+  backToDecksLabel: '‹ Decks',
   cancel: 'Cancelar',
   cancelEditAria: 'Cancelar edição e voltar à visualização',
   save: 'Salvar',
@@ -100,8 +100,8 @@ export const decks = {
   // SaveCascadeConfirmModal
   illegalCardsInDeck_one: '{{count}} carta ilegal neste deck',
   illegalCardsInDeck_other: '{{count}} cartas ilegais neste deck',
-  saveCascadeDesc_one: 'Este deck tem {{count}} carta ilegal. Ao salvar, ela é removida.',
-  saveCascadeDesc_other: 'Este deck tem {{count}} cartas ilegais. Ao salvar, elas são removidas.',
+  saveCascadeDesc_one: 'Este deck tem {{count}} carta que não vale neste formato. Ela fica no deck até você tirá-la.',
+  saveCascadeDesc_other: 'Este deck tem {{count}} cartas que não valem neste formato. Elas ficam no deck até você tirá-las.',
   confirmSave: 'Salvar mesmo assim',
   // ShoppingPanel
   shoppingList: 'Lista de compras',
@@ -115,9 +115,9 @@ export const decks = {
   showDetails: 'Mostrar detalhes',
   // Status labels
   statusIdea: 'Ideia',
-  statusBuilding: 'Construindo',
+  statusBuilding: 'Montando',
   statusReady: 'Pronto',
-  statusActive: 'Ativo',
+  statusActive: 'Jogando',
   statusRetired: 'Aposentado',
   // StatusDropdown
   changeStatusAria: 'Mudar status do deck, atualmente {{label}}',

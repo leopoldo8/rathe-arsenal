@@ -21,8 +21,8 @@ export const decks = {
   backToHome: 'Back to home',
   trackFabraryDeck: 'Import a Fabrary deck',
   // DeckDetailHeader
-  backToDecksAria: 'Back to home',
-  backToDecksLabel: '← Home',
+  backToDecksAria: 'Back to decks',
+  backToDecksLabel: '‹ Decks',
   cancel: 'Cancel',
   cancelEditAria: 'Cancel editing and return to view',
   save: 'Save',
@@ -100,8 +100,8 @@ export const decks = {
   // SaveCascadeConfirmModal
   illegalCardsInDeck_one: '{{count}} illegal card in this deck',
   illegalCardsInDeck_other: '{{count}} illegal cards in this deck',
-  saveCascadeDesc_one: 'This deck has {{count}} illegal card. Saving will remove it automatically.',
-  saveCascadeDesc_other: 'This deck has {{count}} illegal cards. Saving will remove them automatically.',
+  saveCascadeDesc_one: 'This deck has {{count}} card that is not valid in this format. It stays in the deck until you take it out.',
+  saveCascadeDesc_other: 'This deck has {{count}} cards that are not valid in this format. They stay in the deck until you take them out.',
   confirmSave: 'Confirm save',
   // ShoppingPanel
   shoppingList: 'Shopping list',

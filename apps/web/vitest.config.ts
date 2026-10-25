@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
 import svgr from 'vite-plugin-svgr';
 import type { UserConfig as VitestUserConfig } from 'vitest/config';
+import { engineLegalityAlias } from './engine-legality-alias';
 
 /**
  * Vitest configuration for `@rathe-arsenal/web`.
@@ -46,6 +47,7 @@ const test: VitestUserConfig['test'] = {
 };
 
 export default defineConfig({
+  resolve: { alias: engineLegalityAlias },
   plugins,
   // @ts-expect-error Vite 6's defineConfig does not know about Vitest's
   // `test` field, but Vitest reads it at runtime. The triple-slash reference

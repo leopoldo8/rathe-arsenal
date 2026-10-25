@@ -77,43 +77,64 @@
   gap: var(--ra-space-6);
 }
 
-.editSlotGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.loadout {
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
 }
 
-.editSlotGroupHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--ra-space-2);
-  margin-bottom: var(--ra-space-3);
-  padding-bottom: var(--ra-space-2);
-  border-bottom: 1px solid var(--ra-border-subtle);
-}
-
-.editSlotGroupName {
-  font-family: var(--ra-font-ui);
-  font-size: var(--ra-text-caption);
-  font-weight: var(--ra-weight-semibold);
-  color: var(--ra-fg-muted);
-}
-
-.editSlotGroupCount {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-caption);
-  color: var(--ra-accent-body);
-  letter-spacing: 0.04em;
-  margin-left: auto;
-}
-
-.editCardList {
+.loadoutList {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: grid;
-  /* Tile width matches CardArt size="md" (120px) + tile padding. The minmax
-     keeps tiles from stretching too wide on big screens. */
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--ra-space-3);
+}
+
+.loadoutList + .loadoutList {
+  border-block-start: 1px solid var(--ra-border-subtle);
+}
+
+.deckSection {
+  background: var(--ra-bg-surface);
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-md);
+  overflow: hidden;
+}
+
+.deckHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ra-space-2);
+  padding: var(--ra-space-3) var(--ra-space-4);
+  border-block-end: 1px solid var(--ra-border-subtle);
+}
+
+.deckHeading {
+  margin: 0;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.deckSize {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-caption);
+  letter-spacing: var(--ra-track-caps);
+  text-transform: uppercase;
+  color: var(--ra-fg-muted);
+}
+
+.deckList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.deckList > li:last-child {
+  border-block-end: 0;
 }

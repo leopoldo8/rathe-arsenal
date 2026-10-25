@@ -920,6 +920,7 @@ const trackedDeck = result.trackedDecks[0]!;
             name: id,
             legalFormats: ['Classic Constructed'],
             legalHeroes: ['Kayo'],
+            keywords: [],
             bannedFormats: id === 'card-b' ? ['Blitz'] : undefined,
           }) as unknown as ReturnType<typeof catalogService.getCard>,
       );

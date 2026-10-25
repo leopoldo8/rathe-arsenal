@@ -15,17 +15,43 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DeckCanvas } from '../DeckCanvas';
+import { DeckDetailHeader } from '../DeckDetailHeader';
+import { cascadeFromLegality, computeDraftLegality } from '../../../lib/draft-legality';
+import { blitzDraft, draftCard, RHINAR } from './rulesChecklistTestData';
 import type { IBreakdown } from '../../../api/deck-detail';
-import type { ICompositionDraft } from '../../../hooks/useCompositionDraft';
+import type { ICompositionDraft, TDraftSlot } from '../../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../../hooks/useCascadeCheck';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
+
+const spies = vi.hoisted(() => ({
+  realRows: false,
+  apiFetch: vi.fn(),
+  navigate: vi.fn(),
+  back: vi.fn(),
+}));
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/home">{children}</a>,
+  useNavigate: () => spies.navigate,
+  useRouter: () => ({ history: { back: spies.back } }),
+}));
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => spies.apiFetch };
+});
+vi.mock('../DeckNameInline', () => ({ DeckNameInline: ({ name }: { name: string }) => <h1>{name}</h1> }));
+vi.mock('../StatusDropdown', () => ({ StatusDropdown: () => null }));
+vi.mock('../TagChipRow', () => ({ TagChipRow: () => null }));
+vi.mock('../DeckOverflowMenu', () => ({ DeckOverflowMenu: () => null }));
+vi.mock('../ShareDialog', () => ({ ShareDialog: () => null }));
 
 vi.mock('../../card-art/CardArt', () => ({
   CardArt: ({ name }: { name: string }) => <div data-testid={`card-art-${name}`}>{name}</div>,
@@ -121,22 +147,30 @@ vi.mock('../../deck-card-search/DeckCardSearchAutocomplete', () => ({
     </div>
   ),
 }));
-vi.mock('../EditableCardRow', () => ({
-  EditableCardRow: ({
-    cardIdentifier,
-    name,
-    quantity,
-    slot,
-    onQuantityChange,
-    onRemove,
-  }: {
-    cardIdentifier: string;
-    name: string;
-    quantity: number;
-    slot: string;
-    onQuantityChange: (id: string, slot: string, qty: number) => void;
-    onRemove: (id: string, slot: string) => void;
-  }) => (
+vi.mock('../EditableCardRow', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../EditableCardRow')>();
+  return {
+    EditableCardRow: (props: React.ComponentProps<typeof actual.EditableCardRow>) =>
+      spies.realRows ? <actual.EditableCardRow {...props} /> : <RowDouble {...props} />,
+  };
+});
+
+function RowDouble({
+  cardIdentifier,
+  name,
+  quantity,
+  slot,
+  onQuantityChange,
+  onRemove,
+}: {
+  cardIdentifier: string;
+  name: string;
+  quantity: number;
+  slot: TDraftSlot;
+  onQuantityChange: (id: string, slot: TDraftSlot, qty: number) => void;
+  onRemove: (id: string, slot: TDraftSlot) => void;
+}) {
+  return (
     <li data-testid={`editable-row-${cardIdentifier}`} data-slot={slot}>
       {name} (qty: {quantity})
       <button
@@ -162,8 +196,8 @@ vi.mock('../EditableCardRow', () => ({
         ×
       </button>
     </li>
-  ),
-}));
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -440,3 +474,200 @@ describe('DeckCanvas Edit mode — mobile layout', () => {
     expect(screen.queryByTestId('format-dropdown-mock')).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Tests — the rules of the draft, with the real rows and the real header
+// ---------------------------------------------------------------------------
+
+function Editor({ initial, format = 'Blitz' }: { initial: ICompositionDraft; format?: string }): React.ReactElement {
+  const [draft, setDraft] = React.useState<ICompositionDraft>({ ...initial, format });
+  const legality = React.useMemo(() => computeDraftLegality(draft, RHINAR), [draft]);
+  const setQuantity = (cardIdentifier: string, quantity: number): void =>
+    setDraft((current) => ({
+      ...current,
+      cards: current.cards.map((card) => (card.cardIdentifier === cardIdentifier ? { ...card, quantity } : card)),
+    }));
+
+  return (
+    <QueryClientProvider client={new QueryClient()}>
+      <DeckDetailHeader
+        deckId={7}
+        deckName="Rhinar - Blitz"
+        status="building"
+        tags={[]}
+        mode="edit"
+        editor={{ format: draft.format, legality, missingCount: 0 }}
+        discardOnCancel={false}
+      />
+      <button type="button" data-testid="raise-pack-hunt" onClick={() => setQuantity('pack-hunt-red', 2)} />
+      <DeckCanvas
+        compositionDraft={draft}
+        cascadeCheck={cascadeFromLegality(legality)}
+        legality={legality}
+        heroName="Rhinar"
+        onUpdateQuantity={(cardIdentifier, _slot, quantity) => setQuantity(cardIdentifier, quantity)}
+      />
+    </QueryClientProvider>
+  );
+}
+
+describe('DeckCanvas Edit mode — the rules of the draft', () => {
+  beforeEach(() => {
+    spies.realRows = true;
+  });
+  afterEach(() => {
+    spies.realRows = false;
+  });
+
+  it('the verdict follows the draft before saving', async () => {
+    const putCalls = spies.apiFetch;
+    putCalls.mockReset();
+    render(<Editor initial={blitzDraft({ deckCards: 40, packHuntCopies: 1 })} />);
+    expect(screen.queryByTestId('editor-verdict')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('raise-pack-hunt'));
+
+    expect(screen.getByTestId('editor-verdict')).toHaveTextContent('Não vale no Blitz');
+    expect(putCalls).not.toHaveBeenCalled();
+  });
+
+  it('the plus button is disabled at the limit with its reason', () => {
+    const cases = [
+      { label: 'a Blitz card at 1', format: 'Blitz', facts: {}, quantity: 1, reason: 'Máximo 1 no Blitz' },
+      { label: 'a Legendary card at 1', format: 'Blitz', facts: { legendary: true }, quantity: 1, reason: 'Máximo 1: carta lendária' },
+      {
+        label: 'a restricted card at 1 in Living Legend',
+        format: 'Living Legend',
+        facts: { restrictedFormats: ['Living Legend'], legalFormats: ['Living Legend'] },
+        quantity: 1,
+        reason: 'Máximo 1 em Living Legend: carta restrita',
+      },
+      {
+        label: 'a Classic Constructed card at 3',
+        format: 'Classic Constructed',
+        facts: { legalFormats: ['Classic Constructed'] },
+        quantity: 3,
+        reason: 'Máximo 3 no Classic Constructed',
+      },
+    ];
+
+    for (const { label, format, facts, quantity, reason } of cases) {
+      const draft = makeDraft([draftCard({ cardIdentifier: 'subject', name: 'Subject', quantity, ...facts })]);
+      const { unmount } = render(<Editor initial={draft} format={format} />);
+
+      const plus = screen.getByTestId('increment-subject');
+      expect(plus, label).toBeDisabled();
+      expect(plus, label).toHaveAccessibleDescription(reason);
+      unmount();
+    }
+  });
+
+  it('keeps the plus button enabled below the limit', () => {
+    const draft = makeDraft([draftCard({ cardIdentifier: 'subject', name: 'Subject', quantity: 2, legalFormats: ['Classic Constructed'] })]);
+
+    render(<Editor initial={draft} format="Classic Constructed" />);
+
+    expect(screen.getByTestId('increment-subject')).toBeEnabled();
+  });
+
+  it('a row over the limit says what to take out', () => {
+    render(<Editor initial={blitzDraft({ deckCards: 31, packHuntCopies: 2 })} />);
+
+    const row = screen.getByTestId('editable-card-row-pack-hunt-red');
+    expect(within(row).getByText('2 cópias · o Blitz permite 1 · tire 1')).toBeInTheDocument();
+    expect(within(row).getByText('Máximo 1 no Blitz')).toBeInTheDocument();
+    expect(within(row).getByText('Ação · custo 2')).toBeInTheDocument();
+  });
+
+  it('matches r3-editor-phone', () => {
+    const { container } = render(<Editor initial={blitzDraft({ deckCards: 31, packHuntCopies: 2 })} />);
+
+    const text = container.textContent ?? '';
+    const inOrder = [
+      '‹ Decks',
+      'Rhinar - Blitz',
+      'Blitz',
+      'Compartilhar',
+      'Não vale no Blitz',
+      'Etapa: Montando',
+      'Rhinar',
+      'Herói',
+      '1x Romping Club',
+      'Arma',
+      '1x Nullrune Hood',
+      '1x Scabskin Leathers',
+      "1x Fyendal's Spring Tunic",
+      'Equipamento',
+      'Deck',
+      '31 de 40 cartas no deck · coloque mais 9',
+      'Pack Hunt (Vermelho)',
+      'Ação · custo 2',
+      '2 cópias · o Blitz permite 1 · tire 1',
+      'Máximo 1 no Blitz',
+      '31 de 40 cartas · 1 problema',
+    ];
+    let cursor = -1;
+    for (const [index, part] of inOrder.entries()) {
+      const at = text.indexOf(part, cursor + 1);
+      expect(at, `"${part}" after "${inOrder[index - 1] ?? 'the start'}"`).toBeGreaterThan(cursor);
+      cursor = at;
+    }
+    const lastBlock = container.querySelector('[data-testid="deck-canvas-edit"]')?.lastElementChild;
+    expect(lastBlock).toBe(screen.getByTestId('rules-bar'));
+  });
+});
+
+describe('DeckDetailHeader — Cancel on a deck created in this visit with no cards', () => {
+  function renderHeader(discardOnCancel: boolean): void {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+        <DeckDetailHeader
+          deckId={7}
+          deckName="Rhinar - Blitz"
+          status="idea"
+          tags={[]}
+          mode="edit"
+          isDirty={false}
+          discardOnCancel={discardOnCancel}
+        />
+      </QueryClientProvider>,
+    );
+  }
+
+  beforeEach(() => {
+    spies.apiFetch.mockReset();
+    spies.apiFetch.mockResolvedValue(undefined);
+    spies.back.mockReset();
+    spies.navigate.mockReset();
+  });
+
+  it('cancel on a new empty deck discards it and goes back', async () => {
+    renderHeader(true);
+
+    await userEvent.click(screen.getByTestId('deck-detail-cancel-btn'));
+
+    await vi.waitFor(() => expect(spies.back).toHaveBeenCalledTimes(1));
+    expect(spies.apiFetch).toHaveBeenCalledWith('/decks/7/permanent', { method: 'DELETE' });
+    expect(spies.navigate).not.toHaveBeenCalled();
+  });
+
+  it('still goes back when the discard fails, leaving the deck as it was', async () => {
+    spies.apiFetch.mockRejectedValue(new Error('not found'));
+    renderHeader(true);
+
+    await userEvent.click(screen.getByTestId('deck-detail-cancel-btn'));
+
+    await vi.waitFor(() => expect(spies.back).toHaveBeenCalledTimes(1));
+  });
+
+  it('cancel on any other deck leaves edit mode and deletes nothing', async () => {
+    renderHeader(false);
+
+    await userEvent.click(screen.getByTestId('deck-detail-cancel-btn'));
+
+    expect(spies.navigate).toHaveBeenCalledTimes(1);
+    expect(spies.apiFetch).not.toHaveBeenCalled();
+    expect(spies.back).not.toHaveBeenCalled();
+  });
+});
+

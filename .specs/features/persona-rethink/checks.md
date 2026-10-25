@@ -152,59 +152,59 @@ Proof: `api e2e src/decks/__tests__/deck-legality-read.e2e-spec.ts -t "a saved b
 
 ### S4 - The editor shows the draft's verdict and the whole checklist · 17 files · 149 KB · ~43k
 
-**C32** - In edit mode on a saved legal Blitz deck, raising Pack Hunt (Vermelho) from 1 to 2 changes the header chip to "Não vale no Blitz" before any save, and no `PUT /decks/:deckId` is called (AC 18)
+**C32** - In edit mode on a saved legal Blitz deck, raising Pack Hunt (Vermelho) from 1 to 2 changes the header chip to "Não vale no Blitz" before any save, and no `PUT /decks/:deckId` is called (AC 18) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "the verdict follows the draft before saving"`
 
 **C33** - The "+" of a card at its limit is disabled with one reason shown: "Máximo 1 no Blitz" (Blitz, 1 copy), "Máximo 1: carta lendária" (Legendary card at 1), "Máximo 1 em Living Legend: carta restrita" (restricted card at 1 in Living Legend); in Classic Constructed a card at 2 in the deck and 1 in the inventory has its "+" disabled; table-driven over 4 rows (AC 19)
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "the plus button is disabled at the limit with its reason"`
 
-**C34** - A Blitz row at 2 copies shows "2 cópias · o Blitz permite 1 · tire 1" (AC 20)
+**C34** - A Blitz row at 2 copies shows "2 cópias · o Blitz permite 1 · tire 1" (AC 20) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "a row over the limit says what to take out"`
 
-**C35** - The bottom bar reads "31 de 40 cartas · 1 problema" for 31 cards and one copy problem, and "32 de 40 cartas · nenhum problema" for 32 cards and no rule problem (AC 21)
+**C35** - The bottom bar reads "31 de 40 cartas · 1 problema" for 31 cards and one copy problem, and "32 de 40 cartas · nenhum problema" for 32 cards and no rule problem (AC 21) · done
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "the bar counts cards and rule problems"`
 
-**C36** - On a 390 px phone, after scrolling the editor to its last row, the bar is still inside the viewport (AC 21)
+**C36** - On a 390 px phone, after scrolling the editor to its last row, the bar is still inside the viewport (AC 21) · done
 Proof: `web e2e --project=mobile-390 tests/e2e/deck-edit-flow.spec.ts -g "the rules bar stays visible while scrolling"`
 
-**C37** - The sheet for `r3-checklist-phone`'s deck lists, in order: "Herói: Rhinar joga Blitz" (green), "Todas as cartas são permitidas no Blitz" (green), "Cartas que você leva: 35 de 52" with "o deck, o inventário, a arma e os equipamentos; o herói não conta. No torneio isto se chama card pool." (green), "Cópias: Pack Hunt (Vermelho) tem 2, o Blitz permite 1" with "Ir para a carta" (red), "Tamanho: 31 de 40 cartas · coloque mais 9" (neutral), then "Para fechar: tire 1 Pack Hunt (Vermelho). O deck fica com 30, então coloque mais 10 cartas." and "Fechar" (AC 22, AC 29)
+**C37** - The sheet for `r3-checklist-phone`'s deck lists, in order: "Herói: Rhinar joga Blitz" (green), "Todas as cartas são permitidas no Blitz" (green), "Cartas que você leva: 35 de 52" with "o deck, o inventário, a arma e os equipamentos; o herói não conta. No torneio isto se chama card pool." (green), "Cópias: Pack Hunt (Vermelho) tem 2, o Blitz permite 1" with "Ir para a carta" (red), "Tamanho: 31 de 40 cartas · coloque mais 9" (neutral), then "Para fechar: tire 1 Pack Hunt (Vermelho). O deck fica com 30, então coloque mais 10 cartas." and "Fechar" (AC 22, AC 29) · done
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "matches r3-checklist-phone"`
 
-**C38** - With two rule problems the sheet lists both red lines at once (AC 22)
+**C38** - With two rule problems the sheet lists both red lines at once (AC 22) · done
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "every problem is listed at once"`
 
-**C39** - "Ir para a carta" closes nothing and moves focus to the Pack Hunt (Vermelho) row (AC 22)
+**C39** - "Ir para a carta" closes nothing and moves focus to the Pack Hunt (Vermelho) row (AC 22) · done
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "go to the card focuses its row"`
 
-**C40** - On a 390 x 844 phone the open sheet's height is between 40% and 50% of the viewport, the list above it stays visible, a scroll of the page leaves it open, and it closes by "Fechar" and by its handle (AC 22)
+**C40** - On a 390 x 844 phone the open sheet's height is between 40% and 50% of the viewport, the list above it stays visible, a scroll of the page leaves it open, and it closes by "Fechar" and by its handle (AC 22) · done
 Proof: `web e2e --project=mobile-390 tests/e2e/deck-edit-flow.spec.ts -g "the checklist sheet opens at about half height and closes only by handle or Fechar"`
 
-**C41** - With no edit made, a new server payload replaces the draft's cards, and `localStorage.setItem` is not called for the draft key (AC 23)
+**C41** - With no edit made, a new server payload replaces the draft's cards, and `localStorage.setItem` is not called for the draft key (AC 23) · done
 Proof: `web unit src/hooks/__tests__/useCompositionDraft.persistence.spec.ts -t "a pristine draft resets to new server data without writing storage"`
 
-**C42** - A payload with a partly owned card (Pack Hunt (Red), quantity 3, 1 owned) gives one draft row for that card and slot with quantity 3 (AC 24)
+**C42** - A payload with a partly owned card (Pack Hunt (Red), quantity 3, 1 owned) gives one draft row for that card and slot with quantity 3 (AC 24) · done
 Proof: `web unit src/hooks/__tests__/useCompositionDraft.spec.ts -t "one draft row per card and slot for a partly owned card"`
 
-**C43** - "Cancelar" on a deck created in this visit with no cards calls `DELETE /decks/:deckId/permanent` and navigates to the location the player came from (AC 25)
+**C43** - "Cancelar" on a deck created in this visit with no cards calls `DELETE /decks/:deckId/permanent` and navigates to the location the player came from (AC 25) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "cancel on a new empty deck discards it and goes back"`
 
-**C44** - Changing the format of a deck named "Rhinar - Blitz" (the automatic name) to Silver Age renames it "Rhinar - Silver Age"; a deck named "Meu Rhinar" keeps its name (AC 26)
+**C44** - Changing the format of a deck named "Rhinar - Blitz" (the automatic name) to Silver Age renames it "Rhinar - Silver Age"; a deck named "Meu Rhinar" keeps its name (AC 26) · done
 Proof: `api unit src/decks/__tests__/decks.service.update-meta.spec.ts -t "the automatic name follows the format"`
 
-**C45** - `PUT /api/decks/:deckId` with a Blitz composition holding Pack Hunt (Red) x2 answers `200`, stores quantity 2, and returns `legality.category` `illegal` (AC 27)
+**C45** - `PUT /api/decks/:deckId` with a Blitz composition holding Pack Hunt (Red) x2 answers `200`, stores quantity 2, and returns `legality.category` `illegal` (AC 27) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "a deck with problems is saved as is"`
 
-**C46** - No pt-BR value of the `deckDetail` and `deckEdit` namespaces matches `/ser(á|ão) removid|vamos tirar|tiraremos/i` (AC 27)
+**C46** - No pt-BR value of the `deckDetail` and `deckEdit` namespaces matches `/ser(á|ão) removid|vamos tirar|tiraremos/i` (AC 27) · done
 Proof: `web unit src/i18n/__tests__/catalog-parity.spec.ts -t "no deck copy promises a removal"`
 
-**C47** - "Ver no Fabrary" in the sidebar and in the status strip points to `https://fabrary.net/decks/<ULID>` (AC 28)
+**C47** - "Ver no Fabrary" in the sidebar and in the status strip points to `https://fabrary.net/decks/<ULID>` (AC 28) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckStatusStrip.spec.tsx -t "the fabrary link uses fabrary.net"`
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailSidebar.spec.tsx -t "the fabrary link uses fabrary.net"`
 
-**C48** - The editor for `r3-editor-phone`'s deck shows, top to bottom: "‹ Decks", "Rhinar - Blitz", the chip "Blitz", "Compartilhar", the red chip "Não vale no Blitz", "Etapa: Montando"; the hero, weapon and three equipment rows; the heading "Deck" with "31 de 40 cartas no deck · coloque mais 9"; the Pack Hunt (Vermelho) row with "Ação · custo 2", "2 cópias · o Blitz permite 1 · tire 1", "Máximo 1 no Blitz" and its stepper at 2; and the bar last (AC 29)
+**C48** - The editor for `r3-editor-phone`'s deck shows, top to bottom: "‹ Decks", "Rhinar - Blitz", the chip "Blitz", "Compartilhar", the red chip "Não vale no Blitz", "Etapa: Montando"; the hero, weapon and three equipment rows; the heading "Deck" with "31 de 40 cartas no deck · coloque mais 9"; the Pack Hunt (Vermelho) row with "Ação · custo 2", "2 cópias · o Blitz permite 1 · tire 1", "Máximo 1 no Blitz" and its stepper at 2; and the bar last (AC 29) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckCanvas.edit.spec.tsx -t "matches r3-editor-phone"`
 
-**C49** - No pt-BR value of `deckDetail` contains "trocas de cartas"; the replacements are named "as substituições" (AC 29, copy rule 7)
+**C49** - No pt-BR value of `deckDetail` contains "trocas de cartas"; the replacements are named "as substituições" (AC 29, copy rule 7) · done
 Proof: `web unit src/i18n/__tests__/catalog-parity.spec.ts -t "replacements are as substituições"`
 
 ### S5 - The inventory · 20 files · 205 KB · ~57k

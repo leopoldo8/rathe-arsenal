@@ -55,6 +55,13 @@ export interface ISearchCardResult {
    * Always present — empty array when the card is not banned in any format.
    */
   readonly bannedFormats: readonly string[];
+  /** Formats where the card is limited to one copy (the Living Legend restricted list). */
+  readonly restrictedFormats: readonly string[];
+  /** Per-format hero scope overrides: the heroes that may play the card in that format. */
+  readonly legalOverrides: readonly { readonly format: string; readonly heroes: readonly string[] }[];
+  /** Heroes the card specializes in; only they can run it. */
+  readonly specializations: readonly string[];
+  readonly legendary: boolean;
 }
 
 export interface ISearchCardsResponse {

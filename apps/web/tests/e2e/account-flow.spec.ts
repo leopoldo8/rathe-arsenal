@@ -147,8 +147,8 @@ test('a session that ends mid-edit keeps the page and the draft', async ({ brows
   const row = page.locator('[data-testid^="editable-card-row-"]').first();
   const quantity = row.locator('[aria-live="polite"]');
   const before = Number(await quantity.textContent());
-  await row.locator('[data-testid^="increment-"]').click();
-  await expect(quantity).toHaveText(String(before + 1));
+  await row.locator('[data-testid^="decrement-"]').click();
+  await expect(quantity).toHaveText(String(before - 1));
 
   // Another device signs this session out.
   const token = (await context.cookies()).find((cookie) => cookie.name === 'ra_session')?.value ?? '';
@@ -167,7 +167,7 @@ test('a session that ends mid-edit keeps the page and the draft', async ({ brows
   await expect(sheet).toHaveCount(0);
   await expect(page).toHaveURL(new RegExp(`/decks/${readyDeckId}\\?edit=`));
   await expect(page.locator('[data-testid^="editable-card-row-"]').first().locator('[aria-live="polite"]')).toHaveText(
-    String(before + 1),
+    String(before - 1),
   );
   await context.close();
 });

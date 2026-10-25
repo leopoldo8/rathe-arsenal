@@ -356,6 +356,21 @@ export function usePutDeckMutation(deckId: number) {
 }
 
 /**
+ * Deletes a deck for good through DELETE /api/decks/:deckId/permanent. The editor uses it to drop a
+ * deck that was just created and never got a card, so it never reaches "Excluídos recentemente".
+ */
+export function useDiscardDeckMutation(deckId: number) {
+  const apiFetch = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/decks/${deckId}/permanent`, { method: 'DELETE' }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: DECKS_QUERY_KEY });
+    },
+  });
+}
+
+/**
  * Creates a scratch deck via POST /api/decks.
  * Returns the new deck so the caller can navigate to the edit view:
  *   navigate({ to: '/decks/$deckId', params: { deckId: String(deck.id) },

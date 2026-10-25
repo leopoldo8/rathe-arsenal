@@ -26,7 +26,7 @@ export const deckEdit = {
   deleteDesc: 'Removes the deck and all of its readiness data. This cannot be undone.',
   deleteButton: 'Delete deck',
   deleteConfirmTitle: 'Delete "{{name}}"?',
-  deleteConfirmDesc: 'The deck and all of its readiness data will be removed. This cannot be undone.',
+  deleteConfirmDesc: 'The deck and all of its readiness data will be deleted. This cannot be undone.',
   deleteConfirmAction: 'Delete deck',
   deleteConfirmCancel: 'Keep deck',
   deleting: 'Deleting…',

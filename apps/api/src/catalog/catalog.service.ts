@@ -13,6 +13,7 @@ import {
   ISearchCardsResponse,
 } from './dtos/search-cards.dto';
 import { IHeroListItem, IHeroListResponse } from './dtos/hero-list-item.dto';
+import { cardLegalityFacts } from './card-legality-facts';
 import {
   ICollectorCodeCard,
   ICollectorCodePrinting,
@@ -206,12 +207,9 @@ export class CatalogService {
       imageUrl: card.imageUrl
         ? { small: card.imageUrl.small, large: card.imageUrl.large }
         : null,
-      // Legality fields for the Edit-mode cascade check (U12/U17).
-      // Always serialized as arrays — never undefined — so the web client
-      // can safely iterate without null-guards.
-      legalFormats: [...card.legalFormats] as string[],
-      legalHeroes: [...card.legalHeroes] as string[],
-      bannedFormats: card.bannedFormats ? ([...card.bannedFormats] as string[]) : [],
+      // Legality fields for the Edit-mode verdict. Always serialized as
+      // arrays, never undefined, so the web client can iterate without null-guards.
+      ...cardLegalityFacts(card),
     }));
 
     return { results };

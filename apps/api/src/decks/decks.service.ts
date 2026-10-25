@@ -42,6 +42,18 @@ import { buildReplacementViews } from '../replacements/build-replacement-views';
 import { buildProtectedCopies, findBrokenReplacements } from '../replacements/replacement-copies';
 import { RecommendationQueueService } from '../recommendations/recommendation-queue.service';
 import { RecommendationsQueryService } from '../recommendations/recommendations-query.service';
+import { cardLegalityFacts, ICardLegalityFacts } from '../catalog/card-legality-facts';
+import { automaticDeckName, nameAfterFormatChange } from './automatic-deck-name';
+
+const NO_LEGALITY_FACTS: ICardLegalityFacts = {
+  legalFormats: [],
+  legalHeroes: [],
+  bannedFormats: [],
+  restrictedFormats: [],
+  legalOverrides: [],
+  specializations: [],
+  legendary: false,
+};
 
 interface IStoredSubstitutionMatch {
   readonly substitute?: { readonly cardIdentifier?: string };
@@ -97,19 +109,15 @@ export class DecksService {
   private enrichBreakdown(breakdown: unknown): IBreakdown {
     const enrichEntry = (entry: IBreakdownEntry): IBreakdownEntry => {
       let name = entry.name && entry.name.length > 0 ? entry.name : entry.cardIdentifier;
-      let legalFormats: string[] = [];
-      let legalHeroes: string[] = [];
-      let bannedFormats: string[] = [];
+      let facts: ICardLegalityFacts = NO_LEGALITY_FACTS;
       try {
         const card = this.catalogService.getCard(entry.cardIdentifier);
         if (card?.name && !(entry.name && entry.name.length > 0)) name = card.name;
-        legalFormats = [...(card?.legalFormats ?? [])];
-        legalHeroes = [...(card?.legalHeroes ?? [])];
-        bannedFormats = [...(card?.bannedFormats ?? [])];
+        if (card) facts = cardLegalityFacts(card);
       } catch {
         // Card retired from catalog — keep the identifier name and empty legality.
       }
-      return { ...entry, name, legalFormats, legalHeroes, bannedFormats };
+      return { ...entry, name, ...facts };
     };
 
     const raw = breakdown as {
@@ -669,7 +677,7 @@ export class DecksService {
     // Look up the hero display name from the catalog.
     const heroCard = this.catalogService.getCard(dto.heroIdentifier);
     const heroDisplayName = heroCard.name;
-    const name = `${heroDisplayName} - ${dto.format}`;
+    const name = automaticDeckName(heroDisplayName, dto.format);
 
     // Persist the deck row inside a transaction (no deck_card rows on creation).
     const saved = await this.dataSource.transaction(async (manager) => {
@@ -767,11 +775,15 @@ export class DecksService {
 
       // --- format (metadata only; readiness does not depend on it) ---
       if (dto.format !== undefined) {
-        const before = await manager.findOne(TrackedDeckEntity, { where: { id: deckId, userId }, select: ['id', 'format'] });
+        const before = await manager.findOne(TrackedDeckEntity, {
+          where: { id: deckId, userId },
+          select: ['id', 'format', 'hero', 'name'],
+        });
+        const followedName = dto.name === undefined && before !== null ? nameAfterFormatChange(before, dto.format) : undefined;
         await manager
           .createQueryBuilder()
           .update(TrackedDeckEntity)
-          .set({ format: dto.format })
+          .set({ format: dto.format, ...(followedName === undefined ? {} : { name: followedName }) })
           .where('id = :id AND "userId" = :userId', { id: deckId, userId })
           .execute();
         if (before !== null && before.format !== dto.format) {
@@ -952,12 +964,14 @@ export class DecksService {
 
         // Step 4: Update hero and format on the tracked_deck row.
         // updatedAt is bumped automatically by @UpdateDateColumn on the entity.
+        const followedName = nameAfterFormatChange(deck, dto.format);
         await manager.update(
           TrackedDeckEntity,
           { id: deckId },
           {
             heroIdentifier,
             format: dto.format,
+            ...(followedName === undefined ? {} : { name: followedName }),
           },
         );
 

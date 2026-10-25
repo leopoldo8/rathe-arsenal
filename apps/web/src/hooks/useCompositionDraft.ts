@@ -18,6 +18,7 @@ import {
   type TCompositionDraftPayload,
 } from './useCompositionDraft.schema';
 import type { ISearchCardResult } from '../api/catalog';
+import type { ICardLegalityExtraFacts, ICardLegalityOverride } from '../api/card-legality-facts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,7 +26,7 @@ import type { ISearchCardResult } from '../api/catalog';
 
 export type TDraftSlot = 'mainboard' | 'hero' | 'weapon' | 'equipment' | 'other';
 
-export interface IDraftCard {
+export interface IDraftCard extends ICardLegalityExtraFacts {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly quantity: number;
@@ -115,6 +116,10 @@ export interface ICompositionDraftInitialPayload {
     readonly legalFormats?: readonly string[];
     readonly legalHeroes?: readonly string[];
     readonly bannedFormats?: readonly string[];
+    readonly restrictedFormats?: readonly string[];
+    readonly legalOverrides?: readonly ICardLegalityOverride[];
+    readonly specializations?: readonly string[];
+    readonly legendary?: boolean;
   }>;
   readonly heroIdentifier: string | null;
   readonly format: string;
@@ -131,10 +136,12 @@ type TDraftAction =
   | { readonly type: 'UPDATE_QUANTITY'; readonly cardIdentifier: string; readonly slot: TDraftSlot; readonly quantity: number }
   | { readonly type: 'REMOVE_CARD'; readonly cardIdentifier: string; readonly slot: TDraftSlot }
   | { readonly type: 'REMOVE_ILLEGAL'; readonly illegalCardIds: ReadonlySet<string> }
-  | { readonly type: 'RESET'; readonly initial: ICompositionDraft }
+  | { readonly type: 'RESET' }
   | { readonly type: 'APPLY_DRAFT'; readonly payload: ICompositionDraft };
 
-function draftReducer(state: ICompositionDraft, action: TDraftAction): ICompositionDraft {
+type TEditAction = Exclude<TDraftAction, { readonly type: 'RESET' | 'APPLY_DRAFT' }>;
+
+function draftReducer(state: ICompositionDraft, action: TEditAction): ICompositionDraft {
   switch (action.type) {
     case 'SET_HERO':
       return { ...state, heroIdentifier: action.heroIdentifier };
@@ -190,12 +197,6 @@ function draftReducer(state: ICompositionDraft, action: TDraftAction): IComposit
         cards: state.cards.filter((c) => !action.illegalCardIds.has(c.cardIdentifier)),
       };
 
-    case 'RESET':
-      return action.initial;
-
-    case 'APPLY_DRAFT':
-      return action.payload;
-
     default:
       return state;
   }
@@ -247,21 +248,47 @@ export function inferSlotFromCardTypes(
   return 'mainboard';
 }
 
-function buildInitialDraft(payload: ICompositionDraftInitialPayload): ICompositionDraft {
+function extraFactsOf(card: ICardLegalityExtraFacts): ICardLegalityExtraFacts {
   return {
-    cards: payload.cards.map((c) => ({
-      cardIdentifier: c.cardIdentifier,
-      name: c.name,
-      quantity: c.quantity,
-      slot: normaliseDraftSlot(c.slot),
-      pitch: c.pitch,
-      cost: c.cost,
-      type: c.type,
-      imageUrl: c.imageUrl,
-      legalFormats: c.legalFormats ?? [],
-      legalHeroes: c.legalHeroes ?? [],
-      bannedFormats: c.bannedFormats ?? [],
-    })),
+    ...(card.restrictedFormats === undefined ? {} : { restrictedFormats: card.restrictedFormats }),
+    ...(card.legalOverrides === undefined ? {} : { legalOverrides: card.legalOverrides }),
+    ...(card.specializations === undefined ? {} : { specializations: card.specializations }),
+    ...(card.legendary === undefined ? {} : { legendary: card.legendary }),
+  };
+}
+
+/**
+ * One draft row per card and slot. A partly owned card arrives as two entries (the copies owned and
+ * the copies missing), and the editor works on the card's total.
+ */
+function buildInitialDraft(payload: ICompositionDraftInitialPayload): ICompositionDraft {
+  const rows = new Map<string, IDraftCard>();
+  for (const c of payload.cards) {
+    const slot = normaliseDraftSlot(c.slot);
+    const key = `${c.cardIdentifier}::${slot}`;
+    const existing = rows.get(key);
+    rows.set(
+      key,
+      existing === undefined
+        ? {
+            cardIdentifier: c.cardIdentifier,
+            name: c.name,
+            quantity: c.quantity,
+            slot,
+            pitch: c.pitch,
+            cost: c.cost,
+            type: c.type,
+            imageUrl: c.imageUrl,
+            legalFormats: c.legalFormats ?? [],
+            legalHeroes: c.legalHeroes ?? [],
+            bannedFormats: c.bannedFormats ?? [],
+            ...extraFactsOf(c),
+          }
+        : { ...existing, quantity: existing.quantity + c.quantity },
+    );
+  }
+  return {
+    cards: [...rows.values()],
     heroIdentifier: payload.heroIdentifier,
     format: payload.format,
   };
@@ -408,10 +435,21 @@ export function useCompositionDraft(
 ): ICompositionDraftResult {
   const initial = useMemo(() => buildInitialDraft(initialPayload), [initialPayload]);
 
-  const [draft, dispatch] = useReducer(draftReducer, initial);
+  // `null` until the player edits: the draft then is the server data itself, so new server data
+  // replaces it and a refetch never looks like an unsaved change.
+  const reducer = useCallback(
+    (state: ICompositionDraft | null, action: TDraftAction): ICompositionDraft | null => {
+      if (action.type === 'RESET') return null;
+      if (action.type === 'APPLY_DRAFT') return action.payload;
+      return draftReducer(state ?? initial, action);
+    },
+    [initial],
+  );
+  const [edited, dispatch] = useReducer(reducer, null);
+  const draft = edited ?? initial;
 
-  const isDirty = useMemo(() => isDraftDirty(initial, draft), [initial, draft]);
-  const changeCount = useMemo(() => computeChangeCount(initial, draft), [initial, draft]);
+  const isDirty = useMemo(() => edited !== null && isDraftDirty(initial, edited), [initial, edited]);
+  const changeCount = useMemo(() => (edited === null ? 0 : computeChangeCount(initial, edited)), [initial, edited]);
 
   // Debounced localStorage write — 500ms after the last change.
   // Skip when the draft is clean (matches the loaded payload). The mount-time
@@ -449,6 +487,7 @@ export function useCompositionDraft(
       legalFormats: card.legalFormats,
       legalHeroes: card.legalHeroes,
       bannedFormats: card.bannedFormats,
+      ...extraFactsOf(card),
     };
     dispatch({ type: 'ADD_CARD', card: draftCard });
   }, []);
@@ -469,8 +508,8 @@ export function useCompositionDraft(
   }, []);
 
   const reset = useCallback(() => {
-    dispatch({ type: 'RESET', initial });
-  }, [initial]);
+    dispatch({ type: 'RESET' });
+  }, []);
 
   const applyDraft = useCallback((payload: ICompositionDraft) => {
     dispatch({ type: 'APPLY_DRAFT', payload });

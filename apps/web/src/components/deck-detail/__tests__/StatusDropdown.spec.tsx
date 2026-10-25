@@ -88,7 +88,7 @@ describe('StatusDropdown — ARIA', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute(
       'aria-label',
-      'Mudar status do deck, atualmente Ativo',
+      'Mudar status do deck, atualmente Jogando',
     );
   });
 
@@ -96,7 +96,7 @@ describe('StatusDropdown — ARIA', () => {
     renderDropdown('building');
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-label',
-      'Mudar status do deck, atualmente Construindo',
+      'Mudar status do deck, atualmente Montando',
     );
   });
 
@@ -142,7 +142,7 @@ describe('StatusDropdown — happy path (opening dropdown)', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Ativo'),
+      el.textContent?.includes('Jogando'),
     );
     expect(activeOption).toBeDefined();
     fireEvent.click(activeOption!);
@@ -159,14 +159,14 @@ describe('StatusDropdown — happy path (opening dropdown)', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Ativo'),
+      el.textContent?.includes('Jogando'),
     );
     fireEvent.click(activeOption!);
 
     await waitFor(() => {
       expect(screen.getByRole('combobox')).toHaveAttribute(
         'aria-label',
-        'Mudar status do deck, atualmente Ativo',
+        'Mudar status do deck, atualmente Jogando',
       );
     });
   });
@@ -203,7 +203,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => screen.getAllByRole('option').length === 5);
 
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Ativo'),
+      el.textContent?.includes('Jogando'),
     );
     fireEvent.click(activeOption!);
 
@@ -232,7 +232,7 @@ describe('StatusDropdown — error path', () => {
     fireEvent.click(trigger);
     await waitFor(() => screen.getAllByRole('option').length === 5);
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Ativo'),
+      el.textContent?.includes('Jogando'),
     );
     fireEvent.click(activeOption!);
 
@@ -240,7 +240,7 @@ describe('StatusDropdown — error path', () => {
     await waitFor(() => {
       expect(trigger).toHaveAttribute(
         'aria-label',
-        'Mudar status do deck, atualmente Ativo',
+        'Mudar status do deck, atualmente Jogando',
       );
     });
 
@@ -260,7 +260,7 @@ describe('StatusDropdown — error path', () => {
     fireEvent.click(screen.getByRole('combobox'));
     await waitFor(() => screen.getAllByRole('option').length === 5);
     const activeOption = screen.getAllByRole('option').find((el) =>
-      el.textContent?.includes('Ativo'),
+      el.textContent?.includes('Jogando'),
     );
     fireEvent.click(activeOption!);
 

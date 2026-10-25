@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
+import type { ICardLegalityExtraFacts } from './card-legality-facts';
 
-export interface ISearchCardResult {
+export interface ISearchCardResult extends ICardLegalityExtraFacts {
   readonly cardIdentifier: string;
   readonly name: string;
   readonly pitch: number | null;

@@ -27,3 +27,32 @@ describe('i18n catalog parity', () => {
     expect(en).toEqual(pt);
   });
 });
+
+function valuesOf(namespace: Record<string, unknown>): string[] {
+  return Object.values(namespace).flatMap((value) =>
+    value !== null && typeof value === 'object' ? valuesOf(value as Record<string, unknown>) : [String(value)],
+  );
+}
+
+const PROMISES_A_REMOVAL = /ser(á|ão) removid|vamos tirar|tiraremos/i;
+
+describe('deck copy', () => {
+  it('no deck copy promises a removal', () => {
+    const copy = [...valuesOf(ptBR.deckDetail), ...valuesOf(ptBR.deckEdit)];
+
+    expect(copy.filter((value) => PROMISES_A_REMOVAL.test(value))).toEqual([]);
+  });
+
+  it('no deck copy of the decks namespace says saving removes a card', () => {
+    const removes = valuesOf(ptBR.decks).filter((value) => /(ao salvar|ao salvar,).*(removid|removida)|é removida|são removidas/i.test(value));
+
+    expect(removes).toEqual([]);
+  });
+
+  it('replacements are as substituições', () => {
+    const copy = valuesOf(ptBR.deckDetail);
+
+    expect(copy.filter((value) => /trocas? de cartas/i.test(value))).toEqual([]);
+  });
+});
+

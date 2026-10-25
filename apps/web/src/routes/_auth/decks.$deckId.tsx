@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,8 +22,9 @@ import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
-import { buildDraftInitialPayload } from './-deck-detail-draft';
-import { useCascadeCheck } from '../../hooks/useCascadeCheck';
+import { buildDraftInitialPayload, isJustCreatedState } from './-deck-detail-draft';
+import { cascadeFromLegality, computeDraftLegality, toDeckLegality } from '../../lib/draft-legality';
+import { summariseDeck } from '../../components/deck-detail/deckDetailModel';
 import { useHeroesQuery } from '../../api/catalog';
 import { useNavigationAwayGuard } from '../../hooks/useNavigationAwayGuard';
 import { DiscardChangesConfirm } from '../../components/deck-detail/DiscardChangesConfirm';
@@ -207,7 +208,7 @@ function DeckDetailPage(): React.ReactElement {
 
 // ---------------------------------------------------------------------------
 // DeckDetailPageWithData — sub-component that can safely call edit-mode hooks
-// (useCompositionDraft, useCascadeCheck) because it always renders with data.
+// (useCompositionDraft, the draft's verdict) because it always renders with data.
 // ---------------------------------------------------------------------------
 
 interface IDeckDetailPageWithDataProps {
@@ -238,7 +239,7 @@ interface IDeckDetailPageWithDataProps {
 
 /**
  * DeckDetailPageWithData — renders after data is confirmed loaded.
- * Calls Edit-mode hooks (useCompositionDraft, useCascadeCheck) unconditionally.
+ * Calls Edit-mode hooks (useCompositionDraft, the draft's verdict) unconditionally.
  * Mounts DraftRestoreModal + NavigationAwayGuard (U13).
  */
 function DeckDetailPageWithData({
@@ -287,9 +288,25 @@ function DeckDetailPageWithData({
         : null,
     [compositionDraft.draft.heroIdentifier, heroesQuery.data],
   );
-  const draftHeroEnum = draftHeroCard?.hero ?? null;
 
-  const cascadeCheck = useCascadeCheck(compositionDraft.draft, draftHeroEnum);
+  // The verdict is the engine's own, run on the draft in the browser: what the player sees while
+  // editing is never the saved verdict.
+  const draftLegality = React.useMemo(
+    () => computeDraftLegality(compositionDraft.draft, draftHeroCard),
+    [compositionDraft.draft, draftHeroCard],
+  );
+  const cascadeCheck = React.useMemo(() => cascadeFromLegality(draftLegality), [draftLegality]);
+
+  const justCreated = useRouterState({ select: (state) => isJustCreatedState(state.location.state) });
+  const discardEmptyNewDeck = justCreated && deck.totalCards === 0;
+  const missingCount = React.useMemo(
+    () =>
+      snapshot === null
+        ? 0
+        : summariseDeck({ pct: snapshot.effectivePercent, breakdown: snapshot.breakdown, replacements: deck.replacements })
+            .missingCards,
+    [snapshot, deck.replacements],
+  );
 
   // In Edit mode the sidebar must reflect the LIVE draft hero/format, not the
   // last-saved deck values, so switching the hero updates the displayed name.
@@ -353,6 +370,10 @@ function DeckDetailPageWithData({
           legalFormats: initial?.legalFormats ?? [],
           legalHeroes: initial?.legalHeroes ?? [],
           bannedFormats: initial?.bannedFormats ?? [],
+          ...(initial?.restrictedFormats === undefined ? {} : { restrictedFormats: initial.restrictedFormats }),
+          ...(initial?.legalOverrides === undefined ? {} : { legalOverrides: initial.legalOverrides }),
+          ...(initial?.specializations === undefined ? {} : { specializations: initial.specializations }),
+          ...(initial?.legendary === undefined ? {} : { legendary: initial.legendary }),
         };
       }),
     });
@@ -432,7 +453,7 @@ function DeckDetailPageWithData({
     // nav-away guard so it does not fire a second DiscardChangesConfirm
     // as soon as `onExitEdit` triggers the post-confirm navigation.
     navGuard.bypassNext();
-    onExitEdit();
+    if (!discardEmptyNewDeck) onExitEdit();
   }
 
   // Build the shopping data to pass to the sidebar.
@@ -491,6 +512,8 @@ function DeckDetailPageWithData({
               saveDraftPayload={saveDraftPayload}
               onSaveSuccess={handleSaveSuccess}
               onConfirmDiscard={handleConfirmDiscard}
+              editor={{ format: compositionDraft.draft.format, legality: draftLegality, missingCount }}
+              discardOnCancel={discardEmptyNewDeck}
               editButtonRef={editBtnRef}
             />
           }
@@ -500,7 +523,7 @@ function DeckDetailPageWithData({
               heroName={null}
               heroLegacy={sidebarHeroName}
               format={sidebarFormat}
-              legality={deck.legality}
+              legality={isEditing && draftLegality !== null ? toDeckLegality(draftLegality) : deck.legality}
               fabraryUlid={deck.fabraryUlid ?? null}
               shoppingData={shoppingData}
               onFetchVariants={onFetchVariants}
@@ -519,6 +542,8 @@ function DeckDetailPageWithData({
             <DeckCanvas
               compositionDraft={compositionDraft.draft}
               cascadeCheck={cascadeCheck}
+              legality={draftLegality}
+              heroName={draftHeroCard?.name ?? deck.hero}
               onAddCard={compositionDraft.addCard}
               onUpdateQuantity={compositionDraft.updateQuantity}
               onRemoveCard={compositionDraft.removeCard}

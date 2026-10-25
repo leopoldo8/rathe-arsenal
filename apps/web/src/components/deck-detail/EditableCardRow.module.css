@@ -1,27 +1,26 @@
 /* ============================================================
-   EditableCardRow — Edit-mode gallery tile (card art primary)
+   EditableCardRow — Edit-mode card row: thumbnail, name, limit message, stepper
    ============================================================ */
 
 .tile {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--ra-space-2);
-  padding: var(--ra-space-2);
+  align-items: center;
+  gap: var(--ra-space-3);
+  padding: var(--ra-space-3) var(--ra-space-4);
   background: var(--ra-bg-surface);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  transition:
-    border-color var(--ra-duration) var(--ra-ease),
-    background-color var(--ra-duration) var(--ra-ease);
+  border-block-end: 1px solid var(--ra-border-subtle);
+  list-style: none;
+  scroll-margin-block-start: 96px;
 }
 
-.tile:hover {
-  border-color: var(--ra-border-strong);
+.tile:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: -2px;
 }
 
 .art {
   position: relative;
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
 }
@@ -32,36 +31,64 @@
   right: var(--ra-space-1);
 }
 
+.text {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-1);
+}
+
 .name {
   font-family: var(--ra-font-ui);
   font-weight: var(--ra-weight-semibold);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-primary);
-  text-align: center;
-  padding: 0 var(--ra-space-1);
-  /* Clamp at 2 lines; overflow becomes a 3-dot ellipsis. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}
+
+.problem {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-ready-low);
+}
+
+.reason {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-primary);
+}
+
+.reasonHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
-  line-height: 1.2;
-  /* Keep tile heights aligned across rows by reserving 2 lines of height
-     even when the name only takes 1. */
-  min-height: calc(var(--ra-text-small) * 1.2 * 2);
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .controls {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--ra-space-2);
 }
 
 .stepper {
   display: inline-flex;
   align-items: center;
-  gap: var(--ra-space-1);
+  gap: var(--ra-space-2);
 }
 
 .stepperBtn {
@@ -84,24 +111,36 @@
     background-color var(--ra-duration) var(--ra-ease);
 }
 
-.stepperBtn:hover {
+.stepperBtn:hover:not(:disabled) {
   border-color: var(--ra-border-strong);
   background: var(--ra-bg-surface);
+}
+
+.stepperBtn:disabled {
+  color: var(--ra-fg-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stepperBtn:focus-visible,
+.removeBtn:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
 }
 
 .stepperQty {
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
-  color: var(--ra-fg-primary);
-  min-width: 1.5ch;
+  color: var(--ra-accent-body);
+  min-inline-size: 1.5ch;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 .removeBtn {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
+  inline-size: 28px;
+  block-size: 28px;
+  display: none;
   align-items: center;
   justify-content: center;
   background: transparent;
@@ -118,4 +157,10 @@
 .removeBtn:hover {
   color: var(--ra-fg-primary);
   border-color: var(--ra-border-strong);
+}
+
+@media (min-width: 640px) {
+  .removeBtn {
+    display: inline-flex;
+  }
 }

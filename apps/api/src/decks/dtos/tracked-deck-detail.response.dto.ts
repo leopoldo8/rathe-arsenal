@@ -57,6 +57,10 @@ export interface IBreakdownEntry {
   readonly legalFormats?: readonly string[];
   readonly legalHeroes?: readonly string[];
   readonly bannedFormats?: readonly string[];
+  readonly restrictedFormats?: readonly string[];
+  readonly legalOverrides?: readonly { readonly format: string; readonly heroes: readonly string[] }[];
+  readonly specializations?: readonly string[];
+  readonly legendary?: boolean;
 }
 
 export interface ISubstitutionEntry {

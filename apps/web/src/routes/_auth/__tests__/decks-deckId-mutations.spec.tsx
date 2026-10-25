@@ -55,6 +55,9 @@ vi.mock('@tanstack/react-router', () => ({
     );
   },
   useNavigate: () => mockNavigate,
+  useRouter: () => ({ history: { back: vi.fn() } }),
+  useRouterState: ({ select }: { select: (state: { location: { state: unknown } }) => unknown }) =>
+    select({ location: { state: {} } }),
   useBlocker: vi.fn(),
 }));
 
@@ -637,7 +640,7 @@ describe('DeckDetailPage — status strip (DECK-02, DECK-03)', () => {
 
 describe('DeckDetailPage — Fabrary link appears once (DECK-09)', () => {
   const fabraryLinks = (): HTMLElement[] =>
-    screen.queryAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.com'));
+    screen.queryAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.net'));
 
   it('renders exactly one Fabrary link on an incomplete deck', () => {
     populate(buildDeck());

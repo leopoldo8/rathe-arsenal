@@ -68,6 +68,7 @@ export function StartScratchCard(): React.ReactElement {
             to: '/decks/$deckId',
             params: { deckId: String(result.id) },
             search: { edit: 1 },
+            state: (previous) => ({ ...previous, justCreated: true }),
           });
         },
         onError: (err) => {

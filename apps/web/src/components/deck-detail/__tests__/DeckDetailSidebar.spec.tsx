@@ -175,7 +175,16 @@ describe('DeckDetailSidebar — fabrary link', () => {
     renderSidebar({ fabraryUlid: 'abc123' });
     const link = screen.getByTestId('sidebar-fabrary-link');
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'https://fabrary.com/decks/abc123');
+    expect(link).toHaveAttribute('href', 'https://fabrary.net/decks/abc123');
+  });
+
+  it('the fabrary link uses fabrary.net', () => {
+    renderSidebar({ fabraryUlid: '01HYW5BJE6PD6K25Z3SK758DE8' });
+
+    expect(screen.getByTestId('sidebar-fabrary-link')).toHaveAttribute(
+      'href',
+      'https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8',
+    );
   });
 
   it('fabrary link opens in a new tab', () => {

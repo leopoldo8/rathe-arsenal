@@ -153,6 +153,34 @@ describe('DecksController PUT /decks/:deckId (int-spec)', () => {
     });
   });
 
+  describe('a deck with problems', () => {
+    it('a deck with problems is saved as is', async () => {
+      const response = buildDetailResponse({
+        format: 'Blitz',
+        legality: { category: 'illegal', reasons: [], details: [] },
+      });
+      decksService.updateComposition.mockResolvedValue(response);
+
+      const res = await request(app.getHttpServer())
+        .put(`/api/decks/${DECK_ID}`)
+        .send(
+          validBody({
+            heroIdentifier: 'rhinar',
+            format: 'Blitz',
+            cards: [{ cardIdentifier: 'pack-hunt-red', quantity: 2, slot: 'mainboard' }],
+          }),
+        )
+        .expect(HttpStatus.OK);
+
+      expect(res.body.legality.category).toBe('illegal');
+      expect(decksService.updateComposition).toHaveBeenCalledWith(
+        DECK_ID,
+        USER_ID,
+        expect.objectContaining({ cards: [{ cardIdentifier: 'pack-hunt-red', quantity: 2, slot: 'mainboard' }] }),
+      );
+    });
+  });
+
   describe('happy path — empty cards array is accepted', () => {
     it('returns 200 with legality=incomplete for zero cards', async () => {
       // Arrange

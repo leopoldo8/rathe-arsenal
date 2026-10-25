@@ -374,3 +374,73 @@ describe('two-tab race — documented behavior', () => {
     expect(stored?.heroIdentifier).toBe('briar-wtr');
   });
 });
+
+describe('useCompositionDraft — server data that changes under a draft nobody edited', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorageMock.clear();
+    localStorageMock.setItem.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const NEW_PAYLOAD: ICompositionDraftInitialPayload = {
+    ...INITIAL_PAYLOAD,
+    format: 'Blitz',
+    cards: INITIAL_PAYLOAD.cards.map((card) => ({ ...card, quantity: 1 })),
+  };
+
+  it('a pristine draft resets to new server data without writing storage', () => {
+    const { result, rerender } = renderHook(({ payload }) => useCompositionDraft(DECK_ID, payload), {
+      initialProps: { payload: INITIAL_PAYLOAD },
+    });
+
+    rerender({ payload: NEW_PAYLOAD });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(result.current.draft.format).toBe('Blitz');
+    expect(result.current.draft.cards[0]?.quantity).toBe(1);
+    expect(result.current.isDirty).toBe(false);
+    expect(result.current.changeCount).toBe(0);
+    expect(localStorageMock.setItem).not.toHaveBeenCalledWith(draftStorageKey(DECK_ID), expect.anything());
+  });
+
+  it('keeps what the player edited when the server data changes', () => {
+    const { result, rerender } = renderHook(({ payload }) => useCompositionDraft(DECK_ID, payload), {
+      initialProps: { payload: INITIAL_PAYLOAD },
+    });
+    act(() => result.current.updateQuantity('pummel-red-dyn', 'mainboard', 3));
+
+    rerender({ payload: NEW_PAYLOAD });
+
+    expect(result.current.draft.cards[0]?.quantity).toBe(3);
+    expect(result.current.isDirty).toBe(true);
+  });
+
+  it('keeps a restored draft: restoring counts as an edit', () => {
+    const { result, rerender } = renderHook(({ payload }) => useCompositionDraft(DECK_ID, payload), {
+      initialProps: { payload: INITIAL_PAYLOAD },
+    });
+    const restored = { ...result.current.draft, cards: result.current.draft.cards.map((card) => ({ ...card, quantity: 3 })) };
+    act(() => result.current.applyDraft(restored));
+
+    rerender({ payload: NEW_PAYLOAD });
+
+    expect(result.current.draft.cards[0]?.quantity).toBe(3);
+  });
+
+  it('reset hands the draft back to the server data', () => {
+    const { result } = renderHook(() => useCompositionDraft(DECK_ID, INITIAL_PAYLOAD));
+    act(() => result.current.updateQuantity('pummel-red-dyn', 'mainboard', 3));
+
+    act(() => result.current.reset());
+
+    expect(result.current.draft.cards[0]?.quantity).toBe(2);
+    expect(result.current.isDirty).toBe(false);
+  });
+});
+

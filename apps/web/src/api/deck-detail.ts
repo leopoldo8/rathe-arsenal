@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { IShoppingLineResponse } from './shopping-line';
 import type { IDeckReplacement } from './replacements';
+import type { ICardLegalityOverride } from './card-legality-facts';
 // Re-export shared v2 types so callers import from a single location
 export type { TDeckStatus, IDeckLegality } from './decks';
 
@@ -44,6 +45,10 @@ export interface IBreakdownEntry {
   readonly legalFormats?: readonly string[];
   readonly legalHeroes?: readonly string[];
   readonly bannedFormats?: readonly string[];
+  readonly restrictedFormats?: readonly string[];
+  readonly legalOverrides?: readonly ICardLegalityOverride[];
+  readonly specializations?: readonly string[];
+  readonly legendary?: boolean;
 }
 
 export interface ISubstituteCard {

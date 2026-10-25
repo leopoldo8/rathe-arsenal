@@ -88,7 +88,7 @@ interface IDeckDetailSidebarProps {
    */
   readonly compositionDraft?: ICompositionDraft;
   /**
-   * Result from useCascadeCheck. Required when mode='edit'.
+   * The cards the engine refuses in the draft. Required when mode='edit'.
    */
   readonly cascadeCheck?: ICascadeCheckResult;
   /**
@@ -151,7 +151,7 @@ export function DeckDetailSidebar({
     writeSidebarExpanded(expanded);
   }, [expanded]);
 
-  const fabraryUrl = fabraryUlid ? `https://fabrary.com/decks/${fabraryUlid}` : null;
+  const fabraryUrl = fabraryUlid ? `https://fabrary.net/decks/${fabraryUlid}` : null;
 
   // Look up the hero card image so the sidebar can render the actual art
   // instead of a generic placeholder. The heroes query is shared with the
@@ -206,10 +206,8 @@ export function DeckDetailSidebar({
               <span className={styles.formatPill} data-testid="sidebar-edit-format-pill">
                 {compositionDraft.format}
               </span>
-              {/* Legality badge stays visible in Edit so the user can see the
-                  status of the saved composition without leaving the canvas.
-                  Reflects the last save — the in-progress cascade check sits
-                  on the canvas as its own banner. */}
+              {/* Legality badge stays visible in Edit. The route hands it the
+                  engine's verdict on the draft, never the saved one. */}
               <div
                 className={styles.legalitySlot}
                 data-testid="sidebar-edit-legality-slot"

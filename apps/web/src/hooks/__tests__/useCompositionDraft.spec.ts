@@ -393,3 +393,33 @@ describe('useCompositionDraft — empty deck (R22)', () => {
     expect(result.current.isDirty).toBe(true);
   });
 });
+
+describe('useCompositionDraft — a partly owned card', () => {
+  it('one draft row per card and slot for a partly owned card', () => {
+    const owned = { ...INITIAL_PAYLOAD.cards[0]!, cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', slot: 'mainboard', quantity: 1 };
+    const missing = { ...owned, quantity: 2 };
+
+    const { result } = renderHook(() => useCompositionDraft('deck-1', { ...INITIAL_PAYLOAD, cards: [owned, missing] }));
+
+    expect(result.current.draft.cards).toHaveLength(1);
+    expect(result.current.draft.cards[0]).toMatchObject({ cardIdentifier: 'pack-hunt-red', slot: 'mainboard', quantity: 3 });
+  });
+
+  it('keeps a card in two slots as two rows', () => {
+    const inMainboard = { ...INITIAL_PAYLOAD.cards[0]!, slot: 'mainboard', quantity: 1 };
+    const inEquipment = { ...inMainboard, slot: 'equipment' };
+
+    const { result } = renderHook(() => useCompositionDraft('deck-1', { ...INITIAL_PAYLOAD, cards: [inMainboard, inEquipment] }));
+
+    expect(result.current.draft.cards.map((card) => card.slot)).toEqual(['mainboard', 'equipment']);
+  });
+
+  it('carries the legality facts beyond formats and heroes into the row', () => {
+    const entry = { ...INITIAL_PAYLOAD.cards[0]!, legendary: true, restrictedFormats: ['Living Legend'], specializations: ['Rhinar'] };
+
+    const { result } = renderHook(() => useCompositionDraft('deck-1', { ...INITIAL_PAYLOAD, cards: [entry] }));
+
+    expect(result.current.draft.cards[0]).toMatchObject({ legendary: true, restrictedFormats: ['Living Legend'], specializations: ['Rhinar'] });
+  });
+});
+
