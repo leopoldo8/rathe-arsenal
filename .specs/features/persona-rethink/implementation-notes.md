@@ -2,6 +2,12 @@
 
 ## Deviations
 
+### Batch 16, how it was checked
+
+- The slices were committed one after the other, but only S22 and S26 had the whole suite set run on their own tree (S22: every suite, one `collection-in-layout` remove-picker case failed on a cold Vite start and passed on its rerun). S25 was committed after lint, typecheck and the unit suites and the list e2e; S24's tree was assembled from the index (its shared files were split from S23's) and never ran on its own; S23 was committed after its own unit and e2e specs. One full run of every suite (engine, web and api lint and typecheck, unit, api e2e, api int, web e2e) came after the S26 commit and all of it passed; a second came after the last code change.
+- Two existing tests in `ListsIndex.spec.tsx` changed the radio they click from "A partir de um deck" to "De um deck" (C309 renames the start); their assertions are otherwise the same. `ListPrices.spec.tsx` changed two expectations for C307 (see S25), `ListShareDialog.spec.tsx` one label for C301 (see S23).
+- C313 asks that a deck with no stored snapshot be priced "as the deck page computes them": the Tutor prices `breakdown.missing` of a fresh readiness, which leaves out cards an engine stand-in covers, while the deck page (since S17) lists `notOwned` and shows the stand-in beside it. The two differ only when the collection holds a stand-in; the fixture (an empty collection) cannot show it. Needs the owner if the Tutor should price the stand-in's card too.
+
 ### S26 (batch 16)
 
 - `get_deck` carries `legality` (the engine's `category`, `reasons` and `details`, so every problem comes with its card, count and limit) and each card's `copyLimit`; it reads the inventory quantity of each line, so a card at 3 in the deck and 1 in the inventory is a 4-copy card. `describeDeck` gives neither for a format the engine has no rules for. The deck's `cardPool` total still counts deck copies only (no check asks to change it).
@@ -650,4 +656,6 @@
   - The old "Marcar como vendida" button of the line panel stays (`ListEditor.spec.tsx` proves it) and marks a line sold without asking about the collection. Say whether it goes.
   - `POST /api/lists/:listId/lines/:lineId/unsold` has no Coverage row in `checks.md` (the validator warns); the Verifier reads its proof as C291's.
   - The events `buy` and `offer` of the buyer and trade views are not sent (no check proves them).
+  - The four tests above prove the older `.specs/features/shared-lists/contract.md` (the shared page's cards, matches and summary), which has no numbered checks; no check of this feature or of another `checks.md` names them.
+  - C313's fresh pricing leaves out stand-in cards (see "Batch 16, how it was checked").
   - Copy of mine, no check or mockup gives it: S22 (the "Tirei N cópias da coleção." result, "De qual importação tirar?", two error lines), S23 (see its Deviations), S24 ("Não foi possível salvar o deck. Tente de novo."), S25 (none), S26 (none).

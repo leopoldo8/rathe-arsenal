@@ -57,7 +57,7 @@ Spare copies, selling and trading:
 1. the collection, the player's holding decks and `user.spareRule` (door 12) -> the spare function (new, no door - placement per conventions) - one count per card and version, never stored
 2. the "Sobrando" page, the trade view of a want list, the group page and the Tutor's spare tool all call it
 3. a sell draft -> `ListLinesService` (exists) - sell lines carry the four version fields (door 1)
-4. "Vendida" with "Sim, tirar N da coleção" -> `CollectionService` (exists) - removes copies by version, then copies with no version
+4. "Vendida" with "Sim, tirar N da coleção" -> `ListSaleService` (new in S22) - removes copies by version, then copies with no version, inside the sale's own transaction (it splits the line there too), then asks `CollectionService` (exists) to recompute the readiness of the decks that use the card
 5. "Quero estas", "Oferecer", "Ver mensagem e enviar" -> `ShareEventsService` (exists) - records `buy`, `offer`, `quote_sent` (door 11)
 
 The Tutor:
