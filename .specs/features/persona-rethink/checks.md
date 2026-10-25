@@ -257,28 +257,28 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the deck intent carries ea
 
 ### S6 - The stage and the verdict on the home card · 8 files · 39 KB · ~14k
 
-**C65** - A home card with no rule problem shows the stage chip: "Pronto" with "60 cartas" for a full deck; "Montando · 31 de 40 cartas" for a deck short of cards (AC 36)
+**C65** - A home card with no rule problem shows the stage chip: "Pronto" with "60 cartas" for a full deck; "Montando · 31 de 40 cartas" for a deck short of cards (AC 36) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "no rule problem shows the stage chip with the size when short"`
 
-**C66** - A home card with a rule problem shows, top to bottom, the red chip "Não vale no Blitz", the red line "8 cartas com 2 cópias", and the grey line "Etapa: Jogando · 40 cartas"; when short, the grey line is "Etapa: Montando · 31 de 40 cartas" (AC 37)
+**C66** - A home card with a rule problem shows, top to bottom, the red chip "Não vale no Blitz", the red line "8 cartas com 2 cópias", and the grey line "Etapa: Jogando · 40 cartas"; when short, the grey line is "Etapa: Montando · 31 de 40 cartas" (AC 37) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "a rule problem shows the verdict, the cause and the stage in grey"`
 
-**C67** - The cause line follows the table, one case per row: all copy problems at 2 gives "8 cartas com 2 cópias"; copy problems at mixed counts gives "N cartas acima do limite de cópias"; banned gives "N cartas banidas"; out of format gives "N cartas fora do formato"; hero gives "herói fora do formato"; three kinds give the first two joined by " · " then "e mais 1"; one card gives "1 carta com 4 cópias"; and no output of any row contains "jogar" or "pronto" (AC 38)
+**C67** - The cause line follows the table, one case per row: all copy problems at 2 gives "8 cartas com 2 cópias"; copy problems at mixed counts gives "N cartas acima do limite de cópias"; banned gives "N cartas banidas"; out of format gives "N cartas fora do formato"; hero gives "herói fora do formato"; three kinds give the first two joined by " · " then "e mais 1"; one card gives "1 carta com 4 cópias"; and no output of any row contains "jogar" or "pronto" (AC 38) · done
 Proof: `web unit src/components/home/__tests__/deckVerdictLine.spec.ts -t "the cause line table"`
 
-**C68** - A deck at stage `active` whose verdict is `illegal` keeps `status` `active` after `GET` and after a `PUT` (AC 39)
+**C68** - A deck at stage `active` whose verdict is `illegal` keeps `status` `active` after `GET` and after a `PUT` (AC 39) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "the verdict never writes the stage"`
 
-**C69** - The stage control on a deck with a rule problem is enabled and offers Ideia, Montando, Pronto, Jogando, Aposentado (AC 39)
+**C69** - The stage control on a deck with a rule problem is enabled and offers Ideia, Montando, Pronto, Jogando, Aposentado (AC 39) · done
 Proof: `web unit src/components/deck-detail/__tests__/StatusDropdown.spec.tsx -t "the stage stays editable on a deck with problems"`
 
-**C70** - The deck page header of a deck with a rule problem shows the red chip "Não vale no Blitz" and the grey "Etapa: Jogando", with the causes in the body and not in the header (AC 40)
+**C70** - The deck page header of a deck with a rule problem shows the red chip "Não vale no Blitz" and the grey "Etapa: Jogando", with the causes in the body and not in the header (AC 40) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "the header shows the verdict and the stage apart"`
 
 **C71** - The home for `r3-stage-a-phone` lists three cards in order with their exact lines: "Rhinar Blitz" / "Não vale no Blitz" / "8 cartas com 2 cópias" / "Etapa: Jogando · 40 cartas"; "Rhinar - Blitz" / "Não vale no Blitz" / "1 carta com 2 cópias" / "Etapa: Montando · 31 de 40 cartas"; "Rhinar CC" / "Não vale no Classic Constructed" / "1 carta com 4 cópias" / "Etapa: Pronto · 60 cartas" (AC 40)
 Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "matches r3-stage-a-phone"`
 
-**C72** - A home card for a format outside the four shows the grey chip "Formato não conferido" and a grey line with the stage (AC 40)
+**C72** - A home card for a format outside the four shows the grey chip "Formato não conferido" and a grey line with the stage (AC 40) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "an unchecked format reads Formato não conferido"`
 
 ### S7 - Getting the list out · 15 files · 110 KB · ~38k

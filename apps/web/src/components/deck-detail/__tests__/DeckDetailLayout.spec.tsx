@@ -12,9 +12,19 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { DeckDetailLayout } from '../DeckDetailLayout';
+import { DeckHeroBanner } from '../DeckHeroBanner';
+import { DeckCauseLine } from '../DeckCauseLine';
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/home">{children}</a>,
+}));
+vi.mock('../StatusDropdown', () => ({ StatusDropdown: () => null }));
+vi.mock('../DeckNameInline', () => ({ DeckNameInline: ({ name }: { name: string }) => <h1>{name}</h1> }));
+vi.mock('../DeckOverflowMenu', () => ({ DeckOverflowMenu: () => null }));
+vi.mock('../useDeckHero', () => ({ useDeckHero: () => ({ name: 'Rhinar', art: null, bannerSources: [] }) }));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,5 +131,42 @@ describe('DeckDetailLayout — mobile behavior', () => {
     });
     // The sidebar element is in the DOM regardless of viewport width.
     expect(screen.getByTestId('mobile-sidebar')).toBeInTheDocument();
+  });
+});
+
+describe('DeckDetailLayout — the verdict and the stage', () => {
+  const copyProblems = Array.from({ length: 8 }, (_, index) => ({
+    code: 'too_many_copies',
+    params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: 2, limit: 1, format: 'Blitz', legendary: false, restricted: false },
+  }));
+  const legality = { category: 'illegal' as const, reasons: ['x'], details: copyProblems };
+
+  it('the header shows the verdict and the stage apart', () => {
+    render(
+      <DeckDetailLayout
+        header={
+          <DeckHeroBanner
+            deckId={7}
+            deckName="Rhinar Blitz"
+            status="active"
+            format="Blitz"
+            legality={legality}
+            heroIdentifier="rhinar"
+            heroFallbackName="Rhinar"
+            pct={100}
+            onEdit={vi.fn()}
+            onShare={vi.fn()}
+          />
+        }
+        sidebar={null}
+        canvas={<DeckCauseLine legality={legality} />}
+      />,
+    );
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByTestId('legality-badge')).toHaveTextContent('Não vale no Blitz');
+    expect(within(header).getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Jogando');
+    expect(header).not.toHaveTextContent('8 cartas com 2 cópias');
+    expect(within(screen.getByRole('main')).getByTestId('deck-cause')).toHaveTextContent('8 cartas com 2 cópias');
   });
 });

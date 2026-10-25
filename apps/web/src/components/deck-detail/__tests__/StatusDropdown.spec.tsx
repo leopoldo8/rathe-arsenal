@@ -275,3 +275,23 @@ describe('StatusDropdown — error path', () => {
     expect(spies.mutate.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('StatusDropdown on a deck with problems', () => {
+  it('the stage stays editable on a deck with problems', async () => {
+    // The verdict is not an input of the control: a deck with a rule problem renders it as any other.
+    renderDropdown('active');
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toBeEnabled();
+
+    fireEvent.click(trigger);
+
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(5));
+    expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual([
+      'Ideia',
+      'Montando',
+      'Pronto',
+      'Jogando',
+      'Aposentado',
+    ]);
+  });
+});

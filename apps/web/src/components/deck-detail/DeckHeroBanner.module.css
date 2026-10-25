@@ -216,3 +216,18 @@
   font-family: var(--ra-font-ui);
   font-size: var(--ra-text-small);
 }
+
+.verdictChip {
+  padding: 2px var(--ra-space-2);
+  border: 1px solid var(--ra-ready-low);
+  border-radius: var(--ra-radius-sm);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-ready-low);
+}
+
+.stageLine {
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  color: var(--ra-fg-secondary);
+}

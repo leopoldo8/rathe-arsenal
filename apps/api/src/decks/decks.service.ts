@@ -309,6 +309,9 @@ export class DecksService {
         heroImageUrl,
         representativeCards: previewMeta.representativeCards,
         cardCounts: snap ? this.deriveCardCounts(snap.breakdown) : null,
+        deckSize: (deckCardsByDeckId.get(deck.id) ?? [])
+          .filter((row) => row.slot === 'mainboard')
+          .reduce((sum, row) => sum + row.quantity, 0),
         clearUpgradeCount: clearUpgradeCounts.get(deck.id) ?? 0,
       };
     });

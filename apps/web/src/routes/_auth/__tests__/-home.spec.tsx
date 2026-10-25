@@ -347,3 +347,56 @@ describe('Home route, unconfirmed e-mail', () => {
     expect(screen.queryByRole('button', { name: 'Reenviar' })).not.toBeInTheDocument();
   });
 });
+
+describe('Home route, the stage and the verdict', () => {
+  beforeEach(() => {
+    mockSearch = { tag: [] };
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const copiesProblem = (count: number, copies: number, limit: number, format: string) => ({
+    category: 'illegal' as const,
+    reasons: ['x'],
+    details: Array.from({ length: count }, (_, index) => ({
+      code: 'too_many_copies',
+      params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: copies, limit, format, legendary: false, restricted: false },
+    })),
+  });
+
+  it('each card of r3-stage-a-phone carries its exact lines', () => {
+    seed([
+      makeDeck(1, 'active', 'Rhinar Blitz', { format: 'Blitz', deckSize: 40, legality: copiesProblem(8, 2, 1, 'Blitz') }),
+      makeDeck(2, 'building', 'Rhinar - Blitz', {
+        format: 'Blitz',
+        deckSize: 31,
+        legality: {
+          ...copiesProblem(1, 2, 1, 'Blitz'),
+          details: [
+            ...copiesProblem(1, 2, 1, 'Blitz').details,
+            { code: 'mainboard_not_exact', params: { card: null, count: 31, limit: 40, format: 'Blitz' } },
+          ],
+        },
+      }),
+      makeDeck(3, 'ready', 'Rhinar CC', { deckSize: 60, legality: copiesProblem(1, 4, 3, 'Classic Constructed') }),
+    ]);
+    renderHome();
+
+    const lines: Record<string, readonly string[]> = {
+      'Rhinar Blitz': ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas'],
+      'Rhinar - Blitz': ['Não vale no Blitz', '1 carta com 2 cópias', 'Etapa: Montando · 31 de 40 cartas'],
+      'Rhinar CC': ['Não vale no Classic Constructed', '1 carta com 4 cópias', 'Etapa: Pronto · 60 cartas'],
+    };
+    for (const [name, expected] of Object.entries(lines)) {
+      const text = screen.getByLabelText(name).textContent ?? '';
+      let cursor = -1;
+      for (const part of expected) {
+        const at = text.indexOf(part, cursor + 1);
+        expect({ name, part, at: at > cursor }).toEqual({ name, part, at: true });
+        cursor = at;
+      }
+    }
+  });
+});

@@ -180,6 +180,8 @@ export interface ITrackedDeckListItem {
   } | null;
   /** Shopping line data for this deck, if available. Added in Phase 1b. */
   readonly shoppingLine?: IShoppingLineResponse;
+  /** Copies in the starting deck's main section (inventory and loadout left out); the home card says "60 cartas" from it. */
+  readonly deckSize?: number;
   /** Clear upgrades the deck's recommendations panel would list; 0 for a retired deck. */
   readonly clearUpgradeCount: number;
 }

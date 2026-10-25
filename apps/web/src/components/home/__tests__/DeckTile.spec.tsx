@@ -114,7 +114,7 @@ describe('DeckTile', () => {
       renderTile(makeDeck({ legality: { category: 'illegal', reasons: ['x'] } }));
       const marker = screen.getByTestId('legality-illegal');
       expect(marker).toHaveClass(styles.legalityIllegal as string);
-      expect(marker).toHaveTextContent('Fora do formato');
+      expect(marker).toHaveTextContent('Não vale no Classic Constructed');
     });
 
     it('shows nothing for a legal deck', () => {
@@ -231,5 +231,70 @@ describe('DeckTile', () => {
       expect(screen.queryByTestId('deck-upgrades')).toBeNull();
       expect(screen.queryByText(/upgrade/i)).toBeNull();
     });
+  });
+});
+
+describe('DeckTile stage and verdict', () => {
+  const blitzProblem = (): ITrackedDeckListItem['legality'] => ({
+    category: 'illegal',
+    reasons: ['x'],
+    details: Array.from({ length: 8 }, (_, index) => ({
+      code: 'too_many_copies',
+      params: { card: `c${index}`, cardIdentifier: `c${index}`, pitch: 1, count: 2, limit: 1, format: 'Blitz', legendary: false, restricted: false },
+    })),
+  });
+  const shortOf40 = {
+    code: 'mainboard_not_exact',
+    params: { card: null, count: 31, limit: 40, format: 'Blitz' },
+  };
+
+  it('no rule problem shows the stage chip with the size when short', () => {
+    const { unmount } = renderTile(makeDeck({ status: 'ready', deckSize: 60, legality: { category: 'legal', reasons: [] } }));
+    expect(screen.getByTestId('deck-stage-chip')).toHaveTextContent('Pronto');
+    expect(screen.getByTestId('deck-size')).toHaveTextContent('60 cartas');
+    unmount();
+
+    renderTile(
+      makeDeck({
+        status: 'building',
+        format: 'Blitz',
+        deckSize: 31,
+        legality: { category: 'incomplete', reasons: ['x'], details: [shortOf40] },
+      }),
+    );
+    expect(screen.getByTestId('deck-stage-chip')).toHaveTextContent('Montando · 31 de 40 cartas');
+    expect(screen.queryByTestId('deck-verdict')).not.toBeInTheDocument();
+  });
+
+  it('a rule problem shows the verdict, the cause and the stage in grey', () => {
+    const { unmount } = renderTile(makeDeck({ status: 'active', format: 'Blitz', deckSize: 40, legality: blitzProblem() }));
+    const tile = screen.getByRole('article');
+    const text = tile.textContent ?? '';
+    const order = ['Não vale no Blitz', '8 cartas com 2 cópias', 'Etapa: Jogando · 40 cartas'];
+    let cursor = -1;
+    for (const part of order) {
+      const at = text.indexOf(part, cursor + 1);
+      expect(at, part).toBeGreaterThan(cursor);
+      cursor = at;
+    }
+    expect(screen.queryByTestId('deck-stage-chip')).not.toBeInTheDocument();
+    unmount();
+
+    renderTile(
+      makeDeck({
+        status: 'building',
+        format: 'Blitz',
+        deckSize: 31,
+        legality: { ...blitzProblem(), details: [...(blitzProblem().details ?? []), shortOf40] },
+      }),
+    );
+    expect(screen.getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Montando · 31 de 40 cartas');
+  });
+
+  it('an unchecked format reads Formato não conferido', () => {
+    renderTile(makeDeck({ status: 'ready', deckSize: 60, legality: { category: 'unchecked', reasons: [] } }));
+
+    expect(screen.getByTestId('deck-verdict')).toHaveTextContent('Formato não conferido');
+    expect(screen.getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Pronto · 60 cartas');
   });
 });

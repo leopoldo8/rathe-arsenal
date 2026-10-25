@@ -5,6 +5,7 @@ import { Deckbox } from '../deckbox/Deckbox';
 import { useToast } from '../ui/Toast/useToast';
 import { resolveDeckMeta, type TDeckMeta } from './homeGroups';
 import { UntrackPin } from './UntrackPin';
+import { DeckStageBlock } from './DeckStageBlock';
 import styles from './DeckTile.module.css';
 
 const UNTRACK_UNDO_WINDOW_MS = 4800;
@@ -17,10 +18,9 @@ interface IDeckTileProps {
 
 interface IDeckMetaProps {
   readonly meta: TDeckMeta;
-  readonly isIllegal: boolean;
 }
 
-function DeckMeta({ meta, isIllegal }: IDeckMetaProps): React.ReactElement {
+function DeckMeta({ meta }: IDeckMetaProps): React.ReactElement {
   const { t } = useTranslation();
   const text =
     meta.state === 'complete'
@@ -42,14 +42,6 @@ function DeckMeta({ meta, isIllegal }: IDeckMetaProps): React.ReactElement {
   return (
     <p className={`${styles.meta} ${stateClass}`} data-testid="deck-meta" data-state={meta.state}>
       <span>{text}</span>
-      {isIllegal && (
-        <>
-          <span aria-hidden="true">·</span>
-          <span className={styles.legalityIllegal} data-testid="legality-illegal">
-            {t('home.legalityNotLegalLabel')}
-          </span>
-        </>
-      )}
     </p>
   );
 }
@@ -114,7 +106,8 @@ export function DeckTile({
         ]}
         readinessPct={readinessPct}
       />
-      <DeckMeta meta={meta} isIllegal={deck.legality.category === 'illegal'} />
+      <DeckStageBlock deck={deck} />
+      <DeckMeta meta={meta} />
       {deck.clearUpgradeCount > 0 && (
         <p className={styles.upgrades} data-testid="deck-upgrades">
           {t('home.upgradesSuggested', { count: deck.clearUpgradeCount })}

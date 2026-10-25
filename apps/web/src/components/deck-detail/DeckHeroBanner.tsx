@@ -9,6 +9,7 @@ import { DeckOverflowMenu } from './DeckOverflowMenu';
 import { LegalityBadge } from './LegalityBadge';
 import type { IDeckLegality } from '../../api/decks';
 import { StatusDropdown } from './StatusDropdown';
+import { STATUS_KEY_MAP } from './status-labels';
 import { useDeckHero } from './useDeckHero';
 import styles from './DeckHeroBanner.module.css';
 
@@ -95,7 +96,18 @@ export function DeckHeroBanner({
             <p className={styles.eyebrow} data-testid="deck-hero-eyebrow">
               {format}
             </p>
-            {legality.category !== 'legal' && <LegalityBadge legality={legality} format={format} />}
+            {legality.category === 'illegal' ? (
+              <>
+                <span className={styles.verdictChip} data-testid="legality-badge" data-legality="illegal">
+                  {t('deckDetail.verdictBlocked', { format })}
+                </span>
+                <span className={styles.stageLine} data-testid="deck-stage-line">
+                  {t('deckDetail.stageLine', { stage: t(STATUS_KEY_MAP[status]) })}
+                </span>
+              </>
+            ) : (
+              legality.category !== 'legal' && <LegalityBadge legality={legality} format={format} />
+            )}
           </div>
           <div className={styles.title}>
             <DeckNameInline deckId={deckId} name={deckName} mode="view" />

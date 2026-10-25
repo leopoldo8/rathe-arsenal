@@ -12,6 +12,7 @@ import { ShareDialog } from './ShareDialog';
 import type { TShareIntent } from '../../api/shared-decks';
 import { DeckList } from './DeckList';
 import { DeckStatusStrip } from './DeckStatusStrip';
+import { DeckCauseLine } from './DeckCauseLine';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
 import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
@@ -112,6 +113,7 @@ export function DeckDetailView({
         fabraryUlid={deck.fabraryUlid}
         offFormat={deck.legality.category === 'illegal' ? deck.format : null}
       />
+      <DeckCauseLine legality={deck.legality} />
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (

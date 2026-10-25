@@ -238,6 +238,7 @@ describe('DecksService', () => {
         heroImageUrl: null,
         representativeCards: [],
         cardCounts: { owned: 0, missing: 0, total: 0 },
+        deckSize: 0,
         clearUpgradeCount: 0,
       });
       // Default mock returns null — aggregateShoppingLine is null when no missing cards.

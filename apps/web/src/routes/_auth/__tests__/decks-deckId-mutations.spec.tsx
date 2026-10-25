@@ -686,7 +686,7 @@ describe('DeckDetailPage — analysis row (DECK-04)', () => {
     populate(buildDeck({ legality: { category: 'illegal', reasons: ['Off format.'] } }));
     renderPage();
 
-    expect(within(screen.getByTestId('deck-hero-banner')).getByTestId('legality-badge')).toHaveTextContent('Ilegal');
+    expect(within(screen.getByTestId('deck-hero-banner')).getByTestId('legality-badge')).toHaveTextContent('Não vale no');
   });
 
   it('shows no legality badge for a legal deck', () => {

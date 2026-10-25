@@ -217,6 +217,15 @@
 - C62's "Ver o que falta" links to the missing panel on the page (`#deck-missing-panel`), the same target "Ver lista de compras" has; S17 builds `/decks/:deckId/missing` and repoints it.
 - The editor always draws two steppers per row, the header "Deck N · Inventário M · Card pool P de L" and the two plain lines (AC 30), also for a deck with no inventory, which `r3-editor-phone` draws with one stepper and no header; C48 still passes because it only reads the order of the texts.
 
+### S6 (batch 6)
+
+- C71 is not met and stays unmarked: `r3-stage-a-phone` lists "Rhinar Blitz" (Jogando), "Rhinar - Blitz" (Montando), "Rhinar CC" (Pronto) in that order, but the home groups the decks by stage ("Ativos" holds Pronto and Jogando, "Construindo" holds Montando), so the real page shows Rhinar Blitz, Rhinar CC, then Rhinar - Blitz.
+  The test written instead, "each card of r3-stage-a-phone carries its exact lines", asserts every card's lines in order and not the order of the cards; the group order was not changed.
+- Home card: the red chip keeps the test id `legality-illegal` and its class, the deck header's red chip keeps `legality-badge`; three older tests that read the old wording ("Fora do formato", "Ilegal") now read the new verdict wording (`DeckTile.spec.tsx`, `decks-deckId-mutations.spec.tsx`). `home.legalityNotLegalLabel` is no longer used.
+- Cause line: kinds are listed copies, banned, outside the format, hero. A problem with no wording in the document (the card pool, a card the hero cannot use, an unknown card) is not named and counts toward "e mais N"; a deck whose only problems are those has no cause line. See Needs the owner.
+- The deck page header shows the red chip and the grey "Etapa: Jogando" for a deck with a rule problem; "incomplete" and "unchecked" keep the existing badge there. The cause line sits in the body, under the status strip.
+- C68 and C69 hold already: the verdict is never an input of the stage, so the tests prove it; C68's test is in the S5 commit.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -258,3 +267,5 @@
 
 - C59: no mockup draws what opens the "Mover 1 para o inventário" menu. It is built as a tap on the quantity number, with no extra element; confirm that or pick another opener.
 - C55 (deleted deck half) waits for S8, see Deviations, S5.
+- The cause line has no wording for a card-pool problem, a card the hero cannot use or an unknown card; give the three phrases if they should appear on the home card.
+- C71 conflicts with the home's grouping by stage, see Deviations, S6; decide whether the check or the grouping changes.
