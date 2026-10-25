@@ -305,6 +305,24 @@
 - The axe scan list gained the page "Versões desta importação"; its context takes the fixture user's first import, or a nil id (the page then shows its error state) when it has none.
 - Noticed, not touched: the CSV re-upload that replaces an import (`CsvUploadService.updateSource`) and the duplicate detection (`DuplicateDetectionService`) both assume one row per card and import. After copies of an import were given versions, a re-upload sets the new quantity on one of the rows and leaves the others. S12 rewrites the reader and the import path.
 
+### S12 (batch 10)
+
+- C133 is marked with this slice: the test "a version the card does not have is refused on every write" now also sends two bad versions to `PATCH /api/collection/pending/:id` (unknown printing `WTR023`, and `first` on `WTR167`), expects `400` and checks the pending line and the copies are unchanged.
+- The pasted-list screen's "Escolher por linha" chip has no mockup for what it opens, so it is selected state only and behaves like "Não sei" (each line keeps only the version its own words settled). "Sem foil · NM" sends `defaultVersion` with the import; the API applies finish and edition only where the card has such a printing and condition always.
+- `r3-product-search-phone` and the report draw nothing for a file that was already imported. A `409` shows one line and a button, copy of mine, see Needs the owner.
+- Plan `Surface`: four rows added (the shape of `POST /api/collection/imports`, the shape of `GET /api/collection/pending`, `PATCH` and `DELETE` of a source accepting every kind but `manual`, and the three new web pages).
+- `PATCH` and `DELETE /api/collection/sources/:id` used to accept only `kind = 'csv'`; they accept every kind but `manual` now, or a pasted import could not be renamed or removed.
+- The dev database keeps the old kind check (`synchronize` compares checks by name only), so the database module replaces `CHK_csv_source_kind_valid` when its definition does not name `paste`, in the same place the lowercased e-mail index is created.
+- `GET /api/collection/pending` returns `quantityHint`, `options` and `suggestion` per line. Door 7's shape has no quantity, so `asks_color` and `bad_quantity` lines store the card they point at in `suggestedCardIdentifier` and the hint is a number found in the original text.
+- Version words read from a pasted line ("foil", "cold foil", "1ª", "NM", ...) are resolved against the card's printings: one printing left records its version, several left record only what they agree on, and "foil" over several foil finishes keeps the note "foil · existe em N versões foil: escolha". The stored "escolha a versão" state of `r3-version-bulk-phone` is not built: no check names it and storing it needs a column door 1 does not have.
+- C157 reads "the tabs `Coleção` and `Importações`"; `r3-pending-phone` draws the heading "Coleção" with a link "Importações" at its right, and that is what is built (heading, then link, then the count line).
+- The collection page is now headed "Coleção" (`library.libraryTitle`), with the count line "612 cópias (241 cartas)" under the header; the navigation label stays "Biblioteca".
+- Entry points: no check builds the add-cards entry (S15 does). Until then `/add-cards/csv` has a link "Colar uma lista" to `/add-cards/list`, and choosing a file there opens `/add-cards/sheet`. The old tab test (four tabs in order) forbids a fifth tab.
+- `/add-cards/csv` no longer calls the old upload route (`POST /api/collection/csv`, which stays for "Importações" re-upload). Obligation 4: that old route still sets one quantity on one row when a re-upload replaces an import whose copies carry several versions, and its duplicate detection compares one row per card; the new import route keeps copies that differ only by version apart (tested) and hashes them with their versions.
+- A paste or file of 5,000 lines is refused (`IMPORT_TOO_MANY_ROWS`); a pasted body above Express's 100 kb JSON limit answers `413` before the reader sees it.
+- Existing tests touched: `-library.test.tsx` got a mock of the new pending query (the page mounts the banner); `csv-parser.service.spec.ts` got the card "Rhinar, Reckless Rampage" in its catalog fixture and new tests; `collection-versions.e2e-spec.ts` got the pending case of C133.
+- Notes the reader writes are pt-BR sentences from the API (`"(3)" lido como Azul`, `lemos "..." certo`), as C139 and C145 require; an English-language session shows them in Portuguese.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -370,3 +388,12 @@
   - Versions page: "Aplicando…", "Não foi possível aplicar. Tente de novo.", "Não foi possível carregar esta importação.", "Esta importação não tem cópias.", "Ficaram como estavam, porque a carta não existe nessa versão:" (heading of the skipped cards), "Mudar a versão de <carta>" (aria-label of "Mudar"), "Aplicar à 1 cópia sem versão" (singular).
   - Scanner review: "Qual é a edição?", "Sim", "Não" (the check gives "É foil?"); "1ª edição", "Gold Foil" and "Sem foil" come from the bulk screen and the sell lists' labels.
   - The remove picker's version line: "<import> · <printing code> · <edition> · <finish> · <condition>".
+- S12, copy of mine, no check or mockup gives it:
+  - Pasted list: the textarea placeholder `Uma carta por linha, como "3x Snatch (Red)"`, "Lendo a lista…", "Não foi possível ler a lista. Tente de novo.", "Não foi possível adicionar. Tente de novo.", "Adicionando…".
+  - Summary of a list with lines the screen does not draw: "N com nome parecido" and "N com quantidade a corrigir" (a near name not yet accepted, a bad quantity).
+  - Line answers: "Esta linha não tem quantidade" (an empty quantity cell), the cap note "quantidade acima de 20: lemos 20" (from the API), "essa carta não tem essa versão" (pasted version words no printing has), the version chip "Sem foil · NM" sends finish and condition even where the card has no plain printing (condition only then).
+  - Report: the group "Não achamos" for a line no card matches (the report draws three groups), the file chooser page ("Planilha", "Escolher o arquivo", "Um arquivo .csv com uma carta por linha.", "Lendo <arquivo>…", "Escolher outro arquivo"), the duplicate answer `Você já adicionou esta planilha como "<nome>".` with "Adicionar de novo".
+  - Errors: `apiErrors.IMPORT_UNREADABLE` ("Não conseguimos ler esse arquivo. Confira se é um arquivo de texto (.csv), com uma carta por linha, e se tem até 2 MB.") and `IMPORT_TOO_MANY_ROWS`, both in en-US too.
+  - The page behind "Resolver" (`/library-pending`) is drawn by no mockup: it reuses the lines of the report (the same colors, near names, quantity field and search) and adds a "Excluir" link per line, a heading "Para resolver", the empty line "Nada para resolver." and two error lines. Each line is added to its import as soon as it is answered.
+  - The link "Colar uma lista" on `/add-cards/csv` is the only way to the pasted-list page until S15 builds the entry.
+

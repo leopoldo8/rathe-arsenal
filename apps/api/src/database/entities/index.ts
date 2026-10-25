@@ -1,6 +1,7 @@
 export { UserEntity } from './user.entity';
 export { CsvSourceEntity } from './csv-source.entity';
 export { CollectionCardEntity } from './collection-card.entity';
+export { ImportPendingLineEntity } from './import-pending-line.entity';
 export { TrackedDeckEntity } from './tracked-deck.entity';
 export { DeckCardEntity } from './deck-card.entity';
 export { DeckReadinessSnapshotEntity } from './deck-readiness-snapshot.entity';

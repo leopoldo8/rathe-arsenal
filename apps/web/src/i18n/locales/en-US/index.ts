@@ -9,6 +9,7 @@ import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
 import { copyVersions } from './copyVersions';
+import { collectionReader } from './collectionReader';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
 import { deckEdit } from './deckEdit';
@@ -39,6 +40,7 @@ export const enUS: TTranslationResources = {
   library,
   csvSources,
   copyVersions,
+  collectionReader,
   decks,
   deckDetail,
   deckEdit,

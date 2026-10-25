@@ -7,6 +7,7 @@ import {
   UserEntity,
   CsvSourceEntity,
   CollectionCardEntity,
+  ImportPendingLineEntity,
   TrackedDeckEntity,
   DeckCardEntity,
   DeckReadinessSnapshotEntity,
@@ -64,6 +65,7 @@ import {
             UserEntity,
             CsvSourceEntity,
             CollectionCardEntity,
+            ImportPendingLineEntity,
             TrackedDeckEntity,
             DeckCardEntity,
             DeckReadinessSnapshotEntity,
@@ -114,6 +116,20 @@ import {
           await dataSource.query(
             `CREATE UNIQUE INDEX IF NOT EXISTS "IDX_user_email_lower" ON "user" (lower("email"))`,
           );
+          // synchronize compares checks by name only, so a database built before the new import kinds
+          // would keep the old list of kinds; replace it when it does not name them.
+          await dataSource.query(`
+            DO $$ BEGIN
+              IF EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'CHK_csv_source_kind_valid' AND conrelid = 'csv_source'::regclass
+                  AND pg_get_constraintdef(oid) NOT LIKE '%paste%'
+              ) THEN
+                ALTER TABLE csv_source DROP CONSTRAINT "CHK_csv_source_kind_valid";
+                ALTER TABLE csv_source ADD CONSTRAINT "CHK_csv_source_kind_valid"
+                  CHECK (kind IN ('csv', 'paste', 'product', 'fabrary', 'manual'));
+              END IF;
+            END $$;`);
         }
         return dataSource;
       },

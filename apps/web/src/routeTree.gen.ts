@@ -23,6 +23,7 @@ import { Route as AuthSwapsRouteImport } from './routes/_auth/swaps'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthReviewsRouteImport } from './routes/_auth/reviews'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthLibraryPendingRouteImport } from './routes/_auth/library-pending'
 import { Route as AuthLibraryCsvSourcesRouteImport } from './routes/_auth/library-csv-sources'
 import { Route as AuthLibraryRouteImport } from './routes/_auth/library'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
@@ -35,7 +36,9 @@ import { Route as AuthDecksNewRouteImport } from './routes/_auth/decks.new'
 import { Route as AuthDecksDeletedRouteImport } from './routes/_auth/decks.deleted'
 import { Route as AuthDecksDeckIdRouteImport } from './routes/_auth/decks.$deckId'
 import { Route as AuthChatConversationIdRouteImport } from './routes/_auth/chat.$conversationId'
+import { Route as AuthAddCardsSheetRouteImport } from './routes/_auth/add-cards_.sheet'
 import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.scan'
+import { Route as AuthAddCardsListRouteImport } from './routes/_auth/add-cards_.list'
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
@@ -111,6 +114,11 @@ const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthLibraryPendingRoute = AuthLibraryPendingRouteImport.update({
+  id: '/library-pending',
+  path: '/library-pending',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLibraryCsvSourcesRoute = AuthLibraryCsvSourcesRouteImport.update({
   id: '/library-csv-sources',
   path: '/library-csv-sources',
@@ -171,9 +179,19 @@ const AuthChatConversationIdRoute = AuthChatConversationIdRouteImport.update({
   path: '/chat/$conversationId',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAddCardsSheetRoute = AuthAddCardsSheetRouteImport.update({
+  id: '/add-cards_/sheet',
+  path: '/add-cards/sheet',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthAddCardsScanRoute = AuthAddCardsScanRouteImport.update({
   id: '/add-cards_/scan',
   path: '/add-cards/scan',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAddCardsListRoute = AuthAddCardsListRouteImport.update({
+  id: '/add-cards_/list',
+  path: '/add-cards/list',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAddCardsManualRoute = AuthAddCardsManualRouteImport.update({
@@ -215,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthHomeRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/library-pending': typeof AuthLibraryPendingRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
@@ -224,7 +243,9 @@ export interface FileRoutesByFullPath {
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/scan': typeof AuthAddCardsScanRoute
+  '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/deleted': typeof AuthDecksDeletedRoute
@@ -247,6 +268,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthHomeRoute
   '/library': typeof AuthLibraryRoute
   '/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/library-pending': typeof AuthLibraryPendingRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/reviews': typeof AuthReviewsRoute
   '/settings': typeof AuthSettingsRoute
@@ -256,7 +278,9 @@ export interface FileRoutesByTo {
   '/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/add-cards/list': typeof AuthAddCardsListRoute
   '/add-cards/scan': typeof AuthAddCardsScanRoute
+  '/add-cards/sheet': typeof AuthAddCardsSheetRoute
   '/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/decks/deleted': typeof AuthDecksDeletedRoute
@@ -282,6 +306,7 @@ export interface FileRoutesById {
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/library': typeof AuthLibraryRoute
   '/_auth/library-csv-sources': typeof AuthLibraryCsvSourcesRoute
+  '/_auth/library-pending': typeof AuthLibraryPendingRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/reviews': typeof AuthReviewsRoute
   '/_auth/settings': typeof AuthSettingsRoute
@@ -291,7 +316,9 @@ export interface FileRoutesById {
   '/_auth/add-cards/csv': typeof AuthAddCardsCsvRoute
   '/_auth/add-cards/fabrary': typeof AuthAddCardsFabraryRoute
   '/_auth/add-cards/manual': typeof AuthAddCardsManualRoute
+  '/_auth/add-cards_/list': typeof AuthAddCardsListRoute
   '/_auth/add-cards_/scan': typeof AuthAddCardsScanRoute
+  '/_auth/add-cards_/sheet': typeof AuthAddCardsSheetRoute
   '/_auth/chat/$conversationId': typeof AuthChatConversationIdRoute
   '/_auth/decks/$deckId': typeof AuthDecksDeckIdRoute
   '/_auth/decks/deleted': typeof AuthDecksDeletedRoute
@@ -317,6 +344,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/library'
     | '/library-csv-sources'
+    | '/library-pending'
     | '/onboarding'
     | '/reviews'
     | '/settings'
@@ -326,7 +354,9 @@ export interface FileRouteTypes {
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
+    | '/add-cards/list'
     | '/add-cards/scan'
+    | '/add-cards/sheet'
     | '/chat/$conversationId'
     | '/decks/$deckId'
     | '/decks/deleted'
@@ -349,6 +379,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/library'
     | '/library-csv-sources'
+    | '/library-pending'
     | '/onboarding'
     | '/reviews'
     | '/settings'
@@ -358,7 +389,9 @@ export interface FileRouteTypes {
     | '/add-cards/csv'
     | '/add-cards/fabrary'
     | '/add-cards/manual'
+    | '/add-cards/list'
     | '/add-cards/scan'
+    | '/add-cards/sheet'
     | '/chat/$conversationId'
     | '/decks/$deckId'
     | '/decks/deleted'
@@ -383,6 +416,7 @@ export interface FileRouteTypes {
     | '/_auth/home'
     | '/_auth/library'
     | '/_auth/library-csv-sources'
+    | '/_auth/library-pending'
     | '/_auth/onboarding'
     | '/_auth/reviews'
     | '/_auth/settings'
@@ -392,7 +426,9 @@ export interface FileRouteTypes {
     | '/_auth/add-cards/csv'
     | '/_auth/add-cards/fabrary'
     | '/_auth/add-cards/manual'
+    | '/_auth/add-cards_/list'
     | '/_auth/add-cards_/scan'
+    | '/_auth/add-cards_/sheet'
     | '/_auth/chat/$conversationId'
     | '/_auth/decks/$deckId'
     | '/_auth/decks/deleted'
@@ -518,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnboardingRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/library-pending': {
+      id: '/_auth/library-pending'
+      path: '/library-pending'
+      fullPath: '/library-pending'
+      preLoaderRoute: typeof AuthLibraryPendingRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/library-csv-sources': {
       id: '/_auth/library-csv-sources'
       path: '/library-csv-sources'
@@ -602,11 +645,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthChatConversationIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add-cards_/sheet': {
+      id: '/_auth/add-cards_/sheet'
+      path: '/add-cards/sheet'
+      fullPath: '/add-cards/sheet'
+      preLoaderRoute: typeof AuthAddCardsSheetRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/add-cards_/scan': {
       id: '/_auth/add-cards_/scan'
       path: '/add-cards/scan'
       fullPath: '/add-cards/scan'
       preLoaderRoute: typeof AuthAddCardsScanRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/add-cards_/list': {
+      id: '/_auth/add-cards_/list'
+      path: '/add-cards/list'
+      fullPath: '/add-cards/list'
+      preLoaderRoute: typeof AuthAddCardsListRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/add-cards/manual': {
@@ -670,11 +727,14 @@ interface AuthRouteChildren {
   AuthHomeRoute: typeof AuthHomeRoute
   AuthLibraryRoute: typeof AuthLibraryRoute
   AuthLibraryCsvSourcesRoute: typeof AuthLibraryCsvSourcesRoute
+  AuthLibraryPendingRoute: typeof AuthLibraryPendingRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthReviewsRoute: typeof AuthReviewsRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthSwapsRoute: typeof AuthSwapsRoute
+  AuthAddCardsListRoute: typeof AuthAddCardsListRoute
   AuthAddCardsScanRoute: typeof AuthAddCardsScanRoute
+  AuthAddCardsSheetRoute: typeof AuthAddCardsSheetRoute
   AuthChatConversationIdRoute: typeof AuthChatConversationIdRoute
   AuthDecksDeckIdRoute: typeof AuthDecksDeckIdRoute
   AuthDecksDeletedRoute: typeof AuthDecksDeletedRoute
@@ -691,11 +751,14 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthHomeRoute: AuthHomeRoute,
   AuthLibraryRoute: AuthLibraryRoute,
   AuthLibraryCsvSourcesRoute: AuthLibraryCsvSourcesRoute,
+  AuthLibraryPendingRoute: AuthLibraryPendingRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthReviewsRoute: AuthReviewsRoute,
   AuthSettingsRoute: AuthSettingsRoute,
   AuthSwapsRoute: AuthSwapsRoute,
+  AuthAddCardsListRoute: AuthAddCardsListRoute,
   AuthAddCardsScanRoute: AuthAddCardsScanRoute,
+  AuthAddCardsSheetRoute: AuthAddCardsSheetRoute,
   AuthChatConversationIdRoute: AuthChatConversationIdRoute,
   AuthDecksDeckIdRoute: AuthDecksDeckIdRoute,
   AuthDecksDeletedRoute: AuthDecksDeletedRoute,

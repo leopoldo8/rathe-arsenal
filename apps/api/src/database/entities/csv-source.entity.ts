@@ -15,10 +15,9 @@ import { UserEntity } from './user.entity';
  * Tracks a collection import source for a user. Every `collection_card` row
  * belongs to exactly one `CsvSourceEntity` via the `sourceId` FK.
  *
- * Two kind values are supported:
- * - `'manual'` — lazy-created on first manual card entry; one per user; never
- *   visible in the Manage CSVs UI; never deletable or toggleable.
- * - `'csv'` — created when the user uploads a CSV file.
+ * Kinds (door 6): `'manual'` is lazy-created on first manual card entry, one per user,
+ * never deletable or toggleable. `'csv'`, `'paste'`, `'product'` (a ready-made deck)
+ * and `'fabrary'` are imports the player can switch off or remove.
  *
  * `kind` is stored as varchar+CHECK (not a Postgres native enum) so adding
  * future kinds requires only a constraint replacement, not a drop-recreate of
@@ -30,7 +29,10 @@ import { UserEntity } from './user.entity';
  * - `(userId, contentHash) WHERE kind='csv' AND contentHash IS NOT NULL` —
  *   DB-level backstop against exact-match duplicate imports.
  */
-@Check('CHK_csv_source_kind_valid', `kind IN ('csv', 'manual')`)
+export const IMPORT_KINDS = ['csv', 'paste', 'product', 'fabrary', 'manual'] as const;
+export type TImportKind = (typeof IMPORT_KINDS)[number];
+
+@Check('CHK_csv_source_kind_valid', `kind IN ('csv', 'paste', 'product', 'fabrary', 'manual')`)
 @Entity({ name: 'csv_source' })
 @Index(['userId'])
 @Index(['userId', 'kind'])
@@ -47,10 +49,14 @@ export class CsvSourceEntity {
   userId!: string;
 
   /**
-   * `'csv' | 'manual'`. Enforced by CHECK constraint in migration.
+   * Enforced by CHECK constraint in migration.
    */
   @Column({ type: 'varchar', length: 16 })
-  kind!: 'csv' | 'manual';
+  kind!: TImportKind;
+
+  /** The ready-made product this import came from; set only when `kind` is `'product'`. */
+  @Column({ type: 'varchar', nullable: true })
+  productKey?: string | null;
 
   /**
    * Human-readable label. For `kind='manual'` this is always "Manual entries".

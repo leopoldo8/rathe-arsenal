@@ -23,6 +23,8 @@ export const apiErrors = {
   PROPOSAL_STALE: 'This proposal no longer fits the deck.',
   DISPLAY_NAME_REQUIRED: 'Pick your name before sharing.',
   SHARE_LINK_UNAVAILABLE: 'This link is no longer available.',
+  IMPORT_UNREADABLE: 'We could not read that file. Check that it is a text file (.csv) with one card per line, up to 2 MB.',
+  IMPORT_TOO_MANY_ROWS: 'The file has too many lines. The limit is 5,000 lines.',
   generic: 'Something went wrong. Please try again.',
   // Rate limit (HTTP 429) — count-based plural
   rateLimitGeneric: 'Too many attempts. Please wait a moment and try again.',

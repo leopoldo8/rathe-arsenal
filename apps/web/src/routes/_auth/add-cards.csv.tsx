@@ -1,9 +1,7 @@
 import React, { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useUploadCsvMutation } from '../../api/csv-sources';
-import { ApiError } from '../../lib/api-client';
-import { recordRecentlyAddedSource } from '../../components/library/RecentlyAddedBanner.helpers';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { setPendingImportFile } from '../../lib/pending-import-file';
 import styles from './add-cards.csv.module.css';
 
 export const Route = createFileRoute('/_auth/add-cards/csv')({
@@ -13,14 +11,10 @@ export const Route = createFileRoute('/_auth/add-cards/csv')({
 const MAX_BYTES = 2 * 1024 * 1024;
 
 /**
- * The CSV subview now redirects on success, so it never sits in a "done"
- * state on this page. The state union covers the three states the page
- * actually displays: idle (drop zone), uploading (in flight), error.
+ * Choosing a file opens the report (`/add-cards/sheet`), which reads it with the one reader and shows
+ * every line before anything is added. This page only holds the drop zone and the size check.
  */
-type TStatus =
-  | { state: 'idle' }
-  | { state: 'uploading'; filename: string }
-  | { state: 'error'; message: string };
+type TStatus = { state: 'idle' } | { state: 'error'; message: string };
 
 export function AddCardsCsvPage(): React.ReactElement {
   const { t } = useTranslation();
@@ -28,7 +22,6 @@ export function AddCardsCsvPage(): React.ReactElement {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dropRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
-  const upload = useUploadCsvMutation();
 
   const [status, setStatus] = useState<TStatus>({ state: 'idle' });
   const [isDragging, setIsDragging] = useState(false);
@@ -43,41 +36,8 @@ export function AddCardsCsvPage(): React.ReactElement {
       });
       return;
     }
-    setStatus({ state: 'uploading', filename: file.name });
-    // Force `action: 'separate'` — every /add-cards/csv import lands as a
-    // brand-new source. Dedup / merge belongs in /library-csv-sources.
-    upload.mutate(
-      { file, action: 'separate' },
-      {
-        onSuccess: (response) => {
-          if (response.kind === 'created') {
-            // Record the success payload, then bounce the user to the
-            // sources list — that's where they manage what just landed.
-            recordRecentlyAddedSource({
-              kind: 'csv',
-              label: file.name,
-              cardCount: response.cardCount,
-            });
-            void navigate({ to: '/library-csv-sources' });
-            return;
-          }
-          // The 'separate' action should never produce these other kinds
-          // since the API only emits them for 'auto'. Fail loudly if it
-          // does — we'd rather surface the surprise than silently swallow.
-          setStatus({
-            state: 'error',
-            message: t('csvSources.csvUnexpectedResult', { kind: response.kind }),
-          });
-        },
-        onError: (err) => {
-          const message =
-            err instanceof ApiError
-              ? err.message
-              : (err as Error).message || t('csvSources.csvUploadFailed');
-          setStatus({ state: 'error', message });
-        },
-      },
-    );
+    setPendingImportFile(file);
+    void navigate({ to: '/add-cards/sheet' });
   }
 
   function handleDragOver(e: React.DragEvent<HTMLDivElement>): void {
@@ -121,31 +81,21 @@ export function AddCardsCsvPage(): React.ReactElement {
         <span className={styles.dropIcon} aria-hidden="true">
           ⇪
         </span>
-        {status.state === 'uploading' ? (
-          <p className={styles.dropTitle} aria-live="polite">
-            {t('csvSources.addCsvUploadingLabel', { filename: status.filename })}
-          </p>
-        ) : (
-          <>
-            <p className={styles.dropTitle}>
-              {isDragging
-                ? t('csvSources.addCsvDragOverTitle')
-                : t('csvSources.addCsvDropTitle')}
-            </p>
-            <p className={styles.dropHint}>{t('csvSources.csvSizeAndRowLimit')}</p>
-            <input
-              ref={fileInputRef}
-              id={inputId}
-              type="file"
-              accept=".csv,text/csv"
-              className={styles.fileInput}
-              onChange={handlePick}
-            />
-            <label htmlFor={inputId} className={styles.dropButton}>
-              {t('csvSources.addCsvChooseFile')}
-            </label>
-          </>
-        )}
+        <p className={styles.dropTitle}>
+          {isDragging ? t('csvSources.addCsvDragOverTitle') : t('csvSources.addCsvDropTitle')}
+        </p>
+        <p className={styles.dropHint}>{t('csvSources.csvSizeAndRowLimit')}</p>
+        <input
+          ref={fileInputRef}
+          id={inputId}
+          type="file"
+          accept=".csv,text/csv"
+          className={styles.fileInput}
+          onChange={handlePick}
+        />
+        <label htmlFor={inputId} className={styles.dropButton}>
+          {t('csvSources.addCsvChooseFile')}
+        </label>
       </div>
 
       {status.state === 'error' && (
@@ -157,6 +107,10 @@ export function AddCardsCsvPage(): React.ReactElement {
           </button>
         </section>
       )}
+
+      <Link to="/add-cards/list" className={styles.pasteLink}>
+        {t('collectionReader.pasteLink')}
+      </Link>
 
       <footer className={styles.subviewFooter}>
         <p className={styles.footerLine}>{t('csvSources.csvExpectedColumns')}</p>

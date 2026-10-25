@@ -46,7 +46,7 @@ export interface ILibraryCardContribution {
   readonly sourceId: string;
   /** "Manual entries" for the manual source, otherwise the user-set label. */
   readonly sourceLabel: string;
-  readonly kind: 'manual' | 'csv';
+  readonly kind: 'csv' | 'paste' | 'product' | 'fabrary' | 'manual';
   /** The version of these copies; `''` or absent is "Não sei". */
   readonly printingCode?: string;
   readonly edition?: string;

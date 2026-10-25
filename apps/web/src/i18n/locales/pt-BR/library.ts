@@ -103,7 +103,8 @@ export const library = {
 
   // Library route — header
   collectionEyebrow: 'Sua coleção',
-  libraryTitle: 'Biblioteca',
+  libraryTitle: 'Coleção',
+  importsLink: 'Importações',
 
   // Library route — actions
   openFiltersAriaLabel: 'Abrir filtros',

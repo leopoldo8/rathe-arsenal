@@ -222,3 +222,14 @@
   line-height: var(--ra-leading-normal);
 }
 
+
+.pasteLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  color: var(--ra-accent-body);
+}

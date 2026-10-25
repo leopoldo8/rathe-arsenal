@@ -5,6 +5,7 @@ import { CollectionCardEntity } from '../database/entities/collection-card.entit
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { DeckReadinessSnapshotEntity } from '../database/entities/deck-readiness-snapshot.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
+import { ImportPendingLineEntity } from '../database/entities/import-pending-line.entity';
 import { StoreStockEntity } from '../database/entities/store-stock.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SubstitutionModule } from '../substitution/substitution.module';
@@ -23,6 +24,10 @@ import { LibraryController } from './library/library.controller';
 import { LibraryService } from './library/library.service';
 import { CollectionVersionsService } from './versions/collection-versions.service';
 import { CollectionVersionsController } from './versions/collection-versions.controller';
+import { ImportsController } from './imports/imports.controller';
+import { ImportsService } from './imports/imports.service';
+import { ImportWriterService } from './imports/import-writer.service';
+import { PendingService } from './imports/pending.service';
 
 @Module({
   imports: [
@@ -33,6 +38,7 @@ import { CollectionVersionsController } from './versions/collection-versions.con
       DeckReadinessSnapshotEntity,
       TrackedDeckEntity,
       StoreStockEntity,
+      ImportPendingLineEntity,
     ]),
     AuthModule,
     SubstitutionModule,
@@ -44,6 +50,7 @@ import { CollectionVersionsController } from './versions/collection-versions.con
     LibraryController,
     SourcesController,
     CollectionVersionsController,
+    ImportsController,
   ],
   providers: [
     CollectionService,
@@ -55,6 +62,9 @@ import { CollectionVersionsController } from './versions/collection-versions.con
     LibraryService,
     FabraryImportService,
     CollectionVersionsService,
+    ImportsService,
+    ImportWriterService,
+    PendingService,
   ],
   exports: [
     CollectionService,
@@ -63,6 +73,7 @@ import { CollectionVersionsController } from './versions/collection-versions.con
     CsvParserService,
     DuplicateDetectionService,
     CsvUploadService,
+    ImportWriterService,
   ],
 })
 export class CollectionModule {}

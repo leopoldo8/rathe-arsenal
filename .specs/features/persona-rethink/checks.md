@@ -473,7 +473,7 @@ Proof: `web unit src/components/collection-versions/__tests__/CardVersionsSheet.
 **C132** - `PATCH /api/collection/cards/:cardIdentifier/versions` moving 1 of 2 unversioned copies to `WTR167`/`unlimited`/`rainbow`/`NM` answers `200` with the card's copies by version (1 unversioned, 2 at that version when one existed); `400` when `quantity` is 0 or above the copies in `from`; `404` for a card the user holds no copy of (AC 76; Surface) · done
 Proof: `api e2e src/collection/__tests__/collection-versions.e2e-spec.ts -t "moving copies between versions answers 200, 400 and 404"`
 
-**C133** - A version naming a printing the card does not have (`printingCode` `WTR023` on Snatch (Vermelho)), or an edition or finish absent from that printing (`first` on `WTR167`), is refused with `400` and changes no row, on `PATCH /api/collection/cards/:cardIdentifier/versions`, on `POST /api/collection/cards/batch` and on `PATCH /api/collection/pending/:id` (AC 78)
+**C133** - A version naming a printing the card does not have (`printingCode` `WTR023` on Snatch (Vermelho)), or an edition or finish absent from that printing (`first` on `WTR167`), is refused with `400` and changes no row, on `PATCH /api/collection/cards/:cardIdentifier/versions`, on `POST /api/collection/cards/batch` and on `PATCH /api/collection/pending/:id` (AC 78) · done
 Proof: `api e2e src/collection/__tests__/collection-versions.e2e-spec.ts -t "a version the card does not have is refused on every write"`
 
 **C134** - The scanner commit sends each card's collector code; `POST /api/collection/cards/batch` with `{ cardIdentifier, quantity: 1, printingCode: 'WTR167' }` stores `printingCode` `WTR167`; a batch with no version fields answers `200` as today and stores `''` in all four; a batch item with `printingCode: 12` answers `400` (AC 77; Surface `cards/batch` `200`, `400`) · done
@@ -495,64 +495,64 @@ Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "
 
 ### S12 - One reader for lists and spreadsheets, and nothing dropped · 28 files · 107 KB · ~51k
 
-**C139** - The pitch reader is table-driven over 10 tokens: "(Red)", "red", "(Yellow)", "(Blue)", "vermelho", "Amarelo", "azul", "(1)", "(2)", "(3)" each read to its pitch, and the numeric ones carry a note; a line "3x Pack Hunt (3)" reads 3 Pack Hunt (Azul) with the note "\"(3)\" lido como Azul" (AC 81)
+**C139** - The pitch reader is table-driven over 10 tokens: "(Red)", "red", "(Yellow)", "(Blue)", "vermelho", "Amarelo", "azul", "(1)", "(2)", "(3)" each read to its pitch, and the numeric ones carry a note; a line "3x Pack Hunt (3)" reads 3 Pack Hunt (Azul) with the note "\"(3)\" lido como Azul" (AC 81) · done
 Proof: `api unit src/collection/reader/__tests__/pitch-token.spec.ts -t "reads pitch in English, Portuguese and as a number"`
 Proof: `api unit src/collection/reader/__tests__/line-reader.spec.ts -t "a numeric pitch is read and noted"`
 
-**C140** - "4 Pummel" (a card printed in three colors, no color, no color column) has outcome `asks_color` with the options Vermelho, Amarelo, Azul and "Não sei"; a card printed in one color with no color is `ready`; with a `cor` column present, an empty color cell is `asks_color` only for a card printed in several colors (AC 82)
+**C140** - "4 Pummel" (a card printed in three colors, no color, no color column) has outcome `asks_color` with the options Vermelho, Amarelo, Azul and "Não sei"; a card printed in one color with no color is `ready`; with a `cor` column present, an empty color cell is `asks_color` only for a card printed in several colors (AC 82) · done
 Proof: `api unit src/collection/reader/__tests__/line-reader.spec.ts -t "a several-color card with no color asks which color"`
 
-**C141** - "comand and conquer" (one edit from exactly one card name) has outcome `suggestion` naming Command and Conquer with its image, and is not counted in `ready`; a text two edits away, or one edit from two card names, is `not_found` (AC 83)
+**C141** - "comand and conquer" (one edit from exactly one card name) has outcome `suggestion` naming Command and Conquer with its image, and is not counted in `ready`; a text two edits away, or one edit from two card names, is `not_found` (AC 83) · done
 Proof: `api unit src/collection/reader/__tests__/line-reader.spec.ts -t "one typo from exactly one card suggests it"`
 
-**C142** - In the reader, the suggestion line shows "Você quis dizer <card>?" with the card image, "Usar esta" and "Corrigir"; the count of ready lines and copies on the add button changes only after "Usar esta", and the line then shows "Você aceitou: Command and Conquer (Vermelho) · Desfazer" (AC 83)
+**C142** - In the reader, the suggestion line shows "Você quis dizer <card>?" with the card image, "Usar esta" and "Corrigir"; the count of ready lines and copies on the add button changes only after "Usar esta", and the line then shows "Você aceitou: Command and Conquer (Vermelho) · Desfazer" (AC 83) · done
 Proof: `web unit src/components/collection-reader/__tests__/ListReader.spec.tsx -t "a suggestion counts only after Usar esta"`
 
-**C143** - A line matching no card shows "Não achamos \"Mistery Card\"" with an edit field holding the text and "Procurar"; editing it to a known name and tapping "Procurar" re-reads that line only (AC 84)
+**C143** - A line matching no card shows "Não achamos \"Mistery Card\"" with an edit field holding the text and "Procurar"; editing it to a known name and tapping "Procurar" re-reads that line only (AC 84) · done
 Proof: `web unit src/components/collection-reader/__tests__/ListReader.spec.tsx -t "a line with no match offers edit and search"`
 
-**C144** - The CSV reader reads the headers `nome`, `quantidade`, `cor`, `versão`, `estado` in any order, and today's English headers (`name`, `card name`, `quantity`, `qty`, `count`, `set`, `set code`); table-driven over 3 header orders; the result's `columns` lists the columns read (AC 85)
+**C144** - The CSV reader reads the headers `nome`, `quantidade`, `cor`, `versão`, `estado` in any order, and today's English headers (`name`, `card name`, `quantity`, `qty`, `count`, `set`, `set code`); table-driven over 3 header orders; the result's `columns` lists the columns read (AC 85) · done
 Proof: `api unit src/collection/__tests__/csv-parser.service.spec.ts -t "reads Portuguese and English headers in any order"`
 
-**C145** - A CSV row `Rhinar, Reckless Rampage,1` (a known card name with a comma, no quotes) is read as that card with a note on that line; a row whose comma does not complete a known name is not merged (AC 85)
+**C145** - A CSV row `Rhinar, Reckless Rampage,1` (a known card name with a comma, no quotes) is read as that card with a note on that line; a row whose comma does not complete a known name is not merged (AC 85) · done
 Proof: `api unit src/collection/__tests__/csv-parser.service.spec.ts -t "an unquoted comma inside a known card name is read and noted"`
 
-**C146** - `POST /api/collection/imports/read` with `text` answers `200` with one `lines` entry per input line, each with `lineNumber`, `originalText` and `outcome` in `ready`, `asks_color`, `suggestion`, `not_found`, `bad_quantity`, and `columns`; with a file it reads the same way; `400` for a body with neither `text` nor a file and for an empty or non-text file (code `IMPORT_UNREADABLE`); `413` for a file over 2 MB; it creates no import in any case (AC 81, AC 86; Surface)
+**C146** - `POST /api/collection/imports/read` with `text` answers `200` with one `lines` entry per input line, each with `lineNumber`, `originalText` and `outcome` in `ready`, `asks_color`, `suggestion`, `not_found`, `bad_quantity`, and `columns`; with a file it reads the same way; `400` for a body with neither `text` nor a file and for an empty or non-text file (code `IMPORT_UNREADABLE`); `413` for a file over 2 MB; it creates no import in any case (AC 81, AC 86; Surface) · done
 Proof: `api e2e src/collection/__tests__/collection-imports.e2e-spec.ts -t "reading a paste or a file answers 200, 400 and 413 and creates nothing"`
 
-**C147** - A file that cannot be read shows the localized `apiErrors.IMPORT_UNREADABLE` text, in pt-BR and en-US, saying what to check, and no raw JSON; `GET /api/collection/sources` afterwards lists no new import (AC 86)
+**C147** - A file that cannot be read shows the localized `apiErrors.IMPORT_UNREADABLE` text, in pt-BR and en-US, saying what to check, and no raw JSON; `GET /api/collection/sources` afterwards lists no new import (AC 86) · done
 Proof: `web unit src/components/collection-reader/__tests__/ImportReport.spec.tsx -t "an unreadable file shows a localized error"`
 Proof: `api e2e src/collection/__tests__/collection-imports.e2e-spec.ts -t "an unreadable file leaves no empty import"`
 
-**C148** - `POST /api/collection/imports` with 6 ready lines and 2 pending lines answers `201` with one `source` holding the 6 lines' copies and `pendingCount` 2; the 2 pending rows store the import id, line number and original text; `400` for a `kind` outside `csv`, `paste`, `product`, `fabrary`, `manual` and for zero ready and zero pending lines; `409` for a file whose content hash matches an existing import when no duplicate strategy is given (AC 87; Surface)
+**C148** - `POST /api/collection/imports` with 6 ready lines and 2 pending lines answers `201` with one `source` holding the 6 lines' copies and `pendingCount` 2; the 2 pending rows store the import id, line number and original text; `400` for a `kind` outside `csv`, `paste`, `product`, `fabrary`, `manual` and for zero ready and zero pending lines; `409` for a file whose content hash matches an existing import when no duplicate strategy is given (AC 87; Surface) · done
 Proof: `api e2e src/collection/__tests__/collection-imports.e2e-spec.ts -t "an import stores ready lines and keeps the rest pending"`
 
-**C149** - "Adicionar as N prontas" sends the ready lines and the unresolved lines in one request, and the note under it reads "As 2 que faltam ficam em \"Para resolver\", no topo da sua coleção." (AC 87)
+**C149** - "Adicionar as N prontas" sends the ready lines and the unresolved lines in one request, and the note under it reads "As 2 que faltam ficam em \"Para resolver\", no topo da sua coleção." (AC 87) · done
 Proof: `web unit src/components/collection-reader/__tests__/ListReader.spec.tsx -t "adding the ready lines keeps the rest for later"`
 
-**C150** - With 11 pending lines from `colecao-lucas.csv` the collection shows "11 linhas de colecao-lucas.csv para resolver · Resolver" at its top; resolving one shows 10; deleting the last one removes the banner; with lines from two imports there is one banner per import (AC 88)
+**C150** - With 11 pending lines from `colecao-lucas.csv` the collection shows "11 linhas de colecao-lucas.csv para resolver · Resolver" at its top; resolving one shows 10; deleting the last one removes the banner; with lines from two imports there is one banner per import (AC 88) · done
 Proof: `web unit src/components/collection-reader/__tests__/PendingBanner.spec.tsx -t "the banner counts down and disappears at zero"`
 
-**C151** - `GET /api/collection/pending` answers `200` with the pending lines grouped by import and `401` with no session; `PATCH /api/collection/pending/:id` with a card and quantity answers `200`, adds the copy to that line's import and deletes the line; `400` for a quantity below 1; `404` for another user's line; `DELETE /api/collection/pending/:id` answers `204` and `404` for an unknown id (AC 88; Surface)
+**C151** - `GET /api/collection/pending` answers `200` with the pending lines grouped by import and `401` with no session; `PATCH /api/collection/pending/:id` with a card and quantity answers `200`, adds the copy to that line's import and deletes the line; `400` for a quantity below 1; `404` for another user's line; `DELETE /api/collection/pending/:id` answers `204` and `404` for an unknown id (AC 88; Surface) · done
 Proof: `api e2e src/collection/__tests__/collection-pending.e2e-spec.ts -t "pending lines list, resolve and delete with their statuses"`
 
-**C152** - `import_pending_line` has `sourceId` referencing `csv_source` with `ON DELETE CASCADE`, `userId`, `lineNumber`, `originalText`, `reason`, and a nullable `suggestedCardIdentifier`; deleting the import row deletes its pending rows (AC 89; door 7)
+**C152** - `import_pending_line` has `sourceId` referencing `csv_source` with `ON DELETE CASCADE`, `userId`, `lineNumber`, `originalText`, `reason`, and a nullable `suggestedCardIdentifier`; deleting the import row deletes its pending rows (AC 89; door 7) · done
 Proof: `api int src/database/migrations/__tests__/import-kinds-and-pending.migration.int-spec.ts -t "import_pending_line cascades from its import"`
 Proof: `api e2e src/collection/__tests__/collection-pending.e2e-spec.ts -t "removing an import removes its pending lines"`
 
-**C153** - For every import the reader's counts satisfy ready + asked + kept = lines read, table-driven over the paste of `r3-list-phone` (8 lines: 6, 1, 1) and a CSV of 300 lines; a quantity of 25 for one card is read as 20 with a note, and 20 stays 20 with no note (AC 90)
+**C153** - For every import the reader's counts satisfy ready + asked + kept = lines read, table-driven over the paste of `r3-list-phone` (8 lines: 6, 1, 1) and a CSV of 300 lines; a quantity of 25 for one card is read as 20 with a note, and 20 stays 20 with no note (AC 90) · done
 Proof: `api unit src/collection/reader/__tests__/line-reader.spec.ts -t "every line is counted once and quantities cap at 20"`
 
-**C154** - "três" in the quantity column is outcome `bad_quantity` with the suggestion 3, shown as "\"três\" não é um número" with the field prefilled 3 and "Usar 3"; a word for a number above twenty gets no suggestion (AC 91; `.design/collection-in.md` Reader and report)
+**C154** - "três" in the quantity column is outcome `bad_quantity` with the suggestion 3, shown as "\"três\" não é um número" with the field prefilled 3 and "Usar 3"; a word for a number above twenty gets no suggestion (AC 91; `.design/collection-in.md` Reader and report) · done
 Proof: `api unit src/collection/reader/__tests__/line-reader.spec.ts -t "a quantity word up to twenty is suggested as a number"`
 
-**C155** - `r3-list-phone` shows, in order: "‹ Adicionar cartas", the heading "Lista colada", the pasted text, "Versão das cartas desta lista" with "Não sei", "Sem foil · NM" and "Escolher por linha", "Lemos 8 linhas: 6 prontas · 1 precisa de cor · 1 não achamos", the numbered lines each with its outcome mark and original text under it (line 3 "foil · existe em 2 versões foil: escolha", line 5 "4 Pummel · Qual cor?" with "Vermelho", "Amarelo", "Azul", line 7 "\"(3)\" lido como Azul", line 8 "Não achamos \"Mistery Card\"" with "Procurar"), the button "Adicionar as 6 prontas (12 cópias)" and the note (AC 91)
+**C155** - `r3-list-phone` shows, in order: "‹ Adicionar cartas", the heading "Lista colada", the pasted text, "Versão das cartas desta lista" with "Não sei", "Sem foil · NM" and "Escolher por linha", "Lemos 8 linhas: 6 prontas · 1 precisa de cor · 1 não achamos", the numbered lines each with its outcome mark and original text under it (line 3 "foil · existe em 2 versões foil: escolha", line 5 "4 Pummel · Qual cor?" with "Vermelho", "Amarelo", "Azul", line 7 "\"(3)\" lido como Azul", line 8 "Não achamos \"Mistery Card\"" with "Procurar"), the button "Adicionar as 6 prontas (12 cópias)" and the note (AC 91) · done
 Proof: `web unit src/components/collection-reader/__tests__/ListReader.spec.tsx -t "matches r3-list-phone copy and order"`
 
-**C156** - `r3-report-phone` shows, in order: "‹ Adicionar cartas", the file name, "289 linhas prontas · 612 cópias (241 cartas)", "Lemos as colunas nome, quantidade e cor.", "Esta planilha não tem coluna de versão: as cartas entram sem versão informada.", "Linha 8: lemos \"Rhinar, Reckless Rampage\" certo.", "11 para resolver", then the groups "Sem cor" (7 lines, each "Linha N", its original text, "Vermelho", "Amarelo", "Azul", "Não sei"), "Nome parecido" (3 lines with "Você quis dizer <card>?", "Usar esta", "Corrigir"), "Quantidade" (1 line), the button "Adicionar as 289 prontas" and "As 11 que faltam ficam em \"Para resolver\", no topo da sua coleção." (AC 85, AC 91)
+**C156** - `r3-report-phone` shows, in order: "‹ Adicionar cartas", the file name, "289 linhas prontas · 612 cópias (241 cartas)", "Lemos as colunas nome, quantidade e cor.", "Esta planilha não tem coluna de versão: as cartas entram sem versão informada.", "Linha 8: lemos \"Rhinar, Reckless Rampage\" certo.", "11 para resolver", then the groups "Sem cor" (7 lines, each "Linha N", its original text, "Vermelho", "Amarelo", "Azul", "Não sei"), "Nome parecido" (3 lines with "Você quis dizer <card>?", "Usar esta", "Corrigir"), "Quantidade" (1 line), the button "Adicionar as 289 prontas" and "As 11 que faltam ficam em \"Para resolver\", no topo da sua coleção." (AC 85, AC 91) · done
 Proof: `web unit src/components/collection-reader/__tests__/ImportReport.spec.tsx -t "matches r3-report-phone copy and order"`
 
-**C157** - `r3-pending-phone` shows, in order: the banner "11 linhas de colecao-lucas.csv para resolver" with "Resolver", the tabs "Coleção" and "Importações", "612 cópias (241 cartas)", then the card grid (AC 88, AC 91)
+**C157** - `r3-pending-phone` shows, in order: the banner "11 linhas de colecao-lucas.csv para resolver" with "Resolver", the tabs "Coleção" and "Importações", "612 cópias (241 cartas)", then the card grid (AC 88, AC 91) · done
 Proof: `web unit src/routes/_auth/__tests__/-library.test.tsx -t "matches r3-pending-phone: the pending banner sits above the collection"`
 
 ### S13 - Ready-made decks · 22 files · 33 KB · ~32k

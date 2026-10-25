@@ -306,7 +306,7 @@ export class SourcesService {
       select: ['id', 'userId', 'kind'],
     });
 
-    if (!source || source.userId !== userId || source.kind !== 'csv') {
+    if (!source || source.userId !== userId || source.kind === 'manual') {
       this.logger.warn('AUTHZ_DENIED csv_source', { sourceId, userId });
       throw new NotFoundException('CSV source not found');
     }

@@ -282,7 +282,25 @@ describe('collection versions (E2E)', () => {
     ).expect(400);
     await as(owner, request(server).post('/api/collection/cards/batch').send({ items: [{ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR023' }] })).expect(400);
     await as(owner, request(server).post('/api/collection/cards/batch').send({ items: [{ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', edition: 'first' }] })).expect(400);
+    const [{ id: pendingId }] = await dataSource.query(
+      `INSERT INTO import_pending_line ("sourceId", "userId", "lineNumber", "originalText", reason)
+       VALUES ($1, $2, 3, 'Snatch,2,', 'asks_color') RETURNING id`,
+      [list, owner.id],
+    );
+    await as(
+      owner,
+      request(server).patch(`/api/collection/pending/${pendingId}`).send({ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR023' }),
+    ).expect(400);
+    await as(
+      owner,
+      request(server).patch(`/api/collection/pending/${pendingId}`).send({ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', edition: 'first' }),
+    ).expect(400);
 
+    const [{ stillPending }] = await dataSource.query(
+      `SELECT count(*)::int AS "stillPending" FROM import_pending_line WHERE id = $1`,
+      [pendingId],
+    );
+    expect(stillPending).toBe(1);
     expect(await rowsOf(owner, list)).toEqual([{ cardIdentifier: SNATCH, ...none, quantity: 2 }]);
     const [{ total }] = await dataSource.query(
       `SELECT COALESCE(SUM(quantity), 0)::int AS total FROM collection_card WHERE "userId" = $1`,

@@ -27,6 +27,9 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'sign-in', path: () => '/sign-in', signedOut: true },
   { name: 'start', path: () => '/entrar', signedOut: true },
   { name: 'versions of an import', path: ({ sourceId }) => `/library-csv-sources/${sourceId}/versions` },
+  { name: 'pasted list', path: () => '/add-cards/list' },
+  { name: 'spreadsheet', path: () => '/add-cards/sheet' },
+  { name: 'lines to resolve', path: () => '/library-pending' },
 ];
 
 const BLOCKING_IMPACTS: ReadonlySet<string> = new Set(['serious', 'critical']);

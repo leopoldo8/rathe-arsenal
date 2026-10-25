@@ -1,7 +1,7 @@
 import { catalog, IMAGE_CDN_BASE } from '@rathe-arsenal/engine';
 import { EDITIONS, FINISHES, TEdition, TFinish } from '../collection/versions/copy-version';
 
-interface IRawPrinting {
+export interface IRawPrinting {
   readonly identifier?: string;
   readonly image?: string;
   readonly set?: string;
@@ -41,11 +41,11 @@ const FINISH_BY_CATALOG: Readonly<Record<string, TFinish>> = {
 };
 
 /** A printing row with no foiling is the plain (non-foil) one. */
-function editionOf(raw: IRawPrinting): TEdition | null {
+export function editionOf(raw: IRawPrinting): TEdition | null {
   return raw.edition ? (EDITION_BY_CATALOG[raw.edition] ?? null) : null;
 }
 
-function finishOf(raw: IRawPrinting): TFinish | null {
+export function finishOf(raw: IRawPrinting): TFinish | null {
   if (!raw.foiling) return 'none';
   return FINISH_BY_CATALOG[raw.foiling] ?? null;
 }
