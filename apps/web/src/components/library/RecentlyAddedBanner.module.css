@@ -29,14 +29,6 @@
   color: var(--ra-accent-body);
 }
 
-.count {
-  font-family: var(--ra-font-mono);
-  font-size: var(--ra-text-body);
-  font-weight: var(--ra-weight-semibold);
-  color: var(--ra-accent-body);
-  font-variant-numeric: tabular-nums;
-}
-
 .dismiss {
   display: inline-flex;
   align-items: center;

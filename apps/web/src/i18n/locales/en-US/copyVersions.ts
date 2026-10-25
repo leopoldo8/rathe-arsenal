@@ -18,6 +18,7 @@ export const copyVersions = {
 
   // CardVersionsSheet
   sheetAriaLabel: 'Versions of the copies of {{name}}',
+  copiesCount_zero: '{{count}} copies',
   copiesCount_one: '{{count}} copy',
   copiesCount_other: '{{count}} copies',
   groupUnknown: '{{count}} version not set',
@@ -27,6 +28,7 @@ export const copyVersions = {
   versionLabel: 'Version',
   versionSearch: 'Search versions',
   versionExplain: 'Version: the set and the art of the card (the code at the bottom, like WTR023)',
+  moreVersions_zero: '+ {{count}} versions',
   moreVersions_one: '+ {{count}} version',
   moreVersions_other: '+ {{count}} versions',
   noVersionMatches: 'No version with that name.',
@@ -44,6 +46,7 @@ export const copyVersions = {
   bulkBack: 'Imports',
   bulkSubtitle: '{{label}} · {{copies}}',
   bulkMarkAll: 'Mark all at once',
+  bulkApply_zero: 'Apply to the {{count}} copies with no version',
   bulkApply_one: 'Apply to the {{count}} copy with no version',
   bulkApply_other: 'Apply to the {{count}} copies with no version',
   bulkApplyNote: 'The ones you already marked do not change.',

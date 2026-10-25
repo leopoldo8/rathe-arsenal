@@ -28,6 +28,7 @@ describe('AddImportKindsAndPendingLines1778533608000', () => {
          "userId" uuid NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
          kind varchar(16) NOT NULL,
          label text,
+         "sourceUrl" text,
          CONSTRAINT "CHK_csv_source_kind_valid" CHECK (kind IN ('csv', 'manual'))
        )`,
     );
@@ -135,6 +136,45 @@ describe('AddImportKindsAndPendingLines1778533608000', () => {
       manual: true,
       other: false,
     });
+  });
+
+  it('the import kind constraint has the five kinds', async () => {
+    // Arrange: before the migration a Fabrary import is a csv with the deck's address
+    const FABRARY_ID = '00000000-0000-0000-0000-0000000000a2';
+    await queryRunner.query(
+      `INSERT INTO "csv_source" (id, "userId", kind, label, "sourceUrl") VALUES ($1, $2, 'csv', 'Fabrary: Kayo', 'https://fabrary.net/decks/01KNQ1FHZ77B3FHT33DJY3RDX3')`,
+      [FABRARY_ID, USER_ID],
+    );
+
+    // Act
+    await new AddImportKindsAndPendingLines1778533608000().up(queryRunner);
+
+    // Assert
+    const insertKind = (kind: string): Promise<unknown> =>
+      queryRunner.query(`INSERT INTO "csv_source" ("userId", kind) VALUES ($1, $2)`, [USER_ID, kind]);
+    const results = await Promise.all(
+      ['csv', 'paste', 'product', 'fabrary', 'manual', 'deck'].map(async (kind) => [kind, await accepted(insertKind(kind))] as const),
+    );
+    expect(Object.fromEntries(results)).toEqual({ csv: true, paste: true, product: true, fabrary: true, manual: true, deck: false });
+
+    const kinds = await queryRunner.query(`SELECT id, kind FROM "csv_source" WHERE id = ANY($1)`, [[SOURCE_ID, FABRARY_ID]]);
+    const kindOf = Object.fromEntries(kinds.map((row: { id: string; kind: string }) => [row.id, row.kind]));
+    expect(kindOf).toEqual({ [SOURCE_ID]: 'csv', [FABRARY_ID]: 'fabrary' });
+  });
+
+  it('going back keeps the moved Fabrary imports as csv', async () => {
+    const FABRARY_ID = '00000000-0000-0000-0000-0000000000a3';
+    await queryRunner.query(
+      `INSERT INTO "csv_source" (id, "userId", kind, label, "sourceUrl") VALUES ($1, $2, 'csv', 'Fabrary: Kayo', 'https://fabrary.net/decks/01KNQ1FHZ77B3FHT33DJY3RDX3')`,
+      [FABRARY_ID, USER_ID],
+    );
+    const migration = new AddImportKindsAndPendingLines1778533608000();
+    await migration.up(queryRunner);
+
+    await migration.down(queryRunner);
+
+    const [row] = await queryRunner.query(`SELECT kind FROM "csv_source" WHERE id = $1`, [FABRARY_ID]);
+    expect(row).toEqual({ kind: 'csv' });
   });
 
   it('runs twice on the same schema without failing', async () => {

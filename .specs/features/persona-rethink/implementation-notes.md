@@ -19,6 +19,17 @@
 - `DeckDetailEmptyState` ("Importar um deck do Fabrary") now links to `/decks/new`, since `/add-cards/fabrary` is gone.
 - `scripts/fixture/fixture-seed.ts` and `docs/dev-fixtures.md` send one `{text, ownsCards: true}` request per deck (the old default seeded the collection). The seed was not run.
 
+### S15 (batch 11)
+
+- Plan `Surface`: four rows added (the sources list's `copies` and manual label, and the three web pages that changed).
+- `/onboarding` renders the first-run chooser, so `FIRST_STEPS_PATH` stays `/onboarding` and C352 needed no repoint; its proofs pass. `OnboardingWizard` (and `Step1PasteUrl`, `Step2ConfirmLibrary`, `Step3FirstReview`) are no longer mounted by any route; their tests still pass. An account with cards and no deck goes to the collection from `/onboarding`.
+- `/add-cards` no longer has a tab bar: the entry screen is the paste box and the four rows. Pages below it (`manual`, `csv`) keep the back link to the library and the link to the imports list. The old CSS rules of the tabs and badges stay (a design guard reads them).
+- "Importações" (`r3-imports-phone`): the subtitle, the collapsible explainer, the count line, the recently-added banner and the "Enviar CSV" button of the header are gone, because the screen does not draw them. `UploadCsvButton`, `UploadResolveModal` and `SumExplainer` are no longer mounted by any page. Rows lose the type badge, the date, the file name and the Ativa/Inativa word.
+- The row keeps the "•••" menu (rename and delete) and the switch, which the screen does not draw: removing an import has no other home and `.design/collection-in.md` says every import is removable. See `## Needs the owner`.
+- `csv_source` migration `1778533608000` also moves old Fabrary imports (kind `csv` with a Fabrary `sourceUrl`) to kind `fabrary`; its down step puts them back to `csv`. The route `POST /api/collection/sources/from-fabrary` still creates kind `csv`; the web no longer calls it.
+- Counts: every `_one` key of `collectionReader` and `copyVersions` gained a `_zero` form (pt-BR reads 0 as singular), the three counts of `products` became plural keys, and the recently-added banner builds "N cartas importadas por CSV como X" from plural keys (`library.bannerImported`, `bannerAdded`). `collectionReader.linesToResolve` is the tooltip of the row's pending count.
+- Tests that asserted the old arrangement and were changed to the picked screens, none weakened: `CsvSourceRow.test.tsx` (badge, date, Ativa/Inativa, manual note), `-library-csv-sources.test.tsx` (count line, explainer), `-add-cards.test.tsx` (tab shell), `-onboarding-redirect.spec.tsx` and the R60 case of `OnboardingWizard.spec.tsx` (the wizard became the chooser), and three Library tests that looked for the old name "Entradas manuais" (`LibraryCardStepper.test.tsx`, `LibraryGrid.test.tsx`, `-library.test.tsx`). Visual baselines regenerated: `onboarding`, `add-cards-manual`, `add-cards-csv`.
+
 ### S1 (batch 1)
 
 - C3 and C4 forced edits to three existing tests that asserted the old copy: `LibraryCardStepper.test.tsx` and `-library.test.tsx` now expect the menu item "Entradas manuais" instead of the API's "Manual entries"; `TagChipRow.spec.tsx` expects "Adicionar tag a este deck".
@@ -448,6 +459,16 @@
   - `apiErrors.INVALID_URL`: "Esse texto não tem um link de deck do Fabrary." (a `400` the paste box cannot normally reach).
   - On `/decks/new` and in onboarding the found card is the same question; the onboarding step keeps its "Continuar" button as the import trigger, disabled until an answer is picked, and shows the found line and "Você tem X de Y" as one sentence.
   - The paste box opens the list reader on paste, not while typing; typing a list by hand stays in the box.
+
+- S15, differences from the picked mockups:
+  - `r3-imports-phone` draws no "•••" menu; each non-manual row keeps it (rename, delete) because removing an import has no other place. Decide where rename and delete live, or accept the menu.
+  - The "Enviar CSV" button of the old page is gone and nothing replaces it: re-uploading a spreadsheet to update an import (the exact-match and update choices in `UploadResolveModal`) has no screen now; `/add-cards/csv` always adds a new import.
+  - The empty "Importações" page keeps its old empty state; its button opens `/add-cards/csv`.
+  - The mockup's first row "Armory Deck: Kayo · 66 cartas" reads "cópias" like every row (derivation note 2 of the checks).
+- S15, copy of mine, no check or mockup gives it:
+  - en-US versions of every new line; "Entradas à mão" is also the stored English-free name the API answers for the manual source ("Hand entries" for en-US).
+  - `csvSources.importsNote` is the check's note; the tooltip of the pending count reads "11 linhas para resolver".
+  - First-run: the link icon on "Tem um link ou uma lista? Colar aqui", the upload and camera icons on the other rows (the PNG draws them; no check names them).
 
 - S13, copy of mine, no check or mockup gives it:
   - Search: "Nenhum deck encontrado.", "Não foi possível carregar os decks. Tente de novo.", "Não achamos esse deck." (an address with a key no file has), the label "Buscar o deck pelo nome do produto ou do herói" of the search field.

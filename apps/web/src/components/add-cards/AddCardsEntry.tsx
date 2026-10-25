@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { findFabraryDeckId } from '../../lib/fabrary-link';
 import { setPastedList } from '../../lib/pasted-list';
 import { FabraryFound } from '../fabrary-import/FabraryFound';
+import { AddOptionRow } from './AddOptionRow';
 import styles from './AddCardsEntry.module.css';
 
 /**
@@ -44,9 +45,17 @@ export function AddCardsEntry(): React.ReactElement {
       {hasLink ? (
         <FabraryFound text={text} />
       ) : (
-        <p id="add-cards-paste-hint" className={styles.hint}>
-          {t('decks.addCardsPasteHint')}
-        </p>
+        <>
+          <p id="add-cards-paste-hint" className={styles.hint}>
+            {t('decks.addCardsPasteHint')}
+          </p>
+          <div className={styles.rows}>
+            <AddOptionRow to="/add-cards/product" icon="box" title={t('decks.addCardsRowProduct')} />
+            <AddOptionRow to="/add-cards/csv" icon="upload" title={t('decks.addCardsRowCsv')} />
+            <AddOptionRow to="/add-cards/scan" icon="camera" title={t('decks.addCardsRowScan')} />
+            <AddOptionRow to="/add-cards/manual" icon="type" title={t('decks.addCardsRowManual')} />
+          </div>
+        </>
       )}
     </div>
   );

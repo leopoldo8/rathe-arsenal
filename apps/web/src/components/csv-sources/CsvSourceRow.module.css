@@ -67,8 +67,7 @@
 }
 
 .labelText {
-  font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
-  color: var(--ra-fg-primary);
+  overflow-wrap: anywhere;
 }
 
 /* Active switch */
@@ -116,8 +115,31 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: hidden;
   min-width: 0;
+}
+
+/* The full name wraps on a phone: nothing in the title is cut off. */
+.title {
+  margin: 0;
+  font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
+  color: var(--ra-fg-primary);
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  color: var(--ra-fg-primary);
+}
+
+.chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 24px;
+  min-block-size: 44px;
+  color: var(--ra-fg-muted);
+  font-size: var(--ra-text-h2);
+  text-decoration: none;
 }
 
 .labelBtn {
@@ -128,9 +150,7 @@
   font: var(--ra-weight-medium) var(--ra-text-body) / var(--ra-leading-snug) var(--ra-font-ui);
   color: var(--ra-fg-primary);
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   transition: color var(--ra-duration) var(--ra-ease);
 }
 

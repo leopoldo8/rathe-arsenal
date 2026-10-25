@@ -86,15 +86,15 @@ export const library = {
   pitchColorlessGroupLabel: 'Colorless',
 
   // RecentlyAddedBanner
-  bannerCardSingular: 'card',
-  bannerCardPlural: 'cards',
+  bannerImported_zero: '{{count}} cards imported',
+  bannerImported_one: '{{count}} card imported',
+  bannerImported_other: '{{count}} cards imported',
+  bannerAdded_zero: '{{count}} cards added',
+  bannerAdded_one: '{{count}} card added',
+  bannerAdded_other: '{{count}} cards added',
+  bannerViaFabrary: 'from Fabrary',
+  bannerViaCsv: 'by CSV',
   bannerAs: 'as',
-  bannerVerbFabrary_one: 'imported from Fabrary',
-  bannerVerbFabrary_other: 'imported from Fabrary',
-  bannerVerbCsv_one: 'imported from CSV',
-  bannerVerbCsv_other: 'imported from CSV',
-  bannerVerbAdded_one: 'added',
-  bannerVerbAdded_other: 'added',
   bannerDismissAriaLabel: 'Dismiss notification',
 
   // Library route — error state

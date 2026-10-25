@@ -37,6 +37,7 @@ vi.mock('@tanstack/react-router', () => ({
   Navigate: ({ to }: { to: string; replace?: boolean }) => (
     <div data-testid="navigate-redirect" data-to={to} />
   ),
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
   useNavigate: () => mockNavigate,
 }));
 
@@ -665,11 +666,10 @@ describe('OnboardingWizard — R60 guard (OnboardingPage): redirect to /decks/ne
     expect(redirect).toHaveAttribute('data-to', '/decks/new');
   });
 
-  it('renders the wizard for a fresh user (0 tracked decks)', () => {
+  it('renders the first-run chooser for a fresh user (0 tracked decks)', () => {
     mockUseDecksQuery.mockReturnValue(makeDecksQueryEmpty());
     renderOnboardingPage();
-    // The wizard renders step 1 which has the step indicator nav
-    expect(screen.getByRole('navigation', { name: /passo 1 de 3/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Como você quer começar?' })).toBeInTheDocument();
   });
 });
 

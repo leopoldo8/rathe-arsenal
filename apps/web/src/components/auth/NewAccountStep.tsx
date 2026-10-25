@@ -12,7 +12,7 @@ import { TurnstileWidget } from './TurnstileWidget';
 import { useIsPhone } from './useIsPhone';
 import styles from './AccountSteps.module.css';
 
-/** Where a new account starts today; journey 2 swaps this for its first-run chooser. */
+/** Where a new account starts: the first-run chooser ("Como você quer começar?"). */
 export const FIRST_STEPS_PATH = '/onboarding';
 
 const MIN_PASSWORD_LENGTH = 10;

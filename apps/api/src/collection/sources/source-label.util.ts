@@ -12,6 +12,8 @@
  * never produce a label that collides with a surviving one.
  */
 
+import type { TLocale } from '../../common/i18n/resolve-locale';
+
 const LABEL_PREFIX_PATTERN = /^#(\d+)\s+(.+)$/;
 
 export interface IParsedSourceLabel {
@@ -70,4 +72,21 @@ export function nextDedupedLabel(
   }
 
   return `#${maxIndex + 1} ${baseLabel}`;
+}
+
+const MANUAL_SOURCE_LABELS: Readonly<Record<TLocale, string>> = {
+  'pt-BR': 'Entradas à mão',
+  'en-US': 'Hand entries',
+};
+
+/**
+ * The name a source shows in a response. The manual source has one name in every surface, in the
+ * language of the request, whatever label was stored with it; every other import keeps the name it was given.
+ */
+export function sourceLabelFor(
+  source: { readonly kind: string; readonly label: string | null },
+  locale: TLocale,
+): string {
+  if (source.kind === 'manual') return MANUAL_SOURCE_LABELS[locale];
+  return source.label || 'Untitled source';
 }

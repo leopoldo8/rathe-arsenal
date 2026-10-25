@@ -187,6 +187,28 @@ describe('SourcesService — U9 extensions', () => {
       expect(csvSourceRepo.update).not.toHaveBeenCalled();
     });
 
+    it('answers each source with the copies it holds, not its rows', async () => {
+      // Arrange
+      const csv = buildCsvSource({ id: 'csv-1', cardCount: 2 });
+      const other = buildCsvSource({ id: 'csv-2' });
+      csvSourceRepo.find.mockResolvedValue([csv, other]);
+      const query = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([{ sourceId: 'csv-1', copies: '612' }]),
+      };
+      collectionCardRepo.createQueryBuilder.mockReturnValue(query as never);
+
+      // Act
+      const result = await service.list(USER_ID);
+
+      // Assert
+      expect(result.map((source) => [source.id, source.copies])).toEqual([['csv-1', 612], ['csv-2', 0]]);
+      expect(query.where).toHaveBeenCalledWith('copy."userId" = :userId', { userId: USER_ID });
+    });
+
     it('returns empty array when user has no csv sources', async () => {
       // Arrange
       csvSourceRepo.find.mockResolvedValue([]);

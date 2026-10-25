@@ -5,6 +5,7 @@
 import {
   parseSourceLabel,
   nextDedupedLabel,
+  sourceLabelFor,
 } from '../sources/source-label.util';
 
 describe('parseSourceLabel', () => {
@@ -80,5 +81,26 @@ describe('nextDedupedLabel', () => {
         'collection.csv',
       ]),
     ).toBe('#2 collection.csv');
+  });
+});
+
+describe('sourceLabelFor', () => {
+  it('the manual source is Entradas à mão', () => {
+    // Arrange
+    const stored = 'Manual entries';
+
+    // Act
+    const portuguese = sourceLabelFor({ kind: 'manual', label: stored }, 'pt-BR');
+    const english = sourceLabelFor({ kind: 'manual', label: stored }, 'en-US');
+
+    // Assert
+    expect(portuguese).toBe('Entradas à mão');
+    expect(english).toBe('Hand entries');
+    expect(`${portuguese} ${english}`).not.toContain('Manual entries');
+  });
+
+  it('keeps the name of any other import and names an unnamed one', () => {
+    expect(sourceLabelFor({ kind: 'csv', label: 'colecao-lucas.csv' }, 'pt-BR')).toBe('colecao-lucas.csv');
+    expect(sourceLabelFor({ kind: 'paste', label: null }, 'pt-BR')).toBe('Untitled source');
   });
 });

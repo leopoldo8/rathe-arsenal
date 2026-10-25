@@ -16,6 +16,8 @@ export interface ICsvSource {
   readonly sourceUrl: string | null;
   readonly contentHash: string | null;
   readonly cardCount: number | null;
+  /** Copies the import holds, not rows: the number the list shows. */
+  readonly copies: number;
   readonly active: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;

@@ -2,6 +2,15 @@ export const onboarding = {
   // OnboardingWizard
   wizardAriaLabel: 'Primeiros passos',
 
+  // FirstRunChooser (r3-first-run-phone)
+  firstRunTitle: 'Como você quer começar?',
+  firstRunProduct: 'Comprei um deck pronto',
+  firstRunProductHint: 'Armory Deck, Blitz Deck ou Silver Age, na caixa',
+  firstRunPaste: 'Tem um link ou uma lista? Colar aqui',
+  firstRunCsv: 'Enviar uma planilha (.csv)',
+  firstRunScan: 'Fotografar ou digitar as cartas',
+  firstRunSkip: 'Pular por agora',
+
   // StepIndicator — nav + items
   stepNavAriaLabel: 'Passo {{current}} de {{total}}',
   stepItemAriaLabel: 'Passo {{number}} de {{total}}: {{label}}, {{state}}',

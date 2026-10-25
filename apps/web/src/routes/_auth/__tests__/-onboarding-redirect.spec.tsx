@@ -7,7 +7,7 @@
  * Covers:
  *  - Happy path: user with tracked decks is redirected to /decks/new
  *  - Not redirected to /import (legacy) or /add-cards/fabrary (cards-only)
- *  - Happy path: fresh user (0 decks) sees the onboarding wizard
+ *  - Happy path: fresh user (0 decks, 0 cards) sees the first-run chooser
  *  - Loading state: null render while query resolves (prevents flash)
  */
 
@@ -30,13 +30,12 @@ vi.mock('@tanstack/react-router', () => ({
 const mockUseDecksQuery = vi.fn();
 vi.mock('../../../api/decks', () => ({
   useDecksQuery: () => mockUseDecksQuery(),
-  useImportDecksMutation: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-// OnboardingWizard — stub so this file only tests the redirect guard
-vi.mock('../../../components/onboarding/OnboardingWizard', () => ({
-  OnboardingWizard: () => <div data-testid="onboarding-wizard" />,
+// FirstRunChooser — stub so this file only tests the redirect guard
+vi.mock('../../../components/onboarding/FirstRunChooser', () => ({
+  FirstRunChooser: () => <div data-testid="first-run-chooser" />,
 }));
 
 // OnboardingSkeleton — stub so the loading-state test stays isolated from the skeleton impl
@@ -109,11 +108,22 @@ describe('OnboardingPage — R60 redirect', () => {
     expect(redirect).not.toHaveAttribute('data-to', '/add-cards/fabrary');
   });
 
-  it('renders the wizard for a fresh user (0 tracked decks)', () => {
+  it('a new account starts on the first-run chooser', () => {
     mockUseDecksQuery.mockReturnValue(makeQueryEmpty());
     render(<OnboardingPage />);
-    expect(screen.getByTestId('onboarding-wizard')).toBeInTheDocument();
+    expect(screen.getByTestId('first-run-chooser')).toBeInTheDocument();
     expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
+  });
+
+  it('an account with cards but no deck goes to the collection, not to the chooser', () => {
+    mockUseDecksQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { trackedDecks: [], collectionCardCount: 12, aggregateShoppingLine: null },
+    });
+    render(<OnboardingPage />);
+    expect(screen.getByTestId('navigate-redirect')).toHaveAttribute('data-to', '/library');
+    expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
   });
 
   it('renders a skeleton (not null) while decks query is loading (R59)', () => {
@@ -121,6 +131,6 @@ describe('OnboardingPage — R60 redirect', () => {
     render(<OnboardingPage />);
     expect(screen.getByTestId('onboarding-skeleton')).toBeInTheDocument();
     expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('onboarding-wizard')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
   });
 });

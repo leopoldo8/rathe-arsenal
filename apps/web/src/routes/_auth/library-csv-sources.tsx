@@ -1,13 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useCsvSourcesQuery } from '../../api/csv-sources';
-import { useLibraryQuery } from '../../api/library';
 import { CsvSourceList } from '../../components/csv-sources/CsvSourceList';
 import { CsvSourcesEmptyState } from '../../components/csv-sources/CsvSourcesEmptyState';
-import { UploadCsvButton } from '../../components/csv-sources/UploadCsvButton';
-import { SumExplainer } from '../../components/csv-sources/SumExplainer';
-import { RecentlyAddedBanner } from '../../components/library/RecentlyAddedBanner';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
 import styles from './library-csv-sources.module.css';
@@ -18,62 +14,31 @@ export const Route = createFileRoute('/_auth/library-csv-sources')({
 
 export function LibraryCsvSourcesPage(): React.ReactElement {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const sourcesQuery = useCsvSourcesQuery();
-  const libraryQuery = useLibraryQuery();
 
   if (sourcesQuery.isLoading) {
     return <CsvSourcesSkeleton />;
   }
 
   const sources = sourcesQuery.data ?? [];
-  const activeCount = sources.filter((source) => source.active).length;
-  const totalCopies = libraryQuery.data?.stats.totalCopies;
 
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.headerText}>
           <Link to="/library" search={DEFAULT_LIBRARY_SEARCH} className={styles.backLink}>
-            <span aria-hidden="true">←</span> {t('csvSources.csvSourcesBackLink')}
+            <span aria-hidden="true">‹ </span>
+            {t('csvSources.csvSourcesBackLink')}
           </Link>
           <h1 className={styles.title}>{t('csvSources.csvSourcesTitle')}</h1>
-          <p className={styles.subtitle}>
-            {t('csvSources.csvSourcesSubtitle')}
-          </p>
-        </div>
-        <div className={styles.headerActions}>
-          <UploadCsvButton />
+          <p className={styles.subtitle}>{t('csvSources.importsNote')}</p>
         </div>
       </header>
 
-      <RecentlyAddedBanner />
-
       <main className={styles.content}>
-        <div className={styles.explainerRow}>
-          <SumExplainer />
-        </div>
-
-        {sources.length > 0 && (
-          <p className={styles.countLine}>
-            <span>
-              {t('csvSources.sourcesCountLine', { count: sources.length, activeCount })}
-            </span>
-            {totalCopies !== undefined && (
-              <span>{t('csvSources.sourcesTotalCopiesLine', { count: totalCopies })}</span>
-            )}
-          </p>
-        )}
-
         {sources.length === 0 ? (
-          <CsvSourcesEmptyState
-            onUpload={() => {
-              // Use a stable data attribute to find the upload trigger regardless of locale.
-              const fileInputLabel = document.querySelector<HTMLLabelElement>(
-                'label[data-upload-csv-trigger="true"]',
-              );
-              fileInputLabel?.click();
-            }}
-          />
+          <CsvSourcesEmptyState onUpload={() => void navigate({ to: '/add-cards/csv' })} />
         ) : (
           <CsvSourceList sources={sources} />
         )}

@@ -320,7 +320,7 @@ describe('LibraryGrid: the manual source label', () => {
 
       await userEvent.click(screen.getByRole('button', { name: /Remover um/i }));
 
-      expect(screen.getByRole('menuitem', { name: /Entradas manuais/ })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /Entradas à mão/ })).toBeInTheDocument();
       expect(screen.getByRole('menuitem', { name: /Meu deck/ })).toBeInTheDocument();
       expect(container.textContent).not.toContain('Manual entries');
     } finally {

@@ -7,9 +7,7 @@ import type { ICsvSource } from '../../api/csv-sources';
 import { usePatchCsvSourceMutation } from '../../api/csv-sources';
 import { useToast } from '../ui/Toast/useToast';
 import { DeleteSourceModal } from './DeleteSourceModal';
-import { formatRelativeTime } from '../../utils/format-relative-time';
 import { deriveSourceKind } from './source-kind';
-import type { TSourceDisplayKind } from './source-kind';
 import styles from './CsvSourceRow.module.css';
 
 // ---------------------------------------------------------------------------
@@ -18,19 +16,17 @@ import styles from './CsvSourceRow.module.css';
 
 interface ICsvSourceRowProps {
   readonly source: ICsvSource;
+  /** Lines of this import still kept "Para resolver". */
+  readonly pendingCount?: number;
 }
-
-const BADGE_LABEL_KEYS: Readonly<Record<Exclude<TSourceDisplayKind, 'manual'>, string>> = {
-  csv: 'csvSources.sourceBadgeCsv',
-  fabrary: 'csvSources.sourceBadgeFabrary',
-};
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 /**
- * CsvSourceRow — renders a single source (CSV, Fabrary or manual) as a list row.
+ * CsvSourceRow — one import of "Importações" (r3-imports-phone): its name, copies and the lines still
+ * to resolve, the link to its versions, the switch that turns it on or off, and a chevron.
  *
  * Features:
  * - Inline label edit (click label → input; Enter/Blur → save)
@@ -38,7 +34,7 @@ const BADGE_LABEL_KEYS: Readonly<Record<Exclude<TSourceDisplayKind, 'manual'>, s
  * - Overflow menu (Radix DropdownMenu) with Rename + Delete actions
  * - Delete opens DeleteSourceModal
  */
-export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement {
+export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): React.ReactElement {
   const { t } = useTranslation();
   const { show } = useToast();
   const patchMutation = usePatchCsvSourceMutation();
@@ -57,8 +53,7 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
   const displayLabel = isManual
     ? t('csvSources.manualSourceLabel')
     : (source.label ?? source.originalFilename ?? t('csvSources.untitledSourceLabel'));
-  const cardCount = source.cardCount ?? 0;
-  const relativeDate = formatRelativeTime(source.createdAt, t);
+  const versionsPath = { to: '/library-csv-sources/$sourceId/versions', params: { sourceId: source.id } } as const;
 
   // Toggle active (optimistic)
   function handleToggle(checked: boolean): void {
@@ -116,72 +111,59 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
         role="listitem"
         data-kind={kind}
       >
-        {!isManual && (
-          <span className={`${styles.badge} ${styles[`badge--${kind}`]}`}>
-            {t(BADGE_LABEL_KEYS[kind])}
-          </span>
-        )}
-
         {/* Label */}
         <div className={styles.labelCell}>
-          {editingLabel ? (
-            <input
-              ref={labelInputRef}
-              id={labelInputId}
-              type="text"
-              value={labelDraft}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={handleLabelKeyDown}
-              className={styles.labelInput}
-              aria-label={t('csvSources.editSourceNameAriaLabel')}
-              aria-describedby={`${labelInputId}-hint`}
-              autoComplete="off"
-            />
-          ) : isManual ? (
-            <span className={styles.labelText}>{displayLabel}</span>
-          ) : (
-            <button
-              type="button"
-              className={styles.labelBtn}
-              onClick={startEdit}
-              aria-label={t('csvSources.renameAriaLabel', { label: displayLabel })}
-              title={t('csvSources.renameTitle')}
-            >
-              {displayLabel}
-            </button>
-          )}
+          <p className={styles.title}>
+            {editingLabel ? (
+              <input
+                ref={labelInputRef}
+                id={labelInputId}
+                type="text"
+                value={labelDraft}
+                onChange={(e) => setLabelDraft(e.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={handleLabelKeyDown}
+                className={styles.labelInput}
+                aria-label={t('csvSources.editSourceNameAriaLabel')}
+                aria-describedby={`${labelInputId}-hint`}
+                autoComplete="off"
+              />
+            ) : isManual ? (
+              <span className={styles.labelText}>{displayLabel}</span>
+            ) : (
+              <button
+                type="button"
+                className={styles.labelBtn}
+                onClick={startEdit}
+                aria-label={t('csvSources.renameAriaLabel', { label: displayLabel })}
+                title={t('csvSources.renameTitle')}
+              >
+                {displayLabel}
+              </button>
+            )}
+            <span className={styles.counts}>
+              {' · '}
+              {t('collectionReader.copiesCount', { count: source.copies })}
+              {pendingCount > 0 && (
+                <>
+                  {' · '}
+                  <span title={t('collectionReader.linesToResolve', { count: pendingCount })}>
+                    {t('collectionReader.toResolve', { count: pendingCount })}
+                  </span>
+                </>
+              )}
+            </span>
+          </p>
 
-          {source.originalFilename !== null && source.label !== null && (
-            <span className={styles.filename}>{source.originalFilename}</span>
-          )}
-
-          <Link
-            to="/library-csv-sources/$sourceId/versions"
-            params={{ sourceId: source.id }}
-            className={styles.versionsLink}
-          >
+          <Link {...versionsPath} className={styles.versionsLink}>
             {t('copyVersions.rowLink')}
           </Link>
-        </div>
-
-        {/* Metadata */}
-        <div className={styles.meta}>
-          <span className={styles.cardCount}>
-            {cardCount.toLocaleString()} {cardCount !== 1 ? t('csvSources.cardPlural') : t('csvSources.cardSingular')}
-          </span>
-          <span className={styles.date} data-testid="relative-time" title={new Date(source.createdAt).toLocaleString()}>
-            {relativeDate}
-          </span>
         </div>
 
         {isManual ? (
           <p className={styles.manualNote}>{t('csvSources.manualAlwaysIncluded')}</p>
         ) : (
           <>
-            <span className={styles.activeLabel}>
-              {source.active ? t('csvSources.activeLabel') : t('csvSources.inactiveLabel')}
-            </span>
             <Switch.Root
               id={switchId}
               checked={source.active}
@@ -226,6 +208,10 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
             </DropdownMenu.Root>
           </>
         )}
+
+        <Link {...versionsPath} className={styles.chevron} aria-hidden="true" tabIndex={-1}>
+          ›
+        </Link>
       </div>
 
       {deleteModalOpen && (

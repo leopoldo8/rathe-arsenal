@@ -65,8 +65,8 @@ export interface ILibraryCard {
 export interface ILibraryCardContribution {
   readonly sourceId: string;
   /**
-   * Human label for the source. Manual entries always read "Manual entries"
-   * — `csv_source.label` defaults to that for `kind='manual'` rows.
+   * Human label for the source. Manual entries read "Entradas à mão" or "Hand entries", by the
+   * language of the request, whatever label the row stores.
    */
   readonly sourceLabel: string;
   readonly kind: TImportKind;

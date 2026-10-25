@@ -81,6 +81,7 @@ function buildSource(overrides: Partial<ICsvSource> = {}): ICsvSource {
     sourceUrl: null,
     contentHash: 'abc',
     cardCount: 42,
+    copies: 42,
     active: true,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -92,10 +93,10 @@ function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function renderRow(source: ICsvSource) {
+function renderRow(source: ICsvSource, pendingCount = 0) {
   return render(
     <QueryClientProvider client={createQueryClient()}>
-      <CsvSourceRow source={source} />
+      <CsvSourceRow source={source} pendingCount={pendingCount} />
     </QueryClientProvider>,
   );
 }
@@ -242,62 +243,50 @@ describe('CsvSourceRow', () => {
       });
     });
 
-    it('renders card count and relative date', () => {
-      renderRow(buildSource({ cardCount: 42 }));
+    it('renders the copies and the lines still to resolve, with no date', () => {
+      renderRow(buildSource({ copies: 612 }), 11);
 
-      expect(screen.getByText(/42 cartas/)).toBeInTheDocument();
-      expect(screen.getByText('2 days ago')).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('My Collection · 612 cópias · 11 para resolver');
+      expect(screen.queryByText('2 days ago')).not.toBeInTheDocument();
+    });
+
+    it('leaves the pending count out when no line waits', () => {
+      renderRow(buildSource({ copies: 1 }), 0);
+
+      expect(screen.getByRole('listitem')).toHaveTextContent('My Collection · 1 cópia');
+      expect(screen.getByRole('listitem')).not.toHaveTextContent('para resolver');
     });
   });
 
-  describe('type badge (LIB-05)', () => {
+  describe('what the row leaves out (r3-imports-phone)', () => {
     it.each([
-      ['csv', { kind: 'csv', sourceUrl: null }, 'CSV'],
-      ['fabrary', { kind: 'csv', sourceUrl: 'https://fabrary.net/decks/ABC' }, 'Fabrary'],
-    ] as const)('renders the %s badge', (_kind, overrides, text) => {
+      ['a csv', { kind: 'csv', sourceUrl: null }],
+      ['a fabrary deck', { kind: 'fabrary', sourceUrl: 'https://fabrary.net/decks/ABC' }],
+      ['the manual source', { kind: 'manual', label: 'Manual entries' }],
+    ] as const)('draws no type badge on %s', (_name, overrides) => {
       renderRow(buildSource(overrides as Partial<ICsvSource>));
-      expect(screen.getByText(text, { selector: 'span' })).toHaveClass(styles.badge!);
-    });
-
-    it('renders no badge for the manual source, whose name already says what it is', () => {
-      renderRow(buildSource({ kind: 'manual', label: 'Manual entries' }));
-      expect(screen.queryByText('Manual', { selector: 'span' })).not.toBeInTheDocument();
       expect(document.querySelector(`.${styles.badge!}`)).toBeNull();
-    });
-  });
-
-  describe('active state (LIB-06)', () => {
-    it('shows the Ativa label and no dim class when active', () => {
-      renderRow(buildSource({ active: true }));
-      expect(screen.getByText('Ativa')).toBeInTheDocument();
-      expect(screen.queryByText('Inativa')).not.toBeInTheDocument();
-      expect(screen.getByRole('listitem')).not.toHaveClass(styles['row--inactive']!);
+      expect(screen.queryByText('CSV', { selector: 'span' })).not.toBeInTheDocument();
     });
 
-    it('flips the label to Inativa and dims the row when inactive', () => {
-      renderRow(buildSource({ active: false }));
-      expect(screen.getByText('Inativa')).toBeInTheDocument();
+    it('says neither Ativa nor Inativa and dims only an inactive row', () => {
+      const active = renderRow(buildSource({ active: true }));
       expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
-      expect(screen.getByRole('listitem')).toHaveClass(styles['row--inactive']!);
-    });
+      expect(screen.getByRole('listitem')).not.toHaveClass(styles['row--inactive']!);
+      active.unmount();
 
-    it('localizes the active labels under en-US', async () => {
-      await setTestLocale('en-US');
-      const { unmount } = renderRow(buildSource({ active: true }));
-      expect(screen.getByText('Active')).toBeInTheDocument();
-      unmount();
       renderRow(buildSource({ active: false }));
-      expect(screen.getByText('Inactive')).toBeInTheDocument();
+      expect(screen.queryByText('Inativa')).not.toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveClass(styles['row--inactive']!);
     });
   });
 
   describe('manual source row', () => {
-    const manual = { kind: 'manual', label: 'Manual entries', originalFilename: null, cardCount: 7 } as const;
+    const manual = { kind: 'manual', label: 'Manual entries', originalFilename: null, cardCount: 7, copies: 4 } as const;
 
-    it('shows the localized name and the card count', () => {
+    it('shows the localized name and the copies', () => {
       renderRow(buildSource(manual));
-      expect(screen.getByText('Entradas manuais')).toBeInTheDocument();
-      expect(screen.getByText(/7 cartas/)).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('Entradas à mão · 4 cópias');
     });
 
     it('renders no toggle, because the backend cannot deactivate it', () => {
@@ -311,20 +300,17 @@ describe('CsvSourceRow', () => {
       expect(screen.queryByRole('button', { name: /renomear/i })).not.toBeInTheDocument();
     });
 
-    it('explains why instead of showing an active label', () => {
+    it('says it is always included instead of showing a switch', () => {
       renderRow(buildSource(manual));
-      expect(
-        screen.getByText('Sempre incluída: cartas adicionadas à mão não podem ser desativadas.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Sempre incluídas')).toBeInTheDocument();
       expect(screen.queryByText('Ativa')).not.toBeInTheDocument();
     });
 
-    it('localizes the explanation under en-US', async () => {
+    it('localizes the name and the note under en-US', async () => {
       await setTestLocale('en-US');
       renderRow(buildSource(manual));
-      expect(
-        screen.getByText("Always included — manually added cards can't be deactivated."),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('listitem')).toHaveTextContent('Hand entries · 4 copies');
+      expect(screen.getByText('Always included')).toBeInTheDocument();
     });
   });
   describe('versions link', () => {

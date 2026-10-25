@@ -4,11 +4,10 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setTestLocale } from '../../../test/i18n-test-utils';
 
 // ---------------------------------------------------------------------------
 // Mocks for TanStack router
@@ -90,101 +89,36 @@ function renderInRouter(node: React.ReactNode): ReturnType<typeof render> {
 }
 
 // ---------------------------------------------------------------------------
-// /add-cards (tab shell)
+// /add-cards (shell)
 // ---------------------------------------------------------------------------
 
-const TAB_PATHS = ['/add-cards/manual', '/add-cards/csv', '/add-cards/scan'] as const;
-
-describe('AddCardsLayout — tab shell (LIB-07)', () => {
+describe('AddCardsLayout (LIB-07)', () => {
   beforeEach(() => {
-    mockLocation.pathname = '/add-cards/manual';
+    mockLocation.pathname = '/add-cards';
     linkSpy.mockClear();
   });
 
-  it('renders the page title and the one-line subtitle', () => {
+  it('draws the heading and no subtitle, tab bar or sentence on the entry screen', () => {
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByRole('heading', { name: /^Adicionar cartas$/i })).toBeInTheDocument();
-    expect(
-      screen.getByText('Registre as cartas que você tem na sua coleção.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText('Registre as cartas que você tem na sua coleção.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /formas de adicionar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Deck do Fabrary' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Biblioteca/ })).not.toBeInTheDocument();
   });
 
-  it('renders the three tabs through the router Link, in order', () => {
-    renderInRouter(<AddCardsLayout />);
-    const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
-    const tabs = within(nav).getAllByRole('link');
-    expect(tabs.map((tab) => tab.textContent)).toEqual([
-      'Manual',
-      'Importar CSV',
-      'Escanear',
-    ]);
-    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([...TAB_PATHS]);
-    for (const path of TAB_PATHS) {
-      expect(linkSpy).toHaveBeenCalledWith(expect.objectContaining({ to: path }));
-    }
-  });
+  it('renders the page body (Outlet) straight on the entry screen and inside the surface panel below it', () => {
+    const entry = renderInRouter(<AddCardsLayout />);
+    expect(screen.getByTestId('tab-outlet').closest('section')).toBeNull();
+    entry.unmount();
 
-  it.each(TAB_PATHS)('marks only the %s tab active', (path) => {
-    mockLocation.pathname = path;
-    renderInRouter(<AddCardsLayout />);
-    const nav = screen.getByRole('navigation', { name: /formas de adicionar/i });
-    const tabs = within(nav).getAllByRole('link');
-    const active = tabs.filter((tab) => tab.getAttribute('data-active') === 'true');
-    expect(active).toHaveLength(1);
-    expect(active[0]).toHaveAttribute('href', path);
-    expect(active[0]).toHaveAttribute('aria-current', 'page');
-    expect(active[0]).toHaveClass(styles.tab!);
-    expect(tabs.filter((tab) => tab !== active[0]).every((tab) => !tab.hasAttribute('aria-current'))).toBe(true);
-  });
-
-  it('shows exactly one explanatory sentence, the one for the active tab', () => {
-    mockLocation.pathname = '/add-cards/csv';
-    renderInRouter(<AddCardsLayout />);
-    expect(screen.getByText('Envie uma planilha exportada de outra ferramenta.')).toBeInTheDocument();
-    expect(screen.queryByText(/Busque a carta e informe/)).not.toBeInTheDocument();
-  });
-
-  it('shows the manual sentence on its own tab, and no Fabrary tab', () => {
     mockLocation.pathname = '/add-cards/manual';
     renderInRouter(<AddCardsLayout />);
-    expect(screen.getByText('Busque a carta e informe quantas você tem.')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Deck do Fabrary' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('tab-outlet').closest('section')).toHaveClass(styles.panel!);
   });
 
-  it('shows the Scan tab', async () => {
-    await setTestLocale('en-US');
-    mockLocation.pathname = '/add-cards/scan';
-    renderInRouter(<AddCardsLayout />);
-
-    const scanTab = screen.getByRole('link', { name: 'Scan' });
-    expect(scanTab).toHaveAttribute('href', '/add-cards/scan');
-    expect(scanTab).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText("Point your phone's camera at your cards, one at a time.")).toBeInTheDocument();
-  });
-
-  it('localizes tabs and sentences under en-US', async () => {
-    await setTestLocale('en-US');
+  it('links back to the library and on to the sources page below the entry screen', () => {
     mockLocation.pathname = '/add-cards/csv';
-    renderInRouter(<AddCardsLayout />);
-    expect(screen.getByRole('link', { name: 'Import CSV' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Fabrary deck' })).not.toBeInTheDocument();
-    expect(screen.getByText('Upload a spreadsheet exported from another tool.')).toBeInTheDocument();
-  });
-
-  it('no longer renders the roman numerals or the three long method paragraphs', () => {
-    renderInRouter(<AddCardsLayout />);
-    expect(screen.queryByText(/^(I|II|III)$/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Ideal para ajustes rápidos/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Cole o link de um deck/)).not.toBeInTheDocument();
-  });
-
-  it('renders the active tab body (Outlet) inside the surface panel', () => {
-    renderInRouter(<AddCardsLayout />);
-    const panel = screen.getByTestId('tab-outlet').closest('section');
-    expect(panel).toHaveClass(styles.panel!);
-  });
-
-  it('links back to the library and on to the sources page', () => {
     renderInRouter(<AddCardsLayout />);
     expect(screen.getByRole('link', { name: /Biblioteca/ })).toHaveAttribute('href', '/library');
     expect(screen.getByRole('link', { name: /Gerenciar fontes da biblioteca/ })).toHaveAttribute(
@@ -224,9 +158,36 @@ describe('/add-cards index page', () => {
     expect(screen.queryByText(/Deck do Fabrary encontrado/)).not.toBeInTheDocument();
   });
 
-  it('shows the paste box with its hint before anything is pasted', () => {
+  it('matches r3-add-phone copy and order', () => {
     renderInRouter(<AddCardsIndexPage />);
-    expect(screen.getByPlaceholderText('Cole aqui')).toBeInTheDocument();
-    expect(screen.getByText('Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas')).toBeInTheDocument();
+
+    const paste = screen.getByPlaceholderText('Cole aqui');
+    const hint = screen.getByText('Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas');
+    const rows = screen.getAllByRole('link');
+    expect(rows.map((row) => row.textContent?.replace('›', '').trim())).toEqual([
+      'Comprei um deck pronto',
+      'Enviar uma planilha (.csv)',
+      'Fotografar as cartas',
+      'Digitar o nome',
+    ]);
+    expect(rows.map((row) => row.getAttribute('href'))).toEqual([
+      '/add-cards/product',
+      '/add-cards/csv',
+      '/add-cards/scan',
+      '/add-cards/manual',
+    ]);
+    const order = [paste, hint, ...rows];
+    order.slice(1).forEach((node, index) => {
+      expect(order[index]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  it('puts the ways in away once a deck link is found', async () => {
+    const user = userEvent.setup();
+    renderInRouter(<AddCardsIndexPage />);
+    await user.click(screen.getByRole('textbox'));
+    await user.paste('https://fabrary.net/decks/01J0Z8K4M2ABCDEFGHJKMNPQRS');
+
+    expect(screen.queryByRole('link', { name: /Comprei um deck pronto/ })).not.toBeInTheDocument();
   });
 });

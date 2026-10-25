@@ -1,6 +1,6 @@
 /**
- * /library-csv-sources — count line, source rows incl. Manual, centred column.
- * Covers LIB-05 and the container side of LIB-06.
+ * /library-csv-sources ("Importações") — one row per import incl. the manual one, the summing note, centred column.
+ * The screen itself is r3-imports-phone, asserted in components/csv-sources/__tests__/CsvSourceList.spec.tsx.
  */
 
 import React from 'react';
@@ -11,6 +11,7 @@ import { setTestLocale } from '../../../test/i18n-test-utils';
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (config: unknown) => config,
+  useNavigate: () => vi.fn(),
   Link: ({ children, to, className }: { children: React.ReactNode; to: string; className?: string }) => (
     <a href={to} className={className}>{children}</a>
   ),
@@ -24,23 +25,11 @@ vi.mock('../../../api/csv-sources', () => ({
   usePreviewDeleteCsvSource: () => vi.fn(),
 }));
 
-const libraryQuery = vi.fn();
-vi.mock('../../../api/library', () => ({
-  useLibraryQuery: () => libraryQuery(),
-  LIBRARY_QUERY_KEY: ['library'],
-}));
-
-vi.mock('../../../components/csv-sources/UploadCsvButton', () => ({
-  UploadCsvButton: () => <button type="button">Enviar CSV</button>,
-}));
-vi.mock('../../../components/library/RecentlyAddedBanner', () => ({
-  RecentlyAddedBanner: () => null,
+vi.mock('../../../api/collection-imports', () => ({
+  usePendingLinesQuery: () => ({ data: { imports: [] } }),
 }));
 vi.mock('../../../components/ui/Toast/useToast', () => ({
   useToast: () => ({ show: vi.fn() }),
-}));
-vi.mock('../../../utils/format-relative-time', () => ({
-  formatRelativeTime: () => 'há 2 dias',
 }));
 
 import { LibraryCsvSourcesPage } from '../library-csv-sources';
@@ -57,6 +46,7 @@ function build(overrides: Partial<ICsvSource>): ICsvSource {
     sourceUrl: null,
     contentHash: null,
     cardCount: 10,
+    copies: 10,
     active: true,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -82,93 +72,37 @@ function renderPage(): ReturnType<typeof render> {
 describe('LibraryCsvSourcesPage', () => {
   beforeEach(() => {
     sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: FOUR_SOURCES });
-    libraryQuery.mockReturnValue({ data: { stats: { totalCopies: 389 } } });
   });
 
-  it('states how many sources exist and how many are active', () => {
-    renderPage();
-    expect(screen.getByText('4 fontes, 3 em uso')).toBeInTheDocument();
-  });
-
-  it('takes the combined card total from the library stats, not from summing rows', () => {
-    renderPage();
-    expect(screen.getByText('389 cartas no total')).toBeInTheDocument();
-  });
-
-  it('omits the combined total while the library stats are not loaded', () => {
-    libraryQuery.mockReturnValue({ data: undefined });
-    renderPage();
-    expect(screen.getByText('4 fontes, 3 em uso')).toBeInTheDocument();
-    expect(screen.queryByText(/cartas no total/)).not.toBeInTheDocument();
-  });
-
-  it('localizes the count line under en-US', async () => {
-    await setTestLocale('en-US');
-    renderPage();
-    expect(screen.getByText('4 sources · 3 active')).toBeInTheDocument();
-    expect(screen.getByText('389 cards combined')).toBeInTheDocument();
-  });
-
-  it('uses the singular form for exactly one source and the plural for two, in both locales', async () => {
-    sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [FOUR_SOURCES[0]!] });
-    const { unmount } = renderPage();
-    expect(screen.getByText('1 fonte, 1 em uso')).toBeInTheDocument();
-    unmount();
-    await setTestLocale('en-US');
-    const single = renderPage();
-    expect(screen.getByText('1 source · 1 active')).toBeInTheDocument();
-    single.unmount();
-    sourcesQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: [FOUR_SOURCES[0]!, FOUR_SOURCES[1]!],
-    });
-    renderPage();
-    expect(screen.getByText('2 sources · 2 active')).toBeInTheDocument();
-  });
-
-  it('renders the pt-BR plural for two sources', () => {
-    sourcesQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: [FOUR_SOURCES[0]!, FOUR_SOURCES[1]!],
-    });
-    renderPage();
-    expect(screen.getByText('2 fontes, 2 em uso')).toBeInTheDocument();
-  });
-
-  it('renders every source row, including the Manual one with no toggle', () => {
+  it('renders every source row, including the manual one with no toggle', () => {
     renderPage();
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
-    expect(screen.getByText('Entradas manuais')).toBeInTheDocument();
+    expect(screen.getByText('Entradas à mão')).toBeInTheDocument();
     expect(screen.getAllByRole('switch')).toHaveLength(3);
   });
 
-  it('shows a type badge on CSV and Fabrary rows, none on the manual row', () => {
-    renderPage();
-    expect(screen.getAllByText('CSV', { selector: 'span' })).toHaveLength(2);
-    expect(screen.getAllByText('Fabrary', { selector: 'span' })).toHaveLength(1);
-    expect(screen.queryByText('Manual', { selector: 'span' })).not.toBeInTheDocument();
-  });
-
-  it('labels each non-manual row Ativa or Inativa', () => {
-    renderPage();
-    expect(screen.getAllByText('Ativa', { selector: 'span' })).toHaveLength(2);
-    expect(screen.getAllByText('Inativa', { selector: 'span' })).toHaveLength(1);
-  });
-
-  it('collapses the explainer to the one-line note by default', () => {
+  it('says the summing rule once, under the heading, and no longer counts the sources', () => {
     renderPage();
     expect(
-      screen.getByRole('button', { name: 'Se a mesma carta aparece em duas fontes, as quantidades somam.' }),
-    ).toHaveAttribute('aria-expanded', 'false');
+      screen.getAllByText(/Se a mesma carta aparece em duas importações, as quantidades somam/),
+    ).toHaveLength(1);
+    expect(screen.queryByText(/\d+ fontes?, \d+ em uso/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cartas no total/)).not.toBeInTheDocument();
   });
 
-  it('links back to the library and renders no count line for an empty list', () => {
+  it('localizes the heading and the note under en-US', async () => {
+    await setTestLocale('en-US');
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'Imports' })).toBeInTheDocument();
+    expect(screen.getByText(/If the same card appears in two imports, the quantities add up/)).toBeInTheDocument();
+    expect(screen.getByText('Hand entries', { selector: 'span' })).toBeInTheDocument();
+  });
+
+  it('links back to the collection and renders no list for an empty one', () => {
     sourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [] });
     renderPage();
-    expect(screen.getByRole('link', { name: /Biblioteca/ })).toHaveAttribute('href', '/library');
-    expect(screen.queryByText(/\d+ fontes?, \d+ em uso/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Coleção/ })).toHaveAttribute('href', '/library');
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('wraps the page in the centred column class', () => {

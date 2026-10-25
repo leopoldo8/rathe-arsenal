@@ -110,3 +110,45 @@ test('the page behind "Resolver" fits a phone with no control over another', asy
 
   await api.dispose();
 });
+
+test('long import names wrap on a phone', async ({ page, context }) => {
+  const api = await playwrightRequest.newContext({ baseURL: BASE_URL });
+  const email = `names-${Date.now().toString(36)}@test.local`;
+  const signUp = await api.post('/api/auth/sign-up', { data: { email, password: PASSWORD } });
+  expect(signUp.status()).toBe(201);
+  const session = (signUp.headers()['set-cookie'] ?? '').match(/ra_session=([^;]+)/)?.[1];
+  expect(session, 'the sign-up set the session cookie').toBeTruthy();
+
+  const name = 'colecao-lucas-importada-em-outubro-2026';
+  expect(name).toHaveLength(39);
+  const longName = `${name}!`;
+  const created = await api.post('/api/collection/imports', {
+    data: { kind: 'csv', name: longName, ready: [{ cardIdentifier: 'snatch-red', quantity: 1 }], pending: [] },
+  });
+  expect(created.status()).toBe(201);
+
+  await context.addCookies([
+    { name: 'ra_session', value: session!, domain: new URL(BASE_URL).hostname, path: '/api', httpOnly: true, secure: false, sameSite: 'Lax' },
+  ]);
+  await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
+  await page.goto('/library-csv-sources');
+
+  const label = page.getByRole('button', { name: /Renomear/ }).first();
+  await label.waitFor();
+  await expect(label).toHaveText(longName);
+  const measured = await label.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+      textOverflow: style.textOverflow,
+      height: element.getBoundingClientRect().height,
+      lineHeight: Number.parseFloat(style.lineHeight),
+    };
+  });
+  expect(measured.textOverflow).not.toBe('ellipsis');
+  expect(measured.scrollWidth).toBeLessThanOrEqual(measured.clientWidth);
+  expect(measured.height, 'the name takes a second line').toBeGreaterThan(measured.lineHeight * 1.5);
+
+  await api.dispose();
+});

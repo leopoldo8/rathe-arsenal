@@ -47,6 +47,9 @@ export interface IDeleteSourceResult {
  * 2. On constraint violation the catch block re-reads the row within the same
  *    EntityManager context, ensuring the caller participates in the outer tx.
  */
+/** A source as the list answers it: with the copies it holds. */
+export type ISourceWithCopies = CsvSourceEntity & { readonly copies: number };
+
 @Injectable()
 export class SourcesService {
   private readonly logger = new Logger(SourcesService.name);
@@ -73,7 +76,7 @@ export class SourcesService {
    * newest first. The manual source never stores a running total, so its
    * `cardCount` is counted per request and never saved.
    */
-  async list(userId: string): Promise<CsvSourceEntity[]> {
+  async list(userId: string): Promise<ISourceWithCopies[]> {
     const sources = await this.csvSourceRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
@@ -86,7 +89,20 @@ export class SourcesService {
       });
     }
 
-    return sources;
+    const copiesBySource = await this.copiesBySource(userId);
+    return sources.map((source) => Object.assign(source, { copies: copiesBySource.get(source.id) ?? 0 }));
+  }
+
+  /** Copies, not rows: a card at two versions or three copies counts every copy once. */
+  private async copiesBySource(userId: string): Promise<Map<string, number>> {
+    const rows: Array<{ sourceId: string; copies: string }> = await this.collectionCardRepo
+      .createQueryBuilder('copy')
+      .select('copy."sourceId"', 'sourceId')
+      .addSelect('COALESCE(SUM(copy.quantity), 0)', 'copies')
+      .where('copy."userId" = :userId', { userId })
+      .groupBy('copy."sourceId"')
+      .getRawMany();
+    return new Map(rows.map((row) => [row.sourceId, Number(row.copies)]));
   }
 
   // ---------------------------------------------------------------------------

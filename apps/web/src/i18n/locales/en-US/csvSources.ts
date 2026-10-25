@@ -18,12 +18,12 @@ export const csvSources = {
 
   // SumExplainer
   sumExplainerTrigger: 'Duplicates across sources are summed, not overwritten.',
-  manualSourceLabel: 'Manual entries',
+  manualSourceLabel: 'Hand entries',
   activeLabel: 'Active',
   inactiveLabel: 'Inactive',
   sourceBadgeCsv: 'CSV',
   sourceBadgeFabrary: 'Fabrary',
-  manualAlwaysIncluded: 'Always included — manually added cards can\'t be deactivated.',
+  manualAlwaysIncluded: 'Always included',
   untitledSourceLabel: 'Untitled CSV',
   deleteFallbackLabel: 'This CSV',
   sourcesCountLine_one: '{{count}} source · {{activeCount}} active',
@@ -122,9 +122,9 @@ export const csvSources = {
   skipReasonEmptyName: 'Empty card name',
 
   // Library CSV sources route
-  csvSourcesBackLink: 'Library',
-  csvSourcesTitle: 'Library sources',
-  csvSourcesSubtitle: 'Each source is one import of your collection. Turn a source off to take its cards out of your library without losing the file. Cards added by hand and Fabrary imports show up here too.',
+  csvSourcesBackLink: 'Collection',
+  csvSourcesTitle: 'Imports',
+  importsNote: 'If the same card appears in two imports, the quantities add up. Turn off an import that repeats cards you already had.',
   csvSourcesErrorBanner: 'Failed to load library sources.',
   csvSourcesRetryButton: 'Retry',
 

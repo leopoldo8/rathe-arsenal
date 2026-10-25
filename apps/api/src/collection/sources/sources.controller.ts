@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ICurrentUser } from '../../auth/dtos/current-user.dto';
-import { SourcesService, IPreviewDeleteResult, IDeleteSourceResult } from './sources.service';
+import { SourcesService, IPreviewDeleteResult, IDeleteSourceResult, ISourceWithCopies } from './sources.service';
 import {
   FabraryImportService,
   IFabraryImportResult,
@@ -20,6 +20,9 @@ import {
 import { PatchSourceDto } from './dtos/patch-source.dto';
 import { ImportFromFabraryDto } from './dtos/import-from-fabrary.dto';
 import { CsvSourceEntity } from '../../database/entities/csv-source.entity';
+import { AcceptLanguage } from '../../common/i18n/accept-language.decorator';
+import { TLocale } from '../../common/i18n/resolve-locale';
+import { sourceLabelFor } from './source-label.util';
 
 /**
  * Lists every `csv_source` row (manual included); PATCH and DELETE only accept kind='csv' rows.
@@ -60,8 +63,10 @@ export class SourcesController {
   @Get()
   async list(
     @CurrentUser() user: ICurrentUser,
-  ): Promise<CsvSourceEntity[]> {
-    return this.sourcesService.list(user.userId);
+    @AcceptLanguage() locale: TLocale = 'pt-BR',
+  ): Promise<ISourceWithCopies[]> {
+    const sources = await this.sourcesService.list(user.userId);
+    return sources.map((source) => ({ ...source, label: sourceLabelFor(source, locale) }));
   }
 
   @Patch(':id')

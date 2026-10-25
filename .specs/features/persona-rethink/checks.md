@@ -621,29 +621,29 @@ Proof: `web unit src/routes/_auth/__tests__/-add-cards.test.tsx -t "the paste bo
 
 ### S15 - One way in, and the "Importações" list · 19 files · 51 KB · ~21k
 
-**C178** - `r3-first-run-phone`: a new account sees, in order, "Como você quer começar?", the large "Comprei um deck pronto" with "Armory Deck, Blitz Deck ou Silver Age, na caixa", then the rows "Tem um link ou uma lista? Colar aqui", "Enviar uma planilha (.csv)", "Fotografar ou digitar as cartas", and "Pular por agora" (AC 107, AC 112)
+**C178** - `r3-first-run-phone`: a new account sees, in order, "Como você quer começar?", the large "Comprei um deck pronto" with "Armory Deck, Blitz Deck ou Silver Age, na caixa", then the rows "Tem um link ou uma lista? Colar aqui", "Enviar uma planilha (.csv)", "Fotografar ou digitar as cartas", and "Pular por agora" (AC 107, AC 112) · done
 Proof: `web unit src/components/onboarding/__tests__/FirstRunChooser.spec.tsx -t "matches r3-first-run-phone copy and order"`
 
-**C179** - A new account opening the app lands on the first-run screen; an account with a deck or an import does not (AC 107)
+**C179** - A new account opening the app lands on the first-run screen; an account with a deck or an import does not (AC 107) · done
 Proof: `web unit src/routes/_auth/__tests__/-onboarding-redirect.spec.tsx -t "a new account starts on the first-run chooser"`
 
-**C180** - `r3-add-phone`: "Adicionar cartas" shows, in order, the paste box "Cole aqui" with "Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas", then "Comprei um deck pronto", "Enviar uma planilha (.csv)", "Fotografar as cartas", "Digitar o nome"; the old "Deck do Fabrary" tab is gone (AC 108, AC 112)
+**C180** - `r3-add-phone`: "Adicionar cartas" shows, in order, the paste box "Cole aqui" with "Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas", then "Comprei um deck pronto", "Enviar uma planilha (.csv)", "Fotografar as cartas", "Digitar o nome"; the old "Deck do Fabrary" tab is gone (AC 108, AC 112) · done
 Proof: `web unit src/routes/_auth/__tests__/-add-cards.test.tsx -t "matches r3-add-phone copy and order"`
 
-**C181** - `r3-imports-phone`: the page "Importações" shows "‹ Coleção", the summing note once ("Se a mesma carta aparece em duas importações, as quantidades somam. Desligue uma importação que repete cartas que você já tinha."), then one row per import with its name, its copies and, when above zero, its "para resolver" count ("colecao-lucas.csv · 612 cópias · 11 para resolver"), and "Entradas à mão · 4 cópias" with "Sempre incluídas" (AC 109, AC 112)
+**C181** - `r3-imports-phone`: the page "Importações" shows "‹ Coleção", the summing note once ("Se a mesma carta aparece em duas importações, as quantidades somam. Desligue uma importação que repete cartas que você já tinha."), then one row per import with its name, its copies and, when above zero, its "para resolver" count ("colecao-lucas.csv · 612 cópias · 11 para resolver"), and "Entradas à mão · 4 cópias" with "Sempre incluídas" (AC 109, AC 112) · done
 Proof: `web unit src/components/csv-sources/__tests__/CsvSourceList.spec.tsx -t "matches r3-imports-phone copy and order"`
 
-**C182** - On a 360 px phone a 40-character import name wraps to a second line: its text element is not truncated (`scrollWidth` ≤ `clientWidth`, no ellipsis) and the full name is in the DOM (AC 109)
+**C182** - On a 360 px phone a 40-character import name wraps to a second line: its text element is not truncated (`scrollWidth` ≤ `clientWidth`, no ellipsis) and the full name is in the DOM (AC 109) · done
 Proof: `web e2e --project=mobile-360 tests/mobile/collection-in-layout.spec.ts -g "long import names wrap on a phone"`
 
-**C183** - The manual source label is "Entradas à mão" in pt-BR and "Hand entries" in en-US in every locale file that names it, and the API's source label for kind `manual` returns "Entradas à mão" for `Accept-Language: pt-BR`; no locale value or API label contains "Manual entries" (AC 110)
+**C183** - The manual source label is "Entradas à mão" in pt-BR and "Hand entries" in en-US in every locale file that names it, and the API's source label for kind `manual` returns "Entradas à mão" for `Accept-Language: pt-BR`; no locale value or API label contains "Manual entries" (AC 110) · done
 Proof: `api unit src/collection/__tests__/source-label.util.spec.ts -t "the manual source is Entradas à mão"`
 Proof: `web unit src/i18n/__tests__/collection-in-locales.spec.ts -t "the manual source has one name in every locale"`
 
-**C184** - Counts use plural rules, table-driven over 0, 1 and 2 in pt-BR and en-US: "0 cartas importadas", "1 carta importada", "2 cartas importadas"; "0 cópias", "1 cópia", "2 cópias"; "1 linha para resolver", "2 linhas para resolver" (AC 111)
+**C184** - Counts use plural rules, table-driven over 0, 1 and 2 in pt-BR and en-US: "0 cartas importadas", "1 carta importada", "2 cartas importadas"; "0 cópias", "1 cópia", "2 cópias"; "1 linha para resolver", "2 linhas para resolver" (AC 111) · done
 Proof: `web unit src/i18n/__tests__/collection-in-locales.spec.ts -t "collection counts use plural forms"`
 
-**C185** - `csv_source` accepts `kind` `csv`, `paste`, `product`, `fabrary` and `manual` and refuses `deck`; existing Fabrary imports (`kind = 'csv'` with a `sourceUrl`) read `fabrary` after the migration (door 6)
+**C185** - `csv_source` accepts `kind` `csv`, `paste`, `product`, `fabrary` and `manual` and refuses `deck`; existing Fabrary imports (`kind = 'csv'` with a `sourceUrl`) read `fabrary` after the migration (door 6) · done
 Proof: `api int src/database/migrations/__tests__/import-kinds-and-pending.migration.int-spec.ts -t "the import kind constraint has the five kinds"`
 
 ### S16 - One honest store answer per card, under a monthly budget · 40 files · 254 KB · ~80k
@@ -1326,7 +1326,7 @@ Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "start is thro
 **C351** - With `next: "new"` for "bia.souza@gmail.com" the page shows, in this order: the heading "Criar sua conta"; "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; the one button "Criar conta e entrar"; the link "Prefiro criar uma senha"; and the staying-in line of C384; "Errei o e-mail" returns to the field with the address in it (screen `r3-new-account-phone`) (AC 222, AC 227) · done
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "a new address offers one button and the password link"`
 
-**C352** - "Criar conta e entrar" calls `POST /api/auth/sign-up` with no `password`; the API answers `201` with `user` and a `Set-Cookie` for `ra_session`, stores the user with `passwordHash` null and `emailVerifiedAt` null, and `GET /api/auth/me` with that cookie answers `200`; with no shared page the web then shows journey 2's "Como você quer começar?" and the toast "Conta criada. Toque no botão do e-mail que mandamos para bia.souza@gmail.com para confirmar." (screen `r3-home-unconfirmed-phone`) (AC 223)
+**C352** - "Criar conta e entrar" calls `POST /api/auth/sign-up` with no `password`; the API answers `201` with `user` and a `Set-Cookie` for `ra_session`, stores the user with `passwordHash` null and `emailVerifiedAt` null, and `GET /api/auth/me` with that cookie answers `200`; with no shared page the web then shows journey 2's "Como você quer começar?" and the toast "Conta criada. Toque no botão do e-mail que mandamos para bia.souza@gmail.com para confirmar." (screen `r3-home-unconfirmed-phone`) (AC 223) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "sign-up without a password creates a signed-in account"`
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "creating the account signs in and opens the first-steps page"`
 

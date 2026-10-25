@@ -18,6 +18,7 @@ export const copyVersions = {
 
   // CardVersionsSheet
   sheetAriaLabel: 'Versões das cópias de {{name}}',
+  copiesCount_zero: '{{count}} cópias',
   copiesCount_one: '{{count}} cópia',
   copiesCount_other: '{{count}} cópias',
   groupUnknown: '{{count}} sem versão informada',
@@ -27,6 +28,7 @@ export const copyVersions = {
   versionLabel: 'Versão',
   versionSearch: 'Procurar versão',
   versionExplain: 'Versão: a coleção e a arte da carta (o código no rodapé, como WTR023)',
+  moreVersions_zero: '+ {{count}} versões',
   moreVersions_one: '+ {{count}} versão',
   moreVersions_other: '+ {{count}} versões',
   noVersionMatches: 'Nenhuma versão com esse nome.',
@@ -44,6 +46,7 @@ export const copyVersions = {
   bulkBack: 'Importações',
   bulkSubtitle: '{{label}} · {{copies}}',
   bulkMarkAll: 'Marcar de uma vez',
+  bulkApply_zero: 'Aplicar às {{count}} cópias sem versão',
   bulkApply_one: 'Aplicar à {{count}} cópia sem versão',
   bulkApply_other: 'Aplicar às {{count}} cópias sem versão',
   bulkApplyNote: 'As que você já marcou não mudam.',

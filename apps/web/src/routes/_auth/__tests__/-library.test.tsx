@@ -550,7 +550,7 @@ describe('LibraryPage — quantity stepper survives (LIB-01, ruling 3.4)', () =>
     await userEvent.click(screen.getByRole('button', { name: 'Remover uma cópia de Multi Card (Vermelho)' }));
     expect(screen.getByRole('menu', { name: /De qual fonte remover 1 cópia de/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Planilha/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Entradas manuais/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Entradas à mão/ })).toBeInTheDocument();
     expect(mockDecrementMutate).not.toHaveBeenCalled();
   });
 });

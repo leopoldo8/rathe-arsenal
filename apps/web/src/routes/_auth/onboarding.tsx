@@ -1,7 +1,8 @@
 import React from 'react';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useDecksQuery } from '../../api/decks';
-import { OnboardingWizard } from '../../components/onboarding/OnboardingWizard';
+import { FirstRunChooser } from '../../components/onboarding/FirstRunChooser';
+import { DEFAULT_LIBRARY_SEARCH } from './-library.helpers';
 import { OnboardingSkeleton } from '../../components/onboarding/OnboardingSkeleton';
 
 export const Route = createFileRoute('/_auth/onboarding')({
@@ -9,17 +10,11 @@ export const Route = createFileRoute('/_auth/onboarding')({
 });
 
 /**
- * Onboarding page — entry point for the 3-step onboarding wizard.
+ * First-run page: the screen "Como você quer começar?" for an account with no deck and no cards.
  *
- * R60 guard: if the user already has tracked decks, redirect to
- * /decks/new (the deck tracking surface). While the decks query is loading,
- * render null to prevent a flash of the wizard for returning users on slow
- * networks.
- *
- * The guard intentionally catches mid-wizard re-entry: a user who completed
- * step 1 (decks imported), navigated away, and then returned to /onboarding
- * is redirected to /decks/new rather than resuming the wizard. This is a
- * deliberate block — v1 has no in-progress-onboarding state persistence.
+ * R60 guard: an account that already has tracked decks goes to /decks/new (the deck tracking
+ * surface), and one that has cards but no deck goes to the collection. While the decks query is
+ * loading, a skeleton avoids a flash of the first-run screen for a returning player on a slow network.
  */
 export function OnboardingPage(): React.ReactElement {
   const decksQuery = useDecksQuery();
@@ -33,5 +28,9 @@ export function OnboardingPage(): React.ReactElement {
     return <Navigate to="/decks/new" replace />;
   }
 
-  return <OnboardingWizard />;
+  if ((decksQuery.data?.collectionCardCount ?? 0) > 0) {
+    return <Navigate to="/library" search={DEFAULT_LIBRARY_SEARCH} replace />;
+  }
+
+  return <FirstRunChooser />;
 }
