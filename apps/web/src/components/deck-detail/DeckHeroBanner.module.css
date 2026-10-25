@@ -249,3 +249,15 @@
   font-size: var(--ra-text-xs);
   color: var(--ra-fg-secondary);
 }
+
+.stageChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ra-space-1) var(--ra-space-3);
+  background: var(--ra-bg-raised);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-primary);
+}

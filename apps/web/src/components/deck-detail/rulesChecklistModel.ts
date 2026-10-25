@@ -157,7 +157,7 @@ function deckSizeText({ deckSize, target, exact }: ISize, t: TFunction): string 
   return t('deckDetail.editorDeckSizeOver', { count: deckSize, target, extra: deckSize - target });
 }
 
-function barText({ deckSize, target, exact, problemCount }: ISize & { readonly problemCount: number }, t: TFunction): string {
+export function barText({ deckSize, target, exact, problemCount }: ISize & { readonly problemCount: number }, t: TFunction): string {
   const size = !exact && deckSize >= target ? t('deckDetail.rulesBarSizeOver', { count: deckSize }) : t('deckDetail.rulesBarSize', { count: deckSize, target });
   const problems = problemCount === 0 ? t('deckDetail.rulesBarNoProblem') : t('deckDetail.rulesBarProblems', { count: problemCount });
   return `${size} · ${problems}`;

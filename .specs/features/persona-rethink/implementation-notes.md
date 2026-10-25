@@ -275,6 +275,20 @@
   `SharedLegalityBlock` sits between the header and "Copiar lista" as `r3-shared-phone` draws; the line "Você tocou em X" is drawn by the mockup and is built.
 - `computeDeckLegalityInOtherFormats` (engine) is used by the API; `RULE_CHANGES` and `IRuleChange` are exported from the engine's barrel for S10.
 
+### S10 (batch 8)
+
+- The notice sits in the deck page's view mode, under the header: the notice, the eight cards with their red line and a single stepper, "Deixar 1 de cada" with its explanation, and "Prefiro escolher carta por carta".
+  Both mockups draw the editor's rows, but the editor exists only in `?edit=1`, and "Deixar 1 de cada" saves at once (C114), so the rows are a smaller row of their own (`RuleChangedRow`) with only the controls the mockup draws; the editor's inventory stepper and remove button are not drawn.
+  The row's "-" takes one copy out and saves with one `PUT`, with no toast; "+" is always disabled because the card is over its limit.
+  "Prefiro escolher carta por carta" hides the notice, its button and its explanation, and keeps the rows.
+- `RULE_CHANGES` is read by the web through the engine's browser entry; the entry has no field for which problem it explains, so `ruleChangedModel.ts` maps `summaryKey` to the problem it covers (`blitz_one_copy_each`: a non-legendary, non-restricted card with exactly 2 copies in Blitz). A card with 3 or more copies is not part of the change and is not listed.
+  `Flow` in `plan.md` no longer says `DecksService` reads `RULE_CHANGES`.
+- The bar "32 de 40 cartas · nenhum problema" of `r2-one-each-phone` is a status line shown after "Deixar 1 de cada" until "Desfazer"; the view mode has no always-on rules bar (only the editor does).
+- C118's stage chip: a deck short of cards and with no rule problem now shows the chip "Jogando · 32 de 40 cartas" in the deck header instead of the "Incompleto" badge, and the list heading reads "32 de 40 cartas no deck · coloque mais 8". S6's table says only the stage chip shows there; the check wins.
+- While the notice shows, the red cause line is hidden (the notice names the same cards).
+- `DeckDetailView.recommendations.spec.tsx` and `DeckDetailView.suggestions.spec.tsx` render the view with no toast provider or query client; they now stub the toast hook, or the two new children, which changes only their setup.
+- The visual baselines of `deck-detail` and `decks-new` were refreshed: the first fixture deck is a hero outside its format and now shows the panel.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -326,3 +340,4 @@
   - `/decks/new`: "Nenhum herói encontrado." (a search with no result); "Classic Constructed: pelo menos 60 cartas, até 3 cópias de cada" and "Living Legend: pelo menos 60 cartas, até 3 cópias de cada, e só 1 de uma carta restrita" (from the rules table of `.design/deck-building.md`); a hero that is not young shows no line under "Você escolheu X".
   - Deck page, hero outside the format: "Não foi possível mudar o formato. Tente de novo." (a refused switch or undo); "Em X" as the heading of each format when none is valid; the sentence of the red block for a card problem other than a ban uses the existing localized reasons.
   - Shared deck page: "O deck tem N cartas; o mínimo no X é N.", "N é lendária e só pode ter 1 cópia; tem N.", "... é restrita no X ...", the steps "tirar N carta", "tirar carta", "escolher outro herói ou outro formato", "tirar N cartas do deck"; the answers of a tapped chip "Em X: vale.", "Em X: não vale. <primeiro motivo>", "Em X: ainda não vale. <tamanho>".
+- S10, copy of mine: "Não foi possível salvar o deck. Tente de novo." (a refused save from the notice's buttons and rows); the singular forms of the notice and of its explanation ("1 carta deste deck tem 2.", "Tira 1 cópia da carta ..."); the "Deixar 1 de cada" toast says "do deck" even if the copy came from the inventory of a card with no deck copy.

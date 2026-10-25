@@ -21,6 +21,10 @@ import { buildDeckList } from './deckListModel';
 import { buildListCards } from './deckListCards';
 import { CopyListSheet } from './CopyListSheet';
 import { HeroOutsideFormatPanel } from './HeroOutsideFormatPanel';
+import { RuleChangedNotice } from './RuleChangedNotice';
+import { findRuleChangedProblem } from './ruleChangedModel';
+import { RULE_CHANGES } from '@rathe-arsenal/engine/legality';
+import { buildDraftInitialPayload } from '../../routes/_auth/-deck-detail-draft';
 import { hasHeroOutsideFormat } from './heroOutsideFormatModel';
 import { useOtherFormatVerdicts } from './useOtherFormatVerdicts';
 import styles from './DeckDetailView.module.css';
@@ -86,6 +90,8 @@ export function DeckDetailView({
     [snapshot.breakdown, summary.openMissing, deck.hero],
   );
   const otherFormats = useOtherFormatVerdicts(deck, snapshot);
+  const savedCards = useMemo(() => buildDraftInitialPayload(deck, snapshot).cards, [deck, snapshot]);
+  const showsRuleChange = findRuleChangedProblem(deck.format, deck.legality.details, savedCards, RULE_CHANGES) !== null;
   const deckCards = useMemo((): IRecommendationDeckCard[] => {
     const seen = new Map<string, IRecommendationDeckCard>();
     for (const { entry } of items) {
@@ -131,7 +137,14 @@ export function DeckDetailView({
         legality={deck.legality}
         otherFormats={otherFormats}
       />
-      {!hasHeroOutsideFormat(deck.legality.details) && <DeckCauseLine legality={deck.legality} />}
+      <RuleChangedNotice
+        deckId={deck.id}
+        format={deck.format}
+        heroIdentifier={deck.heroIdentifier}
+        legality={deck.legality}
+        cards={savedCards}
+      />
+      {!hasHeroOutsideFormat(deck.legality.details) && !showsRuleChange && <DeckCauseLine legality={deck.legality} />}
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && (

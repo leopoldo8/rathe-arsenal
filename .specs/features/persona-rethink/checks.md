@@ -400,31 +400,31 @@ Proof: `web unit src/components/shared-deck/__tests__/SharedLegalityBlock.spec.t
 
 ### S10 - A rule changed under a saved deck · 8 files · 32 KB · ~14k
 
-**C110** - `RULE_CHANGES` is exported from `packages/engine/src/legality/rules.ts` as an array of `{ format, effectiveDate, summaryKey, sourceUrl }`; its first entry has `format` `Blitz` and `effectiveDate` `2026-03-09`, an `effectiveDate` matching `YYYY-MM-DD`, and `sourceUrl` `https://fabtcg.com/rules-and-policy-center/change-log-tournament-rules-and-policy/`, the official tournament rules change log recorded in `.design/deck-building.md` (door 9)
+**C110** - `RULE_CHANGES` is exported from `packages/engine/src/legality/rules.ts` as an array of `{ format, effectiveDate, summaryKey, sourceUrl }`; its first entry has `format` `Blitz` and `effectiveDate` `2026-03-09`, an `effectiveDate` matching `YYYY-MM-DD`, and `sourceUrl` `https://fabtcg.com/rules-and-policy-center/change-log-tournament-rules-and-policy/`, the official tournament rules change log recorded in `.design/deck-building.md` (door 9) · done
 Proof: `engine unit __tests__/legality/rules.spec.ts -t "RULE_CHANGES shape and first entry"`
 
-**C111** - A Blitz deck with eight cards at 2 shows "Desde 9 de março de 2026, o Blitz permite 1 cópia de cada carta (antes eram 2). 8 cartas deste deck têm 2." and "ver o anúncio", whose `href` equals the entry's `sourceUrl` and which opens in a new tab with `rel="noopener noreferrer"` (AC 66)
+**C111** - A Blitz deck with eight cards at 2 shows "Desde 9 de março de 2026, o Blitz permite 1 cópia de cada carta (antes eram 2). 8 cartas deste deck têm 2." and "ver o anúncio", whose `href` equals the entry's `sourceUrl` and which opens in a new tab with `rel="noopener noreferrer"` (AC 66) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "the notice reads the curated entry"`
 
-**C112** - With the entry's `effectiveDate` replaced by `2026-04-01` in the test, the notice reads "Desde 1 de abril de 2026"; with no entry for the deck's problem, no date is rendered (AC 69)
+**C112** - With the entry's `effectiveDate` replaced by `2026-04-01` in the test, the notice reads "Desde 1 de abril de 2026"; with no entry for the deck's problem, no date is rendered (AC 69) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "the date comes only from the entry"`
 
-**C113** - No pt-BR value of any namespace matches `/\b\d{1,2} de (janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro) de \d{4}\b/` (AC 69)
+**C113** - No pt-BR value of any namespace matches `/\b\d{1,2} de (janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro) de \d{4}\b/` (AC 69) · done
 Proof: `web unit src/i18n/__tests__/rule-dates.spec.ts -t "no locale value prints a literal date"`
 
-**C114** - "Deixar 1 de cada" on that deck leaves each of the eight cards at 1, saves once, shows "8 cópias tiradas do deck" with "Desfazer", makes no collection call, and the bar reads "32 de 40 cartas · nenhum problema"; "Desfazer" puts the eight cards back at 2 (AC 67)
+**C114** - "Deixar 1 de cada" on that deck leaves each of the eight cards at 1, saves once, shows "8 cópias tiradas do deck" with "Desfazer", makes no collection call, and the bar reads "32 de 40 cartas · nenhum problema"; "Desfazer" puts the eight cards back at 2 (AC 67) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "keep one of each takes one copy out with undo"`
 
-**C115** - "Prefiro escolher carta por carta" closes the notice and each row keeps its "-" enabled (AC 71)
+**C115** - "Prefiro escolher carta por carta" closes the notice and each row keeps its "-" enabled (AC 71) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "choosing by hand closes the notice"`
 
-**C116** - A deck with a banned card and no curated entry for it shows the verdict and the cause, with no "Desde" and no "antes eram" anywhere on the page (AC 68)
+**C116** - A deck with a banned card and no curated entry for it shows the verdict and the cause, with no "Desde" and no "antes eram" anywhere on the page (AC 68) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "a change with no entry has no date"`
 
-**C117** - The notice is shown while at least one card breaks the Blitz copy rule and gone once none does; rendering it makes no network request (AC 70)
+**C117** - The notice is shown while at least one card breaks the Blitz copy rule and gone once none does; rendering it makes no network request (AC 70) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "the notice lasts until the problem is gone and sends nothing"`
 
-**C118** - The deck page for `r3-rule-changed-deck-phone`'s deck shows, in order: "‹ Decks", "Rhinar Blitz", "Blitz", "Não vale no Blitz", "Etapa: Jogando", the notice with "ver o anúncio", the eight rows each with "2 cópias · o Blitz permite 1 · tire 1", "Deixar 1 de cada" with "Tira 1 cópia de cada uma das 8 cartas. O deck fica com 32 de 40 e você coloca mais 8. As cartas continuam na sua coleção.", and "Prefiro escolher carta por carta"; after the tap (`r2-one-each-phone` with the stage rule) the stage reads "Jogando · 32 de 40 cartas" and the deck count "32 de 40 cartas no deck · coloque mais 8" (AC 71)
+**C118** - The deck page for `r3-rule-changed-deck-phone`'s deck shows, in order: "‹ Decks", "Rhinar Blitz", "Blitz", "Não vale no Blitz", "Etapa: Jogando", the notice with "ver o anúncio", the eight rows each with "2 cópias · o Blitz permite 1 · tire 1", "Deixar 1 de cada" with "Tira 1 cópia de cada uma das 8 cartas. O deck fica com 32 de 40 e você coloca mais 8. As cartas continuam na sua coleção.", and "Prefiro escolher carta por carta"; after the tap (`r2-one-each-phone` with the stage rule) the stage reads "Jogando · 32 de 40 cartas" and the deck count "32 de 40 cartas no deck · coloque mais 8" (AC 71) · done
 Proof: `web unit src/components/deck-detail/__tests__/RuleChangedNotice.spec.tsx -t "matches r3-rule-changed-deck-phone and r2-one-each-phone"`
 
 ### S11 - The version of each copy · 33 files · 143 KB · ~54k

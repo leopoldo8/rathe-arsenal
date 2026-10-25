@@ -7,6 +7,7 @@ import { breakdown, entry } from './deckDetailTestData';
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('../HeroOutsideFormatPanel', () => ({ HeroOutsideFormatPanel: () => null }));
+vi.mock('../RuleChangedNotice', () => ({ RuleChangedNotice: () => null }));
 vi.mock('../useOtherFormatVerdicts', () => ({ useOtherFormatVerdicts: () => [] }));
 vi.mock('../DeckHeroBanner', () => ({ DeckHeroBanner: () => <div data-testid="hero-banner" /> }));
 vi.mock('../DeckShareCard', () => ({ DeckShareCard: () => <div data-testid="share-card" /> }));

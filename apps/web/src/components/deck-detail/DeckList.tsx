@@ -16,6 +16,7 @@ import {
 } from './deckListModel';
 import { ReplacementControls } from './ReplacementMark';
 import { DeckTextList } from './DeckTextList';
+import { sizeProblemOf } from '../home/deckVerdictLine';
 import styles from './DeckList.module.css';
 
 interface IDeckListProps {
@@ -104,6 +105,14 @@ export function DeckList({
     .filter((item) => resolveTypeGroup(item.entry) !== 'loadout')
     .reduce((sum, item) => sum + item.quantity, 0);
 
+  const shortOf = sizeProblemOf(legalityDetails);
+  const countText =
+    shortOf === null
+      ? t('deckDetail.decklistCount', { count: deckSize })
+      : deckSize < shortOf.limit
+        ? t('deckDetail.editorDeckSizeShort', { count: deckSize, target: shortOf.limit, missing: shortOf.limit - deckSize })
+        : t('deckDetail.decklistCount', { count: deckSize });
+
   return (
     <section className={styles.section} aria-labelledby="deck-list-title" data-testid="deck-list">
       <div className={styles.header}>
@@ -112,7 +121,7 @@ export function DeckList({
             {t('deckDetail.decklistTitle')}
           </h2>
           <span className={styles.count} data-testid="deck-list-count">
-            {t('deckDetail.decklistCount', { count: deckSize })}
+            {countText}
           </span>
         </div>
         <div className={styles.headerActions}>

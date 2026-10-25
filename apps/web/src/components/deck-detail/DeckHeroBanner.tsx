@@ -12,6 +12,7 @@ import type { IDeckLegality } from '../../api/decks';
 import { StatusDropdown } from './StatusDropdown';
 import { STATUS_KEY_MAP } from './status-labels';
 import { useDeckHero } from './useDeckHero';
+import { sizeProblemOf } from '../home/deckVerdictLine';
 import styles from './DeckHeroBanner.module.css';
 
 interface IDeckHeroBannerProps {
@@ -44,6 +45,7 @@ export function DeckHeroBanner({
   const { t } = useTranslation();
   const hero = useDeckHero(heroIdentifier, heroFallbackName);
   const art = useImageFallback(hero.bannerSources);
+  const shortOf = sizeProblemOf(legality.details);
 
   return (
     <section
@@ -92,6 +94,13 @@ export function DeckHeroBanner({
                 {t('deckDetail.stageLine', { stage: t(STATUS_KEY_MAP[status]) })}
               </span>
             </>
+          ) : shortOf !== null && legality.category === 'incomplete' ? (
+            <span className={styles.stageChip} data-testid="deck-stage-chip">
+              {t('home.stageChipShort', {
+                stage: t(STATUS_KEY_MAP[status]),
+                size: t('home.deckSizeShort', { count: shortOf.count, target: shortOf.limit }),
+              })}
+            </span>
           ) : (
             legality.category !== 'legal' && <LegalityBadge legality={legality} format={format} />
           )}
