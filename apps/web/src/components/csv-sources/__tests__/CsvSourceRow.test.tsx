@@ -26,6 +26,15 @@ vi.mock('../../../api/csv-sources', () => ({
 }));
 
 const mockShow = vi.fn();
+// The row links to the import's versions page; the tests render it without a router.
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to, params, className }: { children: React.ReactNode; to: string; params?: Record<string, string>; className?: string }) => (
+    <a href={Object.entries(params ?? {}).reduce((path, [key, value]) => path.replace(`$${key}`, value), to)} className={className}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock('../../ui/Toast/useToast', () => ({
   useToast: () => ({ show: mockShow }),
 }));
@@ -316,6 +325,19 @@ describe('CsvSourceRow', () => {
       expect(
         screen.getByText("Always included — manually added cards can't be deactivated."),
       ).toBeInTheDocument();
+    });
+  });
+  describe('versions link', () => {
+    it('each import links to its versions', () => {
+      renderRow(buildSource({ id: 'source-lista' }));
+      renderRow(buildSource({ id: 'source-manual', kind: 'manual', label: null, originalFilename: null }));
+
+      const links = screen.getAllByRole('link', { name: 'Versões desta importação' });
+
+      expect(links.map((link) => link.getAttribute('href'))).toEqual([
+        '/library-csv-sources/source-lista/versions',
+        '/library-csv-sources/source-manual/versions',
+      ]);
     });
   });
 });

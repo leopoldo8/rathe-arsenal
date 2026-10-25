@@ -39,6 +39,25 @@
   color: var(--ra-fg-secondary);
 }
 
+.versionsLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
+  font-size: var(--ra-text-small);
+  color: var(--ra-fg-muted);
+  text-decoration: none;
+}
+
+.versionsLink:hover {
+  color: var(--ra-accent-body);
+}
+
+.versionsLink:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
 .manualNote {
   margin: 0;
   max-inline-size: 28ch;

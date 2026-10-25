@@ -289,6 +289,22 @@
 - `DeckDetailView.recommendations.spec.tsx` and `DeckDetailView.suggestions.spec.tsx` render the view with no toast provider or query client; they now stub the toast hook, or the two new children, which changes only their setup.
 - The visual baselines of `deck-detail` and `decks-new` were refreshed: the first fixture deck is a hero outside its format and now shows the panel.
 
+### S11 (batch 9)
+
+- C119: `card_list_line.condition` already existed, nullable, with a check that refuses `''`. It is converted in place: nulls become `''`, the column is NOT NULL with default `''`, and the check is renamed `CHK_card_list_line_condition_values` (synchronize compares checks by name only, so a database built before this change would have kept the old expression). The entity maps `''` to `null` with a column transformer, so the lists code, its unit tests and the lists API keep saying null until S21 moves the sell lines onto the four fields.
+- C123: the check's example spells the key segments out (`WTR167.unlimited.rainbow`), but the keys stored today use codes (`WTR167.UE.RF`, from `buildPrintingKey`). The migration reads both. A key without a foil segment leaves `finish` `''` (the key does not say the finish is plain), and a key it cannot read keeps only its collector code and logs the line id. The `printing` column stays until S21 stops writing it.
+- C133 stays unmarked: its claim names `PATCH /api/collection/pending/:id`, which S12 builds with door 7. The proof covers the batch and the card move today; the S12 builder adds the pending case to the same test, `assertVersionBelongsToCard` is ready for it, and then marks C133.
+- C134 and C136 say `200` "as today", but `POST /api/collection/cards/batch` and `POST /api/collection/cards/decrement` answer `201` today and the existing tests assert it. They still answer `201`; nothing else about their status changed.
+- C134: the body parser turns `printingCode: 12` into the text `"12"`, so the `400` comes from the catalog check (`VERSION_NOT_AVAILABLE`), not from the type check.
+- `csv_source.cardCount` keeps counting rows (decrement's own comment says so), now rows per card and version; moving copies and bulk marking recount it.
+- Decrement: `sourceId` is optional. Without it the card must have exactly one row (`400` `SOURCE_REQUIRED` when it has more, `404` when none); with it, the row is found by import and version (a part left out is `''`).
+- Plan `Surface`: five rows added before the code (card version options, an import's copies, `collector-codes` extended with `editions` and `finishes`, the import's versions page, and `contributions` of the Library answer).
+- Scanner: two printings of one card scanned in one session are two tray rows (keys `card` and `card@CODE`), because their copies are not one version. "É foil?" is asked only when the code exists both plain and in a foil finish, "Sim" records the finish only when the code has one foil finish (with several it stays `''`), "Não" records `none`, and an unanswered question records nothing.
+- Existing tests touched without changing what they assert: four entity fixtures gained the four version fields; `CsvSourceRow.test.tsx` stubs the router `Link` now that the row links to the versions page; `-add-cards_.scan.test.tsx` expected the commit body to be exactly `{cardIdentifier, quantity}`, which C134 changes, so it now expects each item with its `printingCode`.
+- The Library "−" picker is drawn in the page body (a portal, fixed to the bottom of the screen) so it fits a 360 px phone; its press-outside check now treats the picker as inside.
+- The axe scan list gained the page "Versões desta importação"; its context takes the fixture user's first import, or a nil id (the page then shows its error state) when it has none.
+- Noticed, not touched: the CSV re-upload that replaces an import (`CsvUploadService.updateSource`) and the duplicate detection (`DuplicateDetectionService`) both assume one row per card and import. After copies of an import were given versions, a re-upload sets the new quantity on one of the rows and leaves the others. S12 rewrites the reader and the import path.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -341,3 +357,16 @@
   - Deck page, hero outside the format: "Não foi possível mudar o formato. Tente de novo." (a refused switch or undo); "Em X" as the heading of each format when none is valid; the sentence of the red block for a card problem other than a ban uses the existing localized reasons.
   - Shared deck page: "O deck tem N cartas; o mínimo no X é N.", "N é lendária e só pode ter 1 cópia; tem N.", "... é restrita no X ...", the steps "tirar N carta", "tirar carta", "escolher outro herói ou outro formato", "tirar N cartas do deck"; the answers of a tapped chip "Em X: vale.", "Em X: não vale. <primeiro motivo>", "Em X: ainda não vale. <tamanho>".
 - S10, copy of mine: "Não foi possível salvar o deck. Tente de novo." (a refused save from the notice's buttons and rows); the singular forms of the notice and of its explanation ("1 carta deste deck tem 2.", "Tira 1 cópia da carta ..."); the "Deixar 1 de cada" toast says "do deck" even if the copy came from the inventory of a card with no deck copy.
+- S11, differences from the picked mockups, and what I added:
+  - Nothing on today's Library grid opens a card, so the card sheet (`r3-version-card-phone`) opens from the card's name under the art (the same text, now a button); the mockup draws the Library as a list of rows, which this slice does not rebuild.
+  - "Mudar versão" acts on the copies with no version, or on the first group when every copy has a version; the mockup draws one button for the whole card.
+  - `r3-version-card-phone` offers NM, LP, MP and HP, while `.design/collection-in.md` says `DMG` is offered in the card picker (derivation note 1 of getting cards in): built as drawn, no `DMG`.
+  - The picker lists the printings in the catalog's order (Snatch (Vermelho) starts with its Silver Age decks); the mockup shows Welcome to Rathe, History Pack 1 and Armory Deck: Ira first, and no rule for that order is in the repository.
+  - `r3-imports-phone`: only the link "Versões desta importação" was added to each row; the rest of that screen (the copy, "cópias", the order, the controls the screen leaves out) is C181 in S15.
+  - `r3-version-bulk-phone` draws one preview row, "foil · escolha a versão", for a pasted version word that left more than one printing; that stored state belongs to the reader (S12) and is not built. Its "Mudar" opens the card sheet.
+  - The preview shows the chosen marking on every row with no version, including cards the API will skip; the skipped ones are listed after applying, as the document says.
+- S11, copy of mine, no check or mockup gives it:
+  - Card sheet: "Carregando as versões…", "Não foi possível carregar as versões. Tente de novo.", "Nenhuma versão com esse nome." (a search with no match), "Salvando…", "Não foi possível salvar. Tente de novo.", the singular "+ 1 versão".
+  - Versions page: "Aplicando…", "Não foi possível aplicar. Tente de novo.", "Não foi possível carregar esta importação.", "Esta importação não tem cópias.", "Ficaram como estavam, porque a carta não existe nessa versão:" (heading of the skipped cards), "Mudar a versão de <carta>" (aria-label of "Mudar"), "Aplicar à 1 cópia sem versão" (singular).
+  - Scanner review: "Qual é a edição?", "Sim", "Não" (the check gives "É foil?"); "1ª edição", "Gold Foil" and "Sem foil" come from the bulk screen and the sell lists' labels.
+  - The remove picker's version line: "<import> · <printing code> · <edition> · <finish> · <condition>".

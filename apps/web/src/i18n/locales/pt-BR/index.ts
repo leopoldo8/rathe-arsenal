@@ -7,6 +7,7 @@ import { account } from './account';
 import { apiErrors } from './apiErrors';
 import { library } from './library';
 import { csvSources } from './csvSources';
+import { copyVersions } from './copyVersions';
 import { decks } from './decks';
 import { deckDetail } from './deckDetail';
 import { deckEdit } from './deckEdit';
@@ -32,6 +33,7 @@ export const ptBR = {
   apiErrors,
   library,
   csvSources,
+  copyVersions,
   decks,
   deckDetail,
   deckEdit,

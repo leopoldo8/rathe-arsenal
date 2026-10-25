@@ -38,12 +38,22 @@ async function deckShareToken(deckId: number, sessionToken: string): Promise<str
   return ((await created.json()) as { token: string }).token;
 }
 
+async function firstSourceId(sessionToken: string): Promise<string> {
+  const response = await fetch(`${BASE_URL}/api/collection/sources`, { headers: { Cookie: `ra_session=${sessionToken}` } });
+  const sources = (await response.json()) as Array<{ id: string }>;
+  return sources[0]?.id ?? '00000000-0000-4000-8000-000000000000';
+}
+
 test.describe('accessibility scan', () => {
   let context: IScanContext;
 
   test.beforeAll(async () => {
     const { sessionToken, readyDeckId } = loadFixture();
-    context = { readyDeckId, shareToken: await deckShareToken(readyDeckId, sessionToken) };
+    context = {
+      readyDeckId,
+      shareToken: await deckShareToken(readyDeckId, sessionToken),
+      sourceId: await firstSourceId(sessionToken),
+    };
   });
 
   for (const scanPage of SCAN_PAGES) {

@@ -5,6 +5,7 @@ import { cardName } from '../../lib/card-name';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { lightboxSourcesFor } from '../card-art/use-lightbox-sources';
 import { LibraryCardStepper } from './LibraryCardStepper';
+import { CardVersionsSheet } from '../collection-versions/CardVersionsSheet';
 import type { ILibraryCard } from '../../api/library';
 import type { TGroupBy } from './LibraryFilterRail';
 import styles from './LibraryGrid.module.css';
@@ -178,12 +179,14 @@ interface ILibraryCardCellProps {
   readonly card: ILibraryCard;
   readonly cardSize: number | undefined;
   readonly onOpenLightbox: (card: ILibraryCard) => void;
+  readonly onOpenVersions: (card: ILibraryCard) => void;
 }
 
 function LibraryCardCell({
   card,
   cardSize,
   onOpenLightbox,
+  onOpenVersions,
 }: ILibraryCardCellProps): React.ReactElement {
   const { t } = useTranslation();
   const typeStr = primaryType(card.types, card.subtypes);
@@ -209,7 +212,9 @@ function LibraryCardCell({
         />
       </div>
       <div className={styles.meta}>
-        <span className={styles.name}>{displayName}</span>
+        <button type="button" className={styles.name} onClick={() => onOpenVersions(card)}>
+          {displayName}
+        </button>
         <span className={styles.qtyBadge} aria-label={t('library.ownedAriaLabel', { qty: card.ownedQuantity })}>
           ×{card.ownedQuantity}
         </span>
@@ -268,6 +273,8 @@ export function LibraryGrid({
     return key;
   }
 
+  const [versionsCard, setVersionsCard] = useState<ILibraryCard | null>(null);
+
   function openLightbox(card: ILibraryCard): void {
     if (!card.imageUrl) return;
     setLightbox({
@@ -294,11 +301,15 @@ export function LibraryGrid({
                 card={card}
                 cardSize={cardSize}
                 onOpenLightbox={openLightbox}
+                onOpenVersions={setVersionsCard}
               />
             ))}
           </CardGrid>
         </section>
       ))}
+      {versionsCard && (
+        <CardVersionsSheet card={versionsCard} open onClose={() => setVersionsCard(null)} />
+      )}
       {lightbox && (
         <CardLightbox
           imageUrl={lightbox.imageUrl}

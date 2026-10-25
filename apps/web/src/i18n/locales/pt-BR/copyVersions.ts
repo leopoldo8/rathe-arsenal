@@ -1,0 +1,70 @@
+export const copyVersions = {
+  // Words shared by the card sheet, the bulk page and the scanner review
+  unknown: 'Não sei',
+  noVersion: 'sem versão informada',
+  editionLabel: 'Edição',
+  editionExplain: 'Edição: 1ª edição, Alpha ou Unlimited, escrito na carta',
+  editionFirst: '1ª edição',
+  editionAlpha: 'Alpha',
+  editionUnlimited: 'Unlimited',
+  foilLabel: 'Foil',
+  foilExplain: 'Foil: o acabamento brilhante',
+  finishNone: 'Sem foil',
+  finishRainbow: 'Rainbow Foil',
+  finishCold: 'Cold Foil',
+  finishGold: 'Gold Foil',
+  conditionLabel: 'Estado',
+  conditionExplain: 'Estado: NM quase nova, LP pouco usada, MP usada, HP muito usada',
+
+  // CardVersionsSheet
+  sheetAriaLabel: 'Versões das cópias de {{name}}',
+  copiesCount_one: '{{count}} cópia',
+  copiesCount_other: '{{count}} cópias',
+  groupUnknown: '{{count}} sem versão informada',
+  groupVersion: '{{count}} {{version}}',
+  changeVersion: 'Mudar versão',
+  pickerTitle: 'Versão das cópias',
+  versionLabel: 'Versão',
+  versionSearch: 'Procurar versão',
+  versionExplain: 'Versão: a coleção e a arte da carta (o código no rodapé, como WTR023)',
+  moreVersions_one: '+ {{count}} versão',
+  moreVersions_other: '+ {{count}} versões',
+  noVersionMatches: 'Nenhuma versão com esse nome.',
+  appliesTo: 'Isso vale para:',
+  appliesAll: 'as {{count}} cópias',
+  appliesOne: 'só 1',
+  save: 'Salvar',
+  saving: 'Salvando…',
+  saveError: 'Não foi possível salvar. Tente de novo.',
+  optionsLoading: 'Carregando as versões…',
+  optionsError: 'Não foi possível carregar as versões. Tente de novo.',
+
+  // VersionBulkSheet
+  bulkTitle: 'Versões desta importação',
+  bulkBack: 'Importações',
+  bulkSubtitle: '{{label}} · {{copies}}',
+  bulkMarkAll: 'Marcar de uma vez',
+  bulkApply_one: 'Aplicar à {{count}} cópia sem versão',
+  bulkApply_other: 'Aplicar às {{count}} cópias sem versão',
+  bulkApplyNote: 'As que você já marcou não mudam.',
+  bulkApplying: 'Aplicando…',
+  bulkPreview: 'Prévia',
+  bulkChange: 'Mudar',
+  bulkChangeAria: 'Mudar a versão de {{name}}',
+  bulkSkippedTitle: 'Ficaram como estavam, porque a carta não existe nessa versão:',
+  bulkError: 'Não foi possível aplicar. Tente de novo.',
+  bulkLoadError: 'Não foi possível carregar esta importação.',
+  bulkEmpty: 'Esta importação não tem cópias.',
+
+  // Imports list row
+  rowLink: 'Versões desta importação',
+
+  // Remove picker of the Library stepper
+  removeVersionLine: '{{source}} · {{version}}',
+
+  // Scanner review
+  scanEditionQuestion: 'Qual é a edição?',
+  scanFoilQuestion: 'É foil?',
+  scanFoilYes: 'Sim',
+  scanFoilNo: 'Não',
+} as const;

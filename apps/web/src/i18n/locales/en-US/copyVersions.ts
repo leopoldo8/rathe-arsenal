@@ -1,0 +1,70 @@
+export const copyVersions = {
+  // Words shared by the card sheet, the bulk page and the scanner review
+  unknown: 'Not sure',
+  noVersion: 'version not set',
+  editionLabel: 'Edition',
+  editionExplain: 'Edition: 1st edition, Alpha or Unlimited, printed on the card',
+  editionFirst: '1st edition',
+  editionAlpha: 'Alpha',
+  editionUnlimited: 'Unlimited',
+  foilLabel: 'Foil',
+  foilExplain: 'Foil: the shiny finish',
+  finishNone: 'Non-foil',
+  finishRainbow: 'Rainbow Foil',
+  finishCold: 'Cold Foil',
+  finishGold: 'Gold Foil',
+  conditionLabel: 'Condition',
+  conditionExplain: 'Condition: NM near mint, LP lightly played, MP moderately played, HP heavily played',
+
+  // CardVersionsSheet
+  sheetAriaLabel: 'Versions of the copies of {{name}}',
+  copiesCount_one: '{{count}} copy',
+  copiesCount_other: '{{count}} copies',
+  groupUnknown: '{{count}} version not set',
+  groupVersion: '{{count}} {{version}}',
+  changeVersion: 'Change version',
+  pickerTitle: 'Version of the copies',
+  versionLabel: 'Version',
+  versionSearch: 'Search versions',
+  versionExplain: 'Version: the set and the art of the card (the code at the bottom, like WTR023)',
+  moreVersions_one: '+ {{count}} version',
+  moreVersions_other: '+ {{count}} versions',
+  noVersionMatches: 'No version with that name.',
+  appliesTo: 'This applies to:',
+  appliesAll: 'all {{count}} copies',
+  appliesOne: 'just 1',
+  save: 'Save',
+  saving: 'Saving…',
+  saveError: 'Could not save. Try again.',
+  optionsLoading: 'Loading the versions…',
+  optionsError: 'Could not load the versions. Try again.',
+
+  // VersionBulkSheet
+  bulkTitle: 'Versions of this import',
+  bulkBack: 'Imports',
+  bulkSubtitle: '{{label}} · {{copies}}',
+  bulkMarkAll: 'Mark all at once',
+  bulkApply_one: 'Apply to the {{count}} copy with no version',
+  bulkApply_other: 'Apply to the {{count}} copies with no version',
+  bulkApplyNote: 'The ones you already marked do not change.',
+  bulkApplying: 'Applying…',
+  bulkPreview: 'Preview',
+  bulkChange: 'Change',
+  bulkChangeAria: 'Change the version of {{name}}',
+  bulkSkippedTitle: 'Left as they were, because the card does not exist in that version:',
+  bulkError: 'Could not apply. Try again.',
+  bulkLoadError: 'Could not load this import.',
+  bulkEmpty: 'This import has no copies.',
+
+  // Imports list row
+  rowLink: 'Versions of this import',
+
+  // Remove picker of the Library stepper
+  removeVersionLine: '{{source}} · {{version}}',
+
+  // Scanner review
+  scanEditionQuestion: 'Which edition?',
+  scanFoilQuestion: 'Is it foil?',
+  scanFoilYes: 'Yes',
+  scanFoilNo: 'No',
+} as const;

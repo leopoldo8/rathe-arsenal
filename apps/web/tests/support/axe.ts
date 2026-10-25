@@ -5,6 +5,8 @@ export type TAxeViolation = Awaited<ReturnType<AxeBuilder['analyze']>>['violatio
 export interface IScanContext {
   readonly readyDeckId: number;
   readonly shareToken: string;
+  /** An import of the fixture user, or a nil id when it has none (the page then shows its error state). */
+  readonly sourceId: string;
 }
 
 export interface IScanPage {
@@ -24,6 +26,7 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'shared deck page', path: ({ shareToken }) => `/d/${shareToken}` },
   { name: 'sign-in', path: () => '/sign-in', signedOut: true },
   { name: 'start', path: () => '/entrar', signedOut: true },
+  { name: 'versions of an import', path: ({ sourceId }) => `/library-csv-sources/${sourceId}/versions` },
 ];
 
 const BLOCKING_IMPACTS: ReadonlySet<string> = new Set(['serious', 'critical']);

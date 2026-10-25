@@ -342,3 +342,24 @@ describe('LibraryGrid: card names carry the pitch', () => {
     expect(screen.getByRole('listitem', { name: 'Dawnblade, na coleção: 1' })).toBeInTheDocument();
   });
 });
+
+describe('LibraryGrid: versions', () => {
+  it('the grid shows no unversioned count', () => {
+    const card = makeCard({
+      cardIdentifier: 'snatch-red',
+      name: 'Snatch',
+      pitch: 1,
+      ownedQuantity: 3,
+      contributions: [
+        { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 2, printingCode: '', edition: '', finish: '', condition: '' },
+        { sourceId: 'list', sourceLabel: 'Lista colada', kind: 'csv', quantity: 1, printingCode: 'WTR167', edition: 'unlimited', finish: 'rainbow', condition: 'NM' },
+      ],
+    });
+
+    const { container } = render(<LibraryGrid cards={[card]} group="flat" />);
+
+    expect(container.textContent).not.toMatch(/sem versão informada/i);
+    expect(screen.queryByRole('button', { name: 'Mudar versão' })).not.toBeInTheDocument();
+    expect(container.textContent).toContain('×3');
+  });
+});

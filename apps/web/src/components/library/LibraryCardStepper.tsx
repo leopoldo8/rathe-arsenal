@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   useAddCardMutation,
@@ -6,12 +7,24 @@ import {
 } from '../../api/collection';
 import type { ILibraryCard, ILibraryCardContribution } from '../../api/library';
 import { cardName } from '../../lib/card-name';
+import { describeVersion, versionKey } from '../collection-versions/copy-version-labels';
+import type { ICopyVersion } from '../../api/collection-versions';
 import styles from './LibraryCardStepper.module.css';
 
 interface ILibraryCardStepperProps {
   readonly card: ILibraryCard;
   /** Hard cap on `+` clicks. Set high so the manual source can grow. */
   readonly maxQuantity?: number;
+}
+
+/** The version parts the API needs to find the row; a part left empty is not sent. */
+function versionVariables(contribution: ILibraryCardContribution): Partial<ICopyVersion> {
+  return {
+    ...(contribution.printingCode ? { printingCode: contribution.printingCode } : {}),
+    ...(contribution.edition ? { edition: contribution.edition as ICopyVersion['edition'] } : {}),
+    ...(contribution.finish ? { finish: contribution.finish as ICopyVersion['finish'] } : {}),
+    ...(contribution.condition ? { condition: contribution.condition as ICopyVersion['condition'] } : {}),
+  };
 }
 
 /**
@@ -39,6 +52,7 @@ export function LibraryCardStepper({
   const [pickerOpen, setPickerOpen] = useState(false);
   const popoverId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const removableContributions = card.contributions.filter((c) => c.quantity > 0);
   const canDecrement = removableContributions.length > 0;
@@ -50,10 +64,12 @@ export function LibraryCardStepper({
   useEffect(() => {
     if (!pickerOpen) return undefined;
     const onPointerDown = (e: PointerEvent): void => {
+      // The picker is drawn in the page body so it can sit inside the screen, which leaves it outside
+      // the stepper's own box: a press in either one is not an outside press.
       if (
-        containerRef.current &&
         e.target instanceof Node &&
-        !containerRef.current.contains(e.target)
+        !containerRef.current?.contains(e.target) &&
+        !pickerRef.current?.contains(e.target)
       ) {
         setPickerOpen(false);
       }
@@ -69,6 +85,13 @@ export function LibraryCardStepper({
     };
   }, [pickerOpen]);
 
+  function contributionLabel(contribution: ILibraryCardContribution): string {
+    const source =
+      contribution.kind === 'manual' ? t('csvSources.manualSourceLabel') : contribution.sourceLabel;
+    const version = describeVersion(contribution, t);
+    return version === '' ? source : t('copyVersions.removeVersionLine', { source, version });
+  }
+
   function handleAdd(): void {
     if (!canAdd || isPending) return;
     addMutation.mutate({ cardIdentifier: card.cardIdentifier, quantity: 1 });
@@ -81,6 +104,7 @@ export function LibraryCardStepper({
       decrementMutation.mutate({
         cardIdentifier: card.cardIdentifier,
         sourceId: only.sourceId,
+        ...versionVariables(only),
         quantity: 1,
       });
       return;
@@ -93,6 +117,7 @@ export function LibraryCardStepper({
     decrementMutation.mutate({
       cardIdentifier: card.cardIdentifier,
       sourceId: contribution.sourceId,
+      ...versionVariables(contribution),
       quantity: 1,
     });
   }
@@ -138,42 +163,41 @@ export function LibraryCardStepper({
         +
       </button>
 
-      {pickerOpen && (
-        <div
-          id={popoverId}
-          role="menu"
-          className={styles.picker}
-          aria-label={t('library.removeFromSourceQuestion', { name: displayName })}
-        >
-          <p className={styles.pickerHeading}>
-            {t('library.removeOneFrom')}
-          </p>
-          <ul className={styles.pickerList}>
-            {removableContributions.map((contribution) => (
-              <li key={contribution.sourceId}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={styles.pickerRow}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePickContribution(contribution);
-                  }}
-                >
-                  <span className={styles.pickerLabel}>
-                    {contribution.kind === 'manual'
-                      ? t('csvSources.manualSourceLabel')
-                      : contribution.sourceLabel}
-                  </span>
-                  <span className={styles.pickerCount} aria-hidden="true">
-                    ×{contribution.quantity}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {pickerOpen &&
+        createPortal(
+          <div
+            ref={pickerRef}
+            id={popoverId}
+            role="menu"
+            className={styles.picker}
+            aria-label={t('library.removeFromSourceQuestion', { name: displayName })}
+          >
+            <p className={styles.pickerHeading}>
+              {t('library.removeOneFrom')}
+            </p>
+            <ul className={styles.pickerList}>
+              {removableContributions.map((contribution) => (
+                <li key={`${contribution.sourceId}|${versionKey(contribution)}`}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.pickerRow}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePickContribution(contribution);
+                    }}
+                  >
+                    <span className={styles.pickerLabel}>{contributionLabel(contribution)}</span>
+                    <span className={styles.pickerCount} aria-hidden="true">
+                      ×{contribution.quantity}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

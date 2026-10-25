@@ -39,6 +39,7 @@ import { Route as AuthAddCardsScanRouteImport } from './routes/_auth/add-cards_.
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsFabraryRouteImport } from './routes/_auth/add-cards.fabrary'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
+import { Route as AuthLibraryCsvSourcesSourceIdVersionsRouteImport } from './routes/_auth/library-csv-sources_.$sourceId.versions'
 import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -190,6 +191,12 @@ const AuthAddCardsCsvRoute = AuthAddCardsCsvRouteImport.update({
   path: '/csv',
   getParentRoute: () => AuthAddCardsRoute,
 } as any)
+const AuthLibraryCsvSourcesSourceIdVersionsRoute =
+  AuthLibraryCsvSourcesSourceIdVersionsRouteImport.update({
+    id: '/library-csv-sources_/$sourceId/versions',
+    path: '/library-csv-sources/$sourceId/versions',
+    getParentRoute: () => AuthRoute,
+  } as any)
 const AuthDecksDeckIdEditRoute = AuthDecksDeckIdEditRouteImport.update({
   id: '/decks/$deckId_/edit',
   path: '/decks/$deckId/edit',
@@ -227,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/chat/': typeof AuthChatIndexRoute
   '/lists/': typeof AuthListsIndexRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -258,6 +266,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthChatIndexRoute
   '/lists': typeof AuthListsIndexRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -292,6 +301,7 @@ export interface FileRoutesById {
   '/_auth/chat/': typeof AuthChatIndexRoute
   '/_auth/lists/': typeof AuthListsIndexRoute
   '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
+  '/_auth/library-csv-sources_/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/chat/'
     | '/lists/'
     | '/decks/$deckId/edit'
+    | '/library-csv-sources/$sourceId/versions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/lists'
     | '/decks/$deckId/edit'
+    | '/library-csv-sources/$sourceId/versions'
   id:
     | '__root__'
     | '/'
@@ -390,6 +402,7 @@ export interface FileRouteTypes {
     | '/_auth/chat/'
     | '/_auth/lists/'
     | '/_auth/decks/$deckId_/edit'
+    | '/_auth/library-csv-sources_/$sourceId/versions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -617,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAddCardsCsvRouteImport
       parentRoute: typeof AuthAddCardsRoute
     }
+    '/_auth/library-csv-sources_/$sourceId/versions': {
+      id: '/_auth/library-csv-sources_/$sourceId/versions'
+      path: '/library-csv-sources/$sourceId/versions'
+      fullPath: '/library-csv-sources/$sourceId/versions'
+      preLoaderRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/decks/$deckId_/edit': {
       id: '/_auth/decks/$deckId_/edit'
       path: '/decks/$deckId/edit'
@@ -663,6 +683,7 @@ interface AuthRouteChildren {
   AuthChatIndexRoute: typeof AuthChatIndexRoute
   AuthListsIndexRoute: typeof AuthListsIndexRoute
   AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
+  AuthLibraryCsvSourcesSourceIdVersionsRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -683,6 +704,8 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthChatIndexRoute: AuthChatIndexRoute,
   AuthListsIndexRoute: AuthListsIndexRoute,
   AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,
+  AuthLibraryCsvSourcesSourceIdVersionsRoute:
+    AuthLibraryCsvSourcesSourceIdVersionsRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

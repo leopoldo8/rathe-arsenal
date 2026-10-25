@@ -3,7 +3,10 @@ import type { TVariantId } from '../ocr-variants';
 import {
   addSearchedCard,
   applyRecognition,
+  commitItems,
   EMPTY_SESSION,
+  setRowEdition,
+  setRowFoil,
   setRowQuantity,
   undoScan,
   type IScanSession,
@@ -179,6 +182,66 @@ describe('scan session', () => {
 
       expect(step.outcome.kind).toBe('added');
       expect(quantities(step.session)['card-7']).toBe(2);
+    });
+  });
+  describe('the commit carries what was scanned', () => {
+    it("the commit carries each card's collector code", () => {
+      const snatch: IResolvedCode = { code: 'WTR167', cards: [card('snatch-red')] };
+      const pummel: IResolvedCode = { code: 'WTR135', cards: [card('pummel-red')] };
+
+      const scanned = run([
+        ['full', snatch], ['left-binary', snatch],
+        ['full', pummel], ['left-binary', pummel],
+      ]);
+      const byName = addSearchedCard(scanned, card('nimblism-red')).session;
+
+      expect(commitItems(byName)).toEqual([
+        { cardIdentifier: 'nimblism-red', quantity: 1 },
+        { cardIdentifier: 'pummel-red', quantity: 1, printingCode: 'WTR135' },
+        { cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' },
+      ]);
+    });
+
+    it('two printings of one card are two rows, and one printing scanned twice is one row of two', () => {
+      const alpha: IResolvedCode = { code: 'WTR167', cards: [card('snatch-red')] };
+      const history: IResolvedCode = { code: '1HP371', cards: [card('snatch-red')] };
+      const twice = [['full', alpha], ['left-binary', alpha]] as const;
+
+      let session = run(twice);
+      session = run([['full-binary-sparse', null], ['full-binary-sparse', null], ['full-binary-sparse', null]], session);
+      session = run(twice, session);
+      session = run([['full', history], ['left-binary', history]], session);
+
+      expect(commitItems(session)).toEqual([
+        { cardIdentifier: 'snatch-red', quantity: 1, printingCode: '1HP371' },
+        { cardIdentifier: 'snatch-red', quantity: 2, printingCode: 'WTR167' },
+      ]);
+    });
+
+    it('sends the edition and the foil answers the review collected, and nothing for a part left unanswered', () => {
+      const rainbowOnly: IScannedCard = { ...card('snatch-red'), editions: ['alpha', 'unlimited'], finishes: ['none', 'rainbow'] };
+      const resolved: IResolvedCode = { code: 'WTR167', cards: [rainbowOnly] };
+      const scanned = run([['full', resolved], ['left-binary', resolved]]);
+
+      const unanswered = commitItems(scanned);
+      const answered = commitItems(setRowFoil(setRowEdition(scanned, 'snatch-red', 'alpha'), 'snatch-red', 'yes'));
+      const notFoil = commitItems(setRowFoil(scanned, 'snatch-red', 'no'));
+
+      expect(unanswered).toEqual([{ cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' }]);
+      expect(answered).toEqual([
+        { cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167', edition: 'alpha', finish: 'rainbow' },
+      ]);
+      expect(notFoil[0]).toMatchObject({ finish: 'none' });
+    });
+
+    it('a foil answer stays unknown when the code has more than one foil finish', () => {
+      const twoFoils: IScannedCard = { ...card('snatch-red'), finishes: ['none', 'rainbow', 'cold'] };
+      const resolved: IResolvedCode = { code: 'WTR167', cards: [twoFoils] };
+      const scanned = run([['full', resolved], ['left-binary', resolved]]);
+
+      expect(commitItems(setRowFoil(scanned, 'snatch-red', 'yes'))).toEqual([
+        { cardIdentifier: 'snatch-red', quantity: 1, printingCode: 'WTR167' },
+      ]);
     });
   });
 });

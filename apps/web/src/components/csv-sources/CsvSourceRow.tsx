@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Switch from '@radix-ui/react-switch';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Link } from '@tanstack/react-router';
 import type { ICsvSource } from '../../api/csv-sources';
 import { usePatchCsvSourceMutation } from '../../api/csv-sources';
 import { useToast } from '../ui/Toast/useToast';
@@ -154,6 +155,14 @@ export function CsvSourceRow({ source }: ICsvSourceRowProps): React.ReactElement
           {source.originalFilename !== null && source.label !== null && (
             <span className={styles.filename}>{source.originalFilename}</span>
           )}
+
+          <Link
+            to="/library-csv-sources/$sourceId/versions"
+            params={{ sourceId: source.id }}
+            className={styles.versionsLink}
+          >
+            {t('copyVersions.rowLink')}
+          </Link>
         </div>
 
         {/* Metadata */}
