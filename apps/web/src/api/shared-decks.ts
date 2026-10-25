@@ -61,7 +61,7 @@ export interface ISharedDeckLegality extends ISharedFormatVerdict {
 }
 
 export interface ISharedDeckResponse {
-  readonly intent: TShareIntent;
+  readonly intent: Exclude<TShareIntent, 'quote'>;
   readonly token: string;
   readonly url: string;
   readonly name: string;
@@ -89,6 +89,27 @@ export interface ISharedDeckResponse {
   /** Intent 'deck': the verdict in the deck's own format and in the others. Intent 'missing': null. */
   readonly legality: ISharedDeckLegality | null;
 }
+
+export interface ISharedQuoteItem {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: 1 | 2 | 3 | null;
+  readonly imageUrl: string | null;
+  readonly quantity: number;
+}
+
+/** What a `quote` address answers: who asks and the cards needed, and nothing about any store. */
+export interface ISharedQuoteResponse {
+  readonly intent: 'quote';
+  readonly name: string;
+  readonly hero: string;
+  readonly sharerName: string;
+  /** Digits with country code; null when the link shows no number. */
+  readonly contactWhatsapp: string | null;
+  readonly needed: readonly ISharedQuoteItem[];
+}
+
+export type TSharedPage = ISharedDeckResponse | ISharedQuoteResponse;
 
 export interface ISharedDeckCoverage {
   readonly ownedCopies: number;
@@ -150,6 +171,11 @@ export function sharedDeckImagePath(token: string): string {
 
 export function getSharedDeck(token: string): Promise<ISharedDeckResponse> {
   return authFetch<ISharedDeckResponse>(`/shared/decks/${encodeURIComponent(token)}`);
+}
+
+/** The page behind any deck address: the deck, the missing cards or the quote. */
+export function getSharedPage(token: string): Promise<TSharedPage> {
+  return authFetch<TSharedPage>(`/shared/decks/${encodeURIComponent(token)}`);
 }
 
 export function getCoverage(token: string): Promise<ISharedDeckCoverage> {
@@ -249,7 +275,7 @@ export function useSharedDeckQuery(token: string) {
   const { user, isLoading } = useAuth();
   return useQuery({
     queryKey: sharedDeckQueryKey(token, user?.id ?? null),
-    queryFn: () => getSharedDeck(token),
+    queryFn: () => getSharedPage(token),
     enabled: !isLoading,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

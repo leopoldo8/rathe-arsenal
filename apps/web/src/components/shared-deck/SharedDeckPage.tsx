@@ -11,6 +11,7 @@ import { SharedDeckHeader } from './SharedDeckHeader';
 import { SharedLegalityBlock } from './SharedLegalityBlock';
 import { SharedDeckUnavailable } from './SharedDeckUnavailable';
 import { SharedMissingPage } from './SharedMissingPage';
+import { SharedQuotePage } from './SharedQuotePage';
 import { SharedTopBar } from './SharedTopBar';
 import styles from './SharedDeckPage.module.css';
 
@@ -41,6 +42,7 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
     );
   }
 
+  if (deck?.intent === 'quote') return <SharedQuotePage token={token} quote={deck} />;
   if (deck?.intent === 'missing') return <SharedMissingPage deck={deck} />;
 
   const contactWhatsapp = deck?.contactWhatsapp ?? null;

@@ -12,7 +12,7 @@ export interface ILiveSharedDeck {
   readonly owner: UserEntity;
 }
 
-const DECK_INTENTS: readonly string[] = ['deck', 'missing'];
+const DECK_INTENTS: readonly string[] = ['deck', 'missing', 'quote'];
 
 @Injectable()
 export class SharedDeckLookup {

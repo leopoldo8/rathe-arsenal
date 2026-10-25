@@ -14,7 +14,7 @@ import { UserEntity } from './user.entity';
 export type TShareIntent = 'deck' | 'missing' | 'want' | 'sell' | 'quote';
 export type TDeckShareIntent = 'deck' | 'missing' | 'quote';
 
-export const DECK_SHARE_INTENTS: readonly TDeckShareIntent[] = ['deck', 'missing'];
+export const DECK_SHARE_INTENTS: readonly TDeckShareIntent[] = ['deck', 'missing', 'quote'];
 
 @Check('CHK_share_link_target_kind_valid', `"targetKind" IN ('deck', 'list')`)
 @Check('CHK_share_link_intent_valid', `"intent" IN ('deck', 'missing', 'want', 'sell', 'quote')`)

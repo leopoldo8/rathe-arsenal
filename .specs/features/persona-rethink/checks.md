@@ -687,7 +687,7 @@ Proof: `api unit src/stores/__tests__/firecrawl-client.service.spec.ts -t "count
 **C198** - A failed lookup leaves the line `no_price`; a list open 59 minutes later queues no job for that card and one 61 minutes later queues one (AC 120) · done
 Proof: `api unit src/stores/__tests__/variant-fetch-queue.service.spec.ts -t "a failed lookup is retried no sooner than an hour later"`
 
-**C199** - Opening a `missing` and a `quote` address returns the stored states and leaves the `variant_fetch_job` row count unchanged, even for a card whose price is past the validity window (AC 121)
+**C199** - Opening a `missing` and a `quote` address returns the stored states and leaves the `variant_fetch_job` row count unchanged, even for a card whose price is past the validity window (AC 121) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a public page reads the stored store states and queues no lookup"`
 
 **C200** - `GET /api/admin/stores/:slug/credits` answers `200` `{ creditsUsed, budget, lookupsStopped }` for an admin (`120`, `1000`, `false` after 120 credits counted this month; `lookupsStopped: true` after 851) and `403` for a signed-in non-admin (AC 122) · done
@@ -818,43 +818,43 @@ Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "t
 
 ### S19 - A store quote · 22 files · 42 KB · ~25k
 
-**C237** - Picking "Pedir orçamento a uma loja" creates a `share_link` with intent `quote` the first time and returns the same address the second time, and offers it with "Oi! Pode me passar um orçamento destas cartas? <address>" (AC 145)
+**C237** - Picking "Pedir orçamento a uma loja" creates a `share_link` with intent `quote` the first time and returns the same address the second time, and offers it with "Oi! Pode me passar um orçamento destas cartas? <address>" (AC 145) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "creates or reuses one quote address per deck"`
 Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "the quote intent offers its address with the request text"`
 
-**C238** - Door 11: after the migration `share_link.intent` and `share_event.intent` accept `quote`, `share_event.kind` accepts `offer`, `quote_sent` and `buy`, `user.referredVia` accepts `quote`, all four still refuse `bogus`, and `down()` restores the previous lists (door 11)
+**C238** - Door 11: after the migration `share_link.intent` and `share_event.intent` accept `quote`, `share_event.kind` accepts `offer`, `quote_sent` and `buy`, `user.referredVia` accepts `quote`, all four still refuse `bogus`, and `down()` restores the previous lists (door 11) · done
 Proof: `api int src/database/migrations/__tests__/quote-intent.migration.int-spec.ts -t "widens the four checks in one migration"`
 
-**C239** - `GET /api/shared/decks/:token` for a `quote` address answers `200` with exactly the keys `intent`, `name`, `hero`, `sharerName`, `contactWhatsapp`, `needed`, each needed item with exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `quantity`; the serialized body contains no "Cúpula", no `unitPriceCents`, no `productUrl` and no `storeSummary` (AC 147; door 11; route)
+**C239** - `GET /api/shared/decks/:token` for a `quote` address answers `200` with exactly the keys `intent`, `name`, `hero`, `sharerName`, `contactWhatsapp`, `needed`, each needed item with exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `quantity`; the serialized body contains no "Cúpula", no `unitPriceCents`, no `productUrl` and no `storeSummary` (AC 147; door 11; route) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the quote page carries the needed cards and nothing about stores"`
 
-**C240** - The `quote` page shows "Caio pediu um orçamento para estas cartas. Marque o que você tem e o preço; a resposta vai pelo WhatsApp.", "Caio ainda precisa de 59 cópias (27 cartas).", and every needed card with no "+ N cartas": the name with the pitch as a word, "precisa de 3", a "Tenho" stepper from 0 to 3, a price field in reais and "Observação (edição, condição)" with `maxLength` 60; it shows no sign-up prompt and no "Cúpula DT", store price, store link or store total (AC 146, AC 147)
+**C240** - The `quote` page shows "Caio pediu um orçamento para estas cartas. Marque o que você tem e o preço; a resposta vai pelo WhatsApp.", "Caio ainda precisa de 59 cópias (27 cartas).", and every needed card with no "+ N cartas": the name with the pitch as a word, "precisa de 3", a "Tenho" stepper from 0 to 3, a price field in reais and "Observação (edição, condição)" with `maxLength` 60; it shows no sign-up prompt and no "Cúpula DT", store price, store link or store total (AC 146, AC 147) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "lists every needed card with a stepper, a price and a note"`
 
-**C241** - The `quote` link preview has the title "Orçamento: cartas para [CC] Brute do Caio", the description "Caio pede orçamento de 59 cópias.", the image's kind label "Orçamento", `noindex`, and no store name or price (AC 147)
+**C241** - The `quote` link preview has the title "Orçamento: cartas para [CC] Brute do Caio", the description "Caio pede orçamento de 59 cópias.", the image's kind label "Orçamento", `noindex`, and no store name or price (AC 147) · done
 Proof: `api unit src/sharing/preview/__tests__/share-meta-tags.spec.ts -t "the quote preview names no store"`
 
-**C242** - While the store owner fills rows and sends, the page makes no request carrying a quantity, price or note: the only request is `POST /api/shared/decks/:token/events` with the body `{ "kind": "quote_sent" }`; the stored `share_event` row holds kind and intent only; a body with an extra field answers `400` (AC 148)
+**C242** - While the store owner fills rows and sends, the page makes no request carrying a quantity, price or note: the only request is `POST /api/shared/decks/:token/events` with the body `{ "kind": "quote_sent" }`; the stored `share_event` row holds kind and intent only; a body with an extra field answers `400` (AC 148) · done
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "sends nothing typed and records only quote_sent"`
 Proof: `api e2e src/sharing/__tests__/share-events.e2e-spec.ts -t "records quote_sent without content"`
 
-**C243** - The draft is saved in local storage under a key holding the token and restored on the next visit to the same token; a different token starts empty; when `localStorage` throws on read or write the page starts empty and keeps working (AC 149)
+**C243** - The draft is saved in local storage under a key holding the token and restored on the next visit to the same token; a different token starts empty; when `localStorage` throws on read or write the page starts empty and keeps working (AC 149) · done
 Proof: `web unit src/components/shared-deck/__tests__/quoteDraft.spec.ts -t "restores the draft per token and starts empty without storage"`
 
-**C244** - The sticky footer reads "Seu orçamento: 18 de 59 cópias · R$ 412,00"; "Ver mensagem e enviar" shows the preview "Oi Caio, orçamento para o seu deck [CC] Brute do Caio:", one line per row with a quantity above 0 ("1x Alpha Rampage (Vermelho) · R$ 120,00 cada · Edição promo, condição NM"), and "Total: 18 de 59 cópias · R$ 412,00"; then WhatsApp opens to the sharer when the link shows a number, otherwise the text is copied with "Texto copiado. Cole na conversa com Caio." (AC 150)
+**C244** - The sticky footer reads "Seu orçamento: 18 de 59 cópias · R$ 412,00"; "Ver mensagem e enviar" shows the preview "Oi Caio, orçamento para o seu deck [CC] Brute do Caio:", one line per row with a quantity above 0 ("1x Alpha Rampage (Vermelho) · R$ 120,00 cada · Edição promo, condição NM"), and "Total: 18 de 59 cópias · R$ 412,00"; then WhatsApp opens to the sharer when the link shows a number, otherwise the text is copied with "Texto copiado. Cole na conversa com Caio." (AC 150) · done
 Proof: `web unit src/components/shared-deck/__tests__/quoteMessage.spec.ts -t "builds the quote message from the rows with a quantity"`
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "sends the quote on WhatsApp or copies it"`
 
-**C245** - "Copiar a lista para a sua planilha" copies one tab-separated line per needed card: quantity needed, card name, pitch ("3\tPack Hunt\tVermelho") (AC 146)
+**C245** - "Copiar a lista para a sua planilha" copies one tab-separated line per needed card: quantity needed, card name, pitch ("3\tPack Hunt\tVermelho") (AC 146) · done
 Proof: `web unit src/components/shared-deck/__tests__/quoteMessage.spec.ts -t "copies a tab-separated list for a spreadsheet"`
 
-**C246** - Through a `quote` address, a signed-in visitor's `GET /coverage`, `GET /matches` and `POST /copy` answer `404` `SHARE_LINK_UNAVAILABLE`; a turned-off quote address, a deleted deck and an unknown token answer `404` `SHARE_LINK_UNAVAILABLE` on the page route (AC 151)
+**C246** - Through a `quote` address, a signed-in visitor's `GET /coverage`, `GET /matches` and `POST /copy` answer `404` `SHARE_LINK_UNAVAILABLE`; a turned-off quote address, a deleted deck and an unknown token answer `404` `SHARE_LINK_UNAVAILABLE` on the page route (AC 151) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a quote address answers nothing but the quote"`
 
-**C247** - A sign-up carrying a live `quote` token stores `user.referredVia = 'quote'` and the sharer as `referredByUserId` (AC 152)
+**C247** - A sign-up carrying a live `quote` token stores `user.referredVia = 'quote'` and the sharer as `referredByUserId` (AC 152) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "stores quote as the channel for a sign-up from a quote link"`
 
-**C248** - Arrangement of `r3-quote-phone` at 390 px: the title "Pedido de orçamento", the two header lines, the needed count, then one block per card (name, "precisa de N", "Tenho" stepper, "Preço por unidade" field with "R$", note), then "Copiar a lista para a sua planilha", the disclaimer, and the sticky footer with the running total and "Ver mensagem e enviar"; no horizontal scroll (AC 153)
+**C248** - Arrangement of `r3-quote-phone` at 390 px: the title "Pedido de orçamento", the two header lines, the needed count, then one block per card (name, "precisa de N", "Tenho" stepper, "Preço por unidade" field with "R$", note), then "Copiar a lista para a sua planilha", the disclaimer, and the sticky footer with the running total and "Ver mensagem e enviar"; no horizontal scroll (AC 153) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/quote-layout.spec.ts -g "the quote page follows r3-quote-phone"`
 
 **C249** - The group ask text and the quote page for that deck carry "4 do deck, 3 do inventário" next to the total of 7 (AC 34; moved here from S5, because the group ask and the quote are built in S18 and S19)
@@ -1458,7 +1458,7 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "the fi
 **C389** - For a user with `emailVerifiedAt` null: sign-in answers `200`; `GET /api/decks` answers `200`; `POST /api/decks` answers `201`; `POST /api/decks/:deckId/share` and `POST /api/lists/:listId/share` answer `403` with code `EMAIL_NOT_CONFIRMED` and create no `share_link`; after `emailVerifiedAt` is set the same two answer `201` (AC 244, AC 245) · done
 Proof: `api e2e src/auth/__tests__/unconfirmed-account.e2e-spec.ts -t "an unconfirmed account can do everything but create a share link"`
 
-**C390** - For a confirmed owner, `POST /api/decks/:deckId/share` answers `201` for each intent including `quote`; an unknown intent answers `400`; a list share with `intent: "quote"` answers `400`; a deck or list of another user answers `404` (Surface)
+**C390** - For a confirmed owner, `POST /api/decks/:deckId/share` answers `201` for each intent including `quote`; an unknown intent answers `400`; a list share with `intent: "quote"` answers `400`; a deck or list of another user answers `404` (Surface) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "share creation answers 201, 400 and 404 by intent and owner"`
 
 **C391** - On `403` `EMAIL_NOT_CONFIRMED` from either share dialog, the sheet "Falta confirmar o seu e-mail" opens with "Para criar um link, confirme o e-mail que mandamos para bia.souza@gmail.com. O link vale 7 dias.", "Olhe também o spam e a aba Promoções.", "Mandar o link de novo", "Errei o e-mail" and "Agora não"; "Mandar o link de novo" calls `POST /api/auth/resend-verification`, and "Agora não" closes the sheet (screen `r2-share-blocked-phone`) (AC 245, AC 252) · done

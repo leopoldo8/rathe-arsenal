@@ -188,6 +188,17 @@ describe('Share preview (E2E)', () => {
       expect(res.text.match(/<title>/g)).toHaveLength(1);
     });
 
+    it('answers a quote link with tags that ask for a quote and name no store', async () => {
+      const { token } = await createSharedDeck({ intent: 'quote', name: 'Blades' });
+
+      const res = await request(app.getHttpServer()).get(`/d/${token}`).expect(200);
+
+      expect(res.text).toContain('og:title" content="Orçamento: cartas para Blades"');
+      expect(res.text).toMatch(/og:description" content="Rodrigo H\. pede orçamento de \d+ cópias\."/);
+      expect(res.text).toContain('name="robots" content="noindex,nofollow"');
+      expect(res.text).not.toMatch(/C[uú]pula|cupuladt/i);
+    });
+
     it('answers an unknown token with the generic tags and no deck data', async () => {
       const res = await request(app.getHttpServer()).get(`/d/${generateShareToken()}`).expect(200);
 
@@ -220,6 +231,21 @@ describe('Share preview (E2E)', () => {
   });
 
   describe('GET /api/shared/decks/:token/image', () => {
+    it('serves a stored JPEG for a quote link', async () => {
+      const { token, linkId } = await createSharedDeck({ intent: 'quote', name: 'Blades' });
+
+      const image = await request(app.getHttpServer())
+        .get(`/api/shared/decks/${token}/image`)
+        .buffer(true)
+        .parse(binaryParser as never)
+        .expect(200);
+
+      expect(image.headers['content-type']).toBe('image/jpeg');
+      expect(await sharp(image.body).metadata()).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
+      const stored = await dataSource.query(`SELECT 1 FROM share_image WHERE "shareLinkId" = $1`, [linkId]);
+      expect(stored).toHaveLength(1);
+    });
+
     it('serves a stored JPEG under 600 KB for a live token and reuses it while nothing changes', async () => {
       const { token, linkId } = await createSharedDeck();
 

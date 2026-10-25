@@ -1,5 +1,5 @@
-import { buildDeckShareMeta, buildGenericShareMeta, buildMissingShareMeta } from '../share-copy';
-import { escapeHtml, injectShareMeta, FALLBACK_SPA_HTML } from '../share-meta-tags';
+import { buildDeckShareMeta, buildGenericShareMeta, buildMissingShareMeta, buildQuoteShareMeta } from '../share-copy';
+import { buildShareMetaTags, escapeHtml, injectShareMeta, FALLBACK_SPA_HTML } from '../share-meta-tags';
 
 const SPA = `<!doctype html><html><head><meta charset="utf-8">
 <title>Rathe Arsenal</title>
@@ -122,5 +122,24 @@ describe('the missing preview names no store', () => {
     expect(meta.title).toBe('Procuro cartas para [CC] Brute do Caio');
     expect(meta.description).toBe('Caio procura 16 cópias: 3 Reckless Swing (Azul)');
     expect(JSON.stringify(meta)).not.toMatch(/C[uú]pula|R\$|cupuladt/i);
+  });
+});
+
+describe('the quote preview names no store', () => {
+  it('asks for a quote, counts copies and carries no store name, price or link', () => {
+    const meta = buildQuoteShareMeta({ name: '[CC] Brute do Caio', sharerName: 'Caio', copies: 59 }, 'tok', 'https://ra.example/');
+
+    expect(meta.title).toBe('Orçamento: cartas para [CC] Brute do Caio');
+    expect(meta.description).toBe('Caio pede orçamento de 59 cópias.');
+    expect(meta.pageUrl).toBe('https://ra.example/d/tok');
+    expect(meta.imageUrl).toMatch(/^https:\/\/ra\.example\/api\/shared\/decks\/tok\/image\?v=[\w-]{10}$/);
+    expect(JSON.stringify(meta)).not.toMatch(/C[uú]pula|R\$|cupuladt/i);
+    expect(buildShareMetaTags(meta)).toContain('noindex');
+  });
+
+  it('says copy in the singular for one copy', () => {
+    expect(buildQuoteShareMeta({ name: 'Blades', sharerName: 'Rodrigo', copies: 1 }, 'tok', 'https://ra.example').description).toBe(
+      'Rodrigo pede orçamento de 1 cópia.',
+    );
   });
 });

@@ -42,7 +42,7 @@ export function SharedMissingPage({ deck }: ISharedMissingPageProps): React.Reac
 
   return (
     <div className={styles.page}>
-      <SharedTopBar shareToken={deck.token} isSignedIn={user !== null} />
+      <SharedTopBar shareToken={deck.token} isSignedIn={user !== null} offerSignUp={false} />
       <main className={styles.main}>
         <header className={styles.header}>
           <p className={styles.eyebrow}>{t('sharing.missingPage.eyebrow')}</p>

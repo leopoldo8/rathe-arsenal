@@ -83,7 +83,7 @@ describe('Sharing (E2E)', () => {
     return rows[0]?.n ?? 0;
   }
 
-  async function startSharing(session: ISession, deckId: number, intent: 'deck' | 'missing' = 'deck'): Promise<string> {
+  async function startSharing(session: ISession, deckId: number, intent: 'deck' | 'missing' | 'quote' = 'deck'): Promise<string> {
     await request(server).patch('/api/users/me/display-name').set(...auth(session)).send({ displayName: 'Rodrigo' }).expect(200);
     const res = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(session)).send({ intent }).expect(201);
     return res.body.token as string;
@@ -372,15 +372,89 @@ describe('Sharing (E2E)', () => {
       const owner = await createSession('no-queue');
       const deckId = await createDeck(owner);
       const token = await startSharing(owner, deckId, 'missing');
+      const quoteToken = await startSharing(owner, deckId, 'quote');
       await listCard(CARD_A.cardIdentifier, 3000, 2, 40);
       const before = await jobCount();
 
       const page = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+      const quote = await request(server).get(`/api/shared/decks/${quoteToken}`).expect(200);
 
       const stale = page.body.missing.find((card: { cardIdentifier: string }) => card.cardIdentifier === CARD_A.cardIdentifier);
       expect(stale.state).toBe('looking_up');
+      expect(quote.body.needed).toHaveLength(2);
       expect(await jobCount()).toBe(before);
     });
+
+    it('the quote page carries the needed cards and nothing about stores', async () => {
+      const owner = await createSession('quote-page');
+      const deckId = await createDeck(owner);
+      await request(server).patch('/api/users/me/contact').set(...auth(owner)).send({ whatsappNumber: '(51) 99999-0000' }).expect(200);
+      const token = await startSharing(owner, deckId, 'quote');
+      await listCard(CARD_A.cardIdentifier, 3000, 2, 3);
+      await ownCopies(owner, CARD_A.cardIdentifier, 1);
+
+      const page = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+      expect(Object.keys(page.body).sort()).toEqual(['contactWhatsapp', 'hero', 'intent', 'name', 'needed', 'sharerName']);
+      expect(page.body).toMatchObject({ intent: 'quote', name: 'Shared test deck', hero: 'Some Hero', sharerName: 'Rodrigo', contactWhatsapp: '5551999990000' });
+      expect(page.body.needed).toHaveLength(2);
+      for (const item of page.body.needed as Array<Record<string, unknown>>) {
+        expect(Object.keys(item).sort()).toEqual(['cardIdentifier', 'imageUrl', 'name', 'pitch', 'quantity']);
+      }
+      const byCard = new Map((page.body.needed as Array<{ cardIdentifier: string; quantity: number }>).map((item) => [item.cardIdentifier, item.quantity]));
+      expect(byCard.get(CARD_A.cardIdentifier)).toBe(2);
+      expect(byCard.get(CARD_B.cardIdentifier)).toBe(1);
+      const body = JSON.stringify(page.body);
+      expect(body).not.toMatch(/C[uú]pula|cupuladt|unitPriceCents|productUrl|storeSummary|lineCents/);
+    });
+  });
+
+  it('creates or reuses one quote address per deck', async () => {
+    const owner = await createSession('quote-address');
+    const deckId = await createDeck(owner);
+    await request(server).patch('/api/users/me/display-name').set(...auth(owner)).send({ displayName: 'Rodrigo' }).expect(200);
+
+    const first = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'quote' }).expect(201);
+    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'quote' }).expect(201);
+
+    expect(first.body).toEqual({ intent: 'quote', url: `http://localhost:5173/d/${first.body.token}`, token: first.body.token, showContact: true });
+    expect(second.body.token).toBe(first.body.token);
+    expect(await countEvents('created', owner.userId)).toBe(1);
+    const rows = (await dataSource.query(
+      `SELECT intent FROM share_link WHERE "targetKind" = 'deck' AND "targetId" = $1`,
+      [deckId],
+    )) as { intent: string }[];
+    expect(rows).toEqual([{ intent: 'quote' }]);
+    const state = await request(server).get(`/api/decks/${deckId}/share`).set(...auth(owner)).expect(200);
+    expect(state.body).toEqual({ deck: null, missing: null });
+  });
+
+  it('a quote address answers nothing but the quote', async () => {
+    const owner = await createSession('quote-only');
+    const visitor = await createSession('quote-only-visitor');
+    const deckId = await createDeck(owner);
+    const token = await startSharing(owner, deckId, 'quote');
+
+    for (const [method, path] of [
+      ['get', 'coverage'],
+      ['get', 'matches'],
+      ['post', 'copy'],
+    ] as const) {
+      const refused = await request(server)[method](`/api/shared/decks/${token}/${path}`).set(...auth(visitor)).send({});
+      expect([method, path, refused.status, refused.body.code]).toEqual([method, path, 404, 'SHARE_LINK_UNAVAILABLE']);
+    }
+    await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+    await request(server).delete(`/api/decks/${deckId}/share/quote`).set(...auth(owner)).expect(204);
+    const off = await request(server).get(`/api/shared/decks/${token}`).expect(404);
+    expect(off.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+
+    const second = await request(server).post(`/api/decks/${deckId}/share`).set(...auth(owner)).send({ intent: 'quote' }).expect(201);
+    await request(server).delete(`/api/decks/${deckId}`).set(...auth(owner)).expect(200);
+    const gone = await request(server).get(`/api/shared/decks/${second.body.token}`).expect(404);
+    expect(gone.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+    const unknown = await request(server).get(`/api/shared/decks/${'a'.repeat(32)}`).expect(404);
+    expect(unknown.body.code).toBe('SHARE_LINK_UNAVAILABLE');
   });
 
   it('keeps sharing controls to the deck owner', async () => {
@@ -601,6 +675,21 @@ describe('Sharing (E2E)', () => {
         [owner.userId],
       )) as { intent: string }[];
       expect(event?.intent).toBe('missing');
+    });
+
+    it('stores quote as the channel for a sign-up from a quote link', async () => {
+      const owner = await createSession('referral-quote-owner');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'quote');
+
+      await signUpRaw(emailFor('via-quote'), token).expect(201);
+
+      const [row] = (await dataSource.query(
+        `SELECT "referredByUserId", "referredVia" FROM "user" WHERE email = $1`,
+        [emailFor('via-quote')],
+      )) as { referredByUserId: string | null; referredVia: string | null }[];
+      expect(row).toEqual({ referredByUserId: owner.userId, referredVia: 'quote' });
+      expect(await countEvents('signed_up', owner.userId)).toBe(1);
     });
 
     it('records nothing when the email already exists', async () => {

@@ -74,6 +74,24 @@ export function buildMissingShareMeta(
   };
 }
 
+export interface IQuoteDeckSummary {
+  readonly name: string;
+  readonly sharerName: string;
+  readonly copies: number;
+}
+
+/** A store opens this address from a message: it says what is asked and never names a store or a price. */
+export function buildQuoteShareMeta(summary: IQuoteDeckSummary, token: string, baseUrl: string): IShareMeta {
+  const base = trimTrailingSlash(baseUrl);
+  const noun = summary.copies === 1 ? 'cópia' : 'cópias';
+  return {
+    title: `Orçamento: cartas para ${summary.name}`,
+    description: `${summary.sharerName} pede orçamento de ${summary.copies} ${noun}.`,
+    imageUrl: versionedImageUrl(`${base}/api/shared/decks/${token}/image`, summary),
+    pageUrl: `${base}/d/${token}`,
+  };
+}
+
 export interface ISharedListSummary {
   readonly kind: TListKind;
   readonly name: string;

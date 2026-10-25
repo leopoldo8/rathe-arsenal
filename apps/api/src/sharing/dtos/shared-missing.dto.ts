@@ -19,3 +19,22 @@ export interface IStoreSummary {
   readonly copies: number;
   readonly cents: number;
 }
+
+export interface ISharedQuoteItem {
+  readonly cardIdentifier: string;
+  readonly name: string;
+  readonly pitch: 1 | 2 | 3 | null;
+  /** The small card image address; null when the card has none. */
+  readonly imageUrl: string | null;
+  readonly quantity: number;
+}
+
+/** What a `quote` address answers: who asks and what is needed, and nothing about any store. */
+export interface ISharedQuoteResponse {
+  readonly intent: 'quote';
+  readonly name: string;
+  readonly hero: string;
+  readonly sharerName: string;
+  readonly contactWhatsapp: string | null;
+  readonly needed: readonly ISharedQuoteItem[];
+}

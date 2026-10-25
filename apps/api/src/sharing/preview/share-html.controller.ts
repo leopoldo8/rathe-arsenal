@@ -8,7 +8,7 @@ import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { SharedDeckLookup, type ILiveSharedDeck } from '../shared-deck-lookup';
 import { SharedGroupAskService } from '../shared-group-ask.service';
 import { SharedListLookup, type ILiveSharedList } from '../shared-list-lookup';
-import { buildDeckShareMeta, buildGenericShareMeta, buildListShareMeta, buildMissingShareMeta } from './share-copy';
+import { buildDeckShareMeta, buildGenericShareMeta, buildListShareMeta, buildMissingShareMeta, buildQuoteShareMeta } from './share-copy';
 import { countListCopies, listMetaLines } from './preview-list';
 import { groupAskPreview } from './preview-missing';
 import type { IShareMeta } from './share-meta-tags';
@@ -75,6 +75,14 @@ export class ShareHtmlController {
   private async metaFor(token: string, live: ILiveSharedDeck): Promise<IShareMeta> {
     const rows = await this.deckCards.find({ where: { trackedDeckId: live.deck.id } });
     const sharerName = live.owner.displayName ?? '';
+    if (live.link.intent === 'quote') {
+      const needed = await this.groupAsk.neededFor(live.owner.id, live.deck.id);
+      return buildQuoteShareMeta(
+        { name: live.deck.name, sharerName, copies: needed.reduce((sum, item) => sum + item.quantity, 0) },
+        token,
+        this.baseUrl,
+      );
+    }
     if (live.link.intent === 'missing') {
       const { cards } = await this.groupAsk.cardsFor(live.owner.id, live.deck.id);
       const asked = groupAskPreview(cards);

@@ -118,4 +118,23 @@ describe('Share events (E2E)', () => {
     const dead = await post(`/api/shared/decks/${token}/events`, { kind: 'offer' }).expect(404);
     expect(dead.body.code).toBe('SHARE_LINK_UNAVAILABLE');
   });
+
+  it('records quote_sent without content', async () => {
+    const owner = await createSession('quote-owner');
+    const visitor = await createSession('quote-visitor');
+    const { token } = await shareDeck(owner, 'quote');
+
+    await request(server).post(`/api/shared/decks/${token}/events`).send({ kind: 'quote_sent' }).expect(204);
+    await request(server).post(`/api/shared/decks/${token}/events`).set(...auth(visitor)).send({ kind: 'quote_sent' }).expect(204);
+    await request(server).post(`/api/shared/decks/${token}/events`).set(...auth(owner)).send({ kind: 'quote_sent' }).expect(204);
+    await request(server).post(`/api/shared/decks/${token}/events`).send({ kind: 'quote_sent', quantity: 18, cents: 41200, note: 'NM' }).expect(400);
+    await request(server).post(`/api/shared/decks/${token}/events`).send({ kind: 'quote_sent', total: '412,00' }).expect(400);
+
+    expect(await eventsOf(owner.userId, ['quote_sent'])).toEqual([
+      { kind: 'quote_sent', intent: 'quote', actorUserId: null },
+      { kind: 'quote_sent', intent: 'quote', actorUserId: visitor.userId },
+    ]);
+    const stored = (await dataSource.query(`SELECT * FROM share_event WHERE "ownerUserId" = $1 AND kind = 'quote_sent' LIMIT 1`, [owner.userId])) as Array<Record<string, unknown>>;
+    expect(Object.keys(stored[0]!).sort()).toEqual(['actorUserId', 'id', 'intent', 'kind', 'occurredAt', 'ownerUserId', 'targetId', 'targetKind']);
+  });
 });

@@ -19,10 +19,10 @@ import {
   ISharedDeckResponse,
 } from './dtos/shared-deck.dto';
 import { TVisitorEventKind } from './dtos/share-event.dto';
-import { ISharedMissingCard } from './dtos/shared-missing.dto';
+import { ISharedMissingCard, ISharedQuoteResponse } from './dtos/shared-missing.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildDeckShareUrl } from './share-url';
-import { SharedDeckLookup } from './shared-deck-lookup';
+import { ILiveSharedDeck, SharedDeckLookup } from './shared-deck-lookup';
 import { SharedDeckMissingService } from './shared-deck-missing.service';
 import { SharedGroupAskService } from './shared-group-ask.service';
 import { shareLinkUnavailable } from './sharing-errors';
@@ -68,9 +68,45 @@ export class SharedDeckViewService {
     private readonly groupAsk: SharedGroupAskService,
   ) {}
 
-  async view(token: string, visitor: ICurrentUser | null): Promise<ISharedDeckResponse> {
+  /** What a deck address answers: the deck or the missing cards for people, the needed cards alone for a store's quote. */
+  async page(token: string, visitor: ICurrentUser | null): Promise<ISharedDeckResponse | ISharedQuoteResponse> {
     const live = await this.lookup.findLive(token);
     if (!live) throw shareLinkUnavailable();
+    if (live.link.intent !== 'quote') return this.deckPage(token, live, visitor);
+
+    const { link, deck, owner } = live;
+    const needed = await this.groupAsk.neededFor(owner.id, deck.id);
+    await this.recordOpen(live, visitor);
+    return {
+      intent: 'quote',
+      name: deck.name,
+      hero: deck.hero,
+      sharerName: owner.displayName ?? '',
+      contactWhatsapp: link.showsContact ? owner.whatsappNumber : null,
+      needed,
+    };
+  }
+
+  /** The deck and missing pages only; a quote address is not one of them. */
+  async view(token: string, visitor: ICurrentUser | null): Promise<ISharedDeckResponse> {
+    const live = await this.lookup.findLive(token);
+    if (!live || live.link.intent === 'quote') throw shareLinkUnavailable();
+    return this.deckPage(token, live, visitor);
+  }
+
+  private async recordOpen(live: ILiveSharedDeck, visitor: ICurrentUser | null): Promise<void> {
+    if (visitor?.userId === live.owner.id) return;
+    await this.events.record({
+      kind: 'opened',
+      targetKind: 'deck',
+      targetId: live.deck.id,
+      intent: live.link.intent,
+      ownerUserId: live.owner.id,
+      actorUserId: visitor?.userId ?? null,
+    });
+  }
+
+  private async deckPage(token: string, live: ILiveSharedDeck, visitor: ICurrentUser | null): Promise<ISharedDeckResponse> {
     const { link, deck, owner } = live;
 
     const rows = await this.deckCards.find({ where: { trackedDeckId: deck.id }, order: { id: 'ASC' } });
@@ -80,16 +116,7 @@ export class SharedDeckViewService {
     const missing = groupAsk === null ? [] : await this.withVisitorCounts(groupAsk.cards, isOwner ? null : visitor);
     const heroCard = resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard);
 
-    if (!isOwner) {
-      await this.events.record({
-        kind: 'opened',
-        targetKind: 'deck',
-        targetId: deck.id,
-        intent: link.intent,
-        ownerUserId: owner.id,
-        actorUserId: visitor?.userId ?? null,
-      });
-    }
+    await this.recordOpen(live, visitor);
 
     return {
       intent: link.intent,

@@ -6,6 +6,7 @@ import { OptionalCurrentUser } from '../auth/decorators/optional-current-user.de
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ISharedDeckCoverage, ISharedDeckMatches, ISharedDeckResponse } from './dtos/shared-deck.dto';
+import { ISharedQuoteResponse } from './dtos/shared-missing.dto';
 import { VisitorEventDto } from './dtos/share-event.dto';
 import { SharedDeckCopyService } from './shared-deck-copy.service';
 import { SharedDeckViewService } from './shared-deck-view.service';
@@ -28,8 +29,8 @@ export class SharedDecksController {
   async get(
     @Param('token') token: string,
     @OptionalCurrentUser() visitor: ICurrentUser | null,
-  ): Promise<ISharedDeckResponse> {
-    return this.view.view(token, visitor);
+  ): Promise<ISharedDeckResponse | ISharedQuoteResponse> {
+    return this.view.page(token, visitor);
   }
 
   /** What a visitor did on the page (an offer, a quote sent): the kind only, never any content. */

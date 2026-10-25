@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DeckMissingService, IMissingLine } from '../decks/deck-missing.service';
-import { ISharedMissingCard, IStoreSummary } from './dtos/shared-missing.dto';
+import { ISharedMissingCard, ISharedQuoteItem, IStoreSummary } from './dtos/shared-missing.dto';
 
 export interface IGroupAskCards {
   readonly cards: readonly ISharedMissingCard[];
@@ -29,6 +29,16 @@ function toCard(line: IMissingLine): ISharedMissingCard {
   };
 }
 
+function toQuoteItem(line: IMissingLine): ISharedQuoteItem {
+  return {
+    cardIdentifier: line.cardIdentifier,
+    name: line.name,
+    pitch: line.pitch === 1 || line.pitch === 2 || line.pitch === 3 ? line.pitch : null,
+    imageUrl: line.imageUrl,
+    quantity: line.deckNeeded + line.inventoryNeeded,
+  };
+}
+
 /** The `missing` address reads the owner's list the way the owner sees it, from the stored store states only. */
 @Injectable()
 export class SharedGroupAskService {
@@ -45,5 +55,11 @@ export class SharedGroupAskService {
         cents: priced.reduce((sum, card) => sum + (card.lineCents ?? 0), 0),
       },
     };
+  }
+
+  /** The copies the owner still needs, for the `quote` address: no store answer is read into it. */
+  async neededFor(ownerId: string, deckId: number): Promise<readonly ISharedQuoteItem[]> {
+    const { lines } = await this.deckMissing.missingFor(ownerId, deckId, 'read');
+    return lines.filter((line) => line.deckNeeded + line.inventoryNeeded > 0).map(toQuoteItem);
   }
 }
