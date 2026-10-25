@@ -160,4 +160,23 @@ describe('VariantFetchQueueService', () => {
 
     expect((await service.claimNext('worker-1'))?.id).toBe('job-9');
   });
+
+  it('claimNext starts no lookup while the budget is stopped, even for a job queued before it was reached', async () => {
+    const { service, jobRepo } = await build({ budgetAllows: false });
+    jobRepo.query.mockResolvedValue([[{ id: 'job-queued-earlier', cards: [] }], 1]);
+
+    expect(await service.claimNext('worker-1')).toBeNull();
+
+    expect(jobRepo.query).not.toHaveBeenCalled();
+  });
+
+  it('claimNext fails closed when the credits cannot be read', async () => {
+    const { service, jobRepo, budget } = await build();
+    budget.allowAutomaticLookups.mockRejectedValue(new Error('connection lost'));
+    jobRepo.query.mockResolvedValue([[{ id: 'job-queued-earlier', cards: [] }], 1]);
+
+    expect(await service.claimNext('worker-1')).toBeNull();
+
+    expect(jobRepo.query).not.toHaveBeenCalled();
+  });
 });

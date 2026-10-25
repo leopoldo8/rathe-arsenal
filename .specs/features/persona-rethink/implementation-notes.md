@@ -385,6 +385,10 @@
 - Each of the six new environment variables is optional in `env.dto.ts`; the worker's availability step reads them from `process.env` (strings), the API from `ConfigService`; both go through `readStoreAnswersConfig`.
 - The availability step runs on the worker's 3-second poll, and checks the store row each time; it asks for a URL sync only when a pass is due, none is queued or running, the last failure is over an hour old, and the budget fits.
 
+### Budget gate on the worker (security finding on fd8e3de)
+
+`claimNext` now returns no job while automatic lookups are stopped or the credit read fails (fail closed). Jobs queued before the budget ran out stay `pending` and their lines keep reading `looking_up` (a pending lookup outranks the stopped budget in `classifyStoreRow`, C186) until the next month lets the worker run them. No check names this.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

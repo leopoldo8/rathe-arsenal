@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -24,6 +24,8 @@ interface ILookupFactsRow {
 
 @Injectable()
 export class VariantFetchQueueService {
+  private readonly logger = new Logger(VariantFetchQueueService.name);
+
   constructor(
     @InjectRepository(VariantFetchJobEntity)
     private readonly jobRepo: Repository<VariantFetchJobEntity>,
@@ -90,6 +92,7 @@ export class VariantFetchQueueService {
   }
 
   async claimNext(workerId: string): Promise<VariantFetchJobEntity | null> {
+    if (!(await this.automaticLookupsAllowed())) return null;
     const result = await this.jobRepo.query(
       `UPDATE variant_fetch_job SET status = $1, "claimedAt" = now(), "claimedBy" = $2, "startedAt" = COALESCE("startedAt", now())
        WHERE id = (
@@ -103,6 +106,19 @@ export class VariantFetchQueueService {
     // empty queue yields a truthy `[]` that downstream code mistakes for a job.
     const rows: VariantFetchJobEntity[] = Array.isArray(result?.[0]) ? result[0] : result;
     return rows?.[0] ?? null;
+  }
+
+  /**
+   * Jobs queued before the budget ran out must stop too, and a failed credit
+   * read counts as "stopped": an unknown spend never licenses a paid call.
+   */
+  private async automaticLookupsAllowed(): Promise<boolean> {
+    try {
+      return await this.budget.allowAutomaticLookups();
+    } catch (error) {
+      this.logger.error({ event: 'firecrawl.budget_unreadable', error: (error as Error).message });
+      return false;
+    }
   }
 
   async reclaimOrphans(): Promise<void> {
