@@ -26,10 +26,7 @@ import type { TShareIntent } from '../../../api/shared-decks';
 
 const DECK_URL = 'https://rathearsenal.app/d/k7QxN2mTp9aV4wLcAbCdEf';
 const MISSING_URL = 'https://rathearsenal.app/d/mQ8rZ3nUp2bX5yKdFgHjLs';
-
-function versioned(text: string): RegExp {
-  return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=[0-9a-z]+$`);
-}
+const QUOTE_URL = 'https://rathearsenal.app/d/qT3rZ9nUp2bX5yKdFgHjLs';
 
 function whatsappText(element: HTMLElement): string {
   return decodeURIComponent((element.getAttribute('href') ?? '').replace('https://wa.me/?text=', ''));
@@ -78,56 +75,117 @@ describe('ShareDialog', () => {
     expect(await screen.findByTestId('share-intent-deck')).toBeInTheDocument();
   });
 
-  it('skips the name step when the user already has a name, and offers both intents', async () => {
+  it('skips the name step when the user already has a name, and offers the intents', async () => {
     renderDialog();
     expect(await screen.findByTestId('share-intent-deck')).toHaveTextContent('Quem abrir vê todas as cartas do deck.');
-    expect(screen.getByTestId('share-intent-missing')).toHaveTextContent('Quem abrir vê só as 11 cartas que faltam.');
     expect(screen.queryByText('Nome de exibição')).not.toBeInTheDocument();
   });
 
-  it('disables the missing option, with a reason, when nothing is missing', async () => {
-    renderDialog({ missingCount: 0 });
-    const option = await screen.findByTestId('share-intent-missing');
-    expect(option).toBeDisabled();
-    expect(option).toHaveTextContent('Não falta nenhuma carta.');
+  it('offers the three intents with their lines', async () => {
+    renderDialog();
+
+    const options = await screen.findAllByTestId(/^share-intent-/);
+
+    expect(options.map((option) => option.getAttribute('data-testid'))).toEqual([
+      'share-intent-deck',
+      'share-intent-missing',
+      'share-intent-quote',
+    ]);
+    expect(screen.getByRole('heading', { name: 'Compartilhar' })).toBeInTheDocument();
+    expect(options[0]).toHaveTextContent('Mostrar o deck');
+    expect(options[0]).toHaveTextContent('Quem abrir vê todas as cartas do deck.');
+    expect(options[1]).toHaveTextContent('Pedir as cartas que faltam');
+    expect(options[1]).toHaveTextContent('Para o grupo ou para amigos. Mostra o que falta, e quem tiver a carta te responde no WhatsApp.');
+    expect(options[2]).toHaveTextContent('Pedir orçamento a uma loja');
+    expect(options[2]).toHaveTextContent('Só as cartas que faltam, sem preços. A loja marca quais tem e quanto custa, e te responde no WhatsApp.');
+    for (const option of options) expect(option).not.toHaveAttribute('aria-pressed');
+    expect(api.calls.some((call) => call.key.startsWith('POST'))).toBe(false);
   });
 
-  it('marks the intents whose link is on', async () => {
+  it('disables the missing and quote options, with a reason, when nothing is missing', async () => {
+    renderDialog({ missingCount: 0 });
+    for (const id of ['share-intent-missing', 'share-intent-quote']) {
+      const option = await screen.findByTestId(id);
+      expect(option).toBeDisabled();
+      expect(option).toHaveTextContent('Não falta nenhuma carta.');
+    }
+  });
+
+  it('draws no badge on a link that is already on, and offers it again like the others', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ deck: link('deck'), missing: null }));
     renderDialog();
-    await waitFor(() => expect(within(screen.getByTestId('share-intent-deck')).getByText('link ativo')).toBeInTheDocument());
-    expect(within(screen.getByTestId('share-intent-missing')).queryByText('link ativo')).not.toBeInTheDocument();
+    const deckOption = await screen.findByTestId('share-intent-deck');
+    await waitFor(() => expect(api.calls.some((call) => call.key === 'GET /decks/7/share')).toBe(true));
+    expect(within(deckOption).queryByText('link ativo')).not.toBeInTheDocument();
+    expect(deckOption).toBeEnabled();
   });
 
-  it('choosing an intent turns that link on and shows its address, WhatsApp and the small actions', async () => {
+  it('choosing the deck intent turns that link on and shows its address, WhatsApp and the small actions', async () => {
+    api.handlers.set('POST /decks/7/share', () => link('deck'));
+    renderDialog();
+
+    await userEvent.click(await screen.findByTestId('share-intent-deck'));
+
+    await screen.findByTestId('share-address');
+    expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'deck' });
+    const whatsapp = screen.getByTestId('share-whatsapp');
+    expect(whatsapp).toHaveTextContent('Enviar no WhatsApp');
+    expect(whatsappText(whatsapp)).toBe(`Olha meu deck Rhinar Rampage no Rathe Arsenal:\n${DECK_URL}`);
+    const download = screen.getByTestId('share-download');
+    expect(download).toHaveTextContent('Baixar imagem do deck');
+    expect(download).toHaveAttribute('href', '/api/shared/decks/k7QxN2mTp9aV4wLcAbCdEf/image?download=1');
+    expect(screen.getByTestId('share-turn-off')).toHaveTextContent('Desativar link');
+  });
+
+  it('choosing the missing intent turns that link on and opens the message for the group', async () => {
     api.handlers.set('POST /decks/7/share', () => link('missing'));
     api.handlers.set('GET /shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs', () => ({
       hero: 'Rhinar, Reckless Rampage',
       url: MISSING_URL,
       missing: [
-        { cardIdentifier: 'gauntlet', name: 'Goliath Gauntlet', pitch: null, type: 'Equipment', slot: 'equipment', quantity: 1, imageUrl: null },
-        { cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, type: 'Action - Attack', slot: 'mainboard', quantity: 2, imageUrl: null },
+        { cardIdentifier: 'gauntlet', name: 'Goliath Gauntlet', pitch: null, type: 'Equipment', slot: 'equipment', quantity: 1, imageUrl: null, state: 'not_on_site' },
+        { cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, type: 'Action - Attack', slot: 'mainboard', quantity: 2, imageUrl: null, state: 'store_lacks' },
       ],
     }));
     renderDialog();
 
     await userEvent.click(await screen.findByTestId('share-intent-missing'));
 
-    await screen.findByTestId('share-address');
+    const message = await screen.findByTestId('group-ask-message');
     expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'missing' });
-    const whatsapp = screen.getByTestId('share-whatsapp');
-    expect(whatsapp).toHaveTextContent('Enviar no WhatsApp');
-    await waitFor(() =>
-      expect(whatsappText(whatsapp)).toMatch(
-        versioned(`Comprando essas cartas para meu deck de Rhinar:\n1x Goliath Gauntlet\n2x Pack Hunt (Vermelho)\n\n${MISSING_URL}`),
-      ),
-    );
-    expect(((screen.getByTestId('share-address')) as HTMLInputElement).value).toMatch(versioned(MISSING_URL));
-    const download = screen.getByTestId('share-download');
-    expect(download).toHaveTextContent('Baixar imagem das cartas');
-    expect(download).toHaveAttribute('href', '/api/shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs/image?download=1');
-    expect(screen.getByTestId('share-turn-off')).toHaveTextContent('Desativar link');
-    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pedir as cartas que faltam' })).toBeInTheDocument();
+    expect(message).toHaveTextContent('Procuro estas cartas para o meu deck Rhinar Rampage (Rhinar):');
+    expect(message).toHaveTextContent('2 Pack Hunt (Vermelho)');
+    expect(message).toHaveTextContent('Também procuro: 1 Goliath Gauntlet.');
+    expect(message).toHaveTextContent(new RegExp(`Lista completa: ${MISSING_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=[0-9a-z]+`));
+    expect(screen.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeInTheDocument();
+  });
+
+  it('the quote intent offers its address with the request text', async () => {
+    const quoteLink = { intent: 'quote' as const, url: QUOTE_URL, token: 'qT3rZ9nUp2bX5yKdFgHjLs', showContact: true };
+    api.handlers.set('POST /decks/7/share', () => quoteLink);
+    renderDialog();
+
+    await userEvent.click(await screen.findByTestId('share-intent-quote'));
+
+    expect(await screen.findByTestId('share-address')).toHaveValue(QUOTE_URL);
+    expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'quote' });
+    expect(screen.getByRole('heading', { name: 'Pedir orçamento a uma loja' })).toBeInTheDocument();
+    expect(whatsappText(screen.getByTestId('share-whatsapp'))).toBe(`Oi! Pode me passar um orçamento destas cartas? ${QUOTE_URL}`);
+  });
+
+  it('asks again for the same quote address and gets the one it already has', async () => {
+    const quoteLink = { intent: 'quote' as const, url: QUOTE_URL, token: 'qT3rZ9nUp2bX5yKdFgHjLs', showContact: true };
+    api.handlers.set('POST /decks/7/share', () => quoteLink);
+    renderDialog();
+    await userEvent.click(await screen.findByTestId('share-intent-quote'));
+    await screen.findByTestId('share-address');
+    await userEvent.click(screen.getByTestId('share-back'));
+
+    await userEvent.click(await screen.findByTestId('share-intent-quote'));
+
+    expect(await screen.findByTestId('share-address')).toHaveValue(QUOTE_URL);
+    expect(api.calls.filter((call) => call.key === 'POST /decks/7/share').length).toBeLessThanOrEqual(1);
   });
 
   it('copies the address', async () => {
@@ -146,9 +204,9 @@ describe('ShareDialog', () => {
     api.handlers.set('POST /decks/7/share', () => link('missing'));
     renderDialog({ intent: 'missing' });
 
-    expect(await screen.findByTestId('share-address')).toHaveValue(MISSING_URL);
-    expect(screen.queryByTestId('share-intent-deck')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pedir as cartas que faltam' })).toBeInTheDocument();
+    expect(screen.queryByTestId('share-intent-deck')).not.toBeInTheDocument();
+    await waitFor(() => expect(api.calls.some((call) => call.key === 'POST /decks/7/share')).toBe(true));
   });
 
   it('goes back to the choice from the link', async () => {
@@ -183,14 +241,14 @@ describe('ShareDialog', () => {
 
   it('switches the WhatsApp of this link only', async () => {
     api.handlers.set('GET /decks/7/share', () => ({ deck: link('deck', true), missing: link('missing', true) }));
-    api.handlers.set('PATCH /decks/7/share/missing', ({ body }) => link('missing', (body as { showContact: boolean }).showContact));
+    api.handlers.set('PATCH /decks/7/share/deck', ({ body }) => link('deck', (body as { showContact: boolean }).showContact));
     const auth = makeAuth({ user: { ...SIGNED_IN_USER, whatsappNumber: '5553999990000' } });
-    renderDialog({ intent: 'missing', auth });
+    renderDialog({ intent: 'deck', auth });
 
     await userEvent.click(await screen.findByTestId('deck-share-contact-switch'));
 
     await waitFor(() => expect(screen.getByTestId('deck-share-contact-switch')).toHaveAttribute('aria-checked', 'false'));
-    expect(api.calls.find((call) => call.key === 'PATCH /decks/7/share/missing')?.body).toEqual({ showContact: false });
+    expect(api.calls.find((call) => call.key === 'PATCH /decks/7/share/deck')?.body).toEqual({ showContact: false });
   });
 
   it('asks for the number inline when none is saved', async () => {

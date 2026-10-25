@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-export type TReferredVia = 'deck' | 'want' | 'sell';
+export type TReferredVia = 'deck' | 'want' | 'sell' | 'quote';
 
 /**
  * Authorization role. `admin` unlocks owner/operator surfaces (e.g. the manual
@@ -30,7 +30,7 @@ export enum EUserRole {
  * Token columns hold sha256 hashes of the raw tokens — the raw token is
  * sent in the email link only, never stored.
  */
-@Check('CHK_user_referred_via_valid', `"referredVia" IN ('deck', 'want', 'sell')`)
+@Check('CHK_user_referred_via_valid', `"referredVia" IN ('deck', 'want', 'sell', 'quote')`)
 // Unique on the lowercased address (door 14), `IDX_user_email_lower`. TypeORM cannot declare an
 // expression index: the migration creates it in production and `DatabaseModule` creates it where
 // the schema is synchronized (the schema sync does not read expression indexes, so it leaves it be).
@@ -110,6 +110,10 @@ export class UserEntity {
 
   @Column({ type: 'varchar', length: 8, nullable: true })
   referredVia!: TReferredVia | null;
+
+  /** The last closing line the owner sent in a group ask, offered again next time. */
+  @Column({ type: 'varchar', length: 140, nullable: true })
+  shareClosingLine!: string | null;
 
   /** The in-app page the visitor signed up from, so confirming the e-mail can send them back to it on any device. */
   @Column({ type: 'varchar', length: 200, nullable: true })

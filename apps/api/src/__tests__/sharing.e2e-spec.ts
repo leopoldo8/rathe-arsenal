@@ -230,7 +230,7 @@ describe('Sharing (E2E)', () => {
     );
   });
 
-  it('share creation answers 201, 400 and 404 for the intents that exist today', async () => {
+  it('share creation answers 201, 400 and 404 by intent and owner', async () => {
     const owner = await createSession('creation-statuses');
     const stranger = await createSession('creation-stranger');
     const deckId = await createDeck(owner);
@@ -245,6 +245,142 @@ describe('Sharing (E2E)', () => {
     await request(server).post(`/api/lists/${listId}/share`).set(...auth(owner)).send({}).expect(201);
     await request(server).post(`/api/decks/${deckId}/share`).set(...auth(stranger)).send({ intent: 'deck' }).expect(404);
     await request(server).post(`/api/lists/${listId}/share`).set(...auth(stranger)).send({}).expect(404);
+  });
+
+  describe('store states on the missing page', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const STORE_CARDS = [CARD_A.cardIdentifier, CARD_B.cardIdentifier];
+    const passAt = new Date(Date.now() - DAY_MS);
+    let storeId: number;
+    let createdStore = false;
+    let savedPassAt: Date | null = null;
+    let savedActive = true;
+    let savedStock: Array<Record<string, unknown>> = [];
+
+    beforeAll(async () => {
+      const existing: Array<{ id: number; lastAvailabilityPassAt: Date | null; active: boolean }> = await dataSource.query(
+        `SELECT id, "lastAvailabilityPassAt", active FROM store WHERE slug = 'cupula-dt'`,
+      );
+      if (existing.length === 0) {
+        const created: Array<{ id: number }> = await dataSource.query(
+          `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
+           VALUES ('cupula-dt', 'Cúpula DT', 'https://www.cupuladt.com.br', '/?view=ecom/itens&tcg=8', 1500, true) RETURNING id`,
+        );
+        storeId = created[0]!.id;
+        createdStore = true;
+      } else {
+        storeId = existing[0]!.id;
+        savedPassAt = existing[0]!.lastAvailabilityPassAt;
+        savedActive = existing[0]!.active;
+      }
+      savedStock = await dataSource.query(`SELECT * FROM store_stock WHERE "storeId" = $1 AND "cardIdentifier" = ANY($2)`, [storeId, STORE_CARDS]);
+      await dataSource.query(`UPDATE store SET "lastAvailabilityPassAt" = $2, active = true WHERE id = $1`, [storeId, passAt]);
+    });
+
+    afterAll(async () => {
+      await dataSource.query(`DELETE FROM variant_fetch_job WHERE "cardIdentifier" = ANY($1)`, [STORE_CARDS]);
+      await dataSource.query(`DELETE FROM store_stock WHERE "storeId" = $1 AND "cardIdentifier" = ANY($2)`, [storeId, STORE_CARDS]);
+      for (const row of savedStock) {
+        await dataSource.query(
+          `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt", "listedInStockAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [storeId, row['cardIdentifier'], row['priceCents'], row['quantity'], row['productUrl'], row['productNameRaw'], row['lastFetchedAt'], row['listedInStockAt']],
+        );
+      }
+      if (createdStore) await dataSource.query(`DELETE FROM store WHERE id = $1`, [storeId]);
+      else await dataSource.query(`UPDATE store SET "lastAvailabilityPassAt" = $2, active = $3 WHERE id = $1`, [storeId, savedPassAt, savedActive]);
+    });
+
+    beforeEach(async () => {
+      await dataSource.query(`DELETE FROM variant_fetch_job WHERE "cardIdentifier" = ANY($1)`, [STORE_CARDS]);
+      await dataSource.query(`DELETE FROM store_stock WHERE "storeId" = $1 AND "cardIdentifier" = ANY($2)`, [storeId, STORE_CARDS]);
+    });
+
+    async function listCard(cardIdentifier: string, priceCents: number, quantity: number, fetchedDaysAgo: number): Promise<void> {
+      await dataSource.query(
+        `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt", "listedInStockAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [storeId, cardIdentifier, priceCents, quantity, `https://www.cupuladt.com.br/?view=ecom/item&id=${cardIdentifier}`, cardIdentifier, new Date(Date.now() - fetchedDaysAgo * DAY_MS), passAt],
+      );
+    }
+
+    async function jobCount(): Promise<number> {
+      const [row] = (await dataSource.query(`SELECT count(*)::int AS n FROM variant_fetch_job`)) as [{ n: number }];
+      return row.n;
+    }
+
+    it('the missing page carries the stored store states and the store summary', async () => {
+      const owner = await createSession('store-states');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'missing');
+      await listCard(CARD_A.cardIdentifier, 3000, 2, 3);
+
+      const page = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+      const byCard = new Map((page.body.missing as Array<{ cardIdentifier: string }>).map((card) => [card.cardIdentifier, card]));
+      expect(byCard.get(CARD_A.cardIdentifier)).toMatchObject({
+        quantity: 3,
+        state: 'priced',
+        unitPriceCents: 3000,
+        lineCents: 6000,
+        availableCopies: 2,
+        foilOnly: false,
+        promoOnly: false,
+        productUrl: `https://www.cupuladt.com.br/?view=ecom/item&id=${CARD_A.cardIdentifier}`,
+      });
+      expect(byCard.get(CARD_B.cardIdentifier)).toMatchObject({
+        quantity: 1,
+        state: 'not_on_site',
+        unitPriceCents: null,
+        lineCents: null,
+        availableCopies: null,
+        productUrl: null,
+      });
+      expect(page.body.storeSummary).toEqual({ copies: 2, cents: 6000 });
+      expect(page.body.missingCount).toBe(4);
+    });
+
+    it('the missing page gives a signed-in visitor owned and spare per card', async () => {
+      const owner = await createSession('visitor-counts-owner');
+      const visitor = await createSession('visitor-counts');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'missing');
+      await ownCopies(visitor, CARD_A.cardIdentifier, 2);
+
+      const asVisitor = await request(server).get(`/api/shared/decks/${token}`).set(...auth(visitor)).expect(200);
+      const anonymous = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+      const owned = (body: { missing: Array<{ cardIdentifier: string; owned: number | null }> }) =>
+        Object.fromEntries(body.missing.map((card) => [card.cardIdentifier, card.owned]));
+      expect(owned(asVisitor.body)).toEqual({ [CARD_A.cardIdentifier]: 2, [CARD_B.cardIdentifier]: 0 });
+      expect(owned(anonymous.body)).toEqual({ [CARD_A.cardIdentifier]: null, [CARD_B.cardIdentifier]: null });
+    });
+
+    it("the owner's own missing page carries no visitor counts", async () => {
+      const owner = await createSession('own-page');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'missing');
+      await ownCopies(owner, CARD_A.cardIdentifier, 1);
+
+      const page = await request(server).get(`/api/shared/decks/${token}`).set(...auth(owner)).expect(200);
+
+      expect(page.body.isOwner).toBe(true);
+      expect(page.body.missing.map((card: { owned: number | null }) => card.owned)).toEqual([null, null]);
+    });
+
+    it('a public page reads the stored store states and queues no lookup', async () => {
+      const owner = await createSession('no-queue');
+      const deckId = await createDeck(owner);
+      const token = await startSharing(owner, deckId, 'missing');
+      await listCard(CARD_A.cardIdentifier, 3000, 2, 40);
+      const before = await jobCount();
+
+      const page = await request(server).get(`/api/shared/decks/${token}`).expect(200);
+
+      const stale = page.body.missing.find((card: { cardIdentifier: string }) => card.cardIdentifier === CARD_A.cardIdentifier);
+      expect(stale.state).toBe('looking_up');
+      expect(await jobCount()).toBe(before);
+    });
   });
 
   it('keeps sharing controls to the deck owner', async () => {

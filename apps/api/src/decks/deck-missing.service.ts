@@ -70,6 +70,8 @@ export interface IDeckMissingResponse {
   readonly lines: readonly IMissingLine[];
 }
 
+export type TLookupMode = 'queue' | 'read';
+
 interface INeed {
   readonly slot: string;
   readonly entry: IBreakdownEntry;
@@ -139,7 +141,11 @@ export class DeckMissingService {
     private readonly config: ConfigService,
   ) {}
 
-  async missingFor(userId: string, deckId: number): Promise<IDeckMissingResponse> {
+  /**
+   * `lookups: 'queue'` is the owner's list, which asks for the prices still missing; `'read'` is for public pages,
+   * which only read what is stored and never queue a lookup.
+   */
+  async missingFor(userId: string, deckId: number, lookups: TLookupMode = 'queue'): Promise<IDeckMissingResponse> {
     const rows = await this.deckCardRepo.find({ where: { trackedDeckId: deckId } });
     const owned = await this.collectionRead.loadOwned(userId);
     const active = await this.replacements.loadActive(deckId);
@@ -153,7 +159,8 @@ export class DeckMissingService {
     }
     const coveredOnly = [...replacedOriginals.keys()].filter((cardIdentifier) => !needs.has(cardIdentifier));
 
-    const states = await this.storeAnswers.openForOwner([...needs.keys()]);
+    const states =
+      lookups === 'queue' ? await this.storeAnswers.openForOwner([...needs.keys()]) : await this.storeAnswers.read([...needs.keys()]);
     const coveredStates = await this.storeAnswers.read(coveredOnly);
     const { baseUrl, lastAvailabilityPassAt, offers } = await this.storeAnswers.readOffers([...needs.keys(), ...coveredOnly]);
     const manualQuantities = await this.manualQuantities(userId, [...needs.keys()]);

@@ -1,4 +1,5 @@
 import { TDeckShareIntent } from '../../database/entities/share-link.entity';
+import type { ISharedMissingCard, IStoreSummary } from './shared-missing.dto';
 
 export interface ISharedCardImage {
   small: string;
@@ -47,8 +48,10 @@ export interface ISharedDeckResponse {
   /** Every card for the 'deck' intent; empty for 'missing'. */
   cards: ISharedCard[];
   /** The owner's missing cards for the 'missing' intent; empty for 'deck', enforced here and not only in the UI. */
-  missing: ISharedCard[];
+  missing: ISharedMissingCard[];
   missingCount: number;
+  /** What the store can supply of the missing cards, from stored answers; null outside the 'missing' intent. */
+  storeSummary: IStoreSummary | null;
   /** The deck's verdict in its own format and in the others, for the 'deck' intent; null for 'missing'. */
   legality: ISharedDeckLegality | null;
 }

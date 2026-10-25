@@ -11,13 +11,13 @@ import {
 import type { TShareTargetKind } from './share-event.entity';
 import { UserEntity } from './user.entity';
 
-export type TShareIntent = 'deck' | 'missing' | 'want' | 'sell';
-export type TDeckShareIntent = 'deck' | 'missing';
+export type TShareIntent = 'deck' | 'missing' | 'want' | 'sell' | 'quote';
+export type TDeckShareIntent = 'deck' | 'missing' | 'quote';
 
 export const DECK_SHARE_INTENTS: readonly TDeckShareIntent[] = ['deck', 'missing'];
 
 @Check('CHK_share_link_target_kind_valid', `"targetKind" IN ('deck', 'list')`)
-@Check('CHK_share_link_intent_valid', `"intent" IN ('deck', 'missing', 'want', 'sell')`)
+@Check('CHK_share_link_intent_valid', `"intent" IN ('deck', 'missing', 'want', 'sell', 'quote')`)
 @Index('IDX_share_link_token', ['token'], { unique: true })
 @Index('IDX_share_link_target_intent', ['targetKind', 'targetId', 'intent'], { unique: true })
 @Entity({ name: 'share_link' })

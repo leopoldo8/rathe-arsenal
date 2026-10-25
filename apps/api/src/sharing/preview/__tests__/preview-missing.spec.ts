@@ -1,7 +1,8 @@
 import type { TrackedDeckEntity } from '../../../database/entities/tracked-deck.entity';
 import type { UserEntity } from '../../../database/entities/user.entity';
 import type { ISharedCard } from '../../dtos/shared-deck.dto';
-import { buildPreviewMissing, describeMissingCount, missingLinesByName } from '../preview-missing';
+import type { ISharedMissingCard } from '../../dtos/shared-missing.dto';
+import { buildPreviewMissing, describeMissingCount, groupAskPreview, missingLinesByName } from '../preview-missing';
 
 const OWNER = { displayName: 'Rodrigo H.' } as UserEntity;
 const DECK = { id: 7, name: 'Blades', hero: 'Dorinthea Ironsong', heroIdentifier: 'dorinthea-ironsong', format: 'CC' } as TrackedDeckEntity;
@@ -77,5 +78,59 @@ describe('describeMissingCount', () => {
     [12, 'Faltam 12 cartas'],
   ])('writes %i as %s', (count, text) => {
     expect(describeMissingCount(count)).toBe(text);
+  });
+});
+
+describe('groupAskPreview', () => {
+  const asked = (
+    name: string,
+    pitch: 1 | 2 | 3 | null,
+    quantity: number,
+    state: ISharedMissingCard['state'],
+    availableCopies: number | null = null,
+  ): ISharedMissingCard => ({
+    ...card(name.toLowerCase(), name, quantity),
+    pitch,
+    state,
+    unitPriceCents: availableCopies === null ? null : 2000,
+    lineCents: availableCopies === null ? null : 2000 * availableCopies,
+    availableCopies,
+    foilOnly: false,
+    promoOnly: false,
+    productUrl: availableCopies === null ? null : 'https://store.example/item',
+    owned: null,
+  });
+
+  it('counts copies and never shows the store', () => {
+    const preview = groupAskPreview([
+      asked('Reckless Swing', 3, 3, 'store_lacks'),
+      asked('Bloodrush Bellow', 2, 3, 'priced', 2),
+      asked('Snapdragon Scalers', null, 1, 'not_on_site'),
+      asked('Savage Swing', 1, 2, 'priced', 2),
+      asked('Pack Hunt', 1, 3, 'looking_up'),
+      asked('Crater Fist', null, 1, 'no_price'),
+    ]);
+
+    expect(preview).toEqual({
+      copies: 5,
+      lines: [
+        { name: 'Reckless Swing (Azul)', quantity: 3 },
+        { name: 'Bloodrush Bellow (Amarelo)', quantity: 1 },
+        { name: 'Snapdragon Scalers', quantity: 1 },
+      ],
+    });
+    expect(JSON.stringify(preview)).not.toMatch(/C[uú]pula|R\$|store\.example/);
+  });
+
+  it('asks for everything missing when the store can supply none of it to leave out', () => {
+    const preview = groupAskPreview([asked('Pack Hunt', 1, 3, 'looking_up'), asked('Savage Swing', 1, 1, 'priced', 1)]);
+
+    expect(preview).toEqual({
+      copies: 4,
+      lines: [
+        { name: 'Pack Hunt (Vermelho)', quantity: 3 },
+        { name: 'Savage Swing (Vermelho)', quantity: 1 },
+      ],
+    });
   });
 });

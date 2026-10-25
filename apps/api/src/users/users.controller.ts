@@ -7,6 +7,7 @@ import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { SetPasswordDto } from '../auth/dtos/set-password.dto';
 import { readSessionToken } from '../auth/session-cookie';
 import { UpdateContactDto } from './dtos/update-contact.dto';
+import { UpdateShareClosingLineDto } from './dtos/update-share-closing-line.dto';
 import { UpdateDisplayNameDto } from './dtos/update-display-name.dto';
 import { PatchThemeDto } from './dtos/user-settings.dto';
 import { UsersService, IUserSettings } from './users.service';
@@ -78,6 +79,16 @@ export class UsersController {
     @Body() dto: UpdateContactDto,
   ): Promise<{ whatsappNumber: string | null }> {
     return this.usersService.updateContact(currentUser.userId, dto.whatsappNumber);
+  }
+
+  @Patch('me/share-closing-line')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  async patchShareClosingLine(
+    @CurrentUser() currentUser: ICurrentUser,
+    @Body() dto: UpdateShareClosingLineDto,
+  ): Promise<{ text: string }> {
+    return this.usersService.updateShareClosingLine(currentUser.userId, dto.text);
   }
 
   /** Sets or replaces the password and signs every other device out; this one stays signed in. */

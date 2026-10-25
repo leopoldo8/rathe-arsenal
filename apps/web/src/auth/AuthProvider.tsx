@@ -40,6 +40,7 @@ interface IAuthMeResponse {
   hasPassword?: boolean;
   displayName?: string | null;
   whatsappNumber?: string | null;
+  shareClosingLine?: string | null;
   settings: IAuthSettings;
 }
 
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signedInRef.current = true;
         // Default to 'user' if an older server response omits role (fail-safe:
         // never grant admin UI on a missing field).
-        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, emailConfirmed: res.emailConfirmed === true, hasPassword: res.hasPassword === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null });
+        setUser({ id: res.id, email: res.email, role: res.role ?? 'user', chatAccess: res.chatAccess === true, emailConfirmed: res.emailConfirmed === true, hasPassword: res.hasPassword === true, displayName: res.displayName ?? null, whatsappNumber: res.whatsappNumber ?? null, shareClosingLine: res.shareClosingLine ?? null });
         setRestored(true);
         // Defensive: old server versions without the field shouldn't partial-apply;
         // only touch theme state when the server actually returned a valid shape.
@@ -159,6 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev === null ? prev : { ...prev, whatsappNumber }));
   }, []);
 
+  const setShareClosingLine = useCallback((text: string) => {
+    setUser((prev) => (prev === null ? prev : { ...prev, shareClosingLine: text }));
+  }, []);
+
   const setHasPassword = useCallback((hasPassword: boolean) => {
     setUser((prev) => (prev === null ? prev : { ...prev, hasPassword }));
   }, []);
@@ -203,8 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // assigning `undefined` to an optional field is a type error.
     ...(settings !== undefined ? { settings } : {}),
     setSettings,
-    signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount, setDisplayName, setWhatsappNumber, setHasPassword,
-  }), [user, isLoading, settings, restored, sessionEnded, setSettings, setDisplayName, setWhatsappNumber, setHasPassword, signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount]);
+    signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount, setDisplayName, setWhatsappNumber, setShareClosingLine, setHasPassword,
+  }), [user, isLoading, settings, restored, sessionEnded, setSettings, setDisplayName, setWhatsappNumber, setShareClosingLine, setHasPassword, signUp, signIn, signOut, verifyEmail, changeEmail, verifyCode, redeemCode, deleteAccount]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

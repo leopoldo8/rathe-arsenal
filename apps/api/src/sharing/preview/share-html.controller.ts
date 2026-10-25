@@ -6,11 +6,11 @@ import { Public } from '../../auth/decorators/public.decorator';
 import { CardListLineEntity } from '../../database/entities/card-list-line.entity';
 import { DeckCardEntity } from '../../database/entities/deck-card.entity';
 import { SharedDeckLookup, type ILiveSharedDeck } from '../shared-deck-lookup';
-import { SharedDeckMissingService } from '../shared-deck-missing.service';
+import { SharedGroupAskService } from '../shared-group-ask.service';
 import { SharedListLookup, type ILiveSharedList } from '../shared-list-lookup';
 import { buildDeckShareMeta, buildGenericShareMeta, buildListShareMeta, buildMissingShareMeta } from './share-copy';
 import { countListCopies, listMetaLines } from './preview-list';
-import { missingLinesByName } from './preview-missing';
+import { groupAskPreview } from './preview-missing';
 import type { IShareMeta } from './share-meta-tags';
 import { injectShareMeta } from './share-meta-tags';
 import { SpaIndexHtml } from './spa-index-html';
@@ -24,7 +24,7 @@ export class ShareHtmlController {
     private readonly lookup: SharedDeckLookup,
     private readonly listLookup: SharedListLookup,
     private readonly spaIndex: SpaIndexHtml,
-    private readonly missingCards: SharedDeckMissingService,
+    private readonly groupAsk: SharedGroupAskService,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
     @InjectRepository(CardListLineEntity)
@@ -76,14 +76,10 @@ export class ShareHtmlController {
     const rows = await this.deckCards.find({ where: { trackedDeckId: live.deck.id } });
     const sharerName = live.owner.displayName ?? '';
     if (live.link.intent === 'missing') {
-      const missing = await this.missingCards.missingFor(live.owner.id, rows);
+      const { cards } = await this.groupAsk.cardsFor(live.owner.id, live.deck.id);
+      const asked = groupAskPreview(cards);
       return buildMissingShareMeta(
-        {
-          name: live.deck.name,
-          sharerName,
-          missingCount: missing.reduce((sum, card) => sum + card.quantity, 0),
-          lines: missingLinesByName(missing),
-        },
+        { name: live.deck.name, sharerName, missingCount: asked.copies, lines: asked.lines },
         token,
         this.baseUrl,
       );

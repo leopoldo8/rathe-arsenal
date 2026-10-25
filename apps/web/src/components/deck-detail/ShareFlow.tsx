@@ -13,6 +13,8 @@ import { ConfirmEmailPanel } from '../confirmation/ConfirmEmailPanel';
 import { ShareDialogHeader } from '../share/ShareDialogHeader';
 import { useSaveDisplayName } from '../share/useSaveDisplayName';
 import { DisplayNameForm } from './DisplayNameForm';
+import { GroupAskStep } from './GroupAskStep';
+import { QuoteLinkStep } from './QuoteLinkStep';
 import { ShareIntentStep } from './ShareIntentStep';
 import { ShareLinkStep } from './ShareLinkStep';
 import styles from '../share/ShareSteps.module.css';
@@ -98,9 +100,13 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
           />
         )}
         {step.kind === 'intent' && (
-          <ShareIntentStep links={shareQuery.data} missingCount={missingCount} onChoose={activate} />
+          <ShareIntentStep missingCount={missingCount} onChoose={activate} />
         )}
-        {step.kind === 'link' && link !== null && (
+        {step.kind === 'link' && link !== null && link.intent === 'missing' && (
+          <GroupAskStep key={link.token} deckName={deckName} link={link} />
+        )}
+        {step.kind === 'link' && link !== null && link.intent === 'quote' && <QuoteLinkStep key={link.token} link={link} />}
+        {step.kind === 'link' && link !== null && link.intent === 'deck' && (
           <ShareLinkStep
             key={link.token}
             deckId={deckId}

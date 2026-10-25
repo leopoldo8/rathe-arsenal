@@ -430,9 +430,9 @@ describe('SharedDeckPage', () => {
     it('shows the "looking for" header and only the missing cards, with no deck comparison', async () => {
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      expect(await screen.findByText('Procuro cartas')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1, name: 'Rhinar Rampage' })).toBeInTheDocument();
-      expect(screen.getByText('Faltam 3 cartas')).toBeInTheDocument();
+      expect(await screen.findByText('Lista de cartas')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Cartas que Dudu_Pelotas procura' })).toBeInTheDocument();
+      expect(screen.getByText('Rhinar Rampage')).toBeInTheDocument();
       const cards = screen.getAllByTestId('shared-card');
       expect(cards).toHaveLength(2);
       expect(screen.queryByTestId('shared-invite')).not.toBeInTheDocument();
@@ -463,42 +463,40 @@ describe('SharedDeckPage', () => {
       expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
     });
 
-    it('offers WhatsApp as the main action with the missing-cards message', async () => {
+    it('offers each card to the sharer on WhatsApp instead of a contact bar', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, contactWhatsapp: '5553999990000' }));
       renderPage(undefined, undefined, MISSING_TOKEN);
 
-      const pill = await screen.findByTestId('shared-contact-pill');
-      expect(pill.getAttribute('href')).toContain(
-        encodeURIComponent('Oi! Vi que você procura cartas para o deck Rhinar Rampage.'),
-      );
+      expect(await screen.findAllByRole('button', { name: /^Oferecer / })).toHaveLength(2);
+      expect(screen.queryByTestId('shared-contact-pill')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('shared-contact-bar')).not.toBeInTheDocument();
     });
 
-    it('invites an anonymous visitor to sign up and makes no matches request', async () => {
+    it('asks nothing of an anonymous visitor but the page itself', async () => {
       renderPage(undefined, undefined, MISSING_TOKEN);
-      expect(await screen.findByTestId('shared-signup-prompt')).toHaveTextContent('Crie uma conta para ver quais você já tem.');
-      expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
+      await screen.findByText('Lista de cartas');
+      expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
+      expect(api.calls.map((call) => call.key)).toEqual([wantedKey]);
     });
 
     it('shows "você tem N" on the cards a logged-in visitor owns', async () => {
-      api.handlers.set(`GET /shared/decks/${MISSING_TOKEN}/matches`, () => ({
-        cards: [
-          { cardIdentifier: 'gauntlet', owned: 0 },
-          { cardIdentifier: 'pack-hunt-red', owned: 2 },
-        ],
+      api.handlers.set(wantedKey, () => ({
+        ...WANTED,
+        missing: MISSING.map((entry) => ({ ...entry, owned: entry.cardIdentifier === 'pack-hunt-red' ? 2 : 0 })),
       }));
       renderPage(undefined, makeAuth(), MISSING_TOKEN);
 
       const owned = await screen.findByTestId('shared-owned');
-      expect(owned).toHaveTextContent('você tem 2');
+      expect(owned).toHaveTextContent('Você tem 2');
       expect(screen.getAllByTestId('shared-owned')).toHaveLength(1);
       expect(screen.queryByTestId('shared-signup-prompt')).not.toBeInTheDocument();
-      expect(api.calls.some((call) => call.key.includes('/coverage') || call.key.includes('/copy'))).toBe(false);
+      expect(api.calls.some((call) => call.key.includes('/coverage') || call.key.includes('/copy') || call.key.includes('/matches'))).toBe(false);
     });
 
     it('does not ask the owner for matches', async () => {
       api.handlers.set(wantedKey, () => ({ ...WANTED, isOwner: true, deckId: 7 }));
       renderPage(undefined, makeAuth(), MISSING_TOKEN);
-      await screen.findByText('Procuro cartas');
+      await screen.findByText('Lista de cartas');
       expect(api.calls.some((call) => call.key.includes('/matches'))).toBe(false);
     });
 

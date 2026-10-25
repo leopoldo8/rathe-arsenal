@@ -24,9 +24,30 @@ export interface ISharedCard {
   /** Copies carried outside the starting deck (door 3); absent on answers that predate it. */
   readonly inventoryQuantity?: number;
   readonly imageUrl: ISharedCardImage | null;
+  /**
+   * The store's stored answer for a card of a `missing` link, with the priced facts. Absent on answers that predate them,
+   * which read as "the store does not list it".
+   */
+  readonly state?: TStoreState;
+  readonly unitPriceCents?: number | null;
+  readonly lineCents?: number | null;
+  /** Copies the store can supply of the ones needed; null unless the card is priced. */
+  readonly availableCopies?: number | null;
+  readonly foilOnly?: boolean;
+  readonly promoOnly?: boolean;
+  readonly productUrl?: string | null;
+  /** What the signed-in visitor owns of the card; null for an anonymous visitor and for the owner. */
+  readonly owned?: number | null;
 }
 
-export type TShareIntent = 'deck' | 'missing';
+export type TStoreState = 'priced' | 'store_lacks' | 'not_on_site' | 'looking_up' | 'no_price';
+
+export interface IStoreSummary {
+  readonly copies: number;
+  readonly cents: number;
+}
+
+export type TShareIntent = 'deck' | 'missing' | 'quote';
 
 export interface ISharedFormatVerdict {
   readonly category: 'legal' | 'incomplete' | 'illegal' | 'unchecked';
@@ -59,6 +80,8 @@ export interface ISharedDeckResponse {
   /** Intent 'missing': the owner's not-owned cards, grouped by (cardIdentifier, slot). Intent 'deck': empty. */
   readonly missing: readonly ISharedCard[];
   readonly missingCount: number;
+  /** Intent 'missing': what the store can supply of the missing cards, from its stored answers. Other intents: null. */
+  readonly storeSummary?: IStoreSummary | null;
   /** Digits with country code; set only when the owner saved a number and left the link's switch on. */
   readonly contactWhatsapp: string | null;
   /** The deck's id, only for the owner (to link back to the deck); null for everyone else. */
@@ -91,6 +114,7 @@ export interface ILinkState {
 export interface IDeckShareState {
   readonly deck: ILinkState | null;
   readonly missing: ILinkState | null;
+  readonly quote?: ILinkState | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +195,24 @@ export function patchContact(whatsappNumber: string | null): Promise<{ whatsappN
   return authFetch<{ whatsappNumber: string | null }>('/users/me/contact', {
     method: 'PATCH',
     body: JSON.stringify({ whatsappNumber }),
+  });
+}
+
+/** Saves the closing line of the group ask on the account. 400 above 140 characters. */
+export function patchShareClosingLine(text: string): Promise<{ text: string }> {
+  return authFetch<{ text: string }>('/users/me/share-closing-line', {
+    method: 'PATCH',
+    body: JSON.stringify({ text }),
+  });
+}
+
+export type TVisitorEventKind = 'offer' | 'quote_sent';
+
+/** Tells the sharer's counts that the visitor offered cards or sent a quote. The kind only, never any content. */
+export function postShareEvent(token: string, kind: TVisitorEventKind): Promise<void> {
+  return authFetch<void>(`/shared/decks/${encodeURIComponent(token)}/events`, {
+    method: 'POST',
+    body: JSON.stringify({ kind }),
   });
 }
 

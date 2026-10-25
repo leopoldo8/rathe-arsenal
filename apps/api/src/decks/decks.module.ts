@@ -60,5 +60,6 @@ import { RecommendationsCoreModule } from '../recommendations/recommendations-co
     // is added to main.ts (tracked as a gap for U6 to resolve).
     HeroIdentifierExistsInCatalog,
   ],
+  exports: [DeckMissingService],
 })
 export class DecksModule {}

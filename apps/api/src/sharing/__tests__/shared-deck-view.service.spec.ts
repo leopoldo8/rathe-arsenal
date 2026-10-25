@@ -12,6 +12,7 @@ import { ShareEventsService } from '../share-events.service';
 import { SharedDeckLookup } from '../shared-deck-lookup';
 import { SharedDeckMissingService } from '../shared-deck-missing.service';
 import { SharedDeckViewService } from '../shared-deck-view.service';
+import { SharedGroupAskService } from '../shared-group-ask.service';
 
 const [CARD_A, CARD_B] = catalog.cards
   .filter((card) => card.pitch === 1 && card.types[0] !== 'Hero')
@@ -62,14 +63,24 @@ function build(
   config.get.mockReturnValue('https://app.example');
   const deckCards = createMock<Repository<DeckCardEntity>>();
   deckCards.find.mockResolvedValue(options.rows ?? ROWS);
-  const service = new SharedDeckViewService(
-    lookup,
-    events,
-    new SharedDeckMissingService(collection),
-    collection,
-    config,
-    deckCards,
-  );
+  const missingCards = new SharedDeckMissingService(collection);
+  // The group ask reads store answers, which this spec does not cover: it gets the plain missing cards with no store answer.
+  const groupAsk = createMock<SharedGroupAskService>();
+  groupAsk.cardsFor.mockImplementation(async (ownerId) => ({
+    cards: (await missingCards.missingFor(ownerId, options.rows ?? ROWS)).map((card) => ({
+      ...card,
+      state: 'not_on_site' as const,
+      unitPriceCents: null,
+      lineCents: null,
+      availableCopies: null,
+      foilOnly: false,
+      promoOnly: false,
+      productUrl: null,
+      owned: null,
+    })),
+    storeSummary: { copies: 0, cents: 0 },
+  }));
+  const service = new SharedDeckViewService(lookup, events, missingCards, collection, config, deckCards, groupAsk);
   return { service, events };
 }
 

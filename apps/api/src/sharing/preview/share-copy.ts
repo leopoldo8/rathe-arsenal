@@ -53,8 +53,8 @@ const DESCRIPTION_LINES = 4;
 
 function missingDescription(summary: IMissingDeckSummary): string {
   if (summary.missingCount === 0) return `${summary.sharerName} já tem todas as cartas deste deck`;
-  const noun = summary.missingCount === 1 ? 'carta' : 'cartas';
-  const shown = summary.lines.slice(0, DESCRIPTION_LINES).map((line) => `${line.quantity}x ${line.name}`);
+  const noun = summary.missingCount === 1 ? 'cópia' : 'cópias';
+  const shown = summary.lines.slice(0, DESCRIPTION_LINES).map((line) => `${line.quantity} ${line.name}`);
   const rest = summary.lines.length - shown.length;
   const list = rest > 0 ? `${shown.join(', ')} e mais ${rest}` : shown.join(', ');
   return `${summary.sharerName} procura ${summary.missingCount} ${noun}: ${list}`;

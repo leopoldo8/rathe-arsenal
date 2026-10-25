@@ -16,6 +16,8 @@ export interface IAuthUser {
   displayName?: string | null;
   /** Digits with country code; null until the user saves one. */
   whatsappNumber?: string | null;
+  /** The last closing line sent in a group ask, offered again next time; null until one was sent. */
+  shareClosingLine?: string | null;
 }
 
 export interface IAuthSettings {
@@ -78,6 +80,8 @@ export interface IAuthContext {
   setDisplayName: (displayName: string) => void;
   /** Mirrors a saved (or removed, with null) WhatsApp number into the signed-in user. */
   setWhatsappNumber: (whatsappNumber: string | null) => void;
+  /** Mirrors the closing line just sent into the signed-in user, so the next group ask offers it. */
+  setShareClosingLine?: (text: string) => void;
   /** Mirrors a password created or changed in Settings into the signed-in user. */
   setHasPassword: (hasPassword: boolean) => void;
 }

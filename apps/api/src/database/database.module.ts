@@ -52,6 +52,35 @@ import {
  * and the `scripts/delete-user.ts` dev script) is separate by design — the CLI
  * cannot bootstrap a NestJS module just to run a migration.
  */
+// Door 11: the `quote` intent and the `offer`, `quote_sent` and `buy` events. The same lists as migration
+// 1778533611000; a synchronized database built before it keeps the old ones, because checks compare by name only.
+const SHARE_CHECKS: ReadonlyArray<{ table: string; name: string; needle: string; expression: string }> = [
+  {
+    table: 'share_link',
+    name: 'CHK_share_link_intent_valid',
+    needle: 'quote',
+    expression: `"intent" IN ('deck', 'missing', 'want', 'sell', 'quote')`,
+  },
+  {
+    table: 'share_event',
+    name: 'CHK_share_event_kind_valid',
+    needle: 'quote_sent',
+    expression: `"kind" IN ('created', 'opened', 'signed_up', 'offer', 'quote_sent', 'buy')`,
+  },
+  {
+    table: 'share_event',
+    name: 'CHK_share_event_intent_valid',
+    needle: 'quote',
+    expression: `"intent" IS NULL OR "intent" IN ('deck', 'missing', 'want', 'sell', 'quote')`,
+  },
+  {
+    table: 'user',
+    name: 'CHK_user_referred_via_valid',
+    needle: 'quote',
+    expression: `"referredVia" IN ('deck', 'want', 'sell', 'quote')`,
+  },
+];
+
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -132,6 +161,19 @@ import {
                   CHECK (kind IN ('csv', 'paste', 'product', 'fabrary', 'manual'));
               END IF;
             END $$;`);
+          for (const check of SHARE_CHECKS) {
+            await dataSource.query(`
+              DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM pg_constraint
+                  WHERE conname = '${check.name}' AND conrelid = '"${check.table}"'::regclass
+                    AND pg_get_constraintdef(oid) NOT LIKE '%${check.needle}%'
+                ) THEN
+                  ALTER TABLE "${check.table}" DROP CONSTRAINT "${check.name}";
+                  ALTER TABLE "${check.table}" ADD CONSTRAINT "${check.name}" CHECK (${check.expression});
+                END IF;
+              END $$;`);
+          }
         }
         return dataSource;
       },

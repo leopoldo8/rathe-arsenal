@@ -81,7 +81,7 @@ describe('share meta tags', () => {
 
 describe('buildMissingShareMeta', () => {
   const lines = [
-    { name: 'Pack Hunt', quantity: 3 },
+    { name: 'Pack Hunt (Vermelho)', quantity: 3 },
     { name: 'Pummel', quantity: 2 },
     { name: 'Dawnblade', quantity: 1 },
     { name: 'Hit and Run', quantity: 1 },
@@ -93,7 +93,7 @@ describe('buildMissingShareMeta', () => {
     const meta = buildMissingShareMeta({ name: 'Blades', sharerName: 'Rodrigo', missingCount: 9, lines }, 'tok', 'https://ra.example/');
 
     expect(meta.title).toBe('Procuro cartas para Blades');
-    expect(meta.description).toBe('Rodrigo procura 9 cartas: 3x Pack Hunt, 2x Pummel, 1x Dawnblade, 1x Hit and Run e mais 2');
+    expect(meta.description).toBe('Rodrigo procura 9 cópias: 3 Pack Hunt (Vermelho), 2 Pummel, 1 Dawnblade, 1 Hit and Run e mais 2');
     expect(meta.imageUrl).toMatch(/^https:\/\/ra\.example\/api\/shared\/decks\/tok\/image\?v=[\w-]{10}$/);
     expect(meta.pageUrl).toBe('https://ra.example/d/tok');
   });
@@ -101,7 +101,7 @@ describe('buildMissingShareMeta', () => {
   it('lists every line without a tail when there are four or fewer', () => {
     const meta = buildMissingShareMeta({ name: 'Blades', sharerName: 'Rodrigo', missingCount: 1, lines: lines.slice(0, 1) }, 'tok', 'https://ra.example');
 
-    expect(meta.description).toBe('Rodrigo procura 1 carta: 3x Pack Hunt');
+    expect(meta.description).toBe('Rodrigo procura 1 cópia: 3 Pack Hunt (Vermelho)');
   });
 
   it('does not ask for cards when none are missing', () => {
@@ -111,3 +111,16 @@ describe('buildMissingShareMeta', () => {
   });
 });
 
+describe('the missing preview names no store', () => {
+  it('carries no store name, price or link in any tag', () => {
+    const meta = buildMissingShareMeta(
+      { name: '[CC] Brute do Caio', sharerName: 'Caio', missingCount: 16, lines: [{ name: 'Reckless Swing (Azul)', quantity: 3 }] },
+      'tok',
+      'https://ra.example',
+    );
+
+    expect(meta.title).toBe('Procuro cartas para [CC] Brute do Caio');
+    expect(meta.description).toBe('Caio procura 16 cópias: 3 Reckless Swing (Azul)');
+    expect(JSON.stringify(meta)).not.toMatch(/C[uú]pula|R\$|cupuladt/i);
+  });
+});

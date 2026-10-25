@@ -1,6 +1,8 @@
 import type { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
 import type { UserEntity } from '../../database/entities/user.entity';
+import { PITCH_NAME_PT } from '../../collection/reader/pitch-token';
 import type { ISharedCard } from '../dtos/shared-deck.dto';
+import type { ISharedMissingCard } from '../dtos/shared-missing.dto';
 import { MAX_FAN_CARDS } from './image-layout';
 import { findHeroIdentifier, toPreviewFace, type IPreviewFace } from './preview-deck';
 
@@ -76,4 +78,37 @@ export function buildPreviewMissing(
 export function describeMissingCount(count: number): string {
   if (count === 0) return 'Nenhuma carta faltando';
   return count === 1 ? 'Falta 1 carta' : `Faltam ${count} cartas`;
+}
+
+export interface IGroupAskPreview {
+  readonly copies: number;
+  readonly lines: readonly IMissingLine[];
+}
+
+function copiesTheStoreCannotSupply(card: ISharedMissingCard): number {
+  if (card.state === 'store_lacks' || card.state === 'not_on_site') return card.quantity;
+  if (card.state === 'priced') return Math.max(0, card.quantity - (card.availableCopies ?? 0));
+  return 0;
+}
+
+function lineOf(card: ISharedMissingCard, quantity: number): IMissingLine {
+  const word = card.pitch === null ? null : PITCH_NAME_PT[card.pitch];
+  return { name: word === null ? card.name : `${card.name} (${word})`, quantity };
+}
+
+function summarise(cards: readonly ISharedMissingCard[], quantityOf: (card: ISharedMissingCard) => number): IGroupAskPreview {
+  const lines = cards
+    .map((card) => lineOf(card, quantityOf(card)))
+    .filter((line) => line.quantity > 0)
+    .sort(byQuantityThenName);
+  return { copies: lines.reduce((sum, line) => sum + line.quantity, 0), lines };
+}
+
+/**
+ * What a `missing` link preview says it asks for: the copies the store cannot supply, as the group message asks
+ * for them, and never a store name or a price. When the store can supply every copy, the preview names them all.
+ */
+export function groupAskPreview(cards: readonly ISharedMissingCard[]): IGroupAskPreview {
+  const unsupplied = summarise(cards, copiesTheStoreCannotSupply);
+  return unsupplied.copies > 0 ? unsupplied : summarise(cards, (card) => card.quantity);
 }

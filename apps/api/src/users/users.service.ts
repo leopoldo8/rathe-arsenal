@@ -69,9 +69,15 @@ export class UsersService {
     return { whatsappNumber: normalized };
   }
 
+  async updateShareClosingLine(userId: string, text: string): Promise<{ text: string }> {
+    const trimmed = text.trim();
+    await this.updateProfileColumn(userId, { shareClosingLine: trimmed === '' ? null : trimmed });
+    return { text: trimmed };
+  }
+
   private async updateProfileColumn(
     userId: string,
-    column: Partial<Pick<UserEntity, 'displayName' | 'whatsappNumber'>>,
+    column: Partial<Pick<UserEntity, 'displayName' | 'whatsappNumber' | 'shareClosingLine'>>,
   ): Promise<void> {
     const result = await this.users.update({ id: userId }, column);
     if (result.affected === 0) {

@@ -183,7 +183,7 @@ describe('Share preview (E2E)', () => {
       const res = await request(app.getHttpServer()).get(`/d/${token}`).expect(200);
 
       expect(res.text).toContain('og:title" content="Procuro cartas para Blades"');
-      expect(res.text).toMatch(/og:description" content="Rodrigo H\. procura \d+ cartas: \d+x /);
+      expect(res.text).toMatch(/og:description" content="Rodrigo H\. procura \d+ cópias: \d+ /);
       expect(res.text).toMatch(new RegExp(`og:image" content="http://localhost:5173/api/shared/decks/${token}/image\\?v=[\\w-]{10}"`));
       expect(res.text.match(/<title>/g)).toHaveLength(1);
     });

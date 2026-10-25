@@ -1,0 +1,92 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100vh;
+  background: var(--ra-bg-canvas);
+  color: var(--ra-fg-primary);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ra-space-5);
+  inline-size: 100%;
+  max-inline-size: 640px;
+  margin-inline: auto;
+  padding: var(--ra-space-5) var(--ra-space-4) var(--ra-space-8);
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ra-space-2);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ra-font-display);
+  font-size: var(--ra-text-h1);
+  font-weight: var(--ra-weight-medium);
+  line-height: 1.15;
+}
+
+.deckName {
+  margin: 0;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+  font-weight: var(--ra-weight-semibold);
+}
+
+.pitchHint {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-body);
+}
+
+.copy {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+  background: transparent;
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.copy:hover {
+  border-color: var(--ra-accent);
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.status,
+.empty {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.status:empty {
+  display: none;
+}

@@ -18,10 +18,13 @@ import {
   ISharedDeckMatches,
   ISharedDeckResponse,
 } from './dtos/shared-deck.dto';
+import { TVisitorEventKind } from './dtos/share-event.dto';
+import { ISharedMissingCard } from './dtos/shared-missing.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildDeckShareUrl } from './share-url';
 import { SharedDeckLookup } from './shared-deck-lookup';
 import { SharedDeckMissingService } from './shared-deck-missing.service';
+import { SharedGroupAskService } from './shared-group-ask.service';
 import { shareLinkUnavailable } from './sharing-errors';
 import {
   resolveHeroCard,
@@ -62,6 +65,7 @@ export class SharedDeckViewService {
     private readonly config: ConfigService,
     @InjectRepository(DeckCardEntity)
     private readonly deckCards: Repository<DeckCardEntity>,
+    private readonly groupAsk: SharedGroupAskService,
   ) {}
 
   async view(token: string, visitor: ICurrentUser | null): Promise<ISharedDeckResponse> {
@@ -71,8 +75,9 @@ export class SharedDeckViewService {
 
     const rows = await this.deckCards.find({ where: { trackedDeckId: deck.id }, order: { id: 'ASC' } });
     const showsMissing = link.intent === 'missing';
-    const missing = showsMissing ? await this.missingCards.missingFor(owner.id, rows) : [];
     const isOwner = visitor?.userId === owner.id;
+    const groupAsk = showsMissing ? await this.groupAsk.cardsFor(owner.id, deck.id) : null;
+    const missing = groupAsk === null ? [] : await this.withVisitorCounts(groupAsk.cards, isOwner ? null : visitor);
     const heroCard = resolveHeroCard(rows, deck.heroIdentifier, lookupCatalogCard);
 
     if (!isOwner) {
@@ -104,6 +109,7 @@ export class SharedDeckViewService {
       cards: showsMissing ? [] : rows.map((row) => toSharedCardFromRow(row, lookupCatalogCard)),
       missing,
       missingCount: sumQuantities(missing),
+      storeSummary: groupAsk?.storeSummary ?? null,
       legality: showsMissing
         ? null
         : legalityOf(deck.format, {
@@ -116,6 +122,31 @@ export class SharedDeckViewService {
             })),
           }),
     };
+  }
+
+  /** The owner's own taps record nothing, as with opens; a dead address answers like every other route. */
+  async recordVisitorEvent(token: string, kind: TVisitorEventKind, visitor: ICurrentUser | null): Promise<void> {
+    const live = await this.lookup.findLive(token);
+    if (!live) throw shareLinkUnavailable();
+    if (visitor?.userId === live.owner.id) return;
+    await this.events.record({
+      kind,
+      targetKind: 'deck',
+      targetId: live.deck.id,
+      intent: live.link.intent,
+      ownerUserId: live.owner.id,
+      actorUserId: visitor?.userId ?? null,
+    });
+  }
+
+  /** The visitor's own count per card, only for a signed-in visitor who is not the owner. */
+  private async withVisitorCounts(
+    cards: readonly ISharedMissingCard[],
+    visitor: ICurrentUser | null,
+  ): Promise<ISharedMissingCard[]> {
+    if (visitor === null) return [...cards];
+    const owned = await this.collectionRead.loadOwned(visitor.userId, [...new Set(cards.map((card) => card.cardIdentifier))]);
+    return cards.map((card) => ({ ...card, owned: owned.get(card.cardIdentifier) ?? 0 }));
   }
 
   /** Raw exact copies against the visitor's own collection: engine stand-ins never count. */

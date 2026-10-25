@@ -10,7 +10,7 @@ import { SharedDeckGallery } from './SharedDeckGallery';
 import { SharedDeckHeader } from './SharedDeckHeader';
 import { SharedLegalityBlock } from './SharedLegalityBlock';
 import { SharedDeckUnavailable } from './SharedDeckUnavailable';
-import { SharedMissingGallery } from './SharedMissingGallery';
+import { SharedMissingPage } from './SharedMissingPage';
 import { SharedTopBar } from './SharedTopBar';
 import styles from './SharedDeckPage.module.css';
 
@@ -41,15 +41,15 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
     );
   }
 
+  if (deck?.intent === 'missing') return <SharedMissingPage deck={deck} />;
+
   const contactWhatsapp = deck?.contactWhatsapp ?? null;
   const contactProps =
     deck !== undefined && contactWhatsapp !== null
       ? {
           whatsapp: contactWhatsapp,
           sharerName: deck.sharerName,
-          message: t(deck.intent === 'missing' ? 'sharing.contact.messageMissing' : 'sharing.contact.message', {
-            deck: deck.name,
-          }),
+          message: t('sharing.contact.message', { deck: deck.name }),
         }
       : null;
 
@@ -77,7 +77,7 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
                 deck={deck}
                 contact={
                   contactProps === null ? undefined : (
-                    <SharedContactButton {...contactProps} variant="pill" primary={deck.intent === 'missing'} />
+                    <SharedContactButton {...contactProps} variant="pill" />
                   )
                 }
               />
@@ -87,7 +87,7 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
               <SharedLegalityBlock format={deck.format} legality={deck.legality} />
             )}
             {deck.intent === 'deck' && <SharedCopyList deck={deck} />}
-            {deck.intent === 'deck' ? <SharedDeckGallery cards={deck.cards} /> : <SharedMissingGallery deck={deck} />}
+            {deck.intent === 'deck' && <SharedDeckGallery cards={deck.cards} />}
           </div>
         )}
       </main>
