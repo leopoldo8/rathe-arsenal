@@ -110,7 +110,7 @@ describe('planSuggestedUses', () => {
           notOwned: [missing(EMISSARY, 2)],
           substituted: suggestion(EMISSARY, COAX, 2),
           activeReplacements: [
-            { replacementCardIdentifier: EMISSARY, slot: 'mainboard', quantity: 2 } as CardReplacementEntity,
+            { replacementCardIdentifier: EMISSARY, slot: 'mainboard', quantity: 2, side: 'deck' } as CardReplacementEntity,
           ],
           deckCards: [{ cardIdentifier: EMISSARY, quantity: 2 }],
           owned: new Map([[COAX.cardIdentifier, 3]]),
@@ -131,5 +131,20 @@ describe('planSuggestedUses', () => {
         },
       });
     }
+  });
+
+  it('sizes a use on the deck side only: copies added equal copies removed from the deck', () => {
+    const plan = planSuggestedUses(
+      input({
+        notOwned: [{ cardIdentifier: EMISSARY, slot: 'mainboard', quantity: 3, inventoryQuantity: 1 }],
+        substituted: suggestion(EMISSARY, COAX, 3),
+        deckCards: [{ cardIdentifier: EMISSARY, quantity: 2 }],
+        owned: new Map([[COAX.cardIdentifier, 3]]),
+      }),
+    );
+
+    expect(plan.uses).toEqual([
+      { slot: 'mainboard', original: EMISSARY, replacement: COAX.cardIdentifier, quantity: 2 },
+    ]);
   });
 });

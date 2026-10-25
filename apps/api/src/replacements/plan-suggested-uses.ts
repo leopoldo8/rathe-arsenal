@@ -6,7 +6,7 @@ import {
   TSupportedFormat,
 } from '@rathe-arsenal/engine';
 import { CardReplacementEntity } from '../database/entities/card-replacement.entity';
-import { computeNeeded } from './compute-needed';
+import { computeNeededOnSide } from './compute-needed';
 
 export interface ISuggestedUse {
   readonly slot: string;
@@ -21,7 +21,7 @@ export interface ISuggestedUsesPlan {
 }
 
 export interface ISuggestedUsesInput {
-  readonly notOwned: readonly Pick<IBreakdownEntry, 'cardIdentifier' | 'slot' | 'quantity'>[];
+  readonly notOwned: readonly Pick<IBreakdownEntry, 'cardIdentifier' | 'slot' | 'quantity' | 'inventoryQuantity'>[];
   readonly substituted: readonly {
     readonly original: Pick<IBreakdownEntry, 'cardIdentifier' | 'slot'>;
     readonly match: { readonly substitute: ICatalogCard };
@@ -58,7 +58,7 @@ export function planSuggestedUses(input: ISuggestedUsesInput): ISuggestedUsesPla
   const uses: ISuggestedUse[] = [];
   let skipped = 0;
   for (const { slot, original, substitute } of suggestions.values()) {
-    const quantity = computeNeeded(input.notOwned, input.activeReplacements, original, slot);
+    const quantity = computeNeededOnSide(input.notOwned, input.activeReplacements, original, slot, 'deck');
     if (quantity === 0) continue;
 
     const inDeck = deckCopies.get(substitute.cardIdentifier) ?? 0;
