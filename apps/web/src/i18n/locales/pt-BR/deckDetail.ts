@@ -184,8 +184,9 @@ export const deckDetail = {
   moveToInventoryAll: 'Mover todas ({{count}}) para o inventário',
   moveToDeckOne: 'Mover 1 para o deck',
   moveToDeckAll: 'Mover todas ({{count}}) para o deck',
-  stripMissingCopies_one: 'Falta {{count}} cópia ({{deck}} do deck, {{inventory}} do inventário)',
-  stripMissingCopies_other: 'Faltam {{count}} cópias ({{deck}} do deck, {{inventory}} do inventário)',
+  missingSplit: '{{deck}} do deck, {{inventory}} do inventário',
+  stripMissingCopies_one: 'Falta {{count}} cópia ({{split}})',
+  stripMissingCopies_other: 'Faltam {{count}} cópias ({{split}})',
   seeWhatIsMissing: 'Ver o que falta',
   // Getting the list out (S7)
   copyList: 'Copiar lista',

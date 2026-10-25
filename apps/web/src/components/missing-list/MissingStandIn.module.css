@@ -1,0 +1,68 @@
+.block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ra-space-2) var(--ra-space-3);
+  padding: var(--ra-space-3);
+  border: 1px dashed var(--ra-border-strong);
+  border-radius: var(--ra-radius-md);
+}
+
+.used {
+  border-style: solid;
+  border-color: var(--ra-ready-high-border);
+  background: var(--ra-ready-high-bg);
+}
+
+.text {
+  flex: 1 1 200px;
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+}
+
+.used .text {
+  color: var(--ra-ready-high);
+}
+
+.use,
+.undo {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-sm);
+  background: var(--ra-bg-muted);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  cursor: pointer;
+}
+
+.undo {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ra-accent-body);
+  text-decoration: underline;
+}
+
+.use:focus-visible,
+.undo:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.use:disabled,
+.undo:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-xs);
+}

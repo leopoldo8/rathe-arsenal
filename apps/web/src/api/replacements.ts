@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '../lib/api-client';
 import { deckDetailQueryKey, type IRationaleDetail } from './deck-detail';
+import { missingListQueryKey } from './missing-list';
 
 export type TAlternativeGroup = 'very_close' | 'close' | 'other_pitch' | 'generic' | 'search';
 
@@ -50,6 +51,10 @@ export interface IPickReplacementVariables {
   readonly slot: string;
   readonly replacementCardIdentifier: string;
   readonly pickedFrom: TAlternativeGroup | 'suggested';
+  /** Copies to move, 1 to the copies still needed; omitted, every copy still needed. */
+  readonly quantity?: number;
+  /** Which side of the deck the copies come from; omitted, the deck. */
+  readonly side?: 'deck' | 'inventory';
 }
 
 export interface ISuggestedUsesResponse {
@@ -90,6 +95,7 @@ function useRefreshDeck(deckId: number): () => void {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(String(deckId)) });
+    void queryClient.invalidateQueries({ queryKey: missingListQueryKey(deckId) });
     void queryClient.invalidateQueries({ queryKey: ['decks'] });
   };
 }

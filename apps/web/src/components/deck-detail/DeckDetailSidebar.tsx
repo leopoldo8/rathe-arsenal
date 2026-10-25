@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShoppingPanel } from './ShoppingPanel';
 import { SidebarCollapseToggle } from './SidebarCollapseToggle';
 import { HeroDropdown } from './HeroDropdown';
 import { CascadeWarningPanelSidebar } from './CascadeWarningPanel';
@@ -9,7 +8,6 @@ import { CardArt } from '../card-art/CardArt';
 import { CardLightbox } from '../card-art/CardLightbox';
 import { useHeroesQuery } from '../../api/catalog';
 import type { IDeckLegality } from '../../api/decks';
-import type { IShoppingLineResponse } from '../../api/shopping-line';
 import type { ICompositionDraft } from '../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../hooks/useCascadeCheck';
 import styles from './DeckDetailSidebar.module.css';
@@ -63,12 +61,6 @@ interface IDeckDetailSidebarProps {
    * The Fabrary link only renders when this is non-null.
    */
   readonly fabraryUlid: string | null;
-  /**
-   * Shopping panel data + controls — forwarded to ShoppingPanel.
-   */
-  readonly shoppingData: IShoppingLineResponse | null;
-  readonly onShoppingRetry: () => void;
-
   // ---------------------------------------------------------------------------
   // U12 Edit-mode props
   // ---------------------------------------------------------------------------
@@ -120,8 +112,6 @@ export function DeckDetailSidebar({
   format,
   legality,
   fabraryUlid,
-  shoppingData,
-  onShoppingRetry,
   mode = 'view',
   compositionDraft,
   cascadeCheck,
@@ -267,24 +257,7 @@ export function DeckDetailSidebar({
             />
           )}
 
-        {/* ---- Block 3: Shopping — only when a store has prices to show ---- */}
-        {shoppingData?.kind === 'populated' && (
-          <section
-            className={styles.block}
-            aria-labelledby="sidebar-shopping-title"
-            data-testid="sidebar-shopping-block"
-          >
-            <h3 id="sidebar-shopping-title" className={styles.blockTitle}>
-              {t('decks.shopping')}
-            </h3>
-            <ShoppingPanel
-              data={shoppingData}
-              onRetry={onShoppingRetry}
-            />
-          </section>
-        )}
-
-        {/* ---- Block 4: Fabrary link — conditional ---- */}
+        {/* ---- Block 3: Fabrary link — conditional ---- */}
         {fabraryUrl !== null && (
           <section className={styles.block} data-testid="sidebar-fabrary-block">
             <a

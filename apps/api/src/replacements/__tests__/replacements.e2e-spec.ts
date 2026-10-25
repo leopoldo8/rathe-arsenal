@@ -72,6 +72,7 @@ describe('card replacements (E2E)', () => {
       originalCardIdentifier: EMISSARY,
       replacementCardIdentifier: COAX,
       quantity: 2,
+      side: 'deck',
       pickedFrom: 'very_close',
       status: 'active',
       createdAt: expect.any(String),
@@ -88,6 +89,64 @@ describe('card replacements (E2E)', () => {
     const partialCards = await fixture.deckCards(partial.deckId);
     expect(partialCards[`${EMISSARY}@mainboard`]).toBe(1);
     expect(partialCards[`${COAX}@mainboard`]).toBe(2);
+  });
+
+  it('a pick with quantity 2 moves 2 copies and leaves the third on the list', async () => {
+    const owner = await fixture.scenario([mainboard(ADRENALINE, 3)]);
+
+    const res = await pick(owner, { originalCardIdentifier: ADRENALINE, quantity: 2 });
+
+    expect(res.body.replacement).toMatchObject({ quantity: 2, side: 'deck', originalCardIdentifier: ADRENALINE });
+    const cards = await fixture.deckCards(owner.deckId);
+    expect(cards[`${ADRENALINE}@mainboard`]).toBe(1);
+    expect(cards[`${COAX}@mainboard`]).toBe(2);
+    const breakdown = await fixture.latestBreakdown(owner.deckId);
+    expect(breakdown.missing).toEqual(expect.arrayContaining([expect.objectContaining({ cardIdentifier: ADRENALINE, quantity: 1 })]));
+    const list = await fixture.get(`/api/decks/${owner.deckId}/missing`, owner.sessionToken).expect(200);
+    expect(list.body.lines.find((entry: { cardIdentifier: string }) => entry.cardIdentifier === ADRENALINE)).toMatchObject({ deckNeeded: 1 });
+
+    await fixture.post(`/api/replacements/${res.body.replacement.id}/revert`, owner.sessionToken).expect(200);
+    const reverted = await fixture.deckCards(owner.deckId);
+    expect(reverted[`${ADRENALINE}@mainboard`]).toBe(3);
+    expect(reverted[`${COAX}@mainboard`]).toBeUndefined();
+  });
+
+  it('a pick takes a quantity and a side', async () => {
+    const owner = await fixture.scenario();
+
+    const everyCopy = await pick(owner);
+    expect(everyCopy.body.replacement).toMatchObject({ quantity: 2, side: 'deck' });
+    const [stored] = await fixture.replacementRows(owner.deckId);
+    expect(stored).toMatchObject({ side: 'deck', quantity: 2 });
+
+    const withInventory = await fixture.scenario();
+    await fixture.dataSource.query(
+      `UPDATE deck_card SET quantity = 1, "inventoryQuantity" = 1 WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`,
+      [withInventory.deckId, EMISSARY],
+    );
+    const inventoryPick = await pick(withInventory, { side: 'inventory' });
+    expect(inventoryPick.body.replacement).toMatchObject({ quantity: 1, side: 'inventory' });
+    const rows: Array<{ cardIdentifier: string; quantity: number; inventoryQuantity: number }> = await fixture.dataSource.query(
+      `SELECT "cardIdentifier", quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 AND "cardIdentifier" IN ($2, $3) ORDER BY "cardIdentifier"`,
+      [withInventory.deckId, EMISSARY, COAX],
+    );
+    expect(rows).toEqual([
+      { cardIdentifier: COAX, quantity: 0, inventoryQuantity: 1 },
+      { cardIdentifier: EMISSARY, quantity: 1, inventoryQuantity: 0 },
+    ]);
+
+    const invalid = await fixture.scenario();
+    for (const body of [{ quantity: 0 }, { quantity: -1 }, { quantity: 1.5 }, { side: 'sideboard' }]) {
+      await pick(invalid, body, 400);
+    }
+    await pick(invalid, { quantity: 3 }, 409);
+    expect(await state(invalid)).toEqual({ deckCards: await fixture.deckCards(invalid.deckId), replacements: [] });
+    expect((await fixture.deckCards(invalid.deckId))[`${EMISSARY}@mainboard`]).toBe(2);
+    await fixture
+      .post('/api/decks/999999999/replacements', invalid.sessionToken)
+      .send(pickBody())
+      .expect(404);
+    expect((await pick(invalid, { quantity: 1 })).status).toBe(201);
   });
 
   it.each(['very_close', 'close', 'other_pitch', 'generic', 'search'])(

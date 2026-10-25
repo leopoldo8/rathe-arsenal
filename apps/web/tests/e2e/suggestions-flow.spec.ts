@@ -1,5 +1,5 @@
 /**
- * E2E for the suggestions that replaced swaps: use one from a missing row, use
+ * E2E for the suggestions that replaced swaps: use one from the missing list, use
  * every one from the status strip, and find the old swaps addresses gone.
  *
  * PREREQUISITES: dev servers up; `pnpm seed:fixture` (Playwright's globalSetup
@@ -21,17 +21,18 @@ test.describe('Suggestions from the collection — E2E', () => {
   });
 
   test("Usar on a missing row uses the collection's card", async ({ page }) => {
-    await page.goto(`${BASE_URL}/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle', timeout: 20000 });
-    const panel = page.getByTestId('deck-missing-panel');
-    const row = panel.getByTestId('missing-row').filter({ has: page.getByTestId('missing-row-suggestion') }).first();
-    await expect(row).toBeVisible();
-    const use = row.getByRole('button', { name: /^Usar .+ da sua coleção no lugar de / });
-    const original = ((await use.getAttribute('aria-label')) ?? '').replace(/^Usar .+ da sua coleção no lugar de /, '');
+    const deckId = loadFixture().swapDeckId;
+    await page.goto(`${BASE_URL}/decks/${deckId}/missing`, { waitUntil: 'networkidle', timeout: 20000 });
+    const standIn = page.getByTestId('missing-stand-in').first();
+    await expect(standIn).toBeVisible();
+    const use = standIn.getByRole('button', { name: /^Usar .+ no lugar de / });
+    const original = ((await use.getAttribute('aria-label')) ?? '').replace(/^Usar .+ no lugar de /, '');
     expect(original).not.toBe('');
 
     await use.click();
 
-    await expect(panel.getByTestId('missing-row').filter({ hasText: original })).toHaveCount(0);
+    await expect(page.getByTestId('missing-stand-in').filter({ hasText: 'Você vai usar' }).first()).toBeVisible();
+    await page.goto(`${BASE_URL}/decks/${deckId}`, { waitUntil: 'networkidle', timeout: 20000 });
     const mark = page.getByTestId('deck-list').getByTestId('replacement-mark');
     await expect(mark).toHaveCount(1);
     await expect(mark).toContainText('no lugar de');

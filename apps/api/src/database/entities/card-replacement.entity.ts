@@ -15,6 +15,9 @@ export const REPLACEMENT_STATUSES = ['active', 'kept', 'reverted', 'removed'] as
 export type TReplacementStatus = (typeof REPLACEMENT_STATUSES)[number];
 
 /** Origins the pick route accepts: the group a card was picked from, a name search, or a one-click use of the suggestion. */
+export const REPLACEMENT_SIDES = ['deck', 'inventory'] as const;
+export type TReplacementSide = (typeof REPLACEMENT_SIDES)[number];
+
 export const REPLACEMENT_PICK_ORIGINS = ['very_close', 'close', 'other_pitch', 'generic', 'search', 'suggested'] as const;
 export type TReplacementPickOrigin = (typeof REPLACEMENT_PICK_ORIGINS)[number];
 
@@ -43,6 +46,7 @@ export type TReplacementOrigin = (typeof REPLACEMENT_ORIGINS)[number];
   `"pickedFrom" IN ('very_close', 'close', 'other_pitch', 'generic', 'search', 'suggested', 'recommendation', 'chat')`,
 )
 @Check('CHK_card_replacement_quantity_positive', `quantity > 0`)
+@Check('CHK_card_replacement_side_valid', `"side" IN ('deck', 'inventory')`)
 @Entity({ name: 'card_replacement' })
 @Index('IDX_card_replacement_deck_status', ['trackedDeckId', 'status'])
 export class CardReplacementEntity {
@@ -69,6 +73,10 @@ export class CardReplacementEntity {
   quantity!: number;
 
   /** The alternatives group the owner picked from, `search` for a name search, `suggested` for a one-click use, `recommendation` for an adoption, `chat` for an applied chat swap. */
+  /** Which side of the deck the copies came from; every row before door 2 reads `deck`. */
+  @Column({ type: 'varchar', default: 'deck' })
+  side!: TReplacementSide;
+
   @Column({ type: 'varchar', length: 32 })
   pickedFrom!: TReplacementOrigin;
 

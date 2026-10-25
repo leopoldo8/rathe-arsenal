@@ -1,14 +1,7 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useRef } from 'react';
 import { createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import {
-  IDeckDetailResponse,
-  useDeckDetailQuery,
-  useMarkOwnedMutation,
-  deckDetailQueryKey,
-} from '../../api/deck-detail';
-import { useToast } from '../../components/ui/Toast/useToast';
+import { IDeckDetailResponse, useDeckDetailQuery } from '../../api/deck-detail';
 import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
 import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
 import { DeckDetailLayout } from '../../components/deck-detail/DeckDetailLayout';
@@ -39,8 +32,6 @@ function DeckDetailPage(): React.ReactElement {
   const { deckId } = Route.useParams();
   const { edit } = Route.useSearch();
   const navigate = useNavigate();
-  const { show: showToast } = useToast();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   // Derive current mode from ?edit=1 search param
@@ -60,18 +51,6 @@ function DeckDetailPage(): React.ReactElement {
 
   const detailQuery = useDeckDetailQuery(deckId);
   const tagsQuery = useTagsQuery();
-  const markOwnedMutation = useMarkOwnedMutation(deckId);
-
-  // Retry handler for ShoppingLine error state: invalidates the deck-detail
-  // query so TanStack re-fetches fresh data. Toast notification of the failure
-  // is the host's responsibility — ShoppingLine stays portal-free.
-  const handleShoppingLineRetry = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: deckDetailQueryKey(deckId) });
-    showToast({
-      kind: 'error',
-      message: t('decks.retryShoppingLineToast'),
-    });
-  }, [queryClient, deckId, showToast, t]);
 
   if (detailQuery.isLoading) {
     return <DeckDetailSkeleton />;
@@ -120,20 +99,6 @@ function DeckDetailPage(): React.ReactElement {
       onEnterEdit={handleEnterEdit}
       onOpenMetadataEdit={handleOpenMetadataEdit}
       onExitEdit={handleExitEdit}
-      onMarkOwned={(cardIdentifier) => {
-        markOwnedMutation.mutate(cardIdentifier, {
-          onError: (err) => {
-            showToast({
-              kind: 'error',
-              message: t('decks.failedToMarkCard', { error: (err as Error).message }),
-              retry: () => markOwnedMutation.mutate(cardIdentifier),
-            });
-          },
-        });
-      }}
-      isMarkingOwned={markOwnedMutation.isPending}
-      pendingCard={markOwnedMutation.isPending ? (markOwnedMutation.variables ?? null) : null}
-      onShoppingRetry={handleShoppingLineRetry}
     />
   );
 }
@@ -152,10 +117,6 @@ interface IDeckDetailPageWithDataProps {
   readonly onEnterEdit: () => void;
   readonly onOpenMetadataEdit: () => void;
   readonly onExitEdit: () => void;
-  readonly onMarkOwned: (cardIdentifier: string) => void;
-  readonly isMarkingOwned: boolean;
-  readonly pendingCard: string | null;
-  readonly onShoppingRetry: () => void;
 }
 
 /**
@@ -172,10 +133,6 @@ function DeckDetailPageWithData({
   onEnterEdit,
   onOpenMetadataEdit,
   onExitEdit,
-  onMarkOwned,
-  isMarkingOwned,
-  pendingCard,
-  onShoppingRetry,
 }: IDeckDetailPageWithDataProps): React.ReactElement {
   const navigate = useNavigate();
 
@@ -374,8 +331,6 @@ function DeckDetailPageWithData({
     if (!discardEmptyNewDeck) onExitEdit();
   }
 
-  const shoppingData = deck.shoppingLine ?? null;
-
   return (
     <>
       {mode === 'view' && snapshot != null ? (
@@ -383,13 +338,8 @@ function DeckDetailPageWithData({
           deck={deck}
           snapshot={snapshot}
           tags={tagsForHeader}
-          shoppingData={shoppingData}
           onEdit={onOpenMetadataEdit}
           onEditCards={onEnterEdit}
-          onMarkOwned={onMarkOwned}
-          isMarkingOwned={isMarkingOwned}
-          pendingCard={pendingCard}
-          onShoppingRetry={onShoppingRetry}
         />
       ) : (
         <DeckDetailLayout
@@ -420,8 +370,6 @@ function DeckDetailPageWithData({
               format={sidebarFormat}
               legality={isEditing && draftLegality !== null ? toDeckLegality(draftLegality) : deck.legality}
               fabraryUlid={deck.fabraryUlid ?? null}
-              shoppingData={shoppingData}
-              onShoppingRetry={onShoppingRetry}
               mode={mode}
               compositionDraft={compositionDraft.draft}
               cascadeCheck={cascadeCheck}

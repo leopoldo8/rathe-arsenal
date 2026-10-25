@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck-detail';
 import { breakdown, entry } from './deckDetailTestData';
 
@@ -15,7 +15,7 @@ vi.mock('../TagChipRow', () => ({ TagChipRow: () => <div data-testid="tag-row" /
 vi.mock('../DeckStatusStrip', () => ({ DeckStatusStrip: () => <div data-testid="status-strip" /> }));
 vi.mock('../DeckAnalysisRow', () => ({ DeckAnalysisRow: () => <div data-testid="analysis-row" /> }));
 vi.mock('../DeckList', () => ({ DeckList: () => <div data-testid="deck-list" /> }));
-vi.mock('../MissingPanel', () => ({ MissingPanel: () => <section data-testid="missing-panel" /> }));
+vi.mock('../MissingSummaryCard', () => ({ MissingSummaryCard: () => <div data-testid="missing-summary-card" /> }));
 vi.mock('../recommendations/RecommendationsRail', () => ({
   RecommendationsRail: ({ deckCards, heroName }: { deckCards: unknown[]; heroName: string }) => (
     <section data-testid="recommendations-panel" data-cards={deckCards.length} data-hero={heroName} />
@@ -63,13 +63,8 @@ function renderView(pct: number, missing: boolean): void {
       deck={DECK}
       snapshot={snapshot(pct, missing)}
       tags={[]}
-      shoppingData={null}
       onEdit={noop}
       onEditCards={noop}
-      onMarkOwned={noop}
-      isMarkingOwned={false}
-      pendingCard={null}
-      onShoppingRetry={noop}
     />,
   );
 }
@@ -86,9 +81,7 @@ describe('DeckDetailView recommendations placement', () => {
       expect(screen.getAllByTestId('recommendations-panel')).toHaveLength(1);
       expect(screen.getByTestId('recommendations-panel')).toHaveAttribute('data-hero', 'Katsu, the Wanderer');
       expect(screen.getByTestId('recommendations-panel')).toHaveAttribute('data-cards', '1');
-      const panels = screen.queryByTestId('deck-action-panels');
-      if (missing) expect(within(panels!).queryByTestId('recommendations-panel')).toBeNull();
-      else expect(panels).toBeNull();
+      expect(screen.queryByTestId('missing-summary-card') !== null).toBe(missing);
       document.body.innerHTML = '';
     }
   });

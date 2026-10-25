@@ -29,10 +29,6 @@ import type { IDeckLegality } from '../../../api/decks';
 // Mocks
 // ---------------------------------------------------------------------------
 
-// ShoppingPanel — skip the complex shopping panel in unit tests
-vi.mock('../ShoppingPanel', () => ({
-  ShoppingPanel: () => <div data-testid="shopping-panel-mock" />,
-}));
 
 // useHeroesQuery hits useApiClient which requires <AuthProvider>; mock with
 // a mutable holder so individual tests can seed catalog heroes. Defaults to
@@ -62,8 +58,6 @@ const defaultProps = {
   format: 'Classic Constructed',
   legality: { category: 'legal', reasons: [] as string[] } satisfies IDeckLegality,
   fabraryUlid: 'abc123ulid' as string | null,
-  shoppingData: null,
-  onShoppingRetry: vi.fn(),
 };
 
 function renderSidebar(props: Partial<React.ComponentProps<typeof DeckDetailSidebar>> = {}) {
@@ -274,20 +268,6 @@ describe('DeckDetailSidebar — collapse toggle', () => {
       'aria-expanded',
       'true',
     );
-  });
-});
-
-describe('DeckDetailSidebar — shopping block', () => {
-  it('renders the shopping panel when a store has prices', () => {
-    renderSidebar({
-      shoppingData: { kind: 'populated' } as React.ComponentProps<typeof DeckDetailSidebar>['shoppingData'],
-    });
-    expect(screen.getByTestId('shopping-panel-mock')).toBeInTheDocument();
-  });
-
-  it('leaves out the shopping block when there are no store prices', () => {
-    renderSidebar({ shoppingData: null });
-    expect(screen.queryByTestId('sidebar-shopping-block')).not.toBeInTheDocument();
   });
 });
 

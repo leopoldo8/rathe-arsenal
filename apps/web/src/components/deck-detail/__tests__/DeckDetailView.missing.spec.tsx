@@ -3,10 +3,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck-detail';
-import type { IShoppingLinePopulated } from '../../../api/shopping-line';
 import { setTestLocale } from '../../../test/i18n-test-utils';
 import { breakdown, entry, swap } from './deckDetailTestData';
 
+vi.mock('@tanstack/react-router', async (importOriginal) =>
+  (await import('../../../test/router-link-mock')).withLinkMock(await importOriginal<typeof import('@tanstack/react-router')>()),
+);
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock('../../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }) }));
 vi.mock('../../../lib/api-client', async (importOriginal) => {
@@ -20,6 +22,7 @@ vi.mock('../DeckList', () => ({ DeckList: () => <div data-testid="deck-list" /> 
 vi.mock('../recommendations/RecommendationsRail', () => ({
   RecommendationsRail: () => <section data-testid="recommendations-panel" />,
 }));
+vi.mock('../MissingSummaryCard', () => ({ MissingSummaryCard: () => <section data-testid="missing-summary-card" /> }));
 
 import { DeckDetailView } from '../DeckDetailView';
 
@@ -55,43 +58,39 @@ const SNAPSHOT = {
   }),
 } as IDeckDetailSnapshot;
 
-const ESTIMATED_SHOPPING: IShoppingLinePopulated = {
-  kind: 'populated',
-  storeName: 'Cúpula DT',
-  storeHostname: 'www.cupuladt.com.br',
-  totalCostCents: 4990,
-  availableCardCount: 1,
-  unavailableCardCount: 0,
-  lastFetchedAt: new Date().toISOString(),
-  lines: [],
-  isEstimated: true,
-};
+function renderView(): void {
+  const noop = vi.fn();
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <DeckDetailView deck={DECK} snapshot={SNAPSHOT} tags={[]} onEdit={noop} onEditCards={noop} />
+    </QueryClientProvider>,
+  );
+}
 
 describe('DeckDetailView price lookups', () => {
   it('the deck page has no price fetch button or drawer', async () => {
     await setTestLocale('pt-BR');
-    const noop = vi.fn();
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <DeckDetailView
-          deck={DECK}
-          snapshot={SNAPSHOT}
-          tags={[]}
-          shoppingData={ESTIMATED_SHOPPING}
-          onEdit={noop}
-          onEditCards={noop}
-          onMarkOwned={noop}
-          isMarkingOwned={false}
-          pendingCard={null}
-          onShoppingRetry={noop}
-        />
-      </QueryClientProvider>,
-    );
+    renderView();
 
-    expect(screen.getByTestId('missing-store-summary')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /obter preços exatos/i })).toBeNull();
     expect(screen.queryByText(/obter preços exatos/i)).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(Object.keys(import.meta.glob('../../variant-queue/*.tsx'))).toEqual([]);
+  });
+});
+
+describe('DeckDetailView what is missing', () => {
+  it('the old shopping panels and the group callout are gone', async () => {
+    await setTestLocale('pt-BR');
+    renderView();
+
+    expect(screen.getByTestId('missing-summary-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('deck-action-panels')).toBeNull();
+    expect(screen.queryByTestId('deck-missing-panel')).toBeNull();
+    expect(screen.queryByTestId('missing-store-summary')).toBeNull();
+    expect(screen.queryByTestId('missing-share-callout')).toBeNull();
+    expect(screen.queryByTestId('shopping-panel-desktop')).toBeNull();
+    expect(screen.queryByTestId('sidebar-shopping-block')).toBeNull();
+    expect(screen.queryByText('Pedir nos grupos')).toBeNull();
   });
 });

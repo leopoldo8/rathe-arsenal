@@ -31,6 +31,7 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'spreadsheet', path: () => '/add-cards/sheet' },
   { name: 'ready-made decks', path: () => '/add-cards/product' },
   { name: 'lines to resolve', path: () => '/library-pending' },
+  { name: 'missing list', path: ({ readyDeckId }) => `/decks/${readyDeckId}/missing` },
 ];
 
 const BLOCKING_IMPACTS: ReadonlySet<string> = new Set(['serious', 'critical']);

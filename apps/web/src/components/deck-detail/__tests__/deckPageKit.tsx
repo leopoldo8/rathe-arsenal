@@ -46,13 +46,8 @@ export function DeckPageHarness({ deckId }: { readonly deckId: number }): React.
       deck={deck}
       snapshot={deck.latestSnapshot}
       tags={[]}
-      shoppingData={null}
       onEdit={noop}
       onEditCards={noop}
-      onMarkOwned={noop}
-      isMarkingOwned={false}
-      pendingCard={null}
-      onShoppingRetry={noop}
     />
   );
 }

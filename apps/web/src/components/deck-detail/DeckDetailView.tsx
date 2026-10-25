@@ -1,10 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../api/deck-detail';
-import type { IShoppingLineResponse } from '../../api/shopping-line';
-import type { IAlternativesTarget } from '../../api/replacements';
 import type { ITagResponse } from '../../api/tags';
-import { AlternativesSheet } from './AlternativesSheet';
-import { DeckActionPanels } from './DeckActionPanels';
 import { DeckAnalysisRow } from './DeckAnalysisRow';
 import { DeckHeroBanner } from './DeckHeroBanner';
 import { ShareDialog } from './ShareDialog';
@@ -15,7 +11,8 @@ import { DeckCauseLine } from './DeckCauseLine';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
 import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
-import { findSuggestions, summariseDeck } from './deckDetailModel';
+import { summariseDeck } from './deckDetailModel';
+import { MissingSummaryCard } from './MissingSummaryCard';
 import { buildDeckList } from './deckListModel';
 import { buildListCards } from './deckListCards';
 import { CopyListSheet } from './CopyListSheet';
@@ -32,29 +29,18 @@ interface IDeckDetailViewProps {
   readonly deck: IDeckDetailResponse;
   readonly snapshot: IDeckDetailSnapshot;
   readonly tags: readonly ITagResponse[];
-  readonly shoppingData: IShoppingLineResponse | null;
   readonly onEdit: () => void;
   readonly onEditCards: () => void;
-  readonly onMarkOwned: (cardIdentifier: string) => void;
-  readonly isMarkingOwned: boolean;
-  readonly pendingCard: string | null;
-  readonly onShoppingRetry: () => void;
 }
 
 export function DeckDetailView({
   deck,
   snapshot,
   tags,
-  shoppingData,
   onEdit,
   onEditCards,
-  onMarkOwned,
-  isMarkingOwned,
-  pendingCard,
-  onShoppingRetry,
 }: IDeckDetailViewProps): React.ReactElement {
   const [copyListOpen, setCopyListOpen] = useState(false);
-  const [alternativesTarget, setAlternativesTarget] = useState<IAlternativesTarget | null>(null);
   const [share, setShare] = useState<{ readonly open: boolean; readonly intent: TShareIntent | null }>({
     open: false,
     intent: null,
@@ -67,10 +53,6 @@ export function DeckDetailView({
         replacements: deck.replacements,
       }),
     [snapshot, deck.replacements],
-  );
-  const suggestions = useMemo(
-    () => findSuggestions(snapshot.breakdown, deck.replacements),
-    [snapshot.breakdown, deck.replacements],
   );
   const items = useMemo(
     () => buildDeckList(snapshot.breakdown, summary.openMissing),
@@ -138,21 +120,7 @@ export function DeckDetailView({
       {!hasHeroOutsideFormat(deck.legality.details) && !showsRuleChange && <DeckCauseLine legality={deck.legality} />}
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
       <DeckAnalysisRow items={items} />
-      {summary.kind !== 'complete' && (
-        <DeckActionPanels
-          deckId={deck.id}
-          openMissing={summary.openMissing}
-          suggestions={suggestions}
-          shoppingData={shoppingData}
-          onMarkOwned={onMarkOwned}
-          isMarkingOwned={isMarkingOwned}
-          pendingCard={pendingCard}
-          onShoppingRetry={onShoppingRetry}
-          replacements={deck.replacements}
-          onOpenAlternatives={setAlternativesTarget}
-          onShareMissing={() => setShare({ open: true, intent: 'missing' })}
-        />
-      )}
+      {summary.kind !== 'complete' && <MissingSummaryCard deckId={deck.id} />}
       <DeckList
         items={items}
         onEditCards={onEditCards}
@@ -177,13 +145,6 @@ export function DeckDetailView({
         initialIntent={share.intent}
         onOpenChange={(open) => setShare((current) => ({ ...current, open }))}
       />
-      {alternativesTarget !== null && (
-        <AlternativesSheet
-          deckId={deck.id}
-          target={alternativesTarget}
-          onClose={() => setAlternativesTarget(null)}
-        />
-      )}
     </div>
   );
 }

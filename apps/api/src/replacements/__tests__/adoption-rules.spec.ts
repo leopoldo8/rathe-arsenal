@@ -51,4 +51,20 @@ describe('decideAdoption', () => {
       expect({ label, decision: decideAdoption(input(overrides)) }).toEqual({ label, decision: { kind: 'refuse', code } });
     }
   });
+  it('moves the quantity the caller gives from the side it names', () => {
+    expect(decideAdoption(input({ quantity: 1 }))).toEqual({ kind: 'move', quantity: 1 });
+    expect(decideAdoption(input({ quantity: 2, side: 'deck' }))).toEqual({ kind: 'move', quantity: 2 });
+
+    const withInventory = [
+      ...DECK,
+      { cardIdentifier: 'flex-red', slot: 'mainboard', quantity: 0, inventoryQuantity: 1 },
+    ];
+    expect(decideAdoption(input({ deckCards: withInventory, side: 'inventory' }))).toEqual({ kind: 'move', quantity: 1 });
+    expect(decideAdoption(input({ deckCards: withInventory, side: 'inventory', quantity: 1 }))).toEqual({
+      kind: 'move',
+      quantity: 1,
+    });
+    expect(decideAdoption(input({ side: 'inventory' }))).toEqual({ kind: 'refuse', code: 'NOTHING_TO_REPLACE' });
+    expect(decideAdoption(input({ quantity: 3 }))).toEqual({ kind: 'refuse', code: 'REPLACEMENT_ILLEGAL' });
+  });
 });

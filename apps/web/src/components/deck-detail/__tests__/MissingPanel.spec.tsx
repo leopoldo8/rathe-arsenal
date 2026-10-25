@@ -12,11 +12,16 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
   return { ...actual, useApiClient: () => mockApiFetch };
 });
 
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+vi.mock('../ShareDialog', () => ({ ShareDialog: () => null }));
+
 import { MissingPanel } from '../MissingPanel';
 import markOwnedStyles from '../MarkOwnedButton.module.css';
 import styles from '../MissingPanel.module.css';
 import type { IAlternativesTarget, IDeckReplacement } from '../../../api/replacements';
 import { setTestLocale } from '../../../test/i18n-test-utils';
+import { MissingListPage } from '../../missing-list/MissingListPage';
+import { line as missingLine, response as missingResponse } from '../../missing-list/__tests__/missingListKit';
 
 const HOST = 'www.cupuladt.com.br';
 const NOW = Date.now();
@@ -532,5 +537,49 @@ describe('MissingPanel: card names carry the pitch', () => {
     expect(row.querySelector(`.${styles.name}`)?.textContent).toBe('Dawnblade');
     expect(within(row).getByRole('link', { name: 'Comprar Dawnblade na loja' })).toBeInTheDocument();
     expect(within(row).getByRole('button', { name: 'Já tenho Dawnblade' })).toBeInTheDocument();
+  });
+});
+
+describe('the missing list page', () => {
+  it('the missing list splits and filters by side', async () => {
+    const lines = [
+      missingLine({ cardIdentifier: 'a', name: 'Alpha', deckNeeded: 3, deckQuantity: 3, availableCopies: 3, lineCents: 300 }),
+      missingLine({ cardIdentifier: 'b', name: 'Bravo', deckNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+      missingLine({ cardIdentifier: 'c', name: 'Charlie', deckNeeded: 0, inventoryNeeded: 2, deckQuantity: 2, availableCopies: 2, lineCents: 200 }),
+      missingLine({ cardIdentifier: 'd', name: 'Delta', deckNeeded: 0, inventoryNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+    ];
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === '/decks/7/missing') return missingResponse(lines, { buyCopies: 7 });
+      return { id: 7, name: 'Deck', hero: 'Rhinar' };
+    });
+    // The rows read as sentences on a phone, where the list is a stack of cards.
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MissingListPage deckId={7} />
+      </QueryClientProvider>,
+    );
+
+    const page = await screen.findByTestId('missing-list-page');
+    const head = 'Faltam 7 cópias de 4 cartas · 4 do deck, 3 do inventário';
+    expect(page).toHaveTextContent(head);
+    expect(screen.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Do deck' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Do inventário' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getAllByTestId('missing-row')).toHaveLength(4);
+    const charlie = screen.getAllByTestId('missing-row').find((row) => row.textContent?.includes('Charlie'));
+    expect(charlie).toHaveTextContent('faltam 2 · 2 do inventário');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Do inventário' }));
+
+    const names = screen.getAllByTestId('missing-row').map((row) => row.textContent?.match(/Alpha|Bravo|Charlie|Delta/)?.[0]);
+    expect(names).toEqual(['Charlie', 'Delta']);
+    expect(screen.getByTestId('missing-head')).toHaveTextContent(head);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Do deck' }));
+
+    expect(screen.getAllByTestId('missing-row')).toHaveLength(2);
+    expect(screen.getByTestId('missing-head')).toHaveTextContent(head);
+    Reflect.deleteProperty(window, 'matchMedia');
   });
 });

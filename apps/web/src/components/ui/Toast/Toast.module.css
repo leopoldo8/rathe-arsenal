@@ -20,6 +20,18 @@
   outline: none;
 }
 
+/* On a phone the toast sits at the bottom, above the tab bar, where the thumb is. */
+@media (max-width: 719px) {
+  .viewport {
+    top: auto;
+    right: var(--ra-space-4);
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + var(--ra-space-3));
+    left: var(--ra-space-4);
+    width: auto;
+    max-width: none;
+  }
+}
+
 /* ---------- Individual toast ---------- */
 .toast {
   display: flex;

@@ -43,6 +43,7 @@ import { Route as AuthAddCardsListRouteImport } from './routes/_auth/add-cards_.
 import { Route as AuthAddCardsManualRouteImport } from './routes/_auth/add-cards.manual'
 import { Route as AuthAddCardsCsvRouteImport } from './routes/_auth/add-cards.csv'
 import { Route as AuthLibraryCsvSourcesSourceIdVersionsRouteImport } from './routes/_auth/library-csv-sources_.$sourceId.versions'
+import { Route as AuthDecksDeckIdMissingRouteImport } from './routes/_auth/decks.$deckId_.missing'
 import { Route as AuthDecksDeckIdEditRouteImport } from './routes/_auth/decks.$deckId_.edit'
 import { Route as AuthAddCardsProductProductKeyRouteImport } from './routes/_auth/add-cards_.product.$productKey'
 
@@ -216,6 +217,11 @@ const AuthLibraryCsvSourcesSourceIdVersionsRoute =
     path: '/library-csv-sources/$sourceId/versions',
     getParentRoute: () => AuthRoute,
   } as any)
+const AuthDecksDeckIdMissingRoute = AuthDecksDeckIdMissingRouteImport.update({
+  id: '/decks/$deckId_/missing',
+  path: '/decks/$deckId/missing',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDecksDeckIdEditRoute = AuthDecksDeckIdEditRouteImport.update({
   id: '/decks/$deckId_/edit',
   path: '/decks/$deckId/edit',
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/lists/': typeof AuthListsIndexRoute
   '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/decks/$deckId/missing': typeof AuthDecksDeckIdMissingRoute
   '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRoutesByTo {
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/lists': typeof AuthListsIndexRoute
   '/add-cards/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/decks/$deckId/edit': typeof AuthDecksDeckIdEditRoute
+  '/decks/$deckId/missing': typeof AuthDecksDeckIdMissingRoute
   '/library-csv-sources/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRoutesById {
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/_auth/lists/': typeof AuthListsIndexRoute
   '/_auth/add-cards_/product/$productKey': typeof AuthAddCardsProductProductKeyRoute
   '/_auth/decks/$deckId_/edit': typeof AuthDecksDeckIdEditRoute
+  '/_auth/decks/$deckId_/missing': typeof AuthDecksDeckIdMissingRoute
   '/_auth/library-csv-sources_/$sourceId/versions': typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 export interface FileRouteTypes {
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/lists/'
     | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
+    | '/decks/$deckId/missing'
     | '/library-csv-sources/$sourceId/versions'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -413,6 +423,7 @@ export interface FileRouteTypes {
     | '/lists'
     | '/add-cards/product/$productKey'
     | '/decks/$deckId/edit'
+    | '/decks/$deckId/missing'
     | '/library-csv-sources/$sourceId/versions'
   id:
     | '__root__'
@@ -451,6 +462,7 @@ export interface FileRouteTypes {
     | '/_auth/lists/'
     | '/_auth/add-cards_/product/$productKey'
     | '/_auth/decks/$deckId_/edit'
+    | '/_auth/decks/$deckId_/missing'
     | '/_auth/library-csv-sources_/$sourceId/versions'
   fileRoutesById: FileRoutesById
 }
@@ -707,6 +719,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/decks/$deckId_/missing': {
+      id: '/_auth/decks/$deckId_/missing'
+      path: '/decks/$deckId/missing'
+      fullPath: '/decks/$deckId/missing'
+      preLoaderRoute: typeof AuthDecksDeckIdMissingRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/decks/$deckId_/edit': {
       id: '/_auth/decks/$deckId_/edit'
       path: '/decks/$deckId/edit'
@@ -773,6 +792,7 @@ interface AuthRouteChildren {
   AuthChatIndexRoute: typeof AuthChatIndexRoute
   AuthListsIndexRoute: typeof AuthListsIndexRoute
   AuthDecksDeckIdEditRoute: typeof AuthDecksDeckIdEditRoute
+  AuthDecksDeckIdMissingRoute: typeof AuthDecksDeckIdMissingRoute
   AuthLibraryCsvSourcesSourceIdVersionsRoute: typeof AuthLibraryCsvSourcesSourceIdVersionsRoute
 }
 
@@ -798,6 +818,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthChatIndexRoute: AuthChatIndexRoute,
   AuthListsIndexRoute: AuthListsIndexRoute,
   AuthDecksDeckIdEditRoute: AuthDecksDeckIdEditRoute,
+  AuthDecksDeckIdMissingRoute: AuthDecksDeckIdMissingRoute,
   AuthLibraryCsvSourcesSourceIdVersionsRoute:
     AuthLibraryCsvSourcesSourceIdVersionsRoute,
 }

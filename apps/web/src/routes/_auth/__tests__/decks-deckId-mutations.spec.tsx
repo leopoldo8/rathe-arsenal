@@ -4,7 +4,7 @@
  *
  * View mode mounts the real banner, strip, analysis row, panels and decklist;
  * only data hooks, the router, CardArt (to observe how it is called) and the
- * heavy ShoppingPanel are stubbed. Edit mode keeps the layout shell.
+ * summary card of what is missing (which reads its own query) are stubbed. Edit mode keeps the layout shell.
  */
 
 import React from 'react';
@@ -23,8 +23,6 @@ import galleryStyles from '../../../components/card-gallery/CardGallery.module.c
 import viewStyles from '../../../components/deck-detail/DeckDetailView.module.css';
 import bannerStyles from '../../../components/deck-detail/DeckHeroBanner.module.css';
 import analysisStyles from '../../../components/deck-detail/DeckAnalysisRow.module.css';
-import panelsStyles from '../../../components/deck-detail/DeckActionPanels.module.css';
-import missingStyles from '../../../components/deck-detail/MissingPanel.module.css';
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before imports that use them
@@ -44,12 +42,15 @@ vi.mock('@tanstack/react-router', () => ({
   Link: (props: {
     to: string;
     children: React.ReactNode;
+    params?: Record<string, string>;
     className?: string;
     'aria-label'?: string;
+    'data-testid'?: string;
   }) => {
     mockLink(props);
+    const href = Object.entries(props.params ?? {}).reduce((path, [key, value]) => path.replace(`$${key}`, value), props.to);
     return (
-      <a href={props.to} className={props.className} aria-label={props['aria-label']}>
+      <a href={href} className={props.className} aria-label={props['aria-label']} data-testid={props['data-testid']}>
         {props.children}
       </a>
     );
@@ -90,8 +91,8 @@ vi.mock('../../../components/deck-detail/DeckDetailEmptyState', () => ({
   ),
 }));
 
-vi.mock('../../../components/deck-detail/ShoppingPanel', () => ({
-  ShoppingPanel: () => <div data-testid="shopping-panel" />,
+vi.mock('../../../components/deck-detail/MissingSummaryCard', () => ({
+  MissingSummaryCard: () => <section data-testid="missing-summary-card" />,
 }));
 
 vi.mock('../../../components/deck-detail/DeckDetailLayout', () => ({
@@ -191,7 +192,6 @@ type TQueryState =
 let mockQueryState: TQueryState = 'loading';
 let mockDeckData: IDeckDetailResponse | null | undefined;
 
-const mockMarkOwnedMutate = vi.fn();
 const mockRefetch = vi.fn();
 
 vi.mock('../../../api/deck-detail', async (importOriginal) => {
@@ -204,12 +204,6 @@ vi.mock('../../../api/deck-detail', async (importOriginal) => {
       error: mockQueryState === 'error' ? new Error('Network failure') : null,
       data: mockQueryState.startsWith('success') ? mockDeckData : undefined,
       refetch: mockRefetch,
-    }),
-    useMarkOwnedMutation: () => ({
-      mutate: mockMarkOwnedMutate,
-      isPending: false,
-      isError: false,
-      variables: null,
     }),
   };
 });
@@ -436,7 +430,7 @@ describe('DeckDetailPage — view mode layout', () => {
 });
 
 describe('DeckDetailPage — rendered elements carry the classes the layout rules key on', () => {
-  it('puts the stack, banner, analysis row, panels and list grid on their rules', () => {
+  it('puts the stack, banner, analysis row and list grid on their rules', () => {
     populate(buildDeck());
     renderPage();
 
@@ -444,17 +438,8 @@ describe('DeckDetailPage — rendered elements carry the classes the layout rule
     expect(screen.getByTestId('deck-hero-banner')).toHaveClass(bannerStyles.banner!);
     expect(screen.getByTestId('deck-hero-eyebrow')).toHaveClass(bannerStyles.eyebrow!);
     expect(screen.getByTestId('deck-analysis-row')).toHaveClass(analysisStyles.row!);
-    expect(screen.getByTestId('deck-action-panels')).toHaveClass(panelsStyles.row!);
     expect(screen.getAllByTestId('deck-list-cell')[0]!.parentElement).toHaveClass(galleryStyles.grid!);
     expect(screen.getAllByTestId('deck-list-cell')[0]!.firstElementChild).toHaveClass(galleryStyles.thumb!);
-  });
-
-  it('colours the missing-row pitch bar by the card pitch', () => {
-    populate(buildDeck());
-    renderPage();
-
-    expect(screen.getByTestId('missing-row').firstElementChild).toHaveClass(missingStyles.pitchBar!);
-    expect(screen.getByTestId('missing-row').firstElementChild).toHaveClass(missingStyles.pitchRed!);
   });
 });
 
@@ -681,82 +666,30 @@ describe('DeckDetailPage — analysis row (DECK-04)', () => {
   });
 });
 
-describe('DeckDetailPage — missing panel (DECK-05)', () => {
-  it('renders the missing panel and no swaps panel while the deck is incomplete', () => {
+describe('DeckDetailPage — what is missing (DECK-05)', () => {
+  it('renders the summary card and no swaps panel while the deck is incomplete', () => {
     populate(buildDeck());
     renderPage();
 
-    expect(screen.getByTestId('deck-missing-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('deck-swaps-panel')).toBeNull();
-  });
-
-  it('omits the panels when the deck is complete', () => {
-    populate(completeDeck());
-    renderPage();
-
+    expect(screen.getByTestId('missing-summary-card')).toBeInTheDocument();
     expect(screen.queryByTestId('deck-missing-panel')).toBeNull();
     expect(screen.queryByTestId('deck-swaps-panel')).toBeNull();
   });
 
-  it('gives the missing panel the id the strip anchor points at', () => {
+  it('omits the card when the deck is complete', () => {
+    populate(completeDeck());
+    renderPage();
+
+    expect(screen.queryByTestId('missing-summary-card')).toBeNull();
+    expect(screen.queryByTestId('deck-swaps-panel')).toBeNull();
+  });
+
+  it('points the strip link at the missing list of the deck', () => {
     populate(buildDeck());
     renderPage();
 
-    const anchor = screen.getByTestId('strip-view-shopping');
-    expect(anchor).toHaveAttribute('href', '#deck-missing-panel');
-    expect(screen.getByTestId('deck-missing-panel')).toHaveAttribute('id', 'deck-missing-panel');
+    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '/decks/1/missing');
   });
-
-  it('lists the cards still to buy with their missing count', () => {
-    populate(buildDeck());
-    renderPage();
-
-    const row = within(screen.getByTestId('deck-missing-panel')).getByTestId('missing-row');
-    expect(row).toHaveTextContent('Gap One');
-    expect(row).toHaveTextContent('faltam 3');
-  });
-
-  it('links Comprar to the store product page when the shopping line has one', () => {
-    populate(
-      buildDeck({
-        shoppingLine: {
-          kind: 'populated',
-          storeName: 'Loja',
-          storeHostname: 'loja.example',
-          totalCostCents: 1000,
-          availableCardCount: 1,
-          unavailableCardCount: 0,
-          lastFetchedAt: '2026-04-27T00:00:00Z',
-          lines: [
-            {
-              cardIdentifier: 'gap-1',
-              cardName: 'Gap One',
-              pitch: null,
-              quantityNeeded: 3,
-              quantityAvailable: 3,
-              unitPriceCents: 333,
-              productUrl: 'https://loja.example/gap-one',
-              lastFetchedAt: '2026-04-27T00:00:00Z',
-            },
-          ],
-        },
-      }),
-    );
-    renderPage();
-
-    expect(screen.getByRole('link', { name: 'Comprar Gap One (Vermelho) na loja' })).toHaveAttribute(
-      'href',
-      'https://loja.example/gap-one',
-    );
-  });
-
-  it('shows no Comprar link for a card the store does not list', () => {
-    populate(buildDeck());
-    renderPage();
-
-    expect(screen.queryByRole('link', { name: /Comprar/ })).toBeNull();
-  });
-
 });
 
 describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
@@ -835,39 +768,5 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     expect(screen.queryByTestId('deck-list-group-2')).toBeNull();
 
     expect(mockRefetch).not.toHaveBeenCalled();
-  });
-});
-
-describe('DeckDetailPage — mutation Toast routing', () => {
-  it('marks a missing card as owned through the mutation with its identifier', async () => {
-    populate(buildDeck());
-    renderPage();
-
-    await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho Gap One (Vermelho)' }),
-    );
-
-    expect(mockMarkOwnedMutate).toHaveBeenCalledWith('gap-1', expect.any(Object));
-  });
-
-  it('routes a markOwned failure through Toast', async () => {
-    populate(buildDeck());
-    mockMarkOwnedMutate.mockImplementation(
-      (_cardId: unknown, options?: { onError?: (err: Error) => void }) => {
-        options?.onError?.(new Error('Mark owned failed'));
-      },
-    );
-
-    renderPage();
-    await userEvent.click(
-      within(screen.getByTestId('missing-row')).getByRole('button', { name: 'Já tenho Gap One (Vermelho)' }),
-    );
-
-    expect(mockShowToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'error',
-        message: expect.stringContaining('Não foi possível marcar a carta: Mark owned failed'),
-      }),
-    );
   });
 });

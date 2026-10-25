@@ -45,7 +45,7 @@ Getting cards in:
 
 Closing the deck:
 
-1. the owner opens `/decks/:deckId/missing` -> `GET /api/decks/:deckId/missing` -> `DeckMissingService` (new in S16, extended by S17) - the cards still needed after owned copies -> `StoreAnswersService` (new in S16; `ShoppingLineService` stays for the old panels until S17) - one store state per needed card from `store_stock` (door 10)
+1. the owner opens `/decks/:deckId/missing` -> `GET /api/decks/:deckId/missing` -> `DeckMissingService` (new in S16, extended by S17) - the cards still needed after owned copies -> `StoreAnswersService` (new in S16; since S17 no screen reads `ShoppingLineService`, and the deck page's summary card reads this same route) - one store state per needed card from `store_stock` (door 10)
 2. a card the store lists with no fresh price -> `variant_fetch_job` keyed by card (door 10) -> the worker's existing variant drain, each Firecrawl call counted in `firecrawl_usage` (door 10)
 3. the worker's availability step (door 5) - runs the existing URL sync every `STORE_AVAILABILITY_PASS_DAYS` and stamps `listedInStockAt`
 4. "Já tenho" -> `PUT /api/collection/owned` -> `CollectionService` (exists) - sets the manual-source quantity in one statement (door 1)
@@ -230,6 +230,9 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `/add-cards` (web page behind sign-in, changed by S14 and S15) | nothing | the paste box, with the found Fabrary deck and its question (`r3-fabrary-found-phone`) or the four ways in (`r3-add-phone`); the tab bar and the "Deck do Fabrary" tab are gone | `200` |
 | `/library-csv-sources` (web page behind sign-in, changed by S15) | nothing | "Importações" as `r3-imports-phone` draws it | `200` |
 | `GET /api/decks/:deckId/missing` (lines added by S16; summary added by S17) | nothing | `lines`, each with `cardIdentifier`, `deckNeeded`, `inventoryNeeded`, `state`, from the cards the deck still needs after owned copies (deck and inventory counted as S5 counts them); opening it queues the per-card lookups; rejected: building the whole answer in S16, which C204 gives to S17 | `200`, `404` |
+| `GET /api/decks/:deckId/missing` (shape added by S17) | nothing | `summary` (`totalCopies`, `buyCopies`, `buyCents`, `lacksCopies`, `notOnSiteCopies`, `ownedCopies`, `standInCopies`, `lookingUp`, `noPrice` as cards, `availabilityCheckedAt`, `priceValidDays`) and `lines`, each also with `slot`, `name`, `pitch`, `imageUrl`, `deckQuantity`, `ownedTotal`, `ownedElsewhere` (what other imports hold: the stepper's floor), `unitPriceCents`, `lineCents`, `availableCopies`, `foilOnly`, `promoOnly`, `productUrl`, `searchUrl` and `standIn` (`cardIdentifier`, `name`, `pitch`, `copies`, `savingCents`, `used`, `replacementId`); a card fully covered by an active replacement stays as a line with no copies needed, so "Desfazer" is reachable; rejected: a second route for the prices, since the list reads one answer and the summary must add up with it | `200`, `404` |
+| `POST /api/decks/:deckId/replacements` (response added by S17) | as above | the replacement also carries `side`; `quantity` above the copies still needed on that side answers `409` `REPLACEMENT_ILLEGAL`; rejected: clamping it to the copies needed, which would move fewer copies than the caller asked for | `201`, `400`, `404`, `409` |
+| `/decks/:deckId/missing` (web page behind sign-in, added by S17) | `deckId` | the owner's list as `r3-list-phone` and `r3-list-desktop` draw it, opened from the card on the deck page and from the status strip's "Ver o que falta"; the phone is under 720 px; rejected: a sheet over the deck page, because the screens draw a full page with its own summary and bottom bar | `200` |
 
 ## Landing
 

@@ -8,6 +8,9 @@ import { setTestLocale } from '../../../test/i18n-test-utils';
 import type { IDeckSummary } from '../deckDetailModel';
 
 const mockApiFetch = vi.fn();
+vi.mock('@tanstack/react-router', async (importOriginal) =>
+  (await import('../../../test/router-link-mock')).withLinkMock(await importOriginal<typeof import('@tanstack/react-router')>()),
+);
 vi.mock('../../../lib/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api-client')>();
   return { ...actual, useApiClient: () => mockApiFetch };
@@ -118,10 +121,10 @@ describe('DeckStatusStrip', () => {
     expect(links.some((href) => href?.includes('fabrary.com'))).toBe(false);
   });
 
-  it('renders the shopping anchor and one Fabrary link while cards are missing', () => {
+  it('links to the missing list and shows one Fabrary link while cards are missing', () => {
     renderStrip({ fabraryUlid: 'abc123' });
 
-    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '#deck-missing-panel');
+    expect(screen.getByTestId('strip-view-shopping')).toHaveAttribute('href', '/decks/7/missing');
     const fabrary = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.includes('fabrary.net'));
     expect(fabrary).toHaveLength(1);
     expect(fabrary[0]).toHaveAttribute('href', 'https://fabrary.net/decks/abc123');

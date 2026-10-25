@@ -11,8 +11,9 @@ import { ReplacementMark } from './ReplacementMark';
 import { SuggestionUseButton } from './SuggestionUseButton';
 import { entryKey } from './deckDetailModel';
 import { resolveRowStore } from './missingStoreModel';
-import { MISSING_PANEL_ID } from './DeckStatusStrip';
 import styles from './MissingPanel.module.css';
+
+export const MISSING_PANEL_ID = 'deck-missing-panel';
 
 interface IMissingPanelProps {
   readonly entries: readonly IBreakdownEntry[];

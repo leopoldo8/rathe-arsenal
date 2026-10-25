@@ -127,6 +127,32 @@ describe('deck missing list (E2E)', () => {
     expect(lines.find((line) => line.cardIdentifier === EMISSARY)).toMatchObject({ deckNeeded: 2, inventoryNeeded: 1 });
   });
 
+  it('returns the summary and lines to the owner and 404 to anyone else', async () => {
+    await listCard(COAX, { priceCents: 3000, quantity: 4, fetchedDaysAgo: 3 });
+    const owner = await fixture.scenario([{ cardIdentifier: COAX, quantity: 1, slot: 'mainboard' }]);
+    const stranger = await fixture.signUp('stranger');
+
+    const response = await fixture.get(`/api/decks/${owner.deckId}/missing`, owner.sessionToken).expect(200);
+
+    expect(response.body.summary).toEqual({
+      totalCopies: 7,
+      buyCopies: 1,
+      buyCents: 3000,
+      lacksCopies: 0,
+      notOnSiteCopies: 6,
+      ownedCopies: 0,
+      standInCopies: 0,
+      lookingUp: 0,
+      noPrice: 0,
+      availabilityCheckedAt: passAt.toISOString(),
+      priceValidDays: 30,
+    });
+    const coax = response.body.lines.find((line: { cardIdentifier: string }) => line.cardIdentifier === COAX);
+    expect(coax).toMatchObject({ deckNeeded: 1, inventoryNeeded: 0, state: 'priced', unitPriceCents: 3000, lineCents: 3000 });
+    await fixture.get(`/api/decks/${owner.deckId}/missing`, stranger.sessionToken).expect(404);
+    await fixture.get('/api/decks/999999999/missing', owner.sessionToken).expect(404);
+  });
+
   it('the fetch-variants route is gone', async () => {
     const owner = await fixture.scenario();
 

@@ -11,9 +11,20 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect, vi } from 'vitest';
 import { ShoppingPanel } from '../ShoppingPanel';
+import { MissingListPage } from '../../missing-list/MissingListPage';
+import { line as missingLine, response as missingResponse } from '../../missing-list/__tests__/missingListKit';
 import type { IShoppingLineResponse } from '../../../api/shopping-line';
+
+const mockApiFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/api-client')>()),
+  useApiClient: () => mockApiFetch,
+}));
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+vi.mock('../ShareDialog', () => ({ ShareDialog: () => null }));
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -139,5 +150,28 @@ describe('ShoppingPanel', () => {
         screen.getAllByText(/você já tem tudo o que este deck precisa/i).length,
       ).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('the shopping list of the missing list page', () => {
+  it('the shopping list splits deck and inventory', async () => {
+    const lines = [
+      missingLine({ cardIdentifier: 'a', name: 'Alpha', deckNeeded: 3, deckQuantity: 3, availableCopies: 3, lineCents: 300 }),
+      missingLine({ cardIdentifier: 'b', name: 'Bravo', deckNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+      missingLine({ cardIdentifier: 'c', name: 'Charlie', deckNeeded: 0, inventoryNeeded: 2, deckQuantity: 2, availableCopies: 2, lineCents: 200 }),
+      missingLine({ cardIdentifier: 'd', name: 'Delta', deckNeeded: 0, inventoryNeeded: 1, deckQuantity: 1, availableCopies: 1, lineCents: 100 }),
+    ];
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === '/decks/7/missing') return missingResponse(lines, { buyCopies: 7, buyCents: 700 });
+      return { id: 7, name: 'Deck', hero: 'Rhinar' };
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MissingListPage deckId={7} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByTestId('shopping-split')).toHaveTextContent('4 do deck, 3 do inventário');
   });
 });

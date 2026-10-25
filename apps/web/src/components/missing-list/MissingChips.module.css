@@ -1,0 +1,34 @@
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ra-space-2);
+}
+
+.chip {
+  min-block-size: 44px;
+  padding-inline: var(--ra-space-4);
+  border: 1px solid var(--ra-border-strong);
+  border-radius: var(--ra-radius-full);
+  background: var(--ra-bg-surface);
+  color: var(--ra-fg-primary);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-medium);
+  cursor: pointer;
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}
+
+.active {
+  border-color: var(--ra-accent-soft-bd);
+  background: var(--ra-accent-soft-bg);
+  color: var(--ra-accent-body);
+}
+
+.count {
+  font-family: var(--ra-font-mono);
+  font-weight: var(--ra-weight-bold);
+}

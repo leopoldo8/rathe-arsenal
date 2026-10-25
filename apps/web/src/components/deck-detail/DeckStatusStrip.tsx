@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useUseSuggestions } from '../../api/replacements';
 import { localizeApiError } from '../card-scanner/localize-api-error';
 import { Button } from '../ui/Button/Button';
 import type { IDeckSummary, TStripKind } from './deckDetailModel';
 import styles from './DeckStatusStrip.module.css';
-
-export const MISSING_PANEL_ID = 'deck-missing-panel';
 
 interface IDeckStatusStripProps {
   readonly deckId: number;
@@ -30,8 +29,10 @@ function useStripMessage(summary: IDeckSummary, offFormat: string | null): strin
     summary.missingInventory > 0
       ? t('deckDetail.stripMissingCopies', {
           count: summary.missingCards,
-          deck: summary.missingCards - summary.missingInventory,
-          inventory: summary.missingInventory,
+          split: t('deckDetail.missingSplit', {
+            deck: summary.missingCards - summary.missingInventory,
+            inventory: summary.missingInventory,
+          }),
         })
       : `${t('deckDetail.stripMissingCards', { count: summary.missingCards })}.`;
   if (summary.kind === 'incomplete') return gap;
@@ -99,9 +100,14 @@ export function DeckStatusStrip({
           {showShoppingLink && (
             <>
               {summary.missingInventory > 0 && <span aria-hidden="true">{' · '}</span>}
-              <a href={`#${MISSING_PANEL_ID}`} className={styles.action} data-testid="strip-view-shopping">
+              <Link
+                to="/decks/$deckId/missing"
+                params={{ deckId: String(deckId) }}
+                className={styles.action}
+                data-testid="strip-view-shopping"
+              >
                 {t(summary.missingInventory > 0 ? 'deckDetail.seeWhatIsMissing' : 'deckDetail.seeShopping')}
-              </a>
+              </Link>
             </>
           )}
           {showFabrary && (

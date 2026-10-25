@@ -30,6 +30,7 @@ import {
   IAddCardsBatchResult,
 } from './dtos/add-cards-batch.dto';
 import { IMarkOwnedResponse } from './dtos/mark-owned.response.dto';
+import { ISetOwnedResponse } from './dtos/set-owned.dto';
 import { ICopyVersion, NO_VERSION, TVersionParts, withDefaults } from './versions/copy-version';
 import { assertVersionBelongsToCard } from './versions/collection-versions.service';
 
@@ -123,33 +124,7 @@ export class CollectionService {
       await this.collectionCardRepo.save(entity);
     }
 
-    // Recompute readiness
-    const newSnapshotEntity =
-      await this.substitutionService.computeAndStoreReadiness(deckId, userId);
-
-    // Derive path + fidelityPercent for the response. deckCards is already
-    // loaded above, so totalCards is cheap to compute locally.
-    const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
-    const derived = this.substitutionService.deriveSnapshotFields(
-      newSnapshotEntity,
-      totalCards,
-    );
-
-    const snapshot: ITrackedDeckDetailSnapshot = {
-      id: newSnapshotEntity.id,
-      rawPercent: newSnapshotEntity.rawPercent,
-      effectivePercent: newSnapshotEntity.effectivePercent,
-      path: derived.path,
-      fidelityPercent: derived.fidelityPercent,
-      breakdown:
-        newSnapshotEntity.breakdown as unknown as IBreakdown,
-      substitutions:
-        newSnapshotEntity.substitutions as unknown as Record<
-          string,
-          ISubstitutionEntry
-        >,
-      computedAt: newSnapshotEntity.computedAt.toISOString(),
-    };
+    const snapshot = await this.recomputeSnapshot(userId, deckId, deckCards);
 
     this.logger.log('Card marked as owned', {
       userId,
@@ -163,6 +138,80 @@ export class CollectionService {
       newQuantity,
       snapshot,
     };
+  }
+
+  /** Recomputes the deck's readiness and answers the snapshot the way the deck detail does. */
+  private async recomputeSnapshot(
+    userId: string,
+    deckId: number,
+    deckCards: readonly DeckCardEntity[],
+  ): Promise<ITrackedDeckDetailSnapshot> {
+    const newSnapshotEntity = await this.substitutionService.computeAndStoreReadiness(deckId, userId);
+    const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
+    const derived = this.substitutionService.deriveSnapshotFields(newSnapshotEntity, totalCards);
+    return {
+      id: newSnapshotEntity.id,
+      rawPercent: newSnapshotEntity.rawPercent,
+      effectivePercent: newSnapshotEntity.effectivePercent,
+      path: derived.path,
+      fidelityPercent: derived.fidelityPercent,
+      breakdown: newSnapshotEntity.breakdown as unknown as IBreakdown,
+      substitutions: newSnapshotEntity.substitutions as unknown as Record<string, ISubstitutionEntry>,
+      computedAt: newSnapshotEntity.computedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Sets how many copies of a card the player owns in all, through the manual source: the manual quantity becomes
+   * the total asked minus what the other active sources hold. One statement writes it and reads the value it replaced.
+   */
+  async setOwned(userId: string, deckId: number, cardIdentifier: string, ownedTotal: number): Promise<ISetOwnedResponse> {
+    await this.authzService.assertOwnsTrackedDeck(userId, deckId);
+    const deckCards = await this.deckCardRepo.find({ where: { trackedDeckId: deckId, cardIdentifier } });
+    if (deckCards.length === 0) throw new NotFoundException(`Card "${cardIdentifier}" is not part of this deck`);
+    const deckQuantity = deckCards.reduce((sum, row) => sum + row.quantity + row.inventoryQuantity, 0);
+    if (ownedTotal > deckQuantity) {
+      throw new BadRequestException({ code: 'OWNED_TOTAL_TOO_HIGH', message: 'The total is above what the deck uses of this card' });
+    }
+
+    const manualSource = await this.sourcesService.ensureManualSource(userId);
+    const [held] = await this.dataSource.query(
+      `SELECT COALESCE(SUM(c.quantity) FILTER (WHERE c."sourceId" <> $3), 0)::int AS "otherQuantity"
+       FROM collection_card c JOIN csv_source s ON s.id = c."sourceId"
+       WHERE c."userId" = $1 AND c."cardIdentifier" = $2 AND s.active = true`,
+      [userId, cardIdentifier, manualSource.id],
+    );
+    const otherQuantity = held.otherQuantity as number;
+    if (ownedTotal < otherQuantity) {
+      throw new BadRequestException({ code: 'OWNED_TOTAL_BELOW_OTHER_SOURCES', message: 'Other imports already hold more than this total' });
+    }
+
+    const manualQuantity = ownedTotal - otherQuantity;
+    // One statement writes the manual quantity and returns the one it replaced (a data-changing CTE reads the
+    // table as the statement found it). A total that leaves nothing for the manual source removes its row.
+    const keyMatch = `"userId" = $1 AND "cardIdentifier" = $2 AND "sourceId" = $3
+      AND "printingCode" = '' AND edition = '' AND finish = '' AND condition = ''`;
+    const [written] = await this.dataSource.query(
+      manualQuantity === 0
+        ? `WITH previous AS (SELECT quantity FROM collection_card WHERE ${keyMatch}),
+                removed AS (DELETE FROM collection_card WHERE ${keyMatch} RETURNING 1)
+           SELECT COALESCE((SELECT quantity FROM previous), 0)::int AS "previousManualQuantity"`
+        : `WITH previous AS (SELECT quantity FROM collection_card WHERE ${keyMatch}),
+                written AS (
+                  INSERT INTO collection_card ("userId", "cardIdentifier", "sourceId", quantity)
+                  VALUES ($1, $2, $3, $4)
+                  ON CONFLICT ("userId", "cardIdentifier", "sourceId", "printingCode", edition, finish, condition)
+                  DO UPDATE SET quantity = EXCLUDED.quantity, "lastUpdated" = now()
+                  RETURNING 1
+                )
+           SELECT COALESCE((SELECT quantity FROM previous), 0)::int AS "previousManualQuantity" FROM written`,
+      manualQuantity === 0 ? [userId, cardIdentifier, manualSource.id] : [userId, cardIdentifier, manualSource.id, manualQuantity],
+    );
+    const previousManualQuantity = written.previousManualQuantity as number;
+
+    const snapshot = await this.recomputeSnapshot(userId, deckId, await this.deckCardRepo.find({ where: { trackedDeckId: deckId } }));
+    this.logger.log('Owned total set', { userId, deckId, cardIdentifier, ownedTotal });
+    return { ownedTotal, previousManualQuantity, snapshot };
   }
 
   /**

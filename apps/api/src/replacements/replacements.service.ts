@@ -9,12 +9,12 @@ import {
   TSupportedFormat,
 } from '@rathe-arsenal/engine';
 import { CollectionReadService } from '../collection/collection-read.service';
-import { CardReplacementEntity } from '../database/entities/card-replacement.entity';
+import { CardReplacementEntity, TReplacementSide } from '../database/entities/card-replacement.entity';
 import { DeckCardEntity } from '../database/entities/deck-card.entity';
 import { TrackedDeckEntity } from '../database/entities/tracked-deck.entity';
 import { SubstitutionService } from '../substitution/substitution.service';
 import { NON_REPLACEABLE_SLOTS } from './alternatives.service';
-import { computeNeeded } from './compute-needed';
+import { computeNeededOnSide } from './compute-needed';
 import { PickReplacementDto } from './dtos/pick-replacement.dto';
 import { replacementConflict } from './replacement-errors';
 import { ReplacementsQueryService } from './replacements-query.service';
@@ -35,6 +35,7 @@ export interface IReplacementResponse {
   readonly originalCardIdentifier: string;
   readonly replacementCardIdentifier: string;
   readonly quantity: number;
+  readonly side: TReplacementSide;
   readonly pickedFrom: CardReplacementEntity['pickedFrom'];
   readonly status: CardReplacementEntity['status'];
   readonly createdAt: string;
@@ -55,6 +56,7 @@ function toResponse(entity: CardReplacementEntity): IReplacementResponse {
     originalCardIdentifier: entity.originalCardIdentifier,
     replacementCardIdentifier: entity.replacementCardIdentifier,
     quantity: entity.quantity,
+    side: entity.side,
     pickedFrom: entity.pickedFrom,
     status: entity.status,
     createdAt: entity.createdAt.toISOString(),
@@ -98,12 +100,15 @@ export class ReplacementsService {
       const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
       const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
       const readiness = await this.substitutionService.computeReadiness(deckId, userId, manager);
-      const needed = computeNeeded(readiness.breakdown.notOwned, activeReplacements, original.cardIdentifier, dto.slot);
-      if (needed === 0) throw replacementConflict('NOTHING_TO_REPLACE');
+      const side: TReplacementSide = dto.side ?? 'deck';
+      const stillNeeded = computeNeededOnSide(readiness.breakdown.notOwned, activeReplacements, original.cardIdentifier, dto.slot, side);
+      if (stillNeeded === 0) throw replacementConflict('NOTHING_TO_REPLACE');
+      if (dto.quantity !== undefined && dto.quantity > stillNeeded) throw replacementConflict('REPLACEMENT_ILLEGAL');
+      const needed = dto.quantity ?? stillNeeded;
 
       const copiesHeld = deckCards
         .filter((row) => row.cardIdentifier === replacement.cardIdentifier)
-        .reduce((sum, row) => sum + row.quantity, 0);
+        .reduce((sum, row) => sum + row.quantity + (row.inventoryQuantity ?? 0), 0);
       this.assertLegal(deck, replacement, copiesHeld + needed);
 
       await this.moveCopies(manager, deckCards, {
@@ -112,6 +117,7 @@ export class ReplacementsService {
         from: original.cardIdentifier,
         to: replacement.cardIdentifier,
         quantity: needed,
+        side,
       });
 
       const saved = await manager.save(
@@ -122,6 +128,7 @@ export class ReplacementsService {
           originalCardIdentifier: original.cardIdentifier,
           replacementCardIdentifier: replacement.cardIdentifier,
           quantity: needed,
+          side,
           pickedFrom: dto.pickedFrom,
           status: 'active',
           resolvedAt: null,
@@ -347,6 +354,7 @@ export class ReplacementsService {
           from: record.replacementCardIdentifier,
           to: record.originalCardIdentifier,
           quantity: record.quantity,
+          side: record.side,
         });
         await this.recommendationQueue.enqueueAuto(manager, record.trackedDeckId);
       }
@@ -418,22 +426,28 @@ export class ReplacementsService {
     }
   }
 
-  /** Takes `quantity` copies off one card's row in a slot (row deleted at 0) and adds them to another's (row created when absent). */
+  /**
+   * Takes `quantity` copies off one card's row in a slot (row deleted when nothing is left on either side) and adds
+   * them to another's (row created when absent), on the `side` named: the deck's copies or the inventory's.
+   */
   private async moveCopies(
     manager: EntityManager,
     deckCards: readonly DeckCardEntity[],
-    move: { trackedDeckId: number; slot: string; from: string; to: string; quantity: number },
+    move: { trackedDeckId: number; slot: string; from: string; to: string; quantity: number; side?: TReplacementSide },
   ): Promise<void> {
+    const side = move.side ?? 'deck';
+    const column = side === 'deck' ? 'quantity' : 'inventoryQuantity';
+    const other = side === 'deck' ? 'inventoryQuantity' : 'quantity';
     // A deck may list one card twice in a slot (nothing forbids it), and the missing copies span every
     // such row, so the copies come off each in turn until `quantity` is taken.
     let toTake = move.quantity;
     for (const row of deckCards.filter((r) => r.cardIdentifier === move.from && r.slot === move.slot)) {
       if (toTake <= 0) break;
-      const taken = Math.min(row.quantity, toTake);
+      const taken = Math.min(row[column], toTake);
       toTake -= taken;
-      // A row that still carries inventory copies stays, with no deck copy left.
-      if (row.quantity - taken > 0 || row.inventoryQuantity > 0) {
-        await manager.update(DeckCardEntity, { id: row.id }, { quantity: row.quantity - taken });
+      // A row that still carries copies on the other side stays, with none left on this one.
+      if (row[column] - taken > 0 || row[other] > 0) {
+        await manager.update(DeckCardEntity, { id: row.id }, { [column]: row[column] - taken });
       } else {
         await manager.delete(DeckCardEntity, { id: row.id });
       }
@@ -441,13 +455,13 @@ export class ReplacementsService {
 
     const target = deckCards.find((row) => row.cardIdentifier === move.to && row.slot === move.slot);
     if (target) {
-      await manager.update(DeckCardEntity, { id: target.id }, { quantity: target.quantity + move.quantity });
+      await manager.update(DeckCardEntity, { id: target.id }, { [column]: target[column] + move.quantity });
     } else {
       await manager.insert(DeckCardEntity, {
         trackedDeckId: move.trackedDeckId,
         cardIdentifier: move.to,
-        quantity: move.quantity,
         slot: move.slot,
+        ...(side === 'deck' ? { quantity: move.quantity } : { quantity: 0, inventoryQuantity: move.quantity }),
       });
     }
   }

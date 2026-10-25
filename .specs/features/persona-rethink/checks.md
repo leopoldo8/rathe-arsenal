@@ -702,73 +702,73 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spe
 
 ### S17 - The owner's missing list · 46 files · 251 KB · ~95k
 
-**C203** - With something missing, the deck page shows one card with "Faltam 66 cópias (27 cartas)", "Na Cúpula DT: 50 cópias por R$ 753,28 · 14 a loja não tem · 2 fora do site" and the link "Ver o que falta" to `/decks/:deckId/missing`, and renders no shopping panel, no sidebar shopping panel and no "Pedir nos grupos"; with nothing missing it renders no card (AC 124, AC 133)
+**C203** - With something missing, the deck page shows one card with "Faltam 66 cópias (27 cartas)", "Na Cúpula DT: 50 cópias por R$ 753,28 · 14 a loja não tem · 2 fora do site" and the link "Ver o que falta" to `/decks/:deckId/missing`, and renders no shopping panel, no sidebar shopping panel and no "Pedir nos grupos"; with nothing missing it renders no card (AC 124, AC 133) · done
 Proof: `web unit src/components/deck-detail/__tests__/MissingSummaryCard.spec.tsx -t "one card says what is missing in copies and links to the list"`
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spec.tsx -t "the old shopping panels and the group callout are gone"`
 
-**C204** - `GET /api/decks/:deckId/missing` answers `200` with `summary` holding `totalCopies`, `buyCopies`, `buyCents`, `lacksCopies`, `notOnSiteCopies`, `ownedCopies`, `standInCopies`, `lookingUp`, `noPrice`, `availabilityCheckedAt`, `priceValidDays`, and `lines` each holding `cardIdentifier`, `deckNeeded`, `inventoryNeeded`, `state` and the price fields; another user's deck and an unknown id answer `404` (AC 124, AC 125; route)
+**C204** - `GET /api/decks/:deckId/missing` answers `200` with `summary` holding `totalCopies`, `buyCopies`, `buyCents`, `lacksCopies`, `notOnSiteCopies`, `ownedCopies`, `standInCopies`, `lookingUp`, `noPrice`, `availabilityCheckedAt`, `priceValidDays`, and `lines` each holding `cardIdentifier`, `deckNeeded`, `inventoryNeeded`, `state` and the price fields; another user's deck and an unknown id answer `404` (AC 124, AC 125; route) · done
 Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "returns the summary and lines to the owner and 404 to anyone else"`
 
-**C205** - The summary's `buyCopies + lacksCopies + notOnSiteCopies + ownedCopies + standInCopies` plus the copies of `looking_up` and `no_price` lines equals `totalCopies`, for a table of decks: all priced; all owned; one shortfall (store has 2 of 3, so 2 count to buy and 1 to lacks); one stand-in; one `looking_up`; one `no_price`; one card in the inventory only (AC 126, AC 133)
+**C205** - The summary's `buyCopies + lacksCopies + notOnSiteCopies + ownedCopies + standInCopies` plus the copies of `looking_up` and `no_price` lines equals `totalCopies`, for a table of decks: all priced; all owned; one shortfall (store has 2 of 3, so 2 count to buy and 1 to lacks); one stand-in; one `looking_up`; one `no_price`; one card in the inventory only (AC 126, AC 133) · done
 Proof: `api unit src/decks/__tests__/deck-missing.service.spec.ts -t "the copy counts add up to the deck's total copies"`
 
-**C206** - The list's summary reads "Falta comprar: 43 cópias · R$ 452,28 na Cúpula DT" and "Já descontei 5 cópias que você tem e 2 que você troca por cartas suas.", then once "Preços conferidos nos últimos 30 dias. Estoque conferido em 19/10. O preço final aparece no site da loja.", and no row carries a date (AC 125, AC 133)
+**C206** - The list's summary reads "Falta comprar: 43 cópias · R$ 452,28 na Cúpula DT" and "Já descontei 5 cópias que você tem e 2 que você troca por cartas suas.", then once "Preços conferidos nos últimos 30 dias. Estoque conferido em 19/10. O preço final aparece no site da loja.", and no row carries a date (AC 125, AC 133) · done
 Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "the summary counts copies and states the price window once"`
 
-**C207** - The chips read "Comprar na loja 43", "A loja não tem 14", "Fora do site 2", "Já tenho 5", "No lugar 2"; "Sem preço" and "Buscando" chips appear only while a `no_price` or a `looking_up` line exists (AC 126)
+**C207** - The chips read "Comprar na loja 43", "A loja não tem 14", "Fora do site 2", "Já tenho 5", "No lugar 2"; "Sem preço" and "Buscando" chips appear only while a `no_price` or a `looking_up` line exists (AC 126) · done
 Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "the chips carry copy counts and the price chips appear only when needed"`
 
-**C208** - Row copy per state: a `priced` row shows "faltam 3 · R$ 69,99 cada", the line total and the flags "só tem foil promo", "só tem foil" or "A loja tem 2. A 3ª está no pedido do grupo." when they apply, with "Já tenho…" and "Comprar" (external-link mark, `aria-label` naming the card with its pitch); a `looking_up` row shows "buscando preço…" and the summary adds "1 cartas ainda buscando preço" excluding it from the total; a `no_price` row shows "sem preço agora · ver na loja" with the product link; a `not_on_site` row shows "O app não achou esta carta no site da Cúpula DT · procurar lá" linking `<baseUrl>/?view=ecom/itens&busca=<card name>`; only a `store_lacks` row says the store does not have the card (AC 113, AC 114, AC 115, AC 118)
+**C208** - Row copy per state: a `priced` row shows "faltam 3 · R$ 69,99 cada", the line total and the flags "só tem foil promo", "só tem foil" or "A loja tem 2. A 3ª está no pedido do grupo." when they apply, with "Já tenho…" and "Comprar" (external-link mark, `aria-label` naming the card with its pitch); a `looking_up` row shows "buscando preço…" and the summary adds "1 cartas ainda buscando preço" excluding it from the total; a `no_price` row shows "sem preço agora · ver na loja" with the product link; a `not_on_site` row shows "O app não achou esta carta no site da Cúpula DT · procurar lá" linking `<baseUrl>/?view=ecom/itens&busca=<card name>`; only a `store_lacks` row says the store does not have the card (AC 113, AC 114, AC 115, AC 118) · done
 Proof: `web unit src/components/missing-list/__tests__/MissingListRow.spec.tsx -t "each store state has its own row copy"`
 
-**C209** - The list prices `notOwned` copies: a 3-copy card with an unused stand-in covering 1 stays on the list priced for 3 and shows "Você tem 1 Bloodrush Bellow (Vermelho), que serve no lugar de 1 · economiza R$ 69,99 · Usar" (AC 127)
+**C209** - The list prices `notOwned` copies: a 3-copy card with an unused stand-in covering 1 stays on the list priced for 3 and shows "Você tem 1 Bloodrush Bellow (Vermelho), que serve no lugar de 1 · economiza R$ 69,99 · Usar" (AC 127) · done
 Proof: `api unit src/decks/__tests__/deck-missing.service.spec.ts -t "prices the copies not owned and offers the unused stand-in"`
 Proof: `web unit src/components/missing-list/__tests__/MissingListRow.spec.tsx -t "an unused stand-in is offered inline"`
 
-**C210** - Tapping "Usar" on a stand-in covering 2 of 3 copies posts `POST /api/decks/:deckId/replacements` with `quantity: 2`; afterwards the deck has 2 copies of the stand-in and 1 of the original, the list keeps 1 copy priced, and the row reads "Você vai usar 2 Awakening Bellow (Vermelho), que já tem, no lugar de 2 · economiza R$ 300,00 · Desfazer"; "Desfazer" calls the existing revert and the row returns to "Usar" (AC 128)
+**C210** - Tapping "Usar" on a stand-in covering 2 of 3 copies posts `POST /api/decks/:deckId/replacements` with `quantity: 2`; afterwards the deck has 2 copies of the stand-in and 1 of the original, the list keeps 1 copy priced, and the row reads "Você vai usar 2 Awakening Bellow (Vermelho), que já tem, no lugar de 2 · economiza R$ 300,00 · Desfazer"; "Desfazer" calls the existing revert and the row returns to "Usar" (AC 128) · done
 Proof: `api e2e src/replacements/__tests__/replacements.e2e-spec.ts -t "a pick with quantity 2 moves 2 copies and leaves the third on the list"`
 Proof: `web unit src/components/missing-list/__tests__/MissingListRow.spec.tsx -t "Usar sends the copies the stand-in covers and Desfazer reverts"`
 
-**C211** - Door 2 at the route: `POST /api/decks/:deckId/replacements` with `quantity` omitted and `side` omitted moves every missing copy from the deck as today and stores `side = 'deck'`; `side: 'inventory'` moves inventory copies and stores `inventory`; `quantity` 0, -1, 1.5 or `side: 'sideboard'` answer `400`; `quantity` above the copies still needed answers `409` and changes nothing; an unknown deck answers `404`; a valid pick answers `201` (door 2; route)
+**C211** - Door 2 at the route: `POST /api/decks/:deckId/replacements` with `quantity` omitted and `side` omitted moves every missing copy from the deck as today and stores `side = 'deck'`; `side: 'inventory'` moves inventory copies and stores `inventory`; `quantity` 0, -1, 1.5 or `side: 'sideboard'` answer `400`; `quantity` above the copies still needed answers `409` and changes nothing; an unknown deck answers `404`; a valid pick answers `201` (door 2; route) · done
 Proof: `api e2e src/replacements/__tests__/replacements.e2e-spec.ts -t "a pick takes a quantity and a side"`
 
-**C212** - Door 2 in the rules: `decideAdoption({..., quantity?, side?})` returns today's decision when both are omitted, moves exactly `quantity` copies when given (1 of 3 → 1), and moves from the inventory when `side` is `inventory` (door 2)
+**C212** - Door 2 in the rules: `decideAdoption({..., quantity?, side?})` returns today's decision when both are omitted, moves exactly `quantity` copies when given (1 of 3 → 1), and moves from the inventory when `side` is `inventory` (door 2) · done
 Proof: `api unit src/replacements/__tests__/adoption-rules.spec.ts -t "moves the quantity the caller gives from the side it names"`
 
-**C213** - Door 2 in the table: `card_replacement.side` is `varchar not null default 'deck'` with a check `IN ('deck', 'inventory')`; a row inserted before the migration reads `deck`; inserting `sideboard` fails with the check (door 2)
+**C213** - Door 2 in the table: `card_replacement.side` is `varchar not null default 'deck'` with a check `IN ('deck', 'inventory')`; a row inserted before the migration reads `deck`; inserting `sideboard` fails with the check (door 2) · done
 Proof: `api int src/database/migrations/__tests__/card-replacement-side.migration.int-spec.ts -t "adds side with deck as the default and refuses any other value"`
 
-**C214** - "Já tenho…" opens "Quantas você já tem?" with options 0 to the deck's quantity of that card and the current total owned selected; picking 3 sends `PUT /api/collection/owned` `{ deckId, cardIdentifier, ownedTotal: 3 }` and shows the toast "Pack Hunt (Amarelo): você tem 3 · Desfazer"; "Desfazer" restores the manual source to the `previousManualQuantity` the response returned (AC 129)
+**C214** - "Já tenho…" opens "Quantas você já tem?" with options 0 to the deck's quantity of that card and the current total owned selected; picking 3 sends `PUT /api/collection/owned` `{ deckId, cardIdentifier, ownedTotal: 3 }` and shows the toast "Pack Hunt (Amarelo): você tem 3 · Desfazer"; "Desfazer" restores the manual source to the `previousManualQuantity` the response returned (AC 129) · done
 Proof: `web unit src/components/missing-list/__tests__/OwnedStepper.spec.tsx -t "picking a number sets the owned total and Desfazer restores it"`
 
-**C215** - `PUT /api/collection/owned` with the library holding 1 and `ownedTotal: 3` sets the manual source to 2 in one statement and answers `200` `{ ownedTotal: 3, previousManualQuantity: 0, snapshot }`; two concurrent PUTs of 2 and 3 leave the total at 2 or 3, never 5 (AC 129; route)
+**C215** - `PUT /api/collection/owned` with the library holding 1 and `ownedTotal: 3` sets the manual source to 2 in one statement and answers `200` `{ ownedTotal: 3, previousManualQuantity: 0, snapshot }`; two concurrent PUTs of 2 and 3 leave the total at 2 or 3, never 5 (AC 129; route) · done
 Proof: `api e2e src/collection/__tests__/set-owned.e2e-spec.ts -t "sets the owned total through the manual source in one statement"`
 Proof: `api e2e src/collection/__tests__/set-owned.e2e-spec.ts -t "two concurrent sets end on one of the two values"`
 
-**C216** - `PUT /api/collection/owned` answers `400` for an `ownedTotal` above the deck's quantity of that card (4 for a 3-copy card), for a negative or non-integer value and for a missing field, and answers `404` for another user's deck, an unknown deck and a card not in the deck; each refusal leaves every source unchanged (AC 131; route)
+**C216** - `PUT /api/collection/owned` answers `400` for an `ownedTotal` above the deck's quantity of that card (4 for a 3-copy card), for a negative or non-integer value and for a missing field, and answers `404` for another user's deck, an unknown deck and a card not in the deck; each refusal leaves every source unchanged (AC 131; route) · done
 Proof: `api e2e src/collection/__tests__/set-owned.e2e-spec.ts -t "refuses a total above the deck's quantity and unknown targets"`
 
-**C217** - With 2 copies in the library, the stepper's options 0 and 1 are disabled and the stepper shows "Você tem 2 na sua biblioteca" (AC 130)
+**C217** - With 2 copies in the library, the stepper's options 0 and 1 are disabled and the stepper shows "Você tem 2 na sua biblioteca" (AC 130) · done
 Proof: `web unit src/components/missing-list/__tests__/OwnedStepper.spec.tsx -t "options below what other sources hold are disabled"`
 
-**C218** - "Copiar lista de compras" writes to the clipboard the `priced` rows only, in the document's shape: first line "Lista de compras · [CC] Brute do Caio (Rhinar) · Cúpula DT", one line per row such as "3x Pack Hunt (Vermelho) · R$ 0,20 cada" and "1x Alpha Rampage (Vermelho) · R$ 150,00 cada · foil promo", last line "Total: 43 cópias · R$ 452,28"; the toast reads "Lista copiada" (AC 132)
+**C218** - "Copiar lista de compras" writes to the clipboard the `priced` rows only, in the document's shape: first line "Lista de compras · [CC] Brute do Caio (Rhinar) · Cúpula DT", one line per row such as "3x Pack Hunt (Vermelho) · R$ 0,20 cada" and "1x Alpha Rampage (Vermelho) · R$ 150,00 cada · foil promo", last line "Total: 43 cópias · R$ 452,28"; the toast reads "Lista copiada" (AC 132) · done
 Proof: `web unit src/components/missing-list/__tests__/shoppingListText.spec.ts -t "builds the shopping list from the priced rows"`
 Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "copying the shopping list toasts Lista copiada"`
 
-**C219** - Phone arrangement of `r3-list-phone` and `r3-tenho-phone` at 390 px: summary at the top and sticky, then the chips, then the rows (image, name with pitch as a word, needed and unit price, line total, flags, stand-in line, "Já tenho…", "Comprar"), then a bottom bar with "Compartilhar a lista" as the primary action and "Copiar lista de compras" as the secondary; the "Já tenho…" stepper opens inside its row and the toast sits at the bottom; no horizontal scroll (AC 134)
+**C219** - Phone arrangement of `r3-list-phone` and `r3-tenho-phone` at 390 px: summary at the top and sticky, then the chips, then the rows (image, name with pitch as a word, needed and unit price, line total, flags, stand-in line, "Já tenho…", "Comprar"), then a bottom bar with "Compartilhar a lista" as the primary action and "Copiar lista de compras" as the secondary; the "Já tenho…" stepper opens inside its row and the toast sits at the bottom; no horizontal scroll (AC 134) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g "the phone list follows r3-list-phone"`
 
-**C220** - Desktop arrangement of `r3-list-desktop` at 1440 px: a summary bar on top with "Copiar lista de compras" and "Compartilhar a lista", the chips, a table with the columns "Carta", "Faltam", "Já tenho", "No lugar", "Preço cada", "Total", "Link" (the "Já tenho" cell a 0 to N stepper), a footer "19 cartas na loja · 43 cópias a comprar · R$ 452,28", then the sections "A loja não tem agora · 14 cópias" and "Fora do site · 2 cópias" (AC 134)
+**C220** - Desktop arrangement of `r3-list-desktop` at 1440 px: a summary bar on top with "Copiar lista de compras" and "Compartilhar a lista", the chips, a table with the columns "Carta", "Faltam", "Já tenho", "No lugar", "Preço cada", "Total", "Link" (the "Já tenho" cell a 0 to N stepper), a footer "19 cartas na loja · 43 cópias a comprar · R$ 452,28", then the sections "A loja não tem agora · 14 cópias" and "Fora do site · 2 cópias" (AC 134) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/missing-list-flow.spec.ts -g "the desktop list follows r3-list-desktop"`
 
-**C221** - A deck with inventory copies missing: each line carries `deckNeeded` and `inventoryNeeded` separately, the summary card and the list split the copies in words as S5's inventory copy defines, and inventory copies count in "Faltam" and in the shopping list (AC 134)
+**C221** - A deck with inventory copies missing: each line carries `deckNeeded` and `inventoryNeeded` separately, the summary card and the list split the copies in words as S5's inventory copy defines, and inventory copies count in "Faltam" and in the shopping list (AC 134) · done
 Proof: `api unit src/decks/__tests__/deck-missing.service.spec.ts -t "splits what is missing between the deck and the inventory"`
 Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "inventory copies are named apart"`
 
-**C222** - The missing list for that deck reads "Faltam 7 cópias de 4 cartas · 4 do deck, 3 do inventário", a row reads "faltam 2 · 2 do inventário", the filters "Todas", "Do deck", "Do inventário" are shown with none but "Todas" active, "Do inventário" leaves only rows with inventory copies, and the header total stays 7 under every filter (AC 34, AC 35)
+**C222** - The missing list for that deck reads "Faltam 7 cópias de 4 cartas · 4 do deck, 3 do inventário", a row reads "faltam 2 · 2 do inventário", the filters "Todas", "Do deck", "Do inventário" are shown with none but "Todas" active, "Do inventário" leaves only rows with inventory copies, and the header total stays 7 under every filter (AC 34, AC 35) · done
 Proof: `web unit src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "the missing list splits and filters by side"`
 
-**C223** - The shopping list for that deck shows the same split, "4 do deck, 3 do inventário" (AC 34; moved here from S5, because S17 rebuilds the shopping list)
+**C223** - The shopping list for that deck shows the same split, "4 do deck, 3 do inventário" (AC 34; moved here from S5, because S17 rebuilds the shopping list) · done
 Proof: `web unit src/components/deck-detail/__tests__/ShoppingPanel.spec.tsx -t "the shopping list splits deck and inventory"`
 
 ### S18 - The group ask · 35 files · 139 KB · ~51k

@@ -25,6 +25,7 @@ import { recommendations } from './recommendations';
 import { chat } from './chat';
 import { sharing } from './sharing';
 import { lists } from './lists';
+import { missingList } from './missingList';
 
 /**
  * EN-US catalog typed against TTranslationResources (typeof ptBR) — a missing
@@ -57,4 +58,5 @@ export const enUS: TTranslationResources = {
   chat,
   sharing,
   lists,
+  missingList,
 };
