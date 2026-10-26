@@ -176,6 +176,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: P3a: apps/web/src/components/missing-list/MissingListRow.tsx:156 (C219) (web e2e layout, fixtures)
 - last seen: 2026-10-26T17:17:55Z
 
+### L-037 - When a claim names a screen the player reaches through a route, add one browser proof that walks to it, because a component test renders the screen without the route tree and stays green while the page never mounts.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web routes` · harmful: 0
+- features: persona-rethink
+- evidence: C161 apps/web/tests/e2e/product-add-flow.spec.ts (web routes)
+- last seen: 2026-10-26T19:44:12Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

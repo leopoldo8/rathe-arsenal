@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 37,
+  "next_id": 38,
   "lessons": [
     {
       "id": "L-010",
@@ -490,6 +490,24 @@
       ],
       "created": "2026-10-26T17:17:55Z",
       "last_seen": "2026-10-26T17:17:55Z"
+    },
+    {
+      "id": "L-037",
+      "key": "ac_gap::when a claim names a screen the player reaches through a route add one browser proof that walks to it because a component test renders the screen without the route tree and stays green while the page never mounts",
+      "text": "When a claim names a screen the player reaches through a route, add one browser proof that walks to it, because a component test renders the screen without the route tree and stays green while the page never mounts.",
+      "signal": "ac_gap",
+      "scope": "web routes",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C161 apps/web/tests/e2e/product-add-flow.spec.ts (web routes)"
+      ],
+      "created": "2026-10-26T19:44:12Z",
+      "last_seen": "2026-10-26T19:44:12Z"
     }
   ]
 }
