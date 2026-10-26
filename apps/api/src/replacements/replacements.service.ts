@@ -97,7 +97,7 @@ export class ReplacementsService {
         throw replacementConflict('REPLACEMENT_ILLEGAL');
       }
 
-      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
       const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
       const readiness = await this.substitutionService.computeReadiness(deckId, userId, manager);
       const side: TReplacementSide = dto.side ?? 'deck';
@@ -159,7 +159,7 @@ export class ReplacementsService {
   async useSuggestions(userId: string, deckId: number): Promise<ISuggestedUsesResponse> {
     const outcome = await this.dataSource.transaction(async (manager) => {
       const deck = await this.lockDeck(manager, deckId, userId);
-      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
       const activeReplacements = await this.replacementsQueryService.loadActive(deckId, manager);
       const readiness = await this.substitutionService.computeReadiness(deckId, userId, manager);
       const plan = planSuggestedUses({
@@ -175,7 +175,7 @@ export class ReplacementsService {
 
       const saved: CardReplacementEntity[] = [];
       for (const use of plan.uses) {
-        const current = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+        const current = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
         await this.moveCopies(manager, current, {
           trackedDeckId: deckId,
           slot: use.slot,
@@ -229,7 +229,7 @@ export class ReplacementsService {
         .getOne();
       if (!recommendation) throw new NotFoundException('Recommendation not found');
       const recommended = this.requireCard(recommendation.cardIdentifier);
-      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId } });
+      const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
       const decision = decideAdoption({
         recommended,
         cut,
@@ -308,7 +308,7 @@ export class ReplacementsService {
     const original = this.findCard(swap.originalCardIdentifier);
     const replacement = this.findCard(swap.replacementCardIdentifier);
     if (!original || !replacement) return { kind: 'stale', reason: 'CARD_UNKNOWN' };
-    const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deck.id } });
+    const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: deck.id }, order: { id: 'ASC' } });
     const decision = decideAdoption({
       recommended: replacement,
       cut: original,
@@ -360,7 +360,7 @@ export class ReplacementsService {
       if (record.status !== 'active') throw replacementConflict('REPLACEMENT_NOT_ACTIVE');
 
       if (action === 'revert') {
-        const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: record.trackedDeckId } });
+        const deckCards = await manager.find(DeckCardEntity, { where: { trackedDeckId: record.trackedDeckId }, order: { id: 'ASC' } });
         await this.moveCopies(manager, deckCards, {
           trackedDeckId: record.trackedDeckId,
           slot: record.slot,

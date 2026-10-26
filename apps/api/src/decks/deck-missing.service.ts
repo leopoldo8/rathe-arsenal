@@ -153,7 +153,7 @@ export class DeckMissingService {
    * which only read what is stored and never queue a lookup.
    */
   async missingFor(userId: string, deckId: number, lookups: TLookupMode = 'queue'): Promise<IDeckMissingResponse> {
-    const rows = await this.deckCardRepo.find({ where: { trackedDeckId: deckId } });
+    const rows = await this.deckCardRepo.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } });
     const owned = await this.collectionRead.loadOwned(userId);
     const active = await this.replacements.loadActive(deckId);
     const protectedCopies = await this.replacements.loadProtectedCopies(deckId);

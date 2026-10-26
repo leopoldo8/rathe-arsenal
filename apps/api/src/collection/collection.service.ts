@@ -83,6 +83,7 @@ export class CollectionService {
     // sections as readiness is recomputed.
     const deckCards = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const deckCard = deckCards.find(
@@ -167,7 +168,7 @@ export class CollectionService {
    */
   async setOwned(userId: string, deckId: number, cardIdentifier: string, ownedTotal: number): Promise<ISetOwnedResponse> {
     await this.authzService.assertOwnsTrackedDeck(userId, deckId);
-    const deckCards = await this.deckCardRepo.find({ where: { trackedDeckId: deckId, cardIdentifier } });
+    const deckCards = await this.deckCardRepo.find({ where: { trackedDeckId: deckId, cardIdentifier }, order: { id: 'ASC' } });
     if (deckCards.length === 0) throw new NotFoundException(`Card "${cardIdentifier}" is not part of this deck`);
     const deckQuantity = deckCards.reduce((sum, row) => sum + row.quantity + row.inventoryQuantity, 0);
     if (ownedTotal > deckQuantity) {
@@ -209,7 +210,7 @@ export class CollectionService {
     );
     const previousManualQuantity = written.previousManualQuantity as number;
 
-    const snapshot = await this.recomputeSnapshot(userId, deckId, await this.deckCardRepo.find({ where: { trackedDeckId: deckId } }));
+    const snapshot = await this.recomputeSnapshot(userId, deckId, await this.deckCardRepo.find({ where: { trackedDeckId: deckId }, order: { id: 'ASC' } }));
     this.logger.log('Owned total set', { userId, deckId, cardIdentifier, ownedTotal });
     return { ownedTotal, previousManualQuantity, snapshot };
   }

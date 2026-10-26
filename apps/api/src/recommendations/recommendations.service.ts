@@ -112,7 +112,7 @@ export class RecommendationsService {
   async read(userId: string, trackedDeckId: number, locale: TLocale = 'en-US'): Promise<IRecommendationsResponse> {
     const [deck, deckCards, runs, excluded, latestFinished, active] = await Promise.all([
       this.dataSource.getRepository(TrackedDeckEntity).findOneOrFail({ where: { id: trackedDeckId, userId, deletedAt: IsNull() } }),
-      this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId } }),
+      this.dataSource.getRepository(DeckCardEntity).find({ where: { trackedDeckId }, order: { id: 'ASC' } }),
       this.query.latestDoneRuns([trackedDeckId]),
       this.query.excludedCards([trackedDeckId]),
       this.dataSource.getRepository(RecommendationRunEntity).findOne({

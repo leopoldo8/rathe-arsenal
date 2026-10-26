@@ -253,6 +253,7 @@ export class DecksService {
     {
       const allDeckCards = await this.deckCardRepo.find({
         where: { trackedDeckId: In(decks.map((d) => d.id)) },
+        order: { id: 'ASC' },
       });
       for (const row of allDeckCards) {
         const list = deckCardsByDeckId.get(row.trackedDeckId) ?? [];
@@ -539,6 +540,7 @@ export class DecksService {
 
     const deckCards = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const totalCards = deckCards.reduce((sum, c) => sum + c.quantity, 0);
@@ -1011,6 +1013,7 @@ export class DecksService {
         // just-inserted deck_card rows.
         const freshCards = await manager.find(DeckCardEntity, {
           where: { trackedDeckId: deckId },
+          order: { id: 'ASC' },
         });
 
         const inventory = await this.collectionReadService.loadOwned(userId);
@@ -1075,6 +1078,7 @@ export class DecksService {
       const inventory = await this.collectionReadService.loadOwned(userId);
       const freshCards = await this.deckCardRepo.find({
         where: { trackedDeckId: deckId },
+        order: { id: 'ASC' },
       });
 
       const deckInput = {
@@ -1130,6 +1134,7 @@ export class DecksService {
     // -------------------------------------------------------------------------
     const freshCardsForLegality = await this.deckCardRepo.find({
       where: { trackedDeckId: deckId },
+      order: { id: 'ASC' },
     });
 
     const deckInputForLegality = {

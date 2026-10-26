@@ -134,6 +134,7 @@ export class SubstitutionService {
 
     const deckCardRows = await deckCards.find({
       where: { trackedDeckId },
+      order: { id: 'ASC' },
     });
 
     const protectedCopies = withClaim(await this.replacementsQueryService.loadProtectedCopies(trackedDeckId, manager), instead?.claim);
