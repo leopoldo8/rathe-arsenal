@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 31,
+  "next_id": 36,
   "lessons": [
     {
       "id": "L-010",
@@ -382,6 +382,96 @@
       ],
       "created": "2026-10-12T04:32:55Z",
       "last_seen": "2026-10-12T04:32:55Z"
+    },
+    {
+      "id": "L-031",
+      "key": "surviving_mutant::assert a pinned element while the page is mid scroll not only at the document end where a static element also fits the viewport",
+      "text": "Assert a pinned element while the page is mid-scroll, not only at the document end where a static element also fits the viewport",
+      "signal": "surviving_mutant",
+      "scope": "web-e2e",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "E3 C36 (web-e2e)"
+      ],
+      "created": "2026-10-26T15:48:47Z",
+      "last_seen": "2026-10-26T15:48:47Z"
+    },
+    {
+      "id": "L-032",
+      "key": "surviving_mutant::assert the accessible name of a dialog in every proof that claims the dialog not only the text inside it",
+      "text": "Assert the accessible name of a dialog in every proof that claims the dialog, not only the text inside it",
+      "signal": "surviving_mutant",
+      "scope": "web-e2e",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "E5 C425 (web-e2e)"
+      ],
+      "created": "2026-10-26T15:48:47Z",
+      "last_seen": "2026-10-26T15:48:47Z"
+    },
+    {
+      "id": "L-033",
+      "key": "spec_precision_gap::match each element of an ordered list by its own node not by indexof from the previous match so a substring of the preceding text cannot satisfy it",
+      "text": "Match each element of an ordered list by its own node, not by indexOf from the previous match, so a substring of the preceding text cannot satisfy it",
+      "signal": "spec_precision_gap",
+      "scope": "web-unit",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C48 C118 (web-unit)"
+      ],
+      "created": "2026-10-26T15:48:48Z",
+      "last_seen": "2026-10-26T15:48:48Z"
+    },
+    {
+      "id": "L-034",
+      "key": "gate_fail::a test that compares the application clock with a database timestamp must pass in the full suite run not only alone",
+      "text": "A test that compares the application clock with a database timestamp must pass in the full suite run, not only alone",
+      "signal": "gate_fail",
+      "scope": "api-e2e",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C452 share-report-queries.e2e-spec.ts (api-e2e)"
+      ],
+      "created": "2026-10-26T15:48:48Z",
+      "last_seen": "2026-10-26T15:48:48Z"
+    },
+    {
+      "id": "L-035",
+      "key": "ac_gap::assert the queued lookups and the no price lines when a budget claim names them not only the allow flag and the warning count",
+      "text": "Assert the queued lookups and the no_price lines when a budget claim names them, not only the allow flag and the warning count",
+      "signal": "ac_gap",
+      "scope": "stores",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C195 (stores)"
+      ],
+      "created": "2026-10-26T15:48:48Z",
+      "last_seen": "2026-10-26T15:48:48Z"
     }
   ]
 }

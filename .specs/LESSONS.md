@@ -140,6 +140,36 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C52 / card-replacement.entity.ts:40 (round 2) (apps/web ui checks)
 - last seen: 2026-10-12T04:32:55Z
 
+### L-031 - Assert a pinned element while the page is mid-scroll, not only at the document end where a static element also fits the viewport
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: E3 C36 (web-e2e)
+- last seen: 2026-10-26T15:48:47Z
+
+### L-032 - Assert the accessible name of a dialog in every proof that claims the dialog, not only the text inside it
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: E5 C425 (web-e2e)
+- last seen: 2026-10-26T15:48:47Z
+
+### L-033 - Match each element of an ordered list by its own node, not by indexOf from the previous match, so a substring of the preceding text cannot satisfy it
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `web-unit` · harmful: 0
+- features: persona-rethink
+- evidence: C48 C118 (web-unit)
+- last seen: 2026-10-26T15:48:48Z
+
+### L-034 - A test that compares the application clock with a database timestamp must pass in the full suite run, not only alone
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `api-e2e` · harmful: 0
+- features: persona-rethink
+- evidence: C452 share-report-queries.e2e-spec.ts (api-e2e)
+- last seen: 2026-10-26T15:48:48Z
+
+### L-035 - Assert the queued lookups and the no_price lines when a budget claim names them, not only the allow flag and the warning count
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `stores` · harmful: 0
+- features: persona-rethink
+- evidence: C195 (stores)
+- last seen: 2026-10-26T15:48:48Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
