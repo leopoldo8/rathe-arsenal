@@ -1224,31 +1224,31 @@ Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign an
 
 ### S28 - Asking the Tutor from the deck page · 7 files · 26 KB · ~11k
 
-**C335** - The Tutor tile's first question follows the deck's state, one case per row:
+**C335** - The Tutor tile's first question follows the deck's state, one case per row: · done
 - A Blitz deck with a rule problem reads "Como deixo este deck válido no Blitz?".
 - A Blitz deck at 31 of 40 with no rule problem reads "Quais cartas coloco para chegar a 40?".
 - A deck with neither reads "Como outros jogam o Rhinar, Reckless Rampage nos torneios?" (AC 210)
 
 Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t "the first question follows the deck's state"`
 
-**C336** - The tile shows its questions only with chat access: with `chatAccess: false`, the deck page shows no Tutor tile (AC 210, AC 211)
+**C336** - The tile shows its questions only with chat access: with `chatAccess: false`, the deck page shows no Tutor tile (AC 210, AC 211) · done
 Proof: `web unit src/components/deck-detail/__tests__/RecommendationsRail.spec.tsx -t "the Tutor tile follows chat access"`
 
-**C337** - The tile's second and third questions read "Que carta deste deck vale trocar?" and "O que ainda impede este deck de ficar pronto?". "O que mais falta para ficar pronto?" appears in no pt-BR locale value (AC 213)
+**C337** - The tile's second and third questions read "Que carta deste deck vale trocar?" and "O que ainda impede este deck de ficar pronto?". "O que mais falta para ficar pronto?" appears in no pt-BR locale value (AC 213) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t "the tile's other two questions"`
 
-**C338** - The checklist sheet is drawn from the `a2-deck-ask-phone` deck: a Blitz deck at 31 of 40 with Pack Hunt (Vermelho) at 2.
+**C338** - The checklist sheet is drawn from the `a2-deck-ask-phone` deck: a Blitz deck at 31 of 40 with Pack Hunt (Vermelho) at 2. · done
 - With `chatAccess: true`, the red copies line carries "Perguntar ao Tutor o que pôr no lugar", and the size line carries "Perguntar ao Tutor quais 10 cartas colocar", whose 10 is the number in the "Para fechar" line.
 - With `chatAccess: false`, the sheet has no "Perguntar ao Tutor" button (AC 211)
 
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "each red line carries its Tutor question and the size line counts as Para fechar"`
 
-**C339** - Tapping a tile question or a checklist question calls the conversation start with `{ text: <that question>, trackedDeckId: <deck id> }`, then navigates to `/chat/<id>` (AC 212)
+**C339** - Tapping a tile question or a checklist question calls the conversation start with `{ text: <that question>, trackedDeckId: <deck id> }`, then navigates to `/chat/<id>` (AC 212) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t "questions start a bound conversation"`
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "a checklist question starts a bound conversation"`
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "a checklist question opens a bound chat with the question sent"` (`/api/chat/*` and `/api/auth/me` stubbed with `page.route`)
 
-**C340** - The tile follows `b2-deck-ask-phone`, in DOM order:
+**C340** - The tile follows `b2-deck-ask-phone`, in DOM order: · done
 1. "Pergunte ao Tutor";
 2. "Como deixo este deck válido no Blitz?";
 3. "Que carta deste deck vale trocar?";

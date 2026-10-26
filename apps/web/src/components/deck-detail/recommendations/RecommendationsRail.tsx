@@ -16,6 +16,7 @@ import { localizeApiError } from '../../card-scanner/localize-api-error';
 import { CardLightbox } from '../../card-art/CardLightbox';
 import { useToast } from '../../ui/Toast/useToast';
 import { useAuth } from '../../../auth/useAuth';
+import type { IDeckLegality } from '../../../api/decks';
 import { DeckTutorTile } from './DeckTutorTile';
 import { CandidatePile } from './CandidatePile';
 import { imageSources, type IRecommendationDeckCard } from './card-naming';
@@ -31,6 +32,9 @@ interface IRecommendationsRailProps {
   readonly deckId: number;
   readonly deckCards: readonly IRecommendationDeckCard[];
   readonly heroName: string;
+  /** The deck's verdict and format, so the Tutor tile asks the question that fits the deck's state. */
+  readonly legality?: Pick<IDeckLegality, 'details'> | null | undefined;
+  readonly format?: string;
 }
 
 type TPhase =
@@ -47,7 +51,7 @@ function isCutGone(error: unknown): boolean {
   }
 }
 
-export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommendationsRailProps): React.ReactElement {
+export function RecommendationsRail({ deckId, deckCards, heroName, legality, format }: IRecommendationsRailProps): React.ReactElement {
   const { t } = useTranslation();
   const { show } = useToast();
   const { user } = useAuth();
@@ -221,7 +225,7 @@ export function RecommendationsRail({ deckId, deckCards, heroName }: IRecommenda
 
       {(chatAccess || showPile || listed.length > 0) && (
         <ul ref={railRef} className={styles.rail} aria-label={t('recommendations.listAria')} data-testid="recommendations-rail">
-          {chatAccess && <DeckTutorTile deckId={deckId} heroName={heroName} />}
+          {chatAccess && <DeckTutorTile deckId={deckId} heroName={heroName} legality={legality} {...(format === undefined ? {} : { format })} />}
           {showPile && (
             <CandidatePile
               ref={pileRef}

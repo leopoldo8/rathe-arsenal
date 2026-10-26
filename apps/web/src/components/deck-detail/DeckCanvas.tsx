@@ -79,6 +79,8 @@ interface IDeckCanvasProps {
   readonly onRemoveCard?: (cardIdentifier: string, slot: TDraftSlot) => void;
   readonly onRemoveIllegalCards?: (ids: ReadonlySet<string>) => void;
   readonly onSetHero?: (heroIdentifier: string | null) => void;
+  /** The deck's id when the player has the Tutor, so the checklist can ask it. */
+  readonly tutorDeckId?: number | undefined;
 }
 
 export function DeckCanvas(props: IDeckCanvasProps): React.ReactElement {
@@ -95,6 +97,7 @@ export function DeckCanvas(props: IDeckCanvasProps): React.ReactElement {
       onRemoveCard={props.onRemoveCard}
       onRemoveIllegalCards={props.onRemoveIllegalCards}
       onSetHero={props.onSetHero}
+      tutorDeckId={props.tutorDeckId}
     />
   );
 }
@@ -115,6 +118,7 @@ interface IEditBodyProps {
   readonly onRemoveCard: ((cardIdentifier: string, slot: TDraftSlot) => void) | undefined;
   readonly onRemoveIllegalCards: ((ids: ReadonlySet<string>) => void) | undefined;
   readonly onSetHero: ((heroIdentifier: string | null) => void) | undefined;
+  readonly tutorDeckId: number | undefined;
 }
 
 const LOADOUT_SLOTS: readonly TSlotGroup[] = ['hero', 'weapon', 'equipment'];
@@ -138,6 +142,7 @@ function EditBody({
   onRemoveCard,
   onRemoveIllegalCards,
   onSetHero,
+  tutorDeckId,
 }: IEditBodyProps): React.ReactElement {
   const { t } = useTranslation();
   const autocompleteRef = React.useRef<HTMLInputElement>(null);
@@ -322,6 +327,7 @@ function EditBody({
             open={sheetOpen}
             onClose={() => setSheetOpen(false)}
             onGoToCard={focusCardRow}
+            tutorDeckId={tutorDeckId}
           />
         </>
       )}

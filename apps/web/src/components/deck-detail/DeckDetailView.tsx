@@ -118,7 +118,7 @@ export function DeckDetailView({
         cards={savedCards}
       />
       {!hasHeroOutsideFormat(deck.legality.details) && !showsRuleChange && <DeckCauseLine legality={deck.legality} />}
-      <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} />
+      <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} legality={deck.legality} format={deck.format} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && <MissingSummaryCard deckId={deck.id} />}
       <DeckList

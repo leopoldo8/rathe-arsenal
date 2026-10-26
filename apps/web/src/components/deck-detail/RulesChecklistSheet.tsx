@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { TutorMark } from '../chat/TutorMark';
+import { useAskTutor } from '../chat/useAskTutor';
 import type { IRulesChecklist } from './rulesChecklistModel';
 import styles from './RulesChecklistSheet.module.css';
 
@@ -32,9 +34,28 @@ interface IRulesChecklistSheetProps {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly onGoToCard: (cardIdentifier: string) => void;
+  /** The deck's id when the player has the Tutor: each line that offers a question shows it. Absent, the sheet shows none. */
+  readonly tutorDeckId?: number | undefined;
 }
 
-export function RulesChecklistSheet({ checklist, open, onClose, onGoToCard }: IRulesChecklistSheetProps): React.ReactElement | null {
+function TutorQuestion({ deckId, question }: { readonly deckId: number; readonly question: string }): React.ReactElement {
+  const { ask, pending, error } = useAskTutor(deckId);
+  return (
+    <>
+      <button type="button" className={styles.tutorAsk} disabled={pending} onClick={() => ask(question)}>
+        <TutorMark size={14} />
+        <span>{question}</span>
+      </button>
+      {error !== null && (
+        <span role="alert" className={styles.tutorError}>
+          {error}
+        </span>
+      )}
+    </>
+  );
+}
+
+export function RulesChecklistSheet({ checklist, open, onClose, onGoToCard, tutorDeckId }: IRulesChecklistSheetProps): React.ReactElement | null {
   const { t } = useTranslation();
   if (!open) return null;
 
@@ -74,6 +95,7 @@ export function RulesChecklistSheet({ checklist, open, onClose, onGoToCard }: IR
                   </>
                 )}
                 {line.hint !== undefined && <span className={styles.hint}>{line.hint}</span>}
+                {tutorDeckId !== undefined && line.tutorQuestion !== undefined && <TutorQuestion deckId={tutorDeckId} question={line.tutorQuestion} />}
               </span>
             </li>
           ))}

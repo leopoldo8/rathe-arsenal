@@ -90,6 +90,8 @@ export const deckDetail = {
   rulesSheetHandleAria: 'Fechar as regras do deck',
   rulesSheetClose: 'Fechar',
   goToCard: 'Ir para a carta',
+  tutorAskReplace: 'Perguntar ao Tutor o que pôr no lugar',
+  tutorAskAdd: 'Perguntar ao Tutor quais {{count}} cartas colocar',
   ruleHeroOk: 'Herói: {{hero}} joga {{format}}',
   ruleCardsOk: 'Todas as cartas são permitidas no {{format}}',
   rulePool: 'Cartas que você leva: {{count}} de {{limit}}',

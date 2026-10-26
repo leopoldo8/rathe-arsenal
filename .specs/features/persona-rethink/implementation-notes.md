@@ -2,6 +2,14 @@
 
 ## Deviations
 
+### S28 (batch 17)
+
+- The tile's first question reads the saved verdict (`deck.legality`) that the deck page already has: a detail that is not a size problem asks "Como deixo este deck válido no {{format}}?", a size detail whose count is under its limit asks "Quais cartas coloco para chegar a {{limit}}?" (Blitz's size detail is `mainboard_not_exact`, so both size codes count), else the hero question. The format and the target are the deck's own, so a Classic Constructed deck reads "no Classic Constructed" and "chegar a 60" (derivation note 4 says only Blitz is asserted).
+- `tile.readyMissing` keeps its key and takes the new text "O que ainda impede este deck de ficar pronto?" (en-US: "What still keeps this deck from being ready?"). Tests that said the old text changed with it: `DeckTutorTile.spec.tsx` ("the tile offers questions about this deck", "questions start a bound conversation"), the eval scenario `tile-missing-*`, and `chat-eval-scenarios.spec.ts` reads the key.
+- The checklist's Tutor question is the button's own text, and a tap sends that text (C339's plain reading). A copy line and a card line both say "Perguntar ao Tutor o que pôr no lugar", so a deck with two red lines sends the same text twice; the Tutor reads the deck's whole verdict with `get_deck`. The size line's number is the count "Para fechar" already adds (`rulesChecklistModel.ts` now computes the cards that leave the deck once, for the close steps and for the question).
+- The sheet shows the questions only when the page passes `tutorDeckId`, which the deck route does for a player with chat access; with none the sheet is what S4 built, so `RulesChecklistSheet.spec.tsx` "matches r3-checklist-phone" is unchanged. `useAskTutor` is the one place that starts a bound conversation (the tile and the sheet both use it).
+- The tile keeps its place at the head of the recommendations rail (a 268 px tile in the rail, as `ai-chat-screens` built it); `b2-deck-ask-phone` draws it as a full-width card above the list. The order of its parts is the drawn one.
+
 ### S27 (batch 17)
 
 - `propose_swap` still accepts a call with no `quantity` or `side` (the declaration marks both required for the model): an absent `quantity` is every copy the limit allows and an absent `side` is the deck, as before, so older scripted calls and any proposal stored before door 13 keep working. A `quantity` or `side` that is present and wrong answers `ok: false` with `INVALID_ARGUMENTS` (C323); the payload always stores the resolved `quantity` and `side`.
@@ -677,3 +685,5 @@
   - Copy of mine, no check or mockup gives it, on the swap card: the deck-side outgoing text ", a cópia do deck" / ", as cópias do deck"; the plural button "Trocar N cópias"; "você tem 1 livre"; "Fica N no deck." and "Não fica nenhuma no deck."; "Depois da troca: não falta nenhuma cópia ... (era N)" and the singular "falta 1 cópia"; the kind words of the comparison sentence ("uma ação", "uma reação de ataque", "uma reação de defesa", "um instantâneo", "uma arma", "um equipamento", "uma carta"); en-US for all of it.
   - "Ver no deck" links to the deck page only; the drawn "row marked" for the new card is not built (the doc marks it "not drawn").
   - A swap stored before door 13 has no quantity, side or effect: its card shows the deck's copies of the outgoing card as the quantity, assumes the deck side, and leaves the "Depois da troca" line out.
+  - S28, copy of mine, no check or mockup gives it: the questions on the checklist lines other than copies and cards (hero, card pool) are not offered; a card line (a card the format bans) offers "Perguntar ao Tutor o que pôr no lugar" like a copy line; the tile for a deck short of cards in a format other than Blitz reads "chegar a N" with that format's size.
+  - S28, `b2-deck-ask-phone` draws the Tutor tile as a full-width card; the tile stays the rail tile it was.

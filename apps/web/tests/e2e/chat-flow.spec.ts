@@ -7,6 +7,7 @@ import { test, expect } from '@playwright/test';
 import { BASE_URL, pinPortuguese } from './helpers';
 import { CONVERSATION_ID, stubChat } from '../support/chat-stubs';
 import { loadFixture } from '../support/fixture';
+import { openCompositionEditor } from '../support/pages';
 
 const SIDEBAR_WIDTH_PX = 300;
 const FOOTER_MAX_PX = 48;
@@ -83,5 +84,31 @@ test.describe('Tutor chat', () => {
     const chip = (await open.getByTestId('deck-chip').boundingBox())!;
     const title = (await open.getByRole('heading', { level: 1 }).boundingBox())!;
     expect(chip.y).toBeGreaterThanOrEqual(title.y + title.height - SUBPIXEL_PX);
+  });
+
+  test('a checklist question opens a bound chat with the question sent', async ({ page }) => {
+    const { readyDeckId } = loadFixture();
+    await pinPortuguese(page);
+    await stubChat(page, true);
+    const started: unknown[] = [];
+    const sent: unknown[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/chat/conversations')) started.push(request.postDataJSON());
+    });
+    await page.route(`**/api/chat/conversations/${CONVERSATION_ID}/messages`, (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ userMessageId: 'm-1', assistantMessageId: 'm-2' }) });
+    });
+
+    await openCompositionEditor(page, readyDeckId);
+    await page.getByTestId('rules-bar').click();
+    const ask = page.getByTestId('rules-checklist-sheet').getByRole('button', { name: /^Perguntar ao Tutor/ }).first();
+    await expect(ask).toBeVisible();
+    const question = (await ask.innerText()).trim();
+    await ask.click();
+
+    await expect(page).toHaveURL(new RegExp(`/chat/${CONVERSATION_ID}$`));
+    expect(started).toEqual([{ trackedDeckId: readyDeckId }]);
+    expect(sent).toEqual([{ text: question }]);
   });
 });

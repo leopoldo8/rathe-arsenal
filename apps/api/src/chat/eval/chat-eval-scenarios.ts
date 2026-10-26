@@ -91,7 +91,7 @@ function tileQuestions(deck: (typeof EVAL_DECKS)[number]): IEvalScenario[] {
       check: ownershipLookedUp,
     },
     { id: `tile-swap-${deck.key}`, deck: deck.key, question: 'Que carta deste deck vale trocar?', locale: 'pt-BR' },
-    { id: `tile-missing-${deck.key}`, deck: deck.key, question: 'O que mais falta para ficar pronto?', locale: 'pt-BR' },
+    { id: `tile-missing-${deck.key}`, deck: deck.key, question: 'O que ainda impede este deck de ficar pronto?', locale: 'pt-BR' },
   ];
 }
 

@@ -18,6 +18,8 @@ export interface IChecklistLine {
   readonly text: string;
   readonly hint?: string;
   readonly cardIdentifier?: string;
+  /** The question the line offers the Tutor (shown only to a player who has it); the button reads it and a tap sends it. */
+  readonly tutorQuestion?: string;
 }
 
 export interface IRulesChecklist {
@@ -96,6 +98,7 @@ export function buildRulesChecklist({ result, draft, heroName, t }: IChecklistIn
             key: `card-${cardIdentifier ?? detail.code}`,
             tone: 'problem',
             text: localized(detail),
+            tutorQuestion: t('deckDetail.tutorAskReplace'),
             ...(cardIdentifier === undefined ? {} : { cardIdentifier }),
           };
         })),
@@ -115,14 +118,18 @@ export function buildRulesChecklist({ result, draft, heroName, t }: IChecklistIn
             tone: 'problem',
             text: copiesLine(detail, named(detail.params.cardIdentifier, detail.params.card), t),
             cardIdentifier: detail.params.cardIdentifier,
+            tutorQuestion: t('deckDetail.tutorAskReplace'),
           }),
         )),
     { key: 'size', tone: 'neutral', text: sizeLine({ deckSize, target, exact }, t) },
   ];
 
-  const closeSteps = buildCloseSteps({ draft, deckSize, target, exact, heroProblem: heroDetail !== undefined, poolDetail, copyDetails, cardDetails, named, t });
+  const leavingTheDeck = cardsLeavingTheDeck(draft, cardDetails, copyDetails);
+  const closeSteps = buildCloseSteps({ deckSize, target, exact, leavingTheDeck, heroProblem: heroDetail !== undefined, poolDetail, copyDetails, cardDetails, named, t });
+  // The Tutor's size question counts the cards "Para fechar" adds: the same number, not a second count.
+  const cardsToAdd = deckSize - leavingTheDeck < target ? target - (deckSize - leavingTheDeck) : 0;
   return {
-    lines,
+    lines: lines.map((line) => (line.key === 'size' && cardsToAdd > 0 ? { ...line, tutorQuestion: t('deckDetail.tutorAskAdd', { count: cardsToAdd }) } : line)),
     deckSizeText: deckSizeText({ deckSize, target, exact }, t),
     closeSteps,
     problemCount,
@@ -164,7 +171,7 @@ export function barText({ deckSize, target, exact, problemCount }: ISize & { rea
 }
 
 interface ICloseInput extends ISize {
-  readonly draft: ICompositionDraft;
+  readonly leavingTheDeck: number;
   readonly heroProblem: boolean;
   readonly poolDetail: TLegalityReasonDetail | undefined;
   readonly copyDetails: readonly TCopyDetail[];
@@ -173,21 +180,28 @@ interface ICloseInput extends ISize {
   readonly t: TFunction;
 }
 
+/** The mainboard copies the close steps take out: the cards that are not allowed and the copies over a limit. */
+function cardsLeavingTheDeck(draft: ICompositionDraft, cardDetails: readonly TLegalityReasonDetail[], copyDetails: readonly TCopyDetail[]): number {
+  const fromCards = cardDetails.reduce((sum, detail) => sum + sumQuantity(draft, (slot) => slot === 'mainboard', cardIdentifierOf(detail)), 0);
+  const fromCopies = copyDetails.reduce((sum, detail) => {
+    const extra = detail.params.count - detail.params.limit;
+    return sum + Math.min(extra, sumQuantity(draft, (slot) => slot === 'mainboard', detail.params.cardIdentifier));
+  }, 0);
+  return fromCards + fromCopies;
+}
+
 function buildCloseSteps(input: ICloseInput): string | null {
-  const { draft, deckSize, target, exact, heroProblem, poolDetail, copyDetails, cardDetails, named, t } = input;
+  const { deckSize, target, exact, leavingTheDeck, heroProblem, poolDetail, copyDetails, cardDetails, named, t } = input;
   const steps: string[] = [];
-  let leavingTheDeck = 0;
 
   if (heroProblem) steps.push(t('deckDetail.closeChangeHero'));
   for (const detail of cardDetails) {
     const cardIdentifier = cardIdentifierOf(detail);
     steps.push(t('deckDetail.closeTakeOut', { card: named(cardIdentifier, String((detail.params as { card?: string }).card ?? '')) }));
-    leavingTheDeck += sumQuantity(draft, (slot) => slot === 'mainboard', cardIdentifier);
   }
   for (const detail of copyDetails) {
     const extra = detail.params.count - detail.params.limit;
     steps.push(t('deckDetail.closeTake', { count: extra, card: named(detail.params.cardIdentifier, detail.params.card) }));
-    leavingTheDeck += Math.min(extra, sumQuantity(draft, (slot) => slot === 'mainboard', detail.params.cardIdentifier));
   }
   if (poolDetail && poolDetail.code === 'card_pool_too_large') {
     steps.push(t('deckDetail.closeTakePool', { count: poolDetail.params.count - poolDetail.params.limit }));

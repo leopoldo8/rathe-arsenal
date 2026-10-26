@@ -1,7 +1,16 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  const { mockApiFetch } = await import('../../chat/__tests__/chat-test-mocks');
+  return { ...actual, useApiClient: () => mockApiFetch };
+});
+vi.mock('@tanstack/react-router', async () => (await import('../../chat/__tests__/chat-test-mocks')).routerMock);
+
+import { callsTo, mockApiFetch, mockNavigate, navigatedTo, renderWithClient, serveApi } from '../../chat/__tests__/chat-test-utils';
 import i18n from '../../../i18n';
 import { buildRulesChecklist, type IRulesChecklist } from '../rulesChecklistModel';
 import { RulesBar, RulesChecklistSheet } from '../RulesChecklistSheet';
@@ -22,6 +31,23 @@ function renderSheet(checklist: IRulesChecklist, handlers: { onClose?: () => voi
     <RulesChecklistSheet checklist={checklist} open onClose={handlers.onClose ?? vi.fn()} onGoToCard={handlers.onGoToCard ?? vi.fn()} />,
   );
 }
+
+/** The sheet of a deck whose owner has the Tutor: `tutorDeckId` is what the deck page passes with chat access. */
+function renderSheetWithTutor(checklist: IRulesChecklist, tutorDeckId: number | null) {
+  serveApi({
+    'POST /chat/conversations': () => ({ id: 'c-1' }),
+    'POST /chat/conversations/c-1/messages': () => ({ userMessageId: 'm-1', assistantMessageId: 'm-2' }),
+    'GET /chat/conversations': () => [],
+  });
+  return renderWithClient(
+    <RulesChecklistSheet checklist={checklist} open onClose={vi.fn()} onGoToCard={vi.fn()} {...(tutorDeckId === null ? {} : { tutorDeckId })} />,
+  );
+}
+
+beforeEach(() => {
+  mockApiFetch.mockReset();
+  mockNavigate.mockReset();
+});
 
 describe('RulesBar', () => {
   it('the bar counts cards and rule problems', () => {
@@ -121,5 +147,62 @@ describe('RulesChecklistSheet', () => {
     render(<RulesChecklistSheet checklist={checklistOf(blitzDraft({ deckCards: 31, packHuntCopies: 2 }))} open={false} onClose={vi.fn()} onGoToCard={vi.fn()} />);
 
     expect(screen.queryByTestId('rules-checklist-sheet')).not.toBeInTheDocument();
+  });
+
+  it('each red line carries its Tutor question and the size line counts as Para fechar', () => {
+    const checklist = checklistOf(blitzDraft({ deckCards: 31, packHuntCopies: 2 }));
+    const view = renderSheetWithTutor(checklist, 7);
+
+    const items = screen.getAllByRole('listitem');
+    const copies = items.find((item) => item.getAttribute('data-tone') === 'problem')!;
+    const size = items.find((item) => item.getAttribute('data-tone') === 'neutral')!;
+    expect(within(copies).getByRole('button', { name: 'Perguntar ao Tutor o que pôr no lugar' })).toBeInTheDocument();
+    const sizeButton = within(size).getByRole('button', { name: /^Perguntar ao Tutor quais \d+ cartas colocar$/ });
+    expect(sizeButton).toHaveTextContent('Perguntar ao Tutor quais 10 cartas colocar');
+    const closeSteps = screen.getByText(/^Para fechar:/).textContent ?? '';
+    expect(/coloque mais (\d+) cartas/.exec(closeSteps)?.[1]).toBe('10');
+    expect(items.filter((item) => item.getAttribute('data-tone') === 'ok').flatMap((item) => within(item).queryAllByText(/Perguntar ao Tutor/))).toEqual([]);
+    view.unmount();
+
+    renderSheetWithTutor(checklist, null);
+    expect(screen.queryByText(/Perguntar ao Tutor/)).toBeNull();
+  });
+
+  it('a short deck with no rule problem asks only about the size', () => {
+    renderSheetWithTutor(checklistOf(blitzDraft({ deckCards: 31, packHuntCopies: 1 })), 7);
+
+    expect(screen.getAllByRole('button', { name: /Perguntar ao Tutor/ }).map((button) => button.textContent)).toEqual(['Perguntar ao Tutor quais 9 cartas colocar']);
+  });
+
+  it('a checklist question starts a bound conversation', async () => {
+    const user = userEvent.setup();
+    renderSheetWithTutor(checklistOf(blitzDraft({ deckCards: 31, packHuntCopies: 2 })), 7);
+
+    await user.click(screen.getByRole('button', { name: 'Perguntar ao Tutor o que pôr no lugar' }));
+
+    await waitFor(() => expect(navigatedTo()).toBe('/chat/c-1'));
+    expect(callsTo('POST /chat/conversations')).toEqual([{ trackedDeckId: 7 }]);
+    expect(callsTo('POST /chat/conversations/c-1/messages')).toEqual([{ text: 'Perguntar ao Tutor o que pôr no lugar' }]);
+  });
+
+  it('the checklist with Tutor questions follows a2-deck-ask-phone', () => {
+    renderSheetWithTutor(checklistOf(blitzDraft({ deckCards: 31, packHuntCopies: 2 })), 7);
+
+    const sheet = screen.getByTestId('rules-checklist-sheet');
+    const items = within(sheet).getAllByRole('listitem').map((item) => item.textContent);
+    expect(items[0]).toBe('Herói: Rhinar joga Blitz');
+    expect(items[1]).toBe('Todas as cartas são permitidas no Blitz');
+    expect(items[2]).toMatch(/^Cartas que você leva: 35 de 52/);
+    expect(items[3]).toBe('Cópias: Pack Hunt (Vermelho) tem 2, o Blitz permite 1 · Ir para a cartaPerguntar ao Tutor o que pôr no lugar');
+    expect(items[4]).toBe('Tamanho: 31 de 40 cartas · coloque mais 9Perguntar ao Tutor quais 10 cartas colocar');
+    expect(items).toHaveLength(5);
+    const goTo = within(sheet).getByRole('button', { name: 'Ir para a carta' });
+    const ask = within(sheet).getByRole('button', { name: 'Perguntar ao Tutor o que pôr no lugar' });
+    expect(goTo.compareDocumentPosition(ask) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const closeSteps = within(sheet).getByText('Para fechar: tire 1 Pack Hunt (Vermelho). O deck fica com 30, então coloque mais 10 cartas.');
+    const lastItem = within(sheet).getAllByRole('listitem')[4]!;
+    expect(lastItem.compareDocumentPosition(closeSteps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const close = within(sheet).getByRole('button', { name: 'Fechar' });
+    expect(closeSteps.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

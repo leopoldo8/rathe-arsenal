@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../auth/useAuth';
 import { IDeckDetailResponse, useDeckDetailQuery } from '../../api/deck-detail';
 import { DeckDetailSkeleton } from '../../components/deck-detail/DeckDetailSkeleton';
 import { DeckDetailEmptyState } from '../../components/deck-detail/DeckDetailEmptyState';
@@ -33,7 +34,6 @@ function DeckDetailPage(): React.ReactElement {
   const { edit } = Route.useSearch();
   const navigate = useNavigate();
   const { t } = useTranslation();
-
   // Derive current mode from ?edit=1 search param
   const mode = edit === 1 ? 'edit' : 'view';
 
@@ -135,6 +135,8 @@ function DeckDetailPageWithData({
   onExitEdit,
 }: IDeckDetailPageWithDataProps): React.ReactElement {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const chatAccess = user?.chatAccess === true;
 
   // Ref to the Edit button for DraftRestoreModal focus return.
   const editBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -390,6 +392,7 @@ function DeckDetailPageWithData({
               onRemoveCard={compositionDraft.removeCard}
               onRemoveIllegalCards={compositionDraft.removeIllegalCards}
               onSetHero={compositionDraft.setHero}
+              tutorDeckId={chatAccess ? deck.id : undefined}
             />
           }
         />

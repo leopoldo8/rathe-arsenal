@@ -168,6 +168,34 @@
   cursor: pointer;
 }
 
+.tutorAsk {
+  display: inline-flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: var(--ra-space-2);
+  min-block-size: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ra-accent-body);
+  font: inherit;
+  font-weight: var(--ra-weight-semibold);
+  text-align: start;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tutorAsk:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tutorError {
+  flex-basis: 100%;
+  color: var(--ra-ready-low);
+  font-size: var(--ra-text-xs);
+}
+
 .closeSteps {
   margin: 0;
   font-family: var(--ra-font-ui);
