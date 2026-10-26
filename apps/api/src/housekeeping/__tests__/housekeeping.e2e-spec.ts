@@ -161,16 +161,41 @@ describe('housekeeping (E2E)', () => {
       if ((message as { event?: string })?.event === 'housekeeping.tick') logged.push(message);
     });
 
+    const total = (counts: { users: number; decks: number; signInCodes: number; sessions: number }): number =>
+      counts.users + counts.decks + counts.signInCodes + counts.sessions;
+    const NOTHING = { users: 0, decks: 0, signInCodes: 0, sessions: 0 };
+
+    // While another worker holds the lock, both ticks lose it: they delete nothing, throw nothing and the rows stay.
+    const holder = fixture.dataSource.createQueryRunner();
+    await holder.connect();
+    await holder.startTransaction();
+    await holder.query('SELECT pg_advisory_xact_lock($1)', [HOUSEKEEPING_LOCK_KEY]);
+    let blocked: Array<{ ran: boolean; deleted: typeof NOTHING }>;
+    try {
+      blocked = await Promise.all([housekeeping.tick(), housekeeping.tick()]);
+      expect(await count('tracked_deck', 'id = ANY($1)', [[deckUser.deckId, deckUser2.deckId]])).toBe(2);
+      expect(await count('"user"', 'email = ANY($1)', [[gone.email, gone2.email]])).toBe(2);
+    } finally {
+      await holder.rollbackTransaction();
+      await holder.release();
+    }
+    expect(blocked).toEqual([
+      { ran: false, deleted: NOTHING },
+      { ran: false, deleted: NOTHING },
+    ]);
+
+    // With the lock free, two ticks at once delete every seeded row exactly once between them.
     const results = await Promise.all([housekeeping.tick(), housekeeping.tick()]);
     spy.mockRestore();
 
-    const total = (counts: { users: number; decks: number; signInCodes: number; sessions: number }): number =>
-      counts.users + counts.decks + counts.signInCodes + counts.sessions;
     // 2 users, 2 decks, 2 codes and 2 revoked sessions were seeded, and a second pass finds nothing left.
     expect(results.reduce((sum, result) => sum + total(result.deleted), 0)).toBe(8);
-    expect(logged).toHaveLength(2);
+    expect(results.filter((result) => result.ran).length).toBeGreaterThanOrEqual(1);
+    expect(logged).toHaveLength(4);
     const loggedTotal = (logged as Array<{ deleted: Parameters<typeof total>[0] }>).reduce((sum, entry) => sum + total(entry.deleted), 0);
     expect(loggedTotal).toBe(8);
+    expect(await count('tracked_deck', 'id = ANY($1)', [[deckUser.deckId, deckUser2.deckId]])).toBe(0);
+    expect(await count('"user"', 'email = ANY($1)', [[gone.email, gone2.email]])).toBe(0);
   });
 
   it('the tick that does not get the lock deletes nothing and throws nothing', async () => {

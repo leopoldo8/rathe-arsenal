@@ -122,6 +122,12 @@ describe('Review counts (E2E)', () => {
     // Arrange
     const imported = await asPlayer(request(server()).post('/api/decks/import').send({ text: `https://fabrary.net/decks/${FABRARY_ULID}`, ownsCards: false })).expect(201);
     const deckId = imported.body.deckId as number;
+    // Two copies of one card sit in the inventory, so the list has copies that are not deck copies.
+    await fixture.dataSource.query(
+      `UPDATE deck_card SET "inventoryQuantity" = 2
+       WHERE id = (SELECT id FROM deck_card WHERE "trackedDeckId" = $1 AND quantity >= 2 ORDER BY id LIMIT 1)`,
+      [deckId],
+    );
     logs.mockClear();
 
     // Act
@@ -129,6 +135,7 @@ describe('Review counts (E2E)', () => {
 
     // Assert
     const lines = served.body.lines as Array<{ state: string; deckNeeded: number; inventoryNeeded: number }>;
+    expect(lines.reduce((sum, line) => sum + line.inventoryNeeded, 0)).toBe(2);
     const copiesIn = (state: string): number =>
       lines.filter((line) => line.state === state).reduce((sum, line) => sum + line.deckNeeded + line.inventoryNeeded, 0);
     const entries = logged('missing.served');
@@ -138,7 +145,10 @@ describe('Review counts (E2E)', () => {
       deckId,
       copies: Object.fromEntries(STORE_STATES.map((state) => [state, copiesIn(state)])),
     });
-    expect(Object.values(entries[0]!['copies'] as Record<string, number>).reduce((sum, copies) => sum + copies, 0)).toBeGreaterThan(0);
+    // Deck copies and inventory copies both count: the log adds up to every copy the list asks for.
+    const loggedCopies = Object.values(entries[0]!['copies'] as Record<string, number>).reduce((sum, copies) => sum + copies, 0);
+    expect(loggedCopies).toBe(lines.reduce((sum, line) => sum + line.deckNeeded + line.inventoryNeeded, 0));
+    expect(loggedCopies).toBeGreaterThan(2);
   });
 
   it('spare lists, sold lines and the spare rule are logged', async () => {

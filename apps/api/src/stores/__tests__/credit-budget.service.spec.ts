@@ -42,7 +42,7 @@ describe('CreditBudgetService', () => {
     warn.mockRestore();
   });
 
-  it('stops automatic lookups when what is left of the month budget would not pay for one pass', async () => {
+  it('stops automatic lookups when what is left would not pay for one pass', async () => {
     const enough = await buildService({}, { '2026-10': 850 });
     expect(await enough.service.allowAutomaticLookups(OCTOBER)).toBe(true);
     expect(warn).not.toHaveBeenCalled();

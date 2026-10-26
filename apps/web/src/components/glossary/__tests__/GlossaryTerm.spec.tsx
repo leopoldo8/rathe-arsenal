@@ -125,17 +125,41 @@ describe('GlossaryTerm', () => {
     expect(within(sheet).getByRole('link', { name: 'Ver todos os termos' })).toHaveAttribute('href', '/termos');
   });
 
-  it("opens by click, Enter and Space with the player's own line: a popover anchored to the word on a computer", async () => {
+  it.each([
+    ['a click', async () => userEvent.click(await screen.findByRole('button', { name: 'O que é Pitch?' }))],
+    [
+      'Enter',
+      async () => {
+        (await screen.findByRole('button', { name: 'O que é Pitch?' })).focus();
+        await userEvent.keyboard('{Enter}');
+      },
+    ],
+    [
+      'Space',
+      async () => {
+        (await screen.findByRole('button', { name: 'O que é Pitch?' })).focus();
+        await userEvent.keyboard(' ');
+      },
+    ],
+  ])("opens by click, Enter and Space with the player's own line: a popover anchored to the word on a computer by %s", async (_how, open) => {
     setViewport('computer');
     renderPitch(DECK_PITCH);
 
-    await userEvent.click(screen.getByRole('button', { name: 'O que é Pitch?' }));
+    await open();
 
-    const popover = await screen.findByTestId('glossary-popover');
+    const popover = await screen.findByRole('dialog', { name: 'Pitch' });
+    expect(popover).toHaveAttribute('data-testid', 'glossary-popover');
     expect(within(popover).getByRole('heading', { name: 'Pitch' })).toBeInTheDocument();
+    const texts = Array.from(popover.querySelectorAll('p, a, button, h2')).map((node) => node.textContent);
+    expect(texts).toEqual([
+      'Pitch',
+      PITCH_SENTENCE,
+      'No seu deck: 14 vermelhas, 9 amarelas, 8 azuis.',
+      'Ver todos os termos',
+      'Fechar',
+    ]);
     expect(within(popover).getByTestId('glossary-own-line')).toHaveTextContent('No seu deck: 14 vermelhas, 9 amarelas, 8 azuis.');
-    expect(within(popover).getByRole('link', { name: 'Ver todos os termos' })).toBeInTheDocument();
-    expect(within(popover).getByRole('button', { name: 'Fechar' })).toBeInTheDocument();
+    expect(within(popover).getByRole('link', { name: 'Ver todos os termos' })).toHaveAttribute('href', '/termos');
     expect(screen.queryByTestId('glossary-sheet')).toBeNull();
   });
 

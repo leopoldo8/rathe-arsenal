@@ -9,9 +9,22 @@ test('a popover on a computer', async ({ page }) => {
 
   await page.getByRole('button', { name: 'O que é Pitch?' }).click();
 
-  const popover = page.getByTestId('glossary-popover');
+  const popover = page.getByRole('dialog', { name: 'Pitch' });
   await expect(popover).toBeVisible();
+  await expect(popover).toHaveAttribute('data-testid', 'glossary-popover');
   await expect(popover.getByRole('heading', { name: 'Pitch' })).toBeVisible();
+  await expect(popover).toContainText('O número de 1 a 3 da carta, mostrado também pela cor');
+  await expect(popover.getByRole('link', { name: 'Ver todos os termos' })).toBeVisible();
+  await expect(popover.getByRole('button', { name: 'Fechar' })).toBeVisible();
+  const order = await Promise.all(
+    [
+      popover.getByRole('heading', { name: 'Pitch' }),
+      popover.getByText('O número de 1 a 3 da carta', { exact: false }),
+      popover.getByRole('link', { name: 'Ver todos os termos' }),
+      popover.getByRole('button', { name: 'Fechar' }),
+    ].map(async (part) => (await part.boundingBox())!.y),
+  );
+  expect([...order].sort((a, b) => a - b), 'heading, sentence, link, close').toEqual(order);
   await expect(page.getByTestId('glossary-sheet')).toHaveCount(0);
   const [box, question] = [(await popover.boundingBox())!, (await page.getByRole('button', { name: 'O que é Pitch?' }).boundingBox())!];
   expect(box.width, 'a popover, not a full-width sheet').toBeLessThan(500);

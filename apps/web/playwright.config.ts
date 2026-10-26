@@ -20,6 +20,10 @@ import { STORAGE_STATE_PATH } from './tests/support/fixture';
  * See docs/design/v1/visual-regression.md for the baseline-update procedure.
  */
 
+// The phone projects run the files under tests/mobile and the phone proofs of the deck editor, which live
+// in the editor's own flow file next to its desktop tests (the proofs of C36, C40 and C57 name that file).
+const PHONE_TEST_MATCH = ['**/mobile/**/*.spec.ts', '**/e2e/deck-edit-flow.spec.ts'];
+
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.ts',
@@ -48,7 +52,7 @@ export default defineConfig({
     // Chromium); the viewport sizes and touch emulation are what matter.
     {
       name: 'mobile-360',
-      testMatch: '**/mobile/**/*.spec.ts',
+      testMatch: PHONE_TEST_MATCH,
       use: {
         ...devices['Pixel 5'],
         viewport: { width: 360, height: 740 },
@@ -57,7 +61,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-390',
-      testMatch: '**/mobile/**/*.spec.ts',
+      testMatch: PHONE_TEST_MATCH,
       use: {
         ...devices['Pixel 5'],
         viewport: { width: 390, height: 844 },

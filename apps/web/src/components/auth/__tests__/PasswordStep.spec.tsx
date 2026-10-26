@@ -4,9 +4,21 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthFetchError } from '../../../lib/auth-fetch';
 import { rememberSignIn } from '../../../lib/remembered-account';
-import { makeAuth, renderWithAuth } from './accountTestKit';
+import { jsonResponse, makeAuth, renderWithAuth } from './accountTestKit';
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to, className }: { children: React.ReactNode; to: string; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => vi.fn(),
+  useRouter: () => ({ history: { push: vi.fn() } }),
+}));
+vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 import { PasswordStep } from '../PasswordStep';
+import { StartFlow } from '../StartFlow';
 
 const EMAIL = 'lucas.prado@hotmail.com';
 
@@ -43,6 +55,29 @@ describe('PasswordStep', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Não é você? Trocar' }));
     expect(props.onUseCode).toHaveBeenCalledTimes(1);
     expect(props.onChangeEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('an account with a password offers the password and the code, under the page heading "Entrar"', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ next: 'password' })));
+    try {
+      renderWithAuth(<StartFlow />);
+      await userEvent.type(screen.getByLabelText('Seu e-mail'), EMAIL);
+      await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+      const heading = await screen.findByRole('heading', { level: 1, name: 'Entrar' });
+      inOrder(
+        heading,
+        screen.getByText('E-mail'),
+        screen.getByText(EMAIL),
+        screen.getByRole('button', { name: 'Não é você? Trocar' }),
+        screen.getByLabelText('Senha'),
+        screen.getByRole('button', { name: 'Entrar' }),
+        screen.getByRole('button', { name: 'Entrar com um código por e-mail' }),
+        screen.getByText('Esqueceu a senha? Entre com um código e troque a senha em Configurações.'),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('says the last sign-in used a password only when this device stored one for the address', () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ISharedListLine, ISharedListResponse } from '../../../api/shared-lists';
 import { SHARE_RETURN_STORAGE_KEY } from '../../../lib/share-return';
@@ -19,7 +19,10 @@ vi.mock('../../../lib/auth-fetch', async (importOriginal) => {
   return { ...actual, authFetch: (...args: Parameters<IFakeApi['authFetch']>) => apiRef.current!.authFetch(...args) };
 });
 
+const routerPush = vi.hoisted(() => vi.fn());
+
 vi.mock('@tanstack/react-router', () => ({
+  useRouter: () => ({ history: { push: routerPush } }),
   Link: ({
     children,
     to,
@@ -48,6 +51,8 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { SharedListPage } from '../SharedListPage';
+import { StartFlow } from '../../auth/StartFlow';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
 import { DUDA, DUDA_MATCHES, expectInOrder, MARCOS } from './visitorKit';
 
 const TOKEN = 'aB3dE5gH7jK9mN';
@@ -168,6 +173,35 @@ describe('SharedListPage', () => {
         shareToken: TOKEN,
         savedAt: expect.any(Number),
       });
+    });
+
+    it('a new account lands back on the list with its toast', async () => {
+      // A want list of Pedro's: "Criar conta" remembers the page, the start page makes the account and goes back.
+      api.handlers.set(`GET /shared/lists/${TOKEN}`, () => ({ ...BASE, name: 'Quero estas', sharerName: 'Pedro' }));
+      routerPush.mockClear();
+      renderPage();
+      await userEvent.click(within(await screen.findByTestId('shared-invite')).getByRole('link', { name: 'Criar conta' }));
+      cleanup();
+      api.handlers.set('POST /auth/start', () => ({ next: 'new' }));
+      const signUp = vi.fn().mockResolvedValue(undefined);
+      try {
+        renderWithProviders(
+          <ToastProvider>
+            <StartFlow />
+          </ToastProvider>,
+          makeAuth({ user: null, signUp }),
+        );
+
+        await userEvent.type(await screen.findByLabelText('Seu e-mail'), 'pedro.amigo@gmail.com');
+        await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+        await userEvent.click(await screen.findByRole('button', { name: 'Criar conta e entrar' }));
+
+        await vi.waitFor(() => expect(routerPush).toHaveBeenCalledWith(`/l/${TOKEN}`));
+        expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ email: 'pedro.amigo@gmail.com', returnPath: `/l/${TOKEN}`, shareToken: TOKEN }));
+        expect(await screen.findByText('Conta criada. Você voltou para a lista do Pedro.')).toBeInTheDocument();
+      } finally {
+        cleanup();
+      }
     });
 
     it('remembers the list page from the top bar too', async () => {

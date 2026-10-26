@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect } from '@playwright/test';
 import { blockingViolations, describeViolations, SCAN_PAGES, type IScanContext, type TAxeViolation } from '../support/axe';
 import { ANON_STORAGE_STATE, BASE_URL, loadFixture } from '../support/fixture';
+import { pinPortuguese } from './helpers';
 
 function violation(id: string, impact: TAxeViolation['impact']): TAxeViolation {
   return { id, impact, nodes: [], tags: [], description: '', help: '', helpUrl: '' };
@@ -17,6 +18,27 @@ test.describe('axe filter', () => {
     ]);
 
     expect(kept.map((v) => v.id)).toEqual(['c-serious', 'd-critical']);
+  });
+});
+
+test.describe('landmarks in the real shell', () => {
+  test('the deck page and the imports page each have exactly one main, and the deck canvas is a named region', async ({ page }) => {
+    const { readyDeckId } = loadFixture();
+    await pinPortuguese(page);
+
+    // The deck page as it is read, then as it is edited (the edit page is the one laid out by the canvas region).
+    await page.goto(`/decks/${readyDeckId}`, { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('deck-detail-view')).toBeVisible();
+    await expect(page.getByRole('main')).toHaveCount(1);
+
+    await page.goto(`/decks/${readyDeckId}?edit=1`, { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('deck-canvas-edit')).toBeVisible();
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('main').getByRole('region', { name: 'Conteúdo do deck' })).toHaveCount(1);
+    await expect(page.getByRole('region', { name: 'Conteúdo do deck' }).getByTestId('deck-canvas-edit')).toBeVisible();
+
+    await page.goto('/library-csv-sources', { waitUntil: 'networkidle' });
+    await expect(page.getByRole('main')).toHaveCount(1);
   });
 });
 

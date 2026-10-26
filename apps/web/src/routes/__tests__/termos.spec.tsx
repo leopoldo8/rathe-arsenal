@@ -8,15 +8,22 @@ const routerState = vi.hoisted(() => ({
   location: { state: {} as Record<string, unknown>, hash: '' },
 }));
 const authState = vi.hoisted(() => ({ user: null as { id: string } | null }));
+const searchState = vi.hoisted(() => ({ current: {} as { q?: string | undefined } }));
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...withLinkMock(await importOriginal<object>()),
-  createFileRoute: () => (config: object) => config,
+  createFileRoute: () => (config: object) => ({ ...config, useSearch: () => searchState.current }),
   useRouterState: ({ select }: { select: (state: unknown) => unknown }) => select({ location: routerState.location }),
 }));
 vi.mock('../../auth/useAuth', () => ({ useAuth: () => ({ user: authState.user }) }));
 
-import { TermosPage } from '../termos';
+import { Route, TermosPage } from '../termos';
+
+// The route as the router builds it: its search validator and the component that reads the validated search.
+const termosRoute = Route as unknown as {
+  readonly validateSearch: (search: Record<string, unknown>) => { q?: string | undefined };
+  readonly component: React.ComponentType;
+};
 
 const SORTED_WORDS = (words: readonly string[]): readonly string[] => [...words].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
@@ -28,6 +35,7 @@ describe('/termos', () => {
   beforeEach(() => {
     routerState.location = { state: {}, hash: '' };
     authState.user = null;
+    searchState.current = {};
   });
 
   it('lists every word in Portuguese alphabetical order', () => {
@@ -54,6 +62,9 @@ describe('/termos', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Nenhuma palavra com "xyz". Veja a lista completa abaixo.');
     expect(words()).toHaveLength(31);
+    // The message sits above the full list.
+    const firstEntry = screen.getAllByTestId('glossary-entry')[0] as HTMLElement;
+    expect(screen.getByRole('status').compareDocumentPosition(firstEntry) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('a search that matches narrows the list and finds a word through its sentence', async () => {
@@ -71,6 +82,25 @@ describe('/termos', () => {
 
     expect(screen.getByRole('searchbox', { name: 'Procurar uma palavra' })).toHaveValue('Blitz');
     expect(words()).toContain('Blitz');
+  });
+
+  it('the q parameter fills the search: from the address of the page', () => {
+    // `/termos?q=Blitz` goes through the route's own validator, then the route component reads it.
+    searchState.current = termosRoute.validateSearch({ q: 'Blitz' });
+    const Page = termosRoute.component;
+
+    render(<Page />);
+
+    expect(searchState.current).toEqual({ q: 'Blitz' });
+    expect(screen.getByRole('searchbox', { name: 'Procurar uma palavra' })).toHaveValue('Blitz');
+    expect(words()).toContain('Blitz');
+    expect(words().length).toBeLessThan(31);
+  });
+
+  it('the q parameter fills the search: an empty or odd value is dropped', () => {
+    expect(termosRoute.validateSearch({ q: '' })).toEqual({ q: undefined });
+    expect(termosRoute.validateSearch({ q: 5 })).toEqual({ q: undefined });
+    expect(termosRoute.validateSearch({})).toEqual({ q: undefined });
   });
 
   it('opens scrolled to the word of the address hash', () => {

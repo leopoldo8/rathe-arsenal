@@ -4,9 +4,27 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { withLinkMock } from '../../../test/router-link-mock';
 
-vi.mock('@tanstack/react-router', async (importOriginal) => withLinkMock(await importOriginal<object>()));
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...withLinkMock(await importOriginal<object>()),
+  useNavigate: () => vi.fn(),
+}));
+const apiFetch = vi.hoisted(() => ({ current: vi.fn() }));
+vi.mock('../../../lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api-client')>();
+  return { ...actual, useApiClient: () => (path: string, init?: RequestInit) => apiFetch.current(path, init) };
+});
+vi.mock('../../../auth/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u1', email: 'a@b.com', role: 'user', chatAccess: false } }),
+}));
+vi.mock('../TagChipRow', () => ({ TagChipRow: () => <div data-testid="tag-row" /> }));
+vi.mock('../recommendations/RecommendationsRail', () => ({ RecommendationsRail: () => <section /> }));
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
 import { GlossaryScope } from '../../glossary/GlossaryScope';
+import { createDeckServer, deckFetch, DeckPageHarness } from './deckPageKit';
+import { legalityOfComposition, rhinarBlitzDeck } from './ruleChangedFixture';
+import type { IDeckDetailResponse, IDeckDetailSnapshot } from '../../../api/deck-detail';
 import { DeckAnalysisRow } from '../DeckAnalysisRow';
 import { buildDeckList } from '../deckListModel';
 import { breakdown, entry } from './deckDetailTestData';
@@ -83,5 +101,49 @@ describe('DeckAnalysisRow', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Curva de custo' });
     expect(sheet).toHaveTextContent('Quantas cartas do deck custam 0, 1, 2, 3 ou mais. Mostra se o deck está pesado ou leve.');
     expect(within(sheet).queryByTestId('glossary-own-line')).toBeNull();
+  });
+
+  it('matches r2-pitch-sheet-phone: the deck header, its size line and the analysis of a 31 card deck', async () => {
+    // The deck of the screen: "Rhinar - Blitz", stage Montando, 31 of 40 cards.
+    const base = rhinarBlitzDeck({ status: 'building' });
+    const deck = {
+      ...base,
+      name: 'Rhinar - Blitz',
+      totalCards: 31,
+      legality: legalityOfComposition(31, []),
+      latestSnapshot: { ...base.latestSnapshot, breakdown: { ...base.latestSnapshot!.breakdown, exact: ITEMS.map((item) => item.entry) } } as IDeckDetailSnapshot,
+    } as IDeckDetailResponse;
+    apiFetch.current = deckFetch(createDeckServer(deck));
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (query: string) => ({ matches: query.includes('max-width'), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
+    });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <ToastProvider>
+          <GlossaryScope>
+            <DeckPageHarness deckId={1} />
+          </GlossaryScope>
+        </ToastProvider>
+      </QueryClientProvider>,
+    );
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'Rhinar - Blitz' });
+    const header = screen.getByRole('region', { name: 'Cabeçalho do deck' });
+    expect(header).toContainElement(title);
+    expect(within(header).getByText('Blitz', { exact: true })).toBeInTheDocument();
+    expect(within(header).getAllByText(/Montando/).length).toBeGreaterThan(0);
+    const countLine = screen.getByText('31 de 40 cartas no deck · coloque mais 9');
+    const pitch = screen.getByTestId('analysis-pitch');
+    const cost = screen.getByTestId('analysis-cost');
+    expect(within(pitch).getByRole('heading', { name: /^Pitch/ })).toBeInTheDocument();
+    expect(within(cost).getByRole('heading', { name: /^Curva de custo/ })).toBeInTheDocument();
+    for (const [before, after] of [
+      [title, pitch],
+      [pitch, cost],
+    ] as const) {
+      expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(countLine).toBeInTheDocument();
   });
 });
