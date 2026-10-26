@@ -80,6 +80,22 @@ describe('PasswordStep', () => {
     }
   });
 
+  it('an account with a password offers the password and the code: a remembered password sign-in is said between "Não é você? Trocar" and "Senha"', () => {
+    rememberSignIn(EMAIL, 'password');
+    renderStep();
+
+    inOrder(
+      screen.getByText('E-mail'),
+      screen.getByText(EMAIL),
+      screen.getByRole('button', { name: 'Não é você? Trocar' }),
+      screen.getByText('Da última vez você entrou com senha neste celular.'),
+      screen.getByLabelText('Senha'),
+      screen.getByRole('button', { name: 'Entrar' }),
+      screen.getByRole('button', { name: 'Entrar com um código por e-mail' }),
+      screen.getByText('Esqueceu a senha? Entre com um código e troque a senha em Configurações.'),
+    );
+  });
+
   it('says the last sign-in used a password only when this device stored one for the address', () => {
     rememberSignIn('someone.else@gmail.com', 'password');
     const other = renderStep();

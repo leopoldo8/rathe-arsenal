@@ -30,6 +30,7 @@ test('a bottom sheet on the phone', async ({ page }) => {
 
   const sheet = page.getByRole('dialog', { name: 'Pitch' });
   await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAccessibleName('Pitch');
   await expect(sheet.getByRole('heading', { name: 'Pitch' })).toBeVisible();
   await expect(sheet).toContainText('O número de 1 a 3 da carta, mostrado também pela cor');
   await expect(sheet.getByRole('link', { name: 'Ver todos os termos' })).toBeVisible();

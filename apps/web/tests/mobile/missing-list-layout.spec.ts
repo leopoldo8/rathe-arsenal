@@ -47,6 +47,28 @@ test('the phone list follows r3-list-phone', async ({ page }) => {
   ]);
   expect(standInBox!.y, 'the stand-in line is above "Já tenho…"').toBeLessThan(haveBox!.y);
 
+  // Inside the row: the needed count and unit price share one line ("faltam 3 · R$ 69,99 cada"), under the name;
+  // the line total sits on the name's line, to its right; then the stand-in line, then the two actions.
+  await expect(bloodrush.locator('p').filter({ hasText: 'faltam' })).toHaveText('faltam 3 · R$ 69,99 cada');
+  const nameBox = (await bloodrush.locator('span[class*="name"]').last().boundingBox())!;
+  const metaBox = (await bloodrush.locator('p').filter({ hasText: 'faltam' }).boundingBox())!;
+  const totalBox = (await bloodrush.getByTestId('missing-row-total').boundingBox())!;
+  const buyBox = (await bloodrush.getByRole('link', { name: /^Comprar Bloodrush Bellow/ }).boundingBox())!;
+  expect(nameBox.y, 'the name is above the needed and unit price line').toBeLessThan(metaBox.y);
+  expect(Math.abs(totalBox.y - nameBox.y), 'the line total is on the name line').toBeLessThan(nameBox.height);
+  expect(totalBox.x, 'the line total is to the right of the name').toBeGreaterThan(nameBox.x + nameBox.width);
+  expect(metaBox.y, 'the needed line is above the stand-in line').toBeLessThan(standInBox!.y);
+  expect(haveBox!.x, '"Já tenho…" comes before "Comprar" on the row actions').toBeLessThan(buyBox.x);
+  expect(Math.abs(haveBox!.y - buyBox.y), 'both actions share the last line').toBeLessThan(buyBox.height);
+
+  // A row with an image and flags: the image is left of the name, the flags are under the needed line.
+  const alphaImageBox = (await image.boundingBox())!;
+  const alphaNameBox = (await row.locator('span[class*="name"]').last().boundingBox())!;
+  const alphaMetaBox = (await row.locator('p').filter({ hasText: /falta/ }).boundingBox())!;
+  const alphaFlagsBox = (await row.locator('ul').boundingBox())!;
+  expect(alphaImageBox.x + alphaImageBox.width, 'the image is left of the name').toBeLessThanOrEqual(alphaNameBox.x + 1);
+  expect(alphaMetaBox.y, 'the needed line is above the flags').toBeLessThan(alphaFlagsBox.y);
+
   const buttons = bar.getByRole('button');
   await expect(buttons).toHaveText(['Compartilhar a lista', 'Copiar lista de compras']);
   expect((await bar.boundingBox())!.y, 'the bar is below the rows').toBeGreaterThan(rowBox!.y);

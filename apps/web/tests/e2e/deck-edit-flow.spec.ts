@@ -111,21 +111,31 @@ test.describe('the rules bar of the deck editor', () => {
   });
 
   test('the rules bar stays visible while scrolling', async ({ page }) => {
-    await page.locator('[data-testid^="editable-card-row-"]').last().scrollIntoViewIfNeeded();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const bar = page.getByTestId('rules-bar');
-
-    const box = await bar.boundingBox();
     const height = await viewportHeight(page);
+    const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    expect(pageHeight, 'the editor is taller than the screen, so a bar that is not pinned would leave it').toBeGreaterThan(height * 2);
 
-    expect(box).not.toBeNull();
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(height);
-    const coveredBy = await page.evaluate(
-      ({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="rules-bar"]') !== null,
-      { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 },
-    );
-    expect(coveredBy, 'nothing else is drawn over the bar').toBe(true);
+    // The bar must be on screen part-way down the list too, not only at the end: a bar that scrolls with the page
+    // is on screen at the last row but far below the screen everywhere else.
+    const scrollable = pageHeight - height;
+    for (const [place, top] of [
+      ['a quarter of the way down', Math.round(scrollable / 4)],
+      ['the middle of the list', Math.round(scrollable / 2)],
+      ['the last row', pageHeight],
+    ] as const) {
+      await page.evaluate((y) => window.scrollTo(0, y), top);
+      const box = await bar.boundingBox();
+
+      expect(box, `the bar is drawn at ${place}`).not.toBeNull();
+      expect(box!.y, `the bar top is on screen at ${place}`).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height, `the bar bottom is on screen at ${place}`).toBeLessThanOrEqual(height);
+      const coveredBy = await page.evaluate(
+        ({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="rules-bar"]') !== null,
+        { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 },
+      );
+      expect(coveredBy, `nothing else is drawn over the bar at ${place}`).toBe(true);
+    }
   });
 
   test('the checklist sheet opens at about half height and closes only by handle or Fechar', async ({ page }) => {
