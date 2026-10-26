@@ -6,6 +6,11 @@ export function isJustCreatedState(state: unknown): boolean {
   return typeof state === 'object' && state !== null && (state as { justCreated?: unknown }).justCreated === true;
 }
 
+/** "Cancelar" throws the deck away only when it was created in this visit and still has no cards. */
+export function shouldDiscardOnCancel(locationState: unknown, totalCards: number): boolean {
+  return isJustCreatedState(locationState) && totalCards === 0;
+}
+
 export function buildDraftInitialPayload(
   deck: Pick<IDeckDetailResponse, 'heroIdentifier' | 'format'>,
   snapshot: IDeckDetailResponse['latestSnapshot'],

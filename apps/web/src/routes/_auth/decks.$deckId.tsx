@@ -12,7 +12,7 @@ import { DeckDetailView } from '../../components/deck-detail/DeckDetailView';
 import { DeckCanvas } from '../../components/deck-detail/DeckCanvas';
 import { DraftRestoreModal } from '../../components/deck-detail/DraftRestoreModal';
 import { inventoryOf, useCompositionDraft, readStoredDraft } from '../../hooks/useCompositionDraft';
-import { buildDraftInitialPayload, isJustCreatedState } from './-deck-detail-draft';
+import { buildDraftInitialPayload, shouldDiscardOnCancel } from './-deck-detail-draft';
 import { cascadeFromLegality, computeDraftLegality, toDeckLegality } from '../../lib/draft-legality';
 import { summariseDeck } from '../../components/deck-detail/deckDetailModel';
 import { useHeroesQuery } from '../../api/catalog';
@@ -172,8 +172,9 @@ function DeckDetailPageWithData({
   );
   const cascadeCheck = React.useMemo(() => cascadeFromLegality(draftLegality), [draftLegality]);
 
-  const justCreated = useRouterState({ select: (state) => isJustCreatedState(state.location.state) });
-  const discardEmptyNewDeck = justCreated && deck.totalCards === 0;
+  const discardEmptyNewDeck = useRouterState({
+    select: (state) => shouldDiscardOnCancel(state.location.state, deck.totalCards),
+  });
   const missingCount = React.useMemo(
     () =>
       snapshot === null
