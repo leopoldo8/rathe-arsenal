@@ -32,6 +32,13 @@ describe('Share report queries (E2E)', () => {
 
   const asOwner = (req: request.Test): request.Test => req.set('Cookie', sessionCookieHeader(sessionToken));
 
+  // `occurredAt` is stamped by the database clock. In Docker that clock can differ from this process's by more than the
+  // few milliseconds between starting the test and recording its events, so the window is read from the database too.
+  async function databaseNow(): Promise<Date> {
+    const result = await client.query<{ now: Date }>('SELECT clock_timestamp() AS now');
+    return result.rows[0]!.now;
+  }
+
   async function shareList(kind: 'want' | 'sell'): Promise<string> {
     const list = await asOwner(request(server).post('/api/lists').send({ kind, name: `Report ${kind}` })).expect(201);
     const link = await asOwner(request(server).post(`/api/lists/${list.body.id as number}/share`).send({})).expect(201);
@@ -73,7 +80,7 @@ describe('Share report queries (E2E)', () => {
   });
 
   it('the report counts offer, quote_sent and buy by intent and list kind', async () => {
-    startedAt = new Date();
+    startedAt = await databaseNow();
     const [deck] = (await dataSource.query(
       `INSERT INTO tracked_deck ("userId", name, hero, "heroIdentifier", format, status)
        VALUES ($1, 'Report deck', 'Some Hero', NULL, 'cc', 'building') RETURNING id`,
@@ -86,7 +93,7 @@ describe('Share report queries (E2E)', () => {
     await request(server).post(`/api/shared/lists/${sellToken}/events`).send({ kind: 'buy' }).expect(204);
     await request(server).post(`/api/shared/decks/${quote.body.token as string}/events`).send({ kind: 'quote_sent' }).expect(204);
 
-    const rows = await countVisitorEvents(client, { since: startedAt, until: new Date(Date.now() + 60_000) });
+    const rows = await countVisitorEvents(client, { since: startedAt, until: new Date((await databaseNow()).getTime() + 60_000) });
 
     expect(rows).toEqual([
       { kind: 'buy', intent: 'sell', listKind: 'sell', count: 1 },
