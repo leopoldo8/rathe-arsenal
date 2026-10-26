@@ -13,13 +13,16 @@
 
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { makeAuth, renderWithAuth, stubViewport } from '../../../components/auth/__tests__/accountTestKit';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
 const chooser = vi.hoisted(() => ({ real: false }));
+const navigateMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (_config: unknown) => undefined,
@@ -31,8 +34,10 @@ vi.mock('@tanstack/react-router', () => ({
   Navigate: ({ to }: { to: string; replace?: boolean }) => (
     <div data-testid="navigate-redirect" data-to={to} />
   ),
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigateMock,
+  useRouter: () => ({ history: { push: vi.fn() } }),
 }));
+vi.mock('../../../components/ui/Toast/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 const mockUseDecksQuery = vi.fn();
 vi.mock('../../../api/decks', () => ({
@@ -52,6 +57,7 @@ vi.mock('../../../components/onboarding/OnboardingSkeleton', () => ({
 }));
 
 import { OnboardingPage } from '../onboarding';
+import { NewAccountStep } from '../../../components/auth/NewAccountStep';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,6 +139,35 @@ describe('OnboardingPage — R60 redirect', () => {
     expect(screen.getByRole('link', { name: /Comprei um deck pronto/ })).toHaveAttribute('href', '/add-cards/product');
     expect(screen.getByRole('link', { name: 'Pular por agora' })).toHaveAttribute('href', '/home');
     expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
+  });
+
+  it('a new account starts on the first-run chooser: signing up sends it there, with or without a password', async () => {
+    stubViewport(true);
+    const props = { email: 'bia.souza@gmail.com', shareReturn: null, origin: null, onWrongEmail: vi.fn() };
+
+    const withoutPassword = renderWithAuth(<NewAccountStep {...props} />, makeAuth());
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta e entrar' }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({ to: '/onboarding' }));
+    withoutPassword.unmount();
+    navigateMock.mockClear();
+
+    renderWithAuth(<NewAccountStep {...props} />, makeAuth());
+    await userEvent.click(screen.getByRole('button', { name: 'Prefiro criar uma senha' }));
+    await userEvent.type(screen.getByLabelText('Senha'), '1234567890');
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta com senha e entrar' }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({ to: '/onboarding' }));
+    expect(navigateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a new account starts on the first-run chooser: an account with an import does not land on it', () => {
+    mockUseDecksQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { trackedDecks: [], collectionCardCount: 612, aggregateShoppingLine: null },
+    });
+    render(<OnboardingPage />);
+    expect(screen.getByTestId('navigate-redirect')).toHaveAttribute('data-to', '/library');
+    expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
   });
 
   it('an account with cards but no deck goes to the collection, not to the chooser', () => {

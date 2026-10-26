@@ -244,6 +244,14 @@ describe('RuleChangedNotice', () => {
     const positions = before.map((text) => body.indexOf(text));
         expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    // The format chip is its own element, after the title and before the red chip.
+    const formatChip = screen.getByTestId('deck-hero-eyebrow');
+    expect(formatChip).toHaveTextContent(/^Blitz$/);
+    const redChip = screen.getByTestId('legality-badge');
+    const titleText = screen.getByRole('heading', { level: 1, name: 'Rhinar Blitz' });
+    const after = (a: Element, b: Element): boolean => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(after(titleText, formatChip)).toBe(true);
+    expect(after(formatChip, redChip)).toBe(true);
     const rows = screen.getAllByTestId(/^rule-changed-row-/);
     expect(rows).toHaveLength(8);
     const announcement = screen.getByText('ver o anúncio');

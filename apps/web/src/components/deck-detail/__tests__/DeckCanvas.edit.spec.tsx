@@ -629,6 +629,18 @@ describe('DeckCanvas Edit mode — the rules of the draft', () => {
     const lastBlock = container.querySelector('[data-testid="deck-canvas-edit"]')?.lastElementChild;
     expect(lastBlock).toBe(screen.getByTestId('rules-bar'));
 
+    // The format chip is its own element between the title and "Compartilhar", not the "Blitz" inside the title.
+    const formatChip = container.querySelector(`.${verdictStyles.formatChip}`);
+    expect(formatChip).not.toBeNull();
+    expect(formatChip).toHaveTextContent(/^Blitz$/);
+    const shareButton = screen.getByRole('button', { name: 'Compartilhar' });
+    const redVerdict = screen.getByTestId('editor-verdict');
+    const titleField = screen.getByRole('heading', { level: 1, name: 'Rhinar - Blitz' });
+    const follows = (a: Element, b: Element): boolean => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(titleField, formatChip!)).toBe(true);
+    expect(follows(formatChip!, shareButton)).toBe(true);
+    expect(follows(shareButton, redVerdict)).toBe(true);
+
     const packHunt = screen.getByTestId('editable-card-row-pack-hunt-red');
     expect(within(packHunt).getByTestId('quantity-deck')).toHaveTextContent('2');
 
