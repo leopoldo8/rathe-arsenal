@@ -64,7 +64,10 @@ export function SharedMissingPage({ deck }: ISharedMissingPageProps): React.Reac
           </>
         )}
       </main>
-      <SharedDeckFooter note={t('sharing.missingPage.footNote')} />
+      <SharedDeckFooter
+        note={t('sharing.missingPage.footNote')}
+        glossaryBackLabel={t('glossary.page.backToSharedList', { name: deck.sharerName })}
+      />
     </div>
   );
 }

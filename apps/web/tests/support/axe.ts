@@ -13,6 +13,8 @@ export interface IScanPage {
   readonly name: string;
   readonly path: (context: IScanContext) => string;
   readonly signedOut?: boolean;
+  /** Runs after the page loads and before the scan, to put the page in the state worth scanning. */
+  readonly prepare?: (page: import('@playwright/test').Page) => Promise<void>;
 }
 
 /**
@@ -33,6 +35,15 @@ export const SCAN_PAGES: readonly IScanPage[] = [
   { name: 'lines to resolve', path: () => '/library-pending' },
   { name: 'missing list', path: ({ readyDeckId }) => `/decks/${readyDeckId}/missing` },
   { name: 'spare copies', path: () => '/spare' },
+  { name: 'the glossary', path: () => '/termos', signedOut: true },
+  {
+    name: 'the deck page with the Pitch sheet open',
+    path: ({ readyDeckId }) => `/decks/${readyDeckId}`,
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'O que é Pitch?' }).click();
+      await page.getByTestId('glossary-popover').waitFor();
+    },
+  },
 ];
 
 const BLOCKING_IMPACTS: ReadonlySet<string> = new Set(['serious', 'critical']);

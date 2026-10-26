@@ -1570,7 +1570,7 @@ Proof: `web unit src/routes/_auth/__tests__/-library-csv-sources.test.tsx -t "th
 **C420** - In pt-BR `alternatives.free` gives "nenhuma livre" for count 0, "1 livre" for 1 and "2 livres" for 2 (AC 268) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "zero free copies read nenhuma livre"`
 
-**C421** - No JSX element under `apps/web/src` (tests excluded, SVG `<title>` children excluded) carries a `title=` attribute; `ShoppingLine.tsx`, `MissingStoreSummary.tsx` and `LibraryStatsBar.tsx` show the estimated-price explanation as visible text, and `LibraryStatsBar`'s pitch dots carry the "?" of "Vermelho, Amarelo, Azul" (AC 269)
+**C421** - No JSX element under `apps/web/src` (tests excluded, SVG `<title>` children excluded) carries a `title=` attribute; `ShoppingLine.tsx`, `MissingStoreSummary.tsx` and `LibraryStatsBar.tsx` show the estimated-price explanation as visible text, and `LibraryStatsBar`'s pitch dots carry the "?" of "Vermelho, Amarelo, Azul" (AC 269) · done
 Proof: `web unit src/i18n/__tests__/component-literals.spec.ts -t "no native title tooltip"`
 Proof: `web unit src/components/library/__tests__/LibraryStatsBar.test.tsx -t "the estimated price is explained in visible text"`
 
@@ -1580,62 +1580,62 @@ Proof: `api unit src/email/__tests__/email-templates.spec.ts -t "no template giv
 
 ### S37 - Every game word one tap from an explanation · 24 files · 76 KB · ~39k
 
-**C423** - On the deck analysis block, "Pitch" and "Curva de custo" are each followed by one button named "O que é Pitch?" and "O que é Curva de custo?"; a second "Pitch" on the same screen has no button (AC 271)
+**C423** - On the deck analysis block, "Pitch" and "Curva de custo" are each followed by one button named "O que é Pitch?" and "O que é Curva de custo?"; a second "Pitch" on the same screen has no button (AC 271) · done
 Proof: `web unit src/components/glossary/__tests__/GlossaryTerm.spec.tsx -t "only the first appearance on a screen gets a question mark"`
 
-**C424** - On a 390 px phone the "?" after "Pitch" draws a 20 px circle and its tap target's bounding box is at least 44 by 44 px (AC 271)
+**C424** - On a 390 px phone the "?" after "Pitch" draws a 20 px circle and its tap target's bounding box is at least 44 by 44 px (AC 271) · done
 Proof: `web e2e --project=mobile-390 tests/mobile/glossary.spec.ts -g "the question mark is 20 px drawn and 44 px to tap"`
 
-**C425** - Clicking the "?", Enter on it, and Space on it each open a dialog whose title is "Pitch", with the sentence of `.design/copy-and-access.md` for Pitch, the line "No seu deck: 14 vermelhas, 9 amarelas, 8 azuis." for a deck of 14 red, 9 yellow and 8 blue, then "Ver todos os termos" and "Fechar"; with a phone viewport it is a bottom sheet, with a computer viewport a popover anchored to the word (AC 272)
+**C425** - Clicking the "?", Enter on it, and Space on it each open a dialog whose title is "Pitch", with the sentence of `.design/copy-and-access.md` for Pitch, the line "No seu deck: 14 vermelhas, 9 amarelas, 8 azuis." for a deck of 14 red, 9 yellow and 8 blue, then "Ver todos os termos" and "Fechar"; with a phone viewport it is a bottom sheet, with a computer viewport a popover anchored to the word (AC 272) · done
 Proof: `web unit src/components/glossary/__tests__/GlossaryTerm.spec.tsx -t "opens by click, Enter and Space with the player's own line"`
 Proof: `web e2e --project=mobile-390 tests/mobile/glossary.spec.ts -g "a bottom sheet on the phone"`
 Proof: `web e2e --project=e2e-chromium tests/e2e/termos.spec.ts -g "a popover on a computer"`
 
-**C426** - The player's own line follows the data: "Seu deck Rhinar Blitz v2 continua salvo com as 12 cartas." for "Aposentado" on a 12-card deck named "Rhinar Blitz v2"; "Este deck do Pedro é de Classic Constructed." for "Classic Constructed" on a shared deck by Pedro; and the sentence alone when the page has no data for the word (AC 272)
+**C426** - The player's own line follows the data: "Seu deck Rhinar Blitz v2 continua salvo com as 12 cartas." for "Aposentado" on a 12-card deck named "Rhinar Blitz v2"; "Este deck do Pedro é de Classic Constructed." for "Classic Constructed" on a shared deck by Pedro; and the sentence alone when the page has no data for the word (AC 272) · done
 Proof: `web unit src/components/glossary/__tests__/GlossaryTerm.spec.tsx -t "the own-data line follows the page"`
 
-**C427** - Closing by Escape, by a tap outside and by "Fechar" each return focus to the "?" that opened it (AC 273)
+**C427** - Closing by Escape, by a tap outside and by "Fechar" each return focus to the "?" that opened it (AC 273) · done
 Proof: `web unit src/components/glossary/__tests__/GlossaryTerm.spec.tsx -t "focus returns to the question mark on every close"`
 
-**C428** - In the stage menu the "?" after "Aposentado" is a separate button; clicking it opens the "Aposentado" sheet and the deck's stage stays unchanged (the change handler is not called); clicking the option text still picks "Aposentado" (AC 274)
+**C428** - In the stage menu the "?" after "Aposentado" is a separate button; clicking it opens the "Aposentado" sheet and the deck's stage stays unchanged (the change handler is not called); clicking the option text still picks "Aposentado" (AC 274) · done
 Proof: `web unit src/components/deck-detail/__tests__/StatusDropdown.spec.tsx -t "the question mark never picks the option"`
 
-**C429** - The pt-BR glossary namespace has exactly the 31 words of `.design/copy-and-access.md` "The explanations", each sentence equal to the table cell character for character (AC 275)
+**C429** - The pt-BR glossary namespace has exactly the 31 words of `.design/copy-and-access.md` "The explanations", each sentence equal to the table cell character for character (AC 275) · done
 Proof: `web unit src/i18n/__tests__/glossary-catalog.spec.ts -t "the 31 explanations match the design document word for word"`
 
-**C430** - `/termos` opened signed out answers `200`, stays on `/termos` (no redirect to sign-in) and shows the LSS notice at the foot (AC 275; Surface `/termos`)
+**C430** - `/termos` opened signed out answers `200`, stays on `/termos` (no redirect to sign-in) and shows the LSS notice at the foot (AC 275; Surface `/termos`) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/termos.spec.ts -g "the glossary is public"`
 
-**C431** - The page shows, in order: the title "Termos do jogo", the line "O que querem dizer as palavras do jogo.", a search field labelled "Procurar uma palavra", then the 31 words in the order of `localeCompare(..., 'pt-BR')`, first "Ação" and last "Vermelho, Amarelo, Azul", each with its sentence (AC 275, AC 279; screen `r2-glossary-phone`)
+**C431** - The page shows, in order: the title "Termos do jogo", the line "O que querem dizer as palavras do jogo.", a search field labelled "Procurar uma palavra", then the 31 words in the order of `localeCompare(..., 'pt-BR')`, first "Ação" and last "Vermelho, Amarelo, Azul", each with its sentence (AC 275, AC 279; screen `r2-glossary-phone`) · done
 Proof: `web unit src/routes/__tests__/termos.spec.tsx -t "lists every word in Portuguese alphabetical order"`
 
-**C432** - Opened by "Ver todos os termos" from the deck page `/decks/<id>`, the page's back control returns to `/decks/<id>`; opened from Pedro's shared list it reads "Voltar para a lista do Pedro" and returns to that list (AC 275, AC 279)
+**C432** - Opened by "Ver todos os termos" from the deck page `/decks/<id>`, the page's back control returns to `/decks/<id>`; opened from Pedro's shared list it reads "Voltar para a lista do Pedro" and returns to that list (AC 275, AC 279) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/termos.spec.ts -g "the back control returns to where the player came from"`
 
-**C433** - Searching "xyz" shows "Nenhuma palavra com \"xyz\". Veja a lista completa abaixo." above the full list; `/termos?q=Blitz` opens with "Blitz" in the field and the entry "Blitz" listed (AC 276; Surface `q?`)
+**C433** - Searching "xyz" shows "Nenhuma palavra com \"xyz\". Veja a lista completa abaixo." above the full list; `/termos?q=Blitz` opens with "Blitz" in the field and the entry "Blitz" listed (AC 276; Surface `q?`) · done
 Proof: `web unit src/routes/__tests__/termos.spec.tsx -t "a search with no match says so and keeps the list"`
 Proof: `web unit src/routes/__tests__/termos.spec.tsx -t "the q parameter fills the search"`
 
-**C434** - `/termos#pitch`, as "Ver todos os termos" opens it from the "Pitch" sheet, loads with the "Pitch" entry inside the viewport (AC 277; Surface `#word`)
+**C434** - `/termos#pitch`, as "Ver todos os termos" opens it from the "Pitch" sheet, loads with the "Pitch" entry inside the viewport (AC 277; Surface `#word`) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/termos.spec.ts -g "opened from a question mark it scrolls to the word"`
 
-**C435** - In the missing list, "Pack Hunt (Vermelho)", "(Amarelo)" and "(Azul)" are followed by no button named "O que é Vermelho?", "O que é Amarelo?" or "O que é Azul?" (AC 278)
+**C435** - In the missing list, "Pack Hunt (Vermelho)", "(Amarelo)" and "(Azul)" are followed by no button named "O que é Vermelho?", "O que é Amarelo?" or "O que é Azul?" (AC 278) · done
 Proof: `web unit src/components/deck-detail/__tests__/MissingPanel.spec.tsx -t "no question mark on the pitch word of a card name"`
 
-**C436** - Screen `r2-pitch-sheet-phone`: the deck header "Rhinar - Blitz" with "Blitz" and "Montando", the line "31 de 40 cartas no deck · coloque mais 9", then "Pitch ?" with "Vermelho 14 · Amarelo 9 · Azul 8", then "Curva de custo ?" with the bars 0, 1, 2, 3, 4+; the open sheet reads, in order, "Pitch", the Pitch sentence, "No seu deck: 14 vermelhas, 9 amarelas, 8 azuis.", "Ver todos os termos", "Fechar" (AC 279)
+**C436** - Screen `r2-pitch-sheet-phone`: the deck header "Rhinar - Blitz" with "Blitz" and "Montando", the line "31 de 40 cartas no deck · coloque mais 9", then "Pitch ?" with "Vermelho 14 · Amarelo 9 · Azul 8", then "Curva de custo ?" with the bars 0, 1, 2, 3, 4+; the open sheet reads, in order, "Pitch", the Pitch sentence, "No seu deck: 14 vermelhas, 9 amarelas, 8 azuis.", "Ver todos os termos", "Fechar" (AC 279) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckAnalysisRow.spec.tsx -t "matches r2-pitch-sheet-phone"`
 
-**C437** - Screen `b2-stage-retire-phone`: the stage menu lists, in order, "Ideia", "Montando", "Pronto", "Jogando", "Aposentado" followed by its "?"; the open sheet reads, in order, "Aposentado", the table's sentence ("Etapa de um deck que você não usa mais. Ele fica no grupo Aposentados, salvo com as cartas, e volta a ser usado quando você quiser."), "Seu deck Rhinar Blitz v2 continua salvo com as 12 cartas.", "Ver todos os termos", "Fechar" (AC 272, AC 279)
+**C437** - Screen `b2-stage-retire-phone`: the stage menu lists, in order, "Ideia", "Montando", "Pronto", "Jogando", "Aposentado" followed by its "?"; the open sheet reads, in order, "Aposentado", the table's sentence ("Etapa de um deck que você não usa mais. Ele fica no grupo Aposentados, salvo com as cartas, e volta a ser usado quando você quiser."), "Seu deck Rhinar Blitz v2 continua salvo com as 12 cartas.", "Ver todos os termos", "Fechar" (AC 272, AC 279) · done
 Proof: `web unit src/components/deck-detail/__tests__/StatusDropdown.spec.tsx -t "matches b2-stage-retire-phone"`
 
-**C438** - Screen `r2-glossary-phone` signed out: the top bar has "Entrar"; below it "‹ Voltar", "Termos do jogo", "O que querem dizer as palavras do jogo.", "Procurar uma palavra", "Voltar para a lista do Pedro", the 31 entries, then the LSS notice and "Sobre", in that order (AC 279)
+**C438** - Screen `r2-glossary-phone` signed out: the top bar has "Entrar"; below it "‹ Voltar", "Termos do jogo", "O que querem dizer as palavras do jogo.", "Procurar uma palavra", "Voltar para a lista do Pedro", the 31 entries, then the LSS notice and "Sobre", in that order (AC 279) · done
 Proof: `web unit src/routes/__tests__/termos.spec.tsx -t "matches r2-glossary-phone"`
 
-**C439** - The menu offers "Termos do jogo" linking to `/termos`, and the shared pages' foot offers "O que querem dizer estas palavras?" linking to `/termos` (AC 275)
+**C439** - The menu offers "Termos do jogo" linking to `/termos`, and the shared pages' foot offers "O que querem dizer estas palavras?" linking to `/termos` (AC 275) · done
 Proof: `web unit src/components/shell/__tests__/TopBar.spec.tsx -t "the menu links Termos do jogo"`
 Proof: `web unit src/components/shared-deck/__tests__/SharedDeckPage.spec.tsx -t "the foot links the glossary"`
 
-**C440** - The axe scan list gains `/termos` and a deck page with the "Pitch" sheet open, and both have zero `serious` or `critical` issues (AC 3, AC 279)
+**C440** - The axe scan list gains `/termos` and a deck page with the "Pitch" sheet open, and both have zero `serious` or `critical` issues (AC 3, AC 279) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "no serious or critical axe issue on the glossary"`
 
 ### S38 - Housekeeping on a schedule kept in the repository · 7 files · 31 KB · ~14k

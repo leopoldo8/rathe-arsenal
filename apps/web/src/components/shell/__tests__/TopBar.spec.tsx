@@ -156,6 +156,14 @@ describe('TopBar — nav items', () => {
   });
 });
 
+describe('TopBar — menu', () => {
+  it('the menu links Termos do jogo', () => {
+    render(<TopBar />);
+
+    expect(screen.getByRole('link', { name: 'Termos do jogo' })).toHaveAttribute('href', '/termos');
+  });
+});
+
 describe('TopBar — A11y', () => {
   it('primary nav has aria-label="Primary"', () => {
     render(<TopBar />);

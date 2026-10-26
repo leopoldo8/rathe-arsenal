@@ -24,6 +24,8 @@ interface IDeckHeroBannerProps {
   readonly heroIdentifier: string | null;
   readonly heroFallbackName: string;
   readonly pct: number;
+  /** The deck's cards in the starting deck, for the "Aposentado" sheet's line about the deck. */
+  readonly cardCount?: number | undefined;
   readonly onEdit: () => void;
   readonly onShare: () => void;
   readonly onCopyList: () => void;
@@ -38,6 +40,7 @@ export function DeckHeroBanner({
   heroIdentifier,
   heroFallbackName,
   pct,
+  cardCount,
   onEdit,
   onShare,
   onCopyList,
@@ -115,7 +118,7 @@ export function DeckHeroBanner({
       </div>
 
       <div className={styles.actions} data-testid="deck-detail-action-bar">
-        <StatusDropdown deckId={deckId} currentStatus={status} />
+        <StatusDropdown deckId={deckId} currentStatus={status} deckName={deckName} cardCount={cardCount} />
         <DeckListActions deckId={deckId} onCopyList={onCopyList} />
         <button type="button" className={styles.shareBtn} onClick={onShare} data-testid="deck-detail-share-btn">
           {t('sharing.dialog.trigger')}

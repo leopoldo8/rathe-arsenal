@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useRouterState } from '@tanstack/react-router';
+import { GlossaryScope } from '../glossary/GlossaryScope';
 import { TopBar } from './TopBar';
 import { BottomTabBar } from './BottomTabBar';
 import { Footer } from './Footer';
@@ -42,10 +44,15 @@ export function AppShell({ children, fitViewport = false }: IAppShellProps): Rea
     return () => mql.removeEventListener('change', handler);
   }, []);
 
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
   return (
     <div className={styles.shell} data-fit-viewport={fitViewport ? 'true' : undefined}>
       <TopBar />
-      <main className={styles.main}>{children}</main>
+      {/* A new scope per page, so a game word is explained once on each screen. */}
+      <main className={styles.main}>
+        <GlossaryScope key={pathname}>{children}</GlossaryScope>
+      </main>
       <Footer />
       {isMobile && <BottomTabBar />}
     </div>

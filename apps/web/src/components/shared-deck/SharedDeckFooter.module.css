@@ -12,3 +12,11 @@
   margin: 0 0 var(--ra-space-2);
   max-inline-size: 92ch;
 }
+
+.glossaryLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ra-accent);
+  text-decoration: underline;
+}

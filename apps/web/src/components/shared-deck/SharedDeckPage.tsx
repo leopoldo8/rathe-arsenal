@@ -93,7 +93,9 @@ export function SharedDeckPage({ token }: ISharedDeckPageProps): React.ReactElem
           </div>
         )}
       </main>
-      <SharedDeckFooter />
+      <SharedDeckFooter
+        {...(deck === undefined ? {} : { glossaryBackLabel: t('glossary.page.backToSharedDeck', { name: deck.sharerName }) })}
+      />
       {contactProps !== null && <SharedContactButton {...contactProps} variant="bar" />}
     </div>
   );

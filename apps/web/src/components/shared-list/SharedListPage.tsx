@@ -78,7 +78,9 @@ export function SharedListPage({ token }: ISharedListPageProps): React.ReactElem
           </div>
         )}
       </main>
-      <SharedDeckFooter />
+      <SharedDeckFooter
+        {...(list === undefined ? {} : { glossaryBackLabel: t('glossary.page.backToSharedList', { name: list.sharerName }) })}
+      />
       {list !== undefined && list.contactWhatsapp !== null && visitorView === null && (
         <SharedContactButton
           variant="bar"

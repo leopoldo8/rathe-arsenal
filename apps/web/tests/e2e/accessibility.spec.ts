@@ -65,6 +65,7 @@ test.describe('accessibility scan', () => {
       // The product's language is pt-BR; without the pin the browser's own language decides.
       await scanned.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
       await scanned.goto(`${BASE_URL}${scanPage.path(context)}`, { waitUntil: 'networkidle', timeout: 20000 });
+      await scanPage.prepare?.(scanned);
       const { violations } = await new AxeBuilder({ page: scanned }).analyze();
 
       expect(describeViolations(blockingViolations(violations))).toEqual([]);

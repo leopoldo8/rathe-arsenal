@@ -107,6 +107,35 @@ describe('MissingPanel — one merged panel', () => {
   });
 });
 
+describe('MissingPanel — pitch words in card names', () => {
+  it('no question mark on the pitch word of a card name', () => {
+    renderPanel(
+      populated({
+        lines: [
+          line({ cardIdentifier: 'pack-hunt-red', cardName: 'Pack Hunt', pitch: 1 }),
+          line({ cardIdentifier: 'pack-hunt-yellow', cardName: 'Pack Hunt', pitch: 2 }),
+          line({ cardIdentifier: 'pack-hunt-blue', cardName: 'Pack Hunt', pitch: 3 }),
+        ],
+      }),
+      {
+        entries: [
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1 },
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-yellow', name: 'Pack Hunt', pitch: 2 },
+          { ...ENTRIES[0]!, cardIdentifier: 'pack-hunt-blue', name: 'Pack Hunt', pitch: 3 },
+        ],
+      },
+    );
+
+    expect(screen.getByText('Pack Hunt (Vermelho)')).toBeInTheDocument();
+    expect(screen.getByText('Pack Hunt (Amarelo)')).toBeInTheDocument();
+    expect(screen.getByText('Pack Hunt (Azul)')).toBeInTheDocument();
+    for (const word of ['Vermelho', 'Amarelo', 'Azul']) {
+      expect(screen.queryByRole('button', { name: `O que é ${word}?` })).toBeNull();
+    }
+    expect(screen.queryByRole('button', { name: /^O que é / })).toBeNull();
+  });
+});
+
 describe('MissingPanel — store states per row', () => {
   it('in stock: shows the price and a Buy link to the store product page', () => {
     renderPanel(populated());

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { GlossaryTerm } from '../glossary/GlossaryTerm';
 import { formatBrl } from '../../utils/format-brl';
 import { formatDaysAgo } from '../../lib/format-relative-time';
 import type { ILibraryStats } from '../../api/library';
@@ -73,6 +74,7 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
               </span>
             ) : null,
           )}
+          <GlossaryTerm term="pitchColors" bare />
         </div>
       </div>
 

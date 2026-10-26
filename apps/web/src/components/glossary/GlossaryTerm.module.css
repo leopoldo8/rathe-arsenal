@@ -1,0 +1,43 @@
+.term {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ra-space-1);
+}
+
+/* 44 px to tap, 20 px drawn; the negative margin keeps the tall target from stretching the line. */
+.question {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  margin-block: -12px;
+  margin-inline: -12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.circle {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 20px;
+  block-size: 20px;
+  box-sizing: border-box;
+  border: 1px solid var(--ra-accent-soft-bd);
+  border-radius: 50%;
+  background: var(--ra-accent-soft);
+  color: var(--ra-accent);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-xs);
+  font-weight: var(--ra-weight-bold);
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.question:focus-visible .circle {
+  outline: 2px solid var(--ra-accent);
+  outline-offset: 2px;
+}

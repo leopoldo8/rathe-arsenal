@@ -104,3 +104,18 @@
 .item[data-state="checked"] {
   color: var(--ra-accent-body);
 }
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row > .item {
+  flex: 1 1 auto;
+}
+
+.help {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding-inline-end: var(--ra-space-3);
+}

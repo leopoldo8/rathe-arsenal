@@ -57,6 +57,12 @@ describe('LibraryStatsBar — estimated price', () => {
     );
     expect(container.querySelector('[title]')).toBeNull();
   });
+
+  it('the estimated price is explained in visible text: the pitch dots carry the question mark of Vermelho, Amarelo, Azul', () => {
+    render(<LibraryStatsBar stats={makeStats()} />);
+
+    expect(screen.getByRole('button', { name: 'O que é Vermelho, Amarelo, Azul?' })).toBeInTheDocument();
+  });
 });
 
 describe('LibraryStatsBar — happy path: counts and pills', () => {

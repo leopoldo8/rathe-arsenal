@@ -169,6 +169,16 @@ describe('SharedDeckPage', () => {
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
     });
 
+    it('the foot links the glossary', async () => {
+      renderPage();
+
+      await screen.findByTestId('shared-deck-list');
+      expect(within(screen.getByTestId('shared-deck-footer')).getByRole('link', { name: 'O que querem dizer estas palavras?' })).toHaveAttribute(
+        'href',
+        '/termos',
+      );
+    });
+
     it('headings follow the shared grouping', async () => {
       renderPage();
 

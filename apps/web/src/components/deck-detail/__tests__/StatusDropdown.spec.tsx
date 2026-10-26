@@ -12,6 +12,10 @@
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { withLinkMock } from '../../../test/router-link-mock';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => withLinkMock(await importOriginal<object>()));
+
 import { StatusDropdown } from '../StatusDropdown';
 
 // ---------------------------------------------------------------------------
@@ -292,6 +296,80 @@ describe('StatusDropdown on a deck with problems', () => {
       'Pronto',
       'Jogando',
       'Aposentado',
+    ]);
+  });
+});
+
+describe('StatusDropdown — the "?" of Aposentado', () => {
+  const RETIRED_SENTENCE =
+    'Etapa de um deck que você não usa mais. Ele fica no grupo Aposentados, salvo com as cartas, e volta a ser usado quando você quiser.';
+
+  function setPhone(isPhone: boolean): void {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (query: string) => ({
+        matches: isPhone && query.includes('max-width'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+  }
+
+  async function openMenu(): Promise<void> {
+    render(<StatusDropdown deckId={42} currentStatus="idea" deckName="Rhinar Blitz v2" cardCount={12} />);
+    fireEvent.click(screen.getByRole('combobox'));
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(5));
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    spies.mutate.mockReset();
+    patchConfig.isPending = false;
+  });
+
+  it('the question mark never picks the option', async () => {
+    setPhone(false);
+    await openMenu();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'O que é Aposentado?' }));
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'O que é Aposentado?' }));
+    fireEvent.click(screen.getByRole('button', { name: 'O que é Aposentado?' }));
+
+    expect(await screen.findByRole('heading', { name: 'Aposentado' })).toBeInTheDocument();
+    expect(spies.mutate).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { hidden: true })).toHaveAttribute('aria-label', 'Mudar status do deck, atualmente Ideia');
+
+    fireEvent.click(screen.getAllByRole('option').find((option) => option.textContent?.includes('Aposentado'))!);
+
+    expect(spies.mutate).toHaveBeenCalledWith({ status: 'retired' }, expect.any(Object));
+  });
+
+  it('matches b2-stage-retire-phone', async () => {
+    setPhone(true);
+    await openMenu();
+
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Ideia',
+      'Montando',
+      'Pronto',
+      'Jogando',
+      'Aposentado',
+    ]);
+    const retired = screen.getAllByRole('option')[4]!;
+    const question = screen.getByRole('button', { name: 'O que é Aposentado?' });
+    expect(retired.contains(question)).toBe(false);
+    expect(retired.compareDocumentPosition(question) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(question);
+
+    const sheet = await screen.findByRole('dialog', { name: 'Aposentado' });
+    expect(Array.from(sheet.querySelectorAll('h2, p, a, button')).map((node) => node.textContent)).toEqual([
+      'Aposentado',
+      RETIRED_SENTENCE,
+      'Seu deck Rhinar Blitz v2 continua salvo com as 12 cartas.',
+      'Ver todos os termos',
+      'Fechar',
     ]);
   });
 });

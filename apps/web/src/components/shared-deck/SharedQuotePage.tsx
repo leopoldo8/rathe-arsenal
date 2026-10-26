@@ -167,7 +167,7 @@ export function SharedQuotePage({ token, quote }: ISharedQuotePageProps): React.
           </>
         )}
       </main>
-      <SharedDeckFooter />
+      <SharedDeckFooter glossaryBackLabel={t('glossary.page.backToSharedList', { name: quote.sharerName })} />
       <div className={styles.bar} data-testid="quote-bar">
         <p className={styles.barTotal}>
           {t('sharing.quote.footerTotal', { have: totals.have, count: totals.needed, price: formatBrl(totals.cents) })}

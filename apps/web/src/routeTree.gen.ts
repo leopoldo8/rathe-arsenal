@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -51,6 +52,11 @@ import { Route as AuthAddCardsProductProductKeyRouteImport } from './routes/_aut
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/add-cards': typeof AuthAddCardsRouteWithChildren
   '/home': typeof AuthHomeRoute
@@ -286,6 +293,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/home': typeof AuthHomeRoute
   '/library': typeof AuthLibraryRoute
@@ -326,6 +334,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/termos': typeof TermosRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_auth/add-cards': typeof AuthAddCardsRouteWithChildren
   '/_auth/home': typeof AuthHomeRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/add-cards'
     | '/home'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/home'
     | '/library'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/sign-in'
     | '/sign-up'
+    | '/termos'
     | '/verify-email'
     | '/_auth/add-cards'
     | '/_auth/home'
@@ -486,6 +498,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  TermosRoute: typeof TermosRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   DTokenRoute: typeof DTokenRoute
   LTokenRoute: typeof LTokenRoute
@@ -498,6 +511,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -854,6 +874,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  TermosRoute: TermosRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   DTokenRoute: DTokenRoute,
   LTokenRoute: LTokenRoute,

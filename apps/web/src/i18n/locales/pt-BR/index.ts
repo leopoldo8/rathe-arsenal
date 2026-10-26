@@ -27,6 +27,7 @@ import { lists } from './lists';
 import { missingList } from './missingList';
 import { spare } from './spare';
 import { cardGroups } from './cardGroups';
+import { glossary } from './glossary';
 
 export const ptBR = {
   common,
@@ -58,6 +59,7 @@ export const ptBR = {
   missingList,
   spare,
   cardGroups,
+  glossary,
 } as const;
 
 /**

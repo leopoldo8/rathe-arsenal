@@ -28,6 +28,7 @@ import { lists } from './lists';
 import { missingList } from './missingList';
 import { spare } from './spare';
 import { cardGroups } from './cardGroups';
+import { glossary } from './glossary';
 
 /**
  * EN-US catalog typed against TTranslationResources (typeof ptBR) — a missing
@@ -63,4 +64,5 @@ export const enUS: TTranslationResources = {
   missingList,
   spare,
   cardGroups,
+  glossary,
 };

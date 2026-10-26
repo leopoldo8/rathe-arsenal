@@ -13,7 +13,7 @@ import { RecommendationsRail } from './recommendations/RecommendationsRail';
 import { TagChipRow } from './TagChipRow';
 import { summariseDeck } from './deckDetailModel';
 import { MissingSummaryCard } from './MissingSummaryCard';
-import { buildDeckList } from './deckListModel';
+import { buildDeckList, deckSizeOf } from './deckListModel';
 import { buildListCards } from './deckListCards';
 import { CopyListSheet } from './CopyListSheet';
 import { HeroOutsideFormatPanel } from './HeroOutsideFormatPanel';
@@ -91,6 +91,7 @@ export function DeckDetailView({
         heroIdentifier={deck.heroIdentifier}
         heroFallbackName={deck.hero}
         pct={snapshot.effectivePercent}
+        cardCount={deckSizeOf(items)}
         onEdit={onEdit}
         onShare={() => setShare({ open: true, intent: null })}
         onCopyList={() => setCopyListOpen(true)}

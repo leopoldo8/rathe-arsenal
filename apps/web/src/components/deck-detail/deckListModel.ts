@@ -79,6 +79,13 @@ export function resolveTypeGroup(entry: IBreakdownEntry): TTypeGroupId {
   return cardGroupOf({ slot: entry.slot, type: entry.type });
 }
 
+const LOADOUT_GROUP_IDS: ReadonlySet<TTypeGroupId> = new Set(['hero', 'weapon', 'equipment']);
+
+/** Copies in the starting deck: the hero, the weapon and the equipment are not part of it. */
+export function deckSizeOf(items: readonly IDeckListItem[]): number {
+  return sumQuantity(items.filter((item) => !LOADOUT_GROUP_IDS.has(resolveTypeGroup(item.entry))));
+}
+
 export function resolveCostGroup(cost: number | null): TCostGroupId {
   if (cost === null) return 'none';
   if (cost > MAX_NAMED_COST) return '4plus';
