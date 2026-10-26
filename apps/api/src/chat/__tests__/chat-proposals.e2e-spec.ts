@@ -1,9 +1,14 @@
 import { Logger } from '@nestjs/common';
-import { catalog } from '@rathe-arsenal/engine';
-import { bootChatFixture, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, TALISHAR } from './chat-e2e.fixture';
+import { catalog, computeDeckLegality } from '@rathe-arsenal/engine';
+import { SubstitutionService } from '../../substitution/substitution.service';
+import { bootChatFixture, callAnswer, COAX, EMISSARY, FLEX, IChatFixture, IChatUser, KATSU, scriptedFetch, TALISHAR, textAnswer } from './chat-e2e.fixture';
 
 const ADRENALINE = 'adrenaline-rush-red';
 const CC = 'Classic Constructed';
+const RHINAR = 'rhinar-reckless-rampage';
+const PACK_HUNT_RED = 'pack-hunt-red';
+const PACK_HUNT_YELLOW = 'pack-hunt-yellow';
+const PACK_HUNT_BLUE = 'pack-hunt-blue';
 const UNKNOWN_UUID = '0f1e2d3c-4b5a-4968-8776-655443322110';
 
 interface IProposalSeed {
@@ -57,6 +62,156 @@ describe('chat proposals (E2E)', () => {
   const proposalRow = async (id: string) =>
     ((await fixture.dataSource.query(`SELECT * FROM chat_proposal WHERE id = $1`, [id])) as Array<Record<string, unknown>>)[0];
 
+  const factsOf = (cardIdentifier: string) => {
+    const card = catalog.getCard(cardIdentifier);
+    return JSON.parse(JSON.stringify({ types: card.types, subtypes: card.subtypes, cost: card.cost ?? null, power: card.power ?? null, defense: card.defense ?? null, pitch: card.pitch ?? null }));
+  };
+  const WOUNDING_BLOW_RED = catalog.cards.find((card) => card.name === 'Wounding Blow' && card.pitch === 1)!.cardIdentifier;
+
+  /** The deck of the audit's F34: Rhinar in Classic Constructed with Pack Hunt (Vermelho) at 3 in the deck and 1 in the inventory. */
+  async function insertRhinarDeck(user: IChatUser): Promise<number> {
+    const [{ id }] = (await fixture.dataSource.query(
+      `INSERT INTO tracked_deck ("userId", name, hero, "heroIdentifier", format, status)
+       VALUES ($1, 'Rhinar CC', 'Rhinar, Reckless Rampage', $2, 'Classic Constructed', 'building') RETURNING id`,
+      [user.userId, RHINAR],
+    )) as [{ id: number }];
+    const lines: Array<[string, string, number, number]> = [
+      [RHINAR, 'hero', 1, 0],
+      [PACK_HUNT_RED, 'mainboard', 3, 1],
+      [PACK_HUNT_YELLOW, 'mainboard', 3, 0],
+      [PACK_HUNT_BLUE, 'mainboard', 3, 0],
+    ];
+    for (const [cardIdentifier, slot, quantity, inventoryQuantity] of lines) {
+      await fixture.dataSource.query(
+        `INSERT INTO deck_card ("trackedDeckId", "cardIdentifier", quantity, "inventoryQuantity", slot) VALUES ($1, $2, $3, $4, $5)`,
+        [id, cardIdentifier, quantity, inventoryQuantity, slot],
+      );
+    }
+    return id;
+  }
+
+  /** A real turn: the scripted model calls propose_swap, and the proposal reaches the table through the turn's own finish. */
+  async function swapThroughATurn(user: IChatUser, deckId: number, args: Record<string, unknown>) {
+    const conversationId = await fixture.conversation(user, { trackedDeckId: deckId });
+    const { assistantMessageId } = await fixture.send(user, conversationId, 'Meu Rhinar CC está com Pack Hunt (Vermelho) a mais.');
+    const swap = { deckId, originalCardIdentifier: PACK_HUNT_RED, slot: 'mainboard', replacementCardIdentifier: WOUNDING_BLOW_RED, reason: 'legal and cheap', ...args };
+    const stub = scriptedFetch([callAnswer([{ id: 's1', name: 'propose_swap', args: swap }]), textAnswer('Posso trocar uma cópia.')]);
+    await fixture.drain(stub.fetch);
+    const [proposal] = (await fixture.dataSource.query(`SELECT * FROM chat_proposal WHERE "messageId" = $1`, [assistantMessageId])) as Array<Record<string, any>>;
+    if (!proposal) throw new Error('the turn stored no proposal');
+    return { conversationId, messageId: assistantMessageId, proposal };
+  }
+
+  async function rhinarOwner(): Promise<{ user: IChatUser; deckId: number }> {
+    const user = await fixture.chatUser();
+    const deckId = await insertRhinarDeck(user);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: PACK_HUNT_RED, quantity: 4 }]);
+    return { user, deckId };
+  }
+
+  it('a swap proposal stores quantity, side and the missing count before and after', async () => {
+    const { user, deckId } = await rhinarOwner();
+    const missingNow = (await fixture.app.get(SubstitutionService).computeReadiness(deckId, user.userId)).missingCopies.total;
+
+    const { proposal } = await swapThroughATurn(user, deckId, { quantity: 1, side: 'inventory' });
+
+    expect(proposal.kind).toBe('swap');
+    expect(proposal.payload).toMatchObject({ quantity: 1, side: 'inventory', missingBefore: missingNow, missingAfter: missingNow + 1 });
+  });
+
+  it('the conversation returns the stored swap effect, not a recomputed one', async () => {
+    const { user, deckId } = await rhinarOwner();
+    const { conversationId, proposal } = await swapThroughATurn(user, deckId, { quantity: 1, side: 'inventory' });
+    const read = async () =>
+      (await fixture.get(`/api/chat/conversations/${conversationId}`, user.sessionToken).expect(200)).body.messages[1].proposals[0] as { payload: Record<string, unknown> };
+
+    expect([typeof proposal.payload.missingBefore, typeof proposal.payload.missingAfter]).toEqual(['number', 'number']);
+    const before = await read();
+    await fixture.own(user.sessionToken, [{ cardIdentifier: WOUNDING_BLOW_RED, quantity: 1 }]);
+    const after = await read();
+
+    for (const view of [before, after]) {
+      expect(view.payload).toMatchObject({
+        quantity: 1,
+        side: 'inventory',
+        missingBefore: proposal.payload.missingBefore,
+        missingAfter: proposal.payload.missingAfter,
+      });
+    }
+  });
+
+  it("a swap proposal carries the incoming card's free copies and Cúpula DT price, and the copies that stay", async () => {
+    await fixture.dataSource.query(
+      `INSERT INTO store (slug, name, "baseUrl", "listingPath", "rateLimitMs", active)
+       VALUES ('cupula-dt', 'Cúpula DT', 'https://www.cupuladt.com.br', '/?view=ecom/itens&tcg=8', 1500, true)
+       ON CONFLICT (slug) DO NOTHING`,
+    );
+    await fixture.dataSource.query(
+      `INSERT INTO store_stock ("storeId", "cardIdentifier", "priceCents", quantity, "productUrl", "productNameRaw", "lastFetchedAt")
+       VALUES ((SELECT id FROM store WHERE slug = 'cupula-dt'), $1, 250, 5, 'https://www.cupuladt.com.br/produto/wounding-blow', 'Wounding Blow (Red)', now())
+       ON CONFLICT ("storeId", "cardIdentifier") DO UPDATE SET "priceCents" = 250, quantity = 5, "lastFetchedAt" = now()`,
+      [WOUNDING_BLOW_RED],
+    );
+    const { user, deckId } = await rhinarOwner();
+    const { conversationId } = await swapThroughATurn(user, deckId, { quantity: 1, side: 'inventory' });
+    const deckSide = await swapThroughATurn(user, deckId, { quantity: 1, side: 'deck' });
+    const read = async (id: string) =>
+      (await fixture.get(`/api/chat/conversations/${id}`, user.sessionToken).expect(200)).body.messages[1].proposals[0].display as {
+        original: Record<string, unknown>;
+        replacement: Record<string, unknown>;
+      };
+
+    const none = await read(conversationId);
+    await fixture.own(user.sessionToken, [{ cardIdentifier: WOUNDING_BLOW_RED, quantity: 2 }]);
+    const two = await read(conversationId);
+    const deckDisplay = await read(deckSide.conversationId);
+
+    expect([none.replacement['freeCopies'], two.replacement['freeCopies']]).toEqual([0, 2]);
+    expect(two.replacement['storePriceCents']).toBe(250);
+    expect(two.replacement['facts']).toEqual(factsOf(WOUNDING_BLOW_RED));
+    expect(two.original['facts']).toEqual(factsOf(PACK_HUNT_RED));
+    expect([two.original['copiesInDeck'], two.original['copiesLeft']]).toEqual([3, 3]);
+    expect([deckDisplay.original['copiesInDeck'], deckDisplay.original['copiesLeft']]).toEqual([3, 2]);
+    await fixture.dataSource.query(`DELETE FROM store_stock WHERE "cardIdentifier" = $1`, [WOUNDING_BLOW_RED]);
+    expect((await read(conversationId)).replacement['storePriceCents']).toBeNull();
+  });
+
+  it('applying a one-copy swap moves exactly one copy from the stated side', async () => {
+    const { user, deckId } = await rhinarOwner();
+    const inventorySwap = await swapThroughATurn(user, deckId, { quantity: 1, side: 'inventory' });
+
+    const applied = await fixture.post(`/api/chat/proposals/${inventorySwap.proposal.id}/apply`, user.sessionToken).expect(201);
+
+    const rows = (await fixture.dataSource.query(
+      `SELECT "cardIdentifier", quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 AND slot = 'mainboard'`,
+      [deckId],
+    )) as Array<{ cardIdentifier: string; quantity: number; inventoryQuantity: number }>;
+    const byCard = Object.fromEntries(rows.map((row) => [row.cardIdentifier, [row.quantity, row.inventoryQuantity]]));
+    expect(byCard[PACK_HUNT_RED]).toEqual([3, 0]);
+    expect(byCard[WOUNDING_BLOW_RED]).toEqual([0, 1]);
+    const replacements = await fixture.replacementRows(deckId);
+    expect(replacements.map((row) => [row['id'], row['quantity'], row['side'], row['pickedFrom']])).toEqual([[applied.body.replacementId, 1, 'inventory', 'chat']]);
+    const legality = computeDeckLegality(
+      { heroIdentifier: RHINAR, cards: rows.map((row) => ({ ...row, slot: 'mainboard' })) },
+      catalog,
+      'Classic Constructed',
+    );
+    expect(legality.details.filter((detail) => detail.code === 'too_many_copies' && (detail.params as { cardIdentifier?: string }).cardIdentifier === PACK_HUNT_RED)).toEqual([]);
+    const missingNow = (await fixture.app.get(SubstitutionService).computeReadiness(deckId, user.userId)).missingCopies.total;
+    expect(missingNow).toBe(inventorySwap.proposal.payload.missingAfter);
+
+    const other = await rhinarOwner();
+    const deckSwap = await swapThroughATurn(other.user, other.deckId, { quantity: 1, side: 'deck' });
+    await fixture.post(`/api/chat/proposals/${deckSwap.proposal.id}/apply`, other.user.sessionToken).expect(201);
+    const deckRows = (await fixture.dataSource.query(
+      `SELECT "cardIdentifier", quantity, "inventoryQuantity" FROM deck_card WHERE "trackedDeckId" = $1 AND slot = 'mainboard'`,
+      [other.deckId],
+    )) as Array<{ cardIdentifier: string; quantity: number; inventoryQuantity: number }>;
+    const deckByCard = Object.fromEntries(deckRows.map((row) => [row.cardIdentifier, [row.quantity, row.inventoryQuantity]]));
+    expect(deckByCard[PACK_HUNT_RED]).toEqual([2, 1]);
+    expect(deckByCard[WOUNDING_BLOW_RED]).toEqual([1, 0]);
+  });
+
   it('proposals carry live owned and missing counts', async () => {
     const user = await fixture.chatUser();
     await fixture.own(user.sessionToken, [
@@ -104,8 +259,16 @@ describe('chat proposals (E2E)', () => {
     expect([swap!['trackedDeckId'], swap!['display']]).toEqual([
       user.deckId,
       {
-        original: { cardIdentifier: FLEX, name: 'Flex', pitch: 1, imageUrl: catalog.getCard(FLEX).imageUrl, copiesInDeck: 2 },
-        replacement: { cardIdentifier: EMISSARY, name: 'Emissary of Tides', pitch: 1, imageUrl: catalog.getCard(EMISSARY).imageUrl, freeCopies: 2 },
+        original: { cardIdentifier: FLEX, name: 'Flex', pitch: 1, imageUrl: catalog.getCard(FLEX).imageUrl, copiesInDeck: 2, copiesLeft: 2, facts: factsOf(FLEX) },
+        replacement: {
+          cardIdentifier: EMISSARY,
+          name: 'Emissary of Tides',
+          pitch: 1,
+          imageUrl: catalog.getCard(EMISSARY).imageUrl,
+          freeCopies: 2,
+          storePriceCents: null,
+          facts: factsOf(EMISSARY),
+        },
       },
     ]);
 
@@ -204,6 +367,11 @@ describe('chat proposals (E2E)', () => {
     const invalid = await fixture.chatUser();
     const invalidMessage = await answeredMessage(invalid);
     const invalidId = await seed(invalidMessage.messageId, { kind: 'deck', payload: deckPayload([['card-retired-from-catalog', 2]]) });
+    const copyGone = await rhinarOwner();
+    const copyGoneSwap = await swapThroughATurn(copyGone.user, copyGone.deckId, { quantity: 1, side: 'inventory' });
+    await fixture.dataSource.query(`UPDATE deck_card SET "inventoryQuantity" = 0 WHERE "trackedDeckId" = $1 AND "cardIdentifier" = $2`, [copyGone.deckId, PACK_HUNT_RED]);
+    const copyGoneBefore = [await decksOf(copyGone.user), await replacementsOf(copyGone.user)];
+
     const before = await Promise.all([cutGone, deckGone, invalid].map(async (user) => [await decksOf(user), await replacementsOf(user)]));
 
     const responses = await Promise.all([
@@ -218,6 +386,13 @@ describe('chat proposals (E2E)', () => {
       [409, 'PROPOSAL_STALE'],
     ]);
     expect((await Promise.all([cutId, goneId, invalidId].map(proposalRow))).map((row) => row!['status'])).toEqual(['stale', 'stale', 'stale']);
+
+    const copyResponse = await fixture.post(`/api/chat/proposals/${copyGoneSwap.proposal.id}/apply`, copyGone.user.sessionToken);
+    expect([copyResponse.status, copyResponse.body.code]).toEqual([409, 'PROPOSAL_STALE']);
+    expect(await fixture.deckCards(copyGone.deckId)).not.toHaveProperty(`${WOUNDING_BLOW_RED}@mainboard`);
+    expect([await decksOf(copyGone.user), await replacementsOf(copyGone.user)]).toEqual(copyGoneBefore);
+    const staleRead = (await fixture.get(`/api/chat/conversations/${copyGoneSwap.conversationId}`, copyGone.user.sessionToken).expect(200)).body;
+    expect(staleRead.messages[1].proposals[0].status).toBe('stale');
     expect(await Promise.all([cutGone, deckGone, invalid].map(async (user) => [await decksOf(user), await replacementsOf(user)]))).toEqual(before);
   });
 

@@ -74,4 +74,38 @@ describe('proposal validation', () => {
     expect(code(swap({}), null)).toBe('DECK_NOT_FOUND');
     expect(validateSwapProposal(swap({}) as never, katsuDeck, catalog)).toEqual(expect.objectContaining({ ok: true, copies: 2 }));
   });
+
+  it("a swap's quantity and side are checked against the deck and the limits", () => {
+    const pack = (pitch: string) => `pack-hunt-${pitch}`;
+    const rhinarDeck = {
+      heroIdentifier: 'rhinar-reckless-rampage',
+      format: CC,
+      cards: [
+        { cardIdentifier: pack('red'), slot: 'mainboard', quantity: 3, inventoryQuantity: 1 },
+        { cardIdentifier: pack('yellow'), slot: 'mainboard', quantity: 3 },
+      ],
+    };
+    const woundingBlow = findBy((card) => card.name === 'Wounding Blow' && card.pitch === 1);
+    const swap = (overrides: Record<string, unknown>) => ({
+      trackedDeckId: 1,
+      originalCardIdentifier: pack('red'),
+      slot: 'mainboard',
+      replacementCardIdentifier: woundingBlow,
+      reason: 'a legal card the user lacks',
+      ...overrides,
+    });
+    const answer = (args: Record<string, unknown>, target: typeof rhinarDeck | null = rhinarDeck) => {
+      const result = validateSwapProposal(args as never, target, catalog);
+      return result.ok ? 'ok' : `${result.ok}:${result.error}`;
+    };
+
+    expect(answer(swap({ quantity: 1, side: 'deck' }))).toBe('ok');
+    expect(answer(swap({ quantity: 1, side: 'inventory' }))).toBe('ok');
+    expect(answer(swap({ quantity: 0, side: 'deck' }))).toMatch(/^false:/);
+    expect(answer(swap({ quantity: 2, side: 'inventory' }))).toMatch(/^false:/);
+    expect(answer(swap({ quantity: 1, side: 'bench' }))).toMatch(/^false:/);
+    expect(answer(swap({ quantity: 1, side: 'inventory', replacementCardIdentifier: pack('yellow'), originalCardIdentifier: pack('red') }))).toMatch(/^false:/);
+    const stored = validateSwapProposal(swap({ quantity: 1, side: 'inventory' }) as never, rhinarDeck, catalog);
+    expect(stored).toEqual(expect.objectContaining({ ok: true, copies: 1, payload: expect.objectContaining({ quantity: 1, side: 'inventory' }) }));
+  });
 });

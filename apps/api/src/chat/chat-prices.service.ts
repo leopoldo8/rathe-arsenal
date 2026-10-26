@@ -61,6 +61,24 @@ export class ChatPricesService {
     return this.priceEntries(breakdown.missing, breakdown);
   }
 
+  /**
+   * The Cúpula DT price of one copy of each card, in cents, for the cards it has in stock with a price; a card the store
+   * lacks or has not priced has no entry. It reads the stored rows and never queues a lookup.
+   */
+  async storeUnitPrices(cardIdentifiers: readonly string[]): Promise<Map<string, number>> {
+    const entries = [...new Set(cardIdentifiers)].flatMap((cardIdentifier) => {
+      const card = findCard(cardIdentifier);
+      return card === null ? [] : [breakdownEntry(card, 1)];
+    });
+    const store = await this.shoppingLine.computeForBreakdown({ exact: [], substituted: [], missing: entries, notOwned: entries });
+    const prices = new Map<string, number>();
+    if (store?.kind !== 'populated') return prices;
+    for (const line of store.lines) {
+      if (line.unitPriceCents !== null && line.quantityAvailable > 0) prices.set(line.cardIdentifier, line.unitPriceCents);
+    }
+    return prices;
+  }
+
   private async freshBreakdown(deckId: number, userId: string): Promise<IBreakdown> {
     const { missing, notOwned } = (await this.substitution.computeReadiness(deckId, userId)).breakdown;
     return { exact: [], substituted: [], missing, notOwned };

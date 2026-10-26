@@ -1135,20 +1135,20 @@ Proof: `api unit src/chat/__tests__/chat-prompt.spec.ts -t "the instruction expl
 
 ### S27 - A swap proposal says what moves · 15 files · 148 KB · ~37k
 
-**C321** - The `propose_swap` declaration:
+**C321** - The `propose_swap` declaration: · done
 - Takes a required integer `quantity` (minimum 1) and a required `side` with enum `['deck', 'inventory']`.
 - Its description no longer contains "every copy" and says it moves the given number of copies from the given side (AC 203; door 13)
 
 Proof: `api unit src/chat/__tests__/chat-tools.spec.ts -t "propose_swap takes a quantity and a side and says what it moves"`
 
-**C322** - On the fixture deck, `propose_swap` with `{quantity: 1, side: 'inventory'}` and a replacement the user does not own stores a `chat_proposal` of kind `swap`. Its `payload` holds `quantity` 1, `side` `'inventory'`, `missingBefore` and `missingAfter`.
+**C322** - On the fixture deck, `propose_swap` with `{quantity: 1, side: 'inventory'}` and a replacement the user does not own stores a `chat_proposal` of kind `swap`. Its `payload` holds `quantity` 1, `side` `'inventory'`, `missingBefore` and `missingAfter`. · done
 - `missingBefore` equals the engine's missing copies for the deck before the move.
 - `missingAfter` equals them after the move, computed at validation.
 - In this fixture, `missingAfter` is `missingBefore + 1` (AC 203, AC 206; door 13)
 
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "a swap proposal stores quantity, side and the missing count before and after"`
 
-**C323** - Swap validation answers `ok: false`, and stores no proposal, in four cases:
+**C323** - Swap validation answers `ok: false`, and stores no proposal, in four cases: · done
 - `quantity` 0;
 - a `quantity` above the copies on the named side (2 from an inventory of 1);
 - a `side` outside `deck` and `inventory`;
@@ -1157,13 +1157,13 @@ Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "a swap proposa
 `{quantity: 1, side: 'deck'}` and `{quantity: 1, side: 'inventory'}` on the fixture both answer `ok: true`. One case per row (AC 203, AC 207; door 13)
 Proof: `api unit src/chat/__tests__/proposal-validation.spec.ts -t "a swap's quantity and side are checked against the deck and the limits"`
 
-**C324** - `GET /api/chat/conversations/:id` answers `200`, and its swap proposal carries `quantity`, `side`, `missingBefore` and `missingAfter` equal to the stored payload. After the user adds the incoming card to the collection, the same GET returns the same `missingBefore` and `missingAfter`, so they are not recomputed on read (AC 206; door 13; Surface)
+**C324** - `GET /api/chat/conversations/:id` answers `200`, and its swap proposal carries `quantity`, `side`, `missingBefore` and `missingAfter` equal to the stored payload. After the user adds the incoming card to the collection, the same GET returns the same `missingBefore` and `missingAfter`, so they are not recomputed on read (AC 206; door 13; Surface) · done
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "the conversation returns the stored swap effect, not a recomputed one"`
 
-**C325** - `GET /api/chat/conversations/:id` for another user's conversation answers `404` (Surface)
+**C325** - `GET /api/chat/conversations/:id` for another user's conversation answers `404` (Surface) · done
 Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign and malformed conversations"`
 
-**C326** - The pending swap card for `{quantity: 1, side: 'inventory'}` (Pack Hunt (Vermelho), 3 in the deck, 1 in the inventory) reads:
+**C326** - The pending swap card for `{quantity: 1, side: 'inventory'}` (Pack Hunt (Vermelho), 3 in the deck, 1 in the inventory) reads: · done
 - "Sai: 1 Pack Hunt (Vermelho), a cópia do inventário. Ficam 3 no deck."
 - "Entra: 1 Wounding Blow (Vermelho) no inventário"
 - the button "Trocar 1 cópia" (AC 204)
@@ -1171,7 +1171,7 @@ Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign an
 With `side: 'deck'` on a short Blitz deck, the incoming line reads "Entra: 1 Wounding Blow (Vermelho) no deck".
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a swap proposal says how many copies move and from which side"`
 
-**C327** - The incoming card's line follows the free copies and the store price:
+**C327** - The incoming card's line follows the free copies and the store price: · done
 - Free copies 0 reads "você não tem nenhuma na coleção", and free copies 2 reads "você tem 2 livres".
 - The card never shows "você não tem" on its own, nor today's "você não tem cópias livres".
 - With a store price of 2.50, the line reads "R$ 2,50 na Cúpula DT"; with no price, "sem preço na Cúpula DT".
@@ -1179,10 +1179,10 @@ Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "a swap 
 
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "the incoming card says its free copies and its Cúpula DT price"`
 
-**C328** - The swap card shows "Por que esta carta:" followed by the catalog comparison (type, cost, power, defense, pitch of both cards). With `missingBefore` 7 and `missingAfter` 8, it shows "Depois da troca: faltam 8 cópias para fechar o deck (eram 7)." read from the payload, not computed in the browser (AC 206)
+**C328** - The swap card shows "Por que esta carta:" followed by the catalog comparison (type, cost, power, defense, pitch of both cards). With `missingBefore` 7 and `missingAfter` 8, it shows "Depois da troca: faltam 8 cópias para fechar o deck (eram 7)." read from the payload, not computed in the browser (AC 206) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "the swap card shows why this card and the stored effect on the missing copies"`
 
-**C329** - Applying the C322 proposal moves exactly one copy from the inventory:
+**C329** - Applying the C322 proposal moves exactly one copy from the inventory: · done
 - The `pack-hunt-red` row goes from quantity 3, inventory 1 to quantity 3, inventory 0.
 - The replacement gains inventory 1.
 - One `card_replacement` row is written with `quantity` 1, `side` `'inventory'` and `pickedFrom` `'chat'`.
@@ -1192,10 +1192,10 @@ Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "the swa
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "applying a one-copy swap moves exactly one copy from the stated side"`
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "concurrent applies create one effect"`
 
-**C330** - After a successful apply, the card shows the status "Aplicada", "Troca feita no deck.", "Desfazer" and "Ver no deck". "Ver no deck" links to the deck page of the proposal's deck (AC 207)
+**C330** - After a successful apply, the card shows the status "Aplicada", "Troca feita no deck.", "Desfazer" and "Ver no deck". "Ver no deck" links to the deck page of the proposal's deck (AC 207) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "an applied swap reads Troca feita no deck. with Desfazer and Ver no deck"`
 
-**C331** - The C322 proposal goes stale after its inventory copy has been removed from the deck. The apply then:
+**C331** - The C322 proposal goes stale after its inventory copy has been removed from the deck. The apply then: · done
 - answers with status `stale` and moves nothing;
 - reads `stale` in `GET /api/chat/conversations/:id`;
 - shows "Esta proposta não vale mais: o deck mudou desde a resposta." on the card (AC 208; door 13)
@@ -1203,7 +1203,7 @@ Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "an appl
 Proof: `api e2e src/chat/__tests__/chat-proposals.e2e-spec.ts -t "a proposal that no longer applies turns stale"`
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "each status shows its badge and actions"`
 
-**C332** - The pending swap card follows `r2-proposal-desktop`, in this DOM order:
+**C332** - The pending swap card follows `r2-proposal-desktop`, in this DOM order: · done
 1. "Proposta de troca", "Pendente" and the deck chip "Rhinar CC";
 2. the outgoing block: "Sai", "1", "Pack Hunt (Vermelho), a cópia do inventário", "Ficam 3 no deck.";
 3. the incoming block: "Entra", "1", "Wounding Blow (Vermelho) no inventário", "você não tem nenhuma na coleção · R$ 2,50 na Cúpula DT";
@@ -1216,10 +1216,10 @@ The applied card follows `r2-applied-desktop`: the same blocks with "Aplicada" i
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "the pending swap card follows r2-proposal-desktop"`
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "the applied swap card follows r2-applied-desktop"`
 
-**C333** - A `dismissed` swap proposal still shows its badge and no apply action (AC 209)
+**C333** - A `dismissed` swap proposal still shows its badge and no apply action (AC 209) · done
 Proof: `web unit src/components/chat/__tests__/ProposalCard.spec.tsx -t "each status shows its badge and actions"`
 
-**C334** - `GET /api/chat/conversations/:id` with an id that is not a UUID answers `400` (Surface)
+**C334** - `GET /api/chat/conversations/:id` with an id that is not a UUID answers `400` (Surface) · done
 Proof: `api e2e src/chat/__tests__/chat-conversations.e2e-spec.ts -t "foreign and malformed conversations"`
 
 ### S28 - Asking the Tutor from the deck page · 7 files · 26 KB · ~11k

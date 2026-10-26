@@ -8,6 +8,7 @@ import type {
   IChatMessage,
   IChatUsage,
   IDeckProposal,
+  ISwapCardFacts,
   ISwapProposal,
   TChatMessageStatus,
 } from '../../../api/chat';
@@ -118,6 +119,10 @@ function cardImage(code: string): IAlternativeImageUrl {
   return { small, large, sources: [{ small, large }] };
 }
 
+export function swapFacts(overrides: Partial<ISwapCardFacts> = {}): ISwapCardFacts {
+  return { types: ['Action'], subtypes: ['Attack'], cost: 0, power: 4, defense: 3, pitch: 1, ...overrides };
+}
+
 export function swapProposal(overrides: Partial<ISwapProposal> = {}): ISwapProposal {
   return {
     id: 'p-2',
@@ -129,10 +134,18 @@ export function swapProposal(overrides: Partial<ISwapProposal> = {}): ISwapPropo
     trackedDeckId: 7,
     cardReplacementId: null,
     replacementStatus: null,
-    payload: { trackedDeckId: 7, slot: 'mainboard' },
+    payload: { trackedDeckId: 7, slot: 'mainboard', quantity: 1, side: 'inventory', missingBefore: 7, missingAfter: 8 },
     display: {
-      original: { cardIdentifier: 'flex-red', name: 'Flex', pitch: 1, imageUrl: cardImage('FLEX'), copiesInDeck: 2 },
-      replacement: { cardIdentifier: 'emissary-of-tides-red', name: 'Emissary of Tides', pitch: 3, imageUrl: cardImage('EMISSARY'), freeCopies: 3 },
+      original: { cardIdentifier: 'flex-red', name: 'Flex', pitch: 1, imageUrl: cardImage('FLEX'), copiesInDeck: 2, copiesLeft: 2, facts: swapFacts() },
+      replacement: {
+        cardIdentifier: 'emissary-of-tides-red',
+        name: 'Emissary of Tides',
+        pitch: 3,
+        imageUrl: cardImage('EMISSARY'),
+        freeCopies: 3,
+        storePriceCents: null,
+        facts: swapFacts({ pitch: 3 }),
+      },
     },
     ...overrides,
   };

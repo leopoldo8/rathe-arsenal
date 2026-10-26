@@ -7,7 +7,7 @@ import {
   TSupportedFormat,
   Type,
 } from '@rathe-arsenal/engine';
-import { IDeckProposalPayload, ISwapProposalPayload } from '../database/entities/chat-proposal.entity';
+import { IDeckProposalPayload, ISwapProposalPayload, TSwapSide } from '../database/entities/chat-proposal.entity';
 import { decideAdoption } from '../replacements/adoption-rules';
 import {
   DECK_PROPOSAL_ROWS_MAX,
@@ -134,29 +134,41 @@ export function validateDeckProposal(args: Record<string, unknown>, catalog: ICa
   };
 }
 
-export function readSwapArgs(args: Record<string, unknown>): {
+/** What the model asked for: `quantity` and `side` stay as sent so that validation can refuse a wrong one with `ok: false`. */
+export interface ISwapRequest {
   readonly trackedDeckId: number;
   readonly originalCardIdentifier: string;
   readonly slot: string;
   readonly replacementCardIdentifier: string;
   readonly reason: string;
-} {
+  readonly quantity?: unknown;
+  readonly side?: unknown;
+}
+
+export function readSwapArgs(args: Record<string, unknown>): ISwapRequest {
   return {
     trackedDeckId: readInteger(args, 'deckId', { min: 1 })!,
     originalCardIdentifier: readString(args, 'originalCardIdentifier')!,
     slot: readString(args, 'slot')!,
     replacementCardIdentifier: readString(args, 'replacementCardIdentifier')!,
     reason: readString(args, 'reason', { max: TOOL_REASON_MAX })!,
+    quantity: args['quantity'] ?? undefined,
+    side: args['side'] ?? undefined,
   };
 }
 
+const SWAP_SIDES: readonly TSwapSide[] = ['deck', 'inventory'];
+
 /** `deck` is null when the deck is missing or not the user's. */
-export function validateSwapProposal(
-  swap: Omit<ISwapProposalPayload, never> & { readonly reason: string },
-  deck: ISwapDeck | null,
-  catalog: ICatalog,
-): TSwapProposalCheck {
+export function validateSwapProposal(swap: ISwapRequest, deck: ISwapDeck | null, catalog: ICatalog): TSwapProposalCheck {
   if (!deck) return refuse('DECK_NOT_FOUND', `deck ${swap.trackedDeckId} is not one of the user's decks`);
+  if (swap.quantity !== undefined && (typeof swap.quantity !== 'number' || !Number.isInteger(swap.quantity) || swap.quantity < 1)) {
+    return refuse('INVALID_ARGUMENTS', 'quantity must be an integer of at least 1');
+  }
+  if (swap.side !== undefined && !SWAP_SIDES.includes(swap.side as TSwapSide)) {
+    return refuse('INVALID_ARGUMENTS', `side must be one of ${SWAP_SIDES.join(', ')}`);
+  }
+  const side = (swap.side as TSwapSide | undefined) ?? 'deck';
   const original = findCard(catalog, swap.originalCardIdentifier);
   const replacement = findCard(catalog, swap.replacementCardIdentifier);
   if (!original) return refuse('CARD_UNKNOWN', `${swap.originalCardIdentifier} is not in the catalog`);
@@ -168,6 +180,8 @@ export function validateSwapProposal(
     heroCard: deck.heroIdentifier ? findCard(catalog, deck.heroIdentifier) : null,
     format: deck.format as TSupportedFormat,
     deckCards: deck.cards,
+    quantity: swap.quantity as number | undefined,
+    side,
   });
   if (decision.kind === 'refuse') return refuse(decision.code, `${swap.originalCardIdentifier} -> ${swap.replacementCardIdentifier} in ${swap.slot}`);
   return {
@@ -179,6 +193,8 @@ export function validateSwapProposal(
       originalCardIdentifier: original.cardIdentifier,
       slot: swap.slot,
       replacementCardIdentifier: replacement.cardIdentifier,
+      quantity: decision.quantity,
+      side,
     },
   };
 }

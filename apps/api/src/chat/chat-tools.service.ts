@@ -28,6 +28,9 @@ import { compareWithCommunity } from './community-comparison';
 import { drawOdds } from './draw-odds';
 import { ChatPricesService } from './chat-prices.service';
 import { compareSwap, swapCandidates } from './swap-analysis';
+import { rowsAfterSwap } from './swap-effect';
+import { ISwapProposalPayload } from '../database/entities/chat-proposal.entity';
+import { SubstitutionService } from '../substitution/substitution.service';
 
 const CARD_TEXT_MAX = 300;
 const HERO_COUNT_LIMIT = 60;
@@ -76,6 +79,7 @@ export class ChatToolsService {
     private readonly community: CommunityDecksService,
     private readonly prices: ChatPricesService,
     private readonly spareCopies: SpareCopiesService,
+    private readonly substitution: SubstitutionService,
   ) {}
 
   /** A fresh toolbox per turn; accepted proposals are collected and stored only with the finished answer. */
@@ -113,7 +117,8 @@ export class ChatToolsService {
         const deck = await this.swapDeck(scope.userId, swap.trackedDeckId);
         const check = validateSwapProposal(swap, deck, catalog);
         if (!check.ok) return { ok: false, error: check.error, detail: check.detail };
-        proposals.push({ kind: 'swap', payload: check.payload, reason: check.reason, trackedDeckId: check.payload.trackedDeckId });
+        const effect = await this.swapEffect(scope.userId, check.payload, deck!);
+        proposals.push({ kind: 'swap', payload: { ...check.payload, ...effect }, reason: check.reason, trackedDeckId: check.payload.trackedDeckId });
         const comparison = compareSwap({
           original: catalog.getCard(check.payload.originalCardIdentifier),
           replacement: catalog.getCard(check.payload.replacementCardIdentifier),
@@ -125,6 +130,30 @@ export class ChatToolsService {
       },
     };
     return { toolbox, proposals };
+  }
+
+  /** The deck's missing copies before the move and after it, counted by the engine now and kept on the proposal (door 13). */
+  private async swapEffect(
+    userId: string,
+    swap: ISwapProposalPayload,
+    deck: ISwapDeck,
+  ): Promise<{ readonly missingBefore: number; readonly missingAfter: number }> {
+    const quantity = swap.quantity!;
+    const rows = deck.cards.map((row) => ({ ...row, inventoryQuantity: row.inventoryQuantity ?? 0 }));
+    const [missingBefore, missingAfter] = await Promise.all([
+      this.substitution.computeMissingCopies(swap.trackedDeckId, userId),
+      this.substitution.computeMissingCopies(swap.trackedDeckId, userId, {
+        rows: rowsAfterSwap(rows, {
+          slot: swap.slot,
+          from: swap.originalCardIdentifier,
+          to: swap.replacementCardIdentifier,
+          quantity,
+          side: swap.side!,
+        }),
+        claim: { id: '', slot: swap.slot, replacementCardIdentifier: swap.replacementCardIdentifier, quantity },
+      }),
+    ]);
+    return { missingBefore, missingAfter };
   }
 
   async swapDeck(userId: string, trackedDeckId: number): Promise<ISwapDeck | null> {

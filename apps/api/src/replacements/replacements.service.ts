@@ -290,7 +290,15 @@ export class ReplacementsService {
   async applyChatSwap(
     manager: EntityManager,
     userId: string,
-    swap: { readonly trackedDeckId: number; readonly originalCardIdentifier: string; readonly slot: string; readonly replacementCardIdentifier: string },
+    swap: {
+      readonly trackedDeckId: number;
+      readonly originalCardIdentifier: string;
+      readonly slot: string;
+      readonly replacementCardIdentifier: string;
+      /** Absent in a proposal stored before the swap carried them: every copy the limit allows, from the deck. */
+      readonly quantity?: number | undefined;
+      readonly side?: TReplacementSide | undefined;
+    },
   ): Promise<{ readonly kind: 'applied'; readonly replacementId: string } | { readonly kind: 'stale'; readonly reason: string }> {
     const deck = await manager.findOne(TrackedDeckEntity, {
       where: { id: swap.trackedDeckId, userId, deletedAt: IsNull() },
@@ -308,8 +316,11 @@ export class ReplacementsService {
       heroCard: this.findHero(deck),
       format: deck.format as TSupportedFormat,
       deckCards,
+      quantity: swap.quantity,
+      side: swap.side,
     });
     if (decision.kind === 'refuse') return { kind: 'stale', reason: decision.code };
+    const side = swap.side ?? 'deck';
 
     await this.moveCopies(manager, deckCards, {
       trackedDeckId: deck.id,
@@ -317,6 +328,7 @@ export class ReplacementsService {
       from: original.cardIdentifier,
       to: replacement.cardIdentifier,
       quantity: decision.quantity,
+      side,
     });
     const saved = await manager.save(
       manager.create(CardReplacementEntity, {
@@ -326,6 +338,7 @@ export class ReplacementsService {
         originalCardIdentifier: original.cardIdentifier,
         replacementCardIdentifier: replacement.cardIdentifier,
         quantity: decision.quantity,
+        side,
         pickedFrom: 'chat',
         status: 'active',
         resolvedAt: null,

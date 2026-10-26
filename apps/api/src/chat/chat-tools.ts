@@ -197,16 +197,18 @@ export const CHAT_TOOL_DECLARATIONS: readonly IFunctionDeclaration[] = [
   {
     name: 'propose_swap',
     description:
-      "Propose replacing every copy of one card in one of the user's decks with another card. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, what the new card needs that the deck lacks, the changes, and the mainboard cost curve before and after.",
+      "Propose replacing one card in one of the user's decks with another card. It moves the given number of copies (quantity) from the given side of the deck (side: the starting deck, or the inventory), never more than the replacement's copy limit allows. When accepted it answers with a comparison: copies moved, both cards' type line, cost, pitch, power and defense, whether the role is the same, what the new card needs that the deck lacks, the changes, and the mainboard cost curve before and after.",
     parametersJsonSchema: object(
       {
         deckId: integer('Deck id.'),
         originalCardIdentifier: string('The card to take out.'),
         slot: { type: 'string', enum: ['mainboard', 'equipment'] },
         replacementCardIdentifier: string('The card to put in.'),
+        quantity: { type: 'integer', minimum: 1, description: 'How many copies move, at least 1 and at most the copies of the card on that side.' },
+        side: { type: 'string', enum: ['deck', 'inventory'], description: 'Where the copies come from: the starting deck or the inventory.' },
         reason: string('Why, shown to the user.'),
       },
-      ['deckId', 'originalCardIdentifier', 'slot', 'replacementCardIdentifier', 'reason'],
+      ['deckId', 'originalCardIdentifier', 'slot', 'replacementCardIdentifier', 'quantity', 'side', 'reason'],
     ),
   },
 ];

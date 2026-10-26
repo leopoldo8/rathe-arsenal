@@ -27,6 +27,7 @@ import { SharedListViewService } from '../../../sharing/shared-list-view.service
 import { VisitorDecksMissingService } from '../../../sharing/visitor-decks-missing.service';
 import { VisitorWantListService } from '../../../sharing/visitor-want-list.service';
 import { SharedDeckReplacements } from '../../../sharing/shared-deck-replacements';
+import { SubstitutionService } from '../../../substitution/substitution.service';
 import { SpareCopiesService } from '../spare-copies.service';
 import { SpareViewService } from '../spare-view.service';
 
@@ -134,6 +135,7 @@ async function tutorReader(spare: SpareCopiesService): Promise<number | null> {
     createMock<CommunityDecksService>(),
     createMock<ChatPricesService>(),
     spare,
+    createMock<SubstitutionService>(),
   );
   const result = (await tools.forTurn({ userId: DUDA, locale: 'pt-BR' }).toolbox['get_collection']!({})) as { cards: Array<{ cardIdentifier: string; spare: number }> };
   return result.cards.find((card) => card.cardIdentifier === PACK_HUNT)?.spare ?? null;

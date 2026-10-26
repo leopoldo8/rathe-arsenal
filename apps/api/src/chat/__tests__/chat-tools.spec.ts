@@ -103,4 +103,19 @@ describe('chat tools', () => {
     expect(schema.properties['quantity']?.type).toBe('integer');
     expect(schema.required).not.toContain('quantity');
   });
+
+  it('propose_swap takes a quantity and a side and says what it moves', () => {
+    const declaration = CHAT_TOOL_DECLARATIONS.find((tool) => tool.name === 'propose_swap')!;
+    const schema = declaration.parametersJsonSchema as {
+      properties: Record<string, { type: string; minimum?: number; enum?: string[] }>;
+      required: string[];
+    };
+
+    expect(schema.properties['quantity']).toMatchObject({ type: 'integer', minimum: 1 });
+    expect(schema.properties['side']).toMatchObject({ type: 'string', enum: ['deck', 'inventory'] });
+    expect(schema.required).toEqual(expect.arrayContaining(['quantity', 'side']));
+    expect(declaration.description).not.toContain('every copy');
+    expect(declaration.description).toMatch(/given number of copies/);
+    expect(declaration.description).toMatch(/given side/);
+  });
 });
