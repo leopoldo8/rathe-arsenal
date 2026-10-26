@@ -36,7 +36,6 @@ export const library = {
   pitchFilterAria: 'Pitch {{pitch}}: {{action}}',
   pitchNoneLabel: 'Sem',
   // LibraryGrid — generic fallback group headings (real type/set names stay as data)
-  typeOtherGroupLabel: 'Outros',
   setUnknownGroupLabel: 'Desconhecido',
 
   // LibraryFilterRail — toggle sections

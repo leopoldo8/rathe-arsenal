@@ -1543,38 +1543,38 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "a code
 
 ### S36 - Words that mean one thing, and one landmark · 32 files · 168 KB · ~48k
 
-**C413** - The engine's rationale detail carries, per candidate, the pitch relation (`same` or `different` with both pitches), the classes the two cards share, and whether the candidate is Generic, decided by one case per row: same pitch red; different pitch, candidate blue for a red original; shared class Brute; Generic candidate; classed original and a candidate with no shared class (AC 263)
+**C413** - The engine's rationale detail carries, per candidate, the pitch relation (`same` or `different` with both pitches), the classes the two cards share, and whether the candidate is Generic, decided by one case per row: same pitch red; different pitch, candidate blue for a red original; shared class Brute; Generic candidate; classed original and a candidate with no shared class (AC 263) · done
 Proof: `engine unit __tests__/rationale.spec.ts -t "states the real relation between the two cards"`
 
-**C414** - `formatSwapRationale` writes, in pt-BR: "mesmo pitch (vermelho)" for the same pitch; "pitch diferente: azul em vez de vermelho" for a blue candidate of a red original; "mesma classe (Brute)" for a shared Brute class; "carta genérica" for a Generic candidate; and no class phrase when the cards share no class; the outputs never contain "mesma classe (Generic)", "nenhuma das duas tem classe" or "Mesmo pitch" next to "pitch diferente" (AC 263)
+**C414** - `formatSwapRationale` writes, in pt-BR: "mesmo pitch (vermelho)" for the same pitch; "pitch diferente: azul em vez de vermelho" for a blue candidate of a red original; "mesma classe (Brute)" for a shared Brute class; "carta genérica" for a Generic candidate; and no class phrase when the cards share no class; the outputs never contain "mesma classe (Generic)", "nenhuma das duas tem classe" or "Mesmo pitch" next to "pitch diferente" (AC 263) · done
 Proof: `web unit src/i18n/__tests__/format-reasons.spec.ts -t "the reason states the real relation"`
 
-**C415** - The alternatives sheet of a Generic original shows each candidate's reason once, from `formatSwapRationale`, and does not append "O pitch é diferente" or "fora da classe da original" (AC 263)
+**C415** - The alternatives sheet of a Generic original shows each candidate's reason once, from `formatSwapRationale`, and does not append "O pitch é diferente" or "fora da classe da original" (AC 263) · done
 Proof: `web unit src/components/deck-detail/__tests__/AlternativesSheet.spec.tsx -t "a Generic original reads one honest reason"`
 
-**C416** - `GET` alternatives for a missing card whose catalog classes are `['Brute']` returns the original card's classes `['Brute']` in the payload, and `api/deck-detail.ts` types the field (AC 264)
+**C416** - `GET` alternatives for a missing card whose catalog classes are `['Brute']` returns the original card's classes `['Brute']` in the payload, and `api/deck-detail.ts` types the field (AC 264) · done
 Proof: `api e2e src/replacements/__tests__/alternatives.e2e-spec.ts -t "the payload carries the original card's classes"`
 
-**C417** - One grouping function returns the same ordered headings for the same cards; the deck page, the Library and the shared deck page render that same sequence of headings for one fixture deck; every heading is the pt-BR value of an i18n key, and none is "Attack Actions", "Defense Reactions", "Non-attack Actions", "Hero · Weapon · Equipment" or a raw catalog type in capitals ("ATTACK ACTION") (AC 265)
+**C417** - One grouping function returns the same ordered headings for the same cards; the deck page, the Library and the shared deck page render that same sequence of headings for one fixture deck; every heading is the pt-BR value of an i18n key, and none is "Attack Actions", "Defense Reactions", "Non-attack Actions", "Hero · Weapon · Equipment" or a raw catalog type in capitals ("ATTACK ACTION") (AC 265) · done
 Proof: `web unit src/lib/__tests__/card-groups.spec.ts -t "one grouping rule for every card list"`
 Proof: `web unit src/components/shared-deck/__tests__/SharedDeckPage.spec.tsx -t "headings follow the shared grouping"`
 Proof: `web unit src/components/library/__tests__/LibraryGrid.test.tsx -t "headings follow the shared grouping"`
 
-**C418** - `home.emptyLead` contains "quais cartas da sua coleção podem substituir as que faltam", and every value that C3 rewrote uses "substituir" or no verb of replacement, never "troca" (AC 266)
+**C418** - `home.emptyLead` contains "quais cartas da sua coleção podem substituir as que faltam", and every value that C3 rewrote uses "substituir" or no verb of replacement, never "troca" (AC 266) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "outside a deck the app says substituir"`
 
-**C419** - The deck page inside `AppShell` has exactly one element with role `main`; the deck canvas has role `region` and an accessible name; `/library-csv-sources` has exactly one `main` (AC 267)
+**C419** - The deck page inside `AppShell` has exactly one element with role `main`; the deck canvas has role `region` and an accessible name; `/library-csv-sources` has exactly one `main` (AC 267) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "the canvas is a labelled region, not a second main"`
 Proof: `web unit src/routes/_auth/__tests__/-library-csv-sources.test.tsx -t "the page has one main"`
 
-**C420** - In pt-BR `alternatives.free` gives "nenhuma livre" for count 0, "1 livre" for 1 and "2 livres" for 2 (AC 268)
+**C420** - In pt-BR `alternatives.free` gives "nenhuma livre" for count 0, "1 livre" for 1 and "2 livres" for 2 (AC 268) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "zero free copies read nenhuma livre"`
 
 **C421** - No JSX element under `apps/web/src` (tests excluded, SVG `<title>` children excluded) carries a `title=` attribute; `ShoppingLine.tsx`, `MissingStoreSummary.tsx` and `LibraryStatsBar.tsx` show the estimated-price explanation as visible text, and `LibraryStatsBar`'s pitch dots carry the "?" of "Vermelho, Amarelo, Azul" (AC 269)
 Proof: `web unit src/i18n/__tests__/component-literals.spec.ts -t "no native title tooltip"`
 Proof: `web unit src/components/library/__tests__/LibraryStatsBar.test.tsx -t "the estimated price is explained in visible text"`
 
-**C422** - No pt-BR value and no e-mail template string contains a gendered word about the player from the banned list: "bem-vindo", "bem-vinda", "conectado", "conectada", "logado", "logada" (AC 270)
+**C422** - No pt-BR value and no e-mail template string contains a gendered word about the player from the banned list: "bem-vindo", "bem-vinda", "conectado", "conectada", "logado", "logada" (AC 270) · done
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "no value gives the player a gender"`
 Proof: `api unit src/email/__tests__/email-templates.spec.ts -t "no template gives the player a gender"`
 

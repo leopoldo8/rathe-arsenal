@@ -241,3 +241,9 @@
   gap: var(--ra-space-1);
   user-select: none;
 }
+
+.estimateNote {
+  margin: 0;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-caption);
+}

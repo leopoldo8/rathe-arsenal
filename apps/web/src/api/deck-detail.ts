@@ -74,10 +74,19 @@ export interface ISubstituteCard {
     | null;
 }
 
+export type TRationalePitchRelation =
+  | { readonly relation: 'same'; readonly pitch: string }
+  | { readonly relation: 'different'; readonly original: string; readonly candidate: string };
+
 export interface IRationaleDetail {
   readonly tier: number;
   readonly pitch: string;
+  readonly pitchRelation: TRationalePitchRelation;
+  /** The original card's classes, as the catalog holds them. */
+  readonly originalClasses: readonly string[];
   readonly sharedClasses: readonly string[];
+  /** True when the candidate is a Generic card. */
+  readonly candidateGeneric: boolean;
   readonly powerDelta: number;
   readonly defenseDelta: number;
   readonly sharedKeywords: readonly string[];

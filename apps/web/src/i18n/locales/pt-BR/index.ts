@@ -26,6 +26,7 @@ import { sharing } from './sharing';
 import { lists } from './lists';
 import { missingList } from './missingList';
 import { spare } from './spare';
+import { cardGroups } from './cardGroups';
 
 export const ptBR = {
   common,
@@ -56,6 +57,7 @@ export const ptBR = {
   lists,
   missingList,
   spare,
+  cardGroups,
 } as const;
 
 /**

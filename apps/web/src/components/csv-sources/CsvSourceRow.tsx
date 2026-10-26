@@ -136,7 +136,6 @@ export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): 
                 className={styles.labelBtn}
                 onClick={startEdit}
                 aria-label={t('csvSources.renameAriaLabel', { label: displayLabel })}
-                title={t('csvSources.renameTitle')}
               >
                 {displayLabel}
               </button>
@@ -147,9 +146,7 @@ export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): 
               {pendingCount > 0 && (
                 <>
                   {' · '}
-                  <span title={t('collectionReader.linesToResolve', { count: pendingCount })}>
-                    {t('collectionReader.toResolve', { count: pendingCount })}
-                  </span>
+                  {t('collectionReader.toResolve', { count: pendingCount })}
                 </>
               )}
             </span>

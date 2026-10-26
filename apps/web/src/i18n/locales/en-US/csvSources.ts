@@ -47,7 +47,6 @@ export const csvSources = {
   // CsvSourceRow
   toggleAriaLabel: 'Toggle "{{label}}" active',
   renameAriaLabel: 'Rename "{{label}}"',
-  renameTitle: 'Click to rename',
   editSourceNameAriaLabel: 'Edit source name',
   optionsAriaLabel: 'Options for "{{label}}"',
   renameMenuItem: 'Rename',

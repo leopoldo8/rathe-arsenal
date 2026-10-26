@@ -105,6 +105,27 @@ describe('LibraryCsvSourcesPage', () => {
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
+  it('the page has one main', () => {
+    // The app shell owns the page's one <main>; a stand-in wraps the page as the shell does.
+    render(
+      <main>
+        <QueryClientProvider client={new QueryClient()}>
+          <LibraryCsvSourcesPage />
+        </QueryClientProvider>
+      </main>,
+    );
+
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+
+  it('the page has one main: also while the imports load', () => {
+    sourcesQuery.mockReturnValue({ isLoading: true, isError: false, data: undefined });
+
+    renderPage();
+
+    expect(screen.queryAllByRole('main')).toHaveLength(0);
+  });
+
   it('wraps the page in the centred column class', () => {
     const { container } = renderPage();
     expect(container.firstElementChild).toHaveClass(styles.page!);

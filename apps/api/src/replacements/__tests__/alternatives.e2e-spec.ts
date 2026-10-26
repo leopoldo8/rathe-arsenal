@@ -48,6 +48,24 @@ describe('GET /api/decks/:deckId/alternatives (E2E)', () => {
     );
   });
 
+  it("the payload carries the original card's classes", async () => {
+    const owner = await fixture.scenario([mainboard('pack-hunt-red', 1)]);
+
+    const res = await alternatives(owner.sessionToken, owner.deckId, {
+      cardIdentifier: 'pack-hunt-red',
+      slot: 'mainboard',
+      q: 'coax',
+    }).expect(200);
+
+    const cards = res.body.groups.flatMap((g: { cards: Array<{ rationale: { originalClasses: string[]; sharedClasses: string[]; candidateGeneric: boolean } }> }) => g.cards);
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      expect(card.rationale.originalClasses).toEqual(['Brute']);
+      expect(card.rationale.sharedClasses).toEqual([]);
+      expect(card.rationale.candidateGeneric).toBe(true);
+    }
+  });
+
   it('reports owned copies and shows search results for a name', async () => {
     const owner = await fixture.scenario();
     await fixture.own(owner.sessionToken, [{ cardIdentifier: COAX, quantity: 2 }]);

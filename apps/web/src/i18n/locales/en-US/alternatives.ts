@@ -26,6 +26,7 @@ export const alternatives = {
   groupGeneric: 'Generic',
   groupSearch: 'Search results',
   owned: 'owned',
+  free_zero: 'none free',
   free_one: '{{count}} free',
   free_other: '{{count}} free',
   outOfStock: 'out of stock',

@@ -45,7 +45,7 @@ export function LineTile({ listId, line, kind, selected, onSelect }: ILineTilePr
       </button>
       {kind === 'sell' && (
         <div className={styles.tileMeta}>
-          {line.printingLabel !== null && <span className={styles.chipWide} title={line.printingLabel}>{line.printingLabel}</span>}
+          {line.printingLabel !== null && <span className={styles.chipWide}>{line.printingLabel}</span>}
           <span className={styles.metaRow}>
             {line.condition !== null ? (
               <span className={styles.chipMono}>{line.condition}</span>

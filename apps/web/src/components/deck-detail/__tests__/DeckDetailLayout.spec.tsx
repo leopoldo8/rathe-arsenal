@@ -96,11 +96,17 @@ describe('DeckDetailLayout — structure', () => {
     expect(aside).toContainElement(screen.getByTestId('sidebar-slot'));
   });
 
-  it('renders canvas inside a <main> element', () => {
-    renderLayout();
-    const main = screen.getByRole('main');
-    expect(main).toBeInTheDocument();
-    expect(main).toContainElement(screen.getByTestId('canvas-slot'));
+  it('the canvas is a labelled region, not a second main', () => {
+    // The app shell owns the page's one <main>; a stand-in wraps the layout as the shell does.
+    render(
+      <main>
+        <DeckDetailLayout header={<div />} sidebar={<div />} canvas={<div data-testid="canvas-slot">Canvas</div>} />
+      </main>,
+    );
+
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    const canvas = screen.getByRole('region', { name: 'Conteúdo do deck' });
+    expect(canvas).toContainElement(screen.getByTestId('canvas-slot'));
   });
 });
 
@@ -207,7 +213,7 @@ describe('DeckDetailLayout — the verdict and the stage', () => {
     expect(within(header).getByTestId('legality-badge')).toHaveTextContent('Não vale no Blitz');
     expect(within(header).getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Jogando');
     expect(header).not.toHaveTextContent('8 cartas com 2 cópias');
-    expect(within(screen.getByRole('main')).getByTestId('deck-cause')).toHaveTextContent('8 cartas com 2 cópias');
+    expect(within(screen.getByRole('region', { name: 'Conteúdo do deck' })).getByTestId('deck-cause')).toHaveTextContent('8 cartas com 2 cópias');
   });
 });
 

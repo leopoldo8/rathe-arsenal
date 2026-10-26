@@ -248,18 +248,18 @@ describe('MissingPanel — calm row layout (owner feedback round 2)', () => {
     renderPanel(populated());
 
     const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
-    expect(button).toHaveAttribute('title', 'Já tenho');
+    expect(button).not.toHaveAttribute('title');
     expect(button).toHaveTextContent('');
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(button.parentElement).toHaveClass(styles.owned!);
   });
 
-  it('the pending card keeps its name and says it is saving in the tooltip', () => {
+  it('the pending card keeps its name and is busy and disabled', () => {
     renderPanel(populated(), { isMarkingOwned: true, pendingCard: 'card-a' });
 
     const button = within(rowOf('Card A')).getByRole('button', { name: 'Já tenho Card A (Vermelho)' });
     expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toHaveAttribute('title', 'Salvando…');
+    expect(button).not.toHaveAttribute('title');
     expect(button).toBeDisabled();
   });
 });

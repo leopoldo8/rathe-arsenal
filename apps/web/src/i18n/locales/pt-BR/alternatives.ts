@@ -26,6 +26,7 @@ export const alternatives = {
   groupGeneric: 'Genéricas',
   groupSearch: 'Resultados da busca',
   owned: 'você tem',
+  free_zero: 'nenhuma livre',
   free_one: '{{count}} livre',
   free_other: '{{count}} livres',
   outOfStock: 'sem estoque',

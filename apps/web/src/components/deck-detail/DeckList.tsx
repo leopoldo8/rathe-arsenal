@@ -17,6 +17,7 @@ import {
 import { ReplacementControls } from './ReplacementMark';
 import { DeckTextList } from './DeckTextList';
 import { sizeProblemOf } from '../home/deckVerdictLine';
+import { CARD_GROUP_LABEL_KEY, type TCardGroupId } from '../../lib/card-groups';
 import styles from './DeckList.module.css';
 
 interface IDeckListProps {
@@ -36,11 +37,10 @@ const VIEWS: readonly { readonly id: TDeckListView; readonly labelKey: string }[
   { id: 'list', labelKey: 'deckDetail.viewList' },
 ];
 
+const LOADOUT_GROUPS: ReadonlySet<TCardGroupId> = new Set(['hero', 'weapon', 'equipment']);
+
 const GROUP_LABEL_KEY: Readonly<Record<TDeckListGroupId, string>> = {
-  attack: 'deckDetail.groupAttack',
-  defense: 'deckDetail.groupDefense',
-  nonAttack: 'deckDetail.groupNonAttack',
-  loadout: 'deckDetail.groupLoadout',
+  ...CARD_GROUP_LABEL_KEY,
   all: 'deckDetail.groupAll',
   '0': 'deckDetail.groupCost0',
   '1': 'deckDetail.groupCost1',
@@ -102,7 +102,7 @@ export function DeckList({
   const groups = textView ? [] : groupDeckList(items, view);
   const textGroups = textView ? buildTextList(listCards, legalityDetails, t) : [];
   const deckSize = items
-    .filter((item) => resolveTypeGroup(item.entry) !== 'loadout')
+    .filter((item) => !LOADOUT_GROUPS.has(resolveTypeGroup(item.entry)))
     .reduce((sum, item) => sum + item.quantity, 0);
 
   const shortOf = sizeProblemOf(legalityDetails);

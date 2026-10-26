@@ -154,7 +154,6 @@ function PopulatedShoppingLine({ data }: IPopulatedProps) {
         <span
           className={styles.headerFreshness}
           data-freshness={freshnessKey}
-          title={lastFetchedAt}
         >
           {t('decks.shoppingUpdated', { when: relativeTime })}
           {veryStale && t('decks.pricesMayHaveChanged')}
@@ -168,11 +167,7 @@ function PopulatedShoppingLine({ data }: IPopulatedProps) {
             <p className={styles.headlinePrimary}>
               {t('decks.shoppingHeadlineWith')}
               {isEstimated && (
-                <span
-                  aria-label={t('decks.estimatedPriceAria')}
-                  title={t('decks.estimatedPriceTooltip')}
-                  className={styles.estimateTilde}
-                >
+                <span aria-label={t('decks.estimatedPriceAria')} className={styles.estimateTilde}>
                   ~
                 </span>
               )}
@@ -200,6 +195,12 @@ function PopulatedShoppingLine({ data }: IPopulatedProps) {
             </p>
           )}
         </div>
+
+        {isEstimated && availableCardCount > 0 && (
+          <p className={styles.estimateNote} data-testid="estimate-note">
+            {t('decks.estimatedPriceTooltip')}
+          </p>
+        )}
 
         {/* No-stock CTA */}
         {availableCardCount === 0 && (

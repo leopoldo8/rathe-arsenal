@@ -33,7 +33,10 @@ function card(overrides: Partial<IAlternativeCard> = {}): IAlternativeCard {
     rationale: {
       tier: 1,
       pitch: 'red',
-      sharedClasses: ['Generic'],
+      pitchRelation: { relation: 'same', pitch: 'red' },
+      originalClasses: ['Generic'],
+      candidateGeneric: true,
+      sharedClasses: [],
       powerDelta: 0,
       defenseDelta: 0,
       sharedKeywords: [],
@@ -60,7 +63,13 @@ const TWO_GROUPS = response([
       cardIdentifier: 'brandish-blue',
       name: 'Brandish',
       pitch: 3,
-      rationale: { ...card().rationale, tier: 2, pitch: 'red', relaxed: 'pitch' },
+      rationale: {
+        ...card().rationale,
+        tier: 2,
+        pitch: 'red',
+        pitchRelation: { relation: 'different', original: 'red', candidate: 'blue' },
+        relaxed: 'pitch',
+      },
     }),
   ]),
 ]);
@@ -105,12 +114,41 @@ describe('AlternativesSheet', () => {
     const first = within(groups[0]!).getByTestId('alternative-card');
     expect(first).toHaveTextContent('Coax a Commotion');
     expect(first.querySelector('img')).toHaveAttribute('src', 'https://img.test/coax.webp');
-    expect(within(first).getByTestId('alternative-rationale')).toHaveTextContent('Mesmo pitch (vermelho)');
+    expect(within(first).getByTestId('alternative-rationale')).toHaveTextContent('mesmo pitch (vermelho)');
     expect(within(groups[1]!).getByTestId('alternative-rationale')).toHaveTextContent(
-      'O pitch é diferente do da original.',
+      'pitch diferente: azul em vez de vermelho',
     );
     expect(within(first).getByRole('img', { name: 'pitch Vermelho' })).toBeInTheDocument();
     expect(within(within(groups[1]!).getByTestId('alternative-card')).getByRole('img', { name: 'pitch Azul' })).toBeInTheDocument();
+  });
+
+  it('a Generic original reads one honest reason', async () => {
+    mockApiFetch.mockResolvedValue(
+      response([
+        group('generic', [
+          card({
+            cardIdentifier: 'brandish-blue',
+            name: 'Brandish',
+            pitch: 3,
+            rationale: {
+              ...card().rationale,
+              tier: 2,
+              pitchRelation: { relation: 'different', original: 'red', candidate: 'blue' },
+              relaxed: 'class',
+            },
+          }),
+        ]),
+      ]),
+    );
+
+    renderSheet();
+
+    const reason = (await screen.findByTestId('alternative-rationale')).textContent ?? '';
+    expect(reason.match(/pitch diferente/g)).toHaveLength(1);
+    expect(reason).toContain('carta genérica');
+    expect(reason).not.toContain('O pitch é diferente');
+    expect(reason).not.toContain('fora da classe da original');
+    expect(reason).not.toContain('mesma classe (Generic)');
   });
 
   it('marks owned and free copies', async () => {

@@ -33,9 +33,7 @@ export function MissingStoreSummary({ data }: IMissingStoreSummaryProps): React.
             <>
               <span className={styles.total} data-testid="missing-store-total">
                 {isEstimated && (
-                  <span aria-label={t('decks.estimatedPriceAria')} title={t('decks.estimatedPriceTooltip')}>
-                    ~
-                  </span>
+                  <span aria-label={t('decks.estimatedPriceAria')}>~</span>
                 )}
                 {formatBrl(totalCostCents)}
               </span>{' '}
@@ -53,7 +51,6 @@ export function MissingStoreSummary({ data }: IMissingStoreSummaryProps): React.
             className={styles.freshness}
             data-freshness={veryStale ? 'very-stale' : isStale(lastFetchedAt) ? 'stale' : 'ok'}
             data-testid={veryStale ? 'missing-store-stale' : undefined}
-            title={lastFetchedAt}
           >
             <span className={styles.phrase}>{freshnessText}</span>
             {veryStale && (
@@ -65,6 +62,11 @@ export function MissingStoreSummary({ data }: IMissingStoreSummaryProps): React.
           </span>
         </p>
       </div>
+      {isEstimated && availableCardCount > 0 && (
+        <p className={styles.estimateNote} data-testid="missing-store-estimate-note">
+          {t('decks.estimatedPriceTooltip')}
+        </p>
+      )}
     </div>
   );
 }

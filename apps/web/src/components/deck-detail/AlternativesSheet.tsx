@@ -34,11 +34,6 @@ const PITCH_CLASS: Readonly<Record<number, string | undefined>> = {
   3: styles.pitchBlue,
 };
 
-const RELAXED_KEY = {
-  pitch: 'alternatives.relaxedPitch',
-  class: 'alternatives.relaxedClass',
-} as const;
-
 interface IAlternativesSheetProps {
   readonly deckId: number;
   readonly target: IAlternativesTarget;
@@ -50,9 +45,7 @@ function toPitch(pitch: number | null): 1 | 2 | 3 | null {
 }
 
 function describeRationale(card: IAlternativeCard, t: TFunction): string {
-  const sentence = formatSwapRationale(card.rationale, '', t);
-  const relaxed = card.rationale.relaxed;
-  return relaxed === null ? sentence : `${sentence} ${t(RELAXED_KEY[relaxed])}`;
+  return formatSwapRationale(card.rationale, '', t);
 }
 
 interface ICardOptionProps {

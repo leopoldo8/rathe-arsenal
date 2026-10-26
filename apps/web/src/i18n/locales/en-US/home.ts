@@ -26,7 +26,6 @@ export const home = {
   // DeckCard
   legalityNotLegalLabel: 'Off format',
   untrackAriaLabel: 'Delete {{deckName}}',
-  untrackTitle: 'Delete deck',
   untrackToastMsg: '{{deckName}} moved to Recently deleted',
   undoUntrack: 'Undo',
 

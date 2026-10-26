@@ -37,6 +37,7 @@ export const decks = {
   untrack: 'Excluir deck',
   // DeckDetailLayout
   deckDetailsSidebarAria: 'Detalhes do deck',
+  deckCanvasAria: 'Conteúdo do deck',
   // DeckDetailSidebar
   shopping: 'Compras',
   viewOnFabrary: 'Ver no Fabrary',
@@ -94,7 +95,6 @@ export const decks = {
   cardNotLegalTooltip: 'Carta inválida em {{format}}',
   // MarkOwnedButton
   markOwned: 'Já tenho',
-  markOwnedSaving: 'Salvando…',
   // ReadinessHero
   viewOnFabraryLink: 'Ver no Fabrary ↗',
   // SaveCascadeConfirmModal

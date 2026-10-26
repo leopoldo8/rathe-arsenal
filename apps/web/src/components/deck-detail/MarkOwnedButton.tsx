@@ -46,7 +46,6 @@ export function MarkOwnedButton({
       disabled={isPending}
       aria-busy={isThisCardPending}
       aria-label={`${t('decks.markOwned')} ${cardName(name, pitch, t)}`}
-      title={isThisCardPending ? t('decks.markOwnedSaving') : t('decks.markOwned')}
     >
       <svg
         className={styles.icon}

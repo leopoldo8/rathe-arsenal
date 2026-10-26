@@ -87,7 +87,7 @@ export function CardGalleryCell({
           </span>
         )}
       </div>
-      <span className={styles.name} title={displayName}>
+      <span className={styles.name}>
         {displayName}
       </span>
       {footer}

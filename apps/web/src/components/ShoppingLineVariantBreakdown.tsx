@@ -65,10 +65,7 @@ function VariantRow({ variant }: IVariantRowProps) {
 
   return (
     <tr>
-      <td
-        className={`${styles.td} ${styles['td--edition']}`}
-        title={variant.edition}
-      >
+      <td className={`${styles.td} ${styles['td--edition']}`}>
         {variant.edition}
       </td>
       <td className={styles.td}>

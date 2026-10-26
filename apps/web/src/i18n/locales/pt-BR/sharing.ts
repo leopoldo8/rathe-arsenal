@@ -301,13 +301,6 @@ export const sharing = {
     thumbAria: 'Arte de {{name}}',
     quantity: '{{count}}×',
     groupCount: '{{count}}',
-    group: {
-      hero: 'Herói',
-      weapon: 'Arma',
-      equipment: 'Equipamento',
-      actions: 'Ações',
-      reactions: 'Reações',
-    },
   },
   // 404 SHARE_LINK_UNAVAILABLE
   unavailable: {

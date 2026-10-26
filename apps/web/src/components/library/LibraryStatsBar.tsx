@@ -66,7 +66,6 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
                 key={key}
                 className={styles.pill}
                 role="img"
-                title={t(titleKey)}
                 aria-label={`${t(titleKey)}: ${pitchBreakdown[key]}`}
               >
                 <span className={`${styles.dot} ${dotClass}`} aria-hidden="true" />
@@ -88,11 +87,13 @@ export function LibraryStatsBar({ stats }: ILibraryStatsBarProps): React.ReactEl
           <span
             className={isStale ? styles.freshnessStale : styles.freshnessMuted}
             data-testid="price-freshness"
-            title={t('library.estimatedPricesTooltip')}
           >
             {freshnessLabel}
           </span>
         </div>
+        <p className={styles.estimateNote} data-testid="price-estimate-note">
+          {t('library.estimatedPricesTooltip')}
+        </p>
       </div>
     </section>
   );

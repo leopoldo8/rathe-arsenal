@@ -747,8 +747,8 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     populate(partialDeck());
     renderPage();
 
-    expect(screen.getByTestId('deck-list-group-attack')).toBeInTheDocument();
-    expect(screen.getByTestId('deck-list-group-defense')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-list-group-action')).toBeInTheDocument();
+    expect(screen.getByTestId('deck-list-group-defenseReaction')).toBeInTheDocument();
     expect(screen.getByTestId('deck-list-view-type')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -759,7 +759,7 @@ describe('DeckDetailPage — decklist (DECK-06, DECK-07, DECK-08)', () => {
     await userEvent.click(screen.getByTestId('deck-list-view-cost'));
     expect(screen.getByTestId('deck-list-group-1')).toBeInTheDocument();
     expect(screen.getByTestId('deck-list-group-2')).toBeInTheDocument();
-    expect(screen.queryByTestId('deck-list-group-attack')).toBeNull();
+    expect(screen.queryByTestId('deck-list-group-action')).toBeNull();
     expect(screen.getByTestId('deck-list-view-cost')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('deck-list-view-type')).toHaveAttribute('aria-pressed', 'false');
 

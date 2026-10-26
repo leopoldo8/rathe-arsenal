@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import type { IBreakdown, IBreakdownEntry } from '../../api/deck-detail';
 import type { ILegalityReasonDetail } from '../../api/decks';
 import { cardName } from '../../lib/card-name';
+import { cardGroupOf, CARD_GROUP_ORDER, type TCardGroupId } from '../../lib/card-groups';
 import { cardTypeLabel } from './cardTypeLabel';
 import { entryKey } from './deckDetailModel';
 import { buildSections, type IListCard, type TListSectionId } from './deckListCards';
@@ -17,7 +18,7 @@ export interface IDeckListItem {
 
 export type TDeckListView = 'type' | 'cost' | 'list';
 
-export type TTypeGroupId = 'attack' | 'defense' | 'nonAttack' | 'loadout';
+export type TTypeGroupId = TCardGroupId;
 export type TCostGroupId = '0' | '1' | '2' | '3' | '4plus' | 'none';
 export type TListGroupId = 'all';
 export type TDeckListGroupId = TTypeGroupId | TCostGroupId | TListGroupId;
@@ -28,11 +29,7 @@ export interface IDeckListGroup {
   readonly total: number;
 }
 
-const TYPE_GROUP_ORDER: readonly TTypeGroupId[] = ['attack', 'defense', 'nonAttack', 'loadout'];
 const COST_GROUP_ORDER: readonly TCostGroupId[] = ['0', '1', '2', '3', '4plus', 'none'];
-const LOADOUT_SLOT_PATTERN = /hero|weapon|equipment/i;
-const LOADOUT_TYPE_PATTERN = /hero|weapon|equipment/i;
-const DEFENSE_TYPE_PATTERN = /defense|reaction/i;
 const MAX_NAMED_COST = 3;
 
 /** Copies of an entry that belong to the starting deck; the inventory's share is not part of the deck list. */
@@ -75,17 +72,11 @@ export function buildDeckList(
 }
 
 /**
- * Catalog `type` is the first entry of the card's type list, which for actions is
- * just "Action": it cannot tell an attack from a non-attack. Plain actions land in
- * the attack group until the breakdown carries the full type list.
+ * The deck page's type groups are the shared card-list groups. The breakdown carries only the card's
+ * first type, so a plain action stays under "Ações" until it carries subtypes too.
  */
 export function resolveTypeGroup(entry: IBreakdownEntry): TTypeGroupId {
-  if (LOADOUT_SLOT_PATTERN.test(entry.slot) || LOADOUT_TYPE_PATTERN.test(entry.type)) {
-    return 'loadout';
-  }
-  if (DEFENSE_TYPE_PATTERN.test(entry.type)) return 'defense';
-  if (/^action$|attack/i.test(entry.type.trim())) return 'attack';
-  return 'nonAttack';
+  return cardGroupOf({ slot: entry.slot, type: entry.type });
 }
 
 export function resolveCostGroup(cost: number | null): TCostGroupId {
@@ -116,7 +107,7 @@ export function groupDeckList(
   view: TDeckListView,
 ): readonly IDeckListGroup[] {
   if (view === 'type') {
-    return toGroups(TYPE_GROUP_ORDER, items, (item) => resolveTypeGroup(item.entry));
+    return toGroups(CARD_GROUP_ORDER, items, (item) => resolveTypeGroup(item.entry));
   }
   if (view === 'cost') {
     return toGroups(COST_GROUP_ORDER, items, (item) => resolveCostGroup(item.entry.cost));

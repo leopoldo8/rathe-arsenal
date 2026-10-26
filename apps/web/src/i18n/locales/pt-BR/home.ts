@@ -1,7 +1,7 @@
 export const home = {
   // EducationalEmptyState
   welcomeHeading: 'Comece por um deck',
-  emptyLead: 'Importe um deck e veja quanto dele a sua coleção já cobre, quais cartas podem substituir as que faltam e o que falta comprar.',
+  emptyLead: 'Importe um deck e veja quanto dele você já tem, quais cartas da sua coleção podem substituir as que faltam e o que falta comprar.',
   collectionHintPrefix: 'Você já tem',
   collectionHintCard: 'carta',
   collectionHintCards: 'cartas',
@@ -26,7 +26,6 @@ export const home = {
   // DeckCard
   legalityNotLegalLabel: 'Fora do formato',
   untrackAriaLabel: 'Excluir {{deckName}}',
-  untrackTitle: 'Excluir deck',
   untrackToastMsg: '{{deckName}} foi para Excluídos recentemente',
   undoUntrack: 'Desfazer',
 

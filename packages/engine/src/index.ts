@@ -29,6 +29,7 @@ export type {
   TExclusionKey,
   IRationaleDetail,
   TRationalePitch,
+  TRationalePitchRelation,
   IAlternativeCard,
   IAlternativeGroup,
   IAlternativeRationale,

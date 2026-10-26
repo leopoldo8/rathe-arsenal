@@ -178,3 +178,11 @@
     align-items: flex-start;
   }
 }
+
+.estimateNote {
+  margin: 0;
+  max-inline-size: 22rem;
+  color: var(--ra-fg-secondary);
+  font-size: var(--ra-text-caption);
+  line-height: var(--ra-leading-normal);
+}

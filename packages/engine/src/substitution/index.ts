@@ -29,7 +29,7 @@ export {
 } from './pitch-curve';
 
 export { composeRationale, describeRationale } from './rationale';
-export type { IRationaleDetail, TRationalePitch } from './rationale';
+export type { IRationaleDetail, TRationalePitch, TRationalePitchRelation } from './rationale';
 export { scoreCandidate, findTierMatch } from './score';
 export { findSubstitution } from './find-substitution';
 export {

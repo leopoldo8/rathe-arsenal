@@ -117,6 +117,13 @@ describe('Scenario 3: estimated badge lifecycle', () => {
     expect(screen.getByTestId('estimated-badge')).toHaveTextContent('estimado');
   });
 
+  it('explains the estimated price in visible text, with no native tooltip', () => {
+    render(<ShoppingLine data={makePopulated({ isEstimated: true })} />);
+
+    expect(screen.getByTestId('estimate-note')).toHaveTextContent('Preço estimado pelo anúncio da loja.');
+    expect(document.querySelector('[title]')).toBeNull();
+  });
+
   it('renders a tilde prefix on the price when isEstimated is true', () => {
     const data = makePopulated({ isEstimated: true });
 

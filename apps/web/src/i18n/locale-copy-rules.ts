@@ -1,4 +1,4 @@
-export type TCopyRule = 'dash' | 'banned-word' | 'english-literal';
+export type TCopyRule = 'dash' | 'banned-word' | 'english-literal' | 'gendered-word';
 
 export interface ICopyViolation {
   readonly path: string;
@@ -12,6 +12,17 @@ const DASH_PATTERN = /[–—]/;
 const TROCA_NAMESPACES: ReadonlySet<string> = new Set(['home', 'auth', 'onboarding']);
 const TROCA_PATTERN = /(?<![\p{L}\p{N}])trocas?(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])trocar(?![\p{L}\p{N}])/iu;
 
+// Words that give the player a gender; the copy says the result instead ("A conta fica aberta neste celular").
+export const GENDERED_WORDS: readonly string[] = [
+  'bem-vindo',
+  'bem-vinda',
+  'conectado',
+  'conectada',
+  'logado',
+  'logada',
+];
+const GENDERED_PATTERN = new RegExp(`(?<![\\p{L}\\p{N}-])(?:${GENDERED_WORDS.join('|')})(?![\\p{L}\\p{N}-])`, 'iu');
+
 const ENGLISH_LITERALS: readonly string[] = ['Manual entries', 'Attack Actions'];
 
 /** Returns the rules a single pt-BR value breaks; `namespace` is the top-level catalog key. */
@@ -21,6 +32,7 @@ export function findCopyViolations(namespace: string, value: string): readonly I
   if (TROCA_NAMESPACES.has(namespace) && TROCA_PATTERN.test(value)) {
     violations.push({ path: namespace, rule: 'banned-word' });
   }
+  if (GENDERED_PATTERN.test(value)) violations.push({ path: namespace, rule: 'gendered-word' });
   if (ENGLISH_LITERALS.some((literal) => value.includes(literal))) {
     violations.push({ path: namespace, rule: 'english-literal' });
   }

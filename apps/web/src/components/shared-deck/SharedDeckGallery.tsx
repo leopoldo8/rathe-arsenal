@@ -2,17 +2,13 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ISharedCard } from '../../api/shared-decks';
 import { SharedGallery } from './SharedGallery';
-import { groupSharedCards, type ISharedCardGroup } from './sharedDeckModel';
+import { groupSharedCards } from './sharedDeckModel';
+import { CARD_GROUP_LABEL_KEY } from '../../lib/card-groups';
 import { cardName } from '../../lib/card-name';
 import styles from './SharedDeckGallery.module.css';
 
 interface ISharedDeckGalleryProps {
   readonly cards: readonly ISharedCard[];
-}
-
-/** Known groups have a translated name; any other slot is shown under its own name. */
-function groupLabel(group: ISharedCardGroup, t: (key: string) => string): string {
-  return group.id === 'other' ? (group.cards[0]?.slot ?? '') : t(`sharing.list.group.${group.id}`);
 }
 
 /** The original's name, with its pitch only when the card standing in for it carries the same name. */
@@ -30,7 +26,7 @@ export function SharedDeckGallery({ cards }: ISharedDeckGalleryProps): React.Rea
       {groups.map((group) => (
         <div key={group.id} className={styles.group} data-testid={`shared-group-${group.id}`}>
           <h2 className={styles.groupTitle}>
-            {groupLabel(group, t)}
+            {t(CARD_GROUP_LABEL_KEY[group.id])}
             <em className={styles.groupTotal}>{t('sharing.list.groupCount', { count: group.total })}</em>
           </h2>
           <SharedGallery

@@ -44,6 +44,9 @@ describe('formatSwapRationale', () => {
   const detail = {
     tier: 1,
     pitch: 'red',
+    pitchRelation: { relation: 'same', pitch: 'red' },
+    originalClasses: ['Brute'],
+    candidateGeneric: false,
     sharedClasses: ['Brute'],
     powerDelta: 0,
     defenseDelta: -1,
@@ -52,7 +55,7 @@ describe('formatSwapRationale', () => {
 
   it('phrases the comparison in pt-BR with game terms kept in English', () => {
     expect(formatSwapRationale(detail, 'fallback', t)).toBe(
-      'Mesmo pitch (vermelho), mesma classe (Brute), power igual, defense -1, nenhuma keyword em comum.',
+      'mesmo pitch (vermelho), mesma classe (Brute), power igual, defense -1, nenhuma keyword em comum.',
     );
   });
 
@@ -64,8 +67,45 @@ describe('formatSwapRationale', () => {
     );
   });
 
+  it('the reason states the real relation: the same pitch and a shared class', () => {
+    const reason = formatSwapRationale(detail, 'fallback', t);
+
+    expect(reason).toContain('mesmo pitch (vermelho)');
+    expect(reason).toContain('mesma classe (Brute)');
+  });
+
+  it('the reason states the real relation: a blue candidate for a red original', () => {
+    const blue = { ...detail, pitchRelation: { relation: 'different', original: 'red', candidate: 'blue' } } as const;
+
+    const reason = formatSwapRationale(blue, 'fallback', t);
+
+    expect(reason).toContain('pitch diferente: azul em vez de vermelho');
+    expect(reason).not.toContain('mesmo pitch');
+    expect(reason).not.toContain('Mesmo pitch');
+  });
+
+  it('the reason states the real relation: a Generic candidate is a generic card, never a class', () => {
+    const generic = { ...detail, originalClasses: ['Generic'], sharedClasses: [], candidateGeneric: true } as const;
+
+    const reason = formatSwapRationale(generic, 'fallback', t);
+
+    expect(reason).toContain('carta genérica');
+    expect(reason).not.toContain('mesma classe (Generic)');
+    expect(reason).not.toContain('nenhuma das duas tem classe');
+  });
+
+  it('the reason states the real relation: no class phrase when the cards share none', () => {
+    const none = { ...detail, originalClasses: ['Brute'], sharedClasses: [] } as const;
+
+    const reason = formatSwapRationale(none, 'fallback', t);
+
+    expect(reason).not.toContain('classe');
+    expect(reason).not.toContain('nenhuma das duas tem classe');
+    expect(reason.startsWith('mesmo pitch (vermelho), power igual')).toBe(true);
+  });
+
   it('marks a tier 2 match as a looser one', () => {
-    expect(formatSwapRationale({ ...detail, tier: 2 }, 'fallback', t)).toMatch(/^Troca menos próxima\. Mesmo pitch/);
+    expect(formatSwapRationale({ ...detail, tier: 2 }, 'fallback', t)).toMatch(/^Troca menos próxima\. mesmo pitch/);
   });
 
   it('falls back to the stored sentence when the detail is missing', () => {

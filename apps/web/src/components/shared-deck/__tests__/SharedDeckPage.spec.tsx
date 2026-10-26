@@ -162,11 +162,21 @@ describe('SharedDeckPage', () => {
       expect(screen.getByTestId('shared-group-hero')).toBeInTheDocument();
       expect(screen.getByTestId('shared-group-weapon')).toHaveTextContent('Romping Club');
       expect(screen.getByTestId('shared-group-equipment')).toHaveTextContent('Goliath Gauntlet');
-      expect(screen.getByTestId('shared-group-actions')).toHaveTextContent('Pack Hunt');
-      expect(screen.getByTestId('shared-group-reactions')).toHaveTextContent('Reckless Swing');
+      expect(screen.getByTestId('shared-group-action')).toHaveTextContent('Pack Hunt');
+      expect(screen.getByTestId('shared-group-attackReaction')).toHaveTextContent('Reckless Swing');
       const footer = screen.getByTestId('shared-deck-footer');
       expect(footer).toHaveTextContent('Legend Story Studios®');
       expect(footer.textContent?.match(/© Legend Story Studios/g)).toHaveLength(1);
+    });
+
+    it('headings follow the shared grouping', async () => {
+      renderPage();
+
+      await screen.findByTestId('shared-deck-list');
+      const headings = within(screen.getByTestId('shared-deck-list'))
+        .getAllByRole('heading', { level: 2 })
+        .map((heading) => heading.firstChild?.textContent);
+      expect(headings).toEqual(['Ações', 'Reações de ataque', 'Herói', 'Arma', 'Equipamentos']);
     });
 
     it('shows the verdict block the answer carries', async () => {

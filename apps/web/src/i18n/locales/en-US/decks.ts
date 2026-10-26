@@ -37,6 +37,7 @@ export const decks = {
   untrack: 'Delete deck',
   // DeckDetailLayout
   deckDetailsSidebarAria: 'Deck details',
+  deckCanvasAria: 'Deck content',
   // DeckDetailSidebar
   shopping: 'Shopping',
   viewOnFabrary: 'View on Fabrary',
@@ -94,7 +95,6 @@ export const decks = {
   cardNotLegalTooltip: 'Card is not legal in {{format}}',
   // MarkOwnedButton
   markOwned: 'I own this',
-  markOwnedSaving: 'Saving...',
   // ReadinessHero
   viewOnFabraryLink: 'View on Fabrary ↗',
   // SaveCascadeConfirmModal

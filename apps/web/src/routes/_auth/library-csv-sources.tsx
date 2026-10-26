@@ -36,7 +36,7 @@ export function LibraryCsvSourcesPage(): React.ReactElement {
         </div>
       </header>
 
-      <main className={styles.content}>
+      <div className={styles.content}>
         {sources.length === 0 ? (
           <CsvSourcesEmptyState onUpload={() => void navigate({ to: '/add-cards/csv' })} />
         ) : (
@@ -55,7 +55,7 @@ export function LibraryCsvSourcesPage(): React.ReactElement {
             </button>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
@@ -72,7 +72,7 @@ function CsvSourcesSkeleton(): React.ReactElement {
           <Skeleton width="100%" height="48px" aria-label={t('common.loadingSubtitle')} />
         </div>
       </header>
-      <main className={styles.content}>
+      <div className={styles.content}>
         <div className={styles.skeletonRows}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={styles.skeletonRow}>
@@ -82,7 +82,7 @@ function CsvSourcesSkeleton(): React.ReactElement {
             </div>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

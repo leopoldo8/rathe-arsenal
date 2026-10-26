@@ -457,7 +457,7 @@ describe('LibraryPage — group-by regroups without refetching (LIB-03)', () => 
   }
 
   it.each([
-    ['Tipo', ['Attack Action', 'Equipment']],
+    ['Tipo', ['Ações', 'Equipamentos']],
     ['Pitch', ['Vermelho', 'Azul']],
     ['Set', ['CRU', 'WTR']],
     ['Lista', []],

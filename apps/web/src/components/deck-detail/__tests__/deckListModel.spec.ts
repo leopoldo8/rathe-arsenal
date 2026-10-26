@@ -45,14 +45,15 @@ describe('buildDeckList', () => {
 
 describe('resolveTypeGroup', () => {
   it.each([
-    [{ type: 'Defense Reaction' }, 'defense'],
-    [{ type: 'Action' }, 'attack'],
-    [{ type: 'Attack Action' }, 'attack'],
-    [{ type: 'Instant' }, 'nonAttack'],
-    [{ type: 'Hero', slot: 'hero' }, 'loadout'],
-    [{ type: 'Weapon', slot: 'weapon' }, 'loadout'],
-    [{ type: 'Equipment', slot: 'equipment' }, 'loadout'],
-    [{ type: 'Action', slot: 'equipment' }, 'loadout'],
+    [{ type: 'Defense Reaction' }, 'defenseReaction'],
+    [{ type: 'Attack Reaction' }, 'attackReaction'],
+    [{ type: 'Action' }, 'action'],
+    [{ type: 'Attack Action' }, 'action'],
+    [{ type: 'Instant' }, 'instant'],
+    [{ type: 'Hero', slot: 'hero' }, 'hero'],
+    [{ type: 'Weapon', slot: 'weapon' }, 'weapon'],
+    [{ type: 'Equipment', slot: 'equipment' }, 'equipment'],
+    [{ type: 'Action', slot: 'equipment' }, 'equipment'],
   ])('%j is %s', (overrides, expected) => {
     expect(resolveTypeGroup(entry(overrides))).toBe(expected);
   });
@@ -85,9 +86,9 @@ describe('groupDeckList', () => {
   it('groups by type in the handoff order and totals each group', () => {
     const groups = groupDeckList(items, 'type');
     expect(groups.map((g) => [g.id, g.total])).toEqual([
-      ['attack', 3],
-      ['defense', 2],
-      ['loadout', 1],
+      ['action', 3],
+      ['defenseReaction', 2],
+      ['hero', 1],
     ]);
   });
 
