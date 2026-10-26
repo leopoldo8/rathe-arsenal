@@ -1640,22 +1640,22 @@ Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "no se
 
 ### S38 - Housekeeping on a schedule kept in the repository · 7 files · 31 KB · ~14k
 
-**C441** - The worker's main passes `runWorkerLoops` a step list that includes the housekeeping step and the availability-pass step, next to today's variant, recommendation, chat and reference steps (AC 280; door 5)
+**C441** - The worker's main passes `runWorkerLoops` a step list that includes the housekeeping step and the availability-pass step, next to today's variant, recommendation, chat and reference steps (AC 280; door 5) · done
 Proof: `api unit src/stores/__tests__/variant-queue-worker.main.spec.ts -t "registers the housekeeping and availability-pass steps"`
 
-**C442** - One housekeeping tick deletes: a user with `deletedAt` 31 days ago with its imports, pending lines, copies, lists and lines, decks and deck lines, sessions and sign-in codes; a deck with `deletedAt` 31 days ago with its cascades; consumed sign-in codes; codes past `expiresAt`; sessions with `revokedAt` set. The same tick keeps a user and a deck deleted 29 days ago, a live code and a live session (AC 281; door 5)
+**C442** - One housekeeping tick deletes: a user with `deletedAt` 31 days ago with its imports, pending lines, copies, lists and lines, decks and deck lines, sessions and sign-in codes; a deck with `deletedAt` 31 days ago with its cascades; consumed sign-in codes; codes past `expiresAt`; sessions with `revokedAt` set. The same tick keeps a user and a deck deleted 29 days ago, a live code and a live session (AC 281; door 5) · done
 Proof: `api e2e src/housekeeping/__tests__/housekeeping.e2e-spec.ts -t "one tick removes what is 30 days gone and what has ended"`
 
-**C443** - Two housekeeping ticks started at once delete each row once: the logged deleted counts of both ticks sum to the rows seeded, and the tick that does not get the lock deletes nothing and throws nothing (AC 282; door 5)
+**C443** - Two housekeeping ticks started at once delete each row once: the logged deleted counts of both ticks sum to the rows seeded, and the tick that does not get the lock deletes nothing and throws nothing (AC 282; door 5) · done
 Proof: `api e2e src/housekeeping/__tests__/housekeeping.e2e-spec.ts -t "two workers at once delete each row once"`
 
-**C444** - A tick whose delete throws logs one error with the step name and leaves the loop running; the next tick deletes the rows (Observable "scheduled housekeeping step")
+**C444** - A tick whose delete throws logs one error with the step name and leaves the loop running; the next tick deletes the rows (Observable "scheduled housekeeping step") · done
 Proof: `api unit src/housekeeping/__tests__/housekeeping.step.spec.ts -t "a failed tick logs and the next tick retries"`
 
-**C445** - Setting a deck's `deletedAt` to 31 days ago and running one tick leaves no `tracked_deck` row with that id (S38 independent test) (AC 281)
+**C445** - Setting a deck's `deletedAt` to 31 days ago and running one tick leaves no `tracked_deck` row with that id (S38 independent test) (AC 281) · done
 Proof: `api e2e src/housekeeping/__tests__/housekeeping.e2e-spec.ts -t "a deck deleted 31 days ago is gone after one tick"`
 
-**C446** - A deck deleted 30 days and 1 minute ago is removed for good by the housekeeping step with its cascades, and a deck deleted 29 days ago stays (AC 54; door 4; moved here from S8, because the housekeeping step is built in S38)
+**C446** - A deck deleted 30 days and 1 minute ago is removed for good by the housekeeping step with its cascades, and a deck deleted 29 days ago stays (AC 54; door 4; moved here from S8, because the housekeeping step is built in S38) · done
 Proof: `api e2e src/housekeeping/__tests__/housekeeping.e2e-spec.ts -t "deletes decks soft-deleted 30 days ago"`
 
 ### S39 - The counts the reviews need · 9 files · 52 KB · ~19k

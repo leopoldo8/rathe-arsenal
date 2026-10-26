@@ -29,6 +29,7 @@ import { ChatModule } from './chat/chat.module';
 import { SharingModule } from './sharing/sharing.module';
 import { SharePreviewModule } from './sharing/preview/share-preview.module';
 import { ListsModule } from './lists/lists.module';
+import { HousekeepingModule } from './housekeeping/housekeeping.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { ListsModule } from './lists/lists.module';
     ChatModule,
     SharingModule,
     ListsModule,
+    HousekeepingModule,
     // Link-preview HTML for /d/:token and the generated share images.
     SharePreviewModule,
     // Serve the built SPA from apps/web/dist in production.

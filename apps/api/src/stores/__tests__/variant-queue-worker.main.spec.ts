@@ -5,6 +5,7 @@ import { ResolveJobCardsService } from '../resolve-job-cards.service';
 import { StoreIngestionService } from '../store-ingestion.service';
 import { VariantFetchQueueService } from '../variant-fetch-queue.service';
 import { VariantJobProcessorService } from '../variant-job-processor.service';
+import { HousekeepingService } from '../../housekeeping/housekeeping.service';
 import { main, POLL_MS } from '../variant-queue-worker';
 
 jest.mock('@nestjs/core', () => ({ NestFactory: { createApplicationContext: jest.fn() } }));
@@ -41,5 +42,26 @@ describe('variant-queue-worker main', () => {
     expect(variantQueue.claimNext.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(recommendationRunner.process.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(recommendationRunner.process).toHaveBeenCalledWith({ id: 'run-1' }, { apiKey: 'AIza-main', fetch });
+  });
+
+  it('registers the housekeeping and availability-pass steps', async () => {
+    jest.useFakeTimers();
+    const housekeeping = { tick: jest.fn().mockResolvedValue({ ran: true, deleted: { users: 0, decks: 0, signInCodes: 0, sessions: 0 } }) };
+    const ingestion = { claimPendingUrlSync: jest.fn().mockResolvedValue(null), listActiveStoreSlugs: jest.fn().mockResolvedValue([]) };
+    const services = new Map<unknown, unknown>([
+      [VariantFetchQueueService, { reclaimOrphans: jest.fn(), claimNext: jest.fn().mockResolvedValue(null) }],
+      [VariantJobProcessorService, { process: jest.fn() }],
+      [ResolveJobCardsService, { resolve: jest.fn() }],
+      [StoreIngestionService, ingestion],
+      [HousekeepingService, housekeeping],
+    ]);
+    (NestFactory.createApplicationContext as jest.Mock).mockResolvedValue({ get: (token: unknown) => services.get(token) });
+
+    void main();
+    await jest.advanceTimersByTimeAsync(2 * POLL_MS);
+
+    // The availability step asks the ingestion service which stores it covers; the housekeeping step ticks.
+    expect(ingestion.listActiveStoreSlugs).toHaveBeenCalled();
+    expect(housekeeping.tick).toHaveBeenCalledTimes(1);
   });
 });

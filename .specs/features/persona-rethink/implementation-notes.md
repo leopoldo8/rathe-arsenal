@@ -561,6 +561,15 @@
 - The pt-BR and en-US sentences are the design document's table; the en-US ones are my translation of it (the document has no English), so the owner may want to read them.
 - Visual baselines `auth-deck-detail` and `auth-library` of the dark-desktop project were regenerated: S36's headings and estimated-price caption and S37's "?" changed what they draw.
 
+### S38, housekeeping on a schedule kept in the repository (batch 18)
+
+- The step is `apps/api/src/housekeeping` (service, step, module); the worker registers it in `runWorkerLoops` next to the availability step, and the plan's Landing has a row for what a tick deletes and keeps.
+- Sign-in codes are kept for at least an hour after they were asked for, whatever their state (consumed, expired, or the codes of a purged user's address), because the five-an-hour limit of C404 counts the rows. `housekeeping.e2e-spec.ts` has a test for it.
+- The user purge relies on the `ON DELETE CASCADE` of every user-owned table (the e2e seeds an import, a pending line, copies, a list with a line, a deck with its lines, sessions and a code and checks all are gone); only the sign-in codes (keyed by address) and a purged deck's `share_link` rows (no foreign key) are deleted by hand.
+- The step lets a tick through every 10 minutes after one that worked, and retries on the next wake-up after one that threw (C444); the 3-second worker poll would otherwise run the delete 20 times a minute.
+- `scripts/purge-deleted-users.ts` stays as it is, a manual tool; it was never scheduled and does not cover the newer tables, which the cascade does. No check asks for it to go (derivation note 9).
+- Counts in the tick's log line (`housekeeping.tick`: `ran` and `deleted.users|decks|signInCodes|sessions`) do not count what the user cascade removed below the user row.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.

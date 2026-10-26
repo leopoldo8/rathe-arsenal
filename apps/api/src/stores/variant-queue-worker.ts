@@ -18,6 +18,8 @@ import { parseThinkingLevel, TGeminiFetch } from '../recommendations/gemini-clie
 import { ChatTurnQueueService } from '../chat/chat-turn-queue.service';
 import { ChatRunnerService, drainChatOnce } from '../chat/chat-runner.service';
 import { createReferenceStep } from '../reference/reference-step';
+import { HousekeepingService } from '../housekeeping/housekeeping.service';
+import { createHousekeepingStep } from '../housekeeping/housekeeping.step';
 import { RulesImportService } from '../reference/rules-import.service';
 import { TournamentSyncService } from '../reference/tournament-sync.service';
 
@@ -233,8 +235,10 @@ export async function runWorker(
     logger,
   });
 
+  const housekeepingStep = createHousekeepingStep({ service: app.get(HousekeepingService), logger });
+
   await runWorkerLoops(
-    [variantStep, availabilityStep, recommendationStep, chatStep, referenceStep],
+    [variantStep, availabilityStep, recommendationStep, chatStep, referenceStep, housekeepingStep],
     deps.pollMs ?? POLL_MS,
     deps.shouldContinue,
   );
