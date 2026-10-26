@@ -5,11 +5,17 @@
 import { test, expect } from '@playwright/test';
 import { pinPortuguese } from '../e2e/helpers';
 import { loadFixture } from '../support/fixture';
-import { stubMissingList } from '../support/missing-list-stubs';
+import { missingListStub, stubMissingList } from '../support/missing-list-stubs';
 
 test('the phone list follows r3-list-phone', async ({ page }) => {
   await pinPortuguese(page);
   await stubMissingList(page);
+  // r3-list-phone draws a row with both a flag and a stand-in line: the stub gives that row a flag too (the later route wins).
+  await page.route('**/api/decks/*/missing', (route) => {
+    const stub = missingListStub();
+    const lines = stub.lines.map((line) => (line.cardIdentifier === 'bloodrush-bellow-yellow' ? { ...line, foilOnly: true } : line));
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...stub, lines }) });
+  });
   await page.goto(`/decks/${loadFixture().readyDeckId}/missing`, { waitUntil: 'networkidle' });
   const list = page.getByTestId('missing-list-page');
   await expect(list).toBeVisible();
@@ -58,6 +64,9 @@ test('the phone list follows r3-list-phone', async ({ page }) => {
   expect(Math.abs(totalBox.y - nameBox.y), 'the line total is on the name line').toBeLessThan(nameBox.height);
   expect(totalBox.x, 'the line total is to the right of the name').toBeGreaterThan(nameBox.x + nameBox.width);
   expect(metaBox.y, 'the needed line is above the stand-in line').toBeLessThan(standInBox!.y);
+  const bloodrushFlagsBox = (await bloodrush.locator('ul').boundingBox())!;
+  expect(metaBox.y, 'the needed line is above the flags').toBeLessThan(bloodrushFlagsBox.y);
+  expect(bloodrushFlagsBox.y, 'the flags are above the stand-in line').toBeLessThan(standInBox!.y);
   expect(haveBox!.x, '"Já tenho…" comes before "Comprar" on the row actions').toBeLessThan(buyBox.x);
   expect(Math.abs(haveBox!.y - buyBox.y), 'both actions share the last line').toBeLessThan(buyBox.height);
 
