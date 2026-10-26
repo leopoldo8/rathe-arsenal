@@ -77,15 +77,28 @@ describe('Accounts (E2E, S30 and S31)', () => {
   });
 
   it('sign-up keeps the in-app page it was made from and drops any other', async () => {
-    const fromDeck = ctx.emailFor('return-deck');
-    const fromElsewhere = ctx.emailFor('return-elsewhere');
+    const paths: Record<string, string | null> = {
+      'return-deck': '/d/abc123',
+      'return-decks': '/decks/12',
+      'return-absolute': 'https://evil.example/x',
+      'return-protocol-relative': '//evil.example',
+      'return-long': `/${'a'.repeat(200)}`,
+    };
+    const emails = Object.fromEntries(Object.keys(paths).map((label) => [label, ctx.emailFor(label)]));
 
-    await request(server()).post('/api/auth/sign-up').send({ email: fromDeck, returnPath: '/d/abc123' }).expect(201);
-    await request(server()).post('/api/auth/sign-up').send({ email: fromElsewhere, returnPath: 'https://evil.example/x' }).expect(201);
+    for (const [label, returnPath] of Object.entries(paths)) {
+      await request(server()).post('/api/auth/sign-up').send({ email: emails[label], returnPath }).expect(201);
+    }
 
-    const rows = await ctx.dataSource.query(`SELECT "email", "signupReturnPath" FROM "user" WHERE "email" = ANY($1)`, [[fromDeck, fromElsewhere]]);
+    const rows = await ctx.dataSource.query(`SELECT "email", "signupReturnPath" FROM "user" WHERE "email" = ANY($1)`, [Object.values(emails)]);
     const byEmail = Object.fromEntries(rows.map((row: { email: string; signupReturnPath: string | null }) => [row.email, row.signupReturnPath]));
-    expect(byEmail).toEqual({ [fromDeck]: '/d/abc123', [fromElsewhere]: null });
+    expect(byEmail).toEqual({
+      [emails['return-deck']!]: '/d/abc123',
+      [emails['return-decks']!]: '/decks/12',
+      [emails['return-absolute']!]: null,
+      [emails['return-protocol-relative']!]: null,
+      [emails['return-long']!]: null,
+    });
   });
 
   it('addresses are trimmed and lowercased on every auth route', async () => {

@@ -51,6 +51,16 @@ test('the pitch is visible on a computer', async ({ page }) => {
   }
 });
 
+test('the reset pages are gone and open the not-found page', async ({ page }) => {
+  for (const path of ['/forgot-password', '/reset-password']) {
+    await page.goto(path);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Fora do mapa.' })).toBeVisible();
+    await expect(page.getByText('Esta página não faz parte do seu arsenal.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Entrar' })).toBeVisible();
+  }
+});
+
 test('an account made from a shared deck comes back to it', async ({ page }) => {
   const { sessionToken, readyDeckId } = loadFixture();
   const { token, deckName } = await enableDeckShare(readyDeckId, sessionToken);
@@ -74,6 +84,28 @@ test('an account made from a shared deck comes back to it', async ({ page }) => 
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Colar uma lista' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Enviar uma planilha (.csv)' })).toBeVisible();
+});
+
+test('a confirmed address signs in by code and lands on the page the account was made from', async ({ page }) => {
+  const { sessionToken, readyDeckId } = loadFixture();
+  const { token } = await enableDeckShare(readyDeckId, sessionToken);
+  const returnPath = `/d/${token}`;
+  await page.route('**/api/auth/verify-email', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ verified: true, returnPath, email: STUB_EMAIL }) }),
+  );
+  const { issued } = await stubCodeSignIn(page, { sessionToken, email: STUB_EMAIL, returnPath });
+
+  await page.goto(`/verify-email?token=${'a'.repeat(64)}`);
+  await expect(page.getByRole('status')).toContainText('E-mail confirmado.');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Digite o código' })).toBeVisible();
+  await expect(page.getByText(STUB_EMAIL).first()).toBeVisible();
+  await expect.poll(() => issued.length).toBe(1);
+  await page.getByLabel('Dígito 1 de 6').click();
+  await page.keyboard.type(issued[0]!);
+
+  await expect(page).toHaveURL(new RegExp(`${returnPath}$`));
 });
 
 test('the second code works and the first does not', async ({ page }) => {

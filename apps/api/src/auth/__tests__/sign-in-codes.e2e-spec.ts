@@ -59,15 +59,26 @@ describe('Sign-in codes (E2E, S31)', () => {
     expect(Date.parse(res.body.resendAfter)).toBeGreaterThan(before);
   });
 
+  it('a code request writes the e-mail in the language of Accept-Language', async () => {
+    const email = await accountWithCodeFor('code-language');
+
+    await request(server()).post('/api/auth/codes').set('Accept-Language', 'en-US,en;q=0.9').send({ email }).expect(202);
+    await request(server()).post('/api/auth/codes').set('Accept-Language', 'pt-BR').send({ email }).expect(202);
+    await request(server()).post('/api/auth/codes').send({ email }).expect(202);
+
+    expect(ctx.sentCodes.filter((entry) => entry.to === email).map((entry) => entry.locale)).toEqual(['en-US', 'pt-BR', 'pt-BR']);
+  });
+
   it('the code and the button each sign in once', async () => {
-    const email = await accountWithCodeFor('code-once');
+    const email = ctx.emailFor('code-once');
+    await request(server()).post('/api/auth/sign-up').send({ email, password: PASSWORD, returnPath: '/d/aB3dE5gH7jK9mN' }).expect(201);
     const first = await requestCode(email);
 
     const verified = await request(server()).post('/api/auth/codes/verify').send({ email, code: first.code }).expect(200);
     const replayed = await request(server()).post('/api/auth/codes/redeem').send({ token: first.token });
 
     expect(verified.body.user.email).toBe(email);
-    expect(verified.body).toHaveProperty('returnPath');
+    expect(verified.body.returnPath).toBe('/d/aB3dE5gH7jK9mN');
     expect(sessionCookieOf(verified)).not.toBeNull();
     const [spent] = await ctx.dataSource.query(`SELECT "consumedAt" FROM "sign_in_code" WHERE "email" = $1`, [email]);
     expect(spent.consumedAt).not.toBeNull();
@@ -77,6 +88,7 @@ describe('Sign-in codes (E2E, S31)', () => {
     const redeemed = await request(server()).post('/api/auth/codes/redeem').send({ token: second.token }).expect(200);
     const again = await request(server()).post('/api/auth/codes/redeem').send({ token: second.token });
     expect(redeemed.body.user.email).toBe(email);
+    expect(redeemed.body.returnPath).toBe('/d/aB3dE5gH7jK9mN');
     expect(sessionCookieOf(redeemed)).not.toBeNull();
     expect(again.status).toBe(401);
 

@@ -6,6 +6,8 @@ interface ICodeStubOptions {
   /** The value of a real `ra_session` cookie, for the app to carry on with once the stubbed sign-in succeeds. */
   readonly sessionToken: string;
   readonly email: string;
+  /** The page the API names after the sign-in; null when the account has none. */
+  readonly returnPath?: string | null;
 }
 
 /**
@@ -31,7 +33,7 @@ export async function stubCodeSignIn(page: Page, options: ICodeStubOptions): Pro
       { name: 'ra_session', value: options.sessionToken, domain: base.hostname, path: '/api', httpOnly: true, sameSite: 'Lax' },
     ]);
     return json(route, 200, {
-      returnPath: null,
+      returnPath: options.returnPath ?? null,
       user: { id: 'stub-user', email: options.email, role: 'user', chatAccess: false },
       settings: { theme: 'dark' },
     });

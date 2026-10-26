@@ -116,7 +116,9 @@ describe('AuthService.signUp', () => {
     const storedPathFor = async (returnPath: string): Promise<string | null | undefined> => {
       const create = jest.fn().mockImplementation((u: Partial<UserEntity>) => u as UserEntity);
       const { service } = buildService({ create });
-      await service.signUp({ email: 'a@b.com', returnPath });
+      // A refused path never stops the sign-up: it still answers with a session.
+      const result = await service.signUp({ email: 'a@b.com', returnPath });
+      expect(result.sessionToken).toBe('session-token');
       return (create.mock.calls[0][0] as Partial<UserEntity>).signupReturnPath;
     };
 

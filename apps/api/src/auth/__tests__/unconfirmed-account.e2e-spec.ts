@@ -9,6 +9,8 @@ import { sessionCookieHeader, sessionTokenOf, setCookiesOf } from './session-tes
 
 const SEVEN_DAYS_SECONDS = 604_800;
 const HOUR_MS = 60 * 60 * 1000;
+const TYPED_FIX = 'Bia.Nova@gmail.com';
+const LOWERCASED_FIX = 'bia.nova@gmail.com';
 
 describe('An account that has not confirmed its e-mail (E2E, S33)', () => {
   let ctx: IAccountsApp;
@@ -55,7 +57,18 @@ describe('An account that has not confirmed its e-mail (E2E, S33)', () => {
        VALUES ($1, 'Unconfirmed deck', 'Some Hero', NULL, 'cc', 'building') RETURNING id`,
       [account.userId],
     )) as [{ id: number }];
+    // One collection row of 3 copies, so a fix of the address can be seen to keep the collection.
+    const [source] = (await ctx.dataSource.query(`INSERT INTO csv_source ("userId", kind, active) VALUES ($1, 'manual', true) RETURNING id`, [account.userId])) as [{ id: string }];
+    await ctx.dataSource.query(`INSERT INTO collection_card ("userId", "cardIdentifier", quantity, "sourceId", finish) VALUES ($1, 'flex-red', 3, $2, '')`, [account.userId, source.id]);
     return deck.id;
+  }
+
+  async function collectionOf(account: ISignedUp): Promise<{ rows: number; copies: number }> {
+    const [row] = (await ctx.dataSource.query(
+      `SELECT COUNT(*)::int AS rows, COALESCE(SUM(quantity), 0)::int AS copies FROM collection_card WHERE "userId" = $1`,
+      [account.userId],
+    )) as [{ rows: number; copies: number }];
+    return row;
   }
 
   async function createList(account: ISignedUp): Promise<number> {
@@ -144,35 +157,44 @@ describe('An account that has not confirmed its e-mail (E2E, S33)', () => {
   it('fixing the address keeps the account and sends a new confirmation', async () => {
     const account = await signUp('fix-address');
     const deckId = await createDeck(account);
+    const collectionBefore = await collectionOf(account);
+    expect(collectionBefore).toEqual({ rows: 1, copies: 3 });
     const sentBefore = ctx.sentConfirmations.length;
 
-    const fixed = await request(server()).patch('/api/auth/me/email').set(...as(account.token)).send({ email: ctx.emailFor('Fixed-Address').replace('acct-', 'Acct-') });
-    expect(fixed.status).toBe(200);
-    expect(fixed.body.user.email).toBe(ctx.emailFor('fixed-address'));
+    // The address a person types with capitals; the account keeps it lowercased. A leftover from an aborted run is cleared first.
+    await ctx.dataSource.query(`DELETE FROM "user" WHERE "email" = $1`, [LOWERCASED_FIX]);
+    const fixed = await request(server()).patch('/api/auth/me/email').set(...as(account.token)).send({ email: TYPED_FIX });
+    try {
+      expect(fixed.status).toBe(200);
+      expect(fixed.body.user.email).toBe(LOWERCASED_FIX);
 
-    const [kept] = (await ctx.dataSource.query(`SELECT COUNT(*)::int AS n FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [deckId, account.userId])) as [{ n: number }];
-    expect(kept.n).toBe(1);
-    const me = await request(server()).get('/api/auth/me').set(...as(account.token)).expect(200);
-    expect(me.body.email).toBe(ctx.emailFor('fixed-address'));
-    expect(ctx.sentConfirmations).toHaveLength(sentBefore + 1);
-    const sent = ctx.sentConfirmations[ctx.sentConfirmations.length - 1];
-    expect(sent?.to).toBe(ctx.emailFor('fixed-address'));
+      const [kept] = (await ctx.dataSource.query(`SELECT COUNT(*)::int AS n FROM tracked_deck WHERE id = $1 AND "userId" = $2`, [deckId, account.userId])) as [{ n: number }];
+      expect(kept.n).toBe(1);
+      expect(await collectionOf(account)).toEqual(collectionBefore);
+      const me = await request(server()).get('/api/auth/me').set(...as(account.token)).expect(200);
+      expect(me.body.email).toBe(LOWERCASED_FIX);
+      expect(ctx.sentConfirmations).toHaveLength(sentBefore + 1);
+      const sent = ctx.sentConfirmations[ctx.sentConfirmations.length - 1];
+      expect(sent?.to).toBe(LOWERCASED_FIX);
 
-    const old = await request(server()).post('/api/auth/verify-email').send({ token: account.confirmationToken });
-    expect(old.status).toBe(410);
-    const fresh = new URL(sent?.link ?? '').searchParams.get('token');
-    expect((await request(server()).post('/api/auth/verify-email').send({ token: fresh })).status).toBe(200);
+      const old = await request(server()).post('/api/auth/verify-email').send({ token: account.confirmationToken });
+      expect(old.status).toBe(410);
+      const fresh = new URL(sent?.link ?? '').searchParams.get('token');
+      expect((await request(server()).post('/api/auth/verify-email').send({ token: fresh })).status).toBe(200);
 
-    const confirmedChange = await request(server()).patch('/api/auth/me/email').set(...as(account.token)).send({ email: ctx.emailFor('another-new') });
-    expect(confirmedChange.status).toBe(400);
+      const confirmedChange = await request(server()).patch('/api/auth/me/email').set(...as(account.token)).send({ email: ctx.emailFor('another-new') });
+      expect(confirmedChange.status).toBe(400);
 
-    const other = await signUp('fix-address-other');
-    const taken = await request(server()).patch('/api/auth/me/email').set(...as(other.token)).send({ email: ctx.emailFor('fixed-address') });
-    expect(taken.status).toBe(409);
-    const malformed = await request(server()).patch('/api/auth/me/email').set(...as(other.token)).send({ email: 'bia@gmail' });
-    expect(malformed.status).toBe(400);
-    const noCookie = await request(server()).patch('/api/auth/me/email').send({ email: ctx.emailFor('someone') });
-    expect(noCookie.status).toBe(401);
+      const other = await signUp('fix-address-other');
+      const taken = await request(server()).patch('/api/auth/me/email').set(...as(other.token)).send({ email: LOWERCASED_FIX });
+      expect(taken.status).toBe(409);
+      const malformed = await request(server()).patch('/api/auth/me/email').set(...as(other.token)).send({ email: 'bia@gmail' });
+      expect(malformed.status).toBe(400);
+      const noCookie = await request(server()).patch('/api/auth/me/email').send({ email: ctx.emailFor('someone') });
+      expect(noCookie.status).toBe(401);
+    } finally {
+      await ctx.dataSource.query(`DELETE FROM "user" WHERE "email" = $1`, [LOWERCASED_FIX]);
+    }
   });
 
   it('a failed confirmation e-mail does not block the account', async () => {

@@ -2,6 +2,7 @@
  * S34 over HTTP with the throttler on: Turnstile on sign-up and code requests, five codes per
  * address and twenty sign-ups per IP per hour. Needs DATABASE_URL (see `accounts-e2e.fixture.ts`).
  */
+import { Logger } from '@nestjs/common';
 import request from 'supertest';
 import { bootAccountsApp, IAccountsApp, PASSWORD } from './accounts-e2e.fixture';
 
@@ -27,6 +28,26 @@ describe('Auth limits (E2E, S34)', () => {
     const [row] = (await ctx.dataSource.query(`SELECT COUNT(*)::int AS n FROM "${table}" WHERE "email" = $1`, [email])) as [{ n: number }];
     return row.n;
   }
+
+  // Runs first: the missing-secret warning is kept once an hour, so a later test would find it already given.
+  it('with no Turnstile secret sign-up answers 201 without calling siteverify and the warning comes once', async () => {
+    expect(process.env['TURNSTILE_SECRET_KEY']).toBeUndefined();
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    try {
+      for (let i = 0; i < 3; i++) {
+        await from('198.51.100.90', '/api/auth/sign-up').send({ email: ctx.emailFor(`no-secret-${i}`), password: PASSWORD, turnstileToken: 'anything' }).expect(201);
+      }
+      await from('198.51.100.91', '/api/auth/codes').send({ email: ctx.emailFor('no-secret-0') }).expect(202);
+
+      expect(fetchSpy.mock.calls.filter(([url]) => url === SITEVERIFY_URL)).toHaveLength(0);
+      const missingSecretWarnings = warnSpy.mock.calls.filter(([entry]) => (entry as { event?: string } | undefined)?.event === 'auth.turnstile.secret_missing');
+      expect(missingSecretWarnings).toHaveLength(1);
+    } finally {
+      fetchSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  });
 
   it('five codes per address and twenty sign-ups per IP per hour', async () => {
     const email = ctx.emailFor('five-codes');

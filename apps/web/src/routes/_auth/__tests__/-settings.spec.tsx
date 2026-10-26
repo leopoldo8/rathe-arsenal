@@ -502,7 +502,9 @@ describe('SettingsPage, Conta section: the password', () => {
     return render(<Harness />);
   }
 
-  beforeEach(() => setAccountPasswordMock.mockReset().mockResolvedValue(undefined));
+  beforeEach(() => {
+    setAccountPasswordMock.mockReset().mockResolvedValue(undefined);
+  });
 
   it('the password row follows hasPassword', () => {
     const withPassword = renderSettings(makeAuthContext({ user: account(true) }));
@@ -528,19 +530,38 @@ describe('SettingsPage, Conta section: the password', () => {
   });
 
   it('a new password asks only the new password', async () => {
-    renderWithState(account(false));
+    // The real client function runs: what leaves the browser is the request, so the request is what is asserted.
+    const actual = await vi.importActual<typeof import('../../../lib/account-api')>('../../../lib/account-api');
+    setAccountPasswordMock.mockImplementation((password: string) => actual.setAccountPassword(password));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
 
-    await userEvent.click(within(contaSection()).getByRole('button', { name: 'Criar uma senha' }));
-    const form = contaSection().querySelector('form')!;
-    expect(form.querySelectorAll('input[type="password"]')).toHaveLength(1);
-    expect(form.querySelector('input[autocomplete="current-password"]')).toBeNull();
+    for (const [hasPassword, opener] of [
+      [false, 'Criar uma senha'],
+      [true, 'Mudar a senha'],
+    ] as const) {
+      fetchMock.mockClear();
+      const view = renderWithState(account(hasPassword));
 
-    await userEvent.type(within(form).getByLabelText('Nova senha'), '0123456789');
-    await userEvent.click(within(form).getByRole('button', { name: 'Salvar senha' }));
+      await userEvent.click(within(contaSection()).getByRole('button', { name: opener }));
+      const form = contaSection().querySelector('form')!;
+      expect(form.querySelectorAll('input[type="password"]'), `${opener} opens one password input`).toHaveLength(1);
+      expect(form.querySelector('input[autocomplete="current-password"]')).toBeNull();
+      expect(within(form).queryByLabelText(/atual/i)).toBeNull();
 
-    expect(setAccountPasswordMock).toHaveBeenCalledWith('0123456789');
-    expect(await within(contaSection()).findByText('Senha: você tem uma senha')).toBeInTheDocument();
-    expect(contaSection().querySelector('form')).toBeNull();
+      await userEvent.type(within(form).getByLabelText('Nova senha'), '0123456789');
+      await userEvent.click(within(form).getByRole('button', { name: 'Salvar senha' }));
+
+      expect(await within(contaSection()).findByText('Senha: você tem uma senha')).toBeInTheDocument();
+      expect(contaSection().querySelector('form')).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/users/me/password');
+      expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body as string)).toEqual({ password: '0123456789' });
+      view.unmount();
+    }
+    vi.unstubAllGlobals();
   });
 
   it('a password cannot be removed', () => {
