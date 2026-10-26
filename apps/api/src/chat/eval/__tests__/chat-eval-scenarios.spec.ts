@@ -25,7 +25,7 @@ describe('chat eval scenarios', () => {
 
 describe('chat eval checks', () => {
   const scenario = (id: string) => EVAL_SCENARIOS.find((entry) => entry.id === id)!;
-  const outcome = (overrides: Partial<IEvalOutcome> = {}): IEvalOutcome => ({ text: '', toolCalls: [], swaps: [], ...overrides });
+  const outcome = (overrides: Partial<IEvalOutcome> = {}): IEvalOutcome => ({ text: '', toolCalls: [], swaps: [], toolResults: [], ...overrides });
 
   it('a swap for Lace with Bloodrot fails when it changes the role and passes when it keeps it', () => {
     const check = scenario('swap-keeps-role-azalea').check!;
@@ -116,5 +116,52 @@ describe('chat eval checks', () => {
     expect(check(outcome({ text: 'Você já tem boa parte desse núcleo.' }))).not.toBeNull();
     expect(check(outcome({ text: 'Você já tem boa parte desse núcleo.', toolCalls: ['get_collection({})'] }))).toBeNull();
     expect(check(outcome({ text: 'Há 5 listas regulares.' }))).toBeNull();
+  });
+
+  it("each audit scenario fails on the audit's wrong answer and passes on a right one", () => {
+    const ids = ['copy-rule-pack-hunt', 'one-copy-swap', 'deck-price', 'ready-hero', 'ready-next-hero', 'ready-triggers'];
+    for (const id of ids) expect([id, typeof scenario(id).check]).toEqual([id, 'function']);
+    const lace = 'lace-with-bloodrot-red';
+
+    const copyRule = scenario('copy-rule-pack-hunt').check!;
+    expect(copyRule(outcome({ text: 'Somando os pitches red, yellow e blue, são 10 Pack Hunt. Para ficar no limite pelo nome, deixe 3 no total.' }))).not.toBeNull();
+    expect(
+      copyRule(outcome({ text: 'Cada cor conta separado: Pack Hunt (Vermelho) tem 4 e o limite é 3, então tire 1. Pack Hunt (Amarelo) e (Azul) não entram nessa conta.' })),
+    ).toBeNull();
+
+    const oneCopy = scenario('one-copy-swap').check!;
+    expect(oneCopy(outcome({ text: 'Só consigo trocar todas as cópias de uma vez.' }))).not.toBeNull();
+    expect(oneCopy(outcome({ text: 'Proposta pronta.', toolCalls: ['propose_swap({"deckId":1})'], swaps: [{ original: lace, replacement: 'fire-in-the-hole-red', quantity: 2 }] }))).not.toBeNull();
+    expect(oneCopy(outcome({ text: 'Proposta de uma cópia.', toolCalls: ['propose_swap({"deckId":1})'], swaps: [{ original: lace, replacement: 'fire-in-the-hole-red', quantity: 1 }] }))).toBeNull();
+
+    const price = scenario('deck-price').check!;
+    const refused = { name: 'get_prices', result: { error: 'INVALID_ARGUMENTS', detail: 'give either cardIdentifiers or deckId' } };
+    const priced = { name: 'get_prices', result: { store: { name: 'Cúpula DT', currency: 'BRL' }, cards: [] } };
+    expect(price(outcome({ text: 'Não consegui consultar os preços.', toolCalls: ['get_prices({})', 'get_prices({})'], toolResults: [refused, refused] }))).not.toBeNull();
+    expect(price(outcome({ text: 'Não consegui consultar os preços.', toolCalls: [] }))).not.toBeNull();
+    expect(price(outcome({ text: 'Faltam R$ 40,00 na Cúpula DT.', toolCalls: ['get_prices({})', 'get_prices({})'], toolResults: [refused, priced] }))).toBeNull();
+
+    const hero = scenario('ready-hero').check!;
+    expect(hero(outcome({ text: 'O Kano costuma jogar muitas flechas.' }))).not.toBeNull();
+    expect(hero(outcome({ text: 'O Kano vence com 6 decks.', toolCalls: ['search_tournament_decks({"hero":"Kano"})'] }))).toBeNull();
+
+    const nextHero = scenario('ready-next-hero').check!;
+    expect(nextHero(outcome({ text: 'Monte a Viserai.' }))).not.toBeNull();
+    expect(nextHero(outcome({ text: 'Monte a Viserai.', toolCalls: ['get_tournament_meta({"format":"Classic Constructed"})'] }))).not.toBeNull();
+    expect(nextHero(outcome({ text: 'Com o que você tem, monte a Viserai.', toolCalls: ['get_collection({})', 'get_tournament_meta({})'] }))).toBeNull();
+
+    const triggers = scenario('ready-triggers').check!;
+    const noMatch = { name: 'search_rules', result: { found: false, entries: [] } };
+    expect(triggers(outcome({ text: 'Não achei a regra.', toolCalls: ['search_rules({"query":"ordem dos gatilhos"})'], toolResults: [noMatch] }))).not.toBeNull();
+    expect(triggers(outcome({ text: 'Sem busca.' }))).not.toBeNull();
+    expect(
+      triggers(
+        outcome({
+          text: 'Os gatilhos esperam e o jogador do turno escolhe a ordem (regra 1.2).',
+          toolCalls: ['search_rules({"query":"ordem dos gatilhos"})', 'search_rules({"query":"order of triggers when attacking"})'],
+          toolResults: [noMatch, { name: 'search_rules', result: { found: true, entries: [{ ruleNumber: '1.2' }] } }],
+        }),
+      ),
+    ).toBeNull();
   });
 });

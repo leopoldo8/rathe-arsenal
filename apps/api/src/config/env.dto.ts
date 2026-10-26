@@ -171,6 +171,11 @@ export class EnvDto {
   @IsString()
   GEMINI_API_KEY?: string;
 
+  /** How hard the model thinks on a chat turn: `low`, `medium` or `high`; any other value is ignored by the reader and the model's default applies. */
+  @IsOptional()
+  @IsString()
+  GEMINI_CHAT_THINKING_LEVEL?: string;
+
   /** An OpenRouter model id such as `anthropic/claude-haiku-5.5`; set, chat turns go to it with OPENROUTER_API_KEY instead of Gemini. */
   @IsOptional()
   @IsString()

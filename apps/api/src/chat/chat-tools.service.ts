@@ -126,7 +126,7 @@ export class ChatToolsService {
           quantity: check.copies,
           deckCards: deck!.cards,
         });
-        return { ok: true, comparison };
+        return { ok: true, quantity: check.copies, side: check.payload.side, comparison };
       },
     };
     return { toolbox, proposals };

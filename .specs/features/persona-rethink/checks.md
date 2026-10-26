@@ -1269,7 +1269,7 @@ Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.t
 
 ### S29 - The Tutor's tools are tested in CI, and the model is evaluated before a change ships · 7 files · 74 KB · ~21k
 
-**C341** - The API e2e job (`pnpm --filter @rathe-arsenal/api test:e2e`, the `.e2e-spec.ts` regex, run in `ci.yml`) holds four cases:
+**C341** - The API e2e job (`pnpm --filter @rathe-arsenal/api test:e2e`, the `.e2e-spec.ts` regex, run in `ci.yml`) holds four cases: · done
 - `get_prices` with `{deckId, cardIdentifiers: []}`;
 - `get_deck` on the 4-copy Pack Hunt (Vermelho) deck;
 - a one-copy `propose_swap` through `runChatTool`, answering `ok: true` with `quantity: 1`;
@@ -1281,7 +1281,7 @@ Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "get_deck returns t
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "propose_swap proposes a one-copy swap"`
 Proof: `api e2e src/chat/__tests__/chat-tools.e2e-spec.ts -t "search_rules finds rules for the starter questions' searches"`
 
-**C342** - `EVAL_SCENARIOS` holds `copy-rule-pack-hunt`, `one-copy-swap`, `deck-price`, `ready-hero`, `ready-next-hero` and `ready-triggers`, each with a check function, and `ready-triggers` no longer checks nothing. Each check fails on the audit's recorded wrong answer and passes on a right trace, one case per scenario. The wrong answers are:
+**C342** - `EVAL_SCENARIOS` holds `copy-rule-pack-hunt`, `one-copy-swap`, `deck-price`, `ready-hero`, `ready-next-hero` and `ready-triggers`, each with a check function, and `ready-triggers` no longer checks nothing. Each check fails on the audit's recorded wrong answer and passes on a right trace, one case per scenario. The wrong answers are: · done
 - copy rule: F29, "somando os pitches red, yellow e blue, são 10 Pack Hunt. Para ficar no limite pelo nome, deixe 3 no total";
 - one-copy swap: F34, an answer with no `propose_swap` call;
 - deck price: F30, every `get_prices` call answering `INVALID_ARGUMENTS`;
@@ -1291,14 +1291,14 @@ The ready questions are read exactly as the pt-BR screens show them (AC 216, AC 
 Proof: `api unit src/chat/eval/__tests__/chat-eval-scenarios.spec.ts -t "each audit scenario fails on the audit's wrong answer and passes on a right one"`
 Proof: `api unit src/chat/eval/__tests__/chat-eval-scenarios.spec.ts -t "ask the ready questions exactly as the pt-BR screens show them"`
 
-**C343** - The eval runs by `chat:eval` with a cost cap:
+**C343** - The eval runs by `chat:eval` with a cost cap: · done
 - The options read `--max-usd` with a default of 3.
 - The run stops once `chat_usage` for its turns reaches the cap.
 - `.github/workflows/ci.yml` contains no `chat:eval` and no `chat-eval` step (AC 217)
 
 Proof: `api unit src/chat/eval/__tests__/chat-eval.cli.spec.ts -t "the eval stops at its cost cap and is not a CI step"`
 
-**C344** - `validateEnv` accepts an environment without `GEMINI_CHAT_THINKING_LEVEL`. With `GEMINI_CHAT_THINKING_LEVEL: 'low'`, the parsed config keeps `'low'`, and the property is declared on the environment DTO (AC 218)
+**C344** - `validateEnv` accepts an environment without `GEMINI_CHAT_THINKING_LEVEL`. With `GEMINI_CHAT_THINKING_LEVEL: 'low'`, the parsed config keeps `'low'`, and the property is declared on the environment DTO (AC 218) · done
 Proof: `api unit src/config/__tests__/env.dto.spec.ts -t "GEMINI_CHAT_THINKING_LEVEL is declared and optional"`
 
 ### S30 - One field to start · 26 files · 96 KB · ~44k

@@ -29,6 +29,13 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...valid, GEMINI_API_KEY: 'AIza-test' }).GEMINI_API_KEY).toBe('AIza-test');
   });
 
+  it('GEMINI_CHAT_THINKING_LEVEL is declared and optional', () => {
+    expect(validateEnv(valid).GEMINI_CHAT_THINKING_LEVEL).toBeUndefined();
+    expect(validateEnv({ ...valid, GEMINI_CHAT_THINKING_LEVEL: 'low' }).GEMINI_CHAT_THINKING_LEVEL).toBe('low');
+    // A value the thinking-level parser does not know is ignored there, so the environment must not refuse it.
+    expect(() => validateEnv({ ...valid, GEMINI_CHAT_THINKING_LEVEL: 'extreme' })).not.toThrow();
+  });
+
   it('parses a complete valid env (happy path)', () => {
     const dto = validateEnv(valid);
     expect(dto.NODE_ENV).toBe('development');

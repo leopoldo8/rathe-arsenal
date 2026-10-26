@@ -202,6 +202,8 @@ describe('chat tools (E2E)', () => {
 
     expect(answer).toEqual({
       ok: true,
+      quantity: 2,
+      side: 'deck',
       comparison: expect.objectContaining({
         copies: 2,
         sameRole: true,
@@ -361,6 +363,49 @@ describe('chat tools (E2E)', () => {
     expect(withEmptyList).toEqual(alone);
     expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
     expect(await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [] })).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
+  });
+
+  it('propose_swap proposes a one-copy swap', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const toolbox = toolboxFor(user);
+    const woundingBlow = catalog.cards.find((card) => card.name === 'Wounding Blow' && card.pitch === 1)!.cardIdentifier;
+
+    const answer = await runChatTool(toolbox, 'propose_swap', {
+      deckId,
+      originalCardIdentifier: PACK_HUNT_RED,
+      slot: 'mainboard',
+      replacementCardIdentifier: woundingBlow,
+      quantity: 1,
+      side: 'inventory',
+      reason: 'a legal card for the Rhinar deck',
+    });
+
+    expect(answer['ok']).toBe(true);
+    expect(answer['quantity']).toBe(1);
+    expect(answer['side']).toBe('inventory');
+    expect((answer['comparison'] as { copies: number }).copies).toBe(1);
+  });
+
+  it("search_rules finds rules for the starter questions' searches", async () => {
+    const toolbox = toolboxFor(await fixture.chatUser());
+    const insertRule = `INSERT INTO rules_entry ("ruleNumber", "sectionNumber", "sectionTitle", text, url, "sourceHash", "fetchedAt") VALUES ($1, '9.9', 'Tools', $2, 'u', 'h', now())
+       ON CONFLICT ("ruleNumber") DO UPDATE SET text = EXCLUDED.text`;
+    await fixture.dataSource.query(insertRule, ['tools-starter-triggers', 'The combat chain keeps the order of triggers: triggered effects wait and the turn player picks their order.']);
+    await fixture.dataSource.query(insertRule, ['tools-starter-copies', 'A constructed deck may hold at most the maximum copies of a card with the same name and pitch.']);
+    await fixture.dataSource.query(insertRule, ['tools-starter-equipment', 'A Classic Constructed deck needs one weapon and equipment in each slot, with the requirements of its hero.']);
+
+    const searches: Array<[string, string]> = [
+      ['order of triggers when attacking', 'tools-starter-triggers'],
+      ['constructed deck maximum copies same name pitch', 'tools-starter-copies'],
+      ['Classic Constructed deck equipment weapon requirements', 'tools-starter-equipment'],
+    ];
+    for (const [query, ruleNumber] of searches) {
+      const result = await runChatTool(toolbox, 'search_rules', { query });
+
+      expect(result['found']).toBe(true);
+      expect((result['entries'] as Array<{ ruleNumber: string }>).map((entry) => entry.ruleNumber)).toContain(ruleNumber);
+    }
   });
 
   it('get_prices computes readiness for a deck with none stored', async () => {
