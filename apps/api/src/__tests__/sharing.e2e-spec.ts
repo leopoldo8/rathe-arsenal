@@ -198,6 +198,16 @@ describe('Sharing (E2E)', () => {
     const coverage = await request(server).get(`/api/shared/decks/${missingToken}/coverage`).set(...auth(visitor)).expect(404);
     expect(coverage.body.code).toBe('SHARE_LINK_UNAVAILABLE');
     await request(server).post(`/api/shared/decks/${missingToken}/copy`).set(...auth(visitor)).send({}).expect(404);
+
+    // An unknown token, a malformed one and a switched-off one answer 404 the same way, and none of them writes a deck.
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(owner)).expect(204);
+    for (const token of ['mQ8rZ3nUp2bX5yKdFgHjLs', 'nope', deckToken]) {
+      const refused = await request(server).post(`/api/shared/decks/${token}/copy`).set(...auth(visitor)).send({ variant: 'original' }).expect(404);
+      expect(refused.body.code).toBe('SHARE_LINK_UNAVAILABLE');
+    }
+    const decks = (await dataSource.query(`SELECT COUNT(*)::int AS n FROM tracked_deck WHERE "userId" = $1`, [visitor.userId])) as { n: number }[];
+    expect(decks[0]!.n).toBe(0);
   });
 
   it('answers matches only for the missing intent, with what the visitor owns of each missing card', async () => {

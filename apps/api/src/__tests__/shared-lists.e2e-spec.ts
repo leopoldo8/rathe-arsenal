@@ -400,6 +400,29 @@ describe('Shared lists (E2E)', () => {
       }
     });
 
+    it('a want list owes the rule question to a visitor whose two holding decks share a card, and gives no spare before it', async () => {
+      const marcos = await createSession('trade-rule-owner');
+      const caio = await createSession('trade-rule-visitor');
+      const pummel = cardNamed('Pummel', 1);
+      const listId = await createList(marcos, 'want', 'Procuro - Kayo');
+      await addLine(marcos, listId, pummel, 3);
+      const token = await startSharing(marcos, listId);
+      await ownCopies(caio, pummel, 4);
+      await createDeck(caio, 'building', pummel, 1, 'Kayo CC');
+      await createDeck(caio, 'building', pummel, 2, 'Rhinar CC');
+
+      const asked = await request(server).get(`/api/shared/lists/${token}`).set(...auth(caio)).expect(200);
+
+      expect(asked.body.spareNeedsRule).toBe(true);
+      expect(asked.body.lines).toEqual([expect.objectContaining({ owned: 4, spare: null, spareReason: null })]);
+
+      await request(server).put('/api/users/me/spare-rule').set(...auth(caio)).send({ rule: 'within_format' }).expect(200);
+      const answered = await request(server).get(`/api/shared/lists/${token}`).set(...auth(caio)).expect(200);
+
+      expect(answered.body.spareNeedsRule).toBe(false);
+      expect(answered.body.lines).toEqual([expect.objectContaining({ owned: 4, spare: 2 })]);
+    });
+
     it('a want list offers a signed-in visitor their own shared want list to ask for in return', async () => {
       const marcos = await createSession('trade-owner-2');
       const caio = await createSession('trade-visitor-2');

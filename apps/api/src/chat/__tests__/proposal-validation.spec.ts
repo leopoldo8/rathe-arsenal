@@ -101,10 +101,10 @@ describe('proposal validation', () => {
 
     expect(answer(swap({ quantity: 1, side: 'deck' }))).toBe('ok');
     expect(answer(swap({ quantity: 1, side: 'inventory' }))).toBe('ok');
-    expect(answer(swap({ quantity: 0, side: 'deck' }))).toMatch(/^false:/);
-    expect(answer(swap({ quantity: 2, side: 'inventory' }))).toMatch(/^false:/);
-    expect(answer(swap({ quantity: 1, side: 'bench' }))).toMatch(/^false:/);
-    expect(answer(swap({ quantity: 1, side: 'inventory', replacementCardIdentifier: pack('yellow'), originalCardIdentifier: pack('red') }))).toMatch(/^false:/);
+    expect(answer(swap({ quantity: 0, side: 'deck' }))).toBe('false:INVALID_ARGUMENTS');
+    expect(answer(swap({ quantity: 2, side: 'inventory' }))).toBe('false:REPLACEMENT_ILLEGAL');
+    expect(answer(swap({ quantity: 1, side: 'bench' }))).toBe('false:INVALID_ARGUMENTS');
+    expect(answer(swap({ quantity: 1, side: 'inventory', replacementCardIdentifier: pack('yellow'), originalCardIdentifier: pack('red') }))).toBe('false:REPLACEMENT_ILLEGAL');
     const stored = validateSwapProposal(swap({ quantity: 1, side: 'inventory' }) as never, rhinarDeck, catalog);
     expect(stored).toEqual(expect.objectContaining({ ok: true, copies: 1, payload: expect.objectContaining({ quantity: 1, side: 'inventory' }) }));
   });

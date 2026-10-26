@@ -127,6 +127,11 @@ describe('chat tools (E2E)', () => {
     expect(catalog.getCard(RUNEBLADE_EMISSARY).classes).toEqual(['Runeblade']);
     expect(cards.find((card) => card.cardIdentifier === RUNEBLADE_EMISSARY)?.legal).toBe(false);
     const batched = batch['results'] as Array<{ query: string; cards: Array<{ cardIdentifier: string; legal: boolean }> }>;
+    // A phrase from the rules text of a card, found nowhere in its name, still finds the card.
+    const byRulesText = await runChatTool(toolbox, 'search_cards', { query: 'banish it, then shuffle', limit: 20 });
+    expect(catalog.getCard(KATSU).name.toLowerCase()).not.toContain('banish');
+    expect(catalog.getCard(KATSU).functionalText).toContain('banish it, then shuffle');
+    expect((byRulesText['cards'] as Array<{ cardIdentifier: string }>).map((card) => card.cardIdentifier)).toContain(KATSU);
     expect(batched.map((result) => result.query)).toEqual(['emissary', 'talishar']);
     expect(batched.every((result) => result.cards.length > 0 && result.cards.length <= BATCH_CARD_LIMIT)).toBe(true);
     expect(batched[1]!.cards.map((card) => card.cardIdentifier)).toContain(TALISHAR);
@@ -300,6 +305,7 @@ describe('chat tools (E2E)', () => {
     const listed = await runChatTool(toolbox, 'get_prices', { cardIdentifiers: [FLEX, COAX] });
 
     expect(listed['store']).toEqual(expect.objectContaining({ name: 'Cúpula DT', currency: 'BRL' }));
+    expect(listed['tcgplayer']).toEqual(expect.objectContaining({ currency: 'USD' }));
     const [flex, coax] = listed['cards'] as Array<Record<string, unknown>>;
     expect(flex).toEqual(
       expect.objectContaining({
@@ -320,7 +326,8 @@ describe('chat tools (E2E)', () => {
     expect(deck['cards']).toEqual([
       expect.objectContaining({ cardIdentifier: FLEX, quantity: 2, store: expect.objectContaining({ available: 2, lineCents: 600 }), tcgplayer: expect.objectContaining({ lineCents: 50 }) }),
     ]);
-    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0 }));
+    expect(deck['store']).toEqual(expect.objectContaining({ totalCents: 600, cardsOutOfStock: 0, currency: 'BRL' }));
+    expect(deck['tcgplayer']).toEqual(expect.objectContaining({ currency: 'USD', totalCents: 50 }));
     expect(await runChatTool(toolbox, 'get_prices', { deckId: other.deckId })).toEqual({ error: 'DECK_NOT_FOUND' });
     expect(await runChatTool(toolbox, 'get_prices', {})).toEqual(expect.objectContaining({ error: 'INVALID_ARGUMENTS' }));
   });
@@ -385,6 +392,41 @@ describe('chat tools (E2E)', () => {
     expect(answer['quantity']).toBe(1);
     expect(answer['side']).toBe('inventory');
     expect((answer['comparison'] as { copies: number }).copies).toBe(1);
+  });
+
+  it('propose_swap refuses a bad quantity, side or copy count and stores no proposal', async () => {
+    const user = await fixture.chatUser();
+    const deckId = await insertDeck(user, 'building', PACK_HUNT_DECK);
+    const woundingBlow = catalog.cards.find((card) => card.name === 'Wounding Blow' && card.pitch === 1)!.cardIdentifier;
+    const swap = (overrides: Record<string, unknown>) => ({
+      deckId,
+      originalCardIdentifier: PACK_HUNT_RED,
+      slot: 'mainboard',
+      replacementCardIdentifier: woundingBlow,
+      reason: 'a legal card for the Rhinar deck',
+      ...overrides,
+    });
+    const refusals = [
+      swap({ quantity: 0, side: 'deck' }),
+      swap({ quantity: 2, side: 'inventory' }),
+      swap({ quantity: 1, side: 'bench' }),
+      swap({ quantity: 1, side: 'inventory', replacementCardIdentifier: PACK_HUNT_YELLOW }),
+    ];
+
+    for (const args of refusals) {
+      const turn = tools.forTurn({ userId: user.userId, locale: 'en-US' });
+      const answer = await runChatTool(turn.toolbox, 'propose_swap', args);
+
+      expect(answer['ok']).toBe(false);
+      expect(turn.proposals).toHaveLength(0);
+    }
+    for (const side of ['deck', 'inventory']) {
+      const turn = tools.forTurn({ userId: user.userId, locale: 'en-US' });
+      const answer = await runChatTool(turn.toolbox, 'propose_swap', swap({ quantity: 1, side }));
+
+      expect(answer['ok']).toBe(true);
+      expect(turn.proposals).toHaveLength(1);
+    }
   });
 
   it("search_rules finds rules for the starter questions' searches", async () => {

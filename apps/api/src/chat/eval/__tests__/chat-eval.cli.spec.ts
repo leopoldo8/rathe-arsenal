@@ -8,15 +8,31 @@ import { DEFAULT_MAX_USD, driveTurns, readOptions, toolResultsOf } from '../chat
 
 const CI_WORKFLOW = readFileSync(join(__dirname, '../../../../../../.github/workflows/ci.yml'), 'utf8');
 
-/** An app context whose cost reads come from `spentReads` in order, and whose queue holds `turns` turns. */
-function fakeApp(spentReads: readonly number[], turns: number) {
-  const reads = [...spentReads];
+interface IUsageRow {
+  readonly messageId: string;
+  readonly costUsd: number;
+}
+
+/**
+ * An app context whose `chat_usage` table is a list of rows, whose queue holds `turns` turns, and whose runner adds
+ * `costPerTurn` for the eval's own message each time it processes a turn. The cost read answers only a query on
+ * `chat_usage` that filters by the message ids it is given, summing the matching rows.
+ */
+function fakeApp(usage: IUsageRow[], turns: number, costPerTurn: number, ownMessageId: string) {
   const dataSource = {
-    query: jest.fn(async (sql: string) => (sql.includes('sum("costUsd")') ? [{ spent: reads.shift() ?? reads[0] ?? 0 }] : [])),
+    query: jest.fn(async (sql: string, params: readonly unknown[] = []) => {
+      if (!/FROM chat_usage\b/.test(sql) || !sql.includes('ANY($1)')) return [];
+      const ids = params[0] as readonly string[];
+      return [{ spent: usage.filter((row) => ids.includes(row.messageId)).reduce((sum, row) => sum + row.costUsd, 0) }];
+    }),
   };
   let left = turns;
   const queue = { claimNext: jest.fn(async () => (left-- > 0 ? { id: `turn-${turns - left}` } : null)) };
-  const runner = { process: jest.fn(async () => undefined) };
+  const runner = {
+    process: jest.fn(async () => {
+      usage.push({ messageId: ownMessageId, costUsd: costPerTurn });
+    }),
+  };
   const app = {
     get: (token: unknown) => (token === DataSource ? dataSource : token === ChatTurnQueueService ? queue : token === ChatRunnerService ? runner : undefined),
   } as unknown as INestApplicationContext;
@@ -31,7 +47,8 @@ describe('the eval run', () => {
     expect(DEFAULT_MAX_USD).toBe(3);
     expect(readOptions(['--max-usd', '1.5']).maxUsd).toBe(1.5);
 
-    const { app, queue, runner } = fakeApp([0, 0.6, 1.2], 5);
+    // Another run's message already cost $5: only the eval's own turns (message m-1) count toward the cap.
+    const { app, queue, runner } = fakeApp([{ messageId: 'someone-else', costUsd: 5 }], 5, 0.6, 'm-1');
     await driveTurns(app, 'user-1', { ...DRIVE, maxUsd: 1 });
 
     expect(runner.process).toHaveBeenCalledTimes(2);
