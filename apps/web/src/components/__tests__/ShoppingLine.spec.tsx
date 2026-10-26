@@ -201,9 +201,14 @@ describe('ShoppingLine: card names carry the pitch', () => {
 
     render(<ShoppingLine data={data} />);
 
-    expect(screen.getByText('Pack Hunt (Vermelho)', { exact: false })).toBeInTheDocument();
+    const row = screen.getByText('Pack Hunt (Vermelho)', { exact: false }).closest('li')!;
+    expect(row).toHaveTextContent('Pack Hunt (Vermelho)');
+    expect(row).not.toHaveTextContent(/Pack Hunt(?! \(Vermelho\))/);
     expect(
       screen.getByRole('link', { name: 'Abrir Pack Hunt (Vermelho) na Cupula DT em uma nova aba' }),
     ).toBeInTheDocument();
+    const labels = Array.from(row.querySelectorAll('[aria-label]')).map((node) => node.getAttribute('aria-label'));
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.filter((label) => /Pack Hunt/.test(label ?? '') && !/Pack Hunt \(Vermelho\)/.test(label ?? ''))).toEqual([]);
   });
 });

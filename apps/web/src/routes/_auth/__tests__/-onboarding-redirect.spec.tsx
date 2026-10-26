@@ -19,8 +19,15 @@ import { render, screen } from '@testing-library/react';
 // Mocks
 // ---------------------------------------------------------------------------
 
+const chooser = vi.hoisted(() => ({ real: false }));
+
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: (_path: string) => (_config: unknown) => undefined,
+  Link: ({ children, to, className }: { children: React.ReactNode; to: string; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
   Navigate: ({ to }: { to: string; replace?: boolean }) => (
     <div data-testid="navigate-redirect" data-to={to} />
   ),
@@ -33,10 +40,11 @@ vi.mock('../../../api/decks', () => ({
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-// FirstRunChooser — stub so this file only tests the redirect guard
-vi.mock('../../../components/onboarding/FirstRunChooser', () => ({
-  FirstRunChooser: () => <div data-testid="first-run-chooser" />,
-}));
+// FirstRunChooser — stubbed so most tests only read the redirect guard; the real screen where a test names it
+vi.mock('../../../components/onboarding/FirstRunChooser', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../components/onboarding/FirstRunChooser')>();
+  return { FirstRunChooser: () => (chooser.real ? <actual.FirstRunChooser /> : <div data-testid="first-run-chooser" />) };
+});
 
 // OnboardingSkeleton — stub so the loading-state test stays isolated from the skeleton impl
 vi.mock('../../../components/onboarding/OnboardingSkeleton', () => ({
@@ -84,6 +92,7 @@ function makeQueryLoading() {
 
 afterEach(() => {
   vi.clearAllMocks();
+  chooser.real = false;
 });
 
 describe('OnboardingPage — R60 redirect', () => {
@@ -112,6 +121,17 @@ describe('OnboardingPage — R60 redirect', () => {
     mockUseDecksQuery.mockReturnValue(makeQueryEmpty());
     render(<OnboardingPage />);
     expect(screen.getByTestId('first-run-chooser')).toBeInTheDocument();
+    expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
+  });
+
+  it('a new account starts on the first-run chooser: the real screen, with its ways in', () => {
+    chooser.real = true;
+    mockUseDecksQuery.mockReturnValue(makeQueryEmpty());
+    render(<OnboardingPage />);
+
+    expect(screen.getByRole('heading', { name: 'Como você quer começar?' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Comprei um deck pronto/ })).toHaveAttribute('href', '/add-cards/product');
+    expect(screen.getByRole('link', { name: 'Pular por agora' })).toHaveAttribute('href', '/home');
     expect(screen.queryByTestId('navigate-redirect')).not.toBeInTheDocument();
   });
 

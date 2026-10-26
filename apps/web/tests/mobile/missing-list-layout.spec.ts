@@ -30,6 +30,22 @@ test('the phone list follows r3-list-phone', async ({ page }) => {
   await expect(row).toContainText('só tem foil promo');
   await expect(row.getByRole('button', { name: 'Já tenho Alpha Rampage (Vermelho)' })).toBeVisible();
   await expect(row.getByRole('link', { name: /^Comprar Alpha Rampage/ })).toBeVisible();
+  const image = row.locator('img');
+  await expect(image).toBeVisible();
+  expect(await image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0), 'the row image loads').toBe(true);
+
+  // A row with a stand-in: unit price and line total are two different numbers, and the stand-in line sits under the flags.
+  const bloodrush = page.getByTestId('missing-row').filter({ hasText: 'Bloodrush Bellow (Amarelo)' }).first();
+  await expect(bloodrush.getByTestId('missing-row-price')).toHaveText('R$ 69,99 cada');
+  await expect(bloodrush.getByTestId('missing-row-total')).toHaveText('R$ 139,98');
+  const standIn = bloodrush.getByTestId('missing-stand-in');
+  await expect(standIn).toContainText('Você tem 1 Bloodrush Bellow (Vermelho), que serve no lugar de 1 · economiza R$ 69,99');
+  await expect(standIn.getByRole('button', { name: /^Usar Bloodrush Bellow \(Vermelho\)/ })).toBeVisible();
+  const [standInBox, haveBox] = await Promise.all([
+    standIn.boundingBox(),
+    bloodrush.getByRole('button', { name: /^Já tenho Bloodrush Bellow/ }).boundingBox(),
+  ]);
+  expect(standInBox!.y, 'the stand-in line is above "Já tenho…"').toBeLessThan(haveBox!.y);
 
   const buttons = bar.getByRole('button');
   await expect(buttons).toHaveText(['Compartilhar a lista', 'Copiar lista de compras']);

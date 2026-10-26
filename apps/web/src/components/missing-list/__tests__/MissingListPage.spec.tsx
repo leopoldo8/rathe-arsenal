@@ -111,6 +111,19 @@ describe('MissingListPage', () => {
 
     expect(page).toHaveTextContent('Faltam 7 cópias de 3 cartas · 4 do deck, 3 do inventário');
     expect(screen.getByTestId('shopping-split')).toHaveTextContent('4 do deck, 3 do inventário');
+
+    // The copied shopping list counts the inventory copies too: the two inventory-only cards are rows of it.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await waitFor(() => expect(api.fetch.mock.calls.some(([path]) => path === '/decks/7')).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar lista de compras' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect((writeText.mock.calls[0]![0] as string).split('\n').slice(1)).toEqual([
+      '4x Alpha (Vermelho) · R$ 0,20 cada',
+      '2x Bravo (Vermelho) · R$ 0,20 cada',
+      '1x Charlie (Vermelho) · R$ 0,20 cada',
+      'Total: 7 cópias · R$ 7,00',
+    ]);
   });
 
   it('shows the phone arrangement with the bottom bar and the rest of the cards behind a button', async () => {

@@ -53,6 +53,8 @@ describe('deck copy', () => {
     const copy = valuesOf(ptBR.deckDetail);
 
     expect(copy.filter((value) => /trocas? de cartas/i.test(value))).toEqual([]);
+    expect(valuesOf(ptBR as Record<string, unknown>).filter((value) => /trocas? de cartas/i.test(value))).toEqual([]);
+    expect(ptBR.home.deletedIntro).toBe('Um deck excluído volta com as cartas, as substituições e o histórico.');
   });
 });
 

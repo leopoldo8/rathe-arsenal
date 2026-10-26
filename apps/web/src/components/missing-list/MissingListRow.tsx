@@ -130,7 +130,11 @@ function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMi
         <div className={styles.main}>
           <div className={styles.headline}>
             <NameBlock line={line} name={name} />
-            {showTotal && <span className={styles.total}>{formatBrl(line.lineCents ?? 0)}</span>}
+            {showTotal && (
+              <span className={styles.total} data-testid="missing-row-total">
+                {formatBrl(line.lineCents ?? 0)}
+              </span>
+            )}
           </div>
           <p className={styles.meta}>
             {open && <span>{neededText(line, t)}</span>}

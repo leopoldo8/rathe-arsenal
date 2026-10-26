@@ -27,13 +27,28 @@ const PRICED: ReadonlyArray<readonly [string, string, number, number, number, nu
   ['barraging-brawnhide-red', 'Barraging Brawnhide', 1, 3, 20, 60, false, false],
 ];
 
+/** A 1 by 1 picture served inline, so the row image loads with no network. */
+const STUB_IMAGE =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
+/** The one stand-in of the list: a Bloodrush Bellow in red covers one of the three yellow copies. */
+const STAND_IN = {
+  cardIdentifier: 'bloodrush-bellow-red',
+  name: 'Bloodrush Bellow',
+  pitch: 1,
+  copies: 1,
+  savingCents: 6999,
+  used: false,
+  replacementId: null,
+};
+
 function pricedLine([cardIdentifier, name, pitch, needed, unit, total, foilOnly, promoOnly]: (typeof PRICED)[number]) {
   return {
     cardIdentifier,
     slot: 'mainboard',
     name,
     pitch: pitch === 0 ? null : pitch,
-    imageUrl: null,
+    imageUrl: cardIdentifier === 'alpha-rampage-red' ? STUB_IMAGE : null,
     deckNeeded: needed,
     inventoryNeeded: 0,
     deckQuantity: 3,
@@ -47,7 +62,7 @@ function pricedLine([cardIdentifier, name, pitch, needed, unit, total, foilOnly,
     promoOnly,
     productUrl: `https://www.cupuladt.com.br/?view=ecom/item&id=${cardIdentifier}`,
     searchUrl: null,
-    standIn: null,
+    standIn: cardIdentifier === 'bloodrush-bellow-yellow' ? STAND_IN : null,
   };
 }
 

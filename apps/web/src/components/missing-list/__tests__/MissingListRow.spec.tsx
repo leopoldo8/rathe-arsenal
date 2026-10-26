@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { MissingListRow } from '../MissingListRow';
 import { MissingSummary } from '../MissingSummary';
-import { line, Providers, SEARCH_BASE, summary } from './missingListKit';
+import { useMissingListQuery } from '../../../api/missing-list';
+import { line, Providers, response, SEARCH_BASE, summary } from './missingListKit';
 
 const api = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock('../../../lib/api-client', async (importOriginal) => ({
@@ -55,6 +56,10 @@ describe('MissingListRow', () => {
     expect(within(priced).getByRole('button', { name: 'Já tenho Bloodrush Bellow (Amarelo)' })).toHaveTextContent('Já tenho…');
     const buy = within(priced).getByRole('link', { name: /Bloodrush Bellow \(Amarelo\)/ });
     expect(buy).toHaveTextContent('Comprar');
+    expect(buy).toHaveTextContent('Comprar ↗');
+    expect(buy).toHaveAccessibleName('Comprar Bloodrush Bellow (Amarelo) no site da Cúpula DT');
+    expect(buy).toHaveAttribute('target', '_blank');
+    expect(buy.getAttribute('rel')).toContain('noopener');
     expect(buy).toHaveAttribute('href', 'https://store.test/pack-hunt');
     expect(priced).not.toHaveTextContent('não tem esta carta');
     document.body.innerHTML = '';
@@ -67,6 +72,7 @@ describe('MissingListRow', () => {
     const lookingUp = renderRow({ state: 'looking_up', unitPriceCents: null, lineCents: null, availableCopies: null, productUrl: null });
     expect(lookingUp).toHaveTextContent('buscando preço…');
     expect(lookingUp).not.toHaveTextContent('R$');
+    expect(within(lookingUp).queryByRole('link')).toBeNull();
     expect(lookingUp).not.toHaveTextContent('não tem esta carta');
     document.body.innerHTML = '';
 
@@ -179,6 +185,69 @@ describe('MissingListRow', () => {
     await waitFor(() => expect(api.fetch).toHaveBeenCalledTimes(2));
     expect(api.fetch.mock.calls[1]![0]).toBe('/replacements/r1/revert');
     expect(api.fetch.mock.calls[1]![1].method).toBe('POST');
+  });
+
+  it('Usar sends the copies the stand-in covers and Desfazer reverts: the row follows the server and returns to Usar', async () => {
+    let used = false;
+    const base = {
+      cardIdentifier: 'alpha-rampage-red',
+      name: 'Alpha Rampage',
+      pitch: 1 as const,
+      unitPriceCents: 15000,
+    };
+    const rowFromServer = () =>
+      line({
+        ...base,
+        deckNeeded: used ? 1 : 3,
+        lineCents: used ? 15000 : 45000,
+        availableCopies: used ? 1 : 3,
+        standIn: { cardIdentifier: 'awakening-bellow-red', name: 'Awakening Bellow', pitch: 1, copies: 2, savingCents: 30000, used, replacementId: used ? 'r1' : null },
+      });
+    api.fetch.mockImplementation(async (path: string, init?: { method?: string }) => {
+      if (path === '/decks/7/missing') return response([rowFromServer()]);
+      if (path === '/decks/7/replacements' && init?.method === 'POST') {
+        used = true;
+        return { replacement: {} };
+      }
+      if (path === '/replacements/r1/revert' && init?.method === 'POST') {
+        used = false;
+        return { replacement: {} };
+      }
+      throw new Error(`unhandled ${path}`);
+    });
+    function ListFromServer(): React.ReactElement | null {
+      const { data } = useMissingListQuery(7);
+      return data === undefined ? null : (
+        <ul>
+          {data.lines.map((entry) => (
+            <MissingListRow key={entry.cardIdentifier} deckId={7} line={entry} />
+          ))}
+        </ul>
+      );
+    }
+    render(
+      <Providers>
+        <ListFromServer />
+      </Providers>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /^Usar Awakening Bellow \(Vermelho\)/ }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('missing-stand-in')).toHaveTextContent(
+        'Você vai usar 2 Awakening Bellow (Vermelho), que já tem, no lugar de 2 · economiza R$ 300,00',
+      ),
+    );
+    expect(screen.getByRole('button', { name: /^Desfazer a troca de Alpha Rampage/ })).toHaveTextContent('Desfazer');
+    expect(screen.getByTestId('missing-row')).toHaveTextContent('falta 1 · R$ 150,00');
+    expect(screen.getByTestId('missing-row')).toHaveTextContent('R$ 150,00');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Desfazer a troca de Alpha Rampage/ }));
+
+    expect(await screen.findByRole('button', { name: /^Usar Awakening Bellow \(Vermelho\)/ })).toHaveTextContent('Usar');
+    expect(screen.queryByRole('button', { name: /^Desfazer/ })).toBeNull();
+    expect(screen.getByTestId('missing-row')).toHaveTextContent('faltam 3');
+    expect(screen.getByTestId('missing-row')).toHaveTextContent('R$ 450,00');
   });
 
   it('shows the table row of the desktop list with its columns', () => {

@@ -25,6 +25,7 @@ import { breakdown, entry } from './deckDetailTestData';
 
 const spies = vi.hoisted(() => ({
   realMenu: false,
+  realStage: false,
   apiFetch: vi.fn(),
   navigate: vi.fn(),
   show: vi.fn(),
@@ -39,7 +40,14 @@ vi.mock('../../../lib/api-client', async (importOriginal) => {
   return { ...actual, useApiClient: () => spies.apiFetch };
 });
 vi.mock('../../ui/Toast/useToast', () => ({ useToast: () => ({ show: spies.show }) }));
-vi.mock('../StatusDropdown', () => ({ StatusDropdown: () => null }));
+// The real stage control only where a test reads it.
+vi.mock('../StatusDropdown', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../StatusDropdown')>();
+  return {
+    StatusDropdown: (props: React.ComponentProps<typeof actual.StatusDropdown>) =>
+      spies.realStage ? <actual.StatusDropdown {...props} /> : null,
+  };
+});
 vi.mock('../DeckNameInline', () => ({ DeckNameInline: ({ name }: { name: string }) => <h1>{name}</h1> }));
 // The real menu only where a test reads it; the other tests of this file never look at it.
 vi.mock('../DeckOverflowMenu', async (importOriginal) => {
@@ -172,6 +180,7 @@ function withClient(node: React.ReactElement): React.ReactElement {
 
 beforeEach(() => {
   spies.realMenu = false;
+  spies.realStage = false;
   spies.apiFetch.mockReset();
   spies.navigate.mockReset();
   spies.show.mockReset();
@@ -184,7 +193,9 @@ describe('DeckDetailLayout — the verdict and the stage', () => {
   }));
   const legality = { category: 'illegal' as const, reasons: ['x'], details: copyProblems };
 
-  it('the header shows the verdict and the stage apart', () => {
+  it('the header shows the verdict and the stage apart', async () => {
+    spies.realStage = true;
+    Element.prototype.scrollIntoView = vi.fn();
     render(
       withClient(
         <DeckDetailLayout
@@ -214,6 +225,17 @@ describe('DeckDetailLayout — the verdict and the stage', () => {
     expect(within(header).getByTestId('deck-stage-line')).toHaveTextContent('Etapa: Jogando');
     expect(header).not.toHaveTextContent('8 cartas com 2 cópias');
     expect(within(screen.getByRole('region', { name: 'Conteúdo do deck' })).getByTestId('deck-cause')).toHaveTextContent('8 cartas com 2 cópias');
+    // The page has a rule problem, and the stage control in that same header is enabled with all five stages.
+    const stage = within(header).getByRole('combobox');
+    expect(stage).toBeEnabled();
+    await userEvent.click(stage);
+    expect((await screen.findAllByRole('option')).map((option) => option.textContent?.trim())).toEqual([
+      'Ideia',
+      'Montando',
+      'Pronto',
+      'Jogando',
+      'Aposentado',
+    ]);
   });
 });
 

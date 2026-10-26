@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe('OwnedStepper', () => {
   it('picking a number sets the owned total and Desfazer restores it', async () => {
-    api.fetch.mockResolvedValueOnce({ ownedTotal: 3, previousManualQuantity: 1 }).mockResolvedValueOnce({ ownedTotal: 2, previousManualQuantity: 2 });
+    api.fetch.mockResolvedValueOnce({ ownedTotal: 3, previousManualQuantity: 0 }).mockResolvedValueOnce({ ownedTotal: 1, previousManualQuantity: 2 });
     render(
       <Providers>
         <OwnedStepper deckId={7} line={line({ cardIdentifier: 'pack-hunt-yellow', name: 'Pack Hunt', pitch: 2, deckQuantity: 3, ownedTotal: 2, ownedElsewhere: 1 })} />
@@ -46,7 +46,8 @@ describe('OwnedStepper', () => {
     await waitFor(() => expect(api.fetch).toHaveBeenCalledTimes(2));
     expect(api.fetch.mock.calls[1]![1]).toEqual({
       method: 'PUT',
-      body: JSON.stringify({ deckId: 7, cardIdentifier: 'pack-hunt-yellow', ownedTotal: 2 }),
+      // The manual source goes back to the 0 the response named (the other imports still hold 1): 1 in all, not the 2 shown before.
+      body: JSON.stringify({ deckId: 7, cardIdentifier: 'pack-hunt-yellow', ownedTotal: 1 }),
     });
   });
 

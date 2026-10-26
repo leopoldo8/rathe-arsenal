@@ -216,7 +216,10 @@ describe('RuleChangedNotice', () => {
         </ToastProvider>
       </QueryClientProvider>,
     );
-    expect(screen.queryByText(/cartas? deste deck tem? 2/)).not.toBeInTheDocument();
+    expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cartas? deste deck t(e|ê)m 2/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Deixar 1 de cada' })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Desde 9 de março|antes eram 2|ver o anúncio|Deixar 1 de cada/);
     expect(calls).not.toHaveBeenCalled();
   });
 
@@ -243,6 +246,14 @@ describe('RuleChangedNotice', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
     const rows = screen.getAllByTestId(/^rule-changed-row-/);
     expect(rows).toHaveLength(8);
+    const announcement = screen.getByText('ver o anúncio');
+    const keepOne = screen.getByRole('button', { name: 'Deixar 1 de cada' });
+    for (const row of rows) {
+      expect(announcement.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(row.compareDocumentPosition(keepOne) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    const orderedRows = rows.map((row) => row.compareDocumentPosition(rows[rows.length - 1]!));
+    expect(orderedRows.slice(0, -1).every((position) => (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)).toBe(true);
     for (const row of rows) expect(row).toHaveTextContent('2 cópias · o Blitz permite 1 · tire 1');
     expect(rows[0]).toHaveTextContent('Flock of the Feather Walkers (Vermelho)');
 

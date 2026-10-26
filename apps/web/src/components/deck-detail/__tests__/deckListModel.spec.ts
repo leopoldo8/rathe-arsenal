@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import i18n from '../../../i18n';
 import {
@@ -7,6 +9,7 @@ import {
   resolveCostGroup,
   resolveTypeGroup,
 } from '../deckListModel';
+import { DeckTextList } from '../DeckTextList';
 import { buildCostBars, buildPitchSlices } from '../deckAnalysisModel';
 import { breakdown, entry } from './deckDetailTestData';
 import { FIXTURE_CARDS, FIXTURE_ILLEGAL_LEGALITY } from './copyListFixture';
@@ -171,5 +174,9 @@ describe('buildTextList', () => {
     expect(inventory.lines[2]).toMatchObject({ text: '2x Muscle Mutt (Amarelo) · custo 3 · Ação', missing: 'faltam 2' });
     expect(groups.find((group) => group.id === 'hero')!.lines[0]!.text).toBe('1x Rhinar, Reckless Rampage · Herói');
     expect(groups.find((group) => group.id === 'equipment')!.lines[3]!.text).toBe('1x Arcanite Skullcap · Equipamento');
+
+    render(createElement(DeckTextList, { groups }));
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.firstChild?.textContent);
+    expect(headings).toEqual(['Herói', 'Arma', 'Equipamentos', 'Deck', 'Inventário']);
   });
 });

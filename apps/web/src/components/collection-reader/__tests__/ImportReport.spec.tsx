@@ -144,6 +144,9 @@ describe('ImportReport', () => {
     for (const item of items) {
       expect(['Vermelho', 'Amarelo', 'Azul', 'Não sei'].map((name) => within(item).getByRole('button', { name }))).toHaveLength(4);
     }
+    const quantityItem = within(screen.getByRole('heading', { name: /Quantidade/ }).parentElement as HTMLElement).getByRole('listitem');
+    expect(within(quantityItem).getByRole('textbox', { name: 'Quantidade da linha 141' })).toHaveValue('3');
+    expect(within(quantityItem).getByRole('button', { name: 'Usar 3' })).toBeEnabled();
     const similar = within(screen.getByRole('heading', { name: /Nome parecido/ }).parentElement as HTMLElement).getAllByRole('listitem');
     expect(similar).toHaveLength(3);
     expect(screen.getByRole('link', { name: /Adicionar cartas/ })).toHaveAttribute('href', '/add-cards');

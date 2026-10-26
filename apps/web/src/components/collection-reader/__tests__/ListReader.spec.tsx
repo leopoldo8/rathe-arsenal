@@ -91,10 +91,40 @@ describe('ListReader', () => {
     expect(['Vermelho', 'Amarelo', 'Azul'].map((name) => colors.getByRole('button', { name }))).toHaveLength(3);
     expect(colors.queryByRole('button', { name: 'Não sei' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Lista de cartas' })).toHaveValue(LIST_PASTE);
+
+    const pasted = screen.getByRole('textbox', { name: 'Lista de cartas' });
+    const heading = screen.getByRole('heading', { name: 'Lista colada' });
+    const versionHeading = screen.getByRole('heading', { name: 'Versão das cartas desta lista' });
+    expect(heading.compareDocumentPosition(pasted) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(pasted.compareDocumentPosition(versionHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const numbered = Array.from(container.querySelector('ol')!.children) as HTMLElement[];
+    expect(numbered.map((item) => item.querySelector('span')?.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+    expect(numbered.map((item) => item.querySelector('[role="img"]')?.getAttribute('aria-label'))).toEqual([
+      'Lida',
+      'Lida',
+      'Lida',
+      'Lida',
+      'Precisa de uma resposta',
+      'Lida',
+      'Lida',
+      'Não achamos',
+    ]);
+    expect(numbered.map((item) => item.querySelector('[role="img"]')?.textContent)).toEqual(['✓', '✓', '✓', '✓', '!', '✓', '✓', '×']);
+    expect(numbered.map((item) => item.lastElementChild?.lastElementChild?.textContent)).toEqual(LIST_LINES.map((line) => line.originalText));
   });
 
   it('a suggestion counts only after Usar esta', async () => {
+    const imageUrl = { small: 'https://cards.example/command-and-conquer-red-small.webp', large: 'https://cards.example/command-and-conquer-red.webp' };
+    answerReads({
+      [LIST_PASTE]: LIST_LINES.map((line) =>
+        line.lineNumber === 4 && line.suggestion !== null ? { ...line, suggestion: { ...line.suggestion, imageUrl } } : line,
+      ),
+    });
     await renderPasted();
+    const suggestionImage = lineItem(4).querySelector('img');
+    expect(suggestionImage).not.toBeNull();
+    expect(suggestionImage).toHaveAttribute('src', imageUrl.small);
 
     expect(screen.getByRole('button', { name: 'Adicionar as 5 prontas (11 cópias)' })).toBeInTheDocument();
     expect(screen.getByText(/Você quis dizer/)).toHaveTextContent('Você quis dizer Command and Conquer (Vermelho)?');

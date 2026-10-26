@@ -15,14 +15,18 @@
  */
 
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DeckCanvas } from '../DeckCanvas';
 import { DeckDetailHeader } from '../DeckDetailHeader';
+import verdictStyles from '../EditorVerdictRow.module.css';
 import { cascadeFromLegality, computeDraftLegality } from '../../../lib/draft-legality';
 import { blitzDraft, draftCard, RHINAR } from './rulesChecklistTestData';
+import { shouldDiscardOnCancel } from '../../../routes/_auth/-deck-detail-draft';
 import type { IBreakdown } from '../../../api/deck-detail';
 import type { ICompositionDraft, TDraftSlot } from '../../../hooks/useCompositionDraft';
 import type { ICascadeCheckResult } from '../../../hooks/useCascadeCheck';
@@ -624,6 +628,18 @@ describe('DeckCanvas Edit mode — the rules of the draft', () => {
     }
     const lastBlock = container.querySelector('[data-testid="deck-canvas-edit"]')?.lastElementChild;
     expect(lastBlock).toBe(screen.getByTestId('rules-bar'));
+
+    const packHunt = screen.getByTestId('editable-card-row-pack-hunt-red');
+    expect(within(packHunt).getByTestId('quantity-deck')).toHaveTextContent('2');
+
+    const redChip = screen.getByTestId('editor-verdict');
+    expect(redChip).toHaveTextContent('Não vale no Blitz');
+    expect(redChip).toHaveClass(verdictStyles.verdict!);
+    expect(redChip).not.toHaveClass(verdictStyles.formatChip!);
+    const css = readFileSync(resolve(__dirname, '../EditorVerdictRow.module.css'), 'utf8');
+    const verdictRule = /\.verdict \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(verdictRule).toContain('color: var(--ra-ready-low);');
+    expect(verdictRule).toContain('border: 1px solid var(--ra-ready-low);');
   });
 });
 
@@ -659,6 +675,23 @@ describe('DeckDetailHeader — Cancel on a deck created in this visit with no ca
     await vi.waitFor(() => expect(spies.back).toHaveBeenCalledTimes(1));
     expect(spies.apiFetch).toHaveBeenCalledWith('/decks/7/permanent', { method: 'DELETE' });
     expect(spies.navigate).not.toHaveBeenCalled();
+  });
+
+  it('cancel on a new empty deck discards it and goes back only for a deck created in this visit with no cards', () => {
+    const created = { justCreated: true };
+    const rows: ReadonlyArray<readonly [unknown, number, boolean]> = [
+      [created, 0, true],
+      [created, 1, false],
+      [created, 31, false],
+      [undefined, 0, false],
+      [{}, 0, false],
+      [{ justCreated: false }, 0, false],
+      [{ justCreated: 'true' }, 0, false],
+    ];
+
+    expect(rows.map(([state, totalCards]) => shouldDiscardOnCancel(state, totalCards))).toEqual(
+      rows.map(([, , expected]) => expected),
+    );
   });
 
   it('still goes back when the discard fails, leaving the deck as it was', async () => {

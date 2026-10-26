@@ -82,6 +82,12 @@ describe('SharedLegalityBlock', () => {
     expect(screen.getByRole('button', { name: 'Living Legend' })).toHaveAttribute('aria-pressed', 'true');
     expect(block.textContent).toBe(before);
     expect(within(block).getByText('Blitz · ainda não pode jogar')).toBeInTheDocument();
+
+    const result = screen.getByText('Em Living Legend: não vale. O Rhinar jovem joga só Blitz e Silver Age.');
+    const lastChip = screen.getByRole('button', { name: 'Silver Age' });
+    expect(block.contains(result)).toBe(false);
+    expect(lastChip.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(block.compareDocumentPosition(lastChip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("another format's result never changes the own-format block, a legal deck included", async () => {

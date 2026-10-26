@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MissingSummaryCard } from '../MissingSummaryCard';
 import { line, Providers, response } from '../../missing-list/__tests__/missingListKit';
-import type { IMissingListResponse } from '../../../api/missing-list';
+import { useMissingListQuery, type IMissingListResponse } from '../../../api/missing-list';
 
 const api = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock('../../../lib/api-client', async (importOriginal) => ({
@@ -18,6 +18,11 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
     </a>
   ),
 }));
+
+/** Shows once the missing list has loaded, so a test can tell "nothing missing" from "still loading". */
+function LoadedMarker({ deckId }: { readonly deckId: number }): React.ReactElement | null {
+  return useMissingListQuery(deckId).data === undefined ? null : <span data-testid="list-loaded" />;
+}
 
 function serve(data: IMissingListResponse): void {
   api.fetch.mockResolvedValue(data);
@@ -54,9 +59,10 @@ describe('MissingSummaryCard', () => {
     render(
       <Providers>
         <MissingSummaryCard deckId={7} />
+        <LoadedMarker deckId={7} />
       </Providers>,
     );
-    await vi.waitFor(() => expect(api.fetch).toHaveBeenCalled());
+    await screen.findByTestId('list-loaded');
     expect(screen.queryByTestId('missing-summary-card')).toBeNull();
   });
 

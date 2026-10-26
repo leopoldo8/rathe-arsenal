@@ -1,4 +1,6 @@
 import React from 'react';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -96,8 +98,28 @@ describe('CardVersionsSheet', () => {
     const unknown = screen.getByText('2 sem versão informada');
     expect(unknown).toHaveClass(styles.muted!);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    expect(screen.queryByText(/badge/i)).not.toBeInTheDocument();
+    expect(unknown.tagName).toBe('LI');
+    expect(unknown.children).toHaveLength(0);
+    expect(unknown.className).toBe(styles.muted);
+    expect(unknown.closest('button, a, [role="button"], [role="status"], [role="img"]')).toBeNull();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Mudar versão']);
+  });
+
+  it('an unknown version is grey text with no badge or call to action: no other surface shows an unversioned count', () => {
+    // The Library grid, "Importações" and the deck page never name the unversioned copies:
+    // only this sheet and the bulk sheet may use the copy that does.
+    const unversionedCopy = /copyVersions\.(noVersion|groupUnknown|bulkApply)/;
+    const components = resolve(__dirname, '../..');
+    const surfaces = ['library', 'csv-sources', 'deck-detail', 'card-gallery', 'home'];
+    const offenders = surfaces.flatMap((folder) =>
+      readdirSync(resolve(components, folder), { recursive: true, encoding: 'utf8' })
+        .filter((file) => /\.tsx?$/.test(file) && !file.includes('__tests__'))
+        .filter((file) => unversionedCopy.test(readFileSync(resolve(components, folder, file), 'utf8')))
+        .map((file) => `${folder}/${file}`),
+    );
+
+    expect(offenders).toEqual([]);
   });
 
   it('matches r3-version-card-phone copy and order', async () => {

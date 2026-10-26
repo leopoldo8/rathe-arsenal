@@ -56,6 +56,31 @@ test.describe('accessibility scan', () => {
     };
   });
 
+  test('no serious or critical axe issue on the scan list: it starts with exactly the five named pages', () => {
+    const firstFive = SCAN_PAGES.slice(0, 5).map((scanPage) => ({
+      name: scanPage.name,
+      path: scanPage.path({ readyDeckId: 42, shareToken: 'TOKEN', sourceId: 'SRC' }),
+      signedOut: scanPage.signedOut === true,
+    }));
+
+    expect(firstFive).toEqual([
+      { name: 'home', path: '/home', signedOut: false },
+      { name: 'deck page', path: '/decks/42', signedOut: false },
+      { name: 'library', path: '/library', signedOut: false },
+      { name: 'shared deck page', path: '/d/TOKEN', signedOut: false },
+      { name: 'sign-in', path: '/sign-in', signedOut: true },
+    ]);
+  });
+
+  test('no serious or critical axe issue on a failing page: the message names the rule id and the selector', () => {
+    const failing: TAxeViolation = {
+      ...violation('color-contrast', 'serious'),
+      nodes: [{ target: ['#app', '.hero > a'] } as TAxeViolation['nodes'][number]],
+    };
+
+    expect(describeViolations(blockingViolations([failing]))).toEqual(['color-contrast (serious): #app .hero > a']);
+  });
+
   for (const scanPage of SCAN_PAGES) {
     test(`no serious or critical axe issue on ${scanPage.name}`, async ({ browser, page }) => {
       const scanned = scanPage.signedOut
