@@ -170,6 +170,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C195 (stores)
 - last seen: 2026-10-26T15:48:48Z
 
+### L-036 - When a check names an order of parts inside one row, the test fixture needs a row that carries every named part together, or swapping two of them survives every proof.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web e2e layout, fixtures` · harmful: 0
+- features: persona-rethink
+- evidence: P3a: apps/web/src/components/missing-list/MissingListRow.tsx:156 (C219) (web e2e layout, fixtures)
+- last seen: 2026-10-26T17:17:55Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

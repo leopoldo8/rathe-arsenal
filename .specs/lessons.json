@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 36,
+  "next_id": 37,
   "lessons": [
     {
       "id": "L-010",
@@ -472,6 +472,24 @@
       ],
       "created": "2026-10-26T15:48:48Z",
       "last_seen": "2026-10-26T15:48:48Z"
+    },
+    {
+      "id": "L-036",
+      "key": "surviving_mutant::when a check names an order of parts inside one row the test fixture needs a row that carries every named part together or swapping two of them survives every proof",
+      "text": "When a check names an order of parts inside one row, the test fixture needs a row that carries every named part together, or swapping two of them survives every proof.",
+      "signal": "surviving_mutant",
+      "scope": "web e2e layout, fixtures",
+      "status": "candidate",
+      "features": [
+        "persona-rethink"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "P3a: apps/web/src/components/missing-list/MissingListRow.tsx:156 (C219) (web e2e layout, fixtures)"
+      ],
+      "created": "2026-10-26T17:17:55Z",
+      "last_seen": "2026-10-26T17:17:55Z"
     }
   ]
 }
