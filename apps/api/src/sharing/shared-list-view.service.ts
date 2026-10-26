@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { CardListLineEntity } from '../database/entities/card-list-line.entity';
 import { CardListEntity } from '../database/entities/card-list.entity';
 import { lookupCardInfo } from '../lists/card-lookup';
 import { printingLabelOf } from '../lists/list-view.service';
+import { TListVisitorEventKind } from './dtos/share-event.dto';
 import { ISharedListLine, ISharedListMatches, ISharedListResponse } from './dtos/shared-list.dto';
 import { ShareEventsService } from './share-events.service';
 import { buildListShareUrl } from './share-url';
@@ -60,6 +61,28 @@ export class SharedListViewService {
     @InjectRepository(CardListLineEntity)
     private readonly lines: Repository<CardListLineEntity>,
   ) {}
+
+  /**
+   * "Oferecer" belongs to a want list and "Quero estas" to a sell list. The owner's own taps record nothing, as with
+   * opens; a dead address answers like every other route.
+   */
+  async recordVisitorEvent(token: string, kind: TListVisitorEventKind, visitor: ICurrentUser | null): Promise<void> {
+    const live = await this.lookup.findLive(token);
+    if (!live) throw shareLinkUnavailable();
+    const expectedKind = live.list.kind === 'want' ? 'offer' : 'buy';
+    if (kind !== expectedKind) {
+      throw new BadRequestException({ code: 'SHARE_EVENT_KIND_MISMATCH', message: `A ${live.list.kind} list takes "${expectedKind}" only` });
+    }
+    if (visitor?.userId === live.owner.id) return;
+    await this.events.record({
+      kind,
+      targetKind: 'list',
+      targetId: live.list.id,
+      intent: live.link.intent,
+      ownerUserId: live.owner.id,
+      actorUserId: visitor?.userId ?? null,
+    });
+  }
 
   async view(token: string, visitor: ICurrentUser | null): Promise<ISharedListResponse> {
     const live = await this.lookup.findLive(token);

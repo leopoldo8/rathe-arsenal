@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { DELETE_SHARE_LINKS_FOR_LIST_SQL } from '../sharing/preview/share-link-cleanup';
@@ -34,6 +34,8 @@ interface IPreviewRow {
 
 @Injectable()
 export class ListsService {
+  private readonly logger = new Logger(ListsService.name);
+
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly access: ListAccess,
@@ -88,7 +90,7 @@ export class ListsService {
 
   async create(userId: string, dto: CreateListDto): Promise<ICardList> {
     const seeds = dto.fromDeckId === undefined ? [] : await this.fromDeck.linesFor(userId, dto.kind, dto.fromDeckId);
-    return this.dataSource.transaction(async (manager) => {
+    const created = await this.dataSource.transaction(async (manager) => {
       const list = await manager.save(
         manager.create(CardListEntity, {
           userId,
@@ -115,6 +117,10 @@ export class ListsService {
       }
       return this.views.build(manager, list);
     });
+    if (dto.origin !== undefined) {
+      this.logger.log({ event: 'lists.created', userId, listId: created.id, kind: dto.kind, origin: dto.origin });
+    }
+    return created;
   }
 
   async update(userId: string, listId: number, dto: UpdateListDto): Promise<ICardList> {

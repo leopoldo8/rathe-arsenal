@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ISharedListMatches, ISharedListResponse } from '../../api/shared-lists';
+import { postListEvent, type ISharedListMatches, type ISharedListResponse } from '../../api/shared-lists';
 import { cardName } from '../../lib/card-name';
 import { plural } from '../spare/spareModel';
 import { ShareMessageView } from './ShareMessageView';
@@ -30,6 +30,8 @@ export function SharedListBuyer({ list, matches }: ISharedListBuyerProps): React
         initialText={buildBuyMessage(list.sharerName, rows, selection, t)}
         whatsapp={list.contactWhatsapp}
         onBack={() => setReading(false)}
+        // Counting the ask must never stop it: a failed post is dropped.
+        onSent={() => void postListEvent(list.token, 'buy').catch(() => undefined)}
       />
     );
   }

@@ -173,7 +173,7 @@ describe('SellDraft', () => {
       'POST /lists/7/share',
       'PATCH /users/me/sell-closing-line',
     ]);
-    expect(api.calls[0]!.body).toEqual({ kind: 'sell', name: 'Vendo - 21/10' });
+    expect(api.calls[0]!.body).toEqual({ kind: 'sell', name: 'Vendo - 21/10', origin: 'spare' });
     expect(api.calls[1]!.body).toEqual({
       cardIdentifier: 'enlightened-strike-red',
       quantity: 1,

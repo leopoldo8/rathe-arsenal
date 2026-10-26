@@ -10,13 +10,15 @@ interface IShareMessageViewProps {
   /** Digits with country code; null when the link shows no number. */
   readonly whatsapp: string | null;
   readonly onBack: () => void;
+  /** Called when the visitor sends the text or copies it, so the sharer's counts can record it. */
+  readonly onSent?: () => void;
 }
 
 /**
  * "Mensagem para o WhatsApp": the text the visitor is about to send, editable. With the sharer's number the button opens
  * their chat; with none it copies the text and says where to paste it.
  */
-export function ShareMessageView({ backLabel, initialText, whatsapp, onBack }: IShareMessageViewProps): React.ReactElement {
+export function ShareMessageView({ backLabel, initialText, whatsapp, onBack, onSent }: IShareMessageViewProps): React.ReactElement {
   const { t } = useTranslation();
   const [text, setText] = useState(initialText);
   const [status, setStatus] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export function ShareMessageView({ backLabel, initialText, whatsapp, onBack }: I
   }
 
   function send(): void {
+    onSent?.();
     if (whatsapp !== null) {
       window.open(buildWhatsappUrl(whatsapp, text), '_blank', 'noopener,noreferrer');
       return;
@@ -63,7 +66,10 @@ export function ShareMessageView({ backLabel, initialText, whatsapp, onBack }: I
           <WhatsappGlyph />
           {t('sharing.shareMessage.send')}
         </button>
-        <button type="button" className={styles.copy} onClick={() => void copy('sharing.shareMessage.copied')}>
+        <button type="button" className={styles.copy} onClick={() => {
+            onSent?.();
+            void copy('sharing.shareMessage.copied');
+          }}>
           {t('sharing.shareMessage.copy')}
         </button>
       </div>

@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { catalog } from '@rathe-arsenal/engine';
 import { DataSource, EntityManager } from 'typeorm';
 import { editionOf, finishOf, IRawPrinting } from '../catalog/card-version-options';
+import { importFinishedEntry } from '../collection/imports/import-finished-log';
 import { IImportCopy, ImportWriterService } from '../collection/imports/import-writer.service';
 import { ICopyVersion } from '../collection/versions/copy-version';
 import { CsvSourceEntity } from '../database/entities/csv-source.entity';
@@ -93,7 +94,7 @@ export class ProductsService {
       return { source, deckId };
     });
     await this.writer.recomputeReadiness(userId);
-    this.logger.log({ event: 'collection.import', userId, kind: 'product', product: key, addCards: dto.addCards, createDeck: dto.createDeck });
+    this.logger.log(importFinishedEntry({ userId, kind: 'product', ready: file.cards.length, productKey: key }));
     return {
       ...(result.source === undefined
         ? {}

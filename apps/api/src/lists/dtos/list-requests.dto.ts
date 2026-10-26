@@ -21,6 +21,9 @@ import { CONDITIONS, TCondition } from '../../database/entities/card-list-line.e
 import { LIST_KINDS, TListKind } from '../../database/entities/card-list.entity';
 import { EDITION_VALUES, FINISH_VALUES, ICopyVersion } from '../../collection/versions/copy-version';
 
+export const LIST_ORIGINS = ['spare'] as const;
+export type TListOrigin = (typeof LIST_ORIGINS)[number];
+
 const MAX_INT32 = 2_147_483_647;
 const MAX_MULTIPLIER = 50;
 const NAME_MAX = 80;
@@ -43,6 +46,11 @@ export class CreateListDto {
   @Min(1)
   @Max(MAX_INT32)
   fromDeckId?: number;
+
+  /** Where the list was started from, for the review counts: only "Sobrando" says so. */
+  @IsOptional()
+  @IsIn(LIST_ORIGINS)
+  origin?: TListOrigin;
 }
 
 export class UpdateListDto {

@@ -87,6 +87,13 @@ const STATE_ORDER: Readonly<Record<TStoreState, number>> = {
   not_on_site: 4,
 };
 
+/** Copies still needed, per store state; every state is present so a count of zero is a number and not a gap. */
+export function copiesPerStoreState(lines: readonly IMissingLine[]): Record<TStoreState, number> {
+  const copies: Record<TStoreState, number> = { priced: 0, store_lacks: 0, not_on_site: 0, looking_up: 0, no_price: 0 };
+  for (const line of lines) copies[line.state] += line.deckNeeded + line.inventoryNeeded;
+  return copies;
+}
+
 function searchUrlOf(baseUrl: string | null, name: string): string | null {
   return baseUrl === null ? null : `${baseUrl.replace(/\/$/, '')}/?view=ecom/itens&busca=${encodeURIComponent(name)}`;
 }

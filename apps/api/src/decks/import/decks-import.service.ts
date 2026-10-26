@@ -3,6 +3,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import { FabraryService } from '../../fabrary/fabrary.service';
 import { SubstitutionService } from '../../substitution/substitution.service';
 import { CollectionReadService } from '../../collection/collection-read.service';
+import { importFinishedEntry } from '../../collection/imports/import-finished-log';
 import { ImportWriterService, IImportCopy } from '../../collection/imports/import-writer.service';
 import { NO_VERSION } from '../../collection/versions/copy-version';
 import { TrackedDeckEntity } from '../../database/entities/tracked-deck.entity';
@@ -57,6 +58,14 @@ export class DecksImportService {
 
     await this.computeReadiness(saved.trackedDeck.id, user.userId);
     if (saved.source !== undefined) await this.recomputeExistingDecks(user.userId, saved.trackedDeck.id);
+    this.logger.log(
+      importFinishedEntry({
+        userId: user.userId,
+        kind: 'fabrary',
+        ready: aggregateInventory([deck]).size,
+        ownership: dto.ownsCards,
+      }),
+    );
 
     return saved.source === undefined
       ? { deckId: saved.trackedDeck.id }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ISharedListResponse } from '../../api/shared-lists';
+import { postListEvent, type ISharedListResponse } from '../../api/shared-lists';
 import { useSpareQuery } from '../../api/spare';
 import { cardName } from '../../lib/card-name';
 import { SpareRuleSheet } from '../spare/SpareRuleSheet';
@@ -44,6 +44,8 @@ export function SharedListTrade({ list }: { readonly list: ISharedListResponse }
         initialText={buildOfferMessage(list, rows.spare, selection, includeMine, t)}
         whatsapp={list.contactWhatsapp}
         onBack={() => setReading(false)}
+        // Counting the offer must never stop it: a failed post is dropped.
+        onSent={() => void postListEvent(list.token, 'offer').catch(() => undefined)}
       />
     );
   }

@@ -1660,22 +1660,22 @@ Proof: `api e2e src/housekeeping/__tests__/housekeeping.e2e-spec.ts -t "deletes 
 
 ### S39 - The counts the reviews need · 9 files · 52 KB · ~19k
 
-**C447** - When an import finishes, one log entry with `event: "import.finished"` carries `kind`, `linesRead`, `ready`, `asked` and `kept`; for a `paste` of 5 lines with 3 ready, 1 asked and 1 kept the values are `paste`, 5, 3, 1, 1; a `product` import adds `productKey`; a `fabrary` import adds `ownership` with the answer given (AC 283)
+**C447** - When an import finishes, one log entry with `event: "import.finished"` carries `kind`, `linesRead`, `ready`, `asked` and `kept`; for a `paste` of 5 lines with 3 ready, 1 asked and 1 kept the values are `paste`, 5, 3, 1, 1; a `product` import adds `productKey`; a `fabrary` import adds `ownership` with the answer given (AC 283) · done
 Proof: `api e2e src/__tests__/review-counts.e2e-spec.ts -t "each import kind logs what it read"`
 
-**C448** - Resolving and deleting a "Para resolver" line each log one entry with `event: "import.pending_line"`, the `sourceId`, and `action` `resolved` or `deleted` (AC 284)
+**C448** - Resolving and deleting a "Para resolver" line each log one entry with `event: "import.pending_line"`, the `sourceId`, and `action` `resolved` or `deleted` (AC 284) · done
 Proof: `api e2e src/__tests__/review-counts.e2e-spec.ts -t "a resolved or deleted pending line is logged"`
 
-**C449** - Serving `GET /api/decks/:deckId/missing` to the owner logs one entry with `event: "missing.served"`, the `deckId`, and the copies per store state with the keys `priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price` (AC 285)
+**C449** - Serving `GET /api/decks/:deckId/missing` to the owner logs one entry with `event: "missing.served"`, the `deckId`, and the copies per store state with the keys `priced`, `store_lacks`, `not_on_site`, `looking_up`, `no_price` (AC 285) · done
 Proof: `api e2e src/__tests__/review-counts.e2e-spec.ts -t "the owner's missing list logs copies per store state"`
 
-**C450** - "Oferecer", "Ver mensagem e enviar" on a quote and "Quero estas" record one `share_event` each with `kind` `offer`, `quote_sent` and `buy`, the link's `intent`, and `actorUserId` set for a signed-in visitor and null for an anonymous one; the owner of the link doing the same records nothing (AC 286)
+**C450** - "Oferecer", "Ver mensagem e enviar" on a quote and "Quero estas" record one `share_event` each with `kind` `offer`, `quote_sent` and `buy`, the link's `intent`, and `actorUserId` set for a signed-in visitor and null for an anonymous one; the owner of the link doing the same records nothing (AC 286) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "offer, quote_sent and buy are recorded with intent and visitor, never for the owner"`
 
-**C451** - Creating a sell list from "Sobrando" logs `origin: "spare"`; marking a line sold logs the collection answer given; setting the spare rule logs the rule and `firstAnswer: true`, and changing it logs `firstAnswer: false` (AC 287)
+**C451** - Creating a sell list from "Sobrando" logs `origin: "spare"`; marking a line sold logs the collection answer given; setting the spare rule logs the rule and `firstAnswer: true`, and changing it logs `firstAnswer: false` (AC 287) · done
 Proof: `api e2e src/__tests__/review-counts.e2e-spec.ts -t "spare lists, sold lines and the spare rule are logged"`
 
-**C452** - The share report's query, run on 1 `offer` and 1 `buy` for a `want` list and 1 `quote_sent` for a deck `quote` link, returns the rows `offer` 1, `buy` 1 and `quote_sent` 1 under their intent and list kind, and `scripts/share-report.ts` prints them through that same query (AC 288)
+**C452** - The share report's query, run on 1 `offer` and 1 `buy` for a `want` list and 1 `quote_sent` for a deck `quote` link, returns the rows `offer` 1, `buy` 1 and `quote_sent` 1 under their intent and list kind, and `scripts/share-report.ts` prints them through that same query (AC 288) · done
 Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the report counts offer, quote_sent and buy by intent and list kind"`
 
 ## Coverage

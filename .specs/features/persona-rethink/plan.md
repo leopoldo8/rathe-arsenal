@@ -188,6 +188,8 @@ Routes this adds, removes, or whose signature changes. `/api` is the prefix.
 | `GET /api/shared/decks/:token` | nothing | per intent: `deck` with inventory, `missing` with store states and spare, `quote` with `needed` only | `200`, `404` |
 | `POST /api/shared/decks/:token/copy` | `variant`: `original` or `as_built` (required when the deck has active replacements) | `deckId` | `201`, `400`, `404` |
 | `POST /api/shared/:kind/:token/events` | `kind`: `offer`, `quote_sent` or `buy` | nothing | `204`, `400`, `404` |
+| `POST /api/shared/lists/:token/events` (S39) | `kind`: `offer` on a want list, `buy` on a sell list; the other kind answers `400` | nothing | `204`, `400`, `404` |
+| `POST /api/lists` (S39) | as today, plus `origin?`: `spare` (logged as `lists.created` with `origin: spare`) | the list | `201`, `400` |
 | `GET /api/shared/lists/:token` | nothing | as today; want lists add per line `owned`, `spare`, `spareReason` for a signed-in visitor | `200`, `404` |
 | `GET /api/collection/spare` | nothing | `needsRule` with the count per rule, or rows per card and version | `200`, `401` |
 | `PUT /api/users/me/spare-rule` | `rule` | the rule | `200`, `400` |

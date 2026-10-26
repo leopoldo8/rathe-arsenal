@@ -109,13 +109,16 @@ export class PendingService {
       return { ...added, sourceId: line.sourceId };
     });
     await this.writer.recomputeReadiness(userId);
-    this.logger.log({ event: 'collection.pending.resolved', userId, pendingLineId: id });
+    this.logger.log({ event: 'import.pending_line', userId, sourceId: copy.sourceId, action: 'resolved' });
     return { copy };
   }
 
   async remove(userId: string, id: number): Promise<void> {
-    const result = await this.dataSource.getRepository(ImportPendingLineEntity).delete({ id, userId });
+    const repository = this.dataSource.getRepository(ImportPendingLineEntity);
+    const line = await repository.findOne({ where: { id, userId }, select: { id: true, sourceId: true } });
+    if (line === null) throw new NotFoundException('Pending line not found');
+    const result = await repository.delete({ id, userId });
     if (result.affected === 0 || result.affected === undefined) throw new NotFoundException('Pending line not found');
-    this.logger.log({ event: 'collection.pending.deleted', userId, pendingLineId: id });
+    this.logger.log({ event: 'import.pending_line', userId, sourceId: line.sourceId, action: 'deleted' });
   }
 }

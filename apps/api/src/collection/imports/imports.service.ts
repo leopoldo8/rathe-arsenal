@@ -7,6 +7,7 @@ import { nextDedupedLabel } from '../sources/source-label.util';
 import { SourcesService } from '../sources/sources.service';
 import { IReadImportResult } from '../reader/import-table';
 import { CreateImportDto, ICreateImportResponse } from './dtos/import-requests.dto';
+import { importFinishedEntry } from './import-finished-log';
 import {
   assertCopyIsValid,
   groupCopies,
@@ -46,13 +47,7 @@ export class ImportsService {
 
     const source = await this.store(userId, dto, copies, contentHash);
     await this.writer.recomputeReadiness(userId);
-    this.logger.log({
-      event: 'collection.import',
-      userId,
-      kind: dto.kind,
-      ready: dto.ready.length,
-      pending: dto.pending.length,
-    });
+    this.logger.log(importFinishedEntry({ userId, kind: dto.kind, ready: dto.ready.length, pending: dto.pending }));
     return {
       source: {
         id: source.id,

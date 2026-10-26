@@ -38,7 +38,7 @@ export function useSendSellList(): (input: ISellListInput) => Promise<ISellListS
   return async function send(input: ISellListInput): Promise<ISellListSent> {
     const state = progress.current;
     if (state.listId === null) {
-      const list = await authFetch<ICardList>('/lists', { method: 'POST', ...json({ kind: 'sell', name: input.name }) });
+      const list = await authFetch<ICardList>('/lists', { method: 'POST', ...json({ kind: 'sell', name: input.name, origin: 'spare' }) });
       state.listId = list.id;
     }
     if (!state.linesAdded) {

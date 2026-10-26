@@ -174,3 +174,13 @@ export function useSharedListMatchesQuery(token: string, enabled: boolean) {
     retry: false,
   });
 }
+
+export type TListVisitorEventKind = 'offer' | 'buy';
+
+/** Tells the sharer's counts that the visitor offered cards ("offer") or asked for some ("buy"). The kind only, never any content. */
+export function postListEvent(token: string, kind: TListVisitorEventKind): Promise<void> {
+  return authFetch<void>(`/shared/lists/${encodeURIComponent(token)}/events`, {
+    method: 'POST',
+    body: JSON.stringify({ kind }),
+  });
+}

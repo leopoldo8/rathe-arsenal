@@ -688,6 +688,53 @@ describe('Sharing (E2E)', () => {
     await copy({}).expect(201);
   });
 
+  it('offer, quote_sent and buy are recorded with intent and visitor, never for the owner', async () => {
+    const owner = await createSession('visitor-events-owner');
+    const visitor = await createSession('visitor-events-visitor');
+    const deckId = await createDeck(owner);
+    const quoteToken = await startSharing(owner, deckId, 'quote');
+    const wantList = (await request(server).post('/api/lists').set(...auth(owner)).send({ kind: 'want', name: 'Procuro' }).expect(201)).body.id as number;
+    const sellList = (await request(server).post('/api/lists').set(...auth(owner)).send({ kind: 'sell', name: 'Vendo' }).expect(201)).body.id as number;
+    const wantToken = (await request(server).post(`/api/lists/${wantList}/share`).set(...auth(owner)).send({}).expect(201)).body.token as string;
+    const sellToken = (await request(server).post(`/api/lists/${sellList}/share`).set(...auth(owner)).send({}).expect(201)).body.token as string;
+    const cases = [
+      { kind: 'offer', path: `/api/shared/lists/${wantToken}/events`, intent: 'want' },
+      { kind: 'quote_sent', path: `/api/shared/decks/${quoteToken}/events`, intent: 'quote' },
+      { kind: 'buy', path: `/api/shared/lists/${sellToken}/events`, intent: 'sell' },
+    ] as const;
+    const rowsOf = async (kind: string): Promise<unknown[]> =>
+      dataSource.query(`SELECT intent, "actorUserId" FROM share_event WHERE kind = $1 AND "ownerUserId" = $2 ORDER BY id`, [kind, owner.userId]);
+
+    for (const { kind, path, intent } of cases) {
+      await request(server).post(path).set(...auth(visitor)).send({ kind }).expect(204);
+      await request(server).post(path).send({ kind }).expect(204);
+      await request(server).post(path).set(...auth(owner)).send({ kind }).expect(204);
+
+      expect(await rowsOf(kind)).toEqual([
+        { intent, actorUserId: visitor.userId },
+        { intent, actorUserId: null },
+      ]);
+    }
+  });
+
+  it('a list takes only the visitor event its kind has, and nothing else', async () => {
+    const owner = await createSession('list-events-owner');
+    const wantList = (await request(server).post('/api/lists').set(...auth(owner)).send({ kind: 'want', name: 'Procuro' }).expect(201)).body.id as number;
+    const wantToken = await (async () => {
+      await request(server).patch('/api/users/me/display-name').set(...auth(owner)).send({ displayName: 'Rodrigo' }).expect(200);
+      return (await request(server).post(`/api/lists/${wantList}/share`).set(...auth(owner)).send({}).expect(201)).body.token as string;
+    })();
+    const post = (body: object) => request(server).post(`/api/shared/lists/${wantToken}/events`).send(body);
+
+    await post({ kind: 'buy' }).expect(400);
+    await post({ kind: 'quote_sent' }).expect(400);
+    await post({ kind: 'opened' }).expect(400);
+    await post({ kind: 'offer', quantity: 2 }).expect(400);
+    await request(server).post(`/api/shared/lists/${'a'.repeat(32)}/events`).send({ kind: 'offer' }).expect(404);
+    expect(await countEvents('offer', owner.userId)).toBe(0);
+    expect(await countEvents('buy', owner.userId)).toBe(0);
+  });
+
   describe('sign-up attribution', () => {
     const normalize = (body: { message: string; _devVerificationLink: string }) => ({
       message: body.message,

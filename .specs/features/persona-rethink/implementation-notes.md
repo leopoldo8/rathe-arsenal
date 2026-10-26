@@ -2,6 +2,16 @@
 
 ## Deviations
 
+### S39 (batch 19)
+
+- The owner-list log line is C449 (`missing.served`), so it is built, in `DeckMissingController` (the public pages read the same service and never pass through it). Its `copies` object always carries the five states, with 0 where none.
+- `import.finished` replaces the old `collection.import` entry (`ImportsService`, `ProductsService`) and `import.pending_line` replaces `collection.pending.resolved` and `collection.pending.deleted`, so a review reads one stream; no test read the old names. `asked` is every pending line the reader asked about (a color, a near name, a quantity), `kept` is `not_found`, `linesRead = ready + asked + kept`. A product logs one `ready` per card in its file; a Fabrary deck one per distinct card, with `ownership` the boolean answer, also when the answer is "no" and no import is written. A Fabrary deck the player already has returns before the log, as it returns before any write.
+- The events `offer` and `buy` of lists (batch 16 left them unbuilt): new `POST /api/shared/lists/:token/events` (`offer` on a want list, `buy` on a sell list, the other kind `400` with `SHARE_EVENT_KIND_MISMATCH`), and `ShareMessageView` calls `onSent` on "Enviar no WhatsApp" and "Copiar texto", which the buyer and trade views turn into the post. A failed post is dropped. Surface rows added to `plan.md`.
+- `POST /api/lists` takes `origin?: 'spare'`; the "Sobrando" draft sends it and the API logs `lists.created` with `origin: 'spare'` (only when an origin is sent). The sold-line and spare-rule entries already existed (`lists.line.sold` with `removeFromCollection`, `spare.rule.set` with `firstAnswer`) and C451 proves them.
+- The share report's SQL lives in `apps/api/src/sharing/share-report-queries.ts` (like `share-link-cleanup`, imported by the script). A deck link's list kind reads `deck`.
+- `SellDraft.spec.tsx` "sending creates the sell list, shares it and saves the closing line" expected the body `{ kind, name }` of the list creation; it now expects `origin: 'spare'` as well (C451), nothing else changed.
+- I wrote the implementation before first running the new tests, so I did not see them red; the three API specs assert values that no code produced before this slice (new routes, new `event` names).
+
 ### S29 (batch 17)
 
 - Two of C341's four cases were already in `chat-tools.e2e-spec.ts` from S26 under the exact names ("get_prices with a deck and an empty list answers as for the deck alone", "get_deck returns the engine's full legality and each card's copy limit"); I added the other two. The `propose_swap` answer now also carries `quantity` and `side` at its top level, so the model and the test read what was proposed; the two older tests that compared the whole answer (`chat-tools.e2e-spec.ts` "propose_swap answers with how the swap changes ...", `chat-worker.e2e-spec.ts` "stores the valid proposals with the answer") gained those two keys in their expected value.
