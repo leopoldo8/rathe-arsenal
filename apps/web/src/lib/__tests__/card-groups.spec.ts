@@ -6,6 +6,7 @@ import { setTestLocale } from '../../test/i18n-test-utils';
 import { DeckList } from '../../components/deck-detail/DeckList';
 import { LibraryGrid } from '../../components/library/LibraryGrid';
 import { SharedDeckGallery } from '../../components/shared-deck/SharedDeckGallery';
+import type { IDeckListItem } from '../../components/deck-detail/deckListModel';
 import type { ISharedCard } from '../../api/shared-decks';
 import type { ILibraryCard } from '../../api/library';
 import { cardGroupOf, CARD_GROUP_LABEL_KEY, groupCardsByKind, type ICardGroupFacts } from '../card-groups';
@@ -112,7 +113,7 @@ describe('card groups', () => {
     ] as const;
     // One deck, listed backwards so the order of the headings can only come from the grouping rule.
     const reversed = [...KINDS].reverse();
-    const deckPage = reversed.map(([id, type, slot]) => ({
+    const deckPage = reversed.map(([id, type, slot]): IDeckListItem => ({
       key: `${id}::${slot}`,
       entry: { cardIdentifier: id, name: `Card ${id}`, quantity: 2, slot, pitch: 1, cost: 1, type, imageUrl: null },
       quantity: 2,
