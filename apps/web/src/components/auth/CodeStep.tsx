@@ -145,11 +145,6 @@ export function CodeStep({ email, onChangeEmail, onSignedIn, onUsePassword }: IC
           {expired ? t('account.codeExpired') : t('account.codeWrong')}
         </p>
       )}
-      {tooShort && (
-        <p className={styles.fieldError} role="alert">
-          {t('account.codeTooShort')}
-        </p>
-      )}
       {error !== '' && (
         <div className={styles.inlineRow} role="alert">
           <p className={styles.fieldError}>{error}</p>
@@ -184,6 +179,11 @@ export function CodeStep({ email, onChangeEmail, onSignedIn, onUsePassword }: IC
           />
         ))}
       </div>
+      {tooShort && (
+        <p className={styles.fieldError} role="alert">
+          {t('account.codeTooShort')}
+        </p>
+      )}
 
       {!expired && <p className={styles.note}>{t('account.codeButtonHint')}</p>}
 
