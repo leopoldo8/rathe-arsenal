@@ -162,13 +162,18 @@ describe('SharedMissingPage', () => {
           ? { ...entry, owned: 1, spare: 0 }
           : { ...entry, owned: 0, spare: 0 },
     );
-    renderWithProviders(<SharedMissingPage deck={{ ...DECK, missing: withSpare, spareNeedsRule: false }} />, makeAuth({ user: { ...SIGNED_IN_USER, id: 'visitor' } }));
+    // The API lists the card the visitor does not have first: the owned rows must still come first, in the API's order.
+    const apiOrder = [withSpare[2]!, withSpare[1]!, withSpare[0]!];
+    renderWithProviders(<SharedMissingPage deck={{ ...DECK, missing: apiOrder, spareNeedsRule: false }} />, makeAuth({ user: { ...SIGNED_IN_USER, id: 'visitor' } }));
 
     const rows = screen.getAllByTestId('shared-card');
-    expect(rows[0]).toHaveTextContent('Você tem 3 · 1 sobrando');
-    expect(rows[1]).toHaveTextContent('Você tem 1 · 0 sobrando');
+    expect(rows[0]).toHaveTextContent('Nullrune Hood');
+    expect(rows[0]).toHaveTextContent('Você tem 1 · 0 sobrando');
+    expect(rows[1]).toHaveTextContent('Reckless Swing (Azul)');
+    expect(rows[1]).toHaveTextContent('Você tem 3 · 1 sobrando');
+    expect(rows[2]).toHaveTextContent('Bloodrush Bellow (Amarelo)');
     expect(within(rows[2]!).queryByText(/Você tem/)).not.toBeInTheDocument();
-    // The cards come with the owned rows first, then one button for the cards the visitor has.
+    // One button for the cards the visitor has.
     expect(screen.getByRole('button', { name: 'Oferecer as 2 cartas que você tem' })).toBeInTheDocument();
   });
 

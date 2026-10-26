@@ -119,6 +119,21 @@ describe('Spare copies (E2E, S20 and S21)', () => {
     expect(spareOf(second)).toBe(2);
   });
 
+  it('marking an Ideia deck as Montando through the deck route changes the next spare read', async () => {
+    const user = await signUp('mark-building');
+    await own(user, PACK_HUNT, 6);
+    await createDeck(user, 'Kayo CC', 'Classic Constructed', 'building', [{ cardIdentifier: PACK_HUNT, quantity: 3 }]);
+    const dash = await createDeck(user, 'Dash ideia', 'Classic Constructed', 'idea', [{ cardIdentifier: PACK_HUNT, quantity: 3 }]);
+    await putRule(user, 'per_deck').expect(200);
+    expect(spareOf(await getSpare(user))).toBe(3);
+
+    await request(server()).patch(`/api/decks/${dash}`).set(...as(user)).send({ status: 'building' }).expect(200);
+
+    const after = await getSpare(user);
+    expect(spareOf(after)).toBe(0);
+    expect(after.totalSpare).toBe(0);
+  });
+
   it('asks for the rule only when two holding decks share a card', async () => {
     const { user } = await sharedScenario('asks-rule');
 

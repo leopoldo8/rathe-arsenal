@@ -393,6 +393,8 @@ describe('Sharing (E2E)', () => {
 
       expect(page.body.isOwner).toBe(true);
       expect(page.body.missing.map((card: { owned: number | null }) => card.owned)).toEqual([null, null]);
+      expect(page.body.missing.map((card: { spare: number | null }) => card.spare)).toEqual([null, null]);
+      expect(page.body.spareNeedsRule).toBe(false);
     });
 
     it('a public page reads the stored store states and queues no lookup', async () => {

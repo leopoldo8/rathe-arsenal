@@ -50,16 +50,33 @@ test.describe('the owner', () => {
     await expect(message).toContainText('Lista completa: https://rathe-arsenal.app/d/');
     const toggle = dialog.getByRole('switch', { name: /Incluir também as/ });
     const send = dialog.getByRole('button', { name: 'Abrir no WhatsApp' });
+    // The editor is titled "Pedir as cartas que faltam", above the heading of the message.
+    const editorTitle = dialog.getByText('Pedir as cartas que faltam', { exact: true }).first();
+    await expect(editorTitle).toBeVisible();
+    const closingField = message.getByRole('textbox', { name: 'Linha final da mensagem' });
+    const fullList = message.getByText(/^Lista completa: https:\/\/rathe-arsenal\.app\/d\//);
+    const switchLine = dialog.getByText('Hoje a mensagem tem só as 16 que a loja não tem ou não achou.');
     const order = [
+      await y(page, editorTitle),
       await y(page, heading),
       await y(page, dialog.getByText('Você pode editar antes de enviar.')),
       await y(page, message),
-      await y(page, message.getByRole('textbox', { name: 'Linha final da mensagem' })),
+      await y(page, closingField),
+      await y(page, fullList),
       await y(page, toggle),
+      await y(page, switchLine),
       await y(page, send),
     ];
-    expect([...order].sort((a, b) => a - b), 'heading, hint, message, closing line, switch, button').toEqual(order);
-    await expect(dialog.getByText('Hoje a mensagem tem só as 16 que a loja não tem ou não achou.')).toBeVisible();
+    expect(
+      [...order].sort((a, b) => a - b),
+      'title, heading, hint, message, closing line, full list line, switch, its line, button',
+    ).toEqual(order);
+    // The closing line is highlighted: a dashed box that the rest of the message does not have.
+    const boxStyle = await closingField.evaluate((field) => getComputedStyle(field.closest('label')!).borderTopStyle);
+    expect(boxStyle, 'the closing line sits in a dashed box').toBe('dashed');
+    const messageStyle = await message.evaluate((node) => getComputedStyle(node).borderTopStyle);
+    expect(messageStyle, 'the message box itself is not dashed').toBe('solid');
+    await expect(switchLine).toBeVisible();
     const sendBox = (await send.boundingBox())!;
     expect(sendBox.x + sendBox.width, 'the button fits the phone').toBeLessThanOrEqual(page.viewportSize()!.width);
     await expectNoHorizontalScroll(page);
@@ -122,6 +139,15 @@ test.describe('a visitor who has some of the cards', () => {
     await expect(sheet.getByTestId('offer-message')).toContainText('Oi Caio, vi seu pedido no Rathe Arsenal. Tenho:');
     await expect(sheet.getByTestId('offer-message')).toContainText('3 Reckless Swing (Azul), edição __, condição __, R$ __ cada');
     await expect(sheet.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeVisible();
+    // Top to bottom: the sheet title, the heading, the hint, the text and the button last.
+    const offerOrder = [
+      await y(page, sheet.getByText('Oferecer para Caio')),
+      await y(page, sheet.getByRole('heading', { name: 'Mensagem para o WhatsApp' })),
+      await y(page, sheet.getByText('Preencha edição, condição e preço no WhatsApp antes de enviar.')),
+      await y(page, sheet.getByTestId('offer-message')),
+      await y(page, sheet.getByRole('button', { name: 'Abrir no WhatsApp' })),
+    ];
+    expect([...offerOrder].sort((a, b) => a - b), 'title, heading, hint, text, button').toEqual(offerOrder);
     await expectNoHorizontalScroll(page);
   });
 });

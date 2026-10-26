@@ -46,6 +46,20 @@ describe('WhySpareSheet', () => {
     expect(screen.getByText('Dash ideia não conta: decks Ideia e Aposentado não prendem cartas.')).toBeInTheDocument();
     expect(screen.getByText('Sua regra: você passa cartas entre decks do mesmo formato')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mudar' })).toBeInTheDocument();
+
+    // Top to bottom: the way back, the question, the card, the list, the Ideia note, the rule line, then "Mudar".
+    const inOrder = [
+      within(sheet).getByRole('button', { name: /Sobrando/ }),
+      screen.getByText('Por que sobra?'),
+      screen.getByRole('heading', { name: 'Pack Hunt (Azul)' }),
+      screen.getByRole('list'),
+      screen.getByText('Dash ideia não conta: decks Ideia e Aposentado não prendem cartas.'),
+      screen.getByText('Sua regra: você passa cartas entre decks do mesmo formato'),
+      screen.getByRole('button', { name: 'Mudar' }),
+    ];
+    inOrder.slice(1).forEach((node, index) => {
+      expect(inOrder[index]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING, `block ${index + 1} follows block ${index}`).toBeTruthy();
+    });
   });
 
   it('shows one row with the deck that uses most under any_deck', () => {

@@ -158,14 +158,36 @@ describe('SparePage (S21)', () => {
     expect(rowsOf()).toHaveLength(8);
   });
 
+  it('sorts by price or name and filters by price, at the exact limits', async () => {
+    const rows = [
+      row({ cardIdentifier: 'a', name: 'Exactly five', spare: 1, suggestedCents: 500 }),
+      row({ cardIdentifier: 'b', name: 'Just over five', spare: 1, suggestedCents: 501 }),
+      row({ cardIdentifier: 'c', name: 'Exactly twenty', spare: 1, suggestedCents: 2000 }),
+      row({ cardIdentifier: 'd', name: 'Just over twenty', spare: 1, suggestedCents: 2001 }),
+    ];
+    await renderPage(response({ rows, totalSpare: 4 }));
+    await screen.findByTestId('spare-page');
+    const names = (): string[] => rowsOf().map((entry) => entry.querySelector('p')?.textContent ?? '');
+
+    await userEvent.click(screen.getByRole('button', { name: 'acima de R$ 5' }));
+    expect(names()).toEqual(['Just over twenty (Vermelho)', 'Exactly twenty (Vermelho)', 'Just over five (Vermelho)']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'acima de R$ 20' }));
+    expect(names()).toEqual(['Just over twenty (Vermelho)']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'todas' }));
+    expect(names()).toEqual(['Just over twenty (Vermelho)', 'Exactly twenty (Vermelho)', 'Just over five (Vermelho)', 'Exactly five (Vermelho)']);
+  });
+
   it('marking the Ideia deck as Montando updates the count', async () => {
     let building = false;
     api.fetch.mockImplementation(async (path: string, init?: RequestInit) => {
       if (path === '/collection/spare') {
         return building ? response({ totalSpare: 17, ideaDecks: [] }) : response();
       }
+      // Only a PATCH that sets the stage to `building` on the Ideia deck changes the next read.
       if (path === '/decks/4' && init?.method === 'PATCH') {
-        building = true;
+        building = building || init.body === JSON.stringify({ status: 'building' });
         return undefined;
       }
       throw new Error(`unhandled ${path}`);
@@ -182,6 +204,9 @@ describe('SparePage (S21)', () => {
     expect(api.fetch).toHaveBeenCalledWith('/decks/4', { method: 'PATCH', body: JSON.stringify({ status: 'building' }) });
     expect(await screen.findByText('Sobrando · 17 cópias')).toBeInTheDocument();
     expect(screen.queryByTestId('idea-notice')).toBeNull();
+    // The count comes from a new read after the PATCH, not from the old answer edited in place.
+    const calls = api.fetch.mock.calls.map(([path, init]) => `${init?.method ?? 'GET'} ${path}`);
+    expect(calls).toEqual(['GET /collection/spare', 'PATCH /decks/4', 'GET /collection/spare']);
   });
 
   it('the store reference shows only next to unknown or regular versions with a price', async () => {
