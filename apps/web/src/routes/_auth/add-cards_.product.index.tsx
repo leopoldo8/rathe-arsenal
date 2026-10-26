@@ -2,7 +2,7 @@ import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { ProductSearch } from '../../components/products/ProductSearch';
 
-export const Route = createFileRoute('/_auth/add-cards_/product')({
+export const Route = createFileRoute('/_auth/add-cards_/product/')({
   component: AddCardsProductPage,
 });
 
