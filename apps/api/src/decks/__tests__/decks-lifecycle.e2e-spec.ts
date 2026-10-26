@@ -298,9 +298,20 @@ describe('deck lifecycle (E2E)', () => {
       const runsBefore = await runsOf(gone);
       await fixture.dataSource.transaction((manager) => queue.enqueueAuto(manager, gone));
       expect(await runsOf(gone)).toEqual(runsBefore);
-      const claimedRun = await queue.claimNext();
-      if (claimedRun) await fixture.dataSource.query(`UPDATE recommendation_run SET status = 'pending', "claimedAt" = NULL WHERE id = $1`, [claimedRun.id]);
-      expect(claimedRun?.trackedDeckId).not.toBe(gone);
+      // Both decks have a due run: the drain must hand out the live deck's and never the deleted deck's.
+      await fixture.dataSource.query(
+        `UPDATE recommendation_run SET "runAfter" = now() - interval '1 minute' WHERE "trackedDeckId" = ANY($1) AND status = 'pending'`,
+        [[gone, kept]],
+      );
+      const claimedRuns: Array<{ id: string; trackedDeckId: number }> = [];
+      for (let next = await queue.claimNext(); next !== null; next = await queue.claimNext()) {
+        claimedRuns.push({ id: next.id, trackedDeckId: next.trackedDeckId });
+      }
+      for (const claimed of claimedRuns) {
+        await fixture.dataSource.query(`UPDATE recommendation_run SET status = 'pending', "claimedAt" = NULL WHERE id = $1`, [claimed.id]);
+      }
+      expect(claimedRuns.map((claimed) => claimed.trackedDeckId)).toContain(kept);
+      expect(claimedRuns.map((claimed) => claimed.trackedDeckId)).not.toContain(gone);
     });
   });
 

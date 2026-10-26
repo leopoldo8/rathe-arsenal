@@ -280,8 +280,15 @@ describe('collection versions (E2E)', () => {
         .patch(`/api/collection/cards/${SNATCH}/versions`)
         .send({ from: none, to: { ...none, printingCode: 'WTR167', edition: 'first' }, quantity: 1 }),
     ).expect(400);
+    await as(
+      owner,
+      request(server)
+        .patch(`/api/collection/cards/${SNATCH}/versions`)
+        .send({ from: none, to: { ...none, printingCode: 'WTR167', finish: 'gold' }, quantity: 1 }),
+    ).expect(400);
     await as(owner, request(server).post('/api/collection/cards/batch').send({ items: [{ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR023' }] })).expect(400);
     await as(owner, request(server).post('/api/collection/cards/batch').send({ items: [{ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', edition: 'first' }] })).expect(400);
+    await as(owner, request(server).post('/api/collection/cards/batch').send({ items: [{ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', finish: 'gold' }] })).expect(400);
     const [{ id: pendingId }] = await dataSource.query(
       `INSERT INTO import_pending_line ("sourceId", "userId", "lineNumber", "originalText", reason)
        VALUES ($1, $2, 3, 'Snatch,2,', 'asks_color') RETURNING id`,
@@ -296,12 +303,17 @@ describe('collection versions (E2E)', () => {
       request(server).patch(`/api/collection/pending/${pendingId}`).send({ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', edition: 'first' }),
     ).expect(400);
 
+    await as(
+      owner,
+      request(server).patch(`/api/collection/pending/${pendingId}`).send({ cardIdentifier: SNATCH, quantity: 1, printingCode: 'WTR167', finish: 'gold' }),
+    ).expect(400);
+
     // Undoing a sale puts copies back at a version: it cannot mint one the card lacks, nor one the sold line never held.
     const sellList = (await as(owner, request(server).post('/api/lists').send({ kind: 'sell', name: 'Vendo' })).expect(201)).body.id as number;
     const soldLine = (await as(owner, request(server).post(`/api/lists/${sellList}/lines`).send({ cardIdentifier: SNATCH, quantity: 1 })).expect(201)).body
       .lines[0].id as number;
     await as(owner, request(server).post(`/api/lists/${sellList}/lines/${soldLine}/sold`).send({ quantity: 1, removeFromCollection: false })).expect(200);
-    for (const bad of [{ printingCode: 'WTR023' }, { printingCode: 'WTR167', edition: 'first' }, { printingCode: 'WTR167' }]) {
+    for (const bad of [{ printingCode: 'WTR023' }, { printingCode: 'WTR167', edition: 'first' }, { printingCode: 'WTR167', finish: 'gold' }, { printingCode: 'WTR167' }]) {
       await as(
         owner,
         request(server)

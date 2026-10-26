@@ -95,6 +95,20 @@ describe('products (E2E)', () => {
     expect(deckOnly.body.deckId).toEqual(expect.any(Number));
   });
 
+  it('the product key is set only on imports of kind product', async () => {
+    const ready = [{ cardIdentifier: 'snatch-red', quantity: 1 }];
+    const paste = await asOwner(request(server()).post('/api/collection/imports').send({ kind: 'paste', name: 'Lista', ready, pending: [] })).expect(201);
+    const csv = await asOwner(request(server()).post('/api/collection/imports').send({ kind: 'csv', name: 'colecao.csv', ready, pending: [] })).expect(201);
+    const product = await asOwner(request(server()).post('/api/products/armory-kayo/import').send({ addCards: true, createDeck: false })).expect(201);
+
+    const rows = await fixture.dataSource.query(`SELECT id, kind, "productKey" FROM csv_source WHERE "userId" = $1`, [owner.id]);
+
+    const keyOf = (id: string): unknown => rows.find((row: { id: string }) => row.id === id)?.productKey;
+    expect(keyOf(paste.body.source.id)).toBeNull();
+    expect(keyOf(csv.body.source.id)).toBeNull();
+    expect(keyOf(product.body.source.id)).toBe('armory-kayo');
+  });
+
   it('a repeated product asks before a second box', async () => {
     const first = await asOwner(request(server()).post('/api/products/armory-kayo/import').send({ addCards: true, createDeck: false })).expect(201);
     const [{ createdAt }] = await fixture.dataSource.query(`SELECT "createdAt" FROM csv_source WHERE id = $1`, [first.body.source.id]);

@@ -117,6 +117,19 @@ describe('AddImportKindsAndPendingLines1778533608000', () => {
     expect(column).toEqual({ data_type: 'character varying', is_nullable: 'YES' });
     const [existing] = await queryRunner.query(`SELECT "productKey" FROM "csv_source" WHERE id = $1`, [SOURCE_ID]);
     expect(existing.productKey).toBeNull();
+    for (const kind of ['csv', 'paste', 'fabrary', 'manual']) {
+      await queryRunner.query(`INSERT INTO "csv_source" ("userId", kind) VALUES ($1, $2)`, [USER_ID, kind]);
+    }
+    await queryRunner.query(`INSERT INTO "csv_source" ("userId", kind, "productKey") VALUES ($1, 'product', 'armory-kayo')`, [USER_ID]);
+    const rows = await queryRunner.query(`SELECT kind, "productKey" FROM "csv_source" ORDER BY kind, "productKey" NULLS FIRST`);
+    expect(rows.filter((row: { kind: string }) => row.kind !== 'product').map((row: { productKey: string | null }) => row.productKey)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(rows.find((row: { kind: string }) => row.kind === 'product')).toEqual({ kind: 'product', productKey: 'armory-kayo' });
   });
 
   it('the kind check accepts the five import kinds and nothing else', async () => {

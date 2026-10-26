@@ -70,18 +70,39 @@ describe('line reader', () => {
     expect(ambiguous.outcome).toBe('not_found');
   });
 
-  it('every line is counted once and quantities cap at 20', () => {
-    const lines = readText(...LIST_PHONE_PASTE);
-    const manyLines = readText(...Array.from({ length: 300 }, (_unused, index) => (index % 7 === 0 ? 'Cartaqualquer' : index % 5 === 0 ? '2 Pummel' : '1 Snatch (Red)')));
-    const [capped, exact] = readText('25 Snatch (Red)', '20 Snatch (Red)');
+  describe('every line is counted once and quantities cap at 20', () => {
+    // Index 0, 7, 14... name a card that does not exist; index 5, 10, 15... (not a multiple of 7) leave the color out.
+    const csvRows = Array.from({ length: 300 }, (_unused, index) =>
+      reader.read({
+        lineNumber: index + 2,
+        originalText: `row ${index}`,
+        isTable: true,
+        text: index % 7 === 0 ? 'Cartaqualquer' : index % 5 === 0 ? 'Pummel' : 'Snatch',
+        quantityCell: '1',
+        colorCell: index % 7 !== 0 && index % 5 === 0 ? '' : 'Vermelho',
+      }),
+    );
 
-    expect(summarizeLines(lines, [4])).toEqual({ read: 8, ready: 6, asked: 1, kept: 1 });
-    const many = summarizeLines(manyLines);
-    expect(many.ready + many.asked + many.kept).toBe(300);
-    expect(capped).toMatchObject({ quantity: 20 });
-    expect(capped!.notes).toHaveLength(1);
-    expect(exact).toMatchObject({ quantity: 20 });
-    expect(exact!.notes).toEqual([]);
+    it.each<[string, readonly IReadLine[], readonly number[], { read: number; ready: number; asked: number; kept: number }]>([
+      ['the paste of r3-list-phone, with its suggestion accepted', readText(...LIST_PHONE_PASTE), [4], { read: 8, ready: 6, asked: 1, kept: 1 }],
+      ['a CSV of 300 lines', csvRows, [], { read: 300, ready: 206, asked: 51, kept: 43 }],
+    ])('ready, asked and kept add up to the lines read: %s', (_label, lines, accepted, expected) => {
+      const summary = summarizeLines(lines, accepted);
+
+      expect(summary).toEqual(expected);
+      expect(summary.read).toBe(lines.length);
+      expect(summary.ready + summary.asked + summary.kept).toBe(summary.read);
+    });
+
+    it.each<[string, string, readonly string[]]>([
+      ['25 reads as 20 with one note', '25 Snatch (Red)', ['quantidade acima de 20: lemos 20']],
+      ['20 stays 20 with no note', '20 Snatch (Red)', []],
+    ])('a quantity of %s', (_label, text, notes) => {
+      const [line] = readText(text);
+
+      expect(line).toMatchObject({ outcome: 'ready', cardIdentifier: 'snatch-red', quantity: 20 });
+      expect(line!.notes).toEqual(notes);
+    });
   });
 
   it('a quantity word up to twenty is suggested as a number', () => {

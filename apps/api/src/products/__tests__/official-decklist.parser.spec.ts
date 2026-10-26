@@ -42,10 +42,36 @@ describe('official decklist parser', () => {
       { cardIdentifier: 'bare-fangs-yellow', printingCode: 'AKO016', quantity: 3 },
     ]);
     expect(file.cards.map((card) => card.cardIdentifier)).not.toContain('agility');
-    expect(differences).toContain('no printing tagged with Armory Deck: Kayo: Snatch (red)');
-    expect(differences).toContain('not in the catalog: Not A Real Card');
-    expect(differences).toContain('in the catalog for Armory Deck: Kayo, not on the page: Beaten Trackers');
-    expect(differences.some((line) => /: (Agility|Might)( |$)/.test(line))).toBe(false);
+    const notOnThePage = [
+      'Agile Windup (blue)',
+      'Assault and Battery (blue)',
+      'Battlefront Bastion (blue)',
+      'Beaten Trackers',
+      'Clash of Agility (red)',
+      'Hide Tanner',
+      'Humble (red)',
+      'Knucklehead',
+      'Mandible Claw',
+      'Mighty Windup (blue)',
+      'Pound Town (blue)',
+      'Pulping (red)',
+      'Rally the Rearguard (red)',
+      'Reincarnate (blue)',
+      'Riled Up (blue)',
+      'Run Roughshod (blue)',
+      'Savage Beatdown (red)',
+      'Savage Sash',
+      'Smash Instinct (blue)',
+      'Strength Rules All (red)',
+      'Wild Ride (red)',
+      'Wreck Havoc (red)',
+      'Wrecker Romp (blue)',
+    ];
+    expect(differences).toEqual([
+      'no printing tagged with Armory Deck: Kayo: Snatch (red)',
+      'not in the catalog: Not A Real Card',
+      ...notOnThePage.map((name) => `in the catalog for Armory Deck: Kayo, not on the page: ${name}`),
+    ]);
   });
 
   it('lists nothing when the page matches the catalog', () => {

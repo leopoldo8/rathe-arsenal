@@ -104,6 +104,9 @@ describe('DeckMissingService', () => {
     expect(stand.summary).toMatchObject({ totalCopies: 3, standInCopies: 2, buyCopies: 1 });
     const unknown = await run(cases[4]![1]);
     expect(unknown.summary).toMatchObject({ lookingUp: 1, noPrice: 0, availabilityCheckedAt: '2026-10-19T12:00:00.000Z', priceValidDays: 30 });
+    // The two copies still being looked up are left out of what is left to buy and what it costs.
+    expect(unknown.summary).toMatchObject({ buyCopies: 1, buyCents: 100 });
+    expect(unknown.lines.find((line) => line.cardIdentifier === CARD_A)).toMatchObject({ state: 'looking_up', unitPriceCents: null, lineCents: null });
     expect((await run(cases[5]![1])).summary).toMatchObject({ lookingUp: 0, noPrice: 1 });
   });
 
