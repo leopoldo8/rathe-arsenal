@@ -74,6 +74,54 @@ describe('Auth limits (E2E, S34)', () => {
     expect(signUps[20]).toBe(429);
   });
 
+  it('ten failed tries per address per hour across codes', async () => {
+    const email = ctx.emailFor('ten-failed');
+    await from('198.51.100.100', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+    let ipCounter = 0;
+    const failTries = async (count: number): Promise<void> => {
+      const sent = [...ctx.sentCodes].reverse().find((entry) => entry.to === email);
+      const wrong = `${sent?.code.slice(0, 5)}${(Number(sent?.code[5]) + 1) % 10}`;
+      for (let i = 0; i < count; i++) {
+        await from(`198.51.101.${(ipCounter += 1)}`, '/api/auth/codes/verify').send({ email, code: wrong }).expect(401);
+      }
+    };
+
+    await from('198.51.100.101', '/api/auth/codes').send({ email }).expect(202);
+    await failTries(5);
+    await from('198.51.100.102', '/api/auth/codes').send({ email }).expect(202);
+    await failTries(4);
+    // 9 failed tries: the next request still answers 202.
+    await from('198.51.100.103', '/api/auth/codes').send({ email }).expect(202);
+    await failTries(1);
+
+    // 10 failed tries across three codes, none of them untried: the next request is refused.
+    const rowsBefore = await countOf('sign_in_code', email);
+    const refused = await from('198.51.100.104', '/api/auth/codes').send({ email });
+    expect(refused.status).toBe(429);
+    expect(Number(refused.headers['retry-after'])).toBeGreaterThan(0);
+    expect(Number(refused.headers['retry-after'])).toBeLessThanOrEqual(3600);
+    expect(await countOf('sign_in_code', email)).toBe(rowsBefore);
+  });
+
+  it('a code that has had a try does not count toward the five', async () => {
+    const email = ctx.emailFor('tried-not-counted');
+    await from('198.51.100.110', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+
+    for (let i = 0; i < 4; i++) {
+      await from('198.51.100.111', '/api/auth/codes').send({ email }).expect(202);
+    }
+    const sent = [...ctx.sentCodes].reverse().find((entry) => entry.to === email);
+    const wrong = `${sent?.code.slice(0, 5)}${(Number(sent?.code[5]) + 1) % 10}`;
+    await from('198.51.100.112', '/api/auth/codes/verify').send({ email, code: wrong }).expect(401);
+
+    // Four codes asked, one of them tried: only three count, so two more requests fit.
+    await from('198.51.100.111', '/api/auth/codes').send({ email }).expect(202);
+    await from('198.51.100.111', '/api/auth/codes').send({ email }).expect(202);
+    const refused = await from('198.51.100.111', '/api/auth/codes').send({ email });
+    expect(refused.status).toBe(429);
+    expect(await countOf('sign_in_code', email)).toBe(6);
+  });
+
   it('parallel code requests cannot pass the five-per-address limit together', async () => {
     const email = ctx.emailFor('parallel-codes');
     await from('198.51.100.70', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
@@ -85,12 +133,12 @@ describe('Auth limits (E2E, S34)', () => {
     expect(await countOf('sign_in_code', email)).toBe(5);
   });
 
-  it('asking for a new code does not give a guesser more than five tries per code', async () => {
+  it('asking for a new code does not give a guesser more than ten tries per hour', async () => {
     const email = ctx.emailFor('fresh-tries');
     await from('198.51.100.40', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
 
     let wrongTries = 0;
-    for (let round = 0; round < 5; round++) {
+    for (let round = 0; round < 2; round++) {
       const ip = `198.51.100.${50 + round}`;
       await from(ip, '/api/auth/codes').send({ email }).expect(202);
       const sent = [...ctx.sentCodes].reverse().find((entry) => entry.to === email);
@@ -101,7 +149,7 @@ describe('Auth limits (E2E, S34)', () => {
       }
     }
 
-    expect(wrongTries).toBe(25);
+    expect(wrongTries).toBe(10);
     await from('198.51.100.60', '/api/auth/codes').send({ email }).expect(429);
   });
 

@@ -214,6 +214,11 @@
   Table: [decisions-2026-10-27.md](decisions-2026-10-27.md).
   The expired and wrong-code messages stay above the boxes (D22). The four tests of the signed-in visitor stay (D54). A deleted account at the start step stays as is, because sign-up rejects deleted rows (D58). A throwaway Postgres container with its own name and port is approved, never `rathe-arsenal-pg` (D60). Both unused routes stay, since the main branch calls them (D61). The Tutor model eval is deferred, it needs a model key and money (D62).
 
+### Batch X2 (D56, D59, D51)
+
+- D59 (C404): `SIGN_IN_CODE_MAX_PER_ADDRESS_PER_HOUR` is now `SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR` (5) beside `SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR` (10). The failed-try sum reads `attempts`, which also counts the one try of a successful verify; ten successful sign-ins by one address in an hour would close code requests too.
+- D59: the test "asking for a new code does not give a guesser more than five tries per code" in `auth-limits.e2e-spec.ts` is not a proof of any check and its premise (five rounds of five tries) is what C404 now forbids. It is renamed "... more than ten tries per hour" and runs two rounds of five tries, then expects the `429`; it still proves a new code does not reset the tries.
+
 ## Needs the owner`.
 - `csv_source` migration `1778533608000` also moves old Fabrary imports (kind `csv` with a Fabrary `sourceUrl`) to kind `fabrary`; its down step puts them back to `csv`. The route `POST /api/collection/sources/from-fabrary` still creates kind `csv`; the web no longer calls it.
 - Counts: every `_one` key of `collectionReader` and `copyVersions` gained a `_zero` form (pt-BR reads 0 as singular), the three counts of `products` became plural keys, and the recently-added banner builds "N cartas importadas por CSV como X" from plural keys (`library.bannerImported`, `bannerAdded`). `collectionReader.linesToResolve` is the tooltip of the row's pending count.

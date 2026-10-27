@@ -12,7 +12,10 @@ import { TokenGeneratorService } from './services/token-generator.service';
 
 export const SIGN_IN_CODE_TTL_MS = 15 * 60 * 1000;
 export const SIGN_IN_CODE_MAX_ATTEMPTS = 5;
-export const SIGN_IN_CODE_MAX_PER_ADDRESS_PER_HOUR = 5;
+/** Codes asked and never tried that one address may collect in an hour. */
+export const SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR = 5;
+/** Failed tries, summed across all the codes of one address, that close its code requests for the hour. */
+export const SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR = 10;
 const HOUR_MS = 60 * 60 * 1000;
 /** The wait the code screen shows before "Reenviar" is offered. */
 export const SIGN_IN_CODE_RESEND_AFTER_MS = 45 * 1000;
@@ -122,9 +125,12 @@ export class SignInCodeService {
   }
 
   /**
-   * Counts the address's codes of the last hour, replaced ones included, so a new code never resets the
-   * tries. The count and the insert share one transaction behind a per-address lock, so parallel requests
-   * cannot all pass a count that none of them has written to yet.
+   * Refuses a new code once the address has 5 codes of the last hour that nobody tried, or 10 failed
+   * tries summed across its codes. Tries do not count toward the 5, so a stranger who burns the live
+   * code's tries cannot lock the owner out of asking; only the 10-try floor stops that guessing. The
+   * rows of the last hour include replaced ones, so a new code never resets either count. The count and
+   * the insert share one transaction behind a per-address lock, so parallel requests cannot all pass a
+   * count that none of them has written to yet.
    */
   private async assertUnderAddressLimit(manager: EntityManager, email: string): Promise<void> {
     await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`sign_in_code:${email}`]);
@@ -132,13 +138,33 @@ export class SignInCodeService {
     const recent = await manager.find(SignInCodeEntity, {
       where: { email, createdAt: MoreThan(new Date(now - HOUR_MS)) },
       order: { createdAt: 'ASC' },
-      select: { createdAt: true },
+      select: { createdAt: true, attempts: true },
     });
-    if (recent.length < SIGN_IN_CODE_MAX_PER_ADDRESS_PER_HOUR) return;
-    const oldestCounted = recent[recent.length - SIGN_IN_CODE_MAX_PER_ADDRESS_PER_HOUR] as SignInCodeEntity;
-    const retryAfterSeconds = Math.max(1, Math.ceil((oldestCounted.createdAt.getTime() + HOUR_MS - now) / 1000));
+    const untried = recent.filter((row) => row.attempts === 0);
+    const failedTries = recent.reduce((sum, row) => sum + row.attempts, 0);
+    const waits: number[] = [];
+    if (untried.length >= SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR) {
+      const oldestCounted = untried[untried.length - SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR] as SignInCodeEntity;
+      waits.push(oldestCounted.createdAt.getTime() + HOUR_MS - now);
+    }
+    if (failedTries >= SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR) {
+      waits.push(this.msUntilFailedTriesFit(recent, now));
+    }
+    if (waits.length === 0) return;
+    // Both limits must be clear before a request fits, so the wait is the longer one.
+    const retryAfterSeconds = Math.max(1, Math.ceil(Math.max(...waits) / 1000));
     this.logger.warn({ event: 'auth.code.address_limit', retryAfterSeconds });
     throw new AuthError(EAuthErrorCode.TooManyCodes, 'Too many codes were asked for this address', retryAfterSeconds);
+  }
+
+  /** How long until enough old codes leave the hour for the failed tries to drop below the cap. */
+  private msUntilFailedTriesFit(recentOldestFirst: readonly SignInCodeEntity[], now: number): number {
+    let remaining = recentOldestFirst.reduce((sum, row) => sum + row.attempts, 0);
+    for (const row of recentOldestFirst) {
+      remaining -= row.attempts;
+      if (remaining < SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR) return row.createdAt.getTime() + HOUR_MS - now;
+    }
+    return HOUR_MS;
   }
 
   private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
