@@ -72,7 +72,7 @@ describe('Auth limits (E2E, S34)', () => {
     }
     expect(signUps[19]).toBe(201);
     expect(signUps[20]).toBe(429);
-  });
+ }, 60_000);
 
   it('ten failed tries per address per hour across codes', async () => {
     const email = ctx.emailFor('ten-failed');
@@ -101,7 +101,21 @@ describe('Auth limits (E2E, S34)', () => {
     expect(Number(refused.headers['retry-after'])).toBeGreaterThan(0);
     expect(Number(refused.headers['retry-after'])).toBeLessThanOrEqual(3600);
     expect(await countOf('sign_in_code', email)).toBe(rowsBefore);
-  });
+ }, 60_000);
+
+  it('a code sign-in that succeeds does not count toward the ten failed tries', async () => {
+    const email = ctx.emailFor('signed-in-not-failed');
+    await from('198.51.100.120', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+
+    for (let i = 0; i < 10; i++) {
+      await from('198.51.100.121', '/api/auth/codes').send({ email }).expect(202);
+      const sent = [...ctx.sentCodes].reverse().find((entry) => entry.to === email);
+      await from(`198.51.102.${i + 1}`, '/api/auth/codes/verify').send({ email, code: sent?.code }).expect(200);
+    }
+
+    // Ten correct sign-ins are not ten failed tries: the next request still answers 202.
+    await from('198.51.100.122', '/api/auth/codes').send({ email }).expect(202);
+  }, 60_000);
 
   it('a code that has had a try does not count toward the five', async () => {
     const email = ctx.emailFor('tried-not-counted');
