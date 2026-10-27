@@ -51,6 +51,14 @@ export type TGlossaryOwnData =
 
 const FORMAT_TERMS: ReadonlySet<TGlossaryTermId> = new Set(['classicConstructed', 'livingLegend', 'blitz', 'silverAge']);
 
+/** The glossary word of a format as the page writes it, or null for a format the glossary does not explain. */
+export function formatTermId(format: string, t: TFunction): TGlossaryTermId | null {
+  for (const id of FORMAT_TERMS) {
+    if (t(`glossary.terms.${id}.word`) === format) return id;
+  }
+  return null;
+}
+
 export function glossaryEntry(id: TGlossaryTermId, t: TFunction): IGlossaryEntry {
   return { id, word: t(`glossary.terms.${id}.word`), sentence: t(`glossary.terms.${id}.sentence`) };
 }

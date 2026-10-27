@@ -179,6 +179,28 @@ describe('SharedDeckPage', () => {
       );
     });
 
+    it('the format chip carries a question mark that explains the format and names the sharer', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const header = await screen.findByTestId('shared-deck-header');
+      const chip = within(header).getByText('Classic Constructed');
+      const question = within(header).getByRole('button', { name: 'O que é Classic Constructed?' });
+      expect(chip.nextElementSibling, 'the question mark comes right after the chip').toContainElement(question);
+      expect(within(header).getAllByRole('button', { name: /^O que é/ }), 'one question mark, at the first appearance').toHaveLength(1);
+
+      await user.click(question);
+
+      const sheet = await screen.findByRole('dialog', { name: 'Classic Constructed' });
+      expect(Array.from(sheet.querySelectorAll('h2, p, a, button')).map((node) => node.textContent)).toEqual([
+        'Classic Constructed',
+        expect.stringMatching(/^Formato de torneio com o herói adulto/),
+        'Este deck do Dudu_Pelotas é de Classic Constructed.',
+        'Ver todos os termos',
+        'Fechar',
+      ]);
+    });
+
     it('headings follow the shared grouping', async () => {
       renderPage();
 

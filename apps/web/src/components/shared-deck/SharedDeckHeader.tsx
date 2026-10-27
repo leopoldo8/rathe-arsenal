@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ISharedCard, ISharedDeckResponse } from '../../api/shared-decks';
 import { useImageFallback } from '../../hooks/useImageFallback';
+import { GlossaryTerm } from '../glossary/GlossaryTerm';
+import { formatTermId } from '../glossary/glossary-model';
 import { imageSources } from '../deck-detail/recommendations/card-naming';
 import styles from './SharedDeckHeader.module.css';
 
@@ -20,6 +22,7 @@ export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): Rea
   const heroCard = deck.heroCard ?? findHeroCard(deck.cards);
   const isMissing = deck.intent === 'missing';
   const art = useImageFallback(imageSources(heroCard?.imageUrl ?? null, 'large'));
+  const formatTerm = formatTermId(deck.format, t);
 
   return (
     <section className={styles.header} aria-labelledby="shared-deck-title" data-testid="shared-deck-header">
@@ -45,6 +48,9 @@ export function SharedDeckHeader({ deck, contact }: ISharedDeckHeaderProps): Rea
           </h1>
           <div className={styles.chips}>
             <span className={styles.chipAccent}>{deck.format}</span>
+            {formatTerm !== null && (
+              <GlossaryTerm bare term={formatTerm} own={{ kind: 'format', sharerName: deck.sharerName, format: deck.format }} />
+            )}
             <span className={styles.chip}>{t('sharing.page.heroLine', { hero: deck.hero })}</span>
             <span className={styles.chip}>
               {isMissing
