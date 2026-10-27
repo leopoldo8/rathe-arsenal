@@ -141,7 +141,6 @@ export const lists = {
     condition: 'Condição (opcional)',
     price: 'Preço cada (opcional)',
     priceInvalid: 'Use um valor como 6 ou 6,50.',
-    markSold: 'Marcar como vendida',
     unmarkSold: 'Voltar para à venda',
     remove: 'Remover da lista',
   },

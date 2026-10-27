@@ -149,9 +149,9 @@ export function LineEditPanel({ list, line, onClose }: ILineEditPanelProps): Rea
             )}
 
             <div className={styles.panelActions}>
-              {isSell && (
-                <button type="button" className={styles.panelBtn} disabled={busy} onClick={() => update({ sold: !line.sold })}>
-                  {line.sold ? t('lists.panel.unmarkSold') : t('lists.panel.markSold')}
+              {isSell && line.sold && (
+                <button type="button" className={styles.panelBtn} disabled={busy} onClick={() => update({ sold: false })}>
+                  {t('lists.panel.unmarkSold')}
                 </button>
               )}
               <button

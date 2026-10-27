@@ -141,7 +141,6 @@ export const lists = {
     condition: 'Condition (optional)',
     price: 'Price each (optional)',
     priceInvalid: 'Use a value like 6 or 6,50.',
-    markSold: 'Mark as sold',
     unmarkSold: 'Back on sale',
     remove: 'Remove from list',
   },
