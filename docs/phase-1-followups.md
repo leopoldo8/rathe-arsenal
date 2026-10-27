@@ -434,6 +434,14 @@ Shared deck links, share attribution, generated link-preview images and copying 
 
 ---
 
+## Sign-in by code (2026-10-27)
+
+### AU1. A stranger can keep an address's code requests blocked for as long as they keep at it
+**Posture:** once an address has 5 codes asked and never tried in the last hour, or 10 failed tries across its codes, the next code request answers `429` with the exact `Retry-After`. A stranger who knows the address asks for a code the moment a slot frees, so the block lasts as long as they keep at it. Every request of theirs also replaces the owner's live code, so a code the owner just received stops working. This predates the limit change of D59 (C404), which did not widen it: it only stopped burnt tries from locking the owner out. Password sign-in and sessions that already exist are not affected. An account with no password cannot sign in on a new device while the block lasts.
+**Trigger:** the log event `auth.code.address_limit` showing repeated hits for one address. **Work (known, not built):** let a browser that already signed in to that account skip the per-address limit, recognised by a device cookie.
+
+---
+
 ## How to use this file
 
 When starting Phase 1:
