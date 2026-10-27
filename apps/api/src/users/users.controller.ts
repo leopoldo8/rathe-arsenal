@@ -1,11 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Put, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthService } from '../auth/auth.service';
 import { ICurrentUser } from '../auth/dtos/current-user.dto';
 import { SetPasswordDto } from '../auth/dtos/set-password.dto';
+import { AUTH_THROTTLE } from '../auth/auth-throttle';
+import { mapAuthError } from '../auth/auth-error.mapper';
+import { AuthError, EAuthErrorCode } from '../auth/errors';
 import { readSessionToken } from '../auth/session-cookie';
+import { AcceptLanguage } from '../common/i18n/accept-language.decorator';
+import { TLocale } from '../common/i18n/resolve-locale';
 import { UpdateContactDto } from './dtos/update-contact.dto';
 import { UpdateSellClosingLineDto } from './dtos/update-sell-closing-line.dto';
 import { UpdateSpareRuleDto } from './dtos/update-spare-rule.dto';
@@ -114,7 +119,27 @@ export class UsersController {
     return this.usersService.updateSpareRule(currentUser.userId, dto.rule);
   }
 
-  /** Sets or replaces the password and signs every other device out; this one stays signed in. */
+  /** E-mails a six-digit code to the account's own address; the password change needs it back. */
+  @Post('me/password-code')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: AUTH_THROTTLE.codes })
+  async postPasswordCode(
+    @CurrentUser() currentUser: ICurrentUser,
+    @AcceptLanguage() locale: TLocale,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ expiresAt: Date; resendAfter: Date }> {
+    try {
+      return await this.authService.requestPasswordCode(currentUser.userId, locale);
+    } catch (err) {
+      throw this.asHttpError(err, res);
+    }
+  }
+
+  /**
+   * Sets or replaces the password once the e-mailed code is spent, and signs every other device out;
+   * this one stays signed in. A wrong code answers 400, never 401: the web client reads a 401 as a
+   * lost session.
+   */
   @Put('me/password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
@@ -122,7 +147,21 @@ export class UsersController {
     @CurrentUser() currentUser: ICurrentUser,
     @Body() dto: SetPasswordDto,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.setPassword(currentUser.userId, dto.password, readSessionToken(req));
+    try {
+      await this.authService.changePasswordWithCode(currentUser.userId, dto.code, dto.password, readSessionToken(req));
+    } catch (err) {
+      throw this.asHttpError(err, res);
+    }
+  }
+
+  private asHttpError(err: unknown, res: Response): unknown {
+    if (!(err instanceof AuthError)) return err;
+    if (err.retryAfterSeconds !== undefined) res.setHeader('Retry-After', String(err.retryAfterSeconds));
+    if (err.code === EAuthErrorCode.InvalidCode) {
+      return new BadRequestException({ message: err.message, code: err.code });
+    }
+    return mapAuthError(err);
   }
 }

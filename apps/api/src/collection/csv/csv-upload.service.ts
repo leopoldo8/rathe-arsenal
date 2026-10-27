@@ -20,6 +20,7 @@ import {
   IUploadCsvResponse,
   ICreatedResponse,
   IExactMatchResponse,
+  IPartialOverlapResponse,
   IUpdatedResponse,
   IReplacedResponse,
 } from './dtos/upload-csv.response.dto';
@@ -70,6 +71,12 @@ export class CsvUploadService {
     // Parse is always needed (all non-cancel actions require the buffer).
     const parsed = this.csvParserService.parse(buffer);
 
+    if (action === 'auto' && targetSourceId !== undefined) {
+      await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
+      return this.previewUpdate(userId, targetSourceId, parsed.resolved, parsed.skipped);
+    }
+
     if (action === 'auto') {
       return this.handleAuto(userId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
@@ -89,6 +96,7 @@ export class CsvUploadService {
         throw new BadRequestException('MISSING_TARGET_SOURCE');
       }
       await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
       return this.replaceSource(userId, targetSourceId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
 
@@ -97,6 +105,7 @@ export class CsvUploadService {
         throw new BadRequestException('MISSING_TARGET_SOURCE');
       }
       await this.assertOwnsCsvSource(userId, targetSourceId);
+      this.assertHasRows(parsed.resolved);
       return this.updateSource(userId, targetSourceId, buffer, parsed.resolved, parsed.skipped, originalFilename);
     }
 
@@ -169,6 +178,39 @@ export class CsvUploadService {
 
     // detection.kind === 'new'
     return this.createNewSource(userId, buffer, resolved, skipped, originalFilename, 'auto');
+  }
+
+  /**
+   * A file sent from one import's menu: the delta is against that import alone, whatever else the
+   * file overlaps, and nothing is written until the player picks update or replace.
+   */
+  private async previewUpdate(
+    userId: string,
+    targetSourceId: string,
+    resolved: readonly IResolvedCsvRow[],
+    skipped: readonly import('./csv.types').ISkippedCsvRow[],
+  ): Promise<IPartialOverlapResponse> {
+    const target = await this.csvSourceRepo.findOneByOrFail({ id: targetSourceId });
+    const existingCards = await this.collectionCardRepo.find({
+      where: { sourceId: targetSourceId },
+      select: ['cardIdentifier', 'quantity'],
+    });
+    const existingQuantities = new Map(existingCards.map((card) => [card.cardIdentifier, card.quantity]));
+    const incomingIdSet = new Set(resolved.map((row) => row.cardIdentifier));
+    const incomingQuantities = new Map(resolved.map((row) => [row.cardIdentifier, row.quantity]));
+    const shared = [...incomingIdSet].filter((cardIdentifier) => existingQuantities.has(cardIdentifier)).length;
+    const union = incomingIdSet.size + existingQuantities.size - shared;
+
+    this.logger.log({ event: 'csv.upload', userId, action: 'auto', kind: 'partial-overlap', existingSourceId: targetSourceId });
+    return {
+      kind: 'partial-overlap',
+      existingSourceId: targetSourceId,
+      existingLabel: target.label,
+      similarityScore: union === 0 ? 1 : shared / union,
+      delta: computeDelta(incomingIdSet, incomingQuantities, existingQuantities),
+      cardCount: existingQuantities.size,
+      skippedRows: skipped,
+    };
   }
 
   private async createNewSource(
@@ -426,6 +468,11 @@ export class CsvUploadService {
       delta: result.delta,
       skippedRows: skipped,
     };
+  }
+
+  /** A file that reads as no card would empty the import it was sent for. */
+  private assertHasRows(resolved: readonly IResolvedCsvRow[]): void {
+    if (resolved.length === 0) throw new BadRequestException('EMPTY_FILE');
   }
 
   // ---------------------------------------------------------------------------

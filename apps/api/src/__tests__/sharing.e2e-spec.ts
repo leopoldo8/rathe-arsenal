@@ -505,6 +505,27 @@ describe('Sharing (E2E)', () => {
     await request(server).delete(`/api/decks/${deckId}/share/deck`).set(...auth(stranger)).expect(404);
   });
 
+  it('turning off the missing link answers 204, kills only that link and is repeatable', async () => {
+    const owner = await createSession('turn-off-missing');
+    const stranger = await createSession('turn-off-stranger');
+    const deckId = await createDeck(owner);
+    const deckToken = await startSharing(owner, deckId, 'deck');
+    const missingToken = await startSharing(owner, deckId, 'missing');
+    const quoteToken = await startSharing(owner, deckId, 'quote');
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+
+    await request(server).delete(`/api/decks/${deckId}/share/missing`).set(...auth(stranger)).expect(404);
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(200);
+    await request(server).delete(`/api/decks/${deckId}/share/missing`).expect(401);
+
+    await request(server).delete(`/api/decks/${deckId}/share/missing`).set(...auth(owner)).expect(204);
+    await request(server).get(`/api/shared/decks/${missingToken}`).expect(404);
+    await request(server).delete(`/api/decks/${deckId}/share/missing`).set(...auth(owner)).expect(204);
+
+    await request(server).get(`/api/shared/decks/${deckToken}`).expect(200);
+    await request(server).get(`/api/shared/decks/${quoteToken}`).expect(200);
+  });
+
   it('answers 404 once the owner is soft-deleted, and for malformed or unknown tokens', async () => {
     const owner = await createSession('softdelete');
     const deckId = await createDeck(owner);

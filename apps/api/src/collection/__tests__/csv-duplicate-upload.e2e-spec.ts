@@ -103,4 +103,70 @@ describe('duplicate CSV uploads (E2E)', () => {
     const rows = await dataSource.query(`SELECT id FROM csv_source WHERE "userId" = $1 AND kind = 'csv' AND label = 'same.csv'`, [userId]);
     expect(rows).toHaveLength(1);
   });
+
+  describe('a file sent for one import', () => {
+    const TARGET = Buffer.from(['Name,Quantity', 'Snatch (Red),2', 'Pummel (Red),1'].join('\n'), 'utf-8');
+    const BYSTANDER = Buffer.from(['Name,Quantity', 'Pack Hunt (Blue),1', 'Sink Below (Yellow),3'].join('\n'), 'utf-8');
+    const REPLACEMENT = Buffer.from(['Name,Quantity', 'Command and Conquer (Red),2', 'Pummel (Yellow),1'].join('\n'), 'utf-8');
+    const FILE = Buffer.from(['Name,Quantity', 'Snatch (Red),3', 'Pack Hunt (Blue),1'].join('\n'), 'utf-8');
+    const EMPTY = Buffer.from('Name,Quantity\n', 'utf-8');
+
+    const post = (file: Buffer, fields: Record<string, string>, token = sessionToken) => {
+      const call = request(app.getHttpServer()).post('/api/collection/csv').set('Cookie', sessionCookieHeader(token));
+      for (const [name, value] of Object.entries(fields)) call.field(name, value);
+      return call.attach('file', file, { filename: 'new-version.csv', contentType: 'text/csv' });
+    };
+    const quantitiesOf = async (sourceId: string): Promise<number[]> =>
+      (
+        (await dataSource.query(`SELECT quantity FROM collection_card WHERE "sourceId" = $1 ORDER BY quantity`, [sourceId])) as {
+          quantity: number;
+        }[]
+      ).map((row) => row.quantity);
+
+    it('a file sent for one import answers its delta, updates or replaces it, and 404s a foreign id', async () => {
+      const target = await post(TARGET, { action: 'separate' }).expect(201);
+      const targetId = target.body.sourceId as string;
+      const bystander = await post(BYSTANDER, { action: 'separate' }).expect(201);
+      const bystanderId = bystander.body.sourceId as string;
+      expect(await quantitiesOf(targetId)).toEqual([1, 2]);
+
+      // The delta is against this import alone: the card the other import holds still counts as added.
+      const preview = await post(FILE, { targetSourceId: targetId }).expect(201);
+      expect(preview.body.kind).toBe('partial-overlap');
+      expect(preview.body.existingSourceId).toBe(targetId);
+      expect(preview.body.delta.added).toHaveLength(1);
+      expect(preview.body.delta.increased).toHaveLength(1);
+      expect(preview.body.delta.decreased).toHaveLength(0);
+      expect(preview.body.delta.removed).toHaveLength(1);
+      expect(await quantitiesOf(targetId)).toEqual([1, 2]);
+      const explicitAuto = await post(FILE, { targetSourceId: targetId, action: 'auto' }).expect(201);
+      expect(explicitAuto.body.existingSourceId).toBe(targetId);
+
+      const updated = await post(FILE, { targetSourceId: targetId, action: 'update' }).expect(201);
+      expect(updated.body).toEqual(expect.objectContaining({ kind: 'updated', sourceId: targetId }));
+      expect(await quantitiesOf(targetId)).toEqual([1, 3]);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      const replaced = await post(REPLACEMENT, { targetSourceId: targetId, action: 'replace' }).expect(201);
+      expect(replaced.body.kind).toBe('replaced');
+      expect(await quantitiesOf(replaced.body.sourceId as string)).toEqual([1, 2]);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      await post(EMPTY, { targetSourceId: bystanderId }).expect(400);
+      await post(EMPTY, { targetSourceId: bystanderId, action: 'update' }).expect(400);
+      expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+
+      const strangerEmail = `csv-stranger-${Date.now().toString(36)}@test.local`;
+      const stranger = await request(app.getHttpServer()).post('/api/auth/sign-up').send({ email: strangerEmail, password }).expect(201);
+      try {
+        const foreign = await post(FILE, { targetSourceId: bystanderId }, sessionTokenOf(stranger));
+        expect(foreign.status).toBe(404);
+        await post(FILE, { targetSourceId: bystanderId, action: 'update' }, sessionTokenOf(stranger)).expect(404);
+        await post(FILE, { targetSourceId: '4b8f3a5e-0d3c-4c1e-9d1a-2f6f0a1b2c3d' }).expect(404);
+        expect(await quantitiesOf(bystanderId)).toEqual([1, 3]);
+      } finally {
+        await dataSource.query(`DELETE FROM "user" WHERE email = $1`, [strangerEmail]);
+      }
+    });
+  });
 });

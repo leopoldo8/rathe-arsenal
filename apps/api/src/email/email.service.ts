@@ -5,6 +5,7 @@ import { TLocale } from '../common/i18n/resolve-locale';
 import { EEmailErrorCode, EmailDeliveryError } from './errors';
 import { renderVerificationEmail } from './templates/verification-email.template';
 import { renderSignInCodeEmail } from './templates/sign-in-code-email.template';
+import { renderPasswordCodeEmail } from './templates/password-code-email.template';
 
 const APP_NAME = 'Rathe Arsenal';
 
@@ -33,6 +34,11 @@ export class EmailService {
   async sendSignInCodeEmail(to: string, code: string, link: string, locale: TLocale = 'pt-BR'): Promise<void> {
     const rendered = renderSignInCodeEmail({ code, link, appName: APP_NAME, locale });
     await this.send(to, rendered.subject, rendered.html, rendered.text, link);
+  }
+
+  async sendPasswordCodeEmail(to: string, code: string, locale: TLocale = 'pt-BR'): Promise<void> {
+    const rendered = renderPasswordCodeEmail({ code, appName: APP_NAME, locale });
+    await this.send(to, rendered.subject, rendered.html, rendered.text, '');
   }
 
   private async send(to: string, subject: string, html: string, text: string, link: string): Promise<void> {

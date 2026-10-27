@@ -295,6 +295,27 @@ export class AuthService {
     return { ok: true };
   }
 
+  /** E-mails the signed-in account a code that must come back with the new password. */
+  async requestPasswordCode(userId: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult> {
+    const user = await this.signedInUser(userId);
+    return this.signInCodes.requestPasswordCode(userId, user.email, locale);
+  }
+
+  /** Sets the password once the code e-mailed to the account's own address is spent. */
+  async changePasswordWithCode(userId: string, code: string, password: string, currentSessionToken: string | null): Promise<void> {
+    const user = await this.signedInUser(userId);
+    await this.signInCodes.spendPasswordCode(user.email, code);
+    await this.setPassword(userId, password, currentSessionToken);
+  }
+
+  private async signedInUser(userId: string): Promise<UserEntity> {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user || user.deletedAt !== null) {
+      throw new AuthError(EAuthErrorCode.UserNotFound, 'Account not found');
+    }
+    return user;
+  }
+
   /**
    * Sets the account's password (a first one or a replacement) and ends every other session: whoever
    * held the old password, or an old session, is signed out. The session that asked stays.

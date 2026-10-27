@@ -75,6 +75,7 @@ export class SignInCodeService {
     const buttonToken = this.tokenGenerator.generateRawToken();
     await this.replaceLiveCode({
       email,
+      purpose: 'sign_in',
       codeHash: this.hashCode(email, code),
       buttonTokenHash: this.tokenGenerator.hashToken(buttonToken),
       expiresAt: result.expiresAt,
@@ -92,7 +93,7 @@ export class SignInCodeService {
 
   /** Checks the six digits against the address's live code and spends it. Returns the address to sign in. */
   async verify(email: string, code: string): Promise<string> {
-    const live = await this.codes.findOne({ where: { email, consumedAt: IsNull() } });
+    const live = await this.codes.findOne({ where: { email, purpose: 'sign_in', consumedAt: IsNull() } });
     if (!live) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
@@ -118,7 +119,9 @@ export class SignInCodeService {
 
   /** Signs in with the e-mail button's token, once. Returns the address to sign in. */
   async redeem(rawToken: string): Promise<string> {
-    const row = await this.codes.findOne({ where: { buttonTokenHash: this.tokenGenerator.hashToken(rawToken) } });
+    const row = await this.codes.findOne({
+      where: { buttonTokenHash: this.tokenGenerator.hashToken(rawToken), purpose: 'sign_in' },
+    });
     if (!row || row.consumedAt !== null) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This button is no longer valid');
     }
@@ -127,6 +130,60 @@ export class SignInCodeService {
     }
     await this.spend(row.id, { signedInByDigits: false });
     return row.email;
+  }
+
+  /**
+   * Stores a code that guards a password change for a signed-in account, replacing its live one, and
+   * e-mails it to the account's own address. The digits sign nobody in, and the same per-address
+   * limit as the sign-in codes applies.
+   */
+  async requestPasswordCode(userId: string, email: string, locale: TLocale): Promise<ICodeRequestResult> {
+    const now = Date.now();
+    const result = {
+      expiresAt: new Date(now + SIGN_IN_CODE_TTL_MS),
+      resendAfter: new Date(now + SIGN_IN_CODE_RESEND_AFTER_MS),
+    };
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    await this.replaceLiveCode({
+      email,
+      purpose: 'password',
+      codeHash: this.hashCode(email, code),
+      // The row needs a button token, but nothing e-mails it: no link can redeem a password code.
+      buttonTokenHash: this.tokenGenerator.hashToken(this.tokenGenerator.generateRawToken()),
+      expiresAt: result.expiresAt,
+    });
+    try {
+      await this.emailService.sendPasswordCodeEmail(email, code, locale);
+    } catch {
+      this.logger.error({ event: 'auth.password_code.email_failed', userId });
+      throw new AuthError(EAuthErrorCode.EmailDeliveryFailed, 'Could not send the code. Please try again later.');
+    }
+    this.logger.log({ event: 'auth.password_code.requested', userId });
+    return result;
+  }
+
+  /**
+   * Spends the account's live password-change code when the digits match. Wrong digits answer
+   * `InvalidCode`; a code that was used, replaced or has expired answers `TokenExpired`; the sixth
+   * try on one code answers `TooManyCodes`, with the wait until that code would have expired.
+   */
+  async spendPasswordCode(email: string, code: string): Promise<void> {
+    const latest = await this.codes.findOne({ where: { email, purpose: 'password' }, order: { createdAt: 'DESC' } });
+    if (!latest) {
+      throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
+    }
+    if (latest.consumedAt !== null || latest.expiresAt.getTime() <= Date.now()) {
+      throw new AuthError(EAuthErrorCode.TokenExpired, 'This code has expired or was already used');
+    }
+    const attempts = await this.takeTry(latest.id);
+    if (attempts === null) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((latest.expiresAt.getTime() - Date.now()) / 1000));
+      throw new AuthError(EAuthErrorCode.TooManyCodes, 'Too many tries on this code', retryAfterSeconds);
+    }
+    if (!this.matches(latest.codeHash, this.hashCode(email, code))) {
+      throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
+    }
+    await this.spend(latest.id, { signedInByDigits: true });
   }
 
   /**
@@ -180,7 +237,7 @@ export class SignInCodeService {
     return row.attempts === SIGNED_IN_ATTEMPTS ? 0 : row.attempts;
   }
 
-  private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
+  private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'purpose' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
     try {
       await this.codes.manager.transaction(async (manager) => {
         await this.assertUnderAddressLimit(manager, fresh.email);
@@ -188,7 +245,7 @@ export class SignInCodeService {
           .createQueryBuilder()
           .update(SignInCodeEntity)
           .set({ consumedAt: new Date() })
-          .where('"email" = :email AND "consumedAt" IS NULL', { email: fresh.email })
+          .where('"email" = :email AND "purpose" = :purpose AND "consumedAt" IS NULL', { email: fresh.email, purpose: fresh.purpose })
           .execute();
         await manager.insert(SignInCodeEntity, fresh);
       });

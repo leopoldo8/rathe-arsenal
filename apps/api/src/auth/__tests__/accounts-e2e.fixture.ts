@@ -16,6 +16,12 @@ export interface ISentCode {
   readonly locale: string | undefined;
 }
 
+export interface ISentPasswordCode {
+  readonly to: string;
+  readonly code: string;
+  readonly locale: string | undefined;
+}
+
 export interface ISentConfirmation {
   readonly to: string;
   readonly link: string;
@@ -26,6 +32,8 @@ export interface IAccountsApp {
   readonly dataSource: DataSource;
   /** Every sign-in code e-mail sent since the app booted, oldest first. */
   readonly sentCodes: ISentCode[];
+  /** Every password-change code e-mail sent since the app booted, oldest first. */
+  readonly sentPasswordCodes: ISentPasswordCode[];
   /** Every confirmation e-mail sent since the app booted, oldest first. */
   readonly sentConfirmations: ISentConfirmation[];
   /** While true, sending a confirmation e-mail throws, as when the mail provider is down. */
@@ -51,6 +59,7 @@ export async function bootAccountsApp(options: { readonly throttle?: boolean } =
 
   const sentCodes: ISentCode[] = [];
   const sentConfirmations: ISentConfirmation[] = [];
+  const sentPasswordCodes: ISentPasswordCode[] = [];
   // Read by the stub below, which the app calls after `bootAccountsApp` returned.
   const state = { failConfirmations: false };
   const emailStub = {
@@ -60,6 +69,9 @@ export async function bootAccountsApp(options: { readonly throttle?: boolean } =
     },
     sendSignInCodeEmail: async (to: string, code: string, link: string, locale?: string): Promise<void> => {
       sentCodes.push({ to, code, link, locale });
+    },
+    sendPasswordCodeEmail: async (to: string, code: string, locale?: string): Promise<void> => {
+      sentPasswordCodes.push({ to, code, locale });
     },
   };
 
@@ -83,6 +95,7 @@ export async function bootAccountsApp(options: { readonly throttle?: boolean } =
     dataSource,
     sentCodes,
     sentConfirmations,
+    sentPasswordCodes,
     get failConfirmations(): boolean {
       return state.failConfirmations;
     },

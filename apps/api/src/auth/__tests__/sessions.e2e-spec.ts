@@ -60,6 +60,14 @@ describe('Sessions (E2E, S32)', () => {
     return { code: sent.code, button: new URL(sent.link).searchParams.get('token') ?? '' };
   }
 
+  /** Asks the e-mailed code of a password change for the session of `cookie` and returns its digits. */
+  async function passwordCodeFor(email: string, cookie: string): Promise<string> {
+    await request(server()).post('/api/users/me/password-code').set('Cookie', cookie).expect(202);
+    const sent = [...ctx.sentPasswordCodes].reverse().find((entry) => entry.to === email);
+    if (!sent) throw new Error('no password code e-mail was recorded');
+    return sent.code;
+  }
+
   const meWith = (token: string): request.Test => request(server()).get('/api/auth/me').set('Cookie', sessionCookieHeader(token));
 
   it('each way in sets the session cookie and stores only its hash', async () => {
@@ -181,7 +189,8 @@ describe('Sessions (E2E, S32)', () => {
     const changing = await signUp('new-password');
     const here = await signIn(changing.email);
     const elsewhere = await signIn(changing.email);
-    await request(server()).put('/api/users/me/password').set('Cookie', sessionCookieHeader(here)).send({ password: NEW_PASSWORD }).expect(204);
+    const passwordCode = await passwordCodeFor(changing.email, sessionCookieHeader(here));
+    await request(server()).put('/api/users/me/password').set('Cookie', sessionCookieHeader(here)).send({ code: passwordCode, password: NEW_PASSWORD }).expect(204);
     await meWith(elsewhere).expect(401);
     await meWith(sessionTokenOf(changing.response)).expect(401);
     await meWith(here).expect(200);
@@ -230,7 +239,7 @@ describe('Sessions (E2E, S32)', () => {
 
       const refused = [
         await request(server()).post('/api/lists').set('Cookie', cookie).set('Origin', EVIL).send({ kind: 'want', name: 'Planted' }),
-        await request(server()).put('/api/users/me/password').set('Cookie', cookie).set('Origin', EVIL).send({ password: NEW_PASSWORD }),
+        await request(server()).put('/api/users/me/password').set('Cookie', cookie).set('Origin', EVIL).send({ code: '123456', password: NEW_PASSWORD }),
         await request(server()).patch('/api/users/me/display-name').set('Cookie', cookie).set('Origin', EVIL).send({ displayName: 'Mallory' }),
         await request(server()).delete(`/api/lists/${keeper.body.id}`).set('Cookie', cookie).set('Origin', EVIL),
       ];
@@ -252,7 +261,8 @@ describe('Sessions (E2E, S32)', () => {
         const created = await call(request(server()).post('/api/lists')).send({ kind: 'want', name: 'Mine' });
         const statuses = [created.status];
         statuses.push((await call(request(server()).patch('/api/users/me/display-name')).send({ displayName: 'Bia' })).status);
-        statuses.push((await call(request(server()).put('/api/users/me/password')).send({ password: NEW_PASSWORD })).status);
+        const code = cookieHeader === null ? '123456' : await passwordCodeFor(email, cookieHeader);
+        statuses.push((await call(request(server()).put('/api/users/me/password')).send({ code, password: NEW_PASSWORD })).status);
         statuses.push((await call(request(server()).delete(`/api/lists/${created.body.id ?? 0}`)).send()).status);
         return statuses;
       };
