@@ -97,6 +97,22 @@
   font-size: var(--ra-text-small);
 }
 
+.alternatives {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ra-accent-body);
+  font-family: var(--ra-font-ui);
+  font-size: var(--ra-text-small);
+  font-weight: var(--ra-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .flags {
   display: flex;
   flex-wrap: wrap;
@@ -172,6 +188,10 @@
   align-items: flex-start;
   gap: var(--ra-space-1);
   min-inline-size: 0;
+}
+
+.cardCellText .alternatives {
+  min-block-size: 24px;
 }
 
 .numCell,

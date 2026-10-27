@@ -66,10 +66,11 @@ test.describe('the owner', () => {
       await y(page, toggle),
       await y(page, switchLine),
       await y(page, send),
+      await y(page, dialog.getByRole('button', { name: 'Desativar link' })),
     ];
     expect(
       [...order].sort((a, b) => a - b),
-      'title, heading, hint, message, closing line, full list line, switch, its line, button',
+      'title, heading, hint, message, closing line, full list line, switch, its line, button, then the turn-off row last',
     ).toEqual(order);
     // The closing line is highlighted: a dashed box that the rest of the message does not have.
     const boxStyle = await closingField.evaluate((field) => getComputedStyle(field.closest('label')!).borderTopStyle);

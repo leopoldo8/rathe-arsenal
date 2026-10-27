@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { IMissingLine } from '../../api/missing-list';
 import { cardName } from '../../lib/card-name';
 import { formatBrl } from '../../utils/format-brl';
+import { AlternativesSheet } from '../deck-detail/AlternativesSheet';
 import { neededCopies } from './missingListModel';
 import { MissingStandIn } from './MissingStandIn';
 import { OwnedStepper } from './OwnedStepper';
@@ -113,6 +114,22 @@ function StoreLink({ line, name, className }: { readonly line: IMissingLine; rea
   return null;
 }
 
+/** "Alternativas" under the name of a row: opens the sheet of stand-ins for that card and the copies it still needs. */
+function AlternativesLink({ deckId, line, name }: { readonly deckId: number; readonly line: IMissingLine; readonly name: string }): React.ReactElement {
+  const { t } = useTranslation();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className={styles.alternatives} aria-label={t('alternatives.openAria', { name })} onClick={() => setSheetOpen(true)}>
+        {t('alternatives.open')}
+      </button>
+      {sheetOpen && (
+        <AlternativesSheet deckId={deckId} target={{ cardIdentifier: line.cardIdentifier, name, slot: line.slot }} onClose={() => setSheetOpen(false)} />
+      )}
+    </>
+  );
+}
+
 function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMissingLine }): React.ReactElement {
   const { t } = useTranslation();
   const [stepperOpen, setStepperOpen] = useState(false);
@@ -151,6 +168,7 @@ function CardRow({ deckId, line }: { readonly deckId: number; readonly line: IMi
               </>
             )}
           </p>
+          {open && <AlternativesLink deckId={deckId} line={line} name={name} />}
         </div>
       </div>
       {flags.length > 0 && (
@@ -199,6 +217,7 @@ function TableRow({ deckId, line }: { readonly deckId: number; readonly line: IM
               </span>
             ))}
             {!priced && price !== null && <span className={styles.meta}>{price}</span>}
+            {needed > 0 && <AlternativesLink deckId={deckId} line={line} name={name} />}
           </div>
         </div>
       </td>

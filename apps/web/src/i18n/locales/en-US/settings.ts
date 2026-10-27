@@ -16,6 +16,9 @@ export const settings = {
   savePassword: 'Save password',
   passwordCancel: 'Cancel',
   passwordCodeNote: 'You can also sign in with a code by email, no password needed.',
+  passwordCodeSentBefore: 'We sent a code to ',
+  passwordCodeSentAfter_one: '. It is valid for {{count}} minute.',
+  passwordCodeSentAfter_other: '. It is valid for {{count}} minutes.',
   // Appearance section
   theme: 'Appearance',
   // Account section

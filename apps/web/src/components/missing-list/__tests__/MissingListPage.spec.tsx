@@ -23,6 +23,22 @@ function serve(data: IMissingListResponse): void {
   api.fetch.mockImplementation(async (path: string) => {
     if (path === '/decks/7/missing') return data;
     if (path === '/decks/7') return { id: 7, name: '[CC] Brute do Caio', hero: 'Rhinar' };
+    if (path.startsWith('/decks/7/alternatives?')) {
+      const cardIdentifier = new URLSearchParams(path.split('?')[1]).get('cardIdentifier');
+      const needed = data.lines.find((candidate) => candidate.cardIdentifier === cardIdentifier)?.deckNeeded ?? 0;
+      return {
+        needed,
+        groups: [
+          {
+            group: 'other_pitch',
+            cards: [
+              { cardIdentifier: 'candidate-red', name: 'Candidate', pitch: 1, imageUrl: null, freeCopies: needed, priceCents: null, productUrl: null, rationale: null },
+              { cardIdentifier: 'candidate-blue', name: 'Candidate', pitch: 3, imageUrl: null, freeCopies: 0, priceCents: null, productUrl: null, rationale: null },
+            ],
+          },
+        ],
+      };
+    }
     throw new Error(`unhandled ${path}`);
   });
 }
@@ -179,5 +195,36 @@ describe('MissingListPage', () => {
     const page = await renderPage(response([], { buyCopies: 0, buyCents: 0, lacksCopies: 0, notOnSiteCopies: 0, ownedCopies: 66, standInCopies: 0 }));
 
     expect(page).toHaveTextContent('Nada falta neste deck.');
+  });
+
+  it("the Alternativas link opens the sheet for that row's card and count", async () => {
+    phone.value = true;
+    const rows = [
+      line({ cardIdentifier: 'bloodrush-bellow-yellow', name: 'Bloodrush Bellow', pitch: 2, deckNeeded: 3 }),
+      line({ cardIdentifier: 'savage-swing-red', name: 'Savage Swing', pitch: 1, deckNeeded: 1 }),
+      line({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, deckNeeded: 3 }),
+    ];
+    await renderPage(response(rows));
+    const expected = [
+      { name: 'Bloodrush Bellow (Amarelo)', needed: 'Ocupa o lugar de 3 cópias que faltam.' },
+      { name: 'Savage Swing (Vermelho)', needed: 'Ocupa o lugar de 1 cópia que falta.' },
+      { name: 'Pack Hunt (Vermelho)', needed: 'Ocupa o lugar de 3 cópias que faltam.' },
+    ];
+
+    for (const { name, needed } of expected) {
+      fireEvent.click(screen.getByRole('button', { name: `Ver alternativas para ${name}` }));
+
+      const sheet = await screen.findByTestId('alternatives-sheet');
+      expect(within(sheet).getByRole('heading', { name: `Alternativas para ${name}` })).toBeInTheDocument();
+      expect(await within(sheet).findByText(needed)).toBeInTheDocument();
+      expect(within(sheet).getByLabelText('Buscar pelo nome')).toHaveAttribute('placeholder', 'Nome da carta');
+      expect(within(sheet).getAllByTestId('alternative-ownership').map((tag) => tag.textContent)).toEqual(['você tem', 'nenhuma livre']);
+
+      const picks = api.fetch.mock.calls.filter(([path, init]) => String(path).includes('/replacements') && init !== undefined);
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Fechar' }));
+      await waitFor(() => expect(screen.queryByTestId('alternatives-sheet')).toBeNull());
+      expect(api.fetch.mock.calls.filter(([path, init]) => String(path).includes('/replacements') && init !== undefined)).toHaveLength(picks.length);
+      expect(picks).toHaveLength(0);
+    }
   });
 });

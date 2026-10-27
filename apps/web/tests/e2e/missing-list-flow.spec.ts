@@ -30,7 +30,9 @@ test.describe('Missing list — E2E', () => {
     const table = page.getByRole('table', { name: 'Cartas que faltam' });
     await expect(table.getByRole('columnheader')).toHaveText(['Carta', 'Faltam', 'Já tenho', 'No lugar', 'Preço cada', 'Total', 'Link']);
     const alpha = table.getByTestId('missing-row').filter({ hasText: 'Alpha Rampage' });
-    await expect(alpha.getByRole('button')).toHaveCount(4);
+    // The four of the stepper and the stand-in, and the "Alternativas" entry the owner's round 6 pick gave every row.
+    await expect(alpha.getByRole('button')).toHaveCount(5);
+    await expect(alpha.getByRole('button', { name: 'Ver alternativas para Alpha Rampage (Vermelho)' })).toHaveText('Alternativas');
     await expect(alpha.getByRole('link', { name: /^Comprar/ })).toBeVisible();
     await expect(page.getByTestId('missing-footer')).toHaveText('19 cartas na loja · 43 cópias a comprar · R$ 452,28');
 

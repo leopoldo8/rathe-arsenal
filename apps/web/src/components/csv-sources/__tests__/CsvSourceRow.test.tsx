@@ -18,9 +18,11 @@ const mockPatchMutation = {
   mutate: mockMutate,
   isPending: false,
 };
+const mockUploadAsync = vi.fn();
 
 vi.mock('../../../api/csv-sources', () => ({
   usePatchCsvSourceMutation: () => mockPatchMutation,
+  useUploadCsvMutation: () => ({ mutateAsync: mockUploadAsync, isPending: false }),
   useDeleteCsvSourceMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   usePreviewDeleteCsvSource: () => vi.fn().mockResolvedValue({ cardsRemoved: 0, affectedDecks: [] }),
 }));
@@ -255,6 +257,111 @@ describe('CsvSourceRow', () => {
 
       expect(screen.getByRole('listitem')).toHaveTextContent('My Collection · 1 cópia');
       expect(screen.getByRole('listitem')).not.toHaveTextContent('para resolver');
+    });
+  });
+
+  describe('a new version of an import (r6-update-import-a-phone)', () => {
+    const OVERLAP = {
+      kind: 'partial-overlap' as const,
+      existingSourceId: 'src-001',
+      existingLabel: 'My Collection',
+      similarityScore: 0.5,
+      delta: {
+        added: Array.from({ length: 5 }, (_, index) => ({ cardIdentifier: `added-${index}`, quantity: 1 })),
+        removed: [],
+        increased: [{ cardIdentifier: 'up', previousQuantity: 1, newQuantity: 2 }],
+        decreased: [
+          { cardIdentifier: 'down-1', previousQuantity: 3, newQuantity: 2 },
+          { cardIdentifier: 'down-2', previousQuantity: 2, newQuantity: 1 },
+        ],
+      },
+      cardCount: 10,
+      skippedRows: [],
+    };
+    const csvFile = (): File => new File(['Name,Quantity\nSnatch (Red),2\n'], 'nova-versao.csv', { type: 'text/csv' });
+    const fileInput = (): HTMLInputElement => document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    async function openMenu(): Promise<void> {
+      await userEvent.click(screen.getByRole('button', { name: /opções para.*my collection/i }));
+    }
+
+    beforeEach(() => {
+      mockUploadAsync.mockReset().mockResolvedValue(OVERLAP);
+      mockShow.mockReset();
+    });
+
+    it('the menu lists Renomear, Enviar nova versão, a separator and Excluir in that order', async () => {
+      renderRow(buildSource());
+
+      await openMenu();
+
+      const items = screen.getAllByRole('menuitem');
+      expect(items.map((item) => item.textContent)).toEqual(['Renomear', 'Enviar nova versão', 'Excluir']);
+      const separator = screen.getByRole('separator');
+      const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(items[1]!, separator)).toBe(true);
+      expect(follows(separator, items[2]!)).toBe(true);
+    });
+
+    it('Enviar nova versão sends the file for this import and each window action re-sends it', async () => {
+      const file = csvFile();
+      renderRow(buildSource());
+      expect(fileInput().getAttribute('accept')).toContain('.csv');
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), file);
+
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(1));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, targetSourceId: 'src-001' });
+      const windowTitle = await screen.findByText('Atualizar fonte existente?');
+      const counts = windowTitle.closest('[role="dialog"]') as HTMLElement;
+      expect(counts).toHaveTextContent('Cartas novas5');
+      expect(counts).toHaveTextContent('Aumentaram1');
+      expect(counts).toHaveTextContent('Diminuíram2');
+      expect(counts).toHaveTextContent('Removidas0');
+
+      mockUploadAsync.mockResolvedValueOnce({ kind: 'updated', sourceId: 'src-001', cardCount: 9, delta: OVERLAP.delta, skippedRows: [] });
+      await userEvent.click(screen.getByRole('button', { name: 'Atualizar a existente' }));
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(2));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, action: 'update', targetSourceId: 'src-001' });
+      await waitFor(() => expect(screen.queryByText('Atualizar fonte existente?')).toBeNull());
+      expect(mockShow).toHaveBeenCalledTimes(1);
+      expect(mockShow).toHaveBeenCalledWith({ kind: 'success', message: 'CSV importado com sucesso.' });
+    });
+
+    it('Substituir pela nova re-sends with replace, and Cancelar sends nothing', async () => {
+      const file = csvFile();
+      renderRow(buildSource());
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), file);
+      await screen.findByText('Atualizar fonte existente?');
+      mockUploadAsync.mockResolvedValueOnce({ kind: 'replaced', sourceId: 'src-002', cardCount: 9, skippedRows: [] });
+      await userEvent.click(screen.getByRole('button', { name: 'Substituir pela nova' }));
+      await waitFor(() => expect(mockUploadAsync).toHaveBeenCalledTimes(2));
+      expect(mockUploadAsync).toHaveBeenLastCalledWith({ file, action: 'replace', targetSourceId: 'src-001' });
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), csvFile());
+      await screen.findByText('Atualizar fonte existente?');
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+      await waitFor(() => expect(screen.queryByText('Atualizar fonte existente?')).toBeNull());
+      expect(mockUploadAsync).toHaveBeenCalledTimes(3);
+    });
+
+    it('a file over 2 MB shows the size error and sends nothing', async () => {
+      renderRow(buildSource());
+      const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'grande.csv', { type: 'text/csv' });
+
+      await openMenu();
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Enviar nova versão' }));
+      await userEvent.upload(fileInput(), big);
+
+      expect(mockShow).toHaveBeenCalledWith({ kind: 'error', message: 'Arquivo grande demais: o máximo é 2 MB.' });
+      expect(mockUploadAsync).not.toHaveBeenCalled();
     });
   });
 

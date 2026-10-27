@@ -16,6 +16,9 @@ export const settings = {
   savePassword: 'Salvar senha',
   passwordCancel: 'Cancelar',
   passwordCodeNote: 'Você também pode entrar com um código por e-mail, sem senha.',
+  passwordCodeSentBefore: 'Mandamos para ',
+  passwordCodeSentAfter_one: '. Ele vale {{count}} minuto.',
+  passwordCodeSentAfter_other: '. Ele vale {{count}} minutos.',
   // Appearance section
   theme: 'Aparência',
   // Account section

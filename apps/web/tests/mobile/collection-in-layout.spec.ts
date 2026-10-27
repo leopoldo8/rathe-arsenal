@@ -192,3 +192,57 @@ test('long import names wrap on a phone', async ({ page, context }) => {
 
   await api.dispose();
 });
+
+test('the imports page follows r6-update-import-a-phone', async ({ page, context }) => {
+  const api = await playwrightRequest.newContext({ baseURL: BASE_URL });
+  const email = `update-${Date.now().toString(36)}@test.local`;
+  const signUp = await api.post('/api/auth/sign-up', { data: { email, password: PASSWORD } });
+  expect(signUp.status()).toBe(201);
+  const session = (signUp.headers()['set-cookie'] ?? '').match(/ra_session=([^;]+)/)?.[1];
+  expect(session, 'the sign-up set the session cookie').toBeTruthy();
+  const first = Buffer.from('Name,Quantity\nSnatch (Red),2\nPummel (Red),1\nPack Hunt (Blue),3\n');
+  const created = await api.post('/api/collection/csv', { multipart: { file: { name: 'colecao-lucas.csv', mimeType: 'text/csv', buffer: first } } });
+  expect(created.status()).toBe(201);
+
+  await context.addCookies([
+    { name: 'ra_session', value: session!, domain: new URL(BASE_URL).hostname, path: '/api', httpOnly: true, secure: false, sameSite: 'Lax' },
+  ]);
+  await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
+  await page.goto('/library-csv-sources');
+  const row = page.getByRole('listitem').filter({ hasText: 'colecao-lucas.csv' });
+  await expect(row).toBeVisible();
+
+  // The "•••" menu: Renomear, Enviar nova versão, a separator, Excluir in the danger color; each item 44 px or more.
+  await row.getByRole('button', { name: /^Opções para/ }).click();
+  const items = page.getByRole('menuitem');
+  await expect(items).toHaveText(['Renomear', 'Enviar nova versão', 'Excluir']);
+  const boxes = await Promise.all([0, 1, 2].map((index) => items.nth(index).boundingBox()));
+  for (const box of boxes) expect(Math.round(box!.height), 'each menu item is at least 44 px high').toBeGreaterThanOrEqual(44);
+  const separator = (await page.getByRole('separator').boundingBox())!;
+  expect(separator.y).toBeGreaterThanOrEqual(boxes[1]!.y + boxes[1]!.height - 1);
+  expect(separator.y + separator.height).toBeLessThanOrEqual(boxes[2]!.y + 1);
+  const danger = await items.nth(2).evaluate((node) => getComputedStyle(node).color);
+  const accent = await items.nth(1).evaluate((node) => getComputedStyle(node).color);
+  expect(danger, 'Excluir is not the color of the other items').not.toBe(accent);
+
+  // The chooser belongs to this import: picking a file opens the window with the counts the server returned.
+  const update = Buffer.from('Name,Quantity\nSnatch (Red),3\nCommand and Conquer (Red),2\nSink Below (Yellow),1\n');
+  await page.locator('input[type="file"]').first().setInputFiles({ name: 'nova-versao.csv', mimeType: 'text/csv', buffer: update });
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('Atualizar fonte existente?')).toBeVisible();
+  const rows = await dialog.locator('tr').evaluateAll((nodes) => nodes.map((node) => [...node.querySelectorAll('td')].map((cell) => cell.textContent)));
+  expect(rows).toEqual([['Cartas novas', '2'], ['Aumentaram', '1'], ['Diminuíram', '0'], ['Removidas', '2']]);
+  const buttons = dialog.getByRole('button');
+  await expect(buttons).toHaveText(['Atualizar a existente', 'Substituir pela nova', 'Cancelar']);
+  const buttonBoxes = await Promise.all([0, 1, 2].map((index) => buttons.nth(index).boundingBox()));
+  for (const box of buttonBoxes) expect(Math.round(box!.height), 'each window button is at least 44 px high').toBeGreaterThanOrEqual(44);
+  expect(buttonBoxes[0]!.y).toBeLessThan(buttonBoxes[1]!.y);
+  expect(buttonBoxes[1]!.y).toBeLessThan(buttonBoxes[2]!.y);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow, 'no horizontal scroll').toBeLessThanOrEqual(0);
+
+  await buttons.nth(0).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('· 6 cópias')).toBeVisible();
+  await api.dispose();
+});

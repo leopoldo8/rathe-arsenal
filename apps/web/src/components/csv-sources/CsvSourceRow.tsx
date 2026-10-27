@@ -7,6 +7,8 @@ import type { ICsvSource } from '../../api/csv-sources';
 import { usePatchCsvSourceMutation } from '../../api/csv-sources';
 import { useToast } from '../ui/Toast/useToast';
 import { DeleteSourceModal } from './DeleteSourceModal';
+import { UploadResolveModal } from './UploadResolveModal';
+import { useNewVersionUpload } from './useNewVersionUpload';
 import { deriveSourceKind } from './source-kind';
 import styles from './CsvSourceRow.module.css';
 
@@ -47,6 +49,7 @@ export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): 
   const labelInputRef = useRef<HTMLInputElement | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const newVersion = useNewVersionUpload(source.id);
 
   const kind = deriveSourceKind(source);
   const isManual = kind === 'manual';
@@ -193,6 +196,11 @@ export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): 
                   >
                     {t('csvSources.renameMenuItem')}
                   </DropdownMenu.Item>
+                  {source.kind === 'csv' && (
+                    <DropdownMenu.Item className={styles.menuItem} onSelect={newVersion.choose}>
+                      {t('csvSources.newVersionMenuItem')}
+                    </DropdownMenu.Item>
+                  )}
                   <DropdownMenu.Separator className={styles.menuSeparator} />
                   <DropdownMenu.Item
                     className={`${styles.menuItem} ${styles.menuItemDestructive}`}
@@ -210,6 +218,20 @@ export function CsvSourceRow({ source, pendingCount = 0 }: ICsvSourceRowProps): 
           ›
         </Link>
       </div>
+
+      <input
+        ref={newVersion.inputRef}
+        type="file"
+        accept=".csv,text/csv,text/plain,application/vnd.ms-excel"
+        className={styles.fileInput}
+        tabIndex={-1}
+        aria-label={t('csvSources.fileInputAriaLabel')}
+        onChange={newVersion.onFileChange}
+      />
+
+      {newVersion.response !== null && (
+        <UploadResolveModal open targeted response={newVersion.response} onClose={newVersion.close} onAction={newVersion.onAction} />
+      )}
 
       {deleteModalOpen && (
         <DeleteSourceModal

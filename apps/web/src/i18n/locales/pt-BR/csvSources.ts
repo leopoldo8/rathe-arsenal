@@ -50,6 +50,7 @@ export const csvSources = {
   editSourceNameAriaLabel: 'Editar nome da fonte',
   optionsAriaLabel: 'Opções para "{{label}}"',
   renameMenuItem: 'Renomear',
+  newVersionMenuItem: 'Enviar nova versão',
   deleteMenuItem: 'Excluir',
   cardSingular: 'carta',
   cardPlural: 'cartas',

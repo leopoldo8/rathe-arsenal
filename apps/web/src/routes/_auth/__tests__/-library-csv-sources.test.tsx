@@ -23,6 +23,7 @@ vi.mock('../../../api/csv-sources', () => ({
   usePatchCsvSourceMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteCsvSourceMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   usePreviewDeleteCsvSource: () => vi.fn(),
+  useUploadCsvMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('../../../api/collection-imports', () => ({

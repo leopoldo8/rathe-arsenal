@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 import { pinPortuguese } from '../e2e/helpers';
 import { loadFixture } from '../support/fixture';
 import { missingListStub, stubMissingList } from '../support/missing-list-stubs';
+import { stubOwnerSharing, stubSignedIn } from '../support/sharing-stubs';
 
 test('the phone list follows r3-list-phone', async ({ page }) => {
   await pinPortuguese(page);
@@ -101,4 +102,116 @@ test('the phone list follows r3-list-phone', async ({ page }) => {
   await expect(toast).toBeVisible();
   const toastBox = await toast.boundingBox();
   expect(toastBox!.y, 'the toast sits at the bottom').toBeGreaterThan(viewport.height / 2);
+});
+
+test('the phone list follows r6-alternatives-a-phone', async ({ page }) => {
+  await pinPortuguese(page);
+  await stubMissingList(page);
+  // The sheet reads the deck's own alternatives; the card of the stub is not in the fixture deck, so it is served too.
+  await page.route('**/api/decks/*/alternatives*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ needed: 3, groups: [] }) }),
+  );
+  await page.goto(`/decks/${loadFixture().readyDeckId}/missing`, { waitUntil: 'networkidle' });
+  await expect(page.getByTestId('missing-list-page')).toBeVisible();
+
+  // Under the name line and above the store notice and the two buttons, in the accent color, underlined.
+  const bloodrush = page.getByTestId('missing-row').filter({ hasText: 'Bloodrush Bellow (Amarelo)' }).first();
+  const link = bloodrush.getByRole('button', { name: 'Ver alternativas para Bloodrush Bellow (Amarelo)' });
+  await expect(link).toHaveText('Alternativas');
+  const meta = (await bloodrush.locator('p').filter({ hasText: 'faltam' }).boundingBox())!;
+  const linkBox = (await link.boundingBox())!;
+  const have = (await bloodrush.getByRole('button', { name: /^Já tenho Bloodrush Bellow/ }).boundingBox())!;
+  const buy = (await bloodrush.getByRole('link', { name: /^Comprar Bloodrush Bellow/ }).boundingBox())!;
+  expect(linkBox.y, 'the link is under the name line').toBeGreaterThan(meta.y);
+  expect(linkBox.y + linkBox.height, 'the link is above the buttons').toBeLessThanOrEqual(have.y);
+  expect(have.x, '"Já tenho…" and "Comprar" stay last, in that order').toBeLessThan(buy.x);
+  expect(linkBox.height, 'the tap target is at least 44 px').toBeGreaterThanOrEqual(44);
+  const style = await link.evaluate((node) => {
+    const computed = getComputedStyle(node);
+    return { decoration: computed.textDecorationLine, color: computed.color };
+  });
+  expect(style.decoration).toBe('underline');
+  const accent = await bloodrush.getByRole('link', { name: /^Comprar Bloodrush Bellow/ }).evaluate((node) => getComputedStyle(node).color);
+  expect(style.color, 'the link uses the accent color of "Comprar"').toBe(accent);
+
+  // Every row of the priced section has one.
+  const rows = page.getByTestId('missing-row');
+  const count = await rows.count();
+  for (let index = 0; index < count; index += 1) {
+    await expect(rows.nth(index).getByRole('button', { name: /^Ver alternativas para / })).toHaveCount(1);
+  }
+
+  await link.click();
+  const sheet = page.getByTestId('alternatives-sheet');
+  await expect(sheet.getByRole('heading', { name: 'Alternativas para Bloodrush Bellow (Amarelo)' })).toBeVisible();
+  await expect(sheet.getByText('Ocupa o lugar de 3 cópias que faltam.')).toBeVisible();
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow, 'no horizontal scroll').toBeLessThanOrEqual(0);
+});
+
+test('the missing message step follows r6-turnoff-a-phone', async ({ page }) => {
+  await pinPortuguese(page);
+  await stubSignedIn(page);
+  await stubMissingList(page);
+  await stubOwnerSharing(page);
+  let deletes = 0;
+  await page.route('**/api/decks/*/share/missing', (route) => {
+    deletes += route.request().method() === 'DELETE' ? 1 : 0;
+    return route.fulfill({ status: 204 });
+  });
+  await page.goto(`/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Compartilhar', exact: true }).first().click();
+  const dialog = page.getByTestId('share-dialog');
+  await dialog.getByTestId('share-intent-missing').click();
+  await expect(dialog.getByTestId('group-ask-message')).toBeVisible();
+
+  // Under the green button: a divider, then one centered "Desativar link" in the danger color, and nothing after it.
+  const send = dialog.getByRole('button', { name: 'Abrir no WhatsApp' });
+  const turnOff = dialog.getByRole('button', { name: 'Desativar link' });
+  await expect(dialog.getByText('Desativar link')).toHaveCount(1);
+  const [sendBox, turnOffBox] = await Promise.all([send.boundingBox(), turnOff.boundingBox()]);
+  expect(turnOffBox!.y, 'the row is under "Abrir no WhatsApp"').toBeGreaterThanOrEqual(sendBox!.y + sendBox!.height);
+  const centerOfRow = turnOffBox!.x + turnOffBox!.width / 2;
+  expect(Math.abs(centerOfRow - (sendBox!.x + sendBox!.width / 2)), 'the row is centered').toBeLessThan(4);
+  expect(turnOffBox!.height, 'the row is at least 44 px high').toBeGreaterThanOrEqual(44);
+  expect(await turnOff.evaluate((node) => getComputedStyle(node).color), 'the row is in the danger color').toBe(
+    await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--ra-ready-low)';
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    }),
+  );
+  const divider = await turnOff.evaluate((node) => getComputedStyle(node.parentElement!).borderTopStyle);
+  expect(divider, 'a divider sits above the row').toBe('solid');
+  const buttonsBelow = await dialog.getByRole('button').evaluateAll(
+    (nodes, top) => nodes.filter((node) => node.getBoundingClientRect().top > top + 1).length,
+    turnOffBox!.y,
+  );
+  expect(buttonsBelow, 'nothing after the row').toBe(0);
+
+  // Tapping it swaps the row in place for the question, "Desativar" and "Manter"; the rest stays.
+  const messageBefore = await dialog.getByTestId('group-ask-message').boundingBox();
+  await turnOff.click();
+  await expect(dialog.getByText('Desativar? Quem tem o link não vai mais conseguir abrir.')).toBeVisible();
+  const confirm = dialog.getByRole('button', { name: 'Desativar', exact: true });
+  const keep = dialog.getByRole('button', { name: 'Manter' });
+  await expect(send).toBeVisible();
+  await expect(dialog.getByRole('switch', { name: /Incluir também as/ })).toBeVisible();
+  const [confirmBox, keepBox] = await Promise.all([confirm.boundingBox(), keep.boundingBox()]);
+  expect(confirmBox!.height).toBeGreaterThanOrEqual(44);
+  expect(keepBox!.height).toBeGreaterThanOrEqual(44);
+  expect(confirmBox!.x, '"Desativar" is left of "Manter"').toBeLessThan(keepBox!.x);
+  expect(keepBox!.x + keepBox!.width, '"Manter" is at the right edge').toBeGreaterThan(sendBox!.x + sendBox!.width - 24);
+  const messageAfter = await dialog.getByTestId('group-ask-message').boundingBox();
+  expect({ width: messageAfter!.width, height: messageAfter!.height }, 'the message keeps its size').toEqual({ width: messageBefore!.width, height: messageBefore!.height });
+
+  await keep.click();
+  await expect(turnOff).toBeVisible();
+  expect(deletes).toBe(0);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow, 'no horizontal scroll').toBeLessThanOrEqual(0);
 });

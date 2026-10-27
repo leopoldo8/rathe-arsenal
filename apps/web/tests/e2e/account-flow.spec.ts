@@ -268,6 +268,8 @@ test('share waits for the confirmation and works after it', async ({ page, brows
 // ---------------------------------------------------------------------------
 
 test('a code-only account creates a password and signs in with it', async ({ page, context }) => {
+  // Sign-in is limited per address of the caller and the tests above spend it, so the last step may have to wait.
+  test.setTimeout(150_000);
   const email = `lucas.${Date.now().toString(36)}@hotmail.com`;
   const password = 'a-fresh-password-123';
   await page.goto('/entrar');
@@ -278,7 +280,12 @@ test('a code-only account creates a password and signs in with it', async ({ pag
 
   await page.goto('/settings');
   await expect(page.getByText('Senha: nenhuma')).toBeVisible();
+  const asked = page.waitForResponse('**/api/users/me/password-code');
   await page.getByRole('button', { name: 'Criar uma senha' }).click();
+  const { _devCode: code } = (await (await asked).json()) as { _devCode: string };
+  await expect(page.getByText(/Mandamos para/)).toBeVisible();
+  await page.getByLabel('Dígito 1 de 6').click();
+  await page.keyboard.type(code);
   await page.getByLabel('Nova senha').fill(password);
   await page.getByRole('button', { name: 'Salvar senha' }).click();
   await expect(page.getByText('Senha: você tem uma senha')).toBeVisible();
@@ -290,6 +297,59 @@ test('a code-only account creates a password and signs in with it', async ({ pag
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.getByLabel('Senha').fill(password);
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  const throttled = await page.getByText(/Muitas tentativas/).waitFor({ timeout: 3000 }).then(() => true, () => false);
+  if (throttled) {
+    await page.waitForTimeout(61_000);
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  }
 
   await expect(page).toHaveURL(/\/home/);
+});
+
+// ---------------------------------------------------------------------------
+// S40: changing a password asks the e-mailed code first (D23).
+// ---------------------------------------------------------------------------
+
+test('a password change asks the e-mailed code first', async ({ page }) => {
+  test.setTimeout(150_000);
+  const email = `lucas.${Date.now().toString(36)}@hotmail.com`;
+  const oldPassword = 'the-old-password-123';
+  const newPassword = 'the-new-password-456';
+  expect((await page.request.post('/api/auth/sign-up', { data: { email, password: oldPassword } })).status()).toBe(201);
+  await page.goto('/settings');
+  await expect(page.getByText('Senha: você tem uma senha')).toBeVisible();
+
+  const asked = page.waitForResponse('**/api/users/me/password-code');
+  await page.getByRole('button', { name: 'Mudar a senha' }).click();
+  const { _devCode: code } = (await (await asked).json()) as { _devCode: string };
+  await expect(page.getByText(/Mandamos para/)).toBeVisible();
+  await expect(page.getByLabel('Dígito 1 de 6')).toBeFocused();
+  await expect(page.getByLabel('Senha atual')).toHaveCount(0);
+
+  // Wrong digits come back from the server as a refusal on the code step, and the right ones still work.
+  const wrong = code === '000000' ? '000001' : '000000';
+  await page.keyboard.type(wrong);
+  await page.getByLabel('Nova senha').fill(newPassword);
+  await page.getByRole('button', { name: 'Salvar senha' }).click();
+  await expect(page.getByText('Este código não confere. Confira no e-mail.')).toBeVisible();
+
+  await page.getByLabel('Dígito 1 de 6').click();
+  await page.keyboard.type(code);
+  await page.getByLabel('Nova senha').fill(newPassword);
+  const saved = page.waitForResponse((response) => response.url().endsWith('/api/users/me/password') && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: 'Salvar senha' }).click();
+  expect((await saved).status()).toBe(204);
+  await expect(page.getByLabel('Nova senha')).toHaveCount(0);
+
+  // Sign-in is limited per address of the caller, and the earlier tests of this file spend it: wait it out.
+  const signIn = async (password: string): Promise<number> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const answer = await page.request.post('/api/auth/sign-in', { data: { email, password } });
+      if (answer.status() !== 429) return answer.status();
+      await page.waitForTimeout((Number(answer.headers()['retry-after'] ?? '60') + 1) * 1000);
+    }
+    return 429;
+  };
+  expect(await signIn(newPassword)).toBe(200);
+  expect(await signIn(oldPassword)).toBe(401);
 });

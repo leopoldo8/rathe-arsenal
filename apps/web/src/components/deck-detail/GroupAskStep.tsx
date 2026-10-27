@@ -1,20 +1,25 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOwnSharedDeckQuery, type ILinkState } from '../../api/shared-decks';
+import { useDisableDeckShareMutation, useOwnSharedDeckQuery, type ILinkState } from '../../api/shared-decks';
 import { buildGroupAskMessage } from '../share/groupAskMessage';
 import { GroupAskEditor } from '../share/GroupAskEditor';
+import { ShareTurnOffRow } from '../share/ShareTurnOffRow';
 import { versionShareUrl } from '../share/shareUrlVersion';
 import styles from '../share/ShareSteps.module.css';
 
 interface IGroupAskStepProps {
+  readonly deckId: number;
   readonly deckName: string;
   readonly link: ILinkState;
+  /** Called once the link is switched off, so the dialog closes. */
+  readonly onTurnedOff: () => void;
 }
 
 /** Third step of "Pedir as cartas que faltam": reads the owner's own view of the link, then offers the message. */
-export function GroupAskStep({ deckName, link }: IGroupAskStepProps): React.ReactElement {
+export function GroupAskStep({ deckId, deckName, link, onTurnedOff }: IGroupAskStepProps): React.ReactElement {
   const { t } = useTranslation();
   const own = useOwnSharedDeckQuery(link.token, true);
+  const disable = useDisableDeckShareMutation(deckId);
 
   if (own.isError) {
     return (
@@ -46,5 +51,14 @@ export function GroupAskStep({ deckName, link }: IGroupAskStepProps): React.Reac
     t,
   );
 
-  return <GroupAskEditor deckName={deckName} hero={own.data.hero} url={versionShareUrl(link.url, withoutAddress)} cards={cards} />;
+  return (
+    <>
+      <GroupAskEditor deckName={deckName} hero={own.data.hero} url={versionShareUrl(link.url, withoutAddress)} cards={cards} />
+      <ShareTurnOffRow
+        turningOff={disable.isPending}
+        turnOffFailed={disable.isError}
+        onTurnOff={() => disable.mutate(link.intent, { onSuccess: onTurnedOff })}
+      />
+    </>
+  );
 }

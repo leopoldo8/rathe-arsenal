@@ -263,7 +263,9 @@
 }
 
 .menuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
   padding: var(--ra-space-2) var(--ra-space-4);
   font-size: var(--ra-text-small);
   color: var(--ra-fg-secondary);
@@ -309,4 +311,15 @@
   .menuContent {
     animation: none;
   }
+}
+
+/* The chooser opens from the menu item; the input itself is never seen. */
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  opacity: 0;
+  pointer-events: none;
 }

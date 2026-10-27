@@ -261,4 +261,43 @@ describe('MissingListRow', () => {
     expect(within(cells[2]!).getAllByRole('button')).toHaveLength(4);
     expect(within(cells[6]!).getByRole('link')).toHaveTextContent('Comprar');
   });
+
+  it('a row has the Alternativas link under the name line and above the notice and buttons', () => {
+    const row = renderRow({
+      cardIdentifier: 'bloodrush-bellow-yellow',
+      name: 'Bloodrush Bellow',
+      pitch: 2,
+      deckNeeded: 3,
+      unitPriceCents: 6999,
+      lineCents: 20997,
+      availableCopies: 2,
+    });
+
+    const link = within(row).getByRole('button', { name: 'Ver alternativas para Bloodrush Bellow (Amarelo)' });
+    expect(link).toHaveTextContent('Alternativas');
+    expect(within(row).getAllByRole('button', { name: /^Ver alternativas/ })).toHaveLength(1);
+    const meta = within(row).getByText('faltam 3', { exact: false }).closest('p') as HTMLElement;
+    const notice = within(row).getByText('A loja tem 2. A 3ª está no pedido do grupo.');
+    const have = within(row).getByRole('button', { name: 'Já tenho Bloodrush Bellow (Amarelo)' });
+    const buy = within(row).getByRole('link', { name: /Comprar Bloodrush Bellow/ });
+    const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(meta, link)).toBe(true);
+    expect(follows(link, notice)).toBe(true);
+    expect(follows(link, have)).toBe(true);
+    expect(follows(have, buy)).toBe(true);
+  });
+
+  it('a table row of the desktop list has the Alternativas link under the card name', () => {
+    const row = renderRow({ cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, deckNeeded: 3 }, 'table');
+
+    const link = within(row).getByRole('button', { name: 'Ver alternativas para Pack Hunt (Vermelho)' });
+    expect(link).toHaveTextContent('Alternativas');
+    expect(link.closest('td')).toBe(within(row).getByText('Pack Hunt (Vermelho)').closest('td'));
+  });
+
+  it('a card with no copy to buy has no Alternativas link', () => {
+    const row = renderRow({ deckNeeded: 0, inventoryNeeded: 0, ownedTotal: 3 });
+
+    expect(within(row).queryByRole('button', { name: /^Ver alternativas/ })).toBeNull();
+  });
 });

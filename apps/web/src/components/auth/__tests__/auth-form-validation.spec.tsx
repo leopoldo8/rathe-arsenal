@@ -86,6 +86,7 @@ describe('auth forms', () => {
       makeAuth({ user: { id: 'u1', email: 'lucas.prado@hotmail.com', role: 'user', chatAccess: false, hasPassword: true } }),
     );
     await userEvent.click(screen.getByRole('button', { name: 'Mudar a senha' }));
+    await userEvent.type(await screen.findByLabelText('Dígito 1 de 6'), '482913');
     await userEvent.type(screen.getByLabelText('Nova senha'), NINE_CHARACTERS);
     await userEvent.click(screen.getByRole('button', { name: 'Salvar senha' }));
     expect(screen.getByLabelText('Nova senha')).toHaveAttribute('aria-invalid', 'true');
@@ -98,7 +99,7 @@ describe('auth forms', () => {
     expect(screen.getByLabelText('Seu e-mail')).toHaveAttribute('aria-invalid', 'true');
     expect(messageUnder(screen.getByLabelText('Seu e-mail'))).toBe('Falta o final do e-mail, por exemplo bia@gmail.com');
 
-    // The only request in the whole run is the code the code step asks for when it opens.
-    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual(['/api/auth/codes']);
+    // The only requests in the whole run are the codes asked for when a code step opens: no password was sent.
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual(['/api/auth/codes', '/api/users/me/password-code']);
   });
 });

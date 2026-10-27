@@ -298,4 +298,94 @@ describe('ShareDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Agora não' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  describe('the missing message step and its way to turn the link off', () => {
+    function serveMissing(): void {
+      api.handlers.set('GET /decks/7/share', () => ({ deck: null, missing: link('missing') }));
+      api.handlers.set('GET /shared/decks/mQ8rZ3nUp2bX5yKdFgHjLs', () => ({
+        hero: 'Rhinar, Reckless Rampage',
+        url: MISSING_URL,
+        missing: [
+          { cardIdentifier: 'pack-hunt-red', name: 'Pack Hunt', pitch: 1, type: 'Action - Attack', slot: 'mainboard', quantity: 2, imageUrl: null, state: 'store_lacks' },
+        ],
+      }));
+    }
+    const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const deletes = (): number => api.calls.filter((call) => call.key === 'DELETE /decks/7/share/missing').length;
+
+    it('the missing message step ends with Desativar link under Abrir no WhatsApp and asks before turning off', async () => {
+      serveMissing();
+      renderDialog({ intent: 'missing' });
+      const message = await screen.findByTestId('group-ask-message');
+      const send = screen.getByRole('button', { name: 'Abrir no WhatsApp' });
+      const switchRow = screen.getByRole('switch');
+
+      const turnOff = screen.getByRole('button', { name: 'Desativar link' });
+      expect(screen.getAllByText('Desativar link')).toHaveLength(1);
+      expect(follows(message, switchRow)).toBe(true);
+      expect(follows(switchRow, send)).toBe(true);
+      expect(follows(send, turnOff)).toBe(true);
+      const dialog = screen.getByRole('dialog');
+      const controls = within(dialog).getAllByRole('button').filter((button) => follows(send, button));
+      expect(controls).toEqual([turnOff]);
+
+      await userEvent.click(turnOff);
+
+      expect(screen.queryByRole('button', { name: 'Desativar link' })).toBeNull();
+      const question = screen.getByText('Desativar? Quem tem o link não vai mais conseguir abrir.');
+      const confirm = screen.getByRole('button', { name: 'Desativar' });
+      const keep = screen.getByRole('button', { name: 'Manter' });
+      expect(follows(send, question)).toBe(true);
+      expect(follows(question, confirm)).toBe(true);
+      expect(follows(confirm, keep)).toBe(true);
+      expect(screen.getByTestId('group-ask-message')).toBe(message);
+      expect(screen.getByRole('switch')).toBe(switchRow);
+      expect(screen.getByRole('button', { name: 'Abrir no WhatsApp' })).toBe(send);
+      expect(deletes()).toBe(0);
+    });
+
+    it('Manter sends nothing and Desativar sends one delete for the missing link', async () => {
+      serveMissing();
+      api.handlers.set('DELETE /decks/7/share/missing', () => undefined);
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <ShareDialog deckId={7} deckName="Rhinar Rampage" missingCount={11} open initialIntent="missing" onOpenChange={onOpenChange} />,
+        makeAuth(),
+      );
+      await screen.findByTestId('group-ask-message');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Desativar link' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Manter' }));
+      expect(screen.getByRole('button', { name: 'Desativar link' })).toBeInTheDocument();
+      expect(screen.queryByText('Desativar? Quem tem o link não vai mais conseguir abrir.')).toBeNull();
+      expect(deletes()).toBe(0);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Desativar link' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Desativar' }));
+
+      await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+      expect(deletes()).toBe(1);
+    });
+
+    it('a failed delete keeps the step open with an alert and brings Desativar link back', async () => {
+      serveMissing();
+      api.handlers.set('DELETE /decks/7/share/missing', () => {
+        throw apiError(500, 'SERVER_ERROR');
+      });
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <ShareDialog deckId={7} deckName="Rhinar Rampage" missingCount={11} open initialIntent="missing" onOpenChange={onOpenChange} />,
+        makeAuth(),
+      );
+      await screen.findByTestId('group-ask-message');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Desativar link' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Desativar' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível desativar o link. Tente novamente.');
+      expect(screen.getByRole('button', { name: 'Desativar link' })).toBeInTheDocument();
+      expect(screen.getByTestId('group-ask-message')).toBeInTheDocument();
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+  });
 });

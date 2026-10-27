@@ -752,6 +752,17 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - A sign-in through the e-mailed button leaves its code counted as untried, so 5 button sign-ins in an hour block a 6th code request for that hour. Accepted.
 - C454 names `--warn`; the code uses `--ra-ready-mid`, which is the app's `--warn` amber (`apps/web/src/styles/__tests__/contrast.spec.ts` names it so). Accepted, no change.
 
+### S40, the four doors of round 6 (batch X4)
+
+- D23: the password-change code lives in `sign_in_code` under a new `purpose` column (Landing row added to `plan.md` with the rejected alternative). A password code is not consumed by its fifth wrong try, so the sixth answers 429 with the wait until the code would expire.
+- D23: `POST /api/users/me/password-code` also answers `_devCode` when `NODE_ENV` is not `production` (Surface row added). The e2e flows C412 and C462 have no inbox to read, and sign-up already carries `_devVerificationLink` the same way. Security review: confirm production never sets `NODE_ENV` to anything else; a unit test proves the field is absent in production.
+- D23: the code is checked when the password is saved, as C462 says ("the six digits are sent with the new password only at Save"). A wrong code at that point goes back to the code step with "Este código não confere" and does not spend the code; the first frame reads "after the sixth digit" without a request.
+- D27: the "Alternativas" entry is a `<button>` styled as the text link, on the phone card and on the desktop table row (under the card name). The desktop table row is not drawn by any mockup; the desktop proof of C220 counted four buttons in a row, now five (the new one asserted by name).
+- D29: `UploadResolveModal` takes `targeted` for the window sent from an import's menu: four rows even at 0, plain numbers, three stacked actions, no description and no "Importar como fonte separada", as drawn. The window of the plain upload keeps its four actions because an existing test requires them. "Enviar nova versão" shows only for `kind` `csv` imports, the only kind `POST /api/collection/csv` accepts with a target; pasted lists, Fabrary imports and ready-made decks keep the menu of two.
+- C460: the route already existed as `DELETE /api/decks/:deckId/share/:intent`; its test was written first and passed without a code change.
+- Existing proofs updated to the amended claims, none deleted or weakened: `password.e2e-spec.ts` (setting a password), `sessions.e2e-spec.ts` (two password writes now ask the code first), `-settings.spec.tsx` (a new password asks only the new password), `auth-form-validation.spec.tsx` (the settings form first asks its code, and the expected requests list gains it), `group-ask-layout.spec.ts` (the turn-off row is last), `missing-list-flow.spec.ts` (button count 4 to 5), the api mocks of the imports list specs (they gain `useUploadCsvMutation`), and `card-alternatives-flow.spec.ts` (C58, restored from `b288d305^` and started from the missing list).
+- A `replace` upload whose file equals another import's content answers 500 (unique index on the content hash). Not touched; noticed while writing the C467 proof.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
@@ -950,3 +961,6 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - Batch X1, D40: the "?" after the format chip is built (this closes the S37 entry above); it sits as its own element after the chip, not inside it.
 - Batch X1, D43: in the deck editor (`?edit=1`) the stage menu's "Aposentado" sheet shows the sentence without the line "Seu deck ... continua salvo", because the edit header has no card count.
 - Batch X1, D31: the lift of the toast over the rules bar uses `:has()` on the body (Chrome and Safari support it) and a fixed 56 px bar height.
+- Batch X4, D27: no mockup draws "Alternativas" on the desktop table; it is built under the card name so C457 can run on the desktop project. Remove it there if the owner wants the phone only.
+- Batch X4, D29: the size error of "Enviar nova versão" shows as an error toast with the existing line "Arquivo grande demais: o máximo é 2 MB."; no mockup draws where.
+- Batch X4, D23: when a request for the code fails, the existing wait or generic error line shows under the password row, as a red line; no mockup draws it. "Mandar um código novo" (existing copy) replaces "Reenviar" after a code that expired.

@@ -44,9 +44,14 @@ export function resendConfirmation(): Promise<void> {
   return authFetch<void>('/auth/resend-verification', JSON_POST);
 }
 
-/** Creates the account's password, or replaces it. Every other session of the account ends. */
-export function setAccountPassword(password: string): Promise<void> {
-  return authFetch<void>('/users/me/password', { method: 'PUT', body: JSON.stringify({ password }) });
+/** E-mails the signed-in account a code that the password change needs back. */
+export function requestPasswordCode(): Promise<ICodeRequest> {
+  return authFetch<ICodeRequest>('/users/me/password-code', JSON_POST);
+}
+
+/** Creates the account's password, or replaces it, with the e-mailed code. Every other session of the account ends. */
+export function setAccountPassword(code: string, password: string): Promise<void> {
+  return authFetch<void>('/users/me/password', { method: 'PUT', body: JSON.stringify({ code, password }) });
 }
 
 /** Moves an unconfirmed account to a corrected address and sends the confirmation there. */

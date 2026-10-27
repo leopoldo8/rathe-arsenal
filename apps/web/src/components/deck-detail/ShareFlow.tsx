@@ -103,7 +103,7 @@ export function ShareFlow({ deckId, deckName, missingCount, initialIntent, onClo
           <ShareIntentStep missingCount={missingCount} onChoose={activate} />
         )}
         {step.kind === 'link' && link !== null && link.intent === 'missing' && (
-          <GroupAskStep key={link.token} deckName={deckName} link={link} />
+          <GroupAskStep key={link.token} deckId={deckId} deckName={deckName} link={link} onTurnedOff={onClose} />
         )}
         {step.kind === 'link' && link !== null && link.intent === 'quote' && <QuoteLinkStep key={link.token} link={link} />}
         {step.kind === 'link' && link !== null && link.intent === 'deck' && (

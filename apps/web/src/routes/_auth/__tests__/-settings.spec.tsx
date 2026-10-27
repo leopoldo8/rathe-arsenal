@@ -92,8 +92,14 @@ const { patchContactMock } = vi.hoisted(() => ({ patchContactMock: vi.fn() }));
 vi.mock('../../../api/shared-decks', () => ({ patchDisplayName: patchDisplayNameMock, patchContact: patchContactMock }));
 
 // Password PUT — stubbed so the form is tested without a network.
-const { setAccountPasswordMock } = vi.hoisted(() => ({ setAccountPasswordMock: vi.fn() }));
-vi.mock('../../../lib/account-api', () => ({ setAccountPassword: setAccountPasswordMock }));
+const { setAccountPasswordMock, requestPasswordCodeMock } = vi.hoisted(() => ({
+  setAccountPasswordMock: vi.fn(),
+  requestPasswordCodeMock: vi.fn(),
+}));
+vi.mock('../../../lib/account-api', () => ({
+  setAccountPassword: setAccountPasswordMock,
+  requestPasswordCode: requestPasswordCodeMock,
+}));
 
 // DeleteAccountModal — smoke-stub so settings tests focus on the page layout
 vi.mock('../../../components/delete-account-modal', () => ({
@@ -531,9 +537,22 @@ describe('SettingsPage, Conta section: the password', () => {
     return render(<Harness />);
   }
 
+  const askedCode = (): { expiresAt: string; resendAfter: string } => ({
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    resendAfter: new Date(Date.now() + 45 * 1000).toISOString(),
+  });
+
   beforeEach(() => {
     setAccountPasswordMock.mockReset().mockResolvedValue(undefined);
+    requestPasswordCodeMock.mockReset().mockImplementation(async () => askedCode());
   });
+
+  async function typeCode(digits: string): Promise<void> {
+    const boxes = within(contaSection()).getAllByLabelText(/^Dígito \d de 6$/);
+    for (const [index, digit] of [...digits].entries()) await userEvent.type(boxes[index]!, digit);
+  }
+
+  const follows = (first: Node, second: Node): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
 
   it('the password row follows hasPassword', () => {
     const withPassword = renderSettings(makeAuthContext({ user: account(true) }));
@@ -559,10 +578,15 @@ describe('SettingsPage, Conta section: the password', () => {
   });
 
   it('a new password asks only the new password', async () => {
-    // The real client function runs: what leaves the browser is the request, so the request is what is asserted.
+    // The real client functions run: what leaves the browser is the request, so the request is what is asserted.
     const actual = await vi.importActual<typeof import('../../../lib/account-api')>('../../../lib/account-api');
-    setAccountPasswordMock.mockImplementation((password: string) => actual.setAccountPassword(password));
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    requestPasswordCodeMock.mockImplementation(() => actual.requestPasswordCode());
+    setAccountPasswordMock.mockImplementation((code: string, password: string) => actual.setAccountPassword(code, password));
+    const fetchMock = vi.fn(async (url: string) =>
+      url === '/api/users/me/password-code'
+        ? new Response(JSON.stringify(askedCode()), { status: 202, headers: { 'Content-Type': 'application/json' } })
+        : new Response(null, { status: 204 }),
+    );
     vi.stubGlobal('fetch', fetchMock);
 
     for (const [hasPassword, opener] of [
@@ -573,6 +597,9 @@ describe('SettingsPage, Conta section: the password', () => {
       const view = renderWithState(account(hasPassword));
 
       await userEvent.click(within(contaSection()).getByRole('button', { name: opener }));
+      expect(await within(contaSection()).findByText(/Mandamos para/)).toBeInTheDocument();
+      expect(contaSection().querySelector('input[type="password"]'), 'the code step has no password input').toBeNull();
+      await typeCode('482913');
       const form = contaSection().querySelector('form')!;
       expect(form.querySelectorAll('input[type="password"]'), `${opener} opens one password input`).toHaveLength(1);
       expect(form.querySelector('input[autocomplete="current-password"]')).toBeNull();
@@ -583,14 +610,122 @@ describe('SettingsPage, Conta section: the password', () => {
 
       expect(await within(contaSection()).findByText('Senha: você tem uma senha')).toBeInTheDocument();
       expect(contaSection().querySelector('form')).toBeNull();
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      const [codeUrl, codeInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(codeUrl).toBe('/api/users/me/password-code');
+      expect(codeInit.method).toBe('POST');
+      const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
       expect(url).toBe('/api/users/me/password');
       expect(init.method).toBe('PUT');
-      expect(JSON.parse(init.body as string)).toEqual({ password: '0123456789' });
+      expect(JSON.parse(init.body as string)).toEqual({ code: '482913', password: '0123456789' });
       view.unmount();
     }
     vi.unstubAllGlobals();
+  });
+
+  it('the password change arranges the code step and the new password step as r6-password-b-phone', async () => {
+    renderWithState(account(true));
+    const section = (): ReturnType<typeof within> => within(contaSection());
+
+    await userEvent.click(section().getByRole('button', { name: 'Mudar a senha' }));
+
+    // Frame one: the row keeps its state without the button, then the code step, then the note.
+    const boxes = await section().findAllByLabelText(/^Dígito \d de 6$/);
+    expect(boxes).toHaveLength(6);
+    expect(boxes[0]).toHaveFocus();
+    expect(section().queryByRole('button', { name: 'Mudar a senha' })).toBeNull();
+    const sentTo = section().getByText(/Mandamos para/);
+    expect(sentTo).toHaveTextContent('Mandamos para lucas.prado@hotmail.com. Ele vale 15 minutos.');
+    expect(sentTo.querySelector('b')).toHaveTextContent('lucas.prado@hotmail.com');
+    const resend = section().getByRole('button', { name: 'Reenviar em 45 s' });
+    expect(resend).toHaveAttribute('aria-disabled', 'true');
+    const cancel = section().getByRole('button', { name: 'Cancelar' });
+    const note = section().getByText('Você também pode entrar com um código por e-mail, sem senha.');
+    const order = [section().getByText('Senha: você tem uma senha'), sentTo, boxes[0]!, boxes[5]!, resend, cancel, note];
+    for (let i = 1; i < order.length; i++) expect(follows(order[i - 1]!, order[i]!)).toBe(true);
+
+    // Frame two: after the sixth digit, the new password field is focused and empty.
+    await typeCode('482913');
+    const field = section().getByLabelText('Nova senha');
+    expect(field).toHaveFocus();
+    expect(field).toHaveValue('');
+    expect(section().queryByLabelText(/^Dígito/)).toBeNull();
+    const hint = section().getByText('Pelo menos 10 caracteres.');
+    const secondCancel = section().getByRole('button', { name: 'Cancelar' });
+    const save = section().getByRole('button', { name: 'Salvar senha' });
+    expect(secondCancel.parentElement).toBe(save.parentElement);
+    expect(follows(secondCancel, save)).toBe(true);
+    const secondOrder = [section().getByText('Senha: você tem uma senha'), field, hint, secondCancel, save, section().getByText('Você também pode entrar com um código por e-mail, sem senha.')];
+    for (let i = 1; i < secondOrder.length; i++) expect(follows(secondOrder[i - 1]!, secondOrder[i]!)).toBe(true);
+  });
+
+  it('a password is set after the e-mailed code, for an account with and without one', async () => {
+    for (const [hasPassword, opener, before] of [
+      [false, 'Criar uma senha', 'Senha: nenhuma'],
+      [true, 'Mudar a senha', 'Senha: você tem uma senha'],
+    ] as const) {
+      setAccountPasswordMock.mockClear();
+      requestPasswordCodeMock.mockClear();
+      requestPasswordCodeMock.mockImplementation(async () => ({
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        resendAfter: new Date(Date.now() + 30 * 1000).toISOString(),
+      }));
+      const view = renderWithState(account(hasPassword));
+      expect(within(contaSection()).getByText(before)).toBeInTheDocument();
+
+      await userEvent.click(within(contaSection()).getByRole('button', { name: opener }));
+
+      expect(requestPasswordCodeMock).toHaveBeenCalledTimes(1);
+      expect(await within(contaSection()).findByText(/Mandamos para/)).toHaveTextContent('Ele vale 10 minutos.');
+      expect(within(contaSection()).getByRole('button', { name: 'Reenviar em 30 s' })).toBeInTheDocument();
+      expect(setAccountPasswordMock).not.toHaveBeenCalled();
+
+      // "Cancelar" on the code step returns to the row and asks nothing more.
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Cancelar' }));
+      expect(within(contaSection()).getByText(before)).toBeInTheDocument();
+      expect(within(contaSection()).getByRole('button', { name: opener })).toBeInTheDocument();
+
+      // "Cancelar" on the second step spends no code and changes no password.
+      await userEvent.click(within(contaSection()).getByRole('button', { name: opener }));
+      await within(contaSection()).findByText(/Mandamos para/);
+      await typeCode('123456');
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Cancelar' }));
+      expect(setAccountPasswordMock).not.toHaveBeenCalled();
+      expect(within(contaSection()).getByText(before)).toBeInTheDocument();
+
+      await userEvent.click(within(contaSection()).getByRole('button', { name: opener }));
+      await within(contaSection()).findByText(/Mandamos para/);
+      await typeCode('654321');
+      await userEvent.type(within(contaSection()).getByLabelText('Nova senha'), '0123456789');
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Salvar senha' }));
+
+      expect(await within(contaSection()).findByText('Senha: você tem uma senha')).toBeInTheDocument();
+      expect(setAccountPasswordMock).toHaveBeenCalledTimes(1);
+      expect(setAccountPasswordMock).toHaveBeenCalledWith('654321', '0123456789');
+      view.unmount();
+    }
+  });
+
+  it('a refused code sends the player back to the code step with the reason', async () => {
+    const { AuthFetchError } = await vi.importActual<typeof import('../../../lib/auth-fetch')>('../../../lib/auth-fetch');
+    renderWithState(account(true));
+
+    for (const [failure, message] of [
+      [new AuthFetchError('wrong', 400, null, 'INVALID_CODE'), 'Este código não confere. Confira no e-mail.'],
+      [new AuthFetchError('gone', 410, null, 'TOKEN_EXPIRED'), 'Este código venceu. Ele vale 15 minutos.'],
+    ] as const) {
+      setAccountPasswordMock.mockRejectedValueOnce(failure);
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Mudar a senha' }));
+      await within(contaSection()).findByText(/Mandamos para/);
+      await typeCode('111111');
+      await userEvent.type(within(contaSection()).getByLabelText('Nova senha'), '0123456789');
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Salvar senha' }));
+
+      expect(await within(contaSection()).findByRole('alert')).toHaveTextContent(message);
+      expect(within(contaSection()).getAllByLabelText(/^Dígito \d de 6$/)).toHaveLength(6);
+      expect(within(contaSection()).queryByLabelText('Nova senha')).toBeNull();
+      await userEvent.click(within(contaSection()).getByRole('button', { name: 'Cancelar' }));
+    }
   });
 
   it('a password cannot be removed', () => {
