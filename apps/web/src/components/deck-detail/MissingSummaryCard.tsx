@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useMissingListQuery } from '../../api/missing-list';
+import { useStoredMissingListQuery } from '../../api/missing-list';
 import { formatBrl } from '../../utils/format-brl';
 import { missingTotals } from '../missing-list/missingListModel';
 import styles from './MissingSummaryCard.module.css';
@@ -13,7 +13,7 @@ interface IMissingSummaryCardProps {
 /** The deck page's one card for what is missing: the count in copies, the store's line and the way to the list. */
 export function MissingSummaryCard({ deckId }: IMissingSummaryCardProps): React.ReactElement | null {
   const { t } = useTranslation();
-  const query = useMissingListQuery(deckId);
+  const query = useStoredMissingListQuery(deckId);
   if (query.data === undefined) return null;
 
   const { summary, lines } = query.data;

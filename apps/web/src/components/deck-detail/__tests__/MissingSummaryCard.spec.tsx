@@ -66,6 +66,20 @@ describe('MissingSummaryCard', () => {
     expect(screen.queryByTestId('missing-summary-card')).toBeNull();
   });
 
+  it('asks for the stored prices only, so opening the deck page queues no lookup', async () => {
+    serve(response(cards(3, 3), { buyCopies: 3, buyCents: 3000 }));
+
+    render(
+      <Providers>
+        <MissingSummaryCard deckId={7} />
+      </Providers>,
+    );
+
+    await screen.findByTestId('missing-summary-card');
+    expect(api.fetch).toHaveBeenCalledTimes(1);
+    expect(api.fetch).toHaveBeenCalledWith('/decks/7/missing?lookups=read');
+  });
+
   it('splits the copies in words when the deck has an inventory', async () => {
     serve(
       response([line({ cardIdentifier: 'a', deckNeeded: 4 }), line({ cardIdentifier: 'b', deckNeeded: 0, inventoryNeeded: 3 })], {

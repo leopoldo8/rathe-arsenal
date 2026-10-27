@@ -68,12 +68,27 @@ export function missingListQueryKey(deckId: number) {
   return ['missing-list', deckId] as const;
 }
 
+/** The deck page's card reads stored prices (`lookups=read`), so it has its own cache entry apart from the list page's. */
+export function storedMissingListQueryKey(deckId: number) {
+  return [...missingListQueryKey(deckId), 'stored'] as const;
+}
+
+/** The owner's list page: opening it asks the API to queue the price lookups still missing. */
 export function useMissingListQuery(deckId: number) {
   const apiFetch = useApiClient();
   return useQuery({
     queryKey: missingListQueryKey(deckId),
     queryFn: () => apiFetch<IMissingListResponse>(`/decks/${deckId}/missing`),
     refetchInterval: (query) => ((query.state.data?.summary.lookingUp ?? 0) > 0 ? LOOKUP_POLL_MS : false),
+  });
+}
+
+/** The deck page's summary card: stored prices only, so opening a deck never spends lookup credits (D51). */
+export function useStoredMissingListQuery(deckId: number) {
+  const apiFetch = useApiClient();
+  return useQuery({
+    queryKey: storedMissingListQueryKey(deckId),
+    queryFn: () => apiFetch<IMissingListResponse>(`/decks/${deckId}/missing?lookups=read`),
   });
 }
 

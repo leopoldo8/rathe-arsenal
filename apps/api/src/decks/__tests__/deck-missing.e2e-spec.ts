@@ -96,6 +96,23 @@ describe('deck missing list (E2E)', () => {
     expect(await pendingJobs(EMISSARY)).toBe(1);
   });
 
+  it('opening the deck page queues no price lookup', async () => {
+    await listCard(EMISSARY);
+    const owner = await fixture.scenario();
+
+    // The deck page's "Faltam N cartas" card asks for the stored prices only.
+    const deckPage = await fixture.get(`/api/decks/${owner.deckId}/missing?lookups=read`, owner.sessionToken).expect(200);
+
+    expect(deckPage.body.lines.find((line: IMissingLine) => line.cardIdentifier === EMISSARY)).toMatchObject({ deckNeeded: 2 });
+    expect(await pendingJobs(EMISSARY)).toBe(0);
+
+    // The owner's list page is the one that queues it.
+    await linesOf(owner.sessionToken, owner.deckId);
+    expect(await pendingJobs(EMISSARY)).toBe(1);
+
+    await fixture.get(`/api/decks/${owner.deckId}/missing?lookups=nonsense`, owner.sessionToken).expect(400);
+  });
+
   it('gives each card the state the store answers for it', async () => {
     await listCard(COAX, { priceCents: 3000, quantity: 4, fetchedDaysAgo: 3 });
     await listCard(ADRENALINE, { priceCents: 3000, quantity: 4, fetchedDaysAgo: 3 });
