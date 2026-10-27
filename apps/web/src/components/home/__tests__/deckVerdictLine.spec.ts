@@ -23,6 +23,16 @@ const SIZE: ILegalityReasonDetail = {
   params: { card: null, count: 31, limit: 40, format: 'Blitz' },
 };
 
+const CARD_POOL: ILegalityReasonDetail = {
+  code: 'card_pool_too_large',
+  params: { card: null, count: 81, limit: 80, format: 'Classic Constructed' },
+};
+const NOT_FOR_HERO: ILegalityReasonDetail = {
+  code: 'card_not_for_hero',
+  params: { card: 'a', cardIdentifier: 'a', hero: 'Rhinar' },
+};
+const UNKNOWN_CARD: ILegalityReasonDetail = { code: 'card_unknown', params: { card: 'a', cardIdentifier: 'a' } };
+
 const eightAtTwo = Array.from({ length: 8 }, (_, index) => copies(`card-${index}`, 2));
 
 describe('deckCauseLine', () => {
@@ -36,6 +46,11 @@ describe('deckCauseLine', () => {
       ['three kinds', [...eightAtTwo, banned('x'), HERO], '8 cartas com 2 cópias · 1 carta banida e mais 1'],
       ['one card', [copies('a', 4, 3)], '1 carta com 4 cópias'],
       ['the size is never a rule problem', [SIZE], null],
+      ['a card pool problem has no wording of its own', [CARD_POOL], null],
+      ['a card the hero cannot use has no wording of its own', [NOT_FOR_HERO], null],
+      ['an unknown card has no wording of its own', [UNKNOWN_CARD], null],
+      ['unnamed problems alone, all three together', [CARD_POOL, NOT_FOR_HERO, UNKNOWN_CARD], null],
+      ['an unnamed problem beside a named one counts toward "e mais"', [copies('a', 2), CARD_POOL], '1 carta com 2 cópias e mais 1'],
       ['a size problem beside a rule problem', [SIZE, copies('a', 2)], '1 carta com 2 cópias'],
     ];
 
