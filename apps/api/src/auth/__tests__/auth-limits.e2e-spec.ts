@@ -4,6 +4,7 @@
  */
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
+import { AUTH_THROTTLE } from '../auth-throttle';
 import { bootAccountsApp, IAccountsApp, PASSWORD } from './accounts-e2e.fixture';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -165,6 +166,64 @@ describe('Auth limits (E2E, S34)', () => {
 
     expect(wrongTries).toBe(10);
     await from('198.51.100.60', '/api/auth/codes').send({ email }).expect(429);
+  });
+
+  // The per-IP windows of the auth routes, answered by the real AuthService instead of a stub.
+  describe('per-IP windows with the real AuthService', () => {
+    it('start is throttled per IP', async () => {
+      const { limit } = AUTH_THROTTLE.start;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await from('203.0.113.10', '/api/auth/start').send({ email: ctx.emailFor('start-window') });
+        statuses.push(last.status);
+      }
+
+      expect(statuses).toEqual([...Array(limit).fill(200), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
+    }, 60_000);
+
+    it('sign-in answers 401 for a wrong password and 429 once the IP passes its per-minute limit', async () => {
+      const email = ctx.emailFor('sign-in-window');
+      await from('203.0.113.20', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+      const { limit } = AUTH_THROTTLE.signIn;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await from('203.0.113.21', '/api/auth/sign-in').send({ email, password: 'not-the-password-123' });
+        statuses.push(last.status);
+      }
+
+      expect(statuses).toEqual([...Array(limit).fill(401), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
+    }, 60_000);
+
+    it('code verification is throttled per IP', async () => {
+      const email = ctx.emailFor('verify-window');
+      await from('203.0.113.30', '/api/auth/sign-up').send({ email, password: PASSWORD }).expect(201);
+      const { limit } = AUTH_THROTTLE.codesVerify;
+      const statuses: number[] = [];
+      let last: request.Response | undefined;
+      for (let i = 0; i < limit + 1; i++) {
+        last = await from('203.0.113.31', '/api/auth/codes/verify').send({ email, code: '123456' });
+        statuses.push(last.status);
+      }
+
+      expect(statuses).toEqual([...Array(limit).fill(401), 429]);
+      expect(Number(last?.headers['retry-after'])).toBeGreaterThan(0);
+    });
+
+    it('invalid requests do not use up the limit', async () => {
+      for (let i = 0; i < 25; i++) {
+        await from('203.0.113.40', '/api/auth/sign-up').send({ email: 'bia@gmail', password: PASSWORD }).expect(400);
+      }
+      await from('203.0.113.40', '/api/auth/sign-up').send({ email: ctx.emailFor('after-invalid'), password: PASSWORD }).expect(201);
+
+      for (let i = 0; i < 25; i++) {
+        await from('203.0.113.41', '/api/auth/codes').send({ email: 'bia@gmail' }).expect(400);
+      }
+      await from('203.0.113.41', '/api/auth/codes').send({ email: ctx.emailFor('after-invalid') }).expect(202);
+    }, 60_000);
   });
 
   // Runs last: the config service keeps the secret it first read from the environment.

@@ -704,6 +704,45 @@ describe('CsvParserService reader', () => {
     expect(result.lines[0]).toMatchObject({ outcome: 'ready', cardIdentifier: 'command-and-conquer', quantity: 2, lineNumber: 2 });
   });
 
+  // The Coverage row "CSV headers (12)": every spelling the reader accepts is read on its own, not only as part of a longer header.
+  it.each([
+    ['nome', 'nome', 'nome,quantidade'],
+    ['card name', 'nome', 'card name,quantidade'],
+    ['name', 'nome', 'name,quantidade'],
+    ['quantidade', 'quantidade', 'nome,quantidade'],
+    ['quantity', 'quantidade', 'nome,quantity'],
+    ['qty', 'quantidade', 'nome,qty'],
+    ['count', 'quantidade', 'nome,count'],
+    ['cor', 'cor', 'nome,quantidade,cor'],
+    ['versão', 'versão', 'nome,quantidade,versão'],
+    ['estado', 'estado', 'nome,quantidade,estado'],
+    ['set', 'set', 'nome,quantidade,set'],
+    ['set code', 'set', 'nome,quantidade,set code'],
+  ])('reads the header spelling %s as the column %s', (_spelling, expectedColumn, header) => {
+    const cellsByColumn: Record<string, string> = {
+      nome: 'Command and Conquer',
+      'card name': 'Command and Conquer',
+      name: 'Command and Conquer',
+      quantidade: '2',
+      quantity: '2',
+      qty: '2',
+      count: '2',
+      cor: 'Vermelho',
+      'versão': 'foil',
+      estado: 'NM',
+      set: 'ARC',
+      'set code': 'ARC',
+    };
+    const row = header.split(',').map((name) => cellsByColumn[name] ?? '').join(',');
+
+    const result = service.readText(`${header}\n${row}\n`);
+
+    expect(result.columns).toContain(expectedColumn);
+    expect(result.columns).toEqual(header.split(',').map((name) => ({ 'card name': 'nome', name: 'nome', quantity: 'quantidade', qty: 'quantidade', count: 'quantidade', 'set code': 'set' } as Record<string, string>)[name] ?? name));
+    expect(result.lines[0]).toMatchObject({ outcome: 'ready', cardIdentifier: 'command-and-conquer', quantity: 2 });
+    if (expectedColumn === 'estado') expect(result.lines[0]!.version.condition).toBe('NM');
+  });
+
   it('an unquoted comma inside a known card name is read and noted', () => {
     const result = service.readText('name,quantity\nRhinar, Reckless Rampage,1\nRazor, Reflex,1\n');
 

@@ -654,6 +654,41 @@ describe('computeDeckLegality — card pool limit per format without the hero', 
       });
     }
   });
+
+  it.each([
+    ['Classic Constructed', 80, 0],
+    ['Classic Constructed', 81, 1],
+    ['Living Legend', 80, 0],
+    ['Living Legend', 81, 1],
+    ['Blitz', 52, 0],
+    ['Blitz', 53, 1],
+    ['Silver Age', 55, 0],
+    ['Silver Age', 56, 1],
+  ] as const)('%s with %i cards in the pool, a weapon and an equipment among them, gives %i pool problems', (format, poolSize, expectedProblems) => {
+    const heroIdentifier = HERO_BY_FORMAT[format];
+    const [weapon, equipment, ...others] = legalNonLegendaryCards(heroIdentifier, format, poolSize) as readonly string[];
+    const rows: TRow[] = [
+      { cardIdentifier: weapon!, quantity: 1, slot: 'weapon' },
+      { cardIdentifier: equipment!, quantity: 1, slot: 'equipment' },
+      ...others.map((cardIdentifier, index): TRow =>
+        index % 2 === 0
+          ? { cardIdentifier, quantity: 1, slot: 'mainboard' }
+          : { cardIdentifier, quantity: 0, slot: 'mainboard', inventoryQuantity: 1 },
+      ),
+    ];
+    expect(rows).toHaveLength(poolSize);
+
+    const result = computeDeckLegality({ heroIdentifier, cards: [heroRow(heroIdentifier), ...rows] }, catalog, format);
+
+    const problems = problemsOf(result, 'card_pool_too_large');
+    expect(problems).toHaveLength(expectedProblems);
+    if (expectedProblems === 1) {
+      expect(problems[0]).toEqual({
+        code: 'card_pool_too_large',
+        params: { card: null, count: poolSize, limit: poolSize - 1, format },
+      });
+    }
+  });
 });
 
 describe('computeDeckLegality — every check runs and every problem is returned', () => {
