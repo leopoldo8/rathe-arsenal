@@ -134,7 +134,7 @@ describe('the trade view', () => {
     expect(screen.getByRole('textbox', { name: 'Mensagem' }).textContent ?? '').not.toContain('R$');
     expect((screen.getByRole('textbox', { name: 'Mensagem' }) as HTMLTextAreaElement).value).not.toContain('R$');
 
-    await user.click(screen.getByRole('button', { name: '‹ Lista do Marcos' }));
+    await user.click(screen.getByRole('button', { name: '‹ Lista de Marcos' }));
     await user.click(screen.getByRole('switch', { name: /Incluir minha lista/ }));
     expect(screen.queryByTestId('trade-value')).not.toBeInTheDocument();
   });
@@ -145,14 +145,14 @@ describe('the trade view', () => {
 
     await user.click(within(view).getByRole('switch', { name: /Incluir minha lista/ }));
     await user.click(screen.getByRole('button', { name: 'Ver mensagem' }));
-    expect(screen.getByRole('button', { name: '‹ Lista do Marcos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '‹ Lista de Marcos' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Mensagem para o WhatsApp' })).toBeInTheDocument();
     expect(screen.getByText('Você pode editar antes de enviar.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Mensagem' })).toHaveValue(OFFER_WITH_MINE);
     expect(screen.getByRole('button', { name: 'Enviar no WhatsApp' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copiar texto' })).toBeInTheDocument();
     expectInOrder(
-      screen.getByRole('button', { name: '‹ Lista do Marcos' }),
+      screen.getByRole('button', { name: '‹ Lista de Marcos' }),
       screen.getByRole('heading', { name: 'Mensagem para o WhatsApp' }),
       screen.getByText('Você pode editar antes de enviar.'),
       screen.getByRole('textbox', { name: 'Mensagem' }),
@@ -160,7 +160,7 @@ describe('the trade view', () => {
       screen.getByRole('button', { name: 'Copiar texto' }),
     );
 
-    await user.click(screen.getByRole('button', { name: '‹ Lista do Marcos' }));
+    await user.click(screen.getByRole('button', { name: '‹ Lista de Marcos' }));
     await user.click(screen.getByRole('switch', { name: /Incluir minha lista/ }));
     await user.click(screen.getByRole('button', { name: 'Ver mensagem' }));
     expect(screen.getByRole('textbox', { name: 'Mensagem' })).toHaveValue(OFFER_ONLY);

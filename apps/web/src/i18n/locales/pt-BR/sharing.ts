@@ -250,7 +250,7 @@ export const sharing = {
     includeMineList: '{{name}} ({{copies}})',
     value: 'Valor aproximado, pelo preço sugerido: você oferece R$ {{offer}} · você procura R$ {{want}}',
     viewMessage: 'Ver mensagem',
-    back: '‹ Lista do {{name}}',
+    back: '‹ Lista de {{name}}',
     increase: 'Mais uma cópia de {{name}}',
     decrease: 'Menos uma cópia de {{name}}',
     offerOnly: 'Oi {{name}}, vi sua lista no Rathe Arsenal. Tenho sobrando para você: {{offered}}.',
