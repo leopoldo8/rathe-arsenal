@@ -106,6 +106,10 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
             body: JSON.stringify({ trackedDecks: [] }),
           }),
         );
+        // The first-run page also asks for the imports: a new account has none.
+        await page.route('**/api/collection/sources', (route) =>
+          route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+        );
       }
 
       await openSurface(page, url);
