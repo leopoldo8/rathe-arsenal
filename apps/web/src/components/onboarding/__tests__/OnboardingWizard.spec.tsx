@@ -52,6 +52,10 @@ vi.mock('../../../api/decks', () => ({
 
 // API: Fabrary preview and import
 const mockPreview = vi.fn();
+// OnboardingPage also reads the import list; a fresh account has none.
+vi.mock('../../../api/csv-sources', () => ({
+  useCsvSourcesQuery: () => ({ isLoading: false, isError: false, data: [] }),
+}));
 vi.mock('../../../api/fabrary-import', () => ({
   useFabraryPreviewQuery: (text: string) => mockPreview(text),
   useImportFabraryDeckMutation: () => ({

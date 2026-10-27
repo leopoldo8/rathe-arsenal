@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -11,6 +11,20 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { FirstRunChooser } from '../FirstRunChooser';
+import { ToastProvider } from '../../ui/Toast/ToastProvider';
+import { makeAuth, renderWithAuth } from '../../auth/__tests__/accountTestKit';
+
+const CONFIRM_LINE = 'Confirme bia.souza@gmail.com para criar links de compartilhar · Reenviar · Errei o e-mail';
+
+function renderAs(emailConfirmed: boolean): void {
+  const user = { id: 'u1', email: 'bia.souza@gmail.com', role: 'user' as const, chatAccess: false, emailConfirmed };
+  renderWithAuth(
+    <ToastProvider>
+      <FirstRunChooser />
+    </ToastProvider>,
+    makeAuth({ user }),
+  );
+}
 
 describe('FirstRunChooser', () => {
   it('matches r3-first-run-phone copy and order', () => {
@@ -39,5 +53,22 @@ describe('FirstRunChooser', () => {
     const [lead, paste] = screen.getAllByRole('link');
     expect(lead!.className).toContain('lead');
     expect(paste!.className).not.toContain('lead');
+  });
+
+  it('matches r3-home-unconfirmed-phone: the confirm line sits directly above the heading', () => {
+    renderAs(false);
+
+    const line = screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === CONFIRM_LINE);
+    expect(within(line).getByRole('button', { name: 'Reenviar' })).toBeInTheDocument();
+    expect(within(line).getByRole('button', { name: 'Errei o e-mail' })).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { level: 1, name: 'Como você quer começar?' });
+    expect(line.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.previousElementSibling).toBe(line);
+  });
+
+  it('shows no confirm line once the e-mail is confirmed', () => {
+    renderAs(true);
+
+    expect(screen.queryByText(/Confirme bia.souza@gmail.com/)).not.toBeInTheDocument();
   });
 });
