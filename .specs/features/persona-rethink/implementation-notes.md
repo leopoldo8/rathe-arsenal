@@ -769,6 +769,20 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - 2026-10-27, batch X1, D50 (the delete row of the edit page lost its description line): decided by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
   The row keeps no description; the undo toast is the safety.
 - 2026-10-27, batch X1 deviations for D2, D10 and D3: accepted by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
+- 2026-10-27, D56 (account hijack by pre-registration), picked by the owner on 2026-10-27: option (a), do not apply.
+  C398 stays as it is.
+  The unapplied patch stays in the scratchpad (`x2-d56.patch`; that path is machine-local and may be gone).
+  A later option, not chosen now: a question "Foi você que criou esta conta?" on the confirm page, which would need mockups.
+  The risk is recorded as AU2 in `docs/phase-1-followups.md`.
+- 2026-10-27, round 6 mockups, picked by the owner on 2026-10-27 (brief `.design/mockups/close-the-deck/BRIEF-round-6.md`):
+  - D27: alternative A, an "Alternativas" link in the card row (`r6-alternatives-a-phone`); B (`r6-alternatives-b-phone`) was not picked.
+  - D53: alternative A, "Desativar link" in the share step (`r6-turnoff-a-phone`); B (`r6-turnoff-b-phone`) was not picked.
+  - D23: alternative B, an e-mailed code before the new password (`r6-password-b-phone`); A (`r6-password-a-phone`) was not picked.
+  - D29: alternative A, "Enviar nova versão" in the "•••" menu of an import (`r6-update-import-a-phone`); B (`r6-update-import-b-phone`) was not picked.
+  The checks for these four screens are C455 to C466 in `checks.md`, batch X4.
+- 2026-10-27, the formal gate, picked by the owner on 2026-10-27: option (a), accept the spec with the FAIL basis documented.
+  The screen-arrangement checks missing for most journeys, the boundary and pure Test policy rows and the binding Uncovered cells are accepted as recorded gaps.
+  A Verifier round 5 is authorized.
 
 ## Needs the owner
 
@@ -933,8 +947,6 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
   - D52: open `https://www.ligafab.com.br/?view=cards/search&card=Head%20Jab` and say whether it lands on a card search for "Head Jab".
     The site returned 403 to the agent, so the landing is unconfirmed; the link stays until you say it fails.
   - D4: if you know the text that GEM reads on paste, say so; until then the copy-list tab is named "Para Fabrary ou Talishar" and does not claim GEM.
-- Still the owner's after the delegation of 2026-10-27: D23 (a guard on changing the password), D27 (the entry point of the alternatives sheet), D29 ("Enviar CSV" on Importações), D53 (turning off a missing-list link; round 6 mockups are being made), and whether to pursue arrangement checks for every journey to reach a PASS verdict.
 - Batch X1, D40: the "?" after the format chip is built (this closes the S37 entry above); it sits as its own element after the chip, not inside it.
 - Batch X1, D43: in the deck editor (`?edit=1`) the stage menu's "Aposentado" sheet shows the sentence without the line "Seu deck ... continua salvo", because the edit header has no card count.
 - Batch X1, D31: the lift of the toast over the rules bar uses `:has()` on the body (Chrome and Safari support it) and a fixed 56 px bar height.
-- Batch X2, D56 is NOT built: it contradicts C398 (an unamended check). C398's proof, `web e2e account-flow.spec.ts -g "share waits for the confirmation and works after it"`, signs up in one browser, confirms the link in a second browser that has no session, then shares from the first browser. Under D56 that confirmation ends the first browser's session and clears its password, so the share step fails (checked: the proof goes red at `share-address`, line 263). Either C398 changes (confirm from the same browser, or sign in again after confirming) or D56 narrows. The finished code and its three api tests are saved as a patch at `scratchpad/x2-d56.patch` (`verifyEmail(rawToken, confirmingUserId)` clears `passwordHash` in the same conditional update that spends the token and calls `SessionService.revokeAllOf`; the controller reads the cookie with `SessionService.authenticate`; the C395 proof then needs `.set(...as(account.token))` on its second verify-email call). Code sign-in for an account with no password already works: `AuthService.signInWithCodeOf` never reads the password and `start` answers `code` for a null hash.

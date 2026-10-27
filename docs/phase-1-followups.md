@@ -440,6 +440,16 @@ Shared deck links, share attribution, generated link-preview images and copying 
 **Posture:** once an address has 5 codes asked and never tried in the last hour, or 10 failed tries across its codes, the next code request answers `429` with the exact `Retry-After`. A stranger who knows the address asks for a code the moment a slot frees, so the block lasts as long as they keep at it. Every request of theirs also replaces the owner's live code, so a code the owner just received stops working. This predates the limit change of D59 (C404), which did not widen it: it only stopped burnt tries from locking the owner out. Password sign-in and sessions that already exist are not affected. An account with no password cannot sign in on a new device while the block lasts.
 **Trigger:** the log event `auth.code.address_limit` showing repeated hits for one address. **Work (known, not built):** let a browser that already signed in to that account skip the per-address limit, recognised by a device cookie.
 
+### AU2. A stranger can take over an address by signing up with it first
+**Posture:** the attacker signs up with the victim's address and a password of their own, then waits.
+If the victim opens the confirmation e-mail and clicks its button instead of signing in by code, the address becomes confirmed and the attacker's password still opens the account.
+It was left open because the one change that closes it (the confirmation clears the password and ends every session) breaks C398, where an honest owner signs up, confirms in another browser and keeps using the first one.
+The owner decided on 2026-10-27 not to apply it.
+A code sign-in already closes the hole: a code that reached the inbox drops a password still on an unconfirmed account and ends its sessions.
+**Trigger:** any report of an account someone else had a password on, or a decision to change the confirmation screen.
+**Work (known, not built):** a question "Foi você que criou esta conta?" on the confirm page, whose answers and effects are not designed yet. It needs mockups.
+The unapplied patch is `x2-d56.patch` in the session scratchpad; that path is machine-local and may be gone.
+
 ---
 
 ## How to use this file

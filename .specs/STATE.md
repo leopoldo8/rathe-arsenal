@@ -210,6 +210,14 @@
 - **Date**: 2026-10-23
 - **Status**: accepted - the owner approved `.specs/features/persona-rethink/plan.md` on 2026-10-23; not built yet
 
+### AD-027
+- **Decision**: The persona-rethink spec is accepted with the FAIL basis of the verification documented, and a Verifier round 5 is authorized; the owner decided this on 2026-10-27 (option (a) of the formal gate).
+- **Reason**: The verification (`.specs/features/persona-rethink/verification.md`) lists gaps that no further check or test removes cheaply: the screen-arrangement checks missing for most journeys, the boundary and pure rows of the Test policy, and the binding Uncovered cells.
+- **Trade-off**: Those gaps ship as recorded gaps; a change in any of them is caught only by the checks that exist.
+- **Scope**: `.specs/features/persona-rethink/`.
+- **Date**: 2026-10-27
+- **Status**: accepted
+
 ## Handoff
 
 - **Feature**: sharing-decks - `.specs/features/sharing-decks/` - planned, built and merged (#156 to #161): shared deck page with missing view, share card with WhatsApp contact (alternative B), display name and contact in Settings, return to the shared page after sign-in or verification, share attribution and `pnpm share:report`, link-preview tags and generated images, copy a shared deck. Verified by API unit (1073) and e2e (283) suites, web suite (2252), and a browser walkthrough against the real API.

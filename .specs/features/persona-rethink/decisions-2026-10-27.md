@@ -106,3 +106,16 @@ Each entry below was decided by the orchestrator under the owner's delegation of
   - D2 keeps the plain count "60 cartas" in the list header, because the `r3-deck-actions-desktop` test needs it.
   - D10 reads `GET /api/collection/sources`.
   - The D3/D42 change to the phone test "the inventory steppers stack on the phone" only adds a step that moves one copy to the inventory first, since a deck with no inventory now shows no second stepper.
+
+## Owner answers, 2026-10-27
+
+The owner answered the three open questions on 2026-10-27.
+
+- D56 (account hijack by pre-registration): option (a), do not apply.
+  C398 stays as it is.
+  The unapplied patch stays in the scratchpad (`x2-d56.patch`).
+  A later option, not chosen now: a question "Foi você que criou esta conta?" on the confirm page, which would need mockups.
+- Round 6 mockups: D27 alternative A (an "Alternativas" link in the card row), D53 alternative A ("Desativar link" in the share step), D23 alternative B (an e-mailed code before the new password), D29 alternative A ("Enviar nova versão" in the "•••" menu).
+- The formal gate: option (a), accept the spec with the FAIL basis documented.
+  The screen-arrangement checks missing for most journeys, the boundary and pure Test policy rows and the binding Uncovered cells are accepted as recorded gaps.
+  A Verifier round 5 is authorized.
