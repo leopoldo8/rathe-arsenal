@@ -157,7 +157,7 @@ export const sharing = {
     eyebrow: 'Quote request',
     title: '{{name}} asked for a quote on these cards.',
     lead: 'Mark what you have and the price; the answer goes through WhatsApp.',
-    needs: '{{name}} still needs {{copies}} ({{cards}}).',
+    needs: '{{name}} still needs {{copies}} ({{cards}} minus the ones already held).',
     copies_one: '{{count}} copy',
     copies_other: '{{count}} copies',
     cards_one: '{{count}} card',

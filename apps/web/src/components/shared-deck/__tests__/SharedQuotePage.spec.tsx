@@ -77,7 +77,7 @@ describe('SharedQuotePage', () => {
     expect(screen.getByText('Pedido de orçamento')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Caio pediu um orçamento para estas cartas.' })).toBeInTheDocument();
     expect(screen.getByText('Marque o que você tem e o preço; a resposta vai pelo WhatsApp.')).toBeInTheDocument();
-    expect(screen.getByText('Caio ainda precisa de 59 cópias (27 cartas).')).toBeInTheDocument();
+    expect(screen.getByText('Caio ainda precisa de 59 cópias (27 cartas menos as que ele já tem).')).toBeInTheDocument();
 
     const rows = screen.getAllByTestId('quote-row');
     expect(rows).toHaveLength(27);
@@ -206,6 +206,25 @@ describe('SharedQuotePage', () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('3\tPack Hunt\tVermelho\n1\tNullrune Hood\t'));
     expect(api.calls).toEqual([]);
+  });
+
+  it('the preview block stands with its placeholder between the cards and the spreadsheet button until a card is marked', async () => {
+    const user = userEvent.setup();
+    renderQuote();
+
+    const preview = screen.getByTestId('quote-preview');
+    const previewTitle = screen.getByRole('heading', { level: 2, name: 'Prévia da mensagem' });
+    expect(previewTitle.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(preview).toHaveTextContent('Marque as cartas que você tem para ver a mensagem.');
+    const rows = screen.getAllByTestId('quote-row');
+    const spreadsheet = screen.getByRole('button', { name: 'Copiar a lista para a sua planilha' });
+    expect(rows[rows.length - 1]!.compareDocumentPosition(previewTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(preview.compareDocumentPosition(spreadsheet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(within(rows[0]!).getByRole('button', { name: 'Tenho 1 de Alpha Rampage (Vermelho)' }));
+
+    expect(screen.getByTestId('quote-preview')).toHaveTextContent('Oi Caio, orçamento para o seu deck [CC] Brute do Caio:');
+    expect(screen.getByTestId('quote-preview')).not.toHaveTextContent('Marque as cartas que você tem para ver a mensagem.');
   });
 
   it('does not offer to send until a card is marked', () => {

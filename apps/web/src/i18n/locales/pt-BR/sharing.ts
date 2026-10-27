@@ -157,7 +157,7 @@ export const sharing = {
     eyebrow: 'Pedido de orçamento',
     title: '{{name}} pediu um orçamento para estas cartas.',
     lead: 'Marque o que você tem e o preço; a resposta vai pelo WhatsApp.',
-    needs: '{{name}} ainda precisa de {{copies}} ({{cards}}).',
+    needs: '{{name}} ainda precisa de {{copies}} ({{cards}} menos as que ele já tem).',
     copies_one: '{{count}} cópia',
     copies_other: '{{count}} cópias',
     cards_one: '{{count}} carta',

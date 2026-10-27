@@ -154,6 +154,8 @@ describe('ShareDialog', () => {
     const message = await screen.findByTestId('group-ask-message');
     expect(api.calls.find((call) => call.key === 'POST /decks/7/share')?.body).toEqual({ intent: 'missing' });
     expect(screen.getByRole('heading', { name: 'Pedir as cartas que faltam' })).toBeInTheDocument();
+    // The title stands alone: no eyebrow above it repeats the words.
+    expect(screen.getAllByText('Pedir as cartas que faltam')).toHaveLength(1);
     expect(message).toHaveTextContent('Procuro estas cartas para o meu deck Rhinar Rampage (Rhinar):');
     expect(message).toHaveTextContent('2 Pack Hunt (Vermelho)');
     expect(message).toHaveTextContent('Também procuro: 1 Goliath Gauntlet.');
