@@ -135,7 +135,7 @@ export function ToastProvider({ children }: IToastProviderProps): React.ReactEle
           );
         })}
 
-        <RadixToast.Viewport className={styles.viewport} />
+        <RadixToast.Viewport className={styles.viewport} data-testid="toast-viewport" />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

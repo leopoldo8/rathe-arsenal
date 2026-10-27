@@ -21,6 +21,7 @@ export function RulesBar({ checklist, open, onToggle }: IRulesBarProps): React.R
       aria-expanded={open}
       aria-controls={RULES_SHEET_ID}
       data-testid="rules-bar"
+      data-bottom-bar=""
       onClick={onToggle}
     >
       <span className={styles.barText}>{checklist.barText}</span>

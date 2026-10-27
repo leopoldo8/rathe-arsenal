@@ -138,6 +138,18 @@ test.describe('the rules bar of the deck editor', () => {
     }
   });
 
+  test('a toast stacks above the rules bar, not over it', async ({ page }) => {
+    // Mid-list the bar is pinned at the bottom of the screen. Toasts grow upward from the toast area's bottom
+    // edge, so that edge must clear the top of the bar.
+    await page.evaluate(() => window.scrollTo(0, Math.round((document.documentElement.scrollHeight - window.innerHeight) / 2)));
+    const edges = await page.evaluate(() => ({
+      toastBottom: document.querySelector('[data-testid="toast-viewport"]')!.getBoundingClientRect().bottom,
+      barTop: document.querySelector('[data-testid="rules-bar"]')!.getBoundingClientRect().top,
+    }));
+
+    expect(edges.toastBottom, 'the toast area ends above the rules bar').toBeLessThanOrEqual(edges.barTop);
+  });
+
   test('the checklist sheet opens at about half height and closes only by handle or Fechar', async ({ page }) => {
     await page.locator('[data-testid^="editable-card-row-"]').nth(3).scrollIntoViewIfNeeded();
     await page.getByTestId('rules-bar').click();

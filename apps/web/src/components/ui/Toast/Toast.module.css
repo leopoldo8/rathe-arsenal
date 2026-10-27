@@ -30,6 +30,11 @@
     width: auto;
     max-width: none;
   }
+
+  /* The deck editor pins its rules bar (56 px or more) just above the tab bar: stack toasts above it, not over it. */
+  :global(body):has([data-bottom-bar]) .viewport {
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 56px + var(--ra-space-4) + var(--ra-space-3));
+  }
 }
 
 /* ---------- Individual toast ---------- */
