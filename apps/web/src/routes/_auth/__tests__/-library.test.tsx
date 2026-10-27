@@ -597,6 +597,8 @@ describe('LibraryPage — pending lines', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Coleção');
     expect(screen.getByRole('link', { name: 'Importações' })).toHaveAttribute('href', '/library-csv-sources');
     expect(screen.getByRole('link', { name: 'Resolver' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   it('shows no banner when no import has lines left', () => {

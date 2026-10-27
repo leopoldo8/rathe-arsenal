@@ -92,6 +92,11 @@ test.describe('accessibility scan', () => {
       { name: 'shared deck page', path: '/d/TOKEN', signedOut: false },
       { name: 'sign-in', path: '/sign-in', signedOut: true },
     ]);
+
+    // The sixth page is the shopping list: the fixture deck's missing list, scanned signed in.
+    const shoppingList = SCAN_PAGES.find((scanPage) => scanPage.path({ readyDeckId: 42, shareToken: 'TOKEN', sourceId: 'SRC' }) === '/decks/42/missing');
+    expect(shoppingList, 'the missing list is on the scan list').toBeDefined();
+    expect(shoppingList?.signedOut ?? false).toBe(false);
   });
 
   test('no serious or critical axe issue on a failing page: the message names the rule id and the selector', () => {
