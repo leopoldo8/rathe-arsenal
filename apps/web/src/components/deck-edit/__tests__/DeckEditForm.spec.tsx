@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import type { IDeckDetailResponse } from '../../../api/deck-detail';
 import type { TDeckStatus } from '../../../api/decks';
 
@@ -8,8 +8,7 @@ const h = vi.hoisted(() => ({
   navigate: vi.fn(),
   patchMutate: vi.fn(),
   patchPending: { value: false },
-  untrackMutate: vi.fn(),
-  untrackPending: { value: false },
+  deleteDeck: vi.fn(),
   bypassNext: vi.fn(),
   guardOptions: { current: null as null | {
     isDirty: boolean;
@@ -25,8 +24,10 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('../../../api/decks', () => ({
   usePatchDeckMutation: () => ({ mutate: h.patchMutate, isPending: h.patchPending.value }),
-  useUntrackDeckMutation: () => ({ mutate: h.untrackMutate, isPending: h.untrackPending.value }),
 }));
+
+// The edit page deletes the way the deck page does: at once, with the undo toast the hook shows.
+vi.mock('../../../hooks/useDeleteDeckWithUndo', () => ({ useDeleteDeckWithUndo: () => h.deleteDeck }));
 
 vi.mock('../../../hooks/useNavigationAwayGuard', () => ({
   useNavigationAwayGuard: (options: NonNullable<typeof h.guardOptions.current>) => {
@@ -97,10 +98,9 @@ function succeedNextPatch(): void {
 beforeEach(() => {
   h.navigate.mockReset();
   h.patchMutate.mockReset();
-  h.untrackMutate.mockReset();
+  h.deleteDeck.mockReset();
   h.bypassNext.mockReset();
   h.patchPending.value = false;
-  h.untrackPending.value = false;
   h.guardOptions.current = null;
   h.tagRowProps.current = null;
 });
@@ -361,42 +361,30 @@ describe('DeckEditForm: danger zone (EDIT-04)', () => {
     expect(screen.getByTestId('deck-retire-btn')).toBeDisabled();
   });
 
-  it('does not delete on the first click, it asks first', () => {
+  it('deletes at once, with no confirm dialog, and goes back to Home', async () => {
+    h.deleteDeck.mockResolvedValue(true);
     renderForm();
     fireEvent.click(screen.getByTestId('deck-delete-btn'));
 
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('Excluir "Rhinar Aggro"?');
-    expect(h.untrackMutate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(h.deleteDeck).toHaveBeenCalledTimes(1);
+    expect(h.deleteDeck).toHaveBeenCalledWith({ id: 42, name: 'Rhinar Aggro' });
+    await waitFor(() => expect(h.navigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } }));
   });
 
-  it('keeps the deck when the confirmation is cancelled', () => {
+  it('stays on the page when the delete does not go through', async () => {
+    h.deleteDeck.mockResolvedValue(false);
     renderForm();
     fireEvent.click(screen.getByTestId('deck-delete-btn'));
-    fireEvent.click(screen.getByTestId('deck-delete-cancel'));
 
-    expect(h.untrackMutate).not.toHaveBeenCalled();
+    await waitFor(() => expect(h.deleteDeck).toHaveBeenCalledTimes(1));
+    expect(h.navigate).not.toHaveBeenCalled();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('deletes the deck once confirmed and goes back to Home', () => {
-    h.untrackMutate.mockImplementation((_id, opts) => opts?.onSuccess?.());
+  it('no longer says the delete cannot be undone', () => {
     renderForm();
-    fireEvent.click(screen.getByTestId('deck-delete-btn'));
-    fireEvent.click(screen.getByTestId('deck-delete-confirm'));
 
-    expect(h.untrackMutate).toHaveBeenCalledTimes(1);
-    expect(h.untrackMutate.mock.calls[0]![0]).toBe(42);
-    expect(h.navigate).toHaveBeenCalledWith({ to: '/home', search: { tag: [] } });
-  });
-
-  it('keeps the dialog open with an inline error when the delete fails', () => {
-    h.untrackMutate.mockImplementation((_id, opts) => opts?.onError?.(new Error('boom')));
-    renderForm();
-    fireEvent.click(screen.getByTestId('deck-delete-btn'));
-    fireEvent.click(screen.getByTestId('deck-delete-confirm'));
-
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    expect(screen.getByTestId('deck-delete-error')).toHaveTextContent('Não foi possível excluir');
-    expect(h.navigate).not.toHaveBeenCalled();
+    expect(within(screen.getByTestId('deck-danger-zone')).queryByText(/desfazer/i)).not.toBeInTheDocument();
   });
 });

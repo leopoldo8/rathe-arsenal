@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { TDeckStatus } from '../../api/decks';
 import { usePatchDeckMutation } from '../../api/decks';
-import { DeleteDeckDialog } from './DeleteDeckDialog';
+import { useDeleteDeckWithUndo } from '../../hooks/useDeleteDeckWithUndo';
 import styles from './DeckDangerZone.module.css';
 
 interface IDeckDangerZoneProps {
@@ -20,7 +21,8 @@ export function DeckDangerZone({
 }: IDeckDangerZoneProps): React.ReactElement {
   const { t } = useTranslation();
   const patchMutation = usePatchDeckMutation(deckId);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const navigate = useNavigate();
+  const deleteDeck = useDeleteDeckWithUndo();
   const [retireFailed, setRetireFailed] = useState(false);
 
   const isRetired = status === 'retired';
@@ -34,6 +36,13 @@ export function DeckDangerZone({
         onError: () => setRetireFailed(true),
       },
     );
+  }
+
+  // Deleting is undoable ("Desfazer", "Excluídos recentemente"), so it asks nothing: the home shows the toast.
+  function handleDelete(): void {
+    void deleteDeck({ id: deckId, name: deckName }).then((deleted) => {
+      if (deleted) void navigate({ to: '/home', search: { tag: [] } });
+    });
   }
 
   return (
@@ -72,19 +81,17 @@ export function DeckDangerZone({
       <div className={styles.row}>
         <div className={styles.copy}>
           <h3 className={styles.rowTitle}>{t('deckEdit.deleteTitle')}</h3>
-          <p className={styles.rowDesc}>{t('deckEdit.deleteDesc')}</p>
         </div>
         <button
           type="button"
           className={styles.deleteBtn}
-          onClick={() => setConfirmOpen(true)}
+          onClick={handleDelete}
           data-testid="deck-delete-btn"
         >
           {t('deckEdit.deleteButton')}
         </button>
       </div>
 
-      <DeleteDeckDialog deckId={deckId} deckName={deckName} open={confirmOpen} onOpenChange={setConfirmOpen} />
     </section>
   );
 }

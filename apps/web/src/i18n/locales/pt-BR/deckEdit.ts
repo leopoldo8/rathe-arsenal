@@ -23,12 +23,5 @@ export const deckEdit = {
   retiredNote: 'Este deck já está aposentado.',
   retireError: 'Não foi possível aposentar o deck. Tente de novo.',
   deleteTitle: 'Excluir deck',
-  deleteDesc: 'Remove o deck e todos os dados de prontidão dele. Não dá para desfazer.',
   deleteButton: 'Excluir deck',
-  deleteConfirmTitle: 'Excluir "{{name}}"?',
-  deleteConfirmDesc: 'O deck e todos os dados de prontidão dele serão apagados. Não dá para desfazer.',
-  deleteConfirmAction: 'Excluir deck',
-  deleteConfirmCancel: 'Manter deck',
-  deleting: 'Excluindo…',
-  deleteError: 'Não foi possível excluir o deck. Tente de novo.',
 } as const;

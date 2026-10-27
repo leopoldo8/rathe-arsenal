@@ -23,12 +23,5 @@ export const deckEdit = {
   retiredNote: 'This deck is already retired.',
   retireError: 'Could not retire the deck. Try again.',
   deleteTitle: 'Delete deck',
-  deleteDesc: 'Removes the deck and all of its readiness data. This cannot be undone.',
   deleteButton: 'Delete deck',
-  deleteConfirmTitle: 'Delete "{{name}}"?',
-  deleteConfirmDesc: 'The deck and all of its readiness data will be deleted. This cannot be undone.',
-  deleteConfirmAction: 'Delete deck',
-  deleteConfirmCancel: 'Keep deck',
-  deleting: 'Deleting…',
-  deleteError: 'Could not delete the deck. Try again.',
 } as const;

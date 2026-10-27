@@ -35,8 +35,9 @@ vi.mock('../../../api/tags', () => ({
 
 vi.mock('../../../api/decks', () => ({
   usePatchDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
-  useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+
+vi.mock('../../../hooks/useDeleteDeckWithUndo', () => ({ useDeleteDeckWithUndo: () => vi.fn() }));
 
 vi.mock('../../../hooks/useNavigationAwayGuard', () => ({
   useNavigationAwayGuard: () => ({ bypassNext: vi.fn() }),
