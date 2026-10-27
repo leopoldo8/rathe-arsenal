@@ -572,9 +572,10 @@ Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "searching produc
 **C160** - `r3-product-search-phone` shows, in order: "‹ Adicionar cartas", "Qual deck você comprou?", "Armory Deck, Blitz Deck ou Silver Age.", the search field, and one row per result with hero image, product name and format label ("Armory Deck: Kayo" / "Classic Constructed"); no row carries a "Deck pronto" label (AC 92, AC 98) · done
 Proof: `web unit src/components/products/__tests__/ProductSearch.spec.tsx -t "matches r3-product-search-phone copy and order"`
 
-**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora." (this sentence holds for the one product file the repo has, Armory Deck: Kayo; another box gets its token names from its own file), and "Adicionar" (AC 93, AC 98) · done · amended 2026-10-27 (delegation, D9, D63)
+**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora." (this sentence holds for the one product file the repo has, Armory Deck: Kayo; another box gets its token names from its own file), and "Adicionar" (AC 93, AC 98) · done · amended 2026-10-27 (delegation, D9, D63) · proof extended 2026-10-27 (delegation)
 Proof: `web unit src/components/products/__tests__/ProductConfirm.spec.tsx -t "matches r3-product-confirm-phone copy and order"`
 Proof: `web e2e --project=e2e-chromium tests/e2e/product-add-flow.spec.ts -g "choosing Kayo shows the confirm screen of the box"`
+Proof: `web e2e --project=mobile-360 --project=mobile-390 tests/mobile/product-add-flow.spec.ts -g "choosing Kayo shows the confirm screen of the box"`
 
 **C162** - `POST /api/products/armory-kayo/import` with `addCards` and `createDeck` true answers `201` with a `source` of kind `product`, `productKey` `armory-kayo`, named "Armory Deck: Kayo", whose copies carry each card's `printingCode` from the file, and a `deckId` whose deck has the product's name, hero and format and the file's cards; with only `addCards` it returns no `deckId`, with only `createDeck` no `source` (AC 94) · done
 Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "importing a product creates the import and the deck"`
@@ -1329,8 +1330,9 @@ Proof: `web unit src/routes/__tests__/Entrar.spec.tsx -t "from a shared page the
 **C349** - `POST /api/auth/start` answers `200` with `next: "new"` for an address with no account, `next: "password"` for an account with a `passwordHash`, and `next: "code"` for an account without one; "BIA@Gmail.com " finds the account stored as "bia@gmail.com"; a body with `email: "bia@gmail"` answers `400` with a `code`; no response body carries a session token (AC 222, AC 226, AC 228) · done
 Proof: `api e2e src/auth/__tests__/accounts.e2e-spec.ts -t "start says what comes next for each kind of address"`
 
-**C350** - `POST /api/auth/start` answers `429` with a `Retry-After` header once one IP passes the route's per-IP limit, and the limit is the constant the controller declares for the route (AC 257) · done
+**C350** - `POST /api/auth/start` answers `429` with a `Retry-After` header once one IP passes the route's per-IP limit, and the limit is the constant the controller declares for the route (AC 257) · done · proof extended 2026-10-27 (delegation)
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "start is throttled per IP"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "start is throttled per IP"`
 
 **C351** - With `next: "new"` for "bia.souza@gmail.com" the page shows, in this order: the heading "Criar sua conta"; "Primeira vez aqui? Vamos criar sua conta com bia.souza@gmail.com." with "Errei o e-mail"; the one button "Criar conta e entrar"; the link "Prefiro criar uma senha"; and the staying-in line of C384; "Errei o e-mail" returns to the field with the address in it (screen `r3-new-account-phone`) (AC 222, AC 227) · done
 Proof: `web unit src/components/auth/__tests__/NewAccountStep.spec.tsx -t "a new address offers one button and the password link"`
@@ -1506,8 +1508,9 @@ Proof: `web unit src/components/auth/__tests__/auth-form-validation.spec.tsx -t 
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "field errors carry a code"`
 Proof: `web unit src/auth/__tests__/localize-auth-error.spec.ts -t "field codes have their own message"`
 
-**C401** - From one IP, 25 sign-up requests that fail validation answer `400` each, and the next valid one answers `201`, not `429`; the same holds for code requests (AC 255) · done
+**C401** - From one IP, 25 sign-up requests that fail validation answer `400` each, and the next valid one answers `201`, not `429`; the same holds for code requests (AC 255) · done · proof extended 2026-10-27 (delegation)
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "invalid requests do not use up the limit"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "invalid requests do not use up the limit"`
 
 **C402** - With `TURNSTILE_SECRET_KEY` set and siteverify stubbed to `success: false`, sign-up and code requests answer `400` `CAPTCHA_FAILED`, create no user and no `sign_in_code`; stubbed to `success: true` they answer `201` and `202`; the stub received a `POST` to `https://challenges.cloudflare.com/turnstile/v0/siteverify` with the secret and the request's token (AC 256; door 16) · done
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "Turnstile decides sign-up and code requests when the secret is set"`
@@ -1522,13 +1525,15 @@ Proof: `web unit src/components/auth/__tests__/TurnstileWidget.spec.tsx -t "no s
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "five codes per address and twenty sign-ups per IP per hour"`
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "ten failed tries per address per hour across codes"`
 
-**C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done
+**C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done · proof extended 2026-10-27 (delegation)
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "too many tries says the wait and the other way in"`
 Proof: `web unit src/components/auth/__tests__/CodeStep.spec.tsx -t "too many tries says the wait and the other way in"`
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "returns 200 for the first 5 requests and 429 on the 6th"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "sign-in answers 401 for a wrong password and 429 once the IP passes its per-minute limit"`
 
-**C406** - `POST /api/auth/codes/verify` answers `429` once one IP passes the route's per-IP limit, the constant the controller declares (Surface) · done
+**C406** - `POST /api/auth/codes/verify` answers `429` once one IP passes the route's per-IP limit, the constant the controller declares (Surface) · done · proof extended 2026-10-27 (delegation)
 Proof: `api e2e src/auth/__tests__/auth.controller.e2e-spec.ts -t "code verification is throttled per IP"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "code verification is throttled per IP"`
 
 **C407** - WHERE `TURNSTILE_SECRET_KEY` is set and the siteverify call fails with a network error or a timeout, the Turnstile check lets the request through, as when the secret is absent, and logs one warning naming the failure (plan Assumptions, siteverify unreachable; door 16) · done
 Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "an unreachable siteverify lets the request through and warns"`

@@ -746,6 +746,12 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - D26: the skip note is printed under the near-name step only, as `r4-resolve-b-phone` draws it. The "Qual cor?" step stays (see Needs the owner). Tests: two `not.toBeInTheDocument` lines in `PendingResolver.spec.tsx` (failed first).
 - Local run note: the runner needs `NODE_OPTIONS=--max-old-space-size=4096` in this shell, because the inherited `NODE_OPTIONS` points at a file that no longer exists.
 
+### Accepted by the orchestrator under the owner's delegation of 2026-10-27
+
+- C404 fix (8b760ec): a code that signed in by its digits stores `attempts = -1`, so the up to 4 failed tries made on that same code before the right one stop counting toward the 10. Bounded and accepted: only the owner of the account, who holds the code, can trigger it, and it erases at most 4 tries per sign-in.
+- A sign-in through the e-mailed button leaves its code counted as untried, so 5 button sign-ins in an hour block a 6th code request for that hour. Accepted.
+- C454 names `--warn`; the code uses `--ra-ready-mid`, which is the app's `--warn` amber (`apps/web/src/styles/__tests__/contrast.spec.ts` names it so). Accepted, no change.
+
 ## Settled by the owner
 
 - 2026-10-24, C16: accepted as built. No toast follows a swap today, so the pitch is named in the undo action, "Desfazer a troca de Pack Hunt (Vermelho)"; no swap toast is to be added.
