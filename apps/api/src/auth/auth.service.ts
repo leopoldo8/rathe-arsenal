@@ -296,9 +296,12 @@ export class AuthService {
   }
 
   /** E-mails the signed-in account a code that must come back with the new password. */
-  async requestPasswordCode(userId: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult> {
+  async requestPasswordCode(userId: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult & { _devCode?: string }> {
     const user = await this.signedInUser(userId);
-    return this.signInCodes.requestPasswordCode(userId, user.email, locale);
+    const { code, ...issued } = await this.signInCodes.requestPasswordCode(userId, user.email, locale);
+    // Like `_devVerificationLink` on sign-up: outside production the digits ride in the answer, so an e2e
+    // test that has no inbox can finish the flow. Production never carries them.
+    return this.isDev ? { ...issued, _devCode: code } : issued;
   }
 
   /** Sets the password once the code e-mailed to the account's own address is spent. */

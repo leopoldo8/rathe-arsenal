@@ -19,6 +19,7 @@ function buildService(overrides: {
   create?: jest.Mock;
   sendVerification?: jest.Mock;
   resolveReferral?: jest.Mock;
+  nodeEnv?: string;
 } = {}) {
   const repo = createMock<Repository<UserEntity>>();
   repo.findOne = overrides.findOne ?? jest.fn().mockResolvedValue(null);
@@ -36,7 +37,7 @@ function buildService(overrides: {
   const config = createMock<ConfigService>();
   config.get.mockImplementation((key: string) => {
     if (key === 'APP_BASE_URL') return 'http://localhost:5173';
-    if (key === 'NODE_ENV') return 'development';
+    if (key === 'NODE_ENV') return overrides.nodeEnv ?? 'development';
     return undefined;
   });
 
@@ -635,5 +636,25 @@ describe('AuthService.getMe sharing profile', () => {
 
     expect(result.displayName).toBe('Rodrigo');
     expect(result.whatsappNumber).toBe('5551999990000');
+  });
+});
+
+describe('AuthService.requestPasswordCode', () => {
+  const account = { id: 'u1', email: 'lucas@hotmail.com', deletedAt: null } as UserEntity;
+  const issued = { expiresAt: new Date('2026-10-27T12:15:00Z'), resendAfter: new Date('2026-10-27T12:00:45Z'), code: '482913' };
+
+  it('hands the digits back only outside production, so tests can read them without an inbox', async () => {
+    const dev = buildService({ findOne: jest.fn().mockResolvedValue(account) });
+    dev.signInCodes.requestPasswordCode.mockResolvedValue(issued);
+    const production = buildService({ findOne: jest.fn().mockResolvedValue(account), nodeEnv: 'production' });
+    production.signInCodes.requestPasswordCode.mockResolvedValue(issued);
+
+    const fromDev = await dev.service.requestPasswordCode('u1');
+    const fromProduction = await production.service.requestPasswordCode('u1');
+
+    expect(fromDev).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter, _devCode: '482913' });
+    expect(fromProduction).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
+    expect(JSON.stringify(fromProduction)).not.toContain('482913');
+    expect(production.signInCodes.requestPasswordCode).toHaveBeenCalledWith('u1', 'lucas@hotmail.com', 'pt-BR');
   });
 });

@@ -32,6 +32,11 @@ export interface ICodeRequestResult {
   resendAfter: Date;
 }
 
+export interface IPasswordCodeIssued extends ICodeRequestResult {
+  /** The six digits just e-mailed; the caller decides whether anything but the inbox may see them. */
+  code: string;
+}
+
 /**
  * The life of an e-mailed sign-in code (door 15): six digits and a single-use button token,
  * both stored hashed, one live code per address, 15 minutes, 5 wrong tries.
@@ -137,7 +142,7 @@ export class SignInCodeService {
    * e-mails it to the account's own address. The digits sign nobody in, and the same per-address
    * limit as the sign-in codes applies.
    */
-  async requestPasswordCode(userId: string, email: string, locale: TLocale): Promise<ICodeRequestResult> {
+  async requestPasswordCode(userId: string, email: string, locale: TLocale): Promise<IPasswordCodeIssued> {
     const now = Date.now();
     const result = {
       expiresAt: new Date(now + SIGN_IN_CODE_TTL_MS),
@@ -159,7 +164,7 @@ export class SignInCodeService {
       throw new AuthError(EAuthErrorCode.EmailDeliveryFailed, 'Could not send the code. Please try again later.');
     }
     this.logger.log({ event: 'auth.password_code.requested', userId });
-    return result;
+    return { ...result, code };
   }
 
   /**
