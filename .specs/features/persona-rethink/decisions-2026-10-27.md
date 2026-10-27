@@ -87,3 +87,22 @@ No new check is needed for these: an existing check already states each one, and
 - C22 (weapons and equipment in the pool): C22 already says "deck + inventory + weapons + equipment and never the hero"; the builders add rows with a weapon and equipment to the table-driven test.
 - The 12 reader header and spelling members: C144 and its Coverage row ("CSV headers (12)") already name all twelve; the builders make the test assert each of the twelve members.
 - The 429 proofs run with real auth: C350, C401, C404, C405 and C406 already claim the statuses; the builders run their api e2e proofs with the real `AuthService`, not a mock.
+
+## After batch X1
+
+Each entry below was decided by the orchestrator under the owner's delegation of 2026-10-27, about items batch X1 left open.
+
+- D44 revised (the "Escolher por linha" chip): the chip stays, because the picked screen `r3-list-phone` draws it and C155 names it.
+  The earlier D44 pick (remove it) is withdrawn.
+  Pressed, it sends no default version, so each line keeps the version written on it; that is what the label promises.
+  Known limit: it behaves the same as "Não sei" today, because the reader has no per-line version picker.
+  Adding one is new UI that needs mockups, so it is deferred.
+- The "Qual cor?" step on the Resolver page stays: without it a line naming a card printed in more than one colour cannot be resolved.
+  No picked screen draws it; C453 asserts only the drawn steps.
+- D57: the copy "Este link já foi usado ou venceu. Peça um código novo." is accepted as written; it has no drawing.
+- D50: the edit page's delete row keeps no description line.
+  The undo toast "... foi para Excluídos recentemente · Desfazer" is the safety, and new copy would need a drawing.
+- X1 deviations accepted:
+  - D2 keeps the plain count "60 cartas" in the list header, because the `r3-deck-actions-desktop` test needs it.
+  - D10 reads `GET /api/collection/sources`.
+  - The D3/D42 change to the phone test "the inventory steppers stack on the phone" only adds a step that moves one copy to the inventory first, since a deck with no inventory now shows no second stepper.

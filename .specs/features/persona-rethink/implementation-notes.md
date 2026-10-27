@@ -731,6 +731,15 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - 2026-10-25, the Armory Deck: Kayo decklist fetched once from the official page `https://fabtcg.com/decklists/kayo-armory-deck/` through `pnpm products:import`: accepted.
 - 2026-10-25, the admin credits line in Settings (C201), which no mockup drew when batch 12 built S16: the owner was shown two alternatives and picked B, a thin bar with "Créditos do Firecrawl este mês" and "120 de 1000", amber when lookups stop (`.design/mockups/close-the-deck/r5-credits-b-phone.png`, brief `BRIEF-round-5.md`); A (`r5-credits-a-phone.png`, one sentence) was not picked.
   The stopped state shows "As consultas automáticas de preço pararam." and "A sincronização manual continua funcionando.".
+- 2026-10-27, batch X1, D44 and C155 (the "Escolher por linha" chip): decided by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
+  The chip stays, because `r3-list-phone` draws it and C155 names it.
+- 2026-10-27, batch X1, D26 (the "Qual cor?" step on the Resolver page): decided by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
+  The step stays, because without it a line naming a card printed in more than one colour cannot be resolved.
+- 2026-10-27, batch X1, D57 (copy "Este link já foi usado ou venceu. Peça um código novo.", no drawing): decided by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
+  The copy is accepted as written.
+- 2026-10-27, batch X1, D50 (the delete row of the edit page lost its description line): decided by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
+  The row keeps no description; the undo toast is the safety.
+- 2026-10-27, batch X1 deviations for D2, D10 and D3: accepted by the orchestrator under the owner's delegation of 2026-10-27; see [decisions-2026-10-27.md](decisions-2026-10-27.md), section "After batch X1".
 
 ## Needs the owner
 
@@ -895,12 +904,7 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
   - D52: open `https://www.ligafab.com.br/?view=cards/search&card=Head%20Jab` and say whether it lands on a card search for "Head Jab".
     The site returned 403 to the agent, so the landing is unconfirmed; the link stays until you say it fails.
   - D4: if you know the text that GEM reads on paste, say so; until then the copy-list tab is named "Para Fabrary ou Talishar" and does not claim GEM.
-  - D57: the line "Este link já foi usado ou venceu. Peça um código novo." is new copy that no picked screen draws; say if you want it drawn or reworded.
 - Still the owner's after the delegation of 2026-10-27: D23 (a guard on changing the password), D27 (the entry point of the alternatives sheet), D29 ("Enviar CSV" on Importações), D53 (turning off a missing-list link; round 6 mockups are being made), and whether to pursue arrangement checks for every journey to reach a PASS verdict.
-- Batch X1, D44 (the "Escolher por linha" chip): not removed. `r3-list-phone` draws the chip, and C155 (not amended) names it in its claim and in the test "matches r3-list-phone copy and order". Removing it means editing that proof, which the rules forbid. Say whether C155 and the mockup should drop the chip, then it is a one-line removal in `ListReader.tsx` plus `collectionReader.versionPerLine`.
-- Batch X1, D26: the Resolver page keeps the step that asks "Qual cor?" for a line that needs a color. No picked mockup draws it (`r4-resolve-b-phone` has three steps); without it such a line cannot be resolved there.
-- Batch X1, D57, undrawn copy: "Este link já foi usado ou venceu. Peça um código novo." (English: "This link was already used or has expired. Ask for a new code."), shown above the e-mail field of `/entrar`.
-- Batch X1, D50, undrawn: the delete row of the edit page's danger zone lost its description line ("Remove o deck ... Não dá para desfazer."). No new text replaced it.
 - Batch X1, D40: the "?" after the format chip is built (this closes the S37 entry above); it sits as its own element after the chip, not inside it.
 - Batch X1, D43: in the deck editor (`?edit=1`) the stage menu's "Aposentado" sheet shows the sentence without the line "Seu deck ... continua salvo", because the edit header has no card count.
 - Batch X1, D31: the lift of the toast over the rules bar uses `:has()` on the body (Chrome and Safari support it) and a fixed 56 px bar height.
