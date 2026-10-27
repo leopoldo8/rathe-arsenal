@@ -123,7 +123,8 @@ describe('the inventory in the deck editor', () => {
     const inOrder = [
       'Deck 60 · Inventário 15 · Card pool 80 de 80',
       'Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas.',
-      'Card pool: deck, inventário, arma e equipamentos; o herói não conta.',
+      'Cartas que você leva: 80 de 80',
+      'o deck, o inventário, a arma e os equipamentos; o herói não conta. No torneio isto se chama card pool.',
       'Carta',
       'No deck',
       'No inventário',
@@ -135,7 +136,7 @@ describe('the inventory in the deck editor', () => {
       cursor = at;
     }
     expect(text.split('Inventário: cartas que você leva').length - 1, 'the inventory line shows once').toBe(1);
-    expect(text.split('Card pool: deck, inventário').length - 1, 'the card pool line shows once').toBe(1);
+    expect(text.split('Cartas que você leva: 80 de 80').length - 1, 'the card pool line shows once').toBe(1);
 
     const rows = screen.getAllByTestId(/^editable-card-row-/);
     expect(rows).toHaveLength(25);
@@ -145,6 +146,30 @@ describe('the inventory in the deck editor', () => {
     const spareRow = screen.getByTestId('editable-card-row-spare-card-0');
     expect(stepperValue(spareRow, 'deck')).toBe('0');
     expect(stepperValue(spareRow, 'inventory')).toBe('3');
+  });
+
+  it('shows one stepper and no inventory header for a deck with no inventory copies', () => {
+    const cards = [card('pack-hunt-red', 'Pack Hunt', 1, 3), card('snatch-red', 'Snatch', 1, 2)];
+    const { container } = render(<Editor cards={cards} />);
+
+    const text = container.textContent ?? '';
+    expect(text).not.toContain('Inventário');
+    expect(text).not.toContain('Card pool');
+    expect(screen.queryByTestId('inventory-summary')).toBeNull();
+    for (const row of screen.getAllByTestId(/^editable-card-row-/)) {
+      expect(within(row).getAllByRole('group', { name: /Quantidade/ })).toHaveLength(1);
+      expect(within(row).queryByTestId('stepper-inventory')).toBeNull();
+    }
+    expect(screen.queryByText('No inventário')).toBeNull();
+  });
+
+  it('shows the second stepper on every row once any card has inventory copies', () => {
+    render(<Editor cards={[card('pack-hunt-red', 'Pack Hunt', 1, 3), card('snatch-red', 'Snatch', 1, 0, 2)]} />);
+
+    expect(screen.getByTestId('inventory-summary')).toHaveTextContent('Deck 3 · Inventário 2 · Card pool 5 de');
+    for (const row of screen.getAllByTestId(/^editable-card-row-/)) {
+      expect(within(row).getAllByRole('group', { name: /Quantidade/ })).toHaveLength(2);
+    }
   });
 
   it('over the limit across deck and inventory', () => {

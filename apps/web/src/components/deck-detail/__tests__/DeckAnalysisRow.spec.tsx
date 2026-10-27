@@ -138,12 +138,16 @@ describe('DeckAnalysisRow', () => {
     const cost = screen.getByTestId('analysis-cost');
     expect(within(pitch).getByRole('heading', { name: /^Pitch/ })).toBeInTheDocument();
     expect(within(cost).getByRole('heading', { name: /^Curva de custo/ })).toBeInTheDocument();
+    // Top to bottom: the header with its chips, the size line, Pitch, Curva de custo.
     for (const [before, after] of [
-      [title, pitch],
+      [title, countLine],
+      [header, countLine],
+      [countLine, pitch],
       [pitch, cost],
     ] as const) {
       expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
-    expect(countLine).toBeInTheDocument();
+    expect(screen.getAllByText('31 de 40 cartas no deck · coloque mais 9'), 'the size line shows once on the page').toHaveLength(1);
+    expect(within(screen.getByTestId('deck-list')).queryByText('31 de 40 cartas no deck · coloque mais 9')).toBeNull();
   });
 });

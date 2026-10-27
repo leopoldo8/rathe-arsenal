@@ -62,6 +62,8 @@ export interface IEditableCardRowProps {
   } | null;
   /** Called with the new quantity when the stepper changes. */
   readonly onQuantityChange: (cardIdentifier: string, slot: TDraftSlot, quantity: number) => void;
+  /** False hides the inventory stepper: a deck that carries no copies outside the starting deck has just one. */
+  readonly showInventory?: boolean;
   /** Called with the new inventory quantity when the inventory stepper changes. */
   readonly onInventoryQuantityChange?: ((cardIdentifier: string, slot: TDraftSlot, quantity: number) => void) | undefined;
   /** Called when the player moves `count` copies out of one side of the row. */
@@ -100,6 +102,7 @@ export function EditableCardRow({
   pitch,
   quantity,
   inventoryQuantity = 0,
+  showInventory = true,
   slot,
   type,
   cost = null,
@@ -204,7 +207,7 @@ export function EditableCardRow({
       </div>
 
       <div className={styles.controls}>
-        <div className={styles.stepperCell} data-testid="stepper-deck" data-label={t('deckDetail.columnDeck')}>
+        <div className={styles.stepperCell} data-testid="stepper-deck" data-label={showInventory ? t('deckDetail.columnDeck') : undefined}>
           <div className={styles.stepper} role="group" aria-label={t('decks.cardQuantityGroupAria', { name })}>
             <button
               type="button"
@@ -237,40 +240,42 @@ export function EditableCardRow({
           </div>
         </div>
 
-        <div className={styles.stepperCell} data-testid="stepper-inventory" data-label={t('deckDetail.columnInventory')}>
-          <div className={styles.stepper} role="group" aria-label={t('deckDetail.inventoryGroupAria')}>
-            <button
-              type="button"
-              className={styles.stepperBtn}
-              aria-label={t('deckDetail.decreaseInventoryAria', { name })}
-              data-testid={`decrement-inventory-${cardIdentifier}`}
-              disabled={inventoryQuantity === 0}
-              onClick={handleInventoryDecrement}
-            >
-              &minus;
-            </button>
-            <QuantityValue
-              side="inventory"
-              value={inventoryQuantity}
-              name={name}
-              onMoveCopies={
-                onMoveCopies && inventoryQuantity > 0 ? (from, count) => onMoveCopies(cardIdentifier, slot, from, count) : undefined
-              }
-              cardIdentifier={cardIdentifier}
-            />
-            <button
-              type="button"
-              className={styles.stepperBtn}
-              aria-label={t('deckDetail.increaseInventoryAria', { name })}
-              aria-describedby={atLimit ? reasonId : undefined}
-              disabled={atLimit}
-              data-testid={`increment-inventory-${cardIdentifier}`}
-              onClick={handleInventoryIncrement}
-            >
-              +
-            </button>
+        {showInventory && (
+          <div className={styles.stepperCell} data-testid="stepper-inventory" data-label={t('deckDetail.columnInventory')}>
+            <div className={styles.stepper} role="group" aria-label={t('deckDetail.inventoryGroupAria')}>
+              <button
+                type="button"
+                className={styles.stepperBtn}
+                aria-label={t('deckDetail.decreaseInventoryAria', { name })}
+                data-testid={`decrement-inventory-${cardIdentifier}`}
+                disabled={inventoryQuantity === 0}
+                onClick={handleInventoryDecrement}
+              >
+                &minus;
+              </button>
+              <QuantityValue
+                side="inventory"
+                value={inventoryQuantity}
+                name={name}
+                onMoveCopies={
+                  onMoveCopies && inventoryQuantity > 0 ? (from, count) => onMoveCopies(cardIdentifier, slot, from, count) : undefined
+                }
+                cardIdentifier={cardIdentifier}
+              />
+              <button
+                type="button"
+                className={styles.stepperBtn}
+                aria-label={t('deckDetail.increaseInventoryAria', { name })}
+                aria-describedby={atLimit ? reasonId : undefined}
+                disabled={atLimit}
+                data-testid={`increment-inventory-${cardIdentifier}`}
+                onClick={handleInventoryIncrement}
+              >
+                +
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <button
           type="button"

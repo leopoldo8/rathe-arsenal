@@ -6,6 +6,7 @@ import { DeckHeroBanner } from './DeckHeroBanner';
 import { ShareDialog } from './ShareDialog';
 import type { TShareIntent } from '../../api/shared-decks';
 import { DeckList } from './DeckList';
+import { DeckSizeLine } from './DeckSizeLine';
 import { DeckStatusStrip } from './DeckStatusStrip';
 import { DeckCauseLine } from './DeckCauseLine';
 import type { IRecommendationDeckCard } from './recommendations/card-naming';
@@ -120,6 +121,7 @@ export function DeckDetailView({
       />
       {!hasHeroOutsideFormat(deck.legality.details) && !showsRuleChange && <DeckCauseLine legality={deck.legality} />}
       <RecommendationsRail deckId={deck.id} deckCards={deckCards} heroName={deck.hero} legality={deck.legality} format={deck.format} />
+      <DeckSizeLine items={items} legalityDetails={deck.legality.details} />
       <DeckAnalysisRow items={items} />
       {summary.kind !== 'complete' && <MissingSummaryCard deckId={deck.id} />}
       <DeckList

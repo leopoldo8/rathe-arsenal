@@ -120,6 +120,11 @@
     font-size: var(--ra-text-xs);
     color: var(--ra-fg-secondary);
   }
+
+  /* A lone stepper needs no "No deck" label. */
+  .stepperCell:not([data-label])::before {
+    display: none;
+  }
 }
 
 @media (min-width: 720px) {

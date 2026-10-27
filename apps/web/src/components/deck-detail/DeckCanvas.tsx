@@ -190,7 +190,8 @@ function EditBody({
   }
 
   const totalCards = compositionDraft.cards.reduce((sum, c) => sum + c.quantity + inventoryOf(c), 0);
-  const pool = poolOf(compositionDraft);
+  const hasInventory = compositionDraft.cards.some((card) => inventoryOf(card) > 0);
+  const pool = hasInventory ? poolOf(compositionDraft) : null;
 
   return (
     <div className={styles.editCanvas} data-testid="deck-canvas-edit">
@@ -276,14 +277,17 @@ function EditBody({
                     })}
                   </p>
                   <p className={styles.plainLine}>{t('deckDetail.inventoryPlain')}</p>
-                  <p className={styles.plainLine}>{t('deckDetail.cardPoolPlain')}</p>
+                  <p className={styles.plainLine}>{t('deckDetail.rulePool', { count: pool.cards, limit: pool.limit })}</p>
+                  <p className={styles.plainLine}>{t('deckDetail.rulePoolHint')}</p>
                 </div>
               )}
-              <div className={styles.columnHeads} aria-hidden="true">
-                <span className={styles.headCard}>{t('deckDetail.columnCard')}</span>
-                <span className={styles.headSide}>{t('deckDetail.columnDeck')}</span>
-                <span className={styles.headSide}>{t('deckDetail.columnInventory')}</span>
-              </div>
+              {hasInventory && (
+                <div className={styles.columnHeads} aria-hidden="true">
+                  <span className={styles.headCard}>{t('deckDetail.columnCard')}</span>
+                  <span className={styles.headSide}>{t('deckDetail.columnDeck')}</span>
+                  <span className={styles.headSide}>{t('deckDetail.columnInventory')}</span>
+                </div>
+              )}
               <ul className={styles.deckList} aria-label={t('decks.slotGroupCardsAria', { group: 'mainboard' })}>
                 {deckRows.map((card) => (
                   <EditableCardRow
@@ -293,6 +297,7 @@ function EditBody({
                     pitch={card.pitch}
                     quantity={card.quantity}
                     inventoryQuantity={inventoryOf(card)}
+                    showInventory={hasInventory}
                     slot={card.slot}
                     type={card.type}
                     cost={card.cost}

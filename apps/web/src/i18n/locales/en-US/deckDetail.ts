@@ -167,7 +167,6 @@ export const deckDetail = {
   // The inventory of a deck line (door 3, S5)
   inventorySummary: 'Deck {{deck}} · Inventory {{inventory}} · Card pool {{pool}} of {{limit}}',
   inventoryPlain: 'Inventory: cards you bring to the tournament besides the deck. Between one game and the next of the same match, you can swap deck cards for them.',
-  cardPoolPlain: 'Card pool: deck, inventory, weapon and equipment; the hero does not count.',
   columnCard: 'Card',
   columnDeck: 'In the deck',
   columnInventory: 'In the inventory',

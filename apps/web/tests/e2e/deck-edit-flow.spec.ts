@@ -182,6 +182,9 @@ test.describe('the inventory in the deck editor on a phone', () => {
     await openCompositionEditor(page, loadFixture().readyDeckId);
     const row = page.locator('[data-testid^="editable-card-row-"]').first();
     await row.scrollIntoViewIfNeeded();
+    // The second stepper shows once a deck carries inventory copies: move one copy there first.
+    await row.locator('[data-testid^="move-from-deck-"]').click();
+    await page.getByRole('menuitem', { name: 'Mover 1 para o inventário' }).click();
 
     const name = await row.locator('[data-testid="row-name"]').boundingBox();
     const deck = await row.getByTestId('stepper-deck').boundingBox();

@@ -16,7 +16,6 @@ import {
 } from './deckListModel';
 import { ReplacementControls } from './ReplacementMark';
 import { DeckTextList } from './DeckTextList';
-import { sizeProblemOf } from '../home/deckVerdictLine';
 import { CARD_GROUP_LABEL_KEY, type TCardGroupId } from '../../lib/card-groups';
 import styles from './DeckList.module.css';
 
@@ -105,14 +104,6 @@ export function DeckList({
     .filter((item) => !LOADOUT_GROUPS.has(resolveTypeGroup(item.entry)))
     .reduce((sum, item) => sum + item.quantity, 0);
 
-  const shortOf = sizeProblemOf(legalityDetails);
-  const countText =
-    shortOf === null
-      ? t('deckDetail.decklistCount', { count: deckSize })
-      : deckSize < shortOf.limit
-        ? t('deckDetail.editorDeckSizeShort', { count: deckSize, target: shortOf.limit, missing: shortOf.limit - deckSize })
-        : t('deckDetail.decklistCount', { count: deckSize });
-
   return (
     <section className={styles.section} aria-labelledby="deck-list-title" data-testid="deck-list">
       <div className={styles.header}>
@@ -121,7 +112,7 @@ export function DeckList({
             {t('deckDetail.decklistTitle')}
           </h2>
           <span className={styles.count} data-testid="deck-list-count">
-            {countText}
+            {t('deckDetail.decklistCount', { count: deckSize })}
           </span>
         </div>
         <div className={styles.headerActions}>
