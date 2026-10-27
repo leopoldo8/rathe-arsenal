@@ -38,6 +38,22 @@ const AUTH_SURFACES = [
   { name: 'home-retired-collapsed', url: '/home' },
 ] as const;
 
+// Fixed imports for the imports page: the real list depends on how many Fabrary imports and hand entries the account has accumulated.
+const STUBBED_IMPORTS = [
+  { id: 'src-goal', kind: 'fabrary', label: 'Fabrary: [CC/GOAL] Kayo', copies: 81, active: true },
+  { id: 'src-current', kind: 'fabrary', label: 'Fabrary: [CC/CURRENT] Kayo', copies: 81, active: true },
+  { id: 'src-manual', kind: 'manual', label: null, copies: 36, active: true },
+].map((source) => ({
+  ...source,
+  userId: 'fixture-user',
+  originalFilename: null,
+  sourceUrl: null,
+  contentHash: null,
+  cardCount: source.copies,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+}));
+
 const DECK_ROUTE_READY_TESTIDS: Readonly<Record<string, string>> = {
   'deck-detail': 'deck-detail-view',
   'deck-detail-edit': 'deck-canvas-edit',
@@ -87,7 +103,11 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
 
   for (const surface of AUTH_SURFACES) {
     test(`auth: ${surface.name}`, async ({ page }) => {
-      const url = surface.url.replace(':deckId', String(loadFixture().readyDeckId));
+      const fixture = loadFixture();
+      // The edit canvas shows every card line, and the imported Fabrary decks carry an inventory only when they were
+      // imported recently; the swap deck is written by the seed itself, so its lines are the same on any database.
+      const deckId = surface.name === 'deck-detail-edit' ? fixture.swapDeckId : fixture.readyDeckId;
+      const url = surface.url.replace(':deckId', String(deckId));
 
       // Runs come from the worker, which `pnpm dev` does not start, so a deck's panel would depend on whatever was queued.
       await page.route('**/api/decks/*/recommendations', (route) =>
@@ -109,6 +129,16 @@ test.describe('Visual regression — dark desktop 1440x900 (U8)', () => {
         // The first-run page also asks for the imports: a new account has none.
         await page.route('**/api/collection/sources', (route) =>
           route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+        );
+      }
+
+      if (surface.name === 'library-csv-sources') {
+        await page.route('**/api/collection/sources', (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(STUBBED_IMPORTS),
+          }),
         );
       }
 
