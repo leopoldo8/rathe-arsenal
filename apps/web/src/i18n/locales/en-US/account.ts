@@ -68,6 +68,7 @@ export const account = {
   codeExpired: 'This code has expired. It is valid for 15 minutes.',
   sendNewCode: 'Send a new code',
   buttonSigningIn: 'Signing in…',
+  buttonUsedOrExpired: 'This link was already used or has expired. Ask for a new code.',
 
   // --- Confirming the e-mail (S33) ---
   unconfirmedLine: 'Confirm {{email}} to create share links ·',

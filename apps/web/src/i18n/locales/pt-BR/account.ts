@@ -71,6 +71,7 @@ export const account = {
   codeExpired: 'Este código venceu. Ele vale 15 minutos.',
   sendNewCode: 'Mandar um código novo',
   buttonSigningIn: 'Entrando…',
+  buttonUsedOrExpired: 'Este link já foi usado ou venceu. Peça um código novo.',
 
   // --- Confirming the e-mail (S33) ---
   unconfirmedLine: 'Confirme {{email}} para criar links de compartilhar ·',

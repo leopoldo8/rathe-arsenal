@@ -197,6 +197,32 @@ describe('the one-field start', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['used a second time', 'a'.repeat(64)],
+    ['opened after its 15 minutes', 'b'.repeat(64)],
+  ])('an e-mailed button %s says so in one line above the field', async (_when, token) => {
+    searchRef.current = { token };
+    const redeemCode = vi.fn().mockRejectedValue(new Error('401'));
+
+    renderWithAuth(<EntrarPage />, makeAuth({ redeemCode }));
+
+    const line = await screen.findByText('Este link já foi usado ou venceu. Peça um código novo.');
+    expect(screen.getAllByText(/Este link já foi usado ou venceu/)).toHaveLength(1);
+    expect(line.compareDocumentPosition(screen.getByLabelText('Seu e-mail')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeInTheDocument();
+  });
+
+  it('shows no used-or-expired line on a plain visit or while a button signs in', async () => {
+    renderWithAuth(<EntrarPage />);
+    expect(screen.queryByText(/Este link já foi usado ou venceu/)).not.toBeInTheDocument();
+
+    searchRef.current = { token: 'c'.repeat(64) };
+    const redeemCode = vi.fn().mockReturnValue(new Promise(() => undefined));
+    renderWithAuth(<EntrarPage />, makeAuth({ redeemCode }));
+    expect(await screen.findByText('Entrando…')).toBeInTheDocument();
+    expect(screen.queryByText(/Este link já foi usado ou venceu/)).not.toBeInTheDocument();
+  });
+
   it('a visitor whose session this device restored goes to the home, not to the start', () => {
     const user = { id: 'u1', email: 'a@b.com', role: 'user' as const, chatAccess: false };
 

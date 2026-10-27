@@ -11,6 +11,7 @@ import { EmailStep } from './EmailStep';
 import { NewAccountStep } from './NewAccountStep';
 import { PasswordStep } from './PasswordStep';
 import { useShareOrigin } from './ShareOrigin';
+import styles from './AccountSteps.module.css';
 
 type TStep =
   | { readonly kind: 'email'; readonly email: string }
@@ -44,6 +45,7 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
     codeEmail !== undefined ? { kind: 'code', email: codeEmail, hasPassword: false } : { kind: 'email', email: readRememberedEmail() },
   );
   const [redeeming, setRedeeming] = useState(buttonToken !== undefined);
+  const [buttonFailed, setButtonFailed] = useState(false);
   const redeemed = useRef(false);
 
   function finish(): void {
@@ -65,8 +67,11 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
     redeemed.current = true;
     redeemCode(buttonToken)
       .then(finish)
-      // A button that no longer works leaves the visitor on the plain start page.
-      .catch(() => setRedeeming(false));
+      // A button that no longer works leaves the visitor on the plain start page, with a line saying why.
+      .catch(() => {
+        setButtonFailed(true);
+        setRedeeming(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buttonToken]);
 
@@ -123,6 +128,11 @@ export function StartFlow({ buttonToken, next: nextPage, codeEmail }: IStartFlow
     case 'email':
       return (
         <AccountLayout title={t('account.brandName')} hideTitle={shareReturn !== null}>
+          {buttonFailed && (
+            <p className={styles.note} role="status">
+              {t('account.buttonUsedOrExpired')}
+            </p>
+          )}
           <EmailStep
             initialEmail={step.email}
             fromSharedPage={shareReturn !== null}
