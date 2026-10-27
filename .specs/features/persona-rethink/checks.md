@@ -3,7 +3,7 @@
 Profile: ui
 Plan: `.specs/features/persona-rethink/plan.md`
 
-454 checks in 39 slices · 19 one-way doors · 7 open, of which 4 block go-live and none blocks the build
+467 checks in 40 slices · 19 one-way doors · 7 open, of which 4 block go-live and none blocks the build
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -1693,6 +1693,57 @@ Proof: `api e2e src/__tests__/review-counts.e2e-spec.ts -t "spare lists, sold li
 **C452** - The share report's query, run on 1 `offer` and 1 `buy` for a `want` list and 1 `quote_sent` for a deck `quote` link, returns the rows `offer` 1, `buy` 1 and `quote_sent` 1 under their intent and list kind, and `scripts/share-report.ts` prints them through that same query (AC 288) · done
 Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the report counts offer, quote_sent and buy by intent and list kind"`
 
+### S40 - Four doors the picked mockups left open (round 6) · 30 files · 313 KB · ~80k
+
+Picked by the owner on 2026-10-27 from `.design/mockups/close-the-deck/BRIEF-round-6.md` (index `index-r6.html`); the screens are `.design/mockups/close-the-deck/r6-alternatives-a-phone`, `r6-turnoff-a-phone`, `r6-password-b-phone` and `r6-update-import-a-phone`, each with a `.png` and the `.html` that holds the exact copy.
+The sheet's second option "Bloodrush Bellow (Azul)", its reason lines, and the numbers in the update window (8, 3, 1, 0) are examples in the pictures, so the checks assert the structure and the fixture's own values, not those example strings as data.
+D27 gives back the entry to the alternatives sheet that S17 removed, and C457 restores the proof of C58 of `card-alternatives` that batch 13 deleted.
+
+**C455** - Arrangement of the missing list with the entry to the alternatives (`r6-alternatives-a-phone`, picked on 2026-10-27, D27) at 390 px: in every row of the sections "Comprar na loja", "A loja não tem" and "Fora do site", under the card name line ("Bloodrush Bellow (Amarelo)" with its price, then "faltam 3 · R$ 69,99 cada") comes one text link "Alternativas" in the accent color, underlined, whose accessible name is "Ver alternativas para Bloodrush Bellow (Amarelo)"; where a row has a store notice ("A loja tem 2. A 3ª está no pedido do grupo.") the link sits above that notice, and the buttons "Já tenho…" and "Comprar" stay last in the row; the link's tap target is at least 44 px high and the page has no horizontal scroll · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/missing-list/__tests__/MissingListRow.spec.tsx -t "a row has the Alternativas link under the name line and above the notice and buttons"`
+Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g "the phone list follows r6-alternatives-a-phone"`
+
+**C456** - Tapping "Alternativas" in a row opens the bottom sheet "Alternativas para Bloodrush Bellow (Amarelo)" with "Fechar", the line "Ocupa o lugar de 3 cópias que faltam." and the field "Buscar pelo nome" (placeholder "Nome da carta") above the groups, for that row's card and its missing count, in each of the 3 rows of the picture's list (Bloodrush Bellow (Amarelo) 3, Savage Swing (Vermelho) 1, Pack Hunt (Vermelho) 3); "Fechar" closes it and sends nothing; each candidate row shows its owned tag from the existing rule ("você tem" or "nenhuma livre") · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/missing-list/__tests__/MissingListPage.spec.tsx -t "the Alternativas link opens the sheet for that row's card and count"`
+
+**C457** - In the browser, on the missing list of the fixture deck: tap "Alternativas" in a row, tap the first candidate, see "no lugar de <that row's card>" on the deck list, tap "Desfazer", and see the original card back in the missing list; this is the claim of C58 of `.specs/features/card-alternatives/checks.md`, which has had no proof since batch 13 deleted its file, and it now starts from the link of C455 instead of the old button · added 2026-10-27 (owner pick, round 6)
+Proof: `web e2e --project=e2e-chromium tests/e2e/card-alternatives-flow.spec.ts -g "pick an alternative and undo it"`
+
+**C458** - Arrangement of the missing-list message step with its way to turn the link off (`r6-turnoff-a-phone`, picked on 2026-10-27, D53) at 390 px: under "Pedir as cartas que faltam", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", the message box, the switch "Incluir também as 43 que a loja tem" with its line, and the green button "Abrir no WhatsApp", comes a divider and then one centered text row "Desativar link" in the danger color, once, and nothing after it; after tapping it the row is replaced, in the same place, by "Desativar? Quem tem o link não vai mais conseguir abrir." with "Desativar" in the danger color and "Manter" in the accent color on the right, while the message, the switch and "Abrir no WhatsApp" stay as they were; "Desativar link", "Desativar" and "Manter" are each at least 44 px high (AC 144) · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "the missing message step ends with Desativar link under Abrir no WhatsApp and asks before turning off"`
+Proof: `web e2e --project=mobile-390 tests/mobile/missing-list-layout.spec.ts -g "the missing message step follows r6-turnoff-a-phone"`
+
+**C459** - In that step, "Manter" closes the question, shows "Desativar link" again and sends no request; "Desativar" sends exactly one `DELETE /api/decks/:deckId/share/missing`, then closes the share sheet; when that request fails the step stays open and shows `sharing.dialog.turnOffFailed` with `role="alert"`, and "Desativar link" is back · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/deck-detail/__tests__/ShareDialog.spec.tsx -t "Manter sends nothing and Desativar sends one delete for the missing link"`
+
+**C460** - `DELETE /api/decks/:deckId/share/missing` answers `204` for the deck's owner, and the link's token answers `404` on `GET /api/shared/decks/:token` afterwards; a second call also answers `204`; the same deck's `deck` and `quote` links keep answering `200`; another player's deck answers `404`; no cookie answers `401` · added 2026-10-27 (owner pick, round 6)
+Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "turning off the missing link answers 204, kills only that link and is repeatable"`
+
+**C461** - Arrangement of the password change with an e-mailed code first (`r6-password-b-phone`, picked on 2026-10-27, D23) at 390 px, in the "Conta" card of "Configurações da conta": above, "E-mail" with the address "lucas.prado@hotmail.com" and "Senha: você tem uma senha" stay; frame one then shows "Mandamos para lucas.prado@hotmail.com. Ele vale 15 minutos." (the address in bold), six digit boxes with the first empty box focused (the picture has "4", "8", "2" typed), a full-width disabled button "Reenviar em 45 s", the text button "Cancelar", and last "Você também pode entrar com um código por e-mail, sem senha."; frame two, after the sixth digit is accepted, shows instead the field "Nova senha" focused and empty, the hint "Pelo menos 10 caracteres.", and "Cancelar" and the primary "Salvar senha" in one row at the right, with the same last line; the code boxes, "Reenviar" and "Salvar senha" are each at least 44 px high (AC 262) · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the password change arranges the code step and the new password step as r6-password-b-phone"`
+Proof: `web e2e --project=mobile-390 tests/mobile/account-start.spec.ts -g "the password change follows r6-password-b-phone"`
+
+**C462** - "Mudar a senha" and "Criar uma senha" first send `POST /api/users/me/password-code` and show the code step of C461, with the button counting down from the `resendAfter` seconds the response carries and the "15 minutos" taken from `expiresAt`; the six digits are sent with the new password only at "Salvar senha", as `PUT /api/users/me/password` with `{ code, password }` and no current-password input anywhere; on `204` the row reads "Senha: você tem uma senha"; "Cancelar" on either step returns to the row, changes no password and, on the second step, spends no code; the same flow holds for an account with no password ("Senha: nenhuma" before, "Senha: você tem uma senha" after) (AC 260, AC 262) · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "a password is set after the e-mailed code, for an account with and without one"`
+Proof: `web e2e --project=e2e-chromium tests/e2e/account-flow.spec.ts -g "a password change asks the e-mailed code first"`
+
+**C463** - `POST /api/users/me/password-code` answers `202` with `expiresAt` 15 minutes ahead and `resendAfter`, sends one e-mail with a six-digit code to the signed-in account's own address and to no other, and that code does not sign anyone in on `POST /api/auth/codes/verify`; it answers `401` with no cookie and `429` with `Retry-After` once the address has 5 codes asked and never tried in the last hour, counted with the sign-in codes of C404 (AC 260; Surface) · added 2026-10-27 (owner pick, round 6)
+Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "asking for a password code answers 202, 401 and 429 and sends it to the account's address"`
+
+**C464** - `PUT /api/users/me/password` with the right `code` and a 10-character `password` answers `204`, and sign-in with the new password then answers `200` while the old one answers `401`; a wrong code answers `400` with `code` `INVALID_CODE` and leaves the old password working; a code already used or past its `expiresAt` answers `410`; a missing `code`, a code that is not six digits or a 9-character password answers `400`; the sixth wrong try on one code answers `429` with `Retry-After`; no cookie answers `401`; the other sessions of the account end and the one that made the call stays (as C380 says for any password change) (AC 260, AC 261; Surface) · added 2026-10-27 (owner pick, round 6)
+Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "changing the password needs the e-mailed code and answers 204, 400, 401, 410 and 429"`
+
+**C465** - Arrangement of the "•••" menu of an import with the new entry, and of the window it leads to (`r6-update-import-a-phone`, picked on 2026-10-27, D29) at 390 px: on the page "Importações", the menu of the row "colecao-lucas.csv · 612 cópias · 11 para resolver" lists, in order, "Renomear", "Enviar nova versão", a separator and "Excluir" in the danger color; each item is at least 44 px high; after a file is chosen the window "Atualizar fonte existente?" lists the table "Cartas novas", "Aumentaram", "Diminuíram", "Removidas" (a row whose count is 0 is not drawn, as the built window does today), then the primary "Atualizar a existente", the secondary "Substituir pela nova" and the text button "Cancelar", in that order, with no horizontal scroll (AC 80, AC 109) · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "the menu lists Renomear, Enviar nova versão, a separator and Excluir in that order"`
+Proof: `web unit src/components/csv-sources/__tests__/UploadResolveModal.test.tsx -t "the update window lists the delta rows then the three actions in the order of r6-update-import-a-phone"`
+Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the imports page follows r6-update-import-a-phone"`
+
+**C466** - "Enviar nova versão" in the menu of one import opens the file chooser, accepts `.csv`, sends the chosen file to `POST /api/collection/csv` with that row's `targetSourceId` and no other import's, and shows "Atualizar fonte existente?" with the counts the server returned; "Atualizar a existente" re-sends it with `action` `update` and the same `targetSourceId`, closes the window and shows the toast of the built update (the import's row then shows the new copies count); "Substituir pela nova" re-sends it with `action` `replace`; "Cancelar" sends `cancel` or nothing and the import is unchanged; a file over 2 MB shows the existing size error and sends nothing · added 2026-10-27 (owner pick, round 6)
+Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "Enviar nova versão sends the file for this import and each window action re-sends it"`
+
+**C467** - `POST /api/collection/csv` with a file and `targetSourceId` of the caller's own import, and `action` absent or `auto`, answers `201` with `kind` `partial-overlap`, that import's id and a delta against that import alone (`added`, `increased`, `decreased`, `removed`), writes nothing, and does so even when the file shares few cards with it; with `action` `update` and the same id it answers `201` and the import then holds exactly the file's quantities, the copies of other imports untouched; with `replace` the import's lines become the file's; an id that is another player's or unknown answers `404`; a file with no rows answers `400` (Surface) · added 2026-10-27 (owner pick, round 6)
+Proof: `api e2e src/collection/__tests__/csv-duplicate-upload.e2e-spec.ts -t "a file sent for one import answers its delta, updates or replaces it, and 404s a foreign id"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -1926,6 +1977,16 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | missing-list store states logged (5) | `priced` C449 · `store_lacks` C449 · `not_on_site` C449 · `looking_up` C449 · `no_price` C449 (keys of one logged object) | - |
 | Relations constraints (3) | `user_session` token hash unique C385 · `sign_in_code` one live per address C364 · `user.email` unique lowercased C357 | - |
 | startup config: cookie parser and origin check (2) places, one shared assembly | `main.ts` through `configureHttpApp` C387 · every API e2e and int bootstrap through `configureHttpApp` or `bootFixture` C387 | - |
+| r6 screens of the picked round 6 (4) | `r6-alternatives-a-phone` C455, C456 · `r6-turnoff-a-phone` C458, C459 · `r6-password-b-phone` C461, C462 · `r6-update-import-a-phone` C465, C466 | - |
+| missing-list sections carrying "Alternativas" (3) | "Comprar na loja" C455 · "A loja não tem" C455 · "Fora do site" C455 | - |
+| rows of the alternatives sheet entry (3) | Bloodrush Bellow (Amarelo) 3 C456 · Savage Swing (Vermelho) 1 C456 · Pack Hunt (Vermelho) 3 C456 | - |
+| `DELETE /api/decks/:deckId/share/:intent` statuses (3) | `204` C460 · `404` C460 · `401` C460 | - |
+| `POST /api/users/me/password-code` statuses (3) | `202` C463 · `401` C463 · `429` C463 | - |
+| `PUT /api/users/me/password` with a code statuses (5) | `204` C464 · `400` C464 · `401` C464 · `410` C464 · `429` C464 | - |
+| password code failures (4) | wrong code C464 · used code C464 · expired code C464 · sixth wrong try C464 | - |
+| `POST /api/collection/csv` with `targetSourceId` statuses (3) | `201` C467 · `400` C467 · `404` C467 | - |
+| update window actions (3) | "Atualizar a existente" C466 · "Substituir pela nova" C466 · "Cancelar" C466 | - |
+| import "•••" menu entries (3) | "Renomear" C465 · "Enviar nova versão" C465, C466 · "Excluir" C465 | - |
 
 - Door 19's "blocks a merge" is GitHub branch protection, outside the repository: no test settles it, and the owner marks `web-e2e` as a required check once (Handoff).
 - Claims naming a route status: C430, proven by a Playwright test that loads the address.
@@ -1936,6 +1997,7 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 - Decision tables are proven at their own layer: store state (C186, C187), queueing (C188, C198), budget (C195), credits (C197), pass timing (C193, C194, C196), chip sums (C205), adoption (C212); the e2e proofs add the boundary.
 - Claims naming a status code, route or response shape: C253, C255, C256, C257, C278, C279, C284, C287, C291, C295, C296, C306 - each has an api e2e proof that crosses the HTTP boundary.
 - Decision tables proven at their own layer: the spare rules, statuses, sides and foil order (C250 to C254, api unit); the removal order (C285, C286, api unit); the message builder (C273, C275, C276, web unit); the original rebuild (C305, api unit).
+- Claims naming a status code, route or response shape of the round 6 picks: C460, C463, C464, C467 - each has an api e2e proof that crosses the HTTP boundary; the screen claims C455, C458, C461 and C465 each have a web unit proof and a phone-width e2e proof.
 - Claims naming a status code, route or response shape: C349, C350, C352, C356, C361, C363, C364, C365, C368, C369, C371, C373, C374, C377, C378, C379, C380, C386, C389, C390, C393, C394, C395, C396, C400, C401, C402, C404, C405, C406, C410, C411, C449, C450: each has an `api e2e` proof that crosses the HTTP boundary
 - Decision tables proven at their own layer as well: the origin check (C386 `origin-check.middleware.spec.ts`), the guards (C381), the cookie options (C372), Turnstile (C402, C403), the in-app return path (C355)
 
@@ -2205,3 +2267,4 @@ A check whose proof needs code from a later slice was moved into that slice befo
 - Batch X3 boundary: 363108f - suite stability, C453 and C454 proofs, C404 successful-try fix, C240 count line, test-policy gaps, followups entry AU1
 - Batch X3 settled mid-build: a successful code sign-in stores `attempts = -1` so it counts as neither a failed try nor an untried code; the quote's count line now reads "(N cartas menos as que ele já tem)" because the built page still read "(N cartas)"; the real-service 429 proofs sit in `auth-limits.e2e-spec.ts` beside the mocked ones
 - Batch X3 abandoned: none
+- Batch X4: S40 = 148k: slice 80k (S40 = 313 KB of the 29 files it touches / 4 = 78k, plus 2k for the one new test file) + reading 68k (`plan.md` 33k, header, Test policy and Swept 4k, the slice's checks 3k, the binding documents `.design/close-the-deck.md`, `.design/account.md` and `.design/collection-in.md` 75 KB / 4 = 19k, `BRIEF-round-6.md` 1k, 4 screens x 2k = 8k) - round 6 picks D27, D53, D23, D29; checks C455 to C467; under the 150k budget, one builder
