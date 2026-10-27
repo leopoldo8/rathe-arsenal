@@ -3,7 +3,7 @@
 Profile: ui
 Plan: `.specs/features/persona-rethink/plan.md`
 
-452 checks in 39 slices · 19 one-way doors · 7 open, of which 4 block go-live and none blocks the build
+454 checks in 39 slices · 19 one-way doors · 7 open, of which 4 block go-live and none blocks the build
 
 Proof commands, by suite (each proof below names its file and test):
 
@@ -48,7 +48,7 @@ Grouped by the plan's slices; numbering runs across the whole feature.
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "flags an em dash and an en dash in a value"`
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "no pt-BR value contains an em or en dash"`
 
-**C2** - The rule function flags `troca`, `trocas` and `trocar` (whole word, any case) in values of the `home`, `auth` and `onboarding` namespaces and does not flag them in `deckDetail` or `alternatives`; it flags the literals "Manual entries" and "Attack Actions" in a value of any pt-BR namespace (AC 2) · done
+**C2** - The rule function flags `troca`, `trocas` and `trocar` (whole word, any case) in values of the `home`, `auth` and `onboarding` namespaces and does not flag them in `deckDetail` or `alternatives`; it flags the literals "Manual entries" and "Attack Actions" in a value of any pt-BR namespace; the one stated exception is the string "Não é você? Trocar" of the `account` namespace (C360, from `.design/account.md`), which the rule does not scan because it covers only `home`, `auth` and `onboarding` (AC 2) · done · amended 2026-10-27 (delegation, D55)
 Proof: `web unit src/i18n/__tests__/locale-copy-rules.spec.ts -t "flags troca outside a deck and the leaked English literals"`
 
 **C3** - The current pt-BR catalog passes both rules after S1: `home.emptyLead`, `home.step2Body`, `auth.decorationCopy`, `onboarding.step2BodySingle`, `onboarding.step2BodyMultiple` and `onboarding.congratsBody` contain no `troca`/`trocas`/`trocar`; `deckDetail.groupAttack` and `deckDetail.groupNonAttack` are not English; `decks.partialUpdateMsg`, `lists` `totalPlaceholder` and `price` contain no em dash, so "R$ —" is gone (AC 4, AC 5) · done
@@ -63,7 +63,7 @@ Proof: `api unit src/decks/__tests__/decks.service.create-scratch.spec.ts -t "co
 **C6** - The axe filter keeps a violation of impact `serious` and one of `critical` and drops `minor` and `moderate` (AC 3) · done
 Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "the axe filter keeps serious and critical issues only"`
 
-**C7** - The scan list exported by `tests/support/axe.ts` starts with exactly these five pages: home, deck page (the fixture deck), Library, shared deck page (`/d/<fixture token>`), sign-in (`/sign-in`, signed out); for each page `new AxeBuilder({ page }).analyze()` returns zero violations of impact `serious` or `critical`, and a failing page names the axe rule id and the selector (AC 3, AC 4; door 18) · done
+**C7** - The scan list exported by `tests/support/axe.ts` contains these six pages, the first five in this order: home, deck page (the fixture deck), Library, shared deck page (`/d/<fixture token>`), sign-in (`/sign-in`, signed out), and the shopping list, which is the fixture deck's missing list (`/decks/<fixture deck id>/missing`); later slices add their own pages after them; for each page `new AxeBuilder({ page }).analyze()` returns zero violations of impact `serious` or `critical`, and a failing page names the axe rule id and the selector (AC 3, AC 4; door 18) · done · amended 2026-10-27 (delegation, D25)
 Proof: `web e2e --project=e2e-chromium tests/e2e/accessibility.spec.ts -g "no serious or critical axe issue on"`
 
 **C8** - `apps/web/package.json` lists `@axe-core/playwright` under `devDependencies` and not under `dependencies` (door 18) · done
@@ -227,7 +227,7 @@ Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "a repea
 **C55** - `PUT /api/decks/:deckId` answers `404` for another player's deck and for a deleted deck, and writes nothing (AC 30, AC 55) · done
 Proof: `api int src/decks/__tests__/decks.controller.put.int-spec.ts -t "put answers 404 for a deck the player cannot edit"`
 
-**C56** - For `r3-inventory-desktop`'s deck the editor header reads "Deck 60 · Inventário 15 · Card pool 80 de 80", followed once by "Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas." and "Card pool: deck, inventário, arma e equipamentos; o herói não conta."; the table heads are "Carta", "No deck", "No inventário"; each row has two steppers (AC 30, AC 35) · done
+**C56** - For `r3-inventory-desktop`'s deck the editor header reads "Deck 60 · Inventário 15 · Card pool 80 de 80", followed once by "Inventário: cartas que você leva ao torneio além do deck. Entre um jogo e outro da mesma partida, dá para trocar cartas do deck por elas." and the card pool line of copy rule 6, "Cartas que você leva: 80 de 80" with "o deck, o inventário, a arma e os equipamentos; o herói não conta. No torneio isto se chama card pool." (the same line sits in the checklist row, C37); the header and its card pool line show only for a deck that has inventory copies; the table heads are "Carta", "No deck", "No inventário"; each row has two steppers (AC 30, AC 35) · amended 2026-10-27 (delegation, D3, D42)
 Proof: `web unit src/components/deck-detail/__tests__/EditableCardRow.inventory.spec.tsx -t "matches r3-inventory-desktop"`
 
 **C57** - On a 390 px phone each row's two steppers sit under the card name, the deck stepper above the inventory stepper (AC 30) · done
@@ -275,8 +275,9 @@ Proof: `web unit src/components/deck-detail/__tests__/StatusDropdown.spec.tsx -t
 **C70** - The deck page header of a deck with a rule problem shows the red chip "Não vale no Blitz" and the grey "Etapa: Jogando", with the causes in the body and not in the header (AC 40) · done
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailLayout.spec.tsx -t "the header shows the verdict and the stage apart"`
 
-**C71** - The home for `r3-stage-a-phone` lists three cards in order with their exact lines: "Rhinar Blitz" / "Não vale no Blitz" / "8 cartas com 2 cópias" / "Etapa: Jogando · 40 cartas"; "Rhinar - Blitz" / "Não vale no Blitz" / "1 carta com 2 cópias" / "Etapa: Montando · 31 de 40 cartas"; "Rhinar CC" / "Não vale no Classic Constructed" / "1 carta com 4 cópias" / "Etapa: Pronto · 60 cartas" (AC 40)
-Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "matches r3-stage-a-phone"`
+**C71** - The home keeps its stage grouping and each card of `r3-stage-a-phone` carries its exact lines: the groups come in the order "Ativos", "Construindo", "Ideias", "Aposentados", a group with no decks is left out, and a ready deck sits under "Ativos" with the active ones; "Rhinar Blitz" (active) / "Não vale no Blitz" / "8 cartas com 2 cópias" / "Etapa: Jogando · 40 cartas" and "Rhinar CC" (ready) / "Não vale no Classic Constructed" / "1 carta com 4 cópias" / "Etapa: Pronto · 60 cartas" sit under "Ativos"; "Rhinar - Blitz" (building) / "Não vale no Blitz" / "1 carta com 2 cópias" / "Etapa: Montando · 31 de 40 cartas" sits under "Construindo"; the picked screen draws one flat list, and the grouping that predates this feature is kept (AC 40) · amended 2026-10-27 (delegation, D1)
+Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "renders four groups with ready and active under one Ativos group"`
+Proof: `web unit src/routes/_auth/__tests__/-home.spec.tsx -t "each card of r3-stage-a-phone carries its exact lines"`
 
 **C72** - A home card for a format outside the four shows the grey chip "Formato não conferido" and a grey line with the stage (AC 40) · done
 Proof: `web unit src/components/home/__tests__/DeckTile.spec.tsx -t "an unchecked format reads Formato não conferido"`
@@ -342,8 +343,9 @@ Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "restore answ
 **C91** - `DELETE /api/decks/:deckId/permanent` answers `204`; the deck, its `deck_card`, `card_replacement` and tag rows are gone and its share links are deleted, as today's delete does; it answers `404` for another player's deck and an unknown id (AC 53) · done
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "permanent delete removes the deck with today's cascades"`
 
-**C92** - While a deck is deleted it is left out of each reader, one case per reader: readiness recompute for a collection change, the home counts of `GET /api/decks`, the Tutor's deck list and `get_deck`, the recommendation queue's enqueue and drain, and the replacement re-solve drain (AC 55; door 4) · done
+**C92** - While a deck is deleted it is left out of each reader, one case per reader: readiness recompute for a collection change, the home counts of `GET /api/decks`, the Tutor's deck list and `get_deck`, and the recommendation queue's enqueue and drain; the three re-solve routes stay 410 stubs and read nothing (AC 55; door 4) · done · amended 2026-10-27 (delegation, D6)
 Proof: `api e2e src/decks/__tests__/decks-lifecycle.e2e-spec.ts -t "a deleted deck is left out of every reader"`
+Proof: `api e2e src/decks/re-solve/__tests__/re-solve.controller.e2e-spec.ts -t "returns 410 Gone with structured deprecation payload"`
 
 **C93** - While a deck is deleted, its `deck` and `missing` addresses answer `404` with `code` `SHARE_LINK_UNAVAILABLE`; after restore both answer `200` (AC 55; door 4: `SharedDeckLookup.findLive`) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a deleted deck's links answer 404 until it is restored"`
@@ -476,14 +478,14 @@ Proof: `api e2e src/collection/__tests__/collection-versions.e2e-spec.ts -t "mov
 **C133** - A version naming a printing the card does not have (`printingCode` `WTR023` on Snatch (Vermelho)), or an edition or finish absent from that printing (`first` on `WTR167`), is refused with `400` and changes no row, on `PATCH /api/collection/cards/:cardIdentifier/versions`, on `POST /api/collection/cards/batch` and on `PATCH /api/collection/pending/:id` (AC 78) · done
 Proof: `api e2e src/collection/__tests__/collection-versions.e2e-spec.ts -t "a version the card does not have is refused on every write"`
 
-**C134** - The scanner commit sends each card's collector code; `POST /api/collection/cards/batch` with `{ cardIdentifier, quantity: 1, printingCode: 'WTR167' }` stores `printingCode` `WTR167`; a batch with no version fields answers `200` as today and stores `''` in all four; a batch item with `printingCode: 12` answers `400` (AC 77; Surface `cards/batch` `200`, `400`) · done
+**C134** - The scanner commit sends each card's collector code; `POST /api/collection/cards/batch` with `{ cardIdentifier, quantity: 1, printingCode: 'WTR167' }` stores `printingCode` `WTR167`; a batch with no version fields answers `201` as today and stores `''` in all four; a batch item with `printingCode: 12` answers `400` (AC 77; Surface `cards/batch` `201`, `400`) · done · amended 2026-10-27 (delegation, D7)
 Proof: `api e2e src/collection/__tests__/collection-batch.e2e-spec.ts -t "the batch records the scanned printing code"`
 Proof: `web unit src/components/card-scanner/__tests__/scan-session.spec.ts -t "the commit carries each card's collector code"`
 
 **C135** - After a scan of `WTR167` the review asks the edition with "Alpha" and "Unlimited" (the code exists in two editions) and asks "É foil?" (it exists in Rainbow Foil); for a code that exists in one edition and no foil finish neither question appears (AC 77) · done
 Proof: `web unit src/components/card-scanner/__tests__/ReviewSheet.spec.tsx -t "asks the edition and foil only when the code has more than one"`
 
-**C136** - `POST /api/collection/cards/decrement` with `sourceId` and a version removes one copy from that row only; `400` when `sourceId` is missing and the card has copies in more than one import or version; `404` when no row matches the import and version (AC 79; Surface `decrement` `200`, `400`, `404`) · done
+**C136** - `POST /api/collection/cards/decrement` with `sourceId` and a version removes one copy from that row only; `400` when `sourceId` is missing and the card has copies in more than one import or version; `404` when no row matches the import and version (AC 79; Surface `decrement` `201`, `400`, `404`) · done · amended 2026-10-27 (delegation, D7)
 Proof: `api e2e src/collection/__tests__/collection-versions.e2e-spec.ts -t "decrement takes one copy from the named import and version"`
 
 **C137** - On a 360 px phone, "−" on a card with copies in two imports or two versions opens the picker with its whole box inside the viewport (left ≥ 0, right ≤ 360, bottom ≤ 740), listing each import and version with its copies (AC 79) · done
@@ -552,8 +554,12 @@ Proof: `web unit src/components/collection-reader/__tests__/ListReader.spec.tsx 
 **C156** - `r3-report-phone` shows, in order: "‹ Adicionar cartas", the file name, "289 linhas prontas · 612 cópias (241 cartas)", "Lemos as colunas nome, quantidade e cor.", "Esta planilha não tem coluna de versão: as cartas entram sem versão informada.", "Linha 8: lemos \"Rhinar, Reckless Rampage\" certo.", "11 para resolver", then the groups "Sem cor" (7 lines, each "Linha N", its original text, "Vermelho", "Amarelo", "Azul", "Não sei"), "Nome parecido" (3 lines with "Você quis dizer <card>?", "Usar esta", "Corrigir"), "Quantidade" (1 line), the button "Adicionar as 289 prontas" and "As 11 que faltam ficam em \"Para resolver\", no topo da sua coleção." (AC 85, AC 91) · done
 Proof: `web unit src/components/collection-reader/__tests__/ImportReport.spec.tsx -t "matches r3-report-phone copy and order"`
 
-**C157** - `r3-pending-phone` shows, in order: the banner "11 linhas de colecao-lucas.csv para resolver" with "Resolver", the tabs "Coleção" and "Importações", "612 cópias (241 cartas)", then the card grid (AC 88, AC 91) · done
+**C157** - `r3-pending-phone` shows, in order: the banner "11 linhas de colecao-lucas.csv para resolver" with "Resolver", the heading "Coleção" with one link, "Importações" (to `/library-csv-sources`), "612 cópias (241 cartas)", then the card grid; there are no tabs (AC 88, AC 91) · done · amended 2026-10-27 (delegation, D8)
 Proof: `web unit src/routes/_auth/__tests__/-library.test.tsx -t "matches r3-pending-phone: the pending banner sits above the collection"`
+
+**C453** - Arrangement of `r4-resolve-b-phone` at 390 px, one line at a time (picked in round 4): under the app bar, "‹ Coleção" and "Sair e continuar depois"; the progress "3 de 11" with "colecao-lucas.csv · 8 depois desta · 2 já resolvidas"; "Linha 12 do arquivo · lemos assim" and the raw line "Snach,2,Vermelho" in the monospace face; then in the near-name step "Você quis dizer", "Snatch (Vermelho)", "Quantas cópias" with the stepper "−" 2 "+", the primary button "Adicionar 2 Snatch (Vermelho)", "Não é esta, buscar", "Pular", "Excluir esta linha" and last the note "Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver."; the unknown-word step ("Linha 31", "Mistery Card,1,") shows "Não achamos essa carta. Busque pelo nome." and a search box holding "Mistery" first, then "Nenhuma carta com esse nome. Tente só uma palavra.", the stepper at 1, "Adicionar" disabled until a card is chosen, "Pular" and "Excluir esta linha"; the unreadable-quantity step ("Linha 141", "Savage Beatdown,três,Vermelho") shows the known card "Savage Beatdown (Vermelho)", ""três" não é um número. Quantas cópias?", the stepper at 3, "Adicionar 3 Savage Beatdown (Vermelho)", "Pular" and "Excluir esta linha"; every button and stepper control is at least 44 px high, and the page has no horizontal scroll (AC 88, AC 91)
+Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "arranges the three steps as r4-resolve-b-phone"`
+Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the page behind Resolver follows r4-resolve-b-phone at 390 px"`
 
 ### S13 - Ready-made decks · 22 files · 33 KB · ~32k
 
@@ -566,8 +572,9 @@ Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "searching produc
 **C160** - `r3-product-search-phone` shows, in order: "‹ Adicionar cartas", "Qual deck você comprou?", "Armory Deck, Blitz Deck ou Silver Age.", the search field, and one row per result with hero image, product name and format label ("Armory Deck: Kayo" / "Classic Constructed"); no row carries a "Deck pronto" label (AC 92, AC 98) · done
 Proof: `web unit src/components/products/__tests__/ProductSearch.spec.tsx -t "matches r3-product-search-phone copy and order"`
 
-**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora.", and "Adicionar" (AC 93, AC 98) · done
+**C161** - `r3-product-confirm-phone` shows, in order: "‹ Escolher outro", "<Product> · N cartas" with N the sum of the file's quantities, the format label, the switch "Colocar as N cartas na minha coleção" with "Você comprou a caixa, então essas cartas são suas.", the switch "Criar um deck com elas" with "Para ver se o deck está completo e o que vale comprar depois.", both on, "Ver as N cartas" collapsed, "As cartas entram com a versão que vem na caixa, inclusive as foil. Agility e Might são marcadores do jogo, não cartas de deck, e ficam de fora." (this sentence holds for the one product file the repo has, Armory Deck: Kayo; another box gets its token names from its own file), and "Adicionar" (AC 93, AC 98) · done · amended 2026-10-27 (delegation, D9, D63)
 Proof: `web unit src/components/products/__tests__/ProductConfirm.spec.tsx -t "matches r3-product-confirm-phone copy and order"`
+Proof: `web e2e --project=e2e-chromium tests/e2e/product-add-flow.spec.ts -g "choosing Kayo shows the confirm screen of the box"`
 
 **C162** - `POST /api/products/armory-kayo/import` with `addCards` and `createDeck` true answers `201` with a `source` of kind `product`, `productKey` `armory-kayo`, named "Armory Deck: Kayo", whose copies carry each card's `printingCode` from the file, and a `deckId` whose deck has the product's name, hero and format and the file's cards; with only `addCards` it returns no `deckId`, with only `createDeck` no `source` (AC 94) · done
 Proof: `api e2e src/products/__tests__/products.e2e-spec.ts -t "importing a product creates the import and the deck"`
@@ -624,7 +631,7 @@ Proof: `web unit src/routes/_auth/__tests__/-add-cards.test.tsx -t "the paste bo
 **C178** - `r3-first-run-phone`: a new account sees, in order, "Como você quer começar?", the large "Comprei um deck pronto" with "Armory Deck, Blitz Deck ou Silver Age, na caixa", then the rows "Tem um link ou uma lista? Colar aqui", "Enviar uma planilha (.csv)", "Fotografar ou digitar as cartas", and "Pular por agora" (AC 107, AC 112) · done
 Proof: `web unit src/components/onboarding/__tests__/FirstRunChooser.spec.tsx -t "matches r3-first-run-phone copy and order"`
 
-**C179** - A new account opening the app lands on the first-run screen; an account with a deck or an import does not (AC 107) · done
+**C179** - Only signing up sends an account with no deck, no card and no import to the first-run screen; an account in that state that signs in later, or opens `/home`, sees the home empty state ("Comece por um deck" with the import button); an account with a deck or an import does not land on the first-run screen, and any import counts, including one whose lines are all unresolved, which goes to the Library with its pending lines (AC 107) · amended 2026-10-27 (delegation, D10, D11)
 Proof: `web unit src/routes/_auth/__tests__/-onboarding-redirect.spec.tsx -t "a new account starts on the first-run chooser"`
 
 **C180** - `r3-add-phone`: "Adicionar cartas" shows, in order, the paste box "Cole aqui" with "Cole um link de deck (do Fabrary, por exemplo) ou uma lista de cartas", then "Comprei um deck pronto", "Enviar uma planilha (.csv)", "Fotografar as cartas", "Digitar o nome"; the old "Deck do Fabrary" tab is gone (AC 108, AC 112) · done
@@ -699,6 +706,9 @@ Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the URL sync 
 **C202** - `POST /api/decks/:deckId/fetch-variants` answers `404`, and the deck page renders no "Obter preços exatos" button and no variant queue drawer (AC 123) · done
 Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "the fetch-variants route is gone"`
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spec.tsx -t "the deck page has no price fetch button or drawer"`
+
+**C454** - Arrangement of the credits bar of `r5-credits-b-phone` in Settings, for an admin: inside the URL sync section, under the line "Última sincronização: 412 produtos · 22/10/2026 03:10", a divider, then the label "Créditos do Firecrawl este mês" on the left and "120 de 1000" on the right, then a bar 8 px high with 4 px rounded ends that has `role="img"` and the name "120 de 1000 créditos usados" and a fill 12% wide in the accent color; when `lookupsStopped` is true, with 880 of 1000 used, the fill is 88% wide in the amber of the `--warn` color (`#c8843c` in the picture) and under the bar come "As consultas automáticas de preço pararam." and "A sincronização manual continua funcionando." in the amber ink (`#d6954c` in the picture); with lookups running neither line shows (AC 122)
+Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the credits bar sits under the sync line and turns amber when lookups stop"`
 
 ### S17 - The owner's missing list · 46 files · 251 KB · ~95k
 
@@ -813,7 +823,7 @@ Proof: `api unit src/sharing/preview/__tests__/share-meta-tags.spec.ts -t "the m
 Proof: `api e2e src/sharing/__tests__/share-events.e2e-spec.ts -t "records an offer for a visitor and nothing for the owner"`
 Proof: `api e2e src/sharing/__tests__/share-events.e2e-spec.ts -t "refuses unknown kinds and dead tokens"`
 
-**C236** - Arrangement of `r3-share-phone`, `r3-message-phone`, `r3-group-phone`, `r3-group-friend-phone` and `r3-offer-phone` at 390 px: the share sheet over the deck with the three options; the editor titled "Pedir as cartas que faltam" with "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", the text, the highlighted closing line, "Lista completa", the switch and its line, and "Abrir no WhatsApp" last; the group page with the first section above the collapsed store section; the friend view with the summary above the first section and the combined button at its top; the offer sheet "Oferecer para Caio" with "Mensagem para o WhatsApp", "Preencha edição, condição e preço no WhatsApp antes de enviar.", the text and "Abrir no WhatsApp" (AC 144) · done
+**C236** - Arrangement of `r3-share-phone`, `r3-message-phone`, `r3-group-phone`, `r3-group-friend-phone` and `r3-offer-phone` at 390 px: the share sheet over the deck with the three options; the editor titled "Pedir as cartas que faltam", with no eyebrow above the title, and with "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", the text, the highlighted closing line, "Lista completa", the switch and its line, and "Abrir no WhatsApp" last; the group page with the first section above the collapsed store section; the friend view with the summary above the first section and the combined button at its top; the offer sheet "Oferecer para Caio" with "Mensagem para o WhatsApp", "Preencha edição, condição e preço no WhatsApp antes de enviar.", the text and "Abrir no WhatsApp" (AC 144) · done · amended 2026-10-27 (delegation, D12)
 Proof: `web e2e --project=mobile-390 tests/mobile/group-ask-layout.spec.ts -g "the group ask screens follow the r3 screens"`
 
 ### S19 - A store quote · 22 files · 42 KB · ~25k
@@ -828,7 +838,7 @@ Proof: `api int src/database/migrations/__tests__/quote-intent.migration.int-spe
 **C239** - `GET /api/shared/decks/:token` for a `quote` address answers `200` with exactly the keys `intent`, `name`, `hero`, `sharerName`, `contactWhatsapp`, `needed`, each needed item with exactly `cardIdentifier`, `name`, `pitch`, `imageUrl`, `quantity`; the serialized body contains no "Cúpula", no `unitPriceCents`, no `productUrl` and no `storeSummary` (AC 147; door 11; route) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "the quote page carries the needed cards and nothing about stores"`
 
-**C240** - The `quote` page shows "Caio pediu um orçamento para estas cartas. Marque o que você tem e o preço; a resposta vai pelo WhatsApp.", "Caio ainda precisa de 59 cópias (27 cartas).", and every needed card with no "+ N cartas": the name with the pitch as a word, "precisa de 3", a "Tenho" stepper from 0 to 3, a price field in reais and "Observação (edição, condição)" with `maxLength` 60; it shows no sign-up prompt and no "Cúpula DT", store price, store link or store total (AC 146, AC 147) · done
+**C240** - The `quote` page shows "Caio pediu um orçamento para estas cartas. Marque o que você tem e o preço; a resposta vai pelo WhatsApp.", "Caio ainda precisa de 59 cópias (27 cartas menos as que ele já tem).", and every needed card with no "+ N cartas": the name with the pitch as a word, "precisa de 3", a "Tenho" stepper from 0 to 3, a price field in reais and "Observação (edição, condição)" with `maxLength` 60; it shows no sign-up prompt and no "Cúpula DT", store price, store link or store total (AC 146, AC 147) · done · amended 2026-10-27 (delegation, D13)
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "lists every needed card with a stepper, a price and a note"`
 
 **C241** - The `quote` link preview has the title "Orçamento: cartas para [CC] Brute do Caio", the description "Caio pede orçamento de 59 cópias.", the image's kind label "Orçamento", `noindex`, and no store name or price (AC 147) · done
@@ -841,7 +851,7 @@ Proof: `api e2e src/sharing/__tests__/share-events.e2e-spec.ts -t "records quote
 **C243** - The draft is saved in local storage under a key holding the token and restored on the next visit to the same token; a different token starts empty; when `localStorage` throws on read or write the page starts empty and keeps working (AC 149) · done
 Proof: `web unit src/components/shared-deck/__tests__/quoteDraft.spec.ts -t "restores the draft per token and starts empty without storage"`
 
-**C244** - The sticky footer reads "Seu orçamento: 18 de 59 cópias · R$ 412,00"; "Ver mensagem e enviar" shows the preview "Oi Caio, orçamento para o seu deck [CC] Brute do Caio:", one line per row with a quantity above 0 ("1x Alpha Rampage (Vermelho) · R$ 120,00 cada · Edição promo, condição NM"), and "Total: 18 de 59 cópias · R$ 412,00"; then WhatsApp opens to the sharer when the link shows a number, otherwise the text is copied with "Texto copiado. Cole na conversa com Caio." (AC 150) · done
+**C244** - The sticky footer reads "Seu orçamento: 18 de 59 cópias · R$ 412,00"; the block "Prévia da mensagem" stands on the page while the store fills it in and reads "Marque as cartas que você tem para ver a mensagem." until a card is marked; once one is, it shows the preview "Oi Caio, orçamento para o seu deck [CC] Brute do Caio:", one line per row with a quantity above 0 ("1x Alpha Rampage (Vermelho) · R$ 120,00 cada · Edição promo, condição NM"), and "Total: 18 de 59 cópias · R$ 412,00"; "Ver mensagem e enviar" then opens WhatsApp to the sharer when the link shows a number, otherwise the text is copied with "Texto copiado. Cole na conversa com Caio." (AC 150) · done · amended 2026-10-27 (delegation, D14)
 Proof: `web unit src/components/shared-deck/__tests__/quoteMessage.spec.ts -t "builds the quote message from the rows with a quantity"`
 Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "sends the quote on WhatsApp or copies it"`
 
@@ -854,12 +864,11 @@ Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "a quote address answers no
 **C247** - A sign-up carrying a live `quote` token stores `user.referredVia = 'quote'` and the sharer as `referredByUserId` (AC 152) · done
 Proof: `api e2e src/__tests__/sharing.e2e-spec.ts -t "stores quote as the channel for a sign-up from a quote link"`
 
-**C248** - Arrangement of `r3-quote-phone` at 390 px: the title "Pedido de orçamento", the two header lines, the needed count, then one block per card (name, "precisa de N", "Tenho" stepper, "Preço por unidade" field with "R$", note), then "Copiar a lista para a sua planilha", the disclaimer, and the sticky footer with the running total and "Ver mensagem e enviar"; no horizontal scroll (AC 153) · done
+**C248** - Arrangement of `r3-quote-phone` at 390 px: the title "Pedido de orçamento", the two header lines, the needed count, then one block per card (name, "precisa de N", "Tenho" stepper, "Preço por unidade" field with "R$", note), then the standing block "Prévia da mensagem" (with "Marque as cartas que você tem para ver a mensagem." until a card is marked), then "Copiar a lista para a sua planilha", the disclaimer, and the sticky footer with the running total and "Ver mensagem e enviar"; no horizontal scroll (AC 153) · done · amended 2026-10-27 (delegation, D14)
 Proof: `web e2e --project=mobile-390 tests/mobile/quote-layout.spec.ts -g "the quote page follows r3-quote-phone"`
 
-**C249** - The group ask text and the quote page for that deck carry "4 do deck, 3 do inventário" next to the total of 7 (AC 34; moved here from S5, because the group ask and the quote are built in S18 and S19)
+**C249** - The group ask text carries "4 do deck, 3 do inventário" next to the total of 7; the quote page shows the total only and no split, so C239 keeps its six keys (AC 34; moved here from S5, because the group ask is built in S18) · amended 2026-10-27 (delegation, D15)
 Proof: `web unit src/components/shared-deck/__tests__/SharedMissingGallery.spec.tsx -t "the group ask splits deck and inventory"`
-Proof: `web unit src/components/shared-deck/__tests__/SharedQuotePage.spec.tsx -t "the quote splits deck and inventory"`
 
 ### S20 - Spare copies, one number everywhere · 22 files · 101 KB · ~41k
 
@@ -985,7 +994,7 @@ Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "says how 
 **C287** - When the card sits in two imports and no `sourceId` is sent with `removeFromCollection: true`, the API answers `400` and removes nothing; with `sourceId` it removes from that import only (AC 177) · done
 Proof: `api e2e src/__tests__/lists.e2e-spec.ts -t "asks which import when the card sits in more than one"`
 
-**C288** - The sold sheet (`r3-sold-phone`): every line of the owner's list shows "Vendida"; on a line of 2 it asks "Quantas você vendeu?" with the line's name and version and the choices 1 and 2; then "Tirar da sua coleção também?", "Você tem 4; ficam 2, as que o Kayo CC usa.", "Sim, tirar 2 da coleção", "Não, só marcar como vendida", "Escolha \"Não\" se essas cópias não estavam no app."; on a line of 1 it goes straight to the collection question (AC 172, AC 173, AC 178) · done
+**C288** - The sold sheet (`r3-sold-phone`): every unsold line of the owner's list shows "Vendida" and a sold line shows no such button; on a line of 2 it asks "Quantas você vendeu?" with the line's name and version and the choices 1 and 2; then "Tirar da sua coleção também?", "Você tem 4; ficam 2, as que o Kayo CC usa.", "Sim, tirar 2 da coleção", "Não, só marcar como vendida", "Escolha \"Não\" se essas cópias não estavam no app."; on a line of 1 it goes straight to the collection question (AC 172, AC 173, AC 178) · done · amended 2026-10-27 (delegation, D17)
 Proof: `web unit src/components/lists/__tests__/SoldSheet.spec.tsx -t "asks how many, then about the collection"`
 
 **C289** - When the removal would leave a holding deck short, the question reads "O Kayo CC vai ficar faltando 2." instead of the "ficam N" line (AC 175) · done
@@ -1021,7 +1030,7 @@ Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "a f
 **C298** - With "Incluir minha lista" on, the screen shows "Valor aproximado, pelo preço sugerido: você oferece R$ 57 · você procura R$ 21"; with it off the line is absent; in both cases the message contains no "R$" (AC 182) · done
 Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "the value of each side shows on screen and never in the message"`
 
-**C299** - The offer message (`r3-offer-message-phone`) with the switch on equals "Oi Marcos, vi sua lista no Rathe Arsenal. Tenho sobrando para você: 3x Pummel (Vermelho) · sem foil, 1x Command and Conquer (Vermelho). Em troca procuro: 2x Wrecker Romp (Azul), 1x Savage Feast (Vermelho). Minha lista: <link>", with "‹ Lista do Marcos", "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", "Enviar no WhatsApp", "Copiar texto"; with the switch off it ends after the offered lines (AC 180, AC 182, AC 186) · done
+**C299** - The offer message (`r3-offer-message-phone`) with the switch on equals "Oi Marcos, vi sua lista no Rathe Arsenal. Tenho sobrando para você: 3x Pummel (Vermelho) · sem foil, 1x Command and Conquer (Vermelho). Em troca procuro: 2x Wrecker Romp (Azul), 1x Savage Feast (Vermelho). Minha lista: <link>", with "‹ Lista de Marcos" (a copy rule, "de" before every name; the picked screen draws "do Marcos" and `r3-buyer-message-phone` draws "de Duda"), "Mensagem para o WhatsApp", "Você pode editar antes de enviar.", "Enviar no WhatsApp", "Copiar texto"; with the switch off it ends after the offered lines (AC 180, AC 182, AC 186) · amended 2026-10-27 (delegation, D18)
 Proof: `web unit src/components/shared-list/__tests__/TradeView.spec.tsx -t "builds the offer message with and without the visitor's list"`
 
 **C300** - When the sharer shows no number, "Enviar no WhatsApp" copies the text and shows "Texto copiado. Cole no grupo onde você viu a lista.", on both the buy and the offer message (AC 183) · done
@@ -1243,7 +1252,7 @@ Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t 
 
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "each red line carries its Tutor question and the size line counts as Para fechar"`
 
-**C339** - Tapping a tile question or a checklist question calls the conversation start with `{ text: <that question>, trackedDeckId: <deck id> }`, then navigates to `/chat/<id>` (AC 212) · done
+**C339** - Tapping a tile question or a checklist question makes two calls, the conversation start with `{ trackedDeckId: <deck id> }` and then the send of `{ text: <that question> }` to that conversation, then navigates to `/chat/<id>` (AC 212) · done · amended 2026-10-27 (delegation, D19)
 Proof: `web unit src/components/deck-detail/__tests__/DeckTutorTile.spec.tsx -t "questions start a bound conversation"`
 Proof: `web unit src/components/deck-detail/__tests__/RulesChecklistSheet.spec.tsx -t "a checklist question starts a bound conversation"`
 Proof: `web e2e --project=e2e-chromium tests/e2e/chat-flow.spec.ts -g "a checklist question opens a bound chat with the question sent"` (`/api/chat/*` and `/api/auth/me` stubbed with `page.route`)
@@ -1509,8 +1518,9 @@ Proof: `api unit src/auth/__tests__/turnstile.service.spec.ts -t "an absent secr
 Proof: `api unit src/config/__tests__/env.dto.spec.ts -t "the Turnstile secret is optional"`
 Proof: `web unit src/components/auth/__tests__/TurnstileWidget.spec.tsx -t "no site key, no widget"`
 
-**C404** - The 6th code request for one address within an hour answers `429` with `Retry-After` and adds no row, counted from that address's `sign_in_code` rows of the last hour, while another address from the same IP still answers `202`; the 21st sign-up from one IP within an hour answers `429`, the 20th `201` (AC 257; assumption "the per-address code limit") · done
+**C404** - A code request for one address answers `429` with `Retry-After` and adds no row once that address has 5 codes asked and never tried within the last hour, or 10 failed tries within the last hour counted across all of its codes, whichever comes first; with 4 such codes, or 9 failed tries, the next request still answers `202`; a code that has had a try does not count toward the 5; the counts come from that address's `sign_in_code` rows of the last hour, and another address from the same IP still answers `202`; the 21st sign-up from one IP within an hour answers `429`, the 20th `201` (AC 257; assumption "the per-address code limit") · amended 2026-10-27 (delegation, D59)
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "five codes per address and twenty sign-ups per IP per hour"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "ten failed tries per address per hour across codes"`
 
 **C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "too many tries says the wait and the other way in"`
@@ -1729,7 +1739,7 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | checklist line kinds (3) | green C37 · red with "Ir para a carta" C37, C39 · neutral size C37 | - |
 | sheet close ways (3) | handle C40 · "Fechar" C40 · scroll does not close C40 | - |
 | inventory row menu moves (4) | 1 to inventory C59 · all to inventory C59 · 1 to deck C59 · all to deck C59 | - |
-| missing split surfaces (5) | deck page C62 · missing list C222 · shopping list C223 · group ask C249 · quote C249 | - |
+| missing split surfaces (5) | deck page C62 · missing list C222 · shopping list C223 · group ask C249 · quote page, total only C240 | - |
 | missing filters (3) | "Todas" C222 · "Do deck" C222 · "Do inventário" C222 | - |
 | home card states (4) | no problem full C65 · no problem short C65 · rule problem C66 · format outside the four C72 | - |
 | cause line rows (7) | copies same count C67 · copies mixed C67 · banned C67 · out of format C67 · hero C67 · more than two kinds C67 · singular C67 (table-driven over 7) | - |
@@ -1754,8 +1764,8 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | `POST /api/decks/import` statuses (4) | 201 C169 · 400 C170 · 404 C171 · 502 C171 | - |
 | `PATCH /api/collection/sources/:id/versions` statuses (3) | 200 C126 · 400 C127 · 404 C127 | - |
 | `PATCH /api/collection/cards/:cardIdentifier/versions` statuses (3) | 200 C132 · 400 C132, C133 · 404 C132 | - |
-| `POST /api/collection/cards/batch` statuses (2) | 200 C134 · 400 C134, C133 | - |
-| `POST /api/collection/cards/decrement` statuses (3) | 200 C136 · 400 C136 · 404 C136 | - |
+| `POST /api/collection/cards/batch` statuses (2) | 201 C134 · 400 C134, C133 | - |
+| `POST /api/collection/cards/decrement` statuses (3) | 201 C136 · 400 C136 · 404 C136 | - |
 | door 1 version columns (8) | `collection_card.printingCode` C119 · `collection_card.edition` C119 · `collection_card.finish` C119 · `collection_card.condition` C119 · `card_list_line.printingCode` C119 · `card_list_line.edition` C119 · `card_list_line.finish` C119 · `card_list_line.condition` C119 | - |
 | door 1 `finish` values (5) | `''` C120 · `none` C120 · `rainbow` C120 · `cold` C120 · `gold` C120 | - |
 | door 1 `edition` values (4) | `''` C120 · `first` C120 · `unlimited` C120 · `alpha` C120 | - |
@@ -1779,7 +1789,7 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | version writes that refuse an unknown printing (3 routes) | card versions C133 · batch C133 · pending resolve C133 | - |
 | scanner questions (2) | edition when more than one C135 · "É foil?" when a foil finish exists C135 | - |
 | plural forms (9) | cartas importadas, cópias, linhas para resolver at 0, 1, 2: C184, table-driven over all 9 | - |
-| screens of journey 2 (11) | `r3-version-bulk-phone` C129 · `r3-version-card-phone` C131 · `r3-imports-phone` C181, C138 · `r3-list-phone` C155 · `r3-report-phone` C156 · `r3-pending-phone` C157 · `r3-first-run-phone` C178 · `r3-product-search-phone` C160 · `r3-product-confirm-phone` C161 · `r3-add-phone` C180, C177 · `r3-fabrary-found-phone` C173 | - |
+| screens of journey 2 (12) | `r3-version-bulk-phone` C129 · `r3-version-card-phone` C131 · `r3-imports-phone` C181, C138 · `r3-list-phone` C155 · `r3-report-phone` C156 · `r3-pending-phone` C157 · `r3-first-run-phone` C178 · `r3-product-search-phone` C160 · `r3-product-confirm-phone` C161 · `r3-add-phone` C180, C177 · `r3-fabrary-found-phone` C173 · `r4-resolve-b-phone` C453 | - |
 | states drawn nowhere, from `.design/collection-in.md` (7) | "É foil?" C135 · "Você já adicionou <product>" C164 · Fabrary not found and unreachable C175 · "−" picker inside the screen C137 · skipped cards list C128 · unreadable CSV C147 · 20-copy cap note C153 | - |
 | store states (5) | `priced` C186 · `store_lacks` C186 · `not_on_site` C186 · `looking_up` C186 · `no_price` C186 | - |
 | Store answers decision rows (9) | pass-listed stocked C186 · newer zero-stock lookup C186 · absent from latest pass C186 · newer stocked lookup over absence C186 · no row C186 · no product URL C186 · pending lookup C186 · budget stopped C186 · lookup failed C186 | - |
@@ -1794,6 +1804,7 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | missing-list chips (7) | "Comprar na loja" C207 · "A loja não tem" C207 · "Fora do site" C207 · "Já tenho" C207 · "No lugar" C207 · "Sem preço" C207 · "Buscando" C207 | - |
 | chip sum decks (7) | all priced C205 · all owned C205 · shortfall C205 · stand-in C205 · `looking_up` C205 · `no_price` C205 · inventory only C205 | - |
 | r3 screens of journey 4 (11) | `r3-deck-phone` C203 · `r3-list-phone` C219 · `r3-list-desktop` C220 · `r3-tenho-phone` C219, C214 · `r3-copy-phone` C218 · `r3-share-phone` C236, C224 · `r3-message-phone` C236 · `r3-group-phone` C236, C230 · `r3-group-friend-phone` C236, C231 · `r3-offer-phone` C236, C232 · `r3-quote-phone` C248, C240 | - |
+| r5 screens of journey 4 (1) | `r5-credits-b-phone` C454 | - |
 | share sheet intents (3) | `deck` C224 · `missing` C224 · `quote` C224, C237 | - |
 | group message blocks (5) | store-cannot-supply lines C225 · "Também procuro" C225 · closing line C225, C227 · "Lista completa" C225 · 30-line cut C225 | - |
 | copies the store cannot supply (3) | `store_lacks` C225 · shortfall of `priced` C225 · `not_on_site` C225 | - |
@@ -1899,7 +1910,7 @@ Proof: `api e2e src/sharing/__tests__/share-report-queries.e2e-spec.ts -t "the r
 | code refusals (4) | wrong C365 · malformed C365 · expired C365 · exhausted after 5 tries C365 | - |
 | auth forms with client checks (6) | start field C399, C347 · new-account password C399, C353 · sign-in password C399 · code boxes C399 · settings password C399 · address fix C399 | - |
 | confirmation token edges (2) | 6 days 23 hours C393 · 7 days and 1 second C393 | - |
-| limits (4) | 5th code per address `202` C404 · 6th code per address `429` C404 · 20th sign-up per IP `201` C404 · 21st sign-up per IP `429` C404 | - |
+| limits (6) | 4 untried codes, next request `202` C404 · 5 untried codes, next request `429` C404 · 9 failed tries, next request `202` C404 · 10 failed tries, next request `429` C404 · 20th sign-up per IP `201` C404 · 21st sign-up per IP `429` C404 | - |
 | screens of `.design/account.md` (14) | `r3-arrive-phone` C345 · `r2-typo-phone` C347 · `r2-share-renata-phone` C348 · `r3-new-account-phone` C351 · `r3-new-account-password-phone` C353 · `r3-back-to-deck-phone` C354 · `r3-back-to-list-phone` C354 · `r2-return-password-phone` C360 · `r2-return-code-phone` C366 · `r2-code-expired-phone` C367 · `b4-email-phone` C362 · `r3-home-unconfirmed-phone` C352, C392 · `r2-share-blocked-phone` C391 · `r2-confirmed-phone` C394 | - |
 | screen `r2-settings-password-phone` (1) | C408 | - |
 | housekeeping deletes (8) | user 30 days gone with its tables C442 · deck 30 days gone C442, C445 · consumed code C442 · expired code C442 · revoked session C442 · kept: user and deck 29 days C442 · kept: live code C442 · kept: live session C442 | - |

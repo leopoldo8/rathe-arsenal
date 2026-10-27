@@ -89,8 +89,9 @@ Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "retry reo
 **C20** - The limit banner `Limite do mês atingido.` / `Volta a ser liberado em 1 de novembro. Suas conversas continuam abertas para leitura.` and a composer disabled with placeholder `Limite do mês atingido` appear in each of three cases: usage `{ spentUsd: 5, budgetUsd: 5, resetsAt: '2026-11-01T00:00:00.000Z' }`; a send answering `429` with code `CHAT_BUDGET_EXHAUSTED` and `details.resetsAt`; the last answer `failed` with `BUDGET_EXHAUSTED`; the banner follows the last message; in en-US the date reads `November 1` (AC 23) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "the monthly limit shows its reset date"`
 
-**C21** - Rendering the chat screen at the limit, with a deck and a swap proposal, and the deck tile, the document text matches neither `/R\$|US\$|\$\s?\d|USD|BRL/` nor the values `5` of `spentUsd`/`budgetUsd` as an amount (AC 24) · done
+**C21** - Rendering the chat screen at the limit, with a deck and a swap proposal whose card carries a store price ("R$ 2,50 na Cúpula DT"), and the deck tile, the document text shows no spend figure: it matches neither `/US\$|USD|BRL/` nor the values `5` of `spentUsd`/`budgetUsd` as an amount, and the only `R$` amount on the screen is the store price on the swap card (AC 24) · done · amended 2026-10-27 (delegation, D28)
 Proof: `web unit src/components/chat/__tests__/no-money.spec.tsx -t "no amount renders anywhere in the chat"`
+Proof: `web unit src/components/chat/__tests__/no-money.spec.tsx -t "a priced swap card shows the store price and no spend figure"`
 
 **C22** - A read answering `404` shows `Conversa não encontrada.` and a link `Começar uma nova` to `/chat`; `400` shows the same; `500` shows `Não foi possível carregar a conversa.` and `Tentar de novo`, which refetches (AC 25, AC 26) · done
 Proof: `web unit src/components/chat/__tests__/ChatThread.spec.tsx -t "missing and failing conversations"`
