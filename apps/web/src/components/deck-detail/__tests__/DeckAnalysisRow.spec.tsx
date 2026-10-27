@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { withLinkMock } from '../../../test/router-link-mock';
 
@@ -44,6 +44,9 @@ const ITEMS = buildDeckList(
   [],
 );
 
+// Radix Select calls scrollIntoView, which jsdom lacks.
+if (!window.Element.prototype.scrollIntoView) window.Element.prototype.scrollIntoView = vi.fn();
+
 const PITCH_SENTENCE =
   'O número de 1 a 3 da carta, mostrado também pela cor: vermelha vale 1, amarela 2, azul 3. Para pagar o custo de uma carta, você descarta outras da mão, e cada uma paga o número do seu pitch.';
 
@@ -61,6 +64,32 @@ function renderRow(): void {
     <GlossaryScope>
       <DeckAnalysisRow items={ITEMS} />
     </GlossaryScope>,
+  );
+}
+
+function renderDeckPage31(): void {
+  // The deck of the screen: "Rhinar - Blitz", stage Montando, 31 of 40 cards.
+  const base = rhinarBlitzDeck({ status: 'building' });
+  const deck = {
+    ...base,
+    name: 'Rhinar - Blitz',
+    totalCards: 31,
+    legality: legalityOfComposition(31, []),
+    latestSnapshot: { ...base.latestSnapshot, breakdown: { ...base.latestSnapshot!.breakdown, exact: ITEMS.map((item) => item.entry) } } as IDeckDetailSnapshot,
+  } as IDeckDetailResponse;
+  apiFetch.current = deckFetch(createDeckServer(deck));
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({ matches: query.includes('max-width'), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
+  });
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <ToastProvider>
+        <GlossaryScope>
+          <DeckPageHarness deckId={1} />
+        </GlossaryScope>
+      </ToastProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -104,29 +133,7 @@ describe('DeckAnalysisRow', () => {
   });
 
   it('matches r2-pitch-sheet-phone: the deck header, its size line and the analysis of a 31 card deck', async () => {
-    // The deck of the screen: "Rhinar - Blitz", stage Montando, 31 of 40 cards.
-    const base = rhinarBlitzDeck({ status: 'building' });
-    const deck = {
-      ...base,
-      name: 'Rhinar - Blitz',
-      totalCards: 31,
-      legality: legalityOfComposition(31, []),
-      latestSnapshot: { ...base.latestSnapshot, breakdown: { ...base.latestSnapshot!.breakdown, exact: ITEMS.map((item) => item.entry) } } as IDeckDetailSnapshot,
-    } as IDeckDetailResponse;
-    apiFetch.current = deckFetch(createDeckServer(deck));
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: (query: string) => ({ matches: query.includes('max-width'), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
-    });
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <ToastProvider>
-          <GlossaryScope>
-            <DeckPageHarness deckId={1} />
-          </GlossaryScope>
-        </ToastProvider>
-      </QueryClientProvider>,
-    );
+    renderDeckPage31();
 
     const title = await screen.findByRole('heading', { level: 1, name: 'Rhinar - Blitz' });
     const header = screen.getByRole('region', { name: 'Cabeçalho do deck' });
@@ -149,5 +156,16 @@ describe('DeckAnalysisRow', () => {
     }
     expect(screen.getAllByText('31 de 40 cartas no deck · coloque mais 9'), 'the size line shows once on the page').toHaveLength(1);
     expect(within(screen.getByTestId('deck-list')).queryByText('31 de 40 cartas no deck · coloque mais 9')).toBeNull();
+  });
+
+  it('the retire sheet of the deck page names the deck and its cards (b2-stage-retire-phone)', async () => {
+    renderDeckPage31();
+
+    await screen.findByRole('heading', { level: 1, name: 'Rhinar - Blitz' });
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('button', { name: 'O que é Aposentado?' }));
+
+    const sheet = await screen.findByRole('dialog', { name: 'Aposentado' });
+    expect(within(sheet).getByText('Seu deck Rhinar - Blitz continua salvo com as 31 cartas.')).toBeInTheDocument();
   });
 });
