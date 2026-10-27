@@ -3,7 +3,7 @@
  * through the API, never to the fixture user: copies added to the fixture would shift the readiness
  * of its decks and the visual baselines.
  */
-import { test, expect, request as playwrightRequest } from '@playwright/test';
+import { test, expect, request as playwrightRequest, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 import { ANON_STORAGE_STATE, BASE_URL } from '../support/fixture';
 
 test.use({ storageState: ANON_STORAGE_STATE });
@@ -53,7 +53,7 @@ test('the remove picker opens inside the screen', async ({ page, context }) => {
   await api.dispose();
 });
 
-test('the page behind "Resolver" fits a phone with no control over another', async ({ page, context }) => {
+async function openResolverWithThreeLines(page: Page, context: BrowserContext): Promise<APIRequestContext> {
   const api = await playwrightRequest.newContext({ baseURL: BASE_URL });
   const email = `resolve-${Date.now().toString(36)}@test.local`;
   const signUp = await api.post('/api/auth/sign-up', { data: { email, password: PASSWORD } });
@@ -80,6 +80,11 @@ test('the page behind "Resolver" fits a phone with no control over another', asy
   ]);
   await page.addInitScript(() => localStorage.setItem('rathe.lang', 'pt-BR'));
   await page.goto('/library-pending');
+  return api;
+}
+
+test('the page behind "Resolver" fits a phone with no control over another', async ({ page, context }) => {
+  const api = await openResolverWithThreeLines(page, context);
 
   const viewport = page.viewportSize()!;
   const steps = [/^Adicionar 2 Snatch/, /^Adicionar$/, /^Adicionar 3 Savage/];
@@ -104,6 +109,39 @@ test('the page behind "Resolver" fits a phone with no control over another', asy
         const overlaps = a.x < b.right - 0.5 && b.x < a.right - 0.5 && a.y < b.bottom - 0.5 && b.y < a.bottom - 0.5;
         expect(overlaps, `step ${index + 1}: "${a.name}" overlaps "${b.name}"`).toBe(false);
       }
+    }
+    await page.getByRole('button', { name: 'Pular' }).click();
+  }
+
+  await api.dispose();
+});
+
+test('the page behind Resolver follows r4-resolve-b-phone at 390 px', async ({ page, context }) => {
+  const api = await openResolverWithThreeLines(page, context);
+
+  const steps = [
+    { add: /^Adicionar 2 Snatch/, raw: 'Snach,2,Vermelho', buttons: ['Não é esta, buscar', 'Pular', 'Excluir esta linha'] },
+    { add: /^Adicionar$/, raw: 'Mistery Card,1,', buttons: ['Pular', 'Excluir esta linha'] },
+    { add: /^Adicionar 3 Savage/, raw: 'Savage Beatdown,três,Vermelho', buttons: ['Pular', 'Excluir esta linha'] },
+  ];
+  for (const [index, step] of steps.entries()) {
+    await page.getByRole('button', { name: step.add }).waitFor();
+    await expect(page.getByText(step.raw, { exact: true })).toBeVisible();
+    for (const name of step.buttons) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `step ${index + 1}: no horizontal scroll`).toBeLessThanOrEqual(0);
+
+    const heights = await page.locator('button').evaluateAll((buttons) =>
+      buttons
+        .map((button) => ({ name: button.textContent?.trim() || button.getAttribute('aria-label') || 'button', rect: button.getBoundingClientRect() }))
+        .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+        .map(({ name, rect }) => ({ name, height: rect.height, width: rect.width })),
+    );
+    expect(heights.length, `step ${index + 1}: buttons found`).toBeGreaterThanOrEqual(step.buttons.length + 3);
+    for (const { name, height, width } of heights) {
+      expect(height, `step ${index + 1}: "${name}" height`).toBeGreaterThanOrEqual(44);
+      expect(width, `step ${index + 1}: "${name}" width`).toBeGreaterThanOrEqual(44);
     }
     await page.getByRole('button', { name: 'Pular' }).click();
   }

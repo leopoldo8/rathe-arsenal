@@ -452,6 +452,35 @@ describe('SettingsPage — admin store-sync section', () => {
     expect(screen.queryByTestId('store-sync-failure')).not.toBeInTheDocument();
   });
 
+  it('the credits bar sits under the sync line and turns amber when lookups stop', () => {
+    const follows = (before: HTMLElement, after: HTMLElement): boolean =>
+      Boolean(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const fillOf = (meter: HTMLElement): SVGRectElement => meter.querySelector('rect') as SVGRectElement;
+
+    credits.current = { creditsUsed: 120, budget: 1000, lookupsStopped: false };
+    const running = renderSettings(admin);
+    const label = screen.getByText('Créditos do Firecrawl este mês');
+    const numbers = screen.getByText('120 de 1000');
+    const meter = screen.getByRole('img', { name: '120 de 1000 créditos usados' });
+    expect(follows(screen.getByTestId('store-sync-status'), label)).toBe(true);
+    expect(follows(label, numbers)).toBe(true);
+    expect(follows(numbers, meter)).toBe(true);
+    expect(fillOf(meter)).toHaveAttribute('width', '12%');
+    expect(meter).not.toHaveClass(cls(settingsStyles.meterStopped));
+    expect(screen.queryByText('As consultas automáticas de preço pararam.')).not.toBeInTheDocument();
+    expect(screen.queryByText('A sincronização manual continua funcionando.')).not.toBeInTheDocument();
+    running.unmount();
+
+    credits.current = { creditsUsed: 880, budget: 1000, lookupsStopped: true };
+    renderSettings(admin);
+    const stoppedMeter = screen.getByRole('img', { name: '880 de 1000 créditos usados' });
+    expect(fillOf(stoppedMeter)).toHaveAttribute('width', '88%');
+    expect(stoppedMeter).toHaveClass(cls(settingsStyles.meterStopped));
+    const stopLine = screen.getByText('As consultas automáticas de preço pararam.');
+    expect(follows(stoppedMeter, stopLine)).toBe(true);
+    expect(follows(stopLine, screen.getByText('A sincronização manual continua funcionando.'))).toBe(true);
+  });
+
   it("the URL sync section shows the month's credits and when lookups stopped", () => {
     credits.current = { creditsUsed: 120, budget: 1000, lookupsStopped: false };
     const { unmount } = renderSettings(admin);

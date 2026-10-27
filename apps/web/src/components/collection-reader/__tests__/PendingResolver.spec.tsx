@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IPendingLine, IPendingResponse, IReadImportResponse } from '../../../api/collection-imports';
 import { makeLine } from './readerFixtures';
@@ -79,6 +79,75 @@ describe('PendingResolver', () => {
     expect(screen.getByRole('button', { name: 'Excluir esta linha' })).toBeInTheDocument();
     expect(screen.getByText('Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver.')).toBeInTheDocument();
     expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+  });
+
+  it('arranges the three steps as r4-resolve-b-phone', () => {
+    // 11 open lines with 2 already settled puts the near-name line at "3 de 11" with 8 after it.
+    const filler = (id: number): IPendingLine => line({ id, lineNumber: id, originalText: `Filler ${id},1,`, reason: 'suggestion', quantityHint: 1, suggestion: SNATCH });
+    pendingQuery.mockReturnValue(withLines(filler(101), filler(102), SUGGESTION_LINE, ...[103, 104, 105, 106, 107, 108].map(filler), UNKNOWN_LINE, QUANTITY_LINE));
+    render(<PendingResolver />);
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar 1 Snatch (Vermelho)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar 1 Snatch (Vermelho)' }));
+
+    const inOrder = (...elements: readonly HTMLElement[]): void => {
+      elements.slice(1).forEach((element, index) => {
+        const before = elements[index] as HTMLElement;
+        expect(before.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING, `${before.textContent} then ${element.textContent}`).toBeTruthy();
+      });
+    };
+
+    // Near-name step.
+    expect(screen.getByText('3 de 11')).toBeInTheDocument();
+    inOrder(
+      screen.getByRole('link', { name: /Coleção/ }),
+      screen.getByRole('link', { name: 'Sair e continuar depois' }),
+      screen.getByText('3 de 11'),
+      screen.getByText('colecao-lucas.csv · 8 depois desta · 2 já resolvidas'),
+      screen.getByText('Linha 12 do arquivo · lemos assim'),
+      screen.getByText('Snach,2,Vermelho'),
+      screen.getByText('Você quis dizer'),
+      screen.getByText('Snatch (Vermelho)'),
+      screen.getByText('Quantas cópias'),
+      screen.getByRole('button', { name: 'Menos uma cópia' }),
+      screen.getByRole('button', { name: 'Mais uma cópia' }),
+      screen.getByRole('button', { name: 'Adicionar 2 Snatch (Vermelho)' }),
+      screen.getByRole('button', { name: 'Não é esta, buscar' }),
+      screen.getByRole('button', { name: 'Pular' }),
+      screen.getByRole('button', { name: 'Excluir esta linha' }),
+      screen.getByText('Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver.'),
+    );
+    expect(screen.getByText('2')).toBeInTheDocument();
+
+    // Unknown-word step: the search box comes right after the prompt, and Adicionar waits for a card.
+    pendingQuery.mockReturnValue(withLines(UNKNOWN_LINE));
+    cleanup();
+    render(<PendingResolver />);
+    inOrder(
+      screen.getByText('Linha 31 do arquivo · lemos assim'),
+      screen.getByText('Mistery Card,1,'),
+      screen.getByText('Não achamos essa carta. Busque pelo nome.'),
+      screen.getByRole('searchbox'),
+      screen.getByRole('button', { name: 'Adicionar' }),
+      screen.getByRole('button', { name: 'Pular' }),
+      screen.getByRole('button', { name: 'Excluir esta linha' }),
+    );
+    expect(screen.getByRole('button', { name: 'Adicionar' })).toBeDisabled();
+    expect(screen.getByText('1')).toBeInTheDocument();
+
+    // Unreadable-quantity step: the known card, then the sentence, then the stepper at 3.
+    pendingQuery.mockReturnValue(withLines(QUANTITY_LINE));
+    cleanup();
+    render(<PendingResolver />);
+    inOrder(
+      screen.getByText('Linha 141 do arquivo · lemos assim'),
+      screen.getByText('Savage Beatdown,três,Vermelho'),
+      screen.getByText('Savage Beatdown (Vermelho)'),
+      screen.getByText('"três" não é um número. Quantas cópias?'),
+      screen.getByRole('button', { name: 'Adicionar 3 Savage Beatdown (Vermelho)' }),
+      screen.getByRole('button', { name: 'Pular' }),
+      screen.getByRole('button', { name: 'Excluir esta linha' }),
+    );
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('an unknown word centres on the search and keeps Adicionar off until a card is chosen', () => {
