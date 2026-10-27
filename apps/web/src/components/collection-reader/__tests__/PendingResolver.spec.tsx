@@ -93,6 +93,8 @@ describe('PendingResolver', () => {
     expect(screen.queryByText('Você quis dizer')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Adicionar' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Excluir esta linha' })).toBeInTheDocument();
+    // r4-resolve-b-phone draws the skip note under the near-name step only.
+    expect(screen.queryByText('Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver.')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Snatch' } });
     act(() => {
@@ -131,6 +133,7 @@ describe('PendingResolver', () => {
     expect(screen.getByText('"três" não é um número. Quantas cópias?')).toBeInTheDocument();
     expect(screen.queryByText('Você quis dizer')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Adicionar 3 Savage Beatdown (Vermelho)' })).toBeEnabled();
+    expect(screen.queryByText('Pular deixa a linha na lista. Ela volta na próxima vez que você abrir Resolver.')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mais uma cópia' }));
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar 4 Savage Beatdown (Vermelho)' }));

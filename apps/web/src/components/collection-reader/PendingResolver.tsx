@@ -222,7 +222,7 @@ function Step({ line, failed, busy, onAdd, onSkip, onDelete }: IStepProps): Reac
           </div>
         )}
       </div>
-      <p className={styles.note}>{t('collectionReader.resolveSkipNote')}</p>
+      {line.reason === 'suggestion' && <p className={styles.note}>{t('collectionReader.resolveSkipNote')}</p>}
     </>
   );
 }
