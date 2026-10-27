@@ -17,6 +17,11 @@ export const SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR = 5;
 /** Failed tries, summed across all the codes of one address, that close its code requests for the hour. */
 export const SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR = 10;
 const HOUR_MS = 60 * 60 * 1000;
+/**
+ * Stored in `attempts` once the digits matched and the address signed in. The try that signed in
+ * is neither a failed try nor an untried code, so it counts toward neither request limit.
+ */
+const SIGNED_IN_ATTEMPTS = -1;
 /** The wait the code screen shows before "Reenviar" is offered. */
 export const SIGN_IN_CODE_RESEND_AFTER_MS = 45 * 1000;
 
@@ -107,7 +112,7 @@ export class SignInCodeService {
       }
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
-    await this.spend(live.id);
+    await this.spend(live.id, { signedInByDigits: true });
     return live.email;
   }
 
@@ -120,7 +125,7 @@ export class SignInCodeService {
     if (row.expiresAt.getTime() <= Date.now()) {
       throw new AuthError(EAuthErrorCode.TokenExpired, 'This button has expired');
     }
-    await this.spend(row.id);
+    await this.spend(row.id, { signedInByDigits: false });
     return row.email;
   }
 
@@ -141,7 +146,7 @@ export class SignInCodeService {
       select: { createdAt: true, attempts: true },
     });
     const untried = recent.filter((row) => row.attempts === 0);
-    const failedTries = recent.reduce((sum, row) => sum + row.attempts, 0);
+    const failedTries = this.countFailedTries(recent);
     const waits: number[] = [];
     if (untried.length >= SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR) {
       const oldestCounted = untried[untried.length - SIGN_IN_CODE_MAX_UNTRIED_PER_ADDRESS_PER_HOUR] as SignInCodeEntity;
@@ -159,12 +164,20 @@ export class SignInCodeService {
 
   /** How long until enough old codes leave the hour for the failed tries to drop below the cap. */
   private msUntilFailedTriesFit(recentOldestFirst: readonly SignInCodeEntity[], now: number): number {
-    let remaining = recentOldestFirst.reduce((sum, row) => sum + row.attempts, 0);
+    let remaining = this.countFailedTries(recentOldestFirst);
     for (const row of recentOldestFirst) {
-      remaining -= row.attempts;
+      remaining -= this.failedTriesOf(row);
       if (remaining < SIGN_IN_CODE_MAX_FAILED_TRIES_PER_ADDRESS_PER_HOUR) return row.createdAt.getTime() + HOUR_MS - now;
     }
     return HOUR_MS;
+  }
+
+  private countFailedTries(rows: readonly SignInCodeEntity[]): number {
+    return rows.reduce((sum, row) => sum + this.failedTriesOf(row), 0);
+  }
+
+  private failedTriesOf(row: SignInCodeEntity): number {
+    return row.attempts === SIGNED_IN_ATTEMPTS ? 0 : row.attempts;
   }
 
   private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
@@ -202,11 +215,11 @@ export class SignInCodeService {
   }
 
   /** Marks the code consumed in one statement; a second caller finds nothing to spend. */
-  private async spend(id: string): Promise<void> {
+  private async spend(id: string, options: { signedInByDigits: boolean }): Promise<void> {
     const result = await this.codes
       .createQueryBuilder()
       .update(SignInCodeEntity)
-      .set({ consumedAt: new Date() })
+      .set(options.signedInByDigits ? { consumedAt: new Date(), attempts: SIGNED_IN_ATTEMPTS } : { consumedAt: new Date() })
       .where('"id" = :id AND "consumedAt" IS NULL', { id })
       .execute();
     if (result.affected !== 1) {
