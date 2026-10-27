@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeAuth, renderWithAuth, stubViewport } from '../../../components/auth/__tests__/accountTestKit';
@@ -43,6 +43,12 @@ const mockUseDecksQuery = vi.fn();
 vi.mock('../../../api/decks', () => ({
   useDecksQuery: () => mockUseDecksQuery(),
   useUntrackDeckMutation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+// The import list: an account whose import kept no card still has the import (D10).
+const mockUseCsvSourcesQuery = vi.fn();
+vi.mock('../../../api/csv-sources', () => ({
+  useCsvSourcesQuery: () => mockUseCsvSourcesQuery(),
 }));
 
 // FirstRunChooser — stubbed so most tests only read the redirect guard; the real screen where a test names it
@@ -95,6 +101,10 @@ function makeQueryLoading() {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+beforeEach(() => {
+  mockUseCsvSourcesQuery.mockReturnValue({ isLoading: false, isError: false, data: [] });
+});
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -167,6 +177,27 @@ describe('OnboardingPage — R60 redirect', () => {
     });
     render(<OnboardingPage />);
     expect(screen.getByTestId('navigate-redirect')).toHaveAttribute('data-to', '/library');
+    expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
+  });
+
+  it('an account whose import has only unresolved lines does not land on the chooser', () => {
+    // The import kept no card (every line is waiting to be resolved), so the deck query counts 0 cards.
+    mockUseDecksQuery.mockReturnValue(makeQueryEmpty());
+    mockUseCsvSourcesQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: [{ id: 's1', kind: 'csv', label: 'colecao-lucas.csv', cardCount: 0, copies: 0, active: true }],
+    });
+    render(<OnboardingPage />);
+    expect(screen.getByTestId('navigate-redirect')).toHaveAttribute('data-to', '/library');
+    expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
+  });
+
+  it('shows the skeleton, not the chooser, while the import list loads', () => {
+    mockUseDecksQuery.mockReturnValue(makeQueryEmpty());
+    mockUseCsvSourcesQuery.mockReturnValue({ isLoading: true, isError: false, data: undefined });
+    render(<OnboardingPage />);
+    expect(screen.getByTestId('onboarding-skeleton')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-chooser')).not.toBeInTheDocument();
   });
 
