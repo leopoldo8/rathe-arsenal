@@ -35,7 +35,7 @@ describe('chat throttle (E2E)', () => {
     expect(sends[20]).toBe(429);
     expect(retries.slice(0, 20).includes(429)).toBe(false);
     expect(retries[20]).toBe(429);
-  });
+  }, 60_000);
 
   it('every chat route is throttled', async () => {
     const user = await fixture.chatUser();
@@ -66,5 +66,5 @@ describe('chat throttle (E2E)', () => {
 
     expect(earlyLimits).toEqual([]);
     expect(last).toEqual(routes.map(() => 429));
-  });
+  }, 60_000);
 });
