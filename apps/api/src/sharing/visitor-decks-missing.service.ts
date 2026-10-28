@@ -46,6 +46,8 @@ export class VisitorDecksMissingService {
     const decks = await this.decks.find({
       where: { userId: visitorId, status: Not('retired'), deletedAt: IsNull() },
       select: { id: true, name: true },
+      // Oldest deck first; without it the database answers in storage order, which an UPDATE of a row changes.
+      order: { id: 'ASC' },
     });
     if (decks.length === 0) return perDeck;
 

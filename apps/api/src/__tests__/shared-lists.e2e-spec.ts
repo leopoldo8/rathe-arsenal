@@ -528,6 +528,23 @@ describe('Shared lists (E2E)', () => {
       ]);
     });
 
+    it('lists the visitor decks oldest first even when an update moved the oldest row in storage', async () => {
+      const owner = await createSession('match-order');
+      const visitor = await createSession('match-order-visitor');
+      const listId = await createList(owner, 'sell');
+      const lineA = await addLine(owner, listId, CARD_A, 2);
+      const token = await startSharing(owner, listId);
+      const first = await createDeck(visitor, 'building', CARD_A, 2, 'First deck');
+      const second = await createDeck(visitor, 'building', CARD_A, 2, 'Second deck');
+      // An update writes a new row version after the second deck, so a query with no ORDER BY now answers second first.
+      await dataSource.query(`UPDATE tracked_deck SET name = 'First deck, renamed' WHERE id = $1`, [first]);
+
+      const res = await request(server).get(`/api/shared/lists/${token}/matches`).set(...auth(visitor)).expect(200);
+
+      const line = (res.body.lines as { lineId: number; decks: { deckId: number }[] }[]).find((entry) => entry.lineId === lineA);
+      expect(line?.decks.map((deck) => deck.deckId)).toEqual([first, second]);
+    });
+
     it('gives the owner no lines, and answers 404 for a dead link', async () => {
       const owner = await createSession('match-owner');
       const listId = await createList(owner, 'sell');

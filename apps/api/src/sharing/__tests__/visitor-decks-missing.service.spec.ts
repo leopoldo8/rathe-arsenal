@@ -26,7 +26,7 @@ describe('VisitorDecksMissingService.missingByCard', () => {
 
     await service.missingByCard('visitor-1', new Set([CARD_A.cardIdentifier]), new Map());
 
-    expect(deckRepo.find).toHaveBeenCalledWith({ where: { userId: 'visitor-1', status: Not('retired'), deletedAt: IsNull() }, select: { id: true, name: true } });
+    expect(deckRepo.find).toHaveBeenCalledWith({ where: { userId: 'visitor-1', status: Not('retired'), deletedAt: IsNull() }, select: { id: true, name: true }, order: { id: 'ASC' } });
     expect(cardRepo.find).toHaveBeenCalledWith({ where: { trackedDeckId: In([1, 2]) } });
   });
 
