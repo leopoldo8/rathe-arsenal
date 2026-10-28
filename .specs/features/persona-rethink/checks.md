@@ -2301,3 +2301,6 @@ A check whose proof needs code from a later slice was moved into that slice befo
 - Fix round E boundary: 102ef7c0 - C2, C71, C179, C236, C240, C404, C422, C453, C454, C456, C457, C458, C465 and the new C468
 - Fix round E settled mid-build: the credits bar ends are 4 px as the claim says (it was 6 px); the look checks of the Resolver and of the update window sit inside the existing walks because the web e2e run signs up from one address and stops at 20 sign-ups an hour
 - Fix round E abandoned: none
+- Fix round F boundary: 2a5be3c4 - C454, C404 (proof line), and the visitor deck order of `/api/shared/lists/:token/matches`
+- Fix round F settled mid-build: the second stop line of the credits bar is in `--ra-fg-tertiary` as the picture draws it, and the claim of C454 says so; the visitor's decks are ordered by id ascending (no source states an order, the existing test expects creation order)
+- Fix round F abandoned: none
