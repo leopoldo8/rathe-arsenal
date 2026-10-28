@@ -1,3 +1,4 @@
+import { renderPasswordCodeEmail } from '../templates/password-code-email.template';
 import { renderSignInCodeEmail } from '../templates/sign-in-code-email.template';
 import { renderVerificationEmail } from '../templates/verification-email.template';
 
@@ -16,6 +17,15 @@ describe('e-mail templates', () => {
       for (const word of GENDERED_WORDS) {
         expect({ word, found: copy.includes(word) }).toEqual({ word, found: false });
       }
+    }
+  });
+
+  it('the password-code e-mail does not give the player a gender either', () => {
+    const { subject, html, text } = renderPasswordCodeEmail({ code: '482913', appName: 'Rathe Arsenal', locale: 'pt-BR' });
+
+    const copy = `${subject}\n${html}\n${text}`.toLowerCase();
+    for (const word of GENDERED_WORDS) {
+      expect({ word, found: copy.includes(word) }).toEqual({ word, found: false });
     }
   });
 });
