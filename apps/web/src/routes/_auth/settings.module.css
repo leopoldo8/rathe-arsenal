@@ -220,7 +220,8 @@
 .meter {
   height: var(--ra-space-2);
   margin-top: var(--ra-space-2);
-  border-radius: var(--ra-radius-xs);
+  /* r5-credits-b-phone draws 4 px ends; no radius token is that small. */
+  border-radius: 4px;
   background: var(--ra-bg-raised);
   overflow: hidden;
 }
