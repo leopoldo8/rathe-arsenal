@@ -1524,6 +1524,8 @@ Proof: `web unit src/components/auth/__tests__/TurnstileWidget.spec.tsx -t "no s
 **C404** - A code request for one address answers `429` with `Retry-After` and adds no row once that address has 5 codes asked and never tried within the last hour, or 10 failed tries within the last hour counted across all of its codes, whichever comes first; with 4 such codes, or 9 failed tries, the next request still answers `202`; a code that has had a try does not count toward the 5; the counts come from that address's `sign_in_code` rows of the last hour, and another address from the same IP still answers `202`; the 21st sign-up from one IP within an hour answers `429`, the 20th `201` (AC 257; assumption "the per-address code limit") · amended 2026-10-27 (delegation, D59) · done
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "five codes per address and twenty sign-ups per IP per hour"`
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "ten failed tries per address per hour across codes"`
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "a code that has had a try does not count toward the five"` · amended 2026-10-27 (delegation, round 5)
+Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "a code sign-in that succeeds does not count toward the ten failed tries"` · amended 2026-10-27 (delegation, round 5)
 
 **C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done · proof extended 2026-10-27 (delegation)
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "too many tries says the wait and the other way in"`
@@ -1744,6 +1746,9 @@ Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "
 
 **C467** - `POST /api/collection/csv` with a file and `targetSourceId` of the caller's own import, and `action` absent or `auto`, answers `201` with `kind` `partial-overlap`, that import's id and a delta against that import alone (`added`, `increased`, `decreased`, `removed`), writes nothing, and does so even when the file shares few cards with it; with `action` `update` and the same id it answers `201` and the import then holds exactly the file's quantities, the copies of other imports untouched; with `replace` the import's lines become the file's; an id that is another player's or unknown answers `404`; a file with no rows answers `400` (Surface) · added 2026-10-27 (owner pick, round 6) · done
 Proof: `api e2e src/collection/__tests__/csv-duplicate-upload.e2e-spec.ts -t "a file sent for one import answers its delta, updates or replaces it, and 404s a foreign id"`
+
+**C468** - `GET /api/decks/:deckId/missing?lookups=read` (the route the deck page's "Faltam N cartas" card sends) answers `200` to the deck's owner with the same shape as the route without the query and queues no price lookup; a deck of another user and a deleted deck answer `404`; a `lookups` value other than `read` or `queue` answers `400`; a request with no session answers `401` (Surface; D51) · added 2026-10-27 (delegation, round 5)
+Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "lookups=read answers the owner without queueing and refuses everyone else"`
 
 ## Coverage
 
@@ -1988,6 +1993,7 @@ Proof: `api e2e src/collection/__tests__/csv-duplicate-upload.e2e-spec.ts -t "a 
 | `POST /api/collection/csv` with `targetSourceId` statuses (3) | `201` C467 · `400` C467 · `404` C467 | - |
 | update window actions (3) | "Atualizar a existente" C466 · "Substituir pela nova" C466 · "Cancelar" C466 | - |
 | import "•••" menu entries (3) | "Renomear" C465 · "Enviar nova versão" C465, C466 · "Excluir" C465 | - |
+| `GET /api/decks/:deckId/missing?lookups=read` statuses (4) | `200` C468 · `404` C468 · `400` C468 · `401` C468 | - |
 
 - Door 19's "blocks a merge" is GitHub branch protection, outside the repository: no test settles it, and the owner marks `web-e2e` as a required check once (Handoff).
 - Claims naming a route status: C430, proven by a Playwright test that loads the address.
