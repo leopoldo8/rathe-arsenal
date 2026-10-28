@@ -566,7 +566,6 @@ Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -
 Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "prints the skip note under the near-name step only, on no other step"` · amended 2026-10-27 (delegation, round 5)
 Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "groups the near-name controls as r4-resolve-b-phone draws them"` · amended 2026-10-27 (delegation, round 5)
 Proof: `web unit src/components/collection-reader/__tests__/PendingResolver.spec.tsx -t "shows Mistery in the search box, then the no-card sentence under it and above Adicionar"` · amended 2026-10-27 (delegation, round 5)
-Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the Resolver steps draw the bar, the monospace line and the control rows of r4-resolve-b-phone"` · amended 2026-10-27 (delegation, round 5)
 
 ### S13 - Ready-made decks · 22 files · 33 KB · ~32k
 
@@ -1760,7 +1759,6 @@ Proof: `api e2e src/users/__tests__/password.e2e-spec.ts -t "changing the passwo
 Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "the menu lists Renomear, Enviar nova versão, a separator and Excluir in that order"`
 Proof: `web unit src/components/csv-sources/__tests__/UploadResolveModal.test.tsx -t "the update window lists the delta rows then the three actions in the order of r6-update-import-a-phone"`
 Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the imports page follows r6-update-import-a-phone"`
-Proof: `web e2e --project=mobile-390 tests/mobile/collection-in-layout.spec.ts -g "the menu and the update window carry the colors, sizes and field order of r6-update-import-a-phone"` · amended 2026-10-27 (delegation, round 5)
 
 **C466** - "Enviar nova versão" in the menu of one import opens the file chooser, accepts `.csv`, sends the chosen file to `POST /api/collection/csv` with that row's `targetSourceId` and no other import's, and shows "Atualizar fonte existente?" with the counts the server returned; "Atualizar a existente" re-sends it with `action` `update` and the same `targetSourceId`, closes the window and shows the toast of the built update (the import's row then shows the new copies count); "Substituir pela nova" re-sends it with `action` `replace`; "Cancelar" sends `cancel` or nothing and the import is unchanged; a file over 2 MB shows the existing size error and sends nothing · added 2026-10-27 (owner pick, round 6) · done
 Proof: `web unit src/components/csv-sources/__tests__/CsvSourceRow.test.tsx -t "Enviar nova versão sends the file for this import and each window action re-sends it"`
