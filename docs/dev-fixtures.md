@@ -32,8 +32,8 @@ Playwright runs it from `globalSetup` (`apps/web/tests/support/global-setup.ts`)
 EMAIL="audit-$(date +%s)@test.local"
 PASS="test-password-1234"
 
-# sign-up returns _devVerificationLink only when the API runs with EXPOSE_DEV_SECRETS=true
-# (set it in your local .env; the API refuses to start with it in production)
+# fixture-seed.ts and this sign-up helper read _devVerificationLink; the local API returns it only when it runs with EXPOSE_DEV_SECRETS=true
+# (add it to the local .env; the API refuses to start with it set and NODE_ENV=production)
 curl -s -X POST http://localhost:5173/api/auth/sign-up \
   -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '._devVerificationLink'
