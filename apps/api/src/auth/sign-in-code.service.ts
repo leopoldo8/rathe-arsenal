@@ -140,7 +140,7 @@ export class SignInCodeService {
   /**
    * Stores a code that guards a password change for a signed-in account, replacing its live one, and
    * e-mails it to the account's own address. The digits sign nobody in, and the same per-address
-   * limit as the sign-in codes applies.
+   * limits as the sign-in codes apply, counted over password-change codes only.
    */
   async requestPasswordCode(userId: string, email: string, locale: TLocale): Promise<IPasswordCodeIssued> {
     const now = Date.now();
@@ -168,11 +168,13 @@ export class SignInCodeService {
   }
 
   /**
-   * Spends the account's live password-change code when the digits match. Wrong digits answer
-   * `InvalidCode`; a code that was used, replaced or has expired answers `TokenExpired`; the sixth
-   * try on one code answers `TooManyCodes`, with the wait until that code would have expired.
+   * Checks the digits against the account's live password-change code and returns that code's id,
+   * without spending it: the caller spends it inside the transaction that writes the password, so a
+   * failed write leaves the code usable. Wrong digits answer `InvalidCode`; a code that was used,
+   * replaced or has expired answers `TokenExpired`; the sixth try on one code answers `TooManyCodes`,
+   * with the wait until that code would have expired.
    */
-  async spendPasswordCode(email: string, code: string): Promise<void> {
+  async checkPasswordCode(email: string, code: string): Promise<string> {
     const latest = await this.codes.findOne({ where: { email, purpose: 'password' }, order: { createdAt: 'DESC' } });
     if (!latest) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
@@ -188,22 +190,28 @@ export class SignInCodeService {
     if (!this.matches(latest.codeHash, this.hashCode(email, code))) {
       throw new AuthError(EAuthErrorCode.InvalidCode, 'This code does not match');
     }
-    await this.spend(latest.id, { signedInByDigits: true });
+    return latest.id;
+  }
+
+  /** Spends a code that `checkPasswordCode` accepted, on the caller's transaction; a second caller finds nothing to spend. */
+  async spendCheckedPasswordCode(manager: EntityManager, codeId: string): Promise<void> {
+    await this.spend(codeId, { signedInByDigits: true }, manager);
   }
 
   /**
-   * Refuses a new code once the address has 5 codes of the last hour that nobody tried, or 10 failed
+   * Counts only the rows of one purpose, so password-change codes asked by a session holder cannot
+   * block the owner's code sign-in. Refuses a new code once the address has 5 codes of the last hour that nobody tried, or 10 failed
    * tries summed across its codes. Tries do not count toward the 5, so a stranger who burns the live
    * code's tries cannot lock the owner out of asking; only the 10-try floor stops that guessing. The
    * rows of the last hour include replaced ones, so a new code never resets either count. The count and
    * the insert share one transaction behind a per-address lock, so parallel requests cannot all pass a
    * count that none of them has written to yet.
    */
-  private async assertUnderAddressLimit(manager: EntityManager, email: string): Promise<void> {
-    await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`sign_in_code:${email}`]);
+  private async assertUnderAddressLimit(manager: EntityManager, email: string, purpose: SignInCodeEntity['purpose']): Promise<void> {
+    await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`sign_in_code:${purpose}:${email}`]);
     const now = Date.now();
     const recent = await manager.find(SignInCodeEntity, {
-      where: { email, createdAt: MoreThan(new Date(now - HOUR_MS)) },
+      where: { email, purpose, createdAt: MoreThan(new Date(now - HOUR_MS)) },
       order: { createdAt: 'ASC' },
       select: { createdAt: true, attempts: true },
     });
@@ -245,7 +253,7 @@ export class SignInCodeService {
   private async replaceLiveCode(fresh: Pick<SignInCodeEntity, 'email' | 'purpose' | 'codeHash' | 'buttonTokenHash' | 'expiresAt'>): Promise<void> {
     try {
       await this.codes.manager.transaction(async (manager) => {
-        await this.assertUnderAddressLimit(manager, fresh.email);
+        await this.assertUnderAddressLimit(manager, fresh.email, fresh.purpose);
         await manager
           .createQueryBuilder()
           .update(SignInCodeEntity)
@@ -277,8 +285,8 @@ export class SignInCodeService {
   }
 
   /** Marks the code consumed in one statement; a second caller finds nothing to spend. */
-  private async spend(id: string, options: { signedInByDigits: boolean }): Promise<void> {
-    const result = await this.codes
+  private async spend(id: string, options: { signedInByDigits: boolean }, manager: EntityManager = this.codes.manager): Promise<void> {
+    const result = await manager
       .createQueryBuilder()
       .update(SignInCodeEntity)
       .set(options.signedInByDigits ? { consumedAt: new Date(), attempts: SIGNED_IN_ATTEMPTS } : { consumedAt: new Date() })

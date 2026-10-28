@@ -3,6 +3,7 @@
  * Needs DATABASE_URL (see `auth/__tests__/accounts-e2e.fixture.ts`).
  */
 import request from 'supertest';
+import { EntityManager } from 'typeorm';
 import { bootAccountsApp, IAccountsApp, PASSWORD } from '../../auth/__tests__/accounts-e2e.fixture';
 import { sessionCookieHeader, sessionTokenOf } from '../../auth/__tests__/session-test-helpers';
 
@@ -136,6 +137,43 @@ describe('Password in Settings (E2E, S35)', () => {
     expect(sixth.status).toBe(429);
     expect(Number(sixth.headers['retry-after'])).toBeGreaterThan(0);
     expect((await put({ code: guarded, password: 'another-password-789' })).status).toBe(429);
+  });
+
+  it('password codes and sign-in codes are counted apart, so a session holder cannot block the owner\'s code sign-in', async () => {
+    const { email, token } = await signUp('limits-apart', PASSWORD);
+
+    for (let asks = 1; asks <= 5; asks += 1) {
+      await request(server()).post('/api/users/me/password-code').set(...as(token)).expect(202);
+    }
+    expect((await request(server()).post('/api/users/me/password-code').set(...as(token))).status).toBe(429);
+
+    // Five password codes asked and never tried do not count toward the sign-in limits.
+    await request(server()).post('/api/auth/codes').send({ email }).expect(202);
+    expect(ctx.sentCodes.filter((sent) => sent.to === email)).toHaveLength(1);
+
+    // And the other way round: sign-in codes do not count toward the password change.
+    const other = await signUp('limits-apart-other', PASSWORD);
+    for (let asks = 1; asks <= 5; asks += 1) {
+      await request(server()).post('/api/auth/codes').send({ email: other.email }).expect(202);
+    }
+    expect((await request(server()).post('/api/auth/codes').send({ email: other.email })).status).toBe(429);
+    await request(server()).post('/api/users/me/password-code').set(...as(other.token)).expect(202);
+  });
+
+  it('a failed password write leaves the code usable, and the code still works only once', async () => {
+    const { email, token } = await signUp('failed-write', PASSWORD);
+    const code = await askCode(token, email);
+    const put = () => request(server()).put('/api/users/me/password').set(...as(token)).send({ code, password: NEW_PASSWORD });
+
+    const writeFails = jest.spyOn(EntityManager.prototype, 'update').mockRejectedValueOnce(new Error('the database dropped the write'));
+    const failed = await put();
+    writeFails.mockRestore();
+    expect(failed.status).toBe(500);
+    expect((await request(server()).post('/api/auth/sign-in').send({ email, password: PASSWORD })).status).toBe(200);
+
+    expect((await put()).status).toBe(204);
+    expect((await request(server()).post('/api/auth/sign-in').send({ email, password: NEW_PASSWORD })).status).toBe(200);
+    expect((await put()).status).toBe(410);
   });
 
   it('GET /api/auth/me says whether the account has a password', async () => {

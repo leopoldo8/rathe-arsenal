@@ -36,6 +36,23 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...valid, GEMINI_CHAT_THINKING_LEVEL: 'extreme' })).not.toThrow();
   });
 
+  describe('EXPOSE_DEV_SECRETS', () => {
+    it('is absent by default and kept as given otherwise', () => {
+      expect(validateEnv(valid).EXPOSE_DEV_SECRETS).toBeUndefined();
+      expect(validateEnv({ ...valid, EXPOSE_DEV_SECRETS: 'true' }).EXPOSE_DEV_SECRETS).toBe('true');
+    });
+
+    it('refuses to start in production when it is exactly "true"', () => {
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: 'true' })).toThrow(/EXPOSE_DEV_SECRETS/);
+    });
+
+    it('lets production start when it is unset or anything but "true"', () => {
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production' })).not.toThrow();
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: 'false' })).not.toThrow();
+      expect(() => validateEnv({ ...valid, NODE_ENV: 'production', EXPOSE_DEV_SECRETS: '1' })).not.toThrow();
+    });
+  });
+
   it('parses a complete valid env (happy path)', () => {
     const dto = validateEnv(valid);
     expect(dto.NODE_ENV).toBe('development');

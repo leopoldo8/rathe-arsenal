@@ -232,6 +232,16 @@ export class EnvDto {
   FIRECRAWL_CREDITS_PER_LISTING_PAGE?: number;
 
   /**
+   * Opt-in, exactly the string `true`: sign-up answers with `_devVerificationLink` and the password
+   * code request with `_devCode`, so tests with no inbox can finish the flow. Unset by default, because
+   * any deploy that returned them would let a stolen session change the password without the e-mail.
+   * The API refuses to start with it `true` in production (see validateEnv).
+   */
+  @IsOptional()
+  @IsString()
+  EXPOSE_DEV_SECRETS?: string;
+
+  /**
    * Sentry DSN for api error reporting. Optional — when absent, initApiSentry
    * skips init entirely so local dev and CI never attempt to report errors.
    */
@@ -269,6 +279,9 @@ export function validateEnv(raw: Record<string, unknown>): EnvDto {
       .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('\n  ');
     throw new Error(`Invalid environment configuration:\n  ${formatted}`);
+  }
+  if (dto.EXPOSE_DEV_SECRETS === 'true' && dto.NODE_ENV === ENodeEnv.Production) {
+    throw new Error('Invalid environment configuration:\n  EXPOSE_DEV_SECRETS: must not be "true" when NODE_ENV is production');
   }
   return dto;
 }

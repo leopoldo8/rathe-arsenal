@@ -98,6 +98,7 @@ jobs:
           EMAIL_FROM: CI Test <noreply@test.local>
           APP_BASE_URL: http://localhost:5173
           PORT: "3001"
+          EXPOSE_DEV_SECRETS: "true"
         run: pnpm --filter @rathe-arsenal/api test:e2e
 
   # Browser E2E and the accessibility scan: the full stack (API on :3000, Vite
@@ -116,6 +117,8 @@ jobs:
       RESEND_API_KEY: re_test_fake_key_for_ci_bypass
       EMAIL_FROM: CI Test <noreply@test.local>
       APP_BASE_URL: http://localhost:5173
+      # The browser tests have no inbox: sign-up and the password code answer with their secrets.
+      EXPOSE_DEV_SECRETS: "true"
 
     services:
       postgres:

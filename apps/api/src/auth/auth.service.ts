@@ -49,7 +49,7 @@ export interface ISessionGrant<T> {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly baseUrl: string;
-  private readonly isDev: boolean;
+  private readonly exposeDevSecrets: boolean;
 
   constructor(
     @InjectRepository(UserEntity)
@@ -64,7 +64,8 @@ export class AuthService {
     private readonly signInCodes: SignInCodeService,
   ) {
     this.baseUrl = this.config.get<string>('APP_BASE_URL') ?? 'http://localhost:5173';
-    this.isDev = this.config.get<string>('NODE_ENV') !== 'production';
+    // An explicit opt-in, not "anything but production": a staging deploy must not hand out the secrets.
+    this.exposeDevSecrets = this.config.get<string>('EXPOSE_DEV_SECRETS') === 'true';
   }
 
   /** Says what an address takes next, so the page can show the right step. Reveals existence on purpose (journey 1). */
@@ -124,7 +125,7 @@ export class AuthService {
 
     this.logger.log({ event: 'auth.sign_up.success', userId: saved.id });
     const grant = await this.authResponse(saved);
-    const response: ISignUpResponse = this.isDev ? { ...grant.body, _devVerificationLink: link } : grant.body;
+    const response: ISignUpResponse = this.exposeDevSecrets ? { ...grant.body, _devVerificationLink: link } : grant.body;
     return { body: response, sessionToken: grant.sessionToken };
   }
 
@@ -299,16 +300,24 @@ export class AuthService {
   async requestPasswordCode(userId: string, locale: TLocale = 'pt-BR'): Promise<ICodeRequestResult & { _devCode?: string }> {
     const user = await this.signedInUser(userId);
     const { code, ...issued } = await this.signInCodes.requestPasswordCode(userId, user.email, locale);
-    // Like `_devVerificationLink` on sign-up: outside production the digits ride in the answer, so an e2e
-    // test that has no inbox can finish the flow. Production never carries them.
-    return this.isDev ? { ...issued, _devCode: code } : issued;
+    // Like `_devVerificationLink` on sign-up: with EXPOSE_DEV_SECRETS the digits ride in the answer, so an e2e
+    // test that has no inbox can finish the flow. Nothing else carries them.
+    return this.exposeDevSecrets ? { ...issued, _devCode: code } : issued;
   }
 
   /** Sets the password once the code e-mailed to the account's own address is spent. */
   async changePasswordWithCode(userId: string, code: string, password: string, currentSessionToken: string | null): Promise<void> {
     const user = await this.signedInUser(userId);
-    await this.signInCodes.spendPasswordCode(user.email, code);
-    await this.setPassword(userId, password, currentSessionToken);
+    const codeId = await this.signInCodes.checkPasswordCode(user.email, code);
+    const passwordHash = await this.passwordHasher.hash(password);
+    // One transaction: a failed write rolls the spend back, so the code is not burned, and the
+    // conditional spend still lets only one of two racing requests through.
+    await this.users.manager.transaction(async (manager) => {
+      await this.signInCodes.spendCheckedPasswordCode(manager, codeId);
+      await manager.update(UserEntity, { id: userId }, { passwordHash });
+    });
+    await this.sessions.revokeAllOf(userId, currentSessionToken ?? undefined);
+    this.logger.log({ event: 'auth.password.set', userId });
   }
 
   private async signedInUser(userId: string): Promise<UserEntity> {

@@ -20,6 +20,7 @@ function buildService(overrides: {
   sendVerification?: jest.Mock;
   resolveReferral?: jest.Mock;
   nodeEnv?: string;
+  exposeDevSecrets?: string | undefined;
 } = {}) {
   const repo = createMock<Repository<UserEntity>>();
   repo.findOne = overrides.findOne ?? jest.fn().mockResolvedValue(null);
@@ -38,6 +39,7 @@ function buildService(overrides: {
   config.get.mockImplementation((key: string) => {
     if (key === 'APP_BASE_URL') return 'http://localhost:5173';
     if (key === 'NODE_ENV') return overrides.nodeEnv ?? 'development';
+    if (key === 'EXPOSE_DEV_SECRETS') return overrides.exposeDevSecrets;
     return undefined;
   });
 
@@ -62,9 +64,23 @@ function buildService(overrides: {
   return { service, repo, hasher, tokens, sessions, email, referral, shareEvents, signInCodes };
 }
 
+describe('AuthService.signUp dev link', () => {
+  it.each([undefined, 'false', '1', 'TRUE', ' true', ''])('leaves the link out when EXPOSE_DEV_SECRETS is %p, even outside production', async (flag) => {
+    const { service } = buildService({ exposeDevSecrets: flag });
+    const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
+    expect(result.body).not.toHaveProperty('_devVerificationLink');
+  });
+
+  it('hands the link back only when EXPOSE_DEV_SECRETS is exactly "true"', async () => {
+    const { service } = buildService({ exposeDevSecrets: 'true' });
+    const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
+    expect(result.body._devVerificationLink).toContain('/verify-email?token=');
+  });
+});
+
 describe('AuthService.signUp', () => {
   it('creates a signed-in user, sends the verification email and returns the dev link (happy path)', async () => {
-    const { service, email } = buildService();
+    const { service, email } = buildService({ exposeDevSecrets: 'true' });
     const result = await service.signUp({ email: 'a@b.com', password: 'longenoughpassword' });
     expect(result.sessionToken).toBe('session-token');
     expect(result.body.user.email).toBe('a@b.com');
@@ -643,18 +659,23 @@ describe('AuthService.requestPasswordCode', () => {
   const account = { id: 'u1', email: 'lucas@hotmail.com', deletedAt: null } as UserEntity;
   const issued = { expiresAt: new Date('2026-10-27T12:15:00Z'), resendAfter: new Date('2026-10-27T12:00:45Z'), code: '482913' };
 
-  it('hands the digits back only outside production, so tests can read them without an inbox', async () => {
-    const dev = buildService({ findOne: jest.fn().mockResolvedValue(account) });
-    dev.signInCodes.requestPasswordCode.mockResolvedValue(issued);
-    const production = buildService({ findOne: jest.fn().mockResolvedValue(account), nodeEnv: 'production' });
-    production.signInCodes.requestPasswordCode.mockResolvedValue(issued);
+  it('hands the digits back only when EXPOSE_DEV_SECRETS is exactly "true"', async () => {
+    const exposed = buildService({ findOne: jest.fn().mockResolvedValue(account), exposeDevSecrets: 'true' });
+    exposed.signInCodes.requestPasswordCode.mockResolvedValue(issued);
 
-    const fromDev = await dev.service.requestPasswordCode('u1');
-    const fromProduction = await production.service.requestPasswordCode('u1');
+    const fromExposed = await exposed.service.requestPasswordCode('u1');
 
-    expect(fromDev).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter, _devCode: '482913' });
-    expect(fromProduction).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
-    expect(JSON.stringify(fromProduction)).not.toContain('482913');
-    expect(production.signInCodes.requestPasswordCode).toHaveBeenCalledWith('u1', 'lucas@hotmail.com', 'pt-BR');
+    expect(fromExposed).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter, _devCode: '482913' });
+    expect(exposed.signInCodes.requestPasswordCode).toHaveBeenCalledWith('u1', 'lucas@hotmail.com', 'pt-BR');
+  });
+
+  it.each([undefined, 'false', '1', 'TRUE', ''])('keeps the digits out of the answer when EXPOSE_DEV_SECRETS is %p, even outside production', async (flag) => {
+    const hidden = buildService({ findOne: jest.fn().mockResolvedValue(account), exposeDevSecrets: flag });
+    hidden.signInCodes.requestPasswordCode.mockResolvedValue(issued);
+
+    const answer = await hidden.service.requestPasswordCode('u1');
+
+    expect(answer).toEqual({ expiresAt: issued.expiresAt, resendAfter: issued.resendAfter });
+    expect(JSON.stringify(answer)).not.toContain('482913');
   });
 });
