@@ -973,3 +973,16 @@ Built on `35da1df` under the owner's delegation of 2026-10-27; each line says wh
 - Batch X4, D27: no mockup draws "Alternativas" on the desktop table; it is built under the card name so C457 can run on the desktop project. Remove it there if the owner wants the phone only.
 - Batch X4, D29: the size error of "Enviar nova versão" shows as an error toast with the existing line "Arquivo grande demais: o máximo é 2 MB."; no mockup draws where.
 - Batch X4, D23: when a request for the code fails, the existing wait or generic error line shows under the password row, as a red line; no mockup draws it. "Mandar um código novo" (existing copy) replaces "Reenviar" after a code that expired.
+
+## Before deploying
+
+Information only: what someone must check or do on the deployed environment.
+
+- Production and staging run with `NODE_ENV=production` and without `EXPOSE_DEV_SECRETS`: with it set, the API returns the sign-up confirmation link and the password-change code in its responses (the API refuses to start with both set).
+- `APP_BASE_URL` is set, for the e-mailed links.
+- Every user signs in again after the deploy, because sessions moved to the `ra_session` cookie over a `user_session` row.
+- Migrations run, including `1778533613000` (the `purpose` column of `sign_in_code`).
+- The housekeeping step (`apps/api/src/housekeeping`, run by the worker) purges accounts and decks deleted more than 30 days ago, sign-in codes that are used up or expired and at least an hour old, and sessions that ended; the worker service must be running for it to happen.
+- Mark the web e2e job as a required check in the repository settings.
+- The events `buy` and `offer` of the buyer and trade views are not sent (no check proves them).
+- Plan routes with no coverage row (the warning of `validate_checks.py`; the last run printed 4, not 5): `/api/collection/sources/:id/copies`, `/api/catalog/collector-codes`, `/library-csv-sources/:sourceId/versions`, `/api/collection/library`.

@@ -220,6 +220,14 @@
 
 ## Handoff
 
+- **Feature**: persona-rethink - `.specs/features/persona-rethink/` - planned, built and verified through round 7 (commit `57a131bf`): 468 of 468 checks PASS. Branch `design/close-the-deck` in worktree `.claude/worktrees/close-the-deck`, not pushed, no PR.
+- **Verdict**: stays FAIL, only on the basis the owner accepted on 2026-10-27 (the screen-arrangement checks missing for most journeys, the "Screen copy and arrangement" Test policy row, the Uncovered cells carried from the binding sources), plus four contradictions with a picked screen that decisions taken under the owner's delegation kept: C71 (D1), C74 (D4), C82 (D5), C288 (D17). `validate_verification.py` exits 1 with the single error "verdict is FAIL".
+- **Decisions and deviations**: `.specs/features/persona-rethink/decisions-2026-10-27.md` and `.specs/features/persona-rethink/implementation-notes.md` (its "Before deploying" section lists what to check on the deployed environment).
+- **Next (the owner's)**: push the branch and open the PR when they decide.
+- **Open**: `docs/phase-1-followups.md` AU1 to AU3.
+
+### Previous handoff (sharing-decks)
+
 - **Feature**: sharing-decks - `.specs/features/sharing-decks/` - planned, built and merged (#156 to #161): shared deck page with missing view, share card with WhatsApp contact (alternative B), display name and contact in Settings, return to the shared page after sign-in or verification, share attribution and `pnpm share:report`, link-preview tags and generated images, copy a shared deck. Verified by API unit (1073) and e2e (283) suites, web suite (2252), and a browser walkthrough against the real API.
 - **Next**: Card list, Shared list (with list previews) and Price suggestion from `.design/sharing.md`.
 - **Open**: `docs/phase-1-followups.md` SH1 to SH6, of which SH1 (a real WhatsApp paste after the production deploy) is the owner's.

@@ -450,6 +450,11 @@ A code sign-in already closes the hole: a code that reached the inbox drops a pa
 **Work (known, not built):** a question "Foi você que criou esta conta?" on the confirm page, whose answers and effects are not designed yet. It needs mockups.
 The unapplied patch is `x2-d56.patch` in the session scratchpad; that path is machine-local and may be gone.
 
+### AU3. Two more sign-ups in the web e2e suite, or two runs within an hour, fail with 429
+**Posture:** the web e2e suite signs up about 18 accounts per run from one client address, and the API allows 20 sign-ups per address per hour. Two more sign-ups in the suite, or two web e2e runs within one hour against the same API process, answer `429`.
+**Trigger:** adding any web e2e test that signs up.
+**Work (known, not built):** give each Playwright worker or test its own client address that the API trusts in test (check how the API reads the client IP: `main.ts` sets `trust proxy` to 1, so `X-Forwarded-For` is read from the first hop and the test run would need to send it), or a test-only limit set through an environment variable that refuses to start in production, like `EXPOSE_DEV_SECRETS`.
+
 ---
 
 ## How to use this file
