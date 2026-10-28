@@ -92,5 +92,6 @@ test('the credits bar turns amber when lookups stop', async ({ page }) => {
   expect(await lines.evaluate((node) => getComputedStyle(node).color), 'the first line is in the amber ink').toBe('rgb(214, 149, 76)');
   const note = lines.getByText('A sincronização manual continua funcionando.');
   expect(meterBox.y + meterBox.height, 'the lines are under the bar').toBeLessThanOrEqual((await lines.boundingBox())!.y + 1);
-  expect(await note.evaluate((node) => getComputedStyle(node).color), 'the second line is muted').not.toBe('');
+  // The picture draws the second line in --fg3 (#8b8d96), the token the app calls --ra-fg-tertiary.
+  expect(await note.evaluate((node) => getComputedStyle(node).color), 'the second line is muted').toBe('rgb(139, 141, 150)');
 });

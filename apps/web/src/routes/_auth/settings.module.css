@@ -251,7 +251,7 @@
 .stopLineNote {
   display: block;
   margin-top: var(--ra-space-1);
-  color: var(--ra-fg-muted);
+  color: var(--ra-fg-tertiary);
 }
 
 @media (max-width: 639px) {
