@@ -84,6 +84,44 @@ test.describe('the owner', () => {
   });
 });
 
+test.describe('the owner, turn-off row', () => {
+  test('the turn-off row of the editor is a centered danger-colored text row under a divider', async ({ page }) => {
+    await pinPortuguese(page);
+    await stubSignedIn(page);
+    await stubMissingList(page);
+    await stubOwnerSharing(page);
+    await page.goto(`/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Compartilhar', exact: true }).first().click();
+    const dialog = page.getByTestId('share-dialog');
+    await dialog.getByTestId('share-intent-missing').click();
+    await expect(dialog.getByTestId('group-ask-message')).toBeVisible();
+
+    const send = dialog.getByRole('button', { name: 'Abrir no WhatsApp' });
+    const turnOff = dialog.getByRole('button', { name: 'Desativar link' });
+    const [sendBox, turnOffBox] = await Promise.all([send.boundingBox(), turnOff.boundingBox()]);
+    expect(Math.abs(turnOffBox!.x + turnOffBox!.width / 2 - (sendBox!.x + sendBox!.width / 2)), 'the row is centered under the button').toBeLessThan(4);
+
+    const divider = await turnOff.evaluate((node) => {
+      const row = node.parentElement!;
+      const style = getComputedStyle(row);
+      return { style: style.borderTopStyle, width: style.borderTopWidth, top: row.getBoundingClientRect().top };
+    });
+    expect(divider.style, 'a divider sits above the row').toBe('solid');
+    expect(divider.width).toBe('1px');
+    expect(divider.top, 'the divider is under "Abrir no WhatsApp"').toBeGreaterThanOrEqual(sendBox!.y + sendBox!.height);
+
+    const danger = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--ra-ready-low)';
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    expect(await turnOff.evaluate((node) => getComputedStyle(node).color), 'the row is in the danger color').toBe(danger);
+  });
+});
+
 test.describe('a visitor signed out', () => {
   test.use({ storageState: ANON_STORAGE_STATE });
 

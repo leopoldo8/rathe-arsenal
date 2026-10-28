@@ -215,3 +215,48 @@ test('the missing message step follows r6-turnoff-a-phone', async ({ page }) => 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, 'no horizontal scroll').toBeLessThanOrEqual(0);
 });
+
+test('the missing message step carries the drawn texts and colors of r6-turnoff-a-phone', async ({ page }) => {
+  await pinPortuguese(page);
+  await stubSignedIn(page);
+  await stubMissingList(page);
+  await stubOwnerSharing(page);
+  await page.goto(`/decks/${loadFixture().swapDeckId}`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Compartilhar', exact: true }).first().click();
+  const dialog = page.getByTestId('share-dialog');
+  await dialog.getByTestId('share-intent-missing').click();
+  await expect(dialog.getByTestId('group-ask-message')).toBeVisible();
+
+  await expect(dialog.getByText('Pedir as cartas que faltam', { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Mensagem para o WhatsApp' })).toBeVisible();
+  await expect(dialog.getByText('Você pode editar antes de enviar.', { exact: true })).toBeVisible();
+  // The picture draws 43; the stub holds 7 store-side copies, and the label is the same sentence around the count.
+  await expect(dialog.getByRole('switch', { name: 'Incluir também as 7 que a loja tem' })).toBeVisible();
+
+  // Nothing after the row: no text starts below its bottom edge.
+  const turnOff = dialog.getByRole('button', { name: 'Desativar link' });
+  const turnOffBox = (await turnOff.boundingBox())!;
+  const textBelow = await dialog.evaluate(
+    (node, bottom) =>
+      [...node.querySelectorAll('*')].filter(
+        (element) => element.children.length === 0 && (element.textContent ?? '').trim() !== '' && element.getBoundingClientRect().top >= bottom - 0.5,
+      ).length,
+    turnOffBox.y + turnOffBox.height,
+  );
+  expect(textBelow, 'no text after the row').toBe(0);
+
+  const colorOf = (token: string) =>
+    page.evaluate((value) => {
+      const probe = document.createElement('span');
+      probe.style.color = `var(${value})`;
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    }, token);
+  await turnOff.click();
+  const confirm = dialog.getByRole('button', { name: 'Desativar', exact: true });
+  const keep = dialog.getByRole('button', { name: 'Manter' });
+  expect(await confirm.evaluate((node) => getComputedStyle(node).color), '"Desativar" is in the danger color').toBe(await colorOf('--ra-ready-low'));
+  expect(await keep.evaluate((node) => getComputedStyle(node).color), '"Manter" is in the accent color').toBe(await colorOf('--ra-accent-body'));
+});
