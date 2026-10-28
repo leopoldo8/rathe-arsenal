@@ -106,7 +106,9 @@ jobs:
   # TypeORM creates the schema on API boot (NODE_ENV=development).
   web-e2e:
     name: Web E2E (Playwright, axe scan)
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, where Playwright 1.59 cannot
+    # install Chromium. Unpin once Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     env:
