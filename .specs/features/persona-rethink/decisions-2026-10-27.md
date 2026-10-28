@@ -119,3 +119,8 @@ The owner answered the three open questions on 2026-10-27.
 - The formal gate: option (a), accept the spec with the FAIL basis documented.
   The screen-arrangement checks missing for most journeys, the boundary and pure Test policy rows and the binding Uncovered cells are accepted as recorded gaps.
   A Verifier round 5 is authorized.
+
+## Owner answers, 2026-10-28
+
+The stale price label on the library page failed the contrast rule in the dark theme.
+Fixing it in this PR, with no mockups, was picked by the owner on 2026-10-28.
