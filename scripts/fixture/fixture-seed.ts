@@ -20,8 +20,15 @@ export interface IFixtureHandles {
 interface IDeckSummary {
   readonly id: number;
   readonly name: string;
-  readonly fabraryUlid: string | null;
   readonly tags: readonly string[];
+}
+
+type TDeckSlot = 'mainboard' | 'equipment' | 'weapon' | 'hero';
+
+interface IReadyDeckSpec {
+  readonly name: string;
+  readonly hero: string;
+  readonly cards: ReadonlyArray<readonly [slot: TDeckSlot, cardIdentifier: string, quantity: number]>;
 }
 
 interface IDeckDetail {
@@ -36,13 +43,100 @@ export const SWAP_DECK_NAME = 'Rhinar Swap Test';
 export const FIXTURE_TAG = 'liga local';
 
 const SWAP_DECK_HERO = 'rhinar-reckless-rampage';
-const FABRARY_DECK_URLS = [
-  'https://fabrary.net/decks/01J027FSFWMBYYDR457YVXM5QT',
-  'https://fabrary.net/decks/01HYW5BJE6PD6K25Z3SK758DE8',
-];
 const MIN_SUGGESTIONS = 3;
 const SIGN_IN_RETRY_MS = 15_000;
 const SIGN_IN_MAX_WAIT_MS = 150_000;
+
+const READY_DECK_HERO = 'kayo-armed-and-dangerous';
+const READY_DECK_FORMAT = 'Classic Constructed';
+
+// The two Kayo decks the fixture used to import from fabrary.net, written out as plain compositions so the
+// seed never needs the network (CI runners are blocked by Fabrary). The first one is the "ready deck" the
+// browser tests open; both names show on the home page.
+const READY_DECKS: readonly IReadyDeckSpec[] = [
+  {
+    name: '[CC/CURRENT] Kayo',
+    hero: READY_DECK_HERO,
+    cards: [
+      ['hero', READY_DECK_HERO, 1],
+      ['weapon', 'mandible-claw', 1],
+      ['equipment', 'beaten-trackers', 1],
+      ['equipment', 'hide-tanner', 1],
+      ['equipment', 'savage-sash', 1],
+      ['equipment', 'scowling-flesh-bag', 1],
+      ['mainboard', 'agile-windup-blue', 3],
+      ['mainboard', 'agile-windup-yellow', 3],
+      ['mainboard', 'assault-and-battery-blue', 3],
+      ['mainboard', 'bare-fangs-red', 3],
+      ['mainboard', 'bare-fangs-yellow', 3],
+      ['mainboard', 'beast-within-yellow', 3],
+      ['mainboard', 'bloodrush-bellow-yellow', 3],
+      ['mainboard', 'clash-of-agility-red', 3],
+      ['mainboard', 'command-and-conquer-red', 1],
+      ['mainboard', 'enlightened-strike-red', 2],
+      ['mainboard', 'erase-face-red', 1],
+      ['mainboard', 'mighty-windup-blue', 3],
+      ['mainboard', 'pack-hunt-red', 3],
+      ['mainboard', 'pulping-red', 3],
+      ['mainboard', 'reckless-swing-blue', 1],
+      ['mainboard', 'riled-up-blue', 3],
+      ['mainboard', 'run-roughshod-blue', 3],
+      ['mainboard', 'savage-feast-red', 3],
+      ['mainboard', 'send-packing-yellow', 3],
+      ['mainboard', 'smash-instinct-blue', 3],
+      ['mainboard', 'wild-ride-red', 3],
+      ['mainboard', 'wild-ride-yellow', 3],
+      ['mainboard', 'wrecker-romp-blue', 2],
+    ],
+  },
+  {
+    name: '[CC/GOAL] Kayo',
+    hero: READY_DECK_HERO,
+    cards: [
+      ['hero', READY_DECK_HERO, 1],
+      ['weapon', 'mandible-claw', 1],
+      ['equipment', 'apex-bonebreaker', 1],
+      ['equipment', 'beaten-trackers', 1],
+      ['equipment', 'savage-sash', 1],
+      ['equipment', 'scowling-flesh-bag', 1],
+      ['mainboard', 'agile-windup-blue', 3],
+      ['mainboard', 'agile-windup-yellow', 3],
+      ['mainboard', 'bare-fangs-yellow', 3],
+      ['mainboard', 'beast-within-yellow', 3],
+      ['mainboard', 'bloodrush-bellow-yellow', 3],
+      ['mainboard', 'clash-of-agility-red', 3],
+      ['mainboard', 'command-and-conquer-red', 3],
+      ['mainboard', 'enlightened-strike-red', 3],
+      ['mainboard', 'mighty-windup-blue', 3],
+      ['mainboard', 'pack-hunt-red', 3],
+      ['mainboard', 'pulping-red', 3],
+      ['mainboard', 'reckless-swing-blue', 2],
+      ['mainboard', 'riled-up-blue', 3],
+      ['mainboard', 'run-roughshod-blue', 3],
+      ['mainboard', 'savage-feast-red', 3],
+      ['mainboard', 'send-packing-yellow', 1],
+      ['mainboard', 'smash-instinct-blue', 3],
+      ['mainboard', 'swing-big-red', 3],
+      ['mainboard', 'wild-ride-red', 3],
+      ['mainboard', 'wild-ride-yellow', 3],
+      ['mainboard', 'wrecker-romp-blue', 3],
+    ],
+  },
+];
+
+export const READY_DECK_NAME = READY_DECKS[0]!.name;
+const READY_DECK_NAMES: ReadonlySet<string> = new Set(READY_DECKS.map((deck) => deck.name));
+
+/** The most copies of each card any ready deck asks for: the player owns the decks, as the old import said. */
+function ownedByReadyDecks(): Readonly<Record<string, number>> {
+  const owned: Record<string, number> = {};
+  for (const deck of READY_DECKS) {
+    for (const [, cardIdentifier, quantity] of deck.cards) {
+      owned[cardIdentifier] = Math.max(owned[cardIdentifier] ?? 0, quantity);
+    }
+  }
+  return owned;
+}
 
 // Cards the user must own for the swap deck below to produce its
 // suggestions. The deck's pitch curve has to stay within the engine's tolerance,
@@ -194,23 +288,45 @@ async function ensureOwnedCards(creds: IFixtureCredentials, sessionToken: string
     '/collection/library',
   );
   const owned = new Map(cards.map((card) => [card.cardIdentifier, card.ownedQuantity]));
-  for (const [cardIdentifier, wanted] of Object.entries(REQUIRED_OWNED)) {
+  const wantedByCard = new Map<string, number>();
+  for (const [cardIdentifier, quantity] of [...Object.entries(ownedByReadyDecks()), ...Object.entries(REQUIRED_OWNED)]) {
+    wantedByCard.set(cardIdentifier, Math.max(wantedByCard.get(cardIdentifier) ?? 0, quantity));
+  }
+  for (const [cardIdentifier, wanted] of wantedByCard) {
     const missing = wanted - (owned.get(cardIdentifier) ?? 0);
     if (missing <= 0) continue;
     await authed(creds, sessionToken, 'POST', '/collection/cards', { cardIdentifier, quantity: missing });
   }
 }
 
-async function ensureFabraryDeck(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
+async function putReadyDeckComposition(
+  creds: IFixtureCredentials,
+  sessionToken: string,
+  deckId: number,
+  spec: IReadyDeckSpec,
+): Promise<void> {
+  await authed(creds, sessionToken, 'PUT', `/decks/${deckId}`, {
+    heroIdentifier: spec.hero,
+    format: READY_DECK_FORMAT,
+    cards: spec.cards.map(([slot, cardIdentifier, quantity]) => ({ cardIdentifier, quantity, slot })),
+  });
+}
+
+/** Creates the ready decks from their plain compositions over the app's own API; returns the first one's id. */
+async function ensureReadyDecks(creds: IFixtureCredentials, sessionToken: string): Promise<number> {
   let decks = await listDecks(creds, sessionToken);
-  if (!decks.some((deck) => deck.fabraryUlid !== null)) {
-    for (const url of FABRARY_DECK_URLS) {
-      await authed(creds, sessionToken, 'POST', '/decks/import', { text: url, ownsCards: true });
-    }
+  for (const spec of READY_DECKS) {
+    if (decks.some((deck) => deck.name === spec.name)) continue;
+    const created = await authed<{ id: number }>(creds, sessionToken, 'POST', '/decks', {
+      heroIdentifier: spec.hero,
+      format: READY_DECK_FORMAT,
+    });
+    await putReadyDeckComposition(creds, sessionToken, created.id, spec);
+    await authed(creds, sessionToken, 'PATCH', `/decks/${created.id}`, { name: spec.name, status: 'building' });
     decks = await listDecks(creds, sessionToken);
   }
-  const ready = [...decks].filter((deck) => deck.fabraryUlid !== null).sort((a, b) => a.id - b.id)[0];
-  if (!ready) throw new Error('no Fabrary-imported deck available for the fixture user');
+  const ready = [...decks].filter((deck) => deck.name === READY_DECK_NAME).sort((a, b) => a.id - b.id)[0];
+  if (!ready) throw new Error(`the fixture has no deck named ${READY_DECK_NAME}`);
   return ready.id;
 }
 
@@ -257,7 +373,7 @@ async function ensureSwapDeck(creds: IFixtureCredentials, sessionToken: string):
 async function pruneExtraDecks(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
   const decks = await listDecks(creds, sessionToken);
   for (const deck of decks) {
-    if (deck.fabraryUlid !== null || deck.name === SWAP_DECK_NAME) continue;
+    if (READY_DECK_NAMES.has(deck.name) || deck.name === SWAP_DECK_NAME) continue;
     await authed(creds, sessionToken, 'DELETE', `/decks/${deck.id}`);
   }
 }
@@ -265,7 +381,7 @@ async function pruneExtraDecks(creds: IFixtureCredentials, sessionToken: string)
 /**
  * Puts the fixture user back to the state the specs assume: the swap deck with
  * its composition (which closes any replacement a spec left behind) and its
- * suggestions, and no decks beyond the imported ones and the swap deck.
+ * suggestions, and no decks beyond the ready decks and the swap deck.
  */
 export async function resetFixtureState(creds: IFixtureCredentials, sessionToken: string): Promise<void> {
   await pruneExtraDecks(creds, sessionToken);
@@ -286,7 +402,7 @@ export async function resetFixtureState(creds: IFixtureCredentials, sessionToken
 export async function seedFixture(creds: IFixtureCredentials): Promise<IFixtureHandles> {
   const sessionToken = await signInFixtureUser(creds);
   await ensureOwnedCards(creds, sessionToken);
-  const readyDeckId = await ensureFabraryDeck(creds, sessionToken);
+  const readyDeckId = await ensureReadyDecks(creds, sessionToken);
   const swapDeckId = await ensureSwapDeck(creds, sessionToken);
   await resetFixtureState(creds, sessionToken);
   return { sessionToken, swapDeckId, readyDeckId };
