@@ -123,6 +123,24 @@ describe('duplicate CSV uploads (E2E)', () => {
         }[]
       ).map((row) => row.quantity);
 
+    it('a replace or update upload whose file equals another import answers an exact match and leaves both imports as they were', async () => {
+      const OTHER = Buffer.from(['Name,Quantity', 'Oasis Respite (Red),2', 'Pummel (Blue),1'].join('\n'), 'utf-8');
+      const MINE = Buffer.from(['Name,Quantity', 'Sigil of Solace (Blue),1', 'Sink Below (Blue),2'].join('\n'), 'utf-8');
+      const other = await post(OTHER, { action: 'separate' }).expect(201);
+      const mine = await post(MINE, { action: 'separate' }).expect(201);
+      const otherId = other.body.sourceId as string;
+      const mineId = mine.body.sourceId as string;
+
+      for (const action of ['replace', 'update']) {
+        const res = await post(OTHER, { targetSourceId: mineId, action }).expect(201);
+        expect(res.body).toEqual(expect.objectContaining({ kind: 'exact-match', existingSourceId: otherId }));
+        expect(await quantitiesOf(mineId)).toEqual([1, 2]);
+        expect(await quantitiesOf(otherId)).toEqual([1, 2]);
+      }
+      const rows = await dataSource.query(`SELECT id FROM csv_source WHERE id = ANY($1)`, [[mineId, otherId]]);
+      expect(rows).toHaveLength(2);
+    });
+
     it('a file sent for one import answers its delta, updates or replaces it, and 404s a foreign id', async () => {
       const target = await post(TARGET, { action: 'separate' }).expect(201);
       const targetId = target.body.sourceId as string;
