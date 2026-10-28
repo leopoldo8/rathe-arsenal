@@ -717,10 +717,10 @@ Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the URL sync 
 Proof: `api e2e src/decks/__tests__/deck-missing.e2e-spec.ts -t "the fetch-variants route is gone"`
 Proof: `web unit src/components/deck-detail/__tests__/DeckDetailView.missing.spec.tsx -t "the deck page has no price fetch button or drawer"`
 
-**C454** - Arrangement of the credits bar of `r5-credits-b-phone` in Settings, for an admin: inside the URL sync section, under the line "Última sincronização: 412 produtos · 22/10/2026 03:10", a divider, then the label "Créditos do Firecrawl este mês" on the left and "120 de 1000" on the right, then a bar 8 px high with 4 px rounded ends that has `role="img"` and the name "120 de 1000 créditos usados" and a fill 12% wide in the accent color; when `lookupsStopped` is true, with 880 of 1000 used, the fill is 88% wide in the amber of the `--warn` color (`#c8843c` in the picture) and under the bar come "As consultas automáticas de preço pararam." and "A sincronização manual continua funcionando." in the amber ink (`#d6954c` in the picture); with lookups running neither line shows (AC 122) · done
+**C454** - Arrangement of the credits bar of `r5-credits-b-phone` in Settings, for an admin: inside the URL sync section, under the line "Última sincronização: 412 produtos · 22/10/2026 03:10", a divider, then the label "Créditos do Firecrawl este mês" on the left and "120 de 1000" on the right, then a bar 8 px high with 4 px rounded ends that has `role="img"` and the name "120 de 1000 créditos usados" and a fill 12% wide in the accent color; when `lookupsStopped` is true, with 880 of 1000 used, the fill is 88% wide in the amber of the `--warn` color (`#c8843c` in the picture) and under the bar come "As consultas automáticas de preço pararam." in the amber ink (`#d6954c` in the picture) and, under it, "A sincronização manual continua funcionando." in the muted text color (`--fg3`, `#8b8d96` in the picture); with lookups running neither line shows (AC 122) · done · amended 2026-10-27 (delegation, round 6)
 Proof: `web unit src/routes/_auth/__tests__/-settings.spec.tsx -t "the credits bar sits under the sync line and turns amber when lookups stop"`
 Proof: `web e2e --project=mobile-390 tests/mobile/settings-credits.spec.ts -g "the credits bar follows r5-credits-b-phone while lookups run"` · amended 2026-10-27 (delegation, round 5)
-Proof: `web e2e --project=mobile-390 tests/mobile/settings-credits.spec.ts -g "the credits bar turns amber when lookups stop"` · amended 2026-10-27 (delegation, round 5)
+Proof: `web e2e --project=mobile-390 tests/mobile/settings-credits.spec.ts -g "the credits bar turns amber when lookups stop"` · amended 2026-10-27 (delegation, round 5) · amended 2026-10-27 (delegation, round 6)
 
 ### S17 - The owner's missing list · 46 files · 251 KB · ~95k
 
@@ -1541,6 +1541,7 @@ Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "five codes per ad
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "ten failed tries per address per hour across codes"`
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "a code that has had a try does not count toward the five"` · amended 2026-10-27 (delegation, round 5)
 Proof: `api e2e src/auth/__tests__/auth-limits.e2e-spec.ts -t "a code sign-in that succeeds does not count toward the ten failed tries"` · amended 2026-10-27 (delegation, round 5)
+Proof: `api unit src/auth/__tests__/sign-in-code.service.spec.ts -t "never exceeds one hour when the database clock stamped the oldest code ahead of this process"` · amended 2026-10-27 (delegation, round 6)
 
 **C405** - On a `429` with `Retry-After: 300` the password screen shows "Muitas tentativas. Aguarde 5 minutos e tente novamente." and "Entre com um código por e-mail"; on the code screen it shows the wait and the password way in when the account has a password; `POST /api/auth/sign-in` answers `429` once one IP passes its per-minute limit (AC 258; Surface) · done · proof extended 2026-10-27 (delegation)
 Proof: `web unit src/components/auth/__tests__/PasswordStep.spec.tsx -t "too many tries says the wait and the other way in"`
